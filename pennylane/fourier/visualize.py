@@ -121,8 +121,8 @@ def violin(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
     """Plots a list of sets of Fourier coefficients as a violin plot.
 
     Args:
-        coeffs (list[array[complex]]): A list of sets of Fourier coefficients. The shape of the arrays
-            should resemble that of the output of NumPy/SciPy's ``fftn`` function, or
+        coeffs (list[array[complex]]): A list of sets of Fourier coefficients. The shape of the
+            coefficient arrays should resemble that of the output of NumPy/SciPy's ``fftn`` function, or
             :func:`~.pennylane.fourier.coefficients`.
         n_inputs (int): The number of input variables in the function.
         ax (array[matplotlib.axes.Axes]): Axis on which to plot. Must
@@ -222,10 +222,10 @@ def violin(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
 
 
 def box(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True, show_fliers=True):
-    """Plots a set of Fourier coefficients as a box plot.
+    """Plot a list of sets of Fourier coefficients as a box plot.
 
     Args:
-        coeffs (list[array[complex]]): A list of sets of Fourier coefficients. The shape of the arrays
+        coeffs (list[array[complex]]): A list of sets of Fourier coefficients. The shape of the coefficient arrays
             should resemble that of the output of numpy/scipy's ``fftn`` function, or
             :func:`~.pennylane.fourier.coefficients`.
         n_inputs (int): The number of input variables in the function.
@@ -337,12 +337,12 @@ def box(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True, show_fliers=Tru
 
 
 def bar(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
-    """Plots a set of Fourier coefficients as a bar plot.
+    """Plot a set of Fourier coefficients as a bar plot.
 
     Args:
 
-        coeffs (array[complex]): A single set of Fourier coefficients. The dimensions of the
-            array should be ``(2d + 1, ) * n_inputs`` where ``d`` is the largest frequency.
+        coeffs (array[complex]): A single set of Fourier coefficients. The dimensions of the coefficient
+            arrays should be ``(2d + 1, ) * n_inputs`` where ``d`` is the largest frequency.
         n_inputs (int): The number of input variables in the function.
         ax (list[matplotlib.axes.Axes]): Axis on which to plot. Must
             be a pair of axes from a subplot where ``sharex="row"`` and ``sharey="col"``.
@@ -435,12 +435,12 @@ def bar(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
 
 
 def panel(coeffs, n_inputs, ax, colour=None):
-    """Plot list of sets of coefficients in the complex plane for a 1- or 2-dimensional function.
+    """Plot a list of sets of coefficients in the complex plane for a 1- or 2-dimensional function.
 
     Args:
-        coeffs (list[array[complex]]): A list of sets of Fourier coefficients. The arrays must be 1-
-            or 2-dimensional, i.e., the array should have shape ``(2d + 1,)``
-            for 1-dimensional, or ``(2d + 1, 2d + 1)`` where ``d`` is the
+        coeffs (list[array[complex]]): A list of sets of Fourier coefficients. The coefficient arrays must all
+            be either 1- or 2-dimensional, i.e., each array should have shape ``(2d + 1,)``
+            for the 1-dimensional case, or ``(2d + 1, 2d + 1)`` where ``d`` is the
             degree, i.e., the maximum frequency of present in the coefficients.
             Such an array may be the output of the numpy/scipy ``fft``/``fft2`` functions,
             or :func:`~.pennylane.fourier.coefficients`.
@@ -560,14 +560,14 @@ def panel(coeffs, n_inputs, ax, colour=None):
 
 
 def radial_box(coeffs, n_inputs, ax, show_freqs=True, colour_dict=None, show_fliers=True):
-    """Plot distributions of Fourier coefficients on a radial plot as box plots.
+    """Plot a list of sets of Fourier coefficients on a radial plot as box plots.
 
     Produces a 2-panel plot in which the left panel represents the real parts of
     Fourier coefficients. This method accepts multiple sets of coefficients, and
     plots the distribution of each coefficient as a boxplot.
 
     Args:
-        coeffs (array[complex]): A list of sets of Fourier coefficients. The shape of the array
+        coeffs (list[array[complex]]): A list of sets of Fourier coefficients. The shape of the array
             should resemble that of the output of numpy/scipy's ``fftn`` function, or
             :func:`~.pennylane.fourier.coefficients`.
         n_inputs (int): Dimension of the transformed function.
