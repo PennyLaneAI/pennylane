@@ -248,8 +248,16 @@ coeffs_3D_valid = np.array(
 
 fig_valid, ax_valid = plt.subplots(2, 1, sharex=True, sharey=True)
 fig_invalid, ax_invalid = plt.subplots(3, 1, sharex=True, sharey=True)
-fig_panel_invalid, ax_panel_invalid = plt.subplots(3, 2, sharex=True, sharey=True)
+
+fig_radial_valid, ax_radial_valid = plt.subplots(
+    2, 1, sharex=True, sharey=True, subplot_kw=dict(polar=True)
+)
+fig_radial_invalid, ax_radial_invalid = plt.subplots(
+    3, 1, sharex=True, sharey=True, subplot_kw=dict(polar=True)
+)
+
 fig_panel_valid, ax_panel_valid = plt.subplots(5, 5, sharex=True, sharey=True)
+fig_panel_invalid, ax_panel_invalid = plt.subplots(3, 2, sharex=True, sharey=True)
 
 
 class TestValidateCoefficients:
@@ -323,7 +331,7 @@ class TestInvalidAxesPassing:
                 radial_box,
                 coeffs_2D_valid_list,
                 2,
-                ax_invalid,
+                ax_radial_invalid,
                 "Matplotlib axis should consist of two subplots.",
             ),
             (
@@ -369,7 +377,7 @@ class TestReturnType:
                 radial_box,
                 coeffs_2D_valid_list,
                 2,
-                ax_valid,
+                ax_radial_valid,
             ),
             (
                 panel,
