@@ -24,7 +24,7 @@ torch = pytest.importorskip("torch", minversion="1.8.1")
 import pennylane as qml
 from pennylane import DeviceError
 from pennylane.wires import Wires
-from pennylane.devices.default_qubit_pt import DefaultQubitPT
+from pennylane.devices.default_qubit_torch import DefaultQubitPT
 from gate_data import (
     I,
     X,
@@ -155,7 +155,7 @@ class TestApply:
         expected = np.zeros([2 ** 4])
         expected[np.ravel_multi_index(state, [2] * 4)] = 1
 
-        assert isinstance(res, torch.tensor)
+        assert isinstance(res, torch.Tensor)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_invalid_basis_state_length(self, tol):
@@ -187,7 +187,7 @@ class TestApply:
 
         res = dev.state
         expected = state
-        assert isinstance(res, torch.tensor)
+        assert isinstance(res, torch.Tensor)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_full_subsystem_statevector(self, mocker):
@@ -199,7 +199,7 @@ class TestApply:
         spy = mocker.spy(dev, "_scatter")
         dev._apply_state_vector(state=state, device_wires=state_wires)
 
-        assert np.all(torch.reshape(dev._state, [-1]) == state)
+        assert np.all(np.array(torch.reshape(dev._state, [-1]) == state))
         spy.assert_not_called()
 
     def test_partial_subsystem_statevector(self, mocker):
@@ -212,7 +212,7 @@ class TestApply:
         dev._apply_state_vector(state=state, device_wires=state_wires)
         res = torch.reshape(torch.sum(dev._state, axis=(1,)), [-1])
 
-        assert np.all(res == state)
+        assert np.all(np.array(res == state))
         spy.assert_called()
 
     def test_invalid_qubit_state_vector_size(self):
@@ -257,7 +257,7 @@ class TestApply:
 
         res = dev.state
         expected = mat @ state
-        assert isinstance(res, torch.tensor)
+        assert isinstance(res, torch.Tensor)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("theta", [0.5432, -0.232])
@@ -1331,7 +1331,7 @@ class TestSamples:
         a = torch.autograd.Variable(torch.tensor(0.54))
         res = circuit(a)
 
-        assert isinstance(res, torch.tensor)
+        assert isinstance(res, torch.Tensor)
         assert res.shape == (shots,)
         assert set(res.numpy()) == {-1, 1}
 
@@ -1363,7 +1363,7 @@ class TestSamples:
 
         res = circuit()
 
-        assert isinstance(res, torch.tensor)
+        assert isinstance(res, torch.Tensor)
 
         expected = np.array([0, 1])
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -1380,7 +1380,7 @@ class TestSamples:
 
         res = circuit()
 
-        assert isinstance(res, torch.tensor)
+        assert isinstance(res, torch.Tensor)
 
         expected = np.array([0, 0, 0, 1])
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -1401,7 +1401,7 @@ class TestSamples:
         b = torch.autograd.Variable(torch.tensor(0.43))
 
         res = circuit(a, b)
-        assert isinstance(res, torch.tensor)
+        assert isinstance(res, torch.Tensor)
 
         # We don't check the expected value due to stochasticity, but
         # leave it here for completeness.
@@ -1426,7 +1426,7 @@ class TestSamples:
     #     with tf.GradientTape() as tape:
     #         res = circuit(a, b)
     #
-    #     assert isinstance(res, torch.tensor)
+    #     assert isinstance(res, torch.Tensor)
     #     grad = tape.gradient(res, [a, b])
     #     assert grad == [None, None]
 
