@@ -1031,288 +1031,288 @@ class TestQNodeIntegration:
         expected = CRot3(a, b, c) @ state
         assert np.allclose(res.numpy(), expected, atol=tol, rtol=0)
 
-
-class TestPassthruIntegration:
-    """Tests for integration with the PassthruQNode"""
-
-    def test_jacobian_variable_multiply(self, tol):
-        """Test that jacobian of a QNode with an attached default.qubit.torch device
-        gives the correct result in the case of parameters multiplied by scalars"""
-        x = torch.autograd.Variable(torch.tensor(0.43316321))
-        y = torch.autograd.Variable(torch.tensor(0.2162158))
-        z = torch.autograd.Variable(torch.tensor(0.75110998))
-
-        dev = qml.device("default.qubit.torch", wires=1)
-
-        @qml.qnode(dev, interface="torch", diff_method="backprop")
-        def circuit(p):
-            qml.RX(3 * p[0], wires=0)
-            qml.RY(p[1], wires=0)
-            qml.RX(p[2] / 2, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        with tf.GradientTape() as tape:
-            res = circuit([x, y, z])
-
-        expected = torch.cos(3 * x) * torch.cos(y) * torch.cos(z / 2) - torch.sin(
-            3 * x
-        ) * torch.sin(z / 2)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        res = tf.concat(tape.jacobian(res, [x, y, z]), axis=0)
-
-        expected = np.array(
-            [
-                -3
-                * (
-                    torch.sin(3 * x) * torch.cos(y) * torch.cos(z / 2)
-                    + torch.cos(3 * x) * torch.sin(z / 2)
-                ),
-                -torch.cos(3 * x) * torch.sin(y) * torch.cos(z / 2),
-                -0.5
-                * (
-                    torch.sin(3 * x) * torch.cos(z / 2)
-                    + torch.cos(3 * x) * torch.cos(y) * torch.sin(z / 2)
-                ),
-            ]
-        )
-
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_jacobian_repeated(self, tol):
-        """Test that jacobian of a QNode with an attached default.qubit.torch device
-        gives the correct result in the case of repeated parameters"""
-        x = 0.43316321
-        y = 0.2162158
-        z = 0.75110998
-        p = torch.autograd.Variable(torch.tensor([x, y, z]))
-        dev = qml.device("default.qubit.torch", wires=1)
-
-        @qml.qnode(dev, interface="torch", diff_method="backprop")
-        def circuit(x):
-            qml.RX(x[1], wires=0)
-            qml.Rot(x[0], x[1], x[2], wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        with tf.GradientTape() as tape:
-            res = circuit(p)
-
-        expected = np.cos(y) ** 2 - np.sin(x) * np.sin(y) ** 2
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        res = tape.jacobian(res, p)
-
-        expected = np.array(
-            [-np.cos(x) * np.sin(y) ** 2, -2 * (np.sin(x) + 1) * np.sin(y) * np.cos(y), 0]
-        )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_jacobian_agrees_backprop_parameter_shift(self, tol):
-        """Test that jacobian of a QNode with an attached default.qubit.torch device
-        gives the correct result with respect to the parameter-shift method"""
-        p = np.array([0.43316321, 0.2162158, 0.75110998, 0.94714242])
-
-        def circuit(x):
-            for i in range(0, len(p), 2):
-                qml.RX(x[i], wires=0)
-                qml.RY(x[i + 1], wires=1)
-            for i in range(2):
-                qml.CNOT(wires=[i, i + 1])
-            return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))
-
-        dev1 = qml.device("default.qubit.torch", wires=3)
-        dev2 = qml.device("default.qubit.torch", wires=3)
-
-        circuit1 = qml.QNode(circuit, dev1, diff_method="backprop", interface="torch")
-        circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift")
-
-        p_torch = torch.autograd.Variable(torch.tensor(p))
-        with tf.GradientTape() as tape:
-            res = circuit1(p_torch)
-
-        assert np.allclose(res, circuit2(p), atol=tol, rtol=0)
-
-        res = tape.jacobian(res, p_torch)
-        assert np.allclose(res, qml.jacobian(circuit2)(p), atol=tol, rtol=0)
-
-    def test_state_differentiability(self, tol):
-        """Test that the device state can be differentiated"""
-        dev = qml.device("default.qubit.torch", wires=1)
-
-        @qml.qnode(dev, diff_method="backprop", interface="torch")
-        def circuit(a):
-            qml.RY(a, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        a = torch.autograd.Variable(torch.tensor(0.54))
-
-        with tf.GradientTape() as tape:
-            circuit(a)
-            res = torch.abs(dev.state) ** 2
-            res = res[1] - res[0]
-
-        grad = tape.gradient(res, a)
-        expected = torch.sin(a)
-        assert np.allclose(grad, expected, atol=tol, rtol=0)
-
-    def test_prob_differentiability(self, tol):
-        """Test that the device probability can be differentiated"""
-        dev = qml.device("default.qubit.torch", wires=2)
-
-        @qml.qnode(dev, diff_method="backprop", interface="torch")
-        def circuit(a, b):
-            qml.RX(a, wires=0)
-            qml.RY(b, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.probs(wires=[1])
-
-        a = torch.autograd.Variable(torch.tensor(0.54))
-        b = torch.autograd.Variable(torch.tensor(0.12))
-
-        with tf.GradientTape() as tape:
-            # get the probability of wire 1
-            prob_wire_1 = circuit(a, b)
-            # compute Prob(|1>_1) - Prob(|0>_1)
-            res = prob_wire_1[1] - prob_wire_1[0]
-
-        expected = -torch.cos(a) * torch.cos(b)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        grad = tape.gradient(res, [a, b])
-        expected = [torch.sin(a) * torch.cos(b), torch.cos(a) * torch.sin(b)]
-        assert np.allclose(grad, expected, atol=tol, rtol=0)
-
-    def test_backprop_gradient(self, tol):
-        """Tests that the gradient of the qnode is correct"""
-        dev = qml.device("default.qubit.torch", wires=2)
-
-        @qml.qnode(dev, diff_method="backprop", interface="torch")
-        def circuit(a, b):
-            qml.RX(a, wires=0)
-            qml.CRX(b, wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-        a = torch.tensor(-0.234)
-        a = a.type(torch.float64)
-        b = torch.tensor(0.654)
-        b = b.type(torch.float64)
-
-        a_torch = torch.autograd.Variable(a)
-        b_torch = torch.autograd.Variable(b)
-
-        with tf.GradientTape() as tape:
-            tape.watch([a_torch, b_torch])
-            res = circuit(a_torch, b_torch)
-
-        # the analytic result of evaluating circuit(a, b)
-        expected_cost = 0.5 * (np.cos(a) * np.cos(b) + np.cos(a) - np.cos(b) + 1)
-
-        # the analytic result of evaluating grad(circuit(a, b))
-        expected_grad = np.array(
-            [-0.5 * np.sin(a) * (np.cos(b) + 1), 0.5 * np.sin(b) * (1 - np.cos(a))]
-        )
-
-        assert np.allclose(res.numpy(), expected_cost, atol=tol, rtol=0)
-
-        res = tape.gradient(res, [a_torch, b_torch])
-        assert np.allclose(res, expected_grad, atol=tol, rtol=0)
-
-    @pytest.mark.parametrize("operation", [qml.U3, qml.U3.decomposition])
-    @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "finite-diff"])
-    def test_torch_interface_gradient(self, operation, diff_method, tol):
-        """Tests that the gradient of an arbitrary U3 gate is correct
-        using the TensorFlow interface, using a variety of differentiation methods."""
-        dev = qml.device("default.qubit.torch", wires=1)
-
-        @qml.qnode(dev, diff_method=diff_method, interface="torch")
-        def circuit(x, weights, w):
-            """In this example, a mixture of scalar
-            arguments, array arguments, and keyword arguments are used."""
-            qml.QubitStateVector(1j * np.array([1, -1]) / np.sqrt(2), wires=w)
-            operation(x, weights[0], weights[1], wires=w)
-            return qml.expval(qml.PauliX(w))
-
-        # Check that the correct QNode type is being used.
-        if diff_method == "backprop":
-            assert circuit.diff_options["method"] == "backprop"
-        elif diff_method == "parameter-shift":
-            assert circuit.diff_options["method"] == "analytic"
-        elif diff_method == "finite-diff":
-            assert circuit.diff_options["method"] == "numeric"
-
-        def cost(params):
-            """Perform some classical processing"""
-            return circuit(params[0], params[1:], w=0) ** 2
-
-
-        theta = torch.tensor(0.543)
-        theta = theta.type(torch.float64)
-        phi = torch.tensor(-0.234)
-        phi = phi.type(torch.float64)
-        lam = torch.tensor(0.654)
-        lam = torch.type(torch.float64)
-
-        params = torch.autograd.Variable([theta, phi, lam])
-
-        with tf.GradientTape() as tape:
-            tape.watch(params)
-            res = cost(params)
-
-        # check that the result is correct
-        expected_cost = (np.sin(lam) * np.sin(phi) - np.cos(theta) * np.cos(lam) * np.cos(phi)) ** 2
-        assert np.allclose(res.numpy(), expected_cost, atol=tol, rtol=0)
-
-        res = tape.gradient(res, params)
-
-        # check that the gradient is correct
-        expected_grad = (
-            np.array(
-                [
-                    np.sin(theta) * np.cos(lam) * np.cos(phi),
-                    np.cos(theta) * np.cos(lam) * np.sin(phi) + np.sin(lam) * np.cos(phi),
-                    np.cos(theta) * np.sin(lam) * np.cos(phi) + np.cos(lam) * np.sin(phi),
-                ]
-            )
-            * 2
-            * (np.sin(lam) * np.sin(phi) - np.cos(theta) * np.cos(lam) * np.cos(phi))
-        )
-        assert np.allclose(res.numpy(), expected_grad, atol=tol, rtol=0)
-
-    def test_inverse_operation_jacobian_backprop(self, tol):
-        """Test that inverse operations work in backprop
-        mode"""
-        dev = qml.device("default.qubit.torch", wires=1)
-
-        @qml.qnode(dev, diff_method="backprop", interface="torch")
-        def circuit(param):
-            qml.RY(param, wires=0).inv()
-            return qml.expval(qml.PauliX(0))
-
-        x = torch.autograd.Variable(torch.tensor(0.3))
-
-        with tf.GradientTape() as tape:
-            res = circuit(x)
-
-        assert np.allclose(res, -torch.sin(x), atol=tol, rtol=0)
-
-        grad = tape.gradient(res, x)
-        assert np.allclose(grad, -torch.cos(x), atol=tol, rtol=0)
-
-    @pytest.mark.parametrize("interface", ["autograd", "torch"])
-    def test_error_backprop_wrong_interface(self, interface, tol):
-        """Tests that an error is raised if diff_method='backprop' but not using
-        the torch interface"""
-        dev = qml.device("default.qubit.torch", wires=1)
-
-        def circuit(x, w=None):
-            qml.RZ(x, wires=w)
-            return qml.expval(qml.PauliX(w))
-
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="default.qubit.torch only supports diff_method='backprop' when using the torch interface",
-        ):
-            qml.qnode(dev, diff_method="backprop", interface=interface)(circuit)
+#
+# class TestPassthruIntegration:
+#     """Tests for integration with the PassthruQNode"""
+#
+#     def test_jacobian_variable_multiply(self, tol):
+#         """Test that jacobian of a QNode with an attached default.qubit.torch device
+#         gives the correct result in the case of parameters multiplied by scalars"""
+#         x = torch.autograd.Variable(torch.tensor(0.43316321))
+#         y = torch.autograd.Variable(torch.tensor(0.2162158))
+#         z = torch.autograd.Variable(torch.tensor(0.75110998))
+#
+#         dev = qml.device("default.qubit.torch", wires=1)
+#
+#         @qml.qnode(dev, interface="torch", diff_method="backprop")
+#         def circuit(p):
+#             qml.RX(3 * p[0], wires=0)
+#             qml.RY(p[1], wires=0)
+#             qml.RX(p[2] / 2, wires=0)
+#             return qml.expval(qml.PauliZ(0))
+#
+#         with tf.GradientTape() as tape:
+#             res = circuit([x, y, z])
+#
+#         expected = torch.cos(3 * x) * torch.cos(y) * torch.cos(z / 2) - torch.sin(
+#             3 * x
+#         ) * torch.sin(z / 2)
+#         assert np.allclose(res, expected, atol=tol, rtol=0)
+#
+#         res = tf.concat(tape.jacobian(res, [x, y, z]), axis=0)
+#
+#         expected = np.array(
+#             [
+#                 -3
+#                 * (
+#                     torch.sin(3 * x) * torch.cos(y) * torch.cos(z / 2)
+#                     + torch.cos(3 * x) * torch.sin(z / 2)
+#                 ),
+#                 -torch.cos(3 * x) * torch.sin(y) * torch.cos(z / 2),
+#                 -0.5
+#                 * (
+#                     torch.sin(3 * x) * torch.cos(z / 2)
+#                     + torch.cos(3 * x) * torch.cos(y) * torch.sin(z / 2)
+#                 ),
+#             ]
+#         )
+#
+#         assert np.allclose(res, expected, atol=tol, rtol=0)
+#
+#     def test_jacobian_repeated(self, tol):
+#         """Test that jacobian of a QNode with an attached default.qubit.torch device
+#         gives the correct result in the case of repeated parameters"""
+#         x = 0.43316321
+#         y = 0.2162158
+#         z = 0.75110998
+#         p = torch.autograd.Variable(torch.tensor([x, y, z]))
+#         dev = qml.device("default.qubit.torch", wires=1)
+#
+#         @qml.qnode(dev, interface="torch", diff_method="backprop")
+#         def circuit(x):
+#             qml.RX(x[1], wires=0)
+#             qml.Rot(x[0], x[1], x[2], wires=0)
+#             return qml.expval(qml.PauliZ(0))
+#
+#         with tf.GradientTape() as tape:
+#             res = circuit(p)
+#
+#         expected = np.cos(y) ** 2 - np.sin(x) * np.sin(y) ** 2
+#         assert np.allclose(res, expected, atol=tol, rtol=0)
+#
+#         res = tape.jacobian(res, p)
+#
+#         expected = np.array(
+#             [-np.cos(x) * np.sin(y) ** 2, -2 * (np.sin(x) + 1) * np.sin(y) * np.cos(y), 0]
+#         )
+#         assert np.allclose(res, expected, atol=tol, rtol=0)
+#
+#     def test_jacobian_agrees_backprop_parameter_shift(self, tol):
+#         """Test that jacobian of a QNode with an attached default.qubit.torch device
+#         gives the correct result with respect to the parameter-shift method"""
+#         p = np.array([0.43316321, 0.2162158, 0.75110998, 0.94714242])
+#
+#         def circuit(x):
+#             for i in range(0, len(p), 2):
+#                 qml.RX(x[i], wires=0)
+#                 qml.RY(x[i + 1], wires=1)
+#             for i in range(2):
+#                 qml.CNOT(wires=[i, i + 1])
+#             return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))
+#
+#         dev1 = qml.device("default.qubit.torch", wires=3)
+#         dev2 = qml.device("default.qubit.torch", wires=3)
+#
+#         circuit1 = qml.QNode(circuit, dev1, diff_method="backprop", interface="torch")
+#         circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift")
+#
+#         p_torch = torch.autograd.Variable(torch.tensor(p))
+#         with tf.GradientTape() as tape:
+#             res = circuit1(p_torch)
+#
+#         assert np.allclose(res, circuit2(p), atol=tol, rtol=0)
+#
+#         res = tape.jacobian(res, p_torch)
+#         assert np.allclose(res, qml.jacobian(circuit2)(p), atol=tol, rtol=0)
+#
+#     def test_state_differentiability(self, tol):
+#         """Test that the device state can be differentiated"""
+#         dev = qml.device("default.qubit.torch", wires=1)
+#
+#         @qml.qnode(dev, diff_method="backprop", interface="torch")
+#         def circuit(a):
+#             qml.RY(a, wires=0)
+#             return qml.expval(qml.PauliZ(0))
+#
+#         a = torch.autograd.Variable(torch.tensor(0.54))
+#
+#         with tf.GradientTape() as tape:
+#             circuit(a)
+#             res = torch.abs(dev.state) ** 2
+#             res = res[1] - res[0]
+#
+#         grad = tape.gradient(res, a)
+#         expected = torch.sin(a)
+#         assert np.allclose(grad, expected, atol=tol, rtol=0)
+#
+#     def test_prob_differentiability(self, tol):
+#         """Test that the device probability can be differentiated"""
+#         dev = qml.device("default.qubit.torch", wires=2)
+#
+#         @qml.qnode(dev, diff_method="backprop", interface="torch")
+#         def circuit(a, b):
+#             qml.RX(a, wires=0)
+#             qml.RY(b, wires=1)
+#             qml.CNOT(wires=[0, 1])
+#             return qml.probs(wires=[1])
+#
+#         a = torch.autograd.Variable(torch.tensor(0.54))
+#         b = torch.autograd.Variable(torch.tensor(0.12))
+#
+#         with tf.GradientTape() as tape:
+#             # get the probability of wire 1
+#             prob_wire_1 = circuit(a, b)
+#             # compute Prob(|1>_1) - Prob(|0>_1)
+#             res = prob_wire_1[1] - prob_wire_1[0]
+#
+#         expected = -torch.cos(a) * torch.cos(b)
+#         assert np.allclose(res, expected, atol=tol, rtol=0)
+#
+#         grad = tape.gradient(res, [a, b])
+#         expected = [torch.sin(a) * torch.cos(b), torch.cos(a) * torch.sin(b)]
+#         assert np.allclose(grad, expected, atol=tol, rtol=0)
+#
+#     def test_backprop_gradient(self, tol):
+#         """Tests that the gradient of the qnode is correct"""
+#         dev = qml.device("default.qubit.torch", wires=2)
+#
+#         @qml.qnode(dev, diff_method="backprop", interface="torch")
+#         def circuit(a, b):
+#             qml.RX(a, wires=0)
+#             qml.CRX(b, wires=[0, 1])
+#             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+#
+#         a = torch.tensor(-0.234)
+#         a = a.type(torch.float64)
+#         b = torch.tensor(0.654)
+#         b = b.type(torch.float64)
+#
+#         a_torch = torch.autograd.Variable(a)
+#         b_torch = torch.autograd.Variable(b)
+#
+#         with tf.GradientTape() as tape:
+#             tape.watch([a_torch, b_torch])
+#             res = circuit(a_torch, b_torch)
+#
+#         # the analytic result of evaluating circuit(a, b)
+#         expected_cost = 0.5 * (np.cos(a) * np.cos(b) + np.cos(a) - np.cos(b) + 1)
+#
+#         # the analytic result of evaluating grad(circuit(a, b))
+#         expected_grad = np.array(
+#             [-0.5 * np.sin(a) * (np.cos(b) + 1), 0.5 * np.sin(b) * (1 - np.cos(a))]
+#         )
+#
+#         assert np.allclose(res.numpy(), expected_cost, atol=tol, rtol=0)
+#
+#         res = tape.gradient(res, [a_torch, b_torch])
+#         assert np.allclose(res, expected_grad, atol=tol, rtol=0)
+#
+#     @pytest.mark.parametrize("operation", [qml.U3, qml.U3.decomposition])
+#     @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "finite-diff"])
+#     def test_torch_interface_gradient(self, operation, diff_method, tol):
+#         """Tests that the gradient of an arbitrary U3 gate is correct
+#         using the TensorFlow interface, using a variety of differentiation methods."""
+#         dev = qml.device("default.qubit.torch", wires=1)
+#
+#         @qml.qnode(dev, diff_method=diff_method, interface="torch")
+#         def circuit(x, weights, w):
+#             """In this example, a mixture of scalar
+#             arguments, array arguments, and keyword arguments are used."""
+#             qml.QubitStateVector(1j * np.array([1, -1]) / np.sqrt(2), wires=w)
+#             operation(x, weights[0], weights[1], wires=w)
+#             return qml.expval(qml.PauliX(w))
+#
+#         # Check that the correct QNode type is being used.
+#         if diff_method == "backprop":
+#             assert circuit.diff_options["method"] == "backprop"
+#         elif diff_method == "parameter-shift":
+#             assert circuit.diff_options["method"] == "analytic"
+#         elif diff_method == "finite-diff":
+#             assert circuit.diff_options["method"] == "numeric"
+#
+#         def cost(params):
+#             """Perform some classical processing"""
+#             return circuit(params[0], params[1:], w=0) ** 2
+#
+#
+#         theta = torch.tensor(0.543)
+#         theta = theta.type(torch.float64)
+#         phi = torch.tensor(-0.234)
+#         phi = phi.type(torch.float64)
+#         lam = torch.tensor(0.654)
+#         lam = torch.type(torch.float64)
+#
+#         params = torch.autograd.Variable([theta, phi, lam])
+#
+#         with tf.GradientTape() as tape:
+#             tape.watch(params)
+#             res = cost(params)
+#
+#         # check that the result is correct
+#         expected_cost = (np.sin(lam) * np.sin(phi) - np.cos(theta) * np.cos(lam) * np.cos(phi)) ** 2
+#         assert np.allclose(res.numpy(), expected_cost, atol=tol, rtol=0)
+#
+#         res = tape.gradient(res, params)
+#
+#         # check that the gradient is correct
+#         expected_grad = (
+#             np.array(
+#                 [
+#                     np.sin(theta) * np.cos(lam) * np.cos(phi),
+#                     np.cos(theta) * np.cos(lam) * np.sin(phi) + np.sin(lam) * np.cos(phi),
+#                     np.cos(theta) * np.sin(lam) * np.cos(phi) + np.cos(lam) * np.sin(phi),
+#                 ]
+#             )
+#             * 2
+#             * (np.sin(lam) * np.sin(phi) - np.cos(theta) * np.cos(lam) * np.cos(phi))
+#         )
+#         assert np.allclose(res.numpy(), expected_grad, atol=tol, rtol=0)
+#
+#     def test_inverse_operation_jacobian_backprop(self, tol):
+#         """Test that inverse operations work in backprop
+#         mode"""
+#         dev = qml.device("default.qubit.torch", wires=1)
+#
+#         @qml.qnode(dev, diff_method="backprop", interface="torch")
+#         def circuit(param):
+#             qml.RY(param, wires=0).inv()
+#             return qml.expval(qml.PauliX(0))
+#
+#         x = torch.autograd.Variable(torch.tensor(0.3))
+#
+#         with tf.GradientTape() as tape:
+#             res = circuit(x)
+#
+#         assert np.allclose(res, -torch.sin(x), atol=tol, rtol=0)
+#
+#         grad = tape.gradient(res, x)
+#         assert np.allclose(grad, -torch.cos(x), atol=tol, rtol=0)
+#
+#     @pytest.mark.parametrize("interface", ["autograd", "torch"])
+#     def test_error_backprop_wrong_interface(self, interface, tol):
+#         """Tests that an error is raised if diff_method='backprop' but not using
+#         the torch interface"""
+#         dev = qml.device("default.qubit.torch", wires=1)
+#
+#         def circuit(x, w=None):
+#             qml.RZ(x, wires=w)
+#             return qml.expval(qml.PauliX(w))
+#
+#         with pytest.raises(
+#             qml.QuantumFunctionError,
+#             match="default.qubit.torch only supports diff_method='backprop' when using the torch interface",
+#         ):
+#             qml.qnode(dev, diff_method="backprop", interface=interface)(circuit)
 
 
 class TestSamples:
@@ -1335,22 +1335,22 @@ class TestSamples:
         assert res.shape == (shots,)
         assert set(res.numpy()) == {-1, 1}
 
-    def test_sample_observables_non_differentiable(self):
-        """Test that sampled observables cannot be differentiated."""
-        shots = 100
-        dev = qml.device("default.qubit.torch", wires=2, shots=shots)
-
-        @qml.qnode(dev, diff_method="backprop", interface="torch")
-        def circuit(a):
-            qml.RX(a, wires=0)
-            return qml.sample(qml.PauliZ(0))
-
-        a = torch.autograd.Variable(torch.tensor(0.54))
-
-        with tf.GradientTape() as tape:
-            res = circuit(a)
-
-        assert tape.gradient(res, a) is None
+    # def test_sample_observables_non_differentiable(self):
+    #     """Test that sampled observables cannot be differentiated."""
+    #     shots = 100
+    #     dev = qml.device("default.qubit.torch", wires=2, shots=shots)
+    #
+    #     @qml.qnode(dev, diff_method="backprop", interface="torch")
+    #     def circuit(a):
+    #         qml.RX(a, wires=0)
+    #         return qml.sample(qml.PauliZ(0))
+    #
+    #     a = torch.autograd.Variable(torch.tensor(0.54))
+    #
+    #     with tf.GradientTape() as tape:
+    #         res = circuit(a)
+    #
+    #     assert tape.gradient(res, a) is None
 
     def test_estimating_marginal_probability(self, tol):
         """Test that the probability of a subset of wires is accurately estimated."""
@@ -1408,27 +1408,27 @@ class TestSamples:
         # expected = [torch.cos(a), torch.cos(a) * torch.cos(b)]
         # assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_estimating_expectation_values_not_differentiable(self, tol):
-        """Test that finite shots results in non-differentiable QNodes"""
-
-        dev = qml.device("default.qubit.torch", wires=3, shots=1000)
-
-        @qml.qnode(dev, diff_method="backprop", interface="torch")
-        def circuit(a, b):
-            qml.RX(a, wires=[0])
-            qml.RX(b, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
-
-        a = torch.autograd.Variable(torch.tensor(0.543))
-        b = torch.autograd.Variable(torch.tensor(0.43))
-
-        with tf.GradientTape() as tape:
-            res = circuit(a, b)
-
-        assert isinstance(res, torch.tensor)
-        grad = tape.gradient(res, [a, b])
-        assert grad == [None, None]
+    # def test_estimating_expectation_values_not_differentiable(self, tol):
+    #     """Test that finite shots results in non-differentiable QNodes"""
+    #
+    #     dev = qml.device("default.qubit.torch", wires=3, shots=1000)
+    #
+    #     @qml.qnode(dev, diff_method="backprop", interface="torch")
+    #     def circuit(a, b):
+    #         qml.RX(a, wires=[0])
+    #         qml.RX(b, wires=[1])
+    #         qml.CNOT(wires=[0, 1])
+    #         return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+    #
+    #     a = torch.autograd.Variable(torch.tensor(0.543))
+    #     b = torch.autograd.Variable(torch.tensor(0.43))
+    #
+    #     with tf.GradientTape() as tape:
+    #         res = circuit(a, b)
+    #
+    #     assert isinstance(res, torch.tensor)
+    #     grad = tape.gradient(res, [a, b])
+    #     assert grad == [None, None]
 
 
 class TestHighLevelIntegration:
