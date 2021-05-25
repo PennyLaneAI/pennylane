@@ -344,14 +344,17 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 * Removes occurrences of the deprecated device argument ``analytic`` from the documentation.
   [(#1261)](https://github.com/PennyLaneAI/pennylane/pull/1261)
+  
+* Updated PyTorch and TensorFlow interface introductions.
+  [(#1333)](https://github.com/PennyLaneAI/pennylane/pull/1333)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Marius Aglitoiu, Vishnu Ajith, Thomas Bromley, Jack Ceroni, Miruna Daian, Olivia Di Matteo,
-Tanya Garg, Diego Guala, Anthony Hayes, Josh Izaac, Pavan Jayasinha, Ryan Levy, Nahum Sá, Johannes Jakob Meyer,
-Brian Shi, Antal Száva, David Wierichs, Vincent Wong, Alberto Maldonado.
+Tanya Garg, Diego Guala, Anthony Hayes, Ryan Hill, Josh Izaac, Pavan Jayasinha, Ryan Levy, Nahum Sá, 
+Johannes Jakob Meyer, Brian Shi, Antal Száva, David Wierichs, Vincent Wong, Alberto Maldonado.
 
 # Release 0.15.1 (current release)
 
