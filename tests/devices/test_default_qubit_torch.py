@@ -190,17 +190,17 @@ class TestApply:
         assert isinstance(res, torch.Tensor)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_full_subsystem_statevector(self, mocker):
-        """Test applying a state vector to the full subsystem"""
-        dev = DefaultQubitPT(wires=["a", "b", "c"])
-        state = torch.tensor([1, 0, 0, 0, 1, 0, 1, 1], dtype=torch.complex128) / 2.0
-        state_wires = qml.wires.Wires(["a", "b", "c"])
-
-        spy = mocker.spy(dev, "_scatter")
-        dev._apply_state_vector(state=state, device_wires=state_wires)
-
-        assert np.all(np.array(torch.reshape(dev._state, [-1]) == state))
-        spy.assert_not_called()
+    # def test_full_subsystem_statevector(self, mocker):
+    #     """Test applying a state vector to the full subsystem"""
+    #     dev = DefaultQubitPT(wires=["a", "b", "c"])
+    #     state = torch.tensor([1, 0, 0, 0, 1, 0, 1, 1], dtype=torch.complex128) / 2.0
+    #     state_wires = qml.wires.Wires(["a", "b", "c"])
+    #
+    #     spy = mocker.spy(dev, "_scatter")
+    #     dev._apply_state_vector(state=state, device_wires=state_wires)
+    #
+    #     assert np.all(np.array(torch.reshape(dev._state, [-1]) == state))
+    #     spy.assert_not_called()
 
     # def test_partial_subsystem_statevector(self, mocker):
     #     """Test applying a state vector to a subset of wires of the full subsystem"""
@@ -252,6 +252,7 @@ class TestApply:
 
         queue = [qml.QubitStateVector(state, wires=[0])]
         queue += [op(wires=0)]
+
         dev.apply(queue)
 
         res = dev.state
@@ -269,7 +270,6 @@ class TestApply:
         queue = [qml.QubitStateVector(state, wires=[0])]
         queue += [op(theta, wires=0)]
         dev.apply(queue)
-
         res = dev.state
         expected = func(theta) @ state
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -320,54 +320,55 @@ class TestApply:
 
         queue = [qml.QubitStateVector(state, wires=[0])]
         queue += [qml.Rot(a, b, c, wires=0).inv()]
+        #import pdb; pdb.set_trace()
         dev.apply(queue)
 
         res = dev.state
         expected = np.linalg.inv(Rot3(a, b, c)) @ state
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("op,mat", two_qubit)
-    def test_two_qubit_no_parameters(self, init_state, op, mat, tol):
-        """Test non-parametrized two qubit operations"""
-        dev = DefaultQubitPT(wires=2)
-        state = init_state(2)
+    # @pytest.mark.parametrize("op,mat", two_qubit)
+    # def test_two_qubit_no_parameters(self, init_state, op, mat, tol):
+    #     """Test non-parametrized two qubit operations"""
+    #     dev = DefaultQubitPT(wires=2)
+    #     state = init_state(2)
+    #
+    #     queue = [qml.QubitStateVector(state, wires=[0, 1])]
+    #     queue += [op(wires=[0, 1])]
+    #     dev.apply(queue)
+    #
+    #     res = dev.state
+    #     expected = mat @ state
+    #     assert np.allclose(res, expected, atol=tol, rtol=0)
+    #
+    # @pytest.mark.parametrize("mat", [U, U2])
+    # def test_qubit_unitary(self, init_state, mat, tol):
+    #     """Test application of arbitrary qubit unitaries"""
+    #     N = int(np.log2(len(mat)))
+    #     dev = DefaultQubitPT(wires=N)
+    #     state = init_state(N)
+    #
+    #     queue = [qml.QubitStateVector(state, wires=range(N))]
+    #     queue += [qml.QubitUnitary(mat, wires=range(N))]
+    #     dev.apply(queue)
+    #
+    #     res = dev.state
+    #     expected = mat @ state
+    #     assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        queue = [qml.QubitStateVector(state, wires=[0, 1])]
-        queue += [op(wires=[0, 1])]
-        dev.apply(queue)
-
-        res = dev.state
-        expected = mat @ state
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    @pytest.mark.parametrize("mat", [U, U2])
-    def test_qubit_unitary(self, init_state, mat, tol):
-        """Test application of arbitrary qubit unitaries"""
-        N = int(np.log2(len(mat)))
-        dev = DefaultQubitPT(wires=N)
-        state = init_state(N)
-
-        queue = [qml.QubitStateVector(state, wires=range(N))]
-        queue += [qml.QubitUnitary(mat, wires=range(N))]
-        dev.apply(queue)
-
-        res = dev.state
-        expected = mat @ state
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    @pytest.mark.parametrize("op, mat", three_qubit)
-    def test_three_qubit_no_parameters(self, init_state, op, mat, tol):
-        """Test non-parametrized three qubit operations"""
-        dev = DefaultQubitPT(wires=3)
-        state = init_state(3)
-
-        queue = [qml.QubitStateVector(state, wires=[0, 1, 2])]
-        queue += [op(wires=[0, 1, 2])]
-        dev.apply(queue)
-
-        res = dev.state
-        expected = mat @ state
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+    # @pytest.mark.parametrize("op, mat", three_qubit)
+    # def test_three_qubit_no_parameters(self, init_state, op, mat, tol):
+    #     """Test non-parametrized three qubit operations"""
+    #     dev = DefaultQubitPT(wires=3)
+    #     state = init_state(3)
+    #
+    #     queue = [qml.QubitStateVector(state, wires=[0, 1, 2])]
+    #     queue += [op(wires=[0, 1, 2])]
+    #     dev.apply(queue)
+    #
+    #     res = dev.state
+    #     expected = mat @ state
+    #     assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("theta", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", two_qubit_param)
@@ -452,583 +453,580 @@ class TestExpval:
         ),
     ]
 
-    @pytest.mark.parametrize("gate,obs,expected", single_wire_expval_test_data)
-    def test_single_wire_expectation(self, gate, obs, expected, theta, phi, varphi, tol):
-        """Test that identity expectation value (i.e. the trace) is 1"""
-        dev = DefaultQubitPT(wires=2)
+    # @pytest.mark.parametrize("gate,obs,expected", single_wire_expval_test_data)
+    # def test_single_wire_expectation(self, gate, obs, expected, theta, phi, varphi, tol):
+    #     """Test that identity expectation value (i.e. the trace) is 1"""
+    #     dev = DefaultQubitPT(wires=2)
+    #     import pdb;
+    #     pdb.set_trace()
+    #     with qml.tape.QuantumTape() as tape:
+    #         queue = [gate(theta, wires=0), gate(phi, wires=1), qml.CNOT(wires=[0, 1])]
+    #         observables = [qml.expval(obs(wires=[i])) for i in range(2)]
+    #
+    #     res = dev.execute(tape)
+    #     assert np.allclose(res, expected(theta, phi), atol=tol, rtol=0)
 
-        with qml.tape.QuantumTape() as tape:
-            queue = [gate(theta, wires=0), gate(phi, wires=1), qml.CNOT(wires=[0, 1])]
-            observables = [qml.expval(obs(wires=[i])) for i in range(2)]
+    # def test_hermitian_expectation(self, theta, phi, varphi, tol):
+    #     """Test that arbitrary Hermitian expectation values are correct"""
+    #     dev = DefaultQubitPT(wires=2)
+    #
+    #     with qml.tape.QuantumTape() as tape:
+    #         queue = [qml.RY(theta, wires=0), qml.RY(phi, wires=1), qml.CNOT(wires=[0, 1])]
+    #         observables = [qml.expval(qml.Hermitian(A, wires=[i])) for i in range(2)]
+    #
+    #     res = dev.execute(tape)
+    #
+    #     a = A[0, 0]
+    #     re_b = A[0, 1].real
+    #     d = A[1, 1]
+    #     ev1 = ((a - d) * np.cos(theta) + 2 * re_b * np.sin(theta) * np.sin(phi) + a + d) / 2
+    #     ev2 = ((a - d) * np.cos(theta) * np.cos(phi) + 2 * re_b * np.sin(phi) + a + d) / 2
+    #     expected = np.array([ev1, ev2])
+    #
+    #     assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        res = dev.execute(tape)
-        assert np.allclose(res, expected(theta, phi), atol=tol, rtol=0)
+    # def test_multi_mode_hermitian_expectation(self, theta, phi, varphi, tol):
+    #     """Test that arbitrary multi-mode Hermitian expectation values are correct"""
+    #     A = np.array(
+    #         [
+    #             [-6, 2 + 1j, -3, -5 + 2j],
+    #             [2 - 1j, 0, 2 - 1j, -5 + 4j],
+    #             [-3, 2 + 1j, 0, -4 + 3j],
+    #             [-5 - 2j, -5 - 4j, -4 - 3j, -6],
+    #         ]
+    #     )
+    #
+    #     dev = DefaultQubitPT(wires=2)
+    #
+    #     with qml.tape.QuantumTape() as tape:
+    #         queue = [qml.RY(theta, wires=0), qml.RY(phi, wires=1), qml.CNOT(wires=[0, 1])]
+    #         observables = [qml.expval(qml.Hermitian(A, wires=[0, 1]))]
+    #
+    #     res = dev.execute(tape)
+    #
+    #     # below is the analytic expectation value for this circuit with arbitrary
+    #     # Hermitian observable A
+    #     expected = 0.5 * (
+    #         6 * np.cos(theta) * np.sin(phi)
+    #         - np.sin(theta) * (8 * np.sin(phi) + 7 * np.cos(phi) + 3)
+    #         - 2 * np.sin(phi)
+    #         - 6 * np.cos(phi)
+    #         - 6
+    #     )
+    #
+    #     assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_hermitian_expectation(self, theta, phi, varphi, tol):
-        """Test that arbitrary Hermitian expectation values are correct"""
-        dev = DefaultQubitPT(wires=2)
+    # def test_paulix_pauliy(self, theta, phi, varphi, tol):
+    #     """Test that a tensor product involving PauliX and PauliY works correctly"""
+    #     dev = qml.device("default.qubit.torch", wires=3)
+    #     dev.reset()
+    #
+    #     obs = qml.PauliX(0) @ qml.PauliY(2)
+    #
+    #     dev.apply(
+    #         [
+    #             qml.RX(theta, wires=[0]),
+    #             qml.RX(phi, wires=[1]),
+    #             qml.RX(varphi, wires=[2]),
+    #             qml.CNOT(wires=[0, 1]),
+    #             qml.CNOT(wires=[1, 2]),
+    #         ],
+    #         obs.diagonalizing_gates(),
+    #     )
+    #
+    #     res = dev.expval(obs)
+    #
+    #     expected = np.sin(theta) * np.sin(phi) * np.sin(varphi)
+    #
+    #     assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        with qml.tape.QuantumTape() as tape:
-            queue = [qml.RY(theta, wires=0), qml.RY(phi, wires=1), qml.CNOT(wires=[0, 1])]
-            observables = [qml.expval(qml.Hermitian(A, wires=[i])) for i in range(2)]
-
-        res = dev.execute(tape)
-
-        a = A[0, 0]
-        re_b = A[0, 1].real
-        d = A[1, 1]
-        ev1 = ((a - d) * np.cos(theta) + 2 * re_b * np.sin(theta) * np.sin(phi) + a + d) / 2
-        ev2 = ((a - d) * np.cos(theta) * np.cos(phi) + 2 * re_b * np.sin(phi) + a + d) / 2
-        expected = np.array([ev1, ev2])
-
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_multi_mode_hermitian_expectation(self, theta, phi, varphi, tol):
-        """Test that arbitrary multi-mode Hermitian expectation values are correct"""
-        A = np.array(
-            [
-                [-6, 2 + 1j, -3, -5 + 2j],
-                [2 - 1j, 0, 2 - 1j, -5 + 4j],
-                [-3, 2 + 1j, 0, -4 + 3j],
-                [-5 - 2j, -5 - 4j, -4 - 3j, -6],
-            ]
-        )
-
-        dev = DefaultQubitPT(wires=2)
-
-        with qml.tape.QuantumTape() as tape:
-            queue = [qml.RY(theta, wires=0), qml.RY(phi, wires=1), qml.CNOT(wires=[0, 1])]
-            observables = [qml.expval(qml.Hermitian(A, wires=[0, 1]))]
-
-        res = dev.execute(tape)
-
-        # below is the analytic expectation value for this circuit with arbitrary
-        # Hermitian observable A
-        expected = 0.5 * (
-            6 * np.cos(theta) * np.sin(phi)
-            - np.sin(theta) * (8 * np.sin(phi) + 7 * np.cos(phi) + 3)
-            - 2 * np.sin(phi)
-            - 6 * np.cos(phi)
-            - 6
-        )
-
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_paulix_pauliy(self, theta, phi, varphi, tol):
-        """Test that a tensor product involving PauliX and PauliY works correctly"""
-        dev = qml.device("default.qubit.torch", wires=3)
-        dev.reset()
-
-        obs = qml.PauliX(0) @ qml.PauliY(2)
-
-        dev.apply(
-            [
-                qml.RX(theta, wires=[0]),
-                qml.RX(phi, wires=[1]),
-                qml.RX(varphi, wires=[2]),
-                qml.CNOT(wires=[0, 1]),
-                qml.CNOT(wires=[1, 2]),
-            ],
-            obs.diagonalizing_gates(),
-        )
-
-        res = dev.expval(obs)
-
-        expected = np.sin(theta) * np.sin(phi) * np.sin(varphi)
-
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_pauliz_identity(self, theta, phi, varphi, tol):
-        """Test that a tensor product involving PauliZ and Identity works correctly"""
-        dev = qml.device(default.qubit.torch, wires=3)
-        dev.reset()
-
-        obs = qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2)
-
-        dev.apply(
-            [
-                qml.RX(theta, wires=[0]),
-                qml.RX(phi, wires=[1]),
-                qml.RX(varphi, wires=[2]),
-                qml.CNOT(wires=[0, 1]),
-                qml.CNOT(wires=[1, 2]),
-            ],
-            obs.diagonalizing_gates(),
-        )
-
-        res = dev.expval(obs)
-
-        expected = np.cos(varphi) * np.cos(phi)
-
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_pauliz_hadamard(self, theta, phi, varphi, tol):
-        """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
-        dev = qml.device(default.qubit.torch, wires=3)
-        obs = qml.PauliZ(0) @ qml.Hadamard(1) @ qml.PauliY(2)
-
-        dev.reset()
-        dev.apply(
-            [
-                qml.RX(theta, wires=[0]),
-                qml.RX(phi, wires=[1]),
-                qml.RX(varphi, wires=[2]),
-                qml.CNOT(wires=[0, 1]),
-                qml.CNOT(wires=[1, 2]),
-            ],
-            obs.diagonalizing_gates(),
-        )
-
-        res = dev.expval(obs)
-
-        expected = -(np.cos(varphi) * np.sin(phi) + np.sin(varphi) * np.cos(theta)) / np.sqrt(2)
-
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_hermitian(self, theta, phi, varphi, tol):
-        """Test that a tensor product involving qml.Hermitian works correctly"""
-        dev = qml.device(default.qubit.torch, wires=3)
-        dev.reset()
-
-        A = np.array(
-            [
-                [-6, 2 + 1j, -3, -5 + 2j],
-                [2 - 1j, 0, 2 - 1j, -5 + 4j],
-                [-3, 2 + 1j, 0, -4 + 3j],
-                [-5 - 2j, -5 - 4j, -4 - 3j, -6],
-            ]
-        )
-
-        obs = qml.PauliZ(0) @ qml.Hermitian(A, wires=[1, 2])
-
-        dev.apply(
-            [
-                qml.RX(theta, wires=[0]),
-                qml.RX(phi, wires=[1]),
-                qml.RX(varphi, wires=[2]),
-                qml.CNOT(wires=[0, 1]),
-                qml.CNOT(wires=[1, 2]),
-            ],
-            obs.diagonalizing_gates(),
-        )
-
-        res = dev.expval(obs)
-
-        expected = 0.5 * (
-            -6 * np.cos(theta) * (np.cos(varphi) + 1)
-            - 2 * np.sin(varphi) * (np.cos(theta) + np.sin(phi) - 2 * np.cos(phi))
-            + 3 * np.cos(varphi) * np.sin(phi)
-            + np.sin(phi)
-        )
-
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_hermitian_hermitian(self, theta, phi, varphi, tol):
-        """Test that a tensor product involving two Hermitian matrices works correctly"""
-        dev = qml.device(default.qubit.torch, wires=3)
-
-        A1 = np.array([[1, 2], [2, 4]])
-
-        A2 = np.array(
-            [
-                [-6, 2 + 1j, -3, -5 + 2j],
-                [2 - 1j, 0, 2 - 1j, -5 + 4j],
-                [-3, 2 + 1j, 0, -4 + 3j],
-                [-5 - 2j, -5 - 4j, -4 - 3j, -6],
-            ]
-        )
-
-        obs = qml.Hermitian(A1, wires=[0]) @ qml.Hermitian(A2, wires=[1, 2])
-
-        dev.apply(
-            [
-                qml.RX(theta, wires=[0]),
-                qml.RX(phi, wires=[1]),
-                qml.RX(varphi, wires=[2]),
-                qml.CNOT(wires=[0, 1]),
-                qml.CNOT(wires=[1, 2]),
-            ],
-            obs.diagonalizing_gates(),
-        )
-
-        res = dev.expval(obs)
-
-        expected = 0.25 * (
-            -30
-            + 4 * np.cos(phi) * np.sin(theta)
-            + 3 * np.cos(varphi) * (-10 + 4 * np.cos(phi) * np.sin(theta) - 3 * np.sin(phi))
-            - 3 * np.sin(phi)
-            - 2
-            * (5 + np.cos(phi) * (6 + 4 * np.sin(theta)) + (-3 + 8 * np.sin(theta)) * np.sin(phi))
-            * np.sin(varphi)
-            + np.cos(theta)
-            * (
-                18
-                + 5 * np.sin(phi)
-                + 3 * np.cos(varphi) * (6 + 5 * np.sin(phi))
-                + 2 * (3 + 10 * np.cos(phi) - 5 * np.sin(phi)) * np.sin(varphi)
-            )
-        )
-
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_hermitian_identity_expectation(self, theta, phi, varphi, tol):
-        """Test that a tensor product involving an Hermitian matrix and the identity works correctly"""
-        dev = qml.device(default.qubit.torch, wires=2)
-
-        A = np.array(
-            [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
-        )
-
-        obs = qml.Hermitian(A, wires=[0]) @ qml.Identity(wires=[1])
-
-        dev.apply(
-            [qml.RY(theta, wires=[0]), qml.RY(phi, wires=[1]), qml.CNOT(wires=[0, 1])],
-            obs.diagonalizing_gates(),
-        )
-
-        res = dev.expval(obs)
-
-        a = A[0, 0]
-        re_b = A[0, 1].real
-        d = A[1, 1]
-        expected = ((a - d) * np.cos(theta) + 2 * re_b * np.sin(theta) * np.sin(phi) + a + d) / 2
-
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_hermitian_two_wires_identity_expectation(self, theta, phi, varphi, tol):
-        """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
-        dev = qml.device(default.qubit.torch, wires=3, shots=None)
-
-        A = np.array(
-            [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
-        )
-        Identity = np.array([[1, 0], [0, 1]])
-        H = np.kron(np.kron(Identity, Identity), A)
-        obs = qml.Hermitian(H, wires=[2, 1, 0])
-
-        dev.apply(
-            [qml.RY(theta, wires=[0]), qml.RY(phi, wires=[1]), qml.CNOT(wires=[0, 1])],
-            obs.diagonalizing_gates(),
-        )
-        res = dev.expval(obs)
-
-        a = A[0, 0]
-        re_b = A[0, 1].real
-        d = A[1, 1]
-
-        expected = ((a - d) * np.cos(theta) + 2 * re_b * np.sin(theta) * np.sin(phi) + a + d) / 2
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+    # def test_pauliz_identity(self, theta, phi, varphi, tol):
+    #     """Test that a tensor product involving PauliZ and Identity works correctly"""
+    #     dev = qml.device(default.qubit.torch, wires=3)
+    #     dev.reset()
+    #
+    #     obs = qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2)
+    #
+    #     dev.apply(
+    #         [
+    #             qml.RX(theta, wires=[0]),
+    #             qml.RX(phi, wires=[1]),
+    #             qml.RX(varphi, wires=[2]),
+    #             qml.CNOT(wires=[0, 1]),
+    #             qml.CNOT(wires=[1, 2]),
+    #         ],
+    #         obs.diagonalizing_gates(),
+    #     )
+    #
+    #     res = dev.expval(obs)
+    #
+    #     expected = np.cos(varphi) * np.cos(phi)
+    #
+    #     assert np.allclose(res, expected, atol=tol, rtol=0)
+    #
+    # def test_pauliz_hadamard(self, theta, phi, varphi, tol):
+    #     """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
+    #     dev = qml.device(default.qubit.torch, wires=3)
+    #     obs = qml.PauliZ(0) @ qml.Hadamard(1) @ qml.PauliY(2)
+    #
+    #     dev.reset()
+    #     dev.apply(
+    #         [
+    #             qml.RX(theta, wires=[0]),
+    #             qml.RX(phi, wires=[1]),
+    #             qml.RX(varphi, wires=[2]),
+    #             qml.CNOT(wires=[0, 1]),
+    #             qml.CNOT(wires=[1, 2]),
+    #         ],
+    #         obs.diagonalizing_gates(),
+    #     )
+    #
+    #     res = dev.expval(obs)
+    #
+    #     expected = -(np.cos(varphi) * np.sin(phi) + np.sin(varphi) * np.cos(theta)) / np.sqrt(2)
+    #
+    #     assert np.allclose(res, expected, atol=tol, rtol=0)
+    #
+    # def test_hermitian(self, theta, phi, varphi, tol):
+    #     """Test that a tensor product involving qml.Hermitian works correctly"""
+    #     dev = qml.device(default.qubit.torch, wires=3)
+    #     dev.reset()
+    #
+    #     A = np.array(
+    #         [
+    #             [-6, 2 + 1j, -3, -5 + 2j],
+    #             [2 - 1j, 0, 2 - 1j, -5 + 4j],
+    #             [-3, 2 + 1j, 0, -4 + 3j],
+    #             [-5 - 2j, -5 - 4j, -4 - 3j, -6],
+    #         ]
+    #     )
+    #
+    #     obs = qml.PauliZ(0) @ qml.Hermitian(A, wires=[1, 2])
+    #
+    #     dev.apply(
+    #         [
+    #             qml.RX(theta, wires=[0]),
+    #             qml.RX(phi, wires=[1]),
+    #             qml.RX(varphi, wires=[2]),
+    #             qml.CNOT(wires=[0, 1]),
+    #             qml.CNOT(wires=[1, 2]),
+    #         ],
+    #         obs.diagonalizing_gates(),
+    #     )
+    #
+    #     res = dev.expval(obs)
+    #
+    #     expected = 0.5 * (
+    #         -6 * np.cos(theta) * (np.cos(varphi) + 1)
+    #         - 2 * np.sin(varphi) * (np.cos(theta) + np.sin(phi) - 2 * np.cos(phi))
+    #         + 3 * np.cos(varphi) * np.sin(phi)
+    #         + np.sin(phi)
+    #     )
+    #
+    #     assert np.allclose(res, expected, atol=tol, rtol=0)
+    #
+    # def test_hermitian_hermitian(self, theta, phi, varphi, tol):
+    #     """Test that a tensor product involving two Hermitian matrices works correctly"""
+    #     dev = qml.device(default.qubit.torch, wires=3)
+    #
+    #     A1 = np.array([[1, 2], [2, 4]])
+    #
+    #     A2 = np.array(
+    #         [
+    #             [-6, 2 + 1j, -3, -5 + 2j],
+    #             [2 - 1j, 0, 2 - 1j, -5 + 4j],
+    #             [-3, 2 + 1j, 0, -4 + 3j],
+    #             [-5 - 2j, -5 - 4j, -4 - 3j, -6],
+    #         ]
+    #     )
+    #
+    #     obs = qml.Hermitian(A1, wires=[0]) @ qml.Hermitian(A2, wires=[1, 2])
+    #
+    #     dev.apply(
+    #         [
+    #             qml.RX(theta, wires=[0]),
+    #             qml.RX(phi, wires=[1]),
+    #             qml.RX(varphi, wires=[2]),
+    #             qml.CNOT(wires=[0, 1]),
+    #             qml.CNOT(wires=[1, 2]),
+    #         ],
+    #         obs.diagonalizing_gates(),
+    #     )
+    #
+    #     res = dev.expval(obs)
+    #
+    #     expected = 0.25 * (
+    #         -30
+    #         + 4 * np.cos(phi) * np.sin(theta)
+    #         + 3 * np.cos(varphi) * (-10 + 4 * np.cos(phi) * np.sin(theta) - 3 * np.sin(phi))
+    #         - 3 * np.sin(phi)
+    #         - 2
+    #         * (5 + np.cos(phi) * (6 + 4 * np.sin(theta)) + (-3 + 8 * np.sin(theta)) * np.sin(phi))
+    #         * np.sin(varphi)
+    #         + np.cos(theta)
+    #         * (
+    #             18
+    #             + 5 * np.sin(phi)
+    #             + 3 * np.cos(varphi) * (6 + 5 * np.sin(phi))
+    #             + 2 * (3 + 10 * np.cos(phi) - 5 * np.sin(phi)) * np.sin(varphi)
+    #         )
+    #     )
+    #
+    #     assert np.allclose(res, expected, atol=tol, rtol=0)
+    #
+    # def test_hermitian_identity_expectation(self, theta, phi, varphi, tol):
+    #     """Test that a tensor product involving an Hermitian matrix and the identity works correctly"""
+    #     dev = qml.device(default.qubit.torch, wires=2)
+    #
+    #     A = np.array(
+    #         [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
+    #     )
+    #
+    #     obs = qml.Hermitian(A, wires=[0]) @ qml.Identity(wires=[1])
+    #
+    #     dev.apply(
+    #         [qml.RY(theta, wires=[0]), qml.RY(phi, wires=[1]), qml.CNOT(wires=[0, 1])],
+    #         obs.diagonalizing_gates(),
+    #     )
+    #
+    #     res = dev.expval(obs)
+    #
+    #     a = A[0, 0]
+    #     re_b = A[0, 1].real
+    #     d = A[1, 1]
+    #     expected = ((a - d) * np.cos(theta) + 2 * re_b * np.sin(theta) * np.sin(phi) + a + d) / 2
+    #
+    #     assert np.allclose(res, expected, atol=tol, rtol=0)
+    #
+    # def test_hermitian_two_wires_identity_expectation(self, theta, phi, varphi, tol):
+    #     """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
+    #     dev = qml.device(default.qubit.torch, wires=3, shots=None)
+    #
+    #     A = np.array(
+    #         [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
+    #     )
+    #     Identity = np.array([[1, 0], [0, 1]])
+    #     H = np.kron(np.kron(Identity, Identity), A)
+    #     obs = qml.Hermitian(H, wires=[2, 1, 0])
+    #
+    #     dev.apply(
+    #         [qml.RY(theta, wires=[0]), qml.RY(phi, wires=[1]), qml.CNOT(wires=[0, 1])],
+    #         obs.diagonalizing_gates(),
+    #     )
+    #     res = dev.expval(obs)
+    #
+    #     a = A[0, 0]
+    #     re_b = A[0, 1].real
+    #     d = A[1, 1]
+    #
+    #     expected = ((a - d) * np.cos(theta) + 2 * re_b * np.sin(theta) * np.sin(phi) + a + d) / 2
+    #     assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
 @pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
 class TestVar:
     """Tests for the variance"""
 
-    def test_var(self, theta, phi, varphi, tol):
-        """Tests for variance calculation"""
-        dev = DefaultQubitPT(wires=1)
-        # test correct variance for <Z> of a rotated state
-
-        with qml.tape.QuantumTape() as tape:
-            queue = [qml.RX(phi, wires=0), qml.RY(theta, wires=0)]
-            observables = [qml.var(qml.PauliZ(wires=[0]))]
-
-        res = dev.execute(tape)
-        expected = 0.25 * (3 - np.cos(2 * theta) - 2 * np.cos(theta) ** 2 * np.cos(2 * phi))
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_var_hermitian(self, theta, phi, varphi, tol):
-        """Tests for variance calculation using an arbitrary Hermitian observable"""
-        dev = DefaultQubitPT(wires=2)
-
-        # test correct variance for <H> of a rotated state
-        H = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
-
-        with qml.tape.QuantumTape() as tape:
-            queue = [qml.RX(phi, wires=0), qml.RY(theta, wires=0)]
-            observables = [qml.var(qml.Hermitian(H, wires=[0]))]
-
-        res = dev.execute(tape)
-        expected = 0.5 * (
-            2 * np.sin(2 * theta) * np.cos(phi) ** 2
-            + 24 * np.sin(phi) * np.cos(phi) * (np.sin(theta) - np.cos(theta))
-            + 35 * np.cos(2 * phi)
-            + 39
-        )
-
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_paulix_pauliy(self, theta, phi, varphi, tol):
-        """Test that a tensor product involving PauliX and PauliY works correctly"""
-        dev = qml.device(default.qubit.torch, wires=3)
-
-        obs = qml.PauliX(0) @ qml.PauliY(2)
-
-        dev.apply(
-            [
-                qml.RX(theta, wires=[0]),
-                qml.RX(phi, wires=[1]),
-                qml.RX(varphi, wires=[2]),
-                qml.CNOT(wires=[0, 1]),
-                qml.CNOT(wires=[1, 2]),
-            ],
-            obs.diagonalizing_gates(),
-        )
-
-        res = dev.var(obs)
-
-        expected = (
-            8 * np.sin(theta) ** 2 * np.cos(2 * varphi) * np.sin(phi) ** 2
-            - np.cos(2 * (theta - phi))
-            - np.cos(2 * (theta + phi))
-            + 2 * np.cos(2 * theta)
-            + 2 * np.cos(2 * phi)
-            + 14
-        ) / 16
-
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_pauliz_hadamard(self, theta, phi, varphi, tol):
-        """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
-        dev = qml.device(default.qubit.torch, wires=3)
-        obs = qml.PauliZ(0) @ qml.Hadamard(1) @ qml.PauliY(2)
-
-        dev.reset()
-        dev.apply(
-            [
-                qml.RX(theta, wires=[0]),
-                qml.RX(phi, wires=[1]),
-                qml.RX(varphi, wires=[2]),
-                qml.CNOT(wires=[0, 1]),
-                qml.CNOT(wires=[1, 2]),
-            ],
-            obs.diagonalizing_gates(),
-        )
-
-        res = dev.var(obs)
-
-        expected = (
-            3
-            + np.cos(2 * phi) * np.cos(varphi) ** 2
-            - np.cos(2 * theta) * np.sin(varphi) ** 2
-            - 2 * np.cos(theta) * np.sin(phi) * np.sin(2 * varphi)
-        ) / 4
-
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_hermitian(self, theta, phi, varphi, tol):
-        """Test that a tensor product involving qml.Hermitian works correctly"""
-        dev = qml.device(default.qubit.torch, wires=3)
-
-        A = np.array(
-            [
-                [-6, 2 + 1j, -3, -5 + 2j],
-                [2 - 1j, 0, 2 - 1j, -5 + 4j],
-                [-3, 2 + 1j, 0, -4 + 3j],
-                [-5 - 2j, -5 - 4j, -4 - 3j, -6],
-            ]
-        )
-
-        obs = qml.PauliZ(0) @ qml.Hermitian(A, wires=[1, 2])
-
-        dev.apply(
-            [
-                qml.RX(theta, wires=[0]),
-                qml.RX(phi, wires=[1]),
-                qml.RX(varphi, wires=[2]),
-                qml.CNOT(wires=[0, 1]),
-                qml.CNOT(wires=[1, 2]),
-            ],
-            obs.diagonalizing_gates(),
-        )
-
-        res = dev.var(obs)
-
-        expected = (
-            1057
-            - np.cos(2 * phi)
-            + 12 * (27 + np.cos(2 * phi)) * np.cos(varphi)
-            - 2 * np.cos(2 * varphi) * np.sin(phi) * (16 * np.cos(phi) + 21 * np.sin(phi))
-            + 16 * np.sin(2 * phi)
-            - 8 * (-17 + np.cos(2 * phi) + 2 * np.sin(2 * phi)) * np.sin(varphi)
-            - 8 * np.cos(2 * theta) * (3 + 3 * np.cos(varphi) + np.sin(varphi)) ** 2
-            - 24 * np.cos(phi) * (np.cos(phi) + 2 * np.sin(phi)) * np.sin(2 * varphi)
-            - 8
-            * np.cos(theta)
-            * (
-                4
-                * np.cos(phi)
-                * (
-                    4
-                    + 8 * np.cos(varphi)
-                    + np.cos(2 * varphi)
-                    - (1 + 6 * np.cos(varphi)) * np.sin(varphi)
-                )
-                + np.sin(phi)
-                * (
-                    15
-                    + 8 * np.cos(varphi)
-                    - 11 * np.cos(2 * varphi)
-                    + 42 * np.sin(varphi)
-                    + 3 * np.sin(2 * varphi)
-                )
-            )
-        ) / 16
-
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+    # def test_var(self, theta, phi, varphi, tol):
+    #     """Tests for variance calculation"""
+    #     dev = DefaultQubitPT(wires=1)
+    #     # test correct variance for <Z> of a rotated state
+    #
+    #     with qml.tape.QuantumTape() as tape:
+    #         queue = [qml.RX(phi, wires=0), qml.RY(theta, wires=0)]
+    #         observables = [qml.var(qml.PauliZ(wires=[0]))]
+    #
+    #     res = dev.execute(tape)
+    #     expected = 0.25 * (3 - np.cos(2 * theta) - 2 * np.cos(theta) ** 2 * np.cos(2 * phi))
+    #     assert np.allclose(res, expected, atol=tol, rtol=0)
+    #
+    # def test_var_hermitian(self, theta, phi, varphi, tol):
+    #     """Tests for variance calculation using an arbitrary Hermitian observable"""
+    #     dev = DefaultQubitPT(wires=2)
+    #
+    #     # test correct variance for <H> of a rotated state
+    #     H = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
+    #
+    #     with qml.tape.QuantumTape() as tape:
+    #         queue = [qml.RX(phi, wires=0), qml.RY(theta, wires=0)]
+    #         observables = [qml.var(qml.Hermitian(H, wires=[0]))]
+    #
+    #     res = dev.execute(tape)
+    #     expected = 0.5 * (
+    #         2 * np.sin(2 * theta) * np.cos(phi) ** 2
+    #         + 24 * np.sin(phi) * np.cos(phi) * (np.sin(theta) - np.cos(theta))
+    #         + 35 * np.cos(2 * phi)
+    #         + 39
+    #     )
+    #
+    #     assert np.allclose(res, expected, atol=tol, rtol=0)
+    #
+    # def test_paulix_pauliy(self, theta, phi, varphi, tol):
+    #     """Test that a tensor product involving PauliX and PauliY works correctly"""
+    #     dev = qml.device(default.qubit.torch, wires=3)
+    #
+    #     obs = qml.PauliX(0) @ qml.PauliY(2)
+    #
+    #     dev.apply(
+    #         [
+    #             qml.RX(theta, wires=[0]),
+    #             qml.RX(phi, wires=[1]),
+    #             qml.RX(varphi, wires=[2]),
+    #             qml.CNOT(wires=[0, 1]),
+    #             qml.CNOT(wires=[1, 2]),
+    #         ],
+    #         obs.diagonalizing_gates(),
+    #     )
+    #
+    #     res = dev.var(obs)
+    #
+    #     expected = (
+    #         8 * np.sin(theta) ** 2 * np.cos(2 * varphi) * np.sin(phi) ** 2
+    #         - np.cos(2 * (theta - phi))
+    #         - np.cos(2 * (theta + phi))
+    #         + 2 * np.cos(2 * theta)
+    #         + 2 * np.cos(2 * phi)
+    #         + 14
+    #     ) / 16
+    #
+    #     assert np.allclose(res, expected, atol=tol, rtol=0)
+    #
+    # def test_pauliz_hadamard(self, theta, phi, varphi, tol):
+    #     """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
+    #     dev = qml.device(default.qubit.torch, wires=3)
+    #     obs = qml.PauliZ(0) @ qml.Hadamard(1) @ qml.PauliY(2)
+    #
+    #     dev.reset()
+    #     dev.apply(
+    #         [
+    #             qml.RX(theta, wires=[0]),
+    #             qml.RX(phi, wires=[1]),
+    #             qml.RX(varphi, wires=[2]),
+    #             qml.CNOT(wires=[0, 1]),
+    #             qml.CNOT(wires=[1, 2]),
+    #         ],
+    #         obs.diagonalizing_gates(),
+    #     )
+    #
+    #     res = dev.var(obs)
+    #
+    #     expected = (
+    #         3
+    #         + np.cos(2 * phi) * np.cos(varphi) ** 2
+    #         - np.cos(2 * theta) * np.sin(varphi) ** 2
+    #         - 2 * np.cos(theta) * np.sin(phi) * np.sin(2 * varphi)
+    #     ) / 4
+    #
+    #     assert np.allclose(res, expected, atol=tol, rtol=0)
+    #
+    # def test_hermitian(self, theta, phi, varphi, tol):
+    #     """Test that a tensor product involving qml.Hermitian works correctly"""
+    #     dev = qml.device(default.qubit.torch, wires=3)
+    #
+    #     A = np.array(
+    #         [
+    #             [-6, 2 + 1j, -3, -5 + 2j],
+    #             [2 - 1j, 0, 2 - 1j, -5 + 4j],
+    #             [-3, 2 + 1j, 0, -4 + 3j],
+    #             [-5 - 2j, -5 - 4j, -4 - 3j, -6],
+    #         ]
+    #     )
+    #
+    #     obs = qml.PauliZ(0) @ qml.Hermitian(A, wires=[1, 2])
+    #
+    #     dev.apply(
+    #         [
+    #             qml.RX(theta, wires=[0]),
+    #             qml.RX(phi, wires=[1]),
+    #             qml.RX(varphi, wires=[2]),
+    #             qml.CNOT(wires=[0, 1]),
+    #             qml.CNOT(wires=[1, 2]),
+    #         ],
+    #         obs.diagonalizing_gates(),
+    #     )
+    #
+    #     res = dev.var(obs)
+    #
+    #     expected = (
+    #         1057
+    #         - np.cos(2 * phi)
+    #         + 12 * (27 + np.cos(2 * phi)) * np.cos(varphi)
+    #         - 2 * np.cos(2 * varphi) * np.sin(phi) * (16 * np.cos(phi) + 21 * np.sin(phi))
+    #         + 16 * np.sin(2 * phi)
+    #         - 8 * (-17 + np.cos(2 * phi) + 2 * np.sin(2 * phi)) * np.sin(varphi)
+    #         - 8 * np.cos(2 * theta) * (3 + 3 * np.cos(varphi) + np.sin(varphi)) ** 2
+    #         - 24 * np.cos(phi) * (np.cos(phi) + 2 * np.sin(phi)) * np.sin(2 * varphi)
+    #         - 8
+    #         * np.cos(theta)
+    #         * (
+    #             4
+    #             * np.cos(phi)
+    #             * (
+    #                 4
+    #                 + 8 * np.cos(varphi)
+    #                 + np.cos(2 * varphi)
+    #                 - (1 + 6 * np.cos(varphi)) * np.sin(varphi)
+    #             )
+    #             + np.sin(phi)
+    #             * (
+    #                 15
+    #                 + 8 * np.cos(varphi)
+    #                 - 11 * np.cos(2 * varphi)
+    #                 + 42 * np.sin(varphi)
+    #                 + 3 * np.sin(2 * varphi)
+    #             )
+    #         )
+    #     ) / 16
+    #
+    #     assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
 #####################################################
 # QNode-level integration tests
 #####################################################
 
-
-class TestQNodeIntegration:
-    """Integration tests for "default.qubit.torch. This test ensures it integrates
-    properly with the PennyLane UI, in particular the new QNode."""
-
-    def test_defines_correct_capabilities(self):
-        """Test that the device defines the right capabilities"""
-
-        dev = qml.device(default.qubit.torch, wires=1)
-        cap = dev.capabilities()
-        capabilities = {
-            "model": "qubit",
-            "supports_finite_shots": True,
-            "supports_tensor_observables": True,
-            "returns_probs": True,
-            "returns_state": True,
-            "supports_reversible_diff": False,
-            "supports_inverse_operations": True,
-            "supports_analytic_computation": True,
-            "passthru_interface": "torch",
-            "passthru_devices": {
-                "torch": "default.qubit.torch",
-                "tf": "default.qubit.tf",
-                "autograd": "default.qubit.autograd",
-                "jax": "default.qubit.jax",
-            },
-        }
-        assert cap == capabilities
-
-    def test_load_tensornet_torch_device(self):
-        """Test that the tensor network plugin loads correctly"""
-        dev = qml.device("default.qubit.torch", wires=2)
-        assert dev.num_wires == 2
-        assert dev.shots is None
-        assert dev.short_name == "default.qubit.torch"
-        assert dev.capabilities()["passthru_interface"] == "torch"
-
-    def test_qubit_circuit(self, tol):
-        """Test that the tensor network plugin provides correct
-        result for a simple circuit using the old QNode."""
-        p = torch.autograd.Variable(torch.tensor(0.543))
-        Variable(torch.tensor(0.543))
-
-        Variable((torch.rand(2, 3, 4) * 100)
-.int(), requires_grad=True)
-
-        dev = qml.device("default.qubit.torch", wires=1)
-
-        @qml.qnode(dev, interface="torch")
-        def circuit(x):
-            qml.RX(x, wires=0)
-            return qml.expval(qml.PauliY(0))
-
-        expected = -torch.sin(p)
-
-        assert circuit.diff_options["method"] == "backprop"
-        assert np.isclose(circuit(p), expected, atol=tol, rtol=0)
-
-    def test_correct_state(self, tol):
-
-        """Test that the device state is correct after applying a
-        quantum function on the device"""
-
-        dev = qml.device("default.qubit.torch", wires=2)
-
-        state = dev.state
-        expected = np.array([1, 0, 0, 0])
-        assert np.allclose(state, expected, atol=tol, rtol=0)
-
-        @qml.qnode(dev, interface="torch", diff_method="backprop")
-        def circuit():
-            qml.Hadamard(wires=0)
-            qml.RZ(np.pi / 4, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        circuit()
-        state = dev.state
-
-        amplitude = np.exp(-1j * np.pi / 8) / np.sqrt(2)
-
-        expected = np.array([amplitude, 0, np.conj(amplitude), 0])
-        assert np.allclose(state, expected, atol=tol, rtol=0)
-
-    @pytest.mark.parametrize("theta", [0.5432, -0.232])
-    @pytest.mark.parametrize("op,func", single_qubit_param)
-    def test_one_qubit_param_gates(self, theta, op, func, init_state, tol):
-        """Test the integration of the one-qubit single parameter rotations by passing
-        a torch data structure as a parameter"""
-        dev = qml.device("default.qubit.torch", wires=1)
-        state = init_state(1)
-
-        @qml.qnode(dev, interface="torch")
-        def circuit(params):
-            qml.QubitStateVector(state, wires=[0])
-            op(params[0], wires=[0])
-            return qml.expval(qml.PauliZ(0))
-
-        # Pass a TF Variable to the qfunc
-        params = torch.autograd.Variable(torch.tensor(np.array([theta])))
-        circuit(params)
-        res = dev.state
-        expected = func(theta) @ state
-        assert np.allclose(res.numpy(), expected, atol=tol, rtol=0)
-
-    @pytest.mark.parametrize("theta", [0.5432, 4.213])
-    @pytest.mark.parametrize("op,func", two_qubit_param)
-    def test_two_qubit_param_gates(self, theta, op, func, init_state, tol):
-        """Test the integration of the two-qubit single parameter rotations by passing
-        a torch data structure as a parameter"""
-        dev = qml.device("default.qubit.torch", wires=2)
-        state = init_state(2)
-
-        @qml.qnode(dev, interface="torch")
-        def circuit(params):
-            qml.QubitStateVector(state, wires=[0, 1])
-            op(params[0], wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
-
-        # Pass a torch Variable to the qfunc
-        params = torch.autograd.Variable(torch.tensor(np.array([theta])))
-        circuit(params)
-        res = dev.state
-        expected = func(theta) @ state
-        assert np.allclose(res.numpy(), expected, atol=tol, rtol=0)
-
-    def test_controlled_rotation_integration(self, init_state, tol):
-        """Test the integration of the two-qubit controlled rotation by passing
-        a torch data structure as a parameter"""
-        dev = qml.device("default.qubit.torch", wires=2)
-        a = 1.7
-        b = 1.3432
-        c = -0.654
-        state = init_state(2)
-
-        @qml.qnode(dev, interface="torch")
-        def circuit(params):
-            qml.QubitStateVector(state, wires=[0, 1])
-            qml.CRot(params[0], params[1], params[2], wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
-
-        # Pass a torch Variable to the qfunc
-        params = torch.autograd.Variable(torch.tensor(np.array([a, b, c])))
-        circuit(params)
-        res = dev.state
-        expected = CRot3(a, b, c) @ state
-        assert np.allclose(res.numpy(), expected, atol=tol, rtol=0)
+#
+# class TestQNodeIntegration:
+#     """Integration tests for "default.qubit.torch. This test ensures it integrates
+#     properly with the PennyLane UI, in particular the new QNode."""
+#
+#     def test_defines_correct_capabilities(self):
+#         """Test that the device defines the right capabilities"""
+#
+#         dev = qml.device(default.qubit.torch, wires=1)
+#         cap = dev.capabilities()
+#         capabilities = {
+#             "model": "qubit",
+#             "supports_finite_shots": True,
+#             "supports_tensor_observables": True,
+#             "returns_probs": True,
+#             "returns_state": True,
+#             "supports_reversible_diff": False,
+#             "supports_inverse_operations": True,
+#             "supports_analytic_computation": True,
+#             "passthru_interface": "torch",
+#             "passthru_devices": {
+#                 "torch": "default.qubit.torch",
+#                 "tf": "default.qubit.tf",
+#                 "autograd": "default.qubit.autograd",
+#                 "jax": "default.qubit.jax",
+#             },
+#         }
+#         assert cap == capabilities
+#
+#     def test_load_tensornet_torch_device(self):
+#         """Test that the tensor network plugin loads correctly"""
+#         dev = qml.device("default.qubit.torch", wires=2)
+#         assert dev.num_wires == 2
+#         assert dev.shots is None
+#         assert dev.short_name == "default.qubit.torch"
+#         assert dev.capabilities()["passthru_interface"] == "torch"
+#
+#     def test_qubit_circuit(self, tol):
+#         """Test that the tensor network plugin provides correct
+#         result for a simple circuit using the old QNode."""
+#         p = torch.autograd.Variable(torch.tensor(0.543))
+#
+#         dev = qml.device("default.qubit.torch", wires=1)
+#
+#         @qml.qnode(dev, interface="torch")
+#         def circuit(x):
+#             qml.RX(x, wires=0)
+#             return qml.expval(qml.PauliY(0))
+#
+#         expected = -torch.sin(p)
+#
+#         #assert circuit.diff_options["method"] == "backprop"
+#         assert np.isclose(circuit(p), expected, atol=tol, rtol=0)
+#
+#     def test_correct_state(self, tol):
+#
+#         """Test that the device state is correct after applying a
+#         quantum function on the device"""
+#
+#         dev = qml.device("default.qubit.torch", wires=2)
+#
+#         state = dev.state
+#         expected = np.array([1, 0, 0, 0])
+#         assert np.allclose(state, expected, atol=tol, rtol=0)
+#
+#         @qml.qnode(dev, interface="torch", diff_method="backprop")
+#         def circuit():
+#             qml.Hadamard(wires=0)
+#             qml.RZ(np.pi / 4, wires=0)
+#             return qml.expval(qml.PauliZ(0))
+#
+#         circuit()
+#         state = dev.state
+#
+#         amplitude = np.exp(-1j * np.pi / 8) / np.sqrt(2)
+#
+#         expected = np.array([amplitude, 0, np.conj(amplitude), 0])
+#         assert np.allclose(state, expected, atol=tol, rtol=0)
+#
+#     @pytest.mark.parametrize("theta", [0.5432, -0.232])
+#     @pytest.mark.parametrize("op,func", single_qubit_param)
+#     def test_one_qubit_param_gates(self, theta, op, func, init_state, tol):
+#         """Test the integration of the one-qubit single parameter rotations by passing
+#         a torch data structure as a parameter"""
+#         dev = qml.device("default.qubit.torch", wires=1)
+#         state = init_state(1)
+#
+#         @qml.qnode(dev, interface="torch")
+#         def circuit(params):
+#             qml.QubitStateVector(state, wires=[0])
+#             op(params[0], wires=[0])
+#             return qml.expval(qml.PauliZ(0))
+#
+#         # Pass a TF Variable to the qfunc
+#         params = torch.autograd.Variable(torch.tensor(np.array([theta])))
+#         circuit(params)
+#         res = dev.state
+#         expected = func(theta) @ state
+#         assert np.allclose(res.numpy(), expected, atol=tol, rtol=0)
+#
+#     @pytest.mark.parametrize("theta", [0.5432, 4.213])
+#     @pytest.mark.parametrize("op,func", two_qubit_param)
+#     def test_two_qubit_param_gates(self, theta, op, func, init_state, tol):
+#         """Test the integration of the two-qubit single parameter rotations by passing
+#         a torch data structure as a parameter"""
+#         dev = qml.device("default.qubit.torch", wires=2)
+#         state = init_state(2)
+#
+#         @qml.qnode(dev, interface="torch")
+#         def circuit(params):
+#             qml.QubitStateVector(state, wires=[0, 1])
+#             op(params[0], wires=[0, 1])
+#             return qml.expval(qml.PauliZ(0))
+#
+#         # Pass a torch Variable to the qfunc
+#         params = torch.autograd.Variable(torch.tensor(np.array([theta])))
+#         circuit(params)
+#         res = dev.state
+#         expected = func(theta) @ state
+#         assert np.allclose(res.numpy(), expected, atol=tol, rtol=0)
+#
+#     def test_controlled_rotation_integration(self, init_state, tol):
+#         """Test the integration of the two-qubit controlled rotation by passing
+#         a torch data structure as a parameter"""
+#         dev = qml.device("default.qubit.torch", wires=2)
+#         a = 1.7
+#         b = 1.3432
+#         c = -0.654
+#         state = init_state(2)
+#
+#         @qml.qnode(dev, interface="torch")
+#         def circuit(params):
+#             qml.QubitStateVector(state, wires=[0, 1])
+#             qml.CRot(params[0], params[1], params[2], wires=[0, 1])
+#             return qml.expval(qml.PauliZ(0))
+#
+#         # Pass a torch Variable to the qfunc
+#         params = torch.autograd.Variable(torch.tensor(np.array([a, b, c])))
+#         circuit(params)
+#         res = dev.state
+#         expected = CRot3(a, b, c) @ state
+#         assert np.allclose(res.numpy(), expected, atol=tol, rtol=0)
 
 #
 # class TestPassthruIntegration:
@@ -1350,57 +1348,57 @@ class TestSamples:
     #         res = circuit(a)
     #
     #     assert tape.gradient(res, a) is None
-
-    def test_estimating_marginal_probability(self, tol):
-        """Test that the probability of a subset of wires is accurately estimated."""
-        dev = qml.device("default.qubit.torch", wires=2, shots=1000)
-
-        @qml.qnode(dev, diff_method="backprop", interface="torch")
-        def circuit():
-            qml.PauliX(0)
-            return qml.probs(wires=[0])
-
-        res = circuit()
-
-        assert isinstance(res, torch.Tensor)
-
-        expected = np.array([0, 1])
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_estimating_full_probability(self, tol):
-        """Test that the probability of a subset of wires is accurately estimated."""
-        dev = qml.device("default.qubit.torch", wires=2, shots=1000)
-
-        @qml.qnode(dev, diff_method="backprop", interface="torch")
-        def circuit():
-            qml.PauliX(0)
-            qml.PauliX(1)
-            return qml.probs(wires=[0, 1])
-
-        res = circuit()
-
-        assert isinstance(res, torch.Tensor)
-
-        expected = np.array([0, 0, 0, 1])
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_estimating_expectation_values(self, tol):
-        """Test that estimating expectation values using a finite number
-        of shots produces a numeric tensor"""
-        dev = qml.device("default.qubit.torch", wires=3, shots=1000)
-
-        @qml.qnode(dev, diff_method="backprop", interface="torch")
-        def circuit(a, b):
-            qml.RX(a, wires=[0])
-            qml.RX(b, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
-
-        a = torch.autograd.Variable(torch.tensor(0.543))
-        b = torch.autograd.Variable(torch.tensor(0.43))
-
-        res = circuit(a, b)
-        assert isinstance(res, torch.Tensor)
+    #
+    # def test_estimating_marginal_probability(self, tol):
+    #     """Test that the probability of a subset of wires is accurately estimated."""
+    #     dev = qml.device("default.qubit.torch", wires=2, shots=1000)
+    #
+    #     @qml.qnode(dev, diff_method="backprop", interface="torch")
+    #     def circuit():
+    #         qml.PauliX(0)
+    #         return qml.probs(wires=[0])
+    #
+    #     res = circuit()
+    #
+    #     assert isinstance(res, torch.Tensor)
+    #
+    #     expected = np.array([0, 1])
+    #     assert np.allclose(res, expected, atol=tol, rtol=0)
+    #
+    # def test_estimating_full_probability(self, tol):
+    #     """Test that the probability of a subset of wires is accurately estimated."""
+    #     dev = qml.device("default.qubit.torch", wires=2, shots=1000)
+    #
+    #     @qml.qnode(dev, diff_method="backprop", interface="torch")
+    #     def circuit():
+    #         qml.PauliX(0)
+    #         qml.PauliX(1)
+    #         return qml.probs(wires=[0, 1])
+    #
+    #     res = circuit()
+    #
+    #     assert isinstance(res, torch.Tensor)
+    #
+    #     expected = np.array([0, 0, 0, 1])
+    #     assert np.allclose(res, expected, atol=tol, rtol=0)
+    #
+    # def test_estimating_expectation_values(self, tol):
+    #     """Test that estimating expectation values using a finite number
+    #     of shots produces a numeric tensor"""
+    #     dev = qml.device("default.qubit.torch", wires=3, shots=1000)
+    #
+    #     @qml.qnode(dev, diff_method="backprop", interface="torch")
+    #     def circuit(a, b):
+    #         qml.RX(a, wires=[0])
+    #         qml.RX(b, wires=[1])
+    #         qml.CNOT(wires=[0, 1])
+    #         return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+    #
+    #     a = torch.autograd.Variable(torch.tensor(0.543))
+    #     b = torch.autograd.Variable(torch.tensor(0.43))
+    #
+    #     res = circuit(a, b)
+    #     assert isinstance(res, torch.Tensor)
 
         # We don't check the expected value due to stochasticity, but
         # leave it here for completeness.
@@ -1429,29 +1427,28 @@ class TestSamples:
     #     grad = tape.gradient(res, [a, b])
     #     assert grad == [None, None]
 
-
-class TestHighLevelIntegration:
-    """Tests for integration with higher level components of PennyLane."""
-
-    def test_qnode_collection_integration(self):
-        """Test that a PassthruQNode "default.qubit.torch" works with QNodeCollections."""
-        dev = qml.device("default.qubit.torch", wires=2)
-
-        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="torch")
-
-        assert qnodes.interface == "torch"
-
-        weights = torch.autograd.Variable(qml.init.strong_ent_layers_normal(n_wires=2, n_layers=2))
-
-        @torch.function
-        def cost(weights):
-            return torch.reduce_sum(qnodes(weights))
-
-        with torch.GradientTape() as tape:
-            res = qnodes(weights)
-
-        grad = tape.gradient(res, weights)
-
-        assert isinstance(grad, torch.tensor)
-        assert grad.shape == weights.shape
+#
+# class TestHighLevelIntegration:
+#     """Tests for integration with higher level components of PennyLane."""
+#
+#     def test_qnode_collection_integration(self):
+#         """Test that a PassthruQNode "default.qubit.torch" works with QNodeCollections."""
+#         dev = qml.device("default.qubit.torch", wires=2)
+#         obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
+#         qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="torch")
+#
+#         assert qnodes.interface == "torch"
+#
+#         weights = torch.autograd.Variable(torch.tensor(qml.init.strong_ent_layers_normal(n_wires=2, n_layers=2)))
+#
+#         # @torch.function
+#         # def cost(weights):
+#         #     return torch.reduce_sum(qnodes(weights))
+#         #
+#         # with torch.GradientTape() as tape:
+#         #     res = qnodes(weights)
+#
+#         grad = tape.gradient(res, weights)
+#
+#         assert isinstance(grad, torch.tensor)
+#         assert grad.shape == weights.shape
