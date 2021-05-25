@@ -146,9 +146,7 @@ class TestJacobian:
 
         dev = qml.device("default.qubit", wires=1)
 
-        with pytest.raises(
-            ValueError, match=r"analytic gradient method cannot be used"
-        ):
+        with pytest.raises(ValueError, match=r"analytic gradient method cannot be used"):
             tape.jacobian(dev, method="analytic")
 
     def test_analytic_method(self, mocker):
@@ -724,6 +722,4 @@ class TestObservableWithObjectReturnType:
             return qml.expval(qml.PauliZ(wires=0))
 
         assert np.isclose(qnode(0.2).item().val, reference_qnode(0.2))
-        assert np.isclose(
-            qml.jacobian(qnode)(0.2).item().val, qml.jacobian(reference_qnode)(0.2)
-        )
+        assert np.isclose(qml.jacobian(qnode)(0.2).item().val, qml.jacobian(reference_qnode)(0.2))
