@@ -2905,7 +2905,7 @@ class Hermitian(Observable):
 
 
 class Projector(Observable):
-    r"""Projector(features, wires)
+    r"""Projector(basis_state, wires)
     The basis state observable :math:`P=\ket{i}\bra{i}`.
 
     The expectation of this observable returns the value
@@ -2922,22 +2922,38 @@ class Projector(Observable):
     * Gradient recipe: None
 
     Args:
-        features (tensor-like): binary input of shape ``(n, )``
+        basis_state (tensor-like): binary input of shape ``(n, )``
         wires (Iterable): wires that the template acts on
     """
     num_wires = AnyWires
     num_params = 1
     par_domain = "A"
 
-    @classmethod
-    def _matrix(cls, *params):
-        A = np.zeros((2**len(params[0]), 2**len(params[0])))
-        idx = int("".join(str(i) for i in params[0]), 2)
-        A[idx,idx]=1
-        return A
+    def __init__(self, basis_state, wires, do_queue=True):
+        wires = Wires(wires)
+        shape = qml.math.shape(basis_state)
+
+        if len(shape) != 1:
+            raise ValueError(f"Basis state must be one-dimensional; got shape {shape}.")
+
+        n_basis_state = shape[0]
+        if n_basis_state != len(wires):
+            raise ValueError(f"Basis state must be of length {len(wires)}; got length {n_basis_state}.")
+
+        basis_state = list(qml.math.toarray(basis_state))
+
+        if not set(basis_state).issubset({0, 1}):
+            raise ValueError(f"Basis state must only consist of 0s and 1s; got {basis_state}")
+
+        super().__init__(basis_state, wires=wires, do_queue=do_queue)
 
     @classmethod
     def _eigvals(cls, *params):
+        """Eigenvalues of the specific projector operator.
+
+        Returns:
+            array: eigenvalues of the projector observable in the computational basis
+        """
         w = np.zeros(2**len(params[0]))
         idx = int("".join(str(i) for i in params[0]), 2)
         w[idx]=1
