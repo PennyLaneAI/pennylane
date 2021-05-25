@@ -37,6 +37,8 @@ coeffs_1D_valid_1 = np.array([0.5, 0, 0.25j, 0.25j, 0])
 coeffs_1D_valid_2 = [0.5, 0.1j, -0.25j, 0.25j, -0.1j]
 coeffs_1D_invalid = np.array([0.5, 0, 0.25j, 0.25j])
 
+coeffs_1D_valid_list = [coeffs_1D_valid_1, coeffs_1D_valid_2]
+
 coeffs_2D_valid_1 = np.array(
     [
         [
@@ -257,6 +259,8 @@ fig_radial_invalid, ax_radial_invalid = plt.subplots(
 )
 
 fig_panel_valid, ax_panel_valid = plt.subplots(5, 5, sharex=True, sharey=True)
+fig_panel_1d_valid, ax_panel_1d_valid = plt.subplots(5, 1, sharex=True, sharey=True)
+
 fig_panel_invalid, ax_panel_invalid = plt.subplots(3, 2, sharex=True, sharey=True)
 
 
@@ -360,41 +364,85 @@ class TestReturnType:
     """Test that the functions return an axis date type."""
 
     @pytest.mark.parametrize(
-        "func,coeffs,n_inputs,ax",
+        "func,coeffs,n_inputs,ax,show_freqs",
         [
             (
                 violin,
                 coeffs_1D_valid_1,
                 1,
                 ax_valid,
+                True,
+            ),
+            (
+                    violin,
+                    coeffs_1D_valid_1,
+                    1,
+                    ax_valid,
+                    False,
             ),
             (
                 box,
                 coeffs_1D_valid_1,
                 1,
                 ax_valid,
+                True,
+            ),
+            (
+                    box,
+                    coeffs_1D_valid_1,
+                    1,
+                    ax_valid,
+                False
             ),
             (
                 bar,
                 coeffs_1D_valid_1,
                 1,
                 ax_valid,
+                True
+            ),
+            (
+                bar,
+                coeffs_1D_valid_1,
+                1,
+                ax_valid,
+                False
             ),
             (
                 radial_box,
                 coeffs_2D_valid_list,
                 2,
                 ax_radial_valid,
+                True,
+            ),
+            (
+                    radial_box,
+                    coeffs_2D_valid_list,
+                    2,
+                    ax_radial_valid,
+                    False
             ),
             (
                 panel,
                 coeffs_2D_valid_list,
                 2,
                 ax_panel_valid,
+                None
+            ),
+            (
+                panel,
+                coeffs_1D_valid_list,
+                1,
+                ax_panel_1d_valid,
+                None
             ),
         ],
     )
-    def test_correct_return_type(self, func, coeffs, n_inputs, ax):
+    def test_correct_return_type(self, func, coeffs, n_inputs, ax, show_freqs):
         """Test that invalid axes are not plotted on."""
-        res = func(coeffs, n_inputs, ax)
+        if show_freqs is None:
+            res = func(coeffs, n_inputs, ax)
+        else:
+            res = func(coeffs, n_inputs, ax, show_freqs=show_freqs)
+
         assert isinstance(res, type(ax))
