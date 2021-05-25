@@ -191,6 +191,8 @@ class DefaultQubitTorch(DefaultQubit):
                     res = torch.cat([torch.reshape(i, (-1,)) for i in a], dim=0)
                 else:
                     res = np.asarray(a)
+                    # a = [torch.as_tensor(l, device=self._torch_device, dtype=dtype) for l in a]
+                    # res = torch.cat([torch.reshape(i, (-1,)) for i in a], dim=0)
             else:
                 res = torch.cat([torch.reshape(i, (-1,)) for i in a], dim=0)
         else:
@@ -276,7 +278,10 @@ class DefaultQubitTorch(DefaultQubit):
                 )
 
             if unitary.inverse:
-                mat = self._transpose(self._conj(mat), axes=[1, 0])
+                if isinstance(unitary, DiagonalOperation):
+                    mat = self._conj(mat)
+                else:
+                    mat = self._transpose(self._conj(mat), axes=[1, 0])
 
             return mat
 
