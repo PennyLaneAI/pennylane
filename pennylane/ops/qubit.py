@@ -2938,7 +2938,9 @@ class Projector(Observable):
 
         n_basis_state = shape[0]
         if n_basis_state != len(wires):
-            raise ValueError(f"Basis state must be of length {len(wires)}; got length {n_basis_state}.")
+            raise ValueError(
+                f"Basis state must be of length {len(wires)}; got length {n_basis_state}."
+            )
 
         basis_state = list(qml.math.toarray(basis_state))
 
@@ -2954,9 +2956,9 @@ class Projector(Observable):
         Returns:
             array: eigenvalues of the projector observable in the computational basis
         """
-        w = np.zeros(2**len(params[0]))
+        w = np.zeros(2 ** len(params[0]))
         idx = int("".join(str(i) for i in params[0]), 2)
-        w[idx]=1
+        w[idx] = 1
         return w
 
     def diagonalizing_gates(self):
