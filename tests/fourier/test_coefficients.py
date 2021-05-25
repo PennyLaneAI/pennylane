@@ -20,11 +20,12 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
-from pennylane.fourier.coefficients import coefficients
+from pennylane.fourier import coefficients
 
 
 def fourier_function(freq_dict, x):
-    """Function to construct and evaluate a Fourier series given
+    r"""Function of the form :math:`\sum c_n e^{inx}` to construct
+    and evaluate a Fourier series given
     a dictionary of frequencies and their coefficients.
 
     Args:
@@ -32,7 +33,7 @@ def fourier_function(freq_dict, x):
             Fourier coefficients.
 
     Returns:
-        float: The output of the function \sum(c_n e^{inx}).
+        float: output of the function
     """
     result = 0
 
@@ -77,10 +78,10 @@ dev_2 = qml.device("default.qubit", wires=2)
 
 @qml.qnode(dev_1)
 def circuit_one_qubit_one_param_rx(inpt):
-    """Circuit with a single-qubit, single-param, output function <Z>.
+    r"""Circuit with a single-qubit, single-param, output function <Z>.
 
-    By-hand calculation of f(x) gives <Z> = cos^2(x/2) - sin^2(x/2) = cos(x).
-    Fourier coeffs are c_1 = c_-1 = 0.5
+    By-hand calculation of :math:`f(x)` gives :math:`<Z> = cos^2(x/2) - sin^2(x/2) = cos(x)`.
+    Fourier coeffs are :math:`c_1 = c_-1 = 0.5`.
     """
     qml.RX(inpt[0], wires=0)
     return qml.expval(qml.PauliZ(0))
@@ -88,10 +89,10 @@ def circuit_one_qubit_one_param_rx(inpt):
 
 @qml.qnode(dev_1)
 def circuit_one_qubit_one_param_h_ry(inpt):
-    """Circuit with a single-qubit, single-param, output function <Z>.
+    r"""Circuit with a single-qubit, single-param, output function <Z>.
 
-    By-hand calculation of f(x) gives <Z> = -sin(x)
-    Fourier coeffs are c_1 = 0.5i, c_-1 = -0.5i
+    By-hand calculation of :math:`f(x)` gives :math:`<Z> = -sin(x)`.
+    Fourier coeffs are :math:`c_1 = 0.5i, c_-1 = -0.5i`.
     """
     qml.Hadamard(wires=0)
     qml.RY(inpt[0], wires=0)
@@ -100,10 +101,10 @@ def circuit_one_qubit_one_param_h_ry(inpt):
 
 @qml.qnode(dev_1)
 def circuit_one_qubit_one_param_rx_ry(inpt):
-    """Circuit with a single-qubit, single-param, output function <Z>.
+    r"""Circuit with a single-qubit, single-param, output function <Z>.
 
-    By-hand calculation of f(x) gives <Z> = 1/2 + 1/2 cos(2x)
-    Fourier coeffs are c_0 = 0.5, c_1 = c_-1 = 0, c_2 = c_-2 = 0.5
+    By-hand calculation of :math:`f(x)` gives :math:`<Z> = 1/2 + 1/2 cos(2x)`.
+    Fourier coeffs are :math:`c_0 = 0.5, c_1 = c_-1 = 0, c_2 = c_-2 = 0.5`.
     """
     qml.RX(inpt[0], wires=0)
     qml.RY(inpt[0], wires=0)
@@ -112,10 +113,10 @@ def circuit_one_qubit_one_param_rx_ry(inpt):
 
 @qml.qnode(dev_1)
 def circuit_one_qubit_two_params(inpt):
-    """Circuit with a single-qubit, single-param, output function <Z>.
+    r"""Circuit with a single-qubit, single-param, output function <Z>.
 
-    By-hand calculation of f(x) gives <Z> = cos(x_1) cos(x_2)
-    Fourier coeffs are 0.25 for all +/-1 combinations, 0 elsewhere.
+    By-hand calculation of :math:`f(x)` gives :math:`<Z> = cos(x_1) cos(x_2)`
+    Fourier coeffs are 0.25 for all :math:`+/-1` combinations, 0 elsewhere.
     """
     qml.RY(inpt[0], wires=0)
     qml.RX(inpt[1], wires=0)
@@ -124,11 +125,11 @@ def circuit_one_qubit_two_params(inpt):
 
 @qml.qnode(dev_2)
 def circuit_two_qubits_repeated_param(inpt):
-    """Circuit with two qubits, repeated single-param output function <Z>
+    r"""Circuit with two qubits, repeated single-param output function :math:`<Z>`
 
-    By-hand calculation of f(x) gives <Z> = 1/2 + 1/2 cos(2x)
-    Fourier coeffs are c_0 = 0.5, c_1 = c_-1 = 0, c_2 = c_-2 = 0.25
-    (Same as above circuit_one_qubit_one_param_rx_ry, just different qubits).
+    By-hand calculation of :math:`f(x)` gives :math:`<Z> = 1/2 + 1/2 cos(2x)`
+    Fourier coeffs are :math:`c_0 = 0.5, c_1 = c_-1 = 0, c_2 = c_-2 = 0.25`
+    (same as above circuit_one_qubit_one_param_rx_ry, just different qubits).
     """
     qml.RX(inpt[0], wires=0)
     qml.RY(inpt[0], wires=1)
@@ -138,10 +139,10 @@ def circuit_two_qubits_repeated_param(inpt):
 
 @qml.qnode(dev_2)
 def circuit_two_qubits_two_params(inpt):
-    """Circuit with a single-qubit, two-param output function <Z>.
+    r"""Circuit with a single-qubit, two-param output function :math:`<Z>`.
 
-    By-hand calculation of f(x) gives <Z> = cos(x_1) cos(x_2)
-    Fourier coeffs are 0.25 for all +/-1 combinations, 0 elsewhere
+    By-hand calculation of :math:`f(x)` gives :math:`<Z> = cos(x_1) cos(x_2)`
+    Fourier coeffs are 0.25 for all :math:`+/-1` combinations, 0 elsewhere
     (Same as the circuit with one qubit and two params)
     """
     qml.RY(inpt[0], wires=0)

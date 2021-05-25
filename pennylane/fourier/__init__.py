@@ -12,16 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-r"""Fourier module
-------------------
-
+r"""
 .. currentmodule:: pennylane.fourier
 
-This module contains convenient functionality to investigate the fourier representation
-of quantum circuits.
-
-Computing coefficients
-^^^^^^^^^^^^^^^^^^^^^^
+Computing the Fourier representation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autosummary::
 
@@ -29,6 +24,8 @@ Computing coefficients
 
 Visualization
 ^^^^^^^^^^^^^
+
+The following functions require matplotlib.
 
 .. autosummary::
 
