@@ -531,6 +531,7 @@ class DefaultQubit(QubitDevice):
         # translate to wire labels used by device
         device_wires = self.map_wires(device_wires)
         state = self._asarray(state, dtype=self.C_DTYPE)
+
         n_state_vector = state.shape[0]
 
         if state.ndim != 1 or n_state_vector != 2 ** len(device_wires):
@@ -596,7 +597,6 @@ class DefaultQubit(QubitDevice):
         """
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
-
         if self.C_DTYPE==torch.complex128:
             mat = self._cast(self._reshape(mat, [2] * len(device_wires) * 2).numpy())
             mat = torch.from_numpy(mat)
@@ -678,7 +678,7 @@ class DefaultQubit(QubitDevice):
             array[complex]: output state
         """
         # translate to wire labels used by device
-                device_wires = self.map_wires(wires)
+        device_wires = self.map_wires(wires)
 
         # reshape vectors, if we have torch as backend!
         if self.C_DTYPE==torch.complex128:
