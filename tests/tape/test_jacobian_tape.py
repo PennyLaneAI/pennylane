@@ -146,7 +146,9 @@ class TestJacobian:
 
         dev = qml.device("default.qubit", wires=1)
 
-        with pytest.raises(ValueError, match=r"analytic gradient method cannot be used"):
+        with pytest.raises(
+            ValueError, match=r"analytic gradient method cannot be used"
+        ):
             tape.jacobian(dev, method="analytic")
 
     def test_analytic_method(self, mocker):
@@ -636,9 +638,11 @@ class TestHessian:
             qml.state()
 
         with pytest.raises(
-            ValueError, match=r"The Hessian method does not support circuits that return the state"
+            ValueError,
+            match=r"The Hessian method does not support circuits that return the state",
         ):
             tape.hessian(None)
+
 
 class TestObservableWithObjectReturnType:
     """Unit tests for differentiation of observables returning an object"""
@@ -646,13 +650,15 @@ class TestObservableWithObjectReturnType:
     def test_special_observable_qnode_differentiation(self):
         """Test differentiation of a QNode on a device supporting a
         special observable that returns an object rathern than a nummber."""
-        class SpecialObject():
+
+        class SpecialObject:
             """SpecialObject
 
             A special object that conveniently encapsulates the return value of
             a special observable supported by a special device and which supports
             multiplication with scalars and addition.
             """
+
             def __init__(self, val):
                 self.val = val
 
@@ -680,9 +686,9 @@ class TestObservableWithObjectReturnType:
             def __radd__(self, other):
                 return self + other
 
-
         class SpecialObservable(Observable):
             """SpecialObservable"""
+
             num_wires = AnyWires
             num_params = 0
             par_domain = None
@@ -692,8 +698,8 @@ class TestObservableWithObjectReturnType:
                 return []
 
         class DeviceSupporingSpecialObservable(DefaultQubit):
-            name = 'Device supporing SpecialObservable'
-            short_name = 'default.qibit.specialobservable'
+            name = "Device supporing SpecialObservable"
+            short_name = "default.qibit.specialobservable"
             observables = DefaultQubit.observables.union({"SpecialObservable"})
 
             def expval(self, observable, **kwargs):
@@ -707,15 +713,17 @@ class TestObservableWithObjectReturnType:
 
         # force diff_method='parameter-shift' because otherwise
         # PennyLane swaps out dev for default.qubit.autograd
-        @qml.qnode(dev, diff_method='parameter-shift')
+        @qml.qnode(dev, diff_method="parameter-shift")
         def qnode(x):
             qml.RY(x, wires=0)
             return qml.expval(SpecialObservable(wires=0))
 
-        @qml.qnode(dev, diff_method='parameter-shift')
+        @qml.qnode(dev, diff_method="parameter-shift")
         def reference_qnode(x):
             qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(wires=0))
 
         assert np.isclose(qnode(0.2).item().val, reference_qnode(0.2))
-        assert np.isclose(qml.jacobian(qnode)(0.2).item().val, qml.jacobian(reference_qnode)(0.2))
+        assert np.isclose(
+            qml.jacobian(qnode)(0.2).item().val, qml.jacobian(reference_qnode)(0.2)
+        )
