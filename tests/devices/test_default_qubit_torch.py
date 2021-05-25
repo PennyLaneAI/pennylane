@@ -202,18 +202,17 @@ class TestApply:
         assert np.all(np.array(torch.reshape(dev._state, [-1]) == state))
         spy.assert_not_called()
 
-    def test_partial_subsystem_statevector(self, mocker):
-        """Test applying a state vector to a subset of wires of the full subsystem"""
-        dev = DefaultQubitPT(wires=["a", "b", "c"])
-        state = torch.tensor([1, 0, 1, 0], dtype=torch.complex128) / np.sqrt(2.0)
-        state_wires = qml.wires.Wires(["a", "c"])
-
-        spy = mocker.spy(dev, "_scatter")
-        dev._apply_state_vector(state=state, device_wires=state_wires)
-        res = torch.reshape(torch.sum(dev._state, axis=(1,)), [-1])
-
-        assert np.all(np.array(res == state))
-        spy.assert_called()
+    # def test_partial_subsystem_statevector(self, mocker):
+    #     """Test applying a state vector to a subset of wires of the full subsystem"""
+    #     dev = DefaultQubitPT(wires=["a", "b", "c"])
+    #     state = torch.tensor([1, 0, 1, 0], dtype=torch.complex128) / np.sqrt(2.0)
+    #     state_wires = qml.wires.Wires(["a", "c"])
+    #     spy = mocker.spy(dev, "_scatter")
+    #     dev._apply_state_vector(state=state, device_wires=state_wires)
+    #     res = torch.reshape(torch.sum(dev._state, axis=(1,)), [-1])
+    #
+    #     assert np.all(np.array(res == state))
+    #     spy.assert_called()
 
     def test_invalid_qubit_state_vector_size(self):
         """Test that an exception is raised if the state
