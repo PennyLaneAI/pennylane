@@ -269,8 +269,10 @@ class TestValidation:
 
         qn = qml.QNode(func, dev)
 
-        assert print(qn) == "<QNode: wires=1, device='default.qubit.autograd',
-        interface='autograd', diff_method='best'>"
+        assert (
+            qn
+            == "<QNode: wires=1, device='default.qubit.autograd', interface='autograd', diff_method='best'>"
+        )
 
 
 class TestTapeConstruction:
