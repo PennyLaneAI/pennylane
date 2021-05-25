@@ -1,6 +1,56 @@
 # Release 0.16.0-dev (development release)
 
 <h3>New features since last release</h3>
+
+* It is now possible [(1291)](https://github.com/PennyLaneAI/pennylane/pull/1291)
+  to create custom Observables and corresponding devices
+  whose return type can be an arbitrary object and QNodes using such Observable
+  remain differentiable with qml.grad as long as the class of the returned
+  object implements the operations of a field. See tests/tape/test_jacobian_tape.py
+  for an example.
+
+* PennyLane now has a ``kernels`` module.
+  It provides basic functionalities for working with quantum kernels as well as 
+  post-processing methods to mitigate sampling errors and device noise:
+
+```python
+import pennylane as qml
+from pennylane import numpy as np
+
+num_wires = 6
+wires = range(num_wires)
+
+dev = qml.device('default.qubit', wires=num_wires)
+
+@qml.qnode(dev)
+def kernel_circuit(x1, x2):
+    qml.templates.AngleEmbedding(x1, wires=wires)
+    qml.adjoint(qml.templates.AngleEmbedding)(x2, wires=wires)
+    return qml.probs(wires)
+
+kernel = lambda x1, x2: kernel_circuit(x1, x2)[0]
+
+# "Training feature vectors"
+X_train = np.random.random((10, 6))
+# Create symmetric square kernel matrix (for training)
+K = qml.kernels.square_kernel_matrix(X_train, kernel)
+# Add some (symmetric) Gaussian noise to the kernel matrix.
+N = np.random.randn(10, 10)
+K += (N + N.T) / 2
+        
+K1 = qml.kernels.displace_matrix(K)
+K2 = qml.kernels.closest_psd_matrix(K)
+K3 = qml.kernels.threshold_matrix(K)
+K4 = qml.kernels.mitigate_depolarizing_noise(K, num_wires, method='single')
+K5 = qml.kernels.mitigate_depolarizing_noise(K, num_wires, method='average')
+K6 = qml.kernels.mitigate_depolarizing_noise(K, num_wires, method='split_channel')
+
+# "Testing feature vectors"
+X_test = np.random.random((5, 6))
+# Compute kernel between test and training data.
+K_test = qml.kernels.kernel_matrix(X_train, X_test, kernel)
+```
+
 * Added CPhase operation as an alias for ControlledPhaseShift operation
   [(#1319)](https://github.com/PennyLaneAI/pennylane/pull/1319).
 
@@ -118,9 +168,8 @@
   + (0.25) [Y5 X4 Y0]
   >>> mapping
   {0: (0, 1), 1: (0, 2), 2: (1, 0), 3: (1, 2), 4: (2, 0), 5: (2, 1)}
-  ```
-  
-  Additional functionality can be found in the `qml.qaoa.cycle` module.
+  ``` 
+ Additional functionality can be found in the `qml.qaoa.cycle` module.
 
 * Adds `QubitCarry` and `QubitSum` operations for basic arithmetic.
   [(#1169)](https://github.com/PennyLaneAI/pennylane/pull/1169)
@@ -173,6 +222,13 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 * Ising XX gate functionality added. [(#1194)](https://github.com/PennyLaneAI/pennylane/pull/1194)
 
 <h3>Improvements</h3>
+
+* The `benchmark` module was deleted, since it was outdated and is superseded by 
+  the new separate [benchmark repository](https://github.com/PennyLaneAI/benchmark).
+  [(#1343)](https://github.com/PennyLaneAI/pennylane/pull/1343)
+  
+*  A decomposition has been added for the `qml.CSWAP` operation.
+  [(#1306)](https://github.com/PennyLaneAI/pennylane/issues/1306)
 
 * The `qml.inv()` function is now deprecated with a warning to use the more general `qml.adjoint()`.
   [(#1325)](https://github.com/PennyLaneAI/pennylane/pull/1325)
@@ -266,6 +322,9 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Bug fixes</h3>
 
+* Fixes drawing QNodes with no operations.
+  [(#1354)](https://github.com/PennyLaneAI/pennylane/pull/1354)
+
 * Fixes incorrect wires in the decomposition of the `ControlledPhaseShift` operation.
   [(#1338)](https://github.com/PennyLaneAI/pennylane/pull/1338)
 
@@ -296,14 +355,18 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 * Removes occurrences of the deprecated device argument ``analytic`` from the documentation.
   [(#1261)](https://github.com/PennyLaneAI/pennylane/pull/1261)
+  
+* Updated PyTorch and TensorFlow interface introductions.
+  [(#1333)](https://github.com/PennyLaneAI/pennylane/pull/1333)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Marius Aglitoiu, Vishnu Ajith, Thomas Bromley, Jack Ceroni, Miruna Daian, Olivia Di Matteo,
-Tanya Garg, Diego Guala, Anthony Hayes, Josh Izaac, Pavan Jayasinha, Ryan Levy, Nahum Sá,
-Brian Shi, Antal Száva, Vincent Wong.
+Tanya Garg, Christian Gogolin, Diego Guala, Anthony Hayes, Ryan Hill, Josh Izaac, Pavan Jayasinha, Ryan Levy, Nahum Sá, Maria Schuld, 
+Johannes Jakob Meyer, Brian Shi, Antal Száva, David Wierichs, Vincent Wong, Alberto Maldonado.
+
 
 # Release 0.15.1 (current release)
 
