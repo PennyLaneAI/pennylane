@@ -24,14 +24,14 @@ import matplotlib.pyplot as plt
 
 from pennylane import numpy as np
 
-from pennylane.fourier.visualization import _validate_coefficients
+from pennylane.fourier.visualize import _validate_coefficients
 
-from pennylane.fourier.visualization import (
-    plot_coeffs_violin,
-    plot_coeffs_bar,
-    plot_coeffs_box,
-    plot_coeffs_panel,
-    plot_coeffs_radial_box,
+from pennylane.fourier.visualize import (
+    violin,
+    bar,
+    box,
+    panel,
+    radial_box,
 )
 
 
@@ -300,38 +300,38 @@ class TestInvalidAxesPassing:
         "func,coeffs,n_inputs,ax,expected_error_message",
         [
             (
-                plot_coeffs_violin,
-                coeffs_1D_valid_1,
-                1,
-                ax_invalid,
+                    violin,
+                    coeffs_1D_valid_1,
+                    1,
+                    ax_invalid,
                 "Matplotlib axis should consist of two subplots.",
             ),
             (
-                plot_coeffs_box,
-                coeffs_1D_valid_2,
-                1,
-                ax_invalid,
+                    box,
+                    coeffs_1D_valid_2,
+                    1,
+                    ax_invalid,
                 "Matplotlib axis should consist of two subplots.",
             ),
             (
-                plot_coeffs_bar,
-                coeffs_1D_valid_1,
-                1,
-                ax_invalid,
+                    bar,
+                    coeffs_1D_valid_1,
+                    1,
+                    ax_invalid,
                 "Matplotlib axis should consist of two subplots.",
             ),
             (
-                plot_coeffs_radial_box,
-                coeffs_2D_valid_list,
-                2,
-                ax_invalid,
+                    radial_box,
+                    coeffs_2D_valid_list,
+                    2,
+                    ax_invalid,
                 "Matplotlib axis should consist of two subplots.",
             ),
             (
-                plot_coeffs_panel,
-                coeffs_2D_valid_list,
-                2,
-                ax_panel_invalid,
+                    panel,
+                    coeffs_2D_valid_list,
+                    2,
+                    ax_panel_invalid,
                 "Shape of subplot axes must match the shape of the coefficient data.",
             ),
         ],
@@ -340,3 +340,47 @@ class TestInvalidAxesPassing:
         """Test that invalid axes are not plotted on."""
         with pytest.raises(ValueError, match=expected_error_message):
             func(coeffs, n_inputs, ax)
+
+
+class TestReturnType:
+    """Test that axes of the incorrect type are not plotted on."""
+
+    @pytest.mark.parametrize(
+        "func,coeffs,n_inputs,ax",
+        [
+            (
+                    violin,
+                    coeffs_1D_valid_1,
+                    1,
+                    ax_valid,
+            ),
+            (
+                    box,
+                    coeffs_1D_valid_2,
+                    1,
+                    ax_valid,
+            ),
+            (
+                    bar,
+                    coeffs_1D_valid_1,
+                    1,
+                    ax_valid,
+            ),
+            (
+                    radial_box,
+                    coeffs_2D_valid_list,
+                    2,
+                    ax_valid,
+            ),
+            (
+                    panel,
+                    coeffs_2D_valid_list,
+                    2,
+                    ax_valid,
+            ),
+        ],
+    )
+    def test_correct_return_type(self, func, coeffs, n_inputs, ax):
+        """Test that invalid axes are not plotted on."""
+        res = func(coeffs, n_inputs, ax)
+        assert isinstance(res, type(ax))

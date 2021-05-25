@@ -85,7 +85,7 @@ def _validate_coefficients(coeffs, n_inputs, can_be_list=True):
 
 
 def _extract_data_and_labels(coeffs):
-    """Helper function for creating frequency labels and partitionining data.
+    """Helper function for creating frequency labels and partitioning data.
 
     Args:
         coeffs (array[complex]): A list of sets of Fourier coefficients.
@@ -115,7 +115,7 @@ def _adjust_spine_placement(ax):
     ax.set_axisbelow(True)
 
 
-def plot_coeffs_violin(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
+def violin(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
     """Plots a list of sets of Fourier coefficients as a violin plot.
 
     Args:
@@ -178,7 +178,7 @@ def plot_coeffs_violin(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
 
     >>> import matplotlib.pyplot as plt
     >>> fig, ax = plt.subplots(2, 1, sharey=True, figsize=(15, 4))
-    >>> plot_coeffs_violin(coeffs, n_inputs, ax, show_freqs=True)
+    >>> violin(coeffs, n_inputs, ax, show_freqs=True)
 
     .. image:: ../../_static/fourier_vis_violin.png
         :align: center
@@ -219,7 +219,7 @@ def plot_coeffs_violin(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
     return ax
 
 
-def plot_coeffs_box(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True, show_fliers=True):
+def box(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True, show_fliers=True):
     """Plots a set of Fourier coefficients as a box plot.
 
     Args:
@@ -283,7 +283,7 @@ def plot_coeffs_box(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True, sho
 
     >>> import matplotlib.pyplot as plt
     >>> fig, ax = plt.subplots(2, 1, sharey=True, figsize=(15, 4))
-    >>> plot_coeffs_box(coeffs, n_inputs, ax, show_freqs=True)
+    >>> box(coeffs, n_inputs, ax, show_freqs=True)
 
     .. image:: ../../_static/fourier_vis_box.png
         :align: center
@@ -334,7 +334,7 @@ def plot_coeffs_box(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True, sho
     return ax
 
 
-def plot_coeffs_bar(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
+def bar(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
     """Plots a set of Fourier coefficients as a bar plot.
 
     Args:
@@ -393,7 +393,7 @@ def plot_coeffs_bar(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
 
     >>> import matplotlib.pyplot as plt
     >>> fig, ax = plt.subplots(2, 1, sharey=True, figsize=(15, 4))
-    >>> plot_coeffs_bar(coeffs, n_inputs, ax, colour_dict={"real" : "red", "imag" : "blue"})
+    >>> bar(coeffs, n_inputs, ax, colour_dict={"real" : "red", "imag" : "blue"})
 
     .. image:: ../../_static/fourier_vis_bar_plot_2.png
         :align: center
@@ -432,7 +432,7 @@ def plot_coeffs_bar(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
     return ax
 
 
-def plot_coeffs_panel(coeffs, n_inputs, ax, colour=None):
+def panel(coeffs, n_inputs, ax, colour=None):
     """Plot list of sets of coefficients in the complex plane for a 1- or 2-dimensional function.
 
     Args:
@@ -499,7 +499,7 @@ def plot_coeffs_panel(coeffs, n_inputs, ax, colour=None):
 
     >>> import matplotlib.pyplot as plt
     >>> fig, ax = plt.subplots(5, 5, figsize=(12, 10), sharex=True, sharey=True)
-    >>> plot_coeffs_panel(coeffs, n_inputs, ax)
+    >>> panel(coeffs, n_inputs, ax)
 
     .. image:: ../../_static/fourier_vis_panel.png
         :align: center
@@ -557,7 +557,7 @@ def plot_coeffs_panel(coeffs, n_inputs, ax, colour=None):
     return ax
 
 
-def plot_coeffs_radial_box(
+def radial_box(
     coeffs, n_inputs, ax, show_freqs=True, colour_dict=None, show_fliers=True
 ):
     """Plot distributions of Fourier coefficients on a radial plot as box plots.
@@ -639,7 +639,7 @@ def plot_coeffs_radial_box(
             figsize=(15, 8)
         )
 
-        plot_coeffs_radial_box(coeffs, 2, ax, show_freqs=True, show_fliers=False)
+        radial_box(coeffs, 2, ax, show_freqs=True, show_fliers=False)
 
     .. image:: ../../_static/fourier_vis_radial_box.png
         :align: center

@@ -12,8 +12,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-r"""Fourier series of quantum circuits
-----------------------------------
+r"""Fourier module
+------------------
+
+.. currentmodule:: pennylane.fourier
+
+This module contains convenient functionality to investigate the fourier representation
+of quantum circuits.
+
+Computing coefficients
+^^^^^^^^^^^^^^^^^^^^^^
+
+.. autosummary::
+
+    coefficients
+
+Visualization
+^^^^^^^^^^^^^
+
+.. autosummary::
+
+    visualize.bar
+    visualize.box
+    visualize.panel
+    visualize.radial_box
+    visualize.violin
+
+
+Fourier representation of quantum circuits
+------------------------------------------
 
 Consider a quantum circuit that depends on a parameter vector :math:`x` with
 length :math:`N`. The circuit involves application of some unitary operations
@@ -117,7 +144,7 @@ for multiple dimensions.
 
 
 Fourier coefficient visualization
----------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 A key application of the Fourier module is to analyze the *expressivity* of
 classes of quantum circuit families. The set of frequencies in the Fourier
@@ -140,18 +167,18 @@ over Fourier coefficients for a parametrized circuit family.
    should be created for each function.
 
 Visualizing a single set of coefficients
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 While all the functions available for visualizing multiple sets of Fourier
 coefficients can be used for a single set, the primary tool for this purpose is
-the ``plot_coeffs_bar`` function. Using the coefficients we obtained in the
+the ``bar`` function. Using the coefficients we obtained in the
 earlier example,
 
 >>> from pennylane.fourier import *
 >>> import matplotlib.pyplot as plt
 
 >>> fig, ax = plt.subplots(2, 1, sharex=True, sharey=True) # Set up the axes
->>> plot_coeffs_bar(coeffs, 1, ax)
+>>> bar(coeffs, 1, ax)
 
 .. image:: ../_static/fourier_vis_bar_plot.png
     :align: center
@@ -194,7 +221,7 @@ customization options available:
 
    # Number of inputs is now 2; pass custom colours as well
    fig, ax = plt.subplots(2, 1, sharex=True, sharey=True, figsize=(15, 4))
-   plot_coeffs_bar(coeffs, 2, ax, colour_dict={"real" : "red", "imag" : "blue"})
+   bar(coeffs, 2, ax, colour_dict={"real" : "red", "imag" : "blue"})
 
 .. image:: ../_static/fourier_vis_bar_plot_2.png
     :align: center
@@ -203,8 +230,7 @@ customization options available:
 
 
 Visualizing multiple sets of coefficients
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Suppose we do not want to visualize the Fourier coefficients for a fixed
 ``weights`` argument in ``circuit_with_weights``, but the distribution over sets
@@ -220,12 +246,12 @@ of Fourier coefficients when the weights are randomly sampled. For each
        c = coefficients(partial(circuit_with_weights, weights), 2, degree=2)
        coeffs.append(np.round(c, decimals=8))
 
-One option to plot the distribution is :func:`~.pennylane.fourier.plot_coeffs_violin`:
+One option to plot the distribution is :func:`~.pennylane.fourier.violin`:
 
 .. code::
 
    fig, ax = plt.subplots(2, 1, sharey=True, figsize=(15, 4))
-   plot_coeffs_violin(coeffs, 2, ax, show_freqs=True)
+   violin(coeffs, 2, ax, show_freqs=True)
 
 .. image:: ../_static/fourier_vis_violin.png
     :width: 100%
@@ -233,11 +259,11 @@ One option to plot the distribution is :func:`~.pennylane.fourier.plot_coeffs_vi
 
 |
 
-A similar option is the :func:`~.pennylane.fourier.plot_coeffs_box`, which
+A similar option is the :func:`~.pennylane.fourier.box`, which
 produces a plot of the same format but using a box plot.
 
 A different view can obtained using the
-:func:`~.pennylane.fourier.plot_coeffs_radial_box` function. This "rolls up"
+:func:`~.pennylane.fourier.radial_box` function. This "rolls up"
 the coefficients onto a polar grid. Let us use it to visualize the same set of
 coefficients as above:
 
@@ -249,7 +275,7 @@ coefficients as above:
        subplot_kw=dict(polar=True),
        figsize=(15, 8)
    )
-   plot_coeffs_radial_box(coeffs, 2, ax, show_freqs=True, show_fliers=False)
+   radial_box(coeffs, 2, ax, show_freqs=True, show_fliers=False)
 
 .. image:: ../_static/fourier_vis_radial_box.png
     :align: center
@@ -271,14 +297,14 @@ recommended to disable the frequency labelling by setting ``show_freqs=False``,
 and hiding box plot fliers as was done above.
 
 Finally, for the special case of 1- or 2-dimensional functions, we can use the
-:func:`~.pennylane.fourier.plot_coeffs_panel` to plot the distributions of the
+:func:`~.pennylane.fourier.panel` to plot the distributions of the
 sampled sets of Fourier coefficients on the complex plane.
 
 .. code::
 
    # Need a grid large enough to hold all coefficients up to frequency 2
    fig, ax = plt.subplots(5, 5, figsize=(12, 10), sharex=True, sharey=True)
-   plot_coeffs_panel(coeffs, 2, ax)
+   panel(coeffs, 2, ax)
 
 .. image:: ../_static/fourier_vis_panel.png
     :align: center
