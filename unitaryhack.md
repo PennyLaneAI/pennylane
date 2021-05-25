@@ -72,4 +72,6 @@ You can claim swag prizes by contributing to these other unitaryHACK issues:
 
 [Define decomposition for qml.CSWAP](https://github.com/PennyLaneAI/pennylane/issues/1306)
 
+[QNodes no longer display readable info when printed](https://github.com/PennyLaneAI/pennylane/issues/1352)
+
 Consider also contributing to our sister libraries [Strawberry Fields](https://github.com/XanaduAI/strawberryfields/labels/unitaryhack) and [The Walrus](https://github.com/XanaduAI/thewalrus/labels/unitaryhack).
