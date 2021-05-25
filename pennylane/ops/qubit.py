@@ -634,6 +634,15 @@ class CSWAP(Operation):
     def _matrix(cls, *params):
         return cls.matrix
 
+    @staticmethod
+    def decomposition(wires):
+        decomp_ops = [
+            qml.Toffoli(wires=[wires[0], wires[2], wires[1]]),
+            qml.Toffoli(wires=[wires[0], wires[1], wires[2]]),
+            qml.Toffoli(wires=[wires[0], wires[2], wires[1]]),
+        ]
+        return decomp_ops
+
     def adjoint(self):
         return CSWAP(wires=self.wires)
 

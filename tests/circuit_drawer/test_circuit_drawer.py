@@ -913,3 +913,21 @@ class TestWireOrdering:
 
         with pytest.raises(ValueError, match="contains wires not contained on the device"):
             res = circuit.draw(wire_order=["q2", 5])
+
+    def test_no_ops_draws(self):
+        """Test that a QNode with no operations still draws correctly"""
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def qnode():
+            return qml.expval(qml.PauliX(wires=[0]) @ qml.PauliX(wires=[1]) @ qml.PauliX(wires=[2]))
+
+        qnode()
+        res = qnode.draw()
+        expected = [
+            " 0: ──╭┤ ⟨X ⊗ X ⊗ X⟩ \n",
+            " 1: ──├┤ ⟨X ⊗ X ⊗ X⟩ \n",
+            " 2: ──╰┤ ⟨X ⊗ X ⊗ X⟩ \n",
+        ]
+
+        assert res == "".join(expected)
