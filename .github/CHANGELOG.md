@@ -3,7 +3,7 @@
 <h3>New features since last release</h3>
 
 * PennyLane now has a `fourier` module, which hosts a growing library 
-  of methods that help investigating the Fourier representation of functions 
+  of methods that help with investigating the Fourier representation of functions 
   implemented by quantum circuits.
   [(1160)](https://github.com/PennyLaneAI/pennylane/pull/1160)
   
