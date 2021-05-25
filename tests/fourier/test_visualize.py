@@ -363,7 +363,7 @@ class TestReturnType:
             ),
             (
                 box,
-                coeffs_1D_valid_2,
+                coeffs_1D_valid_1,
                 1,
                 ax_valid,
             ),

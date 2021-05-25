@@ -121,7 +121,7 @@ def violin(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
     """Plots a list of sets of Fourier coefficients as a violin plot.
 
     Args:
-        coeffs (array[complex]): A list of sets of Fourier coefficients. The shape of the array
+        coeffs (list[array[complex]]): A list of sets of Fourier coefficients. The shape of the arrays
             should resemble that of the output of NumPy/SciPy's ``fftn`` function, or
             :func:`~.pennylane.fourier.coefficients`.
         n_inputs (int): The number of input variables in the function.
@@ -225,7 +225,7 @@ def box(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True, show_fliers=Tru
     """Plots a set of Fourier coefficients as a box plot.
 
     Args:
-        coeffs (array[complex]): A list of sets of Fourier coefficients. The shape of the array
+        coeffs (list[array[complex]]): A list of sets of Fourier coefficients. The shape of the arrays
             should resemble that of the output of numpy/scipy's ``fftn`` function, or
             :func:`~.pennylane.fourier.coefficients`.
         n_inputs (int): The number of input variables in the function.
@@ -292,7 +292,7 @@ def box(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True, show_fliers=Tru
         :width: 800px
         :target: javascript:void(0);
     """
-    _validate_coefficients(coeffs, n_inputs, True)
+    coeffs = _validate_coefficients(coeffs, n_inputs, True)
 
     # Check axis shape
     if ax.size != 2:
@@ -438,7 +438,7 @@ def panel(coeffs, n_inputs, ax, colour=None):
     """Plot list of sets of coefficients in the complex plane for a 1- or 2-dimensional function.
 
     Args:
-        coeffs (array[complex]): A list set of Fourier coefficients. Must be 1-
+        coeffs (list[array[complex]]): A list of sets of Fourier coefficients. The arrays must be 1-
             or 2-dimensional, i.e., the array should have shape ``(2d + 1,)``
             for 1-dimensional, or ``(2d + 1, 2d + 1)`` where ``d`` is the
             degree, i.e., the maximum frequency of present in the coefficients.
