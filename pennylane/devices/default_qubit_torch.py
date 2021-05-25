@@ -200,6 +200,7 @@ class DefaultQubitTorch(DefaultQubit):
     def _cast(self, a, dtype=None):
         return self._asarray(a, dtype=dtype)
 
+
     @staticmethod
     def _reduce_sum(array, axes):
         if not axes:
@@ -262,16 +263,21 @@ class DefaultQubitTorch(DefaultQubit):
             the return type will be a ``np.ndarray``. For parametric unitaries, a ``torch.Tensor``
             object will be returned.
         """
+        op_name = unitary.name.split(".inv")[0]
 
-        if unitary.name in self.parametric_ops:
-            if unitary.name == "MultiRZ":
-                mat = self.parametric_ops[unitary.name](
+        if op_name in self.parametric_ops:
+            if op_name == "MultiRZ":
+                mat = self.parametric_ops[op_name](
                     *unitary.parameters, len(unitary.wires), device=self._torch_device
                 )
             else:
-                mat = self.parametric_ops[unitary.name](
+                mat = self.parametric_ops[op_name](
                     *unitary.parameters, device=self._torch_device
                 )
+
+            if unitary.inverse:
+                mat = self._transpose(self._conj(mat), axes=[1, 0])
+
             return mat
 
         if isinstance(unitary, DiagonalOperation):
