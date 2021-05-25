@@ -71,23 +71,20 @@ class DefaultQubitPT(DefaultQubit):
     ...     qml.RX(x[1], wires=0)
     ...     qml.Rot(x[0], x[1], x[2], wires=0)
     ...     return qml.expval(qml.PauliZ(0))
-
-    ## TODO:  need to test all code samples
-    >>> weights = tf.Variable([0.2, 0.5, 0.1])
-    >>> with tf.GradientTape() as tape:
-    ...     res = circuit(weights)
-    >>> print(tape.gradient(res, weights))
-    tf.Tensor([-2.2526717e-01 -1.0086454e+00  1.3877788e-17], shape=(3,), dtype=float32)
+    >>> weights = torch.tensor([0.2, 0.5, 0.1], requires_grad=True)
+    >>> res = circuit(weights)
+    >>> res.backward()
+    >>> print(weights.grad)
+    tensor([-2.2527e-01, -1.0086e+00,  1.3878e-17])
 
     Autograph mode will also work when using classical backpropagation:
 
-    >>> @tf.function
-    ... def cost(weights):
-    ...     return tf.reduce_sum(circuit(weights)**3) - 1
-    >>> with tf.GradientTape() as tape:
-    ...     res = cost(weights)
-    >>> print(tape.gradient(res, weights))
-    tf.Tensor([-3.5471588e-01 -1.5882589e+00  3.4694470e-17], shape=(3,), dtype=float32)
+    >>> def cost(weights):
+    ...    return torch.sum(circuit(weights)**3) - 1
+    >>> res = circuit(weights)
+    >>> res.backward()
+    >>> print(weights.grad)
+    tensor([-3.5472e-01, -1.5883e+00,  2.0817e-17])
 
     If you wish to use a different machine-learning interface, or prefer to calculate quantum
     gradients using the ``parameter-shift`` or ``finite-diff`` differentiation methods,
