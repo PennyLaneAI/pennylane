@@ -13,6 +13,7 @@ Computing the Fourier representation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autosummary::
+    :toctree: api
 
     coefficients
 
@@ -22,6 +23,7 @@ Visualization
 The visualization functions require the `matplotlib` library to be installed.
 
 .. autosummary::
+    :toctree: api
 
     visualize.bar
     visualize.box
