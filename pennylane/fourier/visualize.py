@@ -653,6 +653,9 @@ def radial_box(coeffs, n_inputs, ax, show_freqs=True, colour_dict=None, show_fli
     if ax.size != 2:
         raise ValueError("Matplotlib axis should consist of two subplots.")
 
+    if ax[0].name != 'polar' or ax[1].name != 'polar':
+        raise ValueError("Matplotlib axes for radial_box must be polar.")
+
     if colour_dict is None:
         colour_dict = {"real": "red", "imag": "black"}
 

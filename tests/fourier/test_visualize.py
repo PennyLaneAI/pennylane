@@ -335,6 +335,13 @@ class TestInvalidAxesPassing:
                 "Matplotlib axis should consist of two subplots.",
             ),
             (
+                radial_box,
+                coeffs_2D_valid_list,
+                2,
+                ax_valid,
+                "Matplotlib axes for radial_box must be polar.",
+            ),
+            (
                 panel,
                 coeffs_2D_valid_list,
                 2,
