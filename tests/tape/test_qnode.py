@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -259,6 +259,19 @@ class TestValidation:
         with pytest.raises(ValueError, match="The default.gaussian device does not"):
             QNode._validate_adjoint_method(dev, "tf")
 
+    def test_qnode_print(self):
+        """Test that printing a QNode object yields the right information."""
+        dev = qml.device("default.qubit", wires=1)
+
+        def func(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        qn = qml.QNode(func, dev)
+
+        assert print(qn) == "<QNode: wires=1, device='default.qubit.autograd',
+        interface='autograd', diff_method='best'>"
+
 
 class TestTapeConstruction:
     """Tests for the tape construction"""
@@ -456,8 +469,8 @@ class TestTapeConstruction:
 
         result = draw(circuit)(p1=x, p3=z)
         expected = """\
- 0: ──RX(0.1)───RX(0.4)──╭C──╭┤ ⟨Z ⊗ X⟩ 
- 1: ──RY(0.06)───────────╰X──╰┤ ⟨Z ⊗ X⟩ 
+ 0: ──RX(0.1)───RX(0.4)──╭C──╭┤ ⟨Z ⊗ X⟩
+ 1: ──RY(0.06)───────────╰X──╰┤ ⟨Z ⊗ X⟩
 """
 
         assert result == expected
@@ -482,8 +495,8 @@ class TestTapeConstruction:
 
         result = draw(circuit, charset="ascii")(p1=x, p2=y, p3=z)
         expected = """\
- 0: --RX(0.1)---RX(0.4)--+C--+| <Z @ X> 
- 1: --RY(0.06)-----------+X--+| <Z @ X> 
+ 0: --RX(0.1)---RX(0.4)--+C--+| <Z @ X>
+ 1: --RY(0.06)-----------+X--+| <Z @ X>
 """
 
         assert result == expected
@@ -510,8 +523,8 @@ class TestTapeConstruction:
 
         result = circuit.draw()
         expected = """\
- 0: ──RX(0.1)───RX(0.4)──╭C──╭┤ ⟨Z ⊗ X⟩ 
- 1: ──RY(0.06)───────────╰X──╰┤ ⟨Z ⊗ X⟩ 
+ 0: ──RX(0.1)───RX(0.4)──╭C──╭┤ ⟨Z ⊗ X⟩
+ 1: ──RY(0.06)───────────╰X──╰┤ ⟨Z ⊗ X⟩
 """
 
         assert result == expected
@@ -538,8 +551,8 @@ class TestTapeConstruction:
 
         result = circuit.draw(charset="ascii")
         expected = """\
- 0: --RX(0.1)---RX(0.4)--+C--+| <Z @ X> 
- 1: --RY(0.06)-----------+X--+| <Z @ X> 
+ 0: --RX(0.1)---RX(0.4)--+C--+| <Z @ X>
+ 1: --RY(0.06)-----------+X--+| <Z @ X>
 """
 
         assert result == expected
