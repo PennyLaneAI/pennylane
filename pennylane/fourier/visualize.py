@@ -346,8 +346,8 @@ def bar(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
         n_inputs (int): The number of input variables in the function.
         ax (list[matplotlib.axes.Axes]): Axis on which to plot. Must
             be a pair of axes from a subplot where ``sharex="row"`` and ``sharey="col"``.
-        colour_dict (dict[str, str]): A dictionary of the form {"real" : colour_string,
-            "imag" : other_colour_string} indicating which colours should be used in the plot.
+        colour_dict (dict[str, str]): A dictionary of the form ``{"real" : colour_string,
+            "imag" : other_colour_string}`` indicating which colours should be used in the plot.
         show_freqs (bool): Whether or not to print the frequency labels on the plot axis.
 
      Returns:
@@ -577,7 +577,7 @@ def radial_box(coeffs, n_inputs, ax, show_freqs=True, colour_dict=None, show_fli
             the radial axis. Turn off for large plots.
         colour_dict (str : str): Specify a colour mapping for positive and negative
             real/imaginary components. If none specified, will default to:
-            {"real" : "red", "imag" : "black"}
+            ``{"real" : "red", "imag" : "black"}``
         showfliers (bool): Whether or not to plot outlying "fliers" on the boxplots.
         merge_plots (bool): Whether to plot real/complex values on the same panel, or
             on separate panels. Default is to plot real/complex values on separate panels.
