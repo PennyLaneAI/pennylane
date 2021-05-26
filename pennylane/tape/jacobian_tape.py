@@ -224,11 +224,17 @@ class JacobianTape(QuantumTape):
     @staticmethod
     def _flatten_processing_result(g):
         """Flattens the output from processing_fn in parameter shift methods."""
-        if g.dtype is np.dtype("object"):
-            # object arrays cannot be flattened; must hstack them
+        if hasattr(g, "dtype") and g.dtype is np.dtype("object"):
+            # - Object arrays cannot be flattened; must hstack them.
+            # - We also check that g has attribute dtype first to allow for
+            #   Observables that return arbitrary objects.
             g = np.hstack(g)
 
-        return g.flatten()
+        if hasattr(g, "flatten"):
+            # flatten only if g supports flattening to allow for
+            # objects other than numpy ndarrays
+            return g.flatten()
+        return g
 
     def numeric_pd(self, idx, params=None, **options):
         """Generate the tapes and postprocessing methods required to compute the gradient of a parameter using the
@@ -580,9 +586,15 @@ class JacobianTape(QuantumTape):
 
             if jac is None:
                 # update the tape's output dimension
-                self._output_dim = len(g)
-                # create the Jacobian matrix
-                jac = np.zeros((len(g), len(params)), dtype=float)
+                try:
+                    self._output_dim = len(g)
+                except TypeError:
+                    # if g has no len (e.g., because it is not a numpy.ndarray)
+                    # assume the dimension is 1
+                    self._output_dim = 1
+                # create the Jacobian matrix with appropriate dtype
+                dtype = g.dtype if isinstance(g, (np.ndarray, float)) else np.object
+                jac = np.zeros((self._output_dim, len(params)), dtype=dtype)
 
             jac[:, i] = g
 
