@@ -746,7 +746,7 @@ class TestOperations:
 
         mats = []
         for i in reversed(res):
-            if i.wires == Wires([2]):
+            if i.wires == Wires([3]):
                 # RY gate
                 mats.append(np.kron(np.eye(2), i.matrix))
             else:
