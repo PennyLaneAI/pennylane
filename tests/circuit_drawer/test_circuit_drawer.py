@@ -675,23 +675,6 @@ def drawn_qubit_circuit_with_interesting_wires():
     )
 
 
-@pytest.fixture
-def drawn_qubit_circuit_with_same_wire_multiple_measurements():
-    """The rendered circuit representation of the qubit circuit that has
-    multiple measurements on the same wire.
-
-    Note: the circuit is diagonalized to the computational basis, therefore the
-    measurements are always in PauliZ measurements with additional diagonalizing
-    gates in the circuit.
-    """
-    return (
-        " 0: ──RY(1)──────H──RZ(2)──RY(-1.57)──╭┤ ⟨Z ⊗ Z ⊗ Z⟩ ╭┤ ⟨Z ⊗ Z⟩ \n"
-        + " 1: ──RY(-1.57)───────────────────────├┤ ⟨Z ⊗ Z ⊗ Z⟩ │┤         \n"
-        + " 2: ──RY(-1.57)───────────────────────╰┤ ⟨Z ⊗ Z ⊗ Z⟩ │┤         \n"
-        + " 3: ──RY(-1.57)────────────────────────┤             ╰┤ ⟨Z ⊗ Z⟩ \n"
-    )
-
-
 class TestCircuitDrawerIntegration:
     """Test that QNodes are properly drawn."""
 
@@ -780,9 +763,7 @@ class TestCircuitDrawerIntegration:
             + " 1: -----+RX(2.3)--Rot(1.2, 3.2, 0.7)--+RX(-2.3)--+| <Z @ Z> \n"
         )
 
-    def test_same_wire_multiple_measurements(
-        self, drawn_qubit_circuit_with_same_wire_multiple_measurements
-    ):
+    def test_same_wire_multiple_measurements(self):
         """Test that drawing a QNode with multiple measurements on certain wires works correctly."""
         dev = qml.device("default.qubit", wires=4)
 
@@ -796,9 +777,15 @@ class TestCircuitDrawerIntegration:
                 qml.expval(qml.PauliX(wires=[0]) @ qml.PauliX(wires=[3])),
             ]
 
-        res = qnode(1.0, 2.0)
+        qnode(1.0, 2.0)
 
-        assert qnode.draw() == drawn_qubit_circuit_with_same_wire_multiple_measurements
+        expected = (
+            " 0: ──RY(1)──────H──RZ(2)──RY(-1.57)──╭┤ ⟨Z ⊗ Z ⊗ Z⟩ ╭┤ ⟨Z ⊗ Z⟩ \n"
+            + " 1: ──RY(-1.57)───────────────────────├┤ ⟨Z ⊗ Z ⊗ Z⟩ │┤         \n"
+            + " 2: ──RY(-1.57)───────────────────────╰┤ ⟨Z ⊗ Z ⊗ Z⟩ │┤         \n"
+            + " 3: ──RY(-1.57)────────────────────────┤             ╰┤ ⟨Z ⊗ Z⟩ \n"
+        )
+        assert qnode.draw() == expected
 
 
 class TestWireOrdering:

@@ -237,11 +237,12 @@ class TestCircuitGraph:
             (circuit_measure_multiple_with_max_twice, 2),
         ],
     )
-    def test_compute_max_obs_per_wire(self, circ, expected):
-        """A test computing the maximum number of observables for a circuit"""
+    def test_max_measure_per_wire(self, circ, expected):
+        """A test for getting the maximum number of measurements on any wire in
+        the circuit graph."""
 
         dev = qml.device("default.qubit", wires=3)
         qnode = qml.QNode(circ, dev)
         qnode()
         circuit = qnode.qtape.graph
-        assert circuit.compute_max_obs_per_wire() == expected
+        assert circuit.max_measure_per_wire == expected
