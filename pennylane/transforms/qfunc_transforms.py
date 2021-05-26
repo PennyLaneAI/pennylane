@@ -275,7 +275,7 @@ def qfunc_transform(tape_transform):
     >>> qml.grad(circuit)(x, y)
     (array(-0.02485651), array([-0.02474011, -0.09954244]))
     """
-    if not callable(single_tape_transform):
+    if not callable(tape_transform):
         raise ValueError(
             "The qfunc_transform decorator can only be applied "
             "to single tape transform functions."

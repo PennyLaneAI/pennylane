@@ -20,8 +20,77 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
+class TestSingleTapeTransform:
+    """Tests for the single_tape_transform decorator"""
+
+    def test_error_invalid_callable(self):
+        """Test that an error is raised if the transform
+        is applied to an invalid function"""
+
+        with pytest.raises(ValueError, match="does not appear to be a valid Python function"):
+            qml.single_tape_transform(5)
+
+    def test_parametrized_transform(self):
+        """Test that a parametrized transform can be applied
+        to a tape"""
+
+        @qml.single_tape_transform
+        def my_transform(tape, a, b):
+            for op in tape.operations + tape.measurements:
+                if op.name == "CRX":
+                    wires = op.wires
+                    param = op.parameters[0]
+                    qml.RX(a, wires=wires[1])
+                    qml.RY(qml.math.sum(b) * param / 2, wires=wires[1])
+                    qml.CZ(wires=[wires[1], wires[0]])
+                else:
+                    op.queue()
+
+        a = 0.1
+        b = np.array([0.2, 0.3])
+        x = 0.543
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=0)
+            qml.CRX(x, wires=[0, 1])
+
+        ops = my_transform(tape, a, b).operations
+        assert len(ops) == 4
+        assert ops[0].name == "Hadamard"
+
+        assert ops[1].name == "RX"
+        assert ops[1].parameters == [a]
+
+        assert ops[2].name == "RY"
+        assert ops[2].parameters == [np.sum(b) * x / 2]
+
+        assert ops[3].name == "CZ"
+
+
 class TestQFuncTransforms:
     """Tests for the qfunc_transform decorator"""
+
+    def test_error_invalid_transform_callable(self):
+        """Test that an error is raised if the transform
+        is applied to an invalid function"""
+
+        with pytest.raises(
+            ValueError, match="can only be applied to single tape transform functions"
+        ):
+            qml.qfunc_transform(5)
+
+    def test_error_invalid_qfunc(self):
+        """Test that an error is raised if the transform
+        is applied to an invalid function"""
+
+        def identity_transform(tape):
+            for op in tape.operations + tape.measurements:
+                op.queue()
+
+        my_transform = qml.qfunc_transform(identity_transform)
+
+        with pytest.raises(ValueError, match="does not appear to be a valid Python function"):
+            my_transform(5)
 
     def test_unparametrized_transform(self):
         """Test that an unparametrized transform can be applied

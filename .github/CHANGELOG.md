@@ -2,6 +2,66 @@
 
 <h3>New features since last release</h3>
 
+* Adds a decorator `@qml.qfunc_transform` to easily create a transformation
+  that transforms a quantum function.
+  [(#1315)](https://github.com/PennyLaneAI/pennylane/pull/1315)
+
+  For example, consider the following transform, which replaces all
+  `CRX` gates a sequence of `RX`, `RY`, and `CZ` gates:
+
+  ```python
+  @qml.qfunc_transform
+  def my_transform(tape, x, y):
+      for op in tape.operations + tape.measurements:
+          if op.name == "CRX":
+              wires = op.wires
+              param = op.parameters[0]
+              qml.RX(x * param, wires=wires[1])
+              qml.RY(y * qml.math.sqrt(param), wires=wires[1])
+              qml.CZ(wires=[wires[1], wires[0]])
+          else:
+              op.queue()
+  ```
+
+  We can now use apply this transform to any quantum function:
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  def ansatz(x):
+      qml.Hadamard(wires=0)
+      qml.CRX(x, wires=[0, 1])
+
+  @qml.qnode(dev)
+  def circuit(param, transform_weights):
+      qml.RX(0.1, wires=0)
+
+      # apply the transform to the ansatz
+      my_transform(*transform_weights)(ansatz)(param)
+
+      return qml.expval(qml.PauliZ(1))
+  ```
+
+  We can print this QNode to show that the qfunc transform is taking place:
+
+  ```pycon
+  >>> x = np.array(0.5, requires_grad=True)
+  >>> y = np.array([0.1, 0.2], requires_grad=True)
+  >>> print(qml.draw(circuit)(x, y))
+   0: ──RX(0.1)───H──────────╭Z──┤
+   1: ──RX(0.05)──RY(0.141)──╰C──┤ ⟨Z⟩  
+  ```
+
+  Evaluating the QNode, as well as the derivative, with respect to the gate
+  parameter *and* the transform weights:
+
+  ```pycon
+  >>> circuit(x, y)
+  0.9887793925354269
+  >>> qml.grad(circuit)(x, y)
+  (array(-0.02485651), array([-0.02474011, -0.09954244]))
+  ```
+
 * It is now possible [(1291)](https://github.com/PennyLaneAI/pennylane/pull/1291)
   to create custom Observables and corresponding devices
   whose return type can be an arbitrary object and QNodes using such Observable
