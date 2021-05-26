@@ -14,8 +14,6 @@
 """
 Unit tests for :mod:`fourier` utils functions.
 """
-import numpy as np
-from pennylane.ops import RX
 from pennylane.fourier.utils import format_nvec
 
 
