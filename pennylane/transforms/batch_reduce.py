@@ -80,12 +80,12 @@ def batch_tape_execute(tapes, device, batch_execute=False, parallel=False, **kwa
         if isinstance(device, Sequence):
             raise ValueError("'batch_execute=True' is only supported for a single device.")
 
-        warnings.warn(
-            "'batch_execute=True' currently does not support differentiability when using diff_method='parameter-shift' or 'finite-diff'.",
-            UserWarning,
-        )
+        if any(t.interface is not None for t in tapes):
+            warnings.warn(
+                "'batch_execute=True' currently does not support differentiability when using diff_method='parameter-shift' or 'finite-diff'.",
+                UserWarning,
+            )
 
-        print("here")
         return device.batch_execute(tapes)
 
     if not isinstance(device, Sequence):
