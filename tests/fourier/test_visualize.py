@@ -374,11 +374,11 @@ class TestReturnType:
                 True,
             ),
             (
-                    violin,
-                    coeffs_1D_valid_1,
-                    1,
-                    ax_valid,
-                    False,
+                violin,
+                coeffs_1D_valid_1,
+                1,
+                ax_valid,
+                False,
             ),
             (
                 box,
@@ -387,27 +387,9 @@ class TestReturnType:
                 ax_valid,
                 True,
             ),
-            (
-                    box,
-                    coeffs_1D_valid_1,
-                    1,
-                    ax_valid,
-                False
-            ),
-            (
-                bar,
-                coeffs_1D_valid_1,
-                1,
-                ax_valid,
-                True
-            ),
-            (
-                bar,
-                coeffs_1D_valid_1,
-                1,
-                ax_valid,
-                False
-            ),
+            (box, coeffs_1D_valid_1, 1, ax_valid, False),
+            (bar, coeffs_1D_valid_1, 1, ax_valid, True),
+            (bar, coeffs_1D_valid_1, 1, ax_valid, False),
             (
                 radial_box,
                 coeffs_2D_valid_list,
@@ -415,27 +397,9 @@ class TestReturnType:
                 ax_radial_valid,
                 True,
             ),
-            (
-                    radial_box,
-                    coeffs_2D_valid_list,
-                    2,
-                    ax_radial_valid,
-                    False
-            ),
-            (
-                panel,
-                coeffs_2D_valid_list,
-                2,
-                ax_panel_valid,
-                None
-            ),
-            (
-                panel,
-                coeffs_1D_valid_list,
-                1,
-                ax_panel_1d_valid,
-                None
-            ),
+            (radial_box, coeffs_2D_valid_list, 2, ax_radial_valid, False),
+            (panel, coeffs_2D_valid_list, 2, ax_panel_valid, None),
+            (panel, coeffs_1D_valid_list, 1, ax_panel_1d_valid, None),
         ],
     )
     def test_correct_return_type(self, func, coeffs, n_inputs, ax, show_freqs):
