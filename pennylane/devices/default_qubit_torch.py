@@ -183,20 +183,21 @@ class DefaultQubitTorch(DefaultQubit):
         self._state = self._state.to(self._torch_device)
         self._pre_rotated_state = self._state
 
-    def _asarray(self, a, dtype=None):
+    @staticmethod
+    def _asarray(a, dtype=None):
         if isinstance(a, list):
             if not isinstance(a[0], torch.Tensor):
-                if self._shots is None:
-                    a = [torch.as_tensor(l, device=self._torch_device, dtype=dtype) for l in a]
-                    res = torch.cat([torch.reshape(i, (-1,)) for i in a], dim=0)
-                else:
-                    res = np.asarray(a)
+                # if self._shots is None:
+                #     a = [torch.as_tensor(l, dtype=dtype) for l in a]
+                #     res = torch.cat([torch.reshape(i, (-1,)) for i in a], dim=0)
+                # else:
+                res = np.asarray(a)
                     # a = [torch.as_tensor(l, device=self._torch_device, dtype=dtype) for l in a]
                     # res = torch.cat([torch.reshape(i, (-1,)) for i in a], dim=0)
             else:
                 res = torch.cat([torch.reshape(i, (-1,)) for i in a], dim=0)
         else:
-            res = torch.as_tensor(a, dtype=dtype, device=self._torch_device)
+            res = torch.as_tensor(a, dtype=dtype)
         return res
 
     def _cast(self, a, dtype=None):
