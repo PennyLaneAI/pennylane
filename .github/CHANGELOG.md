@@ -227,10 +227,10 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Improvements</h3>
 
-* The `benchmark` module was deleted, since it was outdated and is superseded by 
+* The `benchmark` module was deleted, since it was outdated and is superseded by
   the new separate [benchmark repository](https://github.com/PennyLaneAI/benchmark).
   [(#1343)](https://github.com/PennyLaneAI/pennylane/pull/1343)
-  
+
 *  A decomposition has been added for the `qml.CSWAP` operation.
   [(#1306)](https://github.com/PennyLaneAI/pennylane/issues/1306)
 
@@ -359,7 +359,7 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 * Removes occurrences of the deprecated device argument ``analytic`` from the documentation.
   [(#1261)](https://github.com/PennyLaneAI/pennylane/pull/1261)
-  
+
 * Updated PyTorch and TensorFlow interface introductions.
   [(#1333)](https://github.com/PennyLaneAI/pennylane/pull/1333)
 
@@ -368,13 +368,7 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 This release contains contributions from (in alphabetical order):
 
 Marius Aglitoiu, Vishnu Ajith, Thomas Bromley, Jack Ceroni, Miruna Daian, Olivia Di Matteo,
-<<<<<<< HEAD
-Tanya Garg, Diego Guala, Anthony Hayes, Josh Izaac, Pavan Jayasinha, Ryan Levy, Nahum Sá, Johannes Jakob Meyer, Brian Shi, Antal Száva, David Wierichs, Vincent Wong, Alberto Maldonado, Ashish Panigrahi
-=======
-Tanya Garg, Christian Gogolin, Diego Guala, Anthony Hayes, Ryan Hill, Josh Izaac, Pavan Jayasinha, Ryan Levy, Nahum Sá, Maria Schuld, 
-Johannes Jakob Meyer, Brian Shi, Antal Száva, David Wierichs, Vincent Wong, Alberto Maldonado.
-
->>>>>>> master
+Tanya Garg, Diego Guala, Anthony Hayes, Josh Izaac, Pavan Jayasinha, Ryan Levy, Nahum Sá, Johannes Jakob Meyer, Brian Shi, Antal Száva, David Wierichs, Vincent Wong, Alberto Maldonado, Ashish Panigrahi.
 
 # Release 0.15.1 (current release)
 
