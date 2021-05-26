@@ -740,9 +740,9 @@ class TestOperations:
         assert res[1].wires == Wires([3])
         assert res[2].wires == Wires([3, 2])
 
-        assert res[0].name == "CNOT"
+        assert res[0].name == "CY"
         assert res[1].name == "RY"
-        assert res[2].name == "CNOT"
+        assert res[2].name == "CY"
 
         mats = []
         for i in reversed(res):
