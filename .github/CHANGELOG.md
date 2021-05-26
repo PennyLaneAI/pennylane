@@ -10,9 +10,7 @@
   For example, one can plot distributions over Fourier series coefficients like 
   this one:
   
-  <img src="https://pennylane.readthedocs.io/en/latest/_images/fourier_vis_violin.png"
-  width=80%></img>
-  
+  <img src="https://pennylane.readthedocs.io/en/latest/_static/fourier.png" width=70%/>
 
 * It is now possible [(1291)](https://github.com/PennyLaneAI/pennylane/pull/1291)
   to create custom Observables and corresponding devices
