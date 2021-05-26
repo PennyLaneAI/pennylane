@@ -80,4 +80,4 @@ from .hamiltonian_expand import hamiltonian_expand
 from .invisible import invisible
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor, metric_tensor_tape
-from .qfunc_transform import make_tape, single_tape_transform, qfunc_transform
+from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
