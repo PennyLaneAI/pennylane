@@ -21,7 +21,7 @@ import warnings
 import pennylane as qml
 
 
-def batch_tape_execution(tapes, device, batch_execute=False, parallel=False):
+def batch_tape_execution(tapes, device, batch_execute=False, parallel=False, **kwargs):
     """Execute a sequence of independent tapes on a device or devices.
 
     Args:
@@ -76,6 +76,7 @@ def batch_tape_execution(tapes, device, batch_execute=False, parallel=False):
         for t, d in zip(tapes, device):
             results.append(dask.delayed(t.execute)(device=d))
 
+        _scheduler = kwargs.pop("scheduler", "threads")
         return dask.compute(*results, scheduler=_scheduler)
 
     return [t.execute(device=d) for t, d in zip(tapes, device)]
