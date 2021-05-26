@@ -32,6 +32,8 @@ If you're interested in claiming a cash prize, the following issue has a $100 bo
 
 You can claim swag prizes by contributing to these other unitaryHACK issues:
 
+[Ensure that MottonenStatePreparation is fully differentiable](https://github.com/PennyLaneAI/pennylane/issues/1361)
+
 [Add search bar for navigating tutorials](https://github.com/PennyLaneAI/pennylane/issues/1296)
 
 [Create a separate requirements file for the CI](https://github.com/PennyLaneAI/pennylane/issues/1292)
