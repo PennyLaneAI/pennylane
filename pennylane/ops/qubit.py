@@ -1812,7 +1812,7 @@ class U3(Operation):
 
 class IsingXX(Operation):
     r"""IsingXX(phi, wires)
-    Ising XX coupling gate
+    The Ising XX coupling gate
 
     .. math:: XX(\phi) = \begin{bmatrix}
             \cos(\phi / 2) & 0 & 0 & -i \sin(\phi / 2) \\
@@ -1869,7 +1869,7 @@ class IsingXX(Operation):
 
 class IsingYY(Operation):
     r"""IsingYY(phi, wires)
-    Ising YY coupling gate
+    The Ising YY coupling gate
 
     .. math:: \mathtt{YY}(\phi) = \begin{bmatrix}
         \cos(\phi / 2) & 0 & 0 & i \sin(\phi / 2) \\
@@ -1929,7 +1929,7 @@ class IsingYY(Operation):
 
 class IsingZZ(Operation):
     r""" IsingZZ(phi, wires)
-    Ising ZZ coupling gate
+    The Ising ZZ coupling gate
 
     .. math:: ZZ(\phi) = \begin{bmatrix}
         e^{-i \phi / 2} & 0 & 0 & 0 \\
