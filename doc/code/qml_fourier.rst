@@ -20,7 +20,7 @@ Computing the Fourier representation
 Visualization
 ^^^^^^^^^^^^^
 
-The visualization functions require the `matplotlib` library to be installed.
+The visualization functions require the ``matplotlib`` library to be installed.
 
 .. autosummary::
     :toctree: api
@@ -252,7 +252,7 @@ One option to plot the distribution is :func:`~.pennylane.fourier.violin`:
 
 |
 
-A similar option is the :func:`~.pennylane.fourier.box`, which
+A similar option is :func:`~.pennylane.fourier.box`, which
 produces a plot of the same format but using a box plot.
 
 A different view can obtained using the

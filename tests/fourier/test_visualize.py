@@ -410,3 +410,9 @@ class TestReturnType:
             res = func(coeffs, n_inputs, ax, show_freqs=show_freqs)
 
         assert isinstance(res, type(ax))
+
+
+def test_panel_n_inputs():
+    """Tests that error is raised if n_inputs not 1 or 2."""
+    with pytest.raises(ValueError, match="Panel plot function accepts input"):
+        panel(coeffs_1D_valid_list, 3, ax_panel_1d_valid)

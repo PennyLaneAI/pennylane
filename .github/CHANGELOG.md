@@ -10,7 +10,7 @@
   For example, one can plot distributions over Fourier series coefficients like 
   this one:
   
-  <img src="https://pennylane.readthedocs.io/en/latest/_static/fourier_vis_violin.png"
+  <img src="https://pennylane.readthedocs.io/en/latest/_images/fourier_vis_violin.png"
   width=80%></img>
   
 

@@ -28,7 +28,10 @@ def coefficients(f, n_inputs, degree, lowpass_filter=False, filter_threshold=Non
     <https://arxiv.org/abs/2008.08605>`__ and `Vidal and Theis, 2019
     <https://arxiv.org/abs/1901.11434>`__.
 
-    Consider a quantum circuit that depends on a parameter vector :math:`x` with
+    **Details**
+
+    Consider a quantum circuit that depends on a
+    parameter vector :math:`x` with
     length :math:`N`. The circuit involves application of some unitary
     operations :math:`U(x)`, and then measurement of an observable
     :math:`\langle \hat{O} \rangle`. Analytically, the expectation value is
