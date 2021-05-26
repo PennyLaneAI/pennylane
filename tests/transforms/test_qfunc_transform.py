@@ -353,7 +353,7 @@ class TestQFuncTransformGradients:
 
     def test_differentiable_qfunc_torch(self, diff_method):
         """Test that a qfunc transform is differentiable when using
-        TensorFlow"""
+        PyTorch"""
         if diff_method == "backprop":
             pytest.skip("Does not support backprop mode")
 
