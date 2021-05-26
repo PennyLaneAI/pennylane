@@ -737,7 +737,7 @@ class TestOperations:
         assert len(res) == 3
 
         assert res[0].wires == Wires([3, 2])
-        assert res[1].wires == Wires([2])
+        assert res[1].wires == Wires([3])
         assert res[2].wires == Wires([3, 2])
 
         assert res[0].name == "CNOT"
