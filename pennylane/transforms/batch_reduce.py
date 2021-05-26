@@ -21,8 +21,14 @@ import warnings
 import pennylane as qml
 
 
-def batch_tape_execution(tapes, device, batch_execute=False, parallel=False, **kwargs):
+def batch_tape_execute(tapes, device, batch_execute=False, parallel=False, **kwargs):
     """Execute a sequence of independent tapes on a device or devices.
+
+    This function helps automate the process of:
+
+    - Submitting a batch of tapes within a single job (if the device supports
+      the ``batch_execute`` method), or
+    - Executing a batch of tapes in parallel across multiple devices.
 
     Args:
         tapes (Sequence[.QuantumTape]): sequence of independent tapes to execute
@@ -41,6 +47,31 @@ def batch_tape_execution(tapes, device, batch_execute=False, parallel=False, **k
     Returns:
         list[float]: a one-dimensional list containing the numerical results corresponding
         to each tape execution
+
+    **Example**
+
+    Consider the following list of tapes:
+
+    .. code-block:: python
+
+        tapes = []
+
+        for x in [0.1, 0.2, 0.3]:
+            with qml.tape.QuantumTape() as tape:
+                qml.Hadamard(wires=0)
+                qml.CNOT(wires=[0, 1])
+                qml.RX(x, wires=0)
+                qml.probs(wires=[0, 1])
+
+            tapes.append(tape)
+
+    We can execute these tapes in a batch using ``batch_tape_execute``:
+
+    >>> dev = qml.device("default.qubit", wires=2)
+    >>> qml.transforms.batch_tape_execute(tapes, dev)
+    [array([[0.49875104, 0.00124896, 0.00124896, 0.49875104]]),
+     array([[0.49501664, 0.00498336, 0.00498336, 0.49501664]]),
+     array([[0.48883412, 0.01116588, 0.01116588, 0.48883412]])]
     """
     if batch_execute and parallel:
         raise ValueError("'batch_execute' and 'parallel' cannot both be set to True.")
@@ -61,7 +92,7 @@ def batch_tape_execution(tapes, device, batch_execute=False, parallel=False, **k
 
     if parallel:
         try:
-            import dask
+            import dask  # pylint: disable=import-outside-toplevel
         except ImportError as e:  # pragma: no cover
             raise ImportError(
                 "Dask must be installed for parallel evaluation. "
@@ -72,6 +103,8 @@ def batch_tape_execution(tapes, device, batch_execute=False, parallel=False, **k
         if not isinstance(device, Sequence):
             # broadcast the single device over all tapes
             device = [device] * len(tapes)
+
+        results = []
 
         for t, d in zip(tapes, device):
             results.append(dask.delayed(t.execute)(device=d))
@@ -111,7 +144,7 @@ def _create_batch_reduce_internal_wrapper(fn, qnode, transform_args, transform_k
         if reduction_fn is None:
             reduction_fn = lambda x: x
 
-        res = batch_tape_execution(
+        res = batch_tape_execute(
             tapes, qnode.device, batch_execute=batch_execute, parallel=parallel
         )
 
