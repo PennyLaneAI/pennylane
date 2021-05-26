@@ -306,3 +306,20 @@ class TestInterfaces:
         obtained_result = coefficients(partial(qnode, weights), 2, 1)
 
         assert np.allclose(obtained_result, self.expected_result)
+
+    def test_coefficients_jax_interface(self):
+        """Test that coefficients are correctly computed when using the JAX interface."""
+        jax = pytest.importorskip("jax")
+
+        # Need to enable float64 support
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
+
+        qnode = qml.QNode(self.circuit, self.dev, interface="jax", diff_method="parameter-shift")
+
+        weights = jax.numpy.array([0.5, 0.2])
+
+        obtained_result = coefficients(partial(qnode, weights), 2, 1)
+
+        assert np.allclose(obtained_result, self.expected_result)
