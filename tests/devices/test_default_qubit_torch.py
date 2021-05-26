@@ -385,33 +385,33 @@ class TestApply:
         expected = func(theta) @ state
         assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
 
-    def test_apply_ops_not_supported(self, mocker, monkeypatch):
-        """Test that when a version of PyTorch before 1.8.1 is used, the _apply_ops dictionary is
-        empty and application of a CNOT gate is performed using _apply_unitary_einsum"""
-        with monkeypatch.context() as m:
-            m.setattr("pennylane.devices.default_qubit_Torch.SUPPORTS_APPLY_OPS", False)
-            dev = DefaultQubitTorch(wires=3)
-            assert dev._apply_ops == {}
+    # def test_apply_ops_not_supported(self, mocker, monkeypatch):
+    #     """Test that when a version of PyTorch before 1.8.1 is used, the _apply_ops dictionary is
+    #     empty and application of a CNOT gate is performed using _apply_unitary_einsum"""
+    #     with monkeypatch.context() as m:
+    #         m.setattr("pennylane.devices.default_qubit_Torch.SUPPORTS_APPLY_OPS", False)
+    #         dev = DefaultQubitTorch(wires=3)
+    #         assert dev._apply_ops == {}
 
-            spy = mocker.spy(DefaultQubitTorch, "_apply_unitary_einsum")
+    #         spy = mocker.spy(DefaultQubitTorch, "_apply_unitary_einsum")
 
-            queue = [qml.CNOT(wires=[1, 2])]
-            dev.apply(queue)
+    #         queue = [qml.CNOT(wires=[1, 2])]
+    #         dev.apply(queue)
 
-            spy.assert_called_once()
+    #         spy.assert_called_once()
 
-    def test_apply_ops_above_8_wires(self, mocker):
-        """Test that when 9 wires are used, the _apply_ops dictionary is empty and application of a
-        CNOT gate is performed using _apply_unitary_einsum"""
-        dev = DefaultQubitTorch(wires=9)
-        assert dev._apply_ops == {}
+    # def test_apply_ops_above_8_wires(self, mocker):
+    #     """Test that when 9 wires are used, the _apply_ops dictionary is empty and application of a
+    #     CNOT gate is performed using _apply_unitary_einsum"""
+    #     dev = DefaultQubitTorch(wires=9)
+    #     assert dev._apply_ops == {}
 
-        spy = mocker.spy(DefaultQubitTorch, "_apply_unitary_einsum")
+    #     spy = mocker.spy(DefaultQubitTorch, "_apply_unitary_einsum")
 
-        queue = [qml.CNOT(wires=[1, 2])]
-        dev.apply(queue)
+    #     queue = [qml.CNOT(wires=[1, 2])]
+    #     dev.apply(queue)
 
-        spy.assert_called_once()
+    #     spy.assert_called_once()
 
     # @pytest.mark.xfail(
     #     raises=torch.errors.UnimplementedError,
