@@ -3,11 +3,11 @@
 <h3>New features since last release</h3>
 
 * Adds a decorator `@qml.qfunc_transform` to easily create a transformation
-  that transforms a quantum function.
+  that modifies the behaviour of a quantum function.
   [(#1315)](https://github.com/PennyLaneAI/pennylane/pull/1315)
 
   For example, consider the following transform, which replaces all
-  `CRX` gates a sequence of `RX`, `RY`, and `CZ` gates:
+  `CRX` gates with a sequence of `RX`, `RY`, and `CZ` gates:
 
   ```python
   @qml.qfunc_transform
@@ -23,7 +23,7 @@
               op.queue()
   ```
 
-  We can now use apply this transform to any quantum function:
+  We can now apply this transform to any quantum function:
 
   ```python
   dev = qml.device("default.qubit", wires=2)

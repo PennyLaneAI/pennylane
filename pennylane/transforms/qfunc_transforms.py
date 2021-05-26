@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains transforms for registering qfunc transforms."""
+"""Contains tools and decorators for registering qfunc transforms."""
 # pylint: disable=too-few-public-methods
 import functools
 import inspect
@@ -160,7 +160,7 @@ class single_tape_transform:
         tape_class = type(tape.__class__.__name__, (NonQueuingTape, tape.__class__), {})
 
         # new_tape, when first created, is of the class (NonQueuingTape, tape.__class__), so that it
-        # doesn't result in a nested tape on the tape
+        # doesn't result in a nested tape
         with tape_class() as new_tape:
             self.transform_fn(tape, *args, **kwargs)
 
