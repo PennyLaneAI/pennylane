@@ -276,6 +276,7 @@ class TestQFuncTransforms:
 # Test transform, ansatz, and qfunc function
 
 
+@pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
 class TestQFuncTransformGradients:
     """Tests for the qfunc_transform decorator differentiability"""
 
@@ -313,11 +314,11 @@ class TestQFuncTransformGradients:
         """Analytic expectation value of the above circuit qfunc"""
         return np.cos(np.sum(b) * np.sqrt(x)) * np.cos(a * x)
 
-    def test_differentiable_qfunc_autograd(self):
+    def test_differentiable_qfunc_autograd(self, diff_method):
         """Test that a qfunc transform is differentiable when using
         autograd"""
         dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(self.circuit, dev, interface="autograd")
+        qnode = qml.QNode(self.circuit, dev, interface="autograd", diff_method=diff_method)
 
         a = np.array(0.5, requires_grad=True)
         b = np.array([0.1, 0.2], requires_grad=True)
@@ -330,12 +331,12 @@ class TestQFuncTransformGradients:
         expected = qml.grad(self.expval)(x, a, b)
         assert all(np.allclose(g, e) for g, e in zip(grad, expected))
 
-    def test_differentiable_qfunc_tf(self):
+    def test_differentiable_qfunc_tf(self, diff_method):
         """Test that a qfunc transform is differentiable when using
         TensorFlow"""
         tf = pytest.importorskip("tensorflow")
         dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(self.circuit, dev, interface="tf")
+        qnode = qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method)
 
         a = tf.Variable(0.5, dtype=tf.float64)
         b = tf.Variable([0.1, 0.2], dtype=tf.float64)
@@ -350,12 +351,15 @@ class TestQFuncTransformGradients:
         expected = qml.grad(self.expval)(x.numpy(), a.numpy(), b.numpy())
         assert all(np.allclose(g, e) for g, e in zip(grad, expected))
 
-    def test_differentiable_qfunc_torch(self):
+    def test_differentiable_qfunc_torch(self, diff_method):
         """Test that a qfunc transform is differentiable when using
         TensorFlow"""
+        if diff_method == "backprop":
+            pytest.skip("Does not support backprop mode")
+
         torch = pytest.importorskip("torch")
         dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(self.circuit, dev, interface="torch")
+        qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
 
         a = torch.tensor(0.5, requires_grad=True)
         b = torch.tensor([0.1, 0.2], requires_grad=True)
@@ -370,3 +374,22 @@ class TestQFuncTransformGradients:
         assert np.allclose(x.grad, expected[0])
         assert np.allclose(a.grad, expected[1])
         assert np.allclose(b.grad, expected[2])
+
+    def test_differentiable_qfunc_jax(self, diff_method):
+        """Test that a qfunc transform is differentiable when using
+        jax"""
+        jax = pytest.importorskip("jax")
+        dev = qml.device("default.qubit", wires=2)
+        qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method)
+
+        a = jax.numpy.array(0.5)
+        b = jax.numpy.array([0.1, 0.2])
+        x = jax.numpy.array(0.543)
+
+        res = qnode(x, a, b)
+        assert np.allclose(res, self.expval(x, a, b))
+
+        grad = jax.grad(qnode, argnums=[0, 1, 2])(x, a, b)
+        expected = qml.grad(self.expval)(np.array(x), np.array(a), np.array(b))
+        print(grad, expected)
+        assert all(np.allclose(g, e) for g, e in zip(grad, expected))
