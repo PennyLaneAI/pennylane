@@ -12,8 +12,6 @@
   
   <img src="https://pennylane.readthedocs.io/en/latest/_static/fourier.png" width=70%/>
 
-  
-
 * It is now possible [(1291)](https://github.com/PennyLaneAI/pennylane/pull/1291)
   to create custom Observables and corresponding devices
   whose return type can be an arbitrary object and QNodes using such Observable
