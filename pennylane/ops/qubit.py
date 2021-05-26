@@ -2968,11 +2968,11 @@ class Projector(Observable):
     The expectation of this observable returns the value
 
     .. math::
-        \braket{P} = |\braketT{\psi}{\i}|^{2}
+        |\langle \psi | i \rangle |^2
 
     corresponding to the probability of measuring the quantum state in the :math:`i` -th eigenstate of the specified :math:`n` qubits.
 
-    For example, the projector :math:`\ket{11}\bra{11}` , or in integer notation :math:`\ket{3}\bra{3}` is created by ```basis_state=np.array([1, 1])```.
+    For example, the projector :math:`\ket{11}\bra{11}` , or in integer notation :math:`\ket{3}\bra{3}` is created by ``basis_state=np.array([1, 1])``.
 
     **Details:**
 
