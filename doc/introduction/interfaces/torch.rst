@@ -1,14 +1,13 @@
 .. _torch_interf:
 
 PyTorch interface
-=================
+==================
 
 In order to use PennyLane in combination with PyTorch, we have to generate PyTorch-compatible
-quantum nodes. A basic ``QNode`` can be translated into a quantum node that interfaces with PyTorch,
-either by using the ``interface='torch'`` flag in the QNode Decorator, or by calling the
-:meth:`QNode.to_torch() <pennylane.qnodes.JacobianQNode.to_torch>` method. Internally, the translation is
-executed by the :func:`~.interfaces.torch.to_torch` function that returns the
-new quantum node object.
+quantum nodes. Such a QNode can be created explicitly using the ``interface='torch'`` keyword in
+the QNode decorator or QNode class constructor. Alternatively, an existing, basic QNode can be
+translated into a quantum node that interfaces with PyTorch by calling the
+:meth:`QNode.to_torch() <pennylane.qnode.QNode.to_torch>` method.
 
 .. note::
 
@@ -21,18 +20,48 @@ new quantum node object.
         import pennylane as qml
         import torch
 
+Using the PyTorch interface is easy in PennyLane --- let's consider a few ways
+it can be done.
 
-Construction via the decorator
-------------------------------
+
+.. _torch_interf_keyword:
+
+Construction via keyword
+------------------------
 
 The :ref:`QNode decorator <intro_vcirc_decorator>` is the recommended way for creating
-a PyTorch-capable QNode in PennyLane. Simply specify the ``interface='torch'`` keyword argument:
+:class:`~.QNode` objects in PennyLane. The only change required to construct a PyTorch-capable
+QNode is to specify the ``interface='torch'`` keyword argument:
 
 .. code-block:: python
 
     dev = qml.device('default.qubit', wires=2)
 
     @qml.qnode(dev, interface='torch')
+    def circuit(phi, theta):
+        qml.RX(phi[0], wires=0)
+        qml.RY(phi[1], wires=1)
+        qml.CNOT(wires=[0, 1])
+        qml.PhaseShift(theta, wires=0)
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
+
+The QNode ``circuit()`` is now a PyTorch-capable QNode, accepting ``torch.tensor`` objects as
+input, and returning ``torch.tensor`` objects. Subclassing from ``torch.autograd.Function``,
+it can now be used like any other PyTorch function:
+
+>>> phi = torch.tensor([0.5, 0.1])
+>>> theta = torch.tensor(0.2)
+>>> circuit(phi, theta)
+tensor([0.8776, 0.6880], dtype=torch.float64)
+
+PyTorch-capable QNodes can also be created using the
+:ref:`QNode class constructor <intro_vcirc_qnode>`:
+
+.. code-block:: python
+
+    dev1 = qml.device('default.qubit', wires=2)
+    dev2 = qml.device('default.mixed', wires=2)
+
     def circuit1(phi, theta):
         qml.RX(phi[0], wires=0)
         qml.RY(phi[1], wires=1)
@@ -40,46 +69,32 @@ a PyTorch-capable QNode in PennyLane. Simply specify the ``interface='torch'`` k
         qml.PhaseShift(theta, wires=0)
         return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
 
-The QNode ``circuit1()`` is now a PyTorch-capable QNode, accepting ``torch.tensor`` objects
-as input, and returning ``torch.tensor`` objects. Subclassing from ``torch.autograd.Function``,
-it can now be used like any other PyTorch function:
+    qnode1 = qml.QNode(circuit1, dev1)
+    qnode2 = qml.QNode(circuit1, dev2, interface='torch')
 
->>> phi = torch.tensor([0.5, 0.1])
->>> theta = torch.tensor(0.2)
->>> circuit1(phi, theta)
+``qnode1()`` is a default NumPy-interfacing QNode, while ``qnode2()`` is a PyTorch-capable
+QNode:
+
+>>> qnode2(phi, theta)
 tensor([0.8776, 0.6880], dtype=torch.float64)
 
-Converting an existing QNode
-----------------------------
 
-Sometimes, it is more convenient to instantiate a :class:`~.QNode` object directly, for example,
-if you would like to reuse the same quantum function across multiple devices, or even
-use different classical interfaces:
+.. _torch_interf_convert:
 
-.. code-block:: python
+Construction from an existing QNode
+-----------------------------------
 
-    dev1 = qml.device('default.qubit', wires=2)
-    dev2 = qml.device('forest.wavefunction', wires=2)
+Let's say we change our mind and now want ``qnode1()`` to interface with PyTorch. We can easily
+perform the conversion by using the :meth:`~.QNode.to_torch` method:
 
-    def circuit2(phi, theta):
-        qml.RX(phi[0], wires=0)
-        qml.RY(phi[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.PhaseShift(theta, wires=0)
-        return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
+>>> qnode1.to_torch()
+>>> qnode1
+<QNode: device='default.mixed', func=circuit1, wires=2, interface=PyTorch>
 
-    qnode1 = qml.QNode(circuit2, dev1)
-    qnode2 = qml.QNode(circuit2, dev2)
+``qnode1()`` is now a PyTorch-capable QNode, as well.
 
-We can convert the default NumPy-interfacing QNode to a PyTorch-interfacing QNode by
-using the :meth:`~.QNode.to_torch` method:
 
->>> qnode1_torch = qnode1.to_torch()
->>> qnode1_torch
-<QNode: device='default.qubit', func=circuit, wires=2, interface=PyTorch>
-
-Internally, the :meth:`QNode.to_torch <qnode.QNode.to_torch>` method uses the
-:func:`TorchQNode <interfaces.torch.TorchQNode>` function to do the conversion.
+.. _pytorch_qgrad:
 
 Quantum gradients using PyTorch
 -------------------------------

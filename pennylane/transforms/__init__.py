@@ -54,6 +54,7 @@ more tapes as well as a classical processing function.
 
     ~transforms.measurement_grouping
     ~transforms.metric_tensor_tape
+    ~transforms.hamiltonian_expand
 
 Decorators and utility functions
 --------------------------------
@@ -74,6 +75,7 @@ from .classical_jacobian import classical_jacobian
 from .control import ControlledOperation, ctrl
 from .decorators import make_tape, single_tape_transform, qfunc_transform, qnode_transform
 from .draw import draw
+from .hamiltonian_expand import hamiltonian_expand
 from .invisible import invisible
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor, metric_tensor_tape

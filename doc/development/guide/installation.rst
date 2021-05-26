@@ -17,6 +17,7 @@ as well as the following Python packages:
 * `toml <https://github.com/uiri/toml>`_
 * `appdirs <https://github.com/ActiveState/appdirs>`_
 * `semantic-version <https://github.com/rbarrois/python-semanticversion>`_ == 2.6
+* `autoray <https://github.com/jcmgray/autoray>`__
 
 The following Python packages are optional:
 
