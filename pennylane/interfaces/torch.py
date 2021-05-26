@@ -26,12 +26,6 @@ from pennylane.queuing import AnnotatedQueue
 COMPLEX_SUPPORT = semantic_version.match(">=1.8.1", torch.__version__)
 
 
-try:
-    if isinstance(res, torch.Tensor):
-       res = res.cpu().numpy()
-except ModuleNotFoundError:
-    pass
-
 def args_to_numpy(args):
     """Converts all Torch tensors in a list to NumPy arrays
 

@@ -921,12 +921,12 @@ class TestQNodeIntegration:
         assert dev.short_name == "default.qubit.torch"
         assert dev.capabilities()["passthru_interface"] == "torch"
 
-    def test_qubit_circuit(self, tol):
+    def test_qubit_circuit(self, tol, torch_device='cpu'):
         """Test that the tensor network plugin provides correct
         result for a simple circuit using the old QNode."""
-        p = torch.tensor(0.543)
+        p = torch.tensor([0.543], device=torch_device)
 
-        dev = qml.device("default.qubit.torch", wires=1)
+        dev = qml.device("default.qubit.torch", wires=1, torch_device=torch_device)
 
         @qml.qnode(dev, interface="torch")
         def circuit(x):
@@ -938,15 +938,15 @@ class TestQNodeIntegration:
         assert circuit.diff_options["method"] == "backprop"
         assert np.isclose(circuit(p).detach(), expected, atol=tol, rtol=0)
 
-    def test_correct_state(self, tol):
+    def test_correct_state(self, tol, torch_device='cpu'):
         """Test that the device state is correct after applying a
         quantum function on the device"""
 
-        dev = qml.device("default.qubit.torch", wires=2)
+        dev = qml.device("default.qubit.torch", wires=2, torch_device=torch_device)
 
         state = dev.state
         expected = np.array([1, 0, 0, 0])
-        assert np.allclose(state.detach(), expected, atol=tol, rtol=0)
+        assert np.allclose(state.detach().cpu(), expected, atol=tol, rtol=0)
 
         @qml.qnode(dev, interface="torch", diff_method="backprop")
         def circuit():
@@ -960,7 +960,7 @@ class TestQNodeIntegration:
         amplitude = np.exp(-1j * np.pi / 8) / np.sqrt(2)
 
         expected = np.array([amplitude, 0, np.conj(amplitude), 0])
-        assert np.allclose(state.detach(), expected, atol=tol, rtol=0)
+        assert np.allclose(state.detach().cpu(), expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("theta", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", single_qubit_param)
@@ -1442,3 +1442,11 @@ class TestHighLevelIntegration:
 
         assert isinstance(grad, torch.Tensor)
         assert grad.shape == weights.shape
+
+
+# class TestGPUSupport:
+#     """Tests for computation on the GPU"""
+
+#     gpu_only = pytest.mark.skipif(torch.cuda.is_available(), reason="requires GPU")
+
+                
