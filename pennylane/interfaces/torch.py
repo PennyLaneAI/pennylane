@@ -23,8 +23,14 @@ import torch
 import pennylane as qml
 from pennylane.queuing import AnnotatedQueue
 
-COMPLEX_SUPPORT = semantic_version.match(">=1.6.0", torch.__version__)
+COMPLEX_SUPPORT = semantic_version.match(">=1.8.1", torch.__version__)
 
+
+try:
+    if isinstance(res, torch.Tensor):
+       res = res.cpu().numpy()
+except ModuleNotFoundError:
+    pass
 
 def args_to_numpy(args):
     """Converts all Torch tensors in a list to NumPy arrays
@@ -285,3 +291,9 @@ class TorchInterface(AnnotatedQueue):
         tape.__class__ = type("TorchQuantumTape", (cls, tape_class), {"dtype": dtype})
         tape._update_trainable_params()
         return tape
+
+try:
+    if isinstance(res, torch.Tensor):
+       res = res.cpu().numpy()
+except ModuleNotFoundError:
+    pass
