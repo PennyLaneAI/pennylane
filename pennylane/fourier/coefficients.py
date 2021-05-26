@@ -71,7 +71,7 @@ def coefficients(f, n_inputs, degree, lowpass_filter=False, filter_threshold=Non
     **Example**
 
     Suppose we have the following quantum function and wish to compute its Fourier
-    coefficients with respect to the variable ``inpt``:
+    coefficients with respect to the variable ``inpt``, which is an array with 2 values:
 
     .. code-block:: python
 
@@ -87,18 +87,26 @@ def coefficients(f, n_inputs, degree, lowpass_filter=False, filter_threshold=Non
 
             return qml.expval(qml.PauliZ(wires='a'))
 
-    We must specify the number of inputs (2), and the maximum desired degree. Based
-    on the underlying theory, we expect the degree to be 1 (frequencies -1, 0, and 1).
+    Unless otherwise specified, the coefficients will be computed for all input
+    values. To compute coefficients with respect to only a subset of the input
+    values, it is necessary to use a wrapper function (e.g.,
+    ``functools.partial``). We do this below, while fixing a value for
+    ``weights``:
+
+    >>> from functools import partial
+    >>> weights = np.array([0.5, 0.2])
+    >>> partial_circuit = partial(circuit, weights)
+
+    Now we must specify the number of inputs, and the maximum desired
+    degree. Based on the underlying theory, we expect the degree to be 1
+    (frequencies -1, 0, and 1).
 
     >>> num_inputs = 2
     >>> degree = 1
 
-    Now we fix a value for ``weights``, and use a partial function so coefficients are
-    computed only with respect to the desired variables:
+    Then we can obtain the coefficients:
 
-    >>> from functools import partial
-    >>> weights = np.array([0.5, 0.2])
-    >>> coeffs = coefficients(partial(circuit, weights), num_inputs, degree)
+    >>> coeffs = coefficients(partial_circuit, num_inputs, degree)
     >>> print(coeffs)
     [[ 0.    +0.j     -0.    +0.j     -0.    +0.j    ]
     [-0.0014-0.022j  -0.3431-0.0408j -0.1493+0.0374j]
@@ -107,12 +115,13 @@ def coefficients(f, n_inputs, degree, lowpass_filter=False, filter_threshold=Non
     If the specified degree is lower than the highest frequency of the function,
     aliasing may occur, and the resultant coefficients will be incorrect as they
     will include components of the series expansion from higher frequencies. In
-    order to mitigate aliasing, there is an option to apply a simple low-pass
-    filter prior to computing the coefficients. Coefficients up to a specified
-    value are computed, and then frequencies higher than the degree are simply
-    removed. This ensures that the coefficients returned will have the correct
-    values, though they may not be the full set of coefficients. If no threshold
-    value is provided, the threshold will be set to ``2 * degree``.
+    order to mitigate aliasing, setting ``lowpass_filter=True`` will apply a
+    simple low-pass filter prior to computing the coefficients. Coefficients up
+    to a specified value are computed, and then frequencies higher than the
+    degree are simply removed. This ensures that the coefficients returned will
+    have the correct values, though they may not be the full set of
+    coefficients. If no threshold value is provided, the threshold will be set
+    to ``2 * degree``.
 
     Consider the circuit below:
 
@@ -140,6 +149,7 @@ def coefficients(f, n_inputs, degree, lowpass_filter=False, filter_threshold=Non
 
     Note that in this case, ``2 * degree`` gives us exactly the maximum coefficient;
     in other situations it may be desirable to set the threshold value explicitly.
+
     """
     if not lowpass_filter:
         return _coefficients_no_filter(f, n_inputs, degree)
