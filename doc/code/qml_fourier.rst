@@ -1,36 +1,14 @@
 qml.fourier
 ===========
 
-This module contains tools for computing Fourier series representations of
-quantum circuits.
 
 .. currentmodule:: pennylane.fourier
 
-Overview
---------
-
-Computing the Fourier representation
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. autosummary::
-    :toctree: api
-
-    coefficients
-
-Visualization
-^^^^^^^^^^^^^
-
-The visualization functions require the ``matplotlib`` library to be installed.
-
-.. autosummary::
-    :toctree: api
-
-    visualize.bar
-    visualize.box
-    visualize.panel
-    visualize.radial_box
-    visualize.violin
-
+.. automodapi:: pennylane.fourier
+    :no-heading:
+    :include-all-objects:
+    :no-inheritance-diagram:
+    :no-inherited-members:
 
 Fourier representation of quantum circuits
 ------------------------------------------
