@@ -70,7 +70,7 @@ represent, potentially leading to greater utility for quantum machine learning
 applications.
 
 Calculating the Fourier coefficients
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------------------
 
 The Fourier coefficients can be numerically calculated with the
 :func:`~.pennylane.fourier.coefficients` function:
@@ -102,7 +102,7 @@ For more details and examples of coefficient calculation, please see the
 documentation for :func:`~.pennylane.fourier.coefficients`.
 
 Fourier coefficient visualization
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+---------------------------------
 
 A key application of the Fourier module is to analyze the *expressivity* of
 classes of quantum circuit families. The set of frequencies in the Fourier
@@ -126,7 +126,7 @@ over Fourier coefficients for a parametrized circuit family.
    below demonstrate how the subplots should be created for each function.
 
 Visualizing a single set of coefficients
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 While all the functions available for visualizing multiple sets of Fourier
 coefficients can be used for a single set, the primary tool for this purpose is
@@ -189,7 +189,7 @@ customization options available:
 
 
 Visualizing multiple sets of coefficients
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Suppose we do not want to visualize the Fourier coefficients for a fixed
 ``weights`` argument in ``circuit_with_weights``, but the distribution over sets
