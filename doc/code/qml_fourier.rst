@@ -106,35 +106,22 @@ The Fourier coefficients can be numerically calculated with the
 
 The inputs to the :func:`~.pennylane.fourier.coefficients` function are
 
-- A QNode containing the variational circuit for which to compute the Fourier coefficients,
+- A function, or QNode containing the variational circuit for which to compute the Fourier coefficients,
 - the length of the input vector, and
 - the maximum frequency for which to calculate the coefficients (also known as
   the *degree*).
 
-.. note::
-
-   For a quantum function of multiple inputs, it may be necessary to use a
-   wrapper function to ensure the Fourier coefficients are calculated with
-   respect to the correct input values (using, e.g., ``functools.partial``).
-
-Internally, the coefficients are computed using numpy's `discrete Fourier
+Internally, the coefficients are computed using NumPy's `discrete Fourier
 transform <https://numpy.org/doc/stable/reference/generated/numpy.fft.fftn.html>`__
 function. The order of the coefficients in the output thus follows the standard
 output ordering, i.e., :math:`[c_0, c_1, c_2, c_{-2}, c_{-1}]`, and similarly
-for multiple dimensions.
+for multiple dimensions. The normalization convention used here corresponds to
+the ``norm="forward"`` option in the NumPy transforms, i.e., the Fourier
+transform over an array of size :math:`N` is rescaled by :math:`1/N`, while the
+inverse Fourier transform is left as-is.
 
-.. note::
-
-   If a frequency lower than the true maximum frequency is used to calculate the
-   coefficients, it is possible that `aliasing
-   <https://en.wikipedia.org/wiki/Aliasing>`__ will be present in the
-   output. The coefficient calculator also contains a simple anti-aliasing
-   filter that will cut off frequencies higher than a given threshold. This can
-   be configured by setting the ``lowpass_filter`` option to ``True``, and optionally
-   specifying the ``frequency_threshold`` argument (if none is specified, 2 times
-   the specified degree will be used as the threshold). See the documentation of
-   :func:`~.pennylane.fourier.coefficients` for an example.
-
+For more details and examples of coefficient calculation, please see the
+documentation for :func:`~.pennylane.fourier.coefficients`.
 
 Fourier coefficient visualization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -152,22 +139,23 @@ over Fourier coefficients for a parametrized circuit family.
 
 .. note::
 
-   Visualization of the Fourier coefficients requires the ``matplotlib`` library.
-   The visualization functions are structured to accept ``matplotlib`` axes as
-   arguments so that additional configuration (such as adding titles, saving,
-   etc.) can be done outside the functions. Many of the plots, however, require
-   a specific number of subplots. The examples below demonstrate how the subplots
-   should be created for each function.
+   Visualization of the Fourier coefficients requires the ``matplotlib``
+   library. As such, visualization functions are contained in the submodule
+   ``pennylane.fourier.visualize``.  The visualization functions are structured
+   to accept ``matplotlib`` axes as arguments so that additional configuration
+   (such as adding titles, saving, etc.) can be done outside the functions. Many
+   of the plots, however, require a specific number of subplots. The examples
+   below demonstrate how the subplots should be created for each function.
 
 Visualizing a single set of coefficients
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 While all the functions available for visualizing multiple sets of Fourier
 coefficients can be used for a single set, the primary tool for this purpose is
-the ``bar`` function. Using the coefficients we obtained in the
+the :func:`~.pennylane.fourier.visualize.bar` function. Using the coefficients we obtained in the
 earlier example,
 
->>> from pennylane.fourier import *
+>>> from pennylane.fourier.visualize import *
 >>> import matplotlib.pyplot as plt
 
 >>> fig, ax = plt.subplots(2, 1, sharex=True, sharey=True) # Set up the axes
@@ -239,7 +227,7 @@ of Fourier coefficients when the weights are randomly sampled. For each
        c = coefficients(partial(circuit_with_weights, weights), 2, degree=2)
        coeffs.append(np.round(c, decimals=8))
 
-One option to plot the distribution is :func:`~.pennylane.fourier.violin`:
+One option to plot the distribution is :func:`~.pennylane.fourier.visualize.violin`:
 
 .. code::
 
@@ -252,11 +240,11 @@ One option to plot the distribution is :func:`~.pennylane.fourier.violin`:
 
 |
 
-A similar option is :func:`~.pennylane.fourier.box`, which
+A similar option is :func:`~.pennylane.fourier.visualize.box`, which
 produces a plot of the same format but using a box plot.
 
 A different view can obtained using the
-:func:`~.pennylane.fourier.radial_box` function. This "rolls up"
+:func:`~.pennylane.fourier.visualize.radial_box` function. This "rolls up"
 the coefficients onto a polar grid. Let us use it to visualize the same set of
 coefficients as above:
 
@@ -290,7 +278,7 @@ recommended to disable the frequency labelling by setting ``show_freqs=False``,
 and hiding box plot fliers as was done above.
 
 Finally, for the special case of 1- or 2-dimensional functions, we can use the
-:func:`~.pennylane.fourier.panel` to plot the distributions of the
+:func:`~.pennylane.fourier.visualize.panel` to plot the distributions of the
 sampled sets of Fourier coefficients on the complex plane.
 
 .. code::
