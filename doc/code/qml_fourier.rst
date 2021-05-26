@@ -239,7 +239,7 @@ of Fourier coefficients when the weights are randomly sampled. For each
        c = coefficients(partial(circuit_with_weights, weights), 2, degree=2)
        coeffs.append(np.round(c, decimals=8))
 
-One option to plot the distribution is :func:`~.pennylane.fourier.violin`:
+One option to plot the distribution is :func:`~.pennylane.fourier.visualize.violin`:
 
 .. code::
 
@@ -252,11 +252,11 @@ One option to plot the distribution is :func:`~.pennylane.fourier.violin`:
 
 |
 
-A similar option is :func:`~.pennylane.fourier.box`, which
+A similar option is :func:`~.pennylane.fourier.visualize.box`, which
 produces a plot of the same format but using a box plot.
 
 A different view can obtained using the
-:func:`~.pennylane.fourier.radial_box` function. This "rolls up"
+:func:`~.pennylane.fourier.visualize.radial_box` function. This "rolls up"
 the coefficients onto a polar grid. Let us use it to visualize the same set of
 coefficients as above:
 
@@ -290,7 +290,7 @@ recommended to disable the frequency labelling by setting ``show_freqs=False``,
 and hiding box plot fliers as was done above.
 
 Finally, for the special case of 1- or 2-dimensional functions, we can use the
-:func:`~.pennylane.fourier.panel` to plot the distributions of the
+:func:`~.pennylane.fourier.visualize.panel` to plot the distributions of the
 sampled sets of Fourier coefficients on the complex plane.
 
 .. code::
