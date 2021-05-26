@@ -15,6 +15,7 @@
 Unit tests for the batch reduce transform decorator.
 """
 
+
 class TestBatchReduceTransforms:
     """Tests for the qnode_transform decorator"""
 

@@ -301,4 +301,3 @@ class TestQFuncTransformGradients:
         assert np.allclose(x.grad, expected[0])
         assert np.allclose(a.grad, expected[1])
         assert np.allclose(b.grad, expected[2])
-
