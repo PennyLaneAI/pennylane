@@ -261,3 +261,48 @@ class TestAntiAliasing:
         coeffs_anti_aliased = coefficients(circuit, len(inpt), degree)
 
         assert np.allclose(coeffs_regular, coeffs_anti_aliased)
+
+
+class TestInterfaces:
+    """Test that coefficients are properly computed when QNodes use different interfaces."""
+
+    @staticmethod
+    def circuit(weights, inpt):
+        qml.RX(weights[0], wires=0)
+        qml.RY(weights[1], wires=1)
+        qml.RY(inpt[0], wires=0)
+        qml.RX(inpt[1], wires=1)
+        qml.CNOT(wires=[1, 0])
+        return qml.expval(qml.PauliZ(0))
+
+    dev = qml.device("default.qubit", wires=2)
+
+    expected_result = np.array(
+        [
+            [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+            [0.0 + 0.0j, 0.21502233 + 0.0j, 0.21502233 + 0.0j],
+            [0.0 + 0.0j, 0.21502233 + 0.0j, 0.21502233 + 0.0j],
+        ]
+    )
+
+    def test_coefficients_tf_interface(self):
+        """Test that coefficients are correctly computed when using the Tensorflow interface."""
+        tf = pytest.importorskip("tensorflow")
+        qnode = qml.QNode(self.circuit, self.dev, interface="tf")
+
+        weights = tf.Variable([0.5, 0.2])
+
+        obtained_result = coefficients(partial(qnode, weights), 2, 1)
+
+        assert np.allclose(obtained_result, self.expected_result)
+
+    def test_coefficients_torch_interface(self):
+        """Test that coefficients are correctly computed when using the PyTorch interface."""
+        torch = pytest.importorskip("torch")
+        qnode = qml.QNode(self.circuit, self.dev, interface="torch")
+
+        weights = torch.tensor([0.5, 0.2])
+
+        obtained_result = coefficients(partial(qnode, weights), 2, 1)
+
+        assert np.allclose(obtained_result, self.expected_result)
