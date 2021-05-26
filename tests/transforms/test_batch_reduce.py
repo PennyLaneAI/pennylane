@@ -35,7 +35,7 @@ class TestBatchReduceTransforms:
                 else:
                     op.queue()
 
-        my_transform = qml.batch_reduce(tape_transform)
+        my_transform = qml.batch_reduce(tape_transform)()
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
@@ -66,7 +66,7 @@ class TestBatchReduceTransforms:
         def my_transform(qnode):
             return [tape_transform(qnode.qtape)], lambda res: qml.math.sqrt(res)
 
-        my_transform = qml.batch_reduce(my_transform)
+        my_transform = qml.batch_reduce(my_transform)()
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
@@ -100,7 +100,7 @@ class TestBatchReduceTransforms:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @my_transform
+        @my_transform()
         @qml.qnode(dev)
         def qnode(x):
             qml.Hadamard(wires=0)

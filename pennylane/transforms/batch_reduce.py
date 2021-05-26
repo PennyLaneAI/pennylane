@@ -236,9 +236,9 @@ def batch_reduce(fn):
     .. code-block:: python
 
         @qml.batch_reduce
-        def my_transform(qnode, x, y):
-            tape1 = tape_transform(qnode.qtape, x)
-            tape2 = tape_transform(qnode.qtape, y)
+        def my_transform(tape, x, y):
+            tape1 = tape_transform(tape, x)
+            tape2 = tape_transform(tape, y)
 
             def processing_fn(results):
                 return qml.math.sum(results)
