@@ -69,10 +69,10 @@ to help build custom QNode, quantum function, and tape transforms:
     ~qfunc_transform
     ~batch_reduce
     ~transforms.make_tape
-    ~transforms.tape_reduction
+    ~transforms.batch_tape_execution
 """
 from .adjoint import adjoint
-from .batch_reduce import batch_reduce, tape_reduction
+from .batch_reduce import batch_reduce, batch_tape_execution
 from .classical_jacobian import classical_jacobian
 from .control import ControlledOperation, ctrl
 from .draw import draw
