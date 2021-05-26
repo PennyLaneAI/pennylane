@@ -13,6 +13,7 @@
 # limitations under the License.
 """Contains transforms for registering batch reductions of tapes and QNodes."""
 # pylint: disable=too-few-public-methods
+from collections.abc import Sequence
 import functools
 import inspect
 import warnings
@@ -52,9 +53,13 @@ def batch_tape_execution(tapes, device, batch_execute=False, parallel=False):
             "'batch_execute=True' currently does not support differentiability.", UserWarning
         )
 
-        res = qnode.device.batch_execute(tapes)
+        return device.batch_execute(tapes)
 
-    elif parallel:
+    if not isinstance(device, Sequence):
+        # broadcast the single device over all tapes
+        device = [device] * len(tapes)
+
+    if parallel:
         try:
             import dask
         except ImportError as e:  # pragma: no cover
@@ -71,12 +76,9 @@ def batch_tape_execution(tapes, device, batch_execute=False, parallel=False):
         for t, d in zip(tapes, device):
             results.append(dask.delayed(t.execute)(device=d))
 
-        res = dask.compute(*results, scheduler=_scheduler)
+        return dask.compute(*results, scheduler=_scheduler)
 
-    else:
-        res = [t.execute(device=qnode.device) for t in tapes]
-
-    return reduction_fn(res)
+    return [t.execute(device=d) for t, d in zip(tapes, device)]
 
 
 def _create_batch_reduce_internal_wrapper(fn, qnode, transform_args, transform_kwargs):
@@ -88,29 +90,31 @@ def _create_batch_reduce_internal_wrapper(fn, qnode, transform_args, transform_k
             f"The object to transform, {qnode}, does not appear " "to be a valid QNode."
         )
 
-    parallel = transform_kwargs.pop("parallel")
-    batch_execute = transform_kwargs.pop("batch_execute")
+    parallel = transform_kwargs.pop("parallel", False)
+    batch_execute = transform_kwargs.pop("batch_execute", False)
 
     @functools.wraps(qnode)
     def internal_wrapper(*args, **kwargs):
         qnode.construct(args, kwargs)
 
-        if isinstance(fn, single_tape_transform):
-            fn = None
+        if isinstance(fn, qml.single_tape_transform):
+            reduction_fn = None
             tapes = fn(qnode.qtape, *transform_args, **transform_kwargs)
         else:
-            tapes, fn = fn(qnode, *transform_args, **transform_kwargs)
+            tapes, reduction_fn = fn(qnode, *transform_args, **transform_kwargs)
 
         if not isinstance(tapes, Sequence):
             # quantum function returned a single tape
             tapes = [tapes]
 
-        if fn is None:
-            fn = lambda x: x
+        if reduction_fn is None:
+            reduction_fn = lambda x: x
 
-        return batch_tape_execution(
+        res = batch_tape_execution(
             tapes, qnode.device, batch_execute=batch_execute, parallel=parallel
         )
+
+        return reduction_fn(res)
 
     internal_wrapper.qnode = qnode
     internal_wrapper.interface = qnode.interface
@@ -260,4 +264,4 @@ def batch_reduce(fn):
         def make_batch_reduce(qnode):
             return _create_batch_reduce_internal_wrapper(fn, qnode, [], {})
 
-    return make_qnode_transform
+    return make_batch_reduce

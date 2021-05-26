@@ -14,6 +14,10 @@
 """
 Unit tests for the batch reduce transform decorator.
 """
+import pytest
+
+import pennylane as qml
+from pennylane import numpy as np
 
 
 class TestBatchReduceTransforms:
