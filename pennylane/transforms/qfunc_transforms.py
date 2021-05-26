@@ -11,41 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains utility functions and decorators for constructing valid transforms."""
+"""Contains transforms for registering qfunc transforms."""
 # pylint: disable=too-few-public-methods
 import functools
 import inspect
-from typing import Tuple, List, Callable
+import warnings
 
 import pennylane as qml
-
-
-AUTO_EXECUTE_NO_PROCESSING = (
-    qml.tape.QuantumTape,
-    List[qml.tape.QuantumTape],
-    Tuple[qml.tape.QuantumTape, None],
-    Tuple[List[qml.tape.QuantumTape], None]
-)
-"""tuple[type]: QNode transform function return types
-for which the decorator will qutomatically execute returned
-tapes. The resulting QNode transform will return a list of floating
-point results per tape to be executed.
-"""
-
-
-AUTO_EXECUTE_PROCESSING = (
-    inspect._empty,
-    Tuple[List[qml.tape.QuantumTape], Callable]
-)
-"""tuple[type]: QNode transform function return types
-for which the decorator will:
-
-- Automatically executes returned tapes
-- Applies post-processing functions
-"""
-
-
-AUTO_EXECUTE = AUTO_EXECUTE_PROCESSING + AUTO_EXECUTE_NO_PROCESSING
 
 
 def make_tape(fn):
@@ -202,7 +174,7 @@ def qfunc_transform(tape_transform):
     """Converts a single tape transform to a quantum function (qfunc) transform.
 
     Args:
-        tape_transform (single_tape_transform): the single tape transform
+        tape_transform (function or single_tape_transform): the single tape transform
             to convert into the qfunc transform.
 
     Returns:
@@ -341,197 +313,3 @@ def qfunc_transform(tape_transform):
 
     make_qfunc_transform.tape_fn = tape_transform
     return make_qfunc_transform
-
-
-def qnode_transform(qnode_transform_fn):
-    """Register a new QNode transform.
-
-    Args:
-        qnode_transform_fn (QNode transform): the QNode transform function
-            to register.
-
-            Allowed QNode transforms must be functions of the following form:
-
-            .. code-block:: python
-
-                def qnode_transform(qnode, *args, **kwargs):
-                    ...
-                    return tapes, processing_fn
-
-            That is, the first argument must be the input QNode to transform,
-            and the function must return a tuple ``(list, function)`` containing:
-
-            * A list of new tapes to execute, and
-            * A processing function with signature ``processing_fn(List[float])``
-              which is applied to the flat list of results from the executed tapes.
-
-            If ``tapes`` is empty, then it is assumed no quantum evaluations
-            are required, and ``processing_fn`` will be passed an empty list.
-
-    Returns:
-        function: A hybrid quantum-classical function. Takes the same input arguments as
-        the input QNode.
-
-    **Example**
-
-    Given a simple tape transform, that replaces the :class:`~.CRX` gate with a
-    :class:`~.RY` and :class:`~.CZ` operation,
-
-    .. code-block:: python
-
-        @qml.single_tape_transform
-        def tape_transform(tape, x):
-            for op in tape.operations + tape.measurements:
-                if op.name == "CRX":
-                    qml.RY(op.parameters[0] * qml.math.sqrt(x), wires=op.wires[1])
-                    qml.CZ(wires=op.wires)
-                else:
-                    op.queue()
-
-    let's build a QNode transform that applies this transform twice with different
-    transform parameters to create two tapes, and then sum the results:
-
-    .. code-block:: python
-
-        @qml.qnode_transform
-        def my_transform(qnode, x, y):
-            tape1 = tape_transform(qnode.qtape, x)
-            tape2 = tape_transform(qnode.qtape, y)
-
-            def processing_fn(results):
-                return qml.math.sum(results)
-
-            return [tape1, tape2], processing_fn
-
-    It can then be used to transform an existing QNode:
-
-    .. code-block:: python
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @my_transform(0.7, 0.8)
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.Hadamard(wires=0)
-            qml.CRX(x, wires=[0, 1])
-            return qml.expval(qml.PauliZ(1))
-
-    >>> circuit(0.6)
-    1.7360468658221193
-
-    Not only is the transformed QNode fully differentiable, but the QNode transform
-    parameters *themselves* are differentiable:
-
-    .. code-block:: python
-
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.Hadamard(wires=0)
-            qml.CRX(x, wires=[0, 1])
-            return qml.expval(qml.PauliZ(1))
-
-        def cost_fn(x, transform_weights):
-            transform_fn = my_transform(*transform_weights)(circuit)
-            return transform_fn(x)
-
-    Evaluating the transform, as well as the derivative, with respect to the gate
-    parameter *and* the transform weights:
-
-    >>> x = np.array(0.6, requires_grad=True)
-    >>> transform_weights = np.array([0.7, 0.8], requires_grad=True)
-    >>> cost_fn(x, transform_weights)
-    1.7360468658221193
-    >>> qml.grad(cost_fn)(x, transform_weights)
-    (array(-0.85987045), array([-0.17253469, -0.17148357]))
-    """
-    if not callable(qnode_transform_fn):
-        raise ValueError(
-            "The qnode_transform decorator can only be applied "
-            "to valid Python functions or callables."
-        )
-
-    sig = inspect.signature(qnode_transform_fn)
-    params = sig.parameters
-
-    if isinstance(qnode_transform_fn, single_tape_transform):
-        auto_execute = True
-        post_process = False
-    else:
-        # determine from the return annotation if the QNode transform
-        # returns tapes that should be autoexecuted by the decorator
-        auto_execute = sig.return_annotation in AUTO_EXECUTE
-        post_process = auto_execute and sig.return_annotation in AUTO_EXECUTE_PROCESSING
-
-    if len(params) > 1:
-
-        @functools.wraps(qnode_transform_fn)
-        def make_qnode_transform(*targs, **tkwargs):
-            def wrapper(qnode):
-
-                if not isinstance(qnode, qml.QNode):
-                    raise ValueError(
-                        f"The object to transform, {qnode}, does not appear "
-                        "to be a valid QNode."
-                    )
-
-                @functools.wraps(qnode)
-                def internal_wrapper(*args, **kwargs):
-                    qnode.construct(args, kwargs)
-
-                    if auto_execute and not post_process:
-                        tapes = qnode_transform_fn(qnode.qtape, *targs, **tkwargs)
-
-                        if isinstance(tapes, tuple) and tapes[-1] is None:
-                            # quantum function returned a tuple (tapes(s), None)
-                            tapes = tapes[0]
-
-                        if not isinstance(tapes, Sequence):
-                            # quantum function returned a single tape
-                            tapes = [tapes]
-
-                        return [t.execute(device=qnode.device) for t in tapes]
-
-                    if auto_execute:
-                        tapes, fn = qnode_transform_fn(qnode, *targs, **tkwargs)
-                        res = [t.execute(device=qnode.device) for t in tapes]
-                        return fn(res)
-
-
-
-                internal_wrapper.qnode = qnode
-                internal_wrapper.interface = qnode.interface
-                internal_wrapper.device = qnode.device
-                return internal_wrapper
-
-            return wrapper
-
-    elif len(params) == 1:
-
-        @functools.wraps(qnode_transform_fn)
-        def make_qnode_transform(qnode):
-
-            if not isinstance(qnode, qml.QNode):
-                raise ValueError(
-                    f"The object to transform, {qnode}, does not appear "
-                    "to be a valid QNode."
-                )
-
-            @functools.wraps(qnode)
-            def internal_wrapper(*args, **kwargs):
-                qnode.construct(args, kwargs)
-
-                if isinstance(qnode_transform_fn, single_tape_transform):
-                    fn = lambda x: x
-                    tapes = [qnode_transform_fn(qnode.qtape)]
-                else:
-                    tapes, fn = qnode_transform_fn(qnode)
-
-                res = [t.execute(device=qnode.device) for t in tapes]
-                return fn(res)
-
-            internal_wrapper.qnode = qnode
-            internal_wrapper.interface = qnode.interface
-            internal_wrapper.device = qnode.device
-            return internal_wrapper
-
-    return make_qnode_transform

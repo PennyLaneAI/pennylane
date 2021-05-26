@@ -67,15 +67,17 @@ to help build custom QNode, quantum function, and tape transforms:
 
     ~single_tape_transform
     ~qfunc_transform
-    ~qnode_transform
+    ~batch_reduce
     ~transforms.make_tape
+    ~transforms.tape_reduction
 """
 from .adjoint import adjoint
+from .batch_reduce import batch_reduce, tape_reduction
 from .classical_jacobian import classical_jacobian
 from .control import ControlledOperation, ctrl
-from .decorators import make_tape, single_tape_transform, qfunc_transform, qnode_transform
 from .draw import draw
 from .hamiltonian_expand import hamiltonian_expand
 from .invisible import invisible
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor, metric_tensor_tape
+from .qfunc_transform import make_tape, single_tape_transform, qfunc_transform
