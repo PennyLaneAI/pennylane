@@ -164,6 +164,8 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 * Ising XX gate functionality added. [(#1194)](https://github.com/PennyLaneAI/pennylane/pull/1194)
 
+* Added Projector observable to default_qubit device. [(#1356)](https://github.com/PennyLaneAI/pennylane/pull/1356)
+
 <h3>Improvements</h3>
 
 * The `qml.inv()` function is now deprecated with a warning to use the more general `qml.adjoint()`.
