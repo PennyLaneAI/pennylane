@@ -49,6 +49,7 @@ from pennylane.transforms import (
     measurement_grouping,
     metric_tensor,
     qfunc_transform,
+    batch_reduce,
     single_tape_transform,
 )
 from pennylane.utils import inv
