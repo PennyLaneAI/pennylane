@@ -285,9 +285,3 @@ class TorchInterface(AnnotatedQueue):
         tape.__class__ = type("TorchQuantumTape", (cls, tape_class), {"dtype": dtype})
         tape._update_trainable_params()
         return tape
-
-try:
-    if isinstance(res, torch.Tensor):
-       res = res.cpu().numpy()
-except ModuleNotFoundError:
-    pass
