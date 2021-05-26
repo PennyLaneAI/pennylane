@@ -81,9 +81,11 @@ def batch_tape_execute(tapes, device, batch_execute=False, parallel=False, **kwa
             raise ValueError("'batch_execute=True' is only supported for a single device.")
 
         warnings.warn(
-            "'batch_execute=True' currently does not support differentiability.", UserWarning
+            "'batch_execute=True' currently does not support differentiability when using diff_method='parameter-shift' or 'finite-diff'.",
+            UserWarning,
         )
 
+        print("here")
         return device.batch_execute(tapes)
 
     if not isinstance(device, Sequence):
@@ -127,15 +129,25 @@ def _create_batch_reduce_internal_wrapper(fn, qnode, transform_args, transform_k
     parallel = transform_kwargs.pop("parallel", False)
     batch_execute = transform_kwargs.pop("batch_execute", False)
 
+    params = inspect.signature(fn).parameters
+    first_parameter = list(params.values())[0]
+
     @functools.wraps(qnode)
     def internal_wrapper(*args, **kwargs):
         qnode.construct(args, kwargs)
+
+        if first_parameter.name == "tape" or isinstance(
+            first_parameter.annotation, qml.tape.QuantumTape
+        ):
+            transform_input = qnode.qtape
+        else:
+            transform_input = qnode
 
         if isinstance(fn, qml.single_tape_transform):
             reduction_fn = None
             tapes = fn(qnode.qtape, *transform_args, **transform_kwargs)
         else:
-            tapes, reduction_fn = fn(qnode, *transform_args, **transform_kwargs)
+            tapes, reduction_fn = fn(transform_input, *transform_args, **transform_kwargs)
 
         if not isinstance(tapes, Sequence):
             # quantum function returned a single tape
@@ -172,12 +184,12 @@ def batch_reduce(fn):
 
             .. code-block:: python
 
-                def my_custom_reduction(qnode, *args, **kwargs):
+                def my_custom_reduction(qnode or tape, *args, **kwargs):
                     ...
                     return tapes, processing_fn
 
-            That is, the first argument must be the input QNode to transform,
-            and the function must return a tuple ``(list, function)`` containing:
+            That is, the first argument must be the input QNode (or quantum tape) to transform, and
+            the function must return a tuple ``(list, function)`` containing:
 
             * A list of new tapes to execute in a batch, and
             * A processing function with signature ``processing_fn(List[float])``
@@ -280,22 +292,11 @@ def batch_reduce(fn):
             "to valid Python functions or callables."
         )
 
-    sig = inspect.signature(fn)
-    params = sig.parameters
+    @functools.wraps(fn)
+    def make_batch_reduce(*targs, **tkwargs):
+        def wrapper(qnode):
+            return _create_batch_reduce_internal_wrapper(fn, qnode, targs, tkwargs)
 
-    if len(params) > 1:
-
-        @functools.wraps(fn)
-        def make_batch_reduce(*targs, **tkwargs):
-            def wrapper(qnode):
-                return _create_batch_reduce_internal_wrapper(fn, qnode, targs, tkwargs)
-
-            return wrapper
-
-    elif len(params) == 1:
-
-        @functools.wraps(fn)
-        def make_batch_reduce(qnode):
-            return _create_batch_reduce_internal_wrapper(fn, qnode, [], {})
+        return wrapper
 
     return make_batch_reduce
