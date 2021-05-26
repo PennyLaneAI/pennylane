@@ -188,7 +188,7 @@ def batch_reduce(fn):
 
     Returns:
         function: A hybrid quantum-classical function. Takes the same input arguments as
-        the input QNode, as well as two additional experimental keyword arguments:
+        the input QNode, as well as two additional **experimental** keyword arguments:
 
         * **batch_execute=False** (``bool``): If set to ``True``, the batch of tapes will
           be executed via the QNode devices' ``batch_execute`` method. This can see significant
