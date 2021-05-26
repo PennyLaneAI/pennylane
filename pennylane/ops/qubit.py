@@ -2906,14 +2906,16 @@ class Hermitian(Observable):
 
 class Projector(Observable):
     r"""Projector(basis_state, wires)
-    The basis state observable :math:`P=\ket{i}\bra{i}`.
+    The basis state observable :math:`P=\ket{i}\bra{i}` .
 
     The expectation of this observable returns the value
 
     .. math::
         \braket{P} = |\braketT{\psi}{\i}|^{2}
 
-    corresponding to the probability of measuring the quantum state in the :math:`i` -th eigenstate.
+    corresponding to the probability of measuring the quantum state in the :math:`i` -th eigenstate of the specified :math:`n` qubits.
+
+    For example, the projector :math:`\ket{11}\bra{11}` , or in integer notation :math:`\ket{3}\bra{3}` is created by ```basis_state=np.array([1, 1])```.
 
     **Details:**
 
@@ -2923,7 +2925,7 @@ class Projector(Observable):
 
     Args:
         basis_state (tensor-like): binary input of shape ``(n, )``
-        wires (Iterable): wires that the template acts on
+        wires (Iterable): wires that the projector acts on
     """
     num_wires = AnyWires
     num_params = 1

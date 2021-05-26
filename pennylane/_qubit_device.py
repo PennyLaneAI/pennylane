@@ -109,7 +109,7 @@ class QubitDevice(Device):
         new_array[indices] = array
         return new_array
 
-    observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}
+    observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity", "Projector"}
 
     def __init__(self, wires=1, shots=None, cache=0, analytic=None):
         super().__init__(wires=wires, shots=shots, analytic=analytic)
