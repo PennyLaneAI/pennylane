@@ -471,8 +471,8 @@ class TestTapeConstruction:
 
         result = draw(circuit)(p1=x, p3=z)
         expected = """\
- 0: ──RX(0.1)───RX(0.4)──╭C──╭┤ ⟨Z ⊗ X⟩
- 1: ──RY(0.06)───────────╰X──╰┤ ⟨Z ⊗ X⟩
+ 0: ──RX(0.1)───RX(0.4)──╭C──╭┤ ⟨Z ⊗ X⟩ 
+ 1: ──RY(0.06)───────────╰X──╰┤ ⟨Z ⊗ X⟩ 
 """
 
         assert result == expected
@@ -497,8 +497,8 @@ class TestTapeConstruction:
 
         result = draw(circuit, charset="ascii")(p1=x, p2=y, p3=z)
         expected = """\
- 0: --RX(0.1)---RX(0.4)--+C--+| <Z @ X>
- 1: --RY(0.06)-----------+X--+| <Z @ X>
+ 0: --RX(0.1)---RX(0.4)--+C--+| <Z @ X> 
+ 1: --RY(0.06)-----------+X--+| <Z @ X> 
 """
 
         assert result == expected
@@ -525,8 +525,8 @@ class TestTapeConstruction:
 
         result = circuit.draw()
         expected = """\
- 0: ──RX(0.1)───RX(0.4)──╭C──╭┤ ⟨Z ⊗ X⟩
- 1: ──RY(0.06)───────────╰X──╰┤ ⟨Z ⊗ X⟩
+ 0: ──RX(0.1)───RX(0.4)──╭C──╭┤ ⟨Z ⊗ X⟩ 
+ 1: ──RY(0.06)───────────╰X──╰┤ ⟨Z ⊗ X⟩ 
 """
 
         assert result == expected
@@ -553,8 +553,8 @@ class TestTapeConstruction:
 
         result = circuit.draw(charset="ascii")
         expected = """\
- 0: --RX(0.1)---RX(0.4)--+C--+| <Z @ X>
- 1: --RY(0.06)-----------+X--+| <Z @ X>
+ 0: --RX(0.1)---RX(0.4)--+C--+| <Z @ X> 
+ 1: --RY(0.06)-----------+X--+| <Z @ X> 
 """
 
         assert result == expected
