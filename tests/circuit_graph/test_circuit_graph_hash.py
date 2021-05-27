@@ -29,7 +29,11 @@ class TestCircuitGraphHash:
     numeric_queues = [
         ([qml.RX(0.3, wires=[0])], [], "RX!0.3![0]|||"),
         (
-            [qml.RX(0.3, wires=[0]), qml.RX(0.4, wires=[1]), qml.RX(0.5, wires=[2]),],
+            [
+                qml.RX(0.3, wires=[0]),
+                qml.RX(0.4, wires=[1]),
+                qml.RX(0.5, wires=[2]),
+            ],
             [],
             "RX!0.3![0]RX!0.4![1]RX!0.5![2]|||",
         ),

@@ -1078,7 +1078,9 @@ class QuantumTape(AnnotatedQueue):
             str: the circuit representation of the tape
         """
         return self.graph.draw(
-            charset=charset, wire_order=wire_order, show_all_wires=show_all_wires,
+            charset=charset,
+            wire_order=wire_order,
+            show_all_wires=show_all_wires,
         )
 
     def to_openqasm(self, wires=None, rotations=True):

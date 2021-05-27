@@ -32,7 +32,6 @@ from pennylane.operation import DiagonalOperation
 from pennylane.devices import torch_ops
 from . import DefaultQubit
 
-
 ABC_ARRAY = np.array(list(ABC))
 
 
@@ -73,7 +72,7 @@ class DefaultQubitTorch(DefaultQubit):
      res = circuit(weights)
      res.backward()
     >>> print(weights.grad)
-    tensor([-2.2527e-01, -1.0086e+00,  1.3878e-17])
+     tensor([-2.2527e-01, -1.0086e+00,  1.3878e-17])
 
     Autograd mode will also work when using classical backpropagation:
 
@@ -88,17 +87,19 @@ class DefaultQubitTorch(DefaultQubit):
     and therefore providing an acceleration. Your parameters need to be instantiated on the same
     device as the backend device.
 
-    >>> dev = qml.device("default.qubit.torch", wires=1, torch_device='cuda')
-    >>> @qml.qnode(dev, interface="torch", diff_method="backprop")
-    ... def circuit(x):
-    ...     qml.RX(x[1], wires=0)
-    ...     qml.Rot(x[0], x[1], x[2], wires=0)
-    ...     return qml.expval(qml.PauliZ(0))
-    >>> weights = torch.tensor([0.2, 0.5, 0.1], requires_grad=True, device='cuda')
-    >>> res = circuit(weights)
-    >>> res.backward()
+    .. code-block:: python
+
+     dev = qml.device("default.qubit.torch", wires=1, torch_device='cuda')
+     @qml.qnode(dev, interface="torch", diff_method="backprop")
+     def circuit(x):
+        qml.RX(x[1], wires=0)
+        qml.Rot(x[0], x[1], x[2], wires=0)
+        return qml.expval(qml.PauliZ(0))
+     weights = torch.tensor([0.2, 0.5, 0.1], requires_grad=True, device='cuda')
+     res = circuit(weights)
+     res.backward()
     >>> print(weights.grad)
-    tensor([-2.2527e-01, -1.0086e+00,  1.3878e-17])
+     tensor([-2.2527e-01, -1.0086e+00,  1.3878e-17])
 
 
 
@@ -119,7 +120,7 @@ class DefaultQubitTorch(DefaultQubit):
 
 
     Args:
-         wires (int, Iterable): Number of subsystems represented by the device,
+        wires (int, Iterable): Number of subsystems represented by the device,
             or iterable that contains unique labels for the subsystems. Default 1 if not specified.
         shots (None, int): How many times the circuit should be evaluated (or sampled) to estimate
             the expectation values. Defaults to ``None`` if not specified, which means
@@ -273,7 +274,6 @@ class DefaultQubitTorch(DefaultQubit):
         if isinstance(unitary, DiagonalOperation):
             return self._asarray(unitary.eigvals, dtype=self.C_DTYPE)
         return self._asarray(unitary.matrix, dtype=self.C_DTYPE)
-
 
     def sample_basis_states(self, number_of_states, state_probability):
         """Sample from the computational basis states based on the state

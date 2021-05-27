@@ -327,7 +327,9 @@ class TestTapeConstruction:
             @classmethod
             def capabilities(cls):
                 capabilities = super().capabilities().copy()
-                capabilities.update(provides_jacobian=True,)
+                capabilities.update(
+                    provides_jacobian=True,
+                )
                 return capabilities
 
             def jacobian(self, *args, **kwargs):
