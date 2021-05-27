@@ -115,9 +115,7 @@ class ReversibleTape(JacobianTape):
         )
 
         einsum_str = "{vec1_indices},{obs_indices},{vec2_indices}->".format(
-            vec1_indices=vec1_indices,
-            obs_indices=obs_indices,
-            vec2_indices=vec2_indices,
+            vec1_indices=vec1_indices, obs_indices=obs_indices, vec2_indices=vec2_indices,
         )
 
         return np.einsum(einsum_str, np.conj(vec1), mat, vec2)

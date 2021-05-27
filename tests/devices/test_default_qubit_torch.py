@@ -130,8 +130,7 @@ def test_analytic_deprecation():
     msg += "Please use shots=None instead of analytic=True."
 
     with pytest.raises(
-        DeviceError,
-        match=msg,
+        DeviceError, match=msg,
     ):
         qml.device("default.qubit.torch", wires=1, shots=1, analytic=True)
 
@@ -921,7 +920,7 @@ class TestQNodeIntegration:
         assert dev.short_name == "default.qubit.torch"
         assert dev.capabilities()["passthru_interface"] == "torch"
 
-    def test_qubit_circuit(self, tol, torch_device='cpu'):
+    def test_qubit_circuit(self, tol, torch_device="cpu"):
         """Test that the tensor network plugin provides correct
         result for a simple circuit using the old QNode."""
         p = torch.tensor([0.543], device=torch_device)
@@ -938,7 +937,7 @@ class TestQNodeIntegration:
         assert circuit.diff_options["method"] == "backprop"
         assert np.isclose(circuit(p).detach(), expected, atol=tol, rtol=0)
 
-    def test_correct_state(self, tol, torch_device='cpu'):
+    def test_correct_state(self, tol, torch_device="cpu"):
         """Test that the device state is correct after applying a
         quantum function on the device"""
 
@@ -1116,7 +1115,7 @@ class TestPassthruIntegration:
                 qml.RY(x[i + 1], wires=1)
             for i in range(2):
                 qml.CNOT(wires=[i, i + 1])
-            return qml.expval(qml.PauliZ(0))#, qml.var(qml.PauliZ(1))
+            return qml.expval(qml.PauliZ(0))  # , qml.var(qml.PauliZ(1))
 
         dev1 = qml.device("default.qubit.torch", wires=3)
         dev2 = qml.device("default.qubit", wires=3)
@@ -1166,7 +1165,6 @@ class TestPassthruIntegration:
 
         a = torch.tensor([0.54], requires_grad=True)
         b = torch.tensor([0.12], requires_grad=True)
-
 
         # get the probability of wire 1
         prob_wire_1 = circuit(a, b)
@@ -1298,9 +1296,13 @@ class TestPassthruIntegration:
         def circuit(x, w=None):
             qml.RZ(x, wires=w)
             return qml.expval(qml.PauliX(w))
+
         with pytest.raises(Exception) as e:
             assert qml.qnode(dev, diff_method="autograd", interface=interface)(circuit)
-        assert str(e.value) == "Differentiation method autograd not recognized. Allowed options are ('best', 'parameter-shift', 'backprop', 'finite-diff', 'device', 'reversible', 'adjoint')."
+        assert (
+            str(e.value)
+            == "Differentiation method autograd not recognized. Allowed options are ('best', 'parameter-shift', 'backprop', 'finite-diff', 'device', 'reversible', 'adjoint')."
+        )
 
 
 class TestSamples:
@@ -1430,7 +1432,9 @@ class TestHighLevelIntegration:
 
         assert qnodes.interface == "torch"
 
-        weights = torch.tensor(qml.init.strong_ent_layers_normal(n_wires=2, n_layers=2), requires_grad=True)
+        weights = torch.tensor(
+            qml.init.strong_ent_layers_normal(n_wires=2, n_layers=2), requires_grad=True
+        )
 
         def cost(weights):
             return torch.sum(qnodes(weights))
