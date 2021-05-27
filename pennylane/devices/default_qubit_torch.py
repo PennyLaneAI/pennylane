@@ -164,7 +164,11 @@ class DefaultQubitTorch(DefaultQubit):
     _reshape = staticmethod(torch.reshape)
     _roll = staticmethod(torch.roll)
     _stack = staticmethod(lambda arrs, axis=0, out=None: torch.stack(arrs, axis=axis, out=out))
-    _tensordot = staticmethod(lambda a, b, axes: torch.tensordot(a, b, dims=axes))
+    _tensordot = staticmethod(
+        lambda a, b, axes: torch.tensordot(
+            a, b, axes if isinstance(axes, int) else tuple(map(list, axes))
+        )
+    )
     _transpose = staticmethod(lambda a, axes=None: a.permute(*axes))
     _asnumpy = staticmethod(lambda x: x.cpu().numpy())
     _conj = staticmethod(torch.conj)
@@ -271,31 +275,6 @@ class DefaultQubitTorch(DefaultQubit):
             return self._asarray(unitary.eigvals, dtype=self.C_DTYPE)
         return self._asarray(unitary.matrix, dtype=self.C_DTYPE)
 
-    def _apply_unitary(self, state, mat, wires):
-        r"""Apply multiplication of a matrix to subsystems of the quantum state.
-
-        Args:
-            state (torch.Tensor[complex]): input state
-            mat (torch.Tensor): matrix to multiply
-            wires (Wires): target wires
-
-        Returns:
-            torch.Tensor[complex]: output state
-        """
-        # translate to wire labels used by device
-        device_wires = self.map_wires(wires)
-        mat = self._cast(self._reshape(mat, [2] * len(device_wires) * 2), dtype=self.C_DTYPE)
-        # CHANGE w.t.r default.qubit axes in format (list, ...) instead of (array, ...)
-        axes = (list(np.arange(len(device_wires), 2 * len(device_wires))), device_wires)
-        tdot = self._tensordot(mat, state, axes=axes)
-        # tensordot causes the axes given in `wires` to end up in the first positions
-        # of the resulting tensor. This corresponds to a (partial) transpose of
-        # the correct output state
-        # We'll need to invert this permutation to put the indices in the correct place
-        unused_idxs = [idx for idx in range(self.num_wires) if idx not in device_wires]
-        perm = list(device_wires) + unused_idxs
-        inv_perm = np.argsort(perm)  # argsort gives inverse permutation
-        return self._transpose(tdot, inv_perm)
 
     def sample_basis_states(self, number_of_states, state_probability):
         """Sample from the computational basis states based on the state

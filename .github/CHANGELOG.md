@@ -322,6 +322,9 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Bug fixes</h3>
 
+* Fixes drawing QNodes that contain multiple measurements on a single wire.
+  [(#1353)](https://github.com/PennyLaneAI/pennylane/pull/1353)
+
 * Fixes drawing QNodes with no operations.
   [(#1354)](https://github.com/PennyLaneAI/pennylane/pull/1354)
 
