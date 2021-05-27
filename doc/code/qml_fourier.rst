@@ -1,14 +1,28 @@
 qml.fourier
 ===========
 
-
 .. currentmodule:: pennylane.fourier
+
+Overview
+--------
 
 .. automodapi:: pennylane.fourier
     :no-heading:
     :include-all-objects:
     :no-inheritance-diagram:
     :no-inherited-members:
+
+Visualization
+^^^^^^^^^^^^^
+
+.. autosummary::
+
+    visualize.bar
+    visualize.box
+    visualize.panel
+    visualize.radial_box
+    visualize.violin
+
 
 Fourier representation of quantum circuits
 ------------------------------------------
@@ -102,7 +116,7 @@ For more details and examples of coefficient calculation, please see the
 documentation for :func:`~.pennylane.fourier.coefficients`.
 
 Fourier coefficient visualization
----------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 A key application of the Fourier module is to analyze the *expressivity* of
 classes of quantum circuit families. The set of frequencies in the Fourier
