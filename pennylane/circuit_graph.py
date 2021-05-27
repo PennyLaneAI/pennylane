@@ -183,7 +183,7 @@ class CircuitGraph:
 
         # Required to keep track if we need to handle multiple returned
         # observables per wire
-        self._max_measure_per_wire = None
+        self._max_simultaneous_measurements = None
 
     def print_contents(self):
         """Prints the contents of the quantum circuit."""
@@ -498,7 +498,7 @@ class CircuitGraph:
 
         observables = OrderedDict()
 
-        if self.max_measure_per_wire == 1:
+        if self.max_simultaneous_measurements == 1:
 
             # There is a single measurement
             for wire in sorted(self._grid):
@@ -517,10 +517,10 @@ class CircuitGraph:
 
             # There are multiple measurements
             for wire in sorted(self._grid):
-                mp_map = dict(zip(self.observables, range(self.max_measure_per_wire)))
+                mp_map = dict(zip(self.observables, range(self.max_simultaneous_measurements)))
 
                 # Initialize to None everywhere
-                observables[wire] = [None] * self.max_measure_per_wire
+                observables[wire] = [None] * self.max_simultaneous_measurements
 
                 for op in self._grid[wire]:
                     if is_returned_observable(op):
@@ -643,7 +643,7 @@ class CircuitGraph:
         return nx.has_path(self._graph, a, b)
 
     @property
-    def max_measure_per_wire(self):
+    def max_simultaneous_measurements(self):
         """Returns the maximum number of measurements on any wire in the circuit graph.
 
         This method counts the number of measurements for each wire and returns
@@ -660,7 +660,7 @@ class CircuitGraph:
         >>> qnode = qml.QNode(circuit_measure_max_once, dev)
 
         >>> qnode()
-        >>> qnode.qtape.graph.max_measure_per_wire
+        >>> qnode.qtape.graph.max_simultaneous_measurements
         1
 
         >>> def circuit_measure_max_twice():
@@ -669,13 +669,13 @@ class CircuitGraph:
         >>> qnode = qml.QNode(circuit_measure_max_twice, dev)
 
         >>> qnode()
-        >>> qnode.qtape.graph.max_measure_per_wire
+        >>> qnode.qtape.graph.max_simultaneous_measurements
         2
 
         Returns:
             int: the maximum number of measurements
         """
-        if self._max_measure_per_wire is None:
+        if self._max_simultaneous_measurements is None:
             all_wires = []
 
             for obs in self.observables:
@@ -683,7 +683,7 @@ class CircuitGraph:
 
             a = np.array(all_wires)
             _, counts = np.unique(a, return_counts=True)
-            self._max_measure_per_wire = (
+            self._max_simultaneous_measurements = (
                 counts.max() if counts.size != 0 else 1
             )  # qml.state() will result in an empty array
-        return self._max_measure_per_wire
+        return self._max_simultaneous_measurements
