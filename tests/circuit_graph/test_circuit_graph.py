@@ -74,6 +74,25 @@ def parameterized_circuit(wires):
     return qfunc
 
 
+def circuit_measure_max_once():
+    """A fixture of a circuit that measures wire 0 once."""
+    return qml.expval(qml.PauliX(wires=0))
+
+
+def circuit_measure_max_twice():
+    """A fixture of a circuit that measures wire 0 twice."""
+    return qml.expval(qml.PauliX(wires=0)), qml.probs(wires=0)
+
+
+def circuit_measure_multiple_with_max_twice():
+    """A fixture of a circuit that measures wire 0 twice."""
+    return (
+        qml.expval(qml.PauliX(wires=0)),
+        qml.probs(wires=[0, 1, 2]),
+        qml.var(qml.PauliX(wires=[1]) @ qml.PauliZ([2])),
+    )
+
+
 class TestCircuitGraph:
     """Test conversion of queues to DAGs"""
 
@@ -209,3 +228,21 @@ class TestCircuitGraph:
         assert set(result[2][1]) == set(circuit.operations[5:])
         assert result[2][2] == (6, 7)
         assert set(result[2][3]) == set(circuit.observables[1:])
+
+    @pytest.mark.parametrize(
+        "circ, expected",
+        [
+            (circuit_measure_max_once, 1),
+            (circuit_measure_max_twice, 2),
+            (circuit_measure_multiple_with_max_twice, 2),
+        ],
+    )
+    def test_max_simultaneous_measurements(self, circ, expected):
+        """A test for getting the maximum number of measurements on any wire in
+        the circuit graph."""
+
+        dev = qml.device("default.qubit", wires=3)
+        qnode = qml.QNode(circ, dev)
+        qnode()
+        circuit = qnode.qtape.graph
+        assert circuit.max_simultaneous_measurements == expected
