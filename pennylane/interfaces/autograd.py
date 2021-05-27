@@ -168,7 +168,7 @@ class AutogradInterface(AnnotatedQueue):
 
         if self.is_sampled:
             return res
-        
+ 
         if res.dtype == np.dtype("object"):
             return np.hstack(res)
 
