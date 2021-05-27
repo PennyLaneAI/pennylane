@@ -62,7 +62,7 @@ X_test = np.random.random((5, 6))
 K_test = qml.kernels.kernel_matrix(X_train, X_test, kernel)
 ```
 
-- Added `__str__` and `__repr__` methods to display readable info when printing QNodes.
+* QNodes now display readable information when in interactive environments or when printed.
   [(#1359)](https://github.com/PennyLaneAI/pennylane/pull/1359).
 
 * Added CPhase operation as an alias for ControlledPhaseShift operation
