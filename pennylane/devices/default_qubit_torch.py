@@ -163,7 +163,6 @@ class DefaultQubitTorch(DefaultQubit):
     _flatten = staticmethod(torch.flatten)
     _reshape = staticmethod(torch.reshape)
     _roll = staticmethod(torch.roll)
-    # _gather = staticmethod(lambda array, indices: torch.gather(array, 0, torch.tensor(indices)))
     _stack = staticmethod(lambda arrs, axis=0, out=None: torch.stack(arrs, axis=axis, out=out))
     _tensordot = staticmethod(lambda a, b, axes: torch.tensordot(a, b, dims=axes))
     _transpose = staticmethod(lambda a, axes=None: a.permute(*axes))
@@ -186,13 +185,7 @@ class DefaultQubitTorch(DefaultQubit):
     def _asarray(a, dtype=None):
         if isinstance(a, list):
             if not isinstance(a[0], torch.Tensor):
-                # if self._shots is None:
-                #     a = [torch.as_tensor(l, dtype=dtype) for l in a]
-                #     res = torch.cat([torch.reshape(i, (-1,)) for i in a], dim=0)
-                # else:
                 res = np.asarray(a)
-                # a = [torch.as_tensor(l, device=self._torch_device, dtype=dtype) for l in a]
-                # res = torch.cat([torch.reshape(i, (-1,)) for i in a], dim=0)
             else:
                 res = torch.cat([torch.reshape(i, (-1,)) for i in a], dim=0)
         else:
@@ -218,12 +211,10 @@ class DefaultQubitTorch(DefaultQubit):
     def _ravel_multi_index(multi_index, dims):
         # Idea: ravelling a multi-index can be expressed as a matrix-vector product
         flip = lambda x: torch.flip(x, dims=[0])
-
         dims = torch.as_tensor(dims, device=multi_index.device)
         coeffs = torch.ones_like(dims, device=multi_index.device)
         coeffs[:-1] = dims[1:]
         coeffs = flip(torch.cumprod(flip(coeffs), dim=0))
-
         ravelled_indices = (multi_index.T.type(torch.float) @ coeffs.type(torch.float)).type(
             torch.long
         )
@@ -234,7 +225,6 @@ class DefaultQubitTorch(DefaultQubit):
 
         # `array` is now a torch tensor
         tensor = array
-
         new_tensor = torch.zeros(new_dimensions, dtype=tensor.dtype, device=tensor.device)
         new_tensor[indices] = tensor
         return new_tensor
@@ -263,7 +253,6 @@ class DefaultQubitTorch(DefaultQubit):
             object will be returned.
         """
         op_name = unitary.name.split(".inv")[0]
-
         if op_name in self.parametric_ops:
             if op_name == "MultiRZ":
                 mat = self.parametric_ops[op_name](
@@ -271,18 +260,15 @@ class DefaultQubitTorch(DefaultQubit):
                 )
             else:
                 mat = self.parametric_ops[op_name](*unitary.parameters, device=self._torch_device)
-
             if unitary.inverse:
                 if isinstance(unitary, DiagonalOperation):
                     mat = self._conj(mat)
                 else:
                     mat = self._transpose(self._conj(mat), axes=[1, 0])
-
             return mat
 
         if isinstance(unitary, DiagonalOperation):
             return self._asarray(unitary.eigvals, dtype=self.C_DTYPE)
-
         return self._asarray(unitary.matrix, dtype=self.C_DTYPE)
 
     def _apply_unitary(self, state, mat, wires):
@@ -298,13 +284,10 @@ class DefaultQubitTorch(DefaultQubit):
         """
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
-
         mat = self._cast(self._reshape(mat, [2] * len(device_wires) * 2), dtype=self.C_DTYPE)
-
         # CHANGE w.t.r default.qubit axes in format (list, ...) instead of (array, ...)
         axes = (list(np.arange(len(device_wires), 2 * len(device_wires))), device_wires)
         tdot = self._tensordot(mat, state, axes=axes)
-
         # tensordot causes the axes given in `wires` to end up in the first positions
         # of the resulting tensor. This corresponds to a (partial) transpose of
         # the correct output state
@@ -334,9 +317,7 @@ class DefaultQubitTorch(DefaultQubit):
                 "a default of 1000 shots is used.",
                 UserWarning,
             )
-
         shots = self.shots or 1000
-
         basis_states = np.arange(number_of_states)
         state_probability = state_probability.cpu().detach().numpy()
         return np.random.choice(basis_states, shots, p=state_probability)
