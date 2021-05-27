@@ -30,7 +30,7 @@ to verify and test quantum gradient computations.
     default_gaussian
     default_mixed
     tf_ops
-    torch_ops.py
+    torch_ops
     autograd_ops
     tests
 """
