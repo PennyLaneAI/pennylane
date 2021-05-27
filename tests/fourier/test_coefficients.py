@@ -314,6 +314,7 @@ class TestInterfaces:
         # Need to enable float64 support
         from jax.config import config
 
+        remember = config["jax_enable_x64"]
         config.update("jax_enable_x64", True)
 
         qnode = qml.QNode(self.circuit, self.dev, interface="jax", diff_method="parameter-shift")
@@ -323,3 +324,5 @@ class TestInterfaces:
         obtained_result = coefficients(partial(qnode, weights), 2, 1)
 
         assert np.allclose(obtained_result, self.expected_result)
+
+        config.update("jax_enable_x64", remember)
