@@ -481,7 +481,6 @@ class QubitDevice(Device):
         shots = self.shots or 1000
 
         basis_states = np.arange(number_of_states)
-
         return np.random.choice(basis_states, shots, p=state_probability)
 
     @staticmethod
@@ -731,7 +730,6 @@ class QubitDevice(Device):
 
         powers_of_two = 2 ** np.arange(len(device_wires))[::-1]
         perm = basis_states @ powers_of_two
-
         return self._gather(prob, perm)
 
     def expval(self, observable, shot_range=None, bin_size=None):
