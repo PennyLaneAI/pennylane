@@ -1442,11 +1442,3 @@ class TestHighLevelIntegration:
 
         assert isinstance(grad, torch.Tensor)
         assert grad.shape == weights.shape
-
-
-# class TestGPUSupport:
-#     """Tests for computation on the GPU"""
-
-#     gpu_only = pytest.mark.skipif(torch.cuda.is_available(), reason="requires GPU")
-
-                
