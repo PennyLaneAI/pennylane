@@ -736,8 +736,6 @@ class TestCircuitDrawerIntegration:
         """Test that a qubit circuit with unused wires renders correctly."""
         output = qubit_circuit_with_state.draw()
 
-        print(output)
-        print(drawn_qubit_circuit_with_state)
         assert output == drawn_qubit_circuit_with_state
 
     def test_direct_qnode_integration(self):
@@ -764,6 +762,30 @@ class TestCircuitDrawerIntegration:
             " 0: --H--+C----------------------------+C---------+| <Z @ Z> \n"
             + " 1: -----+RX(2.3)--Rot(1.2, 3.2, 0.7)--+RX(-2.3)--+| <Z @ Z> \n"
         )
+
+    def test_same_wire_multiple_measurements(self):
+        """Test that drawing a QNode with multiple measurements on certain wires works correctly."""
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def qnode(x, y):
+            qml.RY(x, wires=0)
+            qml.Hadamard(0)
+            qml.RZ(y, wires=0)
+            return [
+                qml.expval(qml.PauliX(wires=[0]) @ qml.PauliX(wires=[1]) @ qml.PauliX(wires=[2])),
+                qml.expval(qml.PauliX(wires=[0]) @ qml.PauliX(wires=[3])),
+            ]
+
+        qnode(1.0, 2.0)
+
+        expected = (
+            " 0: ──RY(1)──────H──RZ(2)──RY(-1.57)──╭┤ ⟨Z ⊗ Z ⊗ Z⟩ ╭┤ ⟨Z ⊗ Z⟩ \n"
+            + " 1: ──RY(-1.57)───────────────────────├┤ ⟨Z ⊗ Z ⊗ Z⟩ │┤         \n"
+            + " 2: ──RY(-1.57)───────────────────────╰┤ ⟨Z ⊗ Z ⊗ Z⟩ │┤         \n"
+            + " 3: ──RY(-1.57)────────────────────────┤             ╰┤ ⟨Z ⊗ Z⟩ \n"
+        )
+        assert qnode.draw() == expected
 
 
 class TestWireOrdering:
