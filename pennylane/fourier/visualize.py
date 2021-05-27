@@ -35,14 +35,14 @@ def _validate_coefficients(coeffs, n_inputs, can_be_list=True):
     """Helper function to validate input coefficients of plotting functions.
 
     Args:
-        coeffs (tensor-like[complex]): A set (or list of sets) of Fourier coefficients of a
+        coeffs (array[complex]): A set (or list of sets) of Fourier coefficients of a
             n_inputs-dimensional function.
         n_inputs (int): The number of inputs (dimension) of the function the coefficients are for.
         can_be_list (bool): Whether or not the plotting function accepts a list of
             coefficients, or only a single set.
 
     Raises:
-        TypeError: If the coefficients are not a list or tensor.
+        TypeError: If the coefficients are not a list or array.
         ValueError: if the coefficients are not a suitable type for the plotting function.
     """
     # Make sure we have a list or numpy array
@@ -93,7 +93,7 @@ def _extract_data_and_labels(coeffs):
     """Helper function for creating frequency labels and partitioning data.
 
     Args:
-        coeffs (tensor-like[complex]): A list of sets of Fourier coefficients.
+        coeffs (array[complex]): A list of sets of Fourier coefficients.
 
     Returns:
         (list(str), dict[str, array[complex]): The set of frequency labels, and a data
@@ -124,8 +124,8 @@ def violin(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
     """Plots a list of sets of Fourier coefficients as a violin plot.
 
     Args:
-        coeffs (list[tensor-like]): A list of sets of Fourier coefficients. The shape of the
-            coefficient tensors should resemble that of the output of NumPy/SciPy's ``fftn`` function, or
+        coeffs (list[array[complex]]): A list of sets of Fourier coefficients. The shape of the
+            coefficient arrays should resemble that of the output of NumPy/SciPy's ``fftn`` function, or
             :func:`~.pennylane.fourier.coefficients`.
         n_inputs (int): The number of input variables in the function.
         ax (array[matplotlib.axes.Axes]): Axis on which to plot. Must
@@ -228,8 +228,8 @@ def box(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True, show_fliers=Tru
     """Plot a list of sets of Fourier coefficients as a box plot.
 
     Args:
-        coeffs (list[tensor-like]): A list of sets of Fourier coefficients. The shape of the
-            coefficient tensors should resemble that of the output of numpy/scipy's ``fftn``
+        coeffs (list[array[complex]]): A list of sets of Fourier coefficients. The shape of the
+            coefficient arrays should resemble that of the output of numpy/scipy's ``fftn``
             function, or :func:`~.pennylane.fourier.coefficients`.
         n_inputs (int): The number of input variables in the function.
         ax (array[matplotlib.axes.Axes]): Axis on which to plot. Must
@@ -344,8 +344,8 @@ def bar(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
 
     Args:
 
-        coeffs (tensor-like[complex]): A single set of Fourier coefficients. The dimensions of the coefficient
-            tensor should be ``(2d + 1, ) * n_inputs`` where ``d`` is the largest frequency.
+        coeffs (array[complex]): A single set of Fourier coefficients. The dimensions of the coefficient
+            array should be ``(2d + 1, ) * n_inputs`` where ``d`` is the largest frequency.
         n_inputs (int): The number of input variables in the function.
         ax (list[matplotlib.axes.Axes]): Axis on which to plot. Must
             be a pair of axes from a subplot where ``sharex="row"`` and ``sharey="col"``.
@@ -441,12 +441,12 @@ def panel(coeffs, n_inputs, ax, colour=None):
     """Plot a list of sets of coefficients in the complex plane for a 1- or 2-dimensional function.
 
     Args:
-        coeffs (list[tensor-like]): A list of sets of Fourier coefficients. The shape of the
-            coefficient tensors must all be either 1- or 2-dimensional, i.e.,
-            each tensor should have shape ``(2d + 1,)``
+        coeffs (list[array[complex]]): A list of sets of Fourier coefficients. The shape of the
+            coefficient arrays must all be either 1- or 2-dimensional, i.e.,
+            each array should have shape ``(2d + 1,)``
             for the 1-dimensional case, or ``(2d + 1, 2d + 1)`` where ``d`` is the
             degree, i.e., the maximum frequency of present in the coefficients.
-            Such a tensor may be the output of the numpy/scipy ``fft``/``fft2`` functions,
+            Such an array may be the output of the numpy/scipy ``fft``/``fft2`` functions,
             or :func:`~.pennylane.fourier.coefficients`.
         n_inputs (int): The number of variables in the function.
         ax (array[matplotlib.axes._subplots.AxesSubplot]): Axis on which to plot. For
@@ -571,8 +571,8 @@ def radial_box(coeffs, n_inputs, ax, show_freqs=True, colour_dict=None, show_fli
     plots the distribution of each coefficient as a boxplot.
 
     Args:
-        coeffs (list[tensor-like]): A list of sets of Fourier coefficients. The shape of the
-            coefficient tensors should resemble that of the output of numpy/scipy's ``fftn`` function, or
+        coeffs (list[array[complex]]): A list of sets of Fourier coefficients. The shape of the
+            coefficient arrays should resemble that of the output of numpy/scipy's ``fftn`` function, or
             :func:`~.pennylane.fourier.coefficients`.
         n_inputs (int): Dimension of the transformed function.
         ax (array[matplotlib.axes.Axes]): Axes to plot on. For this function, subplots
