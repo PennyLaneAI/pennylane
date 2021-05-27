@@ -734,6 +734,12 @@ class QubitDevice(Device):
 
     def expval(self, observable, shot_range=None, bin_size=None):
 
+        if observable.name == "Projector":
+            # branch specifically to handle the projector observable
+            idx = int("".join(str(i) for i in observable.parameters[0]), 2)
+            probs = self.probability(wires=observable.wires, shot_range=shot_range, bin_size=bin_size)
+            return probs[idx]
+
         if self.shots is None:
             # exact expectation value
             eigvals = self._asarray(observable.eigvals, dtype=self.R_DTYPE)
