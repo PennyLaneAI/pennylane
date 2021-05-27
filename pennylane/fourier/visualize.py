@@ -578,7 +578,7 @@ def radial_box(coeffs, n_inputs, ax, show_freqs=True, colour_dict=None, show_fli
             must specify ``subplot_kw=dict(polar=True)`` upon construction.
         show_freqs (bool): Whether or not to label the frequencies on
             the radial axis. Turn off for large plots.
-        colour_dict (str : str): Specify a colour mapping for positive and negative
+        colour_dict (dict[str, str]): Specify a colour mapping for positive and negative
             real/imaginary components. If none specified, will default to:
             ``{"real" : "red", "imag" : "black"}``
         showfliers (bool): Whether or not to plot outlying "fliers" on the boxplots.

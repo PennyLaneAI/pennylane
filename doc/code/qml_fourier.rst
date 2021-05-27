@@ -270,7 +270,7 @@ recommended to disable the frequency labelling by setting ``show_freqs=False``,
 and hiding box plot fliers as was done above.
 
 Finally, for the special case of 1- or 2-dimensional functions, we can use the
-:func:`~.pennylane.fourier.visualize.panel` to plot the distributions of the
+:func:`~.pennylane.fourier.visualize.panel` function to plot the distributions of the
 sampled sets of Fourier coefficients on the complex plane.
 
 .. code::
