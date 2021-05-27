@@ -1,8 +1,6 @@
 qml.fourier
 ===========
 
-.. currentmodule:: pennylane.fourier
-
 Overview
 --------
 
@@ -15,13 +13,19 @@ Overview
 Visualization
 ^^^^^^^^^^^^^
 
-.. autosummary::
+.. currentmodule:: pennylane.fourier.visualize
 
-    visualize.bar
-    visualize.box
-    visualize.panel
-    visualize.radial_box
-    visualize.violin
+Tools to visualize the Fourier representations can be found in the :mod:`fourier.visualize`
+submodule. This requires the ``matplotlib`` package to be installed.
+
+.. autosummary::
+    :toctree: api
+
+    bar
+    box
+    panel
+    radial_box
+    violin
 
 
 Fourier representation of quantum circuits

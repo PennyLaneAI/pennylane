@@ -55,7 +55,7 @@ def coefficients(f, n_inputs, degree, lowpass_filter=False, filter_threshold=Non
     :math:`c_{n_1,\ldots,n_N}` are Fourier coefficients.
 
     Args:
-        f (callable): function that takes a 1D array of ``n_inputs`` scalar inputs
+        f (callable): Function that takes a 1D tensor of ``n_inputs`` scalar inputs.
         n_inputs (int): number of function inputs
         degree (int): max frequency of Fourier coeffs to be computed. For degree :math:`d`,
             the coefficients from frequencies :math:`-d, -d+1,...0,..., d-1, d` will be computed.
@@ -150,6 +150,7 @@ def coefficients(f, n_inputs, degree, lowpass_filter=False, filter_threshold=Non
     Note that in this case, ``2 * degree`` gives us exactly the maximum coefficient;
     in other situations it may be desirable to set the threshold value explicitly.
 
+    The `coefficients` function can handle qnodes from all PennyLane interfaces.
     """
     if not lowpass_filter:
         return _coefficients_no_filter(f, n_inputs, degree)
