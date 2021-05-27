@@ -2,6 +2,17 @@
 
 <h3>New features since last release</h3>
 
+* PennyLane now has a `fourier` module, which hosts a [growing library 
+  of methods](https://pennylane.readthedocs.io/en/stable/code/qml_fourier.html) 
+  that help with investigating the Fourier representation of functions 
+  implemented by quantum circuits.
+  [(#1160)](https://github.com/PennyLaneAI/pennylane/pull/1160)
+  
+  For example, one can plot distributions over Fourier series coefficients like 
+  this one:
+  
+  <img src="https://pennylane.readthedocs.io/en/latest/_static/fourier.png" width=70%/>
+
 * It is now possible [(1291)](https://github.com/PennyLaneAI/pennylane/pull/1291)
   to create custom Observables and corresponding devices
   whose return type can be an arbitrary object and QNodes using such Observable
