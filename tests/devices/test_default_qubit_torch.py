@@ -158,20 +158,6 @@ class TestApply:
         assert isinstance(res, torch.Tensor)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_basis_state_cuda(self, tol):
-        """Test basis state initialization"""
-        dev = DefaultQubitTorch(wires=4, torch_device='cuda')
-        state = np.array([0, 0, 1, 0])
-
-        dev.apply([qml.BasisState(state, wires=[0, 1, 2, 3])])
-
-        res = dev.state
-        expected = np.zeros([2 ** 4])
-        expected[np.ravel_multi_index(state, [2] * 4)] = 1
-
-        assert isinstance(res, torch.Tensor)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
     def test_invalid_basis_state_length(self, tol):
         """Test that an exception is raised if the basis state is the wrong size"""
         dev = DefaultQubitTorch(wires=4)
@@ -1462,5 +1448,3 @@ class TestHighLevelIntegration:
 #     """Tests for computation on the GPU"""
 
 #     gpu_only = pytest.mark.skipif(torch.cuda.is_available(), reason="requires GPU")
-
-                
