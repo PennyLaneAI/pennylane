@@ -24,7 +24,6 @@ from pennylane import numpy as np
 from pennylane.queuing import AnnotatedQueue
 
 
-
 class AutogradInterface(AnnotatedQueue):
     """Mixin class for applying an autograd interface to a :class:`~.JacobianTape`.
 
@@ -168,7 +167,7 @@ class AutogradInterface(AnnotatedQueue):
 
         if self.is_sampled:
             return res
-        
+
         if res.dtype == np.dtype("object"):
             return np.hstack(res)
 
