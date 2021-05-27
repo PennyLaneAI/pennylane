@@ -2963,7 +2963,7 @@ class Hermitian(Observable):
 
 class Projector(Observable):
     r"""Projector(basis_state, wires)
-    The basis state observable :math:`P=\ket{i}\bra{i}` .
+    Observable corresponding to the computational basis state projector :math:`P=\ket{i}\bra{i}`.
 
     The expectation of this observable returns the value
 
