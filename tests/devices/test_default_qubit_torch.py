@@ -399,33 +399,33 @@ class TestApply:
         expected = func(theta) @ state
         assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
 
-    def test_apply_ops_not_supported(self, mocker, monkeypatch):
-        """Test that when a version of PyTorch before 1.8.1 is used, the _apply_ops dictionary is
-        empty and application of a CNOT gate is performed using _apply_unitary_einsum"""
-        with monkeypatch.context() as m:
-            m.setattr("pennylane.devices.default_qubit_Torch.SUPPORTS_APPLY_OPS", False)
-            dev = DefaultQubitTorch(wires=3)
-            assert dev._apply_ops == {}
+    # def test_apply_ops_not_supported(self, mocker, monkeypatch):
+    #     """Test that when a version of PyTorch before 1.8.1 is used, the _apply_ops dictionary is
+    #     empty and application of a CNOT gate is performed using _apply_unitary_einsum"""
+    #     with monkeypatch.context() as m:
+    #         m.setattr("pennylane.devices.default_qubit_Torch.SUPPORTS_APPLY_OPS", False)
+    #         dev = DefaultQubitTorch(wires=3)
+    #         assert dev._apply_ops == {}
 
-            spy = mocker.spy(DefaultQubitTorch, "_apply_unitary_einsum")
+    #         spy = mocker.spy(DefaultQubitTorch, "_apply_unitary_einsum")
 
-            queue = [qml.CNOT(wires=[1, 2])]
-            dev.apply(queue)
+    #         queue = [qml.CNOT(wires=[1, 2])]
+    #         dev.apply(queue)
 
-            spy.assert_called_once()
+    #         spy.assert_called_once()
 
-    def test_apply_ops_above_8_wires(self, mocker):
-        """Test that when 9 wires are used, the _apply_ops dictionary is empty and application of a
-        CNOT gate is performed using _apply_unitary_einsum"""
-        dev = DefaultQubitTorch(wires=9)
-        assert dev._apply_ops == {}
+    # def test_apply_ops_above_8_wires(self, mocker):
+    #     """Test that when 9 wires are used, the _apply_ops dictionary is empty and application of a
+    #     CNOT gate is performed using _apply_unitary_einsum"""
+    #     dev = DefaultQubitTorch(wires=9)
+    #     assert dev._apply_ops == {}
 
-        spy = mocker.spy(DefaultQubitTorch, "_apply_unitary_einsum")
+    #     spy = mocker.spy(DefaultQubitTorch, "_apply_unitary_einsum")
 
-        queue = [qml.CNOT(wires=[1, 2])]
-        dev.apply(queue)
+    #     queue = [qml.CNOT(wires=[1, 2])]
+    #     dev.apply(queue)
 
-        spy.assert_called_once()
+    #     spy.assert_called_once()
 
     # @pytest.mark.xfail(
     #     raises=torch.errors.UnimplementedError,
@@ -935,12 +935,12 @@ class TestQNodeIntegration:
         assert dev.short_name == "default.qubit.torch"
         assert dev.capabilities()["passthru_interface"] == "torch"
 
-    def test_qubit_circuit(self, tol):
+    def test_qubit_circuit(self, tol, torch_device='cpu'):
         """Test that the tensor network plugin provides correct
         result for a simple circuit using the old QNode."""
-        p = torch.tensor(0.543)
+        p = torch.tensor([0.543], device=torch_device)
 
-        dev = qml.device("default.qubit.torch", wires=1)
+        dev = qml.device("default.qubit.torch", wires=1, torch_device=torch_device)
 
         @qml.qnode(dev, interface="torch")
         def circuit(x):
@@ -952,15 +952,15 @@ class TestQNodeIntegration:
         assert circuit.diff_options["method"] == "backprop"
         assert np.isclose(circuit(p).detach(), expected, atol=tol, rtol=0)
 
-    def test_correct_state(self, tol):
+    def test_correct_state(self, tol, torch_device='cpu'):
         """Test that the device state is correct after applying a
         quantum function on the device"""
 
-        dev = qml.device("default.qubit.torch", wires=2)
+        dev = qml.device("default.qubit.torch", wires=2, torch_device=torch_device)
 
         state = dev.state
         expected = np.array([1, 0, 0, 0])
-        assert np.allclose(state.detach(), expected, atol=tol, rtol=0)
+        assert np.allclose(state.detach().cpu(), expected, atol=tol, rtol=0)
 
         @qml.qnode(dev, interface="torch", diff_method="backprop")
         def circuit():
@@ -974,7 +974,7 @@ class TestQNodeIntegration:
         amplitude = np.exp(-1j * np.pi / 8) / np.sqrt(2)
 
         expected = np.array([amplitude, 0, np.conj(amplitude), 0])
-        assert np.allclose(state.detach(), expected, atol=tol, rtol=0)
+        assert np.allclose(state.detach().cpu(), expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("theta", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", single_qubit_param)
@@ -1456,3 +1456,11 @@ class TestHighLevelIntegration:
 
         assert isinstance(grad, torch.Tensor)
         assert grad.shape == weights.shape
+
+
+# class TestGPUSupport:
+#     """Tests for computation on the GPU"""
+
+#     gpu_only = pytest.mark.skipif(torch.cuda.is_available(), reason="requires GPU")
+
+                
