@@ -737,7 +737,9 @@ class QubitDevice(Device):
         if observable.name == "Projector":
             # branch specifically to handle the projector observable
             idx = int("".join(str(i) for i in observable.parameters[0]), 2)
-            probs = self.probability(wires=observable.wires, shot_range=shot_range, bin_size=bin_size)
+            probs = self.probability(
+                wires=observable.wires, shot_range=shot_range, bin_size=bin_size
+            )
             return probs[idx]
 
         if self.shots is None:
