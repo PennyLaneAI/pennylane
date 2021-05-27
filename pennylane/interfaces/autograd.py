@@ -167,8 +167,7 @@ class AutogradInterface(AnnotatedQueue):
         self.set_parameters(self._all_parameter_values, trainable_only=False)
 
         if self.is_sampled:
-            return res
- 
+            return res 
         if res.dtype == np.dtype("object"):
             return np.hstack(res)
 
