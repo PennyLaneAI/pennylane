@@ -96,12 +96,7 @@ def get_device_tests():
 
 
 def test_device(
-    device_name,
-    shots=0,
-    skip_ops=True,
-    flaky_report=False,
-    pytest_args=None,
-    **kwargs,
+    device_name, shots=0, skip_ops=True, flaky_report=False, pytest_args=None, **kwargs,
 ):
     """Run the device integration tests using an installed PennyLane device.
 

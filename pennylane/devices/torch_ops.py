@@ -127,9 +127,9 @@ def PhaseShift(phi, device=None):
     """
     phi = torch.as_tensor(phi, dtype=C_DTYPE, device=device)
     p = torch.exp(1j * phi)
-    return torch.tensor(
-        [1, 0], dtype=torch.complex128, device=device
-    ) + p * torch.tensor([0, 1], dtype=torch.complex128, device=device)
+    return torch.tensor([1, 0], dtype=torch.complex128, device=device) + p * torch.tensor(
+        [0, 1], dtype=torch.complex128, device=device
+    )
 
 
 def ControlledPhaseShift(phi, device=None):
@@ -276,9 +276,7 @@ def CRZ(theta, device):
         :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R_z(\theta)`
     """
     theta = torch.as_tensor(theta, dtype=C_DTYPE, device=device)
-    return torch.cat(
-        [torch.as_tensor([1.0, 1.0], device=device), RZ(theta, device)], dim=0
-    )
+    return torch.cat([torch.as_tensor([1.0, 1.0], device=device), RZ(theta, device)], dim=0)
 
 
 def CRot(a, b, c, device):

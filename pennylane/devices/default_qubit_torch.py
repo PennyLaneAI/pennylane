@@ -33,7 +33,6 @@ from pennylane.devices import torch_ops
 from . import DefaultQubit
 
 
-
 ABC_ARRAY = np.array(list(ABC))
 
 
@@ -165,9 +164,7 @@ class DefaultQubitTorch(DefaultQubit):
     _reshape = staticmethod(torch.reshape)
     _roll = staticmethod(torch.roll)
     # _gather = staticmethod(lambda array, indices: torch.gather(array, 0, torch.tensor(indices)))
-    _stack = staticmethod(
-        lambda arrs, axis=0, out=None: torch.stack(arrs, axis=axis, out=out)
-    )
+    _stack = staticmethod(lambda arrs, axis=0, out=None: torch.stack(arrs, axis=axis, out=out))
     _tensordot = staticmethod(lambda a, b, axes: torch.tensordot(a, b, dims=axes))
     _transpose = staticmethod(lambda a, axes=None: a.permute(*axes))
     _asnumpy = staticmethod(lambda x: x.cpu().numpy())
@@ -194,8 +191,8 @@ class DefaultQubitTorch(DefaultQubit):
                 #     res = torch.cat([torch.reshape(i, (-1,)) for i in a], dim=0)
                 # else:
                 res = np.asarray(a)
-                    # a = [torch.as_tensor(l, device=self._torch_device, dtype=dtype) for l in a]
-                    # res = torch.cat([torch.reshape(i, (-1,)) for i in a], dim=0)
+                # a = [torch.as_tensor(l, device=self._torch_device, dtype=dtype) for l in a]
+                # res = torch.cat([torch.reshape(i, (-1,)) for i in a], dim=0)
             else:
                 res = torch.cat([torch.reshape(i, (-1,)) for i in a], dim=0)
         else:
@@ -204,7 +201,6 @@ class DefaultQubitTorch(DefaultQubit):
 
     def _cast(self, a, dtype=None):
         return self._asarray(a, dtype=dtype)
-
 
     @staticmethod
     def _reduce_sum(array, axes):
@@ -228,9 +224,9 @@ class DefaultQubitTorch(DefaultQubit):
         coeffs[:-1] = dims[1:]
         coeffs = flip(torch.cumprod(flip(coeffs), dim=0))
 
-        ravelled_indices = (
-            multi_index.T.type(torch.float) @ coeffs.type(torch.float)
-        ).type(torch.long)
+        ravelled_indices = (multi_index.T.type(torch.float) @ coeffs.type(torch.float)).type(
+            torch.long
+        )
         return ravelled_indices
 
     @staticmethod
@@ -239,9 +235,7 @@ class DefaultQubitTorch(DefaultQubit):
         # `array` is now a torch tensor
         tensor = array
 
-        new_tensor = torch.zeros(
-            new_dimensions, dtype=tensor.dtype, device=tensor.device
-        )
+        new_tensor = torch.zeros(new_dimensions, dtype=tensor.dtype, device=tensor.device)
         new_tensor[indices] = tensor
         return new_tensor
 
@@ -276,9 +270,7 @@ class DefaultQubitTorch(DefaultQubit):
                     *unitary.parameters, len(unitary.wires), device=self._torch_device
                 )
             else:
-                mat = self.parametric_ops[op_name](
-                    *unitary.parameters, device=self._torch_device
-                )
+                mat = self.parametric_ops[op_name](*unitary.parameters, device=self._torch_device)
 
             if unitary.inverse:
                 if isinstance(unitary, DiagonalOperation):
@@ -307,9 +299,7 @@ class DefaultQubitTorch(DefaultQubit):
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
 
-        mat = self._cast(
-            self._reshape(mat, [2] * len(device_wires) * 2), dtype=self.C_DTYPE
-        )
+        mat = self._cast(self._reshape(mat, [2] * len(device_wires) * 2), dtype=self.C_DTYPE)
 
         # CHANGE w.t.r default.qubit axes in format (list, ...) instead of (array, ...)
         axes = (list(np.arange(len(device_wires), 2 * len(device_wires))), device_wires)
