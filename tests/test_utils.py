@@ -204,7 +204,8 @@ class TestPauliEigs:
     def test_correct_eigenvalues_pauli_kronecker_products_three_qubits(self, pauli_product):
         """Test the paulieigs function for three qubits"""
         assert np.array_equal(
-            pu.pauli_eigs(3), np.diag(np.kron(self.pauliz, np.kron(self.pauliz, self.pauliz)))
+            pu.pauli_eigs(3),
+            np.diag(np.kron(self.pauliz, np.kron(self.pauliz, self.pauliz))),
         )
 
     @pytest.mark.parametrize("depth", list(range(1, 6)))
@@ -239,7 +240,12 @@ class TestArgumentHelpers:
             pass
 
         res = pu._get_default_args(dummy_func)
-        expected = {"c": (2, 8), "d": (3, [0, 0.65]), "e": (4, np.array([4])), "f": (5, None)}
+        expected = {
+            "c": (2, 8),
+            "d": (3, [0, 0.65]),
+            "e": (4, np.array([4])),
+            "f": (5, None),
+        }
 
         assert res == expected
 
@@ -328,7 +334,8 @@ class TestExpand:
     def test_expand_invalid_wires(self):
         """test exception raised if unphysical subsystems provided."""
         with pytest.raises(
-            ValueError, match="Invalid target subsystems provided in 'original_wires' argument"
+            ValueError,
+            match="Invalid target subsystems provided in 'original_wires' argument",
         ):
             pu.expand(U2, [-1, 5], 4)
 
@@ -440,7 +447,8 @@ class TestExpand:
     def test_expand_vector_invalid_wires(self):
         """Test exception raised if unphysical subsystems provided."""
         with pytest.raises(
-            ValueError, match="Invalid target subsystems provided in 'original_wires' argument"
+            ValueError,
+            match="Invalid target subsystems provided in 'original_wires' argument",
         ):
             pu.expand_vector(TestExpand.VECTOR2, [-1, 5], 4)
 
@@ -830,7 +838,8 @@ class TestInv:
     def test_non_operations_in_list(self, arg):
         """Test that the proper error is raised when the argument does not only contain operations."""
         with pytest.raises(
-            ValueError, match="The given operation_list does not only contain Operations"
+            ValueError,
+            match="The given operation_list does not only contain Operations",
         ):
             pu.inv(arg)
 
@@ -842,3 +851,28 @@ class TestInv:
             match=r"Use of qml\.inv\(\) is deprecated and should be replaced with qml\.adjoint\(\)\.",
         ):
             qml.inv(qml.Hadamard(wires=[0]))
+
+
+class TestFrobeniusInnerProduct:
+    @pytest.mark.parametrize(
+        "A,B,normalize,expected",
+        [
+            (np.eye(2), np.eye(2), False, 2.0),
+            (np.eye(2), np.zeros((2, 2)), False, 0.0),
+            (
+                np.array([[1.0, 2.3], [-1.3, 2.4]]),
+                np.array([[0.7, -7.3], [-1.0, -2.9]]),
+                False,
+                -21.75,
+            ),
+            (np.eye(2), np.eye(2), True, 1.0),
+            (
+                np.array([[1.0, 2.3], [-1.3, 2.4]]),
+                np.array([[0.7, -7.3], [-1.0, -2.9]]),
+                True,
+                -0.7381450594,
+            ),
+        ],
+    )
+    def test_frobenius_inner_product(self, A, B, normalize, expected):
+        assert expected == pytest.approx(pu.frobenius_inner_product(A, B, normalize=normalize))
