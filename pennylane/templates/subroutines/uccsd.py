@@ -60,7 +60,7 @@ class UCCSD(Operation):
 
     Args:
         weights (tensor_like): Size ``(len(singles) + len(doubles),)`` tensor containing the
-            angles :math:`\theta` entering the :class:`~.pennylane.SingleExcitation` and 
+            angles :math:`\theta` entering the :class:`~.pennylane.SingleExcitation` and
             :class:`~.pennylane.DoubleExcitation` operations corresponding to the single and
             double excitations of the Hartree-Fock (HF) reference state generated with the
             :func:`~.excitations` function.
@@ -104,7 +104,7 @@ class UCCSD(Operation):
 
             # Define the device
             dev = qml.device('default.qubit', wires=4)
-            
+
             wires = range(4)
 
             @qml.qnode(dev)
