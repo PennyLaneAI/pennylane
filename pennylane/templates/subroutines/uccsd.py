@@ -95,66 +95,45 @@ class UCCSD(Operation):
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane import qchem
-
-            from functools import partial
-
-            # Build the electronic Hamiltonian
-            symbols = ['H', 'H']
-            coordinates = np.array([0.0, 0.0, -0.66, 0.0, 0.0, 0.66])
-            h, qubits = qchem.molecular_hamiltonian(symbols, coordinates)
 
             # Define the HF state
-            electrons = 2
-            hf_state = qchem.hf_state(electrons, qubits)
+            hf_state = qml.qchem.hf_state(electrons=2, qubits=4)
 
             # Generate single and double excitations
-            singles, doubles = qchem.excitations(electrons, qubits)
+            singles, doubles = qml.qchem.excitations(electrons=2, qubits=4)
 
             # Define the device
-            dev = qml.device('default.qubit', wires=qubits)
+            dev = qml.device('default.qubit', wires=4)
+            
+            wires = range(4)
 
             @qml.qnode(dev)
             def circuit(weights, hf_state, singles, doubles):
-                qml.templates.UCCSD(weights, wires, hf_state, singles, doubles)
-                return qml.expval(qml.PauliZ(0))
+            	qml.templates.UCCSD(weights, wires, hf_state, singles, doubles)
+            	return qml.expval(qml.PauliZ(0))
 
             # Compute the expectation value of 'h' for given set of parameters 'params'
             params = np.random.normal(0, np.pi, len(singles) + len(doubles))
-            circuit(params, hf_state, singles, doubles)
+            circuit(params, hf_state, singles=singles, doubles=doubles)
     """
 
     num_params = 1
     num_wires = AnyWires
     par_domain = "A"
 
-    # def __init__(self, weights, wires, s_wires=None, d_wires=None, init_state=None, do_queue=True):
     def __init__(self, weights, wires, hf_state, singles=None, doubles=None, do_queue=True):
 
-        # if (not s_wires) and (not d_wires):
-        #     raise ValueError(
-        #         "s_wires and d_wires lists can not be both empty; got ph={}, pphh={}".format(
-        #             s_wires, d_wires
-        #         )
-        #     )
-        if (not singles) and (not doubles):
+        if (not singles and not doubles):
             raise ValueError(
-                "singles and doubles lists can not be both empty; got singles={}, doubles={}".format(
+                "'singles' and 'doubles' lists can not be both empty; got singles={}, doubles={}".format(
                     singles, doubles
                 )
             )
 
-        # for d_wires_ in d_wires:
-        #     if len(d_wires_) != 2:
-        #         raise ValueError(
-        #             "expected entries of d_wires to be of size 2; got {} of length {}".format(
-        #                 d_wires_, len(d_wires_)
-        #             )
-        #         )
         for d_wires in doubles:
             if len(d_wires) != 4:
                 raise ValueError(
-                    "Expected entries of doubles to be of size 4; got {} of length {}".format(
+                    "Expected entries of 'doubles' to be of size 4; got {} of length {}".format(
                         d_wires, len(d_wires)
                     )
                 )
@@ -162,35 +141,25 @@ class UCCSD(Operation):
         for s_wires in singles:
             if len(s_wires) != 2:
                 raise ValueError(
-                    "Expected entries of singles to be of size 2; got {} of length {}".format(
+                    "Expected entries of 'singles' to be of size 2; got {} of length {}".format(
                         s_wires, len(s_wires)
                     )
                 )                
 
-        # shape = qml.math.shape(weights)
-        # if shape != (len(s_wires) + len(d_wires),):
-        #     raise ValueError(
-        #         f"Weights tensor must be of shape {(len(s_wires) + len(d_wires),)}; got {shape}."
-        #     )
         shape = qml.math.shape(weights)
         if shape != (len(singles) + len(doubles),):
             raise ValueError(
-                f"Weights tensor must be of shape {(len(singles) + len(doubles),)}; got {shape}."
+                f"'weights' tensor must be of shape {(len(singles) + len(doubles),)}; got {shape}."
             )
 
         # we can extract the numpy representation here
         # since hf_state can never be differentiable
         self.hf_state = qml.math.toarray(hf_state)
-        # self.s_wires = s_wires
-        # self.d_wires = d_wires
         self.singles = singles
         self.doubles = doubles
 
         if hf_state.dtype != np.dtype("int"):
             raise ValueError(f"Elements of 'hf_state' must be integers; got {hf_state.dtype}")
-
-        # no needed for this now
-        # self.init_state_flipped = np.flip(init_state)
 
         super().__init__(weights, wires=wires, do_queue=do_queue)
 
@@ -200,18 +169,11 @@ class UCCSD(Operation):
 
         with qml.tape.QuantumTape() as tape:
 
-            # BasisState(self.init_state_flipped, wires=self.wires)
             BasisState(self.hf_state, wires=self.wires)
 
-            # for i, (w1, w2) in enumerate(self.d_wires):
-            #     qml.templates.DoubleExcitationUnitary(
-            #         weights[len(self.s_wires) + i], wires1=w1, wires2=w2
-            #     )
             for i, d_wires in enumerate(self.doubles):
-                qml.DoubleExcitation(weights[len(self.singles) + i], wires1=d_wires)
+                qml.DoubleExcitation(weights[len(self.singles) + i], wires=d_wires)
 
-            # for j, s_wires_ in enumerate(self.s_wires):
-            #     qml.templates.SingleExcitationUnitary(weights[j], wires=s_wires_)
             for j, s_wires in enumerate(self.singles):
                 qml.SingleExcitation(weights[j], wires=s_wires)
 
