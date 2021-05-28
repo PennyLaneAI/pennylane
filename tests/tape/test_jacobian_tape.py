@@ -54,6 +54,7 @@ class TestConstruction:
             4: {"op": ops[3], "p_idx": 0, "grad_method": "0"},
         }
 
+
 class TestTapeCopying:
     """Test for tape copying behaviour"""
 
@@ -69,6 +70,7 @@ class TestTapeCopying:
             "method": "device",
             "jacobian_method": "adjoint_jacobian",
         }
+
 
 class TestGradMethod:
     """Tests for parameter gradient methods"""
