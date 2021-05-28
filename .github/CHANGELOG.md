@@ -342,6 +342,10 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Bug fixes</h3>
 
+* Copying the `JacobianTape` now correctly also copies the `jacobian_options` attribute. This fixes a bug
+  allowing the JAX interface to support adjoint differentiation.  Also, on `JacobianTape`, finite difference derivatives are calculated using `np.float64` casted parameters.  This fixes floating point errors that occur 
+  [(#1349)](https://github.com/PennyLaneAI/pennylane/pull/1349)
+
 * Fixes drawing QNodes that contain multiple measurements on a single wire.
   [(#1353)](https://github.com/PennyLaneAI/pennylane/pull/1353)
 
@@ -390,7 +394,7 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 This release contains contributions from (in alphabetical order):
 
 Marius Aglitoiu, Vishnu Ajith, Thomas Bromley, Jack Ceroni, Miruna Daian, Olivia Di Matteo,
-Tanya Garg, Christian Gogolin, Diego Guala, Anthony Hayes, Ryan Hill, Josh Izaac, Pavan Jayasinha, Ryan Levy, Nahum Sá, Maria Schuld,
+Tanya Garg, Christian Gogolin, Diego Guala, Anthony Hayes, Ryan Hill, Josh Izaac, Pavan Jayasinha, Christina Lee, Ryan Levy, Nahum Sá, Maria Schuld,
 Johannes Jakob Meyer, Brian Shi, Antal Száva, David Wierichs, Vincent Wong, Alberto Maldonado, Ashish Panigrahi.
 
 
