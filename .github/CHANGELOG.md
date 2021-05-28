@@ -2,6 +2,9 @@
 
 <h3>New features since last release</h3>
 
+* Added validation for noise channel parameters. Invalid noise parameters now
+  raise a `ValueError`. [(#1357)](https://github.com/PennyLaneAI/pennylane/pull/1357)
+
 * PennyLane now has a `fourier` module, which hosts a [growing library 
   of methods](https://pennylane.readthedocs.io/en/stable/code/qml_fourier.html) 
   that help with investigating the Fourier representation of functions 
