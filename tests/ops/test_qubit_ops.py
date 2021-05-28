@@ -87,6 +87,12 @@ EIGVALS_TEST_DATA = [
 
 EIGVALS_TEST_DATA_MULTI_WIRES = [functools.reduce(np.kron, [Y, I, Z])]
 
+# Testing Projector observable with the basis states.
+PROJECTOR_EIGVALS_TEST_DATA = [
+    (np.array([0, 0])),
+    (np.array([1, 0, 1])),
+]
+
 
 @pytest.mark.usefixtures("tear_down_hermitian")
 class TestObservables:
@@ -331,6 +337,61 @@ class TestObservables:
         H2[0, 1] = 2
         with pytest.raises(ValueError, match="must be Hermitian"):
             qml.Hermitian(H2, wires=0).matrix
+
+
+class TestProjector:
+    """Tests for projector observable"""
+
+    @pytest.mark.parametrize("basis_state", PROJECTOR_EIGVALS_TEST_DATA)
+    def test_projector_eigvals(self, basis_state, tol):
+        """Tests that the eigvals property of the Projector class returns the correct results."""
+        num_wires = len(basis_state)
+        eigvals = qml.Projector(basis_state, wires=range(num_wires)).eigvals
+
+        if basis_state[0] == 0:
+            observable = np.array([[1, 0], [0, 0]])
+        elif basis_state[0] == 1:
+            observable = np.array([[0, 0], [0, 1]])
+        for i in basis_state[1:]:
+            if i == 0:
+                observable = np.kron(observable, np.array([[1, 0], [0, 0]]))
+            elif i == 1:
+                observable = np.kron(observable, np.array([[0, 0], [0, 1]]))
+        expected_eigvals, expected_eigvecs = np.linalg.eig(observable)
+
+        assert np.allclose(np.sort(eigvals), np.sort(expected_eigvals), atol=tol, rtol=0)
+        assert np.allclose(
+            eigvals, expected_eigvecs[np.where(expected_eigvals == 1)[0][0]], atol=tol, rtol=0
+        )
+
+    @pytest.mark.parametrize("basis_state", PROJECTOR_EIGVALS_TEST_DATA)
+    def test_projector_diagonalization(self, basis_state, tol):
+        """Test that the diagonalizing_gates property of the Projector class returns empty."""
+        num_wires = len(basis_state)
+        diag_gates = qml.Projector(basis_state, wires=range(num_wires)).diagonalizing_gates()
+
+        assert diag_gates == []
+
+    def test_projector_exceptions(self):
+        """Tests that the projector construction raises the proper errors on incorrect inputs."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(basis_state):
+            obs = qml.Projector(basis_state, wires=range(2))
+            return qml.expval(obs)
+
+        with pytest.raises(ValueError, match="Basis state must be one-dimensional"):
+            basis_state = np.random.randint(2, size=(2, 4))
+            circuit(basis_state)
+
+        with pytest.raises(ValueError, match="Basis state must be of length"):
+            basis_state = np.random.randint(2, size=(3))
+            circuit(basis_state)
+
+        with pytest.raises(ValueError, match="Basis state must only consist of 0s"):
+            basis_state = np.array([0, 2])
+            circuit(basis_state)
 
 
 # Non-parametrized operations and their matrix representation

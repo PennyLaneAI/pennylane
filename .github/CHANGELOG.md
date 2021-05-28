@@ -238,6 +238,9 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 * Ising XX gate functionality added. [(#1194)](https://github.com/PennyLaneAI/pennylane/pull/1194)
 
+* Added Projector observable, which is available on all devices inheriting from the `QubitDevice` class.
+  [(#1356)](https://github.com/PennyLaneAI/pennylane/pull/1356)
+
 <h3>Improvements</h3>
 
 * The `benchmark` module was deleted, since it was outdated and is superseded by
