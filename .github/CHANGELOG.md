@@ -243,6 +243,8 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Improvements</h3>
 
+* Implemented special handle on QubitDevice.var for Projector observable
+
 * The `benchmark` module was deleted, since it was outdated and is superseded by
   the new separate [benchmark repository](https://github.com/PennyLaneAI/benchmark).
   [(#1343)](https://github.com/PennyLaneAI/pennylane/pull/1343)
