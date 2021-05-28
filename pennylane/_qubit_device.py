@@ -109,7 +109,7 @@ class QubitDevice(Device):
         new_array[indices] = array
         return new_array
 
-    observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}
+    observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity", "Projector"}
 
     def __init__(self, wires=1, shots=None, cache=0, analytic=None):
         super().__init__(wires=wires, shots=shots, analytic=analytic)
@@ -733,6 +733,14 @@ class QubitDevice(Device):
         return self._gather(prob, perm)
 
     def expval(self, observable, shot_range=None, bin_size=None):
+
+        if observable.name == "Projector":
+            # branch specifically to handle the projector observable
+            idx = int("".join(str(i) for i in observable.parameters[0]), 2)
+            probs = self.probability(
+                wires=observable.wires, shot_range=shot_range, bin_size=bin_size
+            )
+            return probs[idx]
 
         if self.shots is None:
             # exact expectation value

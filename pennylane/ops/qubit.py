@@ -2961,6 +2961,75 @@ class Hermitian(Observable):
         return [QubitUnitary(self.eigendecomposition["eigvec"].conj().T, wires=list(self.wires))]
 
 
+class Projector(Observable):
+    r"""Projector(basis_state, wires)
+    Observable corresponding to the computational basis state projector :math:`P=\ket{i}\bra{i}`.
+
+    The expectation of this observable returns the value
+
+    .. math::
+        |\langle \psi | i \rangle |^2
+
+    corresponding to the probability of measuring the quantum state in the :math:`i` -th eigenstate of the specified :math:`n` qubits.
+
+    For example, the projector :math:`\ket{11}\bra{11}` , or in integer notation :math:`\ket{3}\bra{3}`, is created by ``basis_state=np.array([1, 1])``.
+
+    **Details:**
+
+    * Number of wires: Any
+    * Number of parameters: 1
+    * Gradient recipe: None
+
+    Args:
+        basis_state (tensor-like): binary input of shape ``(n, )``
+        wires (Iterable): wires that the projector acts on
+    """
+    num_wires = AnyWires
+    num_params = 1
+    par_domain = "A"
+
+    def __init__(self, basis_state, wires, do_queue=True):
+        wires = Wires(wires)
+        shape = qml.math.shape(basis_state)
+
+        if len(shape) != 1:
+            raise ValueError(f"Basis state must be one-dimensional; got shape {shape}.")
+
+        n_basis_state = shape[0]
+        if n_basis_state != len(wires):
+            raise ValueError(
+                f"Basis state must be of length {len(wires)}; got length {n_basis_state}."
+            )
+
+        basis_state = list(qml.math.toarray(basis_state))
+
+        if not set(basis_state).issubset({0, 1}):
+            raise ValueError(f"Basis state must only consist of 0s and 1s; got {basis_state}")
+
+        super().__init__(basis_state, wires=wires, do_queue=do_queue)
+
+    @classmethod
+    def _eigvals(cls, *params):
+        """Eigenvalues of the specific projector operator.
+
+        Returns:
+            array: eigenvalues of the projector observable in the computational basis
+        """
+        w = np.zeros(2 ** len(params[0]))
+        idx = int("".join(str(i) for i in params[0]), 2)
+        w[idx] = 1
+        return w
+
+    def diagonalizing_gates(self):
+        """Return the gate set that diagonalizes a circuit according to the
+        specified Projector observable.
+
+        Returns:
+            list: list containing the gates diagonalizing the projector observable
+        """
+        return []
+
+
 # =============================================================================
 # Arithmetic
 # =============================================================================
@@ -3206,7 +3275,7 @@ ops = {
 }
 
 
-obs = {"Hadamard", "PauliX", "PauliY", "PauliZ", "Hermitian"}
+obs = {"Hadamard", "PauliX", "PauliY", "PauliZ", "Hermitian", "Projector"}
 
 
 __all__ = list(ops | obs)
