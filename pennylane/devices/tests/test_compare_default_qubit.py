@@ -68,7 +68,8 @@ class TestComparison:
         assert np.allclose(qnode(theta, phi), qnode_def(theta, phi), atol=tol(dev.shots))
         assert np.allclose(grad(theta, phi), grad_def(theta, phi), atol=tol(dev.shots))
 
-    def test_projector_expectation(self, device, tol):
+    @pytest.mark.parametrize("state", [[0, 0], [0, 1], [1, 0], [1, 1]])
+    def test_projector_expectation(self, device, state, tol):
         """Test that arbitrary multi-mode Projector expectation values are correct"""
         n_wires = 2
         dev = device(n_wires)
@@ -98,9 +99,12 @@ class TestComparison:
         grad_def = qml.grad(qnode_def, argnum=[0, 1])
         grad = qml.grad(qnode, argnum=[0, 1])
 
-        for s in [[0, 0], [0, 1], [1, 0], [1, 1]]:
-            assert np.allclose(qnode(theta, phi, s), qnode_def(theta, phi, s), atol=tol(dev.shots))
-            assert np.allclose(grad(theta, phi, s), grad_def(theta, phi, s), atol=tol(dev.shots))
+        assert np.allclose(
+            qnode(theta, phi, state), qnode_def(theta, phi, state), atol=tol(dev.shots)
+        )
+        assert np.allclose(
+            grad(theta, phi, state), grad_def(theta, phi, state), atol=tol(dev.shots)
+        )
 
     def test_pauliz_expectation_analytic(self, device, tol):
         """Test that the tensor product of PauliZ expectation value is correct"""
