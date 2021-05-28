@@ -2,6 +2,20 @@
 
 <h3>New features since last release</h3>
 
+* Added validation for noise channel parameters. Invalid noise parameters now
+  raise a `ValueError`. [(#1357)](https://github.com/PennyLaneAI/pennylane/pull/1357)
+
+* PennyLane now has a `fourier` module, which hosts a [growing library 
+  of methods](https://pennylane.readthedocs.io/en/stable/code/qml_fourier.html) 
+  that help with investigating the Fourier representation of functions 
+  implemented by quantum circuits.
+  [(#1160)](https://github.com/PennyLaneAI/pennylane/pull/1160)
+  
+  For example, one can plot distributions over Fourier series coefficients like 
+  this one:
+  
+  <img src="https://pennylane.readthedocs.io/en/latest/_static/fourier.png" width=70%/>
+
 * It is now possible [(1291)](https://github.com/PennyLaneAI/pennylane/pull/1291)
   to create custom Observables and corresponding devices
   whose return type can be an arbitrary object and QNodes using such Observable
@@ -50,6 +64,9 @@ X_test = np.random.random((5, 6))
 # Compute kernel between test and training data.
 K_test = qml.kernels.kernel_matrix(X_train, X_test, kernel)
 ```
+
+* QNodes now display readable information when in interactive environments or when printed.
+  [(#1359)](https://github.com/PennyLaneAI/pennylane/pull/1359).
 
 * Added CPhase operation as an alias for ControlledPhaseShift operation
   [(#1319)](https://github.com/PennyLaneAI/pennylane/pull/1319).
@@ -219,8 +236,10 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 * The ISWAP operation has been added to the `default_qubit` device.
   [(#1298)](https://github.com/PennyLaneAI/pennylane/pull/1298)
 
-* Ising XX gate functionality added.
-  [(#1194)](https://github.com/PennyLaneAI/pennylane/pull/1194)
+* Ising XX gate functionality added. [(#1194)](https://github.com/PennyLaneAI/pennylane/pull/1194)
+
+* Added Projector observable, which is available on all devices inheriting from the `QubitDevice` class.
+  [(#1356)](https://github.com/PennyLaneAI/pennylane/pull/1356)
 
 * Ising YY gate functionality added.
   [(#1347)](https://github.com/PennyLaneAI/pennylane/pull/1358)
@@ -326,6 +345,9 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Bug fixes</h3>
 
+* Fixes drawing QNodes that contain multiple measurements on a single wire.
+  [(#1353)](https://github.com/PennyLaneAI/pennylane/pull/1353)
+
 * Fixes drawing QNodes with no operations.
   [(#1354)](https://github.com/PennyLaneAI/pennylane/pull/1354)
 
@@ -345,6 +367,9 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
   [(#1332)](https://github.com/PennyLaneAI/pennylane/pull/1332)
 
 <h3>Documentation</h3>
+
+* Fix typo in the documentation of qml.templates.layers.StronglyEntanglingLayers 
+  [(#1367)](https://github.com/PennyLaneAI/pennylane/pull/1367)
 
 * Fixed typo on TensorFlow interface documentation [(#1312)](https://github.com/PennyLaneAI/pennylane/pull/1312)
 
@@ -368,7 +393,9 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 This release contains contributions from (in alphabetical order):
 
 Marius Aglitoiu, Vishnu Ajith, Thomas Bromley, Jack Ceroni, Miruna Daian, Olivia Di Matteo,
-Tanya Garg, Diego Guala, Anthony Hayes, Josh Izaac, Pavan Jayasinha, Ryan Levy, Nahum Sá, Johannes Jakob Meyer, Brian Shi, Antal Száva, David Wierichs, Vincent Wong, Alberto Maldonado, Ashish Panigrahi.
+Tanya Garg, Christian Gogolin, Diego Guala, Anthony Hayes, Ryan Hill, Josh Izaac, Pavan Jayasinha, Ryan Levy, Nahum Sá, Maria Schuld,
+Johannes Jakob Meyer, Brian Shi, Antal Száva, David Wierichs, Vincent Wong, Alberto Maldonado, Ashish Panigrahi.
+
 
 # Release 0.15.1 (current release)
 
