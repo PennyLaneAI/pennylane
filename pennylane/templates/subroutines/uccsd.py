@@ -123,7 +123,7 @@ class UCCSD(Operation):
 
     def __init__(self, weights, wires, hf_state, singles=None, doubles=None, do_queue=True):
 
-        if (not singles and not doubles):
+        if not singles and not doubles:
             raise ValueError(
                 "'singles' and 'doubles' lists can not be both empty; got singles={}, doubles={}".format(
                     singles, doubles
@@ -144,7 +144,7 @@ class UCCSD(Operation):
                     "Expected entries of 'singles' to be of size 2; got {} of length {}".format(
                         s_wires, len(s_wires)
                     )
-                )                
+                )
 
         shape = qml.math.shape(weights)
         if shape != (len(singles) + len(doubles),):
