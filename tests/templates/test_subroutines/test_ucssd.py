@@ -24,113 +24,69 @@ class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
     @pytest.mark.parametrize(
-        ("s_wires", "d_wires", "weights", "ref_gates"),
+        ("singles", "doubles", "weights", "ref_gates"),
         [
             (
-                [[0, 1, 2]],
+                [[0, 2], [0, 4], [1, 3], [1, 5]],
+                [[0, 1, 2, 3], [0, 1, 2, 5], [0, 1, 3, 4], [0, 1, 4, 5]],
+                np.array(
+                    [
+                        -0.39926835,
+                        2.24302631,
+                        -1.87369867,
+                        2.66863856,
+                        0.08284505,
+                        -1.90970947,
+                        1.70143771,
+                        -1.0404567,
+                    ]
+                ),
+                [
+                    [0, qml.BasisState, [0, 1, 2, 3, 4, 5], [np.array([1, 1, 0, 0, 0, 0])]],
+                    [5, qml.SingleExcitation, [0, 2], [-0.39926835]],
+                    [6, qml.SingleExcitation, [0, 4], [2.24302631]],
+                    [7, qml.SingleExcitation, [1, 3], [-1.87369867]],
+                    [8, qml.SingleExcitation, [1, 5], [2.66863856]],
+                    [1, qml.DoubleExcitation, [0, 1, 2, 3], [0.08284505]],
+                    [2, qml.DoubleExcitation, [0, 1, 2, 5], [-1.90970947]],
+                    [3, qml.DoubleExcitation, [0, 1, 3, 4], [1.70143771]],
+                    [4, qml.DoubleExcitation, [0, 1, 4, 5], [-1.0404567]],
+                ],
+            ),
+            (
+                [[1, 5]],
                 [],
                 np.array([3.815]),
                 [
-                    [0, qml.BasisState, [0, 1, 2, 3, 4, 5], [np.array([0, 0, 0, 0, 1, 1])]],
-                    [1, qml.RX, [0], [-np.pi / 2]],
-                    [5, qml.RZ, [2], [1.9075]],
-                    [6, qml.CNOT, [1, 2], []],
-                ],
-            ),
-            (
-                [[0, 1, 2], [1, 2, 3]],
-                [],
-                np.array([3.815, 4.866]),
-                [
-                    [2, qml.Hadamard, [2], []],
-                    [8, qml.RX, [0], [np.pi / 2]],
-                    [12, qml.CNOT, [0, 1], []],
-                    [23, qml.RZ, [3], [2.433]],
-                    [24, qml.CNOT, [2, 3], []],
-                    [26, qml.RX, [1], [np.pi / 2]],
+                    [0, qml.BasisState, [0, 1, 2, 3, 4, 5], [np.array([1, 1, 0, 0, 0, 0])]],
+                    [1, qml.SingleExcitation, [1, 5], [3.815]],
                 ],
             ),
             (
                 [],
-                [[[0, 1], [2, 3, 4, 5]]],
-                np.array([3.815]),
+                [[0, 1, 4, 5]],
+                np.array([4.866]),
                 [
-                    [3, qml.RX, [2], [-np.pi / 2]],
-                    [29, qml.RZ, [5], [0.476875]],
-                    [73, qml.Hadamard, [0], []],
-                    [150, qml.RX, [1], [np.pi / 2]],
-                    [88, qml.CNOT, [3, 4], []],
-                    [121, qml.CNOT, [2, 3], []],
-                ],
-            ),
-            (
-                [],
-                [[[0, 1], [2, 3]], [[0, 1], [4, 5]]],
-                np.array([3.815, 4.866]),
-                [
-                    [4, qml.Hadamard, [3], []],
-                    [16, qml.RX, [0], [-np.pi / 2]],
-                    [38, qml.RZ, [3], [0.476875]],
-                    [78, qml.Hadamard, [2], []],
-                    [107, qml.RX, [1], [-np.pi / 2]],
-                    [209, qml.Hadamard, [4], []],
-                    [218, qml.RZ, [5], [-0.60825]],
-                    [82, qml.CNOT, [2, 3], []],
-                    [159, qml.CNOT, [4, 5], []],
-                ],
-            ),
-            (
-                [[0, 1, 2, 3, 4], [1, 2, 3]],
-                [[[0, 1], [2, 3]], [[0, 1], [4, 5]]],
-                np.array([3.815, 4.866, 1.019, 0.639]),
-                [
-                    [16, qml.RX, [0], [-np.pi / 2]],
-                    [47, qml.Hadamard, [1], []],
-                    [74, qml.Hadamard, [2], []],
-                    [83, qml.RZ, [3], [-0.127375]],
-                    [134, qml.RX, [4], [np.pi / 2]],
-                    [158, qml.RZ, [5], [0.079875]],
-                    [188, qml.RZ, [5], [-0.079875]],
-                    [96, qml.CNOT, [1, 2], []],
-                    [235, qml.CNOT, [1, 4], []],
+                    [0, qml.BasisState, [0, 1, 2, 3, 4, 5], [np.array([1, 1, 0, 0, 0, 0])]],
+                    [1, qml.DoubleExcitation, [0, 1, 4, 5], [4.866]],
                 ],
             ),
         ],
     )
-    def test_uccsd_operations(self, s_wires, d_wires, weights, ref_gates):
+    def test_uccsd_operations(self, singles, doubles, weights, ref_gates):
         """Test the correctness of the UCCSD template including the gate count
         and order, the wires the operation acts on and the correct use of parameters
         in the circuit."""
 
-        sqg = 10 * len(s_wires) + 72 * len(d_wires)
-
-        cnots = 0
-        for s_wires_ in s_wires:
-            cnots += 4 * (len(s_wires_) - 1)
-
-        for d_wires_ in d_wires:
-            cnots += 16 * (len(d_wires_[0]) - 1 + len(d_wires_[1]) - 1 + 1)
         N = 6
         wires = range(N)
 
-        ref_state = np.array([1, 1, 0, 0, 0, 0])
+        hf_state = np.array([1, 1, 0, 0, 0, 0])
 
-        op = qml.templates.UCCSD(
-            weights, wires, s_wires=s_wires, d_wires=d_wires, init_state=ref_state
-        )
-        raw_queue = op.expand().operations
+        op = qml.templates.UCCSD(weights, wires, hf_state, singles=singles, doubles=doubles)
+        queue = op.expand().operations
 
-        # hack to avoid updating the test data:
-        # expand the other templates, which now
-        # queue as a single operation
-        queue = []
-        for op in raw_queue:
-            if op.name in ["SingleExcitationUnitary", "DoubleExcitationUnitary"]:
-                queue.extend(op.expand().operations)
-            else:
-                queue.append(op)
-
-        assert len(queue) == sqg + cnots + 1
+        assert len(queue) == len(singles) + len(doubles) + 1
 
         for gate in ref_gates:
             idx = gate[0]
@@ -140,7 +96,7 @@ class TestDecomposition:
             assert isinstance(res_gate, exp_gate)
 
             exp_wires = gate[2]
-            res_wires = queue[idx]._wires
+            res_wires = queue[idx].wires
             assert res_wires.tolist() == exp_wires
 
             exp_weight = gate[3]
@@ -159,9 +115,9 @@ class TestDecomposition:
             qml.templates.UCCSD(
                 weights,
                 wires=range(4),
-                s_wires=[[0, 1]],
-                d_wires=[[[0, 1], [2, 3]]],
-                init_state=np.array([0, 1, 0, 1]),
+                hf_state=np.array([1, 1, 0, 0]),
+                singles=[[0, 1]],
+                doubles=[[0, 1, 2, 3]],
             )
             return qml.expval(qml.Identity(0))
 
@@ -170,9 +126,9 @@ class TestDecomposition:
             qml.templates.UCCSD(
                 weights,
                 wires=["z", "a", "k", "e"],
-                s_wires=[["z", "a"]],
-                d_wires=[[["z", "a"], ["k", "e"]]],
-                init_state=np.array([0, 1, 0, 1]),
+                hf_state=np.array([1, 1, 0, 0]),
+                singles=[["z", "a"]],
+                doubles=[["z", "a", "k", "e"]],
             )
             return qml.expval(qml.Identity("z"))
 
@@ -186,28 +142,36 @@ class TestInputs:
     """Test inputs and pre-processing."""
 
     @pytest.mark.parametrize(
-        ("weights", "s_wires", "d_wires", "init_state", "msg_match"),
+        # ("weights", "s_wires", "d_wires", "init_state", "msg_match"),
+        ("weights", "singles", "doubles", "hf_state", "msg_match"),
         [
             (
                 np.array([-2.8]),
-                [[0, 1, 2]],
+                [[0, 2]],
                 [],
                 np.array([1.2, 1, 0, 0]),
-                "Elements of 'init_state' must be integers",
+                "Elements of 'hf_state' must be integers",
             ),
             (
                 np.array([-2.8]),
                 [],
                 [],
                 np.array([1, 1, 0, 0]),
-                "s_wires and d_wires lists can not be both empty",
+                "'singles' and 'doubles' lists can not be both empty",
             ),
             (
                 np.array([-2.8]),
                 [],
-                [[[0, 1, 2, 3]]],
+                [[0, 1, 2, 3, 4]],
                 np.array([1, 1, 0, 0]),
-                "expected entries of d_wires to be of size 2",
+                "Expected entries of 'doubles' to be of size 4",
+            ),
+            (
+                np.array([-2.8]),
+                [[0, 2, 3]],
+                [],
+                np.array([1, 1, 0, 0]),
+                "Expected entries of 'singles' to be of size 2",
             ),
             (
                 np.array([-2.8]),
@@ -218,43 +182,44 @@ class TestInputs:
             ),
             (
                 np.array([-2.8, 1.6]),
-                [[0, 1, 2]],
+                [[0, 2]],
                 [],
                 np.array([1, 1, 0, 0]),
-                "Weights tensor must be of",
+                "'weights' tensor must be of shape",
             ),
             (
                 np.array([-2.8, 1.6]),
                 [],
-                [[[0, 1], [2, 3]]],
+                [[0, 1, 2, 3]],
                 np.array([1, 1, 0, 0]),
-                "Weights tensor must be of",
+                "'weights' tensor must be of shape",
             ),
             (
                 np.array([-2.8, 1.6]),
-                [[0, 1, 2], [1, 2, 3]],
-                [[[0, 1], [2, 3]]],
+                [[0, 2], [1, 3]],
+                [[0, 1, 2, 3]],
                 np.array([1, 1, 0, 0]),
-                "Weights tensor must be of",
+                "'weights' tensor must be of shape",
             ),
         ],
     )
-    def test_uccsd_xceptions(self, weights, s_wires, d_wires, init_state, msg_match):
+    def test_uccsd_exceptions(self, weights, singles, doubles, hf_state, msg_match):
         """Test that UCCSD throws an exception if the parameters have illegal
         shapes, types or values."""
+
         N = 4
         wires = range(4)
         dev = qml.device("default.qubit", wires=N)
 
         def circuit(
-            weights=weights, wires=wires, s_wires=s_wires, d_wires=d_wires, init_state=init_state
+            weights=weights, wires=wires, hf_state=hf_state, singles=singles, doubles=doubles
         ):
             qml.templates.UCCSD(
                 weights=weights,
                 wires=wires,
-                s_wires=s_wires,
-                d_wires=d_wires,
-                init_state=init_state,
+                hf_state=hf_state,
+                singles=singles,
+                doubles=doubles,
             )
             return qml.expval(qml.PauliZ(0))
 
@@ -264,9 +229,9 @@ class TestInputs:
             qnode(
                 weights=weights,
                 wires=wires,
-                s_wires=s_wires,
-                d_wires=d_wires,
-                init_state=init_state,
+                hf_state=hf_state,
+                singles=singles,
+                doubles=doubles,
             )
 
 
@@ -274,17 +239,17 @@ def circuit_template(weights):
     qml.templates.UCCSD(
         weights,
         wires=range(4),
-        s_wires=[[0, 1]],
-        d_wires=[[[0, 1], [2, 3]]],
-        init_state=np.array([0, 0, 0, 1]),
+        hf_state=np.array([1, 1, 0, 0]),
+        singles=[[0, 1]],
+        doubles=[[0, 1, 2, 3]],
     )
     return qml.expval(qml.PauliZ(0))
 
 
 def circuit_decomposed(weights):
-    qml.BasisState(np.array([1, 0, 0, 0]), wires=range(4))
-    qml.templates.DoubleExcitationUnitary(weights[1], wires1=[0, 1], wires2=[2, 3])
-    qml.templates.SingleExcitationUnitary(weights[0], wires=[0, 1])
+    qml.BasisState(np.array([1, 1, 0, 0]), wires=range(4))
+    qml.DoubleExcitation(weights[1], wires=[0, 1, 2, 3])
+    qml.SingleExcitation(weights[0], wires=[0, 1])
     return qml.expval(qml.PauliZ(0))
 
 
