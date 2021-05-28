@@ -186,18 +186,18 @@ class DefaultQubitTorch(DefaultQubit):
         self._pre_rotated_state = self._state
 
     @staticmethod
-    def _asarray(a, dtype=None):
+    def _asarray(a, dtype=None, device='cpu'):
         if isinstance(a, list):
             if not isinstance(a[0], torch.Tensor):
                 res = np.asarray(a)
             else:
-                res = torch.cat([torch.reshape(i, (-1,)) for i in a], dim=0)
+                res = torch.cat([torch.reshape(i, (-1,)) for i in a], dim=0).to(device)
         else:
-            res = torch.as_tensor(a, dtype=dtype)
+            res = torch.as_tensor(a, dtype=dtype, device=device)
         return res
 
     def _cast(self, a, dtype=None):
-        return self._asarray(a, dtype=dtype)
+        return self._asarray(a, dtype=dtype, device=self._torch_device)
 
     @staticmethod
     def _reduce_sum(array, axes):
