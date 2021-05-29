@@ -62,17 +62,19 @@ class DefaultQubitTorch(DefaultQubit):
 
     .. code-block:: python
 
-     dev = qml.device("default.qubit.torch", wires=1)
-     @qml.qnode(dev, interface="torch", diff_method="backprop")
-     def circuit(x):
-         qml.RX(x[1], wires=0)
-         qml.Rot(x[0], x[1], x[2], wires=0)
-         return qml.expval(qml.PauliZ(0))
-     weights = torch.tensor([0.2, 0.5, 0.1], requires_grad=True)
-     res = circuit(weights)
-     res.backward()
+        dev = qml.device("default.qubit.torch", wires=1)
+
+        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        def circuit(x):
+            qml.RX(x[1], wires=0)
+            qml.Rot(x[0], x[1], x[2], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+    >>> weights = torch.tensor([0.2, 0.5, 0.1], requires_grad=True)
+    >>> res = circuit(weights)
+    >>> res.backward()
     >>> print(weights.grad)
-     tensor([-2.2527e-01, -1.0086e+00,  1.3878e-17])
+    tensor([-2.2527e-01, -1.0086e+00,  1.3878e-17])
 
     Autograd mode will also work when using classical backpropagation:
 
@@ -89,18 +91,19 @@ class DefaultQubitTorch(DefaultQubit):
 
     .. code-block:: python
 
-     dev = qml.device("default.qubit.torch", wires=1, torch_device='cuda')
-     @qml.qnode(dev, interface="torch", diff_method="backprop")
-     def circuit(x):
-        qml.RX(x[1], wires=0)
-        qml.Rot(x[0], x[1], x[2], wires=0)
-        return qml.expval(qml.PauliZ(0))
-     weights = torch.tensor([0.2, 0.5, 0.1], requires_grad=True, device='cuda')
-     res = circuit(weights)
-     res.backward()
-    >>> print(weights.grad)
-     tensor([-2.2527e-01, -1.0086e+00,  1.3878e-17])
+        dev = qml.device("default.qubit.torch", wires=1, torch_device='cuda')
 
+        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        def circuit(x):
+            qml.RX(x[1], wires=0)
+            qml.Rot(x[0], x[1], x[2], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+    >>> weights = torch.tensor([0.2, 0.5, 0.1], requires_grad=True, device='cuda')
+    >>> res = circuit(weights)
+    >>> res.backward()
+    >>> print(weights.grad)
+    tensor([-2.2527e-01, -1.0086e+00,  1.3878e-17])
 
 
     There are a couple of things to keep in mind when using the ``"backprop"``
@@ -113,11 +116,9 @@ class DefaultQubitTorch(DefaultQubit):
       When instantiating the device with ``shots!=None``, differentiating QNode
       outputs will result in ``None``.
 
-
     If you wish to use a different machine-learning interface, or prefer to calculate quantum
     gradients using the ``parameter-shift`` or ``finite-diff`` differentiation methods,
     consider using the ``default.qubit`` device instead.
-
 
     Args:
         wires (int, Iterable): Number of subsystems represented by the device,
