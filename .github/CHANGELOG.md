@@ -2,6 +2,9 @@
 
 <h3>New features since last release</h3>
 
+* The number of parameters used to estimate the jacobian can now be specified.
+  [(#1371)](https://github.com/PennyLaneAI/pennylane/pull/1371)
+
 * Added validation for noise channel parameters. Invalid noise parameters now
   raise a `ValueError`. [(#1357)](https://github.com/PennyLaneAI/pennylane/pull/1357)
 
