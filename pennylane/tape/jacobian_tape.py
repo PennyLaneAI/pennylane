@@ -19,11 +19,13 @@ to the ``QuantumTape`` class.
 
 import itertools
 import numpy as np
+import warnings
 
 import pennylane as qml
 
 from pennylane.operation import State
 from pennylane.tape import QuantumTape
+import random
 
 # CV ops still need to support state preparation operations prior to any
 # other operation for PennyLane-SF tests to pass.
@@ -393,6 +395,23 @@ class JacobianTape(QuantumTape):
         """
         raise NotImplementedError
 
+    @staticmethod
+    def _choose_params_with_methods(diff_methods, num_params):
+
+        if num_params is None:
+            return enumerate(diff_methods)
+
+        if len(diff_methods) < num_params:
+            warnings.warn(
+                "The number of parameters specified for computing the "
+                "jacobian exceeds the number of trainable parameters, the jacobian will be "
+                "computed using all trainable parameters.",
+                UserWarning,
+            )
+            return enumerate(diff_methods)
+
+        return random.sample(list(enumerate(diff_methods)), k=num_params)
+
     def jacobian(self, device, params=None, **options):
         r"""Compute the Jacobian of the parametrized quantum circuit recorded by the quantum tape.
 
@@ -547,7 +566,11 @@ class JacobianTape(QuantumTape):
         processing_fns = []
         nonzero_grad_idx = []
 
-        for trainable_idx, param_method in enumerate(diff_methods):
+        num_params = options.get("num_params", None)
+
+        params_with_methods = self._choose_params_with_methods(diff_methods, num_params)
+
+        for trainable_idx, param_method in params_with_methods:
             if param_method == "0":
                 continue
 

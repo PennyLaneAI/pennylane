@@ -414,6 +414,26 @@ class TestJacobian:
         assert np.allclose(j1, [exp, 0])
         assert np.allclose(j2, [0, exp])
 
+    @pytest.mark.parametrize("diff_methods", [["A", "0", "F"], ["A", "A", "A"], ["A", "A", "A"]])
+    @pytest.mark.parametrize("num_params", [None, 0, 1, 2, 3])
+    def test_choose_params_and_methods(self, diff_methods, num_params):
+        """Test that the _choose_params_and_methods helper method returns
+        expected results"""
+        res = JacobianTape._choose_params_with_methods(diff_methods, num_params)
+
+        num_all_params = len(diff_methods)
+
+        assert all(k in range(num_all_params) for k, _ in res)
+        assert all(v in diff_methods for _, v in res)
+        assert len(res) == num_params if num_params is not None else num_all_params
+
+    def test_choose_params_and_methods_warns(self):
+        """Test that the _choose_params_and_methods helper method warns if too
+        many parameters were specified"""
+        with pytest.warns(
+            UserWarning, match="The number of parameters specified for computing the jacobian exceeds"
+        ):
+            JacobianTape._choose_params_with_methods(["F"], 2)
 
 class TestJacobianIntegration:
     """Integration tests for the Jacobian method"""
