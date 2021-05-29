@@ -432,7 +432,7 @@ class TestJacobian:
     @pytest.mark.parametrize("num_params", [0, 2])
     def test_choose_params_and_methods_warns(self, num_params):
         """Test that the _choose_params_and_methods helper method warns if too
-        many parameters were specified"""
+        many or too few parameters were specified"""
         diff_methods = ["F"]
         with pytest.warns(
             UserWarning,
