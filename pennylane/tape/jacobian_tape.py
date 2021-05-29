@@ -401,14 +401,14 @@ class JacobianTape(QuantumTape):
         by returning a map of their indices and differentiation methods.
 
         When there are fewer parameters specified than the total number of
-        trainable parameters, the jacobian is being estimated by sampling
-        ``num_params`` many parameters from the set of trainable parameters.
+        trainable parameters, the jacobian is estimated by using ``num_params`` many
+        random parameters from the set of trainable parameters.
 
         Args:
             diff_methods (list): the ordered list of differentiation methods
                 for each parameter
-            num_params (int or None): the number of parameters to use for
-                computing the jacobian
+            num_params (int or None): The number of parameters to use for
+                computing the jacobian. Specifies the number of parameters to sample.
 
         Returns:
             object or list: map of the trainable parameter indices and
