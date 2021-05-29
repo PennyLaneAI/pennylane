@@ -159,7 +159,6 @@ class DefaultQubitTorch(DefaultQubit):
     R_DTYPE = torch.float64
 
     _abs = staticmethod(torch.abs)
-    _dot = staticmethod(lambda x, y: torch.tensordot(x, y, dims=1))
     _einsum = staticmethod(torch.einsum)
     _flatten = staticmethod(torch.flatten)
     _reshape = staticmethod(torch.reshape)
@@ -196,6 +195,16 @@ class DefaultQubitTorch(DefaultQubit):
         else:
             res = torch.as_tensor(a, dtype=dtype)
         return res
+
+    @staticmethod
+    def _dot(x, y):
+        if x.device != y.device:
+            if x.device != 'cpu':
+                return torch.tensordot(x, y.to(x.device), dims=1)
+            if y.device != 'cpu':
+                return torch.tensordot(x.to(y.device), y, dims=1)
+
+        return torch.tensordot(x, y, dims=1)
 
     def _cast(self, a, dtype=None):
         return torch.as_tensor(self._asarray(a, dtype=dtype), device=self._torch_device)
