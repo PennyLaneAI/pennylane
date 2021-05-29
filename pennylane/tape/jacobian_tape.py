@@ -397,7 +397,23 @@ class JacobianTape(QuantumTape):
 
     @staticmethod
     def _choose_params_with_methods(diff_methods, num_params):
+        """Chooses the trainable parameters to use for computing the jacobian
+        by returning a map of their indices and differentiation methods.
 
+        When there are fewer parameters specified than the total number of
+        trainable parameters, the jacobian is being estimated by sampling
+        ``num_params`` many parameters from the set of trainable parameters.
+
+        Args:
+            diff_methods (list): the ordered list of differentiation methods
+                for each parameter
+            num_params (int or None): the number of parameters to use for
+                computing the jacobian
+
+        Returns:
+            object or list: map of the trainable parameter indices and
+            differentiation methods
+        """
         if num_params is None:
             return enumerate(diff_methods)
 
@@ -460,6 +476,10 @@ class JacobianTape(QuantumTape):
             order=1 (int): The order of the finite difference method to use. ``1`` corresponds
                 to forward finite differences, ``2`` to centered finite differences.
             shift=pi/2 (float): the size of the shift for two-term parameter-shift gradient computations
+            num_params=None (int): The number of parameters to use for
+                computing the jacobian. When there are fewer parameters specified than the
+                total number of trainable parameters, the jacobian is being estimated by
+                sampling ``num_params`` many parameters from the set of trainable parameters.
 
         Returns:
             array[float]: 2-dimensional array of shape ``(tape.output_dim, tape.num_params)``
