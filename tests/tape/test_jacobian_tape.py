@@ -414,7 +414,7 @@ class TestJacobian:
         assert np.allclose(j1, [exp, 0])
         assert np.allclose(j2, [0, exp])
 
-    @pytest.mark.parametrize("diff_methods", [["A", "0", "F"], ["A", "A", "A"], ["A", "A", "A"]])
+    @pytest.mark.parametrize("diff_methods", [["A", "0", "F"], ["A", "A", "A"], ["F", "A", "A", "0","0"]])
     @pytest.mark.parametrize("num_params", [None, 1, 2, 3])
     def test_choose_params_and_methods(self, diff_methods, num_params):
         """Test that the _choose_params_and_methods helper method returns
