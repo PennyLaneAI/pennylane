@@ -478,9 +478,10 @@ class TestJacobianIntegration:
         expected = np.array([[-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_single_expectation_value_with_num_params(self, tol):
+    def test_single_expectation_value_with_num_params_all(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with a single expval output"""
+        with a single expval output where all parameters are chose to compute
+        the jacobian"""
         dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
@@ -491,11 +492,40 @@ class TestJacobianIntegration:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        res = tape.jacobian(dev, num_params=2)
+        res = tape.jacobian(dev, num_params=2)  # <--- we choose both trainable parameters
         assert res.shape == (1, 2)
 
         expected = np.array([[-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]])
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_single_expectation_value_with_num_params_one(self, tol):
+        """Tests correct output shape and evaluation for a tape
+        with a single expval output where only one parameter is chosen to
+        estimate the jacobian.
+
+        This test relies on the fact that exactly one term of the estimated
+        jacobian will match the expected analytical value.
+        """
+        dev = qml.device("default.qubit", wires=2)
+        x = 0.543
+        y = -0.654
+
+        with JacobianTape() as tape:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        res = tape.jacobian(dev, num_params=1)  # <--- we only choose one trainable parameter
+        assert res.shape == (1, 2)
+
+        expected = np.array([[-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]])
+
+        res = res.flatten()
+        expected = expected.flatten()
+
+        assert any(np.allclose(r,e, atol=tol, rtol=0) for r, e in zip(res, expected))
+        assert not all(np.allclose(r,e, atol=tol, rtol=0) for r, e in zip(res, expected))
 
     def test_multiple_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
