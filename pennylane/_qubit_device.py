@@ -178,9 +178,6 @@ class QubitDevice(Device):
             if circuit_hash in self._cache_execute:
                 return self._cache_execute[circuit_hash]
 
-        if hasattr(self, '_torch_device'):
-            self._state = self._state.to(self._torch_device)
-
         self.check_validity(circuit.operations, circuit.observables)
 
         # apply all circuit operations
