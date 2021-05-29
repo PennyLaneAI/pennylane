@@ -18,14 +18,14 @@ to the ``QuantumTape`` class.
 # pylint: disable=too-many-branches
 
 import itertools
-import numpy as np
+import random
 import warnings
 
-import pennylane as qml
+import numpy as np
 
+import pennylane as qml
 from pennylane.operation import State
 from pennylane.tape import QuantumTape
-import random
 
 # CV ops still need to support state preparation operations prior to any
 # other operation for PennyLane-SF tests to pass.
