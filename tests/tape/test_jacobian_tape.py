@@ -415,7 +415,7 @@ class TestJacobian:
         assert np.allclose(j2, [0, exp])
 
     @pytest.mark.parametrize("diff_methods", [["A", "0", "F"], ["A", "A", "A"], ["A", "A", "A"]])
-    @pytest.mark.parametrize("num_params", [None, 0, 1, 2, 3])
+    @pytest.mark.parametrize("num_params", [None, 1, 2, 3])
     def test_choose_params_and_methods(self, diff_methods, num_params):
         """Test that the _choose_params_and_methods helper method returns
         expected results"""
@@ -427,13 +427,17 @@ class TestJacobian:
         assert all(v in diff_methods for _, v in res)
         assert len(res) == num_params if num_params is not None else num_all_params
 
-    def test_choose_params_and_methods_warns(self):
+    @pytest.mark.parametrize("num_params", [0, 2])
+    def test_choose_params_and_methods_warns(self, num_params):
         """Test that the _choose_params_and_methods helper method warns if too
         many parameters were specified"""
+        diff_methods = ["F"]
         with pytest.warns(
-            UserWarning, match="The number of parameters specified for computing the jacobian exceeds"
+            UserWarning, match="Invalid number of parameters specified for computing the jacobian exceeds"
         ):
-            JacobianTape._choose_params_with_methods(["F"], 2)
+            res = JacobianTape._choose_params_with_methods(diff_methods, num_params)
+
+        assert list(res) == [(0, "F")]
 
 class TestJacobianIntegration:
     """Integration tests for the Jacobian method"""
@@ -469,6 +473,25 @@ class TestJacobianIntegration:
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         res = tape.jacobian(dev)
+        assert res.shape == (1, 2)
+
+        expected = np.array([[-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]])
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_single_expectation_value_with_num_params(self, tol):
+        """Tests correct output shape and evaluation for a tape
+        with a single expval output"""
+        dev = qml.device("default.qubit", wires=2)
+        x = 0.543
+        y = -0.654
+
+        with JacobianTape() as tape:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        res = tape.jacobian(dev, num_params=2)
         assert res.shape == (1, 2)
 
         expected = np.array([[-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]])
