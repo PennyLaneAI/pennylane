@@ -433,11 +433,13 @@ class TestJacobian:
         many parameters were specified"""
         diff_methods = ["F"]
         with pytest.warns(
-            UserWarning, match="Invalid number of parameters specified for computing the jacobian exceeds"
+            UserWarning,
+            match="Invalid number of parameters specified for computing the jacobian exceeds",
         ):
             res = JacobianTape._choose_params_with_methods(diff_methods, num_params)
 
         assert list(res) == [(0, "F")]
+
 
 class TestJacobianIntegration:
     """Integration tests for the Jacobian method"""
@@ -524,8 +526,8 @@ class TestJacobianIntegration:
         res = res.flatten()
         expected = expected.flatten()
 
-        assert any(np.allclose(r,e, atol=tol, rtol=0) for r, e in zip(res, expected))
-        assert not all(np.allclose(r,e, atol=tol, rtol=0) for r, e in zip(res, expected))
+        assert any(np.allclose(r, e, atol=tol, rtol=0) for r, e in zip(res, expected))
+        assert not all(np.allclose(r, e, atol=tol, rtol=0) for r, e in zip(res, expected))
 
     def test_multiple_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
