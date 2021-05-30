@@ -158,6 +158,11 @@ class Hamiltonian:
 
     @property
     def name(self):
+        r""""To get name of operation being Used.
+
+        Returns:
+            (Constant): String of Operation name.
+        """
         return "Hamiltonian"
 
     def simplify(self):
