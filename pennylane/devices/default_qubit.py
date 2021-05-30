@@ -215,7 +215,7 @@ class DefaultQubit(QubitDevice):
             array[complex]: output state
         """
 
-        if hasattr(self, '_torch_device'):
+        if hasattr(self, "_torch_device"):
             if state.device != self._torch_device:
                 state = state.to(self._torch_device)
 
@@ -653,13 +653,11 @@ class DefaultQubit(QubitDevice):
         )
 
         # We now put together the indices in the notation numpy's einsum requires
-        einsum_indices = (
-            "{new_indices}{affected_indices},{state_indices}->{new_state_indices}".format(
-                affected_indices=affected_indices,
-                state_indices=state_indices,
-                new_indices=new_indices,
-                new_state_indices=new_state_indices,
-            )
+        einsum_indices = "{new_indices}{affected_indices},{state_indices}->{new_state_indices}".format(
+            affected_indices=affected_indices,
+            state_indices=state_indices,
+            new_indices=new_indices,
+            new_state_indices=new_state_indices,
         )
 
         return self._einsum(einsum_indices, mat, state)
