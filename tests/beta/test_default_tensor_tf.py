@@ -496,7 +496,11 @@ class TestJacobianIntegration:
 
         res = qml.jacobian(circuit)(p)
         expected = np.array(
-            [-np.cos(x) * np.sin(y) ** 2, -2 * (np.sin(x) + 1) * np.sin(y) * np.cos(y), 0,]
+            [
+                -np.cos(x) * np.sin(y) ** 2,
+                -2 * (np.sin(x) + 1) * np.sin(y) * np.cos(y),
+                0,
+            ]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
