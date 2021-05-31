@@ -37,8 +37,10 @@ def _get_spectrum(op):
 
     # the generator is undefined
     if g is None:
-        raise ValueError("no generator defined for data-encoding gate {}; "
-                         "cannot extract Fourier spectrum".format(op.name))
+        raise ValueError(
+            "no generator defined for data-encoding gate {}; "
+            "cannot extract Fourier spectrum".format(op.name)
+        )
 
     # if g is an Operator instance ("PauliX(wires=0)") or class ("PauliX"),
     # extract its eigenvalues or matrix representation
@@ -55,8 +57,10 @@ def _get_spectrum(op):
 
         # if this also fails, we need to abort
         if g.matrix is None:
-            raise ValueError("no matrix or eigenvalues defined for generator {} of data-encoding gate {}; "
-                             "cannot extract Fourier spectrum".format(g, op.name))
+            raise ValueError(
+                "no matrix or eigenvalues defined for generator {} of data-encoding gate {}; "
+                "cannot extract Fourier spectrum".format(g, op.name)
+            )
 
     # if we have to use the matrix representation,
     # extract the eigenvalues from the matrix
@@ -201,8 +205,10 @@ def spectrum(qnode, encoding_gates=None):
             if is_encoding_gate:
 
                 if len(op.parameters) != 1:
-                    raise ValueError("can only consider one-parameter gates as data-encoding gates; "
-                                     "got {}.".format(op.name))
+                    raise ValueError(
+                        "can only consider one-parameter gates as data-encoding gates; "
+                        "got {}.".format(op.name)
+                    )
 
                 spec = _get_spectrum(op)
 
@@ -214,4 +220,5 @@ def spectrum(qnode, encoding_gates=None):
                 freqs[id] = spec
 
         return freqs
+
     return wrapper

@@ -30,6 +30,7 @@ class DummyOp(qml.operation.Operation):
 class GeneratorIsOp(qml.PauliX):
     """Dummy operation whose generator is another
     Operation, but without a matrix defined"""
+
     generator = [DummyOp, 1]
 
 
@@ -90,9 +91,9 @@ def circuit(x, w):
 
 
 expected_result = {
-    'x0': [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0],
-    'x1': [-2.0, -1.0, 0.0, 1.0, 2.0],
-    'x2': [-2.0, -1.0, 0.0, 1.0, 2.0]
+    "x0": [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0],
+    "x1": [-2.0, -1.0, 0.0, 1.0, 2.0],
+    "x2": [-2.0, -1.0, 0.0, 1.0, 2.0],
 }
 
 
@@ -108,7 +109,7 @@ class TestInterfaces:
         w = pnp.array([[-1, -2, -3], [-4, -5, -6]], requires_grad=True)
 
         dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(circuit, dev, interface='autograd')
+        qnode = qml.QNode(circuit, dev, interface="autograd")
 
         res = spectrum(qnode)(x, w)
         for (k1, v1), (k2, v2) in zip(res.items(), expected_result.items()):
@@ -120,11 +121,11 @@ class TestInterfaces:
         in the torch interface."""
 
         torch = pytest.importorskip("torch")
-        x = torch.tensor([1., 2., 3., 4., 5.], requires_grad=True)
+        x = torch.tensor([1.0, 2.0, 3.0, 4.0, 5.0], requires_grad=True)
         w = torch.tensor([[-1, -2, -3], [-4, -5, -6]], requires_grad=False)
 
         dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(circuit, dev, interface='torch')
+        qnode = qml.QNode(circuit, dev, interface="torch")
 
         res = spectrum(qnode)(x, w)
         assert res
@@ -138,10 +139,10 @@ class TestInterfaces:
         tf = pytest.importorskip("tensorflow")
 
         dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(circuit, dev, interface='tf')
+        qnode = qml.QNode(circuit, dev, interface="tf")
 
         with tf.GradientTape() as tape:
-            x = tf.Variable([1., 2., 3., 4., 5.])
+            x = tf.Variable([1.0, 2.0, 3.0, 4.0, 5.0])
             w = tf.constant([[-1, -2, -3], [-4, -5, -6]])
             # the spectrum function has to be called in a tape context
             res = spectrum(qnode)(x, w)
@@ -162,7 +163,7 @@ class TestInterfaces:
         w = [[-1, -2, -3], [-4, -5, -6]]
 
         dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(circuit, dev, interface='jax')
+        qnode = qml.QNode(circuit, dev, interface="jax")
 
         res = spectrum(qnode)(x, w)
 
@@ -170,4 +171,3 @@ class TestInterfaces:
         for (k1, v1), (k2, v2) in zip(res.items(), expected_result.items()):
             assert k1 == k2
             assert v1 == v2
-
