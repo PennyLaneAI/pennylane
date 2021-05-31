@@ -380,6 +380,7 @@ class TestOperationConstruction:
 
     def test_id(self):
         """Test that the id attribute of an operator can be set."""
+
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
@@ -387,7 +388,7 @@ class TestOperationConstruction:
             par_domain = "N"
             grad_method = None
 
-        op = DummyOp(1., wires=0, id="test")
+        op = DummyOp(1.0, wires=0, id="test")
         assert op.id == "test"
 
 
@@ -482,7 +483,7 @@ class TestObservableConstruction:
             par_domain = "N"
             grad_method = None
 
-        op = DummyObserv(1., wires=0, id="test")
+        op = DummyObserv(1.0, wires=0, id="test")
         assert op.id == "test"
 
 
