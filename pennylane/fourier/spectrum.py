@@ -14,44 +14,66 @@
 """Contains a function that computes the fourier spectrum of a tape."""
 import numpy as np
 from itertools import product
+import pennylane as qml
 
 
 def _get_spectrum(op):
-    r"""Get the spectrum of the input x of a single-parameter operation :math:`\exp(-i x G)`.
+    r"""Extract the frequencies contributed by a data-encoding gate to the
+    overall Fourier representation of a quantum circuit.
 
-    The spectrum is the set of sums of :math:`G`'s eigenvalues.
+    If :math:`G` is the generator of the data-encoding gate :math:`\exp(-i x G)`,
+    the frequencies are the set of differences of :math:`G`'s eigenvalues and their negative
+    equivalent.
+
+    The negative eigenvalues are
+
+    Args:
+        op (~pennylane.operation.Operation): an instance of the `Operation` class
+
+    Returns:
+        list: frequencies contributed by the data-encoding gate
     """
-
+    evals = None
     g, coeff = op.generator
 
-    # some generators are operations
-    if not isinstance(g, np.ndarray) and g is not None:
-        g = g.matrix
-
-    # the matrix or generator could be undefined
+    # the generator is undefined
     if g is None:
-        raise ValueError("cannot get spectrum for data-encoding gate {}".format(op.name))
+        raise ValueError("no generator defined for data-encoding gate {}; "
+                         "cannot extract Fourier spectrum".format(op.name))
 
-    g = coeff * g
-    evals = np.linalg.eigvals(g)
-    # eigenvalues of hermitian ops are guaranteed to be real
-    evals = np.real(evals)
+    # if g is an Operator instance,
+    # extract its eigenvalues or matrix representation
+    if isinstance(g, qml.operation.Operator):
+        # first try if we can directly find eigenvalues
+        evals = g.eigvals
 
-    # append negative to cater for the
-    # complex conjugate part of the expectation,
-    # which subtracts eigenvalues
-    evals = [evals, -evals]
+        # if not, try to extract the matrix
+        if evals is None:
+            g = g.matrix
 
-    frequencies = [np.round(sum(comb), decimals=8) for comb in product(*evals)]
+        # if this also fails, we need to abort
+        if g.matrix is None:
+            raise ValueError("no matrix or eigenvalues defined for generator {} of data-encoding gate {}; "
+                             "cannot extract Fourier spectrum".format(g.name, op.name))
+
+    # if we have to use the matrix representation,
+    # extract the eigenvalues from the matrix
+    if evals is None:
+        g = coeff * g
+        # eigenvalues of hermitian ops are guaranteed to be real
+        evals = qml.math.real(np.linalg.eigvals(g))
+
+    # compute all differences of eigenvalues
+    frequencies = [np.round(e1 - e2, decimals=8) for e1, e2 in product(evals, evals)]
     unique_frequencies = list(set(frequencies))
     return sorted(unique_frequencies)
 
 
 def _join_spectra(spec1, spec2):
-    r"""Join two spectra that belong to the same input.
+    r"""Join two sets of frequencies that belong to the same input scalar.
 
-    Since :math:`\exp(i a x)\exp(i b x) = \exp(i (a+b) x)`, spectra are
-    joined by taking the set of sums of their elements.
+    Since :math:`\exp(i a x)\exp(i b x) = \exp(i (a+b) x)`, frequency sets of two gates
+    encoding the same :math:`x` are joined by computing the set of sums of their elements.
 
     Args:
         spec1 (list[float]): first spectrum
@@ -64,15 +86,21 @@ def _join_spectra(spec1, spec2):
 
 
 def spectrum(tape, encoding_gates=None):
-    r"""Compute the frequency spectrum of the quantum circuit represented by a quantum tape.
+    r"""Compute the frequency spectrum of the Fourier representation of simple quantum circuits.
 
-    EXPLAIN MARKING
+    The circuit must only use single-parameter gates of the form :math:`e^{-ix_j G}` as
+    data-encoding gates, which allows the computation of the spectrum by inspecting the gates'
+    generators :math:`G`.
 
-    EXPLAIN QNODE FORM
+    Gates are marked as data-encoding gates on the tape by giving them an id which is
+    found in encoding_gates. If two gates have the same id, they are considered
+    to be used to encode the same input :math:`x_j`. If encoding_gates is None,
+    all gates on the tape which have a custom id attribute are considered to be input-encoding gates.
 
     Args:
-        tape (pennylane.tapes.QuantumTape): a quantum tape in which data-encoding
+        tape (pennylane.tapes.QuantumTape): a quantum tape on which encoding
             gates are marked
+        encoding_gates (list[str]): list of data-encoding gate IDs for which to compute the frequency spectra
 
     Returns:
         (Dict[str, list[float]]): Dictionary with the input scalars' gate IDs as keys and
@@ -80,21 +108,22 @@ def spectrum(tape, encoding_gates=None):
 
     **Details**
 
-    If the circuit represented by the qnode returns the expectation value of an
-    observable, it can be interpreted as a function
+    A circuit that returns an expectation value which depends on
+    :math:`N` scalar inputs :math:`x_i` can be interpreted as a function
     :math:`f: \mathbb{R}^N \rightarrow \mathbb{R}`. This function can always be
-    expressed by a Fourier series
+    expressed by a Fourier-type sum
 
     .. math::
 
-        \sum \limits_{n_1\in \Omega_1} \dots \sum \limits_{n_N \in \Omega_N}
-        c_{n_1,\dots, n_N} e^{-i x_1 n_1} \dots e^{-i x_N n_N}
+        \sum \limits_{\omega_1\in \Omega_1} \dots \sum \limits_{\omega_N \in \Omega_N}
+        c_{\omega_1,\dots, \omega_N} e^{-i x_1 \omega_1} \dots e^{-i x_N \omega_N}
 
-    summing over the *frequency spectra* :math:`\Omega_i \subseteq \mathbb{Z},`
-    :math:`i=1,\dots,N`, where :math:`\mathbb{Z}` are the integers. Each
+    over the *frequency spectra* :math:`\Omega_i \subseteq \mathbb{R},`
+    :math:`i=1,\dots,N`. Each
     spectrum has the property that :math:`0 \in \Omega_i`, and the spectrum is
-    symmetric (for every :math:`n \in \Omega_i` we have that :math:`-n \in
-    \Omega_i`).
+    symmetric (for every :math:`\omega \in \Omega_i` we have that :math:`-\omega \in
+    \Omega_i`). If all frequencies are integer-valued, the Fourier sum becomes a
+    *Fourier series*.
 
     As shown in `Vidal and Theis (2019)
     <https://arxiv.org/abs/1901.11434>`_ and `Schuld, Sweke and Meyer (2020)
@@ -104,7 +133,6 @@ def spectrum(tape, encoding_gates=None):
     of the generators :math:`G`. In many situations, the spectra are limited
     to a few frequencies only, which in turn limits the function class that the circuit
     can express.
-
 
     **Example**
 
@@ -130,6 +158,7 @@ def spectrum(tape, encoding_gates=None):
         x = np.array([1, 2, 3])
         w = np.random.random((n_layers, n_qubits, 3))
 
+        # evaluatae qnode once to
         circuit(x, w)
 
         res = spectrum(circuit.qtape)
@@ -151,13 +180,13 @@ def spectrum(tape, encoding_gates=None):
         if id is None:
             continue
 
-        # if user has not specified encoding gate id's,
+        # if user has not specified encoding_gate id's,
         # consider any id
         is_encoding_gate = encoding_gates is None or id in encoding_gates
         if is_encoding_gate:
 
             if len(op.parameters) != 1:
-                raise ValueError("Spectrum function can only consider one-parameter gates as data-encoding gates; "
+                raise ValueError("can only consider one-parameter gates as data-encoding gates; "
                                  "got {}.".format(op.name))
 
             spec = _get_spectrum(op)
@@ -170,5 +199,3 @@ def spectrum(tape, encoding_gates=None):
             freqs[id] = spec
 
     return freqs
-
-
