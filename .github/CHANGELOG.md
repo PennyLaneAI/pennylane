@@ -2,6 +2,9 @@
 
 <h3>New features since last release</h3>
 
+* Added validation for noise channel parameters. Invalid noise parameters now
+  raise a `ValueError`. [(#1357)](https://github.com/PennyLaneAI/pennylane/pull/1357)
+
 * PennyLane now has a `fourier` module, which hosts a [growing library 
   of methods](https://pennylane.readthedocs.io/en/stable/code/qml_fourier.html) 
   that help with investigating the Fourier representation of functions 
@@ -235,7 +238,13 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 * Ising XX gate functionality added. [(#1194)](https://github.com/PennyLaneAI/pennylane/pull/1194)
 
+* Added Projector observable, which is available on all devices inheriting from the `QubitDevice` class.
+  [(#1356)](https://github.com/PennyLaneAI/pennylane/pull/1356)
+
 <h3>Improvements</h3>
+
+* Implement special handling for measuring the variance of Projector observables to improve memory usage.
+  [(#1368)](https://github.com/PennyLaneAI/pennylane/pull/1368)
 
 * The `benchmark` module was deleted, since it was outdated and is superseded by
   the new separate [benchmark repository](https://github.com/PennyLaneAI/benchmark).
@@ -338,7 +347,12 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 * Fixes a bug where `qml.ctrl` would fail to transform gates that had no
   control defined and no decomposition defined.
-  [](https://github.com/PennyLaneAI/pennylane/pull/)
+  [(#1376)](https://github.com/PennyLaneAI/pennylane/pull/1376)
+
+* Copying the `JacobianTape` now correctly also copies the `jacobian_options` attribute. This fixes a bug
+  allowing the JAX interface to support adjoint differentiation.
+  [(#1349)](https://github.com/PennyLaneAI/pennylane/pull/1349)
+
 
 * Fixes drawing QNodes that contain multiple measurements on a single wire.
   [(#1353)](https://github.com/PennyLaneAI/pennylane/pull/1353)
@@ -363,6 +377,9 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Documentation</h3>
 
+* Fix typo in the documentation of qml.templates.layers.StronglyEntanglingLayers 
+  [(#1367)](https://github.com/PennyLaneAI/pennylane/pull/1367)
+
 * Fixed typo on TensorFlow interface documentation [(#1312)](https://github.com/PennyLaneAI/pennylane/pull/1312)
 
 * Fixed typos in the mathematical expressions in documentation of `qml.DoubleExcitation`.
@@ -385,7 +402,7 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 This release contains contributions from (in alphabetical order):
 
 Marius Aglitoiu, Vishnu Ajith, Thomas Bromley, Jack Ceroni, Miruna Daian, Olivia Di Matteo,
-Tanya Garg, Christian Gogolin, Diego Guala, Anthony Hayes, Ryan Hill, Josh Izaac, Pavan Jayasinha, Ryan Levy, Nahum Sá, Maria Schuld,
+Tanya Garg, Christian Gogolin, Diego Guala, Anthony Hayes, Ryan Hill, Josh Izaac, Pavan Jayasinha, Christina Lee, Ryan Levy, Nahum Sá, Maria Schuld,
 Johannes Jakob Meyer, Brian Shi, Antal Száva, David Wierichs, Vincent Wong, Alberto Maldonado, Ashish Panigrahi.
 
 
