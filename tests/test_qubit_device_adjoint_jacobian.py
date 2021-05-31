@@ -346,7 +346,7 @@ class TestAdjointJacobianQNode:
 
         assert np.allclose(g1, g2)
 
-    def interface_torch(self, dev):
+    def test_interface_torch(self, dev):
         """Test if gradients agree between the adjoint and finite-diff methods when using the
         Torch interface"""
         torch = pytest.importorskip("torch")
