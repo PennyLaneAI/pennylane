@@ -138,7 +138,7 @@ class TFInterface(AnnotatedQueue):
         res = self.execute_device(args, input_kwargs["device"])
         self.set_parameters(all_params, trainable_only=False)
 
-        # save state 
+        # save state
         if self.jacobian_options.get("reuse_cached_state", False):
             state = input_kwargs["device"].state
 
