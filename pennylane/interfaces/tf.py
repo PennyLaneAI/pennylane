@@ -138,7 +138,8 @@ class TFInterface(AnnotatedQueue):
         res = self.execute_device(args, input_kwargs["device"])
         self.set_parameters(all_params, trainable_only=False)
 
-        if self.jacobian_options.get("jacobian_method", None) == "adjoint_jacobian":
+        # save state 
+        if self.jacobian_options.get("reuse_cached_state", False):
             state = input_kwargs["device"].state
 
         # The following dictionary caches the Jacobian and Hessian matrices,
@@ -177,7 +178,7 @@ class TFInterface(AnnotatedQueue):
             if grad_matrix_fn in saved_grad_matrices:
                 return saved_grad_matrices[grad_matrix_fn]
 
-            if self.jacobian_options.get("jacobian_method", None) == "adjoint_jacobian":
+            if self.jacobian_options.get("reuse_cached_state", False):
                 self.jacobian_options["device_pd_options"] = {"starting_state": state}
 
             self.set_parameters(all_params_unwrapped, trainable_only=False)

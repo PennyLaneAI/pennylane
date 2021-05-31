@@ -103,6 +103,9 @@ class JAXInterface(AnnotatedQueue):
 
         def wrapped_exec_bwd(params, g):
             def jacobian(params):
+                # reuse device state for adjoint diff
+                if self.jacobian_options.get("jacobian_method", None) == "adjoint_jacobian":
+                    self.jacobian_options["device_pd_options"] = {"use_device_state": True}
                 tape = self.copy()
                 tape.set_parameters(params)
                 return tape.jacobian(device, params=params, **tape.jacobian_options)

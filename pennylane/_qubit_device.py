@@ -848,7 +848,6 @@ class QubitDevice(Device):
 
         if starting_state is not None:
             print("provided starting state")
-            print("state: ", starting_state)
             ket = self._reshape(starting_state, [2] * self.num_wires)
         elif use_device_state:
             print("using device state")

@@ -76,9 +76,8 @@ class _TorchInterface(torch.autograd.Function):
         if hasattr(res, "numpy"):
             res = res.numpy()
 
-        if tape.jacobian_options.get("jacobian_method", None) == "adjoint_jacobian":
+        if tape.jacobian_options.get("reuse_cached_state", False):
             state = device.state
-            print(state)
 
         ctx.saved_grad_matrices = {}
 
@@ -109,8 +108,7 @@ class _TorchInterface(torch.autograd.Function):
             if grad_matrix_fn in ctx.saved_grad_matrices:
                 return ctx.saved_grad_matrices[grad_matrix_fn]
 
-            if tape.jacobian_options.get("jacobian_method", None) == "adjoint_jacobian":
-                print(state)
+            if tape.jacobian_options.get("reuse_cached_state", False):
                 tape.jacobian_options["device_pd_options"] = {"starting_state": state}
 
             tape.set_parameters(ctx.all_params_unwrapped, trainable_only=False)
