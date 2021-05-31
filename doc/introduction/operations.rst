@@ -155,6 +155,7 @@ Qubit observables
     ~pennylane.PauliX
     ~pennylane.PauliY
     ~pennylane.PauliZ
+    ~pennylane.Projector
 
 :html:`</div>`
 
