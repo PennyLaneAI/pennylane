@@ -10,7 +10,8 @@
   that help with investigating the Fourier representation of functions 
   implemented by quantum circuits.
   [(#1160)](https://github.com/PennyLaneAI/pennylane/pull/1160)
-  
+  [(#1378)](https://github.com/PennyLaneAI/pennylane/pull/1378)
+
   For example, one can plot distributions over Fourier series coefficients like 
   this one:
   

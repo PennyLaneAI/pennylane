@@ -11,9 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains a function that computes the fourier spectrum of a tape."""
-import numpy as np
+"""Contains a QNode transform that computes the Fourier spectrum of a quantum
+circuit."""
 from itertools import product
+from functools import wraps
+import numpy as np
 import pennylane as qml
 
 
@@ -22,16 +24,13 @@ def _get_spectrum(op):
     overall Fourier representation of a quantum circuit.
 
     If :math:`G` is the generator of the data-encoding gate :math:`\exp(-i x G)`,
-    the frequencies are the set of differences of :math:`G`'s eigenvalues and their negative
-    equivalent.
-
-    The negative eigenvalues are
+    the frequencies are the differences between any two of :math:`G`'s eigenvalues.
 
     Args:
         op (~pennylane.operation.Operation): an instance of the `Operation` class
 
     Returns:
-        list: frequencies contributed by the data-encoding gate
+        list: frequencies contributed by this data-encoding gate
     """
     evals = None
     g, coeff = op.generator
@@ -41,20 +40,23 @@ def _get_spectrum(op):
         raise ValueError("no generator defined for data-encoding gate {}; "
                          "cannot extract Fourier spectrum".format(op.name))
 
-    # if g is an Operator instance,
+    # if g is an Operator instance ("PauliX(wires=0)") or class ("PauliX"),
     # extract its eigenvalues or matrix representation
-    if isinstance(g, qml.operation.Operator):
+    if hasattr(g, "eigvals"):
         # first try if we can directly find eigenvalues
         evals = g.eigvals
 
-        # if not, try to extract the matrix
-        if evals is None:
-            g = g.matrix
+        if evals is not None:
+            # scale evals correctly
+            evals = evals * coeff
+    elif hasattr(g, "matrix"):
+        # try to extract the matrix
+        g = g.matrix
 
         # if this also fails, we need to abort
         if g.matrix is None:
             raise ValueError("no matrix or eigenvalues defined for generator {} of data-encoding gate {}; "
-                             "cannot extract Fourier spectrum".format(g.name, op.name))
+                             "cannot extract Fourier spectrum".format(g, op.name))
 
     # if we have to use the matrix representation,
     # extract the eigenvalues from the matrix
@@ -85,7 +87,7 @@ def _join_spectra(spec1, spec2):
     return sorted(list(set(sums)))
 
 
-def spectrum(tape, encoding_gates=None):
+def spectrum(qnode, encoding_gates=None):
     r"""Compute the frequency spectrum of the Fourier representation of simple quantum circuits.
 
     The circuit must only use single-parameter gates of the form :math:`e^{-ix_j G}` as
@@ -98,9 +100,10 @@ def spectrum(tape, encoding_gates=None):
     all gates on the tape which have a custom id attribute are considered to be input-encoding gates.
 
     Args:
-        tape (pennylane.tapes.QuantumTape): a quantum tape on which encoding
-            gates are marked
-        encoding_gates (list[str]): list of data-encoding gate IDs for which to compute the frequency spectra
+        qnode (pennylane.QNode): a quantum node representing a circuit in which
+            input-encoding gates are marked by IDs
+        encoding_gates (list[str]): list of input-encoding gate IDs
+            for which to compute the frequency spectra
 
     Returns:
         (Dict[str, list[float]]): Dictionary with the input scalars' gate IDs as keys and
@@ -158,10 +161,7 @@ def spectrum(tape, encoding_gates=None):
         x = np.array([1, 2, 3])
         w = np.random.random((n_layers, n_qubits, 3))
 
-        # evaluatae qnode once to
-        circuit(x, w)
-
-        res = spectrum(circuit.qtape)
+        res = spectrum(circuit, encoding_gates)(x, w)
 
         for inp, freqs in res.items():
             print(f"{inp}: {freqs}")
@@ -169,33 +169,49 @@ def spectrum(tape, encoding_gates=None):
         >>> 'x1': [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0]
         >>> 'x2': [-2.0, -1.0, 0.0, 1.0, 2.0]
         >>> 'x3': [-2.0, -1.0, 0.0, 1.0, 2.0]
+
+    .. note::
+        While the Fourier spectrum usually does not depend
+        on the actual circuit parameters and inputs, it may still change with
+        arguments of the QNode, for example if the arguments change the architecture
+        of the circuit.
+
+    .. note::
+        The `spectrum` function does not check if the result of the
+        circuit is an expectation value.
     """
 
-    freqs = {}
-    for op in tape.operations:
-        id = op.id
+    @wraps(qnode)
+    def wrapper(*args, **kwargs):
+        qnode.construct(args, kwargs)
+        tape = qnode.qtape
 
-        # if the operator has no specific ID,
-        # move to the next
-        if id is None:
-            continue
+        freqs = {}
+        for op in tape.operations:
+            id = op.id
 
-        # if user has not specified encoding_gate id's,
-        # consider any id
-        is_encoding_gate = encoding_gates is None or id in encoding_gates
-        if is_encoding_gate:
+            # if the operator has no specific ID,
+            # move to the next
+            if id is None:
+                continue
 
-            if len(op.parameters) != 1:
-                raise ValueError("can only consider one-parameter gates as data-encoding gates; "
-                                 "got {}.".format(op.name))
+            # if user has not specified encoding_gate id's,
+            # consider any id
+            is_encoding_gate = encoding_gates is None or id in encoding_gates
+            if is_encoding_gate:
 
-            spec = _get_spectrum(op)
+                if len(op.parameters) != 1:
+                    raise ValueError("can only consider one-parameter gates as data-encoding gates; "
+                                     "got {}.".format(op.name))
 
-            # if id has been seen before,
-            # join this spectrum to another one
-            if id in freqs:
-                spec = _join_spectra(freqs[id], spec)
+                spec = _get_spectrum(op)
 
-            freqs[id] = spec
+                # if id has been seen before,
+                # join this spectrum to another one
+                if id in freqs:
+                    spec = _join_spectra(freqs[id], spec)
 
-    return freqs
+                freqs[id] = spec
+
+        return freqs
+    return wrapper
