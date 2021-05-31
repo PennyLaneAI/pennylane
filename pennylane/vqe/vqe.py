@@ -158,6 +158,11 @@ class Hamiltonian:
 
     @property
     def name(self):
+        r""""To get name of operation being Used.
+
+        Returns:
+            (Constant): String of Operation name.
+        """
         return "Hamiltonian"
 
     def simplify(self):
@@ -597,8 +602,6 @@ class VQECost(ExpvalCost):
 
     def __init__(self, *args, **kwargs):
         warnings.warn(
-            "Use of VQECost is deprecated and should be replaced with ExpvalCost",
-            UserWarning,
-            2,
+            "Use of VQECost is deprecated and should be replaced with ExpvalCost", UserWarning, 2,
         )
         super().__init__(*args, **kwargs)

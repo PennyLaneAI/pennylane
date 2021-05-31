@@ -23,7 +23,7 @@ import torch
 import pennylane as qml
 from pennylane.queuing import AnnotatedQueue
 
-COMPLEX_SUPPORT = semantic_version.match(">=1.8.1", torch.__version__)
+COMPLEX_SUPPORT = semantic_version.match(">=1.8.0", torch.__version__)
 
 
 def args_to_numpy(args):
