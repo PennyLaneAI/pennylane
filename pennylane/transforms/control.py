@@ -15,6 +15,8 @@
 Contains the control transform.
 """
 from functools import wraps
+
+import pennylane as qml
 from pennylane.tape import QuantumTape, get_active_tape
 from pennylane.operation import Operation, AnyWires
 from pennylane.wires import Wires
@@ -45,9 +47,28 @@ def expand_with_control(tape, control_wire):
                 # pylint: disable=protected-access
                 op._controlled(control_wire)
             else:
-                tmp_tape = op.expand()
-                tmp_tape = expand_with_control(tmp_tape, control_wire)
-                requeue_ops_in_tape(tmp_tape)
+                try:
+                    # Attempt to decompose the operation and apply
+                    # controls to each gate in the decomposition.
+                    tmp_tape = op.expand()
+                    tmp_tape = expand_with_control(tmp_tape, control_wire)
+                    requeue_ops_in_tape(tmp_tape)
+
+                except NotImplementedError as e:
+                    # Operation does not have a decomposition defined.
+
+                    # Option 1: raise an error
+                    # raise ValueError(f"Operation {op.name} currently does not support control wires.")
+
+                    # Option 2: change the name of the gate and hope the device understands it.
+                    # op._name = "C" + op._name
+                    # op.queue()
+
+                    # Option 3: create a dense matrix and pass this to the underlying device
+                    qml.ControlledQubitUnitary(
+                        op.matrix, control_wires=control_wire, wires=op.wires
+                    )
+
     return new_tape
 
 

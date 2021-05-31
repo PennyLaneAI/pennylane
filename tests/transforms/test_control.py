@@ -210,3 +210,16 @@ def test_no_control_defined():
     # Check that all operations are updated to their controlled version.
     for op in tape.operations:
         assert type(op) in {qml.ControlledPhaseShift, qml.Toffoli, qml.CRX, qml.CSWAP}
+
+
+def test_no_decomposition_defined():
+    """Test that a controlled gate that has no control transform defined,
+    as well as no decomposition transformed defined, still works correctly"""
+
+    with QuantumTape() as tape:
+        ctrl(qml.CZ, 0)(wires=[1, 2])
+
+    tape = expand_tape(tape)
+
+    assert len(tape.operations) == 1
+    assert tape.operations[0].name == "ControlledQubitUnitary"

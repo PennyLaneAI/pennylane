@@ -336,6 +336,10 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where `qml.ctrl` would fail to transform gates that had no
+  control defined and no decomposition defined.
+  [](https://github.com/PennyLaneAI/pennylane/pull/)
+
 * Fixes drawing QNodes that contain multiple measurements on a single wire.
   [(#1353)](https://github.com/PennyLaneAI/pennylane/pull/1353)
 
