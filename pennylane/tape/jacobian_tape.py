@@ -538,8 +538,7 @@ class JacobianTape(QuantumTape):
                 # First order (forward) finite-difference will be performed.
                 # Compute the value of the tape at the current parameters here. This ensures
                 # this computation is only performed once, for all parameters.
-                params_f64 = np.array(params, dtype=np.float64)
-                options["y0"] = np.asarray(self.execute_device(params_f64, device))
+                options["y0"] = np.asarray(self.execute_device(params, device))
 
         # some gradient methods need the device or the device wires
         options["device"] = device
