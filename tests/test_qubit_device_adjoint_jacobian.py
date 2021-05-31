@@ -376,10 +376,10 @@ class TestAdjointJacobianQNode:
         assert np.allclose(grad_adjoint, grad_fd)
 
     def test_interface_jax(self, dev):
-        """Test if the gradients agree between adjoint and backprop methods in the 
+        """Test if the gradients agree between adjoint and backprop methods in the
         jax interface"""
         jax = pytest.importorskip("jax")
-        
+
         def f(params1, params2):
             qml.RX(0.4, wires=[0])
             qml.RZ(params1 * jax.numpy.sqrt(params2), wires=[0])
@@ -389,8 +389,8 @@ class TestAdjointJacobianQNode:
         params1 = jax.numpy.array(0.3)
         params2 = jax.numpy.array(0.4)
 
-        qnode_adjoint = QNode(f, dev, interface='jax', diff_method='adjoint')
-        qnode_backprop = QNode(f, dev, interface='jax', diff_method='backprop')
+        qnode_adjoint = QNode(f, dev, interface="jax", diff_method="adjoint")
+        qnode_backprop = QNode(f, dev, interface="jax", diff_method="backprop")
 
         grad_adjoint = jax.grad(qnode_adjoint)(params1, params2)
         grad_backprop = jax.grad(qnode_backprop)(params1, params2)
