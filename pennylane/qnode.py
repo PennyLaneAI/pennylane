@@ -28,7 +28,12 @@ from pennylane import Device
 from pennylane.operation import State
 
 from pennylane.interfaces.autograd import AutogradInterface, np as anp
-from pennylane.tape import JacobianTape, QubitParamShiftTape, CVParamShiftTape, ReversibleTape
+from pennylane.tape import (
+    JacobianTape,
+    QubitParamShiftTape,
+    CVParamShiftTape,
+    ReversibleTape,
+)
 
 
 class QNode:
@@ -181,6 +186,16 @@ class QNode:
 
         self.dtype = np.float64
         self.max_expansion = max_expansion
+
+    def __repr__(self):
+        """String representation."""
+        detail = "<QNode: wires={}, device='{}', interface='{}', diff_method='{}'>"
+        return detail.format(
+            self.device.num_wires,
+            self.device.short_name,
+            self.interface,
+            self.diff_method,
+        )
 
     # pylint: disable=too-many-return-statements
     @staticmethod
@@ -825,11 +840,21 @@ class QNode:
                 "version of JAX to enable the 'jax' interface."
             ) from e
 
-    INTERFACE_MAP = {"autograd": to_autograd, "torch": to_torch, "tf": to_tf, "jax": to_jax}
+    INTERFACE_MAP = {
+        "autograd": to_autograd,
+        "torch": to_torch,
+        "tf": to_tf,
+        "jax": to_jax,
+    }
 
 
 def qnode(
-    device, interface="autograd", diff_method="best", mutable=True, max_expansion=10, **diff_options
+    device,
+    interface="autograd",
+    diff_method="best",
+    mutable=True,
+    max_expansion=10,
+    **diff_options,
 ):
     """Decorator for creating QNodes.
 

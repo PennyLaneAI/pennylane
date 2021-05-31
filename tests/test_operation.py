@@ -35,9 +35,11 @@ from pennylane.wires import Wires
 op_classes = [getattr(qml.ops, cls) for cls in qml.ops.__all__]
 op_classes_cv = [getattr(qml.ops, cls) for cls in qml.ops._cv__all__]
 op_classes_gaussian = [cls for cls in op_classes_cv if cls.supports_heisenberg]
+op_classes_exception = {"PauliRot", "Projector"}
 
 op_classes_param_testable = op_classes.copy()
-op_classes_param_testable.remove(qml.ops.PauliRot)
+for i in [getattr(qml.ops, cls) for cls in list(op_classes_exception)]:
+    op_classes_param_testable.remove(i)
 
 
 def U3(theta, phi, lam):

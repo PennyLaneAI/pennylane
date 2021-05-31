@@ -87,6 +87,12 @@ EIGVALS_TEST_DATA = [
 
 EIGVALS_TEST_DATA_MULTI_WIRES = [functools.reduce(np.kron, [Y, I, Z])]
 
+# Testing Projector observable with the basis states.
+PROJECTOR_EIGVALS_TEST_DATA = [
+    (np.array([0, 0])),
+    (np.array([1, 0, 1])),
+]
+
 
 @pytest.mark.usefixtures("tear_down_hermitian")
 class TestObservables:
@@ -331,6 +337,61 @@ class TestObservables:
         H2[0, 1] = 2
         with pytest.raises(ValueError, match="must be Hermitian"):
             qml.Hermitian(H2, wires=0).matrix
+
+
+class TestProjector:
+    """Tests for projector observable"""
+
+    @pytest.mark.parametrize("basis_state", PROJECTOR_EIGVALS_TEST_DATA)
+    def test_projector_eigvals(self, basis_state, tol):
+        """Tests that the eigvals property of the Projector class returns the correct results."""
+        num_wires = len(basis_state)
+        eigvals = qml.Projector(basis_state, wires=range(num_wires)).eigvals
+
+        if basis_state[0] == 0:
+            observable = np.array([[1, 0], [0, 0]])
+        elif basis_state[0] == 1:
+            observable = np.array([[0, 0], [0, 1]])
+        for i in basis_state[1:]:
+            if i == 0:
+                observable = np.kron(observable, np.array([[1, 0], [0, 0]]))
+            elif i == 1:
+                observable = np.kron(observable, np.array([[0, 0], [0, 1]]))
+        expected_eigvals, expected_eigvecs = np.linalg.eig(observable)
+
+        assert np.allclose(np.sort(eigvals), np.sort(expected_eigvals), atol=tol, rtol=0)
+        assert np.allclose(
+            eigvals, expected_eigvecs[np.where(expected_eigvals == 1)[0][0]], atol=tol, rtol=0
+        )
+
+    @pytest.mark.parametrize("basis_state", PROJECTOR_EIGVALS_TEST_DATA)
+    def test_projector_diagonalization(self, basis_state, tol):
+        """Test that the diagonalizing_gates property of the Projector class returns empty."""
+        num_wires = len(basis_state)
+        diag_gates = qml.Projector(basis_state, wires=range(num_wires)).diagonalizing_gates()
+
+        assert diag_gates == []
+
+    def test_projector_exceptions(self):
+        """Tests that the projector construction raises the proper errors on incorrect inputs."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(basis_state):
+            obs = qml.Projector(basis_state, wires=range(2))
+            return qml.expval(obs)
+
+        with pytest.raises(ValueError, match="Basis state must be one-dimensional"):
+            basis_state = np.random.randint(2, size=(2, 4))
+            circuit(basis_state)
+
+        with pytest.raises(ValueError, match="Basis state must be of length"):
+            basis_state = np.random.randint(2, size=(3))
+            circuit(basis_state)
+
+        with pytest.raises(ValueError, match="Basis state must only consist of 0s"):
+            basis_state = np.array([0, 2])
+            circuit(basis_state)
 
 
 # Non-parametrized operations and their matrix representation
@@ -688,6 +749,62 @@ class TestOperations:
 
         assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
 
+    def test_isingxx_decomposition(self, tol):
+        """Tests that the decomposition of the IsingXX gate is correct"""
+        param = 0.1234
+        op = qml.IsingXX(param, wires=[3, 2])
+        res = op.decomposition(param, op.wires)
+
+        assert len(res) == 3
+
+        assert res[0].wires == Wires([3, 2])
+        assert res[1].wires == Wires([3])
+        assert res[2].wires == Wires([3, 2])
+
+        assert res[0].name == "CNOT"
+        assert res[1].name == "RX"
+        assert res[2].name == "CNOT"
+
+        mats = []
+        for i in reversed(res):
+            if i.wires == Wires([3]):
+                # RX gate
+                mats.append(np.kron(i.matrix, np.eye(2)))
+            else:
+                mats.append(i.matrix)
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+
+        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
+
+    def test_isingzz_decomposition(self, tol):
+        """Tests that the decomposition of the IsingZZ gate is correct"""
+        param = 0.1234
+        op = qml.IsingZZ(param, wires=[3, 2])
+        res = op.decomposition(param, op.wires)
+
+        assert len(res) == 3
+
+        assert res[0].wires == Wires([3, 2])
+        assert res[1].wires == Wires([2])
+        assert res[2].wires == Wires([3, 2])
+
+        assert res[0].name == "CNOT"
+        assert res[1].name == "RZ"
+        assert res[2].name == "CNOT"
+
+        mats = []
+        for i in reversed(res):
+            if i.wires == Wires([2]):
+                # RZ gate
+                mats.append(np.kron(np.eye(2), i.matrix))
+            else:
+                mats.append(i.matrix)
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+
+        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
+
     def test_toffoli_decomposition(self, tol):
         """Tests that the decomposition of the Toffoli gate is correct"""
         op = qml.Toffoli(wires=[0, 1, 2])
@@ -718,6 +835,51 @@ class TestOperations:
                             [0, 0, 0, 1, 0, 0, 0, 0],
                             [0, 0, 0, 0, 0, 1, 0, 0],
                             [0, 0, 0, 0, 1, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 0, 0, 1],
+                            [0, 0, 0, 0, 0, 0, 1, 0],
+                        ]
+                    )
+                )
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+
+        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
+
+    def test_CSWAP_decomposition(self, tol):
+        """Tests that the decomposition of the CSWAP gate is correct"""
+        op = qml.CSWAP(wires=[0, 1, 2])
+        res = op.decomposition(op.wires)
+
+        assert len(res) == 3
+
+        mats = []
+
+        for i in reversed(res):  # only use 3 toffoli gates
+            if i.wires == Wires([0, 2, 1]) and i.name == "Toffoli":
+                mats.append(
+                    np.array(
+                        [
+                            [1, 0, 0, 0, 0, 0, 0, 0],
+                            [0, 1, 0, 0, 0, 0, 0, 0],
+                            [0, 0, 1, 0, 0, 0, 0, 0],
+                            [0, 0, 0, 1, 0, 0, 0, 0],
+                            [0, 0, 0, 0, 1, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 0, 0, 1],
+                            [0, 0, 0, 0, 0, 0, 1, 0],
+                            [0, 0, 0, 0, 0, 1, 0, 0],
+                        ]
+                    )
+                )
+            elif i.wires == Wires([0, 1, 2]) and i.name == "Toffoli":
+                mats.append(
+                    np.array(
+                        [
+                            [1, 0, 0, 0, 0, 0, 0, 0],
+                            [0, 1, 0, 0, 0, 0, 0, 0],
+                            [0, 0, 1, 0, 0, 0, 0, 0],
+                            [0, 0, 0, 1, 0, 0, 0, 0],
+                            [0, 0, 0, 0, 1, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 1, 0, 0],
                             [0, 0, 0, 0, 0, 0, 0, 1],
                             [0, 0, 0, 0, 0, 0, 1, 0],
                         ]
@@ -781,6 +943,43 @@ class TestOperations:
 
         # test identity for theta=pi
         assert np.allclose(qml.RZ._matrix(np.pi), -1j * Z, atol=tol, rtol=0)
+
+    def test_isingxx(self, tol):
+        """Test that the IsingXX operation is correct"""
+        assert np.allclose(qml.IsingXX._matrix(0), np.identity(4), atol=tol, rtol=0)
+
+        def get_expected(theta):
+            expected = np.array(np.diag([np.cos(theta / 2)] * 4), dtype=np.complex128)
+            sin_coeff = -1j * np.sin(theta / 2)
+            expected[3, 0] = sin_coeff
+            expected[2, 1] = sin_coeff
+            expected[1, 2] = sin_coeff
+            expected[0, 3] = sin_coeff
+            return expected
+
+        param = np.pi / 2
+        assert np.allclose(qml.IsingXX._matrix(param), get_expected(param), atol=tol, rtol=0)
+
+        param = np.pi
+        assert np.allclose(qml.IsingXX._matrix(param), get_expected(param), atol=tol, rtol=0)
+
+    def test_isingzz(self, tol):
+        """Test that the IsingZZ operation is correct"""
+        assert np.allclose(qml.IsingZZ._matrix(0), np.identity(4), atol=tol, rtol=0)
+
+        def get_expected(theta):
+            neg_imag = np.exp(-1j * theta / 2)
+            plus_imag = np.exp(1j * theta / 2)
+            expected = np.array(
+                np.diag([neg_imag, plus_imag, plus_imag, neg_imag]), dtype=np.complex128
+            )
+            return expected
+
+        param = np.pi / 2
+        assert np.allclose(qml.IsingZZ._matrix(param), get_expected(param), atol=tol, rtol=0)
+
+        param = np.pi
+        assert np.allclose(qml.IsingZZ._matrix(param), get_expected(param), atol=tol, rtol=0)
 
     def test_arbitrary_rotation(self, tol):
         """Test arbitrary single qubit rotation is correct"""
