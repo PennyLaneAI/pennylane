@@ -54,7 +54,7 @@ def expand_with_control(tape, control_wire):
                     tmp_tape = expand_with_control(tmp_tape, control_wire)
                     requeue_ops_in_tape(tmp_tape)
 
-                except NotImplementedError as e:
+                except NotImplementedError:
                     qml.ControlledQubitUnitary(
                         op.matrix, control_wires=control_wire, wires=op.wires
                     )
