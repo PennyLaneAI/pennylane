@@ -114,9 +114,16 @@ class UCCSD(Operation):
 
     def __init__(self, weights, wires, hf_state, singles=None, doubles=None, do_queue=True):
 
+        if len(wires) < 2:
+            raise ValueError(
+                "The number of qubits (wires) can not be less than 2; got len(wires) = {}".format(
+                    len(wires)
+                )
+            )
+
         if not singles and not doubles:
             raise ValueError(
-                "'singles' and 'doubles' lists can not be both empty; got singles={}, doubles={}".format(
+                "'singles' and 'doubles' lists can not be both empty; got singles = {}, doubles = {}".format(
                     singles, doubles
                 )
             )

@@ -143,10 +143,11 @@ class TestInputs:
 
     @pytest.mark.parametrize(
         # ("weights", "s_wires", "d_wires", "init_state", "msg_match"),
-        ("weights", "singles", "doubles", "hf_state", "msg_match"),
+        ("weights", "wires", "singles", "doubles", "hf_state", "msg_match"),
         [
             (
                 np.array([-2.8]),
+                range(4),
                 [[0, 2]],
                 [],
                 np.array([1.2, 1, 0, 0]),
@@ -154,6 +155,7 @@ class TestInputs:
             ),
             (
                 np.array([-2.8]),
+                range(4),
                 [],
                 [],
                 np.array([1, 1, 0, 0]),
@@ -161,6 +163,7 @@ class TestInputs:
             ),
             (
                 np.array([-2.8]),
+                range(4),
                 [],
                 [[0, 1, 2, 3, 4]],
                 np.array([1, 1, 0, 0]),
@@ -168,6 +171,7 @@ class TestInputs:
             ),
             (
                 np.array([-2.8]),
+                range(4),
                 [[0, 2, 3]],
                 [],
                 np.array([1, 1, 0, 0]),
@@ -175,6 +179,7 @@ class TestInputs:
             ),
             (
                 np.array([-2.8]),
+                range(4),
                 [[0, 2]],
                 [],
                 np.array([1, 1, 0, 0, 0]),
@@ -182,6 +187,7 @@ class TestInputs:
             ),
             (
                 np.array([-2.8, 1.6]),
+                range(4),
                 [[0, 2]],
                 [],
                 np.array([1, 1, 0, 0]),
@@ -189,6 +195,7 @@ class TestInputs:
             ),
             (
                 np.array([-2.8, 1.6]),
+                range(4),
                 [],
                 [[0, 1, 2, 3]],
                 np.array([1, 1, 0, 0]),
@@ -196,20 +203,29 @@ class TestInputs:
             ),
             (
                 np.array([-2.8, 1.6]),
+                range(4),
                 [[0, 2], [1, 3]],
                 [[0, 1, 2, 3]],
                 np.array([1, 1, 0, 0]),
                 "'weights' tensor must be of shape",
             ),
+            (
+                np.array([-2.8, 1.6]),
+                range(1),
+                [],
+                [],
+                np.array([1, 1, 0, 0]),
+                "can not be less than 2",
+            ),
         ],
     )
-    def test_uccsd_exceptions(self, weights, singles, doubles, hf_state, msg_match):
+    def test_uccsd_exceptions(self, weights, wires, singles, doubles, hf_state, msg_match):
         """Test that UCCSD throws an exception if the parameters have illegal
         shapes, types or values."""
 
-        N = 4
-        wires = range(4)
-        dev = qml.device("default.qubit", wires=N)
+        # wires = range(n_wires)
+        # dev = qml.device("default.qubit", wires=N)
+        dev = qml.device("default.qubit", wires=len(wires))
 
         def circuit(
             weights=weights, wires=wires, hf_state=hf_state, singles=singles, doubles=doubles
