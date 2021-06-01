@@ -47,7 +47,7 @@ of PennyLane, plugins, and devices.
 .. titlecard::
     :name: Analytic Circuit Repository
     :description: Repository of some circuits with expected results
-    :link: guide/analytic_circuits.rst
+    :link: guide/analytic_circuits.html
 
 .. raw:: html
 

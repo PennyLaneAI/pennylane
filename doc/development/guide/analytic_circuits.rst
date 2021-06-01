@@ -73,3 +73,51 @@ Vector Input, Single Output
     def expected_hess(x):
         return np.array([[-np.cos(x[0]) * np.cos(x[1]),  np.sin(x[0]) * np.sin(x[1])],
                          [ np.sin(x[0]) * np.sin(x[1]), -np.cos(x[0]) * np.cos(x[1])]])
+
+Others
+------
+
+Found these being used in the testing
+
+.. code-block:: python
+
+    def qfunc(x, y):
+        qml.RX(x, wires=[0])
+        qml.RY(y, wires=[1])
+        qml.CNOT(wires=[0, 1])
+        return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+    
+    def expected_res(x, y):
+        return np.cos(x) * np.sin(y)
+
+    def expected_grad(x, y):
+        return (-np.sin(x) * np.sin(y), np.cos(x) * np.cos(y))
+
+
+.. code-block:: python
+
+    def qfunc(x, y):
+        qml.RX(x, wires=[0])
+        qml.RY(y, wires=[1])
+        qml.CNOT(wires=[0, 1])
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
+
+    def expected_res(x, y):
+        return (np.cos(x), np.sin(y))
+    
+    def expected_jac(x, y):
+        return [[-np.sin(x), 0], [0, np.cos(y)]
+
+.. code-block:: python
+
+    def qfunc(x, y):
+        qml.RX(x, wires=[0])
+        qml.RY(y, wires=[1])
+        qml.CNOT(wires=[0, 1])
+        return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(1))
+
+    def expected_res(x, y):
+        return (np.cos(x), np.cos(y)**2)
+
+    def expected_grad(x, y):
+        return ([-np.sin(x), 0], [0, -2*np.cos(y)*np.sin(y)])
