@@ -237,3 +237,21 @@ def test_controlled_template():
     tape = expand_tape(tape)
     assert len(tape.operations) == 9
     assert all(o.name in {"CRX", "Toffoli"} for o in tape.operations)
+
+
+def test_controlled_template_and_operations():
+    """Test that a combination of controlled templates and operations correctly expands
+    on a device that doesn't support it"""
+
+    weights = np.ones([3, 2])
+
+    def ansatz(weights, wires):
+        qml.PauliX(wires=wires[0])
+        qml.templates.BasicEntanglerLayers(weights, wires=wires)
+
+    with QuantumTape() as tape:
+        ctrl(ansatz, 0)(weights, wires=[1, 2])
+
+    tape = expand_tape(tape)
+    assert len(tape.operations) == 10
+    assert all(o.name in {"CNOT", "CRX", "Toffoli"} for o in tape.operations)
