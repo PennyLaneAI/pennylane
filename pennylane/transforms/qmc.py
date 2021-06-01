@@ -138,6 +138,17 @@ def quantum_monte_carlo(fn, wires, target_wire, estimation_wires):
     estimation (check out :class:`~.QuantumPhaseEstimation` for more details), using the
     ``estimation_wires``.
 
+    .. note::
+
+        A complementary approach for quantum Monte Carlo is available with the
+        :class:`~.QuantumMonteCarlo` template.
+
+        The ``quantum_monte_carlo`` transform is intended for
+        use when you already have the circuit for performing :math:`\mathcal{F}` set up, and is
+        compatible with resource estimation and potential hardware implementation. The
+        :class:`~.QuantumMonteCarlo` template is unitary-based and is only compatible with
+        simulators, but may perform faster and is suited to quick prototyping.
+
     Args:
         fn (Callable): a quantum function that applies quantum operations according to the
             :math:`\mathcal{F}` unitary used as part of quantum Monte Carlo estimation
