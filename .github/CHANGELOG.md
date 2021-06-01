@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* The `quantum_monte_carlo` transform has been added, allowing an input circuit to be transformed
+  into the full quantum Monte Carlo algorithm.
+  [(#1316)](https://github.com/PennyLaneAI/pennylane/pull/1316)
+
 * Added validation for noise channel parameters. Invalid noise parameters now
   raise a `ValueError`. [(#1357)](https://github.com/PennyLaneAI/pennylane/pull/1357)
 
