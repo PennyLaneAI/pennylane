@@ -353,7 +353,6 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
   allowing the JAX interface to support adjoint differentiation.
   [(#1349)](https://github.com/PennyLaneAI/pennylane/pull/1349)
 
-
 * Fixes drawing QNodes that contain multiple measurements on a single wire.
   [(#1353)](https://github.com/PennyLaneAI/pennylane/pull/1353)
 
