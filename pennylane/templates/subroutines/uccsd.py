@@ -22,14 +22,13 @@ from pennylane.ops import BasisState
 
 
 class UCCSD(Operation):
-    r"""Implements the Unitary Coupled-Cluster Singles and Doubles (UCCSD) ansatz.
+    r"""Apply the :class:`~.pennylane.SingleExcitation` and :class:`~.pennylane.DoubleExcitation`
+    operations, implemented as Givens rotations, to an :math:`n-`qubit system to prepare
+    post-Hartree-Fock quantum states of molecules.
 
-    The UCCSD ansatz calls the
-    :func:`~.SingleExcitationUnitary` and :func:`~.DoubleExcitationUnitary`
-    templates to exponentiate the coupled-cluster excitation operator. UCCSD is a VQE ansatz
-    commonly used to run quantum chemistry simulations.
-
-    The UCCSD unitary, within the first-order Trotter approximation, is given by:
+    This ansatz is similar to the traditional `Unitary Coupled-Clusters Singles
+    and Doubles (UCCSD) <https://arxiv.org/abs/1805.04340>`_ within the first-order
+    Trotter approximation:
 
     .. math::
 
@@ -39,41 +38,30 @@ class UCCSD(Operation):
         \prod_{p > q > r > s} \mathrm{exp} \Big\{\theta_{pqrs}
         (\hat{c}_p^\dagger \hat{c}_q^\dagger \hat{c}_r \hat{c}_s-\mathrm{H.c.}) \Big\}
 
-    where :math:`\hat{c}` and :math:`\hat{c}^\dagger` are the fermionic annihilation and
-    creation operators and the indices :math:`r, s` and :math:`p, q` run over the occupied and
-    unoccupied molecular orbitals, respectively. Using the `Jordan-Wigner transformation
-    <https://arxiv.org/abs/1208.5986>`_ the UCCSD unitary defined above can be written in terms
-    of Pauli matrices as follows (for more details see
-    `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_):
+    where :math:`:math:`\hat{c}_p^\dagger \hat{c}_r` and
+    :math:`\hat{c}_p^\dagger \hat{c}_q^\dagger \hat{c}_r \hat{c}_s` are the fermionic
+    single- and double-excitation operators, respectively, and the indices :math:`r, s`
+    and :math:`p, q` run over the occupied and unoccupied molecular orbitals, respectively.
 
-    .. math::
-
-        \hat{U}(\vec{\theta}) = && \prod_{p > r} \mathrm{exp} \Big\{ \frac{i\theta_{pr}}{2}
-        \bigotimes_{a=r+1}^{p-1} \hat{Z}_a (\hat{Y}_r \hat{X}_p - \mathrm{H.c.}) \Big\} \\
-        && \times \prod_{p > q > r > s} \mathrm{exp} \Big\{ \frac{i\theta_{pqrs}}{8}
-        \bigotimes_{b=s+1}^{r-1} \hat{Z}_b \bigotimes_{a=q+1}^{p-1}
-        \hat{Z}_a (\hat{X}_s \hat{X}_r \hat{Y}_q \hat{X}_p +
-        \hat{Y}_s \hat{X}_r \hat{Y}_q \hat{Y}_p +
-        \hat{X}_s \hat{Y}_r \hat{Y}_q \hat{Y}_p +
-        \hat{X}_s \hat{X}_r \hat{X}_q \hat{Y}_p -
-        \{\mathrm{H.c.}\}) \Big\}.
+    This template applies `Givens rotations <https://en.wikipedia.org/wiki/Givens_rotation>`_ in
+    the subspace span by the two qubits :math:`r, p` and the four qubits :math:`s, r, q, p`
+    involved, respectively, in the single excitation
+    :math:`:math:`\hat{c}_p^\dagger \hat{c}_r \vert \mathrm{HF} \rangle`
+    and the double excitation
+    :math:`\hat{c}_p^\dagger \hat{c}_q^\dagger \hat{c}_r \hat{c}_s \vert \mathrm{HF} \rangle`
+    of the Hatree-Fock (HF) state. The resulting unitary conserves the number of particles and
+    prepares the :math:`n`-qubit system in a superposition of the initial HF state and its
+    multiple-excited configurations.
 
     Args:
         weights (tensor_like): Size ``(len(singles) + len(doubles),)`` tensor containing the
             angles :math:`\theta` entering the :class:`~.pennylane.SingleExcitation` and
-            :class:`~.pennylane.DoubleExcitation` operations corresponding to the single and
-            double excitations of the Hartree-Fock (HF) reference state generated with the
-            :func:`~.excitations` function.
-        wires (Iterable): wires that the template acts on
-        singles (Sequence[Sequence]): Sequence of lists containing the wires indices ``[r, p]``
-            encoding, respectively, the indices of the occupied and unoccupied orbitals
-            involved in the single excitation
-            :math:`\vert r, p \rangle = \hat{c}_p^\dagger \hat{c}_r \vert \mathrm{HF} \rangle`.
-        doubles (Sequence[Sequence]): Sequence of lists containing the wires indices
-            ``[s, r, q, p]``. The qubit indices ``s, r`` and ``q, p`` correspond, respectively,
-            to the occupied and unoccupied orbitals involved in the double excitation
-            :math:`\vert s, r, q, p \rangle = \hat{c}_p^\dagger \hat{c}_q^\dagger \hat{c}_r
-            \hat{c}_s \vert \mathrm{HF} \rangle`.
+            :class:`~.pennylane.DoubleExcitation` operations. The indices of the qubits the
+            operations act on are generated with the :func:`~.excitations` function.
+        wires (Iterable): wires that the template acts on.
+        singles (Sequence[Sequence]): sequence of lists containing the wires indices ``[r, p]``
+        doubles (Sequence[Sequence]): sequence of lists containing the wires indices
+            ``[s, r, q, p]``
         hf_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
             HF state. ``hf_state`` is used to initialize the wires.
 
@@ -95,22 +83,25 @@ class UCCSD(Operation):
         .. code-block:: python
 
             import pennylane as qml
+            import numpy as np
 
             # Define the HF state
-            hf_state = qml.qchem.hf_state(electrons=2, qubits=4)
+            electrons = 2
+            qubits = 4
+            hf_state = qml.qchem.hf_state(electrons, qubits)
 
             # Generate single and double excitations
-            singles, doubles = qml.qchem.excitations(electrons=2, qubits=4)
+            singles, doubles = qml.qchem.excitations(electrons, qubits)
 
             # Define the device
-            dev = qml.device('default.qubit', wires=4)
+            dev = qml.device('default.qubit', wires=qubits)
 
-            wires = range(4)
+            wires = range(qubits)
 
             @qml.qnode(dev)
             def circuit(weights, hf_state, singles, doubles):
-            	qml.templates.UCCSD(weights, wires, hf_state, singles, doubles)
-            	return qml.expval(qml.PauliZ(0))
+                qml.templates.UCCSD(weights, wires, hf_state, singles, doubles)
+                return qml.expval(qml.PauliZ(0))
 
             # Compute the expectation value of 'h' for given set of parameters 'params'
             params = np.random.normal(0, np.pi, len(singles) + len(doubles))
