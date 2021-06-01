@@ -414,11 +414,17 @@ class QNode:
                 f"The {device.short_name} device does not support adjoint differentiation."
             )
 
+        jac_options = {"method": "device", "jacobian_method": "adjoint_jacobian"}
+        # reuse the forward pass
+        # torch and tensorflow can cache the state
+        if interface in {"autograd", "jax"}:
+            jac_options["device_pd_options"] = {"use_device_state": True}
+
         return (
             JacobianTape,
             interface,
             device,
-            {"method": "device", "jacobian_method": "adjoint_jacobian"},
+            jac_options,
         )
 
     @staticmethod

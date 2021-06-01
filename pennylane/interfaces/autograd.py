@@ -165,10 +165,6 @@ class AutogradInterface(AnnotatedQueue):
         res = self.execute_device(params, device=device)
         self.set_parameters(self._all_parameter_values, trainable_only=False)
 
-        # reuse device state for adjoint diff
-        if self.jacobian_options.get("jacobian_method", None) == "adjoint_jacobian":
-            self.jacobian_options["device_pd_options"] = {"use_device_state": True}
-
         if self.is_sampled:
             return res
 
