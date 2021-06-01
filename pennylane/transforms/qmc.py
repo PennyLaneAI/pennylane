@@ -255,9 +255,11 @@ def quantum_monte_carlo(fn, wires, target_wire, estimation_wires):
 
         .. code-block::
 
-            from pennylane.templates.state_preparations.mottonen import _uniform_rotation_dagger as r_unitary
+            from pennylane.templates.state_preparations.mottonen import (
+                _uniform_rotation_dagger as r_unitary,
+            )
 
-            n = 5
+            n = 6
             N = 2 ** n
 
             a_wires = range(m)
@@ -281,8 +283,23 @@ def quantum_monte_carlo(fn, wires, target_wire, estimation_wires):
         The estimated value can be retrieved using the formula :math:`\mu = (1-\cos(\pi \theta))/2`
 
         >>> (1 - np.cos(np.pi * phase_estimated)) / 2
-        0.4509914298352196
+        0.42663476277231915
 
+        It is also possible to explore the resources required to perform the quantum Monte Carlo
+        algorithm
+
+        >>> qtape = qmc.qtape.expand(depth=1)
+        >>> qtape.get_resources()
+        {'RY': 14674,
+         'CNOT': 15686,
+         'PhaseShift': 1020,
+         'RX': 510,
+         'CZ': 126,
+         'PauliX': 1260,
+         'Toffoli': 2016,
+         'SWAP': 3,
+         'Hadamard': 6,
+         'ControlledPhaseShift': 15}
     """
     wires = Wires(wires)
     target_wire = Wires(target_wire)
