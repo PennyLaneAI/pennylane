@@ -717,6 +717,52 @@ class TestQNode:
         assert np.allclose(hess.detach(), expected_hess, atol=tol, rtol=0)
 
 
+class Test_adjoint:
+    def test_adjoint_save_state(self, mocker):
+        """Tests that the torch interface reuses device state when prompted by `cache_state=True`"""
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, diff_method="adjoint", interface="torch", cache_state=True)
+        def circ(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        spy = mocker.spy(dev, "adjoint_jacobian")
+
+        x = torch.tensor(0.1, requires_grad=True)
+        res = circ(x)
+        res.backward()
+
+        assert circ.device.num_executions == 1
+
+        spy.assert_called_with(mocker.ANY, starting_state=mocker.ANY)
+
+        assert circ.qtape.jacobian_options["cache_state"] == True
+
+    def test_adjoint_no_save_state(self, mocker):
+        """Tests that under default conditions, the state is not cached"""
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, diff_method="adjoint", interface="torch")
+        def circ(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        spy = mocker.spy(dev, "adjoint_jacobian")
+
+        x = torch.tensor(0.1, requires_grad=True)
+        res = circ(x)
+        res.backward()
+
+        assert circ.device.num_executions == 2
+
+        spy.assert_called_with(mocker.ANY)
+
+        assert circ.qtape.jacobian_options.get("cache_state", False) == False
+
+
 def qtransform(qnode, a, framework=torch):
     """Transforms every RY(y) gate in a circuit to RX(-a*cos(y))"""
 

@@ -245,7 +245,7 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 
 * The adjoint jacobian differentiation method reuses the state computed on the forward pass. For torch and tensorflow
-interfaces, this is disabled by default. By passing `reuse_cached_state=True` during QNode creation for tensorflow and 
+interfaces, this is disabled by default. By passing `cache_state=True` during QNode creation for tensorflow and 
 torch interfaces, the user can save the device state for the backward pass.
 [(#1341)](https://github.com/PennyLaneAI/pennylane/pull/1341)
 
@@ -253,7 +253,7 @@ torch interfaces, the user can save the device state for the backward pass.
   now have an `id` attribute, which can mark an operator in a circuit, for example to
   identify it on the tape by a tape transform.
   [(#1377)](https://github.com/PennyLaneAI/pennylane/pull/1377)
- 
+
 * Implement special handling for measuring the variance of Projector observables to improve memory usage.
   [(#1368)](https://github.com/PennyLaneAI/pennylane/pull/1368)
 

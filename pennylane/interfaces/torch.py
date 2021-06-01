@@ -79,7 +79,7 @@ class _TorchInterface(torch.autograd.Function):
         # tape might not be a jacobian tape
         jac_options = getattr(tape, "jacobian_options", dict())
         # cache state for adjoint jacobian computation
-        if jac_options.get("reuse_cached_state", False):
+        if jac_options.get("cache_state", False):
             state = device.state
 
         ctx.saved_grad_matrices = {}
@@ -111,7 +111,7 @@ class _TorchInterface(torch.autograd.Function):
             if grad_matrix_fn in ctx.saved_grad_matrices:
                 return ctx.saved_grad_matrices[grad_matrix_fn]
 
-            if tape.jacobian_options.get("reuse_cached_state", False):
+            if tape.jacobian_options.get("cache_state", False):
                 tape.jacobian_options["device_pd_options"] = {"starting_state": state}
 
             tape.set_parameters(ctx.all_params_unwrapped, trainable_only=False)
