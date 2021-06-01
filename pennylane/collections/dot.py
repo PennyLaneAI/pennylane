@@ -56,6 +56,14 @@ def _get_dot_func(interface, x=None):
 
         return np.dot, x
 
+    if interface == "jax":
+        import jax.numpy as jnp
+
+        if x is not None and not isinstance(x, jnp.ndarray):
+            x = jnp.array(x)
+
+        return jnp.dot, x
+
     if interface is None:
         import numpy as np
 
@@ -121,17 +129,32 @@ def dot(x, y):
 
         interface = x.interface
         fn, _ = _get_dot_func(interface)
-        func = lambda params, **kwargs: fn(x(params, **kwargs), y(params, **kwargs))
+
+        if interface == "jax":
+            import jax.numpy as jnp
+            func = lambda params, **kwargs: fn(jnp.array(x(params, **kwargs)), jnp.array(y(params, **kwargs)))
+        else:
+            func = lambda params, **kwargs: fn(x(params, **kwargs), y(params, **kwargs))
 
     elif hasattr(x, "interface"):
         interface = x.interface
         fn, y = _get_dot_func(interface, y)
-        func = lambda params, **kwargs: fn(x(params, **kwargs), y)
+
+        if interface == "jax":
+            import jax.numpy as jnp
+            func = lambda params, **kwargs: fn(jnp.array(x(params, **kwargs)), y)
+        else:
+            func = lambda params, **kwargs: fn(x(params, **kwargs), y)
 
     elif hasattr(y, "interface"):
         interface = y.interface
         fn, x = _get_dot_func(interface, x)
-        func = lambda params, **kwargs: fn(x, y(params, **kwargs))
+
+        if interface == "jax":
+            import jax.numpy as jnp
+            func = lambda params, **kwargs: fn(x, jnp.array(y(params, **kwargs)))
+        else:
+            func = lambda params, **kwargs: fn(x, y(params, **kwargs))
 
     else:
         raise ValueError("At least one argument must be a QNodeCollection")
