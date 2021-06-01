@@ -22,7 +22,7 @@ from pennylane.transforms import adjoint
 
 def _apply_controlled_z(wires, control_wire, work_wires):
     r"""Provides the circuit to apply a controlled version of the :math:`Z` gate defined in
-    `this <https://journals.aps.org/pra/abstract/10.1103/PhysRevA.98.022321>`__ paper.
+    `this <https://arxiv.org/abs/1805.00109>`__ paper.
 
     The multi-qubit gate :math:`Z = I - 2|0\rangle \langle 0|` can be performed using the
     conventional multi-controlled-Z gate with an additional bit flip on each qubit before and after.
@@ -57,7 +57,7 @@ def _apply_controlled_z(wires, control_wire, work_wires):
 
 def _apply_controlled_v(target_wire, control_wire):
     """Provides the circuit to apply a controlled version of the :math:`V` gate defined in
-    `this <https://journals.aps.org/pra/abstract/10.1103/PhysRevA.98.022321>`__ paper.
+    `this <https://arxiv.org/abs/1805.00109>`__ paper.
 
     The :math:`V` gate is simply a Pauli-Z gate applied to the ``target_wire``, i.e., the ancilla
     wire in which the expectation value is encoded.
@@ -73,7 +73,7 @@ def _apply_controlled_v(target_wire, control_wire):
 
 def apply_controlled_Q(fn, wires, target_wire, control_wire, work_wires):
     r"""Provides the circuit to apply a controlled version of the :math:`\mathcal{Q}` unitary
-    defined in `this <https://journals.aps.org/pra/abstract/10.1103/PhysRevA.98.022321>`__ paper.
+    defined in `this <https://arxiv.org/abs/1805.00109>`__ paper.
 
     Given a callable ``fn`` input corresponding to the :math:`\mathcal{F}` unitary in the above
     paper, this function transforms the circuit into a controlled-version of the :math:`\mathcal{Q}`
@@ -128,7 +128,105 @@ def apply_controlled_Q(fn, wires, target_wire, control_wire, work_wires):
 
 
 def quantum_monte_carlo(fn, wires, target_wire, estimation_wires):
+    r"""Provides the circuit to perform the
+    `quantum Monte Carlo estimation <https://arxiv.org/abs/1805.00109>`__ algorithm.
 
+    Args:
+        fn (Callable): a quantum function that applies quantum operations according to the
+            :math:`\mathcal{F}` unitary used as part of quantum Monte Carlo estimation
+        wires (Union[Wires or Sequence[int]]): the wires acted upon by the ``fn`` circuit
+        target_wire (Union[Wires, int]): The wire in which the expectation value is encoded. Must be
+            contained within ``wires``.
+        estimation_wires (Union[Wires, Sequence[int], or int]): the wires used for phase estimation
+
+    Returns:
+        function: The circuit for quantum Monte Carlo estimation
+
+    Raises:
+        ValueError: if ``wires`` and ``estimation_wires`` share a common wire
+
+    .. UsageDetails::
+
+        Consider an input quantum circuit ``fn`` that performs the unitary
+
+        .. math::
+
+            \mathcal{F} = \mathcal{R} \mathcal{A}.
+
+        .. figure:: ../../_static/ops/f.svg
+            :align: center
+            :width: 15%
+            :target: javascript:void(0);
+
+        Here, the unitary :math:`\mathcal{A}` prepares a probability distribution :math:`p(i)` of
+        dimension :math:`M = 2^{m}` over :math:`m \geq 1` qubits:
+
+        .. math::
+
+            \mathcal{A}|0\rangle^{\otimes m} = \sum_{i \in X} p(i) |i\rangle
+
+        where :math:`X = \{0, 1, \ldots, M - 1\}`. The :math:`\mathcal{R}` unitary imprints the
+        result of a function :math:`f: X \rightarrow [0, 1]` onto an ancilla qubit:
+
+        .. math::
+
+            \mathcal{R}|i\rangle |0\rangle = |i\rangle \left(\sqrt{1 - f(i)} |0\rangle + \sqrt{f(i)}|1\rangle\right).
+
+        Following `this <https://arxiv.org/abs/1805.00109>`__ paper,
+        it can be seen that the probability of measuring the state :math:`|1\rangle` in the final
+        qubit is
+
+        .. math::
+
+            \mu = \sum_{i \in X} p(i) f(i).
+
+        However, it is possible to measure :math:`\mu` more efficiently using quantum Monte Carlo
+        estimation. This function transforms an input quantum circuit ``fn`` that performs the
+        unitary :math:`\mathcal{F}` to a larger circuit for measuring :math:`\mu` using the quantum
+        Monte Carlo algorithm.
+
+        .. figure:: ../../_static/ops/qmc.svg
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
+        The algorithm proceeds as follows:
+
+        #. The probability distribution :math:`p(i)` is encoded using a unitary :math:`\mathcal{A}`
+           applied to the first :math:`m` qubits specified by ``wires``.
+        #. The function :math:`f(i)` is encoded onto the ``target_wire`` using a unitary
+           :math:`\mathcal{R}`.
+        #. The unitary :math:`\mathcal{Q}` is defined with eigenvalues
+           :math:`e^{\pm 2 \pi i \theta}` such that the phase :math:`\theta` encodes the expectation
+           value through the equation :math:`\mu = (1 + \cos (\pi \theta)) / 2`. The circuit in
+           steps 1 and 2 prepares an equal superposition over the two states corresponding to the
+           eigenvalues :math:`e^{\pm 2 \pi i \theta}`.
+        #. The circuit returned by this function is applied so that :math:`\pm\theta` can be
+           estimated by finding the probabilities of the :math:`n` estimation wires. This in turn
+           allows for the estimation of :math:`\mu`.
+
+        Visit `Rebentrost et al. (2018)
+        <https://arxiv.org/abs/1805.00109>`__ for further details.
+        In this algorithm, the number of applications :math:`N` of the :math:`\mathcal{Q}` unitary
+        scales as :math:`2^{n}`. However, due to the use of quantum phase estimation, the error
+        :math:`\epsilon` scales as :math:`\mathcal{O}(2^{-n})`. Hence,
+
+        .. math::
+
+            N = \mathcal{O}\left(\frac{1}{\epsilon}\right).
+
+        This scaling can be compared to standard Monte Carlo estimation, where :math:`N` samples are
+        generated from the probability distribution and the average over :math:`f` is taken. In that
+        case,
+
+        .. math::
+
+            N =  \mathcal{O}\left(\frac{1}{\epsilon^{2}}\right).
+
+        Hence, the quantum Monte Carlo algorithm has a quadratically improved time complexity with
+        :math:`N`.
+
+    """
     wires = Wires(wires)
     target_wire = Wires(target_wire)
     estimation_wires = Wires(estimation_wires)
