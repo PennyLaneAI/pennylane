@@ -132,7 +132,10 @@ def dot(x, y):
 
         if interface == "jax":
             import jax.numpy as jnp
-            func = lambda params, **kwargs: fn(jnp.array(x(params, **kwargs)), jnp.array(y(params, **kwargs)))
+
+            func = lambda params, **kwargs: fn(
+                jnp.array(x(params, **kwargs)), jnp.array(y(params, **kwargs))
+            )
         else:
             func = lambda params, **kwargs: fn(x(params, **kwargs), y(params, **kwargs))
 
@@ -142,6 +145,7 @@ def dot(x, y):
 
         if interface == "jax":
             import jax.numpy as jnp
+
             func = lambda params, **kwargs: fn(jnp.array(x(params, **kwargs)), y)
         else:
             func = lambda params, **kwargs: fn(x(params, **kwargs), y)
@@ -152,6 +156,7 @@ def dot(x, y):
 
         if interface == "jax":
             import jax.numpy as jnp
+
             func = lambda params, **kwargs: fn(x, jnp.array(y(params, **kwargs)))
         else:
             func = lambda params, **kwargs: fn(x, y(params, **kwargs))
