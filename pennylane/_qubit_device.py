@@ -827,7 +827,7 @@ class QubitDevice(Device):
 
         Returns:
             array: the derivative of the tape with respect to trainable parameters.
-            Dimensions are ``(len(observables), len(trainable_params))``.
+                Dimensions are ``(len(observables), len(trainable_params))``.
 
         Raises:
             QuantumFunctionError: if the input tape has measurements that are not expectation values
