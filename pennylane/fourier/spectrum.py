@@ -20,17 +20,17 @@ import pennylane as qml
 
 
 def _get_spectrum(op):
-    r"""Extract the frequencies contributed by a data-encoding gate to the
+    r"""Extract the frequencies contributed by a input-encoding gate to the
     overall Fourier representation of a quantum circuit.
 
-    If :math:`G` is the generator of the data-encoding gate :math:`\exp(-i x G)`,
+    If :math:`G` is the generator of the input-encoding gate :math:`\exp(-i x G)`,
     the frequencies are the differences between any two of :math:`G`'s eigenvalues.
 
     Args:
         op (~pennylane.operation.Operation): an instance of the `Operation` class
 
     Returns:
-        list: frequencies contributed by this data-encoding gate
+        list: frequencies contributed by this input-encoding gate
     """
     evals = None
     g, coeff = op.generator
@@ -38,27 +38,27 @@ def _get_spectrum(op):
     # the generator is undefined
     if g is None:
         raise ValueError(
-            "no generator defined for data-encoding gate {}; "
+            "no generator defined for input-encoding gate {}; "
             "cannot extract Fourier spectrum".format(op.name)
         )
 
     # if g is an Operator instance ("PauliX(wires=0)") or class ("PauliX"),
     # extract its eigenvalues or matrix representation
-    if hasattr(g, "eigvals"):
+    if hasattr(g, "_eigvals"):
         # first try if we can directly find eigenvalues
-        evals = g.eigvals
+        evals = g._eigvals
 
         if evals is not None:
             # scale evals correctly
             evals = evals * coeff
-    elif hasattr(g, "matrix"):
+    elif hasattr(g, "_matrix"):
         # try to extract the matrix
-        g = g.matrix
+        g = g._matrix
 
         # if this also fails, we need to abort
         if g.matrix is None:
             raise ValueError(
-                "no matrix or eigenvalues defined for generator {} of data-encoding gate {}; "
+                "no matrix or eigenvalues defined for generator {} of input-encoding gate {}; "
                 "cannot extract Fourier spectrum".format(g, op.name)
             )
 
@@ -95,13 +95,13 @@ def spectrum(qnode, encoding_gates=None):
     r"""Compute the frequency spectrum of the Fourier representation of simple quantum circuits.
 
     The circuit must only use single-parameter gates of the form :math:`e^{-ix_j G}` as
-    data-encoding gates, which allows the computation of the spectrum by inspecting the gates'
+    input-encoding gates, which allows the computation of the spectrum by inspecting the gates'
     generators :math:`G`.
 
-    Gates are marked as data-encoding gates on the tape by giving them an id which is
-    found in encoding_gates. If two gates have the same id, they are considered
+    Gates are marked as input-encoding gates in the quantum function by giving them an id which is
+    then listed in encoding_gates. If two gates have the same id, they are considered
     to be used to encode the same input :math:`x_j`. If encoding_gates is None,
-    all gates on the tape which have a custom id attribute are considered to be input-encoding gates.
+    all gates which have an explicit id attribute are considered to be input-encoding gates.
 
     Args:
         qnode (pennylane.QNode): a quantum node representing a circuit in which
@@ -126,8 +126,8 @@ def spectrum(qnode, encoding_gates=None):
         c_{\omega_1,\dots, \omega_N} e^{-i x_1 \omega_1} \dots e^{-i x_N \omega_N}
 
     over the *frequency spectra* :math:`\Omega_i \subseteq \mathbb{R},`
-    :math:`i=1,\dots,N`. Each
-    spectrum has the property that :math:`0 \in \Omega_i`, and the spectrum is
+    :math:`i=1,\dots,N`. Each spectrum has the property that
+    :math:`0 \in \Omega_i`, and the spectrum is
     symmetric (for every :math:`\omega \in \Omega_i` we have that :math:`-\omega \in
     \Omega_i`). If all frequencies are integer-valued, the Fourier sum becomes a
     *Fourier series*.
@@ -142,6 +142,9 @@ def spectrum(qnode, encoding_gates=None):
     can express.
 
     **Example**
+
+    Consider the following example, which uses non-trainable inputs `x` and
+    trainable parameters `w` as arguments to the qnode.
 
     .. code-block:: python
 
@@ -165,14 +168,14 @@ def spectrum(qnode, encoding_gates=None):
         x = np.array([1, 2, 3])
         w = np.random.random((n_layers, n_qubits, 3))
 
-        res = spectrum(circuit, encoding_gates)(x, w)
+        res = spectrum(circuit)(x, w)
 
         for inp, freqs in res.items():
             print(f"{inp}: {freqs}")
 
-        >>> 'x1': [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0]
+        >>> 'x0': [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0]
+        >>> 'x1': [-2.0, -1.0, 0.0, 1.0, 2.0]
         >>> 'x2': [-2.0, -1.0, 0.0, 1.0, 2.0]
-        >>> 'x3': [-2.0, -1.0, 0.0, 1.0, 2.0]
 
     .. note::
         While the Fourier spectrum usually does not depend
@@ -180,9 +183,56 @@ def spectrum(qnode, encoding_gates=None):
         arguments of the QNode, for example if the arguments change the architecture
         of the circuit.
 
+    The input-encoding gates to consider can also be explicitly selected by using the
+    `encoding_gates` keyword argument:
+
+    .. code-block:: python
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x[0], wires=0, id="x0")
+            qml.PhaseShift(x[0], wires=0, id="x0")
+            qml.RX(x[1], wires=0, id="x1")
+            return qml.expval(qml.PauliZ(wires=0))
+
+        x = np.array([1, 2])
+
+        res = spectrum(circuit, encoding_gates=["x0"])(x)
+
+        for inp, freqs in res.items():
+            print(f"{inp}: {freqs}")
+
+        >>> 'x0': [-2.0, -1.0, 0.0, 1.0, 2.0]
+
+    The `spectrum` function works in all interfaces:
+
+    .. code-block:: python
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, interface='tf')
+        def circuit(x):
+            qml.RX(x[0], wires=0, id="x0")
+            qml.PhaseShift(x[1], wires=0, id="x1")
+            return qml.expval(qml.PauliZ(wires=0))
+
+        x = tf.tensor([1, 2])
+
+        res = spectrum(circuit)(x)
+
+        for inp, freqs in res.items():
+            print(f"{inp}: {freqs}")
+
+        >>> 'x0': [-1.0, 0.0, 1.0]
+        >>> 'x1': [-1.0, 0.0, 1.0]
+
     .. note::
         The `spectrum` function does not check if the result of the
-        circuit is an expectation value.
+        circuit is an expectation, or if gates with the same `id`
+        take the same value in a given call of the function.
     """
 
     @wraps(qnode)

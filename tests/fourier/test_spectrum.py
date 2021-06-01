@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the fourier qnode transforms.
+Tests for the Fourier spectrum transform.
 """
 import pytest
 import numpy as np
@@ -30,7 +30,6 @@ class DummyOp(qml.operation.Operation):
 class GeneratorIsOp(qml.PauliX):
     """Dummy operation whose generator is another
     Operation, but without a matrix defined"""
-
     generator = [DummyOp, 1]
 
 
