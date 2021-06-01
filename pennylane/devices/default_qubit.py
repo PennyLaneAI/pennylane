@@ -112,6 +112,7 @@ class DefaultQubit(QubitDevice):
         "CZ",
         "PhaseShift",
         "ControlledPhaseShift",
+        "CPhase",
         "RX",
         "RY",
         "RZ",
@@ -121,6 +122,8 @@ class DefaultQubit(QubitDevice):
         "CRZ",
         "CRot",
         "QFT",
+        "IsingXX",
+        "IsingZZ",
         "SingleExcitation",
         "SingleExcitationPlus",
         "SingleExcitationMinus",
@@ -131,7 +134,7 @@ class DefaultQubit(QubitDevice):
         "QubitSum",
     }
 
-    observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}
+    observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity", "Projector"}
 
     def __init__(self, wires, *, shots=None, cache=0, analytic=None):
         super().__init__(wires, shots, cache=cache, analytic=analytic)

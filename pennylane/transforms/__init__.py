@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -55,6 +56,7 @@ more tapes as well as a classical processing function.
 
     ~transforms.measurement_grouping
     ~transforms.metric_tensor_tape
+    ~transforms.hamiltonian_expand
 """
 from .adjoint import adjoint
 from .classical_jacobian import classical_jacobian
@@ -63,4 +65,5 @@ from .draw import draw
 from .invisible import invisible
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor, metric_tensor_tape
+from .hamiltonian_expand import hamiltonian_expand
 from .qmc import quantum_monte_carlo

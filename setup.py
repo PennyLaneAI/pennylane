@@ -25,6 +25,7 @@ requirements = [
     "toml",
     "appdirs",
     "semantic_version==2.6",
+    "autoray"
 ]
 
 info = {
@@ -57,6 +58,7 @@ info = {
     'long_description_content_type': "text/markdown",
     'provides': ["pennylane"],
     'install_requires': requirements,
+    'extras_require': {'kernels': ['cvxpy', 'cvxopt']},
     'package_data': {'pennylane': ['devices/tests/pytest.ini']},
     'include_package_data': True
 }

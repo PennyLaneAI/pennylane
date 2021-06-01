@@ -47,7 +47,7 @@ class StronglyEntanglingLayers(Operation):
         weights (tensor_like): weight tensor of shape ``(L, M, 3)``
         wires (Iterable): wires that the template acts on
         ranges (Sequence[int]): sequence determining the range hyperparameter for each subsequent layer; if None
-                                using :math:`r=l \mod M` for the :math:`l`th layer and :math:`M` wires.
+                                using :math:`r=l \mod M` for the :math:`l` th layer and :math:`M` wires.
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
 
     .. UsageDetails::
@@ -92,6 +92,17 @@ class StronglyEntanglingLayers(Operation):
                 self.ranges = [(l % (len(wires) - 1)) + 1 for l in range(self.n_layers)]
             else:
                 self.ranges = [0] * self.n_layers
+        else:
+            if len(ranges) != self.n_layers:
+                raise ValueError(
+                    f"Range sequence must be of length {self.n_layers}; got {len(ranges)}"
+                )
+            for r in ranges:
+                if r % len(wires) == 0:
+                    raise ValueError(
+                        f"Ranges must not be zero nor divisible by the number of wires; got {r}"
+                    )
+            self.ranges = ranges
 
         self.imprimitive = imprimitive or qml.CNOT
 
