@@ -817,7 +817,7 @@ class QubitDevice(Device):
         Args:
             tape (.QuantumTape): circuit that the function takes the gradient of
 
-        Kwargs:
+        Keyword Args:
             starting_state (Tensor): post-forward pass state to start execution with. It should be
                 complex-valued. Takes precedence over `use_device_state`.
             use_device_state (bool): use current device state to initialize. Forward pass of the same
