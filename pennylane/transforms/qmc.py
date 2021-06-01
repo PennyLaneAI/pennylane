@@ -131,6 +131,13 @@ def quantum_monte_carlo(fn, wires, target_wire, estimation_wires):
     r"""Provides the circuit to perform the
     `quantum Monte Carlo estimation <https://arxiv.org/abs/1805.00109>`__ algorithm.
 
+    The input ``fn`` should be the quantum circuit corresponding to the :math:`\mathcal{F}` unitary
+    in the paper above that encodes the probability distribution and random variable onto ``wires``
+    so that measurement of the ``target_wire`` provides the expectation value to be estimated.
+    The quantum Monte Carlo algorithm then estimates the expectation value using quantum phase
+    estimation (check out :class:`~.QuantumPhaseEstimation` for more details), using the
+    ``estimation_wires``.
+
     Args:
         fn (Callable): a quantum function that applies quantum operations according to the
             :math:`\mathcal{F}` unitary used as part of quantum Monte Carlo estimation
@@ -165,7 +172,8 @@ def quantum_monte_carlo(fn, wires, target_wire, estimation_wires):
 
             \mathcal{A}|0\rangle^{\otimes m} = \sum_{i \in X} p(i) |i\rangle
 
-        where :math:`X = \{0, 1, \ldots, M - 1\}`. The :math:`\mathcal{R}` unitary imprints the
+        where :math:`X = \{0, 1, \ldots, M - 1\}` and :math:`|i\rangle` is the basis state
+        corresponding to :math:`i`. The :math:`\mathcal{R}` unitary imprints the
         result of a function :math:`f: X \rightarrow [0, 1]` onto an ancilla qubit:
 
         .. math::
