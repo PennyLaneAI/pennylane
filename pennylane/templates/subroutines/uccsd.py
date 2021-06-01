@@ -23,12 +23,11 @@ from pennylane.ops import BasisState
 
 class UCCSD(Operation):
     r"""Apply the :class:`~.pennylane.SingleExcitation` and :class:`~.pennylane.DoubleExcitation`
-    operations, implemented as Givens rotations, to an :math:`n-`qubit system to prepare
-    post-Hartree-Fock quantum states of molecules.
+    operations, implemented as Givens rotations, to the :math:`n-`qubit system to prepare the
+    correlated quantum state of a molecule.
 
     This ansatz is similar to the traditional `Unitary Coupled-Clusters Singles
-    and Doubles (UCCSD) <https://arxiv.org/abs/1805.04340>`_ within the first-order
-    Trotter approximation:
+    and Doubles (UCCSD) <https://arxiv.org/abs/1805.04340>`_ given by,
 
     .. math::
 
@@ -39,18 +38,25 @@ class UCCSD(Operation):
         (\hat{c}_p^\dagger \hat{c}_q^\dagger \hat{c}_r \hat{c}_s-\mathrm{H.c.}) \Big\}
 
     where :math:`:math:`\hat{c}_p^\dagger \hat{c}_r` and
-    :math:`\hat{c}_p^\dagger \hat{c}_q^\dagger \hat{c}_r \hat{c}_s` are the fermionic
-    single- and double-excitation operators, respectively, and the indices :math:`r, s`
-    and :math:`p, q` run over the occupied and unoccupied molecular orbitals, respectively.
+    :math:`\hat{c}_p^\dagger \hat{c}_q^\dagger \hat{c}_r \hat{c}_s` are, respectively, the
+    fermionic single- and double-excitation operators, and the indices :math:`r, s`
+    and :math:`p, q` run over the Hartree-Fock occupied and unoccupied molecular orbitals.
 
-    This template applies `Givens rotations <https://en.wikipedia.org/wiki/Givens_rotation>`_ in
-    the subspace span by the two qubits :math:`r, p` and the four qubits :math:`s, r, q, p`
-    involved, respectively, in the single excitation
-    :math:`:math:`\hat{c}_p^\dagger \hat{c}_r \vert \mathrm{HF} \rangle`
-    and the double excitation
-    :math:`\hat{c}_p^\dagger \hat{c}_q^\dagger \hat{c}_r \hat{c}_s \vert \mathrm{HF} \rangle`
-    of the Hatree-Fock (HF) state. The resulting unitary conserves the number of particles and
-    prepares the :math:`n`-qubit system in a superposition of the initial HF state and its
+    The main difference with respect to the original UCCSD template is that the gate
+    decompositions used to exponentiate the single- and double-excitation operators
+    are replaced with the application of `Givens rotations
+    <https://en.wikipedia.org/wiki/Givens_rotation>`_ that act on the subspaces of two and
+    four qubits. More specifically, the :class:`~.pennylane.SingleExcitation` operation performs
+    a rotation in the two-dimensional subspace :math:`\{\vert 10 \rangle, \vert 01 \rangle \}`
+    of the qubits :math:`r, p` associated with the single excitation
+    `:math:`\hat{c}_p^\dagger \hat{c}_r \vert \mathrm{HF} \rangle` of the Hartree-Fock (HF)
+    state. Similarly, the :class:`~.pennylane.DoubleExcitation` operation implements
+    a rotation in the subspace :math:`\{\vert 1100 \rangle, \vert 0011 \rangle \}` of the qubits
+    :math:`s, r, q, p` involved in the double excitation
+    :math:`\hat{c}_p^\dagger \hat{c}_q^\dagger \hat{c}_r \hat{c}_s \vert \mathrm{HF} \rangle`.
+
+    The resulting unitary conserves the number of particles and prepares the
+    :math:`n`-qubit system in a superposition of the initial HF state and
     multiple-excited configurations.
 
     Args:
