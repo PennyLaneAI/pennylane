@@ -34,16 +34,16 @@ def _apply_controlled_z(wires, control_wire, work_wires):
     Additional control from ``control_wire`` is then included within the multi-controlled-X gate.
 
     Args:
-        wires (Union[Wires, Sequence[int], or int]): the wires on which the Z gate is applied
+        wires (Wires): the wires on which the Z gate is applied
         control_wire (Wires): the control wire from the register of phase estimation qubits
-        work_wires (Union[Wires, Sequence[int], or int]): the work wires used in the decomposition
+        work_wires (Wires): the work wires used in the decomposition
     """
     target_wire = wires[0]
     PauliX(target_wire)
     Hadamard(target_wire)
 
     control_values = "0" * (len(wires) - 1) + "1"
-    control_wires = Wires(wires[1:]) + control_wire
+    control_wires = wires[1:] + control_wire
     MultiControlledX(
         control_wires=control_wires,
         wires=target_wire,
@@ -62,7 +62,7 @@ def _apply_controlled_v(target_wire, control_wire):
     The :math:`V` gate is simply a Pauli-Z gate applied to the ``target_wire``, i.e., the ancilla
     wire in which the expectation value is encoded.
 
-    The controlled version of this gate is then simply a CZ gate.
+    The controlled version of this gate is then a CZ gate.
 
     Args:
         target_wire (Wires): the ancilla wire in which the expectation value is encoded
@@ -79,15 +79,16 @@ def apply_controlled_Q(fn, wires, target_wire, control_wire, work_wires):
     paper, this function transforms the circuit into a controlled-version of the :math:`\mathcal{Q}`
     unitary which forms part of the quantum Monte Carlo algorithm. In this algorithm, one of the
     wires acted upon by :math:`\mathcal{F}`, specified by ``target_wire``, is used to embed a
-    Monte Carlo estimation problem. The :math:`\mathcal{Q}` is then designed to contain the target
-    expectation value as a phase in one of its eigenvalues. This function transforms to a controlled
-    version of :math:`\mathcal{Q}` that is compatible with quantum phase estimation
-    (see :class:`~.QuantumPhaseEstimation` for more details).
+    Monte Carlo estimation problem. The :math:`\mathcal{Q}` unitary is then designed to encode the
+    target expectation value as a phase in one of its eigenvalues.
+
+    This function transforms to a controlled version of :math:`\mathcal{Q}` that is compatible with
+    quantum phase estimation (see :class:`~.QuantumPhaseEstimation` for more details).
 
     Args:
         fn (Callable): a quantum function that applies quantum operations according to the
             :math:`\mathcal{F}` unitary used as part of quantum Monte Carlo estimation
-        wires (Union[Wires, Sequence[int], or int]): the wires acted upon by the ``fn`` circuit
+        wires (Union[Wires or Sequence[int]]): the wires acted upon by the ``fn`` circuit
         target_wire (Union[Wires, int]): The wire in which the expectation value is encoded. Must be
             contained within ``wires``.
         control_wire (Union[Wires, int]): the control wire from the register of phase estimation
@@ -128,9 +129,9 @@ def apply_controlled_Q(fn, wires, target_wire, control_wire, work_wires):
 
 def quantum_monte_carlo(fn, wires, target_wire, estimation_wires):
 
-    estimation_wires = Wires(estimation_wires)
     wires = Wires(wires)
     target_wire = Wires(target_wire)
+    estimation_wires = Wires(estimation_wires)
 
     if Wires.shared_wires([wires, estimation_wires]):
         raise ValueError("No wires can be shared between the wires and estimation_wires registers")

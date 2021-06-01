@@ -52,7 +52,7 @@ def test_apply_controlled_z(n_wires):
     unitary and comparing against the one provided in _make_Z."""
     n_all_wires = n_wires + 1
 
-    wires = range(n_wires)
+    wires = Wires(range(n_wires))
     control_wire = n_wires
     work_wires = None
 
