@@ -44,6 +44,11 @@ of PennyLane, plugins, and devices.
     :description: Architectural overview of PennyLane, its plugins and devices.
     :link: guide/architecture.html
 
+.. titlecard::
+    :name: Analytic Circuit Repository
+    :description: Repository of some circuits with expected results
+    :link: guide/analytic_circuits.rst
+
 .. raw:: html
 
         <div style='clear:both'></div>

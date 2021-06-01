@@ -8,7 +8,8 @@ on pen and paper, we provide circuits here.
 Single Input, Single Output
 ---------------------------
 
-..code-block:: python
+.. code-block:: python
+
     def qfunc(x):
         qml.RY(x, wires=0)
         return qml.expval(qml.PauliZ(0))
@@ -26,14 +27,15 @@ Single Input, Single Output
 Single Input, Multiple Output
 -----------------------------
 
-..code-block:: python
+.. code-block:: python
+
     def circuit(x):
         qml.RY(x, wires=0)
         return qml.probs(wires=[0])
 
     def expected_res(x):
         return np.array([np.cos(x/2.0)**2, np.sin(x/2.0)**2])
-        
+
     def expected_jacobian(x):
         return np.array([-np.sin(x)/2.0, np.sin(x)/2.0])
 
@@ -43,7 +45,8 @@ Single Input, Multiple Output
 Single Input, State Output
 --------------------------
 
-..code-block:: python
+.. code-block:: python
+
     def circuit(x):
         qml.RX(x, wires=0)
         return qml.state()
@@ -54,7 +57,8 @@ Single Input, State Output
 Vector Input, Single Output
 ---------------------------
 
-..code-block:: python
+.. code-block:: python
+
     def circuit(x):
         qml.RY(x[0], wires=0)
         qml.RX(x[1], wires=0)
