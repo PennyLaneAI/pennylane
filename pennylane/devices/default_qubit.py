@@ -215,9 +215,9 @@ class DefaultQubit(QubitDevice):
             array[complex]: output state
         """
 
-        if hasattr(self, "_torch_device"):
-            if state.device != self._torch_device:
-                state = state.to(self._torch_device)
+        # if hasattr(self, "_torch_device"):
+        #     if state.device != self._torch_device:
+        #         state = state.to(self._torch_device)
 
         wires = operation.wires
 

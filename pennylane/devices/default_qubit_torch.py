@@ -309,3 +309,17 @@ class DefaultQubitTorch(DefaultQubit):
         basis_states = np.arange(number_of_states)
         state_probability = state_probability.cpu().detach().numpy()
         return np.random.choice(basis_states, shots, p=state_probability)
+
+    def _apply_operation(self, state, operation):
+        """Applies operations to the input state.
+
+        Args:
+            state (torch.Tensor[complex]): input state
+            operation (~.Operation): operation to apply on the device
+
+        Returns:
+            torch.Tensor[complex]: output state
+        """
+        if state.device != self._torch_device:
+            state = state.to(self._torch_device)
+        return super()._apply_operation(state, operation)

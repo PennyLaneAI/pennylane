@@ -14,7 +14,7 @@
 """Unit tests for the torch interface"""
 import pytest
 
-torch = pytest.importorskip("torch", minversion="1.3")
+torch = pytest.importorskip("torch", minversion="1.8.0")
 
 import numpy as np
 

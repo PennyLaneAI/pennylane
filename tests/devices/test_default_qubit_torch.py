@@ -1056,6 +1056,8 @@ class TestPassthruIntegration:
 
         res = torch.stack([x.grad, y.grad, z.grad], axis=0).detach().numpy()
 
+        x, y, z = x.detach(), y.detach(), z.detach()
+
         expected = np.array(
             [
                 -3
@@ -1072,7 +1074,7 @@ class TestPassthruIntegration:
             ]
         )
 
-        expected = np.stack([i.detach().numpy() for i in expected])
+        expected = np.stack([i for i in expected])
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
