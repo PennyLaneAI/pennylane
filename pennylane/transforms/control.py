@@ -47,17 +47,23 @@ def expand_with_control(tape, control_wire):
                 # pylint: disable=protected-access
                 op._controlled(control_wire)
             else:
-                try:
-                    # Attempt to decompose the operation and apply
-                    # controls to each gate in the decomposition.
-                    tmp_tape = op.expand()
-                    tmp_tape = expand_with_control(tmp_tape, control_wire)
-                    requeue_ops_in_tape(tmp_tape)
+                # Attempt to decompose the operation and apply
+                # controls to each gate in the decomposition.
+                with new_tape.stop_recording():
+                    try:
+                        tmp_tape = op.expand()
 
-                except NotImplementedError:
-                    qml.ControlledQubitUnitary(
-                        op.matrix, control_wires=control_wire, wires=op.wires
-                    )
+                    except NotImplementedError:
+                        # No decomposition is defined. Create a
+                        # ControlledQubitUnitary gate using the operation
+                        # matrix representation.
+                        with QuantumTape() as tmp_tape:
+                            qml.ControlledQubitUnitary(
+                                op.matrix, control_wires=control_wire, wires=op.wires
+                            )
+
+                tmp_tape = expand_with_control(tmp_tape, control_wire)
+                requeue_ops_in_tape(tmp_tape)
 
     return new_tape
 

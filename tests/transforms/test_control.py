@@ -223,3 +223,17 @@ def test_no_decomposition_defined():
 
     assert len(tape.operations) == 1
     assert tape.operations[0].name == "ControlledQubitUnitary"
+
+
+def test_controlled_template():
+    """Test that a controlled template correctly expands
+    on a device that doesn't support it"""
+
+    weights = np.ones([3, 2])
+
+    with QuantumTape() as tape:
+        ctrl(qml.templates.BasicEntanglerLayers, 0)(weights, wires=[1, 2])
+
+    tape = expand_tape(tape)
+    assert len(tape.operations) == 9
+    assert all(o.name in {"CRX", "Toffoli"} for o in tape.operations)
