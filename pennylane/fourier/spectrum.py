@@ -36,8 +36,8 @@ def _get_spectrum(op):
     if hasattr(op, "generator"):
         g, coeff = op.generator
 
-        if isinstance(g[0], np.ndarray):
-            matrix = g[0]
+        if isinstance(g, np.ndarray):
+            matrix = g
         elif hasattr(g, "matrix"):
             matrix = g.matrix
             if not isinstance(matrix, np.ndarray):
@@ -50,9 +50,9 @@ def _get_spectrum(op):
     if no_generator:
         raise ValueError(f"generator of operation {op} is not defined")
 
-    g = coeff * g
+    matrix = coeff * matrix
     # eigenvalues of hermitian ops are guaranteed to be real
-    evals = qml.math.real(np.linalg.eigvals(g))
+    evals = qml.math.real(np.linalg.eigvals(matrix))
 
     # compute all differences of eigenvalues
     frequencies = [np.round(e1 - e2, decimals=8) for e1, e2 in product(evals, evals)]

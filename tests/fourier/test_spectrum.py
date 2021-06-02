@@ -55,12 +55,12 @@ class TestHelpers:
         """Test that an error is raised if the operator has no generator defined."""
 
         # Observables have no generator attribute
-        with pytest.raises(ValueError, match="no generator defined"):
+        with pytest.raises(ValueError, match="generator of operation"):
             _get_spectrum(qml.P(wires=0))
 
         # CNOT is an operation where generator is an abstract property
-        with pytest.raises(ValueError, match="no generator defined"):
-            _get_spectrum(qml.CNOT(wires=0))
+        with pytest.raises(ValueError, match="generator of operation"):
+            _get_spectrum(qml.CNOT(wires=[0,1]))
 
 
 def circuit(x, w):
