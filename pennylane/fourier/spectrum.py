@@ -125,7 +125,7 @@ def spectrum(qnode, encoding_gates=None):
     to a few frequencies only, which in turn limits the function class that the circuit
     can express.
 
-    The ``spectrum`` function computes all frequencies that are allowed to appear in the
+    The ``spectrum`` function computes all frequencies that will potentially appear in the
     sets :math:`\Omega_1` to :math:`\Omega_N` (which correspond to the :math:`N` different strings
     used as an ``id`` to mark the input-encoding gates).
 
