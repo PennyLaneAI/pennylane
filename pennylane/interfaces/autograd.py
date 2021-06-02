@@ -194,27 +194,6 @@ class AutogradInterface(AnnotatedQueue):
             function: this function accepts the backpropagation
             gradient output vector, and computes the vector-Jacobian product
         """
-        # Expand the tape here
-        if hasattr(self, "supports"):
-            supports_obj = self.supports()
-            ops_not_supported = not all(supports_obj(op) for op in self.operations)
-
-            if ops_not_supported:
-                import pennylane as qml
-
-                classical_jac_fn = qml.transforms.expansion_jacobian(self, depth=5, stop_at=supports_obj)
-                classical_jac = classical_jac_fn(autograd.numpy.array(params))
-                tape = classical_jac_fn.expanded_tape
-
-                tape._all_params_unwrapped = [
-                    p.numpy() if isinstance(p, np.tensor) else p for p in tape._all_parameter_values
-                ]
-
-                def gradient_product(dy):
-                    quantum_vjp = self.vjp(ans, tape, tape.get_parameters(), device)(dy)
-                    return np.tensordot(quantum_vjp, classical_jac, axes=[[0], [0]])
-
-                return gradient_product
 
         # The following dictionary caches the Jacobian and Hessian matrices,
         # so that they can be re-used for different vjp/vhp computations

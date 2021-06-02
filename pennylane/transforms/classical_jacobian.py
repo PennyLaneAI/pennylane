@@ -49,7 +49,6 @@ def _make_jacobian_fn(fn, interface):
 
 
 class expansion_jacobian:
-
     def __init__(self, tape, depth=1, stop_at=None):
 
         self.tape = tape
