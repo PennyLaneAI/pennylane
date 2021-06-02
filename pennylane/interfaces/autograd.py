@@ -202,15 +202,10 @@ class AutogradInterface(AnnotatedQueue):
             if ops_not_supported:
                 import pennylane as qml
 
-                def classical_gate_processing(x):
-                    self.set_parameters(x)
-                    self._expanded_tape = self.expand(depth=10, stop_at=supports_obj)
-                    return qml.math.stack(self._expanded_tape.get_parameters())
+                classical_jac_fn = qml.transforms.expansion_jacobian(self, depth=5, stop_at=supports_obj)
+                classical_jac = classical_jac_fn(autograd.numpy.array(params))
+                tape = classical_jac_fn.expanded_tape
 
-                params = autograd.numpy.array(params)
-                classical_jac = autograd.jacobian(classical_gate_processing, argnum=0)(params)
-
-                tape = self._expanded_tape
                 tape._all_params_unwrapped = [
                     p.numpy() if isinstance(p, np.tensor) else p for p in tape._all_parameter_values
                 ]

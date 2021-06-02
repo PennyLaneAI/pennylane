@@ -57,7 +57,7 @@ more tapes as well as a classical processing function.
     ~transforms.hamiltonian_expand
 """
 from .adjoint import adjoint
-from .classical_jacobian import classical_jacobian
+from .classical_jacobian import classical_jacobian, expansion_jacobian
 from .control import ControlledOperation, ctrl
 from .draw import draw
 from .invisible import invisible

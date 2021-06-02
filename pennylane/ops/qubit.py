@@ -1339,8 +1339,8 @@ class CRX(Operation):
     num_params = 1
     num_wires = 2
     par_domain = "R"
-    grad_method = "A"
-    grad_recipe = four_term_grad_recipe
+    # grad_method = "A"
+    # grad_recipe = four_term_grad_recipe
 
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), -1 / 2]
 

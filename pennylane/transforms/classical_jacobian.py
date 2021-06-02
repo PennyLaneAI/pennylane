@@ -18,6 +18,59 @@ Contains the classical Jacobian transform
 import pennylane as qml
 
 
+def _make_jacobian_fn(fn, interface):
+    if interface == "autograd":
+        return qml.jacobian(fn)
+
+    if interface == "torch":
+        import torch
+
+        def _jacobian(*args, **kwargs):  # pylint: disable=unused-argument
+            return torch.autograd.functional.jacobian(fn, args)
+
+        return _jacobian
+
+    if interface == "jax":
+        import jax
+
+        return jax.jacobian(fn)
+
+    if interface == "tf":
+        import tensorflow as tf
+
+        def _jacobian(*args, **kwargs):
+            with tf.GradientTape() as tape:
+                tape.watch(args)
+                gate_params = fn(*args, **kwargs)
+
+            return tape.jacobian(gate_params, args)
+
+        return _jacobian
+
+
+class expansion_jacobian:
+
+    def __init__(self, tape, depth=1, stop_at=None):
+
+        self.tape = tape
+        self._expanded_tape = None
+
+        def classical_preprocessing(params):
+            self.tape.set_parameters(params)
+            self._expanded_tape = self.tape.expand(depth=depth, stop_at=stop_at)
+            return qml.math.stack(self._expanded_tape.get_parameters())
+
+        self.fn = classical_preprocessing
+        self.jac_fn = _make_jacobian_fn(self.fn, self.tape.interface)
+
+    @property
+    def expanded_tape(self):
+        return self._expanded_tape
+
+    def __call__(self, *args, **kwargs):
+        return self.jac_fn(*args, **kwargs)
+
+
 def classical_jacobian(qnode):
     r"""Returns a function to extract the Jacobian
     matrix of the classical part of a QNode.
@@ -75,30 +128,4 @@ def classical_jacobian(qnode):
         qnode.construct(args, kwargs)
         return qml.math.stack(qnode.qtape.get_parameters())
 
-    if qnode.interface == "autograd":
-        return qml.jacobian(classical_preprocessing)
-
-    if qnode.interface == "torch":
-        import torch
-
-        def _jacobian(*args, **kwargs):  # pylint: disable=unused-argument
-            return torch.autograd.functional.jacobian(classical_preprocessing, args)
-
-        return _jacobian
-
-    if qnode.interface == "jax":
-        import jax
-
-        return jax.jacobian(classical_preprocessing)
-
-    if qnode.interface == "tf":
-        import tensorflow as tf
-
-        def _jacobian(*args, **kwargs):
-            with tf.GradientTape() as tape:
-                tape.watch(args)
-                gate_params = classical_preprocessing(*args, **kwargs)
-
-            return tape.jacobian(gate_params, args)
-
-        return _jacobian
+    return _make_jacobian_fn(classical_preprocessing, qnode.interface)
