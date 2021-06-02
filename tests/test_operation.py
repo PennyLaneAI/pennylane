@@ -378,6 +378,19 @@ class TestOperationConstruction:
         with pytest.raises(ValueError, match="Must specify the wires"):
             DummyOp(0.54, 0)
 
+    def test_id(self):
+        """Test that the id attribute of an operator can be set."""
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+            num_params = 1
+            par_domain = "N"
+            grad_method = None
+
+        op = DummyOp(1.0, wires=0, id="test")
+        assert op.id == "test"
+
 
 class TestObservableConstruction:
     """Test custom observables construction."""
@@ -459,6 +472,19 @@ class TestObservableConstruction:
         m = qml.PauliZ(wires=["a"])
         expected = "PauliZ(wires=['a'])"
         assert str(m) == expected
+
+    def test_id(self):
+        """Test that the id attribute of an observable can be set."""
+
+        class DummyObserv(qml.operation.Observable):
+            r"""Dummy custom observable"""
+            num_wires = 1
+            num_params = 1
+            par_domain = "N"
+            grad_method = None
+
+        op = DummyObserv(1.0, wires=0, id="test")
+        assert op.id == "test"
 
 
 class TestOperatorIntegration:
