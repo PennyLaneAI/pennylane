@@ -246,44 +246,6 @@ def qfunc_transform(tape_transform):
 
     .. UsageDetails::
 
-        **Differentiability**
-
-        Not only is the transformed qfunc fully differentiable, but the qfunc transform
-        parameters *themselves* are differentiable:
-
-        .. code-block:: python
-
-            dev = qml.device("default.qubit", wires=2)
-
-            def ansatz(x):
-                qml.Hadamard(wires=0)
-                qml.CRX(x, wires=[0, 1])
-
-            @qml.qnode(dev)
-            def circuit(param, transform_weights):
-                qml.RX(0.1, wires=0)
-
-                # apply the transform to the ansatz
-                my_transform(*transform_weights)(ansatz)(param)
-
-                return qml.expval(qml.PauliZ(1))
-
-        We can print this QNode to show that the qfunc transform is taking place:
-
-        >>> x = np.array(0.5, requires_grad=True)
-        >>> y = np.array([0.1, 0.2], requires_grad=True)
-        >>> print(qml.draw(circuit)(x, y))
-         0: ──RX(0.1)───H──────────╭Z──┤
-         1: ──RX(0.05)──RY(0.141)──╰C──┤ ⟨Z⟩
-
-        Evaluating the QNode, as well as the derivative, with respect to the gate
-        parameter *and* the transform weights:
-
-        >>> circuit(x, y)
-        0.9887793925354269
-        >>> qml.grad(circuit)(x, y)
-        (array(-0.02485651), array([-0.02474011, -0.09954244]))
-
         **Inline usage**
 
         qfunc transforms, when used inline (that is, not as a decorator), take the following form:
@@ -318,6 +280,49 @@ def qfunc_transform(tape_transform):
         >>> my_transform(transform_weights)(ansatz)(param)
 
         simply 'chains' these three steps together, into a single call.
+
+        **Differentiability**
+
+        When applying a qfunc transform, not only is the newly transformed qfunc fully
+        differentiable, but the qfunc transform parameters *themselves* are differentiable.
+        This allows us to train both the quantum function, as well as the transform
+        that created it.
+
+        Consider the following example, where a pre-defined ansatz is transformed
+        within a QNode:
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit", wires=2)
+
+            def ansatz(x):
+                qml.Hadamard(wires=0)
+                qml.CRX(x, wires=[0, 1])
+
+            @qml.qnode(dev)
+            def circuit(param, transform_weights):
+                qml.RX(0.1, wires=0)
+
+                # apply the transform to the ansatz
+                my_transform(*transform_weights)(ansatz)(param)
+
+                return qml.expval(qml.PauliZ(1))
+
+        We can print this QNode to show that the qfunc transform is taking place:
+
+        >>> x = np.array(0.5, requires_grad=True)
+        >>> y = np.array([0.1, 0.2], requires_grad=True)
+        >>> print(qml.draw(circuit)(x, y))
+         0: ──RX(0.1)───H──────────╭Z──┤
+         1: ──RX(0.05)──RY(0.141)──╰C──┤ ⟨Z⟩
+
+        Evaluating the QNode, as well as the derivative, with respect to the gate
+        parameter *and* the transform weights:
+
+        >>> circuit(x, y)
+        0.9887793925354269
+        >>> qml.grad(circuit)(x, y)
+        (array(-0.02485651), array([-0.02474011, -0.09954244]))
 
         **Implementation details**
 
