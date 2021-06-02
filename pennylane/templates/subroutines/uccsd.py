@@ -37,7 +37,7 @@ class UCCSD(Operation):
         \prod_{p > q > r > s} \mathrm{exp} \Big\{\theta_{pqrs}
         (\hat{c}_p^\dagger \hat{c}_q^\dagger \hat{c}_r \hat{c}_s-\mathrm{H.c.}) \Big\}
 
-    where :math:`:math:`\hat{c}_p^\dagger \hat{c}_r` and
+    where :math:`\hat{c}_p^\dagger \hat{c}_r` and
     :math:`\hat{c}_p^\dagger \hat{c}_q^\dagger \hat{c}_r \hat{c}_s` are, respectively, the
     fermionic single- and double-excitation operators, and the indices :math:`r, s`
     and :math:`p, q` run over the Hartree-Fock occupied and unoccupied molecular orbitals.
@@ -49,7 +49,7 @@ class UCCSD(Operation):
     four qubits. More specifically, the :class:`~.pennylane.SingleExcitation` operation performs
     a rotation in the two-dimensional subspace :math:`\{\vert 10 \rangle, \vert 01 \rangle \}`
     of the qubits :math:`r, p` associated with the single excitation
-    `:math:`\hat{c}_p^\dagger \hat{c}_r \vert \mathrm{HF} \rangle` of the Hartree-Fock (HF)
+    :math:`\hat{c}_p^\dagger \hat{c}_r \vert \mathrm{HF} \rangle` of the Hartree-Fock (HF)
     state. Similarly, the :class:`~.pennylane.DoubleExcitation` operation implements
     a rotation in the subspace :math:`\{\vert 1100 \rangle, \vert 0011 \rangle \}` of the qubits
     :math:`s, r, q, p` involved in the double excitation
