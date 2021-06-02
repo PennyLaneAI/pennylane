@@ -17,10 +17,13 @@ This subpackage contains QNode, quantum function, device, and tape transforms.
 
 .. currentmodule:: pennylane
 
-QNode transforms
-----------------
+Transforms
+----------
 
-The following transforms act on QNodes. They return new transformed functions
+Transforms that act on QNodes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Thes transforms accept QNodes, and return new transformed functions
 that compute the desired quantity.
 
 .. autosummary::
@@ -30,11 +33,11 @@ that compute the desired quantity.
     ~draw
     ~metric_tensor
 
-Quantum function transforms
----------------------------
+Transforms that act on quantum functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The following transforms act on quantum functions (Python functions
-containing quantum operations) that are used *inside* QNodes.
+These transforms accept quantum functions (Python functions
+containing quantum operations) that are used to construct QNodes.
 
 .. autosummary::
     :toctree: api
@@ -43,10 +46,10 @@ containing quantum operations) that are used *inside* QNodes.
     ~ctrl
     ~transforms.invisible
 
-Tape transforms
----------------
+Transforms that act on tapes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The following transforms act on quantum tapes, and return one or
+These transforms accept quantum tapes, and return one or
 more tapes as well as a classical processing function.
 
 .. autosummary::
