@@ -109,11 +109,11 @@ def spectrum(qnode, encoding_gates=None):
         \sum \limits_{\omega_1\in \Omega_1} \dots \sum \limits_{\omega_N \in \Omega_N}
         c_{\omega_1,\dots, \omega_N} e^{-i x_1 \omega_1} \dots e^{-i x_N \omega_N}
 
-    over the *frequency spectra* :math:`\Omega_i \subseteq \mathbb{R},`
-    :math:`i=1,\dots,N`. Each spectrum has the property that
-    :math:`0 \in \Omega_i`, and the spectrum is
-    symmetric (for every :math:`\omega \in \Omega_i` we have that :math:`-\omega \in
-    \Omega_i`). If all frequencies are integer-valued, the Fourier sum becomes a
+    over the *frequency spectra* :math:`\Omega_j \subseteq \mathbb{R},`
+    :math:`j=1,\dots,N`. Each spectrum has the property that
+    :math:`0 \in \Omega_j`, and the spectrum is
+    symmetric (for every :math:`\omega \in \Omega_j` we have that :math:`-\omega \in
+    \Omega_j`). If all frequencies are integer-valued, the Fourier sum becomes a
     *Fourier series*.
 
     As shown in `Vidal and Theis (2019)
