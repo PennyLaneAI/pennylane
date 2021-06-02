@@ -63,6 +63,66 @@ class TestHelpers:
             _get_spectrum(qml.CNOT(wires=[0, 1]))
 
 
+class TestCircuits:
+    """Tests that the spectrum is returned as expected."""
+
+    @pytest.mark.parametrize("n_layers, n_qubits", [(1, 1),
+                                                    (2, 3),
+                                                    (4, 1)])
+    def test_spectrum_grows_with_gates(self, n_layers, n_qubits):
+        """Test that the spectrum grows linearly with the number of
+        encoding gates if we use Pauli rotation encoding."""
+
+        dev = qml.device("default.qubit", wires=n_qubits)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            for l in range(n_layers):
+                for i in range(n_qubits):
+                    qml.RX(x, wires=i, id="x")
+                    qml.RY(0.4, wires=i, id="other")
+            return qml.expval(qml.PauliZ(wires=0))
+
+        res = spectrum(circuit, encoding_gates=["x"])(0.1)
+        expected_degree = n_qubits*n_layers
+        assert np.allclose(res['x'], range(-expected_degree, expected_degree+1))
+
+    def test_spectrum_changes_with_qnode_args(self):
+        """Test that the spectrum changes per call if a qnode argument changes the
+        circuit architecture."""
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit(last_gate):
+            qml.RX(0.1, wires=0, id="x")
+            qml.RX(0.2, wires=1, id="x")
+            if last_gate:
+                qml.RX(0.3, wires=2, id="x")
+            return qml.expval(qml.PauliZ(wires=0))
+
+        res_true = spectrum(circuit)(True)
+        assert np.allclose(res_true['x'], range(-3, 4))
+
+        res_false = spectrum(circuit)(False)
+        assert np.allclose(res_false['x'], range(-2, 3))
+
+    def test_input_gates_not_of_correct_form(self):
+        """Test that error is thrown if gates marked as encoding gates
+        are not single-param gates."""
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(0.1, wires=0, id="x")
+            qml.Rot(0.2, 0.3, 0.4, wires=1, id="x")
+            return qml.expval(qml.PauliZ(wires=0))
+
+        with pytest.raises(ValueError, match="can only consider one-parameter gates"):
+            spectrum(circuit)()
+
+
 def circuit(x, w):
     """Test circuit"""
     for l in range(2):

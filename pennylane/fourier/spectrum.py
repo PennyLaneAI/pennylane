@@ -40,8 +40,6 @@ def _get_spectrum(op):
             matrix = g
         elif hasattr(g, "matrix"):
             matrix = g.matrix
-            if not isinstance(matrix, np.ndarray):
-                no_generator = True
         else:
             no_generator = True
     else:
