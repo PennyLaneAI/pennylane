@@ -422,6 +422,11 @@ class Operator(abc.ABC):
         """String for the name of the operator."""
         return self._name
 
+    @property
+    def id(self):
+        """String for the ID of the operator."""
+        return self._id
+
     @name.setter
     def name(self, value):
         self._name = value
@@ -992,13 +997,13 @@ class Observable(Operator):
         """
         return super().eigvals
 
-    def __init__(self, *params, wires=None, do_queue=True):
+    def __init__(self, *params, wires=None, do_queue=True, id=None):
         # extract the arguments
         if wires is None:
             wires = params[-1]
             params = params[:-1]
 
-        super().__init__(*params, wires=wires, do_queue=do_queue)
+        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
     def __repr__(self):
         """Constructor-call-like representation."""
