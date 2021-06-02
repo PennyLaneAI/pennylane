@@ -96,9 +96,9 @@ that encode the corresponding inputs :math:`x_j` (see for example `Schuld,
 Sweke and Meyer (2020) <https://arxiv.org/abs/2008.08605>`__). More precisely, if
 all input-encoding gates are of the form :math:`e^{-ix_j G}`, where :math:`G` is
 a Hamiltonian that "generates" the operation, we can deduce a maximum set of frequencies
-that can theoretically appear in :math:`\Omega_i`.  Depending on the non-input-encoding
+that can theoretically appear in :math:`\Omega_j`.  Depending on the non-input-encoding
 gates in the circuit, some of these theoretically supported frequencies may end up
-having vanishing Fourier coefficients, and :math:`\Omega_i` effectively turns out to be smaller.
+having vanishing Fourier coefficients, and :math:`\Omega_j` effectively turns out to be smaller.
 However, estimates based on the input-encoding strategy can still be useful to understand
 the potential expressivity of a type of ansatz.
 
