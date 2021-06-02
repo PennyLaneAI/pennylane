@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains a QNode transform that computes the Fourier spectrum of a quantum
+"""Contains a QNode transform that computes the frequency spectrum of a quantum
 circuit."""
 from itertools import product
 from functools import wraps
@@ -20,7 +20,7 @@ import pennylane as qml
 
 
 def _get_spectrum(op):
-    r"""Extract the frequencies contributed by a input-encoding gate to the
+    r"""Extract the frequencies contributed by an input-encoding gate to the
     overall Fourier representation of a quantum circuit.
 
     If :math:`G` is the generator of the input-encoding gate :math:`\exp(-i x G)`,
@@ -83,19 +83,19 @@ def spectrum(qnode, encoding_gates=None):
     input-encoding gates, which allows the computation of the spectrum by inspecting the gates'
     generators :math:`G`.
 
-    Gates are marked as input-encoding gates in the quantum function by giving them an id which is
-    then listed in encoding_gates. If two gates have the same id, they are considered
-    to be used to encode the same input :math:`x_j`. If encoding_gates is None,
-    all gates which have an explicit id attribute are considered to be input-encoding gates.
+    Gates are marked as input-encoding gates in the quantum function by giving them an `id`.
+    If two gates have the same id, they are considered
+    to be used to encode the same input :math:`x_j`. The `encoding_gates` argument can be used
+    if only specific `id`s should be interpreted as marking input-encoding gates.
 
     Args:
         qnode (pennylane.QNode): a quantum node representing a circuit in which
-            input-encoding gates are marked by IDs
+            input-encoding gates are marked by their `id` attribute
         encoding_gates (list[str]): list of input-encoding gate IDs
             for which to compute the frequency spectra
 
     Returns:
-        (Dict[str, list[float]]): Dictionary with the input scalars' gate IDs as keys and
+        (Dict[str, list[float]]): Dictionary with the input-encoding gate IDs as keys and
             their frequency spectra as values.
 
     **Details**
@@ -146,7 +146,7 @@ def spectrum(qnode, encoding_gates=None):
             for l in range(n_layers):
                 for i in range(n_qubits):
                     qml.RX(x[i], wires=0, id="x"+str(i))
-                    qml.Rot(w[l,i,0], w[l,i,1], w[l,i,3], wires=0)
+                    qml.Rot(w[l,i,0], w[l,i,1], w[l,i,2], wires=0)
             qml.RZ(x[0], wires=0, id="x0")
             return qml.expval(qml.PauliZ(wires=0))
 
@@ -164,8 +164,8 @@ def spectrum(qnode, encoding_gates=None):
 
     .. note::
         While the Fourier spectrum usually does not depend
-        on the actual circuit parameters and inputs, it may still change with
-        arguments of the QNode, for example if the arguments change the architecture
+        on trainable circuit parameters and the actual values of the inputs,
+        it may still change with arguments of the QNode that determine the architecture
         of the circuit.
 
     The input-encoding gates to consider can also be explicitly selected by using the
@@ -191,6 +191,11 @@ def spectrum(qnode, encoding_gates=None):
 
         >>> 'x0': [-2.0, -1.0, 0.0, 1.0, 2.0]
 
+    .. note::
+        The `spectrum` function does not check if the result of the
+        circuit is an expectation, or if gates with the same `id`
+        take the same value in a given call of the function.
+
     The `spectrum` function works in all interfaces:
 
     .. code-block:: python
@@ -204,7 +209,7 @@ def spectrum(qnode, encoding_gates=None):
             qml.PhaseShift(x[1], wires=0, id="x1")
             return qml.expval(qml.PauliZ(wires=0))
 
-        x = tf.tensor([1, 2])
+        x = tf.constant([1, 2])
 
         res = spectrum(circuit)(x)
 
@@ -214,10 +219,6 @@ def spectrum(qnode, encoding_gates=None):
         >>> 'x0': [-1.0, 0.0, 1.0]
         >>> 'x1': [-1.0, 0.0, 1.0]
 
-    .. note::
-        The `spectrum` function does not check if the result of the
-        circuit is an expectation, or if gates with the same `id`
-        take the same value in a given call of the function.
     """
 
     @wraps(qnode)

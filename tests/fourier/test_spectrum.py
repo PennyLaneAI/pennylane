@@ -60,7 +60,7 @@ class TestHelpers:
 
         # CNOT is an operation where generator is an abstract property
         with pytest.raises(ValueError, match="generator of operation"):
-            _get_spectrum(qml.CNOT(wires=[0,1]))
+            _get_spectrum(qml.CNOT(wires=[0, 1]))
 
 
 def circuit(x, w):
