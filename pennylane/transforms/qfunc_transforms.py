@@ -197,7 +197,9 @@ def qfunc_transform(tape_transform):
 
     Returns:
         function: A qfunc transform, that acts on any qfunc, and returns a *new*
-        qfunc as per the tape transform.
+        qfunc as per the tape transform. Note that if ``tape_transform`` takes
+        additional parameters beyond a single tape, then the created qfunc transform
+        will take the *same* parameters, prior to being applied to the qfunc.
 
     **Example**
 
