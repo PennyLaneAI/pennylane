@@ -484,15 +484,6 @@ class Operator(abc.ABC):
         return self._wires
 
     @property
-    def id(self):
-        """Custom ID of this operator.
-
-        Returns:
-            str: ID
-        """
-        return self._id
-
-    @property
     def parameters(self):
         """Current parameter values."""
         return self.data.copy()
