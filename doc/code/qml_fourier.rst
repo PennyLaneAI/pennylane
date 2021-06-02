@@ -90,11 +90,11 @@ applications.
 Calculating the frequencies supported by an encoding
 ----------------------------------------------------
 
-For certain circuits, information on the frequency spectra :math:`\Omega_i`
+For certain circuits, information on the frequency spectra :math:`\Omega_j`
 can be derived solely from the structure of the gates
-that encode the corresponding inputs :math:`x_i` (see for example `Schuld,
+that encode the corresponding inputs :math:`x_j` (see for example `Schuld,
 Sweke and Meyer (2020) <https://arxiv.org/abs/2008.08605>`__). More precisely, if
-all input-encoding gates are of the form :math:`e^{-ix_i G}`, where :math:`G` is
+all input-encoding gates are of the form :math:`e^{-ix_j G}`, where :math:`G` is
 a Hamiltonian that "generates" the operation, we can deduce a maximum set of frequencies
 that can theoretically appear in :math:`\Omega_i`.  Depending on the non-input-encoding
 gates in the circuit, some of these theoretically supported frequencies may end up
