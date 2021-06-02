@@ -93,6 +93,11 @@ class JacobianTape(QuantumTape):
         self.jacobian_options = {}
         self.hessian_options = {}
 
+    def copy(self, copy_operations=False, tape_cls=None):
+        copied_tape = super().copy(copy_operations=copy_operations, tape_cls=tape_cls)
+        copied_tape.jacobian_options = self.jacobian_options
+        return copied_tape
+
     def _grad_method(self, idx, use_graph=True, default_method="F"):
         """Determine the correct partial derivative computation method for each gate parameter.
 
@@ -224,11 +229,17 @@ class JacobianTape(QuantumTape):
     @staticmethod
     def _flatten_processing_result(g):
         """Flattens the output from processing_fn in parameter shift methods."""
-        if g.dtype is np.dtype("object"):
-            # object arrays cannot be flattened; must hstack them
+        if hasattr(g, "dtype") and g.dtype is np.dtype("object"):
+            # - Object arrays cannot be flattened; must hstack them.
+            # - We also check that g has attribute dtype first to allow for
+            #   Observables that return arbitrary objects.
             g = np.hstack(g)
 
-        return g.flatten()
+        if hasattr(g, "flatten"):
+            # flatten only if g supports flattening to allow for
+            # objects other than numpy ndarrays
+            return g.flatten()
+        return g
 
     def numeric_pd(self, idx, params=None, **options):
         """Generate the tapes and postprocessing methods required to compute the gradient of a parameter using the
@@ -580,9 +591,15 @@ class JacobianTape(QuantumTape):
 
             if jac is None:
                 # update the tape's output dimension
-                self._output_dim = len(g)
-                # create the Jacobian matrix
-                jac = np.zeros((len(g), len(params)), dtype=float)
+                try:
+                    self._output_dim = len(g)
+                except TypeError:
+                    # if g has no len (e.g., because it is not a numpy.ndarray)
+                    # assume the dimension is 1
+                    self._output_dim = 1
+                # create the Jacobian matrix with appropriate dtype
+                dtype = g.dtype if isinstance(g, (np.ndarray, float)) else np.object
+                jac = np.zeros((self._output_dim, len(params)), dtype=dtype)
 
             jac[:, i] = g
 
@@ -684,6 +701,36 @@ class JacobianTape(QuantumTape):
             # Either all parameters have grad method 0, or there are no trainable
             # parameters. Simply return an empty Hessian.
             return np.zeros((len(params), len(params)), dtype=float)
+
+        # The parameter-shift Hessian implementation currently only supports
+        # the two-term parameter-shift rule. Raise an error for unsupported operations.
+        supported_ops = (
+            "RX",
+            "RY",
+            "RZ",
+            "Rot",
+            "PhaseShift",
+            "ControlledPhaseShift",
+            "MultiRZ",
+            "PauliRot",
+            "U1",
+            "U2",
+            "U3",
+            "SingleExcitationMinus",
+            "SingleExcitationPlus",
+            "DoubleExcitationMinus",
+            "DoubleExcitationPlus",
+        )
+
+        for idx, info in self._par_info.items():
+            op = info["op"]
+
+            if idx in self.trainable_params and op.name not in supported_ops:
+                raise ValueError(
+                    f"The operation {op.name} is currently not supported for the "
+                    f"parameter-shift Hessian.\nPlease decompose the operation in your "
+                    f"QNode by replacing it with '{op.__str__().replace('(', '.decomposition(')}'"
+                )
 
         # some gradient methods need the device or the device wires
         options["device"] = device

@@ -26,9 +26,9 @@ that compute the desired quantity.
 .. autosummary::
     :toctree: api
 
-    ~transforms.classical_jacobian
     ~draw
     ~metric_tensor
+    ~transforms.classical_jacobian
     ~transforms.natural_jacobian
     ~transforms.quantum_jacobian
 
@@ -56,6 +56,7 @@ more tapes as well as a classical processing function.
 
     ~transforms.measurement_grouping
     ~transforms.metric_tensor_tape
+    ~transforms.hamiltonian_expand
 """
 from .adjoint import adjoint
 from .classical_jacobian import classical_jacobian
@@ -64,5 +65,6 @@ from .draw import draw
 from .invisible import invisible
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor, metric_tensor_tape
+from .hamiltonian_expand import hamiltonian_expand
 from .natural_jacobian import natural_jacobian
 from .quantum_jacobian import quantum_jacobian

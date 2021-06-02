@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -258,6 +258,21 @@ class TestValidation:
 
         with pytest.raises(ValueError, match="The default.gaussian device does not"):
             QNode._validate_adjoint_method(dev, "tf")
+
+    def test_qnode_print(self):
+        """Test that printing a QNode object yields the right information."""
+        dev = qml.device("default.qubit", wires=1)
+
+        def func(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        qn = qml.QNode(func, dev)
+
+        assert (
+            qn.__repr__()
+            == "<QNode: wires=1, device='default.qubit.autograd', interface='autograd', diff_method='best'>"
+        )
 
 
 class TestTapeConstruction:
@@ -883,7 +898,7 @@ class TestShots:
             return qml.sample(qml.PauliZ(wires=0))
 
         with pytest.warns(
-            DeprecationWarning, match="The 'shots' argument name is reserved for overriding"
+            UserWarning, match="The 'shots' argument name is reserved for overriding"
         ):
             circuit = qml.QNode(circuit, dev)
 
@@ -909,7 +924,7 @@ class TestShots:
 
         # assert that warning is still raised
         with pytest.warns(
-            DeprecationWarning, match="The 'shots' argument name is reserved for overriding"
+            UserWarning, match="The 'shots' argument name is reserved for overriding"
         ):
             circuit = qml.QNode(circuit, dev)
 

@@ -42,7 +42,6 @@
   <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/header.png" width="700px">
 </p>
 
-
 ## Key Features
 
 <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/code.png" width="400px" align="right">
@@ -61,7 +60,7 @@
 
 ## Installation
 
-PennyLane requires Python version 3.6 and above. Installation of PennyLane, as well as all
+PennyLane requires Python version 3.7 and above. Installation of PennyLane, as well as all
 dependencies, can be done using pip:
 
 ```console

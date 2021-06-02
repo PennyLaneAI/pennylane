@@ -90,7 +90,10 @@ def test_particle_number_observable(orbitals, mapping, terms_exp, custom_wires, 
 
 @pytest.mark.parametrize(
     ("orbitals", "msg_match"),
-    [(-3, "'orbitals' must be greater than 0"), (0, "'orbitals' must be greater than 0"),],
+    [
+        (-3, "'orbitals' must be greater than 0"),
+        (0, "'orbitals' must be greater than 0"),
+    ],
 )
 def test_exception_particle_number(orbitals, msg_match):
     """Test that the function `'particle_number'` throws an exception if the

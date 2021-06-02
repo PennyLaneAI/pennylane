@@ -68,6 +68,44 @@ class TestComparison:
         assert np.allclose(qnode(theta, phi), qnode_def(theta, phi), atol=tol(dev.shots))
         assert np.allclose(grad(theta, phi), grad_def(theta, phi), atol=tol(dev.shots))
 
+    @pytest.mark.parametrize("state", [[0, 0], [0, 1], [1, 0], [1, 1]])
+    def test_projector_expectation(self, device, state, tol):
+        """Test that arbitrary multi-mode Projector expectation values are correct"""
+        n_wires = 2
+        dev = device(n_wires)
+        dev_def = qml.device("default.qubit", wires=n_wires)
+
+        if dev.shots is not None:
+            pytest.skip("Device is in non-analytical mode.")
+
+        if "Projector" not in dev.observables:
+            pytest.skip("Device does not support the Projector observable.")
+
+        if dev.name == dev_def.name:
+            pytest.skip("Device is default.qubit.")
+
+        theta = 0.432
+        phi = 0.123
+
+        def circuit(theta, phi, basis_state):
+            qml.RX(theta, wires=[0])
+            qml.RX(phi, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.Projector(basis_state, wires=[0, 1]))
+
+        qnode_def = qml.QNode(circuit, dev_def)
+        qnode = qml.QNode(circuit, dev)
+
+        grad_def = qml.grad(qnode_def, argnum=[0, 1])
+        grad = qml.grad(qnode, argnum=[0, 1])
+
+        assert np.allclose(
+            qnode(theta, phi, state), qnode_def(theta, phi, state), atol=tol(dev.shots)
+        )
+        assert np.allclose(
+            grad(theta, phi, state), grad_def(theta, phi, state), atol=tol(dev.shots)
+        )
+
     def test_pauliz_expectation_analytic(self, device, tol):
         """Test that the tensor product of PauliZ expectation value is correct"""
         n_wires = 2

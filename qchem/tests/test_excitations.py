@@ -6,7 +6,15 @@ from pennylane import qchem
 
 
 @pytest.mark.parametrize(
-    ("electrons", "orbitals", "delta_sz", "n_singles", "n_doubles", "singles_exp", "doubles_exp",),
+    (
+        "electrons",
+        "orbitals",
+        "delta_sz",
+        "n_singles",
+        "n_doubles",
+        "singles_exp",
+        "doubles_exp",
+    ),
     [
         (1, 5, 0, 2, 0, [[0, 2], [0, 4]], []),
         (1, 5, 1, 0, 0, [], []),

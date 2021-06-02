@@ -10,7 +10,14 @@ ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_fi
 
 
 @pytest.mark.parametrize(
-    ("name", "core", "active", "mapping", "coeffs_ref", "pauli_strings_ref",),
+    (
+        "name",
+        "core",
+        "active",
+        "mapping",
+        "coeffs_ref",
+        "pauli_strings_ref",
+    ),
     [
         (
             "lih",

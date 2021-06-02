@@ -28,7 +28,12 @@ from pennylane import Device
 from pennylane.operation import State
 
 from pennylane.interfaces.autograd import AutogradInterface, np as anp
-from pennylane.tape import JacobianTape, QubitParamShiftTape, CVParamShiftTape, ReversibleTape
+from pennylane.tape import (
+    JacobianTape,
+    QubitParamShiftTape,
+    CVParamShiftTape,
+    ReversibleTape,
+)
 
 
 class QNode:
@@ -47,15 +52,15 @@ class QNode:
         interface (str): The interface that will be used for classical backpropagation.
             This affects the types of objects that can be passed to/returned from the QNode:
 
-            * ``interface='autograd'``: Allows autograd to backpropagate
+            * ``"autograd"``: Allows autograd to backpropagate
               through the QNode. The QNode accepts default Python types
               (floats, ints, lists) as well as NumPy array arguments,
               and returns NumPy arrays.
 
-            * ``interface='torch'``: Allows PyTorch to backpropogate
+            * ``"torch"``: Allows PyTorch to backpropogate
               through the QNode. The QNode accepts and returns Torch tensors.
 
-            * ``interface='tf'``: Allows TensorFlow in eager mode to backpropogate
+            * ``"tf"``: Allows TensorFlow in eager mode to backpropogate
               through the QNode. The QNode accepts and returns
               TensorFlow ``tf.Variable`` and ``tf.tensor`` objects.
 
@@ -64,7 +69,7 @@ class QNode:
               and returns NumPy arrays. It does not connect to any
               machine learning library automatically for backpropagation.
 
-        diff_method (str, None): the method of differentiation to use in the created QNode
+        diff_method (str): the method of differentiation to use in the created QNode
 
             * ``"best"``: Best available method. Uses classical backpropagation or the
               device directly to compute the gradient if supported, otherwise will use
@@ -157,7 +162,7 @@ class QNode:
                 "Detected 'shots' as an argument to the given quantum function. "
                 "The 'shots' argument name is reserved for overriding the number of shots "
                 "taken by the device. Its use outside of this context should be avoided.",
-                DeprecationWarning,
+                UserWarning,
             )
             self._qfunc_uses_shots_arg = True
         else:
@@ -181,6 +186,16 @@ class QNode:
 
         self.dtype = np.float64
         self.max_expansion = max_expansion
+
+    def __repr__(self):
+        """String representation."""
+        detail = "<QNode: wires={}, device='{}', interface='{}', diff_method='{}'>"
+        return detail.format(
+            self.device.num_wires,
+            self.device.short_name,
+            self.interface,
+            self.diff_method,
+        )
 
     # pylint: disable=too-many-return-statements
     @staticmethod
@@ -825,11 +840,21 @@ class QNode:
                 "version of JAX to enable the 'jax' interface."
             ) from e
 
-    INTERFACE_MAP = {"autograd": to_autograd, "torch": to_torch, "tf": to_tf, "jax": to_jax}
+    INTERFACE_MAP = {
+        "autograd": to_autograd,
+        "torch": to_torch,
+        "tf": to_tf,
+        "jax": to_jax,
+    }
 
 
 def qnode(
-    device, interface="autograd", diff_method="best", mutable=True, max_expansion=10, **diff_options
+    device,
+    interface="autograd",
+    diff_method="best",
+    mutable=True,
+    max_expansion=10,
+    **diff_options,
 ):
     """Decorator for creating QNodes.
 
@@ -846,15 +871,15 @@ def qnode(
         interface (str): The interface that will be used for classical backpropagation.
             This affects the types of objects that can be passed to/returned from the QNode:
 
-            * ``interface='autograd'``: Allows autograd to backpropogate
+            * ``"autograd"``: Allows autograd to backpropogate
               through the QNode. The QNode accepts default Python types
               (floats, ints, lists) as well as NumPy array arguments,
               and returns NumPy arrays.
 
-            * ``interface='torch'``: Allows PyTorch to backpropogate
+            * ``"torch"``: Allows PyTorch to backpropogate
               through the QNode. The QNode accepts and returns Torch tensors.
 
-            * ``interface='tf'``: Allows TensorFlow in eager mode to backpropogate
+            * ``"tf"``: Allows TensorFlow in eager mode to backpropogate
               through the QNode. The QNode accepts and returns
               TensorFlow ``tf.Variable`` and ``tf.tensor`` objects.
 
@@ -863,7 +888,7 @@ def qnode(
               and returns NumPy arrays. It does not connect to any
               machine learning library automatically for backpropagation.
 
-        diff_method (str, None): the method of differentiation to use in the created QNode.
+        diff_method (str): the method of differentiation to use in the created QNode.
 
             * ``"best"``: Best available method. Uses classical backpropagation or the
               device directly to compute the gradient if supported, otherwise will use

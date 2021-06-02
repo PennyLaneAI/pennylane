@@ -14,6 +14,8 @@
 """
 Unit tests for the available built-in discrete-variable quantum operations.
 """
+import itertools
+import re
 import pytest
 import functools
 import numpy as np
@@ -30,8 +32,11 @@ from gate_data import (
     Y,
     Z,
     H,
+    StateZeroProjector,
+    StateOneProjector,
     CNOT,
     SWAP,
+    ISWAP,
     CZ,
     S,
     T,
@@ -81,6 +86,12 @@ EIGVALS_TEST_DATA = [
 ]
 
 EIGVALS_TEST_DATA_MULTI_WIRES = [functools.reduce(np.kron, [Y, I, Z])]
+
+# Testing Projector observable with the basis states.
+PROJECTOR_EIGVALS_TEST_DATA = [
+    (np.array([0, 0])),
+    (np.array([1, 0, 1])),
+]
 
 
 @pytest.mark.usefixtures("tear_down_hermitian")
@@ -328,10 +339,66 @@ class TestObservables:
             qml.Hermitian(H2, wires=0).matrix
 
 
+class TestProjector:
+    """Tests for projector observable"""
+
+    @pytest.mark.parametrize("basis_state", PROJECTOR_EIGVALS_TEST_DATA)
+    def test_projector_eigvals(self, basis_state, tol):
+        """Tests that the eigvals property of the Projector class returns the correct results."""
+        num_wires = len(basis_state)
+        eigvals = qml.Projector(basis_state, wires=range(num_wires)).eigvals
+
+        if basis_state[0] == 0:
+            observable = np.array([[1, 0], [0, 0]])
+        elif basis_state[0] == 1:
+            observable = np.array([[0, 0], [0, 1]])
+        for i in basis_state[1:]:
+            if i == 0:
+                observable = np.kron(observable, np.array([[1, 0], [0, 0]]))
+            elif i == 1:
+                observable = np.kron(observable, np.array([[0, 0], [0, 1]]))
+        expected_eigvals, expected_eigvecs = np.linalg.eig(observable)
+
+        assert np.allclose(np.sort(eigvals), np.sort(expected_eigvals), atol=tol, rtol=0)
+        assert np.allclose(
+            eigvals, expected_eigvecs[np.where(expected_eigvals == 1)[0][0]], atol=tol, rtol=0
+        )
+
+    @pytest.mark.parametrize("basis_state", PROJECTOR_EIGVALS_TEST_DATA)
+    def test_projector_diagonalization(self, basis_state, tol):
+        """Test that the diagonalizing_gates property of the Projector class returns empty."""
+        num_wires = len(basis_state)
+        diag_gates = qml.Projector(basis_state, wires=range(num_wires)).diagonalizing_gates()
+
+        assert diag_gates == []
+
+    def test_projector_exceptions(self):
+        """Tests that the projector construction raises the proper errors on incorrect inputs."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(basis_state):
+            obs = qml.Projector(basis_state, wires=range(2))
+            return qml.expval(obs)
+
+        with pytest.raises(ValueError, match="Basis state must be one-dimensional"):
+            basis_state = np.random.randint(2, size=(2, 4))
+            circuit(basis_state)
+
+        with pytest.raises(ValueError, match="Basis state must be of length"):
+            basis_state = np.random.randint(2, size=(3))
+            circuit(basis_state)
+
+        with pytest.raises(ValueError, match="Basis state must only consist of 0s"):
+            basis_state = np.array([0, 2])
+            circuit(basis_state)
+
+
 # Non-parametrized operations and their matrix representation
 NON_PARAMETRIZED_OPERATIONS = [
     (qml.CNOT, CNOT),
     (qml.SWAP, SWAP),
+    (qml.ISWAP, ISWAP),
     (qml.CZ, CZ),
     (qml.S, S),
     (qml.T, T),
@@ -363,12 +430,16 @@ class TestOperations:
             qml.CZ(wires=[0, 1]),
             qml.CY(wires=[0, 1]),
             qml.SWAP(wires=[0, 1]),
+            qml.ISWAP(wires=[0, 1]),
             qml.CSWAP(wires=[0, 1, 2]),
             qml.PauliRot(0.123, "Y", wires=0),
+            qml.IsingXX(0.123, wires=[0, 1]),
+            qml.IsingZZ(0.123, wires=[0, 1]),
             qml.Rot(0.123, 0.456, 0.789, wires=0),
             qml.Toffoli(wires=[0, 1, 2]),
             qml.PhaseShift(2.133, wires=0),
             qml.ControlledPhaseShift(1.777, wires=[0, 2]),
+            qml.CPhase(1.777, wires=[0, 2]),
             qml.MultiRZ(0.112, wires=[1, 2, 3]),
             qml.CRX(0.836, wires=[2, 3]),
             qml.CRY(0.721, wires=[2, 3]),
@@ -642,6 +713,183 @@ class TestOperations:
 
         assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
 
+    def test_ISWAP_decomposition(self, tol):
+        """Tests that the decomposition of the ISWAP gate is correct"""
+        op = qml.ISWAP(wires=[0, 1])
+        res = op.decomposition(op.wires)
+
+        assert len(res) == 6
+
+        assert res[0].wires == Wires([0])
+        assert res[1].wires == Wires([1])
+        assert res[2].wires == Wires([0])
+        assert res[3].wires == Wires([0, 1])
+        assert res[4].wires == Wires([1, 0])
+        assert res[5].wires == Wires([1])
+
+        assert res[0].name == "S"
+        assert res[1].name == "S"
+        assert res[2].name == "Hadamard"
+        assert res[3].name == "CNOT"
+        assert res[4].name == "CNOT"
+        assert res[5].name == "Hadamard"
+
+        mats = []
+        for i in reversed(res):
+            if i.wires == Wires([1]):
+                mats.append(np.kron(np.eye(2), i.matrix))
+            elif i.wires == Wires([0]):
+                mats.append(np.kron(i.matrix, np.eye(2)))
+            elif i.wires == Wires([1, 0]) and i.name == "CNOT":
+                mats.append(np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]]))
+            else:
+                mats.append(i.matrix)
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+
+        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
+
+    def test_isingxx_decomposition(self, tol):
+        """Tests that the decomposition of the IsingXX gate is correct"""
+        param = 0.1234
+        op = qml.IsingXX(param, wires=[3, 2])
+        res = op.decomposition(param, op.wires)
+
+        assert len(res) == 3
+
+        assert res[0].wires == Wires([3, 2])
+        assert res[1].wires == Wires([3])
+        assert res[2].wires == Wires([3, 2])
+
+        assert res[0].name == "CNOT"
+        assert res[1].name == "RX"
+        assert res[2].name == "CNOT"
+
+        mats = []
+        for i in reversed(res):
+            if i.wires == Wires([3]):
+                # RX gate
+                mats.append(np.kron(i.matrix, np.eye(2)))
+            else:
+                mats.append(i.matrix)
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+
+        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
+
+    def test_isingzz_decomposition(self, tol):
+        """Tests that the decomposition of the IsingZZ gate is correct"""
+        param = 0.1234
+        op = qml.IsingZZ(param, wires=[3, 2])
+        res = op.decomposition(param, op.wires)
+
+        assert len(res) == 3
+
+        assert res[0].wires == Wires([3, 2])
+        assert res[1].wires == Wires([2])
+        assert res[2].wires == Wires([3, 2])
+
+        assert res[0].name == "CNOT"
+        assert res[1].name == "RZ"
+        assert res[2].name == "CNOT"
+
+        mats = []
+        for i in reversed(res):
+            if i.wires == Wires([2]):
+                # RZ gate
+                mats.append(np.kron(np.eye(2), i.matrix))
+            else:
+                mats.append(i.matrix)
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+
+        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
+
+    def test_toffoli_decomposition(self, tol):
+        """Tests that the decomposition of the Toffoli gate is correct"""
+        op = qml.Toffoli(wires=[0, 1, 2])
+        res = op.decomposition(op.wires)
+
+        assert len(res) == 15
+
+        mats = []
+
+        for i in reversed(res):
+            if i.wires == Wires([2]):
+                mats.append(np.kron(np.eye(4), i.matrix))
+            elif i.wires == Wires([1]):
+                mats.append(np.kron(np.eye(2), np.kron(i.matrix, np.eye(2))))
+            elif i.wires == Wires([0]):
+                mats.append(np.kron(i.matrix, np.eye(4)))
+            elif i.wires == Wires([0, 1]) and i.name == "CNOT":
+                mats.append(np.kron(i.matrix, np.eye(2)))
+            elif i.wires == Wires([1, 2]) and i.name == "CNOT":
+                mats.append(np.kron(np.eye(2), i.matrix))
+            elif i.wires == Wires([0, 2]) and i.name == "CNOT":
+                mats.append(
+                    np.array(
+                        [
+                            [1, 0, 0, 0, 0, 0, 0, 0],
+                            [0, 1, 0, 0, 0, 0, 0, 0],
+                            [0, 0, 1, 0, 0, 0, 0, 0],
+                            [0, 0, 0, 1, 0, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 1, 0, 0],
+                            [0, 0, 0, 0, 1, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 0, 0, 1],
+                            [0, 0, 0, 0, 0, 0, 1, 0],
+                        ]
+                    )
+                )
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+
+        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
+
+    def test_CSWAP_decomposition(self, tol):
+        """Tests that the decomposition of the CSWAP gate is correct"""
+        op = qml.CSWAP(wires=[0, 1, 2])
+        res = op.decomposition(op.wires)
+
+        assert len(res) == 3
+
+        mats = []
+
+        for i in reversed(res):  # only use 3 toffoli gates
+            if i.wires == Wires([0, 2, 1]) and i.name == "Toffoli":
+                mats.append(
+                    np.array(
+                        [
+                            [1, 0, 0, 0, 0, 0, 0, 0],
+                            [0, 1, 0, 0, 0, 0, 0, 0],
+                            [0, 0, 1, 0, 0, 0, 0, 0],
+                            [0, 0, 0, 1, 0, 0, 0, 0],
+                            [0, 0, 0, 0, 1, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 0, 0, 1],
+                            [0, 0, 0, 0, 0, 0, 1, 0],
+                            [0, 0, 0, 0, 0, 1, 0, 0],
+                        ]
+                    )
+                )
+            elif i.wires == Wires([0, 1, 2]) and i.name == "Toffoli":
+                mats.append(
+                    np.array(
+                        [
+                            [1, 0, 0, 0, 0, 0, 0, 0],
+                            [0, 1, 0, 0, 0, 0, 0, 0],
+                            [0, 0, 1, 0, 0, 0, 0, 0],
+                            [0, 0, 0, 1, 0, 0, 0, 0],
+                            [0, 0, 0, 0, 1, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 1, 0, 0],
+                            [0, 0, 0, 0, 0, 0, 0, 1],
+                            [0, 0, 0, 0, 0, 0, 1, 0],
+                        ]
+                    )
+                )
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+
+        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
+
     def test_phase_shift(self, tol):
         """Test phase shift is correct"""
 
@@ -695,6 +943,43 @@ class TestOperations:
 
         # test identity for theta=pi
         assert np.allclose(qml.RZ._matrix(np.pi), -1j * Z, atol=tol, rtol=0)
+
+    def test_isingxx(self, tol):
+        """Test that the IsingXX operation is correct"""
+        assert np.allclose(qml.IsingXX._matrix(0), np.identity(4), atol=tol, rtol=0)
+
+        def get_expected(theta):
+            expected = np.array(np.diag([np.cos(theta / 2)] * 4), dtype=np.complex128)
+            sin_coeff = -1j * np.sin(theta / 2)
+            expected[3, 0] = sin_coeff
+            expected[2, 1] = sin_coeff
+            expected[1, 2] = sin_coeff
+            expected[0, 3] = sin_coeff
+            return expected
+
+        param = np.pi / 2
+        assert np.allclose(qml.IsingXX._matrix(param), get_expected(param), atol=tol, rtol=0)
+
+        param = np.pi
+        assert np.allclose(qml.IsingXX._matrix(param), get_expected(param), atol=tol, rtol=0)
+
+    def test_isingzz(self, tol):
+        """Test that the IsingZZ operation is correct"""
+        assert np.allclose(qml.IsingZZ._matrix(0), np.identity(4), atol=tol, rtol=0)
+
+        def get_expected(theta):
+            neg_imag = np.exp(-1j * theta / 2)
+            plus_imag = np.exp(1j * theta / 2)
+            expected = np.array(
+                np.diag([neg_imag, plus_imag, plus_imag, neg_imag]), dtype=np.complex128
+            )
+            return expected
+
+        param = np.pi / 2
+        assert np.allclose(qml.IsingZZ._matrix(param), get_expected(param), atol=tol, rtol=0)
+
+        param = np.pi
+        assert np.allclose(qml.IsingZZ._matrix(param), get_expected(param), atol=tol, rtol=0)
 
     def test_arbitrary_rotation(self, tol):
         """Test arbitrary single qubit rotation is correct"""
@@ -873,11 +1158,35 @@ class TestOperations:
         with pytest.raises(ValueError, match="must be a square matrix"):
             qml.QubitUnitary(U, wires=0).matrix
 
+    def test_iswap_eigenval(self):
+        """Tests that the ISWAP eigenvalue matches the numpy eigenvalues of the ISWAP matrix"""
+        op = qml.ISWAP(wires=[0, 1])
+        exp = np.linalg.eigvals(op.matrix)
+        res = op.eigvals
+        assert np.allclose(res, exp)
+
+    def test_swap_decomposition(self):
+        """Tests the swap operator produces the correct output"""
+        opr = qml.SWAP(wires=[0, 1])
+        decomp = opr.decomposition([0, 1])
+
+        mat = []
+        for op in reversed(decomp):
+            if isinstance(op, qml.CNOT) and op.wires.tolist() == [0, 1]:
+                mat.append(CNOT)
+            elif isinstance(op, qml.CNOT) and op.wires.tolist() == [1, 0]:
+                mat.append(np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]]))
+
+        decomposed_matrix = np.linalg.multi_dot(mat)
+
+        assert np.allclose(decomposed_matrix, opr.matrix)
+
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
-    def test_controlled_phase_shift_matrix_and_eigvals(self, phi):
-        """Tests that the ControlledPhaseShift operation calculates the correct matrix and
+    @pytest.mark.parametrize("cphase_op", [qml.ControlledPhaseShift, qml.CPhase])
+    def test_controlled_phase_shift_matrix_and_eigvals(self, phi, cphase_op):
+        """Tests that the ControlledPhaseShift and CPhase operation calculates the correct matrix and
         eigenvalues"""
-        op = qml.ControlledPhaseShift(phi, wires=[0, 1])
+        op = cphase_op(phi, wires=[0, 1])
         res = op.matrix
         exp = ControlledPhaseShift(phi)
         assert np.allclose(res, exp)
@@ -886,10 +1195,65 @@ class TestOperations:
         assert np.allclose(res, np.diag(exp))
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
-    def test_controlled_phase_shift_decomp(self, phi):
-        """Tests that the ControlledPhaseShift operation calculates the correct decomposition"""
-        op = qml.ControlledPhaseShift(phi, wires=[0, 1])
-        decomp = op.decomposition(phi, wires=[0, 1])
+    @pytest.mark.parametrize("cphase_op", [qml.ControlledPhaseShift, qml.CPhase])
+    def test_controlled_phase_shift_decomp(self, phi, cphase_op):
+        """Tests that the ControlledPhaseShift and CPhase operation
+        calculates the correct decomposition"""
+        op = cphase_op(phi, wires=[0, 2])
+        decomp = op.decomposition(phi, wires=[0, 2])
+
+        mats = []
+        for i in reversed(decomp):
+            if i.wires.tolist() == [0]:
+                mats.append(np.kron(i.matrix, np.eye(4)))
+            elif i.wires.tolist() == [1]:
+                mats.append(np.kron(np.eye(2), np.kron(i.matrix, np.eye(2))))
+            elif i.wires.tolist() == [2]:
+                mats.append(np.kron(np.eye(4), i.matrix))
+            elif isinstance(i, qml.CNOT) and i.wires.tolist() == [0, 1]:
+                mats.append(np.kron(i.matrix, np.eye(2)))
+            elif isinstance(i, qml.CNOT) and i.wires.tolist() == [0, 2]:
+                mats.append(
+                    np.array(
+                        [
+                            [1, 0, 0, 0, 0, 0, 0, 0],
+                            [0, 1, 0, 0, 0, 0, 0, 0],
+                            [0, 0, 1, 0, 0, 0, 0, 0],
+                            [0, 0, 0, 1, 0, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 1, 0, 0],
+                            [0, 0, 0, 0, 1, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 0, 0, 1],
+                            [0, 0, 0, 0, 0, 0, 1, 0],
+                        ]
+                    )
+                )
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+        lam = np.exp(1j * phi)
+        exp = np.array(
+            [
+                [1, 0, 0, 0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0, 0, 0, 0],
+                [0, 0, 1, 0, 0, 0, 0, 0],
+                [0, 0, 0, 1, 0, 0, 0, 0],
+                [0, 0, 0, 0, 1, 0, 0, 0],
+                [0, 0, 0, 0, 0, lam, 0, 0],
+                [0, 0, 0, 0, 0, 0, 1, 0],
+                [0, 0, 0, 0, 0, 0, 0, lam],
+            ]
+        )
+
+        assert np.allclose(decomposed_matrix, exp)
+
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
+    def test_single_excitation_plus_decomp(self, phi):
+        """Tests that the SingleExcitationPlus operation calculates the correct decomposition.
+
+        Need to consider the matrix of CRY separately, as the control is wire 1
+        and the target is wire 0 in the decomposition. (Not applicable for
+        ControlledPhase as it has the same matrix representation regardless of the
+        control and target wires.)"""
+        decomp = qml.SingleExcitationPlus.decomposition(phi, wires=[0, 1])
 
         mats = []
         for i in reversed(decomp):
@@ -897,11 +1261,57 @@ class TestOperations:
                 mats.append(np.kron(i.matrix, np.eye(2)))
             elif i.wires.tolist() == [1]:
                 mats.append(np.kron(np.eye(2), i.matrix))
+            elif i.wires.tolist() == [1, 0] and isinstance(i, qml.CRY):
+                new_mat = np.array(
+                    [
+                        [1, 0, 0, 0],
+                        [0, np.cos(phi / 2), 0, -np.sin(phi / 2)],
+                        [0, 0, 1, 0],
+                        [0, np.sin(phi / 2), 0, np.cos(phi / 2)],
+                    ]
+                )
+
+                mats.append(new_mat)
             else:
                 mats.append(i.matrix)
 
         decomposed_matrix = np.linalg.multi_dot(mats)
-        exp = ControlledPhaseShift(phi)
+        exp = SingleExcitationPlus(phi)
+
+        assert np.allclose(decomposed_matrix, exp)
+
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
+    def test_single_excitation_minus_decomp(self, phi):
+        """Tests that the SingleExcitationMinus operation calculates the correct decomposition.
+
+        Need to consider the matrix of CRY separately, as the control is wire 1
+        and the target is wire 0 in the decomposition. (Not applicable for
+        ControlledPhase as it has the same matrix representation regardless of the
+        control and target wires.)"""
+        decomp = qml.SingleExcitationMinus.decomposition(phi, wires=[0, 1])
+
+        mats = []
+        for i in reversed(decomp):
+            if i.wires.tolist() == [0]:
+                mats.append(np.kron(i.matrix, np.eye(2)))
+            elif i.wires.tolist() == [1]:
+                mats.append(np.kron(np.eye(2), i.matrix))
+            elif i.wires.tolist() == [1, 0] and isinstance(i, qml.CRY):
+                new_mat = np.array(
+                    [
+                        [1, 0, 0, 0],
+                        [0, np.cos(phi / 2), 0, -np.sin(phi / 2)],
+                        [0, 0, 1, 0],
+                        [0, np.sin(phi / 2), 0, np.cos(phi / 2)],
+                    ]
+                )
+
+                mats.append(new_mat)
+            else:
+                mats.append(i.matrix)
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+        exp = SingleExcitationMinus(phi)
 
         assert np.allclose(decomposed_matrix, exp)
 
@@ -917,12 +1327,30 @@ class TestSingleExcitation:
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_single_excitation_decomp(self, phi):
-        """Tests that the SingleExcitation operation calculates the correct decomposition"""
-        op = qml.SingleExcitation(phi, wires=[0, 1])
-        decomp = op.decomposition(phi, wires=[0, 1])
-        mats = [m.matrix for m in decomp]
-        decomposed_matrix = mats[0] @ mats[1]
+        """Tests that the SingleExcitation operation calculates the correct decomposition.
+
+        Need to consider the matrix of CRY separately, as the control is wire 1
+        and the target is wire 0 in the decomposition."""
+        decomp = qml.SingleExcitation.decomposition(phi, wires=[0, 1])
+
+        mats = []
+        for i in reversed(decomp):
+            if i.wires.tolist() == [1, 0] and isinstance(i, qml.CRY):
+                new_mat = np.array(
+                    [
+                        [1, 0, 0, 0],
+                        [0, np.cos(phi / 2), 0, -np.sin(phi / 2)],
+                        [0, 0, 1, 0],
+                        [0, np.sin(phi / 2), 0, np.cos(phi / 2)],
+                    ]
+                )
+                mats.append(new_mat)
+            else:
+                mats.append(i.matrix)
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
         exp = SingleExcitation(phi)
+
         assert np.allclose(decomposed_matrix, exp)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
@@ -1176,6 +1604,53 @@ class TestDoubleExcitation:
         exp = DoubleExcitation(phi)
 
         assert np.allclose(res, exp)
+
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
+    def test_double_excitation_decomp(self, phi):
+        """Tests that the DoubleExcitation operation calculates the correct decomposition.
+
+        The decomposition has already been expressed in terms of single-qubit rotations
+        and CNOTs. For each term in the decomposition we need to construct the appropriate
+        four-qubit tensor product matrix and then multiply them together.
+        """
+        decomp = qml.DoubleExcitation.decomposition(phi, wires=[0, 1, 2, 3])
+
+        from functools import reduce
+
+        # To compute the matrix for CX on an arbitrary number of qubits, use the fact that
+        # CU  = |0><0| \otimes I + |1><1| \otimes U
+        def cnot_four_qubits(wires):
+            proj_0_term = [StateZeroProjector if idx == wires[0] else np.eye(2) for idx in range(4)]
+
+            proj_1_term = [np.eye(2) for idx in range(4)]
+            proj_1_term[wires[0]] = StateOneProjector
+            proj_1_term[wires[1]] = X
+
+            proj_0_kron = reduce(np.kron, proj_0_term)
+            proj_1_kron = reduce(np.kron, proj_1_term)
+
+            return proj_0_kron + proj_1_kron
+
+        # Inserts a single-qubit matrix into a four-qubit matrix at the right place
+        def single_mat_four_qubits(mat, wire):
+            individual_mats = [mat if idx == wire else np.eye(2) for idx in range(4)]
+            return reduce(np.kron, individual_mats)
+
+        mats = []
+        for i in reversed(decomp):
+            # Single-qubit gate
+            if len(i.wires.tolist()) == 1:
+                mat = single_mat_four_qubits(i.matrix, i.wires.tolist()[0])
+                mats.append(mat)
+            # Two-qubit gate
+            else:
+                mat = cnot_four_qubits(i.wires.tolist())
+                mats.append(mat)
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+        exp = DoubleExcitation(phi)
+
+        assert np.allclose(decomposed_matrix, exp)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_double_excitation_plus_matrix(self, phi):
@@ -1535,14 +2010,15 @@ class TestPauliRot:
         assert decomp_ops[4].data[0] == -np.pi / 2
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
-    def test_differentiability(self, angle, tol):
+    @pytest.mark.parametrize("pauli_word", ["XX", "ZZ"])
+    def test_differentiability(self, angle, pauli_word, tol):
         """Test that differentiation of PauliRot works."""
 
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def circuit(theta):
-            qml.PauliRot(theta, "XX", wires=[0, 1])
+            qml.PauliRot(theta, pauli_word, wires=[0, 1])
 
             return qml.expval(qml.PauliZ(0))
 
@@ -2096,6 +2572,190 @@ class TestMultiControlledX:
         pauli_x_state = circuit_pauli_x()
 
         assert np.allclose(mpmct_state, pauli_x_state)
+
+    @pytest.mark.parametrize("n_ctrl_wires", range(3, 6))
+    def test_decomposition_with_many_workers(self, n_ctrl_wires):
+        """Test that the decomposed MultiControlledX gate performs the same unitary as the
+        matrix-based version by checking if U^dagger U applies the identity to each basis
+        state. This test focuses on the case where there are many work wires."""
+        control_wires = range(n_ctrl_wires)
+        target_wire = n_ctrl_wires
+        work_wires = range(n_ctrl_wires + 1, 2 * n_ctrl_wires + 1)
+
+        dev = qml.device("default.qubit", wires=2 * n_ctrl_wires + 1)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.MultiControlledX._decomposition_with_many_workers(
+                control_wires, target_wire, work_wires
+            )
+        assert all(isinstance(op, qml.Toffoli) for op in tape.operations)
+
+        @qml.qnode(dev)
+        def f(bitstring):
+            qml.BasisState(bitstring, wires=range(n_ctrl_wires + 1))
+            qml.MultiControlledX(control_wires=control_wires, wires=target_wire).inv()
+            for op in tape.operations:
+                op.queue()
+            return qml.probs(wires=range(n_ctrl_wires + 1))
+
+        u = np.array([f(b) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]).T
+        assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
+
+    @pytest.mark.parametrize("n_ctrl_wires", range(3, 6))
+    def test_decomposition_with_one_worker(self, n_ctrl_wires):
+        """Test that the decomposed MultiControlledX gate performs the same unitary as the
+        matrix-based version by checking if U^dagger U applies the identity to each basis
+        state. This test focuses on the case where there is one work wire."""
+        control_wires = Wires(range(n_ctrl_wires))
+        target_wire = n_ctrl_wires
+        work_wires = n_ctrl_wires + 1
+
+        dev = qml.device("default.qubit", wires=n_ctrl_wires + 2)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.MultiControlledX._decomposition_with_one_worker(
+                control_wires, target_wire, work_wires
+            )
+        tape = tape.expand(depth=1)
+        assert all(
+            isinstance(op, qml.Toffoli) or isinstance(op, qml.CNOT) for op in tape.operations
+        )
+
+        @qml.qnode(dev)
+        def f(bitstring):
+            qml.BasisState(bitstring, wires=range(n_ctrl_wires + 1))
+            qml.MultiControlledX(control_wires=control_wires, wires=target_wire).inv()
+            for op in tape.operations:
+                op.queue()
+            return qml.probs(wires=range(n_ctrl_wires + 1))
+
+        u = np.array([f(b) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]).T
+        assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
+
+    def test_not_enough_workers(self):
+        """Test that a ValueError is raised when more than 2 control wires are to be decomposed with
+        no work wires supplied"""
+        control_wires = range(3)
+        target_wire = 4
+        op = qml.MultiControlledX(control_wires=control_wires, wires=target_wire)
+
+        match = (
+            f"At least one work wire is required to decompose operation: {re.escape(op.__repr__())}"
+        )
+        with pytest.raises(ValueError, match=match):
+            op.decomposition()
+
+    def test_not_unique_wires(self):
+        """Test that a ValueError is raised when work_wires is not complementary to control_wires"""
+        control_wires = range(3)
+        target_wire = 4
+        work_wires = range(2)
+        with pytest.raises(ValueError, match="The work wires must be different from the control"):
+            qml.MultiControlledX(
+                control_wires=control_wires, wires=target_wire, work_wires=work_wires
+            )
+
+    @pytest.mark.parametrize("control_val", ["0", "1"])
+    @pytest.mark.parametrize("n_ctrl_wires", range(1, 6))
+    def test_decomposition_with_flips(self, n_ctrl_wires, control_val, mocker):
+        """Test that the decomposed MultiControlledX gate performs the same unitary as the
+        matrix-based version by checking if U^dagger U applies the identity to each basis
+        state. This test focuses on varying the control values."""
+        control_values = control_val * n_ctrl_wires
+        control_wires = range(n_ctrl_wires)
+        target_wire = n_ctrl_wires
+        work_wires = range(n_ctrl_wires + 1, 2 * n_ctrl_wires + 1)
+
+        spy = mocker.spy(qml.MultiControlledX, "decomposition")
+        dev = qml.device("default.qubit", wires=2 * n_ctrl_wires + 1)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.MultiControlledX(
+                control_wires=control_wires,
+                wires=target_wire,
+                work_wires=work_wires,
+                control_values=control_values,
+            )
+        tape = tape.expand(depth=1)
+        assert all(not isinstance(op, qml.MultiControlledX) for op in tape.operations)
+
+        @qml.qnode(dev)
+        def f(bitstring):
+            qml.BasisState(bitstring, wires=range(n_ctrl_wires + 1))
+            qml.MultiControlledX(
+                control_wires=control_wires, wires=target_wire, control_values=control_values
+            ).inv()
+            for op in tape.operations:
+                op.queue()
+            return qml.probs(wires=range(n_ctrl_wires + 1))
+
+        u = np.array([f(b) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]).T
+        spy.assert_called()
+        assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
+
+    def test_decomposition_with_custom_wire_labels(self, mocker):
+        """Test that the decomposed MultiControlledX gate performs the same unitary as the
+        matrix-based version by checking if U^dagger U applies the identity to each basis
+        state. This test focuses on using custom wire labels."""
+        n_ctrl_wires = 4
+        control_wires = [-1, "alice", 42, 3.14]
+        target_wire = ["bob"]
+        work_wires = ["charlie"]
+        all_wires = control_wires + target_wire + work_wires
+
+        spy = mocker.spy(qml.MultiControlledX, "decomposition")
+        dev = qml.device("default.qubit", wires=all_wires)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.MultiControlledX(
+                control_wires=control_wires, wires=target_wire, work_wires=work_wires
+            )
+        tape = tape.expand(depth=2)
+        assert all(not isinstance(op, qml.MultiControlledX) for op in tape.operations)
+
+        @qml.qnode(dev)
+        def f(bitstring):
+            qml.BasisState(bitstring, wires=control_wires + target_wire)
+            qml.MultiControlledX(control_wires=control_wires, wires=target_wire).inv()
+            for op in tape.operations:
+                op.queue()
+            return qml.probs(wires=control_wires + target_wire)
+
+        u = np.array([f(b) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]).T
+        spy.assert_called()
+        assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
+
+    def test_worker_state_unperturbed(self, mocker):
+        """Test that the state of the worker wires is unperturbed after the decomposition has used
+        them. To do this, a random state over all the qubits (control, target and workers) is
+        loaded and U^dagger U(decomposed) is applied. If the workers are uncomputed, the output
+        state will be the same as the input."""
+        control_wires = range(4)
+        target_wire = 4
+        worker_wires = [5, 6]
+        n_all_wires = 7
+
+        rnd_state = unitary_group.rvs(2 ** n_all_wires, random_state=1)[0]
+        spy = mocker.spy(qml.MultiControlledX, "decomposition")
+        dev = qml.device("default.qubit", wires=n_all_wires)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.MultiControlledX(
+                control_wires=control_wires, wires=target_wire, work_wires=worker_wires
+            )
+        tape = tape.expand(depth=1)
+        assert all(not isinstance(op, qml.MultiControlledX) for op in tape.operations)
+
+        @qml.qnode(dev)
+        def f():
+            qml.QubitStateVector(rnd_state, wires=range(n_all_wires))
+            qml.MultiControlledX(control_wires=control_wires, wires=target_wire).inv()
+            for op in tape.operations:
+                op.queue()
+            return qml.state()
+
+        assert np.allclose(f(), rnd_state)
+        spy.assert_called()
 
 
 class TestArithmetic:

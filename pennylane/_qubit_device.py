@@ -109,7 +109,7 @@ class QubitDevice(Device):
         new_array[indices] = array
         return new_array
 
-    observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}
+    observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity", "Projector"}
 
     def __init__(self, wires=1, shots=None, cache=0, analytic=None):
         super().__init__(wires=wires, shots=shots, analytic=analytic)
@@ -475,7 +475,7 @@ class QubitDevice(Device):
                 "The number of shots has to be explicitly set on the device "
                 "when using sample-based measurements. Since no shots are specified, "
                 "a default of 1000 shots is used.",
-                DeprecationWarning,
+                UserWarning,
             )
 
         shots = self.shots or 1000
@@ -734,6 +734,14 @@ class QubitDevice(Device):
 
     def expval(self, observable, shot_range=None, bin_size=None):
 
+        if observable.name == "Projector":
+            # branch specifically to handle the projector observable
+            idx = int("".join(str(i) for i in observable.parameters[0]), 2)
+            probs = self.probability(
+                wires=observable.wires, shot_range=shot_range, bin_size=bin_size
+            )
+            return probs[idx]
+
         if self.shots is None:
             # exact expectation value
             eigvals = self._asarray(observable.eigvals, dtype=self.R_DTYPE)
@@ -745,6 +753,14 @@ class QubitDevice(Device):
         return np.squeeze(np.mean(samples, axis=0))
 
     def var(self, observable, shot_range=None, bin_size=None):
+
+        if observable.name == "Projector":
+            # branch specifically to handle the projector observable
+            idx = int("".join(str(i) for i in observable.parameters[0]), 2)
+            probs = self.probability(
+                wires=observable.wires, shot_range=shot_range, bin_size=bin_size
+            )
+            return probs[idx] - probs[idx] ** 2
 
         if self.shots is None:
             # exact variance value
