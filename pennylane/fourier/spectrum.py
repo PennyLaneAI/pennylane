@@ -100,7 +100,7 @@ def spectrum(qnode, encoding_gates=None):
     **Details**
 
     A circuit that returns an expectation value which depends on
-    :math:`N` scalar inputs :math:`x_i` can be interpreted as a function
+    :math:`N` scalar inputs :math:`x_j` can be interpreted as a function
     :math:`f: \mathbb{R}^N \rightarrow \mathbb{R}`. This function can always be
     expressed by a Fourier-type sum
 
