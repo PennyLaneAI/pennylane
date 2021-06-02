@@ -134,7 +134,7 @@ We can then compute the frequencies supported by the input-encoding gates as:
 .. note::
 
     Some encoding gate types may give rise to non-integer-valued frequencies. In this case,
-    the :func:`~.pennylane.fourier.spectrum` function computes the frequency sets :math:`\Omega_i`
+    the :func:`~.pennylane.fourier.spectrum` function computes the frequency sets :math:`\Omega_j`
     of the *Fourier sum* of the form
 
     .. math::
