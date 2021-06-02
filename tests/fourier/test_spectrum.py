@@ -196,7 +196,7 @@ class TestInterfaces:
             assert v1 == v2
 
     def test_integration_jax(self):
-        """Test that the spectra of a circuit with lots of edge cases is calculated correctly
+        """Test that the spectra of a circuit is calculated correctly
         in the jax interface."""
 
         jax = pytest.importorskip("jax")
