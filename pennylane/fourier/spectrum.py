@@ -79,24 +79,25 @@ def _join_spectra(spec1, spec2):
 def spectrum(qnode, encoding_gates=None):
     r"""Compute the frequency spectrum of the Fourier representation of simple quantum circuits.
 
-    The circuit must only use single-parameter gates of the form :math:`e^{-ix_j G}` as
+    The circuit must only use single-parameter gates of the form :math:`e^{-i x_j G}` as
     input-encoding gates, which allows the computation of the spectrum by inspecting the gates'
     generators :math:`G`.
 
-    Gates are marked as input-encoding gates in the quantum function by giving them an `id`.
-    If two gates have the same id, they are considered
+    Gates are marked as input-encoding gates in the quantum function by giving them an ``id``.
+    If two gates have the same ``id``, they are considered
     to be used to encode the same input :math:`x_j`. The `encoding_gates` argument can be used
-    if only specific `id`s should be interpreted as marking input-encoding gates.
+    if only gates with a specific ``id`` should be interpreted as input-encoding gates.
 
     Args:
         qnode (pennylane.QNode): a quantum node representing a circuit in which
-            input-encoding gates are marked by their `id` attribute
-        encoding_gates (list[str]): list of input-encoding gate IDs
+            input-encoding gates are marked by their ``id`` attribute
+        encoding_gates (list[str]): list of input-encoding gate ``id`` strings
             for which to compute the frequency spectra
 
     Returns:
-        (Dict[str, list[float]]): Dictionary with the input-encoding gate IDs as keys and
-            their frequency spectra as values.
+        (dict[str, list[float]]): Dictionary with the input-encoding gate ``id`` as keys and
+        their frequency spectra as values.
+
 
     **Details**
 
