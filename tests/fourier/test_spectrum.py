@@ -21,18 +21,6 @@ from pennylane import numpy as pnp
 from pennylane.fourier.spectrum import spectrum, _join_spectra, _get_spectrum
 
 
-class DummyOp(qml.operation.Operation):
-    num_wires = qml.operation.WiresEnum.AllWires
-    num_params = 0
-    par_domain = "R"
-
-
-class GeneratorIsOp(qml.PauliX):
-    """Dummy operation whose generator is another
-    Operation, but without a matrix defined"""
-    generator = [DummyOp, 1]
-
-
 class TestHelpers:
     @pytest.mark.parametrize(
         "spectrum1, spectrum2, expected",
@@ -51,11 +39,11 @@ class TestHelpers:
     @pytest.mark.parametrize(
         "op, expected",
         [
-            (qml.RX(0.1, wires=0), [-1, 0, 1]),
-            (qml.RY(0.1, wires=0), [-1, 0, 1]),
-            (qml.RZ(0.1, wires=0), [-1, 0, 1]),
-            (qml.PhaseShift(0.5, wires=0), [-1, 0, 1]),
-            (qml.ControlledPhaseShift(0.5, wires=[0, 1]), [-1, 0, 1]),
+            (qml.RX(0.1, wires=0), [-1, 0, 1]),  # generator is a class
+            (qml.RY(0.1, wires=0), [-1, 0, 1]),  # generator is a class
+            (qml.RZ(0.1, wires=0), [-1, 0, 1]),  # generator is a class
+            (qml.PhaseShift(0.5, wires=0), [-1, 0, 1]),  # generator is a array
+            (qml.ControlledPhaseShift(0.5, wires=[0, 1]), [-1, 0, 1]),  # generator is array
         ],
     )
     def test_get_spectrum(self, op, expected, tol):
@@ -65,16 +53,14 @@ class TestHelpers:
 
     def test_get_spectrum_complains_no_generator(self):
         """Test that an error is raised if the operator has no generator defined."""
-        op = qml.Rot(0.1, 0.1, 0.1, wires=0)
-        with pytest.raises(ValueError, match="no generator defined"):
-            _get_spectrum(op)
 
-    def test_get_spectrum_complains_no_matrix_or_evals(self):
-        """Test that an error is raised if the generator
-        has no matrix or eigenvalues defined."""
-        op = GeneratorIsOp(wires=0)
-        with pytest.raises(ValueError, match="no matrix or eigenvalues"):
-            _get_spectrum(op)
+        # Observables have no generator attribute
+        with pytest.raises(ValueError, match="no generator defined"):
+            _get_spectrum(qml.P(wires=0))
+
+        # CNOT is an operation where generator is an abstract property
+        with pytest.raises(ValueError, match="no generator defined"):
+            _get_spectrum(qml.CNOT(wires=0))
 
 
 def circuit(x, w):

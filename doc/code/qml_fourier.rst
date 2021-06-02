@@ -87,6 +87,11 @@ available to a quantum model, the larger the class of functions that model can
 represent, potentially leading to greater utility for quantum machine learning
 applications.
 
+Calculating the Fourier frequencies
+-----------------------------------
+
+TODO
+
 Calculating the Fourier coefficients
 ------------------------------------
 

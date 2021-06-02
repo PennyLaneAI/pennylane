@@ -32,42 +32,27 @@ def _get_spectrum(op):
     Returns:
         list: frequencies contributed by this input-encoding gate
     """
-    evals = None
-    g, coeff = op.generator
+    no_generator = False
+    if hasattr(op, "generator"):
+        g, coeff = op.generator
 
-    # the generator is undefined
-    if g is None:
-        raise ValueError(
-            "no generator defined for input-encoding gate {}; "
-            "cannot extract Fourier spectrum".format(op.name)
-        )
+        if isinstance(g[0], np.ndarray):
+            matrix = g[0]
+        elif hasattr(g, "matrix"):
+            matrix = g.matrix
+            if not isinstance(matrix, np.ndarray):
+                no_generator = True
+        else:
+            no_generator = True
+    else:
+        no_generator = True
 
-    # if g is an Operator instance ("PauliX(wires=0)") or class ("PauliX"),
-    # extract its eigenvalues or matrix representation
-    if hasattr(g, "_eigvals"):
-        # first try if we can directly find eigenvalues
-        evals = g._eigvals
+    if no_generator:
+        raise ValueError(f"generator of operation {op} is not defined")
 
-        if evals is not None:
-            # scale evals correctly
-            evals = evals * coeff
-    elif hasattr(g, "_matrix"):
-        # try to extract the matrix
-        g = g._matrix
-
-        # if this also fails, we need to abort
-        if g.matrix is None:
-            raise ValueError(
-                "no matrix or eigenvalues defined for generator {} of input-encoding gate {}; "
-                "cannot extract Fourier spectrum".format(g, op.name)
-            )
-
-    # if we have to use the matrix representation,
-    # extract the eigenvalues from the matrix
-    if evals is None:
-        g = coeff * g
-        # eigenvalues of hermitian ops are guaranteed to be real
-        evals = qml.math.real(np.linalg.eigvals(g))
+    g = coeff * g
+    # eigenvalues of hermitian ops are guaranteed to be real
+    evals = qml.math.real(np.linalg.eigvals(g))
 
     # compute all differences of eigenvalues
     frequencies = [np.round(e1 - e2, decimals=8) for e1, e2 in product(evals, evals)]
