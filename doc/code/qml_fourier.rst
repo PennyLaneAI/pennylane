@@ -96,13 +96,13 @@ that encode the corresponding inputs :math:`x_j` (see for example `Schuld,
 Sweke and Meyer (2020) <https://arxiv.org/abs/2008.08605>`__). More precisely, if
 all input-encoding gates are of the form :math:`e^{-ix_j G}`, where :math:`G` is
 a Hamiltonian that "generates" the operation, we can deduce a maximum set of frequencies
-that can theoretically appear in :math:`\Omega_i`.  Depending on the non-inout-encoding
+that can theoretically appear in :math:`\Omega_i`.  Depending on the non-input-encoding
 gates in the circuit, some of these theoretically supported frequencies may end up
 having vanishing Fourier coefficients, and :math:`\Omega_i` turns out to be smaller.
 However, estimates based on the input-encoding strategy can still be useful to understand
 the potential expressivity of a type of ansatz.
 
-The estimate of the supported frequencies can be computed
+The theoretically supported frequencies can be computed
 using the :func:`~.pennylane.fourier.spectrum` function. To mark which gates encode
 inputs (and, for example, which ones are only used for trainable parameters), we
 have to give input-encoding gates an `id`:
@@ -134,15 +134,17 @@ We can then compute the frequencies supported by the input-encoding gates as:
 .. note::
 
     Some encoding gate types may give rise to non-integer-valued frequencies. In this case,
-    the Fourier series becomes a *Fourier sum* of the form
+    the :func:`~.pennylane.fourier.spectrum` function computes the frequency sets :math:`\Omega_i`
+    of the *Fourier sum* of the form
 
     .. math::
 
         f(x) = \sum \limits_{\omega_1\in \Omega_1} \dots \sum \limits_{\omega_N \in \Omega_N}
         c_{\omega_1,\dots, \omega_N} e^{-i x_1 \omega_1} \dots e^{-i x_N \omega_N},
 
-    with :math:`\omega \in \mathbb{R}`. As any function, such a sum can be turned into a
-    proper Fourier series, but this is not always trivial.
+    with :math:`\omega \in \mathbb{R}`. Just like any other function, such a sum can be turned into a
+    proper Fourier series, but the mapping from non-integer-valued to integer-valued frequencies
+    is not always trivial.
 
 Calculating the Fourier coefficients
 ------------------------------------

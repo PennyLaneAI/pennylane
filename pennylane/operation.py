@@ -308,28 +308,6 @@ class Operator(abc.ABC):
         Returns:
             array: matrix representation
         """
-        """Matrix representation of the operator
-        in the computational basis.
-
-        This is a *class method* that should be defined for all
-        new operations and observables, that returns the matrix representing
-        the operator in the computational basis.
-
-        This private method allows matrices to be computed
-        directly without instantiating the operators first.
-
-        To return the matrices of *instantiated* operators,
-        please use the :attr:`~.Operator.matrix` property instead.
-
-        **Example:**
-
-        >>> qml.RY._matrix(0.5)
-        >>> array([[ 0.96891242+0.j, -0.24740396+0.j],
-                   [ 0.24740396+0.j,  0.96891242+0.j]])
-
-        Returns:
-            array: matrix representation
-        """
         raise NotImplementedError
 
     @property
