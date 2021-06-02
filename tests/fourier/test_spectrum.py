@@ -145,7 +145,7 @@ class TestInterfaces:
     all interfaces."""
 
     def test_integration_autograd(self):
-        """Test that the spectra of a circuit with lots of edge cases is calculated correctly
+        """Test that the spectra of a circuit is calculated correctly
         in the autograd interface."""
 
         x = pnp.array([1, 2, 3], requires_grad=False)
