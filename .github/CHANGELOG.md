@@ -244,6 +244,12 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Improvements</h3>
 
+* The `Operator` (and by inheritance, the `Operation` and `Observable` class and their children) 
+  now have an `id` attribute, which can mark an operator in a circuit, for example to
+  identify it on the tape by a tape transform.
+  [(#1377)](https://github.com/PennyLaneAI/pennylane/pull/1377)
+
+  
 * Implement special handling for measuring the variance of Projector observables to improve memory usage.
   [(#1368)](https://github.com/PennyLaneAI/pennylane/pull/1368)
 
@@ -345,6 +351,10 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
   [(#1228)](https://github.com/XanaduAI/pennylane/pull/1228)
 
 <h3>Bug fixes</h3>
+
+* Fixes a bug where `qml.ctrl` would fail to transform gates that had no
+  control defined and no decomposition defined.
+  [(#1376)](https://github.com/PennyLaneAI/pennylane/pull/1376)
 
 * Copying the `JacobianTape` now correctly also copies the `jacobian_options` attribute. This fixes a bug
   allowing the JAX interface to support adjoint differentiation.
