@@ -152,7 +152,6 @@ def spectrum(qnode, encoding_gates=None):
 
         x = np.array([1, 2, 3])
         w = np.random.random((n_layers, n_qubits, 3))
-
         res = spectrum(circuit)(x, w)
 
         for inp, freqs in res.items():
@@ -183,7 +182,6 @@ def spectrum(qnode, encoding_gates=None):
             return qml.expval(qml.PauliZ(wires=0))
 
         x = np.array([1, 2])
-
         res = spectrum(circuit, encoding_gates=["x0"])(x)
 
         for inp, freqs in res.items():
@@ -199,6 +197,7 @@ def spectrum(qnode, encoding_gates=None):
     The `spectrum` function works in all interfaces:
 
     .. code-block:: python
+
         import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=1)
@@ -210,7 +209,6 @@ def spectrum(qnode, encoding_gates=None):
             return qml.expval(qml.PauliZ(wires=0))
 
         x = tf.constant([1, 2])
-
         res = spectrum(circuit)(x)
 
         for inp, freqs in res.items():
