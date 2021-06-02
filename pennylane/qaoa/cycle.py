@@ -14,11 +14,12 @@
 r"""
 Functionality for finding the maximum weighted cycle of directed graphs.
 """
-
-from typing import Dict, Tuple
+import itertools
+from typing import Dict, Tuple, Iterable, List
 import networkx as nx
 import numpy as np
 import pennylane as qml
+from pennylane.vqe import Hamiltonian
 
 
 def edges_to_wires(graph: nx.Graph) -> Dict[Tuple, int]:
@@ -79,7 +80,7 @@ def wires_to_edges(graph: nx.Graph) -> Dict[int, Tuple]:
     return {i: edge for i, edge in enumerate(graph.edges)}
 
 
-def cycle_mixer(graph: nx.DiGraph) -> qml.Hamiltonian:
+def cycle_mixer(graph: nx.DiGraph) -> Hamiltonian:
     r"""Calculates the cycle-mixer Hamiltonian.
 
     Following methods outlined `here <https://arxiv.org/pdf/1709.03489.pdf>`__, the
@@ -132,7 +133,7 @@ def cycle_mixer(graph: nx.DiGraph) -> qml.Hamiltonian:
     Returns:
         qml.Hamiltonian: the cycle-mixer Hamiltonian
     """
-    hamiltonian = qml.Hamiltonian([], [])
+    hamiltonian = Hamiltonian([], [])
 
     for edge in graph.edges:
         hamiltonian += _partial_cycle_mixer(graph, edge)
@@ -140,7 +141,7 @@ def cycle_mixer(graph: nx.DiGraph) -> qml.Hamiltonian:
     return hamiltonian
 
 
-def _partial_cycle_mixer(graph: nx.DiGraph, edge: Tuple) -> qml.Hamiltonian:
+def _partial_cycle_mixer(graph: nx.DiGraph, edge: Tuple) -> Hamiltonian:
     r"""Calculates the partial cycle-mixer Hamiltonian for a specific edge.
 
     For an edge :math:`(i, j)`, this function returns:
@@ -184,10 +185,10 @@ def _partial_cycle_mixer(graph: nx.DiGraph, edge: Tuple) -> qml.Hamiltonian:
 
             coeffs.extend([0.25, 0.25, 0.25, -0.25])
 
-    return qml.Hamiltonian(coeffs, ops)
+    return Hamiltonian(coeffs, ops)
 
 
-def loss_hamiltonian(graph: nx.Graph) -> qml.Hamiltonian:
+def loss_hamiltonian(graph: nx.Graph) -> Hamiltonian:
     r"""Calculates the loss Hamiltonian for the maximum-weighted cycle problem.
 
     We consider the problem of selecting a cycle from a graph that has the greatest product of edge
@@ -271,4 +272,220 @@ def loss_hamiltonian(graph: nx.Graph) -> qml.Hamiltonian:
         coeffs.append(np.log(weight))
         ops.append(qml.PauliZ(wires=edges_to_qubits[edge]))
 
-    return qml.Hamiltonian(coeffs, ops)
+    return Hamiltonian(coeffs, ops)
+
+
+def _square_hamiltonian_terms(
+    coeffs: Iterable[float], ops: Iterable[qml.operation.Observable]
+) -> Tuple[List[float], List[qml.operation.Observable]]:
+    """Calculates the coefficients and observables that compose the squared Hamiltonian.
+
+    Args:
+        coeffs (Iterable[float]): coeffients of the input Hamiltonian
+        ops (Iterable[qml.operation.Observable]): observables of the input Hamiltonian
+
+    Returns:
+        Tuple[List[float], List[qml.operation.Observable]]: The list of coefficients and list of observables
+        of the squared Hamiltonian.
+    """
+    squared_coeffs, squared_ops = [], []
+    pairs = [(coeff, op) for coeff, op in zip(coeffs, ops)]
+    products = itertools.product(pairs, repeat=2)
+
+    for (coeff1, op1), (coeff2, op2) in products:
+        squared_coeffs.append(coeff1 * coeff2)
+
+        if isinstance(op1, qml.Identity):
+            squared_ops.append(op2)
+        elif isinstance(op2, qml.Identity):
+            squared_ops.append(op1)
+        elif op1.wires == op2.wires and type(op1) == type(op2):
+            squared_ops.append(qml.Identity(0))
+        elif op2.wires[0] < op1.wires[0]:
+            squared_ops.append(op2 @ op1)
+        else:
+            squared_ops.append(op1 @ op2)
+
+    return squared_coeffs, squared_ops
+
+
+def out_flow_constraint(graph: nx.DiGraph) -> Hamiltonian:
+    r"""Calculates the `out flow constraint <https://1qbit.com/whitepaper/arbitrage/>`__
+    Hamiltonian for the maximum-weighted cycle problem.
+
+    Given a subset of edges in a directed graph, the out-flow constraint imposes that at most one
+    edge can leave any given node, i.e., for all :math:`i`:
+
+    .. math:: \sum_{j,(i,j)\in E}x_{ij} \leq 1,
+
+    where :math:`E` are the edges of the graph and :math:`x_{ij}` is a binary number that selects
+    whether to include the edge :math:`(i, j)`.
+
+    A set of edges satisfies the out-flow constraint whenever the following Hamiltonian is minimized:
+
+    .. math::
+
+        \sum_{i\in V}\left(d_{i}^{out}(d_{i}^{out} - 2)\mathbb{I}
+        - 2(d_{i}^{out}-1)\sum_{j,(i,j)\in E}\hat{Z}_{ij} +
+        \left( \sum_{j,(i,j)\in E}\hat{Z}_{ij} \right)^{2}\right)
+
+
+    where :math:`V` are the graph vertices, :math:`d_{i}^{\rm out}` is the outdegree of node
+    :math:`i`, and :math:`Z_{ij}` is a qubit Pauli-Z matrix acting
+    upon the qubit specified by the pair :math:`(i, j)`. Mapping from edges to wires can be achieved
+    using :func:`~.edges_to_wires`.
+
+    Args:
+        graph (nx.DiGraph): the directed graph specifying possible edges
+
+    Returns:
+        qml.Hamiltonian: the out flow constraint Hamiltonian
+
+    Raises:
+        ValueError: if the input graph is not directed
+    """
+    if not hasattr(graph, "out_edges"):
+        raise ValueError("Input graph must be directed")
+
+    hamiltonian = Hamiltonian([], [])
+
+    for node in graph.nodes:
+        hamiltonian += _inner_out_flow_constraint_hamiltonian(graph, node)
+
+    return hamiltonian
+
+
+def net_flow_constraint(graph: nx.DiGraph) -> Hamiltonian:
+    r"""Calculates the `net flow constraint <https://doi.org/10.1080/0020739X.2010.526248>`__
+    Hamiltonian for the maximum-weighted cycle problem.
+
+    Given a subset of edges in a directed graph, the net-flow constraint imposes that the number of
+    edges leaving any given node is equal to the number of edges entering the node, i.e.,
+
+    .. math:: \sum_{j, (i, j) \in E} x_{ij} = \sum_{j, (j, i) \in E} x_{ji},
+
+    for all nodes :math:`i`, where :math:`E` are the edges of the graph and :math:`x_{ij}` is a
+    binary number that selects whether to include the edge :math:`(i, j)`.
+
+    A set of edges has zero net flow whenever the following Hamiltonian is minimized:
+
+    .. math::
+
+        \sum_{i \in V} \left((d_{i}^{\rm out} - d_{i}^{\rm in})\mathbb{I} -
+        \sum_{j, (i, j) \in E} Z_{ij} + \sum_{j, (j, i) \in E} Z_{ji} \right)^{2},
+
+    where :math:`V` are the graph vertices, :math:`d_{i}^{\rm out}` and :math:`d_{i}^{\rm in}` are
+    the outdegree and indegree, respectively, of node :math:`i` and :math:`Z_{ij}` is a qubit
+    Pauli-Z matrix acting upon the wire specified by the pair :math:`(i, j)`. Mapping from edges to
+    wires can be achieved using :func:`~.edges_to_wires`.
+
+
+    Args:
+        graph (nx.DiGraph): the directed graph specifying possible edges
+
+    Returns:
+        qml.Hamiltonian: the net-flow constraint Hamiltonian
+
+    Raises:
+        ValueError: if the input graph is not directed
+    """
+    if not hasattr(graph, "in_edges") or not hasattr(graph, "out_edges"):
+        raise ValueError("Input graph must be directed")
+
+    hamiltonian = Hamiltonian([], [])
+
+    for node in graph.nodes:
+        hamiltonian += _inner_net_flow_constraint_hamiltonian(graph, node)
+
+    return hamiltonian
+
+
+def _inner_out_flow_constraint_hamiltonian(graph: nx.DiGraph, node) -> Hamiltonian:
+    r"""Calculates the inner portion of the Hamiltonian in :func:`out_flow_constraint`.
+    For a given :math:`i`, this function returns:
+
+    .. math::
+
+        d_{i}^{out}(d_{i}^{out} - 2)\mathbb{I}
+        - 2(d_{i}^{out}-1)\sum_{j,(i,j)\in E}\hat{Z}_{ij} +
+        ( \sum_{j,(i,j)\in E}\hat{Z}_{ij}) )^{2}
+
+    Args:
+        graph (nx.DiGraph): the directed graph specifying possible edges
+        node: a fixed node
+
+    Returns:
+        qml.Hamiltonian: The inner part of the out-flow constraint Hamiltonian.
+    """
+    coeffs = []
+    ops = []
+
+    edges_to_qubits = edges_to_wires(graph)
+    out_edges = graph.out_edges(node)
+    d = len(out_edges)
+
+    for edge in out_edges:
+        wire = (edges_to_qubits[edge],)
+        coeffs.append(1)
+        ops.append(qml.PauliZ(wire))
+
+    coeffs, ops = _square_hamiltonian_terms(coeffs, ops)
+
+    for edge in out_edges:
+        wire = (edges_to_qubits[edge],)
+        coeffs.append(-2 * (d - 1))
+        ops.append(qml.PauliZ(wire))
+
+    coeffs.append(d * (d - 2))
+    ops.append(qml.Identity(0))
+
+    H = Hamiltonian(coeffs, ops)
+    H.simplify()
+
+    return H
+
+
+def _inner_net_flow_constraint_hamiltonian(graph: nx.DiGraph, node) -> Hamiltonian:
+    r"""Calculates the squared inner portion of the Hamiltonian in :func:`net_flow_constraint`.
+
+
+    For a given :math:`i`, this function returns:
+
+    .. math::
+
+        \left((d_{i}^{\rm out} - d_{i}^{\rm in})\mathbb{I} -
+        \sum_{j, (i, j) \in E} Z_{ij} + \sum_{j, (j, i) \in E} Z_{ji} \right)^{2}.
+
+    Args:
+        graph (nx.DiGraph): the directed graph specifying possible edges
+        node: a fixed node
+
+    Returns:
+        qml.Hamiltonian: The inner part of the net-flow constraint Hamiltonian.
+    """
+    edges_to_qubits = edges_to_wires(graph)
+
+    coeffs = []
+    ops = []
+
+    out_edges = graph.out_edges(node)
+    in_edges = graph.in_edges(node)
+
+    coeffs.append(len(out_edges) - len(in_edges))
+    ops.append(qml.Identity(0))
+
+    for edge in out_edges:
+        wires = (edges_to_qubits[edge],)
+        coeffs.append(-1)
+        ops.append(qml.PauliZ(wires))
+
+    for edge in in_edges:
+        wires = (edges_to_qubits[edge],)
+        coeffs.append(1)
+        ops.append(qml.PauliZ(wires))
+
+    coeffs, ops = _square_hamiltonian_terms(coeffs, ops)
+    H = Hamiltonian(coeffs, ops)
+    H.simplify()
+
+    return H
