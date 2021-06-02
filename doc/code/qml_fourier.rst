@@ -87,25 +87,25 @@ available to a quantum model, the larger the class of functions that model can
 represent, potentially leading to greater utility for quantum machine learning
 applications.
 
-Calculating the frequencies supported by an encoding strategy
--------------------------------------------------------------
+Calculating the frequencies supported by an encoding
+----------------------------------------------------
 
 For certain circuits, information on the frequency spectra :math:`\Omega_i`
 can solely be derived from the structure of the gates
-that encode the corresponding inputs :math:`x_j` (see for example `Schuld,
+that encode the corresponding inputs :math:`x_i` (see for example `Schuld,
 Sweke and Meyer (2020) <https://arxiv.org/abs/2008.08605>`__). More precisely, if
-all input-encoding gates are of the form :math:`e^{-ix_j G}`, where :math:`G` is
+all input-encoding gates are of the form :math:`e^{-ix_i G}`, where :math:`G` is
 a Hamiltonian that "generates" the operation, we can deduce a maximum set of frequencies
 that can theoretically appear in :math:`\Omega_i`.  Depending on the non-input-encoding
 gates in the circuit, some of these theoretically supported frequencies may end up
-having vanishing Fourier coefficients, and :math:`\Omega_i` turns out to be smaller.
+having vanishing Fourier coefficients, and :math:`\Omega_i` effectively turns out to be smaller.
 However, estimates based on the input-encoding strategy can still be useful to understand
 the potential expressivity of a type of ansatz.
 
 The theoretically supported frequencies can be computed
 using the :func:`~.pennylane.fourier.spectrum` function. To mark which gates encode
 inputs (and, for example, which ones are only used for trainable parameters), we
-have to give input-encoding gates an `id`:
+have to give input-encoding gates an ``id``:
 
 .. code::
 
@@ -150,7 +150,8 @@ Calculating the Fourier coefficients
 ------------------------------------
 
 To get a more accurate picture of the Fourier series representation of a quantum circuit,
-we have to compute the Fourier *coefficients* :math:`c_{n_1,\ldots,n_N}`. This can be achieved with the
+we have to compute the Fourier coefficients :math:`c_{n_1,\ldots,n_N}`. Since this computation
+does not scale well, it has to be done using numerical methods, as used in the
 :func:`~.pennylane.fourier.coefficients` function:
 
 .. code::

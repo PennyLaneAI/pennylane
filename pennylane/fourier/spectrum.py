@@ -125,10 +125,14 @@ def spectrum(qnode, encoding_gates=None):
     to a few frequencies only, which in turn limits the function class that the circuit
     can express.
 
+    The ``spectrum`` function computes all frequencies that are allowed to appear in the
+    sets :math:`\Omega_1` to :math:`\Omega_N` (which correspond to the :math:`N` different strings
+    used as an ``id`` to mark the input-encoding gates).
+
     **Example**
 
-    Consider the following example, which uses non-trainable inputs `x` and
-    trainable parameters `w` as arguments to the qnode.
+    Consider the following example, which uses non-trainable inputs ``x`` and
+    trainable parameters ``w`` as arguments to the qnode.
 
     .. code-block:: python
 
@@ -167,7 +171,7 @@ def spectrum(qnode, encoding_gates=None):
         of the circuit.
 
     The input-encoding gates to consider can also be explicitly selected by using the
-    `encoding_gates` keyword argument:
+    ``encoding_gates`` keyword argument:
 
     .. code-block:: python
 
