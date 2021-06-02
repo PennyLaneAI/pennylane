@@ -106,8 +106,8 @@ class TestCircuits:
         assert np.allclose(res_false["x"], range(-2, 3))
 
     def test_input_gates_not_of_correct_form(self):
-        """Test that error is thrown if gates marked as encoding gates
-        are not single-param gates."""
+        """Test that an error is thrown if gates marked as encoding gates
+        are not single-parameter gates."""
 
         dev = qml.device("default.qubit", wires=3)
 
