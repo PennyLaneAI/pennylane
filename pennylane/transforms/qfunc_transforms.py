@@ -188,7 +188,8 @@ def _create_qfunc_internal_wrapper(fn, tape_transform, transform_args, transform
 
 
 def qfunc_transform(tape_transform):
-    """Converts a single tape transform to a quantum function (qfunc) transform.
+    """Given a function which defines a tape transform, convert the function into
+    one that applies the tape transform to quantum functions (qfuncs).
 
     Args:
         tape_transform (function or single_tape_transform): the single tape transform
@@ -208,6 +209,7 @@ def qfunc_transform(tape_transform):
     It can then be used to transform an existing qfunc:
 
     >>> new_qfunc = my_qfunc_transform(0.6, 0.7)(old_qfunc)
+    >>> new_qfunc(params)
 
     It can also be used as a decorator:
 
@@ -230,50 +232,121 @@ def qfunc_transform(tape_transform):
             qml.Hadamard(wires=0)
             qml.CRX(x, wires=[0, 1])
 
-    Let's use this qfunc to create a QNode, so that we can execute it on a quantum
-    device:
-
     >>> dev = qml.device("default.qubit", wires=2)
     >>> qnode = qml.QNode(qfunc, dev)
     >>> print(qml.draw(qnode)(2.5))
      0: ──H───────────────────╭Z──┤
      1: ──RX(1.5)──RY(0.158)──╰C──┤
 
-    Not only is the transformed qfunc fully differentiable, but the qfunc transform
-    parameters *themselves* are differentiable:
+    The transform weights provided to a qfunc transform are fully differentiable,
+    allowing the transform itself to be differentiated and trained. For more details,
+    see the Differentiability section under Usage Details.
 
-    .. code-block:: python
+    .. UsageDetails::
 
-        dev = qml.device("default.qubit", wires=2)
+        **Differentiability**
 
-        def ansatz(x):
-            qml.Hadamard(wires=0)
-            qml.CRX(x, wires=[0, 1])
+        Not only is the transformed qfunc fully differentiable, but the qfunc transform
+        parameters *themselves* are differentiable:
 
-        @qml.qnode(dev)
-        def circuit(param, transform_weights):
-            qml.RX(0.1, wires=0)
+        .. code-block:: python
 
-            # apply the transform to the ansatz
-            my_transform(*transform_weights)(ansatz)(param)
+            dev = qml.device("default.qubit", wires=2)
 
-            return qml.expval(qml.PauliZ(1))
+            def ansatz(x):
+                qml.Hadamard(wires=0)
+                qml.CRX(x, wires=[0, 1])
 
-    We can print this QNode to show that the qfunc transform is taking place:
+            @qml.qnode(dev)
+            def circuit(param, transform_weights):
+                qml.RX(0.1, wires=0)
 
-    >>> x = np.array(0.5, requires_grad=True)
-    >>> y = np.array([0.1, 0.2], requires_grad=True)
-    >>> print(qml.draw(circuit)(x, y))
-     0: ──RX(0.1)───H──────────╭Z──┤
-     1: ──RX(0.05)──RY(0.141)──╰C──┤ ⟨Z⟩
+                # apply the transform to the ansatz
+                my_transform(*transform_weights)(ansatz)(param)
 
-    Evaluating the QNode, as well as the derivative, with respect to the gate
-    parameter *and* the transform weights:
+                return qml.expval(qml.PauliZ(1))
 
-    >>> circuit(x, y)
-    0.9887793925354269
-    >>> qml.grad(circuit)(x, y)
-    (array(-0.02485651), array([-0.02474011, -0.09954244]))
+        We can print this QNode to show that the qfunc transform is taking place:
+
+        >>> x = np.array(0.5, requires_grad=True)
+        >>> y = np.array([0.1, 0.2], requires_grad=True)
+        >>> print(qml.draw(circuit)(x, y))
+         0: ──RX(0.1)───H──────────╭Z──┤
+         1: ──RX(0.05)──RY(0.141)──╰C──┤ ⟨Z⟩
+
+        Evaluating the QNode, as well as the derivative, with respect to the gate
+        parameter *and* the transform weights:
+
+        >>> circuit(x, y)
+        0.9887793925354269
+        >>> qml.grad(circuit)(x, y)
+        (array(-0.02485651), array([-0.02474011, -0.09954244]))
+
+        **Inline usage**
+
+        qfunc transforms, when used inline (that is, not as a decorator), take the following form:
+
+        >>> my_transform(transform_weights)(ansatz)(param)
+
+        or
+
+        >>> my_transform(ansatz)(param)
+
+        if they do not permit any parameters. We can break this down into distinct steps,
+        to show what is happening with each new function call:
+
+        0. Create a transform defined by the transform weights:
+
+           >>> specific_transform = my_transform(transform_weights)
+
+           Note that this step is skipped if the transform does not provide any
+           weights/parameters that can be modified!
+
+        1. Apply the transform to the qfunc. A qfunc transform always acts on
+           a qfunc, returning a new qfunc:
+
+           >>> new_qfunc = specific_transform(ansatz)
+
+        2. Finally, we evaluate the new, transformed, qfunc:
+
+           >>> new_qfunc(params)
+
+        So the syntax
+
+        >>> my_transform(transform_weights)(ansatz)(param)
+
+        simply 'chains' these three steps together, into a single call.
+
+        **Implementation details**
+
+        Internally, the qfunc transform works as follows:
+
+        .. code-block:: python
+
+            def transform(old_qfunc, params):
+                def new_qfunc(*args, **kwargs):
+                    # 1. extract the tape from the old qfunc, being
+                    # careful *not* to have it queued.
+                    tape = make_tape(old_qfunc)(*args, **kwargs)
+
+                    # 2. transform the tape
+                    new_tape = tape_transform(tape, params)
+
+                    # 3. queue the *new* tape to the active queuing context
+                    new_tape.queue()
+                return new_qfunc
+
+        *Note: this is pseudocode; the actual implementation is significantly more complicated!*
+
+        Steps (1) and (3) are identical for all qfunc transforms; it is only step (2),
+        ``tape_transform`` and the corresponding tape transform parameters, that define the qfunc
+        transformation.
+
+        That is, given a tape transform that **defines the qfunc transformation**, the
+        decorator **elevates** the tape transform to one that works on quantum functions
+        rather than tapes. This decorator therefore automates the process of adding in
+        the queueing logic required under steps (1) and (3), so that it does not need to be
+        repeated and tested for every new qfunc transform.
     """
     if not callable(tape_transform):
         raise ValueError(
