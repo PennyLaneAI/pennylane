@@ -91,7 +91,7 @@ Calculating the frequencies supported by an encoding
 ----------------------------------------------------
 
 For certain circuits, information on the frequency spectra :math:`\Omega_i`
-can solely be derived from the structure of the gates
+can be derived solely from the structure of the gates
 that encode the corresponding inputs :math:`x_i` (see for example `Schuld,
 Sweke and Meyer (2020) <https://arxiv.org/abs/2008.08605>`__). More precisely, if
 all input-encoding gates are of the form :math:`e^{-ix_i G}`, where :math:`G` is
