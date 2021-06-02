@@ -66,9 +66,7 @@ class TestHelpers:
 class TestCircuits:
     """Tests that the spectrum is returned as expected."""
 
-    @pytest.mark.parametrize("n_layers, n_qubits", [(1, 1),
-                                                    (2, 3),
-                                                    (4, 1)])
+    @pytest.mark.parametrize("n_layers, n_qubits", [(1, 1), (2, 3), (4, 1)])
     def test_spectrum_grows_with_gates(self, n_layers, n_qubits):
         """Test that the spectrum grows linearly with the number of
         encoding gates if we use Pauli rotation encoding."""
@@ -84,8 +82,8 @@ class TestCircuits:
             return qml.expval(qml.PauliZ(wires=0))
 
         res = spectrum(circuit, encoding_gates=["x"])(0.1)
-        expected_degree = n_qubits*n_layers
-        assert np.allclose(res['x'], range(-expected_degree, expected_degree+1))
+        expected_degree = n_qubits * n_layers
+        assert np.allclose(res["x"], range(-expected_degree, expected_degree + 1))
 
     def test_spectrum_changes_with_qnode_args(self):
         """Test that the spectrum changes per call if a qnode argument changes the
@@ -102,10 +100,10 @@ class TestCircuits:
             return qml.expval(qml.PauliZ(wires=0))
 
         res_true = spectrum(circuit)(True)
-        assert np.allclose(res_true['x'], range(-3, 4))
+        assert np.allclose(res_true["x"], range(-3, 4))
 
         res_false = spectrum(circuit)(False)
-        assert np.allclose(res_false['x'], range(-2, 3))
+        assert np.allclose(res_false["x"], range(-2, 3))
 
     def test_input_gates_not_of_correct_form(self):
         """Test that error is thrown if gates marked as encoding gates
