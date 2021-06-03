@@ -2,6 +2,69 @@
 
 <h3>New features since last release</h3>
 
+* Adds a decorator `@qml.qfunc_transform` to easily create a transformation
+  that modifies the behaviour of a quantum function.
+  [(#1315)](https://github.com/PennyLaneAI/pennylane/pull/1315)
+
+  For example, consider the following transform, which scales the parameter of
+  all `RX` gates by :math:`x \rightarrow \sin(a) \sqrt{x}`, and the parameters
+  of all `RY` gates by :math:`y \rightarrow \cos(a * b) y`:
+
+  ```python
+  @qml.qfunc_transform
+  def my_transform(tape, a, b):
+      for op in tape.operations + tape.measurements:
+          if op.name == "RX":
+              x = op.parameters[0]
+              qml.RX(qml.math.sin(a) * qml.math.sqrt(x), wires=op.wires)
+          elif op.name == "RY":
+              y = op.parameters[0]
+              qml.RX(qml.math.cos(a * b) * y, wires=op.wires)
+          else:
+              op.queue()
+  ```
+
+  We can now apply this transform to any quantum function:
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  def ansatz(x):
+      qml.Hadamard(wires=0)
+      qml.RX(x[0], wires=0)
+      qml.RY(x[1], wires=1)
+      qml.CNOT(wires=[0, 1])
+
+  @qml.qnode(dev)
+  def circuit(params, transform_weights):
+      qml.RX(0.1, wires=0)
+
+      # apply the transform to the ansatz
+      my_transform(*transform_weights)(ansatz)(params)
+
+      return qml.expval(qml.PauliZ(1))
+  ```
+
+  We can print this QNode to show that the qfunc transform is taking place:
+
+  ```pycon
+  >>> x = np.array([0.5, 0.3], requires_grad=True)
+  >>> transform_weights = np.array([0.1, 0.6], requires_grad=True)
+  >>> print(qml.draw(circuit)(x, transform_weights))
+   0: ──RX(0.1)────H──RX(0.0706)──╭C──┤
+   1: ──RX(0.299)─────────────────╰X──┤ ⟨Z⟩
+  ```
+
+  Evaluating the QNode, as well as the derivative, with respect to the gate
+  parameter *and* the transform weights:
+
+  ```pycon
+  >>> circuit(x, transform_weights)
+  0.006728293438238053
+  >>> qml.grad(circuit)(x, transform_weights)
+  (array([ 0.00671711, -0.00207359]), array([6.69695008e-02, 3.73694364e-06]))
+  ```
+
 * Added validation for noise channel parameters. Invalid noise parameters now
   raise a `ValueError`. [(#1357)](https://github.com/PennyLaneAI/pennylane/pull/1357)
 
