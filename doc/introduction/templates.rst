@@ -205,7 +205,7 @@ of other templates.
 
 .. customgalleryitem::
     :link: ../code/api/pennylane.templates.subroutines.AllSinglesDoubles.html
-    :description: UCCSD
+    :description: AllSinglesDoubles
     :figure: ../_static/templates/subroutines/all_singles_doubles.png
 
 .. raw:: html
