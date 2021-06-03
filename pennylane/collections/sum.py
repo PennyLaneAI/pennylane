@@ -65,9 +65,7 @@ def sum(x):
         if x.interface == "jax":
             import jax.numpy as jnp
 
-            new_func = lambda params, **kwargs: jnp.sum(jnp.array(x(params, **kwargs)))
-            new_func.interface = x.interface
-            return new_func
+            return apply(jnp.sum, x)
 
         raise ValueError("Unknown interface {}".format(x.interface))
 
