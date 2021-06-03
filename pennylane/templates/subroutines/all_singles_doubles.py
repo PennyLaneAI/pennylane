@@ -22,40 +22,47 @@ from pennylane.ops import BasisState
 
 
 class AllSinglesDoubles(Operation):
-    r"""Apply the :class:`~.pennylane.SingleExcitation` and :class:`~.pennylane.DoubleExcitation`
-    operations, implemented as Givens rotations, to the :math:`n-`qubit system to prepare the
-    correlated quantum state of a molecule.
+    r"""Apply the particle-conserving :class:`~.pennylane.SingleExcitation` and
+    :class:`~.pennylane.DoubleExcitation` operations, implemented as Givens rotations,
+    to prepare quantum states of molecules beyond the Hartree-Fock approximation.
 
-    This ansatz is similar to the traditional `Unitary Coupled-Clusters Singles
-    and Doubles (UCCSD) <https://arxiv.org/abs/1805.04340>`_ given by,
+    In the Jordan-Wigner representation the qubit state :math:`\vert 0 \rangle` or
+    :math:`\vert 1 \rangle` encodes the occupation number of the molecular spin-orbitals.
+    For example, the state :math:`\vert 1100 \rangle` represents the Hartree-Fock (HF) state of
+    two electrons in a basis set consisting of four spin-orbitals. Other states with a fixed
+    number of particles can be interpreted as excitations of the HF reference state. For example,
+    the state :math:`\vert 0110 \rangle` is obtained by exciting a particle from the first to
+    the third qubit. Similarly, the state :math:`\vert 0011 \rangle` corresponds to a double
+    excitation involving the four qubits.
 
-    .. math::
+    This template initializes the qubit register to encode the Hartree-Fock state. Then,
+    it applies :class:`~.pennylane.SingleExcitation` and
+    :class:`~.pennylane.DoubleExcitation` operations corresponding to all possible
+    single-excitations :math:`\hat{c}_p^\dagger \hat{c}_r \vert \mathrm{HF} \rangle`
+    and double-excitations
+    :math:`\hat{c}_p^\dagger \hat{c}_q^\dagger \hat{c}_r \hat{c}_s \vert \mathrm{HF} \rangle`
+    of the initial state where the indices :math:`r, s` and :math:`p, q` label, respectively,
+    the occupied and unoccupied orbitals the particle annihilation (\hat{c}) and
+    creation (\hat{c}^\dagger) operators act on.
 
-        \hat{U}(\vec{\theta}) =
-        \prod_{p > r} \mathrm{exp} \Big\{\theta_{pr}
-        (\hat{c}_p^\dagger \hat{c}_r-\mathrm{H.c.}) \Big\}
-        \prod_{p > q > r > s} \mathrm{exp} \Big\{\theta_{pqrs}
-        (\hat{c}_p^\dagger \hat{c}_q^\dagger \hat{c}_r \hat{c}_s-\mathrm{H.c.}) \Big\}
+    The quantum circuit for the case of two electrons and six spin-orbitals
+    is sketched in the figure below,
 
-    where :math:`\hat{c}_p^\dagger \hat{c}_r` and
-    :math:`\hat{c}_p^\dagger \hat{c}_q^\dagger \hat{c}_r \hat{c}_s` are, respectively, the
-    fermionic single- and double-excitation operators, and the indices :math:`r, s`
-    and :math:`p, q` run over the Hartree-Fock occupied and unoccupied molecular orbitals.
+    |
 
-    The main difference with respect to the original UCCSD template is that the gate
-    decompositions used to exponentiate the single- and double-excitation operators
-    are replaced with the application of `Givens rotations
-    <https://en.wikipedia.org/wiki/Givens_rotation>`_ that act on the subspaces of two and
-    four qubits. More specifically, the :class:`~.pennylane.SingleExcitation` operation performs
-    a rotation in the two-dimensional subspace :math:`\{\vert 10 \rangle, \vert 01 \rangle \}`
-    of the qubits :math:`r, p` associated with the single excitation
-    :math:`\hat{c}_p^\dagger \hat{c}_r \vert \mathrm{HF} \rangle` of the Hartree-Fock (HF)
-    state. Similarly, the :class:`~.pennylane.DoubleExcitation` operation implements
-    a rotation in the subspace :math:`\{\vert 1100 \rangle, \vert 0011 \rangle \}` of the qubits
-    :math:`s, r, q, p` involved in the double excitation
-    :math:`\hat{c}_p^\dagger \hat{c}_q^\dagger \hat{c}_r \hat{c}_s \vert \mathrm{HF} \rangle`.
+    .. figure:: ../../_static/templates/subroutines/all_singles_doubles.png
+        :align: center
+        :width: 60%
+        :target: javascript:void(0);
 
-    The resulting unitary conserves the number of particles and prepares the
+    |
+
+    The :class:`~.pennylane.DoubleExcitation` gates :math:`G^{(2)}` perform
+    `Givens rotations <https://en.wikipedia.org/wiki/Givens_rotation>`_
+    in the two-dimensional subspace :math:`\{\vert 1100 \rangle, \vert 0011 \rangle \}` of
+    the qubits ``[s, r, q, p]``. Similarly, the :class:`~.pennylane.SingleExcitation` gates
+    :math:`G` acts on the subspace :math:`\{\vert 10 \rangle, \vert 01 \rangle \}` of the
+    qubits ``[r, p]``. The resulting unitary conserves the number of particles and prepares the
     :math:`n`-qubit system in a superposition of the initial HF state and
     multiple-excited configurations.
 
@@ -64,7 +71,7 @@ class AllSinglesDoubles(Operation):
             angles :math:`\theta` entering the :class:`~.pennylane.SingleExcitation` and
             :class:`~.pennylane.DoubleExcitation` operations. The indices of the qubits the
             operations act on are generated with the :func:`~.excitations` function.
-        wires (Iterable): wires that the template acts on.
+        wires (Iterable): wires that the template acts on
         singles (Sequence[Sequence]): sequence of lists containing the wires indices ``[r, p]``
         doubles (Sequence[Sequence]): sequence of lists containing the wires indices
             ``[s, r, q, p]``
@@ -91,12 +98,13 @@ class AllSinglesDoubles(Operation):
             import pennylane as qml
             import numpy as np
 
-            # Define the HF state
             electrons = 2
             qubits = 4
+
+            # Define the HF state
             hf_state = qml.qchem.hf_state(electrons, qubits)
 
-            # Generate single and double excitations
+            # Generate all single and double excitations
             singles, doubles = qml.qchem.excitations(electrons, qubits)
 
             # Define the device
