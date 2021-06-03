@@ -82,11 +82,11 @@ class AllSinglesDoubles(Operation):
             :class:`~.pennylane.DoubleExcitation` operations. The indices of the qubits the
             operations act on are generated with the :func:`~.excitations` function.
         wires (Iterable): wires that the template acts on
+        hf_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
+            HF state. ``hf_state`` is used to initialize the wires.
         singles (Sequence[Sequence]): sequence of lists containing the wires indices ``[r, p]``
         doubles (Sequence[Sequence]): sequence of lists containing the wires indices
             ``[s, r, q, p]``
-        hf_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
-            HF state. ``hf_state`` is used to initialize the wires.
 
     .. UsageDetails::
 
