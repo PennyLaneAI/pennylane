@@ -17,13 +17,10 @@ This subpackage contains QNode, quantum function, device, and tape transforms.
 
 .. currentmodule:: pennylane
 
-Transforms
-----------
+QNode transforms
+----------------
 
-Transforms that act on QNodes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Thes transforms accept QNodes, and return new transformed functions
+The following transforms act on QNodes. They return new transformed functions
 that compute the desired quantity.
 
 .. autosummary::
@@ -33,11 +30,11 @@ that compute the desired quantity.
     ~draw
     ~metric_tensor
 
-Transforms that act on quantum functions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Quantum function transforms
+---------------------------
 
-These transforms accept quantum functions (Python functions
-containing quantum operations) that are used to construct QNodes.
+The following transforms act on quantum functions (Python functions
+containing quantum operations) that are used *inside* QNodes.
 
 .. autosummary::
     :toctree: api
@@ -46,10 +43,10 @@ containing quantum operations) that are used to construct QNodes.
     ~ctrl
     ~transforms.invisible
 
-Transforms that act on tapes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Tape transforms
+---------------
 
-These transforms accept quantum tapes, and return one or
+The following transforms act on quantum tapes, and return one or
 more tapes as well as a classical processing function.
 
 .. autosummary::
@@ -58,26 +55,12 @@ more tapes as well as a classical processing function.
     ~transforms.measurement_grouping
     ~transforms.metric_tensor_tape
     ~transforms.hamiltonian_expand
-
-Decorators and utility functions
---------------------------------
-
-The following decorators and convenience functions are provided
-to help build custom QNode, quantum function, and tape transforms:
-
-.. autosummary::
-    :toctree: api
-
-    ~single_tape_transform
-    ~qfunc_transform
-    ~transforms.make_tape
 """
 from .adjoint import adjoint
 from .classical_jacobian import classical_jacobian
 from .control import ControlledOperation, ctrl
 from .draw import draw
-from .hamiltonian_expand import hamiltonian_expand
 from .invisible import invisible
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor, metric_tensor_tape
-from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
+from .hamiltonian_expand import hamiltonian_expand
