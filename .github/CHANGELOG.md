@@ -2,6 +2,14 @@
 
 <h3>New features since last release</h3>
 
+* Adds the new template `AllSinglesDoubles` to prepare quantum states of molecules
+  using the `SingleExcitation` and `DoubleExcitation`. 
+  The new template reduces significantly the number of operations
+  and the depth of the quantum circuit with respect to the traditional UCCSD
+  unitary. The performance of quantum chemistry simulations should benefit
+  from this new implementation. 
+  [(#1383)](https://github.com/PennyLaneAI/pennylane/pull/1383)
+
 * Adds a decorator `@qml.qfunc_transform` to easily create a transformation
   that modifies the behaviour of a quantum function.
   [(#1315)](https://github.com/PennyLaneAI/pennylane/pull/1315)
