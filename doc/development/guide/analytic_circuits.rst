@@ -5,6 +5,41 @@ When possible, we recommend checking circuits against analytic results in ``pyte
 results computed via a different route in PennyLane.  So you don't need to calculate anything out
 on pen and paper, we provide circuits here.
 
+Circuit 1
+---------
+
+Operations
+
+.. code-block:: python
+
+    qml.RX(x, wires=0)
+    qml.RY(y, wires=1)
+    qml.CNOT(wires=(0,1))
+
+State
+
+.. code-block:: python
+
+    state = np.array( [[np.cos(x/2)*np.cos(y/2), np.cos(x/2)*np.sin(y/2)],
+                    [-1j*np.sin(x/2)*np.sin(y/2), 1j*np.sin(x/2)*np.cos(y/2)]])
+
+    prob = state**2
+
+Probs
+
+.. code-block:: python
+
+================================================== ========================
+Measurement                                              Value
+================================================== ========================
+``qml.expval(qml.PauliZ(0))``                       ``np.cos(x)``
+``qml.expval(qml.PauliX(1))``                       ``np.sin(y)``
+``qml.expval(qml.PauliZ(0) @ qml.PauliX(1))``       ``np.cos(x)*np.sin(y)``
+================================================== ========================
+
+
+
+
 Single Input, Single Output
 ---------------------------
 
