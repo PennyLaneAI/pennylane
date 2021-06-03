@@ -83,7 +83,9 @@ class TestDecomposition:
 
         hf_state = np.array([1, 1, 0, 0, 0, 0])
 
-        op = qml.templates.AllSinglesDoubles(weights, wires, hf_state, singles=singles, doubles=doubles)
+        op = qml.templates.AllSinglesDoubles(
+            weights, wires, hf_state, singles=singles, doubles=doubles
+        )
         queue = op.expand().operations
 
         assert len(queue) == len(singles) + len(doubles) + 1
