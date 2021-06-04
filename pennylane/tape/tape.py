@@ -317,7 +317,7 @@ class QuantumTape(AnnotatedQueue):
 
         self._trainable_params = set()
         self._graph = None
-        self._resources = None
+        self._specs = None
         self._depth = None
         self._output_dim = 0
 
@@ -500,7 +500,7 @@ class QuantumTape(AnnotatedQueue):
     def _update(self):
         """Update all internal tape metadata regarding processed operations and observables"""
         self._graph = None
-        self._resources = None
+        self._specs = None
         self._depth = None
         self._update_circuit_info()
         self._update_par_info()
@@ -981,7 +981,7 @@ class QuantumTape(AnnotatedQueue):
 
 
     @property 
-    def resources(self):
+    def specs(self):
         """Resource requirements of a quantum circuit.
 
         Returns:
@@ -1002,28 +1002,33 @@ class QuantumTape(AnnotatedQueue):
 
         Asking for the resources produces a dictionary as shown below:
 
-        >>> tape.resources['by_size']
+        >>> tape.specs['by_size']
         defaultdict(int, {1: 4, 2: 2})
-        >>> tape.resources['by_name']
+        >>> tape.specs['by_name']
         defaultdict(int, {'Hadamard': 2, 'RZ': 1, 'CNOT': 2, 'Rot': 1})
 
         As `defaultdict` objects, any key not present in the dictionary returns 0.
 
-        >>> resources['by_name']['RX']
+        >>> tape.specs['by_name']['RX']
         0
 
         """
-        if self._resources is None:
-            self._resources = {'by_size': defaultdict(int),
+        if self._specs is None:
+            self._specs = {'by_size': defaultdict(int),
                                'by_name': defaultdict(int)}
 
             for op in self.operations:
                 #don't use op.num_wires to allow for flexible gate classes like hermitian
-                self._resources['by_size'][len(op.wires)] += 1
+                self._specs['by_size'][len(op.wires)] += 1
 
-                self._resources['by_name'][op.name] += 1
+                self._specs['by_name'][op.name] += 1
 
-        return self._resources
+            self._specs['total_operations'] = len(self.operations)
+            self._specs['num_tape_wires'] = self.num_wires
+            self._specs['num_trainable_params'] = len(self.trainable_params)
+            self._specs['depth'] = self.depth
+
+        return self._specs
 
     @property
     def depth(self):
@@ -1046,7 +1051,7 @@ class QuantumTape(AnnotatedQueue):
 
         The depth can be obtained like so:
 
-        >>> tape.get_depth()
+        >>> tape.depth
         4
         """
         if self._depth is None:
