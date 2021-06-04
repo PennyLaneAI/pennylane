@@ -56,6 +56,14 @@ def _get_dot_func(interface, x=None):
 
         return np.dot, x
 
+    if interface == "jax":
+        import jax.numpy as jnp
+
+        if x is not None and not isinstance(x, jnp.ndarray):
+            x = jnp.array(x)
+
+        return jnp.dot, x
+
     if interface is None:
         import numpy as np
 
