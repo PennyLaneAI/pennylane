@@ -45,6 +45,7 @@ containing quantum operations) that are used to construct QNodes.
     ~adjoint
     ~ctrl
     ~transforms.invisible
+    ~quantum_monte_carlo
 
 Transforms that act on tapes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -81,3 +82,4 @@ from .invisible import invisible
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor, metric_tensor_tape
 from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
+from .qmc import quantum_monte_carlo
