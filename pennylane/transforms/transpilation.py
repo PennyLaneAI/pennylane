@@ -11,9 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Transforms for transpiling and rewriting quantum circuits."""
 
 from pennylane.ops.qubit import Hadamard, CZ
-from pennylane.transforms import single_tape_transform, qfunc_transform
+from pennylane.transforms import qfunc_transform
 
 
 @qfunc_transform

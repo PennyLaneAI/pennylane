@@ -11,9 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Transforms for optimizing quantum circuits."""
+
+import numpy as np
 
 from pennylane.wires import Wires
 from pennylane.transforms import qfunc_transform
+
 
 # This is a set of gates that are their own inverse; rather than keeping a list,
 # this is possibly something that could be kept as a property of the Operations
@@ -40,18 +44,17 @@ def _find_next_gate(wires, op_list):
     """
     next_gate_idx = None
 
-    for op_idx in range(len(op_list)):
+    for op_idx, op in enumerate(op_list):
         # If there are no unique wires, then the wires are the same and we're done
-        if len(Wires.unique_wires([wires, op_list[op_idx].wires])) == 0:
+        if len(Wires.unique_wires([wires, op.wires])) == 0:
             next_gate_idx = op_idx
             break
 
         # If the sets of wires are not identical, check if any wires are
         # shared; if they are not (i.e., the next operation is on disjoint qubits),
         # then we can still keep looking
-        elif len(Wires.shared_wires([wires, op_list[op_idx].wires])) == 0:
+        elif len(Wires.shared_wires([wires, op.wires])) == 0:
             op_idx += 1
-            continue
 
         # If there are some shared wires, this gate is separated from where its
         # inverse might be, so we must stop

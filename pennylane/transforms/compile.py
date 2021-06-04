@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Code for a compilation transform."""
 
 from pennylane.transforms import qfunc_transform, cancel_inverses, cnot_to_cz
 
@@ -63,7 +64,7 @@ def compile(tape, pipeline=simple_pipeline, basis_set=None, num_passes=1):
     else:
         expanded_tape = tape
 
-    for pass_idx in range(num_passes):
+    for _ in range(num_passes):
         for transform in pipeline:
             expanded_tape = transform.tape_fn(expanded_tape)
 
