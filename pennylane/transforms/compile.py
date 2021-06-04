@@ -14,10 +14,8 @@
 
 from pennylane.transforms import qfunc_transform, cancel_inverses, cnot_to_cz
 
-simple_pipeline = [
-    cnot_to_cz,
-    cancel_inverses
-]
+simple_pipeline = [cnot_to_cz, cancel_inverses]
+
 
 @qfunc_transform
 def compile(tape, pipeline=simple_pipeline, basis_set=None, num_passes=1):
@@ -55,8 +53,8 @@ def compile(tape, pipeline=simple_pipeline, basis_set=None, num_passes=1):
     >>> dev = qml.device('default.qubit', wires=2)
     >>> qnode = qml.QNode(compiled_bell_state, dev)
     >>> print(qml.draw(qnode)())
-    0: ──H──╭Z─┤ ⟨Z⟩ 
-    1: ──H──╰C─┤     
+    0: ──H──╭Z─┤ ⟨Z⟩
+    1: ──H──╰C─┤
 
     """
 

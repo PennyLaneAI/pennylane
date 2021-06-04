@@ -15,6 +15,7 @@
 from pennylane.ops.qubit import Hadamard, CZ
 from pennylane.transforms import single_tape_transform, qfunc_transform
 
+
 @qfunc_transform
 def cnot_to_cz(tape):
     """Quantum function transform to apply a circuit identity that converts
@@ -40,8 +41,8 @@ def cnot_to_cz(tape):
     >>> bell_state_with_cz = cnot_to_cz(bell_state)
     >>> qnode = qml.QNode(bell_state_with_cz, dev)
     >>> print(qml.draw(qnode)(1, 2, 3))
-    0: ──H──╭Z─────┤ ⟨Z⟩ 
-    1: ──H──╰C──H──┤     
+    0: ──H──╭Z─────┤ ⟨Z⟩
+    1: ──H──╰C──H──┤
 
     """
     # Loop through all items in the original tape
