@@ -75,15 +75,12 @@ def apply_controlled_Q(fn, wires, target_wire, control_wire, work_wires):
     r"""Provides the circuit to apply a controlled version of the :math:`\mathcal{Q}` unitary
     defined in `this <https://arxiv.org/abs/1805.00109>`__ paper.
 
-    Given a callable ``fn`` input corresponding to the :math:`\mathcal{F}` unitary in the above
-    paper, this function transforms the circuit into a controlled version of the :math:`\mathcal{Q}`
-    unitary which forms part of the quantum Monte Carlo algorithm. In this algorithm, one of the
-    wires acted upon by :math:`\mathcal{F}` and specified by ``target_wire``, is used to embed a
-    Monte Carlo estimation problem. The :math:`\mathcal{Q}` unitary is then designed to encode the
-    target expectation value as a phase in one of its eigenvalues.
-
-    This function transforms to a controlled version of :math:`\mathcal{Q}` that is compatible with
-    quantum phase estimation (see :class:`~.QuantumPhaseEstimation` for more details).
+    The input ``fn`` should be the quantum circuit corresponding to the :math:`\mathcal{F}` unitary
+    in the paper above. This function transforms this circuit into a controlled version of the
+    :math:`\mathcal{Q}` unitary, which forms part of the quantum Monte Carlo algorithm. The
+    :math:`\mathcal{Q}` unitary encodes the target expectation value as a phase in one of its
+    eigenvalues. This phase can be estimated using quantum phase estimation (see
+    :class:`~.QuantumPhaseEstimation` for more details).
 
     Args:
         fn (Callable): a quantum function that applies quantum operations according to the
@@ -132,10 +129,10 @@ def quantum_monte_carlo(fn, wires, target_wire, estimation_wires):
     `quantum Monte Carlo estimation <https://arxiv.org/abs/1805.00109>`__ algorithm.
 
     The input ``fn`` should be the quantum circuit corresponding to the :math:`\mathcal{F}` unitary
-    in the paper above that encodes the probability distribution and random variable onto ``wires``
-    so that measurement of the ``target_wire`` provides the expectation value to be estimated.
-    The quantum Monte Carlo algorithm then estimates the expectation value using quantum phase
-    estimation (check out :class:`~.QuantumPhaseEstimation` for more details), using the
+    in the paper above. This unitary encodes the probability distribution and random variable onto
+    ``wires`` so that measurement of the ``target_wire`` provides the expectation value to be
+    estimated. The quantum Monte Carlo algorithm then estimates the expectation value using quantum
+    phase estimation (check out :class:`~.QuantumPhaseEstimation` for more details), using the
     ``estimation_wires``.
 
     .. note::
