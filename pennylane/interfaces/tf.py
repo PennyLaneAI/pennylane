@@ -138,8 +138,9 @@ class TFInterface(AnnotatedQueue):
         res = self.execute_device(args, input_kwargs["device"])
         self.set_parameters(all_params, trainable_only=False)
 
-        # save state
+        # tape might not be a jacobian tape
         jac_options = getattr(self, "jacobian_options", dict())
+        # cache state for adjoint jacobian computation
         if jac_options.get("cache_state", False):
             state = input_kwargs["device"].state
 
