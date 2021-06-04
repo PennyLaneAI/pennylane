@@ -150,8 +150,7 @@ Calculating the Fourier coefficients
 ------------------------------------
 
 To get a more accurate picture of the Fourier series representation of a quantum circuit,
-we have to compute the Fourier coefficients :math:`c_{n_1,\ldots,n_N}`. Since this computation
-does not scale well, it has to be done using numerical methods, as used in the
+we have to compute the Fourier coefficients :math:`c_{n_1,\ldots,n_N}`. This is done using numerical methods in the
 :func:`~.pennylane.fourier.coefficients` function:
 
 .. code::
