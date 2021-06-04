@@ -44,6 +44,7 @@ containing quantum operations) that are used to construct QNodes.
 
     ~adjoint
     ~transforms.cancel_inverses
+    ~transforms.cnot_to_cz
     ~ctrl
     ~transforms.invisible
     ~transforms.merge_rotations
@@ -85,3 +86,5 @@ from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor, metric_tensor_tape
 from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
 from .optimization import cancel_inverses, merge_rotations
+from .transpilation import cnot_to_cz
+from .compile import compile
