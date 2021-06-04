@@ -35,7 +35,6 @@ from pennylane.operation import (
     operation_derivative,
 )
 from pennylane import Device
-from pennylane.math import sum as qmlsum
 from pennylane.wires import Wires
 
 
@@ -86,6 +85,7 @@ class QubitDevice(Device):
     R_DTYPE = np.float64
     _asarray = staticmethod(np.asarray)
     _dot = staticmethod(np.dot)
+    _vdot = staticmethod(np.vdot)
     _abs = staticmethod(np.abs)
     _reduce_sum = staticmethod(lambda array, axes: np.sum(array, axis=tuple(axes)))
     _reshape = staticmethod(np.reshape)
@@ -863,7 +863,6 @@ class QubitDevice(Device):
                     expanded_ops.append(op)
 
         jac = np.zeros((len(tape.observables), len(tape.trainable_params)))
-        dot_product_real = lambda a, b: self._real(qmlsum(self._conj(a) * b))
 
         param_number = len(tape._par_info) - 1  # pylint: disable=protected-access
         trainable_param_number = len(tape.trainable_params) - 1
@@ -880,7 +879,7 @@ class QubitDevice(Device):
                     mu = self._apply_unitary(phi, d_op_matrix, op.wires)
 
                     jac_column = np.array(
-                        [2 * dot_product_real(lambda_, mu) for lambda_ in lambdas]
+                        [2 * self._vdot(lambda_, mu).real for lambda_ in lambdas]
                     )
                     jac[:, trainable_param_number] = jac_column
                     trainable_param_number -= 1
@@ -890,3 +889,168 @@ class QubitDevice(Device):
             op.inv()
 
         return jac
+
+    def adjoint_metric_tensor(self, tape):
+        """Implements the adjoint method outlined in
+        `Jones <https://arxiv.org/abs/2011.02991>`__ to compute the metric tensor.
+
+        A mixture of a main forward pass and intermediate partial backwards passes is
+        used to evaluate the metric tensor in O(num_params^2) operations, using 4 state
+        vectors.
+
+        .. note::
+            The adjoint metric tensor method has the following restrictions:
+
+            * As it requires knowledge of the statevector, only statevector simulator
+              devices can be used.
+
+            * We assume the circuit to be composed of unitary gates only and rely
+              on the ``generator`` property of the gates to be implemented.
+              Note also that this makes the metric tensor real-valued.
+
+        Args:
+            tape (.QuantumTape): circuit that the function computes the metric tensor of
+
+        Returns:
+            array: the metric tensor of the tape with respect to its trainable parameters.
+            Dimensions are ``(len(trainable_params), len(trainable_params))``.
+
+        Raises:
+            QuantumFunctionError: if the input tape contains a multi-parameter 
+                operation aside from :class:`~.Rot` or an operation without 
+                ``generator`` attribute.
+        """
+
+        def _apply_any_operation(state, op):
+            if isinstance(op, qml.QubitStateVector):
+                self._apply_state_vector(op.parameters[0], op.wires)
+                return self._state
+            elif isinstance(op, qml.BasisState):
+                self._apply_basis_state(op.parameters[0], op.wires)
+                return self._state
+            else:
+                return self._apply_operation(self._state, op)
+
+        # generate and extract initial state
+        self.reset()
+        psi = self._reshape(self.state, [2] * self.num_wires)
+
+        num_params = len(tape.trainable_params)
+        # initialize tensor components, which all will be real-valued
+        L = np.zeros((num_params, num_params))
+        L_diag = np.zeros(num_params)
+        # T would not be real-valued, but purely complex, we accomodate for this below
+        T = np.zeros(num_params)
+
+        # preprocessing: check support of adjoint method for all operations
+        # and handle special case of qml.Rot
+        expanded_ops = []
+        param_number = 0
+        for op in tape.operations:
+            if op.num_params > 1:
+                if isinstance(op, qml.Rot) and not op.inverse:
+                    ops = op.decomposition(*op.parameters, wires=op.wires)
+                    expanded_ops.extend(ops)
+                    param_number += 3
+                    continue
+                else:
+                    raise qml.QuantumFunctionError(
+                        f"The {op.name} operation is not supported using "
+                        'the "adjoint" metric tensor method.'
+                    )
+            if all([
+                    op.grad_method is not None,
+                    param_number in tape.trainable_params,
+                    not hasattr(op, "generator") or op.generator[0] is None
+                    ]):
+                raise qml.QuantumFunctionError(
+                    "The adjoint metric tensor method requires operations to"
+                    f"have a 'generator' attribute but {op.name} does not have one."
+                )
+            param_number += 1
+            expanded_ops.append(op)
+
+        # preprocessing: divide all operations into trainable operations and blocks
+        # of untrainable operations after each trainable one
+        trainable_operations = []
+        after_trainable_operations = {}
+        param_number = 0
+        # the first set of non-trainable ops are the ops "after the -1st" trainable op
+        train_param_number = -1
+        after_prev_train_op = []
+        for i, op in enumerate(expanded_ops):
+            # check whether we recognize the gate as parametrized
+            if op.grad_method is not None:
+                # check whether the parameter is among the ones we are training
+                if param_number in tape.trainable_params:
+                    trainable_operations.append(op)
+                    after_trainable_operations[train_param_number] = after_prev_train_op
+                    train_param_number += 1
+                    after_prev_train_op = []
+                    continue
+                param_number += 1
+            after_prev_train_op.append(op)
+        # store operations after last trainable op
+        after_trainable_operations[train_param_number] = after_prev_train_op
+
+        for op in after_trainable_operations[-1]:
+            psi = _apply_any_operation(psi, op)
+
+        for j, outer_op in enumerate(trainable_operations):
+            lam = np.copy(psi)
+            phi = np.copy(psi)
+            generator1, prefactor1 = outer_op.generator
+            if not isinstance(generator1, np.ndarray):
+                generator1 = generator1.matrix
+            if outer_op.inverse:
+                generator1 = generator1.conj().T
+                prefactor1 *= -1
+            # this state vector is missing a factor of 1j * prefactor1
+            phi = self._apply_unitary(phi, generator1, outer_op.wires)
+            L_diag[j] = prefactor1**2 * self._vdot(phi, phi).real
+            # this entry is missing a factor of 1j
+            T[j] = prefactor1 * self._vdot(lam, phi).real
+
+            for i in range(j-1, -1, -1):
+                # after first iteration of inner loop: apply U_{i+1}^\dagger
+                if i<j-1:
+                    trainable_operations[i+1].inv()
+                    phi = self._apply_operation(phi, trainable_operations[i+1])
+                    trainable_operations[i+1].inv()
+                # apply V_{i}^\dagger - TODO: check whether this is simpler via qml.inv()
+                for op in after_trainable_operations[i][::-1]:
+                    op.inv()
+                    phi = _apply_any_operation(phi, op)
+                    lam = _apply_any_operation(lam, op)
+                    op.inv()
+                mu = np.copy(lam)
+                inner_op = trainable_operations[i]
+                # extract and apply G_i
+                generator2, prefactor2 = inner_op.generator
+                if not isinstance(generator2, np.ndarray):
+                    generator2 = generator2.matrix
+                if inner_op.inverse:
+                    generator2 = generator2.conj().T
+                    prefactor2 *= -1
+                # this state vector is missing a factor of 1j * prefactor2
+                mu = self._apply_unitary(mu, generator2, inner_op.wires)
+                # this entry is missing a factor of 1j * (-1j) = 1, i.e. none
+                L[i,j] = prefactor1 * prefactor2 * self._vdot(mu, phi).real
+                # apply U_i^\dagger
+                inner_op.inv()
+                lam = self._apply_operation(lam, inner_op)
+                inner_op.inv()
+
+            # apply U_j
+            psi = self._apply_operation(psi, outer_op)
+            # apply V_j
+            for op in after_trainable_operations[j]:
+                psi = _apply_any_operation(psi, op)
+
+        # postprocessing: combine L, L_diag and T into the metric tensor.
+        # We require outer(conj(T), T) here, but as we skipped the factor 1j above,
+        # the stored T is real-valued. Thus we have -1j*1j*outer(T, T) = outer(T, T)
+
+        metric_tensor = L + L.T + np.diag(L_diag) - np.outer(T, T)
+
+        return metric_tensor

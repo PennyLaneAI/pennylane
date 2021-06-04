@@ -53,7 +53,7 @@ class TestAdjointJacobian:
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
     @pytest.mark.parametrize("G", [qml.RX, qml.RY, qml.RZ])
     def test_pauli_rotation_gradient(self, G, theta, tol, dev):
-        """Tests that the automatic gradients of Pauli rotations are correct."""
+        """Tests that the automatic gradients of Pauli rotations match the numeric gradients."""
 
         with qml.tape.JacobianTape() as tape:
             qml.QubitStateVector(np.array([1.0, -1.0]) / np.sqrt(2), wires=0)

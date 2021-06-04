@@ -271,7 +271,7 @@ def metric_tensor(qnode, diag_approx=False, only_construct=False):
         res = [t.execute(device=qnode.device) for t in metric_tensor_tapes]
         mt = processing_fn(res)
 
-        # permute rows ad columns
+        # permute rows and columns
         mt = qml.math.gather(mt, perm)
         mt = qml.math.gather(qml.math.T(mt), perm)
         return mt

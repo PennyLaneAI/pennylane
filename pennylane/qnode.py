@@ -397,10 +397,12 @@ class QNode:
         Raises:
             qml.QuantumFunctionError: if the device does not support adjoint backprop
         """
-        supported_device = hasattr(device, "_apply_operation")
-        supported_device = supported_device and hasattr(device, "_apply_unitary")
-        supported_device = supported_device and device.capabilities().get("returns_state")
-        supported_device = supported_device and hasattr(device, "adjoint_jacobian")
+        supported_device = all([
+            hasattr(device, "_apply_operation"),
+            hasattr(device, "_apply_unitary"),
+            device.capabilities().get("returns_state"),
+            hasattr(device, "adjoint_jacobian"),
+        ])
         # The above provides a minimal set of requirements that we can likely improve upon in
         # future, or alternatively summarize within a single device capability. Moreover, we also
         # need to inspect the circuit measurements to ensure only expectation values are taken. This
