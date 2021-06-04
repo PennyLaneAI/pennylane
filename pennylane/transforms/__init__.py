@@ -43,8 +43,11 @@ containing quantum operations) that are used to construct QNodes.
     :toctree: api
 
     ~adjoint
+    ~transforms.cancel_inverses
     ~ctrl
     ~transforms.invisible
+    ~transforms.merge_rotations
+    
 
 Transforms that act on tapes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -81,3 +84,4 @@ from .invisible import invisible
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor, metric_tensor_tape
 from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
+from .optimization import cancel_inverses, merge_rotations
