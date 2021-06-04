@@ -134,7 +134,7 @@ def test_differentiable_expand(diff_method):
 
 
 def test_adjoint_reuse_device_state(mocker):
-    """Tests that the autograd interface reuses the device state for adjoint differentiation"""
+    """Tests that the jax interface reuses the device state for adjoint differentiation"""
     dev = qml.device("default.qubit", wires=1)
 
     @qml.qnode(dev, interface="jax", diff_method="adjoint")

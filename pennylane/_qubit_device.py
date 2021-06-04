@@ -818,16 +818,16 @@ class QubitDevice(Device):
             tape (.QuantumTape): circuit that the function takes the gradient of
 
         Keyword Args:
-            starting_state (Tensor): post-forward pass state to start execution with. It should be
-                complex-valued. Takes precedence over `use_device_state`.
-            use_device_state (bool): use current device state to initialize. Forward pass of the same
-                circuit should be the last thing the device has executed. If a `starting_state` is
+            starting_state (tensor_like): post-forward pass state to start execution with. It should be
+                complex-valued. Takes precedence over ``use_device_state``.
+            use_device_state (bool): use current device state to initialize. A forward pass of the same
+                circuit should be the last thing the device has executed. If a ``starting_state`` is
                 provided, that takes precedence.
-            return_obs (bool): return the expectation value alongside the jacobian as a tuple (obs, jac)
+            return_obs (bool): return the expectation values alongside the jacobian as a tuple (obs, jac)
 
         Returns:
             array: the derivative of the tape with respect to trainable parameters.
-                Dimensions are ``(len(observables), len(trainable_params))``.
+            Dimensions are ``(len(observables), len(trainable_params))``.
 
         Raises:
             QuantumFunctionError: if the input tape has measurements that are not expectation values
