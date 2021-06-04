@@ -83,7 +83,7 @@ def spectrum(qnode, encoding_gates=None):
 
     Gates are marked as input-encoding gates in the quantum function by giving them an ``id``.
     If two gates have the same ``id``, they are considered
-    to be used to encode the same input :math:`x_j`. The `encoding_gates` argument can be used
+    to be used to encode the same input :math:`x_j`. The ``encoding_gates`` argument can be used
     to indicate that only gates with specific ``id``s should be interpreted as input-encoding gates.
 
     Args:
