@@ -45,7 +45,7 @@ def compile(tape, pipeline=simple_pipeline, basis_set=None, num_passes=1):
 
     >>> my_transforms = [cnot_to_cz, cancel_inverses]
 
-    We can set use this as a pipeline for the ``compile`` transform:
+    We can use this as a pipeline for the ``compile`` transform:
 
     >>> compiled_bell_state = compile(pipeline=my_transforms)(bell_state)
 
