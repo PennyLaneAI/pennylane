@@ -239,6 +239,7 @@ def spectrum(qnode, encoding_gates=None):
             # if user has not specified encoding_gate id's,
             # consider any id
             is_encoding_gate = encoding_gates is None or id in encoding_gates
+
             if is_encoding_gate:
 
                 if len(op.parameters) != 1:
