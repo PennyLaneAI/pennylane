@@ -193,11 +193,11 @@ def spectrum(qnode, encoding_gates=None):
         >>> 'x0': [-2.0, -1.0, 0.0, 1.0, 2.0]
 
     .. note::
-        The `spectrum` function does not check if the result of the
-        circuit is an expectation, or if gates with the same `id`
+        The ``spectrum`` function does not check if the result of the
+        circuit is an expectation, or if gates with the same ``id``
         take the same value in a given call of the function.
 
-    The `spectrum` function works in all interfaces:
+    The ``spectrum`` function works in all interfaces:
 
     .. code-block:: python
 
