@@ -59,7 +59,7 @@ def _get_spectrum(op):
 
 
 def _join_spectra(spec1, spec2):
-    r"""Join two sets of frequencies that belong to the same input scalar.
+    r"""Join two sets of frequencies that belong to the same input.
 
     Since :math:`\exp(i a x)\exp(i b x) = \exp(i (a+b) x)`, frequency sets of two gates
     encoding the same :math:`x` are joined by computing the set of sums of their elements.
