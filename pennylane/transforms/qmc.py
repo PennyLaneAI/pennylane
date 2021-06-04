@@ -189,7 +189,7 @@ def quantum_monte_carlo(fn, wires, target_wire, estimation_wires):
             \mathcal{R}|i\rangle |0\rangle = |i\rangle \left(\sqrt{1 - f(i)} |0\rangle + \sqrt{f(i)}|1\rangle\right).
 
         Following `this <https://arxiv.org/abs/1805.00109>`__ paper,
-       the probability of measuring the state :math:`|1\rangle` in the final
+        the probability of measuring the state :math:`|1\rangle` in the final
         qubit is
 
         .. math::
