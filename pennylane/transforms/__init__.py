@@ -48,7 +48,6 @@ containing quantum operations) that are used to construct QNodes.
     ~ctrl
     ~transforms.invisible
     ~transforms.merge_rotations
-    
 
 Transforms that act on tapes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
