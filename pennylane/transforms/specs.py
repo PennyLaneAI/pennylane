@@ -78,10 +78,5 @@ def specs(qnode):
         """
         qnode.construct(args, kwargs)
 
-        info = qnode.qtape.specs
-        info["dev_short_name"] = qnode.device.short_name
-        info["num_wires"] = qnode.device.num_wires
-
-
-        return info
+        return qnode.specs
     return specs_qnode

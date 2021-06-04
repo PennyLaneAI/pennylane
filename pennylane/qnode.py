@@ -707,8 +707,31 @@ class QNode:
 
     def specs(self):
         """
+        Args:
+            None
 
+        Returns:
+            A dictionary of information about qnode structure
+
+        **Example**
+
+        .. code-block:: python3
+
+            dev = qml.device('default.qubit', wires=2)
+            @qml.qnode(dev)
+            def circuit(x:
+                qml.RX(x[0], wires=0)
+                qml.CNOT(wires=(0,1))
+                return qml.probs(wires=(0,1))
+
+            x = np.array([0.1, 0.2])
+            res = circuit(x)
+            print(circuit.specs())
         """
+        if self.qtape is None:
+            raise qml.QuantumFunctionError(
+                "The QNode specifications can only be calculated after its quantum tape has been constructed."
+            )
 
         info = self.qtape.resources.copy()
 
@@ -720,25 +743,6 @@ class QNode:
         # info['trainable_parameters'] = len(self.qtape.trainable_params)
 
         return info
-
-    def parameter_shift_num_executions(self):
-        """Returns the number of executions used to compute the parameter-shift derivative.
-
-        Args:
-            *args : arguments to QNode
-        Keywod Args:
-            **kwargs : any keywords to QNode
-
-        Returns:
-            Int : number of device executions
-
-        """
-
-        if self.diff_method != "parameter-shift":
-            raise qml.QuantumFunctionError("num_executions_parameter_shift",
-            " returns predicted execution count only for diff_method='parameter-shift'")
-
-        return self.qtape.parameter_shift_num_executions()
 
     def to_tf(self, dtype=None):
         """Apply the TensorFlow interface to the internal quantum tape.
