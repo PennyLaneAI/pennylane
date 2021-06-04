@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains a QNode transform that computes the frequency spectrum of a quantum
+"""Contains a transform that computes the frequency spectrum of a quantum
 circuit."""
 from itertools import product
 from functools import wraps
