@@ -119,9 +119,9 @@ def spectrum(qnode, encoding_gates=None):
     As shown in `Vidal and Theis (2019)
     <https://arxiv.org/abs/1901.11434>`_ and `Schuld, Sweke and Meyer (2020)
     <https://arxiv.org/abs/2008.08605>`_, if an input :math:`x_j, j = 1 \dots N`,
-    only enters into single-parameter gates of the form :math:`e^{-i x_j G}`, the
-    frequency spectrum :math:`\Omega_j` is fully determined by the eigenvalues
-    of the generators :math:`G`. In many situations, the spectra are limited
+    only enters into single-parameter gates of the form :math:`e^{-i x_j G}` (where :math:`G` is a Hermitian generator),
+    the frequency spectrum :math:`\Omega_j` is fully determined by the eigenvalues
+    of :math:`G`. In many situations, the spectra are limited
     to a few frequencies only, which in turn limits the function class that the circuit
     can express.
 
