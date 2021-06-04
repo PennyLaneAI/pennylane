@@ -76,9 +76,9 @@ def apply_controlled_Q(fn, wires, target_wire, control_wire, work_wires):
     defined in `this <https://arxiv.org/abs/1805.00109>`__ paper.
 
     Given a callable ``fn`` input corresponding to the :math:`\mathcal{F}` unitary in the above
-    paper, this function transforms the circuit into a controlled-version of the :math:`\mathcal{Q}`
+    paper, this function transforms the circuit into a controlled version of the :math:`\mathcal{Q}`
     unitary which forms part of the quantum Monte Carlo algorithm. In this algorithm, one of the
-    wires acted upon by :math:`\mathcal{F}`, specified by ``target_wire``, is used to embed a
+    wires acted upon by :math:`\mathcal{F}` and specified by ``target_wire``, is used to embed a
     Monte Carlo estimation problem. The :math:`\mathcal{Q}` unitary is then designed to encode the
     target expectation value as a phase in one of its eigenvalues.
 
@@ -146,7 +146,7 @@ def quantum_monte_carlo(fn, wires, target_wire, estimation_wires):
         The ``quantum_monte_carlo`` transform is intended for
         use when you already have the circuit for performing :math:`\mathcal{F}` set up, and is
         compatible with resource estimation and potential hardware implementation. The
-        :class:`~.QuantumMonteCarlo` template is unitary-based and is only compatible with
+        :class:`~.QuantumMonteCarlo` template is only compatible with
         simulators, but may perform faster and is suited to quick prototyping.
 
     Args:
@@ -181,7 +181,7 @@ def quantum_monte_carlo(fn, wires, target_wire, estimation_wires):
 
         .. math::
 
-            \mathcal{A}|0\rangle^{\otimes m} = \sum_{i \in X} p(i) |i\rangle
+            \mathcal{A}|0\rangle^{\otimes m} = \sum_{i \in X} p(i) |i\rangle,
 
         where :math:`X = \{0, 1, \ldots, M - 1\}` and :math:`|i\rangle` is the basis state
         corresponding to :math:`i`. The :math:`\mathcal{R}` unitary imprints the
@@ -192,7 +192,7 @@ def quantum_monte_carlo(fn, wires, target_wire, estimation_wires):
             \mathcal{R}|i\rangle |0\rangle = |i\rangle \left(\sqrt{1 - f(i)} |0\rangle + \sqrt{f(i)}|1\rangle\right).
 
         Following `this <https://arxiv.org/abs/1805.00109>`__ paper,
-        it can be seen that the probability of measuring the state :math:`|1\rangle` in the final
+       the probability of measuring the state :math:`|1\rangle` in the final
         qubit is
 
         .. math::
