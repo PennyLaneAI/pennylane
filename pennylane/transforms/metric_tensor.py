@@ -18,6 +18,7 @@ import warnings
 
 import numpy as np
 import pennylane as qml
+from ._adjoint_metric_tensor import _adjoint_metric_tensor
 
 
 def _stopping_critera(obj):
@@ -177,7 +178,7 @@ def metric_tensor_tape(tape, diag_approx=False, wrt=None):
     return metric_tensor_tapes, processing_fn
 
 
-def metric_tensor(qnode, diag_approx=False, only_construct=False):
+def metric_tensor(qnode, method="layerwise", diag_approx=False, only_construct=False):
     """Returns a function that returns the value of the metric tensor
     of a given QNode.
 
@@ -189,6 +190,13 @@ def metric_tensor(qnode, diag_approx=False, only_construct=False):
 
     Args:
         qnode (.QNode or .ExpvalCost): QNode(s) to compute the metric tensor of
+        method (str): Which method to use for the computation. One of
+            * "layerwise": The layerwise computation of the block-diagonal tensor
+              as detailed in the
+              `Quantum Natural Gradient paper <https://quantum-journal.org/papers/q-2020-05-25-269/>`__.
+            * "adjoint": The adjoint method for the metric tensor as detailed
+              in `Efficient Calculation of the Quantum Natural Gradient <https://arxiv.org/abs/2011.02991>`__
+              with a slight modification (see usage details).
         diag_approx (bool): iff True, use the diagonal approximation
         only_construct (bool): Iff True, construct the circuits used for computing
             the metric tensor but do not execute them, and return the tapes.
@@ -254,26 +262,35 @@ def metric_tensor(qnode, diag_approx=False, only_construct=False):
         jac = qml.math.stack(qml.transforms.classical_jacobian(qnode)(*args, **kwargs))
         jac = qml.math.reshape(jac, [qnode.qtape.num_params, -1])
 
-        wrt, perm = np.nonzero(qml.math.toarray(jac))
-        perm = np.argsort(np.argsort(perm))
+        # We will only include parameters in the mt computation, for which the row
+        # in the jacobian is not 0 everywhere.
+        wrt, _ = np.nonzero(qml.math.toarray(jac))
+        _wrt = wrt.tolist() if qnode.diff_options["method"] == "backprop" else None
 
         qnode.construct(args, kwargs)
+        
+        if method=="layerwise":
+            metric_tensor_tapes, processing_fn = metric_tensor_tape(
+                qnode.qtape,
+                diag_approx=diag_approx,
+                wrt=_wrt,
+            )
 
-        metric_tensor_tapes, processing_fn = metric_tensor_tape(
-            qnode.qtape,
-            diag_approx=diag_approx,
-            wrt=wrt.tolist() if qnode.diff_options["method"] == "backprop" else None,
-        )
+            if only_construct:
+                return metric_tensor_tapes
 
-        if only_construct:
-            return metric_tensor_tapes
+            res = [t.execute(device=qnode.device) for t in metric_tensor_tapes]
+            mt = processing_fn(res)
+        elif method=="adjoint":
+            mt = _adjoint_metric_tensor(qnode.qtape, qnode.device, wrt=_wrt)
+        else:
+            raise ValueError(f"Method {method} not supported for metric_tensor."
+                    "The supported methods are 'layerwise' and 'adjoint'.")
 
-        res = [t.execute(device=qnode.device) for t in metric_tensor_tapes]
-        mt = processing_fn(res)
-
-        # permute rows and columns
-        mt = qml.math.gather(mt, perm)
-        mt = qml.math.gather(qml.math.T(mt), perm)
+        # In order to match dimensions, we remove the 0 rows from the jacobian
+        jac = jac[wrt]
+        # Compute metric tensor with respect to circuit (instead of gate) parameters.
+        mt = jac.T @ mt @ jac
         return mt
 
     return _metric_tensor_fn
