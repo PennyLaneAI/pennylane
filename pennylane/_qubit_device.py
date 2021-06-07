@@ -847,7 +847,7 @@ class QubitDevice(Device):
             use_device_state (bool): use current device state to initialize. A forward pass of the same
                 circuit should be the last thing the device has executed. If a ``starting_state`` is
                 provided, that takes precedence.
-            return_obs (bool): return the expectation values alongside the jacobian as a tuple (obs, jac)
+            return_obs (bool): return the expectation values alongside the jacobian as a tuple (jac, obs)
 
         Returns:
             Union[array, tuple(array)]: the derivative of the tape with respect to trainable parameters.
