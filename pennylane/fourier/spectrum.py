@@ -77,149 +77,149 @@ def _join_spectra(spec1, spec2):
 def spectrum(qnode, encoding_gates=None):
     r"""Compute the frequency spectrum of the Fourier representation of simple quantum circuits.
 
-        The circuit must only use single-parameter gates of the form :math:`e^{-i x_j G}` as
-        input-encoding gates, which allows the computation of the spectrum by inspecting the gates'
-        generators :math:`G`.
+    The circuit must only use single-parameter gates of the form :math:`e^{-i x_j G}` as
+    input-encoding gates, which allows the computation of the spectrum by inspecting the gates'
+    generators :math:`G`.
 
-        Gates are marked as input-encoding gates in the quantum function by giving them an ``id``.
-        If two gates have the same ``id``, they are considered
-        to be used to encode the same input :math:`x_j`. The ``encoding_gates`` argument can be used
-        to indicate that only gates with a specific ``id`` should be interpreted as input-encoding gates.
+    Gates are marked as input-encoding gates in the quantum function by giving them an ``id``.
+    If two gates have the same ``id``, they are considered
+    to be used to encode the same input :math:`x_j`. The ``encoding_gates`` argument can be used
+    to indicate that only gates with a specific ``id`` should be interpreted as input-encoding gates.
 
-        Args:
-            qnode (pennylane.QNode): a quantum node representing a circuit in which
-                input-encoding gates are marked by their ``id`` attribute
-            encoding_gates (list[str]): list of input-encoding gate ``id`` strings
-                for which to compute the frequency spectra
+    Args:
+        qnode (pennylane.QNode): a quantum node representing a circuit in which
+            input-encoding gates are marked by their ``id`` attribute
+        encoding_gates (list[str]): list of input-encoding gate ``id`` strings
+            for which to compute the frequency spectra
 
-        Returns:
-            (dict[str, list[float]]): Dictionary with the input-encoding gate ``id`` as keys and
-            their frequency spectra as values.
+    Returns:
+        (dict[str, list[float]]): Dictionary with the input-encoding gate ``id`` as keys and
+        their frequency spectra as values.
 
 
-        **Details**
+    **Details**
 
-        A circuit that returns an expectation value which depends on
-        :math:`N` scalar inputs :math:`x_j` can be interpreted as a function
-        :math:`f: \mathbb{R}^N \rightarrow \mathbb{R}`. This function can always be
-        expressed by a Fourier-type sum
+    A circuit that returns an expectation value which depends on
+    :math:`N` scalar inputs :math:`x_j` can be interpreted as a function
+    :math:`f: \mathbb{R}^N \rightarrow \mathbb{R}`. This function can always be
+    expressed by a Fourier-type sum
 
-        .. math::
+    .. math::
 
-            \sum \limits_{\omega_1\in \Omega_1} \dots \sum \limits_{\omega_N \in \Omega_N}
-            c_{\omega_1,\dots, \omega_N} e^{-i x_1 \omega_1} \dots e^{-i x_N \omega_N}
+        \sum \limits_{\omega_1\in \Omega_1} \dots \sum \limits_{\omega_N \in \Omega_N}
+        c_{\omega_1,\dots, \omega_N} e^{-i x_1 \omega_1} \dots e^{-i x_N \omega_N}
 
-        over the *frequency spectra* :math:`\Omega_j \subseteq \mathbb{R},`
-        :math:`j=1,\dots,N`. Each spectrum has the property that
-        :math:`0 \in \Omega_j`, and the spectrum is
-        symmetric (for every :math:`\omega \in \Omega_j` we have that :math:`-\omega \in
-        \Omega_j`). If all frequencies are integer-valued, the Fourier sum becomes a
-        *Fourier series*.
+    over the *frequency spectra* :math:`\Omega_j \subseteq \mathbb{R},`
+    :math:`j=1,\dots,N`. Each spectrum has the property that
+    :math:`0 \in \Omega_j`, and the spectrum is
+    symmetric (for every :math:`\omega \in \Omega_j` we have that :math:`-\omega \in
+    \Omega_j`). If all frequencies are integer-valued, the Fourier sum becomes a
+    *Fourier series*.
 
-        As shown in `Vidal and Theis (2019)
-        <https://arxiv.org/abs/1901.11434>`_ and `Schuld, Sweke and Meyer (2020)
-        <https://arxiv.org/abs/2008.08605>`_, if an input :math:`x_j, j = 1 \dots N`,
-        only enters into single-parameter gates of the form :math:`e^{-i x_j G}` (where :math:`G` is a Hermitian generator),
-        the frequency spectrum :math:`\Omega_j` is fully determined by the eigenvalues
-        of :math:`G`. In many situations, the spectra are limited
-        to a few frequencies only, which in turn limits the function class that the circuit
-        can express.
+    As shown in `Vidal and Theis (2019)
+    <https://arxiv.org/abs/1901.11434>`_ and `Schuld, Sweke and Meyer (2020)
+    <https://arxiv.org/abs/2008.08605>`_, if an input :math:`x_j, j = 1 \dots N`,
+    only enters into single-parameter gates of the form :math:`e^{-i x_j G}` (where :math:`G` is a Hermitian generator),
+    the frequency spectrum :math:`\Omega_j` is fully determined by the eigenvalues
+    of :math:`G`. In many situations, the spectra are limited
+    to a few frequencies only, which in turn limits the function class that the circuit
+    can express.
 
-        The ``spectrum`` function computes all frequencies that will potentially appear in the
-        sets :math:`\Omega_1` to :math:`\Omega_N` (which correspond to the :math:`N` different strings
-        used as an ``id`` to mark the input-encoding gates).
+    The ``spectrum`` function computes all frequencies that will potentially appear in the
+    sets :math:`\Omega_1` to :math:`\Omega_N` (which correspond to the :math:`N` different strings
+    used as an ``id`` to mark the input-encoding gates).
 
-        **Example**
+    **Example**
 
-        Consider the following example, which uses non-trainable inputs ``x`` and
-        trainable parameters ``w`` as arguments to the qnode.
+    Consider the following example, which uses non-trainable inputs ``x`` and
+    trainable parameters ``w`` as arguments to the qnode.
 
-        .. code-block:: python
+    .. code-block:: python
 
-            import pennylane as qml
-            import numpy as np
-            from pennylane.fourier import spectrum
+        import pennylane as qml
+        import numpy as np
+        from pennylane.fourier import spectrum
 
-            n_layers = 2
-            n_qubits = 3
-            dev = qml.device("default.qubit", wires=n_qubits)
+        n_layers = 2
+        n_qubits = 3
+        dev = qml.device("default.qubit", wires=n_qubits)
 
-            @qml.qnode(dev)
-            def circuit(x, w):
-                for l in range(n_layers):
-                    for i in range(n_qubits):
-                        qml.RX(x[i], wires=0, id="x"+str(i))
-                        qml.Rot(w[l,i,0], w[l,i,1], w[l,i,2], wires=0)
-                qml.RZ(x[0], wires=0, id="x0")
-                return qml.expval(qml.PauliZ(wires=0))
+        @qml.qnode(dev)
+        def circuit(x, w):
+            for l in range(n_layers):
+                for i in range(n_qubits):
+                    qml.RX(x[i], wires=0, id="x"+str(i))
+                    qml.Rot(w[l,i,0], w[l,i,1], w[l,i,2], wires=0)
+            qml.RZ(x[0], wires=0, id="x0")
+            return qml.expval(qml.PauliZ(wires=0))
 
-            x = np.array([1, 2, 3])
-            w = np.random.random((n_layers, n_qubits, 3))
-            res = spectrum(circuit)(x, w)
+        x = np.array([1, 2, 3])
+        w = np.random.random((n_layers, n_qubits, 3))
+        res = spectrum(circuit)(x, w)
 
-        >>> print(qml.draw(circuit)(x, w))
-        0: ──RX(1)──Rot(0.134, 0.601, 0.709)──RX(2)──Rot(0.0263, 0.0347, 0.446)──RX(3)──Rot(0.0606, 0.911, 0.366)
-        ──RX(1)──Rot(0.381, 0.398, 0.61)──RX(2)──Rot(0.956, 0.684, 0.0092)──RX(3)──Rot(0.538, 0.65, 0.732)──RZ(1)──┤ ⟨Z⟩
+    >>> print(qml.draw(circuit)(x, w))
+    0: ──RX(1)──Rot(0.134, 0.601, 0.709)──RX(2)──Rot(0.0263, 0.0347, 0.446)──RX(3)──Rot(0.0606, 0.911, 0.366)
+    ──RX(1)──Rot(0.381, 0.398, 0.61)──RX(2)──Rot(0.956, 0.684, 0.0092)──RX(3)──Rot(0.538, 0.65, 0.732)──RZ(1)──┤ ⟨Z⟩
 
-        >>> for inp, freqs in res.items():
-        >>>     print(f"{inp}: {freqs}")
-        'x0': [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0]
-        'x1': [-2.0, -1.0, 0.0, 1.0, 2.0]
-        'x2': [-2.0, -1.0, 0.0, 1.0, 2.0]
+    >>> for inp, freqs in res.items():
+    >>>     print(f"{inp}: {freqs}")
+    'x0': [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0]
+    'x1': [-2.0, -1.0, 0.0, 1.0, 2.0]
+    'x2': [-2.0, -1.0, 0.0, 1.0, 2.0]
 
-        .. note::
-            While the Fourier spectrum usually does not depend
-            on trainable circuit parameters and the actual values of the inputs,
-            it may still change with arguments of the QNode that determine the architecture
-            of the circuit.
+    .. note::
+        While the Fourier spectrum usually does not depend
+        on trainable circuit parameters and the actual values of the inputs,
+        it may still change with arguments of the QNode that determine the architecture
+        of the circuit.
 
-        The input-encoding gates to consider can also be explicitly selected by using the
-        ``encoding_gates`` keyword argument:
+    The input-encoding gates to consider can also be explicitly selected by using the
+    ``encoding_gates`` keyword argument:
 
-        .. code-block:: python
+    .. code-block:: python
 
-            dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit", wires=1)
 
-            @qml.qnode(dev)
-            def circuit(x):
-                qml.RX(x[0], wires=0, id="x0")
-                qml.PhaseShift(x[0], wires=0, id="x0")
-                qml.RX(x[1], wires=0, id="x1")
-                return qml.expval(qml.PauliZ(wires=0))
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x[0], wires=0, id="x0")
+            qml.PhaseShift(x[0], wires=0, id="x0")
+            qml.RX(x[1], wires=0, id="x1")
+            return qml.expval(qml.PauliZ(wires=0))
 
-            x = np.array([1, 2])
-            res = spectrum(circuit, encoding_gates=["x0"])(x)
+        x = np.array([1, 2])
+        res = spectrum(circuit, encoding_gates=["x0"])(x)
 
-        >>> for inp, freqs in res.items():
-        >>>     print(f"{inp}: {freqs}")
-        'x0': [-2.0, -1.0, 0.0, 1.0, 2.0]
+    >>> for inp, freqs in res.items():
+    >>>     print(f"{inp}: {freqs}")
+    'x0': [-2.0, -1.0, 0.0, 1.0, 2.0]
 
-        .. note::
-            The ``spectrum`` function does not check if the result of the
-            circuit is an expectation, or if gates with the same ``id``
-            take the same value in a given call of the function.
+    .. note::
+        The ``spectrum`` function does not check if the result of the
+        circuit is an expectation, or if gates with the same ``id``
+        take the same value in a given call of the function.
 
-        The ``spectrum`` function works in all interfaces:
+    The ``spectrum`` function works in all interfaces:
 
-        .. code-block:: python
+    .. code-block:: python
 
-            import tensorflow as tf
+        import tensorflow as tf
 
-            dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit", wires=1)
 
-            @qml.qnode(dev, interface='tf')
-            def circuit(x):
-                qml.RX(x[0], wires=0, id="x0")
-                qml.PhaseShift(x[1], wires=0, id="x1")
-                return qml.expval(qml.PauliZ(wires=0))
+        @qml.qnode(dev, interface='tf')
+        def circuit(x):
+            qml.RX(x[0], wires=0, id="x0")
+            qml.PhaseShift(x[1], wires=0, id="x1")
+            return qml.expval(qml.PauliZ(wires=0))
 
-            x = tf.constant([1, 2])
-            res = spectrum(circuit)(x)
+        x = tf.constant([1, 2])
+        res = spectrum(circuit)(x)
 
-        >>> for inp, freqs in res.items():
-        >>>     print(f"{inp}: {freqs}")
-        'x0': [-1.0, 0.0, 1.0]
-        'x1': [-1.0, 0.0, 1.0]
+    >>> for inp, freqs in res.items():
+    >>>     print(f"{inp}: {freqs}")
+    'x0': [-1.0, 0.0, 1.0]
+    'x1': [-1.0, 0.0, 1.0]
 
     """
 
