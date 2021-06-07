@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,10 +16,13 @@ This module contains the :class:`Device` abstract base class.
 """
 # pylint: disable=too-many-format-args
 import abc
+from collections.abc import Iterable, Sequence
+from collections import OrderedDict, namedtuple
+from functools import lru_cache
 
 import numpy as np
 
-from collections import Iterable, OrderedDict
+import pennylane as qml
 from pennylane.operation import (
     Operation,
     Observable,
@@ -30,8 +33,63 @@ from pennylane.operation import (
     Probability,
     Tensor,
 )
-from pennylane.qnodes import QuantumFunctionError
 from pennylane.wires import Wires, WireError
+
+
+ShotTuple = namedtuple("ShotTuple", ["shots", "copies"])
+"""tuple[int, int]: Represents copies of a shot number."""
+
+
+def _process_shot_sequence(shot_list):
+    """Process the shot sequence, to determine the total
+    number of shots and the shot vector.
+
+    Args:
+        shot_list (Sequence[int, tuple[int]]): sequence of non-negative shot integers
+
+    Returns:
+        tuple[int, list[.ShotTuple[int]]]: A tuple containing the total number
+        of shots, as well as a list of shot tuples.
+
+    **Example**
+
+    >>> shot_list = [3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10]
+    >>> _process_shot_sequence(shot_list)
+    (57,
+     [ShotTuple(shots=3, copies=1),
+      ShotTuple(shots=1, copies=1),
+      ShotTuple(shots=2, copies=4),
+      ShotTuple(shots=6, copies=1),
+      ShotTuple(shots=1, copies=2),
+      ShotTuple(shots=5, copies=1),
+      ShotTuple(shots=12, copies=1),
+      ShotTuple(shots=10, copies=2)])
+
+    The total number of shots (57), and a sparse representation of the shot
+    sequence is returned, where tuples indicate the number of times a shot
+    integer is repeated.
+    """
+    if all(isinstance(s, int) for s in shot_list):
+
+        if len(set(shot_list)) == 1:
+            # All shots are identical, only require a single shot tuple
+            shot_vector = [ShotTuple(shots=shot_list[0], copies=len(shot_list))]
+        else:
+            # Iterate through the shots, and group consecutive identical shots
+            split_at_repeated = np.split(shot_list, np.diff(shot_list).nonzero()[0] + 1)
+            shot_vector = [ShotTuple(shots=i[0], copies=len(i)) for i in split_at_repeated]
+
+    elif all(isinstance(s, (int, tuple)) for s in shot_list):
+        # shot list contains tuples; assume it is already in a sparse representation
+        shot_vector = [
+            ShotTuple(*i) if isinstance(i, tuple) else ShotTuple(i, 1) for i in shot_list
+        ]
+
+    else:
+        raise ValueError(f"Unknown shot sequence format {shot_list}")
+
+    total_shots = np.sum(np.prod(shot_vector, axis=1))
+    return total_shots, shot_vector
 
 
 class DeviceError(Exception):
@@ -61,9 +119,14 @@ class Device(abc.ABC):
     _circuits = {}  #: dict[str->Circuit]: circuit templates associated with this API class
     _asarray = staticmethod(np.asarray)
 
-    def __init__(self, wires=1, shots=1000):
+    def __init__(self, wires=1, shots=1000, *, analytic=None):
 
         self.shots = shots
+
+        if analytic is not None:
+            msg = "The analytic argument has been replaced by shots=None. "
+            msg += "Please use shots=None instead of analytic=True."
+            raise DeviceError(msg)
 
         if not isinstance(wires, Iterable):
             # interpret wires as the number of consecutive wires
@@ -145,6 +208,13 @@ class Device(abc.ABC):
         return self._shots
 
     @property
+    def analytic(self):
+        """Whether shots is None or not. Kept for backwards compatability."""
+        if self._shots is None:
+            return True
+        return False
+
+    @property
     def wires(self):
         """All wires that can be addressed on this device"""
         return self._wires
@@ -176,12 +246,66 @@ class Device(abc.ABC):
         Raises:
             DeviceError: if number of shots is less than 1
         """
-        if shots < 1:
+        if shots is None:
+            # device is in analytic mode
+            self._shots = shots
+            self._shot_vector = None
+
+        elif isinstance(shots, int):
+            # device is in sampling mode (unbatched)
+            if shots < 1:
+                raise DeviceError(
+                    "The specified number of shots needs to be at least 1. Got {}.".format(shots)
+                )
+
+            self._shots = shots
+            self._shot_vector = None
+
+        elif isinstance(shots, Sequence) and not isinstance(shots, str):
+            # device is in batched sampling mode
+            self._shots, self._shot_vector = _process_shot_sequence(shots)
+
+        else:
             raise DeviceError(
-                "The specified number of shots needs to be at least 1. Got {}.".format(shots)
+                "Shots must be a single non-negative integer or a sequence of non-negative integers."
             )
 
-        self._shots = int(shots)
+    @property
+    def shot_vector(self):
+        """list[.ShotTuple[int, int]]: Returns the shot vector, a sparse
+        representation of the shot sequence used by the device
+        when evaluating QNodes.
+
+        **Example**
+
+        >>> dev = qml.device("default.qubit", wires=2, shots=[3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10])
+        >>> dev.shots
+        57
+        >>> dev.shot_vector
+        [ShotTuple(shots=3, copies=1),
+         ShotTuple(shots=1, copies=1),
+         ShotTuple(shots=2, copies=4),
+         ShotTuple(shots=6, copies=1),
+         ShotTuple(shots=1, copies=2),
+         ShotTuple(shots=5, copies=1),
+         ShotTuple(shots=12, copies=1),
+         ShotTuple(shots=10, copies=2)]
+
+        The sparse representation of the shot
+        sequence is returned, where tuples indicate the number of times a shot
+        integer is repeated.
+        """
+        return self._shot_vector
+
+    def _has_partitioned_shots(self):
+        """Checks if the device was instructed to perform executions with partitioned shots.
+
+        Returns:
+            bool: whether or not shots are partitioned
+        """
+        return self._shot_vector is not None and (
+            len(self._shot_vector) > 1 or self._shot_vector[0].copies > 1
+        )
 
     def define_wire_map(self, wires):
         """Create the map from user-provided wire labels to the wire labels used by the device.
@@ -208,6 +332,7 @@ class Device(abc.ABC):
         wire_map = zip(wires, consecutive_wires)
         return OrderedDict(wire_map)
 
+    @lru_cache()
     def map_wires(self, wires):
         """Map the wire labels of wires using this device's wire map.
 
@@ -311,10 +436,10 @@ class Device(abc.ABC):
                     results.append(list(self.probability(wires=wires).values()))
 
                 elif obs.return_type is State:
-                    raise QuantumFunctionError("Returning the state is not supported")
+                    raise qml.QuantumFunctionError("Returning the state is not supported")
 
                 elif obs.return_type is not None:
-                    raise QuantumFunctionError(
+                    raise qml.QuantumFunctionError(
                         "Unsupported return type specified for observable {}".format(obs.name)
                     )
 
@@ -346,7 +471,7 @@ class Device(abc.ABC):
         circuits on a backend, for example using parallel and/or asynchronous executions.
 
         Args:
-            circuits (list[.tapes.QuantumTape]): circuits to execute on the device
+            circuits (list[.tape.QuantumTape]): circuits to execute on the device
 
         Returns:
             list[array[float]]: list of measured value(s)
@@ -549,6 +674,8 @@ class Device(abc.ABC):
                 )
 
         for o in observables:
+            if isinstance(o, qml.measure.MeasurementProcess) and o.obs is not None:
+                o = o.obs
 
             if isinstance(o, Tensor):
                 # TODO: update when all capabilities keys changed to "supports_tensor_observables"
@@ -568,7 +695,6 @@ class Device(abc.ABC):
                             )
                         )
             else:
-
                 observable_name = o.name
 
                 if issubclass(o.__class__, Operation) and o.inverse:

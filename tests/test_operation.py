@@ -17,14 +17,13 @@ Unit tests for :mod:`pennylane.operation`.
 import itertools
 import functools
 
-import abc
 import pytest
 import numpy as np
 from numpy.linalg import multi_dot
 
 import pennylane as qml
-import pennylane._queuing
-from pennylane.operation import Tensor, Channel
+import pennylane.queuing
+from pennylane.operation import Tensor, operation_derivative
 
 from gate_data import I, X, Y, Rotx, Roty, Rotz, CRotx, CRoty, CRotz, CNOT, Rot3, Rphi
 from pennylane.wires import Wires
@@ -36,9 +35,11 @@ from pennylane.wires import Wires
 op_classes = [getattr(qml.ops, cls) for cls in qml.ops.__all__]
 op_classes_cv = [getattr(qml.ops, cls) for cls in qml.ops._cv__all__]
 op_classes_gaussian = [cls for cls in op_classes_cv if cls.supports_heisenberg]
+op_classes_exception = {"PauliRot", "Projector"}
 
 op_classes_param_testable = op_classes.copy()
-op_classes_param_testable.remove(qml.ops.PauliRot)
+for i in [getattr(qml.ops, cls) for cls in list(op_classes_exception)]:
+    op_classes_param_testable.remove(i)
 
 
 def U3(theta, phi, lam):
@@ -124,6 +125,9 @@ class TestOperation:
     def test_operation_init(self, test_class, monkeypatch):
         "Operation subclass initialization."
 
+        if test_class in (qml.ControlledQubitUnitary, qml.MultiControlledX):
+            pytest.skip("ControlledQubitUnitary alters the input params and wires in its __init__")
+
         n = test_class.num_params
         w = test_class.num_wires
         ww = list(range(w))
@@ -167,62 +171,19 @@ class TestOperation:
         if n == 0:
             return
 
-        # wrong parameter types
-        if test_class.do_check_domain:
-            if test_class.par_domain == "A":
-                # params must be arrays
-                with pytest.raises(TypeError, match="Array parameter expected"):
-                    test_class(*n * [0.0], wires=ww)
-                # params must not be Variables
-                with pytest.raises(TypeError, match="Array parameter expected"):
-                    test_class(*n * [qml.variable.Variable(0)], wires=ww)
-            elif test_class.par_domain == "N":
-                # params must be natural numbers
-                with pytest.raises(TypeError, match="Natural number"):
-                    test_class(*n * [0.7], wires=ww)
-                with pytest.raises(TypeError, match="Natural number"):
-                    test_class(*n * [-1], wires=ww)
-            elif test_class.par_domain == "R":
-                # params must be real numbers
-                with pytest.raises(TypeError, match="Real scalar parameter expected"):
-                    test_class(*n * [1j], wires=ww)
-            elif test_class.par_domain == "L":
-                # params must be list of numpy arrays
-                with pytest.raises(TypeError, match="List parameter"):
-                    test_class(*n * [np.eye(2)], wires=ww)
+    def test_controlled_qubit_unitary_init(self):
+        """Test for the init of ControlledQubitUnitary"""
+        control_wires = [3, 2]
+        target_wires = [1, 0]
+        U = qml.CRX._matrix(0.4)
 
-            # if par_domain ever gets overridden to an unsupported value, should raise exception
-            monkeypatch.setattr(test_class, "par_domain", "junk")
-            with pytest.raises(ValueError, match="Unknown parameter domain"):
-                test_class(*pars, wires=ww)
+        op = qml.ControlledQubitUnitary(U, control_wires=control_wires, wires=target_wires)
+        target_matrix = np.block([[np.eye(12), np.zeros((12, 4))], [np.zeros((4, 12)), U]])
 
-            monkeypatch.setattr(test_class, "par_domain", 7)
-            with pytest.raises(ValueError, match="Unknown parameter domain"):
-                test_class(*pars, wires=ww)
-
-    @pytest.fixture(scope="function")
-    def qnode(self, mock_device):
-        """Provides a QNode for the subsequent tests of do_queue"""
-
-        def circuit(x):
-            qml.RX(x, wires=[0])
-            qml.CNOT(wires=[0, 1], do_queue=False)
-            qml.RY(0.4, wires=[0])
-            qml.RZ(-0.2, wires=[1], do_queue=False)
-            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(1))
-
-        node = qml.QNode(circuit, mock_device)
-        node._construct([1.0], {})
-
-        return node
-
-    def test_operation_inside_context_do_queue_false(self, qnode):
-        """Test that an operation does not get added to the QNode queue when do_queue=False"""
-        assert len(qnode.ops) == 4
-        assert qnode.ops[0].name == "RX"
-        assert qnode.ops[1].name == "RY"
-        assert qnode.ops[2].name == "PauliX"
-        assert qnode.ops[3].name == "PauliZ"
+        assert op.name == qml.ControlledQubitUnitary.__name__
+        assert np.allclose([U], op.data)
+        assert np.allclose(op.matrix, target_matrix)
+        assert op._wires == Wires(control_wires) + Wires(target_wires)
 
     @pytest.fixture(scope="function")
     def qnode_for_inverse(self, mock_device):
@@ -234,19 +195,19 @@ class TestOperation:
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(1))
 
         node = qml.QNode(circuit, mock_device)
-        node._construct([1.0], {})
+        node.construct([1.0], {})
 
         return node
 
     def test_operation_inverse_defined(self, qnode_for_inverse):
         """Test that the inverse of an operation is added to the QNode queue and the operation is an instance
         of the original class"""
-        assert qnode_for_inverse.ops[0].name == "RZ.inv"
-        assert qnode_for_inverse.ops[0].inverse
-        assert issubclass(qnode_for_inverse.ops[0].__class__, qml.operation.Operation)
-        assert qnode_for_inverse.ops[1].name == "RZ"
-        assert not qnode_for_inverse.ops[1].inverse
-        assert issubclass(qnode_for_inverse.ops[1].__class__, qml.operation.Operation)
+        assert qnode_for_inverse.qtape.operations[0].name == "RZ.inv"
+        assert qnode_for_inverse.qtape.operations[0].inverse
+        assert issubclass(qnode_for_inverse.qtape.operations[0].__class__, qml.operation.Operation)
+        assert qnode_for_inverse.qtape.operations[1].name == "RZ"
+        assert not qnode_for_inverse.qtape.operations[1].inverse
+        assert issubclass(qnode_for_inverse.qtape.operations[1].__class__, qml.operation.Operation)
 
     def test_operation_inverse_using_dummy_operation(self):
 
@@ -325,19 +286,6 @@ class TestOperatorConstruction:
         with pytest.raises(ValueError, match="wrong number of parameters"):
             DummyOp(0.5, 0.6, wires=0)
 
-    def test_incorrect_param_domain(self):
-        """Test that an exception is raised if an incorrect parameter domain is requested"""
-
-        class DummyOp(qml.operation.Operator):
-            r"""Dummy custom operator"""
-            num_wires = 1
-            num_params = 1
-            par_domain = "J"
-            grad_method = "A"
-
-        with pytest.raises(ValueError, match="Unknown parameter domain"):
-            DummyOp(0.5, wires=0)
-
 
 class TestOperationConstruction:
     """Test custom operations construction."""
@@ -404,90 +352,6 @@ class TestOperationConstruction:
         with pytest.raises(AssertionError, match="Gradient recipe is only used by the A method"):
             DummyOp(0.5, wires=[0, 1])
 
-    def test_list_of_arrays(self):
-        """Test that an exception is raised if a list of arrays is expected
-         but a list of mixed types is passed"""
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operation"""
-            num_wires = 1
-            num_params = 1
-            par_domain = "L"
-
-        with pytest.raises(TypeError, match="List elements must be Numpy arrays."):
-            DummyOp([[np.eye(2), "a"]], wires=[0])
-
-    def test_variable_instead_of_array(self):
-        """Test that an exception is raised if an array is expected but a variable is passed"""
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operation"""
-            num_wires = 1
-            num_params = 1
-            par_domain = "A"
-            grad_method = "F"
-
-        with pytest.raises(TypeError, match="Array parameter expected, got a Variable"):
-            DummyOp(qml.variable.Variable(0), wires=[0])
-
-    def test_array_instead_of_flattened_array(self):
-        """Test that an exception is raised if an array is expected, but an array is passed
-        to check_domain when flattened=True. In the initial release of the library, this is not
-        accessible by the developer or the user, but is kept in case it will be used in the future."""
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operation"""
-            num_wires = 1
-            num_params = 1
-            par_domain = "A"
-            grad_method = "F"
-
-        with pytest.raises(TypeError, match="Flattened array parameter expected"):
-            op = DummyOp(np.array([1]), wires=[0])
-            op.check_domain(np.array([1]), True)
-
-    def test_scalar_instead_of_array(self):
-        """Test that an exception is raised if an array is expected but a scalar is passed"""
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operation"""
-            num_wires = 1
-            num_params = 1
-            par_domain = "A"
-            grad_method = "F"
-
-        with pytest.raises(TypeError, match="Array parameter expected, got"):
-            DummyOp(0.5, wires=[0])
-
-    def test_array_instead_of_real(self):
-        """Test that an exception is raised if a real number is expected but an array is passed"""
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operation"""
-            num_wires = 1
-            num_params = 1
-            par_domain = "R"
-            grad_method = "F"
-
-        with pytest.raises(TypeError, match="Real scalar parameter expected, got"):
-            DummyOp(np.array([1.0]), wires=[0])
-
-    def test_not_natural_param(self):
-        """Test that an exception is raised if a natural number is expected but not passed"""
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operation"""
-            num_wires = 1
-            num_params = 1
-            par_domain = "N"
-            grad_method = None
-
-        with pytest.raises(TypeError, match="Natural number parameter expected, got"):
-            DummyOp(0.5, wires=[0])
-
-        with pytest.raises(TypeError, match="Natural number parameter expected, got"):
-            DummyOp(-2, wires=[0])
-
     def test_no_wires_passed(self):
         """Test exception raised if no wires are passed"""
 
@@ -513,6 +377,19 @@ class TestOperationConstruction:
 
         with pytest.raises(ValueError, match="Must specify the wires"):
             DummyOp(0.54, 0)
+
+    def test_id(self):
+        """Test that the id attribute of an operator can be set."""
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+            num_params = 1
+            par_domain = "N"
+            grad_method = None
+
+        op = DummyOp(1.0, wires=0, id="test")
+        assert op.id == "test"
 
 
 class TestObservableConstruction:
@@ -577,9 +454,41 @@ class TestObservableConstruction:
         assert cv_obs.wires == Wires([1])
         assert cv_obs.ev_order == 2
 
+    def test_repr(self):
+        """Test the string representation of an observable with and without a return type."""
+
+        m = qml.expval(qml.PauliZ(wires=["a"]) @ qml.PauliZ(wires=["b"]))
+        expected = "expval(PauliZ(wires=['a']) @ PauliZ(wires=['b']))"
+        assert str(m) == expected
+
+        m = qml.probs(wires=["a"])
+        expected = "probs(wires=['a'])"
+        assert str(m) == expected
+
+        m = qml.PauliZ(wires=["a"]) @ qml.PauliZ(wires=["b"])
+        expected = "PauliZ(wires=['a']) @ PauliZ(wires=['b'])"
+        assert str(m) == expected
+
+        m = qml.PauliZ(wires=["a"])
+        expected = "PauliZ(wires=['a'])"
+        assert str(m) == expected
+
+    def test_id(self):
+        """Test that the id attribute of an observable can be set."""
+
+        class DummyObserv(qml.operation.Observable):
+            r"""Dummy custom observable"""
+            num_wires = 1
+            num_params = 1
+            par_domain = "N"
+            grad_method = None
+
+        op = DummyObserv(1.0, wires=0, id="test")
+        assert op.id == "test"
+
 
 class TestOperatorIntegration:
-    """ Integration tests for the Operator class"""
+    """Integration tests for the Operator class"""
 
     def test_all_wires_defined_but_init_with_one(self):
         """Test that an exception is raised if the class is defined with ALL wires,
@@ -587,7 +496,7 @@ class TestOperatorIntegration:
 
         dev1 = qml.device("default.qubit", wires=2)
 
-        class DummyOp(qml.operation.Operator):
+        class DummyOp(qml.operation.Operation):
             r"""Dummy custom operator"""
             num_wires = qml.operation.WiresEnum.AllWires
             num_params = 0
@@ -606,7 +515,7 @@ class TestOperatorIntegration:
 
 
 class TestOperationIntegration:
-    """ Integration tests for the Operation class"""
+    """Integration tests for the Operation class"""
 
     def test_inverse_of_operation(self):
         """Test the inverse of an operation"""
@@ -635,7 +544,7 @@ class TestOperationIntegration:
 
         with pytest.raises(
             qml.DeviceError,
-            match="Gate Rotation.inv not supported on device {}".format(dev1.short_name),
+            match=r"inverse of gates are not supported on device default\.gaussian",
         ):
             mean_photon_gaussian(0.015, 0.02, 0.005)
 
@@ -987,16 +896,14 @@ class TestTensor:
     ]
 
     @pytest.mark.parametrize("tensor_observable, expected", tensor_obs_pruning)
-    @pytest.mark.parametrize("statistics", [qml.expval, qml.var, qml.sample])
-    def test_prune(self, tensor_observable, expected, statistics):
+    def test_prune(self, tensor_observable, expected):
         """Tests that the prune method returns the expected Tensor or single non-Tensor Observable."""
-        O = statistics(tensor_observable)
-        O_expected = statistics(expected)
+        O = tensor_observable
+        O_expected = expected
 
         O_pruned = O.prune()
         assert type(O_pruned) == type(expected)
         assert O_pruned.wires == expected.wires
-        assert O_pruned.return_type == O_expected.return_type
 
 
 equal_obs = [
@@ -1172,7 +1079,7 @@ class TestDecomposition:
         theta = 0.654
         omega = -5.43
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with pennylane.tape.OperationRecorder() as rec:
             qml.Rot.decomposition(phi, theta, omega, wires=0)
 
         assert len(rec.queue) == 3
@@ -1191,7 +1098,7 @@ class TestDecomposition:
         qubit rotation"""
         phi = 0.432
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with pennylane.tape.OperationRecorder() as rec:
             qml.CRX.decomposition(phi, wires=[0, 1])
 
         assert len(rec.queue) == 6
@@ -1244,7 +1151,7 @@ class TestDecomposition:
 
         operation_wires = [0, 1]
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with pennylane.tape.OperationRecorder() as rec:
             qml.CRY.decomposition(phi, wires=operation_wires)
 
         assert len(rec.queue) == 4
@@ -1282,7 +1189,7 @@ class TestDecomposition:
 
         operation_wires = [0, 1]
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with pennylane.tape.OperationRecorder() as rec:
             qml.CRZ.decomposition(phi, wires=operation_wires)
 
         assert len(rec.queue) == 4
@@ -1318,7 +1225,7 @@ class TestDecomposition:
         phi = 0.432
         lam = 0.654
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with pennylane.tape.OperationRecorder() as rec:
             qml.U2.decomposition(phi, lam, wires=0)
 
         assert len(rec.queue) == 3
@@ -1338,7 +1245,7 @@ class TestDecomposition:
         phi = 0.432
         lam = 0.654
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with pennylane.tape.OperationRecorder() as rec:
             qml.U3.decomposition(theta, phi, lam, wires=0)
 
         assert len(rec.queue) == 3
@@ -1410,25 +1317,72 @@ class TestChannel:
         op = DummyOp(0.1, wires=0)
         assert np.all(op.kraus_matrices[0] == expected)
 
-    def test_grad_method(self):
-        """Test that an exception is raised if a gradient method is set to analytic
-        as only finite difference or ``None`` is allowed at the moment. This can be updated
-        once we add gradient recipes for channels. """
 
-        class DummyOp(qml.operation.Channel):
-            r"""Dummy custom channel"""
-            num_wires = 1
-            num_params = 1
-            par_domain = "R"
-            grad_method = "A"
+class TestOperationDerivative:
+    """Tests for operation_derivative function"""
 
-            def _kraus_matrices(self, *params):
-                p = params[0]
-                K1 = np.sqrt(p) * X
-                K2 = np.sqrt(1 - p) * I
-                return [K1, K2]
+    def test_no_generator_raise(self):
+        """Tests if the function raises a ValueError if the input operation has no generator"""
+        op = qml.Rot(0.1, 0.2, 0.3, wires=0)
 
-        with pytest.raises(
-            ValueError, match="Analytic gradients can not be used for quantum channels"
-        ):
-            DummyOp(0.5, wires=0)
+        with pytest.raises(ValueError, match="Operation Rot does not have a generator"):
+            operation_derivative(op)
+
+    def test_multiparam_raise(self):
+        """Test if the function raises a ValueError if the input operation is composed of multiple
+        parameters"""
+
+        class RotWithGen(qml.Rot):
+            generator = [np.zeros((2, 2)), 1]
+
+        op = RotWithGen(0.1, 0.2, 0.3, wires=0)
+
+        with pytest.raises(ValueError, match="Operation RotWithGen is not written in terms of"):
+            operation_derivative(op)
+
+    def test_rx(self):
+        """Test if the function correctly returns the derivative of RX"""
+        p = 0.3
+        op = qml.RX(p, wires=0)
+
+        derivative = operation_derivative(op)
+
+        expected_derivative = 0.5 * np.array(
+            [[-np.sin(p / 2), -1j * np.cos(p / 2)], [-1j * np.cos(p / 2), -np.sin(p / 2)]]
+        )
+
+        assert np.allclose(derivative, expected_derivative)
+
+        op.inv()
+        derivative_inv = operation_derivative(op)
+        expected_derivative_inv = 0.5 * np.array(
+            [[-np.sin(p / 2), 1j * np.cos(p / 2)], [1j * np.cos(p / 2), -np.sin(p / 2)]]
+        )
+
+        assert not np.allclose(derivative, derivative_inv)
+        assert np.allclose(derivative_inv, expected_derivative_inv)
+
+    def test_phase(self):
+        """Test if the function correctly returns the derivative of PhaseShift"""
+        p = 0.3
+        op = qml.PhaseShift(p, wires=0)
+
+        derivative = operation_derivative(op)
+        expected_derivative = np.array([[0, 0], [0, 1j * np.exp(1j * p)]])
+        assert np.allclose(derivative, expected_derivative)
+
+    def test_cry(self):
+        """Test if the function correctly returns the derivative of CRY"""
+        p = 0.3
+        op = qml.CRY(p, wires=[0, 1])
+
+        derivative = operation_derivative(op)
+        expected_derivative = 0.5 * np.array(
+            [
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+                [0, 0, -np.sin(p / 2), -np.cos(p / 2)],
+                [0, 0, np.cos(p / 2), -np.sin(p / 2)],
+            ]
+        )
+        assert np.allclose(derivative, expected_derivative)

@@ -16,8 +16,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.tape.measure import expval
-from pennylane.tape import qnode, QNode
+from pennylane.measure import expval
+from pennylane import qnode, QNode
 from pennylane.devices import DefaultQubit
 
 
@@ -95,7 +95,7 @@ class TestCaching:
 
     def test_drop_from_cache(self):
         """Test that the first entry of the _cache_execute dictionary is the first to be dropped
-         from the dictionary once it becomes full"""
+        from the dictionary once it becomes full"""
         dev = qml.device("default.qubit", wires=2, cache=2)
         qn = QNode(qfunc, dev)
 
@@ -260,19 +260,3 @@ class TestCaching:
         assert calls2 == 5
         assert calls3 == 10
         assert g is not None
-
-    def test_non_tape_mode(self):
-        """Tests that an exception is raised when attempting to use caching outside of tape mode"""
-        dev = qml.device("default.qubit", wires=3, cache=10)
-
-        def qfunc(x, y):
-            """Simple quantum function"""
-            qml.RX(x, wires=0)
-            qml.RX(y, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(wires=1))
-
-        qn = qml.QNode(qfunc, dev)
-
-        with pytest.raises(ValueError, match="Caching is only available when using tape mode"):
-            qn(0.1, 0.2)

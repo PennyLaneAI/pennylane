@@ -81,9 +81,9 @@ PennyLane Documentation
 Features
 --------
 
-.. image:: _static/intro.png
-    :align: right
-    :width: 400px
+.. image:: _static/header.png
+    :align: left
+    :width: 450px
     :target: javascript:void(0);
 
 
@@ -106,7 +106,7 @@ Features
 - *Device independent*.
   The same quantum circuit model can be **run on different backends**. Install
   `plugins <https://pennylane.ai/plugins.html>`_ to access even more
-  devices, including **Strawberry Fields**, **IBM Q**, **Google Cirq**, **Rigetti Forest**,
+  devices, including **Strawberry Fields**, **Amazon Braket**, **IBM Q**, **Google Cirq**, **Rigetti Forest**,
   **Microsoft QDK**, and **ProjectQ**.
 
 
@@ -206,14 +206,16 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qml_interfaces
    code/qml_operation
    code/qml_devices
+   code/qml_fourier
    code/qml_grouping
+   code/qml_kernels
+   code/qml_math
    code/qml_qaoa
    code/qml_qchem
    code/qml_qnn
-   code/qml_qnodes
    code/qml_tape
    code/qml_templates
+   code/qml_transforms
    code/qml_utils
-   code/qml_variable
    code/qml_wires
    code/qml_beta

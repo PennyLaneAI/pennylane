@@ -26,7 +26,7 @@ Subroutines
     :no-heading:
     :include-all-objects:
 
-State preperations
+State preparations
 ------------------
 
 .. automodapi:: pennylane.templates.state_preparations
@@ -70,3 +70,12 @@ Utility functions for input checks
 .. automodapi:: pennylane.templates.utils
     :no-heading:
     :include-all-objects:
+
+Utility functions for quantum Monte Carlo
+-----------------------------------------
+
+Functions
+^^^^^^^^^
+
+.. automodsumm:: pennylane.templates.subroutines.qmc
+    :functions-only:

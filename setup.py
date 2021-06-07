@@ -25,6 +25,7 @@ requirements = [
     "toml",
     "appdirs",
     "semantic_version==2.6",
+    "autoray"
 ]
 
 info = {
@@ -43,6 +44,7 @@ info = {
             'default.gaussian = pennylane.devices:DefaultGaussian',
             'default.qubit.tf = pennylane.devices.default_qubit_tf:DefaultQubitTF',
             'default.qubit.autograd = pennylane.devices.default_qubit_autograd:DefaultQubitAutograd',
+            'default.qubit.jax = pennylane.devices.default_qubit_jax:DefaultQubitJax',
             'default.tensor = pennylane.beta.devices.default_tensor:DefaultTensor',
             'default.tensor.tf = pennylane.beta.devices.default_tensor_tf:DefaultTensorTF',
             'default.mixed = pennylane.devices.default_mixed:DefaultMixed'
@@ -52,10 +54,11 @@ info = {
             ]
         },
     'description': 'PennyLane is a Python quantum machine learning library by Xanadu Inc.',
-    'long_description': open('README.rst').read(),
-    'long_description_content_type': "text/x-rst",
+    'long_description': open('README.md').read(),
+    'long_description_content_type': "text/markdown",
     'provides': ["pennylane"],
     'install_requires': requirements,
+    'extras_require': {'kernels': ['cvxpy', 'cvxopt']},
     'package_data': {'pennylane': ['devices/tests/pytest.ini']},
     'include_package_data': True
 }
@@ -72,9 +75,9 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
     "Programming Language :: Python",
     'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.6',
     'Programming Language :: Python :: 3.7',
     'Programming Language :: Python :: 3.8',
+    'Programming Language :: Python :: 3.9',
     'Programming Language :: Python :: 3 :: Only',
     "Topic :: Scientific/Engineering :: Physics"
 ]

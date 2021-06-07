@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -58,6 +58,10 @@ class AmplitudeDamping(Channel):
     @classmethod
     def _kraus_matrices(cls, *params):
         gamma = params[0]
+
+        if not 0.0 <= gamma <= 1.0:
+            raise ValueError("gamma must be between [0,1].")
+
         K0 = np.diag([1, np.sqrt(1 - gamma)])
         K1 = np.sqrt(gamma) * np.array([[0, 1], [0, 0]])
         return [K0, K1]
@@ -115,6 +119,13 @@ class GeneralizedAmplitudeDamping(Channel):
     @classmethod
     def _kraus_matrices(cls, *params):
         gamma, p = params
+
+        if not 0.0 <= gamma <= 1.0:
+            raise ValueError("gamma must be between [0,1].")
+
+        if not 0.0 <= p <= 1.0:
+            raise ValueError("p must be between [0,1].")
+
         K0 = np.sqrt(p) * np.diag([1, np.sqrt(1 - gamma)])
         K1 = np.sqrt(p) * np.sqrt(gamma) * np.array([[0, 1], [0, 0]])
         K2 = np.sqrt(1 - p) * np.diag([np.sqrt(1 - gamma), 1])
@@ -161,6 +172,10 @@ class PhaseDamping(Channel):
     @classmethod
     def _kraus_matrices(cls, *params):
         gamma = params[0]
+
+        if not 0.0 <= gamma <= 1.0:
+            raise ValueError("gamma must be between [0,1].")
+
         K0 = np.diag([1, np.sqrt(1 - gamma)])
         K1 = np.diag([0, np.sqrt(gamma)])
         return [K0, K1]
@@ -211,16 +226,190 @@ class DepolarizingChannel(Channel):
     num_params = 1
     num_wires = 1
     par_domain = "R"
-    grad_method = "F"
+    grad_method = "A"
+    grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
 
     @classmethod
     def _kraus_matrices(cls, *params):
         p = params[0]
+
+        if not 0.0 <= p <= 1.0:
+            raise ValueError("p must be between [0,1]")
+
         K0 = np.sqrt(1 - p) * np.eye(2)
         K1 = np.sqrt(p / 3) * np.array([[0, 1], [1, 0]])
         K2 = np.sqrt(p / 3) * np.array([[0, -1j], [1j, 0]])
         K3 = np.sqrt(p / 3) * np.array([[1, 0], [0, -1]])
         return [K0, K1, K2, K3]
+
+
+class BitFlip(Channel):
+    r"""BitFlip(p, wires)
+    Single-qubit bit flip (Pauli :math:`X`) error channel.
+
+    This channel is modelled by the following Kraus matrices:
+
+    .. math::
+        K_0 = \sqrt{1-p} \begin{bmatrix}
+                1 & 0 \\
+                0 & 1
+                \end{bmatrix}
+
+    .. math::
+        K_1 = \sqrt{p}\begin{bmatrix}
+                0 & 1  \\
+                1 & 0
+                \end{bmatrix}
+
+    where :math:`p \in [0, 1]` is the probability of a bit flip (Pauli :math:`X` error).
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 1
+
+    Args:
+        p (float): The probability that a bit flip error occurs.
+        wires (Sequence[int] or int): the wire the channel acts on
+    """
+    num_params = 1
+    num_wires = 1
+    par_domain = "R"
+    grad_method = "A"
+    grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
+
+    @classmethod
+    def _kraus_matrices(cls, *params):
+        p = params[0]
+
+        if not 0.0 <= p <= 1.0:
+            raise ValueError("p must be between [0,1]")
+
+        K0 = np.sqrt(1 - p) * np.eye(2)
+        K1 = np.sqrt(p) * np.array([[0, 1], [1, 0]])
+        return [K0, K1]
+
+
+class ResetError(Channel):
+    r"""ResetError(p_0, p_1, wires)
+    Single-qubit Reset error channel.
+
+    This channel is modelled by the following Kraus matrices:
+
+    .. math::
+        K_0 = \sqrt{1-p_0-p_1} \begin{bmatrix}
+                1 & 0 \\
+                0 & 1
+                \end{bmatrix}
+
+    .. math::
+        K_1 = \sqrt{p_0}\begin{bmatrix}
+                1 & 0  \\
+                0 & 0
+                \end{bmatrix}
+
+    .. math::
+        K_2 = \sqrt{p_0}\begin{bmatrix}
+                0 & 1  \\
+                0 & 0
+                \end{bmatrix}
+
+    .. math::
+        K_3 = \sqrt{p_1}\begin{bmatrix}
+                0 & 0  \\
+                1 & 0
+                \end{bmatrix}
+
+    .. math::
+        K_4 = \sqrt{p_1}\begin{bmatrix}
+                0 & 0  \\
+                0 & 1
+                \end{bmatrix}
+
+    where :math:`p_0 \in [0, 1]` is the probability of a reset to 0,
+    and :math:`p_1 \in [0, 1]` is the probability of a reset to 1 error.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 2
+
+    Args:
+        p_0 (float): The probability that a reset to 0 error occurs.
+        p_1 (float): The probability that a reset to 1 error occurs.
+        wires (Sequence[int] or int): the wire the channel acts on
+    """
+    num_params = 2
+    num_wires = 1
+    par_domain = "R"
+    grad_method = "F"
+
+    @classmethod
+    def _kraus_matrices(cls, *params):
+        p_0, p_1 = params[0], params[1]
+
+        if not 0.0 <= p_0 <= 1.0:
+            raise ValueError("p_0 must be between [0,1]")
+
+        if not 0.0 <= p_1 <= 1.0:
+            raise ValueError("p_1 must be between [0,1]")
+
+        if not 0.0 <= p_0 + p_1 <= 1.0:
+            raise ValueError("p_0 + p_1 must be between [0,1]")
+
+        K0 = np.sqrt(1 - p_0 - p_1) * np.eye(2)
+        K1 = np.sqrt(p_0) * np.array([[1, 0], [0, 0]])
+        K2 = np.sqrt(p_0) * np.array([[0, 1], [0, 0]])
+        K3 = np.sqrt(p_1) * np.array([[0, 0], [1, 0]])
+        K4 = np.sqrt(p_1) * np.array([[0, 0], [0, 1]])
+        return [K0, K1, K2, K3, K4]
+
+
+class PhaseFlip(Channel):
+    r"""PhaseFlip(p, wires)
+    Single-qubit bit flip (Pauli :math:`Z`) error channel.
+
+    This channel is modelled by the following Kraus matrices:
+
+    .. math::
+        K_0 = \sqrt{1-p} \begin{bmatrix}
+                1 & 0 \\
+                0 & 1
+                \end{bmatrix}
+
+    .. math::
+        K_1 = \sqrt{p}\begin{bmatrix}
+                1 & 0  \\
+                0 & -1
+                \end{bmatrix}
+
+    where :math:`p \in [0, 1]` is the probability of a phase flip (Pauli :math:`Z`) error.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 1
+
+    Args:
+        p (float): The probability that a phase flip error occurs.
+        wires (Sequence[int] or int): the wire the channel acts on
+    """
+    num_params = 1
+    num_wires = 1
+    par_domain = "R"
+    grad_method = "A"
+    grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
+
+    @classmethod
+    def _kraus_matrices(cls, *params):
+        p = params[0]
+
+        if not 0.0 <= p <= 1.0:
+            raise ValueError("p must be between [0,1]")
+
+        K0 = np.sqrt(1 - p) * np.eye(2)
+        K1 = np.sqrt(p) * np.array([[1, 0], [0, -1]])
+        return [K0, K1]
 
 
 class QubitChannel(Channel):
@@ -282,6 +471,9 @@ __qubit_channels__ = {
     "GeneralizedAmplitudeDamping",
     "PhaseDamping",
     "DepolarizingChannel",
+    "BitFlip",
+    "PhaseFlip",
+    "ResetError",
     "QubitChannel",
 }
 

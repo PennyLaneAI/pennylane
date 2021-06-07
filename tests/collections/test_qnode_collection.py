@@ -39,9 +39,6 @@ except ImportError as e:
     Variable = None
 
 
-pytestmark = pytest.mark.usefixtures("tape_mode")
-
-
 class TestConstruction:
     """Tests for the QNodeCollection construction"""
 
@@ -258,7 +255,9 @@ class TestEvalation:
         """Test correct gradient of the QNodeCollection using
         the tf interface"""
         if parallel and qml.tape_mode_active():
-            pytest.skip("There appears to be a race condition when constructing TF tapes in parallel")
+            pytest.skip(
+                "There appears to be a race condition when constructing TF tapes in parallel"
+            )
 
         qnode1, qnode2 = qnodes
 

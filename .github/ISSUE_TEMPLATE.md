@@ -4,7 +4,7 @@ Search existing GitHub issues to make sure the issue does not already exist:
 https://github.com/xanaduai/pennylane/issues
 
 If posting a PennyLane issue, delete everything above the dashed line, and fill
-in the template.
+in the template. If the issue is a bug, start the title of the issue with [BUG].
 
 If making a feature request, delete the following template and describe, in detail,
 the feature and why it is needed.

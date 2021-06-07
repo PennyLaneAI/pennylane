@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -85,8 +85,8 @@ class DefaultTensor(Device):
         wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
             or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
             or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
-        shots (int): Number of circuit evaluations/random samples to return when sampling from the device.
-            Defaults to 1000 if not specified.
+        shots (None, int): Number of circuit evaluations/random samples to return when sampling from the device.
+            Defaults to ``None`` if not specified, which means that the device returns analytical results.
         representation (str): Underlying representation used for the tensor network simulation.
             Valid options are "exact" (no approximations made) or "mps" (simulated quantum
             state is approximated as a Matrix Product State).
@@ -99,8 +99,8 @@ class DefaultTensor(Device):
     # pylint: disable=attribute-defined-outside-init
     name = "PennyLane TensorNetwork simulator plugin"
     short_name = "default.tensor"
-    pennylane_requires = "0.13"
-    version = "0.13.0"
+    pennylane_requires = "0.16"
+    version = "0.16.0"
     author = "Xanadu Inc."
 
     _operation_map = {
@@ -153,7 +153,7 @@ class DefaultTensor(Device):
 
     _zero_state = np.array([1.0, 0.0], dtype=C_DTYPE)
 
-    def __init__(self, wires, shots=1000, representation="exact", contraction_method="auto"):
+    def __init__(self, wires, shots=None, representation="exact", contraction_method="auto"):
         super().__init__(wires, shots)
         if representation not in ["exact", "mps"]:
             raise ValueError("Invalid representation. Must be one of 'exact' or 'mps'.")
@@ -164,7 +164,6 @@ class DefaultTensor(Device):
         self._rep = representation
         self._contraction_method = contraction_method
         self.reset()
-        self.analytic = False
 
     @classmethod
     def capabilities(cls):
@@ -212,7 +211,7 @@ class DefaultTensor(Device):
         Returns:
             tn.Node: the newly created node
         """
-        name = "{}{}".format(name, wires.labels)
+        name = "{}{}".format(name, (tuple([wires]) if isinstance(wires, int) else wires.labels))
         if isinstance(A, tn.Node):
             A.set_name(name)
             A.backend = self.backend
@@ -551,7 +550,7 @@ class DefaultTensor(Device):
                 tn.connect(obs_node[input_idx], ket[l])  # A|psi>
                 tn.connect(bra[l], obs_node[output_idx])  # <psi|A
 
-        meas_device_wires = Wires(meas_device_wires)
+        meas_device_wires = Wires.all_wires(meas_device_wires)
 
         # unmeasured wires are contracted directly between bra and ket
         unmeasured_device_wires = Wires.unique_wires([all_device_wires, meas_device_wires])

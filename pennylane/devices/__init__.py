@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ to verify and test quantum gradient computations.
     :toctree: api
 
     default_qubit
+    default_qubit_jax
     default_qubit_tf
     default_qubit_autograd
     default_gaussian

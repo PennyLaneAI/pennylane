@@ -17,12 +17,12 @@ with open("pennylane_qchem/_version.py") as f:
     version = f.readlines()[-1].split()[-1].strip("\"'")
 
 requirements = [
-    "pennylane>=0.12",
-    "scipy<1.5",
-    "openfermion",
-    "openfermionpyscf; platform_system != 'Windows'",
-    "openfermionpsi4",
-    "pyscf; platform_system != 'Windows'",
+    "pennylane>=0.13",
+    "scipy",
+    "openfermion>=1.0",
+    "openfermionpyscf>=0.5; platform_system != 'Windows'",
+    "openfermionpsi4>=0.5",
+    "pyscf>=1.7.2; platform_system != 'Windows'",
 ]
 
 info = {
@@ -51,9 +51,9 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.6",
     "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Scientific/Engineering :: Physics",
 ]

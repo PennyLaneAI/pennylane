@@ -24,8 +24,6 @@ from pennylane.qnn.torch import TorchLayer
 
 torch = pytest.importorskip("torch")
 
-pytestmark = pytest.mark.usefixtures("tape_mode")
-
 
 def indices_up_to(n_max):
     """Returns an iterator over the number of qubits and output dimension, up to value n_max.
@@ -128,33 +126,8 @@ class TestTorchLayer:
             TorchLayer(circuit, weight_shapes)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_var_keyword(self, get_circuit, monkeypatch):
-        """Test if a TypeError is raised when instantiated with a variable number of keyword
-        arguments"""
-        if qml.tape_mode_active():
-            pytest.skip("This functionality is supported in tape mode.")
-
-        c, w = get_circuit
-
-        class FuncPatch:
-            """Patch for variable number of keyword arguments"""
-
-            sig = c.func.sig
-            var_pos = False
-            var_keyword = True
-
-        with monkeypatch.context() as m:
-            m.setattr(c, "func", FuncPatch)
-
-            with pytest.raises(TypeError, match="Cannot have a variable number of keyword"):
-                TorchLayer(c, w)
-
-    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_var_keyword_tape_mode(self, n_qubits, output_dim):
-        """Test that variable number of keyword arguments works in tape mode"""
-        if not qml.tape_mode_active():
-            pytest.skip("This functionality is only supported in tape mode.")
-
+    def test_var_keyword(self, n_qubits, output_dim):
+        """Test that variable number of keyword arguments works"""
         dev = qml.device("default.qubit", wires=n_qubits)
         w = {
             "w1": (3, n_qubits, 3),
@@ -202,32 +175,9 @@ class TestTorchLayer:
             assert kwargs["b"] == 2 * math.pi
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_non_input_defaults(self, get_circuit, n_qubits):
-        """Test if a TypeError is raised when default arguments that are not the input argument are
-        present in the QNode"""
-        if qml.tape_mode_active():
-            pytest.skip("This functionality is supported in tape mode.")
-
-        c, w = get_circuit
-
-        @qml.qnode(qml.device("default.qubit", wires=n_qubits), interface="torch")
-        def c_dummy(inputs, w1, w2, w3, w4, w5, w6, w7, w8=None):
-            """Dummy version of the circuit with a default argument"""
-            return c(inputs, w1, w2, w3, w4, w5, w6, w7)
-
-        with pytest.raises(
-            TypeError,
-            match="Only the argument {} is permitted".format(qml.qnn.torch.TorchLayer._input_arg),
-        ):
-            TorchLayer(c_dummy, {**w, **{"w8": 1}})
-
-    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_non_input_defaults_tape_mode(self, n_qubits, output_dim):
+    def test_non_input_defaults(self, n_qubits, output_dim):
         """Test that everything works when default arguments that are not the input argument are
-        present in the QNode in tape mode"""
-        if not qml.tape_mode_active():
-            pytest.skip("This functionality is only supported in tape mode.")
-
+        present in the QNode"""
         dev = qml.device("default.qubit", wires=n_qubits)
         w = {
             "w1": (3, n_qubits, 3),
@@ -383,7 +333,28 @@ class TestTorchLayer:
         x = torch.Tensor(np.ones((2, n_qubits)))
 
         layer_out = layer.forward(x)
+
         assert layer_out.shape == torch.Size((2, output_dim))
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
+    @pytest.mark.parametrize("batch_size", [2, 4, 6])
+    @pytest.mark.parametrize("middle_dim", [2, 5, 8])
+    def test_forward_broadcasting(self, get_circuit, output_dim, middle_dim, batch_size, n_qubits):
+        """Test if the forward() method accepts a batched input with multiple dimensions and returns a tensor of the
+        right shape by broadcasting. Also tests if gradients are still backpropagated correctly."""
+        c, w = get_circuit
+        layer = TorchLayer(c, w)
+        x = torch.Tensor(np.ones((batch_size, middle_dim, n_qubits)))
+
+        weights = layer.qnode_weights.values()
+
+        layer_out = layer.forward(x)
+        layer_out.backward(torch.ones_like(layer_out))
+
+        g_layer = [w.grad for w in weights]
+
+        assert g_layer.count(None) == 0
+        assert layer_out.shape == torch.Size((batch_size, middle_dim, output_dim))
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_str_repr(self, get_circuit):
@@ -418,6 +389,33 @@ class TestTorchLayer:
             assert torch.allclose(g1, g2)
         assert len(weights) == len(list(layer.parameters()))
 
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
+    def test_cuda_backward(self):
+        """Test if TorchLayer can be run on GPU"""
+        if not torch.cuda.is_available():
+            pytest.skip("Cuda device not available")
+        else:
+            try:
+                n_qubits = 4
+                dev = qml.device("default.qubit", wires=n_qubits)
+
+                @qml.qnode(dev, interface="torch")
+                def circuit(inputs, weights):
+                    qml.templates.AngleEmbedding(inputs, wires=range(n_qubits))
+                    qml.templates.BasicEntanglerLayers(weights, wires=range(n_qubits))
+                    return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_qubits)]
+
+                n_layers = 1
+                weight_shapes = {"weights": (n_layers, n_qubits)}
+
+                qlayer = qml.qnn.TorchLayer(circuit, weight_shapes)
+
+                x = torch.rand((5, n_qubits), dtype=torch.float64).to(torch.device("cuda"))
+                loss = torch.sum(qlayer(x)).squeeze()
+                loss.backward()
+            except Exception:
+                pytest.fail("Exception raised in torch CUDA backward")
+
 
 @pytest.mark.parametrize("interface", ["autograd", "torch", "tf"])
 @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
@@ -451,7 +449,6 @@ class TestTorchLayerIntegration:
         x = torch.zeros((batch_size, n_qubits)).type(dtype)
         y = torch.zeros((batch_size, output_dim)).type(dtype)
 
-
         params_before = [w.detach().clone() for w in module.parameters()]
 
         module_out = module(x)
@@ -462,9 +459,7 @@ class TestTorchLayerIntegration:
 
         params_after = [w.detach().clone() for w in module.parameters()]
 
-        params_similar = [
-            torch.allclose(p1, p2) for p1, p2 in zip(params_before, params_after)
-        ]
+        params_similar = [torch.allclose(p1, p2) for p1, p2 in zip(params_before, params_after)]
         assert not all(params_similar)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))

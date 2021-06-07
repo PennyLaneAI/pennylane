@@ -1,37 +1,119 @@
-# Release 0.13.0
+# Release 0.16.0-dev
 
-<h3>New features since last release</h3>
+<h3>New features</h3>
 
 <h3>Improvements</h3>
 
-* Many-body observables are now built from the FermionOperator representation of
+<h3>Bug fixes</h3>
+
+* Include tolerance in the``convert_observable`` function to check if the input QubitOperator
+  contains complex coefficients. This avoid raising an error if the coefficient's imaginary part is less than `2.22e-08`.
+  [(#1309)](https://github.com/PennyLaneAI/pennylane/pull/1309)
+
+* An error message is raised if a QubitOperator with complex coefficients is passed
+  to the ``convert_observable`` function. At present, the ``vqe.Hamiltonian`` class does not
+  support complex coefficients.
+  [(#1277)](https://github.com/PennyLaneAI/pennylane/pull/1277)
+
+<h3>Breaking changes</h3>
+
+<h3>Contributors</h3>
+
+This release contains contributions from (in alphabetical order):
+
+Alain Delgado Gran
+
+# Release 0.15.1
+
+<h3>Bug fixes</h3>
+
+* The version requirement for PySCF has been modified to allow for `pyscf>=1.7.2`.
+  [(#1254)](https://github.com/PennyLaneAI/pennylane/pull/1254)
+
+<h3>Contributors</h3>
+
+This release contains contributions from (in alphabetical order):
+
+Antal Száva.
+
+# Release 0.15.0
+
+<h3>Breaking changes</h3>
+
+* The molecular geometry is now stored by a list containing the atomic symbols and
+  a 1D array with the position of the atoms in atomic units.
+
+  - The `read_structure` function returns a list with the symbols of the atoms and
+    the array with the atomic positions. 
+
+  - The `meanfield` and `molecular_hamiltonian` functions take separately the
+    list of atomic symbols and the array with the atomic coordinates.
+
+  - Labelling the molecule is now optional as we have made `name` a keyword argument
+    in the `meanfield` and `molecular_hamiltonian` functions.
+
+    For example:
+
+    ```pycon
+    >>> symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.661, 0., 0., 0.661]))
+    >>> H, qubits = qml.qchem.molecular_hamiltonian(symbols, coordinates)
+    ```
+
+  This allows users to more easily build parametrized electronic Hamiltonians
+  [(#1078)](https://github.com/PennyLaneAI/pennylane/pull/1078)
+
+<h3>Contributors</h3>
+
+This release contains contributions from (in alphabetical order):
+
+Juan Miguel Arrazola, Alain Delgado Gran, Soran Jahangiri.
+
+
+# Release 0.13.1
+
+<h3>Bug fixes</h3>
+
+* Updates `PennyLane-QChem` to support the new OpenFermion v1.0 release.
+  [(#973)](https://github.com/PennyLaneAI/pennylane/pull/973)
+
+<h3>Contributors</h3>
+
+This release contains contributions from (in alphabetical order):
+
+Josh Izaac
+
+# Release 0.13.0
+
+<h3>Improvements</h3>
+
+* Many-body observables are now built from the OpenFermion `FermionOperator` representation of
   one-particle and two-particle second-quantized operators.
   [(#854)](https://github.com/PennyLaneAI/pennylane/pull/854)
 
   This improvement brings the following advantages:
 
-  - Extra tables to store the indices of the orbitals and the corresponding 
+  - Extra tables to store the indices of the orbitals and the corresponding
     matrix elements are not needed.
 
-  - The functions ``observable``, ``one_particle`` and ``two_particle`` are
+  - The functions `observable`, `one_particle` and `two_particle` are
     significantly simplified.
 
   - The methodology to build many-body observables in PL-QChem is more consistent.
 
-  - Users do not need to keep track of the contribution due to core orbitals
-    when an active space is defined. This is now handle internally.
-
-  - It makes the implementation of observables cleaner and easier to maintain. 
-
-<h3>Breaking changes</h3>
-
-<h3>Documentation</h3>
+  - There is no longer a need to keep track of the contribution due to core orbitals
+    when an active space is defined. This is now handled internally.
 
 <h3>Bug fixes</h3>
+
+* The `qchem._terms_to_qubit_operator` function is now updated to handle tensor products with
+  `Identity` observables.
+  [(#928)](https://github.com/PennyLaneAI/pennylane/pull/928)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
+
+Juan Miguel Arrazola, Alain Delgado Gran, Soran Jahangiri, Zeyue Niu.
 
 # Release 0.12.0
 

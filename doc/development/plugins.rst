@@ -141,13 +141,13 @@ following arguments:
   or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
   and/or strings (``['ancilla', 'q1', 'q2']``).
 
-* ``shots=1000`` (*int*): number of circuit evaluations/random samples used to estimate
-  expectation values of observables in non-analytic mode.
-
-* ``analytic=True`` (*bool*): If ``True``, the device calculates probability, expectation
-  values, and variances analytically. If ``False``, a finite number of samples
-  are used to estimate these quantities. Note that hardware devices should always set
-  ``analytic=False``.
+* ``shots=1000`` (*None*, *int* or *List[iint]*): number of circuit
+  evaluations/random samples used to estimate probabilities, expectation
+  values, variances  of observables in non-analytic mode. If ``None``, the device
+  calculates probability, expectation values, and variances analytically.  If an
+  integer, it specifies the number of samples to estimate these quantities.  If a
+  list of integers is passed, the circuit evaluations are batched over the list
+  of shots.
 
 To add your own device arguments, or to override any of the above defaults, simply
 overwrite the ``__init__.py`` method. For example, here is a device where the number
@@ -167,7 +167,7 @@ of low-level hardware control options:
         observables = {"PauliZ", "PauliX", "PauliY"}
 
         def __init__(self, shots=1024, hardware_options=None):
-            super().__init__(wires=24, shots=shots, analytic=False)
+            super().__init__(wires=24, shots=shots)
             self.hardware_options = hardware_options or hardware_defaults
 
 Note that we have also overridden the default shot number.
@@ -193,7 +193,7 @@ To execute operations on the device, the following methods **must** be defined:
 
     apply
 
-If the device is a statevector simulator (it has an ``analytic`` attribute)
+If the device is a statevector simulator (it can perform analytic computations when ``shots=None``)
 then it **must** also overwrite:
 
 .. autosummary::
@@ -241,7 +241,7 @@ your plugin which, by default, performs the following process:
     self.apply(circuit.operations, rotations=circuit.diagonalizing_gates)
 
     # generate computational basis samples
-    if (not self.analytic) or circuit.is_sampled:
+    if self.shots is not None or circuit.is_sampled:
         self._samples = self.generate_samples()
 
     # compute the required statistics
@@ -410,7 +410,7 @@ test utility:
 
 .. code-block:: console
 
-    pl-device-test --device device_shortname --shots 10000 --analytic False
+    pl-device-test --device device_shortname --shots 10000
 
 In general, as all supported operations have their gradient formula defined and tested by
 PennyLane, testing that your device calculates the correct gradients is not required.
@@ -466,21 +466,19 @@ where
 * :attr:`~.Operation.grad_method`: the gradient computation method; ``'A'`` for the analytic
   method, ``'F'`` for finite differences, and ``None`` if the operation may not be differentiated
 
-* :attr:`~.Operation.grad_recipe`: The gradient recipe for the analytic ``'A'`` method.
-  This is a list with one tuple per operation parameter. For parameter :math:`k`, the tuple is of
-  the form :math:`(c_k, s_k)`, resulting in a gradient recipe of
+* :attr:`~.Operation.grad_recipe`: The gradient recipe for the analytic ``'A'``
+  method. This is a tuple with one nested list per operation parameter. For
+  parameter :math:`\phi_k`, the nested list contains elements of the form
+  :math:`[c_i, a_i, s_i]`, resulting in a gradient recipe of
 
-  .. math:: \frac{d}{d\phi_k}f(O(\phi_k)) = c_k\left[f(O(\phi_k+s_k))-f(O(\phi_k-s_k))\right].
+  .. math:: \frac{\partial}{\partial\phi_k}f(\phi_k) = \sum_{i} c_i f(a_i \phi_k+s_i),
 
-  where :math:`f` is an expectation value that depends on :math:`O(\phi_k)`, an example being
+  where :math:`f` is the expectation value of an observable on a circuit that has been evolved by
+  the operation being considered with parameter :math:`\phi_k`.
 
-  .. math:: f(O(\phi_k)) = \braket{0 | O^{\dagger}(\phi_k) \hat{B} O(\phi_k) | 0}
-
-  which is the simple expectation value of the operator :math:`\hat{B}` evolved via the gate
-  :math:`O(\phi_k)`.
-
-  Note that if ``grad_recipe = None``, the default gradient recipe is
-  :math:`(c_k, s_k)=(1/2, \pi/2)` for every parameter.
+  Note that if ``grad_recipe = None``, the default gradient recipe containing
+  the two terms :math:`[c_0, a_0, s_0]=[1/2, 1, \pi/2]` and :math:`[c_1, a_1,
+  s_1]=[-1/2, 1, -\pi/2]` is assumed for every parameter.
 
 The user can then import this operation directly from your plugin, and use it when defining a QNode:
 

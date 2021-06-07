@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -42,9 +42,9 @@ def sum(x):
     This is a lazy summation --- no QNode evaluation has yet occured. Evaluation
     only occurs when the returned function ``cost`` is evaluated:
 
-    >>> x = qml.init.strong_ent_layers_normal(3, 2)
+    >>> x = qml.init.strong_ent_layers_normal(3, 2, seed=42)
     >>> cost(x)
-    tensor(0.9092, dtype=torch.float64, grad_fn=<SumBackward0>)
+    tensor(0.9177, dtype=torch.float64)
     """
     if hasattr(x, "interface") and x.interface is not None:
         if x.interface == "tf":
@@ -61,6 +61,11 @@ def sum(x):
             from autograd import numpy as np
 
             return apply(np.sum, x)
+
+        if x.interface == "jax":
+            import jax.numpy as jnp
+
+            return apply(jnp.sum, x)
 
         raise ValueError("Unknown interface {}".format(x.interface))
 

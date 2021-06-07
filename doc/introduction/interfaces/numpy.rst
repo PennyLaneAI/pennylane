@@ -326,3 +326,53 @@ of supported and unsupported features. We highlight a few of the major 'gotchas'
 ..
 
 - Some ``isinstance`` checks, like ``isinstance(x, np.ndarray)`` or ``isinstance(x, tuple)``, without first doing ``from autograd.builtins import isinstance, tuple``.
+
+
+SciPy Optimization
+------------------
+
+In addition to using autodifferentiation provided by Autograd, the NumPy interface
+also allows QNodes to be optimized directly using the
+`SciPy optimize <https://docs.scipy.org/doc/scipy/reference/optimize.html>`__ module.
+
+Simply pass the QNode, or your hybrid cost function containing QNodes, directly
+to the ``scipy.minimize`` function:
+
+.. code-block:: python
+
+    from scipy.optimize import minimize
+
+    dev = qml.device('default.qubit', wires=2)
+
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.RX(x[0], wires=0)
+        qml.RZ(x[1], wires=1)
+        qml.CNOT(wires=[0, 1])
+        qml.RX(x[2], wires=0)
+        return qml.expval(qml.PauliZ(0))
+
+    def cost(x):
+        return np.abs(circuit(x) - 0.5) ** 2
+
+    params = np.array([0.011, 0.012, 0.05])
+
+    minimize(cost, params, method='BFGS')
+
+Some of the SciPy minimization methods require information about the gradient
+of the cost function via the ``jac`` keyword argument. This is easy to include; we
+can simply create a function that computes the gradient using ``qml.grad``:
+
+>>> minimize(cost, params, method='BFGS', jac=qml.grad(cost))
+      fun: 6.3491130264451484e-18
+ hess_inv: array([[ 1.85642354e+00, -8.84954187e-22,  3.89539943e+00],
+       [-8.84954187e-22,  1.00000000e+00, -4.02571211e-21],
+       [ 3.89539943e+00, -4.02571211e-21,  1.87180282e+01]])
+      jac: array([5.81636983e-10, 3.23117427e-27, 4.21456861e-09])
+  message: 'Optimization terminated successfully.'
+     nfev: 8
+      nit: 2
+     njev: 8
+   status: 0
+  success: True
+        x: array([0.22685818, 0.012     , 1.03194789])

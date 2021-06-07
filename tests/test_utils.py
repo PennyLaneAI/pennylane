@@ -22,7 +22,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-import pennylane._queuing
+import pennylane.queuing
 import pennylane.utils as pu
 
 from pennylane import Identity, PauliX, PauliY, PauliZ
@@ -82,7 +82,8 @@ class TestDecomposition:
         """Tests that an exception is raised if the Hamiltonian does not have
         the correct shape"""
         with pytest.raises(
-            ValueError, match="The Hamiltonian should have shape",
+            ValueError,
+            match="The Hamiltonian should have shape",
         ):
             pu.decompose_hamiltonian(hamiltonian)
 
@@ -166,7 +167,7 @@ class TestFlatten:
 
     def test_unflatten_error_too_many_elements(self):
         """Tests that unflatten raises an error if the given iterable has
-           more elements than the model"""
+        more elements than the model"""
 
         reshaped = np.reshape(flat_dummy_array, (16, 2, 2))
 
@@ -203,7 +204,8 @@ class TestPauliEigs:
     def test_correct_eigenvalues_pauli_kronecker_products_three_qubits(self, pauli_product):
         """Test the paulieigs function for three qubits"""
         assert np.array_equal(
-            pu.pauli_eigs(3), np.diag(np.kron(self.pauliz, np.kron(self.pauliz, self.pauliz)))
+            pu.pauli_eigs(3),
+            np.diag(np.kron(self.pauliz, np.kron(self.pauliz, self.pauliz))),
         )
 
     @pytest.mark.parametrize("depth", list(range(1, 6)))
@@ -238,7 +240,12 @@ class TestArgumentHelpers:
             pass
 
         res = pu._get_default_args(dummy_func)
-        expected = {"c": (2, 8), "d": (3, [0, 0.65]), "e": (4, np.array([4])), "f": (5, None)}
+        expected = {
+            "c": (2, 8),
+            "d": (3, [0, 0.65]),
+            "e": (4, np.array([4])),
+            "f": (5, None),
+        }
 
         assert res == expected
 
@@ -327,7 +334,8 @@ class TestExpand:
     def test_expand_invalid_wires(self):
         """test exception raised if unphysical subsystems provided."""
         with pytest.raises(
-            ValueError, match="Invalid target subsystems provided in 'original_wires' argument"
+            ValueError,
+            match="Invalid target subsystems provided in 'original_wires' argument",
         ):
             pu.expand(U2, [-1, 5], 4)
 
@@ -439,7 +447,8 @@ class TestExpand:
     def test_expand_vector_invalid_wires(self):
         """Test exception raised if unphysical subsystems provided."""
         with pytest.raises(
-            ValueError, match="Invalid target subsystems provided in 'original_wires' argument"
+            ValueError,
+            match="Invalid target subsystems provided in 'original_wires' argument",
         ):
             pu.expand_vector(TestExpand.VECTOR2, [-1, 5], 4)
 
@@ -462,8 +471,8 @@ def inverted_dummy_template_operations(wires):
     ops = []
 
     for wire in reversed(wires):
-        ops.append(qml.RY(-1, wires=[wire]).inv())
-        ops.append(qml.RX(1, wires=[wire]).inv())
+        ops.append(qml.RY(1, wires=[wire]))
+        ops.append(qml.RX(-1, wires=[wire]))
 
     return ops
 
@@ -473,10 +482,10 @@ class TestInv:
 
     def test_inversion_without_context(self):
         """Test that a sequence of operations is properly inverted."""
-        op_queue = [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
-        inv_queue = [qml.PauliZ(0).inv(), qml.PauliY(0).inv(), qml.PauliX(0).inv()]
+        op_queue = [qml.PauliX(0), qml.PauliY(0).inv(), qml.PauliZ(0)]
+        inv_queue = [qml.PauliZ(0), qml.PauliY(0), qml.PauliX(0)]
 
-        inv_ops = pu.inv(op_queue)
+        inv_ops = pu.inv(op_queue).operations
 
         for inv_op, exp_op in zip(inv_ops, inv_queue):
             assert inv_op.name == exp_op.name
@@ -487,7 +496,7 @@ class TestInv:
         """Test that a template is properly inverted."""
         inv_queue = inverted_dummy_template_operations([0, 1, 2])
 
-        inv_ops = pu.inv(dummy_template([0, 1, 2]))
+        inv_ops = pu.inv(dummy_template([0, 1, 2])).operations
 
         for inv_op, exp_op in zip(inv_ops, inv_queue):
             assert inv_op.name == exp_op.name
@@ -498,7 +507,7 @@ class TestInv:
         """Test that inverting twice changes nothing."""
         op_queue = [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
 
-        inv_inv_ops = pu.inv(pu.inv(op_queue))
+        inv_inv_ops = pu.inv(pu.inv(op_queue)).operations
 
         for inv_inv_op, exp_op in zip(inv_inv_ops, op_queue):
             assert inv_inv_op.name == exp_op.name
@@ -507,7 +516,7 @@ class TestInv:
 
     def test_template_double_inversion(self):
         """Test that inverting twice changes nothing for a template."""
-        inv_inv_ops = pu.inv(pu.inv(dummy_template([0, 1, 2])))
+        inv_inv_ops = pu.inv(pu.inv(dummy_template([0, 1, 2]))).operations
 
         for inv_inv_op, exp_op in zip(inv_inv_ops, dummy_template([0, 1, 2])):
             assert inv_inv_op.name == exp_op.name
@@ -516,7 +525,7 @@ class TestInv:
 
     def test_inversion_with_context(self):
         """Test that a sequence of operations is properly inverted when a context is present."""
-        with pennylane._queuing.OperationRecorder() as rec:
+        with pennylane.tape.OperationRecorder() as rec:
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
             pu.inv([qml.RX(1, wires=[0]), qml.RY(2, wires=[0]), qml.RZ(3, wires=[0])])
@@ -526,9 +535,9 @@ class TestInv:
         inv_queue = [
             qml.Hadamard(wires=[0]),
             qml.CNOT(wires=[0, 1]),
-            qml.RZ(3, wires=[0]).inv(),
-            qml.RY(2, wires=[0]).inv(),
-            qml.RX(1, wires=[0]).inv(),
+            qml.RZ(-3, wires=[0]),
+            qml.RY(-2, wires=[0]),
+            qml.RX(-1, wires=[0]),
             qml.CNOT(wires=[0, 1]),
             qml.Hadamard(wires=[0]),
         ]
@@ -543,7 +552,7 @@ class TestInv:
         Test that this also works for operations that were not queued."""
         inv_ops = [qml.RX(1, wires=[0]), qml.RY(2, wires=[0]), qml.RZ(3, wires=[0])]
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with pennylane.tape.OperationRecorder() as rec:
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
             pu.inv(inv_ops)
@@ -553,9 +562,9 @@ class TestInv:
         inv_queue = [
             qml.Hadamard(wires=[0]),
             qml.CNOT(wires=[0, 1]),
-            qml.RZ(3, wires=[0]).inv(),
-            qml.RY(2, wires=[0]).inv(),
-            qml.RX(1, wires=[0]).inv(),
+            qml.RZ(-3, wires=[0]),
+            qml.RY(-2, wires=[0]),
+            qml.RX(-1, wires=[0]),
             qml.CNOT(wires=[0, 1]),
             qml.Hadamard(wires=[0]),
         ]
@@ -571,7 +580,7 @@ class TestInv:
         X0 = qml.PauliX(0)
         Z0 = qml.PauliZ(0)
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with pennylane.tape.OperationRecorder() as rec:
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
             pu.inv([X0, qml.RX(1, wires=[0]), Z0, qml.RY(2, wires=[0])])
@@ -581,10 +590,10 @@ class TestInv:
         inv_queue = [
             qml.Hadamard(wires=[0]),
             qml.CNOT(wires=[0, 1]),
-            qml.RY(2, wires=[0]).inv(),
-            qml.PauliZ(0).inv(),
-            qml.RX(1, wires=[0]).inv(),
-            qml.PauliX(0).inv(),
+            qml.RY(-2, wires=[0]),
+            qml.PauliZ(0),
+            qml.RX(-1, wires=[0]),
+            qml.PauliX(0),
             qml.CNOT(wires=[0, 1]),
             qml.Hadamard(wires=[0]),
         ]
@@ -600,8 +609,8 @@ class TestInv:
         X0 = qml.PauliX(0)
         Z0 = qml.PauliZ(0)
 
-        with pennylane._queuing.OperationRecorder() as rec1:
-            with pennylane._queuing.OperationRecorder() as rec2:
+        with pennylane.tape.OperationRecorder() as rec1:
+            with pennylane.tape.OperationRecorder() as rec2:
                 qml.Hadamard(wires=[0])
                 qml.CNOT(wires=[0, 1])
                 pu.inv([X0, qml.RX(1, wires=[0]), Z0, qml.RY(2, wires=[0])])
@@ -611,10 +620,10 @@ class TestInv:
         inv_queue = [
             qml.Hadamard(wires=[0]),
             qml.CNOT(wires=[0, 1]),
-            qml.RY(2, wires=[0]).inv(),
-            qml.PauliZ(0).inv(),
-            qml.RX(1, wires=[0]).inv(),
-            qml.PauliX(0).inv(),
+            qml.RY(-2, wires=[0]),
+            qml.PauliZ(0),
+            qml.RX(-1, wires=[0]),
+            qml.PauliX(0),
             qml.CNOT(wires=[0, 1]),
             qml.Hadamard(wires=[0]),
         ]
@@ -631,7 +640,7 @@ class TestInv:
 
     def test_template_inversion_with_context(self):
         """Test that a template is properly inverted when a context is present."""
-        with pennylane._queuing.OperationRecorder() as rec:
+        with pennylane.tape.OperationRecorder() as rec:
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
             pu.inv(dummy_template([0, 1, 2]))
@@ -668,16 +677,16 @@ class TestInv:
         inv_queue = [
             qml.Hadamard(wires=[0]),
             qml.CNOT(wires=[0, 1]),
-            qml.RZ(3, wires=[0]).inv(),
-            qml.RY(2, wires=[0]).inv(),
-            qml.RX(1, wires=[0]).inv(),
+            qml.RZ(-3, wires=[0]),
+            qml.RY(-2, wires=[0]),
+            qml.RX(-1, wires=[0]),
             qml.CNOT(wires=[0, 1]),
             qml.Hadamard(wires=[0]),
         ]
 
         qfunc()
 
-        for inv_op, exp_op in zip(qfunc.ops, inv_queue):
+        for inv_op, exp_op in zip(qfunc.qtape.operations, inv_queue):
             assert inv_op.name == exp_op.name
             assert inv_op.wires == exp_op.wires
             assert inv_op.data == exp_op.data
@@ -702,16 +711,16 @@ class TestInv:
         inv_queue = [
             qml.Hadamard(wires=[0]),
             qml.CNOT(wires=[0, 1]),
-            qml.RZ(3, wires=[0]).inv(),
-            qml.RY(2, wires=[0]).inv(),
-            qml.RX(1, wires=[0]).inv(),
+            qml.RZ(-3, wires=[0]),
+            qml.RY(-2, wires=[0]),
+            qml.RX(-1, wires=[0]),
             qml.CNOT(wires=[0, 1]),
             qml.Hadamard(wires=[0]),
         ]
 
         qfunc()
 
-        for inv_op, exp_op in zip(qfunc.ops, inv_queue):
+        for inv_op, exp_op in zip(qfunc.qtape.operations, inv_queue):
             assert inv_op.name == exp_op.name
             assert inv_op.wires == exp_op.wires
             assert inv_op.data == exp_op.data
@@ -736,17 +745,17 @@ class TestInv:
         inv_queue = [
             qml.Hadamard(wires=[0]),
             qml.CNOT(wires=[0, 1]),
-            qml.RY(2, wires=[0]).inv(),
-            qml.PauliZ(0).inv(),
-            qml.RX(1, wires=[0]).inv(),
-            qml.PauliX(0).inv(),
+            qml.RY(-2, wires=[0]),
+            qml.PauliZ(0),
+            qml.RX(-1, wires=[0]),
+            qml.PauliX(0),
             qml.CNOT(wires=[0, 1]),
             qml.Hadamard(wires=[0]),
         ]
 
         qfunc()
 
-        for inv_op, exp_op in zip(qfunc.ops, inv_queue):
+        for inv_op, exp_op in zip(qfunc.qtape.operations, inv_queue):
             assert inv_op.name == exp_op.name
             assert inv_op.wires == exp_op.wires
             assert inv_op.data == exp_op.data
@@ -775,17 +784,17 @@ class TestInv:
 
         qfunc()
 
-        for inv_op, exp_op in zip(qfunc.ops, inv_queue):
+        for inv_op, exp_op in zip(qfunc.qtape.operations, inv_queue):
             assert inv_op.name == exp_op.name
             assert inv_op.wires == exp_op.wires
             assert inv_op.data == exp_op.data
 
     def test_argument_wrapping(self):
         """Test that a single operation can be given to inv and is properly inverted."""
-        op = qml.PauliX(0)
-        exp_op = qml.PauliX(0).inv()
+        op = qml.RX(0.1, wires=0)
+        exp_op = qml.RX(-0.1, wires=0)
 
-        inv_ops = pu.inv(op)
+        inv_ops = pu.inv(op).operations
 
         assert inv_ops[0].name == exp_op.name
         assert inv_ops[0].wires == exp_op.wires
@@ -813,14 +822,57 @@ class TestInv:
             return x
 
         with pytest.raises(
-            ValueError, match="A function was passed as an argument to inv. ",
+            ValueError,
+            match="A function was passed as an argument to inv. ",
         ):
             pu.inv(func)
 
-    @pytest.mark.parametrize("arg", [[1, 2, 3], [qml.PauliX(0), qml.PauliY(1), "Test"], "Test",])
+    @pytest.mark.parametrize(
+        "arg",
+        [
+            [1, 2, 3],
+            [qml.PauliX(0), qml.PauliY(1), "Test"],
+            "Test",
+        ],
+    )
     def test_non_operations_in_list(self, arg):
         """Test that the proper error is raised when the argument does not only contain operations."""
         with pytest.raises(
-            ValueError, match="The given operation_list does not only contain Operations"
+            ValueError,
+            match="The given operation_list does not only contain Operations",
         ):
             pu.inv(arg)
+
+    def test_warning(self):
+        """Test that the warning is generated."""
+
+        with pytest.warns(
+            UserWarning,
+            match=r"Use of qml\.inv\(\) is deprecated and should be replaced with qml\.adjoint\(\)\.",
+        ):
+            qml.inv(qml.Hadamard(wires=[0]))
+
+
+class TestFrobeniusInnerProduct:
+    @pytest.mark.parametrize(
+        "A,B,normalize,expected",
+        [
+            (np.eye(2), np.eye(2), False, 2.0),
+            (np.eye(2), np.zeros((2, 2)), False, 0.0),
+            (
+                np.array([[1.0, 2.3], [-1.3, 2.4]]),
+                np.array([[0.7, -7.3], [-1.0, -2.9]]),
+                False,
+                -21.75,
+            ),
+            (np.eye(2), np.eye(2), True, 1.0),
+            (
+                np.array([[1.0, 2.3], [-1.3, 2.4]]),
+                np.array([[0.7, -7.3], [-1.0, -2.9]]),
+                True,
+                -0.7381450594,
+            ),
+        ],
+    )
+    def test_frobenius_inner_product(self, A, B, normalize, expected):
+        assert expected == pytest.approx(pu.frobenius_inner_product(A, B, normalize=normalize))

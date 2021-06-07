@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ obs = {
     "PauliX": qml.PauliX(wires=[0]),
     "PauliY": qml.PauliY(wires=[0]),
     "PauliZ": qml.PauliZ(wires=[0]),
+    "Projector": qml.Projector(np.array([1]), wires=[0]),
 }
 
 all_obs = obs.keys()
@@ -98,7 +99,7 @@ class TestExpval:
             return qml.expval(qml.Identity(wires=0)), qml.expval(qml.Identity(wires=1))
 
         res = circuit()
-        assert np.allclose(res, np.array([1, 1]), atol=tol(dev.analytic))
+        assert np.allclose(res, np.array([1, 1]), atol=tol(dev.shots))
 
     def test_pauliz_expectation(self, device, tol):
         """Test that PauliZ expectation value is correct"""
@@ -117,7 +118,7 @@ class TestExpval:
 
         res = circuit()
         assert np.allclose(
-            res, np.array([np.cos(theta), np.cos(theta) * np.cos(phi)]), atol=tol(dev.analytic)
+            res, np.array([np.cos(theta), np.cos(theta) * np.cos(phi)]), atol=tol(dev.shots)
         )
 
     def test_paulix_expectation(self, device, tol):
@@ -137,7 +138,7 @@ class TestExpval:
 
         res = circuit()
         expected = np.array([np.sin(theta) * np.sin(phi), np.sin(phi)])
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
     def test_pauliy_expectation(self, device, tol):
         """Test that PauliY expectation value is correct"""
@@ -156,7 +157,7 @@ class TestExpval:
 
         res = circuit()
         expected = np.array([0.0, -np.cos(theta) * np.sin(phi)])
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
     def test_hadamard_expectation(self, device, tol):
         """Test that Hadamard expectation value is correct"""
@@ -177,7 +178,7 @@ class TestExpval:
         expected = np.array(
             [np.sin(theta) * np.sin(phi) + np.cos(theta), np.cos(theta) * np.cos(phi) + np.sin(phi)]
         ) / np.sqrt(2)
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
     def test_hermitian_expectation(self, device, tol):
         """Test that arbitrary Hermitian expectation values are correct"""
@@ -206,7 +207,41 @@ class TestExpval:
         ev2 = ((a - d) * np.cos(theta) * np.cos(phi) + 2 * re_b * np.sin(phi) + a + d) / 2
         expected = np.array([ev1, ev2])
 
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
+
+    def test_projector_expectation(self, device, tol):
+        """Test that arbitrary Projector expectation values are correct"""
+        n_wires = 2
+        dev = device(n_wires)
+
+        if "Projector" not in dev.observables:
+            pytest.skip("Skipped because device does not support the Projector observable.")
+
+        theta = 0.732
+        phi = 0.523
+
+        @qml.qnode(dev)
+        def circuit(basis_state):
+            qml.RY(theta, wires=[0])
+            qml.RY(phi, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.Projector(basis_state, wires=[0, 1]))
+
+        res = circuit([0, 0])
+        expected = (np.cos(phi / 2) * np.cos(theta / 2)) ** 2
+        assert np.allclose(res, expected, atol=tol(dev.shots))
+
+        res = circuit([0, 1])
+        expected = (np.sin(phi / 2) * np.cos(theta / 2)) ** 2
+        assert np.allclose(res, expected, atol=tol(dev.shots))
+
+        res = circuit([1, 0])
+        expected = (np.sin(phi / 2) * np.sin(theta / 2)) ** 2
+        assert np.allclose(res, expected, atol=tol(dev.shots))
+
+        res = circuit([1, 1])
+        expected = (np.cos(phi / 2) * np.sin(theta / 2)) ** 2
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
     def test_multi_mode_hermitian_expectation(self, device, tol):
         """Test that arbitrary multi-mode Hermitian expectation values are correct"""
@@ -246,7 +281,7 @@ class TestExpval:
             - 6
         )
 
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
 
 @flaky(max_runs=10)
@@ -275,7 +310,7 @@ class TestTensorExpval:
         res = circuit()
 
         expected = np.sin(theta) * np.sin(phi) * np.sin(varphi)
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
     def test_pauliz_hadamard(self, device, tol, skip_if):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
@@ -299,7 +334,7 @@ class TestTensorExpval:
         res = circuit()
 
         expected = -(np.cos(varphi) * np.sin(phi) + np.sin(varphi) * np.cos(theta)) / np.sqrt(2)
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
     def test_hermitian(self, device, tol, skip_if):
         """Test that a tensor product involving qml.Hermitian works correctly"""
@@ -340,7 +375,54 @@ class TestTensorExpval:
             + 3 * np.cos(varphi) * np.sin(phi)
             + np.sin(phi)
         )
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
+
+    def test_projector(self, device, tol, skip_if):
+        """Test that a tensor product involving qml.Projector works correctly"""
+        n_wires = 3
+        dev = device(n_wires)
+
+        if "Projector" not in dev.observables:
+            pytest.skip("Skipped because device does not support the Projector observable.")
+
+        skip_if(dev, {"supports_tensor_observables": False})
+
+        theta = 0.732
+        phi = 0.523
+        varphi = -0.543
+
+        @qml.qnode(dev)
+        def circuit(basis_state):
+            qml.RX(theta, wires=[0])
+            qml.RX(phi, wires=[1])
+            qml.RX(varphi, wires=[2])
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+            return qml.expval(qml.PauliZ(wires=[0]) @ qml.Projector(basis_state, wires=[1, 2]))
+
+        res = circuit([0, 0])
+        expected = (np.cos(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2 - (
+            np.cos(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)
+        ) ** 2
+        assert np.allclose(res, expected, atol=tol(dev.shots))
+
+        res = circuit([0, 1])
+        expected = (np.sin(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2 - (
+            np.sin(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)
+        ) ** 2
+        assert np.allclose(res, expected, atol=tol(dev.shots))
+
+        res = circuit([1, 0])
+        expected = (np.sin(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2 - (
+            np.sin(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)
+        ) ** 2
+        assert np.allclose(res, expected, atol=tol(dev.shots))
+
+        res = circuit([1, 1])
+        expected = (np.cos(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2 - (
+            np.cos(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)
+        ) ** 2
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
 
 @flaky(max_runs=10)
@@ -353,6 +435,9 @@ class TestSample:
         """
         n_wires = 1
         dev = device(n_wires)
+
+        if dev.shots is None:
+            pytest.skip("Device is in analytic mode, cannot test sampling.")
 
         @qml.qnode(dev)
         def circuit():
@@ -371,6 +456,9 @@ class TestSample:
         n_wires = 1
         dev = device(n_wires)
 
+        if dev.shots is None:
+            pytest.skip("Device is in analytic mode, cannot test sampling.")
+
         if "Hermitian" not in dev.observables:
             pytest.skip("Skipped because device does not support the Hermitian observable.")
 
@@ -387,7 +475,7 @@ class TestSample:
         # res should only contain the eigenvalues of
         # the hermitian matrix
         eigvals = np.linalg.eigvalsh(A_)
-        assert np.allclose(sorted(list(set(res.tolist()))), sorted(eigvals), atol=tol(dev.analytic))
+        assert np.allclose(sorted(list(set(res.tolist()))), sorted(eigvals), atol=tol(dev.shots))
         # the analytic mean is 2*sin(theta)+0.5*cos(theta)+0.5
         assert np.allclose(
             np.mean(res), 2 * np.sin(theta) + 0.5 * np.cos(theta) + 0.5, atol=tol(False)
@@ -397,12 +485,57 @@ class TestSample:
             np.var(res), 0.25 * (np.sin(theta) - 4 * np.cos(theta)) ** 2, atol=tol(False)
         )
 
+    def test_sample_values_projector(self, device, tol):
+        """Tests if the samples of a Projector observable returned by sample have
+        the correct values
+        """
+        n_wires = 1
+        dev = device(n_wires)
+
+        if dev.shots is None:
+            pytest.skip("Device is in analytic mode, cannot test sampling.")
+
+        if "Projector" not in dev.observables:
+            pytest.skip("Skipped because device does not support the Projector observable.")
+
+        theta = 0.543
+
+        @qml.qnode(dev)
+        def circuit(basis_state):
+            qml.RX(theta, wires=[0])
+            return qml.sample(qml.Projector(basis_state, wires=0))
+
+        res = circuit([0]).flatten()
+
+        # res should only contain 0 or 1, the eigenvalues of the projector
+        assert np.allclose(sorted(list(set(res.tolist()))), [0, 1], atol=tol(dev.shots))
+
+        assert np.allclose(np.mean(res), np.cos(theta / 2) ** 2, atol=tol(False))
+
+        assert np.allclose(
+            np.var(res), np.cos(theta / 2) ** 2 - (np.cos(theta / 2) ** 2) ** 2, atol=tol(False)
+        )
+
+        res = circuit([1]).flatten()
+
+        # res should only contain 0 or 1, the eigenvalues of the projector
+        assert np.allclose(sorted(list(set(res.tolist()))), [0, 1], atol=tol(dev.shots))
+
+        assert np.allclose(np.mean(res), np.sin(theta / 2) ** 2, atol=tol(False))
+
+        assert np.allclose(
+            np.var(res), np.sin(theta / 2) ** 2 - (np.sin(theta / 2) ** 2) ** 2, atol=tol(False)
+        )
+
     def test_sample_values_hermitian_multi_qubit(self, device, tol):
         """Tests if the samples of a multi-qubit Hermitian observable returned by sample have
         the correct values
         """
         n_wires = 2
         dev = device(n_wires)
+
+        if dev.shots is None:
+            pytest.skip("Device is in analytic mode, cannot test sampling.")
 
         if "Hermitian" not in dev.observables:
             pytest.skip("Skipped because device does not support the Hermitian observable.")
@@ -429,7 +562,7 @@ class TestSample:
         # res should only contain the eigenvalues of
         # the hermitian matrix
         eigvals = np.linalg.eigvalsh(A_)
-        assert np.allclose(sorted(list(set(res.tolist()))), sorted(eigvals), atol=tol(dev.analytic))
+        assert np.allclose(sorted(list(set(res.tolist()))), sorted(eigvals), atol=tol(dev.shots))
 
         # make sure the mean matches the analytic mean
         expected = (
@@ -441,7 +574,50 @@ class TestSample:
             + 27 * np.cos(3 * theta)
             + 6
         ) / 32
-        assert np.allclose(np.mean(res), expected, atol=tol(False))
+        assert np.allclose(np.mean(res), expected, atol=tol(dev.shots))
+
+    def test_sample_values_projector_multi_qubit(self, device, tol):
+        """Tests if the samples of a multi-qubit Projector observable returned by sample have
+        the correct values
+        """
+        n_wires = 2
+        dev = device(n_wires)
+
+        if dev.shots is None:
+            pytest.skip("Device is in analytic mode, cannot test sampling.")
+
+        if "Projector" not in dev.observables:
+            pytest.skip("Skipped because device does not support the Projector observable.")
+
+        theta = 0.543
+
+        @qml.qnode(dev)
+        def circuit(basis_state):
+            qml.RX(theta, wires=[0])
+            qml.RY(2 * theta, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.sample(qml.Projector(basis_state, wires=[0, 1]))
+
+        res = circuit([0, 0]).flatten()
+        # res should only contain 0 or 1, the eigenvalues of the projector
+        assert np.allclose(sorted(list(set(res.tolist()))), [0, 1], atol=tol(dev.shots))
+        expected = (np.cos(theta / 2) * np.cos(theta)) ** 2
+        assert np.allclose(np.mean(res), expected, atol=tol(dev.shots))
+
+        res = circuit([0, 1]).flatten()
+        assert np.allclose(sorted(list(set(res.tolist()))), [0, 1], atol=tol(dev.shots))
+        expected = (np.cos(theta / 2) * np.sin(theta)) ** 2
+        assert np.allclose(np.mean(res), expected, atol=tol(dev.shots))
+
+        res = circuit([1, 0]).flatten()
+        assert np.allclose(sorted(list(set(res.tolist()))), [0, 1], atol=tol(dev.shots))
+        expected = (np.sin(theta / 2) * np.sin(theta)) ** 2
+        assert np.allclose(np.mean(res), expected, atol=tol(dev.shots))
+
+        res = circuit([1, 1]).flatten()
+        assert np.allclose(sorted(list(set(res.tolist()))), [0, 1], atol=tol(dev.shots))
+        expected = (np.sin(theta / 2) * np.cos(theta)) ** 2
+        assert np.allclose(np.mean(res), expected, atol=tol(dev.shots))
 
 
 @flaky(max_runs=10)
@@ -452,6 +628,10 @@ class TestTensorSample:
         """Test that a tensor product involving PauliX and PauliY works correctly"""
         n_wires = 3
         dev = device(n_wires)
+
+        if dev.shots is None:
+            pytest.skip("Device is in analytic mode, cannot test sampling.")
+
         skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
@@ -491,6 +671,10 @@ class TestTensorSample:
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
         n_wires = 3
         dev = device(n_wires)
+
+        if dev.shots is None:
+            pytest.skip("Device is in analytic mode, cannot test sampling.")
+
         skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
@@ -530,6 +714,9 @@ class TestTensorSample:
         """Test that a tensor product involving qml.Hermitian works correctly"""
         n_wires = 3
         dev = device(n_wires)
+
+        if dev.shots is None:
+            pytest.skip("Device is in analytic mode, cannot test sampling.")
 
         if "Hermitian" not in dev.observables:
             pytest.skip("Skipped because device does not support the Hermitian observable.")
@@ -616,6 +803,109 @@ class TestTensorSample:
         )
         assert np.allclose(var, expected, atol=tol(False))
 
+    def test_projector(self, device, tol, skip_if):
+        """Test that a tensor product involving qml.Projector works correctly"""
+        n_wires = 3
+        dev = device(n_wires)
+
+        if dev.shots is None:
+            pytest.skip("Device is in analytic mode, cannot test sampling.")
+
+        if "Projector" not in dev.observables:
+            pytest.skip("Skipped because device does not support the Projector observable.")
+
+        skip_if(dev, {"supports_tensor_observables": False})
+
+        theta = 0.432
+        phi = 0.123
+        varphi = -0.543
+
+        @qml.qnode(dev)
+        def circuit(basis_state):
+            qml.RX(theta, wires=[0])
+            qml.RX(phi, wires=[1])
+            qml.RX(varphi, wires=[2])
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+            return qml.sample(qml.PauliZ(wires=[0]) @ qml.Projector(basis_state, wires=[1, 2]))
+
+        res = circuit([0, 0])
+        # res should only contain the eigenvalues of the projector matrix tensor product Z, i.e. {-1, 0, 1}
+        assert np.allclose(sorted(np.unique(res)), [-1, 0, 1], atol=tol(False))
+        mean = np.mean(res)
+        expected = (np.cos(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2 - (
+            np.cos(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)
+        ) ** 2
+        assert np.allclose(mean, expected, atol=tol(False))
+        var = np.var(res)
+        expected = (
+            (np.cos(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2
+            + (np.cos(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)) ** 2
+            - (
+                (np.cos(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2
+                - (np.cos(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)) ** 2
+            )
+            ** 2
+        )
+        assert np.allclose(var, expected, atol=tol(False))
+
+        res = circuit([0, 1])
+        assert np.allclose(sorted(np.unique(res)), [-1, 0, 1], atol=tol(False))
+        mean = np.mean(res)
+        expected = (np.sin(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2 - (
+            np.sin(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)
+        ) ** 2
+        assert np.allclose(mean, expected, atol=tol(False))
+        var = np.var(res)
+        expected = (
+            (np.sin(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2
+            + (np.sin(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)) ** 2
+            - (
+                (np.sin(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2
+                - (np.sin(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)) ** 2
+            )
+            ** 2
+        )
+        assert np.allclose(var, expected, atol=tol(False))
+
+        res = circuit([1, 0])
+        assert np.allclose(sorted(np.unique(res)), [-1, 0, 1], atol=tol(False))
+        mean = np.mean(res)
+        expected = (np.sin(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2 - (
+            np.sin(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)
+        ) ** 2
+        assert np.allclose(mean, expected, atol=tol(False))
+        var = np.var(res)
+        expected = (
+            (np.sin(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2
+            + (np.sin(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
+            - (
+                (np.sin(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2
+                - (np.sin(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
+            )
+            ** 2
+        )
+        assert np.allclose(var, expected, atol=tol(False))
+
+        res = circuit([1, 1])
+        assert np.allclose(sorted(np.unique(res)), [-1, 0, 1], atol=tol(False))
+        mean = np.mean(res)
+        expected = (np.cos(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2 - (
+            np.cos(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)
+        ) ** 2
+        assert np.allclose(mean, expected, atol=tol(False))
+        var = np.var(res)
+        expected = (
+            (np.cos(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2
+            + (np.cos(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
+            - (
+                (np.cos(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2
+                - (np.cos(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
+            )
+            ** 2
+        )
+        assert np.allclose(var, expected, atol=tol(False))
+
 
 @flaky(max_runs=10)
 class TestVar:
@@ -640,7 +930,7 @@ class TestVar:
         res = circuit()
 
         expected = 0.25 * (3 - np.cos(2 * theta) - 2 * np.cos(theta) ** 2 * np.cos(2 * phi))
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
     def test_var_hermitian(self, device, tol):
         """Tests if the samples of a Hermitian observable returned by sample have
@@ -676,7 +966,51 @@ class TestVar:
             )
         )
 
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
+
+    def test_var_projector(self, device, tol):
+        """Tests if the samples of a Projector observable returned by sample have
+        the correct values
+        """
+        n_wires = 2
+        dev = device(n_wires)
+
+        if "Projector" not in dev.observables:
+            pytest.skip("Skipped because device does not support the Projector observable.")
+
+        phi = 0.543
+        theta = 0.654
+
+        @qml.qnode(dev)
+        def circuit(basis_state):
+            qml.RX(phi, wires=[0])
+            qml.RY(theta, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.var(qml.Projector(basis_state, wires=[0, 1]))
+
+        res = circuit([0, 0])
+        expected = (np.cos(phi / 2) * np.cos(theta / 2)) ** 2 - (
+            (np.cos(phi / 2) * np.cos(theta / 2)) ** 2
+        ) ** 2
+        assert np.allclose(res, expected, atol=tol(dev.shots))
+
+        res = circuit([0, 1])
+        expected = (np.cos(phi / 2) * np.sin(theta / 2)) ** 2 - (
+            (np.cos(phi / 2) * np.sin(theta / 2)) ** 2
+        ) ** 2
+        assert np.allclose(res, expected, atol=tol(dev.shots))
+
+        res = circuit([1, 0])
+        expected = (np.sin(phi / 2) * np.sin(theta / 2)) ** 2 - (
+            (np.sin(phi / 2) * np.sin(theta / 2)) ** 2
+        ) ** 2
+        assert np.allclose(res, expected, atol=tol(dev.shots))
+
+        res = circuit([1, 1])
+        expected = (np.sin(phi / 2) * np.cos(theta / 2)) ** 2 - (
+            (np.sin(phi / 2) * np.cos(theta / 2)) ** 2
+        ) ** 2
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
 
 @flaky(max_runs=10)
@@ -712,7 +1046,7 @@ class TestTensorVar:
             + 2 * np.cos(2 * phi)
             + 14
         ) / 16
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
     def test_pauliz_hadamard(self, device, tol, skip_if):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
@@ -741,7 +1075,7 @@ class TestTensorVar:
             - np.cos(2 * theta) * np.sin(varphi) ** 2
             - 2 * np.cos(theta) * np.sin(phi) * np.sin(2 * varphi)
         ) / 4
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
 
     def test_hermitian(self, device, tol, skip_if):
         """Test that a tensor product involving qml.Hermitian works correctly"""
@@ -812,4 +1146,67 @@ class TestTensorVar:
             / 16
         )
 
-        assert np.allclose(res, expected, atol=tol(dev.analytic))
+        assert np.allclose(res, expected, atol=tol(dev.shots))
+
+    def test_projector(self, device, tol, skip_if):
+        """Test that a tensor product involving qml.Projector works correctly"""
+        n_wires = 3
+        dev = device(n_wires)
+
+        if "Projector" not in dev.observables:
+            pytest.skip("Skipped because device does not support the Projector observable.")
+
+        skip_if(dev, {"supports_tensor_observables": False})
+
+        theta = 0.432
+        phi = 0.123
+        varphi = -0.543
+
+        @qml.qnode(dev)
+        def circuit(basis_state):
+            qml.RX(theta, wires=[0])
+            qml.RX(phi, wires=[1])
+            qml.RX(varphi, wires=[2])
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+            return qml.var(qml.PauliZ(wires=[0]) @ qml.Projector(basis_state, wires=[1, 2]))
+
+        res = circuit([0, 0])
+        expected = (
+            (np.cos(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2
+            + (np.cos(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)) ** 2
+        ) - (
+            (np.cos(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2
+            - (np.cos(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)) ** 2
+        ) ** 2
+        assert np.allclose(res, expected, atol=tol(dev.shots))
+
+        res = circuit([0, 1])
+        expected = (
+            (np.sin(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2
+            + (np.sin(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)) ** 2
+        ) - (
+            (np.sin(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2
+            - (np.sin(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)) ** 2
+        ) ** 2
+        assert np.allclose(res, expected, atol=tol(dev.shots))
+
+        res = circuit([1, 0])
+        expected = (
+            (np.sin(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2
+            + (np.sin(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
+        ) - (
+            (np.sin(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2
+            - (np.sin(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
+        ) ** 2
+        assert np.allclose(res, expected, atol=tol(dev.shots))
+
+        res = circuit([1, 1])
+        expected = (
+            (np.cos(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2
+            + (np.cos(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
+        ) - (
+            (np.cos(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2
+            - (np.cos(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
+        ) ** 2
+        assert np.allclose(res, expected, atol=tol(dev.shots))

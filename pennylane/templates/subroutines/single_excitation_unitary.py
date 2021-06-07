@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,22 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the ``SingleExcitationUnitary`` template.
+Contains the SingleExcitationUnitary template.
 """
-from pennylane import numpy as np
-
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from pennylane.ops import CNOT, RX, RZ, Hadamard
-from pennylane.templates.decorator import template
-from pennylane.templates.utils import (
-    check_shape,
-    get_shape,
-)
-from pennylane.wires import Wires
+import pennylane as qml
+from pennylane import numpy as np
+from pennylane.operation import Operation, AnyWires
+from pennylane.ops import RZ, RX, CNOT, Hadamard
 
 
-@template
-def SingleExcitationUnitary(weight, wires=None):
+class SingleExcitationUnitary(Operation):
     r"""Circuit to exponentiate the tensor product of Pauli matrices representing the
     single-excitation operator entering the Unitary Coupled-Cluster Singles
     and Doubles (UCCSD) ansatz. UCCSD is a VQE ansatz commonly used to run quantum
@@ -77,14 +71,11 @@ def SingleExcitationUnitary(weight, wires=None):
 
     Args:
         weight (float): angle :math:`\theta` entering the Z rotation acting on wire ``p``
-        wires (Iterable or Wires): Wires that the template acts on.
+        wires (Iterable): Wires that the template acts on.
             The wires represent the subset of orbitals in the interval ``[r, p]``. Must be of
             minimum length 2. The first wire is interpreted as ``r`` and the last wire as ``p``.
             Wires in between are acted on with CNOT gates to compute the parity of the set
             of qubits.
-
-    Raises:
-        ValueError: if inputs do not have the correct format
 
     .. UsageDetails::
 
@@ -121,70 +112,75 @@ def SingleExcitationUnitary(weight, wires=None):
 
     """
 
-    ##############
-    # Input checks
+    num_params = 1
+    num_wires = AnyWires
+    par_domain = "A"
 
-    wires = Wires(wires)
+    def __init__(self, weight, wires=None, do_queue=True):
+        if len(wires) < 2:
+            raise ValueError("expected at least two wires; got {}".format(len(wires)))
 
-    if len(wires) < 2:
-        raise ValueError("expected at least two wires; got {}".format(len(wires)))
+        shape = qml.math.shape(weight)
+        if shape != ():
+            raise ValueError(f"Weight must be a scalar tensor {()}; got shape {shape}.")
 
-    expected_shape = ()
-    check_shape(
-        weight,
-        expected_shape,
-        msg="'weight' must be of shape {}; got {}".format(expected_shape, get_shape(weight)),
-    )
+        super().__init__(weight, wires=wires, do_queue=do_queue)
 
-    ###############
+    def expand(self):
 
-    # Interpret first and last wire as r and p
-    r = wires[0]
-    p = wires[-1]
+        weight = self.parameters[0]
 
-    # Sequence of the wires entering the CNOTs between wires 'r' and 'p'
-    set_cnot_wires = [wires.subset([l, l + 1]) for l in range(len(wires) - 1)]
+        # Interpret first and last wire as r and p
+        r = self.wires[0]
+        p = self.wires[-1]
 
-    # ------------------------------------------------------------------
-    # Apply the first layer
+        # Sequence of the wires entering the CNOTs between wires 'r' and 'p'
+        set_cnot_wires = [self.wires[l : l + 2] for l in range(len(self.wires) - 1)]
 
-    # U_1, U_2 acting on wires 'r' and 'p'
-    RX(-np.pi / 2, wires=r)
-    Hadamard(wires=p)
+        with qml.tape.QuantumTape() as tape:
 
-    # Applying CNOTs between wires 'r' and 'p'
-    for cnot_wires in set_cnot_wires:
-        CNOT(wires=cnot_wires)
+            # ------------------------------------------------------------------
+            # Apply the first layer
 
-    # Z rotation acting on wire 'p'
-    RZ(weight / 2, wires=p)
+            # U_1, U_2 acting on wires 'r' and 'p'
+            RX(-np.pi / 2, wires=r)
+            Hadamard(wires=p)
 
-    # Applying CNOTs in reverse order
-    for cnot_wires in reversed(set_cnot_wires):
-        CNOT(wires=cnot_wires)
+            # Applying CNOTs between wires 'r' and 'p'
+            for cnot_wires in set_cnot_wires:
+                CNOT(wires=cnot_wires)
 
-    # U_1^+, U_2^+ acting on wires 'r' and 'p'
-    RX(np.pi / 2, wires=r)
-    Hadamard(wires=p)
+            # Z rotation acting on wire 'p'
+            RZ(weight / 2, wires=p)
 
-    # ------------------------------------------------------------------
-    # Apply the second layer
+            # Applying CNOTs in reverse order
+            for cnot_wires in reversed(set_cnot_wires):
+                CNOT(wires=cnot_wires)
 
-    # U_1, U_2 acting on wires 'r' and 'p'
-    Hadamard(wires=r)
-    RX(-np.pi / 2, wires=p)
+            # U_1^+, U_2^+ acting on wires 'r' and 'p'
+            RX(np.pi / 2, wires=r)
+            Hadamard(wires=p)
 
-    # Applying CNOTs between wires 'r' and 'p'
-    for cnot_wires in set_cnot_wires:
-        CNOT(wires=cnot_wires)
+            # ------------------------------------------------------------------
+            # Apply the second layer
 
-    # Z rotation acting on wire 'p'
-    RZ(-weight / 2, wires=p)
+            # U_1, U_2 acting on wires 'r' and 'p'
+            Hadamard(wires=r)
+            RX(-np.pi / 2, wires=p)
 
-    # Applying CNOTs in reverse order
-    for cnot_wires in reversed(set_cnot_wires):
-        CNOT(wires=cnot_wires)
+            # Applying CNOTs between wires 'r' and 'p'
+            for cnot_wires in set_cnot_wires:
+                CNOT(wires=cnot_wires)
 
-    # U_1^+, U_2^+ acting on wires 'r' and 'p'
-    Hadamard(wires=r)
-    RX(np.pi / 2, wires=p)
+            # Z rotation acting on wire 'p'
+            RZ(-weight / 2, wires=p)
+
+            # Applying CNOTs in reverse order
+            for cnot_wires in reversed(set_cnot_wires):
+                CNOT(wires=cnot_wires)
+
+            # U_1^+, U_2^+ acting on wires 'r' and 'p'
+            Hadamard(wires=r)
+            RX(np.pi / 2, wires=p)
+
+        return tape

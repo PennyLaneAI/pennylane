@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -56,7 +56,7 @@ def partitions(s, include_singles=True):
         if include_singles:
             yield (s[0],), (s[1],)
 
-        yield tuple(s),
+        yield (tuple(s),)
     else:
         # pull off a single item and partition the rest
         if include_singles:
@@ -67,7 +67,7 @@ def partitions(s, include_singles=True):
                 for p in rest_partitions:
                     yield ((item_partition),) + p
             else:
-                yield tuple(s),
+                yield (tuple(s),)
 
         # pull off a pair of items and partition the rest
         for idx1 in range(1, len(s)):
@@ -432,7 +432,7 @@ def thermal_state(nbar, hbar=2.0):
     return state
 
 
-def gaussian_state(mu, cov, hbar=2.0):
+def gaussian_state(cov, mu, hbar=2.0):
     r"""Returns a Gaussian state.
 
     This is simply a bare wrapper function,
@@ -444,17 +444,19 @@ def gaussian_state(mu, cov, hbar=2.0):
     ordering.
 
     Args:
-        mu (array): vector means. Must be length-:math:`2N`,
-            where N is the number of modes
         cov (array): covariance matrix. Must be dimension :math:`2N\times 2N`,
+            where N is the number of modes
+        mu (array): vector means. Must be length-:math:`2N`,
             where N is the number of modes
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`
 
     Returns:
-        tuple: the mean and covariance matrix of the Gaussian state
+        tuple: the mean and the covariance matrix of the Gaussian state
     """
     # pylint: disable=unused-argument
+
+    # Note: the internal order of mu and cov is different to the one used in Strawberry Fields
     return mu, cov
 
 
@@ -477,7 +479,7 @@ def set_state(state, wire, mu, cov):
     N = len(mu0) // 2
 
     # insert the new state into the means vector
-    mu0[[wire.labels[0], wire.labels[0] + N]] = mu
+    mu0[[wire[0], wire[0] + N]] = mu
 
     # insert the new state into the covariance matrix
     ind = np.concatenate([wire.toarray(), wire.toarray() + N])
@@ -640,20 +642,15 @@ class DefaultGaussian(Device):
         wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
             or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
             or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
-        shots (int): How many times the circuit should be evaluated (or sampled) to estimate
-            the expectation values.
-            If ``analytic == True``, then the number of shots is ignored
-            in the calculation of expectation values and variances, and only controls the number
-            of samples returned by ``sample``.
+        shots (None, int): How many times the circuit should be evaluated (or sampled) to estimate
+            the expectation values. If ``None``, the results are analytically computed and hence deterministic.
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`
-        analytic (bool): indicates if the device should calculate expectations
-            and variances analytically
     """
     name = "Default Gaussian PennyLane plugin"
     short_name = "default.gaussian"
-    pennylane_requires = "0.13"
-    version = "0.13.0"
+    pennylane_requires = "0.16"
+    version = "0.16.0"
     author = "Xanadu Inc."
 
     _operation_map = {
@@ -685,11 +682,10 @@ class DefaultGaussian(Device):
 
     _circuits = {}
 
-    def __init__(self, wires, *, shots=1000, hbar=2, analytic=True):
-        super().__init__(wires, shots)
+    def __init__(self, wires, *, shots=None, hbar=2, analytic=None):
+        super().__init__(wires, shots, analytic=analytic)
         self.eng = None
         self.hbar = hbar
-        self.analytic = analytic
 
         self.reset()
 
@@ -733,7 +729,7 @@ class DefaultGaussian(Device):
             # set the new device state
             mu, cov = self._operation_map[operation](*par, hbar=self.hbar)
             # state preparations only act on at most 1 subsystem
-            self._state = set_state(self._state, device_wires[0], mu, cov)
+            self._state = set_state(self._state, device_wires[:1], mu, cov)
             return  # we are done here
 
         # get the symplectic matrix
@@ -790,7 +786,7 @@ class DefaultGaussian(Device):
             mu, cov = self.reduced_state(wires)
             ev, var = self._observable_map[observable](mu, cov, par, hbar=self.hbar)
 
-        if not self.analytic:
+        if self.shots is not None:
             # estimate the ev
             # use central limit theorem, sample normal distribution once, only ok if n_eval is large
             # (see https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem)

@@ -5,7 +5,7 @@ import pytest
 
 from pennylane import qchem
 
-from openfermion.ops import FermionOperator, QubitOperator
+from openfermion import FermionOperator, QubitOperator
 
 t = FermionOperator("0^ 0", 0.5) + FermionOperator("1^ 1", -0.5)
 
@@ -65,7 +65,12 @@ v2 = (
             "JORDAN_wigner",
             {(): (0.5 + 0j), ((0, "Z"),): (-0.25 + 0j), ((1, "Z"),): (0.25 + 0j)},
         ),
-        ([t], 0, "JORDAN_wigner", {((0, "Z"),): (-0.25 + 0j), ((1, "Z"),): (0.25 + 0j)},),
+        (
+            [t],
+            0,
+            "JORDAN_wigner",
+            {((0, "Z"),): (-0.25 + 0j), ((1, "Z"),): (0.25 + 0j)},
+        ),
         (
             [v1],
             1 / 2,
