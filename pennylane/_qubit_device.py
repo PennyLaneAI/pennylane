@@ -224,9 +224,7 @@ class QubitDevice(Device):
         else:
             results = self.statistics(circuit.observables)
 
-        if (
-            circuit.all_sampled or not circuit.is_sampled
-        ) and not multiple_sampled_jobs:
+        if (circuit.all_sampled or not circuit.is_sampled) and not multiple_sampled_jobs:
             results = self._asarray(results)
         else:
             results = tuple(self._asarray(r) for r in results)
@@ -383,23 +381,17 @@ class QubitDevice(Device):
         for obs in observables:
             # Pass instances directly
             if obs.return_type is Expectation:
-                results.append(
-                    self.expval(obs, shot_range=shot_range, bin_size=bin_size)
-                )
+                results.append(self.expval(obs, shot_range=shot_range, bin_size=bin_size))
 
             elif obs.return_type is Variance:
                 results.append(self.var(obs, shot_range=shot_range, bin_size=bin_size))
 
             elif obs.return_type is Sample:
-                results.append(
-                    self.sample(obs, shot_range=shot_range, bin_size=bin_size)
-                )
+                results.append(self.sample(obs, shot_range=shot_range, bin_size=bin_size))
 
             elif obs.return_type is Probability:
                 results.append(
-                    self.probability(
-                        wires=obs.wires, shot_range=shot_range, bin_size=bin_size
-                    )
+                    self.probability(wires=obs.wires, shot_range=shot_range, bin_size=bin_size)
                 )
 
             elif obs.return_type is State:
@@ -418,9 +410,7 @@ class QubitDevice(Device):
 
             elif obs.return_type is not None:
                 raise qml.QuantumFunctionError(
-                    "Unsupported return type specified for observable {}".format(
-                        obs.name
-                    )
+                    "Unsupported return type specified for observable {}".format(obs.name)
                 )
 
         return results
@@ -445,9 +435,7 @@ class QubitDevice(Device):
         state = getattr(self, "state", None)
 
         if state is None:
-            raise qml.QuantumFunctionError(
-                "The state is not available in the current device"
-            )
+            raise qml.QuantumFunctionError("The state is not available in the current device")
 
         if wires:
             density_matrix = self.density_matrix(wires)
@@ -681,9 +669,7 @@ class QubitDevice(Device):
         if self.shots is None:
             return self.analytic_probability(wires=wires)
 
-        return self.estimate_probability(
-            wires=wires, shot_range=shot_range, bin_size=bin_size
-        )
+        return self.estimate_probability(wires=wires, shot_range=shot_range, bin_size=bin_size)
 
     def marginal_prob(self, prob, wires=None):
         r"""Return the marginal probability of the computational basis
@@ -820,9 +806,7 @@ class QubitDevice(Device):
 
         return samples.reshape((bin_size, -1))
 
-    def adjoint_jacobian(
-        self, tape, starting_state=None, use_device_state=False, return_obs=False
-    ):
+    def adjoint_jacobian(self, tape, starting_state=None, use_device_state=False, return_obs=False):
         """Implements the adjoint method outlined in
         `Jones and Gacon <https://arxiv.org/abs/2009.02823>`__ to differentiate an input tape.
 
@@ -867,9 +851,7 @@ class QubitDevice(Device):
                 )
 
             if not hasattr(m.obs, "base_name"):
-                m.obs.base_name = (
-                    None  # This is needed for when the observable is a tensor product
-                )
+                m.obs.base_name = None  # This is needed for when the observable is a tensor product
 
         # Initialization of state
         if starting_state is not None:
@@ -880,7 +862,10 @@ class QubitDevice(Device):
                 self.execute(tape)
             ket = self._pre_rotated_state
 
-        bras = [self._apply_operation(ket, obs) for obs in tape.observables]
+        n_obs = len(tape.observables)
+        bras = np.empty([2] * self.num_wires + [n_obs], dtype=np.complex128)
+        for kk in range(n_obs):
+            bras[..., kk] = self._apply_operation(ket, tape.observables[kk])
 
         if return_obs:
             expectation = [qmlsum(self._conj(bra_) * ket) for bra_ in bras]
@@ -921,9 +906,7 @@ class QubitDevice(Device):
                     ket_temp = self._apply_unitary(ket, d_op_matrix, op.wires)
 
                     for kk, bra_ in enumerate(bras):
-                        jac[kk, trainable_param_number] = 2 * dot_product_real(
-                            bra_, ket_temp
-                        )
+                        jac[kk, trainable_param_number] = 2 * dot_product_real(bra_, ket_temp)
 
                     trainable_param_number -= 1
                 param_number -= 1

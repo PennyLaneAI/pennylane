@@ -47,9 +47,7 @@ def args_to_numpy(args):
             res.append(i)
 
     # if NumPy array is scalar, convert to a Python float
-    res = [
-        i.tolist() if (isinstance(i, np.ndarray) and not i.shape) else i for i in res
-    ]
+    res = [i.tolist() if (isinstance(i, np.ndarray) and not i.shape) else i for i in res]
 
     return res
 
@@ -124,9 +122,7 @@ class _TorchInterface(torch.autograd.Function):
             )
             tape.set_parameters(ctx.all_params, trainable_only=False)
 
-            grad_matrix = torch.as_tensor(
-                torch.from_numpy(grad_matrix), dtype=tape.dtype
-            )
+            grad_matrix = torch.as_tensor(torch.from_numpy(grad_matrix), dtype=tape.dtype)
             ctx.saved_grad_matrices[grad_matrix_fn] = grad_matrix
 
             return grad_matrix
@@ -289,9 +285,7 @@ class TorchInterface(AnnotatedQueue):
         >>> tape
         <TorchQuantumTape: wires=<Wires = [0]>, params=1>
         """
-        if (
-            dtype is torch.complex64 or dtype is torch.complex128
-        ) and not COMPLEX_SUPPORT:
+        if (dtype is torch.complex64 or dtype is torch.complex128) and not COMPLEX_SUPPORT:
             raise qml.QuantumFunctionError(
                 "Version 1.6.0 or above of PyTorch must be installed for complex support, "
                 "which is required for quantum functions that return the state."

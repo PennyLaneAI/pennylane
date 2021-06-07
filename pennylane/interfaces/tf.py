@@ -123,9 +123,7 @@ class TFInterface(AnnotatedQueue):
         Returns:
             list[Any, array]: list with all tensors converted to NumPy arrays
         """
-        return [
-            i.numpy() if isinstance(i, (tf.Variable, tf.Tensor)) else i for i in tensors
-        ]
+        return [i.numpy() if isinstance(i, (tf.Variable, tf.Tensor)) else i for i in tensors]
 
     @tf.custom_gradient
     def _execute(self, params, **input_kwargs):

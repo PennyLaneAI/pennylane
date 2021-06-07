@@ -456,16 +456,10 @@ class TestQNode:
         expected = np.array(
             [
                 np.cos(p_val[1])
-                * (
-                    np.cos(a) * np.cos(p_val[0])
-                    - np.sin(a) * np.sin(p_val[0]) * np.sin(p_val[2])
-                ),
+                * (np.cos(a) * np.cos(p_val[0]) - np.sin(a) * np.sin(p_val[0]) * np.sin(p_val[2])),
                 np.cos(p_val[1]) * np.cos(p_val[2]) * np.sin(a)
                 - np.sin(p_val[1])
-                * (
-                    np.cos(a) * np.sin(p_val[0])
-                    + np.cos(p_val[0]) * np.sin(a) * np.sin(p_val[2])
-                ),
+                * (np.cos(a) * np.sin(p_val[0]) + np.cos(p_val[0]) * np.sin(a) * np.sin(p_val[2])),
                 np.sin(a)
                 * (
                     np.cos(p_val[0]) * np.cos(p_val[1]) * np.cos(p_val[2])
@@ -480,9 +474,7 @@ class TestQNode:
         with prob and expval outputs"""
 
         if diff_method == "adjoint":
-            pytest.skip(
-                "The adjoint method does not currently support returning probabilities"
-            )
+            pytest.skip("The adjoint method does not currently support returning probabilities")
 
         dev = qml.device(dev_name, wires=2)
         x_val = 0.543
@@ -528,9 +520,7 @@ class TestQNode:
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
         if diff_method == "adjoint":
-            pytest.skip(
-                "The adjoint method does not currently support returning probabilities"
-            )
+            pytest.skip("The adjoint method does not currently support returning probabilities")
 
         dev = qml.device(dev_name, wires=2)
         x_val = 0.543
@@ -759,6 +749,7 @@ class Test_adjoint:
         def circ(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=1)
+            qml.CNOT(wires=(0, 1))
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
 
         expected_grad = lambda x: torch.tensor([-torch.sin(x[0]), torch.cos(x[1])])
