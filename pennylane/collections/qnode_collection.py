@@ -238,7 +238,7 @@ class QNodeCollection(Sequence):
         """Convert a list of results coming from multiple QNodes
         to the object required by each interface for auto-differentiation.
 
-        Internally, this method makes use of ``tf.stack``, ``torch.stack``,
+        Internally, this method makes use of ``tf.stack``, ``torch.stack``, ``jnp.stack``,
         and ``np.stack``.
 
         Args:
@@ -259,6 +259,11 @@ class QNodeCollection(Sequence):
             import torch
 
             return torch.stack(results, dim=0)
+
+        if interface == "jax":
+            import jax.numpy as jnp
+
+            return jnp.stack(results)
 
         if interface in ("autograd", "numpy"):
             from autograd import numpy as np

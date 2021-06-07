@@ -52,6 +52,7 @@ class TestComparison:
                 [-5 - 2j, -5 - 4j, -4 - 3j, -6],
             ]
         )
+        A_.requires_grad = False
 
         def circuit(theta, phi):
             qml.RX(theta, wires=[0])
