@@ -17,13 +17,30 @@ import pytest
 import pennylane as qml
 
 
+@pytest.fixture(scope="module")
+def jax_support():
+    """Boolean fixture for JAX support"""
+    try:
+        import jax
+
+        jax_support = True
+
+    except ImportError as e:
+        jax_support = False
+
+    return jax_support
+
+
 @pytest.fixture
-def qnodes(interface, tf_support, torch_support):
+def qnodes(interface, tf_support, torch_support, jax_support):
     """fixture returning some QNodes"""
     if interface == "torch" and not torch_support:
         pytest.skip("Skipped, no torch support")
 
     if interface == "tf" and not tf_support:
+        pytest.skip("Skipped, no tf support")
+
+    if interface == "jax" and not jax_support:
         pytest.skip("Skipped, no tf support")
 
     dev1 = qml.device("default.qubit", wires=2)

@@ -956,3 +956,31 @@ class TestShots:
         res = circuit(0.8, shots=2)
         assert len(res) == 2
         assert dev.shots == 3
+
+
+def test_finitediff_float32(tol):
+    """Tests that float32 parameters do not effect order 1 finite-diff results.
+
+    Checks bugfix.  Problem occured with StronglyEntanglingLayers, but not simpler circuits.
+    """
+
+    n_wires = 2
+    n_layers = 2
+
+    shape = qml.templates.StronglyEntanglingLayers.shape(n_wires=n_wires, n_layers=n_layers)
+
+    rng = np.random.default_rng(seed=42)
+    params = rng.random(shape)
+    params_f32 = np.array(params, dtype=np.float32)
+
+    dev = qml.device("default.qubit", n_wires)
+
+    @qml.qnode(dev, diff_method="finite-diff", order=1)
+    def circuit(params):
+        qml.templates.StronglyEntanglingLayers(params, wires=range(n_wires))
+        return qml.expval(qml.PauliZ(0))
+
+    grad64 = qml.grad(circuit)(params)
+    grad32 = qml.grad(circuit)(params_f32)
+
+    assert np.allclose(grad64, grad32, atol=tol, rtol=0)
