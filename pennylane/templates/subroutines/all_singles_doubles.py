@@ -22,40 +22,21 @@ from pennylane.ops import BasisState
 
 
 class AllSinglesDoubles(Operation):
-    r"""Apply the particle-conserving :class:`~.pennylane.SingleExcitation` and
-    :class:`~.pennylane.DoubleExcitation` operations, implemented as Givens rotations,
-    to prepare quantum states of molecules beyond the Hartree-Fock approximation.
+    r"""Builds a quantum circuit consisting of all :class:`~.pennylane.SingleExcitation`
+    and :class:`~.pennylane.DoubleExcitation` operations that correspond to all
+    possible single and double excitations of the initial Hartree-Fock state.
 
-    In the Jordan-Wigner representation the qubit state :math:`\vert 0 \rangle` or
-    :math:`\vert 1 \rangle` encodes the occupation number of the molecular spin-orbitals.
-    For example, the state :math:`\vert 1100 \rangle` represents the Hartree-Fock (HF) state of
-    two electrons in a basis set consisting of four orbitals. Other states with a fixed
-    number of particles can be interpreted as excitations of the HF reference state. For example,
-    the state :math:`\vert 0110 \rangle` is obtained by exciting a particle from the first to
-    the third qubit. Similarly, the state :math:`\vert 0011 \rangle` corresponds to a double
-    excitation involving the four qubits.
+    The template initializes the :math:`n`-qubit system to encode
+    the input Hartree-Fock state and applies the particle-conserving
+    :class:`~.pennylane.SingleExcitation` and
+    :class:`~.pennylane.DoubleExcitation` operations, implemented as
+    `Givens rotations <https://en.wikipedia.org/wiki/Givens_rotation>`_, which act
+    in the subspace of two and four qubits, respectively. The total number of
+    excitation operations and the indices of the qubits they act on are obtained
+    using the :func:`~.excitations` function.
 
-    This template initializes the quantum register of the :math:`n`-qubit system to
-    the Hartree-Fock state and applies :class:`~.pennylane.SingleExcitation` and
-    :class:`~.pennylane.DoubleExcitation` operations implemented as
-    `Givens rotations <https://en.wikipedia.org/wiki/Givens_rotation>`_ that act
-    in the subspace of two and four qubits, respectively.
-
-    The :class:`~.pennylane.SingleExcitation` operation performs a rotation
-    in the two-dimensional subspace :math:`\{\vert 10 \rangle, \vert 01 \rangle \}` of
-    the qubits ``[r, p]`` involved in the single excitation
-    :math:`\hat{c}_p^\dagger \hat{c}_r \vert \mathrm{HF} \rangle` of the initial state.
-    Similarly, the :class:`~.pennylane.DoubleExcitation` operations perform a rotation
-    in the subspace :math:`\{\vert 1100 \rangle, \vert 0011 \rangle \}` of
-    the qubits ``[s, r, q, p]`` that correspond to the double excitation
-    :math:`\hat{c}_p^\dagger \hat{c}_q^\dagger \hat{c}_r \hat{c}_s \vert \mathrm{HF} \rangle`.
-    The qubit indices ``s, r`` and ``q, p`` correspond, respectively, the occupied and unoccupied
-    spin-orbitals in the initial state, and :math:`c^\dagger` (:math:`c`) is the particle
-    creation (annihilation) operator. The total number of operations is determined by all
-    possible single- and double-excitations of the reference state.
-
-    For example, the quantum circuit for the case of two electrons and six qubits is sketched
-    in the figure below,
+    For example, the quantum circuit for the case of two electrons and six qubits
+    is sketched in the figure below,
 
     |
 
@@ -66,27 +47,27 @@ class AllSinglesDoubles(Operation):
 
     |
 
-    In this case, we have four single- and double-excitations that preserve the total-spin
+    In this case, we have four single and double excitations that preserve the total-spin
     projection of the Hartree-Fock state. The :class:`~.pennylane.SingleExcitation` gates
     :math:`G` act on the qubits ``[0, 2], [0, 4], [1, 3], [1, 5]`` as indicated by the
     squares, while the :class:`~.pennylane.DoubleExcitation` gates :math:`G^{(2)}` are applied
     to the qubits ``[0, 1, 2, 3], [0, 1, 2, 5], [0, 1, 2, 4], [0, 1, 4, 5]``.
 
     The resulting unitary conserves the number of particles and prepares the
-    :math:`n`-qubit system in a superposition of the initial HF state and
-    multiply-excited configurations.
+    :math:`n`-qubit system in a superposition of the initial Hartree-Fock state and
+    other states resulting from multiply-excited configurations.
 
     Args:
-        weights (tensor_like): Size ``(len(singles) + len(doubles),)`` tensor containing the
+        weights (tensor_like): size ``(len(singles) + len(doubles),)`` tensor containing the
             angles :math:`\theta` entering the :class:`~.pennylane.SingleExcitation` and
-            :class:`~.pennylane.DoubleExcitation` operations. The indices of the qubits the
-            operations act on are generated with the :func:`~.excitations` function.
+            :class:`~.pennylane.DoubleExcitation` operations
         wires (Iterable): wires that the template acts on
         hf_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
-            HF state. ``hf_state`` is used to initialize the wires.
-        singles (Sequence[Sequence]): sequence of lists containing the wires indices ``[r, p]``
-        doubles (Sequence[Sequence]): sequence of lists containing the wires indices
-            ``[s, r, q, p]``
+            Hartree-Fock state. ``hf_state`` is used to initialize the wires.
+        singles (Sequence[Sequence]): sequence of lists containing the indices of the two qubits
+            the :class:`~.pennylane.SingleExcitation` operations act on
+        doubles (Sequence[Sequence]): sequence of lists containing the indices of the four qubits
+            the :class:`~.pennylane.DoubleExcitation` operations act on
 
     .. UsageDetails::
 
