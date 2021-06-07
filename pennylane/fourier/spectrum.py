@@ -244,7 +244,7 @@ def spectrum(qnode, encoding_gates=None):
                 if len(op.parameters) != 1:
                     raise ValueError(
                         "can only consider one-parameter gates as data-encoding gates; "
-                        "got {}.".format(op.name)
+                        f"got {op.name}."
                     )
 
                 spec = _get_spectrum(op)
