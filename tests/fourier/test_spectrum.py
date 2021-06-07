@@ -29,6 +29,8 @@ class TestHelpers:
             ([-3, 0, 3], [-5, 0, 5], [-8, -5, -3, -2, 0, 2, 3, 5, 8]),
             ([-2, -1, 0, 1, 2], [-1, 0, 1], [-3, -2, -1, 0, 1, 2, 3]),
             ([-0.5, 0, 0.5], [-1, 0, 1], [-1.5, -1, -0.5, 0, 0.5, 1.0, 1.5]),
+            ([-0.5, 0, 0.5], [], [-0.5, 0, 0.5]),
+            ([], [-0.5, 0, 0.5], [-0.5, 0, 0.5]),
         ],
     )
     def test_join_spectra(self, spectrum1, spectrum2, expected, tol):
@@ -78,12 +80,35 @@ class TestCircuits:
             for l in range(n_layers):
                 for i in range(n_qubits):
                     qml.RX(x, wires=i, id="x")
-                    qml.RY(0.4, wires=i, id="other")
+                    qml.RY(0.4, wires=i)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        res = spectrum(circuit)(0.1)
+        expected_degree = n_qubits * n_layers
+        assert np.allclose(res["x"], range(-expected_degree, expected_degree + 1))
+
+    def test_encoding_gates(self):
+        """Test that the spectrum contains the ids provided in encoding_gates."""
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0, id="x")
+            qml.RY(0.4, wires=0, id="other")
             return qml.expval(qml.PauliZ(wires=0))
 
         res = spectrum(circuit, encoding_gates=["x"])(0.1)
-        expected_degree = n_qubits * n_layers
-        assert np.allclose(res["x"], range(-expected_degree, expected_degree + 1))
+        assert res == {"x": [-1.0, 0.0, 1.0]}
+
+        res = spectrum(circuit, encoding_gates=["x", "other"])(0.1)
+        assert res == {"x": [-1.0, 0.0, 1.0], "other": [-1.0, 0.0, 1.0]}
+
+        res = spectrum(circuit)(0.1)
+        assert res == {"x": [-1.0, 0.0, 1.0], "other": [-1.0, 0.0, 1.0]}
+
+        res = spectrum(circuit, encoding_gates=["a"])(0.1)
+        assert res == {"a": []}
 
     def test_spectrum_changes_with_qnode_args(self):
         """Test that the spectrum changes per call if a qnode argument changes the

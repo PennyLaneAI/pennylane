@@ -70,6 +70,11 @@ def _join_spectra(spec1, spec2):
     Returns:
         list[float]: joined spectrum
     """
+    if not spec1:
+        return sorted(list(set(spec2)))
+    if not spec2:
+        return sorted(list(set(spec1)))
+
     sums = [s1 + s2 for s1 in spec1 for s2 in spec2]
     return sorted(list(set(sums)))
 
@@ -228,7 +233,11 @@ def spectrum(qnode, encoding_gates=None):
         qnode.construct(args, kwargs)
         tape = qnode.qtape
 
-        freqs = {}
+        if encoding_gates is None:
+            freqs = {}
+        else:
+            freqs = {input_id: [] for input_id in encoding_gates}
+
         for op in tape.operations:
             id = op.id
 
