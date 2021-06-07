@@ -842,6 +842,9 @@ class QubitDevice(Device):
             QuantumFunctionError: if the input tape has measurements that are not expectation values
                 or contains a multi-parameter operation aside from :class:`~.Rot`
         """
+        # broadcasted inner product not summing over first dimension of b
+        sum_axes = tuple(range(1, self.num_wires + 1))
+        dot_product_real = lambda b, k: self._real(qmlsum(self._conj(b) * k, axis=sum_axes))
 
         for m in tape.measurements:
             if m.return_type is not qml.operation.Expectation:
@@ -863,12 +866,13 @@ class QubitDevice(Device):
             ket = self._pre_rotated_state
 
         n_obs = len(tape.observables)
-        bras = np.empty([2] * self.num_wires + [n_obs], dtype=np.complex128)
+        bras = np.empty([n_obs] + [2] * self.num_wires, dtype=np.complex128)
         for kk in range(n_obs):
-            bras[..., kk] = self._apply_operation(ket, tape.observables[kk])
+            bras[kk, ...] = self._apply_operation(ket, tape.observables[kk])
 
+        # this can probably be more optimized, but at least now it works...
         if return_obs:
-            expectation = [qmlsum(self._conj(bra_) * ket) for bra_ in bras]
+            expectation = dot_product_real(bras, ket)
 
         expanded_ops = []
         for op in reversed(tape.operations):
@@ -886,7 +890,6 @@ class QubitDevice(Device):
                     expanded_ops.append(op)
 
         jac = np.zeros((len(tape.observables), len(tape.trainable_params)))
-        dot_product_real = lambda a, b: self._real(qmlsum(self._conj(a) * b))
 
         param_number = len(tape._par_info) - 1  # pylint: disable=protected-access
         trainable_param_number = len(tape.trainable_params) - 1
@@ -905,13 +908,13 @@ class QubitDevice(Device):
 
                     ket_temp = self._apply_unitary(ket, d_op_matrix, op.wires)
 
-                    for kk, bra_ in enumerate(bras):
-                        jac[kk, trainable_param_number] = 2 * dot_product_real(bra_, ket_temp)
+                    jac[:, trainable_param_number] = 2 * dot_product_real(bras, ket_temp)
 
                     trainable_param_number -= 1
                 param_number -= 1
 
-            bras = [self._apply_operation(bra_, op) for bra_ in bras]
+            for kk in range(n_obs):
+                bras[kk, ...] = self._apply_operation(bras[kk, ...], op)
             op.inv()
 
         if return_obs:
