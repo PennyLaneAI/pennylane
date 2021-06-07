@@ -33,6 +33,8 @@ The following frameworks are currently supported:
 """
 import autoray as ar
 
+from .classical import frobenius_inner_product
+
 from .multi_dispatch import (
     _multi_dispatch,
     block_diag,

@@ -38,7 +38,7 @@ def frobenius_inner_product(A, B, normalize=False):
 
     >>> A = np.random.random((3,3))
     >>> B = np.random.random((3,3))
-    >>> qml.utils.frobenius_inner_product(A, B)
+    >>> qml.math.frobenius_inner_product(A, B)
     3.091948202943376
     """
     inner_product = np.sum(A * B)
