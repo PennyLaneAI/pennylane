@@ -401,7 +401,7 @@ class JacobianTape(QuantumTape):
         by returning a map of their indices and differentiation methods.
 
         When there are fewer parameters specified than the total number of
-        trainable parameters, the jacobian is estimated by using ``num_params`` many
+        trainable parameters, the jacobian is estimated by using ``num_params``
         random parameters from the set of trainable parameters.
 
         Args:
