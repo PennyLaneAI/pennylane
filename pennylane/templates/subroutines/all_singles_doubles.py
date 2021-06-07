@@ -24,7 +24,7 @@ from pennylane.ops import BasisState
 class AllSinglesDoubles(Operation):
     r"""Builds a quantum circuit to prepare correlated states of molecules
     by applying all :class:`~.pennylane.SingleExcitation` and
-    :class:`~.pennylane.DoubleExcitation` operations that correspond to all
+    :class:`~.pennylane.DoubleExcitation` operations associated with all
     single and double excitations of the initial Hartree-Fock state.
 
     The template initializes the :math:`n`-qubit system to encode
@@ -32,7 +32,7 @@ class AllSinglesDoubles(Operation):
     :class:`~.pennylane.SingleExcitation` and
     :class:`~.pennylane.DoubleExcitation` operations which are implemented as
     `Givens rotations <https://en.wikipedia.org/wiki/Givens_rotation>`_ that act
-    on the subspaces of two and four qubits, respectively. The total number of
+    on the subspace of two and four qubits, respectively. The total number of
     excitation gates and the indices of the qubits they act on are obtained
     using the :func:`~.excitations` function.
 
@@ -56,11 +56,11 @@ class AllSinglesDoubles(Operation):
 
     The resulting unitary conserves the number of particles and prepares the
     :math:`n`-qubit system in a superposition of the initial Hartree-Fock state and
-    other states resulting from multiply-excited configurations.
+    other states encoding multiply-excited configurations.
 
     Args:
         weights (tensor_like): size ``(len(singles) + len(doubles),)`` tensor containing the
-            angles :math:`\theta` entering the :class:`~.pennylane.SingleExcitation` and
+            angles entering the :class:`~.pennylane.SingleExcitation` and
             :class:`~.pennylane.DoubleExcitation` operations
         wires (Iterable): wires that the template acts on
         hf_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
@@ -79,9 +79,6 @@ class AllSinglesDoubles(Operation):
 
         #. The single and double excitations can be generated with the function
            :func:`~.excitations`. See example below.
-
-        #. The vector of parameters ``weights`` is a one-dimensional array of size
-           ``len(singles)+len(doubles)``
 
         An example of how to use this template is shown below:
 
