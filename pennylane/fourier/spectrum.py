@@ -231,8 +231,7 @@ def spectrum(qnode, encoding_gates=None):
         for op in tape.operations:
             id = op.id
 
-            # if the operator has no specific ID,
-            # move to the next
+            # if the operator has no specific ID, move to the next
             if id is None:
                 continue
 
