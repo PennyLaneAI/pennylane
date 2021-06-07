@@ -394,7 +394,9 @@ class TestQNode:
         assert res.shape == (2,)
         assert isinstance(res, tf.Tensor)
 
-    @pytest.mark.parametrize("U", [tf.constant([[0, 1], [1, 0]]), np.array([[0, 1], [1, 0]])])
+    @pytest.mark.parametrize(
+        "U", [tf.constant([[0, 1], [1, 0]]), np.array([[0, 1], [1, 0]])]
+    )
     def test_matrix_parameter(self, dev_name, diff_method, U, tol):
         """Test that the TF interface works correctly
         with a matrix parameter"""
@@ -458,9 +460,13 @@ class TestQNode:
         assert [i.name for i in circuit.qtape.operations] == ["RX", "Rot", "PhaseShift"]
 
         if diff_method == "finite-diff":
-            assert np.all(circuit.qtape.get_parameters() == [p[2], p[0], -p[2], p[1] + p[2]])
+            assert np.all(
+                circuit.qtape.get_parameters() == [p[2], p[0], -p[2], p[1] + p[2]]
+            )
         elif diff_method == "backprop":
-            assert np.all(circuit.qtape.get_parameters() == [a, p[2], p[0], -p[2], p[1] + p[2]])
+            assert np.all(
+                circuit.qtape.get_parameters() == [a, p[2], p[0], -p[2], p[1] + p[2]]
+            )
 
         expected = tf.cos(a) * tf.cos(p[1]) * tf.sin(p[0]) + tf.sin(a) * (
             tf.cos(p[2]) * tf.sin(p[1]) + tf.cos(p[0]) * tf.cos(p[1]) * tf.sin(p[2])
@@ -470,12 +476,16 @@ class TestQNode:
         res = tape.jacobian(res, p)
         expected = np.array(
             [
-                tf.cos(p[1]) * (tf.cos(a) * tf.cos(p[0]) - tf.sin(a) * tf.sin(p[0]) * tf.sin(p[2])),
+                tf.cos(p[1])
+                * (tf.cos(a) * tf.cos(p[0]) - tf.sin(a) * tf.sin(p[0]) * tf.sin(p[2])),
                 tf.cos(p[1]) * tf.cos(p[2]) * tf.sin(a)
                 - tf.sin(p[1])
                 * (tf.cos(a) * tf.sin(p[0]) + tf.cos(p[0]) * tf.sin(a) * tf.sin(p[2])),
                 tf.sin(a)
-                * (tf.cos(p[0]) * tf.cos(p[1]) * tf.cos(p[2]) - tf.sin(p[1]) * tf.sin(p[2])),
+                * (
+                    tf.cos(p[0]) * tf.cos(p[1]) * tf.cos(p[2])
+                    - tf.sin(p[1]) * tf.sin(p[2])
+                ),
             ]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -485,7 +495,9 @@ class TestQNode:
         with multiple probs outputs"""
 
         if diff_method == "adjoint":
-            pytest.skip("The adjoint method does not currently support returning probabilities")
+            pytest.skip(
+                "The adjoint method does not currently support returning probabilities"
+            )
 
         dev = qml.device(dev_name, wires=2)
         x = tf.Variable(0.543, dtype=tf.float64)
@@ -528,7 +540,9 @@ class TestQNode:
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
         if diff_method == "adjoint":
-            pytest.skip("The adjoint method does not currently support returning probabilities")
+            pytest.skip(
+                "The adjoint method does not currently support returning probabilities"
+            )
 
         dev = qml.device(dev_name, wires=2)
         x = tf.Variable(0.543, dtype=tf.float64)
@@ -545,7 +559,11 @@ class TestQNode:
             res = circuit(x, y)
 
         expected = np.array(
-            [tf.cos(x), (1 + tf.cos(x) * tf.cos(y)) / 2, (1 - tf.cos(x) * tf.cos(y)) / 2]
+            [
+                tf.cos(x),
+                (1 + tf.cos(x) * tf.cos(y)) / 2,
+                (1 - tf.cos(x) * tf.cos(y)) / 2,
+            ]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -693,7 +711,10 @@ class TestQNode:
 
         a, b = x * 1.0
 
-        expected_res = [0.5 + 0.5 * tf.cos(a) * tf.cos(b), 0.5 - 0.5 * tf.cos(a) * tf.cos(b)]
+        expected_res = [
+            0.5 + 0.5 * tf.cos(a) * tf.cos(b),
+            0.5 - 0.5 * tf.cos(a) * tf.cos(b),
+        ]
         assert np.allclose(res, expected_res, atol=tol, rtol=0)
 
         expected_g = [
@@ -783,7 +804,7 @@ class TestQNode:
 class Test_adjoint:
     def test_adjoint_save_state(self, mocker):
         """Tests that the tf interface reuses device state when prompted by `cache_state=True`.
-        Also makes sure executing a second circuit before backward pass does not interfere 
+        Also makes sure executing a second circuit before backward pass does not interfere
         with answer.
         """
 
@@ -793,10 +814,10 @@ class Test_adjoint:
         def circ(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=1)
-            qml.CNOT(wires=(0,1))
+            qml.CNOT(wires=(0, 1))
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
 
-        expected_grad = lambda x : np.array([-np.sin(x[0]), np.cos(x[1])])
+        expected_grad = lambda x: np.array([-np.sin(x[0]), np.cos(x[1])])
 
         spy = mocker.spy(dev, "adjoint_jacobian")
 
@@ -881,7 +902,8 @@ def qtransform(qnode, a, framework=tf):
 
 
 @pytest.mark.parametrize(
-    "dev_name,diff_method", [("default.qubit", "finite-diff"), ("default.qubit.tf", "backprop")]
+    "dev_name,diff_method",
+    [("default.qubit", "finite-diff"), ("default.qubit.tf", "backprop")],
 )
 def test_transform(dev_name, diff_method, tol):
     """Test an example transform"""
@@ -918,7 +940,9 @@ def test_transform(dev_name, diff_method, tol):
 
     # check that the incident gate arguments of both QNode tapes are correct
     assert np.all(circuit.qtape.get_parameters() == tf.sin(weights))
-    assert np.all(new_qnode.qtape.get_parameters() == [-a * tf.cos(weights[0]), weights[1]])
+    assert np.all(
+        new_qnode.qtape.get_parameters() == [-a * tf.cos(weights[0]), weights[1]]
+    )
 
     # verify that the gradient has the correct shape
     grad = tape.gradient(loss, [weights, a])
