@@ -282,7 +282,7 @@ def metric_tensor(qnode, method="layerwise", diag_approx=False, only_construct=F
             res = [t.execute(device=qnode.device) for t in metric_tensor_tapes]
             mt = processing_fn(res)
         elif method=="adjoint":
-            mt = _adjoint_metric_tensor(qnode.qtape, qnode.device, wrt=_wrt)
+            mt = _adjoint_metric_tensor(qnode.qtape, _wrt, qnode.device, qnode.interface)
         else:
             raise ValueError(f"Method {method} not supported for metric_tensor."
                     "The supported methods are 'layerwise' and 'adjoint'.")
@@ -291,6 +291,7 @@ def metric_tensor(qnode, method="layerwise", diag_approx=False, only_construct=F
         jac = jac[wrt]
         # Compute metric tensor with respect to circuit (instead of gate) parameters.
         mt = jac.T @ mt @ jac
+
         return mt
 
     return _metric_tensor_fn

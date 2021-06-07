@@ -6,6 +6,8 @@ from autograd.extend import defvjp
 from autograd.numpy.numpy_vjps import match_complex
 from autograd.numpy import numpy_wrapper as anp
 
+""" [WIP] Attempt to register vdot with autograd. Did "almost" work out
+(some reshaping issue still)
 def vdot_adjoint_0(B, G, A_meta, B_meta):
     A_shape, A_ndim, *_ = A_meta
     flat_dim = anp.prod(A_shape)
@@ -29,6 +31,7 @@ def vdot_vjp_1(ans, A, B):
     return lambda g: match_complex(B, vdot_adjoint_1(A, g, A_meta, B_meta))
 
 defvjp(anp.vdot, vdot_vjp_0, vdot_vjp_1)
+"""
 
 def _get_generator(op):
     """Reads out the generator and prefactor of an operation and converts
@@ -50,7 +53,31 @@ def _get_generator(op):
 
     return generator, prefactor
 
-def _adjoint_metric_tensor(tape, device, wrt):
+def _prepare_tape_params(tape, device, interface):
+    """
+    """
+
+    original_parameters = tape.get_parameters()
+
+    if device.short_name=='default.qubit':
+        if interface=='autograd':
+            if hasattr(original_parameters, '_value'):
+                tape.set_parameters(original_parameters._value)
+        elif interface=='tf':
+            pass
+            #unpack tensorflow -> cmath
+        elif interface=='torch':
+            pass
+            #unpack torch -> cmath
+        elif interface=='jax':
+            pass
+            #unpack jax -> cmath
+        else:
+            raise ValueError(f"Unknown interface {interface}.")
+
+    return original_parameters
+
+def _adjoint_metric_tensor(tape, wrt, device, interface):
     """Implements the adjoint method outlined in
     `Jones <https://arxiv.org/abs/2011.02991>`__ to compute the metric tensor.
 
@@ -90,6 +117,8 @@ def _adjoint_metric_tensor(tape, device, wrt):
             return device._state
         else:
             return device._apply_operation(state, op)
+
+    #original_parameters = _prepare_tape_params(tape, device, interface)
 
     if wrt is not None:
         tape.trainable_params = set(wrt)
@@ -166,6 +195,7 @@ def _adjoint_metric_tensor(tape, device, wrt):
 
         # the state vector phi is missing a factor of 1j * prefactor1
         phi = device._apply_unitary(phi, generator1, outer_op.wires)
+
         phi_real = np.real(phi).reshape(dim)
         phi_imag = np.imag(phi).reshape(dim)
         L_diag.append(prefactor1**2 * (np.dot(phi_real, phi_real) + np.dot(phi_imag, phi_imag)))
@@ -212,6 +242,8 @@ def _adjoint_metric_tensor(tape, device, wrt):
         for op in after_trainable_operations[j]:
             psi = _apply_any_operation(psi, op)
 
+    #tape.set_parameters(original_parameters)
+
     # postprocessing: combine L, L_diag and T into the metric tensor.
     # We require outer(conj(T), T) here, but as we skipped the factor 1j above,
     # the stored T is real-valued. Thus we have -1j*1j*outer(T, T) = outer(T, T)
@@ -219,4 +251,3 @@ def _adjoint_metric_tensor(tape, device, wrt):
     metric_tensor = L + L.T + np.eye(num_params)*L_diag - np.outer(T, T)
 
     return metric_tensor
-
