@@ -205,7 +205,7 @@ class TestAdjointJacobian:
 
         tape.trainable_params = {1, 2, 3}
 
-        M, dM = dev.adjoint_jacobian(tape, return_obs=True)
+        dM, M = dev.adjoint_jacobian(tape, return_obs=True)
 
         M_compare = tape.execute(dev)
 
@@ -246,7 +246,7 @@ class TestAdjointJacobian:
         dM1 = dev.adjoint_jacobian(tape)
 
         tape.execute(dev)
-        dM2 = dev.adjoint_jacobian(tape, starting_state=dev.state)
+        dM2 = dev.adjoint_jacobian(tape, starting_state=dev._pre_rotated_state)
 
         assert np.allclose(dM1, dM2, atol=tol, rtol=0)
 

@@ -826,8 +826,9 @@ class QubitDevice(Device):
             return_obs (bool): return the expectation values alongside the jacobian as a tuple (obs, jac)
 
         Returns:
-            array: the derivative of the tape with respect to trainable parameters.
-            Dimensions are ``(len(observables), len(trainable_params))``.
+            Union[array, tuple(array)]: the derivative of the tape with respect to trainable parameters.
+            Dimensions are ``(len(observables), len(trainable_params))``. If ``return_obs`` keyword is True,
+            then returns ``jacobian, expectation_values``
 
         Raises:
             QuantumFunctionError: if the input tape has measurements that are not expectation values
@@ -844,14 +845,14 @@ class QubitDevice(Device):
             if not hasattr(m.obs, "base_name"):
                 m.obs.base_name = None  # This is needed for when the observable is a tensor product
 
+        #Initialization of state
         if starting_state is not None:
             ket = self._reshape(starting_state, [2] * self.num_wires)
-        elif use_device_state:
-            ket = self._reshape(self.state, [2] * self.num_wires)
         else:
-            self.reset()
-            self.execute(tape)
-            ket = self._reshape(self.state, [2] * self.num_wires)
+            if not use_device_state:
+                self.reset()
+                self.execute(tape)
+            ket = self._pre_rotated_state
 
         bras = [self._apply_operation(ket, obs) for obs in tape.observables]
 
@@ -903,5 +904,5 @@ class QubitDevice(Device):
             op.inv()
 
         if return_obs:
-            return expectation, jac
+            return jac, expectation
         return jac
