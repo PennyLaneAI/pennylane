@@ -28,6 +28,7 @@ Z = jnp.array([[1, 0], [0, -1]], dtype=C_DTYPE)
 
 II = jnp.eye(4, dtype=C_DTYPE)
 ZZ = jnp.array(jnp.kron(Z, Z), dtype=C_DTYPE)
+XX = jnp.array(jnp.kron(X, X), dtype=C_DTYPE)
 
 IX = jnp.array(jnp.kron(I, X), dtype=C_DTYPE)
 IY = jnp.array(jnp.kron(I, Y), dtype=C_DTYPE)
@@ -181,6 +182,43 @@ def MultiRZ(theta, n):
     """
     return jnp.exp(-1j * theta / 2 * pauli_eigs(n))
 
+def IsingXX(phi):
+    r"""Ising XX coupling gate.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+    Returns:
+        array[complex]: unitary 4x4 rotation matrix
+        .. math:: XX(\phi) = \begin{bmatrix}
+            \cos(\phi / 2) & 0 & 0 & -i \sin(\phi / 2) \\
+            0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
+            0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
+            -i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
+        \end{bmatrix}`
+    """
+    return (
+            jnp.cos(phi / 2) * II
+            - 1j * jnp.sin(phi/ 2) / 2 * XX
+    )
+
+def IsingZZ(phi):
+    r"""Ising ZZ coupling gate
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+    Returns:
+        array[complex]: unitary 4x4 rotation matrix
+        .. math:: ZZ(\phi) = \begin{bmatrix}
+        e^{-i \phi / 2} & 0 & 0 & 0 \\
+        0 & e^{i \phi / 2} & 0 & 0 \\
+        0 & 0 & e^{i \phi / 2} & 0 \\
+        0 & 0 & 0 & e^{-i \phi / 2}
+        \end{bmatrix}.
+
+    """
+    e_m = jnp.exp(-1j * phi)
+    e = jnp.exp(1j * phi)
+    return jnp.array([[e_m, 0, 0, 0], [0, e, 0, 0], [0, 0, e, 0], [0, 0, 0, e_m]])
 
 def SingleExcitation(phi):
     r"""Single excitation rotation.

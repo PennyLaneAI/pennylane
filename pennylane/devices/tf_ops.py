@@ -197,7 +197,7 @@ def IsingXX(phi):
     r"""Ising XX coupling gate.
 
     Args:
-        phi (float): rotation angle
+        phi (float): rotation angle :math:`\phi`
     Returns:
         tf.Tensor[complex]: unitary 4x4 rotation matrix
         .. math:: XX(\phi) = \begin{bmatrix}
@@ -217,7 +217,7 @@ def IsingZZ(phi):
     r"""Ising ZZ coupling gate
 
     Args:
-        theta (float): rotation angle
+        phi (float): rotation :math:`\phi`
     Returns:
         tf.Tensor[complex]: unitary 4x4 rotation matrix
         .. math:: ZZ(\phi) = \begin{bmatrix}
@@ -230,7 +230,7 @@ def IsingZZ(phi):
     """
     phi = tf.cast(phi, dtype=C_DTYPE)
     e_m = tf.exp(-1j * phi)
-    e = tf.exp(-1j * phi)
+    e = tf.exp(1j * phi)
     return tf.convert_to_tensor([[e_m, 0, 0, 0], [0, e, 0, 0], [0, 0, e, 0], [0, 0, 0, e_m]])
 
 def SingleExcitation(phi):

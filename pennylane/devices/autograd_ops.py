@@ -28,6 +28,7 @@ Z = np.array([[1, 0], [0, -1]], dtype=C_DTYPE)
 
 II = np.eye(4, dtype=C_DTYPE)
 ZZ = np.array(kron(Z, Z), dtype=C_DTYPE)
+XX = np.array(kron(X, X), dtype=C_DTYPE)
 
 IX = np.array(kron(I, X), dtype=C_DTYPE)
 IY = np.array(kron(I, Y), dtype=C_DTYPE)
@@ -181,6 +182,43 @@ def MultiRZ(theta, n):
     """
     return np.exp(-1j * theta / 2 * pauli_eigs(n))
 
+def IsingXX(phi):
+    r"""Ising XX coupling gate.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+    Returns:
+        array[complex]: unitary 4x4 rotation matrix
+        .. math:: XX(\phi) = \begin{bmatrix}
+            \cos(\phi / 2) & 0 & 0 & -i \sin(\phi / 2) \\
+            0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
+            0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
+            -i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
+        \end{bmatrix}`
+    """
+    return (
+            np.cos(phi / 2) * II
+            - 1j * np.sin(phi/ 2) / 2 * XX
+    )
+
+def IsingZZ(phi):
+    r"""Ising ZZ coupling gate
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+    Returns:
+        array[complex]: unitary 4x4 rotation matrix
+        .. math:: ZZ(\phi) = \begin{bmatrix}
+        e^{-i \phi / 2} & 0 & 0 & 0 \\
+        0 & e^{i \phi / 2} & 0 & 0 \\
+        0 & 0 & e^{i \phi / 2} & 0 \\
+        0 & 0 & 0 & e^{-i \phi / 2}
+        \end{bmatrix}.
+
+    """
+    e_m = np.exp(-1j * phi)
+    e = np.exp(1j * phi)
+    return np.array([[e_m, 0, 0, 0], [0, e, 0, 0], [0, 0, e, 0], [0, 0, 0, e_m]])
 
 def SingleExcitation(phi):
     r"""Single excitation rotation.
