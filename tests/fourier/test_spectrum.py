@@ -106,8 +106,8 @@ class TestCircuits:
         assert np.allclose(res_false["x"], range(-2, 3))
 
     def test_input_gates_not_of_correct_form(self):
-        """Test that error is thrown if gates marked as encoding gates
-        are not single-param gates."""
+        """Test that an error is thrown if gates marked as encoding gates
+        are not single-parameter gates."""
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -145,7 +145,7 @@ class TestInterfaces:
     all interfaces."""
 
     def test_integration_autograd(self):
-        """Test that the spectra of a circuit with lots of edge cases is calculated correctly
+        """Test that the spectra of a circuit is calculated correctly
         in the autograd interface."""
 
         x = pnp.array([1, 2, 3], requires_grad=False)
@@ -160,7 +160,7 @@ class TestInterfaces:
             assert v1 == v2
 
     def test_integration_torch(self):
-        """Test that the spectra of a circuit with lots of edge cases is calculated correctly
+        """Test that the spectra of a circuit is calculated correctly
         in the torch interface."""
 
         torch = pytest.importorskip("torch")
@@ -177,7 +177,7 @@ class TestInterfaces:
             assert v1 == v2
 
     def test_integration_tf(self):
-        """Test that the spectra of a circuit with lots of edge cases is calculated correctly
+        """Test that the spectra of a circuit is calculated correctly
         in the tf interface."""
         tf = pytest.importorskip("tensorflow")
 
@@ -196,7 +196,7 @@ class TestInterfaces:
             assert v1 == v2
 
     def test_integration_jax(self):
-        """Test that the spectra of a circuit with lots of edge cases is calculated correctly
+        """Test that the spectra of a circuit is calculated correctly
         in the jax interface."""
 
         jax = pytest.importorskip("jax")

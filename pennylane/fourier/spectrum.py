@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains a QNode transform that computes the frequency spectrum of a quantum
+"""Contains a transform that computes the frequency spectrum of a quantum
 circuit."""
 from itertools import product
 from functools import wraps
@@ -59,7 +59,7 @@ def _get_spectrum(op):
 
 
 def _join_spectra(spec1, spec2):
-    r"""Join two sets of frequencies that belong to the same input scalar.
+    r"""Join two sets of frequencies that belong to the same input.
 
     Since :math:`\exp(i a x)\exp(i b x) = \exp(i (a+b) x)`, frequency sets of two gates
     encoding the same :math:`x` are joined by computing the set of sums of their elements.
@@ -83,8 +83,8 @@ def spectrum(qnode, encoding_gates=None):
 
     Gates are marked as input-encoding gates in the quantum function by giving them an ``id``.
     If two gates have the same ``id``, they are considered
-    to be used to encode the same input :math:`x_j`. The `encoding_gates` argument can be used
-    if only gates with a specific ``id`` should be interpreted as input-encoding gates.
+    to be used to encode the same input :math:`x_j`. The ``encoding_gates`` argument can be used
+    to indicate that only gates with specific ``id``s should be interpreted as input-encoding gates.
 
     Args:
         qnode (pennylane.QNode): a quantum node representing a circuit in which
@@ -100,7 +100,7 @@ def spectrum(qnode, encoding_gates=None):
     **Details**
 
     A circuit that returns an expectation value which depends on
-    :math:`N` scalar inputs :math:`x_i` can be interpreted as a function
+    :math:`N` scalar inputs :math:`x_j` can be interpreted as a function
     :math:`f: \mathbb{R}^N \rightarrow \mathbb{R}`. This function can always be
     expressed by a Fourier-type sum
 
@@ -109,23 +109,23 @@ def spectrum(qnode, encoding_gates=None):
         \sum \limits_{\omega_1\in \Omega_1} \dots \sum \limits_{\omega_N \in \Omega_N}
         c_{\omega_1,\dots, \omega_N} e^{-i x_1 \omega_1} \dots e^{-i x_N \omega_N}
 
-    over the *frequency spectra* :math:`\Omega_i \subseteq \mathbb{R},`
-    :math:`i=1,\dots,N`. Each spectrum has the property that
-    :math:`0 \in \Omega_i`, and the spectrum is
-    symmetric (for every :math:`\omega \in \Omega_i` we have that :math:`-\omega \in
-    \Omega_i`). If all frequencies are integer-valued, the Fourier sum becomes a
+    over the *frequency spectra* :math:`\Omega_j \subseteq \mathbb{R},`
+    :math:`j=1,\dots,N`. Each spectrum has the property that
+    :math:`0 \in \Omega_j`, and the spectrum is
+    symmetric (for every :math:`\omega \in \Omega_j` we have that :math:`-\omega \in
+    \Omega_j`). If all frequencies are integer-valued, the Fourier sum becomes a
     *Fourier series*.
 
     As shown in `Vidal and Theis (2019)
     <https://arxiv.org/abs/1901.11434>`_ and `Schuld, Sweke and Meyer (2020)
-    <https://arxiv.org/abs/2008.08605>`_, if an input :math:`x_j, j = 1 \dots N`
-    only enters into single-parameter gates of the form :math:`e^{-i x_j G}`, the
-    frequency spectrum :math:`\Omega_j` is fully determined by the eigenvalues
-    of the generators :math:`G`. In many situations, the spectra are limited
+    <https://arxiv.org/abs/2008.08605>`_, if an input :math:`x_j, j = 1 \dots N`,
+    only enters into single-parameter gates of the form :math:`e^{-i x_j G}` (where :math:`G` is a Hermitian generator),
+    the frequency spectrum :math:`\Omega_j` is fully determined by the eigenvalues
+    of :math:`G`. In many situations, the spectra are limited
     to a few frequencies only, which in turn limits the function class that the circuit
     can express.
 
-    The ``spectrum`` function computes all frequencies that are allowed to appear in the
+    The ``spectrum`` function computes all frequencies that will potentially appear in the
     sets :math:`\Omega_1` to :math:`\Omega_N` (which correspond to the :math:`N` different strings
     used as an ``id`` to mark the input-encoding gates).
 
@@ -196,11 +196,11 @@ def spectrum(qnode, encoding_gates=None):
         >>> 'x0': [-2.0, -1.0, 0.0, 1.0, 2.0]
 
     .. note::
-        The `spectrum` function does not check if the result of the
-        circuit is an expectation, or if gates with the same `id`
+        The ``spectrum`` function does not check if the result of the
+        circuit is an expectation, or if gates with the same ``id``
         take the same value in a given call of the function.
 
-    The `spectrum` function works in all interfaces:
+    The ``spectrum`` function works in all interfaces:
 
     .. code-block:: python
 
@@ -234,20 +234,20 @@ def spectrum(qnode, encoding_gates=None):
         for op in tape.operations:
             id = op.id
 
-            # if the operator has no specific ID,
-            # move to the next
+            # if the operator has no specific ID, move to the next
             if id is None:
                 continue
 
             # if user has not specified encoding_gate id's,
             # consider any id
             is_encoding_gate = encoding_gates is None or id in encoding_gates
+
             if is_encoding_gate:
 
                 if len(op.parameters) != 1:
                     raise ValueError(
                         "can only consider one-parameter gates as data-encoding gates; "
-                        "got {}.".format(op.name)
+                        f"got {op.name}."
                     )
 
                 spec = _get_spectrum(op)
