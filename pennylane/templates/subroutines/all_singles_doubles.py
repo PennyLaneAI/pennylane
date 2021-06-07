@@ -127,7 +127,7 @@ class AllSinglesDoubles(Operation):
                 qml.templates.AllSinglesDoubles(weights, wires, hf_state, singles, doubles)
                 return qml.expval(qml.PauliZ(0))
 
-            # Compute the expectation value of 'h' for given set of parameters 'params'
+            # Evaluate the QNode for a given set of parameters
             params = np.random.normal(0, np.pi, len(singles) + len(doubles))
             circuit(params, hf_state, singles=singles, doubles=doubles)
     """
