@@ -1392,27 +1392,3 @@ class TestCoercion:
         res = qml.math.coerce(tensors, like="torch")
         dtypes = [r.dtype for r in res]
         assert all(d is torch.complex64 for d in dtypes)
-
-class TestFrobeniusInnerProduct:
-    @pytest.mark.parametrize(
-        "A,B,normalize,expected",
-        [
-            (np.eye(2), np.eye(2), False, 2.0),
-            (np.eye(2), np.zeros((2, 2)), False, 0.0),
-            (
-                np.array([[1.0, 2.3], [-1.3, 2.4]]),
-                np.array([[0.7, -7.3], [-1.0, -2.9]]),
-                False,
-                -21.75,
-            ),
-            (np.eye(2), np.eye(2), True, 1.0),
-            (
-                np.array([[1.0, 2.3], [-1.3, 2.4]]),
-                np.array([[0.7, -7.3], [-1.0, -2.9]]),
-                True,
-                -0.7381450594,
-            ),
-        ],
-    )
-    def test_frobenius_inner_product(self, A, B, normalize, expected):
-        assert expected == pytest.approx(fn.frobenius_inner_product(A, B, normalize=normalize))
