@@ -3,7 +3,7 @@
 <h3>New features since last release</h3>
 
 * Adds the new template `AllSinglesDoubles` to prepare quantum states of molecules
-  using the `SingleExcitation` and `DoubleExcitation`. 
+  using the `SingleExcitation` and `DoubleExcitation` operations. 
   The new template reduces significantly the number of operations
   and the depth of the quantum circuit with respect to the traditional UCCSD
   unitary. The performance of quantum chemistry simulations should benefit

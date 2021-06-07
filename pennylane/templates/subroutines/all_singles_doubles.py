@@ -66,10 +66,10 @@ class AllSinglesDoubles(Operation):
 
     |
 
-    In this case, we have four single- and double-excitations that preserves the total-spin
+    In this case, we have four single- and double-excitations that preserve the total-spin
     projection of the Hartree-Fock state. The :class:`~.pennylane.SingleExcitation` gates
     :math:`G` act on the qubits ``[0, 2], [0, 4], [1, 3], [1, 5]`` as indicated by the
-    squares while the :class:`~.pennylane.DoubleExcitation` gates :math:`G^{(2)}` are applied
+    squares, while the :class:`~.pennylane.DoubleExcitation` gates :math:`G^{(2)}` are applied
     to the qubits ``[0, 1, 2, 3], [0, 1, 2, 5], [0, 1, 2, 4], [0, 1, 4, 5]``.
 
     The resulting unitary conserves the number of particles and prepares the
