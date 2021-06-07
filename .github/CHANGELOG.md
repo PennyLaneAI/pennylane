@@ -6,9 +6,31 @@
   using the `SingleExcitation` and `DoubleExcitation` operations. 
   The new template reduces significantly the number of operations
   and the depth of the quantum circuit with respect to the traditional UCCSD
-  unitary. The performance of quantum chemistry simulations should benefit
-  from this new implementation. 
+  unitary.
   [(#1383)](https://github.com/PennyLaneAI/pennylane/pull/1383)
+
+  For example, consider the case of two particles and four qubits, 
+
+  ```python
+  import pennylane as qml
+  from pennylane import numpy as np
+
+  dev = qml.device('default.qubit', wires=4)
+
+  wires = range(4)
+
+  @qml.qnode(dev)
+  def circuit(weights, hf_state, singles, doubles):
+      qml.templates.AllSinglesDoubles(weights, wires, hf_state, singles, doubles)
+      return qml.expval(qml.PauliZ(0))
+
+  hf_state = np.array([1, 1, 0, 0])
+  singles = [[0, 2], [1, 3]]
+  doubles = [[0, 1, 2, 3]]
+
+  params = np.random.normal(0, np.pi, len(singles) + len(doubles))
+  circuit(params, hf_state, singles=singles, doubles=doubles)
+  ```
 
 * Adds a decorator `@qml.qfunc_transform` to easily create a transformation
   that modifies the behaviour of a quantum function.
