@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* The `quantum_monte_carlo` transform has been added, allowing an input circuit to be transformed
+  into the full quantum Monte Carlo algorithm.
+  [(#1316)](https://github.com/PennyLaneAI/pennylane/pull/1316)
+
 * Adds a decorator `@qml.qfunc_transform` to easily create a transformation
   that modifies the behaviour of a quantum function.
   [(#1315)](https://github.com/PennyLaneAI/pennylane/pull/1315)
