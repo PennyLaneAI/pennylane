@@ -9,24 +9,30 @@
   unitary.
   [(#1383)](https://github.com/PennyLaneAI/pennylane/pull/1383)
 
-  For example, consider the case of two particles and four qubits, 
+  For example, consider the case of two particles and four qubits.
+  First, we define the Hartree-Fock initial state and generate all
+  possible single and double excitations. 
 
   ```python
   import pennylane as qml
   from pennylane import numpy as np
 
-  dev = qml.device('default.qubit', wires=4)
+  electrons = 2
+  qubits = 4
 
-  wires = range(4)
+  hf_state = qml.qchem.hf_state(electrons, qubits)
+  singles, doubles = qml.qchem.excitations(electrons, qubits)
+  ```
+  Now we can use the template ``AllSinglesDoubles`` to define the
+  quantum circuit,
+
+  ```python
+  wires = range(qubits)
 
   @qml.qnode(dev)
   def circuit(weights, hf_state, singles, doubles):
       qml.templates.AllSinglesDoubles(weights, wires, hf_state, singles, doubles)
       return qml.expval(qml.PauliZ(0))
-
-  hf_state = np.array([1, 1, 0, 0])
-  singles = [[0, 2], [1, 3]]
-  doubles = [[0, 1, 2, 3]]
 
   params = np.random.normal(0, np.pi, len(singles) + len(doubles))
   circuit(params, hf_state, singles=singles, doubles=doubles)
