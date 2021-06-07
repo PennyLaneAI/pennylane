@@ -158,14 +158,13 @@ def spectrum(qnode, encoding_gates=None):
         res = spectrum(circuit)(x, w)
 
 >>> print(qml.draw(circuit)(x, w))
->>> 0: ──RX(1)──Rot(0.134, 0.601, 0.709)──RX(2)──Rot(0.0263, 0.0347, 0.446)──RX(3)──Rot(0.0606, 0.911, 0.366)──RX(1)──Rot(0.381, 0.398, 0.61)──RX(2)──Rot(0.956, 0.684, 0.0092)──RX(3)──Rot(0.538, 0.65, 0.732)──RZ(1)──┤ ⟨Z⟩
+0: ──RX(1)──Rot(0.134, 0.601, 0.709)──RX(2)──Rot(0.0263, 0.0347, 0.446)──RX(3)──Rot(0.0606, 0.911, 0.366)──RX(1)──Rot(0.381, 0.398, 0.61)──RX(2)──Rot(0.956, 0.684, 0.0092)──RX(3)──Rot(0.538, 0.65, 0.732)──RZ(1)──┤ ⟨Z⟩
 
 >>> for inp, freqs in res.items():
 >>>     print(f"{inp}: {freqs}")
-
->>> 'x0': [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0]
->>> 'x1': [-2.0, -1.0, 0.0, 1.0, 2.0]
->>> 'x2': [-2.0, -1.0, 0.0, 1.0, 2.0]
+'x0': [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0]
+'x1': [-2.0, -1.0, 0.0, 1.0, 2.0]
+'x2': [-2.0, -1.0, 0.0, 1.0, 2.0]
 
     .. note::
         While the Fourier spectrum usually does not depend
@@ -190,10 +189,9 @@ def spectrum(qnode, encoding_gates=None):
         x = np.array([1, 2])
         res = spectrum(circuit, encoding_gates=["x0"])(x)
 
-        for inp, freqs in res.items():
-            print(f"{inp}: {freqs}")
-
-        >>> 'x0': [-2.0, -1.0, 0.0, 1.0, 2.0]
+>>> for inp, freqs in res.items():
+>>>     print(f"{inp}: {freqs}")
+'x0': [-2.0, -1.0, 0.0, 1.0, 2.0]
 
     .. note::
         The ``spectrum`` function does not check if the result of the
@@ -217,11 +215,10 @@ def spectrum(qnode, encoding_gates=None):
         x = tf.constant([1, 2])
         res = spectrum(circuit)(x)
 
-        for inp, freqs in res.items():
-            print(f"{inp}: {freqs}")
-
-        >>> 'x0': [-1.0, 0.0, 1.0]
-        >>> 'x1': [-1.0, 0.0, 1.0]
+>>> for inp, freqs in res.items():
+>>>     print(f"{inp}: {freqs}")
+'x0': [-1.0, 0.0, 1.0]
+'x1': [-1.0, 0.0, 1.0]
 
     """
 
