@@ -87,8 +87,8 @@ available to a quantum model, the larger the class of functions that model can
 represent, potentially leading to greater utility for quantum machine learning
 applications.
 
-Calculating the frequencies supported by an encoding
-----------------------------------------------------
+Calculating the frequencies supported by a circuit
+--------------------------------------------------
 
 For certain circuits, information on the frequency spectra :math:`\Omega_i`
 can solely be derived from the structure of the gates

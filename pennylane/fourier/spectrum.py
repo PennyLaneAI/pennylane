@@ -157,12 +157,15 @@ def spectrum(qnode, encoding_gates=None):
         w = np.random.random((n_layers, n_qubits, 3))
         res = spectrum(circuit)(x, w)
 
-        for inp, freqs in res.items():
-            print(f"{inp}: {freqs}")
+>>> print(qml.draw(circuit)(x, w))
+>>> 0: ──RX(1)──Rot(0.134, 0.601, 0.709)──RX(2)──Rot(0.0263, 0.0347, 0.446)──RX(3)──Rot(0.0606, 0.911, 0.366)──RX(1)──Rot(0.381, 0.398, 0.61)──RX(2)──Rot(0.956, 0.684, 0.0092)──RX(3)──Rot(0.538, 0.65, 0.732)──RZ(1)──┤ ⟨Z⟩
 
-        >>> 'x0': [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0]
-        >>> 'x1': [-2.0, -1.0, 0.0, 1.0, 2.0]
-        >>> 'x2': [-2.0, -1.0, 0.0, 1.0, 2.0]
+>>> for inp, freqs in res.items():
+>>>     print(f"{inp}: {freqs}")
+
+>>> 'x0': [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0]
+>>> 'x1': [-2.0, -1.0, 0.0, 1.0, 2.0]
+>>> 'x2': [-2.0, -1.0, 0.0, 1.0, 2.0]
 
     .. note::
         While the Fourier spectrum usually does not depend

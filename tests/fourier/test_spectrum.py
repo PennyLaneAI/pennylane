@@ -164,7 +164,7 @@ class TestInterfaces:
         in the torch interface."""
 
         torch = pytest.importorskip("torch")
-        x = torch.tensor([1.0, 2.0, 3.0, 4.0, 5.0], requires_grad=True)
+        x = torch.tensor([1, 2, 3], requires_grad=True)
         w = torch.tensor([[-1, -2, -3], [-4, -5, -6]], requires_grad=False)
 
         dev = qml.device("default.qubit", wires=3)
@@ -185,7 +185,7 @@ class TestInterfaces:
         qnode = qml.QNode(circuit, dev, interface="tf")
 
         with tf.GradientTape() as tape:
-            x = tf.Variable([1.0, 2.0, 3.0, 4.0, 5.0])
+            x = tf.Variable([1, 2, 3])
             w = tf.constant([[-1, -2, -3], [-4, -5, -6]])
             # the spectrum function has to be called in a tape context
             res = spectrum(qnode)(x, w)
@@ -202,7 +202,7 @@ class TestInterfaces:
         jax = pytest.importorskip("jax")
         from jax import numpy as jnp
 
-        x = jnp.array([1, 2, 3, 4, 5])
+        x = jnp.array([1, 2, 3])
         w = [[-1, -2, -3], [-4, -5, -6]]
 
         dev = qml.device("default.qubit", wires=3)
