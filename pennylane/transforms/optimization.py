@@ -13,7 +13,7 @@
 # limitations under the License.
 """Transforms for optimizing quantum circuits."""
 
-import numpy as np
+from pennylane import numpy as np
 
 from pennylane.wires import Wires
 from pennylane.transforms import qfunc_transform
