@@ -12,19 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import defaultdict
+import time
 
 class DevTracker:
     """
     Class docstring
     """
 
-    def __init__(self, dev=None):
+    def __init__(self, dev=None, reset_on_enter=True):
         """
         docstring
         """
+        self.reset_on_enter = reset_on_enter
 
-        self.data = defaultdict(int)
+        self.data = dict()
         self.tracking = False
 
         if dev is not None:
@@ -34,7 +35,9 @@ class DevTracker:
         """
         docstring for enter
         """
-        self.data = defaultdict(int)
+        if self.reset_on_enter:
+            self.data = dict()
+
         self.tracking = True
         return self
 
@@ -48,11 +51,22 @@ class DevTracker:
         """ updating data"""
         for key in kwargs:
             if kwargs[key] is not None:
-                self.data[key] += kwargs[key]
+                self.data[key] = kwargs[key] + self.data.get(key, 0)
 
     def record(self):
         """
         record data somehow
         """
         for key, value in self.data.items():
-            print(f"{key} = {value}")
+            print(f"{key} = {value}", end="\t")
+        print()
+
+class TimingTracker(DevTracker):
+
+    def __enter__(self):
+        self.t0 = time.time()
+        super().__enter__()
+
+    def update(self, **kwargs):
+        super().update(**kwargs)
+        self.data["total_time"] = time.time() - self.t0
