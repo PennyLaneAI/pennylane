@@ -542,6 +542,16 @@ class Operation(Operator):
         s_1]=[-1/2, 1, -\pi/2]` is assumed for every parameter.
     """
 
+    # Test class attributes properties for compilation
+    is_self_inverse = False
+    """bool: True if the operation is its own inverse."""
+
+    is_symmetric_over_wires = False
+    """bool: True if the operation is the same if you exchange the order of wires."""
+
+    is_composable_rotation = False
+    """bool: True if the composing the operations results in an addition of parameters."""
+
     def get_parameter_shift(self, idx, shift=np.pi / 2):
         """Multiplier and shift for the given parameter, based on its gradient recipe.
 
