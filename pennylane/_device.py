@@ -19,7 +19,6 @@ import abc
 from collections.abc import Iterable, Sequence
 from collections import OrderedDict, namedtuple
 from functools import lru_cache
-import contextlib
 
 import numpy as np
 
@@ -137,6 +136,7 @@ class Device(abc.ABC):
         self._wires = Wires(wires)
         self.num_wires = len(self._wires)
         self._wire_map = self.define_wire_map(self._wires)
+        self._num_executions = 0
         self._op_queue = None
         self._obs_queue = None
         self._parameters = None
@@ -209,11 +209,6 @@ class Device(abc.ABC):
         """Number of circuit evaluations/random samples used to estimate
         expectation values of observables"""
         return self._shots
-
-    @property
-    def total_shots(self):
-        """Number of total circuit shots used"""
-        return self._total_shots
 
     @property
     def analytic(self):
@@ -456,6 +451,10 @@ class Device(abc.ABC):
             self._op_queue = None
             self._obs_queue = None
             self._parameters = None
+
+            # increment counter for number of executions of device
+            self._num_executions += 1
+
 
             # Ensures that a combination with sample does not put
             # expvals and vars in superfluous arrays

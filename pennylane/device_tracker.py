@@ -15,6 +15,9 @@
 from collections import defaultdict
 
 class DevTracker:
+    """
+    Class docstring
+    """
 
     def __init__(self, dev=None):
         """

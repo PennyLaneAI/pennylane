@@ -38,6 +38,7 @@ from pennylane import Device
 from pennylane.math import sum as qmlsum
 from pennylane.wires import Wires
 
+
 class QubitDevice(Device):
     """Abstract base class for PennyLane qubit devices.
 
@@ -225,6 +226,8 @@ class QubitDevice(Device):
             if len(self._cache_execute) > self._cache:
                 self._cache_execute.popitem(last=False)
 
+        # increment counter for number of executions of qubit device
+        self._num_executions += 1
 
         if self.tracker.tracking:
             self.tracker.update(total_executions=1, total_shots=self._shots)
