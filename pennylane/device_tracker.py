@@ -81,14 +81,6 @@ class TimingTracker(DevTracker):
         self.data["total_time"] = time.time() - self.t0
         self.times.append(self.data["total_time"])
 
-    def record(self):
-        """
-        record data somehow
-        """
-        for key, value in self.data.items():
-            print(f"{key} = {value}", end="\t")
-        print()
-
     def reset(self):
         super().reset()
         self.t0 = time.time()
