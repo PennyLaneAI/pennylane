@@ -74,6 +74,11 @@ class DevTracker:
 
 class TimingTracker(DevTracker):
 
+    def __init__(self, dev=None, reset_on_enter=True):
+        self.times = []
+        self.t_old = 0
+        super().__init__(dev, reset_on_enter)
+
     def update(self, **kwargs):
 
         super().update(**kwargs)
