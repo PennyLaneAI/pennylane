@@ -13,13 +13,19 @@
 # limitations under the License.
 """Code for a compilation transform."""
 
-from pennylane.transforms import qfunc_transform, cancel_inverses, cnot_to_cz
+from pennylane.transforms import (
+    invisible,
+    qfunc_transform,
+    cancel_inverses,
+    cnot_to_cz
+)
 
-simple_pipeline = [cnot_to_cz, cancel_inverses]
-
+default_pipeline = [
+    cancel_inverses
+]
 
 @qfunc_transform
-def compile(tape, pipeline=simple_pipeline, basis_set=None, num_passes=1):
+def compile(tape, pipeline=default_pipeline, basis_set=None, num_passes=1):
     """Compile a circuit by applying a series of transforms to a quantum function.
 
     Args:
@@ -58,7 +64,6 @@ def compile(tape, pipeline=simple_pipeline, basis_set=None, num_passes=1):
     1: ──H──╰C─┤
 
     """
-
     if basis_set is not None:
         expanded_tape = tape.expand(depth=5, stop_at=lambda obj: obj.name in basis_set)
     else:
@@ -66,7 +71,7 @@ def compile(tape, pipeline=simple_pipeline, basis_set=None, num_passes=1):
 
     for _ in range(num_passes):
         for transform in pipeline:
-            expanded_tape = transform.tape_fn(expanded_tape)
+            expanded_tape = invisible(transform.tape_fn)(expanded_tape)
 
     for op in expanded_tape.operations + expanded_tape.measurements:
         op.queue()
