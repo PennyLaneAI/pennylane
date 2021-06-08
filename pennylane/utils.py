@@ -110,7 +110,7 @@ def sparse_hamiltonian(H):
     """docstring ...
     """
     if not isinstance(H, qml.Hamiltonian):
-        raise TypeError(f"Passed Hamiltonian must be of type `qml.Hamiltonian`")
+        raise TypeError("Passed Hamiltonian must be of type `qml.Hamiltonian`")
 
     n = len(H.wires)
 
