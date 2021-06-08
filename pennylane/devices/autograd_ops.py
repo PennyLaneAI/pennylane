@@ -184,20 +184,19 @@ def MultiRZ(theta, n):
 
 
 def IsingXX(phi):
-    r"""Ising XX coupling gate.
-
-    Args:
-        phi (float): rotation angle :math:`\phi`
-    Returns:
-        array[complex]: unitary 4x4 rotation matrix
+    r"""Ising XX coupling gate
 
     .. math:: XX(\phi) = \begin{bmatrix}
         \cos(\phi / 2) & 0 & 0 & -i \sin(\phi / 2) \\
         0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
         0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
         -i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
-    \end{bmatrix}.
+        \end{bmatrix}.
 
+    Args:
+        phi (float): rotation angle :math:`\phi`
+    Returns:
+        array[complex]: unitary 4x4 rotation matrix
     """
     return np.cos(phi / 2) * II - 1j * np.sin(phi / 2) * XX
 
@@ -205,18 +204,17 @@ def IsingXX(phi):
 def IsingZZ(phi):
     r"""Ising ZZ coupling gate
 
+    .. math:: ZZ(\phi) = \begin{bmatrix}
+        e^{-i \phi / 2} & 0 & 0 & 0 \\
+        0 & e^{i \phi / 2} & 0 & 0 \\
+        0 & 0 & e^{i \phi / 2} & 0 \\
+        0 & 0 & 0 & e^{-i \phi / 2}
+        \end{bmatrix}.
+
     Args:
         phi (float): rotation angle :math:`\phi`
     Returns:
         array[complex]: unitary 4x4 rotation matrix
-
-    .. math:: ZZ(\phi) = \begin{bmatrix}
-            e^{-i \phi / 2} & 0 & 0 & 0 \\
-            0 & e^{i \phi / 2} & 0 & 0 \\
-            0 & 0 & e^{i \phi / 2} & 0 \\
-            0 & 0 & 0 & e^{-i \phi / 2}
-            \end{bmatrix}
-
     """
     e_m = np.exp(-1j * phi / 2)
     e = np.exp(1j * phi / 2)

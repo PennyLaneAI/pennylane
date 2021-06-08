@@ -195,12 +195,7 @@ def CRot(a, b, c):
 
 
 def IsingXX(phi):
-    r"""Ising XX coupling gate.
-
-    Args:
-        phi (float): rotation angle :math:`\phi`
-    Returns:
-        tf.Tensor[complex]: unitary 4x4 rotation matrix
+    r"""Ising XX coupling gate
 
     .. math:: XX(\phi) = \begin{bmatrix}
         \cos(\phi / 2) & 0 & 0 & -i \sin(\phi / 2) \\
@@ -209,6 +204,10 @@ def IsingXX(phi):
         -i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
     \end{bmatrix}.
 
+    Args:
+        phi (float): rotation angle :math:`\phi`
+    Returns:
+        tf.Tensor[complex]: unitary 4x4 rotation matrix
     """
     phi = tf.cast(phi, dtype=C_DTYPE)
     return tf.cos(phi / 2) * II - 1j * tf.sin(phi / 2) * XX
@@ -217,11 +216,6 @@ def IsingXX(phi):
 def IsingZZ(phi):
     r"""Ising ZZ coupling gate
 
-    Args:
-        phi (float): rotation :math:`\phi`
-    Returns:
-        tf.Tensor[complex]: unitary 4x4 rotation matrix
-
     .. math:: ZZ(\phi) = \begin{bmatrix}
         e^{-i \phi / 2} & 0 & 0 & 0 \\
         0 & e^{i \phi / 2} & 0 & 0 \\
@@ -229,6 +223,10 @@ def IsingZZ(phi):
         0 & 0 & 0 & e^{-i \phi / 2}
         \end{bmatrix}.
 
+    Args:
+        phi (float): rotation :math:`\phi`
+    Returns:
+        tf.Tensor[complex]: unitary 4x4 rotation matrix
     """
     phi = tf.cast(phi, dtype=C_DTYPE)
     e_m = tf.exp(-1j * phi / 2)
