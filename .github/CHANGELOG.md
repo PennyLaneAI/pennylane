@@ -5,6 +5,30 @@
 * The number of parameters used to estimate the Jacobian can now be specified.
   [(#1371)](https://github.com/PennyLaneAI/pennylane/pull/1371)
 
+  For example, consider a ``JacobianTape`` with two trainable parameters:
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+  x = 0.543
+  y = -0.654
+
+  with qml.tape.JacobianTape() as tape:
+      qml.RX(x, wires=[0])
+      qml.RY(y, wires=[1])
+      qml.CNOT(wires=[0, 1])
+      qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+  ```
+  When computing the Jacobian by calling the ``jacobian`` method, we can
+  specify the trainable parameters to consider when computing the jacobian:
+  ```pycon
+  >>> tape.jacobian(dev, argnum=[0, 1])
+  array([[0.31434682, 0.67949906]])
+  >>> tape.jacobian(dev, argnum=[0])
+  array([[0.31434682, 0.        ]])
+  ```
+  Specifying a proper subset of the trainable parameters will estimate the
+  jacobian.
+
 * The `quantum_monte_carlo` transform has been added, allowing an input circuit to be transformed
   into the full quantum Monte Carlo algorithm.
   [(#1316)](https://github.com/PennyLaneAI/pennylane/pull/1316)
