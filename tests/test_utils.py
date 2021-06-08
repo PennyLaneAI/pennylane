@@ -135,6 +135,17 @@ class TestDecomposition:
         assert np.allclose(hamiltonian, linear_comb)
 
 
+class TestSparse:
+    """docstring ..."""
+
+    def test_typeerror(self):
+        """Tests that sparse_hamiltonian raises an error if the given Hamiltonian is not of type
+         `qml.Hamiltonian`"""
+
+       with pytest.raises(ValueError, match="Passed Hamiltonian must be of type"):
+           pu.sparse_hamiltonian(np.eye(2))
+
+
 class TestFlatten:
     """Tests the flatten and unflatten functions"""
 
