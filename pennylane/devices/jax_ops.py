@@ -198,7 +198,7 @@ def IsingXX(phi):
     """
     return (
             jnp.cos(phi / 2) * II
-            - 1j * jnp.sin(phi/ 2) / 2 * XX
+            - 1j * jnp.sin(phi/ 2)  * XX
     )
 
 def IsingZZ(phi):

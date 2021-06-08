@@ -210,7 +210,7 @@ def IsingXX(phi):
     phi = tf.cast(phi, dtype=C_DTYPE)
     return (
             tf.cos(phi / 2) * II
-            - 1j * tf.sin(phi/ 2) / 2 * XX
+            - 1j * tf.sin(phi/ 2) * XX
     )
 
 def IsingZZ(phi):

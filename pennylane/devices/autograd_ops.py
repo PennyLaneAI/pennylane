@@ -198,7 +198,7 @@ def IsingXX(phi):
     """
     return (
             np.cos(phi / 2) * II
-            - 1j * np.sin(phi/ 2) / 2 * XX
+            - 1j * np.sin(phi/ 2) * XX
     )
 
 def IsingZZ(phi):
