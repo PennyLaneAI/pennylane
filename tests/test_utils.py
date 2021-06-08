@@ -145,6 +145,23 @@ class TestSparse:
         with pytest.raises(TypeError, match="Passed Hamiltonian must be of type"):
            pu.sparse_hamiltonian(np.eye(2))
 
+    def test_sparse_matrix(self):
+        """Tests that sparse_hamiltonian returns a correct sparse matrix"""
+
+        ref_matrix = np.array([[ 1.+0.j,  0.+0.j,  0.+0.j,  0.+0.j],
+                               [ 0.+0.j, -1.+0.j,  0.+0.j,  0.+0.j],
+                               [ 0.+0.j,  0.+0.j,  0.+0.j,  0.+0.j],
+                               [ 0.+0.j,  0.+0.j,  0.+0.j,  0.+0.j]])
+
+        coeffs = [0.5, 0.5]
+        obs = [qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
+               qml.Identity(wires=[0]) @ qml.PauliZ(wires=[1])]
+        H = qml.Hamiltonian(coeffs, obs)
+
+        sparse_matrix = pu.sparse_hamiltonian(H)
+
+        assert (sparse_matrix.toarray() == ref_matrix).all()
+
 
 class TestFlatten:
     """Tests the flatten and unflatten functions"""
