@@ -1,12 +1,4 @@
-# syntax = docker/dockerfile:experimental
-#
-# NOTE: To build this you will need a docker version > 18.06 with
-#       experimental enabled and DOCKER_BUILDKIT=1
-#
-#       If you do not use buildkit you are not going to have a good time
-#
-#       For reference:
-#           https://docs.docker.com/develop/develop-images/build_enhancements/
+
 ARG BASE_IMAGE=ubuntu:18.04
 ARG PYTHON_VERSION=3.7
 ARG PyTorch_VERSION=1.8.1
@@ -48,9 +40,7 @@ RUN conda create -q -n docker-environment python=${PYTHON_VERSION} -y \
         && . /root/.bashrc \
         && conda update conda  \
         && conda activate docker-environment \
-        && pip3 install -r requirements.txt \ 
-        && python setup.py install \  
+        && pip3 install -r requirements.txt \
+        && python setup.py install \
         && pip3 install pytest pytest-cov pytest-mock flaky \
         && make test
-
-

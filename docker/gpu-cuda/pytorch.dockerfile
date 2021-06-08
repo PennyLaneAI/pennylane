@@ -3,7 +3,7 @@ ARG BASE_IMAGE=nvidia/cuda:11.1-base
 # Setup develop base image packages(build-essentials etc)
 FROM ${BASE_IMAGE} as dev-base
 
-RUN apt-get update && apt-get install -y --no-install-recommends 
+RUN apt-get update && apt-get install -y --no-install-recommends
 RUN DEBIAN_FRONTEND="noninteractive" apt-get install tzdata
 RUN apt-get install -y build-essential \
         tzdata \
@@ -27,7 +27,7 @@ RUN curl -fsSL -v -o ~/miniconda.sh -O  https://repo.anaconda.com/miniconda/Mini
     ~/miniconda.sh -b -p /opt/conda && \
     rm ~/miniconda.sh && \
     /opt/conda/bin/conda clean -ya
-    
+
  # Setup as Submodule-intermediate image for pennylane
 FROM dev-base as submodule-update
 COPY --from=conda /opt/conda /opt/conda
@@ -39,10 +39,8 @@ RUN conda create -q -n docker-environment python=${PYTHON_VERSION} -y \
        && . /root/.bashrc \
        && conda update conda  \
        && conda activate docker-environment \
-       && pip3 install -r requirements.txt \      
-       && python setup.py install \  
+       && pip3 install -r requirements.txt \
+       && python setup.py install \
        && pip install torch==1.8.1 \
        && pip3 install pytest pytest-cov pytest-mock flaky \
        && make test
-
-

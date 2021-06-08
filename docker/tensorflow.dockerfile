@@ -1,12 +1,4 @@
-# syntax = docker/dockerfile:experimental
-#
-# NOTE: To build this you will need a docker version > 18.06 with
-#       experimental enabled and DOCKER_BUILDKIT=1
-#
-#       If you do not use buildkit you are not going to have a good time
-#
-#       For reference:
-#           https://docs.docker.com/develop/develop-images/build_enhancements/
+
 ARG BASE_IMAGE=ubuntu:18.04
 ARG PYTHON_VERSION=3.7
 ARG TensorFlow_VERSION=2.5.0
@@ -48,10 +40,8 @@ RUN conda create -q -n docker-environment python=${PYTHON_VERSION} -y \
         && . /root/.bashrc \
         && conda update conda  \
         && conda activate docker-environment \
-        && pip install -r requirements.txt \ 
+        && pip install -r requirements.txt \
         && python setup.py install \
         && pip install tensorflow==2.5.0  \
         && pip install pytest pytest-cov pytest-mock flaky \
         && make test
-
-

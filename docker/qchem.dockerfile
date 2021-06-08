@@ -1,16 +1,6 @@
-# syntax = docker/dockerfile:experimental
-#
-# NOTE: To build this you will need a docker version > 18.06 with
-#       experimental enabled and DOCKER_BUILDKIT=1
-#
-#       If you do not use buildkit you are not going to have a good time
-#
-#       For reference:
-#           https://docs.docker.com/develop/develop-images/build_enhancements/
+
 ARG BASE_IMAGE=ubuntu:18.04
 ARG TRAVIS_PYTHON_VERSION=3.7
-
-
 
 # Setup develop base image packages(build-essentials etc)
 FROM ${BASE_IMAGE} as dev-base
@@ -50,7 +40,7 @@ RUN conda create -q -n docker-environment python=${TRAVIS_PYTHON_VERSION} -y \
         && conda update conda  \
         && conda activate docker-environment \
         && conda install psi4 psi4-rt python=$TRAVIS_PYTHON_VERSION -c psi4 \
-        && pip install -r requirements.txt \ 
+        && pip install -r requirements.txt \
         && python setup.py install \
         && pip install pytest pytest-cov pytest-mock flaky \
         && make test  \
@@ -58,5 +48,3 @@ RUN conda create -q -n docker-environment python=${TRAVIS_PYTHON_VERSION} -y \
         && pip install -r requirements.txt \
         && python setup.py install  \
         && make test
-   
-
