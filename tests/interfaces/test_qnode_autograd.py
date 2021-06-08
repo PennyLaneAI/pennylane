@@ -1074,65 +1074,73 @@ class TestQNode:
         assert j_spy.call_count == 5
 
     def test_grad_ising_xx(self, dev_name, diff_method, tol):
-
+        """Test the gradient for the gate IsingXX."""
         if diff_method in {"adjoint"}:
             pytest.skip("Test does not support adjoint")
 
         dev = qml.device(dev_name, wires=2)
 
-        a=0.1
-        b=0.2
-        c=0.3
-        d=0.4
+        psi_0 = 0.1
+        psi_1 = 0.2
+        psi_2 = 0.3
+        psi_3 = 0.4
 
-        init_state = np.array([a, b, c, d], requires_grad=False)
+        init_state = np.array([psi_0, psi_1, psi_2, psi_3], requires_grad=False)
         norm = np.linalg.norm(init_state)
         init_state /= norm
 
         @qml.qnode(dev, diff_method=diff_method, interface="autograd")
-        def circuit(x):
+        def circuit(phi):
             qml.QubitStateVector(init_state, wires=[0, 1])
-            qml.IsingXX(x, wires=[0, 1])
+            qml.IsingXX(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        x = np.array(0.1, requires_grad=True)
+        phi = np.array(0.1, requires_grad=True)
 
-        expected = 0.5 * (1 / norm ** 2) * \
-                   (-np.sin(x) * (a ** 2 + b ** 2 - c ** 2 - d ** 2)
-                    + 2*np.sin(x/2)*np.cos(x/2)*(- a ** 2 - b ** 2 + c ** 2 + d ** 2))
+        expected = (
+            0.5
+            * (1 / norm ** 2)
+            * (
+                -np.sin(phi) * (psi_0 ** 2 + psi_1 ** 2 - psi_2 ** 2 - psi_3 ** 2)
+                + 2
+                * np.sin(phi / 2)
+                * np.cos(phi / 2)
+                * (-(psi_0 ** 2) - psi_1 ** 2 + psi_2 ** 2 + psi_3 ** 2)
+            )
+        )
 
-        res = qml.grad(circuit)(x)
+        res = qml.grad(circuit)(phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_grad_ising_zz(self, dev_name, diff_method, tol):
-
+        """Test the gradient for the gate IsingZZ."""
         if diff_method in {"adjoint"}:
             pytest.skip("Test does not support adjoint")
 
         dev = qml.device(dev_name, wires=2)
 
-        a=0.1
-        b=0.2
-        c=0.3
-        d=0.4
+        psi_0 = 0.1
+        psi_1 = 0.2
+        psi_2 = 0.3
+        psi_3 = 0.4
 
-        init_state = np.array([a, b, c, d], requires_grad=False)
+        init_state = np.array([psi_0, psi_1, psi_2, psi_3], requires_grad=False)
         norm = np.linalg.norm(init_state)
         init_state /= norm
 
         @qml.qnode(dev, diff_method=diff_method, interface="autograd")
-        def circuit(x):
+        def circuit(phi):
             qml.QubitStateVector(init_state, wires=[0, 1])
-            qml.IsingZZ(x, wires=[0, 1])
+            qml.IsingZZ(phi, wires=[0, 1])
             return qml.expval(qml.PauliX(0))
 
-        x = np.array(0.1, requires_grad=True)
+        phi = np.array(0.1, requires_grad=True)
 
-        expected = (1 / norm ** 2) * \
-                   (-2*(a*c+b*d)*np.sin(x))
+        expected = (1 / norm ** 2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
 
-        res = qml.grad(circuit)(x)
+        res = qml.grad(circuit)(phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
 
 def qtransform(qnode, a, framework=np):
     """Transforms every RY(y) gate in a circuit to RX(-a*cos(y))"""

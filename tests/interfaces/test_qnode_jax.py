@@ -93,66 +93,70 @@ def test_simple_grad():
         ["default.qubit", "backprop"],
     ],
 )
-def test_grad_ising_xx(dev_name, diff_method, tol):
+class TestIsing:
+    """Test classs for IsingXX and IsingZZ"""
 
-    dev = qml.device(dev_name, wires=2)
+    def test_grad_ising_xx(self, dev_name, diff_method, tol):
+        """Test the gradient for the gate IsingXX."""
+        dev = qml.device(dev_name, wires=2)
 
-    a=0.1
-    b=0.2
-    c=0.3
-    d=0.4
+        psi_0 = 0.1
+        psi_1 = 0.2
+        psi_2 = 0.3
+        psi_3 = 0.4
 
-    init_state = jnp.array([a, b, c, d])
-    norm = jnp.linalg.norm(init_state)
-    init_state = init_state / norm
+        init_state = jnp.array([psi_0, psi_1, psi_2, psi_3])
+        norm = jnp.linalg.norm(init_state)
+        init_state = init_state / norm
 
-    @qml.qnode(dev, diff_method=diff_method, interface="jax")
-    def circuit(x):
-        qml.QubitStateVector(init_state, wires=[0, 1])
-        qml.IsingXX(x, wires=[0, 1])
-        return qml.expval(qml.PauliZ(0))
+        @qml.qnode(dev, diff_method=diff_method, interface="jax")
+        def circuit(phi):
+            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.IsingXX(phi, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
 
-    x = jnp.array(0.1)
+        phi = jnp.array(0.1)
 
-    expected = 0.5 * (1 / norm ** 2) * \
-               (-np.sin(x) * (a ** 2 + b ** 2 - c ** 2 - d ** 2)
-                + 2*np.sin(x/2)*np.cos(x/2)*(- a ** 2 - b ** 2 + c ** 2 + d ** 2))
+        expected = (
+            0.5
+            * (1 / norm ** 2)
+            * (
+                -np.sin(phi) * (psi_0 ** 2 + psi_1 ** 2 - psi_2 ** 2 - psi_3 ** 2)
+                + 2
+                * np.sin(phi / 2)
+                * np.cos(phi / 2)
+                * (-(psi_0 ** 2) - psi_1 ** 2 + psi_2 ** 2 + psi_3 ** 2)
+            )
+        )
 
-    res = jax.grad(circuit, argnums = 0)(x)
-    assert np.allclose(res, expected, atol=tol, rtol=0)
+        res = jax.grad(circuit, argnums=0)(phi)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
-@pytest.mark.parametrize(
-    "dev_name,diff_method",
-    [
-        ["default.qubit", "backprop"],
-    ],
-)
-def test_grad_ising_zz(dev_name, diff_method, tol):
+    def test_grad_ising_zz(self, dev_name, diff_method, tol):
+        """Test the gradient for the gate IsingZZ."""
+        dev = qml.device(dev_name, wires=2)
 
-    dev = qml.device(dev_name, wires=2)
+        psi_0 = 0.1
+        psi_1 = 0.2
+        psi_2 = 0.3
+        psi_3 = 0.4
 
-    a=0.1
-    b=0.2
-    c=0.3
-    d=0.4
+        init_state = jnp.array([psi_0, psi_1, psi_2, psi_3])
+        norm = jnp.linalg.norm(init_state)
+        init_state = init_state / norm
 
-    init_state = jnp.array([a, b, c, d])
-    norm = jnp.linalg.norm(init_state)
-    init_state = init_state / norm
+        @qml.qnode(dev, diff_method=diff_method, interface="jax")
+        def circuit(phi):
+            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.IsingZZ(phi, wires=[0, 1])
+            return qml.expval(qml.PauliX(0))
 
-    @qml.qnode(dev, diff_method=diff_method, interface="jax")
-    def circuit(x):
-        qml.QubitStateVector(init_state, wires=[0, 1])
-        qml.IsingZZ(x, wires=[0, 1])
-        return qml.expval(qml.PauliX(0))
+        phi = jnp.array(0.1)
 
-    x = jnp.array(0.1)
+        expected = (1 / norm ** 2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
 
-    expected = (1 / norm ** 2) * \
-               (-2*(a*c+b*d)*np.sin(x))
-
-    res = jax.grad(circuit, argnums = 0)(x)
-    assert np.allclose(res, expected, atol=tol, rtol=0)
+        res = jax.grad(circuit, argnums=0)(phi)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
 @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff"])

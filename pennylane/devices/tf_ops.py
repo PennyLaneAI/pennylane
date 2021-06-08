@@ -193,6 +193,7 @@ def CRot(a, b, c):
     """
     return tf.linalg.diag(CRZ(c)) @ (CRY(b) @ tf.linalg.diag(CRZ(a)))
 
+
 def IsingXX(phi):
     r"""Ising XX coupling gate.
 
@@ -208,10 +209,8 @@ def IsingXX(phi):
         \end{bmatrix}`
     """
     phi = tf.cast(phi, dtype=C_DTYPE)
-    return (
-            tf.cos(phi / 2) * II
-            - 1j * tf.sin(phi/ 2) * XX
-    )
+    return tf.cos(phi / 2) * II - 1j * tf.sin(phi / 2) * XX
+
 
 def IsingZZ(phi):
     r"""Ising ZZ coupling gate
@@ -229,9 +228,10 @@ def IsingZZ(phi):
 
     """
     phi = tf.cast(phi, dtype=C_DTYPE)
-    e_m = tf.exp(-1j * phi/2)
-    e = tf.exp(1j * phi/2)
+    e_m = tf.exp(-1j * phi / 2)
+    e = tf.exp(1j * phi / 2)
     return tf.convert_to_tensor([[e_m, 0, 0, 0], [0, e, 0, 0], [0, 0, e, 0], [0, 0, 0, e_m]])
+
 
 def SingleExcitation(phi):
     r"""Single excitation rotation.

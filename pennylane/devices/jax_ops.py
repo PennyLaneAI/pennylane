@@ -182,6 +182,7 @@ def MultiRZ(theta, n):
     """
     return jnp.exp(-1j * theta / 2 * pauli_eigs(n))
 
+
 def IsingXX(phi):
     r"""Ising XX coupling gate.
 
@@ -196,10 +197,8 @@ def IsingXX(phi):
             -i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
         \end{bmatrix}`
     """
-    return (
-            jnp.cos(phi / 2) * II
-            - 1j * jnp.sin(phi/ 2)  * XX
-    )
+    return jnp.cos(phi / 2) * II - 1j * jnp.sin(phi / 2) * XX
+
 
 def IsingZZ(phi):
     r"""Ising ZZ coupling gate
@@ -216,9 +215,10 @@ def IsingZZ(phi):
         \end{bmatrix}.
 
     """
-    e_m = jnp.exp(-1j * phi/2)
-    e = jnp.exp(1j * phi/2)
+    e_m = jnp.exp(-1j * phi / 2)
+    e = jnp.exp(1j * phi / 2)
     return jnp.array([[e_m, 0, 0, 0], [0, e, 0, 0], [0, 0, e, 0], [0, 0, 0, e_m]])
+
 
 def SingleExcitation(phi):
     r"""Single excitation rotation.
