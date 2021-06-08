@@ -131,14 +131,14 @@ class TestCompile:
     def test_two_pass(self):
         """Test that two passes of a pipeline produce the expected result"""
 
-        def func_with_many_rots():
+        def qfunc_with_many_rots():
             qml.RX(0.1, wires=0)
             qml.RX(0.2, wires=0)
             qml.RX(0.3, wires=0)
             qml.RX(0.4, wires=0)
             qml.RX(0.5, wires=0)
 
-        two_passes = compile(pipeline=[merge_rotations], num_passes=2)(func_with_many_rots)
+        two_passes = compile(pipeline=[merge_rotations], num_passes=2)(qfunc_with_many_rots)
         ops_two_passes = qml.transforms.make_tape(two_passes)().operations
 
         assert len(ops_two_passes) == 2
@@ -148,3 +148,40 @@ class TestCompile:
 
         assert ops_two_passes[1].name == "RX"
         assert ops_two_passes[1].parameters[0] == 0.5
+
+    def test_basis_expansion(self):
+        """Test that two passes of a pipeline produce the expected result"""
+
+        def qfunc_with_cry():
+            qml.RY(0.2, wires=1)
+            qml.CRY(0.1, wires=[0, 1])
+            qml.RZ(np.pi / 4, wires=2)
+            qml.S(wires=2)
+
+        pipeline = [cancel_inverses, merge_rotations]
+        basis = ["CNOT", "RX", "RY", "RZ"]
+
+        two_passes = compile(pipeline=[merge_rotations], basis_set=basis, num_passes=1)(
+            qfunc_with_cry
+        )
+        ops_two_passes = qml.transforms.make_tape(two_passes)().operations
+
+        assert len(ops_two_passes) == 5
+
+        assert ops_two_passes[0].name == "RY"
+        assert ops_two_passes[0].wires == Wires(1)
+        assert ops_two_passes[0].parameters[0] == 0.25
+
+        assert ops_two_passes[1].name == "CNOT"
+        assert ops_two_passes[1].wires == Wires([0, 1])
+
+        assert ops_two_passes[2].name == "RY"
+        assert ops_two_passes[2].wires == Wires(1)
+        assert ops_two_passes[2].parameters[0] == -0.05
+
+        assert ops_two_passes[3].name == "CNOT"
+        assert ops_two_passes[3].wires == Wires([0, 1])
+
+        assert ops_two_passes[4].name == "RZ"
+        assert ops_two_passes[4].wires == Wires(2)
+        assert np.isclose(ops_two_passes[4].parameters[0], np.pi / 2 + np.pi / 4)
