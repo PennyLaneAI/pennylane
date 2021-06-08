@@ -400,13 +400,19 @@ class Operator(abc.ABC):
         """String for the name of the operator."""
         return self._name
 
+    @property
+    def id(self):
+        """String for the ID of the operator."""
+        return self._id
+
     @name.setter
     def name(self, value):
         self._name = value
 
-    def __init__(self, *params, wires=None, do_queue=True):
+    def __init__(self, *params, wires=None, do_queue=True, id=None):
         # pylint: disable=too-many-branches
         self._name = self.__class__.__name__  #: str: name of the operator
+        self._id = id
         self.queue_idx = None  #: int, None: index of the Operator in the circuit queue, or None if not in a queue
 
         if wires is None:
@@ -685,7 +691,7 @@ class Operation(Operator):
         """Get and set the name of the operator."""
         return self._name + Operation.string_for_inverse if self.inverse else self._name
 
-    def __init__(self, *params, wires=None, do_queue=True):
+    def __init__(self, *params, wires=None, do_queue=True, id=None):
 
         self._inverse = False
 
@@ -712,7 +718,7 @@ class Operation(Operator):
         else:
             assert self.grad_recipe is None, "Gradient recipe is only used by the A method!"
 
-        super().__init__(*params, wires=wires, do_queue=do_queue)
+        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
 
 class DiagonalOperation(Operation):
@@ -960,13 +966,13 @@ class Observable(Operator):
         """
         return super().eigvals
 
-    def __init__(self, *params, wires=None, do_queue=True):
+    def __init__(self, *params, wires=None, do_queue=True, id=None):
         # extract the arguments
         if wires is None:
             wires = params[-1]
             params = params[:-1]
 
-        super().__init__(*params, wires=wires, do_queue=do_queue)
+        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
     def __repr__(self):
         """Constructor-call-like representation."""
