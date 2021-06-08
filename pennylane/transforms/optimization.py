@@ -13,21 +13,10 @@
 # limitations under the License.
 """Transforms for optimizing quantum circuits."""
 
-import pennylane as qml
-
 import numpy as np
 
 from pennylane.wires import Wires
 from pennylane.transforms import qfunc_transform
-
-
-# This is a set of gates that are their own inverse; rather than keeping a list,
-# this is possibly something that could be kept as a property of the Operations
-self_inverse_symmetric = ["Hadamard", "CNOT", "CX", "CY", "CZ", "PauliX", "PauliY", "PauliZ"]
-self_inverse_asymmetric = ["Hadamard", "CZ", "PauliX", "PauliY", "PauliZ"]
-
-# Similarly, would be nice to mark this property within the operation
-mergeable_rotations = ["RX", "RY", "RZ", "CRX", "CRY", "CRZ"]
 
 
 def _find_next_gate(wires, op_list):
@@ -122,7 +111,7 @@ def cancel_inverses(tape):
         current_gate = list_copy[0]
 
         # Normally queue any gates that are not their own inverse
-        if current_gate.name not in self_inverse_symmetric:
+        if not current_gate.is_self_inverse:
             current_gate.queue()
             list_copy.pop(0)
             continue
@@ -148,7 +137,7 @@ def cancel_inverses(tape):
             # If wires are not equal, need to check if the inverse is asymmetric;
             # if it is not, then we can't cancel and have to queue it
             else:
-                if current_gate.name in self_inverse_asymmetric:
+                if current_gate.is_symmetric_over_wires:
                     list_copy.pop(next_gate_idx + 1)
                 else:
                     current_gate.queue()
@@ -217,7 +206,7 @@ def merge_rotations(tape):
         current_gate = list_copy[0]
 
         # Normally queue any non-rotation gates
-        if current_gate.name not in mergeable_rotations:
+        if not current_gate.is_composable_rotation:
             current_gate.queue()
             list_copy.pop(0)
             continue

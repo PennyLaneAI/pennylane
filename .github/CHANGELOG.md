@@ -2,6 +2,58 @@
 
 <h3>New features since last release</h3>
 
+* PennyLane can now perform basic simplification of quantum circuits,
+  including cancellation of adjacent inverses and merging of adjacent
+  single-parameter rotation gates. For example, consider the following
+  circuit:
+
+  ```python
+  def qfunc(x, y, z):
+    qml.RX(x, wires=0)
+    qml.RX(y, wires=0)
+    qml.CNOT(wires=[1, 2])
+    qml.RY(y, wires=1)
+    qml.Hadamard(wires=2)
+    qml.Hadamard(wires=2)
+    qml.CRZ(z, wires=[2, 0])
+    qml.RY(-y, wires=1)
+    qml.CRZ(y, wires=[2, 0])
+    return qml.expval(qml.PauliZ(0))
+  ```
+
+  If we construct a QNode, we can visualize this circuit:
+  ```pycon
+  >>> dev = qml.device('default.qubit', wires=3)
+  >>> qnode = qml.QNode(qfunc, dev)
+  >>> qml.draw(qnode, wire_order=dev.wires)(1, 2, 3)
+  0: ───RX(1)──RX(2)──────────╭RZ(3)──╭RZ(2)──┤ ⟨Z⟩
+  1: ──╭C──────RY(2)──RY(-2)──│───────│───────┤
+  2: ──╰X──────H──────H───────╰C──────╰C──────┤
+  ```
+
+  We can optimize this circuit by passing a "pipeline" of built-in or
+  custom optimization transforms:
+
+  ```pycon
+  >>> pipeline = [qml.transforms.merge_rotations, qml.transforms.cancel_inverses]
+  >>> compiled_qfunc = qml.compile(pipeline=pipeline)(qfunc)
+  >>> compiled_qnode = qml.QNode(compiled_qfunc, dev)
+  >>> print(qml.draw(compiled_qnode, wire_order=dev.wires)(1, 2, 3))
+  0: ───RX(3)──╭RZ(5)──┤ ⟨Z⟩
+  1: ──╭C──────│───────┤
+  2: ──╰X──────╰C──────┤
+  ```
+
+  The `compile` transform, as with other quantum function transforms, can
+  also be used as a decorator:
+
+  ```python
+  @qml.qnode(dev)
+  @qml.compile(pipeline=pipeline)
+  def qfunc(x, y, z):
+      ...
+  ```
+
 * The `quantum_monte_carlo` transform has been added, allowing an input circuit to be transformed
   into the full quantum Monte Carlo algorithm.
   [(#1316)](https://github.com/PennyLaneAI/pennylane/pull/1316)
