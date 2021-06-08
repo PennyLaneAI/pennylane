@@ -24,8 +24,8 @@ from pennylane.ops import BasisState
 class AllSinglesDoubles(Operation):
     r"""Builds a quantum circuit to prepare correlated states of molecules
     by applying all :class:`~.pennylane.SingleExcitation` and
-    :class:`~.pennylane.DoubleExcitation` operations associated with all
-    single and double excitations of the initial Hartree-Fock state.
+    :class:`~.pennylane.DoubleExcitation` operations to
+    the initial Hartree-Fock state.
 
     The template initializes the :math:`n`-qubit system to encode
     the input Hartree-Fock state and applies the particle-conserving
@@ -61,7 +61,7 @@ class AllSinglesDoubles(Operation):
     Args:
         weights (tensor_like): size ``(len(singles) + len(doubles),)`` tensor containing the
             angles entering the :class:`~.pennylane.SingleExcitation` and
-            :class:`~.pennylane.DoubleExcitation` operations
+            :class:`~.pennylane.DoubleExcitation` operations, in that order
         wires (Iterable): wires that the template acts on
         hf_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
             Hartree-Fock state. ``hf_state`` is used to initialize the wires.
