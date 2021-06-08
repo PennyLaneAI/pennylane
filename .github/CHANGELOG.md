@@ -25,10 +25,10 @@
   ```pycon
   >>> dev = qml.device('default.qubit', wires=3)
   >>> qnode = qml.QNode(qfunc, dev)
-  >>> qml.draw(qnode, wire_order=dev.wires)(1, 2, 3)
-  0: ───RX(1)──RX(2)──────────╭RZ(3)──╭RZ(2)──┤ ⟨Z⟩
-  1: ──╭C──────RY(2)──RY(-2)──│───────│───────┤
-  2: ──╰X──────H──────H───────╰C──────╰C──────┤
+  >>> qml.draw(qnode, wire_order=dev.wires)(0.1, 0.2, 0.3)
+  0: ───RX(0.1)──RX(0.2)────────────╭RZ(0.3)──╭RZ(0.2)──┤ ⟨Z⟩
+  1: ──╭C────────RY(0.2)──RY(-0.2)──│─────────│─────────┤
+  2: ──╰X────────H────────H─────────╰C────────╰C────────┤
   ```
 
   We can optimize this circuit by passing a "pipeline" of built-in or
@@ -38,10 +38,10 @@
   >>> pipeline = [qml.transforms.merge_rotations, qml.transforms.cancel_inverses]
   >>> compiled_qfunc = qml.compile(pipeline=pipeline)(qfunc)
   >>> compiled_qnode = qml.QNode(compiled_qfunc, dev)
-  >>> qml.draw(compiled_qnode, wire_order=dev.wires)(1, 2, 3)
-  0: ───RX(3)──╭RZ(5)──┤ ⟨Z⟩
-  1: ──╭C──────│───────┤
-  2: ──╰X──────╰C──────┤
+  >>> qml.draw(compiled_qnode, wire_order=dev.wires)(0.1, 0.2, 0.3)
+  0: ───RX(0.3)──╭RZ(0.5)──┤ ⟨Z⟩
+  1: ──╭C────────│─────────┤
+  2: ──╰X────────╰C────────┤
   ```
 
   The `compile` transform, as with other quantum function transforms, can
@@ -52,6 +52,16 @@
   @qml.compile(pipeline=pipeline)
   def qfunc(x, y, z):
       ...
+  ```
+
+  As quantum transforms preserve differentiability, we can compute the
+  gradient of the optimized version in the same manner as the original.
+
+  ```pycon
+  >>> qml.grad(qnode)(0.1, 0.2, 0.3)
+  (array(-0.29552021), array(-0.29552021), array(0.))
+  >>> qml.grad(compiled_qnode)(0.1, 0.2, 0.3)
+  (array(-0.29552021), array(-0.29552021), array(0.))
   ```
 
 * The `quantum_monte_carlo` transform has been added, allowing an input circuit to be transformed
