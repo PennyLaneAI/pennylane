@@ -21,6 +21,7 @@ from collections import Counter, OrderedDict, namedtuple
 import networkx as nx
 
 import pennylane as qml
+import numpy as np
 
 from .circuit_drawer import CHARSETS, CircuitDrawer
 
@@ -65,6 +66,18 @@ def _list_at_index_or_none(ls, idx):
         return ls[idx]
 
     return None
+
+
+def is_returned_observable(op):
+    """Helper for the condition of having an observable or
+    measurement process in the return statement.
+
+    Returns:
+        bool: whether or not the observable or measurement process is in the
+        return statement
+    """
+    is_obs = isinstance(op, (qml.operation.Observable, qml.measure.MeasurementProcess))
+    return is_obs and op.return_type is not None
 
 
 Layer = namedtuple("Layer", ["ops", "param_inds"])
@@ -167,6 +180,10 @@ class CircuitGraph:
         # For computing depth; want only a graph with the operations, not
         # including the observables
         self._operation_graph = None
+
+        # Required to keep track if we need to handle multiple returned
+        # observables per wire
+        self._max_simultaneous_measurements = None
 
     def print_contents(self):
         """Prints the contents of the quantum circuit."""
@@ -480,19 +497,35 @@ class CircuitGraph:
             l += 1
 
         observables = OrderedDict()
-        for wire in sorted(self._grid):
-            observables[wire] = list(
-                filter(
-                    lambda op: isinstance(
-                        op, (qml.operation.Observable, qml.measure.MeasurementProcess)
-                    )
-                    and op.return_type is not None,
-                    self._grid[wire],
-                )
-            )
 
-            if not observables[wire]:
-                observables[wire] = [None]
+        if self.max_simultaneous_measurements == 1:
+
+            # There is a single measurement
+            for wire in sorted(self._grid):
+                observables[wire] = list(
+                    filter(
+                        lambda op: isinstance(
+                            op, (qml.operation.Observable, qml.measure.MeasurementProcess)
+                        )
+                        and op.return_type is not None,
+                        self._grid[wire],
+                    )
+                )
+                if not observables[wire]:
+                    observables[wire] = [None]
+        else:
+
+            # There are multiple measurements
+            for wire in sorted(self._grid):
+                mp_map = dict(zip(self.observables, range(self.max_simultaneous_measurements)))
+
+                # Initialize to None everywhere
+                observables[wire] = [None] * self.max_simultaneous_measurements
+
+                for op in self._grid[wire]:
+                    if is_returned_observable(op):
+                        obs_idx = mp_map[op]
+                        observables[wire][obs_idx] = op
 
         if wire_order is not None:
             temp_op_grid = OrderedDict()
@@ -608,3 +641,43 @@ class CircuitGraph:
             bool: returns ``True`` if a path exists
         """
         return nx.has_path(self._graph, a, b)
+
+    @property
+    def max_simultaneous_measurements(self):
+        """Returns the maximum number of measurements on any wire in the circuit graph.
+
+        This method counts the number of measurements for each wire and returns
+        the maximum.
+
+        **Examples**
+
+
+        >>> dev = qml.device('default.qubit', wires=3)
+        >>> def circuit_measure_max_once():
+        ...     return qml.expval(qml.PauliX(wires=0))
+        >>> qnode = qml.QNode(circuit_measure_max_once, dev)
+        >>> qnode()
+        >>> qnode.qtape.graph.max_simultaneous_measurements
+        1
+        >>> def circuit_measure_max_twice():
+        ...     return qml.expval(qml.PauliX(wires=0)), qml.probs(wires=0)
+        >>> qnode = qml.QNode(circuit_measure_max_twice, dev)
+        >>> qnode()
+        >>> qnode.qtape.graph.max_simultaneous_measurements
+        2
+
+        Returns:
+            int: the maximum number of measurements
+        """
+        if self._max_simultaneous_measurements is None:
+            all_wires = []
+
+            for obs in self.observables:
+                all_wires.extend(obs.wires.tolist())
+
+            a = np.array(all_wires)
+            _, counts = np.unique(a, return_counts=True)
+            self._max_simultaneous_measurements = (
+                counts.max() if counts.size != 0 else 1
+            )  # qml.state() will result in an empty array
+        return self._max_simultaneous_measurements

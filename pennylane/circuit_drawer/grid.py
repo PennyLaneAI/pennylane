@@ -176,7 +176,7 @@ class Grid:
         Returns:
             Grid: A copy of the Grid
         """
-        return Grid(self.raw_grid.copy())
+        return Grid(self.raw_grid.copy()) if self.raw_grid is not None else Grid()
 
     def append_grid_by_layers(self, other_grid):
         """Append the layers of another Grid to this Grid.
