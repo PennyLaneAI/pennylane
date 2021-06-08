@@ -48,6 +48,7 @@ containing quantum operations) that are used to construct QNodes.
     ~ctrl
     ~transforms.invisible
     ~transforms.merge_rotations
+    ~quantum_monte_carlo
 
 Transforms that act on tapes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -87,3 +88,4 @@ from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
 from .optimization import cancel_inverses, merge_rotations
 from .transpilation import cnot_to_cz
 from .compile import compile
+from .qmc import quantum_monte_carlo
