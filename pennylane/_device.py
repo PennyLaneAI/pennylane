@@ -455,6 +455,9 @@ class Device(abc.ABC):
             # increment counter for number of executions of device
             self._num_executions += 1
 
+            if self.tracker.tracking:
+                self.tracker.update(total_executions=1, total_shots=self._shots)
+                self.tracker.record()
 
             # Ensures that a combination with sample does not put
             # expvals and vars in superfluous arrays
