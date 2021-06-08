@@ -18,6 +18,72 @@ from collections import defaultdict
 import pennylane as qml
 
 def track(dev, version="default", **kwargs):
+    r"""Creates a tracking context and applies it to a device.
+
+    Args:
+        dev (~.Device): a PennyLane-compatible device
+        version (str): name of tracker to use.  The current options are
+            `default` and `timing`.
+
+    Keyword Args:
+        reset_on_enter=True (bool): whether or not to reset information
+            entering the context
+
+    **Example**
+
+    Note that with backpropogation, this functions should take `qnode.device`
+    instead of the device used to create the QNode.  
+
+    .. code-block:: python
+
+        dev = qml.device('default.qubit', wires=1)
+
+        @qml.qnode(device, diff_method="parameter-shift")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+    With the default version, total execution information is printed on
+    each device execution.  The printed data depends on the device and tracker version,
+    but for standard PennyLane devices, the object will track executions and shots.
+
+    >>> with qml.track(circuit.device) as tracker:
+    ...    qml.grad(circuit)(0.1)
+    Totals: executions = 1	
+    Totals: executions = 2	
+    Totals: executions = 3	
+
+    In with the ``'timing'`` implementation, the instance also tracks the time
+    between entering the context and the completion of an execution.
+
+    >>> with qml.track(circuit.device, version='timing') as timing_tracker:
+    ...    circuit(0.1, shots=10)
+    ...    circuit(0.2, shots=20)
+    Totals: executions = 1	shots = 10	time = 0.0011134147644042969	
+    Totals: executions = 2	shots = 30	time = 0.0027322769165039062
+
+    After completion, one can also access the recorded information:
+
+    >>> timing_tracker.totals
+    defaultdict(int, {'executions': 2, 'shots': 30, 'time': 0.00311279296875})
+
+    >>> timing_tracker.history
+    defaultdict(list,
+            {'executions': [1, 1],
+             'shots': [10, 20],
+             'time': [0.0012764930725097656, 0.0018362998962402344]})
+
+    By specifying ``reset_on_enter=False``, you can reuse the same tracker accross
+    multiple runtime contexts.
+
+    >>> with qml.track(circuit.device, reset_on_enter) as tracker:
+    ...     circuit(0.1)
+    Totals: executions = 1	shots = 10	
+    >>> with tracker:
+    ...     circuit(0.2)
+    Totals: executions = 2	shots = 20
+
+    """
     if version=="timing":
         return TimingTracker(dev, **kwargs)
     elif version=="default":
