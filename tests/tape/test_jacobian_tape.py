@@ -434,7 +434,7 @@ class TestJacobian:
     @pytest.mark.parametrize(
         "diff_methods", [["A", "0", "F"], ["A", "A", "A"], ["F", "A", "A", "0", "0"]]
     )
-    @pytest.mark.parametrize("argnum", [None, 0, [0,1], [0,1,2], [2,0], [1,0], [0,0,0]])
+    @pytest.mark.parametrize("argnum", [None, 0, [0, 1], [0, 1, 2], [2, 0], [1, 0], [0, 0, 0]])
     def test_choose_params_and_methods(self, diff_methods, argnum):
         """Test that the _choose_params_and_methods helper method returns
         expected results"""
@@ -454,10 +454,9 @@ class TestJacobian:
         else:
             num_params = len(argnum)
 
-        print(res)
         assert len(res) == num_params
 
-    @pytest.mark.parametrize("argnum", [1,2,3, -1])
+    @pytest.mark.parametrize("argnum", [1, 2, 3, -1])
     def test_choose_params_and_methods_raises(self, argnum):
         """Test that the _choose_params_and_methods helper method raises an
         error if incorrect trainable parameters are specified."""
@@ -482,6 +481,7 @@ class TestJacobian:
             match="No trainable parameters",
         ):
             res = tape._choose_params_with_methods(diff_methods, argnum)
+
 
 class TestJacobianIntegration:
     """Integration tests for the Jacobian method"""
@@ -536,7 +536,7 @@ class TestJacobianIntegration:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        res = tape.jacobian(dev, argnum=[0,1])  # <--- we choose both trainable parameters
+        res = tape.jacobian(dev, argnum=[0, 1])  # <--- we choose both trainable parameters
         assert res.shape == (1, 2)
 
         expected = np.array([[-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]])

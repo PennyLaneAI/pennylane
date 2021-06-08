@@ -415,7 +415,7 @@ class JacobianTape(QuantumTape):
                 with respect to. Specifies the indices of the parameters to sample.
 
         Returns:
-            object or list: map of the trainable parameter indices and
+            enumerate or list: map of the trainable parameter indices and
             differentiation methods
         """
         if argnum is None:
@@ -425,7 +425,9 @@ class JacobianTape(QuantumTape):
             argnum = [argnum]
 
         if not all(ind in self.trainable_params for ind in argnum):
-            raise ValueError("Incorrect trainable parameters were specified for the argnum argument.")
+            raise ValueError(
+                "Incorrect trainable parameters were specified for the argnum argument."
+            )
 
         num_params = len(argnum)
 
