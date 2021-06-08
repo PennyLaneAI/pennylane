@@ -14,6 +14,13 @@
 
 import time
 
+def track(dev, version="default", reset_on_enter=True):
+    if version=="timing":
+        return TimingTracker(dev, reset_on_enter)
+    else:
+        return DevTracker(dev, reset_on_enter)
+
+
 class DevTracker:
     """
     Class docstring
@@ -65,8 +72,20 @@ class TimingTracker(DevTracker):
 
     def __enter__(self):
         self.t0 = time.time()
-        super().__enter__()
+        self.times = []
+        return super().__enter__()
 
     def update(self, **kwargs):
+
         super().update(**kwargs)
+
         self.data["total_time"] = time.time() - self.t0
+        self.times.append(self.data["total_time"])
+
+    def record(self):
+        """
+        record data somehow
+        """
+        for key, value in self.data.items():
+            print(f"{key} = {value}", end="\t")
+        print()
