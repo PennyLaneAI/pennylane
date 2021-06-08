@@ -32,12 +32,12 @@ class DevTracker:
         """
         self.reset_on_enter = reset_on_enter
 
-        self.data = dict()
+        self.reset()
         self.tracking = False
 
         if dev is not None:
             dev.tracker = self
-            
+
     def __enter__(self):
         """
         docstring for enter
@@ -74,11 +74,6 @@ class DevTracker:
 
 class TimingTracker(DevTracker):
 
-    def __init__(self, dev=None, reset_on_enter=True):
-        self.times = []
-        self.t_old = 0
-        super().__init__(dev, reset_on_enter)
-
     def update(self, **kwargs):
 
         super().update(**kwargs)
@@ -86,7 +81,7 @@ class TimingTracker(DevTracker):
         current_time = time.time() - self.t0
         self.data["total_time"] = current_time
         self.times.append(current_time-self.t_old)
-        
+
         self.t_old = current_time
 
     def reset(self):
