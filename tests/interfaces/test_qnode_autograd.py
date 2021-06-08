@@ -1073,6 +1073,35 @@ class TestQNode:
         jac_fn(x)
         assert j_spy.call_count == 5
 
+    def test_grad_ising_xx(self, dev_name, diff_method, tol):
+
+        if diff_method not in {"parameter-shift"}:
+            pytest.skip("Test only supports parameter-shift")
+
+        dev = qml.device(dev_name, wires=2)
+
+        a=0.1
+        b=0.2
+        c=0.3
+        d=0.4
+
+        init_state = np.array([a, b, c, d], requires_grad=False)
+        init_state /= np.linalg.norm(init_state)
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def circuit(x):
+            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        x = np.array(0.1, requires_grad=True)
+
+        expected = 1 / np.linalg.norm(init_state) ** 2 * \
+                   (-np.sin(x) * (a ** 2 + b ** 2 - c ** 2 - d ** 2)
+                    + 2*np.sin(x/2)*np.cos(x/2)*(- a ** 2 - b ** 2 + c ** 2 + d ** 2))
+
+        res = qml.grad(circuit)(x)
+        assert np.allclose(res, np.sin(a), atol=tol, rtol=0)
 
 def qtransform(qnode, a, framework=np):
     """Transforms every RY(y) gate in a circuit to RX(-a*cos(y))"""
