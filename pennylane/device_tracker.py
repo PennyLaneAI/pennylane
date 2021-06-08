@@ -68,7 +68,6 @@ class DevTracker:
 
     def update(self, **current):
         """ updating data"""
-        self.current = current
 
         for key, value in current.items():
             # update history
@@ -82,7 +81,6 @@ class DevTracker:
         """ reseting data"""
         self.totals = defaultdict(int)
         self.history= defaultdict(list)
-        self.current = dict()
 
     def record(self):
         """
