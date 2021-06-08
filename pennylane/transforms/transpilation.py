@@ -53,7 +53,7 @@ def cnot_to_cz(tape):
         if op.name == "CNOT":
             wires = op.wires
             Hadamard(wires=wires[1])
-            CZ(wires=[wires[1], wires[0]])
+            CZ(wires=[wires[0], wires[1]])
             Hadamard(wires=wires[1])
 
         # If it's not a CNOT, simply add it to the tape
