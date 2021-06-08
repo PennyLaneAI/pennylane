@@ -202,7 +202,7 @@ def IsingXX(phi):
         0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
         0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
         -i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
-    \end{bmatrix}.
+        \end{bmatrix}.
 
     Args:
         phi (float): rotation angle :math:`\phi`
