@@ -101,6 +101,24 @@ scripts.
 If you would like to contribute your own demo, see our [demo submission
 guide](https://pennylane.ai/qml/demos_submission.html).
 
+## Build using Docker
+
+
+Buid using CPU as well GPU(Nvidia CUDA11.1) is also supported.
+
+To Build using Basic Pennylane without any interface(Torch,Tensorflow or Jax) run following:
+``` make -f docker.makefile build-base
+ ```
+To Build using interface(Torch,Tensorflow or Jax) run following:
+
+``` make -f docker.makefile build-tensorflow
+```
+
+To Build using interface(Torch,Tensorflow or Jax) and GPU support run following:
+
+``` make -f docker.makefile build-tensorflow gpu=true
+```
+
 ## Contributing to PennyLane
 
 We welcome contributions—simply fork the PennyLane repository, and then make a [pull
