@@ -229,8 +229,8 @@ def IsingZZ(phi):
 
     """
     phi = tf.cast(phi, dtype=C_DTYPE)
-    e_m = tf.exp(-1j * phi)
-    e = tf.exp(1j * phi)
+    e_m = tf.exp(-1j * phi/2)
+    e = tf.exp(1j * phi/2)
     return tf.convert_to_tensor([[e_m, 0, 0, 0], [0, e, 0, 0], [0, 0, e, 0], [0, 0, 0, e_m]])
 
 def SingleExcitation(phi):

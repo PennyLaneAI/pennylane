@@ -90,11 +90,10 @@ def test_simple_grad():
 @pytest.mark.parametrize(
     "dev_name,diff_method",
     [
-        ["default.qubit", "parameter-shift"],
         ["default.qubit", "backprop"],
     ],
 )
-def test_grad_ising_xx(self, dev_name, diff_method, tol):
+def test_grad_ising_xx(dev_name, diff_method, tol):
 
     dev = qml.device(dev_name, wires=2)
 
@@ -103,9 +102,9 @@ def test_grad_ising_xx(self, dev_name, diff_method, tol):
     c=0.3
     d=0.4
 
-    init_state = np.array([a, b, c, d], requires_grad=False)
-    norm = np.linalg.norm(init_state)
-    init_state /= norm
+    init_state = jnp.array([a, b, c, d])
+    norm = jnp.linalg.norm(init_state)
+    init_state = init_state / norm
 
     @qml.qnode(dev, diff_method=diff_method, interface="jax")
     def circuit(x):
@@ -113,13 +112,46 @@ def test_grad_ising_xx(self, dev_name, diff_method, tol):
         qml.IsingXX(x, wires=[0, 1])
         return qml.expval(qml.PauliZ(0))
 
-    x = np.array(0.1, requires_grad=True)
+    x = jnp.array(0.1)
 
     expected = 0.5 * (1 / norm ** 2) * \
                (-np.sin(x) * (a ** 2 + b ** 2 - c ** 2 - d ** 2)
                 + 2*np.sin(x/2)*np.cos(x/2)*(- a ** 2 - b ** 2 + c ** 2 + d ** 2))
 
-    res = qml.grad(circuit)(x)
+    res = jax.grad(circuit, argnums = 0)(x)
+    assert np.allclose(res, expected, atol=tol, rtol=0)
+
+@pytest.mark.parametrize(
+    "dev_name,diff_method",
+    [
+        ["default.qubit", "backprop"],
+    ],
+)
+def test_grad_ising_zz(dev_name, diff_method, tol):
+
+    dev = qml.device(dev_name, wires=2)
+
+    a=0.1
+    b=0.2
+    c=0.3
+    d=0.4
+
+    init_state = jnp.array([a, b, c, d])
+    norm = jnp.linalg.norm(init_state)
+    init_state = init_state / norm
+
+    @qml.qnode(dev, diff_method=diff_method, interface="jax")
+    def circuit(x):
+        qml.QubitStateVector(init_state, wires=[0, 1])
+        qml.IsingZZ(x, wires=[0, 1])
+        return qml.expval(qml.PauliX(0))
+
+    x = jnp.array(0.1)
+
+    expected = (1 / norm ** 2) * \
+               (-2*(a*c+b*d)*np.sin(x))
+
+    res = jax.grad(circuit, argnums = 0)(x)
     assert np.allclose(res, expected, atol=tol, rtol=0)
 
 

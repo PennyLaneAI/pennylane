@@ -216,8 +216,8 @@ def IsingZZ(phi):
         \end{bmatrix}.
 
     """
-    e_m = np.exp(-1j * phi)
-    e = np.exp(1j * phi)
+    e_m = np.exp(-1j * phi/2)
+    e = np.exp(1j * phi/2)
     return np.array([[e_m, 0, 0, 0], [0, e, 0, 0], [0, 0, e, 0], [0, 0, 0, e_m]])
 
 def SingleExcitation(phi):

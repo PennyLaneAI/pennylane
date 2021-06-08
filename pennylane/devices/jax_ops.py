@@ -216,8 +216,8 @@ def IsingZZ(phi):
         \end{bmatrix}.
 
     """
-    e_m = jnp.exp(-1j * phi)
-    e = jnp.exp(1j * phi)
+    e_m = jnp.exp(-1j * phi/2)
+    e = jnp.exp(1j * phi/2)
     return jnp.array([[e_m, 0, 0, 0], [0, e, 0, 0], [0, 0, e, 0], [0, 0, 0, e_m]])
 
 def SingleExcitation(phi):

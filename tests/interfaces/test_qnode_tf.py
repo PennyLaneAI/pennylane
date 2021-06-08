@@ -781,30 +781,66 @@ class TestQNode:
 
     def test_grad_ising_xx(self, dev_name, diff_method, tol):
 
+        if diff_method in {"adjoint"}:
+            pytest.skip("Test does not support adjoint")
+
         dev = qml.device(dev_name, wires=2)
 
-        a = 0.1
-        b = 0.2
-        c = 0.3
-        d = 0.4
+        a = tf.Variable(0.1, dtype=tf.complex128)
+        b = tf.Variable(0.2, dtype=tf.complex128)
+        c = tf.Variable(0.3, dtype=tf.complex128)
+        d = tf.Variable(0.4, dtype=tf.complex128)
 
-        init_state = np.array([a, b, c, d], requires_grad=False)
-        norm = np.linalg.norm(init_state)
-        init_state /= norm
+        init_state = tf.Variable([a, b, c, d], dtype=tf.complex128)
+        norm = tf.norm(init_state)
+        init_state = init_state / norm
 
-        @qml.qnode(dev, diff_method=diff_method, interface="tf")
+        @qml.qnode(dev, interface="tf", diff_method=diff_method)
         def circuit(x):
             qml.QubitStateVector(init_state, wires=[0, 1])
             qml.IsingXX(x, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        x = np.array(0.1, requires_grad=True)
+        x = tf.Variable(0.1, dtype=tf.complex128)
 
         expected = 0.5 * (1 / norm ** 2) * \
-                   (-np.sin(x) * (a ** 2 + b ** 2 - c ** 2 - d ** 2)
-                    + 2 * np.sin(x / 2) * np.cos(x / 2) * (- a ** 2 - b ** 2 + c ** 2 + d ** 2))
+                   (-tf.sin(x) * (a ** 2 + b ** 2 - c ** 2 - d ** 2)
+                    + 2 * tf.sin(x / 2) * tf.cos(x / 2) * (- a ** 2 - b ** 2 + c ** 2 + d ** 2))
 
-        res = qml.grad(circuit)(x)
+        with tf.GradientTape() as tape:
+            result = circuit(x)
+        res = tape.gradient(result, x)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_grad_ising_zz(self, dev_name, diff_method, tol):
+
+        if diff_method in {"adjoint"}:
+            pytest.skip("Test does not support adjoint")
+
+        dev = qml.device(dev_name, wires=2)
+
+        a = tf.Variable(0.1, dtype=tf.complex128)
+        b = tf.Variable(0.2, dtype=tf.complex128)
+        c = tf.Variable(0.3, dtype=tf.complex128)
+        d = tf.Variable(0.4, dtype=tf.complex128)
+
+        init_state = tf.Variable([a, b, c, d], dtype=tf.complex128)
+        norm = tf.norm(init_state)
+        init_state = init_state / norm
+
+        @qml.qnode(dev, interface="tf", diff_method=diff_method)
+        def circuit(x):
+            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.IsingZZ(x, wires=[0, 1])
+            return qml.expval(qml.PauliX(0))
+
+        x = tf.Variable(0.1, dtype=tf.complex128)
+
+        expected = (1 / norm ** 2) * (-2*(a*c+b*d)*np.sin(x))
+
+        with tf.GradientTape() as tape:
+            result = circuit(x)
+        res = tape.gradient(result, x)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
