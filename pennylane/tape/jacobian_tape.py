@@ -424,23 +424,12 @@ class JacobianTape(QuantumTape):
 
         num_params = len(argnum)
 
-        if len(diff_methods) < num_params:
+        if not num_params:
             warnings.warn(
-                "Invalid number of parameters specified for computing the "
-                "jacobian exceeds the number of trainable parameters, the jacobian will be "
-                "computed using all trainable parameters.",
+                "No trainable parameters were specified for computing the jacobian.",
                 UserWarning,
             )
-            return enumerate(diff_methods)
-
-        if num_params < 1:
-            warnings.warn(
-                "Invalid number of parameters specified for computing the "
-                "jacobian exceeds the number of trainable parameters, the jacobian will be "
-                "computed using all trainable parameters.",
-                UserWarning,
-            )
-            return enumerate(diff_methods)
+            return []
 
         diff_methods_to_sample = map(diff_methods.__getitem__, argnum)
         mapped_diff_methods = zip(argnum, diff_methods_to_sample)

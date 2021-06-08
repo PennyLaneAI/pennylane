@@ -417,7 +417,7 @@ class TestJacobian:
     @pytest.mark.parametrize(
         "diff_methods", [["A", "0", "F"], ["A", "A", "A"], ["F", "A", "A", "0", "0"]]
     )
-    @pytest.mark.parametrize("argnum", [None, 0, [0,1], [0,1,2], [2,0], [1,0]])
+    @pytest.mark.parametrize("argnum", [None, 0, [0,1], [0,1,2], [2,0], [1,0], [0,0,0]])
     def test_choose_params_and_methods(self, diff_methods, argnum):
         """Test that the _choose_params_and_methods helper method returns
         expected results"""
@@ -437,10 +437,11 @@ class TestJacobian:
         else:
             num_params = len(argnum)
 
+        print(res)
         assert len(res) == num_params
 
     @pytest.mark.parametrize("argnum", [1,2,3, -1])
-    def test_choose_params_and_methods_warns(self, argnum):
+    def test_choose_params_and_methods_raises(self, argnum):
         """Test that the _choose_params_and_methods helper method raises an
         error if incorrect trainable parameters are specified."""
         tape = JacobianTape()
@@ -452,6 +453,18 @@ class TestJacobian:
         ):
             res = tape._choose_params_with_methods(diff_methods, argnum)
 
+    def test_choose_params_and_methods_warns_no_params(self):
+        """Test that the _choose_params_and_methods helper method warns if an
+        empty list was passed as argnum."""
+        tape = JacobianTape()
+        tape.trainable_params = [0]
+        diff_methods = ["F"]
+        argnum = []
+        with pytest.warns(
+            UserWarning,
+            match="No trainable parameters",
+        ):
+            res = tape._choose_params_with_methods(diff_methods, argnum)
 
 class TestJacobianIntegration:
     """Integration tests for the Jacobian method"""
