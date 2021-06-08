@@ -40,8 +40,8 @@ def qfunc(x, y, z):
 qnode = qml.QNode(qfunc, dev)
 
 
-class TestSinglePass:
-    """Test that a single pass of the compilation pipeline works as expected."""
+class TestCompile:
+    """Test that compilation pipelines work as expected."""
 
     def test_empty_pipeline(self):
         """Test that an empty pipeline returns the original function."""
@@ -112,7 +112,7 @@ class TestSinglePass:
         ],
     )
     def test_full_pass(self, inputs, pipeline, expected_ops):
-        """Test that a one-qubit circuit with a gate in the way does not cancel the inverses."""
+        """Test that different combinations of pipelines work as expected."""
 
         transformed_qfunc = compile(pipeline=pipeline)(qfunc)
         transformed_qnode = qml.QNode(transformed_qfunc, dev)
@@ -127,3 +127,24 @@ class TestSinglePass:
             assert op_obtained.name == op_expected.name
             assert op_obtained.wires == op_expected.wires
             assert np.allclose(op_obtained.parameters, op_expected.parameters)
+
+    def test_two_pass(self):
+        """Test that two passes of a pipeline produce the expected result"""
+
+        def func_with_many_rots():
+            qml.RX(0.1, wires=0)
+            qml.RX(0.2, wires=0)
+            qml.RX(0.3, wires=0)
+            qml.RX(0.4, wires=0)
+            qml.RX(0.5, wires=0)
+
+        two_passes = compile(pipeline=[merge_rotations], num_passes=2)(func_with_many_rots)
+        ops_two_passes = qml.transforms.make_tape(two_passes)().operations
+
+        assert len(ops_two_passes) == 2
+
+        assert ops_two_passes[0].name == "RX"
+        assert ops_two_passes[0].parameters[0] == 1.0
+
+        assert ops_two_passes[1].name == "RX"
+        assert ops_two_passes[1].parameters[0] == 0.5
