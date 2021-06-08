@@ -136,13 +136,13 @@ class TestDecomposition:
 
 
 class TestSparse:
-    """docstring ..."""
+    """Tests the sparse_hamiltonian function"""
 
-    def test_typeerror(self):
+    def test_sparse_typeerror(self):
         """Tests that sparse_hamiltonian raises an error if the given Hamiltonian is not of type
          `qml.Hamiltonian`"""
 
-       with pytest.raises(ValueError, match="Passed Hamiltonian must be of type"):
+        with pytest.raises(TypeError, match="Passed Hamiltonian must be of type"):
            pu.sparse_hamiltonian(np.eye(2))
 
 
