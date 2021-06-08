@@ -201,12 +201,14 @@ def IsingXX(phi):
         phi (float): rotation angle :math:`\phi`
     Returns:
         tf.Tensor[complex]: unitary 4x4 rotation matrix
-        .. math:: XX(\phi) = \begin{bmatrix}
-            \cos(\phi / 2) & 0 & 0 & -i \sin(\phi / 2) \\
-            0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
-            0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
-            -i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
-        \end{bmatrix}`
+
+    .. math:: XX(\phi) = \begin{bmatrix}
+        \cos(\phi / 2) & 0 & 0 & -i \sin(\phi / 2) \\
+        0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
+        0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
+        -i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
+    \end{bmatrix}.
+
     """
     phi = tf.cast(phi, dtype=C_DTYPE)
     return tf.cos(phi / 2) * II - 1j * tf.sin(phi / 2) * XX
@@ -219,7 +221,8 @@ def IsingZZ(phi):
         phi (float): rotation :math:`\phi`
     Returns:
         tf.Tensor[complex]: unitary 4x4 rotation matrix
-        .. math:: ZZ(\phi) = \begin{bmatrix}
+
+    .. math:: ZZ(\phi) = \begin{bmatrix}
         e^{-i \phi / 2} & 0 & 0 & 0 \\
         0 & e^{i \phi / 2} & 0 & 0 \\
         0 & 0 & e^{i \phi / 2} & 0 \\

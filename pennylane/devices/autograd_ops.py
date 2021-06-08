@@ -190,12 +190,14 @@ def IsingXX(phi):
         phi (float): rotation angle :math:`\phi`
     Returns:
         array[complex]: unitary 4x4 rotation matrix
-        .. math:: XX(\phi) = \begin{bmatrix}
-            \cos(\phi / 2) & 0 & 0 & -i \sin(\phi / 2) \\
-            0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
-            0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
-            -i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
-        \end{bmatrix}`
+
+    .. math:: XX(\phi) = \begin{bmatrix}
+        \cos(\phi / 2) & 0 & 0 & -i \sin(\phi / 2) \\
+        0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
+        0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
+        -i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
+    \end{bmatrix}.
+
     """
     return np.cos(phi / 2) * II - 1j * np.sin(phi / 2) * XX
 
@@ -207,12 +209,13 @@ def IsingZZ(phi):
         phi (float): rotation angle :math:`\phi`
     Returns:
         array[complex]: unitary 4x4 rotation matrix
-        .. math:: ZZ(\phi) = \begin{bmatrix}
-        e^{-i \phi / 2} & 0 & 0 & 0 \\
-        0 & e^{i \phi / 2} & 0 & 0 \\
-        0 & 0 & e^{i \phi / 2} & 0 \\
-        0 & 0 & 0 & e^{-i \phi / 2}
-        \end{bmatrix}.
+
+    .. math:: ZZ(\phi) = \begin{bmatrix}
+            e^{-i \phi / 2} & 0 & 0 & 0 \\
+            0 & e^{i \phi / 2} & 0 & 0 \\
+            0 & 0 & e^{i \phi / 2} & 0 \\
+            0 & 0 & 0 & e^{-i \phi / 2}
+            \end{bmatrix}
 
     """
     e_m = np.exp(-1j * phi / 2)
