@@ -1,0 +1,25 @@
+\documentclass{standalone}
+\usepackage{qcircuit}
+
+\begin{document}
+\Qcircuit @C=1em @R=0.5em {
+& & & & & & & & & &\\
+& & & & & & \hspace{-2.2cm}\mbox{wires} & &\\
+\\
+& \multigate{2}{\mathcal{A}} & \multigate{3}{\mathcal{R}} & \multigate{3}{\mathcal{Q}^{2^{n - 1}}} & \multigate{3}{\mathcal{Q}^{2^{n - 2}}} & \qw & \cdots & & \multigate{3}{\mathcal{Q}} & \qw & \qw  \\
+& \ghost{\mathcal{A}} & \ghost{\mathcal{R}} & \ghost{\mathcal{Q}^{2^{n - 1}}} & \ghost{\mathcal{Q}^{2^{n - 2}}} & \qw & \cdots & & \ghost{\mathcal{Q}} & \qw & \qw  \\
+& \ghost{\mathcal{A}} & \ghost{\mathcal{R}} & \ghost{\mathcal{Q}^{2^{n - 1}}} & \ghost{\mathcal{Q}^{2^{n - 2}}} & \qw & \cdots & & \ghost{\mathcal{Q}} & \qw & \qw  \\
+& \qw & \ghost{\mathcal{R}} & \ghost{\mathcal{Q}^{2^{n - 1}}} & \ghost{\mathcal{Q}^{2^{n - 2}}} & \qw & \cdots & & \ghost{\mathcal{Q}} & \qw & \qw \\
+& & & & & & & & & &\\
+& & & & & & & & & &\\
+& & & & & & & & & &\\
+& \qw & \gate{H} & \ctrl{-4} & \qw & \qw & \cdots & & \qw & \multigate{4}{\mathcal{Q}FT^{-1}} & \qw \\
+& \qw & \gate{H} & \qw & \ctrl{-5} & \qw & \cdots & & \qw & \ghost{\mathcal{Q}FT^{-1}} & \qw\\
+& & \vdots & & & & \ddots & & & \\
+& & & & & & & & &\\
+& \qw & \gate{H} \gategroup{10}{1}{17}{11}{.8em}{--}\gategroup{1}{1}{8}{11}{.8em}{--} & \qw & \qw & \qw & \cdots & & \ctrl{-8} & \ghost{\mathcal{Q}FT^{-1}} & \qw
+ \\
+& &  & & & \hspace{-1.2cm}\mbox{estimation wires} & & & & & \\
+& &   & & & & & & & &\\
+}
+\end{document}
