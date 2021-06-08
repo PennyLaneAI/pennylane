@@ -417,30 +417,40 @@ class TestJacobian:
     @pytest.mark.parametrize(
         "diff_methods", [["A", "0", "F"], ["A", "A", "A"], ["F", "A", "A", "0", "0"]]
     )
-    @pytest.mark.parametrize("num_params", [None, 1, 2, 3])
-    def test_choose_params_and_methods(self, diff_methods, num_params):
+    @pytest.mark.parametrize("argnum", [None, 0, [0,1], [0,1,2], [2,0], [1,0]])
+    def test_choose_params_and_methods(self, diff_methods, argnum):
         """Test that the _choose_params_and_methods helper method returns
         expected results"""
-        res = JacobianTape._choose_params_with_methods(diff_methods, num_params)
+        tape = JacobianTape()
+        tape._trainable_params = list(range(len(diff_methods)))
+        res = list(tape._choose_params_with_methods(diff_methods, argnum))
 
         num_all_params = len(diff_methods)
 
         assert all(k in range(num_all_params) for k, _ in res)
         assert all(v in diff_methods for _, v in res)
-        assert len(res) == num_params if num_params is not None else num_all_params
 
-    @pytest.mark.parametrize("num_params", [0, 2])
-    def test_choose_params_and_methods_warns(self, num_params):
-        """Test that the _choose_params_and_methods helper method warns if too
-        many or too few parameters were specified"""
+        if argnum is None:
+            num_params = num_all_params
+        elif isinstance(argnum, int):
+            num_params = 1
+        else:
+            num_params = len(argnum)
+
+        assert len(res) == num_params
+
+    @pytest.mark.parametrize("argnum", [1,2,3, -1])
+    def test_choose_params_and_methods_warns(self, argnum):
+        """Test that the _choose_params_and_methods helper method raises an
+        error if incorrect trainable parameters are specified."""
+        tape = JacobianTape()
+        tape.trainable_params = [0]
         diff_methods = ["F"]
-        with pytest.warns(
-            UserWarning,
-            match="Invalid number of parameters specified for computing the jacobian exceeds",
+        with pytest.raises(
+            ValueError,
+            match="Incorrect trainable parameters",
         ):
-            res = JacobianTape._choose_params_with_methods(diff_methods, num_params)
-
-        assert list(res) == [(0, "F")]
+            res = tape._choose_params_with_methods(diff_methods, argnum)
 
 
 class TestJacobianIntegration:
@@ -482,7 +492,7 @@ class TestJacobianIntegration:
         expected = np.array([[-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_single_expectation_value_with_num_params_all(self, tol):
+    def test_single_expectation_value_with_argnum_all(self, tol):
         """Tests correct output shape and evaluation for a tape
         with a single expval output where all parameters are chose to compute
         the jacobian"""
@@ -496,13 +506,13 @@ class TestJacobianIntegration:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        res = tape.jacobian(dev, num_params=2)  # <--- we choose both trainable parameters
+        res = tape.jacobian(dev, argnum=[0,1])  # <--- we choose both trainable parameters
         assert res.shape == (1, 2)
 
         expected = np.array([[-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_single_expectation_value_with_num_params_one(self, tol):
+    def test_single_expectation_value_with_argnum_one(self, tol):
         """Tests correct output shape and evaluation for a tape
         with a single expval output where only one parameter is chosen to
         estimate the jacobian.
@@ -520,7 +530,7 @@ class TestJacobianIntegration:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        res = tape.jacobian(dev, num_params=1)  # <--- we only choose one trainable parameter
+        res = tape.jacobian(dev, argnum=1)  # <--- we only choose one trainable parameter
         assert res.shape == (1, 2)
 
         expected = np.array([[-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]])

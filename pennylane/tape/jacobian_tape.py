@@ -395,29 +395,36 @@ class JacobianTape(QuantumTape):
         """
         raise NotImplementedError
 
-    @staticmethod
-    def _choose_params_with_methods(diff_methods, num_params):
+    def _choose_params_with_methods(self, diff_methods, argnum):
         """Chooses the trainable parameters to use for computing the jacobian
         by returning a map of their indices and differentiation methods.
 
         When there are fewer parameters specified than the total number of
-        trainable parameters, the jacobian is estimated by using ``num_params``
+        trainable parameters, the jacobian is estimated by using ``argnum``
         random parameters from the set of trainable parameters.
 
         Args:
             diff_methods (list): the ordered list of differentiation methods
                 for each parameter
-            num_params (int or None): The number of parameters to use for
-                computing the jacobian. Specifies the number of parameters to sample.
+            argnum (int, list(int), None): Which argument(s) to compute the jacobian
+                with respect to. Specifies the indices of the parameters to sample.
 
         Returns:
             object or list: map of the trainable parameter indices and
             differentiation methods
         """
-        if num_params is None:
+        if argnum is None:
             return enumerate(diff_methods)
 
-        if len(diff_methods) < num_params or num_params < 1:
+        if not isinstance(argnum, list):
+            argnum = [argnum]
+
+        if not all(ind in self.trainable_params for ind in argnum):
+            raise ValueError("Incorrect trainable parameters were specified for the argnum argument.")
+
+        num_params = len(argnum)
+
+        if len(diff_methods) < num_params:
             warnings.warn(
                 "Invalid number of parameters specified for computing the "
                 "jacobian exceeds the number of trainable parameters, the jacobian will be "
@@ -426,7 +433,19 @@ class JacobianTape(QuantumTape):
             )
             return enumerate(diff_methods)
 
-        return random.sample(list(enumerate(diff_methods)), k=num_params)
+        if num_params < 1:
+            warnings.warn(
+                "Invalid number of parameters specified for computing the "
+                "jacobian exceeds the number of trainable parameters, the jacobian will be "
+                "computed using all trainable parameters.",
+                UserWarning,
+            )
+            return enumerate(diff_methods)
+
+        diff_methods_to_sample = map(diff_methods.__getitem__, argnum)
+        mapped_diff_methods = zip(argnum, diff_methods_to_sample)
+
+        return random.sample(list(mapped_diff_methods), k=num_params)
 
     def jacobian(self, device, params=None, **options):
         r"""Compute the Jacobian of the parametrized quantum circuit recorded by the quantum tape.
@@ -476,10 +495,10 @@ class JacobianTape(QuantumTape):
             order=1 (int): The order of the finite difference method to use. ``1`` corresponds
                 to forward finite differences, ``2`` to centered finite differences.
             shift=pi/2 (float): the size of the shift for two-term parameter-shift gradient computations
-            num_params=None (int): The number of parameters to use for
-                computing the jacobian. When there are fewer parameters specified than the
+            argnum=None (int, list(int), None): Which argument(s) to compute the jacobian
+                with respect to. When there are fewer parameters specified than the
                 total number of trainable parameters, the jacobian is being estimated by
-                sampling ``num_params`` many parameters from the set of trainable parameters.
+                sampling ``argnum`` many parameters from the set of trainable parameters.
 
         Returns:
             array[float]: 2-dimensional array of shape ``(tape.output_dim, tape.num_params)``
@@ -586,9 +605,9 @@ class JacobianTape(QuantumTape):
         processing_fns = []
         nonzero_grad_idx = []
 
-        num_params = options.get("num_params", None)
+        argnum = options.get("argnum", None)
 
-        params_with_methods = self._choose_params_with_methods(diff_methods, num_params)
+        params_with_methods = self._choose_params_with_methods(diff_methods, argnum)
 
         for trainable_idx, param_method in params_with_methods:
             if param_method == "0":
