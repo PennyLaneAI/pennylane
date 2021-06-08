@@ -43,7 +43,7 @@ class DevTracker:
         docstring for enter
         """
         if self.reset_on_enter:
-            self.data = dict()
+            self.reset()
 
         self.tracking = True
         return self
@@ -60,6 +60,10 @@ class DevTracker:
             if kwargs[key] is not None:
                 self.data[key] = kwargs[key] + self.data.get(key, 0)
 
+    def reset(self):
+        """ reseting data"""
+        self.data = dict()
+
     def record(self):
         """
         record data somehow
@@ -69,11 +73,6 @@ class DevTracker:
         print()
 
 class TimingTracker(DevTracker):
-
-    def __enter__(self):
-        self.t0 = time.time()
-        self.times = []
-        return super().__enter__()
 
     def update(self, **kwargs):
 
@@ -89,3 +88,8 @@ class TimingTracker(DevTracker):
         for key, value in self.data.items():
             print(f"{key} = {value}", end="\t")
         print()
+
+    def reset(self):
+        super().reset()
+        self.t0 = time.time()
+        self.times = []
