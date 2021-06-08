@@ -77,9 +77,11 @@ class TimingTracker(DevTracker):
     def update(self, **kwargs):
 
         super().update(**kwargs)
-
-        self.data["total_time"] = time.time() - self.t0
-        self.times.append(self.data["total_time"])
+        
+        last_time = self.data["total_time"]
+        current_time = time.time() - self.t0
+        self.data["total_time"] = current_time
+        self.times.append(current_time-last_time)
 
     def reset(self):
         super().reset()
