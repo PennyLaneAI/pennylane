@@ -25,6 +25,7 @@ from operator import matmul
 import warnings
 
 import numpy as np
+import scipy
 
 import pennylane as qml
 
@@ -103,6 +104,30 @@ def decompose_hamiltonian(H, hide_identity=False):
                 obs.append(functools.reduce(matmul, [t(i) for i, t in enumerate(term)]))
 
     return coeffs, obs
+
+
+def sparse_hamiltonian(H):
+    """docstring ...
+    """
+    if not isinstance(H, qml.Hamiltonian):
+        raise TypeError(f"Passed Hamiltonian must be of type `qml.Hamiltonian`")
+
+    n = len(H.wires)
+
+    matrix = scipy.sparse.coo_matrix((2**n, 2**n), dtype='complex128')
+
+    for coeffs, ops in zip(H.coeffs, H.ops):
+
+        obs = [scipy.sparse.coo_matrix(o.matrix) for o in ops.obs]
+
+        mat = [scipy.sparse.eye(2, format='coo')] * n
+
+        for i, j in enumerate(ops.wires):
+            mat[j] = obs[i]
+
+        matrix += functools.reduce(lambda i, j: scipy.sparse.kron(i, j, format='coo'), mat) * coeffs
+
+    return matrix.tocoo()
 
 
 def _flatten(x):
