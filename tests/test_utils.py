@@ -140,22 +140,28 @@ class TestSparse:
 
     def test_sparse_typeerror(self):
         """Tests that sparse_hamiltonian raises an error if the given Hamiltonian is not of type
-         `qml.Hamiltonian`"""
+        `qml.Hamiltonian`"""
 
         with pytest.raises(TypeError, match="Passed Hamiltonian must be of type"):
-           pu.sparse_hamiltonian(np.eye(2))
+            pu.sparse_hamiltonian(np.eye(2))
 
     def test_sparse_matrix(self):
         """Tests that sparse_hamiltonian returns a correct sparse matrix"""
 
-        ref_matrix = np.array([[ 1.+0.j,  0.+0.j,  0.+0.j,  0.+0.j],
-                               [ 0.+0.j, -1.+0.j,  0.+0.j,  0.+0.j],
-                               [ 0.+0.j,  0.+0.j,  0.+0.j,  0.+0.j],
-                               [ 0.+0.j,  0.+0.j,  0.+0.j,  0.+0.j]])
+        ref_matrix = np.array(
+            [
+                [1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+                [0.0 + 0.0j, -1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+                [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+                [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+            ]
+        )
 
         coeffs = [0.5, 0.5]
-        obs = [qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
-               qml.Identity(wires=[0]) @ qml.PauliZ(wires=[1])]
+        obs = [
+            qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
+            qml.Identity(wires=[0]) @ qml.PauliZ(wires=[1]),
+        ]
         H = qml.Hamiltonian(coeffs, obs)
 
         sparse_matrix = pu.sparse_hamiltonian(H)
