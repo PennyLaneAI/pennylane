@@ -88,7 +88,8 @@ class TestCircuits:
         assert np.allclose(res["x"], range(-expected_degree, expected_degree + 1))
 
     def test_encoding_gates(self):
-        """Test that the spectrum contains the ids provided in encoding_gates."""
+        """Test that the spectrum contains the ids provided in encoding_gates, or
+        all ids if encoding_gates is None."""
 
         dev = qml.device("default.qubit", wires=1)
 
