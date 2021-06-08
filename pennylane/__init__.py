@@ -46,6 +46,7 @@ from pennylane.transforms import (
     adjoint,
     draw,
     ControlledOperation,
+    compile,
     ctrl,
     measurement_grouping,
     metric_tensor,
