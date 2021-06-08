@@ -38,7 +38,7 @@
   >>> pipeline = [qml.transforms.merge_rotations, qml.transforms.cancel_inverses]
   >>> compiled_qfunc = qml.compile(pipeline=pipeline)(qfunc)
   >>> compiled_qnode = qml.QNode(compiled_qfunc, dev)
-  >>> print(qml.draw(compiled_qnode, wire_order=dev.wires)(1, 2, 3))
+  >>> qml.draw(compiled_qnode, wire_order=dev.wires)(1, 2, 3)
   0: ───RX(3)──╭RZ(5)──┤ ⟨Z⟩
   1: ──╭C──────│───────┤
   2: ──╰X──────╰C──────┤

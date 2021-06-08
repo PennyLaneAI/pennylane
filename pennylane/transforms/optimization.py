@@ -231,7 +231,7 @@ def merge_rotations(tape):
             combined_angle = current_gate.parameters[0] + next_gate.parameters[0]
 
             # If the cumulative angle is not close to 0, apply the gate
-            if not np.isclose(combined_angle, 0):
+            if not np.isclose(combined_angle, 0.0):
                 tape.append(type(current_gate)(combined_angle, wires=current_gate.wires))
         else:
             current_gate.queue()
