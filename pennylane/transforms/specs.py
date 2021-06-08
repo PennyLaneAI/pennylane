@@ -13,11 +13,18 @@
 # limitations under the License.
 """Code for resource estimation"""
 
-def specs(qnode):
+def specs(qnode, max_expansion=None):
     """
 
     Args:
         qnode (qml.QNode)
+
+    Keyword Args:
+        max_expansion=None (int): The number of times the internal circuit should be expanded when
+            executed on a device. Expansion occurs when an operation or measurement is not
+            supported, and results in a gate decomposition. If any operations in the decomposition
+            remain unsupported by the device, another expansion occurs. Defaults to 
+            ``qnode.max_expansion``.
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function 
@@ -76,7 +83,14 @@ def specs(qnode):
         >>> x = np.array([0.1, 0.2])
         >>> info = qml.specs(circuit)(x, add_ry=False)
         """
+        if max_expansion is not None:
+            initial_max_expansion = qnode.max_expansion
+            qnode.max_expansion = max_expansion
+
         qnode.construct(args, kwargs)
+
+        if max_expansion is not None:
+            qnode.max_expansion = initial_max_expansion
 
         return qnode.specs
     return specs_qnode

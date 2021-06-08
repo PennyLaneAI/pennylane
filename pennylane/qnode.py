@@ -705,11 +705,9 @@ class QNode:
             charset=charset, wire_order=wire_order, show_all_wires=show_all_wires
         )
 
+    @property
     def specs(self):
         """
-        Args:
-            None
-
         Returns:
             A dictionary of information about qnode structure
 
@@ -719,21 +717,22 @@ class QNode:
 
             dev = qml.device('default.qubit', wires=2)
             @qml.qnode(dev)
-            def circuit(x:
+            def circuit(x):
                 qml.RX(x[0], wires=0)
+                qml.RY(x[1], wires=1)
                 qml.CNOT(wires=(0,1))
                 return qml.probs(wires=(0,1))
 
             x = np.array([0.1, 0.2])
             res = circuit(x)
-            print(circuit.specs())
+            print(circuit.specs)
         """
         if self.qtape is None:
             raise qml.QuantumFunctionError(
                 "The QNode specifications can only be calculated after its quantum tape has been constructed."
             )
 
-        info = self.qtape.resources.copy()
+        info = self.qtape.specs.copy()
 
         info['num_device_wires'] = self.device.num_wires
         info['device_name'] = self.device.short_name
