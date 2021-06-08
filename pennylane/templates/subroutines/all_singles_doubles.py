@@ -153,8 +153,7 @@ class AllSinglesDoubles(Operation):
                 f"'weights' tensor must be of shape {(len(singles) + len(doubles),)}; got {shape}."
             )
 
-        # we can extract the numpy representation here
-        # since hf_state can never be differentiable
+        # we can extract the numpy representation here since hf_state can never be differentiable
         self.hf_state = qml.math.toarray(hf_state)
         self.singles = singles
         self.doubles = doubles
