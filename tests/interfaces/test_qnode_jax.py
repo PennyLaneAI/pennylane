@@ -87,6 +87,42 @@ def test_simple_grad():
     assert "DeviceArray" in val.__repr__()
 
 
+@pytest.mark.parametrize(
+    "dev_name,diff_method",
+    [
+        ["default.qubit", "parameter-shift"],
+        ["default.qubit", "backprop"],
+    ],
+)
+def test_grad_ising_xx(self, dev_name, diff_method, tol):
+
+    dev = qml.device(dev_name, wires=2)
+
+    a=0.1
+    b=0.2
+    c=0.3
+    d=0.4
+
+    init_state = np.array([a, b, c, d], requires_grad=False)
+    norm = np.linalg.norm(init_state)
+    init_state /= norm
+
+    @qml.qnode(dev, diff_method=diff_method, interface="jax")
+    def circuit(x):
+        qml.QubitStateVector(init_state, wires=[0, 1])
+        qml.IsingXX(x, wires=[0, 1])
+        return qml.expval(qml.PauliZ(0))
+
+    x = np.array(0.1, requires_grad=True)
+
+    expected = 0.5 * (1 / norm ** 2) * \
+               (-np.sin(x) * (a ** 2 + b ** 2 - c ** 2 - d ** 2)
+                + 2*np.sin(x/2)*np.cos(x/2)*(- a ** 2 - b ** 2 + c ** 2 + d ** 2))
+
+    res = qml.grad(circuit)(x)
+    assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
 @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff"])
 def test_differentiable_expand(diff_method):
     """Test that operation and nested tapes expansion
