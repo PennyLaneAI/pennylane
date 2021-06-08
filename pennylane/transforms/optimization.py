@@ -13,6 +13,8 @@
 # limitations under the License.
 """Transforms for optimizing quantum circuits."""
 
+import pennylane as qml
+
 import numpy as np
 
 from pennylane.wires import Wires
@@ -179,7 +181,7 @@ def merge_rotations(tape):
 
     .. code-block:: python
 
-        def (x, y, z):
+        def qfunc(x, y, z):
             qml.RX(x, wires=0)
             qml.RX(y, wires=0)
             qml.CNOT(wires=[1, 2])
@@ -239,13 +241,9 @@ def merge_rotations(tape):
 
             combined_angle = current_gate.parameters[0] + next_gate.parameters[0]
 
-            # If the cumulative angle is close to 0, don't apply anything
-            if np.isclose(combined_angle, 0):
-                continue
-            # Otherwise, apply the gate; we need qml.apply for this I think
-            # qml.apply(current_gate_type, angle, wires)
-            else:
-                continue
+            # If the cumulative angle is not close to 0, apply the gate
+            if not np.isclose(combined_angle, 0):
+                tape.append(type(current_gate)(combined_angle, wires=current_gate.wires))
         else:
             current_gate.queue()
 

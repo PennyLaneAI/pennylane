@@ -13,16 +13,10 @@
 # limitations under the License.
 """Code for a compilation transform."""
 
-from pennylane.transforms import (
-    invisible,
-    qfunc_transform,
-    cancel_inverses,
-    cnot_to_cz
-)
+from pennylane.transforms import invisible, qfunc_transform, cancel_inverses, cnot_to_cz
 
-default_pipeline = [
-    cancel_inverses
-]
+default_pipeline = [cancel_inverses]
+
 
 @qfunc_transform
 def compile(tape, pipeline=default_pipeline, basis_set=None, num_passes=1):
@@ -60,9 +54,8 @@ def compile(tape, pipeline=default_pipeline, basis_set=None, num_passes=1):
     >>> dev = qml.device('default.qubit', wires=2)
     >>> qnode = qml.QNode(compiled_bell_state, dev)
     >>> print(qml.draw(qnode)())
-    0: ──H──╭Z─┤ ⟨Z⟩
-    1: ──H──╰C─┤
-
+    0: ──H──╭Z──┤ ⟨Z⟩
+    1: ──H──╰C──┤
     """
     if basis_set is not None:
         expanded_tape = tape.expand(depth=5, stop_at=lambda obj: obj.name in basis_set)
