@@ -230,8 +230,7 @@ class QubitDevice(Device):
         self._num_executions += 1
 
         if self.tracker.tracking:
-            self.tracker.update(total_executions=1, total_shots=self._shots)
-            self.tracker.record()
+            self.tracker.update_and_record(executions=1, shots=self._shots)
 
         return results
 

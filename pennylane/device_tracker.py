@@ -13,12 +13,20 @@
 # limitations under the License.
 
 import time
+from collections import defaultdict
 
-def track(dev, version="default", reset_on_enter=True):
+import pennylane as qml
+
+def track(dev, version="default", **kwargs):
     if version=="timing":
-        return TimingTracker(dev, reset_on_enter)
+        return TimingTracker(dev, **kwargs)
+    elif version=="default":
+        return DevTracker(dev, **kwargs)
     else:
-        return DevTracker(dev, reset_on_enter)
+        raise qml.QuantumFunctionError(
+            f"version {version} supplied to track. "
+            f"Current options are `timing` and `default`."
+        )
 
 
 class DevTracker:
@@ -48,44 +56,54 @@ class DevTracker:
         self.tracking = True
         return self
 
-    def __exit__(self, exc_type, exc_value, exc_trackeback):
+    def __exit__(self, exc_type, exc_value, exc_traceback):
         """
         docstring for exit
         """
         self.tracking = False
 
-    def update(self, **kwargs):
+    def update_and_record(self, **current):
+        self.update(**current)
+        self.record()
+
+    def update(self, **current):
         """ updating data"""
-        for key in kwargs:
-            if kwargs[key] is not None:
-                self.data[key] = kwargs[key] + self.data.get(key, 0)
+        self.current = current
+
+        for key, value in current.items():
+            # update history
+            self.history[key].append(value)
+
+            # updating totals
+            if value is not None:
+                self.totals[key] += value
 
     def reset(self):
         """ reseting data"""
-        self.data = dict()
+        self.totals = defaultdict(int)
+        self.history= defaultdict(list)
+        self.current = dict()
 
     def record(self):
         """
         record data somehow
         """
-        for key, value in self.data.items():
+        print("Totals: ", end="")
+        for key, value in self.totals.items():
             print(f"{key} = {value}", end="\t")
         print()
 
+
 class TimingTracker(DevTracker):
 
-    def update(self, **kwargs):
+    def update(self, **current):
 
-        super().update(**kwargs)
+        current_time = time.time()
+        current["time"] = current_time - self._time_last
+        self._time_last = current_time
 
-        current_time = time.time() - self.t0
-        self.data["total_time"] = current_time
-        self.times.append(current_time-self.t_old)
-
-        self.t_old = current_time
+        super().update(**current)
 
     def reset(self):
         super().reset()
-        self.t0 = time.time()
-        self.t_old = 0
-        self.times = []
+        self._time_last = time.time()
