@@ -27,11 +27,13 @@
   quantum circuit,
 
   ```python
+  from pennylane.templates import AllSinglesDoubles
+
   wires = range(qubits)
 
   @qml.qnode(dev)
   def circuit(weights, hf_state, singles, doubles):
-      qml.templates.AllSinglesDoubles(weights, wires, hf_state, singles, doubles)
+      AllSinglesDoubles(weights, wires, hf_state, singles, doubles)
       return qml.expval(qml.PauliZ(0))
 
   params = np.random.normal(0, np.pi, len(singles) + len(doubles))
