@@ -37,7 +37,7 @@ class AllSinglesDoubles(Operation):
     using the :func:`~.excitations` function.
 
     For example, the quantum circuit for the case of two electrons and six qubits
-    is sketched in the figure below,
+    is sketched in the figure below:
 
     |
 
