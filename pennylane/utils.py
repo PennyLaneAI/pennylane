@@ -110,10 +110,12 @@ def sparse_hamiltonian(H):
     r"""Computes the sparse matrix representation a Hamiltonian in the computational basis.
 
     Args:
-        H (~.Hamiltonian): Hamiltonian operator for which the matrix representation should be measured
+        H (~.Hamiltonian): Hamiltonian operator for which the matrix representation should be
+         measured
 
     Returns:
-        coo_matrix: a sparse matrix in scipy COOrdinate format with the dimension of :math:`(2^n, 2^n)` where :math:`n = len(H.wires)`
+        coo_matrix: a sparse matrix in scipy COOrdinate format with the dimension of
+        :math:`(2^n, 2^n)` where :math:`n` is the number of wires
 
     **Example:**
 
