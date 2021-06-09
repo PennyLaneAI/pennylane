@@ -796,9 +796,6 @@ class TestOperations:
     @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
     def test_isingxx_autograd_grad(self, tol, dev_name, diff_method, phi):
         """Test the gradient for the gate IsingXX."""
-        if diff_method in {"adjoint"}:
-            pytest.skip("Test does not support adjoint")
-
         dev = qml.device(dev_name, wires=2)
 
         psi_0 = 0.1
@@ -836,9 +833,6 @@ class TestOperations:
     @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
     def test_isingzz_autograd_grad(self, tol, dev_name, diff_method, phi):
         """Test the gradient for the gate IsingZZ."""
-        if diff_method in {"adjoint"}:
-            pytest.skip("Test does not support adjoint")
-
         dev = qml.device(dev_name, wires=2)
 
         psi_0 = 0.1
@@ -872,9 +866,6 @@ class TestOperations:
 
         if diff_method in {"parameter-shift"}:
             pytest.skip("Test does not support parameter-shift")
-
-        if diff_method in {"adjoint"}:
-            pytest.skip("Test does not support adjoint")
 
         jax = pytest.importorskip("jax")
         jnp = pytest.importorskip("jax.numpy")
@@ -923,9 +914,6 @@ class TestOperations:
         if diff_method in {"parameter-shift"}:
             pytest.skip("Test does not support parameter-shift")
 
-        if diff_method in {"adjoint"}:
-            pytest.skip("Test does not support adjoint")
-
         jax = pytest.importorskip("jax")
         jnp = pytest.importorskip("jax.numpy")
 
@@ -957,9 +945,6 @@ class TestOperations:
     def test_isingxx_tf_grad(self, tol, dev_name, diff_method, phi):
         """Test the gradient for the gate IsingXX."""
         tf = pytest.importorskip("tensorflow", minversion="2.1")
-
-        if diff_method in {"adjoint"}:
-            pytest.skip("Test does not support adjoint")
 
         dev = qml.device(dev_name, wires=2)
 
@@ -1001,8 +986,6 @@ class TestOperations:
     def test_isingzz_tf_grad(self, tol, dev_name, diff_method, phi):
         """Test the gradient for the gate IsingZZ."""
         tf = pytest.importorskip("tensorflow", minversion="2.1")
-        if diff_method in {"adjoint"}:
-            pytest.skip("Test does not support adjoint")
 
         dev = qml.device(dev_name, wires=2)
 
