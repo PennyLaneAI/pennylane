@@ -194,14 +194,11 @@ class AllSinglesDoubles(Operation):
             tuple(int): shape of the tensor containing the circuit parameters
         """
         if singles is None:
-            if doubles is None:
-                shape_ = (0,)
-            else:
+            if doubles is not None:
                 shape_ = (len(doubles),)
+        elif doubles is None:
+            shape_ = (len(singles),)
         else:
-            if doubles is None:
-                shape_ = (len(singles),)
-            else:
-                shape_ = (len(singles) + len(doubles),)
+            shape_ = (len(singles) + len(doubles),)
 
         return shape_
