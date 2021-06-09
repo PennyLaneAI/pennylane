@@ -563,13 +563,11 @@ class TestJacobianIntegration:
         res = tape.jacobian(dev, argnum=1)  # <--- we only choose one trainable parameter
         assert res.shape == (1, 2)
 
-        expected = np.array([[-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]])
-
+        expected = np.array([[0, np.cos(y)*np.cos(x)]])
         res = res.flatten()
         expected = expected.flatten()
 
-        assert any(np.allclose(r, e, atol=tol, rtol=0) for r, e in zip(res, expected))
-        assert not all(np.allclose(r, e, atol=tol, rtol=0) for r, e in zip(res, expected))
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_multiple_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
