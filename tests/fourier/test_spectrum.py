@@ -210,11 +210,10 @@ class TestInterfaces:
         dev = qml.device("default.qubit", wires=3)
         qnode = qml.QNode(circuit, dev, interface="tf")
 
-        with tf.GradientTape() as tape:
-            x = tf.Variable([1.0, 2.0, 3.0])
-            w = tf.constant([[-1, -2, -3], [-4, -5, -6]])
-            # the spectrum function has to be called in a tape context
-            res = spectrum(qnode)(x, w)
+        x = tf.Variable([1.0, 2.0, 3.0])
+        w = tf.constant([[-1, -2, -3], [-4, -5, -6]])
+        # the spectrum function has to be called in a tape context
+        res = spectrum(qnode)(x, w)
 
         assert res
         for (k1, v1), (k2, v2) in zip(res.items(), expected_result.items()):
