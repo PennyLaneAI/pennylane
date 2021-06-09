@@ -431,7 +431,7 @@ class JacobianTape(QuantumTape):
 
         num_params = len(argnum)
 
-        if not num_params:
+        if num_params==0:
             warnings.warn(
                 "No trainable parameters were specified for computing the jacobian.",
                 UserWarning,
