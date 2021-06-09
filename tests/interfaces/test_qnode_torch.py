@@ -739,7 +739,6 @@ class TestQNode:
 class Test_adjoint:
     def test_adjoint_save_state(self, mocker):
         """Tests that the torch interface reuses device state when prompted by `cache_state=True`.
-
         Also tests a second execution before backward pass does not alter gradient.
         """
 

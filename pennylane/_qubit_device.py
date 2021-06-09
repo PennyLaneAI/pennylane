@@ -899,7 +899,7 @@ class QubitDevice(Device):
                 d_op_matrix = operation_derivative(op)
 
             op.inv()
-            # I'd like to  use op.adjoint() here
+            # Ideally use use op.adjoint() here
             # then we don't have to re-invert the operation at the end
             ket = self._apply_operation(ket, op)
 
