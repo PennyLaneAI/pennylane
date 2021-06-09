@@ -24,9 +24,9 @@ def _find_next_gate(wires, op_list):
     set of wires, in the same order, if one is present.
 
     Args:
-        wires (Wires): A set of wires acted on by a quantum operation
+        wires (Wires): A set of wires acted on by a quantum operation.
         op_list (list[Operation]): A list of operations that are implemented after the
-            operation that acts on wires.
+            operation that acts on ``wires``.
 
     Returns:
         int or None: The index, in `op_list`, of the earliest gate that uses the same
@@ -58,7 +58,7 @@ def _find_next_gate(wires, op_list):
 @qfunc_transform
 def cancel_inverses(tape):
     """Quantum function transform to remove any operations that are applied next to their
-    (self) inverse.
+    (self-)inverse.
 
     Args:
         tape (.QuantumTape): A quantum tape.
@@ -91,9 +91,8 @@ def cancel_inverses(tape):
     1: ──H──────RY(2)──X──────X──│───┤
     2: ──RX(1)──RX(2)────────────╰X──┤
 
-
     We can see that there are two adjacent Hadamards on the first qubit that
-    should cancel each other out. Similarly, there are two Pauli X gates on the
+    should cancel each other out. Similarly, there are two Pauli-X gates on the
     second qubit that should cancel. We can obtain a simplified circuit by running
     the ``cancel_inverses`` transform:
 

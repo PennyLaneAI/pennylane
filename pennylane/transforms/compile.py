@@ -67,7 +67,7 @@ def compile(tape, pipeline=default_pipeline, basis_set=None, num_passes=1):
     """
 
     # Expand the tape; this is done to unroll any templates that may be present,
-    # as well as to decompose us over a specified basis set
+    # as well as to decompose over a specified basis set
     # First, though, we have to stop whatever tape may be recording so that we
     # don't queue anything as a result of the expansion or transform pipeline
     current_tape = get_active_tape()
