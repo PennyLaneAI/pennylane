@@ -19,7 +19,7 @@
       qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
   ```
   When computing the Jacobian by calling the ``jacobian`` method, we can
-  specify the trainable parameters to consider when computing the jacobian:
+  specify the trainable parameters to consider when computing the Jacobian:
   ```pycon
   >>> tape.jacobian(dev, argnum=[0, 1])
   array([[0.31434682, 0.67949906]])
@@ -27,7 +27,7 @@
   array([[0.31434682, 0.        ]])
   ```
   Specifying a proper subset of the trainable parameters will estimate the
-  jacobian.
+  Jacobian.
 
 * The `quantum_monte_carlo` transform has been added, allowing an input circuit to be transformed
   into the full quantum Monte Carlo algorithm.
