@@ -123,6 +123,9 @@ class QNode:
         order=1 (int): The order of the finite difference method to use. ``1`` corresponds
             to forward finite differences, ``2`` to centered finite differences.
         shift=pi/2 (float): the size of the shift for two-term parameter-shift gradient computations
+        adjoint_cache=True (bool): for TensorFlow and PyTorch interfaces and adjoint differentiation,
+            this indicates whether to save the device state after the forward pass.  Doing so saves a
+            forward execution. Device state automatically reused with autograd and JAX interfaces.
 
     **Example**
 
@@ -411,11 +414,17 @@ class QNode:
                 f"The {device.short_name} device does not support adjoint differentiation."
             )
 
+        jac_options = {"method": "device", "jacobian_method": "adjoint_jacobian"}
+        # reuse the forward pass
+        # torch and tensorflow can cache the state
+        if interface in {"autograd", "jax"}:
+            jac_options["device_pd_options"] = {"use_device_state": True}
+
         return (
             JacobianTape,
             interface,
             device,
-            {"method": "device", "jacobian_method": "adjoint_jacobian"},
+            jac_options,
         )
 
     @staticmethod
@@ -942,6 +951,9 @@ def qnode(
         h=1e-7 (float): Step size for the finite difference method.
         order=1 (int): The order of the finite difference method to use. ``1`` corresponds
             to forward finite differences, ``2`` to centered finite differences.
+        adjoint_cache=True (bool): for TensorFlow and PyTorch interfaces and adjoint differentiation,
+            this indicates whether to save the device state after the forward pass.  Doing so saves a
+            forward execution. Device state automatically reused with autograd and JAX interfaces.
 
     **Example**
 

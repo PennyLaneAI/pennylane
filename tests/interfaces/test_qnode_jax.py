@@ -133,6 +133,25 @@ def test_differentiable_expand(diff_method):
     assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
+def test_adjoint_reuse_device_state(mocker):
+    """Tests that the jax interface reuses the device state for adjoint differentiation"""
+    dev = qml.device("default.qubit", wires=1)
+
+    @qml.qnode(dev, interface="jax", diff_method="adjoint")
+    def circ(x):
+        qml.RX(x, wires=0)
+        return qml.expval(qml.PauliZ(0))
+
+    spy = mocker.spy(dev, "adjoint_jacobian")
+
+    grad = jax.grad(circ)(1.0)
+    assert circ.device.num_executions == 1
+
+    spy.assert_called_with(mocker.ANY, use_device_state=True)
+
+    assert circ.qtape.jacobian_options["device_pd_options"]["use_device_state"] == True
+
+
 def qtransform(qnode, a, framework=jnp):
     """Transforms every RY(y) gate in a circuit to RX(-a*cos(y))"""
 
