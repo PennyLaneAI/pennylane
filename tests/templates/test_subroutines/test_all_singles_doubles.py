@@ -212,6 +212,22 @@ class TestInputs:
             ),
             (
                 np.array([-2.8, 1.6]),
+                range(4),
+                None,
+                [[0, 1, 2, 3]],
+                np.array([1, 1, 0, 0]),
+                "'weights' tensor must be of shape",
+            ),
+            (
+                np.array([-2.8, 1.6]),
+                range(4),
+                [[0, 2]],
+                None,
+                np.array([1, 1, 0, 0]),
+                "'weights' tensor must be of shape",
+            ),
+            (
+                np.array([-2.8, 1.6]),
                 range(1),
                 [],
                 [],
@@ -220,7 +236,9 @@ class TestInputs:
             ),
         ],
     )
-    def test_uccsd_exceptions(self, weights, wires, singles, doubles, hf_state, msg_match):
+    def test_allsinglesdoubles_exceptions(
+        self, weights, wires, singles, doubles, hf_state, msg_match
+    ):
         """Test that AllSinglesDoubles throws an exception if the parameters have illegal
         shapes, types or values."""
 
