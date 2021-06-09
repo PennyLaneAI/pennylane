@@ -3032,8 +3032,7 @@ class Projector(Observable):
 
 
 class SparseHamiltonian(Observable):
-    r"""
-    """
+    r""" """
     num_wires = AnyWires
     num_params = 1
     par_domain = None
@@ -3295,7 +3294,7 @@ ops = {
 }
 
 
-obs = {"Hadamard", "PauliX", "PauliY", "PauliZ", "Hermitian", "Projector"}
+obs = {"Hadamard", "PauliX", "PauliY", "PauliZ", "Hermitian", "Projector", "SparseHamiltonian"}
 
 
 __all__ = list(ops | obs)
