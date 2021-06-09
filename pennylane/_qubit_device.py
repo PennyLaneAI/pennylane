@@ -806,7 +806,7 @@ class QubitDevice(Device):
 
         return samples.reshape((bin_size, -1))
 
-    def adjoint_jacobian(self, tape, starting_state=None, use_device_state=False, return_obs=False):
+    def adjoint_jacobian(self, tape, starting_state=None, use_device_state=False):
         """Implements the adjoint method outlined in
         `Jones and Gacon <https://arxiv.org/abs/2009.02823>`__ to differentiate an input tape.
 
@@ -831,12 +831,10 @@ class QubitDevice(Device):
             use_device_state (bool): use current device state to initialize. A forward pass of the same
                 circuit should be the last thing the device has executed. If a ``starting_state`` is
                 provided, that takes precedence.
-            return_obs (bool): return the expectation values alongside the jacobian as a tuple (jac, obs)
 
         Returns:
-            Union[array, tuple(array)]: the derivative of the tape with respect to trainable parameters.
-            Dimensions are ``(len(observables), len(trainable_params))``. If ``return_obs`` keyword is True,
-            then returns ``jacobian, expectation_values``
+            array: the derivative of the tape with respect to trainable parameters.
+            Dimensions are ``(len(observables), len(trainable_params))``.
 
         Raises:
             QuantumFunctionError: if the input tape has measurements that are not expectation values
@@ -869,10 +867,6 @@ class QubitDevice(Device):
         bras = np.empty([n_obs] + [2] * self.num_wires, dtype=np.complex128)
         for kk in range(n_obs):
             bras[kk, ...] = self._apply_operation(ket, tape.observables[kk])
-
-        # this can probably be more optimized, but at least now it works...
-        if return_obs:
-            expectation = dot_product_real(bras, ket)
 
         expanded_ops = []
         for op in reversed(tape.operations):
@@ -917,6 +911,4 @@ class QubitDevice(Device):
                 bras[kk, ...] = self._apply_operation(bras[kk, ...], op)
             op.inv()
 
-        if return_obs:
-            return jac, expectation
         return jac
