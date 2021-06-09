@@ -418,6 +418,9 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Bug fixes</h3>
 
+* Fixes the differentiability of the operations `IsingXX` and `IsingZZ` for Autograd, Jax and Tensorflow.
+[(#1390)](https://github.com/PennyLaneAI/pennylane/pull/1390)
+
 * Fixes floating point errors with `diff_method="finite-diff"` and `order=1` when parameters are `float32`.
 [(#1381)](https://github.com/PennyLaneAI/pennylane/pull/1381)
 
@@ -479,8 +482,9 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 This release contains contributions from (in alphabetical order):
 
 Marius Aglitoiu, Vishnu Ajith, Thomas Bromley, Jack Ceroni, Alaric Cheng, Miruna Daian, Olivia Di Matteo,
-Tanya Garg, Christian Gogolin, Diego Guala, Anthony Hayes, Ryan Hill, Josh Izaac, Pavan Jayasinha, Christina Lee, Ryan Levy, Nahum Sá, Maria Schuld,
-Johannes Jakob Meyer, Brian Shi, Antal Száva, David Wierichs, Vincent Wong, Alberto Maldonado, Ashish Panigrahi.
+Tanya Garg, Christian Gogolin, Diego Guala, Anthony Hayes, Ryan Hill, Josh Izaac, Pavan Jayasinha, Christina Lee, 
+Ryan Levy, Romain Moyard, Nahum Sá, Maria Schuld, Johannes Jakob Meyer, Brian Shi, Antal Száva, David Wierichs,
+Vincent Wong, Alberto Maldonado, Ashish Panigrahi.
 
 
 # Release 0.15.1 (current release)
