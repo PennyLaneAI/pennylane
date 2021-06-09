@@ -93,6 +93,11 @@ class JacobianTape(QuantumTape):
         self.jacobian_options = {}
         self.hessian_options = {}
 
+    def copy(self, copy_operations=False, tape_cls=None):
+        copied_tape = super().copy(copy_operations=copy_operations, tape_cls=tape_cls)
+        copied_tape.jacobian_options = self.jacobian_options
+        return copied_tape
+
     def _grad_method(self, idx, use_graph=True, default_method="F"):
         """Determine the correct partial derivative computation method for each gate parameter.
 
@@ -533,7 +538,9 @@ class JacobianTape(QuantumTape):
                 # First order (forward) finite-difference will be performed.
                 # Compute the value of the tape at the current parameters here. This ensures
                 # this computation is only performed once, for all parameters.
-                options["y0"] = np.asarray(self.execute_device(params, device))
+                # convert to float64 to eliminate floating point errors when params float32
+                params_f64 = np.array(params, dtype=np.float64)
+                options["y0"] = np.asarray(self.execute_device(params_f64, device))
 
         # some gradient methods need the device or the device wires
         options["device"] = device

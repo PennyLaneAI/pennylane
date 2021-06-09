@@ -62,6 +62,11 @@ def sum(x):
 
             return apply(np.sum, x)
 
+        if x.interface == "jax":
+            import jax.numpy as jnp
+
+            return apply(jnp.sum, x)
+
         raise ValueError("Unknown interface {}".format(x.interface))
 
     import numpy as np
