@@ -563,7 +563,7 @@ class TestJacobianIntegration:
         res = tape.jacobian(dev, argnum=1)  # <--- we only choose one trainable parameter
         assert res.shape == (1, 2)
 
-        expected = np.array([[0, np.cos(y)*np.cos(x)]])
+        expected = np.array([[0, np.cos(y) * np.cos(x)]])
         res = res.flatten()
         expected = expected.flatten()
 
