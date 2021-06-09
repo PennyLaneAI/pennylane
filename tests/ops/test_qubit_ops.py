@@ -862,7 +862,7 @@ class TestOperations:
         """Test the gradient for the gate IsingXX."""
 
         if diff_method in {"finite-diff"}:
-            pytest.skip("Test does not support parameter-shift")
+            pytest.skip("Test does not support finite-diff")
 
         if diff_method in {"parameter-shift"}:
             pytest.skip("Test does not support parameter-shift")
