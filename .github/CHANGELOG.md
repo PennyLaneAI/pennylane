@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-* The number of parameters used to estimate the Jacobian can now be specified.
+* A subset of trainable parameters used to estimate the tape Jacobian can now be specified.
   [(#1371)](https://github.com/PennyLaneAI/pennylane/pull/1371)
 
   For example, consider a ``JacobianTape`` with two trainable parameters:
