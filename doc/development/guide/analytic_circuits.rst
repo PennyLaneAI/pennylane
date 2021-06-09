@@ -74,8 +74,7 @@ IsingXX
     phi = np.array(0.1, requires_grad=True)
 
     expected_res = (
-        0.5
-        * (1 / norm ** 2)
+        (1 / norm ** 2)
         * (
             np.cos(phi) * (psi_0 ** 2 + psi_1 ** 2 - psi_2 ** 2 - psi_3 ** 2)
             + np.sin(phi / 2)**2
