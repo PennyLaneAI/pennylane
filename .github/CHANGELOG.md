@@ -421,6 +421,10 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 * Fixes the differentiability of the operations `IsingXX` and `IsingZZ` for Autograd, Jax and Tensorflow.
 [(#1390)](https://github.com/PennyLaneAI/pennylane/pull/1390)
 
+* Fixes bug where `shots=None` was not reset when changing shots temporarily in a QNode call 
+  like `circuit(0.1, shots=3)`.
+  [(#1392)](https://github.com/XanaduAI/pennylane/pull/1392)
+  
 * Fixes floating point errors with `diff_method="finite-diff"` and `order=1` when parameters are `float32`.
 [(#1381)](https://github.com/PennyLaneAI/pennylane/pull/1381)
 
