@@ -131,27 +131,28 @@ class AllSinglesDoubles(Operation):
                 )
             )
 
-        for d_wires in doubles:
-            if len(d_wires) != 4:
-                raise ValueError(
-                    "Expected entries of 'doubles' to be of size 4; got {} of length {}".format(
-                        d_wires, len(d_wires)
+        if doubles is not None:
+            for d_wires in doubles:
+                if len(d_wires) != 4:
+                    raise ValueError(
+                        "Expected entries of 'doubles' to be of size 4; got {} of length {}".format(
+                            d_wires, len(d_wires)
+                        )
                     )
-                )
 
-        for s_wires in singles:
-            if len(s_wires) != 2:
-                raise ValueError(
-                    "Expected entries of 'singles' to be of size 2; got {} of length {}".format(
-                        s_wires, len(s_wires)
+        if singles is not None:
+            for s_wires in singles:
+                if len(s_wires) != 2:
+                    raise ValueError(
+                        "Expected entries of 'singles' to be of size 2; got {} of length {}".format(
+                            s_wires, len(s_wires)
+                        )
                     )
-                )
 
-        shape = qml.math.shape(weights)
-        if shape != (len(singles) + len(doubles),):
-            raise ValueError(
-                f"'weights' tensor must be of shape {(len(singles) + len(doubles),)}; got {shape}."
-            )
+        weights_shape = qml.math.shape(weights)
+        exp_shape = self.shape(singles, doubles)
+        if weights_shape != exp_shape:
+            raise ValueError(f"'weights' tensor must be of shape {exp_shape}; got {weights_shape}.")
 
         # we can extract the numpy representation here since hf_state can never be differentiable
         self.hf_state = qml.math.toarray(hf_state)
@@ -178,3 +179,27 @@ class AllSinglesDoubles(Operation):
                 qml.SingleExcitation(weights[j], wires=s_wires)
 
         return tape
+
+    @staticmethod
+    def shape(singles, doubles):
+        r"""Returns the shape of the tensor containing the circuit parameters.
+
+        Args:
+            singles (Sequence[Sequence]): sequence of lists with the indices of the two qubits
+                the :class:`~.pennylane.SingleExcitation` operations act on
+            doubles (Sequence[Sequence]): sequence of lists with the indices of the four qubits
+                the :class:`~.pennylane.DoubleExcitation` operations act on
+
+        Returns:
+            tuple(int): shape of the tensor containing the circuit parameters
+        """
+        if singles is None:
+            if doubles is None:
+                return (0,)
+            else:
+                return (len(doubles),)
+        else:
+            if doubles is None:
+                return (len(singles),)
+            else:
+                return (len(singles) + len(doubles),)
