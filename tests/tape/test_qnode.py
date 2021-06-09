@@ -806,8 +806,10 @@ class TestIntegration:
         x = anp.array(0.543, requires_grad=True)
         y = anp.array(-0.654, requires_grad=True)
 
-        @qml.qnode(dev, diff_method=diff_method, argnum=[1])  # <--- we only choose one trainable parameter
-        def circuit(x,y):
+        @qml.qnode(
+            dev, diff_method=diff_method, argnum=[1]
+        )  # <--- we only choose one trainable parameter
+        def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
