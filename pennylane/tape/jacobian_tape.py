@@ -420,7 +420,7 @@ class JacobianTape(QuantumTape):
         if argnum is None:
             return enumerate(diff_methods)
 
-        if not isinstance(argnum, list):
+        if isinstance(argnum, int):
             argnum = [argnum]
 
         if not all(ind in self.trainable_params for ind in argnum):
