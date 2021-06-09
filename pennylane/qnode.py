@@ -123,9 +123,9 @@ class QNode:
         order=1 (int): The order of the finite difference method to use. ``1`` corresponds
             to forward finite differences, ``2`` to centered finite differences.
         shift=pi/2 (float): the size of the shift for two-term parameter-shift gradient computations
-        adjoint_cache=True (bool): for tensorflow and torch interfaces and adjoint differentiation,
+        adjoint_cache=True (bool): for TensorFlow and PyTorch interfaces and adjoint differentiation,
             this indicates whether to save the device state after the forward pass.  Doing so saves a
-            forward execution. Device state automatically reused with autograd and jax interfaces.
+            forward execution. Device state automatically reused with autograd and JAX interfaces.
 
     **Example**
 
@@ -950,9 +950,9 @@ def qnode(
         h=1e-7 (float): Step size for the finite difference method.
         order=1 (int): The order of the finite difference method to use. ``1`` corresponds
             to forward finite differences, ``2`` to centered finite differences.
-        adjoint_cache=True (bool): for tensorflow and torch interfaces and adjoint differentiation,
+        adjoint_cache=True (bool): for TensorFlow and PyTorch interfaces and adjoint differentiation,
             this indicates whether to save the device state after the forward pass.  Doing so saves a
-            forward execution. Device state automatically reused with autograd and jax interfaces.
+            forward execution. Device state automatically reused with autograd and JAX interfaces.
 
     **Example**
 

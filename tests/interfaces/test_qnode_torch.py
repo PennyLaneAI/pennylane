@@ -744,7 +744,7 @@ class Test_adjoint:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="adjoint", interface="torch", cache_state=True)
+        @qml.qnode(dev, diff_method="adjoint", interface="torch", adjoint_cache=True)
         def circ(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=1)
@@ -778,7 +778,7 @@ class Test_adjoint:
 
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, diff_method="adjoint", interface="torch")
+        @qml.qnode(dev, diff_method="adjoint", interface="torch", adjoint_cache=False)
         def circ(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
