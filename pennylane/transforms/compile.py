@@ -69,8 +69,9 @@ def compile(tape, pipeline=default_pipeline, basis_set=None, num_passes=1):
     # Expand the tape; this is done to unroll any templates that may be present,
     # as well as to decompose us over a specified basis set
     # First, though, we have to stop whatever tape may be recording so that we
-    # don't queue anything as a result of the expansion process
+    # don't queue anything as a result of the expansion or transform pipeline
     current_tape = get_active_tape()
+
     with current_tape.stop_recording():
         if basis_set is not None:
             expanded_tape = tape.expand(depth=5, stop_at=lambda obj: obj.name in basis_set)
@@ -78,10 +79,10 @@ def compile(tape, pipeline=default_pipeline, basis_set=None, num_passes=1):
             # Expand only the templates
             expanded_tape = tape.expand(stop_at=lambda obj: obj.name not in template_list)
 
-    # Apply the compilation transforms
-    for _ in range(num_passes):
-        for transform in pipeline:
-            expanded_tape = invisible(transform.tape_fn)(expanded_tape)
+        # Apply the compilation transforms
+        for _ in range(num_passes):
+            for transform in pipeline:
+                expanded_tape = transform.tape_fn(expanded_tape)
 
     # Queue the operations on the optimized tape
     for op in expanded_tape.operations + expanded_tape.measurements:
