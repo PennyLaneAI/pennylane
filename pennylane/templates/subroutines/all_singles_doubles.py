@@ -195,11 +195,13 @@ class AllSinglesDoubles(Operation):
         """
         if singles is None:
             if doubles is None:
-                return (0,)
+                shape_ = (0,)
             else:
-                return (len(doubles),)
+                shape_ = (len(doubles),)
         else:
             if doubles is None:
-                return (len(singles),)
+                shape_ = (len(singles),)
             else:
-                return (len(singles) + len(doubles),)
+                shape_ = (len(singles) + len(doubles),)
+
+        return shape_
