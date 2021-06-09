@@ -109,7 +109,15 @@ class QubitDevice(Device):
         new_array[indices] = array
         return new_array
 
-    observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity", "Projector"}
+    observables = {
+        "PauliX",
+        "PauliY",
+        "PauliZ",
+        "Hadamard",
+        "Hermitian",
+        "Identity",
+        "Projector",
+    }
 
     def __init__(self, wires=1, shots=None, cache=0, analytic=None):
         super().__init__(wires=wires, shots=shots, analytic=analytic)
@@ -798,7 +806,7 @@ class QubitDevice(Device):
 
         return samples.reshape((bin_size, -1))
 
-    def adjoint_jacobian(self, tape):
+    def adjoint_jacobian(self, tape, starting_state=None, use_device_state=False):
         """Implements the adjoint method outlined in
         `Jones and Gacon <https://arxiv.org/abs/2009.02823>`__ to differentiate an input tape.
 
@@ -807,7 +815,7 @@ class QubitDevice(Device):
         method, but has a lower time overhead and a similar memory overhead.
 
         .. note::
-            The adjoint differentation method has the following restrictions:
+            The adjoint differentiation method has the following restrictions:
 
             * As it requires knowledge of the statevector, only statevector simulator devices can be
               used.
@@ -817,6 +825,13 @@ class QubitDevice(Device):
         Args:
             tape (.QuantumTape): circuit that the function takes the gradient of
 
+        Keyword Args:
+            starting_state (tensor_like): post-forward pass state to start execution with. It should be
+                complex-valued. Takes precedence over ``use_device_state``.
+            use_device_state (bool): use current device state to initialize. A forward pass of the same
+                circuit should be the last thing the device has executed. If a ``starting_state`` is
+                provided, that takes precedence.
+
         Returns:
             array: the derivative of the tape with respect to trainable parameters.
             Dimensions are ``(len(observables), len(trainable_params))``.
@@ -825,6 +840,9 @@ class QubitDevice(Device):
             QuantumFunctionError: if the input tape has measurements that are not expectation values
                 or contains a multi-parameter operation aside from :class:`~.Rot`
         """
+        # broadcasted inner product not summing over first dimension of b
+        sum_axes = tuple(range(1, self.num_wires + 1))
+        dot_product_real = lambda b, k: self._real(qmlsum(self._conj(b) * k, axis=sum_axes))
 
         for m in tape.measurements:
             if m.return_type is not qml.operation.Expectation:
@@ -836,16 +854,19 @@ class QubitDevice(Device):
             if not hasattr(m.obs, "base_name"):
                 m.obs.base_name = None  # This is needed for when the observable is a tensor product
 
-        # Perform the forward pass.
-        # Consider using caching and calling lower-level functionality. We just need the device to
-        # be in the post-forward pass state.
-        # https://github.com/PennyLaneAI/pennylane/pull/1032/files#r563441040
-        self.reset()
-        self.execute(tape)
+        # Initialization of state
+        if starting_state is not None:
+            ket = self._reshape(starting_state, [2] * self.num_wires)
+        else:
+            if not use_device_state:
+                self.reset()
+                self.execute(tape)
+            ket = self._pre_rotated_state
 
-        phi = self._reshape(self.state, [2] * self.num_wires)
-
-        lambdas = [self._apply_operation(phi, obs) for obs in tape.observables]
+        n_obs = len(tape.observables)
+        bras = np.empty([n_obs] + [2] * self.num_wires, dtype=np.complex128)
+        for kk in range(n_obs):
+            bras[kk, ...] = self._apply_operation(ket, tape.observables[kk])
 
         expanded_ops = []
         for op in reversed(tape.operations):
@@ -863,7 +884,6 @@ class QubitDevice(Device):
                     expanded_ops.append(op)
 
         jac = np.zeros((len(tape.observables), len(tape.trainable_params)))
-        dot_product_real = lambda a, b: self._real(qmlsum(self._conj(a) * b))
 
         param_number = len(tape._par_info) - 1  # pylint: disable=protected-access
         trainable_param_number = len(tape.trainable_params) - 1
@@ -873,20 +893,22 @@ class QubitDevice(Device):
                 d_op_matrix = operation_derivative(op)
 
             op.inv()
-            phi = self._apply_operation(phi, op)
+            # Ideally use use op.adjoint() here
+            # then we don't have to re-invert the operation at the end
+            ket = self._apply_operation(ket, op)
 
             if op.grad_method is not None:
                 if param_number in tape.trainable_params:
-                    mu = self._apply_unitary(phi, d_op_matrix, op.wires)
 
-                    jac_column = np.array(
-                        [2 * dot_product_real(lambda_, mu) for lambda_ in lambdas]
-                    )
-                    jac[:, trainable_param_number] = jac_column
+                    ket_temp = self._apply_unitary(ket, d_op_matrix, op.wires)
+
+                    jac[:, trainable_param_number] = 2 * dot_product_real(bras, ket_temp)
+
                     trainable_param_number -= 1
                 param_number -= 1
 
-            lambdas = [self._apply_operation(lambda_, op) for lambda_ in lambdas]
+            for kk in range(n_obs):
+                bras[kk, ...] = self._apply_operation(bras[kk, ...], op)
             op.inv()
 
         return jac
