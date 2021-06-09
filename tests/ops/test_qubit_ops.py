@@ -858,7 +858,7 @@ class TestOperations:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
-    def test_isingxx_jax_(self, tol, dev_name, diff_method, phi):
+    def test_isingxx_jax_grad(self, tol, dev_name, diff_method, phi):
         """Test the gradient for the gate IsingXX."""
 
         if diff_method in {"finite-diff"}:
