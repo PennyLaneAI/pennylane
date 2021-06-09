@@ -556,7 +556,7 @@ class QNode:
         # If shots specified in call but not in qfunc signature,
         # interpret it as device shots value for this call.
         # TODO: make this more functional by passing shots as qtape.execute(.., shots=shots).
-        original_shots = None
+        original_shots = -1
         if "shots" in kwargs and not self._qfunc_uses_shots_arg:
             original_shots = self.device.shots  # remember device shots
             # remove shots from kwargs and temporarily change on device
@@ -569,7 +569,8 @@ class QNode:
         # execute the tape
         res = self.qtape.execute(device=self.device)
 
-        if original_shots is not None:
+        # if shots was changed
+        if original_shots != -1:
             # reinstate default on device
             self.device.shots = original_shots
 
