@@ -899,7 +899,7 @@ class TestShots:
 
         # check that the circuit is analytic
         res1 = [circuit() for _ in range(100)]
-        assert np.std(res1) == 0.
+        assert np.std(res1) == 0.0
         assert circuit.device._shots is None
 
         # check that the circuit is temporary non-analytic
@@ -908,7 +908,7 @@ class TestShots:
 
         # check that the circuit is analytic again
         res1 = [circuit() for _ in range(100)]
-        assert np.std(res1) == 0.
+        assert np.std(res1) == 0.0
         assert circuit.device._shots is None
 
     def test_no_shots_per_call_if_user_has_shots_qfunc_kwarg(self):
