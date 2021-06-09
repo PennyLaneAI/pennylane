@@ -899,15 +899,15 @@ class TestShots:
 
         # check that the circuit is analytic
         res1 = [circuit() for _ in range(100)]
-        assert np.std(res1) == 0.
+        assert np.std(res1) == 0.0
 
         # check that the circuit is temporary non-analytic
         res1 = [circuit(shots=1) for _ in range(100)]
-        assert np.std(res1) != 0.
+        assert np.std(res1) != 0.0
 
         # check that the circuit is analytic again
         res1 = [circuit() for _ in range(100)]
-        assert np.std(res1) == 0.
+        assert np.std(res1) == 0.0
 
     def test_no_shots_per_call_if_user_has_shots_qfunc_kwarg(self):
         """Tests that the per-call shots overwriting is suspended if user
