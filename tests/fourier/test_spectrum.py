@@ -44,8 +44,8 @@ class TestHelpers:
             (qml.RX(0.1, wires=0), [-1, 0, 1]),  # generator is a class
             (qml.RY(0.1, wires=0), [-1, 0, 1]),  # generator is a class
             (qml.RZ(0.1, wires=0), [-1, 0, 1]),  # generator is a class
-            (qml.PhaseShift(0.5, wires=0), [-1, 0, 1]),  # generator is a array
-            (qml.ControlledPhaseShift(0.5, wires=[0, 1]), [-1, 0, 1]),  # generator is array
+            (qml.PhaseShift(0.5, wires=0), [-1, 0, 1]),  # generator is an array
+            (qml.ControlledPhaseShift(0.5, wires=[0, 1]), [-1, 0, 1]),  # generator is an array
         ],
     )
     def test_get_spectrum(self, op, expected, tol):

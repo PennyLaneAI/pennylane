@@ -174,8 +174,8 @@ def spectrum(qnode, encoding_gates=None):
 
     .. note::
         While the Fourier spectrum usually does not depend
-        on trainable circuit parameters and the actual values of the inputs,
-        it may still change with arguments of the QNode that determine the architecture
+        on trainable circuit parameters or the actual values of the inputs,
+        it may still change based on inputs to the QNode that alter the architecture
         of the circuit.
 
     The input-encoding gates to consider can also be explicitly selected by using the
