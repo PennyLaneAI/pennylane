@@ -737,6 +737,38 @@ class TestQNode:
 
 
 class Test_adjoint:
+    def test_adjoint_default_save_state(self, mocker):
+        """tests that the state will be saved by default"""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method="adjoint", interface="torch")
+        def circ(x):
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=1)
+            qml.CNOT(wires=(0, 1))
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
+
+        expected_grad = lambda x: torch.tensor([-torch.sin(x[0]), torch.cos(x[1])])
+
+        spy = mocker.spy(dev, "adjoint_jacobian")
+
+        x1 = torch.tensor([0.1, 0.2], requires_grad=True)
+        x2 = torch.tensor([0.3, 0.4], requires_grad=True)
+
+        res1 = circ(x1)
+        res2 = circ(x2)
+
+        res1.backward(torch.Tensor([1, 1]))
+        res2.backward(torch.Tensor([1, 1]))
+
+        assert np.allclose(x1.grad, expected_grad(x1))
+        assert np.allclose(x2.grad, expected_grad(x2))
+
+        assert circ.device.num_executions == 2
+
+        spy.assert_called_with(mocker.ANY, starting_state=mocker.ANY)
+
     def test_adjoint_save_state(self, mocker):
         """Tests that the torch interface reuses device state when prompted by `cache_state=True`.
         Also tests a second execution before backward pass does not alter gradient.
@@ -771,10 +803,10 @@ class Test_adjoint:
 
         spy.assert_called_with(mocker.ANY, starting_state=mocker.ANY)
 
-        assert circ.qtape.jacobian_options["cache_state"] == True
+        assert circ.qtape.jacobian_options["adjoint_cache"] == True
 
     def test_adjoint_no_save_state(self, mocker):
-        """Tests that under default conditions, the state is not cached"""
+        """Tests that with `adjoint_cache=False`, the state is not cached"""
 
         dev = qml.device("default.qubit", wires=1)
 
@@ -793,7 +825,7 @@ class Test_adjoint:
 
         spy.assert_called_with(mocker.ANY)
 
-        assert circ.qtape.jacobian_options.get("cache_state", False) == False
+        assert circ.qtape.jacobian_options.get("adjoint_cache", False) == False
 
 
 def qtransform(qnode, a, framework=torch):
