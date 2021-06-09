@@ -18,7 +18,6 @@ to the ``QuantumTape`` class.
 # pylint: disable=too-many-branches
 
 import itertools
-import random
 import warnings
 
 import numpy as np
@@ -405,14 +404,14 @@ class JacobianTape(QuantumTape):
         by returning a map of their indices and differentiation methods.
 
         When there are fewer parameters specified than the total number of
-        trainable parameters, the Jacobian is estimated by using ``argnum``
-        random parameters from the set of trainable parameters.
+        trainable parameters, the Jacobian is estimated by using the parameters
+        specified using the ``argnum`` keyword argument.
 
         Args:
             diff_methods (list): the ordered list of differentiation methods
                 for each parameter
-            argnum (int, list(int), None): Which argument(s) to compute the Jacobian
-                with respect to. Specifies the indices of the parameters to sample.
+            argnum (int, list(int), None): Indices for which argument(s) to
+                compute the Jacobian with respect to.
 
         Returns:
             enumerate or list: map of the trainable parameter indices and
@@ -438,10 +437,8 @@ class JacobianTape(QuantumTape):
             )
             return []
 
-        diff_methods_to_sample = map(diff_methods.__getitem__, argnum)
-        mapped_diff_methods = zip(argnum, diff_methods_to_sample)
-
-        return random.sample(list(mapped_diff_methods), k=num_params)
+        diff_methods_to_use = map(diff_methods.__getitem__, argnum)
+        return zip(argnum, diff_methods_to_use)
 
     def jacobian(self, device, params=None, **options):
         r"""Compute the Jacobian of the parametrized quantum circuit recorded by the quantum tape.
