@@ -94,7 +94,7 @@ def test_simple_grad():
     ],
 )
 class TestIsing:
-    """Test classs for IsingXX and IsingZZ"""
+    """Test class for IsingXX and IsingZZ"""
 
     def test_grad_ising_xx(self, dev_name, diff_method, tol):
         """Test the gradient for the gate IsingXX."""
