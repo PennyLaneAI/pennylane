@@ -192,6 +192,45 @@ class TestAdjointJacobian:
         # the different methods agree
         assert np.allclose(grad_D, grad_F, atol=tol, rtol=0)
 
+    def test_use_device_state(self, tol, dev):
+        """Tests that when using the device state, the correct answer is still returned."""
+
+        x, y, z = [0.5, 0.3, -0.7]
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RX(0.4, wires=[0])
+            qml.Rot(x, y, z, wires=[0])
+            qml.RY(-0.2, wires=[0])
+            qml.expval(qml.PauliZ(0))
+
+        tape.trainable_params = {1, 2, 3}
+
+        dM1 = dev.adjoint_jacobian(tape)
+
+        tape.execute(dev)
+        dM2 = dev.adjoint_jacobian(tape, use_device_state=True)
+
+        assert np.allclose(dM1, dM2, atol=tol, rtol=0)
+
+    def test_provide_starting_state(self, tol, dev):
+        """Tests provides correct answer when provided starting state."""
+        x, y, z = [0.5, 0.3, -0.7]
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RX(0.4, wires=[0])
+            qml.Rot(x, y, z, wires=[0])
+            qml.RY(-0.2, wires=[0])
+            qml.expval(qml.PauliZ(0))
+
+        tape.trainable_params = {1, 2, 3}
+
+        dM1 = dev.adjoint_jacobian(tape)
+
+        tape.execute(dev)
+        dM2 = dev.adjoint_jacobian(tape, starting_state=dev._pre_rotated_state)
+
+        assert np.allclose(dM1, dM2, atol=tol, rtol=0)
+
 
 class TestAdjointJacobianQNode:
     """Test QNode integration with the adjoint_jacobian method"""
