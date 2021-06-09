@@ -2,6 +2,43 @@
 
 <h3>New features since last release</h3>
 
+* The ``argnum`` keyword argument can now be specified for a QNode to define a
+  subset of trainable parameters used to estimate the Jacobian.
+  [(#1371)](https://github.com/PennyLaneAI/pennylane/pull/1371)
+
+  For example, consider two trainable parameters and a quantum function:
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  x = np.array(0.543, requires_grad=True)
+  y = np.array(-0.654, requires_grad=True)
+
+  def circuit(x,y):
+      qml.RX(x, wires=[0])
+      qml.RY(y, wires=[1])
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+  ```
+
+  When computing the gradient of the QNode, we can specify the trainable
+  parameters to consider by passing the ``argnum`` keyword argument:
+
+  ```pycon
+  >>> qnode1 = qml.QNode(circuit, dev, diff_method="parameter-shift", argnum=[0,1])
+  >>> print(qml.grad(qnode1)(x,y))
+  (array(0.31434679), array(0.67949903))
+  ```
+
+  Specifying a proper subset of the trainable parameters will estimate the
+  Jacobian:
+
+  ```pycon
+  >>> qnode2 = qml.QNode(circuit, dev, diff_method="parameter-shift", argnum=[0])
+  >>> print(qml.grad(qnode2)(x,y))
+  (array(0.31434679), array(0.))
+  ```
+
 * The `quantum_monte_carlo` transform has been added, allowing an input circuit to be transformed
   into the full quantum Monte Carlo algorithm.
   [(#1316)](https://github.com/PennyLaneAI/pennylane/pull/1316)
@@ -72,15 +109,15 @@
 * Added validation for noise channel parameters. Invalid noise parameters now
   raise a `ValueError`. [(#1357)](https://github.com/PennyLaneAI/pennylane/pull/1357)
 
-* PennyLane now has a `fourier` module, which hosts a [growing library 
-  of methods](https://pennylane.readthedocs.io/en/stable/code/qml_fourier.html) 
-  that help with investigating the Fourier representation of functions 
+* PennyLane now has a `fourier` module, which hosts a [growing library
+  of methods](https://pennylane.readthedocs.io/en/stable/code/qml_fourier.html)
+  that help with investigating the Fourier representation of functions
   implemented by quantum circuits.
   [(#1160)](https://github.com/PennyLaneAI/pennylane/pull/1160)
-  
-  For example, one can plot distributions over Fourier series coefficients like 
+
+  For example, one can plot distributions over Fourier series coefficients like
   this one:
-  
+
   <img src="https://pennylane.readthedocs.io/en/latest/_static/fourier.png" width=70%/>
 
 * It is now possible [(1291)](https://github.com/PennyLaneAI/pennylane/pull/1291)
@@ -315,7 +352,7 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
   `adjoint_cache=False` during QNode creation.
   [(#1341)](https://github.com/PennyLaneAI/pennylane/pull/1341)
 
-* The `Operator` (and by inheritance, the `Operation` and `Observable` class and their children) 
+* The `Operator` (and by inheritance, the `Operation` and `Observable` class and their children)
   now have an `id` attribute, which can mark an operator in a circuit, for example to
   identify it on the tape by a tape transform.
   [(#1377)](https://github.com/PennyLaneAI/pennylane/pull/1377)
@@ -422,10 +459,10 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Bug fixes</h3>
 
-* Fixes bug where `shots=None` was not reset when changing shots temporarily in a QNode call 
+* Fixes bug where `shots=None` was not reset when changing shots temporarily in a QNode call
   like `circuit(0.1, shots=3)`.
   [(#1392)](https://github.com/XanaduAI/pennylane/pull/1392)
-  
+
 * Fixes floating point errors with `diff_method="finite-diff"` and `order=1` when parameters are `float32`.
 [(#1381)](https://github.com/PennyLaneAI/pennylane/pull/1381)
 
@@ -462,7 +499,7 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Documentation</h3>
 
-* Fix typo in the documentation of qml.templates.layers.StronglyEntanglingLayers 
+* Fix typo in the documentation of qml.templates.layers.StronglyEntanglingLayers
   [(#1367)](https://github.com/PennyLaneAI/pennylane/pull/1367)
 
 * Fixed typo on TensorFlow interface documentation [(#1312)](https://github.com/PennyLaneAI/pennylane/pull/1312)
