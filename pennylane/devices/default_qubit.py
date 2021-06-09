@@ -23,6 +23,7 @@ import functools
 from string import ascii_letters as ABC
 
 import numpy as np
+import scipy
 
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
 from pennylane.operation import DiagonalOperation
@@ -134,7 +135,8 @@ class DefaultQubit(QubitDevice):
         "QubitSum",
     }
 
-    observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity", "Projector"}
+    observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity", "Projector",
+                   "SparseHamiltonian"}
 
     def __init__(self, wires, *, shots=None, cache=0, analytic=None):
         super().__init__(wires, shots, cache=cache, analytic=analytic)
@@ -435,6 +437,21 @@ class DefaultQubit(QubitDevice):
 
         phase = self._conj(parameters) if inverse else parameters
         return self._stack([state[sl_0], phase * state[sl_1]], axis=axes[0])
+
+    def expval(self, observable, shot_range=None, bin_size=None):
+        """ ..."""
+        if observable.name == "SparseHamiltonian" and self.shots == None:
+
+             state_sparse = scipy.sparse.coo_matrix(self.state)
+             state_trans = scipy.sparse.coo_matrix(self.state.reshape(len(self.state), 1))
+             h_sparse = observable.matrix
+
+             ev = scipy.sparse.coo_matrix.dot(state_sparse,
+                  scipy.sparse.coo_matrix.dot(h_sparse, state_trans))
+
+             return np.real(ev.toarray()[0])
+
+        return super().expval(observable)
 
     def _get_unitary_matrix(self, unitary):  # pylint: disable=no-self-use
         """Return the matrix representing a unitary operation.
