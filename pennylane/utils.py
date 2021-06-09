@@ -107,7 +107,32 @@ def decompose_hamiltonian(H, hide_identity=False):
 
 
 def sparse_hamiltonian(H):
-    """docstring ..."""
+    r"""Computes the sparse matrix representation a Hamiltonian in the computational basis.
+
+    Args:
+        H (~.Hamiltonian): Hamiltonian operator for which the matrix representation should be measured
+
+    Returns:
+        coo_matrix: a sparse matrix in scipy COOrdinate format with the dimension of :math:`(2^n, 2^n)` where :math:`n = len(H.wires)`
+
+    **Example:**
+
+    This function can be used by passing a `qml.Hamiltonian` object as:
+
+    >>> coeffs = [0.5, 0.5]
+    >>> obs = [qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
+    ...        qml.Identity(wires=[0]) @ qml.PauliZ(wires=[1])]
+    >>> H = qml.Hamiltonian(coeffs, obs)
+    >>> H_sparse = sparse_hamiltonian(H)
+
+    The resulting matrix can be either used directly or transformed into a numpy array:
+
+    >>> H_sparse.toarray()
+    array([[ 1.+0.j,  0.+0.j,  0.+0.j,  0.+0.j],
+           [ 0.+0.j, -1.+0.j,  0.+0.j,  0.+0.j],
+           [ 0.+0.j,  0.+0.j,  0.+0.j,  0.+0.j],
+           [ 0.+0.j,  0.+0.j,  0.+0.j,  0.+0.j]])
+    """
     if not isinstance(H, qml.Hamiltonian):
         raise TypeError("Passed Hamiltonian must be of type `qml.Hamiltonian`")
 
