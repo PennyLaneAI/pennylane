@@ -21,6 +21,7 @@ import functools
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import math
 import numpy as np
+import scipy
 from scipy.linalg import block_diag
 
 import pennylane as qml
@@ -3027,6 +3028,25 @@ class Projector(Observable):
         Returns:
             list: list containing the gates diagonalizing the projector observable
         """
+        return []
+
+
+class SparseHamiltonian(Observable):
+    r"""
+    """
+    num_wires = AnyWires
+    num_params = 1
+    par_domain = None
+    grad_method = None
+
+    @classmethod
+    def _matrix(cls, *params):
+        A = params[0]
+        if not isinstance(A, scipy.sparse.coo_matrix):
+            raise TypeError("Observable must be a scipy sparse coo_matrix.")
+        return A
+
+    def diagonalizing_gates(self):
         return []
 
 
