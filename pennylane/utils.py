@@ -127,7 +127,7 @@ def sparse_hamiltonian(H):
     >>> H = qml.Hamiltonian(coeffs, obs)
     >>> H_sparse = sparse_hamiltonian(H)
 
-    The resulting matrix can be either used directly or transformed into a numpy array:
+    The resulting sparse matrix can be either used directly or transformed into a numpy array:
 
     >>> H_sparse.toarray()
     array([[ 1.+0.j,  0.+0.j,  0.+0.j,  0.+0.j],
