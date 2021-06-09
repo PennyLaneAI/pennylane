@@ -900,6 +900,7 @@ class TestShots:
         # check that the circuit is analytic
         res1 = [circuit() for _ in range(100)]
         assert np.std(res1) == 0.
+        assert circuit.device._shots is None
 
         # check that the circuit is temporary non-analytic
         res1 = [circuit(shots=1) for _ in range(100)]
