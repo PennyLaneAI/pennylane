@@ -873,8 +873,8 @@ class TestMutability:
 class TestShots:
     """Unittests for specifying shots per call."""
 
-    def test_specify_shots_per_call(self):
-        """Tests that shots can be set per call."""
+    def test_specify_shots_per_call_sample(self):
+        """Tests that shots can be set per call for a sample return type."""
         dev = qml.device("default.qubit", wires=1, shots=10)
 
         @qml.qnode(dev)
@@ -886,6 +886,30 @@ class TestShots:
         assert len(circuit(0.8, shots=2)) == 2
         assert len(circuit(0.8, shots=3178)) == 3178
         assert len(circuit(0.8)) == 10
+
+    def test_specify_shots_per_call_expval(self):
+        """Tests that shots can be set per call for an expectation value.
+        Note: this test has a vanishingly small probability to fail."""
+        dev = qml.device("default.qubit", wires=1, shots=None)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        # check that the circuit is analytic
+        res1 = [circuit() for _ in range(100)]
+        assert np.std(res1) == 0.0
+        assert circuit.device._shots is None
+
+        # check that the circuit is temporary non-analytic
+        res1 = [circuit(shots=1) for _ in range(100)]
+        assert np.std(res1) != 0.0
+
+        # check that the circuit is analytic again
+        res1 = [circuit() for _ in range(100)]
+        assert np.std(res1) == 0.0
+        assert circuit.device._shots is None
 
     def test_no_shots_per_call_if_user_has_shots_qfunc_kwarg(self):
         """Tests that the per-call shots overwriting is suspended if user
