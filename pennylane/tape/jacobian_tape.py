@@ -401,17 +401,17 @@ class JacobianTape(QuantumTape):
         raise NotImplementedError
 
     def _choose_params_with_methods(self, diff_methods, argnum):
-        """Chooses the trainable parameters to use for computing the jacobian
+        """Chooses the trainable parameters to use for computing the Jacobian
         by returning a map of their indices and differentiation methods.
 
         When there are fewer parameters specified than the total number of
-        trainable parameters, the jacobian is estimated by using ``argnum``
+        trainable parameters, the Jacobian is estimated by using ``argnum``
         random parameters from the set of trainable parameters.
 
         Args:
             diff_methods (list): the ordered list of differentiation methods
                 for each parameter
-            argnum (int, list(int), None): Which argument(s) to compute the jacobian
+            argnum (int, list(int), None): Which argument(s) to compute the Jacobian
                 with respect to. Specifies the indices of the parameters to sample.
 
         Returns:
@@ -433,7 +433,7 @@ class JacobianTape(QuantumTape):
 
         if num_params == 0:
             warnings.warn(
-                "No trainable parameters were specified for computing the jacobian.",
+                "No trainable parameters were specified for computing the Jacobian.",
                 UserWarning,
             )
             return []
@@ -491,7 +491,7 @@ class JacobianTape(QuantumTape):
             order=1 (int): The order of the finite difference method to use. ``1`` corresponds
                 to forward finite differences, ``2`` to centered finite differences.
             shift=pi/2 (float): the size of the shift for two-term parameter-shift gradient computations
-            argnum=None (int, list(int), None): Which argument(s) to compute the jacobian
+            argnum=None (int, list(int), None): Which argument(s) to compute the Jacobian
                 with respect to. When there are fewer parameters specified than the
                 total number of trainable parameters, the jacobian is being estimated.
 
