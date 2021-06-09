@@ -980,7 +980,6 @@ class QuantumTape(AnnotatedQueue):
 
         return self._graph
 
-
     def get_resources(self):
         """Resource requirements of a quantum circuit.
         Returns:
@@ -1006,7 +1005,7 @@ class QuantumTape(AnnotatedQueue):
             UserWarning,
         )
 
-        return self.specs['by_name']
+        return self.specs["by_name"]
 
     def get_depth(self):
         """Depth of the quantum circuit.
@@ -1036,13 +1035,12 @@ class QuantumTape(AnnotatedQueue):
 
         return self._depth
 
-
-    @property 
+    @property
     def specs(self):
         """Resource requirements of a quantum circuit.
 
         Returns:
-            dict[Union[str, int], int]: how many times constituent operations are applied
+            dict[str, Union[defaultdict,int]]: how many times constituent operations are applied
 
         **Example**
 
@@ -1071,19 +1069,19 @@ class QuantumTape(AnnotatedQueue):
 
         """
         if self._specs is None:
-            self._specs = {'by_size': defaultdict(int),
-                               'by_name': defaultdict(int)}
+            self._specs = {"by_size": defaultdict(int), "by_name": defaultdict(int)}
 
             for op in self.operations:
-                #don't use op.num_wires to allow for flexible gate classes like hermitian
-                self._specs['by_size'][len(op.wires)] += 1
+                # don't use op.num_wires to allow for flexible gate classes like hermitian
+                self._specs["by_size"][len(op.wires)] += 1
 
-                self._specs['by_name'][op.name] += 1
+                self._specs["by_name"][op.name] += 1
 
-            self._specs['total_operations'] = len(self.operations)
-            self._specs['num_tape_wires'] = self.num_wires
-            self._specs['num_trainable_params'] = len(self.trainable_params)
-            self._specs['depth'] = self.depth
+            self._specs["total_operations"] = len(self.operations)
+            self._specs["total_observables"] = len(self.observables)
+            self._specs["num_tape_wires"] = self.num_wires
+            self._specs["num_trainable_params"] = len(self.trainable_params)
+            self._specs["depth"] = self.depth
 
         return self._specs
 
