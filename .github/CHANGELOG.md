@@ -72,15 +72,15 @@
 * Added validation for noise channel parameters. Invalid noise parameters now
   raise a `ValueError`. [(#1357)](https://github.com/PennyLaneAI/pennylane/pull/1357)
 
-* PennyLane now has a `fourier` module, which hosts a [growing library 
-  of methods](https://pennylane.readthedocs.io/en/stable/code/qml_fourier.html) 
-  that help with investigating the Fourier representation of functions 
+* PennyLane now has a `fourier` module, which hosts a [growing library
+  of methods](https://pennylane.readthedocs.io/en/stable/code/qml_fourier.html)
+  that help with investigating the Fourier representation of functions
   implemented by quantum circuits.
   [(#1160)](https://github.com/PennyLaneAI/pennylane/pull/1160)
-  
-  For example, one can plot distributions over Fourier series coefficients like 
+
+  For example, one can plot distributions over Fourier series coefficients like
   this one:
-  
+
   <img src="https://pennylane.readthedocs.io/en/latest/_static/fourier.png" width=70%/>
 
 * It is now possible [(1291)](https://github.com/PennyLaneAI/pennylane/pull/1291)
@@ -310,12 +310,12 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Improvements</h3>
 
-* The `Operator` (and by inheritance, the `Operation` and `Observable` class and their children) 
+* The `Operator` (and by inheritance, the `Operation` and `Observable` class and their children)
   now have an `id` attribute, which can mark an operator in a circuit, for example to
   identify it on the tape by a tape transform.
   [(#1377)](https://github.com/PennyLaneAI/pennylane/pull/1377)
 
-  
+
 * Implement special handling for measuring the variance of Projector observables to improve memory usage.
   [(#1368)](https://github.com/PennyLaneAI/pennylane/pull/1368)
 
@@ -418,10 +418,10 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Bug fixes</h3>
 
-* Fixes bug where `shots=None` was not reset when changing shots temporarily in a QNode call 
+* Fixes bug where `shots=None` was not reset when changing shots temporarily in a QNode call
   like `circuit(0.1, shots=3)`.
   [(#1392)](https://github.com/XanaduAI/pennylane/pull/1392)
-  
+
 * Fixes floating point errors with `diff_method="finite-diff"` and `order=1` when parameters are `float32`.
 [(#1381)](https://github.com/PennyLaneAI/pennylane/pull/1381)
 
@@ -458,7 +458,10 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Documentation</h3>
 
-* Fix typo in the documentation of qml.templates.layers.StronglyEntanglingLayers 
+* Fix typo in the documentation of qml.qaoa.cycle.loss_hamiltonian
+  [(#1396)](https://github.com/PennyLaneAI/pennylane/pull/1396)
+
+* Fix typo in the documentation of qml.templates.layers.StronglyEntanglingLayers
   [(#1367)](https://github.com/PennyLaneAI/pennylane/pull/1367)
 
 * Fixed typo on TensorFlow interface documentation [(#1312)](https://github.com/PennyLaneAI/pennylane/pull/1312)
