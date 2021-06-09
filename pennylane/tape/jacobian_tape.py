@@ -493,8 +493,7 @@ class JacobianTape(QuantumTape):
             shift=pi/2 (float): the size of the shift for two-term parameter-shift gradient computations
             argnum=None (int, list(int), None): Which argument(s) to compute the jacobian
                 with respect to. When there are fewer parameters specified than the
-                total number of trainable parameters, the jacobian is being estimated by
-                sampling ``argnum`` many parameters from the set of trainable parameters.
+                total number of trainable parameters, the jacobian is being estimated.
 
         Returns:
             array[float]: 2-dimensional array of shape ``(tape.output_dim, tape.num_params)``
