@@ -13,6 +13,7 @@
 # limitations under the License.
 """Code for resource estimation"""
 
+
 def specs(qnode, max_expansion=None):
     """
 
@@ -23,11 +24,11 @@ def specs(qnode, max_expansion=None):
         max_expansion=None (int): The number of times the internal circuit should be expanded when
             executed on a device. Expansion occurs when an operation or measurement is not
             supported, and results in a gate decomposition. If any operations in the decomposition
-            remain unsupported by the device, another expansion occurs. Defaults to 
+            remain unsupported by the device, another expansion occurs. Defaults to
             ``qnode.max_expansion``.
 
     Returns:
-        A function that has the same argument signature as ``qnode``. This function 
+        A function that has the same argument signature as ``qnode``. This function
         returns a dictionary of information about qnode structure
 
     **Example**
@@ -46,23 +47,24 @@ def specs(qnode, max_expansion=None):
     >>> x = np.array([0.1, 0.2])
     >>> info = qml.specs(circuit)(x, add_ry=False)
     """
+
     def specs_qnode(*args, **kwargs):
         """Returns information on the structure and makeup of provided QNode.
 
         Dictionary keys:
             * ``"total_operations"``: total gates in circuit
             * ``"by_size"``: dictionary mapping gate number of wires to number of occurances
-            * ``"by_name"``: dictionary mapping gate types to number of occurances 
+            * ``"by_name"``: dictionary mapping gate types to number of occurances
             * ``"num_tape_wires"``: number of wires used by the circuit
             * ``"num_wires"``: number of wires in device
             * ``"num_trainable_params"``: number of individual scalars that are trainable
             * ``"depth"``: longest path in directed acyclic graph representation
             * ``"dev_short_name"``: name of QNode device
-        
+
         Potential Additional Information:
-            *``"num_parameter_shift_executions"``: number of times circuit will execute when 
+            *``"num_parameter_shift_executions"``: number of times circuit will execute when
                     calculating the derivative
-    
+
 
         Returns:
             dict: information about qnode structure
@@ -93,4 +95,5 @@ def specs(qnode, max_expansion=None):
             qnode.max_expansion = initial_max_expansion
 
         return qnode.specs
+
     return specs_qnode

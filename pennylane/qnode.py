@@ -735,10 +735,10 @@ class QNode:
 
         info = self.qtape.specs.copy()
 
-        info['num_device_wires'] = self.device.num_wires
-        info['device_name'] = self.device.short_name
+        info["num_device_wires"] = self.device.num_wires
+        info["device_name"] = self.device.short_name
 
-        # As this number will not be correct in backprop mode, maybe I 
+        # As this number will not be correct in backprop mode, maybe I
         # should manually recompute it?
         # info['trainable_parameters'] = len(self.qtape.trainable_params)
 
