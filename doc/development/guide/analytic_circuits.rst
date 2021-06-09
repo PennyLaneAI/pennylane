@@ -33,122 +33,89 @@ Measurement                                              Value
 ``qml.expval(qml.PauliZ(0) @ qml.PauliX(1))``       ``np.cos(x)*np.sin(y)``
 ================================================== ==========================
 
+Gate Testing Circuits
+---------------------
 
-
-
-Single Input, Single Output
----------------------------
+IsingXX
+^^^^^^^
 
 .. code-block:: python
 
-    def qfunc(x):
-        qml.RY(x, wires=0)
+    psi_0 = 0.1
+    psi_1 = 0.2
+    psi_2 = 0.3
+    psi_3 = 0.4
+    init_state = np.array([psi_0, psi_1, psi_2, psi_3], requires_grad=False)
+    norm = np.linalg.norm(init_state)
+    init_state /= norm
+
+    @qml.qnode(dev)
+    def circuit(phi):
+        qml.QubitStateVector(init_state, wires=[0, 1])
+        qml.IsingXX(phi, wires=[0, 1])
         return qml.expval(qml.PauliZ(0))
 
-    def expected_res(x):
-        return np.cos(x)
+    phi = np.array(0.1, requires_grad=True)
 
-    def expected_grad(x):
-        return -np.sin(x)
+    expected_res =     psi_0 = 0.1
+    psi_1 = 0.2
+    psi_2 = 0.3
+    psi_3 = 0.4
+    init_state = np.array([psi_0, psi_1, psi_2, psi_3], requires_grad=False)
+    norm = np.linalg.norm(init_state)
+    init_state /= norm
 
-    def expected_hess(x):
-        return -np.cos(x)
-
-
-Single Input, Multiple Output
------------------------------
-
-.. code-block:: python
-
-    def circuit(x):
-        qml.RY(x, wires=0)
-        return qml.probs(wires=[0])
-
-    def expected_res(x):
-        return np.array([np.cos(x/2.0)**2, np.sin(x/2.0)**2])
-
-    def expected_jacobian(x):
-        return np.array([-np.sin(x)/2.0, np.sin(x)/2.0])
-
-    def expected_hess(x):
-        return np.array([-np.cos(x)/2.0, np.cos(x)/2.0])
-
-Single Input, State Output
---------------------------
-
-.. code-block:: python
-
-    def circuit(x):
-        qml.RX(x, wires=0)
-        return qml.state()
-
-    def expected_res(x):
-        return np.array([np.cos(x/2.0), -1j * np.sin(x/2.0)])
-
-Vector Input, Single Output
----------------------------
-
-.. code-block:: python
-
-    def circuit(x):
-        qml.RY(x[0], wires=0)
-        qml.RX(x[1], wires=0)
+    @qml.qnode(dev)
+    def circuit(phi):
+        qml.QubitStateVector(init_state, wires=[0, 1])
+        qml.IsingXX(phi, wires=[0, 1])
         return qml.expval(qml.PauliZ(0))
 
-    def expected_res(x):
-        return np.cos(x[0]) * np.cos(x[1])
+    phi = np.array(0.1, requires_grad=True)
 
-    def expected_grad(x):
-        return np.array([-np.sin(x[0]) * np.cos(x[1]), -np.cos(x[0]) * np.sin(x[1])])
+    expected_res = (
+        0.5
+        * (1 / norm ** 2)
+        * (
+            np.cos(phi) * (psi_0 ** 2 + psi_1 ** 2 - psi_2 ** 2 - psi_3 ** 2)
+            + np.sin(phi / 2)**2
+            * (-(psi_0 ** 2) - psi_1 ** 2 + psi_2 ** 2 + psi_3 ** 2)
+        )
+    )
 
-    def expected_hess(x):
-        return np.array([[-np.cos(x[0]) * np.cos(x[1]),  np.sin(x[0]) * np.sin(x[1])],
-                         [ np.sin(x[0]) * np.sin(x[1]), -np.cos(x[0]) * np.cos(x[1])]])
+    expected_grad = (
+        0.5
+        * (1 / norm ** 2)
+        * (
+            -np.sin(phi) * (psi_0 ** 2 + psi_1 ** 2 - psi_2 ** 2 - psi_3 ** 2)
+            + 2
+            * np.sin(phi / 2)
+            * np.cos(phi / 2)
+            * (-(psi_0 ** 2) - psi_1 ** 2 + psi_2 ** 2 + psi_3 ** 2)
+        )
+    )
 
-Others
-------
 
-Found these being used in the testing
+IsingZZ
+^^^^^^^
 
 .. code-block:: python
 
-    def qfunc(x, y):
-        qml.RX(x, wires=[0])
-        qml.RY(y, wires=[1])
-        qml.CNOT(wires=[0, 1])
-        return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+    psi_0 = 0.1
+    psi_1 = 0.2
+    psi_2 = 0.3
+    psi_3 = 0.4
+
+    init_state = np.array([psi_0, psi_1, psi_2, psi_3], requires_grad=False)
+    norm = np.linalg.norm(init_state)
+    init_state /= norm
+    phi = np.array(0.1, requires_grad=True)
+
+    @qml.qnode(dev)
+    def circuit(phi):
+        qml.QubitStateVector(init_state, wires=[0, 1])
+        qml.IsingZZ(phi, wires=[0, 1])
+        return qml.expval(qml.PauliX(0))
     
-    def expected_res(x, y):
-        return np.cos(x) * np.sin(y)
-
-    def expected_grad(x, y):
-        return (-np.sin(x) * np.sin(y), np.cos(x) * np.cos(y))
-
-
-.. code-block:: python
-
-    def qfunc(x, y):
-        qml.RX(x, wires=[0])
-        qml.RY(y, wires=[1])
-        qml.CNOT(wires=[0, 1])
-        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
-
-    def expected_res(x, y):
-        return (np.cos(x), np.sin(y))
-    
-    def expected_jac(x, y):
-        return [[-np.sin(x), 0], [0, np.cos(y)]
-
-.. code-block:: python
-
-    def qfunc(x, y):
-        qml.RX(x, wires=[0])
-        qml.RY(y, wires=[1])
-        qml.CNOT(wires=[0, 1])
-        return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(1))
-
-    def expected_res(x, y):
-        return (np.cos(x), np.cos(y)**2)
-
-    def expected_grad(x, y):
-        return ([-np.sin(x), 0], [0, -2*np.cos(y)*np.sin(y)])
+    expected_result = (1 / norm ** 2) * (2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.cos(phi))
+    expected_grad = (1 / norm ** 2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
