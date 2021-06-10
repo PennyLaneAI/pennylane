@@ -79,8 +79,10 @@ class QubitParamShiftTape(JacobianTape):
     In the case where :math:`O` is involutory (:math:`\hat{O}^2 = I`), the first term in the above
     expression vanishes, and we are simply left with
 
-    .. math:: \frac{\partial g}{\partial \mathbf{p}} = - 2 f(\mathbf{p})
-    \frac{\partial f}{\partial \mathbf{p}},
+    .. math:: 
+    
+      \frac{\partial g}{\partial \mathbf{p}} = - 2 f(\mathbf{p})
+      \frac{\partial f}{\partial \mathbf{p}},
 
     allowing us to compute the gradient using :math:`2N + 1` evaluations.
     """
