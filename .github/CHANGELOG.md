@@ -247,6 +247,8 @@ K_test = qml.kernels.kernel_matrix(X_train, X_test, kernel)
   [(#1214)](https://github.com/PennyLaneAI/pennylane/pull/1214)
   [(#1283)](https://github.com/PennyLaneAI/pennylane/pull/1283)
   [(#1297)](https://github.com/PennyLaneAI/pennylane/pull/1297)
+  [(#1396)](https://github.com/PennyLaneAI/pennylane/pull/1396)
+  [(#1403)](https://github.com/PennyLaneAI/pennylane/pull/1403)
 
   The `max_weight_cycle` function returns the appropriate cost and mixer Hamiltonians:
 
@@ -498,9 +500,6 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 * Fixed a bug where `qml.sum()` and `qml.dot()` do not support the JAX interface. [(#1380)](https://github.com/PennyLaneAI/pennylane/pull/1380)
 
 <h3>Documentation</h3>
-
-* Fix typo in the documentation of `qml.qaoa.cycle.loss_hamiltonian`.
-  [(#1396)](https://github.com/PennyLaneAI/pennylane/pull/1396)
 
 * Fix typo in the documentation of qml.templates.layers.StronglyEntanglingLayers.
 
