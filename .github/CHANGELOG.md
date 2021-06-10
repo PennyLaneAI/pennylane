@@ -2,6 +2,43 @@
 
 <h3>New features since last release</h3>
 
+* The ``argnum`` keyword argument can now be specified for a QNode to define a
+  subset of trainable parameters used to estimate the Jacobian.
+  [(#1371)](https://github.com/PennyLaneAI/pennylane/pull/1371)
+
+  For example, consider two trainable parameters and a quantum function:
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  x = np.array(0.543, requires_grad=True)
+  y = np.array(-0.654, requires_grad=True)
+
+  def circuit(x,y):
+      qml.RX(x, wires=[0])
+      qml.RY(y, wires=[1])
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+  ```
+
+  When computing the gradient of the QNode, we can specify the trainable
+  parameters to consider by passing the ``argnum`` keyword argument:
+
+  ```pycon
+  >>> qnode1 = qml.QNode(circuit, dev, diff_method="parameter-shift", argnum=[0,1])
+  >>> print(qml.grad(qnode1)(x,y))
+  (array(0.31434679), array(0.67949903))
+  ```
+
+  Specifying a proper subset of the trainable parameters will estimate the
+  Jacobian:
+
+  ```pycon
+  >>> qnode2 = qml.QNode(circuit, dev, diff_method="parameter-shift", argnum=[0])
+  >>> print(qml.grad(qnode2)(x,y))
+  (array(0.31434679), array(0.))
+  ```
+
 * The `quantum_monte_carlo` transform has been added, allowing an input circuit to be transformed
   into the full quantum Monte Carlo algorithm.
   [(#1316)](https://github.com/PennyLaneAI/pennylane/pull/1316)
@@ -466,6 +503,7 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
   [(#1396)](https://github.com/PennyLaneAI/pennylane/pull/1396)
 
 * Fix typo in the documentation of qml.templates.layers.StronglyEntanglingLayers.
+
   [(#1367)](https://github.com/PennyLaneAI/pennylane/pull/1367)
 
 * Fixed typo on TensorFlow interface documentation [(#1312)](https://github.com/PennyLaneAI/pennylane/pull/1312)

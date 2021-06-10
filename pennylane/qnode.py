@@ -126,6 +126,11 @@ class QNode:
         adjoint_cache=True (bool): for TensorFlow and PyTorch interfaces and adjoint differentiation,
             this indicates whether to save the device state after the forward pass.  Doing so saves a
             forward execution. Device state automatically reused with autograd and JAX interfaces.
+        argnum=None (int, list(int), None): Which argument(s) to compute the Jacobian
+            with respect to. When there are fewer parameters specified than the
+            total number of trainable parameters, the jacobian is being estimated. Note
+            that this option is only applicable for the following differentiation methods:
+            ``"parameter-shift"``, ``"finite-diff"`` and ``"reversible"``.
 
     **Example**
 
@@ -954,6 +959,11 @@ def qnode(
         adjoint_cache=True (bool): for TensorFlow and PyTorch interfaces and adjoint differentiation,
             this indicates whether to save the device state after the forward pass.  Doing so saves a
             forward execution. Device state automatically reused with autograd and JAX interfaces.
+        argnum=None (int, list(int), None): Which argument(s) to compute the Jacobian
+            with respect to. When there are fewer parameters specified than the
+            total number of trainable parameters, the jacobian is being estimated. Note
+            that this option is only applicable for the following differentiation methods:
+            ``"parameter-shift"``, ``"finite-diff"`` and ``"reversible"``.
 
     **Example**
 
