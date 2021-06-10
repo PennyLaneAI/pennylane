@@ -248,7 +248,7 @@ K_test = qml.kernels.kernel_matrix(X_train, X_test, kernel)
   [(#1283)](https://github.com/PennyLaneAI/pennylane/pull/1283)
   [(#1297)](https://github.com/PennyLaneAI/pennylane/pull/1297)
   [(#1396)](https://github.com/PennyLaneAI/pennylane/pull/1396)
-  
+  [(#1403)](https://github.com/PennyLaneAI/pennylane/pull/1403)
 
   The `max_weight_cycle` function returns the appropriate cost and mixer Hamiltonians:
 
