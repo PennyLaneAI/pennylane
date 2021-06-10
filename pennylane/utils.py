@@ -121,18 +121,21 @@ def sparse_hamiltonian(H):
 
     This function can be used by passing a `qml.Hamiltonian` object as:
 
-    >>> coeffs = [0.5, 0.5]
-    >>> obs = [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(1)]
+    >>> coeffs = [1, -0.45]
+    >>> obs = [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1)]
     >>> H = qml.Hamiltonian(coeffs, obs)
     >>> H_sparse = sparse_hamiltonian(H)
+    >>> H_sparse
+    <4x4 sparse matrix of type '<class 'numpy.complex128'>'
+        with 2 stored elements in COOrdinate format>
 
     The resulting sparse matrix can be either used directly or transformed into a numpy array:
 
     >>> H_sparse.toarray()
-    array([[ 1.+0.j,  0.+0.j,  0.+0.j,  0.+0.j],
-           [ 0.+0.j, -1.+0.j,  0.+0.j,  0.+0.j],
-           [ 0.+0.j,  0.+0.j,  0.+0.j,  0.+0.j],
-           [ 0.+0.j,  0.+0.j,  0.+0.j,  0.+0.j]])
+    array([[ 1.+0.j  ,  0.+0.j  ,  0.+0.45j,  0.+0.j  ],
+           [ 0.+0.j  , -1.+0.j  ,  0.+0.j  ,  0.-0.45j],
+           [ 0.-0.45j,  0.+0.j  , -1.+0.j  ,  0.+0.j  ],
+           [ 0.+0.j  ,  0.+0.45j,  0.+0.j  ,  1.+0.j  ]])
     """
     if not isinstance(H, qml.Hamiltonian):
         raise TypeError("Passed Hamiltonian must be of type `qml.Hamiltonian`")
