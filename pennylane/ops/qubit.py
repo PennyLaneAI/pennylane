@@ -1002,6 +1002,7 @@ class Rot(Operation):
     num_params = 3
     num_wires = 1
     par_domain = "R"
+    is_composable_rotation = True
     grad_method = "A"
 
     @classmethod

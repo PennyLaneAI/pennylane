@@ -18,6 +18,8 @@ from pennylane import numpy as np
 from pennylane.wires import Wires
 from pennylane.transforms import qfunc_transform
 
+from .optimization_utils import fuse_rot
+
 
 def _find_next_gate(wires, op_list):
     """Given a list of operations, finds the next operation that acts on the same
@@ -162,6 +164,8 @@ def merge_rotations(tape):
 
     Args:
         tape (.QuantumTape): A quantum tape.
+        tol (float): Specifies a threshold below which merged rotations will
+            not be applied, as the rotation angle is effectively 0.
 
     **Example**
 
@@ -227,11 +231,16 @@ def merge_rotations(tape):
         if current_gate.name == next_gate.name and current_gate.wires == next_gate.wires:
             list_copy.pop(next_gate_idx + 1)
 
-            combined_angle = current_gate.parameters[0] + next_gate.parameters[0]
+            # The Rot gate must be treated separately
+            if current_gate.name == "Rot":
+                combined_angles = fuse_rot(current_gate.parameters, next_gate.parameters)
+            # Other, single-parameter rotation gates just have the angle summed
+            else:
+                combined_angles = np.array([current_gate.parameters[0] + next_gate.parameters[0]])
 
             # If the cumulative angle is not close to 0, apply the gate
-            if not np.isclose(combined_angle, 0.0):
-                tape.append(type(current_gate)(combined_angle, wires=current_gate.wires))
+            if not np.allclose(combined_angles, np.zeros(len(combined_angles))):
+                tape.append(type(current_gate)(*combined_angles, wires=current_gate.wires))
         else:
             current_gate.queue()
 

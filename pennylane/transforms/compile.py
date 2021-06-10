@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Code for a compilation transform."""
+"""Code for the high-level quantum function transform that executes compilation."""
 
 from inspect import getmembers, isclass
 import pennylane.templates as templates
