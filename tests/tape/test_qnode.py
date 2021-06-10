@@ -1092,7 +1092,7 @@ class TestSpecs:
 
         dev = qml.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(qfunc, dev, diff_method="parameter-shift")
+        circuit = qml.QNode(qfunc, dev, diff_method="adjoint")
 
         x = pnp.array([0.05, 0.1, 0.2, 0.3], requires_grad=True)
         y = pnp.array(0.1, requires_grad=False)
