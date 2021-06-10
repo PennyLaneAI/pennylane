@@ -46,7 +46,7 @@ def _get_spectrum(op):
         no_generator = True
 
     if no_generator:
-        raise ValueError(f"generator of operation {op} is not defined")
+        raise ValueError(f"Generator of operation {op} is not defined.")
 
     matrix = coeff * matrix
     # eigenvalues of hermitian ops are guaranteed to be real
