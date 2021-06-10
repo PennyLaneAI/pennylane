@@ -2,6 +2,44 @@
 
 <h3>New features since last release</h3>
 
+* Adds the new template `AllSinglesDoubles` to prepare quantum states of molecules
+  using the `SingleExcitation` and `DoubleExcitation` operations. 
+  The new template reduces significantly the number of operations
+  and the depth of the quantum circuit with respect to the traditional UCCSD
+  unitary.
+  [(#1383)](https://github.com/PennyLaneAI/pennylane/pull/1383)
+
+  For example, consider the case of two particles and four qubits.
+  First, we define the Hartree-Fock initial state and generate all
+  possible single and double excitations. 
+
+  ```python
+  import pennylane as qml
+  from pennylane import numpy as np
+
+  electrons = 2
+  qubits = 4
+
+  hf_state = qml.qchem.hf_state(electrons, qubits)
+  singles, doubles = qml.qchem.excitations(electrons, qubits)
+  ```
+  Now we can use the template ``AllSinglesDoubles`` to define the
+  quantum circuit,
+
+  ```python
+  from pennylane.templates import AllSinglesDoubles
+
+  wires = range(qubits)
+
+  @qml.qnode(dev)
+  def circuit(weights, hf_state, singles, doubles):
+      AllSinglesDoubles(weights, wires, hf_state, singles, doubles)
+      return qml.expval(qml.PauliZ(0))
+
+  params = np.random.normal(0, np.pi, len(singles) + len(doubles))
+  circuit(params, hf_state, singles=singles, doubles=doubles)
+  ```
+
 * The ``argnum`` keyword argument can now be specified for a QNode to define a
   subset of trainable parameters used to estimate the Jacobian.
   [(#1371)](https://github.com/PennyLaneAI/pennylane/pull/1371)
@@ -37,6 +75,7 @@
   >>> qnode2 = qml.QNode(circuit, dev, diff_method="parameter-shift", argnum=[0])
   >>> print(qml.grad(qnode2)(x,y))
   (array(0.31434679), array(0.))
+>>>>>>> master
   ```
 
 * The `quantum_monte_carlo` transform has been added, allowing an input circuit to be transformed
