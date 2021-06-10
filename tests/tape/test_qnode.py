@@ -985,6 +985,7 @@ class TestShots:
 
 
 class TestSpecs:
+    """Tests for the qnode property specs"""
     @pytest.fixture
     def qfunc(self):
         def qfunc_inner(x, y):

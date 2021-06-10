@@ -13,5 +13,150 @@
 # limitations under the License.
 """Unit tests for the specs transform"""
 import pytest
+from collections import defaultdict
 
 import pennylane as qml
+from pennylane import numpy as np
+
+
+class TestSpecsTransform:
+    """Tests for the transform specs"""
+
+    @pytest.fixture
+    def qfunc(self):
+        def qfunc_inner(x, y, add_RY=True):
+            qml.RX(x[0], wires=0)
+            qml.Toffoli(wires=(0, 1, 2))
+            qml.CRY(x[1], wires=(0, 1))
+            qml.Rot(x[2], x[3], y, wires=2)
+            if add_RY:
+                qml.RY(x[4], wires=1)
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+        return qfunc_inner
+
+    def test_specs_backprop(self, qfunc):
+        """Test the specs transforms with with backprop"""
+        dev = qml.device("default.qubit", wires=4)
+
+        circuit = qml.QNode(qfunc, dev, diff_method="backprop")
+
+        x = np.array([0.05, 0.1, 0.2, 0.3, 0.5], requires_grad=True)
+        y = np.array(0.1, requires_grad=False)
+
+        info_func = qml.specs(circuit)
+
+        info = info_func(x, y, add_RY=False)
+
+        circuit(x, y, add_RY=False)
+
+        assert info == circuit.specs
+
+        assert len(info) == 9
+
+        assert info["by_size"] == defaultdict(int, {1: 2, 3: 1, 2: 1})
+        assert info["by_name"] == defaultdict(int, {"RX": 1, "Toffoli": 1, "CRY": 1, "Rot": 1})
+        assert info["total_operations"] == 4
+        assert info["total_observables"] == 2
+        assert info["num_tape_wires"] == 3
+        assert info["depth"] == 3
+        assert info["num_device_wires"] == 4
+        assert info["device_name"] == "default.qubit.autograd"
+        assert info["diff_method"] == "backprop"
+
+    def test_specs_parametershift(self, qfunc):
+        """Test the specs transforms with with parametershift"""
+        dev = qml.device("default.qubit", wires=4)
+
+        circuit = qml.QNode(qfunc, dev, diff_method="parameter-shift")
+
+        x = np.array([0.05, 0.1, 0.2, 0.3, 0.5], requires_grad=True)
+        y = np.array(0.1, requires_grad=False)
+
+        info_func = qml.specs(circuit)
+
+        info = info_func(x, y, add_RY=False)
+
+        circuit(x, y, add_RY=False)
+
+        assert info == circuit.specs
+
+        assert len(info) == 11
+
+        assert info["by_size"] == defaultdict(int, {1: 2, 3: 1, 2: 1})
+        assert info["by_name"] == defaultdict(int, {"RX": 1, "Toffoli": 1, "CRY": 1, "Rot": 1})
+        assert info["total_operations"] == 4
+        assert info["total_observables"] == 2
+        assert info["num_tape_wires"] == 3
+        assert info["depth"] == 3
+        assert info["num_trainable_params"] == 4
+        assert info["num_parameter_shift_executions"] == 7
+
+        assert info["num_device_wires"] == 4
+        assert info["device_name"] == "default.qubit"
+        assert info["diff_method"] == "parameter-shift"
+
+    def test_specs_adjoint(self, qfunc):
+        """Test the specs transforms with with adjoint"""
+        dev = qml.device("default.qubit", wires=4)
+
+        circuit = qml.QNode(qfunc, dev, diff_method="adjoint")
+
+        x = np.array([0.05, 0.1, 0.2, 0.3, 0.5], requires_grad=True)
+        y = np.array(0.1, requires_grad=False)
+
+        info_func = qml.specs(circuit)
+
+        info = info_func(x, y, add_RY=False)
+
+        circuit(x, y, add_RY=False)
+
+        assert info == circuit.specs
+
+        assert len(info) == 10
+
+        assert info["by_size"] == defaultdict(int, {1: 2, 3: 1, 2: 1})
+        assert info["by_name"] == defaultdict(int, {"RX": 1, "Toffoli": 1, "CRY": 1, "Rot": 1})
+        assert info["total_operations"] == 4
+        assert info["total_observables"] == 2
+        assert info["num_tape_wires"] == 3
+        assert info["depth"] == 3
+        assert info["num_trainable_params"] == 4
+
+        assert info["num_device_wires"] == 4
+        assert info["device_name"] == "default.qubit"
+        assert info["diff_method"] == "adjoint"
+
+    def test_max_expansion(self):
+        """Test that a user can calculation specifications for a different max
+        expansion parameter."""
+
+        n_layers = 2
+        n_wires = 5
+
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.templates.BasicEntanglerLayers(params, wires=range(n_wires))
+            return qml.expval(qml.PauliZ(0))
+
+        params_shape = qml.templates.BasicEntanglerLayers.shape(n_layers=n_layers, n_wires=n_wires)
+        rng = np.random.default_rng(seed=10)
+        params = rng.standard_normal(params_shape)
+
+        assert circuit.max_expansion == 10
+        info = qml.specs(circuit, max_expansion=0)(params)
+        assert circuit.max_expansion == 10
+
+        assert len(info) == 9
+
+        assert info["by_size"] == defaultdict(int, {5: 1})
+        assert info["by_name"] == defaultdict(int, {"BasicEntanglerLayers": 1})
+        assert info["total_operations"] == 1
+        assert info["total_observables"] == 1
+        assert info["num_tape_wires"] == 5
+        assert info["depth"] == 1
+        assert info["num_device_wires"] == 5
+        assert info["device_name"] == "default.qubit.autograd"
+        assert info["diff_method"] == "backprop"
