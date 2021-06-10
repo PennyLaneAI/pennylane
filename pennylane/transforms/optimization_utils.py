@@ -58,9 +58,7 @@ def yzy_to_zyz(y1, z, y2):
     qy = np.cos(z / 2) * np.sin(0.5 * (y1 + y2))
     qz = np.sin(z / 2) * np.cos(0.5 * (y1 - y2))
 
-    # Now convert the Euler angles of the alternate representation
-    # We need 5 things here; the new Zs require the atan2 of two
-    # arguments each, and the new Y requires an arccos
+    # Now convert from YZY Euler angles to ZYZ angles
     # Source: http://bediyap.com/programming/convert-quaternion-to-euler-rotations/
     z1_arg1 = 2 * (qy * qz - qw * qx)
     z1_arg2 = 2 * (qx * qz + qw * qy)
