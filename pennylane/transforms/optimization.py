@@ -17,8 +17,9 @@ from pennylane import numpy as np
 
 from pennylane.wires import Wires
 from pennylane.transforms import qfunc_transform
+from pennylane.ops.qubit import Rot
 
-from .optimization_utils import fuse_rot
+from .optimization_utils import fuse_rot, convert_to_rot
 
 
 def _find_next_gate(wires, op_list):
@@ -164,8 +165,6 @@ def merge_rotations(tape):
 
     Args:
         tape (.QuantumTape): A quantum tape.
-        tol (float): Specifies a threshold below which merged rotations will
-            not be applied, as the rotation angle is effectively 0.
 
     **Example**
 
@@ -241,6 +240,99 @@ def merge_rotations(tape):
             # If the cumulative angle is not close to 0, apply the gate
             if not np.allclose(combined_angles, np.zeros(len(combined_angles))):
                 tape.append(type(current_gate)(*combined_angles, wires=current_gate.wires))
+        else:
+            current_gate.queue()
+
+        # Remove this gate from the working list
+        list_copy.pop(0)
+
+    # Queue the measurements normally
+    for m in tape.measurements:
+        m.queue()
+
+
+@qfunc_transform
+def single_qubit_fusion(tape):
+    """Quantum function transform to fuse together groups of single-qubit
+    operations into the general single-qubit unitary form.
+
+    Args:
+        tape (.QuantumTape): A quantum tape.
+
+    **Example**
+
+    Consider the following quantum function.
+
+    .. code-block:: python
+
+        def qfunc(r1, r2):
+            qml.Hadamard(wires=0)
+            qml.Rot(*r1, wires=0)
+            qml.Rot(*r2, wires=0)
+            qml.RZ(r1[0], wires=0)
+            qml.RZ(r2[0], wires=0)
+            return qml.expval(qml.PauliX(0))
+
+    The circuit before optimization:
+
+    >>> dev = qml.device('default.qubit', wires=1)
+    >>> qnode = qml.QNode(qfunc, dev)
+    >>> print(qml.draw(qnode)([0.1, 0.2, 0.3], [0.4, 0.5, 0.6]))
+    0: ──H──Rot(0.1, 0.2, 0.3)──Rot(0.4, 0.5, 0.6)──RZ(0.1)──RZ(0.4)──┤ ⟨X⟩
+
+    Full single-qubit gate fusion allows us to collapse this entire sequence into a
+    single ``qml.Rot`` rotation gate.
+
+    >>> optimized_qfunc = qml.compile(pipeline=[single_qubit_fusion], num_passes=3)(qfunc)
+    >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
+    >>> print(qml.draw(optimized_qnode)([0.1, 0.2, 0.3], [0.4, 0.5, 0.6]))
+    0: ──Rot(3.57, 2.09, 2.05)──┤ ⟨X⟩
+
+    """
+    # Make a working copy of the list to traverse
+    list_copy = tape.operations.copy()
+
+    while len(list_copy) > 0:
+        current_gate = list_copy[0]
+
+        # Normally queue any multi-qubit gates
+        if current_gate.num_wires > 1:
+            current_gate.queue()
+            list_copy.pop(0)
+            continue
+
+        # Find the next gate that acts on the same wires
+        next_gate_idx = _find_next_gate(current_gate.wires, list_copy[1:])
+
+        # If no such gate is found (either there simply is none, or there are other gates
+        # "in the way", queue the operation and move on
+        if next_gate_idx is None:
+            current_gate.queue()
+            list_copy.pop(0)
+            continue
+
+        # Otherwise, get the next gate
+        next_gate = list_copy[next_gate_idx + 1]
+
+        # If next gate is on the same qubit, we can fuse them
+        if current_gate.wires == next_gate.wires:
+            list_copy.pop(next_gate_idx + 1)
+
+            if current_gate.name != "Rot":
+                current_gate_angles = convert_to_rot(current_gate)
+            else:
+                current_gate_angles = current_gate.parameters
+
+            if next_gate.name != "Rot":
+                next_gate_angles = convert_to_rot(next_gate)
+            else:
+                next_gate_angles = next_gate.parameters
+
+            combined_angles = fuse_rot(current_gate_angles, next_gate_angles)
+
+            # If the cumulative angle is not close to 0, apply the gate
+            if not np.allclose(combined_angles, np.zeros(len(combined_angles))):
+                tape.append(Rot(*combined_angles, wires=current_gate.wires))
         else:
             current_gate.queue()
 

@@ -47,9 +47,10 @@ def yzy_to_zyz(y1, z, y2):
     Returns:
         (float, float, float): A tuple of rotation angles in the ZYZ representation.
     """
+    # print([y1, z, y2])
     # Catch the case where everything is close to 0
-    if np.allclose([y1, z, y2], np.zeros(3)):
-        return (0.0, 0.0, 0.0)
+    # if np.allclose([y1, z, y2], [0.0, 0.0, 0.0]):
+    #    return (0.0, 0.0, 0.0)
 
     # First, compute the quaternion representation
     # https://ntrs.nasa.gov/api/citations/19770024290/downloads/19770024290.pdf
@@ -102,3 +103,40 @@ def fuse_rot(angles_1, angles_2):
     # Then we can combine to create
     # RZ(a + u) RY(v) RZ(w + f)
     return np.array([leftmost_z_init + u, v, w + rightmost_z_init])
+
+
+def convert_to_rot(op):
+    """Converts a single-qubit operation to a Rot gate.
+
+    It would be nice is this is built-in to the operations instead of
+    a separate method.
+    """
+
+    if op.name == "Hadamard":
+        return [np.pi, np.pi / 2, 0.0]
+
+    if op.name == "PauliX":
+        return [np.pi / 2, np.pi, -np.pi / 2]
+
+    if op.name == "PauliY":
+        return [0.0, np.pi, 0.0]
+
+    if op.name == "PauliZ":
+        return [np.pi, 0.0, 0.0]
+
+    if op.name == "S":
+        return [np.pi / 2, 0.0, 0.0]
+
+    if op.name == "T":
+        return [np.pi / 4, 0.0, 0.0]
+
+    if op.name == "RX":
+        return [np.pi / 2, op.parameters[0], -np.pi / 2]
+
+    if op.name == "RY":
+        return [0.0, op.parameters[0], 0.0]
+
+    if op.name == "RZ" or op.name == "PhaseShift":
+        return [op.parameters[0], 0.0, 0.0]
+
+    return None
