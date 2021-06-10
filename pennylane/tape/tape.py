@@ -982,10 +982,14 @@ class QuantumTape(AnnotatedQueue):
 
     def get_resources(self):
         """Resource requirements of a quantum circuit.
+
         Returns:
             dict[str, int]: how many times constituent operations are applied
+
         **Example**
+
         .. code-block:: python3
+
             with qml.tape.QuantumTape() as tape:
                 qml.Hadamard(wires=0)
                 qml.RZ(0.26, wires=1)
@@ -994,9 +998,12 @@ class QuantumTape(AnnotatedQueue):
                 qml.Hadamard(wires=1)
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
         Asking for the resources produces a dictionary as shown below:
+
         >>> tape.get_resources()
         {'Hadamard': 2, 'RZ': 1, 'CNOT': 2, 'Rot': 1}
+
         """
 
         warnings.warn(
@@ -1009,6 +1016,7 @@ class QuantumTape(AnnotatedQueue):
 
     def get_depth(self):
         """Depth of the quantum circuit.
+
         Returns:
             int: Circuit depth, computed as the longest path in the
             circuit's directed acyclic graph representation.
@@ -1031,6 +1039,7 @@ class QuantumTape(AnnotatedQueue):
         4
 
         """
+
         warnings.warn(
             "``tape.get_depth`` will be deprecated after v0.16 "
             "Please use the more general ``tape.specs`` instead.",
