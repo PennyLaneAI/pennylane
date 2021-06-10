@@ -14,8 +14,10 @@
 """Unit tests for the QNode"""
 import pytest
 import numpy as np
+from collections import defaultdict
 
 import pennylane as qml
+from pennylane import numpy as pnp
 from pennylane import QNodeCollection
 from pennylane import qnode, QNode
 from pennylane.transforms import draw
@@ -980,6 +982,102 @@ class TestShots:
         res = circuit(0.8, shots=2)
         assert len(res) == 2
         assert dev.shots == 3
+
+
+class TestSpecs:
+    @pytest.fixture
+    def qfunc(self):
+        def qfunc_inner(x, y):
+            qml.RX(x[0], wires=0)
+            qml.Toffoli(wires=(0, 1, 2))
+            qml.CRY(x[1], wires=(0, 1))
+            qml.Rot(x[2], x[3], y, wires=2)
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+        return qfunc_inner
+
+    def test_specs_backprop(self, qfunc):
+        """Tests specs property with backprop"""
+
+        dev = qml.device("default.qubit", wires=4)
+
+        circuit = qml.QNode(qfunc, dev, diff_method="backprop")
+
+        x = pnp.array([0.05, 0.1, 0.2, 0.3], requires_grad=True)
+        y = pnp.array(0.1, requires_grad=False)
+
+        res = circuit(x, y)
+
+        info = circuit.specs
+
+        assert len(info) == 9
+
+        assert info["by_size"] == defaultdict(int, {1: 2, 3: 1, 2: 1})
+        assert info["by_name"] == defaultdict(int, {"RX": 1, "Toffoli": 1, "CRY": 1, "Rot": 1})
+        assert info["total_operations"] == 4
+        assert info["total_observables"] == 2
+        assert info["num_tape_wires"] == 3
+        assert info["depth"] == 3
+        assert info["num_device_wires"] == 4
+        assert info["device_name"] == "default.qubit.autograd"
+        assert info["diff_method"] == "backprop"
+
+    def test_specs_parametershift(self, qfunc):
+        """Tests specs property with parameter-shift"""
+
+        dev = qml.device("default.qubit", wires=4)
+
+        circuit = qml.QNode(qfunc, dev, diff_method="parameter-shift")
+
+        x = pnp.array([0.05, 0.1, 0.2, 0.3], requires_grad=True)
+        y = pnp.array(0.1, requires_grad=False)
+
+        res = circuit(x, y)
+
+        info = circuit.specs
+
+        assert len(info) == 11
+
+        assert info["by_size"] == defaultdict(int, {1: 2, 3: 1, 2: 1})
+        assert info["by_name"] == defaultdict(int, {"RX": 1, "Toffoli": 1, "CRY": 1, "Rot": 1})
+        assert info["total_operations"] == 4
+        assert info["total_observables"] == 2
+        assert info["num_tape_wires"] == 3
+        assert info["depth"] == 3
+        assert info["num_trainable_params"] == 4
+        assert info["num_parameter_shift_executions"] == 7
+
+        assert info["num_device_wires"] == 4
+        assert info["device_name"] == "default.qubit"
+        assert info["diff_method"] == "parameter-shift"
+
+    def test_specs_adjoint(self, qfunc):
+        """Tests specs property with adjoint"""
+
+        dev = qml.device("default.qubit", wires=4)
+
+        circuit = qml.QNode(qfunc, dev, diff_method="parameter-shift")
+
+        x = pnp.array([0.05, 0.1, 0.2, 0.3], requires_grad=True)
+        y = pnp.array(0.1, requires_grad=False)
+
+        res = circuit(x, y)
+
+        info = circuit.specs
+
+        assert len(info) == 10
+
+        assert info["by_size"] == defaultdict(int, {1: 2, 3: 1, 2: 1})
+        assert info["by_name"] == defaultdict(int, {"RX": 1, "Toffoli": 1, "CRY": 1, "Rot": 1})
+        assert info["total_operations"] == 4
+        assert info["total_observables"] == 2
+        assert info["num_tape_wires"] == 3
+        assert info["depth"] == 3
+        assert info["num_trainable_params"] == 4
+
+        assert info["num_device_wires"] == 4
+        assert info["device_name"] == "default.qubit"
+        assert info["diff_method"] == "adjoint"
 
 
 def test_finitediff_float32(tol):

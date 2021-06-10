@@ -1080,8 +1080,8 @@ class QuantumTape(AnnotatedQueue):
             self._specs["total_operations"] = len(self.operations)
             self._specs["total_observables"] = len(self.observables)
             self._specs["num_tape_wires"] = self.num_wires
-            self._specs["num_trainable_params"] = len(self.trainable_params)
             self._specs["depth"] = self.depth
+            self._specs["num_trainable_params"] = self.num_params
 
         return self._specs
 

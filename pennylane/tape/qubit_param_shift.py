@@ -389,7 +389,7 @@ class QubitParamShiftTape(JacobianTape):
         # Initialize with the forward pass execution
         num_executions = 1
         # Loop over all variables
-        for idx, info in self._par_info.items():
+        for _, info in self._par_info.items():
 
             if info["grad_method"] == "A":
                 num_executions += len(info["op"].get_parameter_shift(info["p_idx"]))
