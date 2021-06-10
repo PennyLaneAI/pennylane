@@ -50,6 +50,7 @@ def _get_spectrum(op):
 
     matrix = coeff * matrix
     # eigenvalues of hermitian ops are guaranteed to be real
+    # todo: use qml.math.linalg once it is tested properly
     evals = qml.math.real(np.linalg.eigvals(matrix))
 
     # compute all differences of eigenvalues
@@ -70,26 +71,35 @@ def _join_spectra(spec1, spec2):
     Returns:
         list[float]: joined spectrum
     """
-    if not spec1:
-        return sorted(list(set(spec2)))
-    if not spec2:
-        return sorted(list(set(spec1)))
+    if len(spec1) == 0:
+        return sorted(set(spec2))
+    if len(spec2) == 0:
+        return sorted(set(spec1))
 
     sums = [s1 + s2 for s1 in spec1 for s2 in spec2]
-    return sorted(list(set(sums)))
+    return sorted(set(sums))
 
 
 def spectrum(qnode, encoding_gates=None):
     r"""Compute the frequency spectrum of the Fourier representation of simple quantum circuits.
 
-    The circuit must only use single-parameter gates of the form :math:`e^{-i x_j G}` as
+    The circuit must only use simple single-parameter gates of the form :math:`e^{-i x_j G}` as
     input-encoding gates, which allows the computation of the spectrum by inspecting the gates'
-    generators :math:`G`.
+    generators :math:`G`. The most important example of such gates are Pauli rotations.
+
+    .. note::
+
+        More precisely, the spectrum function relies on the gate to define a ``generator``, and will
+        fail if gates marked as inputs do not have this attribute.
 
     Gates are marked as input-encoding gates in the quantum function by giving them an ``id``.
     If two gates have the same ``id``, they are considered
     to be used to encode the same input :math:`x_j`. The ``encoding_gates`` argument can be used
     to indicate that only gates with a specific ``id`` should be interpreted as input-encoding gates.
+    Else, all gates with an explicit ``id`` are considered to be input-encoding gates.
+
+    .. note::
+        If no input-encoding gates are found, an empty dictionary is returned.
 
     Args:
         qnode (pennylane.QNode): a quantum node representing a circuit in which
@@ -99,7 +109,7 @@ def spectrum(qnode, encoding_gates=None):
 
     Returns:
         (dict[str, list[float]]): Dictionary with the input-encoding gate ``id`` as keys and
-        their frequency spectra as values.
+            their frequency spectra as values.
 
 
     **Details**
@@ -131,8 +141,7 @@ def spectrum(qnode, encoding_gates=None):
     can express.
 
     The ``spectrum`` function computes all frequencies that will potentially appear in the
-    sets :math:`\Omega_1` to :math:`\Omega_N` (which correspond to the :math:`N` different strings
-    used as an ``id`` to mark the input-encoding gates).
+    sets :math:`\Omega_1` to :math:`\Omega_N`.
 
     **Example**
 

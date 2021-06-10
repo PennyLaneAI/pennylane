@@ -57,11 +57,11 @@ class TestHelpers:
         """Test that an error is raised if the operator has no generator defined."""
 
         # Observables have no generator attribute
-        with pytest.raises(ValueError, match="generator of operation"):
+        with pytest.raises(ValueError, match="Generator of operation"):
             _get_spectrum(qml.P(wires=0))
 
         # CNOT is an operation where generator is an abstract property
-        with pytest.raises(ValueError, match="generator of operation"):
+        with pytest.raises(ValueError, match="Generator of operation"):
             _get_spectrum(qml.CNOT(wires=[0, 1]))
 
 
@@ -143,7 +143,7 @@ class TestCircuits:
             qml.Rot(0.2, 0.3, 0.4, wires=1, id="x")
             return qml.expval(qml.PauliZ(wires=0))
 
-        with pytest.raises(ValueError, match="can only consider one-parameter gates"):
+        with pytest.raises(ValueError, match="Can only consider one-parameter gates"):
             spectrum(circuit)()
 
 
@@ -212,7 +212,6 @@ class TestInterfaces:
 
         x = tf.Variable([1.0, 2.0, 3.0])
         w = tf.constant([[-1, -2, -3], [-4, -5, -6]])
-        # the spectrum function has to be called in a tape context
         res = spectrum(qnode)(x, w)
 
         assert res
