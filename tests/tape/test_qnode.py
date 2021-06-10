@@ -790,6 +790,40 @@ class TestIntegration:
 
         assert dev.num_executions == 6
 
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff", "reversible"])
+    def test_single_expectation_value_with_argnum_one(self, diff_method, tol):
+        """Tests correct output shape and evaluation for a QNode
+        with a single expval output where only one parameter is chosen to
+        estimate the jacobian.
+
+        This test relies on the fact that exactly one term of the estimated
+        jacobian will match the expected analytical value.
+        """
+        from pennylane import numpy as anp
+
+        dev = qml.device("default.qubit", wires=2)
+
+        x = anp.array(0.543, requires_grad=True)
+        y = anp.array(-0.654, requires_grad=True)
+
+        @qml.qnode(
+            dev, diff_method=diff_method, argnum=[1]
+        )  # <--- we only choose one trainable parameter
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        res = qml.grad(circuit)(x, y)
+        assert len(res) == 2
+
+        expected = (0, np.cos(y) * np.cos(x))
+        res = res
+        expected = expected
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
 
 class TestMutability:
     """Test for QNode immutability"""
