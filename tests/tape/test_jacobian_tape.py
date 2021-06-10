@@ -431,6 +431,57 @@ class TestJacobian:
         assert np.allclose(j1, [exp, 0])
         assert np.allclose(j2, [0, exp])
 
+    @pytest.mark.parametrize(
+        "diff_methods", [["A", "0", "F"], ["A", "A", "A"], ["F", "A", "A", "0", "0"]]
+    )
+    @pytest.mark.parametrize("argnum", [None, 0, [0, 1], [0, 1, 2], [2, 0], [1, 0], [0, 0, 0]])
+    def test_choose_params_and_methods(self, diff_methods, argnum):
+        """Test that the _choose_params_and_methods helper method returns
+        expected results"""
+        tape = JacobianTape()
+        tape._trainable_params = list(range(len(diff_methods)))
+        res = list(tape._choose_params_with_methods(diff_methods, argnum))
+
+        num_all_params = len(diff_methods)
+
+        assert all(k in range(num_all_params) for k, _ in res)
+        assert all(v in diff_methods for _, v in res)
+
+        if argnum is None:
+            num_params = num_all_params
+        elif isinstance(argnum, int):
+            num_params = 1
+        else:
+            num_params = len(argnum)
+
+        assert len(res) == num_params
+
+    @pytest.mark.parametrize("argnum", [1, 2, 3, -1])
+    def test_choose_params_and_methods_raises(self, argnum):
+        """Test that the _choose_params_and_methods helper method raises an
+        error if incorrect trainable parameters are specified."""
+        tape = JacobianTape()
+        tape.trainable_params = [0]
+        diff_methods = ["F"]
+        with pytest.raises(
+            ValueError,
+            match="Incorrect trainable parameters",
+        ):
+            res = tape._choose_params_with_methods(diff_methods, argnum)
+
+    def test_choose_params_and_methods_warns_no_params(self):
+        """Test that the _choose_params_and_methods helper method warns if an
+        empty list was passed as argnum."""
+        tape = JacobianTape()
+        tape.trainable_params = [0]
+        diff_methods = ["F"]
+        argnum = []
+        with pytest.warns(
+            UserWarning,
+            match="No trainable parameters",
+        ):
+            res = tape._choose_params_with_methods(diff_methods, argnum)
+
 
 class TestJacobianIntegration:
     """Integration tests for the Jacobian method"""
@@ -469,6 +520,53 @@ class TestJacobianIntegration:
         assert res.shape == (1, 2)
 
         expected = np.array([[-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]])
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_single_expectation_value_with_argnum_all(self, tol):
+        """Tests correct output shape and evaluation for a tape
+        with a single expval output where all parameters are chose to compute
+        the jacobian"""
+        dev = qml.device("default.qubit", wires=2)
+        x = 0.543
+        y = -0.654
+
+        with JacobianTape() as tape:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        res = tape.jacobian(dev, argnum=[0, 1])  # <--- we choose both trainable parameters
+        assert res.shape == (1, 2)
+
+        expected = np.array([[-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]])
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_single_expectation_value_with_argnum_one(self, tol):
+        """Tests correct output shape and evaluation for a tape
+        with a single expval output where only one parameter is chosen to
+        estimate the jacobian.
+
+        This test relies on the fact that exactly one term of the estimated
+        jacobian will match the expected analytical value.
+        """
+        dev = qml.device("default.qubit", wires=2)
+        x = 0.543
+        y = -0.654
+
+        with JacobianTape() as tape:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        res = tape.jacobian(dev, argnum=1)  # <--- we only choose one trainable parameter
+        assert res.shape == (1, 2)
+
+        expected = np.array([[0, np.cos(y) * np.cos(x)]])
+        res = res.flatten()
+        expected = expected.flatten()
+
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_multiple_expectation_values(self, tol):
