@@ -124,13 +124,6 @@ class AllSinglesDoubles(Operation):
                 )
             )
 
-        if not singles and not doubles:
-            raise ValueError(
-                "'singles' and 'doubles' lists can not be both empty; got singles = {}, doubles = {}".format(
-                    singles, doubles
-                )
-            )
-
         if doubles is not None:
             for d_wires in doubles:
                 if len(d_wires) != 4:
@@ -194,6 +187,11 @@ class AllSinglesDoubles(Operation):
             tuple(int): shape of the tensor containing the circuit parameters
         """
         if singles is None:
+            if doubles is None:
+                raise ValueError(
+                    "'singles' and 'doubles' lists can not be both empty;"
+                    " got singles = {}, doubles = {}".format(singles, doubles)
+                )
             if doubles is not None:
                 shape_ = (len(doubles),)
         elif doubles is None:
