@@ -16,6 +16,8 @@ Unit tests for the DeviceTracker and constructor
 """
 import pytest
 from collections import defaultdict
+from itertools import count
+import time
 
 import pennylane as qml
 from pennylane.device_tracker import DefaultTracker, TimingTracker
@@ -123,3 +125,42 @@ class TestTrackerCoreBehaviour:
         predicted = "Total: a = 1\tb = 2\t\n"
 
         assert captured.out == predicted
+
+
+class TestTimeTracker:
+    def test_time(self, monkeypatch):
+
+        # each time mocker called, increments return value by one
+        counter = count()
+
+        def mocktime():
+            return float(next(counter))
+
+        monkeypatch.setattr(time, "time", mocktime)
+
+        tracker = TimingTracker()
+
+        # reset upon initialization
+        assert tracker._time_last == 0.0
+
+        with tracker:
+            # got reset upon enter
+            assert tracker._time_last == 1.0
+
+            tracker.update(a=1)
+
+            # called again at update
+            assert tracker._time_last == 2.0
+            assert tracker.totals == {"a": 1, "time": 1.0}
+            assert tracker.history == {"a": [1], "time": [1.0]}
+
+            tracker.update(b=1)
+
+            # called again
+            assert tracker._time_last == 3.0
+            assert tracker.totals == {"a": 1, "b": 1, "time": 2.0}
+            assert tracker.history == {"a": [1], "b": [1], "time": [1.0, 1.0]}
+
+        tracker.reset()
+        # incremented once again
+        assert tracker._time_last == 4.0
