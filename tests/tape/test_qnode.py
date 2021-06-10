@@ -1032,6 +1032,16 @@ class TestSpecs:
 
         return qfunc_inner
 
+    def test_specs_error(self, qfunc):
+        """Tests an error is raised if tape is not constructed."""
+
+        dev = qml.device("default.qubit", wires=4)
+
+        circuit = qml.QNode(qfunc, dev)
+
+        with pytest.raises(qml.QuantumFunctionError, match=r"The QNode specifications"):
+            circuit.specs
+
     def test_specs_backprop(self, qfunc):
         """Tests specs property with backprop"""
 

@@ -1010,9 +1010,13 @@ class QuantumTape(AnnotatedQueue):
     def get_depth(self):
         """Depth of the quantum circuit.
         Returns:
-            int: Circuit depth, computed as the longest path in the circuit's directed acyclic graph representation.
+            int: Circuit depth, computed as the longest path in the
+            circuit's directed acyclic graph representation.
+
         **Example**
+
         .. code-block:: python3
+
             with QuantumTape() as tape:
                 qml.Hadamard(wires=0)
                 qml.PauliX(wires=1)
@@ -1020,9 +1024,12 @@ class QuantumTape(AnnotatedQueue):
                 qml.Rot(1.2, 3.2, 0.7, wires=[1])
                 qml.CRX(-2.3, wires=[0, 1])
                 qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
         The depth can be obtained like so:
+
         >>> tape.get_depth()
         4
+
         """
         warnings.warn(
             "``tape.get_depth`` will be deprecated after v0.16 "

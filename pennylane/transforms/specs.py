@@ -18,7 +18,7 @@ def specs(qnode, max_expansion=None):
     """
 
     Args:
-        qnode (qml.QNode)
+        qnode (.QNode): the QNode to calculation the specifications for
 
     Keyword Args:
         max_expansion=None (int): The number of times the internal circuit should be expanded when
@@ -34,6 +34,7 @@ def specs(qnode, max_expansion=None):
     **Example**
 
     .. code-block:: python3
+        x = np.array([0.1, 0.2])
 
         dev = qml.device('default.qubit', wires=2)
         @qml.qnode(dev)
@@ -44,46 +45,40 @@ def specs(qnode, max_expansion=None):
                 qml.RY(x[1], wires=1)
             return qml.probs(wires=(0,1))
 
-    >>> x = np.array([0.1, 0.2])
     >>> info = qml.specs(circuit)(x, add_ry=False)
+    {'by_size': defaultdict(int, {1: 1, 2: 1}),
+    'by_name': defaultdict(int, {'RX': 1, 'CNOT': 1}),
+    'total_operations': 2,
+    'total_observables': 1,
+    'num_tape_wires': 2,
+    'depth': 2,
+    'num_device_wires': 2,
+    'device_name': 'default.qubit.autograd',
+    'diff_method': 'backprop'}
+
     """
 
     def specs_qnode(*args, **kwargs):
         """Returns information on the structure and makeup of provided QNode.
 
         Dictionary keys:
-            * ``"total_operations"``: total gates in circuit
+            * ``"total_operations"``
+            * ``"total_observables"``
             * ``"by_size"``: dictionary mapping gate number of wires to number of occurances
             * ``"by_name"``: dictionary mapping gate types to number of occurances
             * ``"num_tape_wires"``: number of wires used by the circuit
             * ``"num_wires"``: number of wires in device
-            * ``"num_trainable_params"``: number of individual scalars that are trainable
             * ``"depth"``: longest path in directed acyclic graph representation
             * ``"dev_short_name"``: name of QNode device
+            * ``"diff_method"``
 
         Potential Additional Information:
-            *``"num_parameter_shift_executions"``: number of times circuit will execute when
+            * ``"num_trainable_params"``: number of individual scalars that are trainable
+            * ``"num_parameter_shift_executions"``: number of times circuit will execute when
                     calculating the derivative
-
 
         Returns:
             dict: information about qnode structure
-
-        **Example**
-
-        .. code-block:: python3
-
-            dev = qml.device('default.qubit', wires=2)
-            @qml.qnode(dev)
-            def circuit(x, add_ry=True):
-                qml.RX(x[0], wires=0)
-                qml.CNOT(wires=(0,1))
-                if add_ry:
-                    qml.RY(x[1], wires=1)
-                return qml.probs(wires=(0,1))
-
-        >>> x = np.array([0.1, 0.2])
-        >>> info = qml.specs(circuit)(x, add_ry=False)
         """
         if max_expansion is not None:
             initial_max_expansion = qnode.max_expansion

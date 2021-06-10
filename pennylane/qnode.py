@@ -749,8 +749,8 @@ class QNode:
         'num_tape_wires': 2,
         'depth': 2,
         'num_device_wires': 2,
-        'device_name': 'default.qubit.autograd'}
-
+        'device_name': 'default.qubit.autograd',
+        'diff_method': 'backprop'}
 
         """
         if self.qtape is None:
@@ -774,10 +774,6 @@ class QNode:
         # find better syntax for determining if backprop
         if info["diff_method"] == "backprop":
             del info["num_trainable_params"]
-
-        # As this number will not be correct in backprop mode, maybe I
-        # should manually recompute it?
-        # info['trainable_parameters'] = len(self.qtape.trainable_params)
 
         return info
 
