@@ -499,7 +499,11 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Documentation</h3>
 
-* Fix typo in the documentation of qml.templates.layers.StronglyEntanglingLayers
+* Fix typo in the documentation of `qml.qaoa.cycle.loss_hamiltonian`.
+  [(#1396)](https://github.com/PennyLaneAI/pennylane/pull/1396)
+
+* Fix typo in the documentation of qml.templates.layers.StronglyEntanglingLayers.
+
   [(#1367)](https://github.com/PennyLaneAI/pennylane/pull/1367)
 
 * Fixed typo on TensorFlow interface documentation [(#1312)](https://github.com/PennyLaneAI/pennylane/pull/1312)
