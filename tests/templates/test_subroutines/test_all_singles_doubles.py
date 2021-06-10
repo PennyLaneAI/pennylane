@@ -165,6 +165,14 @@ class TestInputs:
             (
                 np.array([-2.8]),
                 range(4),
+                [],
+                [],
+                np.array([1, 1, 0, 0]),
+                "'singles' and 'doubles' lists can not be both empty",
+            ),
+            (
+                np.array([-2.8]),
+                range(4),
                 None,
                 [[0, 1, 2, 3, 4]],
                 np.array([1, 1, 0, 0]),
@@ -266,6 +274,26 @@ class TestInputs:
                 singles=singles,
                 doubles=doubles,
             )
+
+
+class TestAttributes:
+    """Tests additional methods and attributes"""
+
+    @pytest.mark.parametrize(
+        "singles, doubles, expected_shape",
+        [
+            ([[0, 2], [1, 3]], [[0, 1, 2, 3], [4, 5, 6, 7]], (4,)),
+            ([[0, 2], [1, 3]], None, (2,)),
+            ([[0, 2], [1, 3]], [], (2,)),
+            (None, [[0, 1, 2, 3], [4, 5, 6, 7]], (2,)),
+            ([], [[0, 1, 2, 3], [4, 5, 6, 7]], (2,)),
+        ],
+    )
+    def test_shape(self, singles, doubles, expected_shape):
+        """Test that the shape method returns the correct shape of the weights tensor"""
+
+        shape = qml.templates.AllSinglesDoubles.shape(singles, doubles)
+        assert shape == expected_shape
 
 
 def circuit_template(weights):

@@ -186,8 +186,8 @@ class AllSinglesDoubles(Operation):
         Returns:
             tuple(int): shape of the tensor containing the circuit parameters
         """
-        if singles is None:
-            if doubles is None:
+        if singles is None or not singles:
+            if doubles is None or not doubles:
                 raise ValueError(
                     "'singles' and 'doubles' lists can not be both empty;"
                     " got singles = {}, doubles = {}".format(singles, doubles)
