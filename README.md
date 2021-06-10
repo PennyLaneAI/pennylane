@@ -122,6 +122,13 @@ To Build using interface(Torch,Tensorflow or Jax) and GPU support run following:
 make -f docker.makefile build-tensorflow-gpu
 ```
 
+You can also build Qchem packages. Use following commands:
+
+```
+make -f docker.makefile build-qchem
+``
+
+
 ## Contributing to PennyLane
 
 We welcome contributions—simply fork the PennyLane repository, and then make a [pull
