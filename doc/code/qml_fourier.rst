@@ -93,7 +93,7 @@ Calculating the frequencies supported by a circuit
 For certain circuits, information on the frequency spectra :math:`\Omega_j`
 can be derived solely from the structure of the gates
 that encode the corresponding inputs :math:`x_j` (see for example `Schuld,
-Sweke and Meyer (2020) <https://arxiv.org/abs/2008.08605>`__). More precisely, if
+Sweke, and Meyer (2020) <https://arxiv.org/abs/2008.08605>`__). More precisely, if
 all input-encoding gates are of the form :math:`e^{-ix_j G}`, where :math:`G` is
 a Hermitian operator that "generates" the operation, we can deduce a maximum set of frequencies
 that can theoretically appear in :math:`\Omega_j`.  Depending on the non-input-encoding

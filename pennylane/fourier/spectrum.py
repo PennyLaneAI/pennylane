@@ -80,6 +80,7 @@ def _join_spectra(spec1, spec2):
     return sorted(set(sums))
 
 
+
 def spectrum(qnode, encoding_gates=None):
     r"""Compute the frequency spectrum of the Fourier representation of simple quantum circuits.
 
