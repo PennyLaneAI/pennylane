@@ -108,8 +108,15 @@ def fuse_rot(angles_1, angles_2):
 def convert_to_rot(op):
     """Converts a single-qubit operation to a Rot gate.
 
-    It would be nice is this is built-in to the operations instead of
-    a separate method.
+    It would be nice if this information was built-in to the operations instead of
+    included here as a separate method.
+
+    Args:
+        op (qml.Operation): A single-qubit operation.
+
+    Returns:
+        list[float]: A tuple of 3 angles representing the parameters required to
+        implement the given gate as an instance of ``qml.Rot``.
     """
 
     if op.name == "Hadamard":
