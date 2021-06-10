@@ -14,7 +14,7 @@
 """Utility functions for circuit optimization."""
 
 from pennylane import numpy as np
-
+from pennylane.math import allclose, sin, cos, arccos, arctan2
 
 def yzy_to_zyz(y1, z, y2):
     """Converts a set of angles representing a sequence of rotations RY, RZ, RY into
@@ -49,27 +49,27 @@ def yzy_to_zyz(y1, z, y2):
     """
     # print([y1, z, y2])
     # Catch the case where everything is close to 0
-    # if np.allclose([y1, z, y2], [0.0, 0.0, 0.0]):
+    #if allclose([y1, z, y2], [0.0, 0.0, 0.0]):
     #    return (0.0, 0.0, 0.0)
 
     # First, compute the quaternion representation
     # https://ntrs.nasa.gov/api/citations/19770024290/downloads/19770024290.pdf
-    qw = np.cos(z / 2) * np.cos(0.5 * (y1 + y2))
-    qx = np.sin(z / 2) * np.sin(0.5 * (y1 - y2))
-    qy = np.cos(z / 2) * np.sin(0.5 * (y1 + y2))
-    qz = np.sin(z / 2) * np.cos(0.5 * (y1 - y2))
+    qw = cos(z / 2) * cos(0.5 * (y1 + y2))
+    qx = sin(z / 2) * sin(0.5 * (y1 - y2))
+    qy = cos(z / 2) * sin(0.5 * (y1 + y2))
+    qz = sin(z / 2) * cos(0.5 * (y1 - y2))
 
     # Now convert from YZY Euler angles to ZYZ angles
     # Source: http://bediyap.com/programming/convert-quaternion-to-euler-rotations/
     z1_arg1 = 2 * (qy * qz - qw * qx)
     z1_arg2 = 2 * (qx * qz + qw * qy)
-    z1 = np.arctan2(z1_arg1, z1_arg2)
+    z1 = arctan2(z1_arg1, z1_arg2)
 
-    y = np.arccos(qw ** 2 - qx ** 2 - qy ** 2 + qz ** 2)
+    y = arccos(qw ** 2 - qx ** 2 - qy ** 2 + qz ** 2)
 
     z2_arg1 = 2 * (qy * qz + qw * qx)
     z2_arg2 = -2 * (qx * qz - qw * qy)
-    z2 = np.arctan2(z2_arg1, z2_arg2)
+    z2 = arctan2(z2_arg1, z2_arg2)
 
     return (z1, y, z2)
 
