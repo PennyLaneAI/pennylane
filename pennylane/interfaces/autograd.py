@@ -119,7 +119,7 @@ class AutogradInterface(AnnotatedQueue):
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
                 qml.RX(0.133, wires='a')
-                expval(qml.PauliZ(wires=[0]))
+                qml.expval(qml.PauliZ(wires=[0]))
 
         By default, all parameters are trainable and will be returned:
 

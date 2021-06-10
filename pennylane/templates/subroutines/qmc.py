@@ -270,7 +270,8 @@ class QuantumMonteCarlo(Operation):
         This template is only compatible with simulators because the algorithm is performed using
         unitary matrices. Additionally, this operation is not differentiable. To implement the
         quantum Monte Carlo algorithm on hardware requires breaking down the unitary matrices into
-        hardware-compatible gates.
+        hardware-compatible gates, check out the :func:`~.quantum_monte_carlo` transformation for
+        more details.
 
     .. UsageDetails::
 

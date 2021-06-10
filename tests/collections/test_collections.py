@@ -37,6 +37,12 @@ except ImportError as e:
     tf = None
     Variable = None
 
+try:
+    import jax
+    import jax.numpy as jnp
+except ImportError as e:
+    jax = None
+
 
 class TestMap:
     """Test for mapping ansatz over observables or devices,
@@ -190,7 +196,7 @@ class TestMap:
 class TestApply:
     """Tests for the apply function"""
 
-    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf"])
+    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", "jax"])
     def test_apply_summation(self, qnodes, interface, tf_support, torch_support, tol):
         """Test that summation can be applied using all interfaces"""
         if interface == "torch" and not torch_support:
@@ -206,6 +212,8 @@ class TestApply:
             sfn = tf.reduce_sum
         elif interface == "torch":
             sfn = torch.sum
+        elif interface == "jax":
+            sfn = jnp.sum
         else:
             sfn = np.sum
 
@@ -217,7 +225,7 @@ class TestApply:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf"])
+    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", "jax"])
     def test_nested_apply(self, qnodes, interface, tf_support, torch_support, tol):
         """Test that nested apply can be done using all interfaces"""
         if interface == "torch" and not torch_support:
@@ -235,6 +243,9 @@ class TestApply:
         elif interface == "torch":
             sinfn = torch.sin
             sfn = torch.sum
+        elif interface == "jax":
+            sinfn = jnp.sin
+            sfn = jnp.sum
         else:
             sinfn = np.sin
             sfn = np.sum
@@ -251,7 +262,7 @@ class TestApply:
 class TestSum:
     """Tests for the sum function"""
 
-    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", None])
+    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", "jax", None])
     def test_apply_summation(self, qnodes, interface, tf_support, torch_support, tol):
         """Test that summation can be applied using all interfaces"""
         if interface == "torch" and not torch_support:
@@ -292,7 +303,7 @@ class TestSum:
 class TestDot:
     """Tests for the sum function"""
 
-    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", None])
+    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", "jax", None])
     def test_dot_product_tensor_qnodes(self, qnodes, interface, tf_support, torch_support):
         """Test that the dot product of tensor.qnodes can be applied using all interfaces"""
         if interface == "torch" and not torch_support:
@@ -327,7 +338,7 @@ class TestDot:
         expected = np.dot(coeffs, qcval)
         np.testing.assert_allclose(res, expected)
 
-    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", None])
+    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", "jax", None])
     def test_dot_product_qnodes_qnodes(self, qnodes, interface, tf_support, torch_support):
         """Test that the dot product of qnodes.qnodes can be applied using all interfaces"""
         if interface == "torch" and not torch_support:
@@ -357,7 +368,7 @@ class TestDot:
         expected = np.dot(qc1val, qc2val)
         assert np.all(res == expected)
 
-    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", None])
+    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", "jax", None])
     def test_dot_product_qnodes_tensor(self, qnodes, interface, tf_support, torch_support):
         """Test that the dot product of qnodes.tensor can be applied using all interfaces"""
         if interface == "torch" and not torch_support:

@@ -2,18 +2,122 @@
 
 <h3>New features since last release</h3>
 
+* The ``argnum`` keyword argument can now be specified for a QNode to define a
+  subset of trainable parameters used to estimate the Jacobian.
+  [(#1371)](https://github.com/PennyLaneAI/pennylane/pull/1371)
+
+  For example, consider two trainable parameters and a quantum function:
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  x = np.array(0.543, requires_grad=True)
+  y = np.array(-0.654, requires_grad=True)
+
+  def circuit(x,y):
+      qml.RX(x, wires=[0])
+      qml.RY(y, wires=[1])
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+  ```
+
+  When computing the gradient of the QNode, we can specify the trainable
+  parameters to consider by passing the ``argnum`` keyword argument:
+
+  ```pycon
+  >>> qnode1 = qml.QNode(circuit, dev, diff_method="parameter-shift", argnum=[0,1])
+  >>> print(qml.grad(qnode1)(x,y))
+  (array(0.31434679), array(0.67949903))
+  ```
+
+  Specifying a proper subset of the trainable parameters will estimate the
+  Jacobian:
+
+  ```pycon
+  >>> qnode2 = qml.QNode(circuit, dev, diff_method="parameter-shift", argnum=[0])
+  >>> print(qml.grad(qnode2)(x,y))
+  (array(0.31434679), array(0.))
+  ```
+
+* The `quantum_monte_carlo` transform has been added, allowing an input circuit to be transformed
+  into the full quantum Monte Carlo algorithm.
+  [(#1316)](https://github.com/PennyLaneAI/pennylane/pull/1316)
+
+* Adds a decorator `@qml.qfunc_transform` to easily create a transformation
+  that modifies the behaviour of a quantum function.
+  [(#1315)](https://github.com/PennyLaneAI/pennylane/pull/1315)
+
+  For example, consider the following transform, which scales the parameter of
+  all `RX` gates by :math:`x \rightarrow \sin(a) \sqrt{x}`, and the parameters
+  of all `RY` gates by :math:`y \rightarrow \cos(a * b) y`:
+
+  ```python
+  @qml.qfunc_transform
+  def my_transform(tape, a, b):
+      for op in tape.operations + tape.measurements:
+          if op.name == "RX":
+              x = op.parameters[0]
+              qml.RX(qml.math.sin(a) * qml.math.sqrt(x), wires=op.wires)
+          elif op.name == "RY":
+              y = op.parameters[0]
+              qml.RX(qml.math.cos(a * b) * y, wires=op.wires)
+          else:
+              op.queue()
+  ```
+
+  We can now apply this transform to any quantum function:
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  def ansatz(x):
+      qml.Hadamard(wires=0)
+      qml.RX(x[0], wires=0)
+      qml.RY(x[1], wires=1)
+      qml.CNOT(wires=[0, 1])
+
+  @qml.qnode(dev)
+  def circuit(params, transform_weights):
+      qml.RX(0.1, wires=0)
+
+      # apply the transform to the ansatz
+      my_transform(*transform_weights)(ansatz)(params)
+
+      return qml.expval(qml.PauliZ(1))
+  ```
+
+  We can print this QNode to show that the qfunc transform is taking place:
+
+  ```pycon
+  >>> x = np.array([0.5, 0.3], requires_grad=True)
+  >>> transform_weights = np.array([0.1, 0.6], requires_grad=True)
+  >>> print(qml.draw(circuit)(x, transform_weights))
+   0: ──RX(0.1)────H──RX(0.0706)──╭C──┤
+   1: ──RX(0.299)─────────────────╰X──┤ ⟨Z⟩
+  ```
+
+  Evaluating the QNode, as well as the derivative, with respect to the gate
+  parameter *and* the transform weights:
+
+  ```pycon
+  >>> circuit(x, transform_weights)
+  0.006728293438238053
+  >>> qml.grad(circuit)(x, transform_weights)
+  (array([ 0.00671711, -0.00207359]), array([6.69695008e-02, 3.73694364e-06]))
+  ```
+
 * Added validation for noise channel parameters. Invalid noise parameters now
   raise a `ValueError`. [(#1357)](https://github.com/PennyLaneAI/pennylane/pull/1357)
 
-* PennyLane now has a `fourier` module, which hosts a [growing library 
-  of methods](https://pennylane.readthedocs.io/en/stable/code/qml_fourier.html) 
-  that help with investigating the Fourier representation of functions 
+* PennyLane now has a `fourier` module, which hosts a [growing library
+  of methods](https://pennylane.readthedocs.io/en/stable/code/qml_fourier.html)
+  that help with investigating the Fourier representation of functions
   implemented by quantum circuits.
   [(#1160)](https://github.com/PennyLaneAI/pennylane/pull/1160)
-  
-  For example, one can plot distributions over Fourier series coefficients like 
+
+  For example, one can plot distributions over Fourier series coefficients like
   this one:
-  
+
   <img src="https://pennylane.readthedocs.io/en/latest/_static/fourier.png" width=70%/>
 
 * It is now possible [(1291)](https://github.com/PennyLaneAI/pennylane/pull/1291)
@@ -243,6 +347,16 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Improvements</h3>
 
+* The adjoint jacobian differentiation method reuses the state computed on the forward pass.
+  This can be turned off to save memory with the Torch and TensorFlow interfaces by passing
+  `adjoint_cache=False` during QNode creation.
+  [(#1341)](https://github.com/PennyLaneAI/pennylane/pull/1341)
+
+* The `Operator` (and by inheritance, the `Operation` and `Observable` class and their children)
+  now have an `id` attribute, which can mark an operator in a circuit, for example to
+  identify it on the tape by a tape transform.
+  [(#1377)](https://github.com/PennyLaneAI/pennylane/pull/1377)
+
 * Implement special handling for measuring the variance of Projector observables to improve memory usage.
   [(#1368)](https://github.com/PennyLaneAI/pennylane/pull/1368)
 
@@ -345,6 +459,21 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Bug fixes</h3>
 
+* Fixes bug where `shots=None` was not reset when changing shots temporarily in a QNode call
+  like `circuit(0.1, shots=3)`.
+  [(#1392)](https://github.com/XanaduAI/pennylane/pull/1392)
+
+* Fixes floating point errors with `diff_method="finite-diff"` and `order=1` when parameters are `float32`.
+[(#1381)](https://github.com/PennyLaneAI/pennylane/pull/1381)
+
+* Fixes a bug where `qml.ctrl` would fail to transform gates that had no
+  control defined and no decomposition defined.
+  [(#1376)](https://github.com/PennyLaneAI/pennylane/pull/1376)
+
+* Copying the `JacobianTape` now correctly also copies the `jacobian_options` attribute. This fixes a bug
+  allowing the JAX interface to support adjoint differentiation.
+  [(#1349)](https://github.com/PennyLaneAI/pennylane/pull/1349)
+
 * Fixes drawing QNodes that contain multiple measurements on a single wire.
   [(#1353)](https://github.com/PennyLaneAI/pennylane/pull/1353)
 
@@ -366,9 +495,15 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
   to the `StronglyEntanglingLayers` template.
   [(#1332)](https://github.com/PennyLaneAI/pennylane/pull/1332)
 
+* Fixed a bug where `qml.sum()` and `qml.dot()` do not support the JAX interface. [(#1380)](https://github.com/PennyLaneAI/pennylane/pull/1380)
+
 <h3>Documentation</h3>
 
-* Fix typo in the documentation of qml.templates.layers.StronglyEntanglingLayers 
+* Fix typo in the documentation of `qml.qaoa.cycle.loss_hamiltonian`.
+  [(#1396)](https://github.com/PennyLaneAI/pennylane/pull/1396)
+
+* Fix typo in the documentation of qml.templates.layers.StronglyEntanglingLayers.
+
   [(#1367)](https://github.com/PennyLaneAI/pennylane/pull/1367)
 
 * Fixed typo on TensorFlow interface documentation [(#1312)](https://github.com/PennyLaneAI/pennylane/pull/1312)
@@ -392,8 +527,8 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 This release contains contributions from (in alphabetical order):
 
-Marius Aglitoiu, Vishnu Ajith, Thomas Bromley, Jack Ceroni, Miruna Daian, Olivia Di Matteo,
-Tanya Garg, Christian Gogolin, Diego Guala, Anthony Hayes, Ryan Hill, Josh Izaac, Pavan Jayasinha, Ryan Levy, Nahum Sá, Maria Schuld,
+Marius Aglitoiu, Vishnu Ajith, Thomas Bromley, Jack Ceroni, Alaric Cheng, Miruna Daian, Olivia Di Matteo,
+Tanya Garg, Christian Gogolin, Diego Guala, Anthony Hayes, Ryan Hill, Josh Izaac, Pavan Jayasinha, Christina Lee, Ryan Levy, Nahum Sá, Maria Schuld,
 Johannes Jakob Meyer, Brian Shi, Antal Száva, David Wierichs, Vincent Wong, Alberto Maldonado, Ashish Panigrahi.
 
 
