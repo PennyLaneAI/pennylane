@@ -34,6 +34,7 @@ def specs(qnode, max_expansion=None):
     **Example**
 
     .. code-block:: python3
+    
         x = np.array([0.1, 0.2])
 
         dev = qml.device('default.qubit', wires=2)
