@@ -182,7 +182,7 @@ class AllSinglesDoubles(Operation):
 
     @staticmethod
     def shape(singles, doubles):
-        r"""Returns the shape of the tensor containing the circuit parameters.
+        r"""Returns the expected shape of the tensor that contains the circuit parameters.
 
         Args:
             singles (Sequence[Sequence]): sequence of lists with the indices of the two qubits
