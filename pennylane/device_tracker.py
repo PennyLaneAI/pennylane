@@ -17,6 +17,7 @@ from collections import defaultdict
 
 import pennylane as qml
 
+
 def track(dev, version="default", **kwargs):
     r"""Creates a tracking context and applies it to a device.
 
@@ -32,7 +33,7 @@ def track(dev, version="default", **kwargs):
     **Usage Information**
 
     Note that with backpropagation, this functions should take ``qnode.device``
-    instead of the device used to create the QNode.  
+    instead of the device used to create the QNode.
 
     .. code-block:: python
 
@@ -49,9 +50,9 @@ def track(dev, version="default", **kwargs):
 
     >>> with qml.track(circuit.device) as tracker:
     ...    qml.grad(circuit)(0.1, shots=10)
-    Total: executions = 1	shots = 10	
-    Total: executions = 2	shots = 20	
-    Total: executions = 3	shots = 30	
+    Total: executions = 1	shots = 10
+    Total: executions = 2	shots = 20
+    Total: executions = 3	shots = 30
 
     In with the ``'timing'`` implementation, the instance also tracks the time
     between entering the context and the completion of an execution.
@@ -59,7 +60,7 @@ def track(dev, version="default", **kwargs):
     >>> with qml.track(circuit.device, version='timing') as timing_tracker:
     ...    circuit(0.1)
     ...    circuit(0.2)
-    Total: executions = 1	time = 0.0011134147644042969	
+    Total: executions = 1	time = 0.0011134147644042969
     Total: executions = 2	time = 0.0027322769165039062
 
     After completion, one can also access the recorded information:
@@ -77,24 +78,23 @@ def track(dev, version="default", **kwargs):
 
     >>> with qml.track(circuit.device, reset_on_enter=False) as tracker:
     ...     circuit(0.1)
-    Total: executions = 1	
+    Total: executions = 1
     >>> with tracker:
     ...     circuit(0.2)
     Total: executions = 2
 
     """
-    if version=="timing":
+    if version == "timing":
         return TimingTracker(dev, **kwargs)
-    elif version=="default":
-        return DevTracker(dev, **kwargs)
+    elif version == "default":
+        return DefaultTracker(dev, **kwargs)
     else:
         raise qml.QuantumFunctionError(
-            f"version {version} supplied to track. "
-            f"Current options are `timing` and `default`."
+            f"version {version} supplied to track. " f"Current options are `timing` and `default`."
         )
 
 
-class DevTracker:
+class DefaultTracker:
     """
     Class docstring
     """
@@ -132,7 +132,7 @@ class DevTracker:
         self.record()
 
     def update(self, **current):
-        """ updating data"""
+        """updating data"""
 
         for key, value in current.items():
             # update history
@@ -143,9 +143,9 @@ class DevTracker:
                 self.totals[key] += value
 
     def reset(self):
-        """ reseting data"""
+        """reseting data"""
         self.totals = defaultdict(int)
-        self.history= defaultdict(list)
+        self.history = defaultdict(list)
 
     def record(self):
         """
@@ -157,8 +157,7 @@ class DevTracker:
         print()
 
 
-class TimingTracker(DevTracker):
-
+class TimingTracker(DefaultTracker):
     def update(self, **current):
 
         current_time = time.time()
