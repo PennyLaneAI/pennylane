@@ -192,7 +192,7 @@ class AllSinglesDoubles(Operation):
                     "'singles' and 'doubles' lists can not be both empty;"
                     " got singles = {}, doubles = {}".format(singles, doubles)
                 )
-            else:
+            if doubles is not None:
                 shape_ = (len(doubles),)
         elif doubles is None:
             shape_ = (len(singles),)
