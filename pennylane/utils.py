@@ -111,19 +111,18 @@ def sparse_hamiltonian(H):
 
     Args:
         H (~.Hamiltonian): Hamiltonian operator for which the matrix representation should be
-         measured
+         computed
 
     Returns:
-        coo_matrix: a sparse matrix in scipy COOrdinate format with the dimension of
-        :math:`(2^n, 2^n)` where :math:`n` is the number of wires
+        coo_matrix: a sparse matrix in scipy coordinate list (COO) format with dimension
+        :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
 
     **Example:**
 
     This function can be used by passing a `qml.Hamiltonian` object as:
 
     >>> coeffs = [0.5, 0.5]
-    >>> obs = [qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
-    ...        qml.Identity(wires=[0]) @ qml.PauliZ(wires=[1])]
+    >>> obs = [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(1)]
     >>> H = qml.Hamiltonian(coeffs, obs)
     >>> H_sparse = sparse_hamiltonian(H)
 
@@ -139,13 +138,11 @@ def sparse_hamiltonian(H):
         raise TypeError("Passed Hamiltonian must be of type `qml.Hamiltonian`")
 
     n = len(H.wires)
-
     matrix = scipy.sparse.coo_matrix((2 ** n, 2 ** n), dtype="complex128")
 
     for coeffs, ops in zip(H.coeffs, H.ops):
 
         obs = [scipy.sparse.coo_matrix(o.matrix) for o in ops.obs]
-
         mat = [scipy.sparse.eye(2, format="coo")] * n
 
         for i, j in enumerate(ops.wires):
