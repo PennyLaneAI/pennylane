@@ -12,7 +12,7 @@
 IMAGENAME=pennylane-build
 BUILDNAME=pennylane
 
-.PHONY: help build-base build-tensorflow build-torch build-jax build-tensorflow-gpu build-torch-gou
+.PHONY: help build-base build-tensorflow build-torch build-jax build-jax-gpu build-tensorflow-gpu build-torch-gpu
 
 help:
 	    @echo "Makefile arguments:"
@@ -28,9 +28,15 @@ help:
 	    @echo "build-tensorflow"
 	    @echo "build-torch"
 			@echo "build-jax"
+			@echo "build-tensorflow-gpu"
+			@echo "build-jax-gpu"
+			@echo "build-torch-gpu"
 
 build-base:
 	    @docker build -t pennylane -f docker/pennylane.dockerfile .
+
+build-qchem:
+	    @docker build -t pennylane -f docker/qchem.dockerfile .
 
 build-tensorflow:
 	    @docker build -t pennylane -f docker/tensorflow.dockerfile .
@@ -40,3 +46,12 @@ build-torch:
 
 build-jax:
 	     @docker build -t pennylane -f docker/jax.dockerfile .
+
+build-tensorflow-gpu:
+			 	@docker build -t pennylane -f docker/gpu-cuda/tensorflow.dockerfile .
+
+build-jax-gpu:
+			 	@docker build -t pennylane -f docker/gpu-cuda/tensorflow.dockerfile .
+
+build-torch-gpu:
+			 	@docker build -t pennylane -f docker/gpu-cuda/tensorflow.dockerfile .
