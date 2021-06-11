@@ -100,7 +100,7 @@ def spectrum(qnode, encoding_gates=None):
     If two gates have the same ``id``, they are considered
     to be used to encode the same input :math:`x_j`. The ``encoding_gates`` argument can be used
     to indicate that only gates with a specific ``id`` should be interpreted as input-encoding gates.
-    Else, all gates with an explicit ``id`` are considered to be input-encoding gates.
+    Otherwise, all gates with an explicit ``id`` are considered to be input-encoding gates.
 
     .. note::
         If no input-encoding gates are found, an empty dictionary is returned.
