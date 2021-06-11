@@ -339,7 +339,7 @@ def single_qubit_fusion(tape):
             next_gate_idx = _find_next_gate(current_gate.wires, list_copy[1:])
 
         # If the cumulative angle is not close to 0, apply the gate
-        if not allclose(cumulative_angles, np.zeros(3)):
+        if not allclose(np.array(cumulative_angles), np.zeros(3)):
             Rot(*cumulative_angles, wires=current_gate.wires).queue()
 
         # Remove the starting gate from the list
@@ -422,6 +422,8 @@ def diag_behind_controls(tape):
                     if isclose(next_gate.parameters[1], 0.0):
                         list_copy.pop(next_gate_idx + 1)
                         next_gate.queue()
+                    else:
+                        break
                 else:
                     break
 

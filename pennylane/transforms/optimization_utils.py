@@ -14,7 +14,7 @@
 """Utility functions for circuit optimization."""
 
 from pennylane import numpy as np
-from pennylane.math import allclose, sin, cos, arccos, arctan2
+from pennylane.math import allclose, isclose, sin, cos, arccos, arctan2
 
 
 def yzy_to_zyz(y1, z, y2):
@@ -102,14 +102,26 @@ def fuse_rot(angles_1, angles_2):
 
     # RZ(a) RY(b) RZ(c) fused with RZ(d) RY(e) RZ(f)
     # first produces RZ(a) RY(b) RZ(c+d) RY(e) RZ(f)
-    leftmost_z_init = angles_1[0]
+    leftmost_z = angles_1[0]
     middle_yzy = angles_1[1], angles_1[2] + angles_2[0], angles_2[1]
-    rightmost_z_init = angles_2[2]
+    rightmost_z = angles_2[2]
 
-    # Now we need to turn the RY(b) RZ(c+d) RY(e) into something
+    # There are a few other cases to consider where things can be 0 and
+    # avoid having to use the quaternion conversion routine
+    # If b = 0, then we have RZ(a + c + d) RY(e) RZ(f)
+    if isclose(middle_yzy[0], 0.0):
+        return np.array([leftmost_z + middle_yzy[1], middle_yzy[2], rightmost_z])
+    # If c + d is close to 0, then we have the case RZ(a) RY(b + e) RZ(f)
+    elif isclose(middle_yzy[1], 0.0):
+        return np.array([leftmost_z, middle_yzy[0] + middle_yzy[2], rightmost_z])
+    # If e is close to 0, then we have the case RZ(a) RY(b) RZ(c + d + f)
+    elif isclose(middle_yzy[2], 0.0):
+        return np.array([leftmost_z, middle_yzy[0], middle_yzy[1] + rightmost_z])
+
+    # Otherwise, we need to turn the RY(b) RZ(c+d) RY(e) into something
     # of the form RZ(u) RY(v) RZ(w)
     u, v, w = yzy_to_zyz(*middle_yzy)
 
     # Then we can combine to create
     # RZ(a + u) RY(v) RZ(w + f)
-    return np.array([leftmost_z_init + u, v, w + rightmost_z_init])
+    return np.array([leftmost_z + u, v, w + rightmost_z])
