@@ -127,12 +127,9 @@ class DefaultTracker:
         """
         self.tracking = False
 
-    def update_and_record(self, **current):
-        self.update(**current)
-        self.record()
-
     def update(self, **current):
         """updating data"""
+        self.current = current
 
         for key, value in current.items():
             # update history
@@ -146,26 +143,36 @@ class DefaultTracker:
         """reseting data"""
         self.totals = defaultdict(int)
         self.history = defaultdict(list)
+        self.current = dict()
 
     def record(self):
         """
         record data somehow
+        """
+        pass
+
+
+class PrintTotalsMixin(DefaultTracker):
+
+    def record(self):
+        """
+        Print out totals 
         """
         print("Total: ", end="")
         for key, value in self.totals.items():
             print(f"{key} = {value}", end="\t")
         print()
 
+class TimingsMixin(DefaultTracker):
 
-class TimingTracker(DefaultTracker):
     def update(self, **current):
 
         current_time = time.time()
         current["time"] = current_time - self._time_last
         self._time_last = current_time
 
-        super().update(**current)
+        super(TimingsMixin, self).update(**current)
 
     def reset(self):
-        super().reset()
+        super(TimingsMixin, self).reset()
         self._time_last = time.time()
