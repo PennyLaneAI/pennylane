@@ -164,3 +164,44 @@ class TestTimeTracker:
         tracker.reset()
         # incremented once again
         assert tracker._time_last == 4.0
+
+
+class TestDefaultTrackerIntegration:
+    def test_single_execution_default(self, capsys):
+        """Test correct behaviour with single circuit execution"""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(qml.PauliZ(0))
+
+        with DefaultTracker(circuit.device) as tracker:
+            circuit()
+
+        captured = capsys.readouterr()
+
+        predicted_text = "Total: executions = 1\t\n"
+        assert captured.out == predicted_text
+        assert tracker.totals == {"executions": 1}
+        assert tracker.history == {"executions": [1], "shots": [None]}
+
+    def test_shots_execution_default(self, capsys):
+        """Test correct tracks shots as well."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(qml.PauliZ(0))
+
+        with DefaultTracker(circuit.device) as tracker:
+            circuit(shots=10)
+            circuit(shots=20)
+
+        captured = capsys.readouterr()
+
+        predicted_text = "Total: executions = 1\tshots = 10\t\nTotal: executions = 2\tshots = 30\t\n"
+        assert captured.out == predicted_text
+        assert tracker.totals == {"executions": 2, "shots": 30}
+        assert tracker.history == {"executions": [1,1], "shots": [10, 20]}
