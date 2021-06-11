@@ -16,6 +16,7 @@
 from pennylane import numpy as np
 from pennylane.math import allclose, sin, cos, arccos, arctan2
 
+
 def yzy_to_zyz(y1, z, y2):
     """Converts a set of angles representing a sequence of rotations RY, RZ, RY into
     an equivalent sequence of the form RZ, RY, RZ.
@@ -89,8 +90,8 @@ def fuse_rot(angles_1, angles_2):
         array[float]: A tuple of rotation angles for a single ``qml.Rot`` operation
         that implements the same operation as the two sets of input angles.
     """
-    are_angles_1_zero =  allclose(np.array(angles_1), np.zeros(3))
-    are_angles_2_zero =  allclose(np.array(angles_2), np.zeros(3))
+    are_angles_1_zero = allclose(np.array(angles_1), np.zeros(3))
+    are_angles_2_zero = allclose(np.array(angles_2), np.zeros(3))
 
     if are_angles_1_zero and are_angles_2_zero:
         return np.array([0.0, 0.0, 0.0])

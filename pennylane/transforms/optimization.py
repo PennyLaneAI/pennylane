@@ -19,6 +19,8 @@ from pennylane.wires import Wires
 from pennylane.transforms import qfunc_transform
 from pennylane.ops.qubit import Rot
 
+from pennylane.math import allclose
+
 from .optimization_utils import fuse_rot
 
 
@@ -238,7 +240,7 @@ def merge_rotations(tape):
                 combined_angles = np.array([current_gate.parameters[0] + next_gate.parameters[0]])
 
             # If the cumulative angle is not close to 0, apply the gate
-            if not np.allclose(combined_angles, np.zeros(len(combined_angles))):
+            if not allclose(combined_angles, np.zeros(len(combined_angles))):
                 tape.append(type(current_gate)(*combined_angles, wires=current_gate.wires))
         else:
             current_gate.queue()
@@ -311,25 +313,29 @@ def single_qubit_fusion(tape):
             list_copy.pop(0)
             continue
 
-        # Otherwise, get the next gate
-        next_gate = list_copy[next_gate_idx + 1]
+        # Set up a cumulative Rot starting from the angles of the initial gate
+        cumulative_angles = current_gate.as_rot_angles()
 
-        # If next gate is on the same qubit, we can fuse them
-        if current_gate.wires == next_gate.wires:
-            list_copy.pop(next_gate_idx + 1)
+        # Loop as long as a valid next gate exists
+        while next_gate_idx is not None:
+            # Get the next gate
+            next_gate = list_copy[next_gate_idx + 1]
 
-            current_gate_angles = current_gate.as_rot_angles()
-            next_gate_angles = next_gate.as_rot_angles()
+            # If next gate is on the same qubit, we can fuse them
+            if current_gate.wires == next_gate.wires:
+                list_copy.pop(next_gate_idx + 1)
 
-            combined_angles = fuse_rot(current_gate_angles, next_gate_angles)
+                # Merge the angles
+                next_gate_angles = next_gate.as_rot_angles()
+                cumulative_angles = fuse_rot(cumulative_angles, next_gate_angles)
 
-            # If the cumulative angle is not close to 0, apply the gate
-            if not np.allclose(combined_angles, np.zeros(len(combined_angles))):
-                tape.append(Rot(*combined_angles, wires=current_gate.wires))
-        else:
-            current_gate.queue()
+            next_gate_idx = _find_next_gate(current_gate.wires, list_copy[1:])
 
-        # Remove this gate from the working list
+        # If the cumulative angle is not close to 0, apply the gate
+        if not allclose(cumulative_angles, np.zeros(3)):
+            Rot(*cumulative_angles, wires=current_gate.wires).queue()
+
+        # Remove the starting gate from the list
         list_copy.pop(0)
 
     # Queue the measurements normally

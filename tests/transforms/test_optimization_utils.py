@@ -24,7 +24,6 @@ def normalize_angle(theta):
     """Normalize an angle into the range -np.pi to np.pi.
 
     Useful for testing matrix equivalence up to a global phase.
-
     """
     if theta > np.pi:
         theta -= 2 * np.pi * np.ceil(theta // np.pi)
