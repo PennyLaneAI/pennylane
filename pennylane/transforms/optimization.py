@@ -20,7 +20,7 @@ from pennylane.transforms import qfunc_transform
 from pennylane.operation import DiagonalOperation
 from pennylane.ops.qubit import Rot
 
-from pennylane.math import allclose
+from pennylane.math import allclose, isclose
 
 from .optimization_utils import fuse_rot
 
@@ -412,14 +412,18 @@ def diag_behind_controls(tape):
                 break
 
             # Valid next gates must be diagonal, and must share the *control* wire
-            if (
-                isinstance(next_gate, DiagonalOperation)
-                and next_gate.wires[0] == current_gate.wires[0]
-            ):
-                list_copy.pop(next_gate_idx + 1)
-                next_gate.queue()
-            else:
-                break
+            if next_gate.wires[0] == current_gate.wires[0]:
+                if isinstance(next_gate, DiagonalOperation):
+                    list_copy.pop(next_gate_idx + 1)
+                    next_gate.queue()
+                # It could also be that the gate is a Rot but still diagonal if
+                # the angle of the RY gate in the middle is 0
+                elif isinstance(next_gate, Rot):
+                    if isclose(next_gate.parameters[1], 0.0):
+                        list_copy.pop(next_gate_idx+1)
+                        next_gate.queue()
+                else:
+                    break
 
             next_gate_idx = _find_next_gate(Wires(current_gate.wires[0]), list_copy[1:])
 
