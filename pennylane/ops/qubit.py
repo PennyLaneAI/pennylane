@@ -1123,6 +1123,14 @@ class Rot(Operation):
     def _controlled(self, wire):
         CRot(*self.parameters, wires=wire + self.wires)
 
+    def as_rot_angles(self):
+        r"""Return the list of rotation angles. Used for consistency across single-qubit ops.
+
+        Returns:
+            list(float): The set of angle inputs to ``Rot``.
+        """
+        return self.data
+
 
 class MultiRZ(DiagonalOperation):
     r"""MultiRZ(theta, wires)
