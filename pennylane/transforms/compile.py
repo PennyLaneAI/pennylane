@@ -36,7 +36,7 @@ def compile(tape, pipeline=default_pipeline, basis_set=None, num_passes=1):
         basis_set (List[str]): A list of basis gates. When expanding the tape, expansion
             will continue until gates in the specific set are reached. If no basis set is
             specified, no expansion will be done.
-        num_passes (int): The number of times to repeat the set of operations in pipeline.
+        num_passes (int): The number of times to repeat the set of operations in ``pipeline``.
 
     **Example**
 
