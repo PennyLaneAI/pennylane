@@ -420,7 +420,7 @@ def diag_behind_controls(tape):
                 # the angle of the RY gate in the middle is 0
                 elif isinstance(next_gate, Rot):
                     if isclose(next_gate.parameters[1], 0.0):
-                        list_copy.pop(next_gate_idx+1)
+                        list_copy.pop(next_gate_idx + 1)
                         next_gate.queue()
                 else:
                     break
