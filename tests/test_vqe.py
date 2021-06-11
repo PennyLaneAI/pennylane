@@ -1002,13 +1002,13 @@ class TestVQE:
 
         dev = qml.device("default.qubit", wires=5)
         obs = [
+            qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[4]), # <---- These two terms
+            qml.PauliZ(wires=[4]) @ qml.PauliZ(wires=[2]), # <---- are equal
             qml.PauliZ(wires=[1]),
-            qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
             qml.PauliZ(wires=[2]),
+            qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
             qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[0]),
-            qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[4]),
             qml.PauliZ(wires=[3]) @ qml.PauliZ(wires=[1]),
-            qml.PauliZ(wires=[4]) @ qml.PauliZ(wires=[2]),
             qml.PauliZ(wires=[4]) @ qml.PauliZ(wires=[3]),
         ]
 
