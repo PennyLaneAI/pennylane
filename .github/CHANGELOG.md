@@ -22,6 +22,16 @@
       with 2 stored elements in COOrdinate format>
   ```
 
+  The sparse matrix can be converted to an array as:
+
+  ```python
+  >>> H_sparse.toarray()
+  array([[ 1.+0.j  ,  0.+0.j  ,  0.+0.45j,  0.+0.j  ],
+￼        [ 0.+0.j  , -1.+0.j  ,  0.+0.j  ,  0.-0.45j],
+￼        [ 0.-0.45j,  0.+0.j  , -1.+0.j  ,  0.+0.j  ],
+￼        [ 0.+0.j  ,  0.+0.45j,  0.+0.j  ,  1.+0.j  ]])
+  ```
+
 * The `quantum_monte_carlo` transform has been added, allowing an input circuit to be transformed
   into the full quantum Monte Carlo algorithm.
   [(#1316)](https://github.com/PennyLaneAI/pennylane/pull/1316)

@@ -145,7 +145,7 @@ def sparse_hamiltonian(H):
 
     for coeffs, ops in zip(H.coeffs, H.ops):
 
-        obs = [scipy.sparse.coo_matrix(o.matrix) for o in ops.obs]
+        obs = [scipy.sparse.coo_matrix(o.matrix) for o in qml.operation.Tensor(ops).obs]
         mat = [scipy.sparse.eye(2, format="coo")] * n
 
         for i, j in enumerate(ops.wires):
