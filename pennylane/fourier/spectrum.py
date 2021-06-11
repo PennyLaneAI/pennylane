@@ -75,9 +75,9 @@ def _join_spectra(spec1, spec2):
     Returns:
         list[float]: joined spectrum
     """
-    if len(spec1) == 0:
+    if spec1 == []:
         return sorted(set(spec2))
-    if len(spec2) == 0:
+    if spec2 == []:
         return sorted(set(spec1))
 
     sums = [s1 + s2 for s1 in spec1 for s2 in spec2]
