@@ -2,6 +2,47 @@
 
 <h3>New features since last release</h3>
 
+- Math docstrings in class `QubitParamShiftTape` now rendered properly.
+  [(#1402)](https://github.com/PennyLaneAI/pennylane/pull/1402)
+
+* Adds the new template `AllSinglesDoubles` to prepare quantum states of molecules
+  using the `SingleExcitation` and `DoubleExcitation` operations.
+  The new template reduces significantly the number of operations
+  and the depth of the quantum circuit with respect to the traditional UCCSD
+  unitary.
+  [(#1383)](https://github.com/PennyLaneAI/pennylane/pull/1383)
+
+  For example, consider the case of two particles and four qubits.
+  First, we define the Hartree-Fock initial state and generate all
+  possible single and double excitations.
+
+  ```python
+  import pennylane as qml
+  from pennylane import numpy as np
+
+  electrons = 2
+  qubits = 4
+
+  hf_state = qml.qchem.hf_state(electrons, qubits)
+  singles, doubles = qml.qchem.excitations(electrons, qubits)
+  ```
+  Now we can use the template ``AllSinglesDoubles`` to define the
+  quantum circuit,
+
+  ```python
+  from pennylane.templates import AllSinglesDoubles
+
+  wires = range(qubits)
+
+  @qml.qnode(dev)
+  def circuit(weights, hf_state, singles, doubles):
+      AllSinglesDoubles(weights, wires, hf_state, singles, doubles)
+      return qml.expval(qml.PauliZ(0))
+
+  params = np.random.normal(0, np.pi, len(singles) + len(doubles))
+  circuit(params, hf_state, singles=singles, doubles=doubles)
+  ```
+
 * The ``argnum`` keyword argument can now be specified for a QNode to define a
   subset of trainable parameters used to estimate the Jacobian.
   [(#1371)](https://github.com/PennyLaneAI/pennylane/pull/1371)
@@ -37,6 +78,7 @@
   >>> qnode2 = qml.QNode(circuit, dev, diff_method="parameter-shift", argnum=[0])
   >>> print(qml.grad(qnode2)(x,y))
   (array(0.31434679), array(0.))
+>>>>>>> master
   ```
 
 * The `quantum_monte_carlo` transform has been added, allowing an input circuit to be transformed
@@ -247,6 +289,8 @@ K_test = qml.kernels.kernel_matrix(X_train, X_test, kernel)
   [(#1214)](https://github.com/PennyLaneAI/pennylane/pull/1214)
   [(#1283)](https://github.com/PennyLaneAI/pennylane/pull/1283)
   [(#1297)](https://github.com/PennyLaneAI/pennylane/pull/1297)
+  [(#1396)](https://github.com/PennyLaneAI/pennylane/pull/1396)
+  [(#1403)](https://github.com/PennyLaneAI/pennylane/pull/1403)
 
   The `max_weight_cycle` function returns the appropriate cost and mixer Hamiltonians:
 
@@ -498,9 +542,6 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 * Fixed a bug where `qml.sum()` and `qml.dot()` do not support the JAX interface. [(#1380)](https://github.com/PennyLaneAI/pennylane/pull/1380)
 
 <h3>Documentation</h3>
-
-* Fix typo in the documentation of `qml.qaoa.cycle.loss_hamiltonian`.
-  [(#1396)](https://github.com/PennyLaneAI/pennylane/pull/1396)
 
 * Fix typo in the documentation of qml.templates.layers.StronglyEntanglingLayers.
 
