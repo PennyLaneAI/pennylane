@@ -43,12 +43,12 @@ def specs(qnode, max_expansion=None):
                 qml.RY(x[1], wires=1)
             return qml.probs(wires=(0,1))
 
-    >>> info = qml.specs(circuit)(x, add_ry=False)
-    {'by_size': defaultdict(int, {1: 1, 2: 1}),
-    'by_name': defaultdict(int, {'RX': 1, 'CNOT': 1}),
+    >>> qml.specs(circuit)(x, add_ry=False)
+    {'gate_sizes': defaultdict(int, {1: 1, 2: 1}),
+    'gate_types': defaultdict(int, {'RX': 1, 'CNOT': 1}),
     'total_operations': 2,
     'total_observables': 1,
-    'num_tape_wires': 2,
+    'num_used_wires': 2,
     'depth': 2,
     'num_device_wires': 2,
     'device_name': 'default.qubit.autograd',

@@ -1007,7 +1007,7 @@ class QuantumTape(AnnotatedQueue):
         """
 
         warnings.warn(
-            "``tape.get_resources`` will be deprecated after v0.16 "
+            "``tape.get_resources``is now deprecated and will be removed in v0.17 "
             "Please use the more general ``tape.specs`` instead.",
             UserWarning,
         )
@@ -1041,7 +1041,7 @@ class QuantumTape(AnnotatedQueue):
         """
 
         warnings.warn(
-            "``tape.get_depth`` will be deprecated after v0.16 "
+            "``tape.get_depth`` is now deprecated and will be removed in v0.17 "
             "Please use the more general ``tape.specs`` instead.",
             UserWarning,
         )
@@ -1056,7 +1056,7 @@ class QuantumTape(AnnotatedQueue):
         """Resource information about a quantum circuit.
 
         Returns:
-            dict[str, Union[defaultdict,int]]: dictionaries that contain information on how many times constituent operations are applied
+            dict[str, Union[defaultdict,int]]: dictionaries that contain tape specifications
 
         **Example**
 
@@ -1073,28 +1073,28 @@ class QuantumTape(AnnotatedQueue):
 
         Asking for the specs produces a dictionary as shown below:
 
-        >>> tape.specs['by_size']
+        >>> tape.specs['gate_sizes']
         defaultdict(int, {1: 4, 2: 2})
-        >>> tape.specs['by_name']
+        >>> tape.specs['gate_types']
         defaultdict(int, {'Hadamard': 2, 'RZ': 1, 'CNOT': 2, 'Rot': 1})
 
         As ``defaultdict`` objects, any key not present in the dictionary returns 0.
 
-        >>> tape.specs['by_name']['RX']
+        >>> tape.specs['gate_types']['RX']
         0
 
         """
         if self._specs is None:
-            self._specs = {"by_size": defaultdict(int), "by_name": defaultdict(int)}
+            self._specs = {"gate_sizes": defaultdict(int), "gate_types": defaultdict(int)}
 
             for op in self.operations:
                 # don't use op.num_wires to allow for flexible gate classes like QubitUnitary
-                self._specs["by_size"][len(op.wires)] += 1
-                self._specs["by_name"][op.name] += 1
+                self._specs["gate_sizes"][len(op.wires)] += 1
+                self._specs["gate_types"][op.name] += 1
 
             self._specs["total_operations"] = len(self.operations)
             self._specs["total_observables"] = len(self.observables)
-            self._specs["num_tape_wires"] = self.num_wires
+            self._specs["num_used_wires"] = self.num_wires
             self._specs["depth"] = self.graph.get_depth()
             self._specs["num_trainable_params"] = self.num_params
 

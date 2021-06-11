@@ -722,7 +722,8 @@ class QNode:
 
     @property
     def specs(self):
-        """
+        """Resource information about a quantum circuit.
+
         Returns:
             a dictionary listing properties of the qnode
 
@@ -742,11 +743,11 @@ class QNode:
             res = circuit(x)
 
         >>> circuit.specs
-        {'by_size': defaultdict(int, {1: 2, 2: 1}),
-        'by_name': defaultdict(int, {'RX': 1, 'RY': 1, 'CNOT': 1}),
+        {'gate_sizes': defaultdict(int, {1: 2, 2: 1}),
+        'gate_types': defaultdict(int, {'RX': 1, 'RY': 1, 'CNOT': 1}),
         'total_operations': 3,
         'total_observables': 1,
-        'num_tape_wires': 2,
+        'num_used_wires': 2,
         'depth': 2,
         'num_device_wires': 2,
         'device_name': 'default.qubit.autograd',
