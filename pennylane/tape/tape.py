@@ -1092,9 +1092,9 @@ class QuantumTape(AnnotatedQueue):
                 self._specs["gate_sizes"][len(op.wires)] += 1
                 self._specs["gate_types"][op.name] += 1
 
-            self._specs["total_operations"] = len(self.operations)
-            self._specs["total_observables"] = len(self.observables)
-            self._specs["total_diagonalizing_gates"] = len(self.diagonalizing_gates)
+            self._specs["num_operations"] = len(self.operations)
+            self._specs["num_observables"] = len(self.observables)
+            self._specs["num_diagonalizing_gates"] = len(self.diagonalizing_gates)
             self._specs["num_used_wires"] = self.num_wires
             self._specs["depth"] = self.graph.get_depth()
             self._specs["num_trainable_params"] = self.num_params

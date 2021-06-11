@@ -1060,9 +1060,9 @@ class TestSpecs:
 
         assert info["gate_sizes"] == defaultdict(int, {1: 2, 3: 1, 2: 1})
         assert info["gate_types"] == defaultdict(int, {"RX": 1, "Toffoli": 1, "CRY": 1, "Rot": 1})
-        assert info["total_operations"] == 4
-        assert info["total_observables"] == 2
-        assert info["total_diagonalizing_gates"] == 1
+        assert info["num_operations"] == 4
+        assert info["num_observables"] == 2
+        assert info["num_diagonalizing_gates"] == 1
         assert info["num_used_wires"] == 3
         assert info["depth"] == 3
         assert info["num_device_wires"] == 4

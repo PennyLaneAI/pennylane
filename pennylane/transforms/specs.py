@@ -49,9 +49,9 @@ def specs(qnode, max_expansion=None):
     >>> qml.specs(circuit)(x, add_ry=False)
     {'gate_sizes': defaultdict(int, {1: 1, 2: 1}),
     'gate_types': defaultdict(int, {'RX': 1, 'CNOT': 1}),
-    'total_operations': 2,
-    'total_observables': 1,
-    'total_diagonalizing_gates': 0,
+    'num_operations': 2,
+    'num_observables': 1,
+    'num_diagonalizing_gates': 0,
     'num_used_wires': 2,
     'depth': 2,
     'num_device_wires': 2,
@@ -64,12 +64,13 @@ def specs(qnode, max_expansion=None):
         """Returns information on the structure and makeup of provided QNode.
 
         Dictionary keys:
-            * ``"total_operations"``
-            * ``"total_observables"``
-            * ``"by_size"``: dictionary mapping gate number of wires to number of occurances
-            * ``"by_name"``: dictionary mapping gate types to number of occurances
-            * ``"num_tape_wires"``: number of wires used by the circuit
-            * ``"num_wires"``: number of wires in device
+            * ``"num_operations"``
+            * ``"num_observables"``
+            * ``"num_diagonalizing_gates"``
+            * ``"gate_sizes"``: dictionary mapping gate number of wires to number of occurances
+            * ``"gate_types"``: dictionary mapping gate types to number of occurances
+            * ``"num_used_wires"``: number of wires used by the circuit
+            * ``"num_device_wires"``: number of wires in device
             * ``"depth"``: longest path in directed acyclic graph representation
             * ``"dev_short_name"``: name of QNode device
             * ``"diff_method"``
