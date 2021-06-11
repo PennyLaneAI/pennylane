@@ -111,12 +111,14 @@ class TestOptimizeMeasurements:
             grouped_coeffs[i] == grouped_coeffs_sol[i] for i in range(len(grouped_coeffs_sol))
         )
 
-    @pytest.mark.parametrize("obs", [
-                                [PauliZ(0), PauliZ(0)],
-                                [PauliX(0) @ PauliX(1), PauliX(0) @ PauliX(1)],
-                                [PauliX(0) @ PauliX(1), PauliX(1) @ PauliX(0)],
-                                ]
-                            )
+    @pytest.mark.parametrize(
+        "obs",
+        [
+            [PauliZ(0), PauliZ(0)],
+            [PauliX(0) @ PauliX(1), PauliX(0) @ PauliX(1)],
+            [PauliX(0) @ PauliX(1), PauliX(1) @ PauliX(0)],
+        ],
+    )
     def test_optimize_measurements_qwc_term_multiple_times(self, obs):
         """Tests if coefficients are properly re-structured even if the same
         terms appear multiple times.
@@ -127,9 +129,7 @@ class TestOptimizeMeasurements:
         """
         coefficients = [1.43, 4.21]
 
-        diagonalized_groupings_sol = [
-            obs
-        ]
+        diagonalized_groupings_sol = [obs]
 
         grouped_coeffs_sol = [[1.43, 4.21]]
 
