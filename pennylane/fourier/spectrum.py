@@ -56,7 +56,7 @@ def _get_spectrum(op):
     # compute all differences of eigenvalues
     unique_frequencies = set(
         chain.from_iterable(
-            (diff := np.round(x[1] - x[0], decimals=8), -diff) for x in combinations(evals, 2)
+            np.round((x[1] - x[0], x[0] - x[1]), decimals=8) for x in combinations(evals, 2)
         )
     )
     unique_frequencies = unique_frequencies.union({0})
