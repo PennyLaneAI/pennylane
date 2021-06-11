@@ -30,7 +30,7 @@ def draw(qnode, charset="unicode", wire_order=None, show_all_wires=False):
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
 
     Returns:
-        A function that has the same arguement signature as ``qnode``. When called,
+        A function that has the same argument signature as ``qnode``. When called,
         the function will draw the QNode.
 
     **Example**

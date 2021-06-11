@@ -2,6 +2,50 @@
 
 <h3>New features since last release</h3>
 
+* The `specs` QNode transform creates a function that produces the specifications for a circuit
+  at given arguments and keywords. Specifications can also be viewed after execution of a QNode or
+  tape by accessing their `specs` property. 
+  [(#1245)](https://github.com/PennyLaneAI/pennylane/pull/1245)
+
+  For example:
+
+  ```python
+  dev = qml.device('default.qubit', wires=4)
+
+  @qml.qnode(dev, diff_method='parameter-shift')
+  def circuit(x, y):
+      qml.RX(x[0], wires=0)
+      qml.Toffoli(wires=(0, 1, 2))
+      qml.CRY(x[1], wires=(0, 1))
+      qml.Rot(x[2], x[3], y, wires=0)
+      return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
+
+  x = np.array([0.05, 0.1, 0.2, 0.3], requires_grad=True)
+  y = np.array(0.4, requires_grad=False)
+
+  specs_func = qml.specs(circuit)
+  info = specs_func(x, y)
+  ```
+
+  ```pycon
+  >>> info
+  {'gate_sizes': defaultdict(int, {1: 2, 3: 1, 2: 1}),
+   'gate_types': defaultdict(int, {'RX': 1, 'Toffoli': 1, 'CRY': 1, 'Rot': 1}),
+   'num_operations': 4,
+   'num_observables': 2,
+   'num_diagonalizing_gates': 1,
+   'num_used_wires': 3,
+   'depth': 4,
+   'num_trainable_params': 4,
+   'num_parameter_shift_executions': 11,
+   'num_device_wires': 4,
+   'device_name': 'default.qubit',
+   'diff_method': 'parameter-shift'}
+  ```
+
+  The tape methods `get_resources` and `get_depth` are superseded by `specs` and will be
+  deprecated after one release cycle.
+
 - Math docstrings in class `QubitParamShiftTape` now rendered properly.
   [(#1402)](https://github.com/PennyLaneAI/pennylane/pull/1402)
 
