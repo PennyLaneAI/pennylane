@@ -569,8 +569,9 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 This release contains contributions from (in alphabetical order):
 
 Marius Aglitoiu, Vishnu Ajith, Thomas Bromley, Jack Ceroni, Alaric Cheng, Miruna Daian, Olivia Di Matteo,
-Tanya Garg, Christian Gogolin, Diego Guala, Anthony Hayes, Ryan Hill, Josh Izaac, Pavan Jayasinha, Christina Lee, Ryan Levy, Nahum Sá, Maria Schuld,
-Johannes Jakob Meyer, Brian Shi, Antal Száva, David Wierichs, Vincent Wong, Alberto Maldonado, Ashish Panigrahi.
+Tanya Garg, Christian Gogolin, Diego Guala, Anthony Hayes, Ryan Hill, Josh Izaac, Pavan Jayasinha, Nathan Killoran, 
+Christina Lee, Ryan Levy, Nahum Sá, Maria Schuld, Johannes Jakob Meyer, Brian Shi, Antal Száva, David Wierichs, 
+Vincent Wong, Alberto Maldonado, Ashish Panigrahi.
 
 
 # Release 0.15.1 (current release)
