@@ -35,11 +35,13 @@ class TestSpecsTransform:
 
         return qfunc_inner
 
-    def test_specs_backprop(self, qfunc):
+    @pytest.mark.parametrize("diff_method, len_info", [("backprop", 9), ("parameter-shift", 11), 
+        ("adjoint", 10)])
+    def test_specs_backprop(self, qfunc, diff_method, len_info):
         """Test the specs transforms with with backprop"""
         dev = qml.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(qfunc, dev, diff_method="backprop")
+        circuit = qml.QNode(qfunc, dev, diff_method=diff_method)
 
         x = np.array([0.05, 0.1, 0.2, 0.3, 0.5], requires_grad=True)
         y = np.array(0.1, requires_grad=False)
@@ -52,80 +54,25 @@ class TestSpecsTransform:
 
         assert info == circuit.specs
 
-        assert len(info) == 9
+        assert len(info) == len_info
 
-        assert info["by_size"] == defaultdict(int, {1: 2, 3: 1, 2: 1})
-        assert info["by_name"] == defaultdict(int, {"RX": 1, "Toffoli": 1, "CRY": 1, "Rot": 1})
+        assert info["gate_sizes"] == defaultdict(int, {1: 2, 3: 1, 2: 1})
+        assert info["gate_types"] == defaultdict(int, {"RX": 1, "Toffoli": 1, "CRY": 1, "Rot": 1})
         assert info["total_operations"] == 4
         assert info["total_observables"] == 2
         assert info["num_tape_wires"] == 3
         assert info["depth"] == 3
         assert info["num_device_wires"] == 4
-        assert info["device_name"] == "default.qubit.autograd"
-        assert info["diff_method"] == "backprop"
+        assert info["diff_method"] == diff_method
 
-    def test_specs_parametershift(self, qfunc):
-        """Test the specs transforms with with parametershift"""
-        dev = qml.device("default.qubit", wires=4)
+        if diff_method=="parameter-shift":
+            assert info["num_parameter_shift_executions"] == 7
 
-        circuit = qml.QNode(qfunc, dev, diff_method="parameter-shift")
-
-        x = np.array([0.05, 0.1, 0.2, 0.3, 0.5], requires_grad=True)
-        y = np.array(0.1, requires_grad=False)
-
-        info_func = qml.specs(circuit)
-
-        info = info_func(x, y, add_RY=False)
-
-        circuit(x, y, add_RY=False)
-
-        assert info == circuit.specs
-
-        assert len(info) == 11
-
-        assert info["by_size"] == defaultdict(int, {1: 2, 3: 1, 2: 1})
-        assert info["by_name"] == defaultdict(int, {"RX": 1, "Toffoli": 1, "CRY": 1, "Rot": 1})
-        assert info["total_operations"] == 4
-        assert info["total_observables"] == 2
-        assert info["num_tape_wires"] == 3
-        assert info["depth"] == 3
-        assert info["num_trainable_params"] == 4
-        assert info["num_parameter_shift_executions"] == 7
-
-        assert info["num_device_wires"] == 4
-        assert info["device_name"] == "default.qubit"
-        assert info["diff_method"] == "parameter-shift"
-
-    def test_specs_adjoint(self, qfunc):
-        """Test the specs transforms with with adjoint"""
-        dev = qml.device("default.qubit", wires=4)
-
-        circuit = qml.QNode(qfunc, dev, diff_method="adjoint")
-
-        x = np.array([0.05, 0.1, 0.2, 0.3, 0.5], requires_grad=True)
-        y = np.array(0.1, requires_grad=False)
-
-        info_func = qml.specs(circuit)
-
-        info = info_func(x, y, add_RY=False)
-
-        circuit(x, y, add_RY=False)
-
-        assert info == circuit.specs
-
-        assert len(info) == 10
-
-        assert info["by_size"] == defaultdict(int, {1: 2, 3: 1, 2: 1})
-        assert info["by_name"] == defaultdict(int, {"RX": 1, "Toffoli": 1, "CRY": 1, "Rot": 1})
-        assert info["total_operations"] == 4
-        assert info["total_observables"] == 2
-        assert info["num_tape_wires"] == 3
-        assert info["depth"] == 3
-        assert info["num_trainable_params"] == 4
-
-        assert info["num_device_wires"] == 4
-        assert info["device_name"] == "default.qubit"
-        assert info["diff_method"] == "adjoint"
+        if diff_method != "backprop":
+            assert info["device_name"] == "default.qubit"
+            assert info["num_trainable_params"] == 4
+        else:
+            assert info["device_name"] == "default.qubit.autograd"
 
     def test_max_expansion(self):
         """Test that a user can calculation specifications for a different max
