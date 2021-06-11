@@ -462,19 +462,19 @@ class DefaultQubit(QubitDevice):
             matrix in scipy coordinate list (COO) format or returns the :func:`~.expval` function
             from the parent class
         """
-        if observable.name == "SparseHamiltonian" and self.shots == None:
+        # if observable.name == "SparseHamiltonian" and self.shots == None:
+        #
+        #     state_sparse = scipy.sparse.coo_matrix(self.state)
+        #     state_trans = scipy.sparse.coo_matrix(self.state.reshape(len(self.state), 1))
+        #     h_sparse = observable.matrix
+        #
+        #     ev = scipy.sparse.coo_matrix.dot(
+        #         state_sparse, scipy.sparse.coo_matrix.dot(h_sparse, state_trans)
+        #     )
+        #
+        #     return np.real(ev.toarray()[0])
 
-            state_sparse = scipy.sparse.coo_matrix(self.state)
-            state_trans = scipy.sparse.coo_matrix(self.state.reshape(len(self.state), 1))
-            h_sparse = observable.matrix
-
-            ev = scipy.sparse.coo_matrix.dot(
-                state_sparse, scipy.sparse.coo_matrix.dot(h_sparse, state_trans)
-            )
-
-            return np.real(ev.toarray()[0])
-
-        return super().expval(observable)
+        return super().expval(observable, shot_range=None, bin_size=None)
 
     def _get_unitary_matrix(self, unitary):  # pylint: disable=no-self-use
         """Return the matrix representing a unitary operation.
