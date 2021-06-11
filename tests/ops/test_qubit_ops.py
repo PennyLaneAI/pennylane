@@ -809,7 +809,7 @@ class TestOperations:
         for i in reversed(res):
             if i.wires == Wires([3]):
                 # RY gate
-                mats.append(np.kron(np.eye(2), i.matrix))
+                mats.append(np.kron(i.matrix, np.eye(2)))
             else:
                 mats.append(i.matrix)
 
