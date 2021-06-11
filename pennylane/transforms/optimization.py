@@ -318,15 +318,8 @@ def single_qubit_fusion(tape):
         if current_gate.wires == next_gate.wires:
             list_copy.pop(next_gate_idx + 1)
 
-            if current_gate.name != "Rot":
-                current_gate_angles = convert_to_rot(current_gate)
-            else:
-                current_gate_angles = current_gate.parameters
-
-            if next_gate.name != "Rot":
-                next_gate_angles = convert_to_rot(next_gate)
-            else:
-                next_gate_angles = next_gate.parameters
+            current_gate_angles = current_gate.as_rot_angles()
+            next_gate_angles = next_gate.as_rot_angles()
 
             combined_angles = fuse_rot(current_gate_angles, next_gate_angles)
 
