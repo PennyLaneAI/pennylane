@@ -22,8 +22,9 @@ from pennylane import numpy as np
 class TestSpecsTransform:
     """Tests for the transform specs"""
 
-    @pytest.mark.parametrize("diff_method, len_info", [("backprop", 10), ("parameter-shift", 12), 
-        ("adjoint", 11)])
+    @pytest.mark.parametrize(
+        "diff_method, len_info", [("backprop", 10), ("parameter-shift", 12), ("adjoint", 11)]
+    )
     def test_empty(self, diff_method, len_info):
 
         dev = qml.device("default.qubit", wires=1)
@@ -58,8 +59,9 @@ class TestSpecsTransform:
         else:
             assert info["device_name"] == "default.qubit.autograd"
 
-    @pytest.mark.parametrize("diff_method, len_info", [("backprop", 10), ("parameter-shift", 12), 
-        ("adjoint", 11)])
+    @pytest.mark.parametrize(
+        "diff_method, len_info", [("backprop", 10), ("parameter-shift", 12), ("adjoint", 11)]
+    )
     def test_specs(self, diff_method, len_info):
         """Test the specs transforms works in standard situations"""
         dev = qml.device("default.qubit", wires=4)
@@ -97,7 +99,7 @@ class TestSpecsTransform:
         assert info["num_device_wires"] == 4
         assert info["diff_method"] == diff_method
 
-        if diff_method=="parameter-shift":
+        if diff_method == "parameter-shift":
             assert info["num_parameter_shift_executions"] == 7
 
         if diff_method != "backprop":
@@ -106,12 +108,13 @@ class TestSpecsTransform:
         else:
             assert info["device_name"] == "default.qubit.autograd"
 
-    @pytest.mark.parametrize("diff_method, len_info", [("backprop", 10), ("parameter-shift", 11), 
-        ("adjoint", 11)])
+    @pytest.mark.parametrize(
+        "diff_method, len_info", [("backprop", 10), ("parameter-shift", 11), ("adjoint", 11)]
+    )
     def test_specs_state(self, diff_method, len_info):
         """Test specs works when state returned"""
 
-        dev = qml.device('default.qubit', wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit():
@@ -126,7 +129,6 @@ class TestSpecsTransform:
 
         assert info["total_observables"] == 1
         assert info["total_diagonalizing_gates"] == 0
-
 
     def test_max_expansion(self):
         """Test that a user can calculation specifications for a different max

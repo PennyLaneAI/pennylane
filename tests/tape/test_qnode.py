@@ -1033,8 +1033,9 @@ class TestSpecs:
         with pytest.raises(qml.QuantumFunctionError, match=r"The QNode specifications"):
             circuit.specs
 
-    @pytest.mark.parametrize("diff_method, len_info", [("backprop", 10), ("parameter-shift", 12), 
-        ("adjoint", 11)])
+    @pytest.mark.parametrize(
+        "diff_method, len_info", [("backprop", 10), ("parameter-shift", 12), ("adjoint", 11)]
+    )
     def test_specs(self, diff_method, len_info):
         """Tests the specs property with backprop"""
 
@@ -1065,10 +1066,10 @@ class TestSpecs:
         assert info["num_used_wires"] == 3
         assert info["depth"] == 3
         assert info["num_device_wires"] == 4
-        
+
         assert info["diff_method"] == diff_method
 
-        if diff_method=="parameter-shift":
+        if diff_method == "parameter-shift":
             assert info["num_parameter_shift_executions"] == 7
 
         if diff_method != "backprop":
