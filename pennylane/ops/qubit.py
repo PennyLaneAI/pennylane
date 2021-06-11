@@ -96,6 +96,15 @@ class Hadamard(Observable, Operation):
     def adjoint(self):
         return Hadamard(wires=self.wires)
 
+    def as_rot_angles(self):
+        r"""Express the Hadamard operation as a sequence of 3 single-qubit rotations in
+        the form of ``Rot``, i.e., :math:`H = RZ(\pi) RY(\pi/2) RZ(0)`.
+
+        Returns:
+            list(float): The set of angle inputs to ``Rot`` to yield a Hadamard gate.
+        """
+        return [np.pi, np.pi / 2, 0.0]
+
 
 class PauliX(Observable, Operation):
     r"""PauliX(wires)
@@ -154,6 +163,16 @@ class PauliX(Observable, Operation):
 
     def _controlled(self, wire):
         CNOT(wires=Wires(wire) + self.wires)
+
+    def as_rot_angles(self):
+        r"""Express the Pauli :math:`X` operation as a sequence of 3 single-qubit
+        rotations in the form of ``Rot``, i.e., :math:`X = RZ(-\pi/2) RY(\pi) RZ(\pi/2)`.
+
+        Returns:
+            list(float): The set of angle inputs to ``Rot`` to yield a Pauli :math:`X` gate.
+
+        """
+        return [np.pi / 2, np.pi, -np.pi / 2]
 
 
 class PauliY(Observable, Operation):
@@ -216,6 +235,15 @@ class PauliY(Observable, Operation):
     def _controlled(self, wire):
         CY(wires=Wires(wire) + self.wires)
 
+    def as_rot_angles(self):
+        r"""Express the Pauli :math:`Y` operation as a sequence of 3 single-qubit
+        rotations in the form of ``Rot``, i.e., :math:`Y = RZ(0) RY(\pi) RZ(0)`.
+
+        Returns:
+            list(float): The set of angle inputs to ``Rot`` to yield a Pauli :math:`Y` gate.
+        """
+        return [0.0, np.pi, 0.0]
+
 
 class PauliZ(Observable, DiagonalOperation):
     r"""PauliZ(wires)
@@ -260,6 +288,15 @@ class PauliZ(Observable, DiagonalOperation):
     def _controlled(self, wire):
         CZ(wires=Wires(wire) + self.wires)
 
+    def as_rot_angles(self):
+        r"""Express the Pauli :math:`Z` operation as a sequence of 3 single-qubit
+        rotations in the form of ``Rot``, i.e., :math:`Y = RZ(\pi) RY(0) RZ(0)`.
+
+        Returns:
+            list(float): The set of angle inputs to ``Rot`` to yield a Pauli :math:`Z` gate.
+        """
+        return [np.pi, 0.0, 0.0]
+
 
 class S(DiagonalOperation):
     r"""S(wires)
@@ -298,6 +335,16 @@ class S(DiagonalOperation):
     def adjoint(self):
         return S(wires=self.wires).inv()
 
+    def as_rot_angles(self):
+        r"""Express the :math:`S` operation as a sequence of 3 single-qubit rotations in
+        the form of ``Rot``, i.e., :math:`S = RZ(\pi/2) RY(0) RZ(0)`.
+
+        Returns:
+            list(float): The set of angle inputs to ``Rot`` to yield an :math:`S` gate.
+
+        """
+        return [np.pi / 2, 0.0, 0.0]
+
 
 class T(DiagonalOperation):
     r"""T(wires)
@@ -335,6 +382,16 @@ class T(DiagonalOperation):
 
     def adjoint(self):
         return T(wires=self.wires).inv()
+
+    def as_rot_angles(self):
+        r"""Express the :math:`T` operation as a sequence of 3 single-qubit rotations in
+        the form of ``Rot``, i.e., :math:`T = RZ(\pi/4) RY(0) RZ(0)`.
+
+        Returns:
+            list(float): The set of angle inputs to ``Rot`` to yield a :math:`T` gate.
+
+        """
+        return [np.pi / 4, 0.0, 0.0]
 
 
 class SX(Operation):
@@ -770,6 +827,16 @@ class RX(Operation):
     def _controlled(self, wire):
         CRX(*self.parameters, wires=wire + self.wires)
 
+    def as_rot_angles(self):
+        r"""Express the :math:`RX` operation as a sequence of 3 single-qubit rotations in
+        the form of ``Rot``, i.e., :math:`RX(\theta) = RZ(-\pi/2) RY(\theta) RZ(\pi/2)`.
+
+        Returns:
+            list(float): The set of angle inputs to ``Rot`` to yield an :math:`RX(\theta)` gate.
+
+        """
+        return [np.pi / 2, self.data[0], -np.pi / 2]
+
 
 class RY(Operation):
     r"""RY(phi, wires)
@@ -811,6 +878,15 @@ class RY(Operation):
 
     def _controlled(self, wire):
         CRY(*self.parameters, wires=wire + self.wires)
+
+    def as_rot_angles(self):
+        r"""Express the :math:`RY` operation as a sequence of 3 single-qubit rotations in
+        the form of ``Rot``, i.e., :math:`RY(\theta) = RZ(0) RY(\theta) RZ(0)`.
+
+        Returns:
+            list(float): The set of angle inputs to ``Rot`` to yield an :math:`RY(\theta)` gate.
+        """
+        return [0.0, self.data[0], 0.0]
 
 
 class RZ(DiagonalOperation):
@@ -860,6 +936,15 @@ class RZ(DiagonalOperation):
     def _controlled(self, wire):
         CRZ(*self.parameters, wires=wire + self.wires)
 
+    def as_rot_angles(self):
+        r"""Express the :math:`RZ` operation as a sequence of 3 single-qubit rotations in
+        the form of ``Rot``, i.e., :math:`RZ(\theta) = RZ(\theta) RY(0) RZ(0)`.
+
+        Returns:
+            list(float): The set of angle inputs to ``Rot`` to yield an :math:`RZ(\theta)` gate.
+        """
+        return [self.data[0], 0.0, 0.0]
+
 
 class PhaseShift(DiagonalOperation):
     r"""PhaseShift(phi, wires)
@@ -908,6 +993,15 @@ class PhaseShift(DiagonalOperation):
 
     def _controlled(self, wire):
         ControlledPhaseShift(*self.parameters, wires=wire + self.wires)
+
+    def as_rot_angles(self):
+        r"""Express the ``PhaseShift`` operation as a sequence of 3 single-qubit rotations in
+        the form of ``Rot``, i.e., ``PhaseShift``:math:`(\theta) = RZ(\theta) RY(0) RZ(0)`.
+
+        Returns: list(float): The set of angle inputs to ``Rot`` to yield a
+            ``PhaseShift``:math:`(\theta)` gate.
+        """
+        return [self.data[0], 0.0, 0.0]
 
 
 class ControlledPhaseShift(DiagonalOperation):
