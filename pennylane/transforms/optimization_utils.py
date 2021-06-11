@@ -89,6 +89,16 @@ def fuse_rot(angles_1, angles_2):
         array[float]: A tuple of rotation angles for a single ``qml.Rot`` operation
         that implements the same operation as the two sets of input angles.
     """
+    are_angles_1_zero =  allclose(np.array(angles_1), np.zeros(3))
+    are_angles_2_zero =  allclose(np.array(angles_2), np.zeros(3))
+
+    if are_angles_1_zero and are_angles_2_zero:
+        return np.array([0.0, 0.0, 0.0])
+    elif are_angles_1_zero:
+        return np.array(angles_2)
+    elif are_angles_2_zero:
+        return np.array(angles_1)
+
     # RZ(a) RY(b) RZ(c) fused with RZ(d) RY(e) RZ(f)
     # first produces RZ(a) RY(b) RZ(c+d) RY(e) RZ(f)
     leftmost_z_init = angles_1[0]
