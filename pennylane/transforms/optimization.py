@@ -392,8 +392,8 @@ def diag_behind_controls(tape):
             list_copy.pop(0)
             continue
 
-        # Find the next gate that acts on the same wires
-        next_gate_idx = _find_next_gate(current_gate.wires, list_copy[1:])
+        # Find the next gate that uses the control wire
+        next_gate_idx = _find_next_gate(Wires(current_gate.wires[0]), list_copy[1:])
 
         # If no such gate is found (either there simply is none, or there are other gates
         # "in the way", queue the operation and move on
@@ -421,7 +421,7 @@ def diag_behind_controls(tape):
             else:
                 break
 
-            next_gate_idx = _find_next_gate(current_gate.wires, list_copy[1:])
+            next_gate_idx = _find_next_gate(Wires(current_gate.wires[0]), list_copy[1:])
 
         # After we have found all possible diagonal gates to push through the control,
         # we must still apply the original gate
