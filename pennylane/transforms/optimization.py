@@ -17,6 +17,7 @@ from pennylane import numpy as np
 
 from pennylane.wires import Wires
 from pennylane.transforms import qfunc_transform
+from pennylane.operation import DiagonalOperation
 from pennylane.ops.qubit import Rot
 
 from pennylane.math import allclose
@@ -25,8 +26,8 @@ from .optimization_utils import fuse_rot
 
 
 def _find_next_gate(wires, op_list):
-    """Given a list of operations, finds the next operation that acts on the same
-    set of wires, in the same order, if one is present.
+    """Given a list of operations, finds the next operation that acts on at least one of
+    the same set of wires, if present.
 
     Args:
         wires (Wires): A set of wires acted on by a quantum operation.
@@ -34,27 +35,14 @@ def _find_next_gate(wires, op_list):
             operation that acts on ``wires``.
 
     Returns:
-        int or None: The index, in `op_list`, of the earliest gate that uses the same
-            set of wires, or None if no such gate is present (e.g., the target wires are used
-            in other gates that "block" potential gate adjacency)
+        int or None: The index, in `op_list`, of the earliest gate that uses one or more
+            of the same wires, or None if no such gate is present.
     """
     next_gate_idx = None
 
     for op_idx, op in enumerate(op_list):
-        # If there are no unique wires, then the wires are the same and we're done
-        if len(Wires.unique_wires([wires, op.wires])) == 0:
+        if len(Wires.shared_wires([wires, op.wires])) > 0:
             next_gate_idx = op_idx
-            break
-
-        # If the sets of wires are not identical, check if any wires are
-        # shared; if they are not (i.e., the next operation is on disjoint qubits),
-        # then we can still keep looking
-        elif len(Wires.shared_wires([wires, op.wires])) == 0:
-            op_idx += 1
-
-        # If there are some shared wires, this gate is separated from where its
-        # inverse might be, so we must stop
-        else:
             break
 
     return next_gate_idx
@@ -123,8 +111,7 @@ def cancel_inverses(tape):
         # If a gate does has a self-inverse, find the next gate that acts on the same wires
         next_gate_idx = _find_next_gate(current_gate.wires, list_copy[1:])
 
-        # If no such gate is found (either there simply is none, or there are other gates
-        # "in the way", queue the operation and move on
+        # If no such gate is found queue the operation and move on
         if next_gate_idx is None:
             current_gate.queue()
             list_copy.pop(0)
@@ -134,17 +121,26 @@ def cancel_inverses(tape):
         next_gate = list_copy[next_gate_idx + 1]
 
         # If next gate is the same (self inverse), we can potentially remove it
+        # This implicitly ensures that the number of wires for the gates is also the same
         if current_gate.name == next_gate.name:
             # If the wires are the same, then we can safely remove
             if current_gate.wires == next_gate.wires:
                 list_copy.pop(next_gate_idx + 1)
-            # If wires are not equal, need to check if the inverse is asymmetric;
-            # if it is not, then we can't cancel and have to queue it
+            # If wires are not equal, there are two things that can happen
             else:
-                if current_gate.is_symmetric_over_wires:
-                    list_copy.pop(next_gate_idx + 1)
-                else:
+                # There is not full overlap in the wires
+                if len(Wires.shared_wires([current_gate.wires, next_gate.wires])) != len(
+                    current_gate.wires
+                ):
                     current_gate.queue()
+                # There is full overlap, but the wires are in a different order
+                else:
+                    # If the wires are in a different order, only gates that are "symmetric"
+                    # over the wires (e.g., CZ), can be cancelled.
+                    if current_gate.is_symmetric_over_wires:
+                        list_copy.pop(next_gate_idx + 1)
+                    else:
+                        current_gate.queue()
         # Otherwise, queue and move on to the next item
         else:
             current_gate.queue()
@@ -337,6 +333,8 @@ def single_qubit_fusion(tape):
                 # Merge the angles
                 next_gate_angles = next_gate.as_rot_angles()
                 cumulative_angles = fuse_rot(cumulative_angles, next_gate_angles)
+            else:
+                break
 
             next_gate_idx = _find_next_gate(current_gate.wires, list_copy[1:])
 
@@ -345,6 +343,89 @@ def single_qubit_fusion(tape):
             Rot(*cumulative_angles, wires=current_gate.wires).queue()
 
         # Remove the starting gate from the list
+        list_copy.pop(0)
+
+    # Queue the measurements normally
+    for m in tape.measurements:
+        m.queue()
+
+
+@qfunc_transform
+def diag_behind_controls(tape):
+    """Quantum function transform to push controlled gates past diagonal gates that occur
+    afterwards on the control qubit.
+
+    Args:
+        tape (.QuantumTape): A quantum tape.
+
+    **Example**
+
+    Consider the following quantum function.
+
+    .. code-block:: python
+
+        def qfunc_with_many_rots():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.T(wires=0)
+            return qml.expval(qml.PauliX(0))
+
+    In this circuit, the ``PauliZ`` and the ``CNOT`` commute; this means
+    that the they can swap places, and then the ``PauliZ`` can be fused with the
+    ``Hadamard`` gate if desired:
+
+    >>> optimized_qfunc = qml.compile(pipeline=[diag_behind_controls, single_qubit_fusion])(qfunc)
+    >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
+    >>> print(qml.draw(optimized_qnode)())
+    0: ──Rot(3.14, 1.57, 0.785)──╭C──┤ ⟨X⟩
+    1: ──────────────────────────╰X──┤
+    """
+    # Make a working copy of the list to traverse
+    list_copy = tape.operations.copy()
+
+    while len(list_copy) > 0:
+        current_gate = list_copy[0]
+
+        # Consider only two-qubit gates
+        if current_gate.num_wires != 2:
+            current_gate.queue()
+            list_copy.pop(0)
+            continue
+
+        # Find the next gate that acts on the same wires
+        next_gate_idx = _find_next_gate(current_gate.wires, list_copy[1:])
+
+        # If no such gate is found (either there simply is none, or there are other gates
+        # "in the way", queue the operation and move on
+        if next_gate_idx is None:
+            current_gate.queue()
+            list_copy.pop(0)
+            continue
+
+        # Loop as long as a valid next gate exists
+        while next_gate_idx is not None:
+            # Get the next gate
+            next_gate = list_copy[next_gate_idx + 1]
+
+            # If it is not a single-qubit gate, we can't push it through, so stop.
+            if len(next_gate.wires) != 1:
+                break
+
+            # Valid next gates must be diagonal, and must share the *control* wire
+            if (
+                isinstance(next_gate, DiagonalOperation)
+                and next_gate.wires[0] == current_gate.wires[0]
+            ):
+                list_copy.pop(next_gate_idx + 1)
+                next_gate.queue()
+            else:
+                break
+
+            next_gate_idx = _find_next_gate(current_gate.wires, list_copy[1:])
+
+        # After we have found all possible diagonal gates to push through the control,
+        # we must still apply the original gate
+        current_gate.queue()
         list_copy.pop(0)
 
     # Queue the measurements normally
