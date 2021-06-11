@@ -128,26 +128,52 @@ class TestCompile:
             assert op_obtained.wires == op_expected.wires
             assert np.allclose(op_obtained.parameters, op_expected.parameters)
 
-    def test_two_pass(self):
-        """Test that two passes of a pipeline produce the expected result"""
+    @pytest.mark.parametrize(
+        ("gate_type", "angles"),
+        [
+            (qml.RX, [0.1, 0.2, 0.3, 0.4, 0.5]),
+            (qml.RY, [0.01]),
+            (qml.RZ, [0.25, 0.8, 0.98]),
+            (qml.PhaseShift, [-0.1, 0.5]),
+        ],
+    )
+    def test_cumulative_merge_one_qubit_single_parameter_nonzero(self, gate_type, angles):
+        """Test that multiple adjacent instances of a single-qubit gate get merged in one pass"""
 
         def qfunc_with_many_rots():
-            qml.RX(0.1, wires=0)
-            qml.RX(0.2, wires=0)
-            qml.RX(0.3, wires=0)
-            qml.RX(0.4, wires=0)
-            qml.RX(0.5, wires=0)
+            for angle in angles:
+                gate_type(angle, wires=0)
 
-        two_passes = compile(pipeline=[merge_rotations], num_passes=2)(qfunc_with_many_rots)
-        ops_two_passes = qml.transforms.make_tape(two_passes)().operations
+        compiled_qfunc = compile(pipeline=[merge_rotations], num_passes=1)(qfunc_with_many_rots)
+        ops = qml.transforms.make_tape(compiled_qfunc)().operations
 
-        assert len(ops_two_passes) == 2
+        assert len(ops) == 1
 
-        assert ops_two_passes[0].name == "RX"
-        assert ops_two_passes[0].parameters[0] == 1.0
+        assert ops[0].name == gate_type(0, wires=0).name
+        assert ops[0].parameters[0] == sum(angles)
 
-        assert ops_two_passes[1].name == "RX"
-        assert ops_two_passes[1].parameters[0] == 0.5
+    @pytest.mark.parametrize(
+        ("gate_type", "angles"),
+        [
+            (qml.CRX, [0.1, 0.2, 0.3, 0.4, 0.5]),
+            (qml.CRY, [0.01]),
+            (qml.CRZ, [0.25, 0.8, 0.98]),
+        ],
+    )
+    def test_cumulative_merge_two_qubit_single_parameter_nonzero(self, gate_type, angles):
+        """Test that multiple adjacent instances of a two-qubit gate get merged in one pass."""
+
+        def qfunc_with_many_rots():
+            for angle in angles:
+                gate_type(angle, wires=[0, 1])
+
+        compiled_qfunc = compile(pipeline=[merge_rotations], num_passes=1)(qfunc_with_many_rots)
+        ops = qml.transforms.make_tape(compiled_qfunc)().operations
+
+        assert len(ops) == 1
+
+        assert ops[0].name == gate_type(0, wires=[0, 1]).name
+        assert ops[0].parameters[0] == sum(angles)
 
     def test_basis_expansion(self):
         """Test that two passes of a pipeline produce the expected result"""

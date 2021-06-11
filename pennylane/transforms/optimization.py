@@ -215,7 +215,7 @@ def merge_rotations(tape):
             list_copy.pop(0)
             continue
 
-        # Find the next gate that acts on the same wires
+        # Otherwise, find the next gate that acts on the same wires
         next_gate_idx = _find_next_gate(current_gate.wires, list_copy[1:])
 
         # If no such gate is found (either there simply is none, or there are other gates
@@ -225,27 +225,36 @@ def merge_rotations(tape):
             list_copy.pop(0)
             continue
 
-        # Otherwise, get the next gate
-        next_gate = list_copy[next_gate_idx + 1]
+        # Cumulative rotation angle(s)
+        cumulative_angles = current_gate.parameters
 
-        # If next gate is the same, we can potentially remove it
-        if current_gate.name == next_gate.name and current_gate.wires == next_gate.wires:
-            list_copy.pop(next_gate_idx + 1)
+        # As long as there is a valid next gate, check if we can merge the angles
+        while next_gate_idx is not None:
+            # Get the next gate
+            next_gate = list_copy[next_gate_idx + 1]
 
-            # The Rot gate must be treated separately
-            if current_gate.name == "Rot":
-                combined_angles = fuse_rot(current_gate.parameters, next_gate.parameters)
-            # Other, single-parameter rotation gates just have the angle summed
+            # If next gate is of the same type, we can merge the angles
+            if current_gate.name == next_gate.name and current_gate.wires == next_gate.wires:
+                list_copy.pop(next_gate_idx + 1)
+
+                # The Rot gate must be treated separately
+                if current_gate.name == "Rot":
+                    cumulative_angles = fuse_rot(cumulative_angles, next_gate.parameters)
+                # Other, single-parameter rotation gates just have the angle summed
+                else:
+                    cumulative_angles[0] = cumulative_angles[0] + next_gate.parameters[0]
+            # If it is not, we need to stop
             else:
-                combined_angles = np.array([current_gate.parameters[0] + next_gate.parameters[0]])
+                break
 
-            # If the cumulative angle is not close to 0, apply the gate
-            if not allclose(combined_angles, np.zeros(len(combined_angles))):
-                tape.append(type(current_gate)(*combined_angles, wires=current_gate.wires))
-        else:
-            current_gate.queue()
+            # If we did merge, look now at the next gate
+            next_gate_idx = _find_next_gate(current_gate.wires, list_copy[1:])
 
-        # Remove this gate from the working list
+        # If the cumulative angle is not close to 0, apply the cumulative gate
+        if not allclose(np.array(cumulative_angles), np.zeros(len(cumulative_angles))):
+            type(current_gate)(*cumulative_angles, wires=current_gate.wires).queue()
+
+        # Remove the first gate gate from the working list
         list_copy.pop(0)
 
     # Queue the measurements normally
