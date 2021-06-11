@@ -725,7 +725,7 @@ class QNode:
         """Resource information about a quantum circuit.
 
         Returns:
-            a dictionary listing properties of the qnode
+        dict[str, Union[defaultdict,int]]: dictionaries that contain QNode specifications
 
         **Example**
 

@@ -17,7 +17,8 @@
 def specs(qnode, max_expansion=None):
     """Resource information about a quantum circuit.
 
-    This transform performs a tape construction without execution in order to access ``QNode.specs``.
+    This transform converts a QNode into a callable that provides resource information
+    about the circuit.
 
     Args:
         qnode (.QNode): the QNode to calculate the specifications for
@@ -28,7 +29,7 @@ def specs(qnode, max_expansion=None):
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function
-        returns a dictionary of information about qnode structure
+        returns a dictionary of information about qnode structure.
 
     **Example**
 
@@ -79,7 +80,7 @@ def specs(qnode, max_expansion=None):
                     calculating the derivative
 
         Returns:
-            dict: information about qnode structure
+            dict[str, Union[defaultdict,int]]: dictionaries that contain QNode specifications
         """
         if max_expansion is not None:
             initial_max_expansion = qnode.max_expansion

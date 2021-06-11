@@ -418,7 +418,7 @@ class QubitParamShiftTape(JacobianTape):
         >>> tape.specs['gate_types']['RX']
         0
 
-        In Parameter shift tapes, the number of device executions necessary for a gradient
+        In parameter-shift tapes, the number of device executions necessary for a gradient
         is calulated as well:
 
         >>> tape.specs['num_parameter_shift_executions]

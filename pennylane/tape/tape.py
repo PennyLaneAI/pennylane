@@ -1007,7 +1007,7 @@ class QuantumTape(AnnotatedQueue):
         """
 
         warnings.warn(
-            "``tape.get_resources``is now deprecated and will be removed in v0.17 "
+            "``tape.get_resources``is now deprecated and will be removed in v0.17. "
             "Please use the more general ``tape.specs`` instead.",
             UserWarning,
         )
@@ -1041,7 +1041,7 @@ class QuantumTape(AnnotatedQueue):
         """
 
         warnings.warn(
-            "``tape.get_depth`` is now deprecated and will be removed in v0.17 "
+            "``tape.get_depth`` is now deprecated and will be removed in v0.17. "
             "Please use the more general ``tape.specs`` instead.",
             UserWarning,
         )
