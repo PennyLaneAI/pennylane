@@ -747,6 +747,7 @@ class QNode:
         'gate_types': defaultdict(int, {'RX': 1, 'RY': 1, 'CNOT': 1}),
         'total_operations': 3,
         'total_observables': 1,
+        'total_diagonalizing_gates': 0,
         'num_used_wires': 2,
         'depth': 2,
         'num_device_wires': 2,

@@ -48,6 +48,7 @@ def specs(qnode, max_expansion=None):
     'gate_types': defaultdict(int, {'RX': 1, 'CNOT': 1}),
     'total_operations': 2,
     'total_observables': 1,
+    'total_diagonalizing_gates': 0,
     'num_used_wires': 2,
     'depth': 2,
     'num_device_wires': 2,

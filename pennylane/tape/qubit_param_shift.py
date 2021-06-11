@@ -427,7 +427,7 @@ class QubitParamShiftTape(JacobianTape):
         """
 
         info = super().specs
-        
+
         if any(m.return_type is qml.operation.State for m in self.measurements):
             return info
 
