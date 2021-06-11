@@ -102,6 +102,7 @@ class Hadamard(Observable, Operation):
 
         Returns:
             list(float): The set of angle inputs to ``Rot`` to yield a Hadamard gate.
+            list(float): The set of angle inputs to ``Rot`` to yield a Hadamard
         """
         return [np.pi, np.pi / 2, 0.0]
 
@@ -169,8 +170,8 @@ class PauliX(Observable, Operation):
         rotations in the form of ``Rot``, i.e., :math:`X = RZ(-\pi/2) RY(\pi) RZ(\pi/2)`.
 
         Returns:
-            list(float): The set of angle inputs to ``Rot`` to yield a Pauli :math:`X` gate.
-
+            list(float): The set of angle inputs to ``Rot`` to yield a Pauli :math:`X` gate
+            (up to a phase).
         """
         return [np.pi / 2, np.pi, -np.pi / 2]
 
@@ -389,7 +390,6 @@ class T(DiagonalOperation):
 
         Returns:
             list(float): The set of angle inputs to ``Rot`` to yield a :math:`T` gate.
-
         """
         return [np.pi / 4, 0.0, 0.0]
 
@@ -435,6 +435,16 @@ class SX(Operation):
 
     def adjoint(self):
         return SX(wires=self.wires).inv()
+
+    def as_rot_angles(self):
+        r"""Express the :math:`SX` operation as a sequence of 3 single-qubit rotations in
+        the form of ``Rot``, i.e., :math:`X = RZ(-\pi/2) RY(\pi/2) RZ(\pi/2)`.
+
+        Returns:
+            list(float): The set of angle inputs to ``Rot`` to yield a Pauli :math:`SX` gate
+            up to a phase.
+        """
+        return [np.pi / 2, np.pi / 2, -np.pi / 2]
 
 
 class CNOT(Operation):
