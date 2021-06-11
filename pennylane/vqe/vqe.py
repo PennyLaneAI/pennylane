@@ -533,6 +533,9 @@ class ExpvalCost:
         if kwargs.get("measure", "expval") != "expval":
             raise ValueError("ExpvalCost can only be used to construct sums of expectation values.")
 
+        # Before processing, we simplify the Hamiltonian
+        hamiltonian.simplify()
+
         coeffs, observables = hamiltonian.terms
 
         self.hamiltonian = hamiltonian
