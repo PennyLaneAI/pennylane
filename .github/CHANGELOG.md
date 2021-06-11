@@ -503,6 +503,10 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where multiple identical Hamiltonian terms will produce a
+  different result with ``optimize=True`` using ``ExpvalCost``.
+  [(#1405)](https://github.com/XanaduAI/pennylane/pull/1405)
+
 * Fixes bug where `shots=None` was not reset when changing shots temporarily in a QNode call
   like `circuit(0.1, shots=3)`.
   [(#1392)](https://github.com/XanaduAI/pennylane/pull/1392)
