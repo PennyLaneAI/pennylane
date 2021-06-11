@@ -42,14 +42,15 @@ class QubitParamShiftTape(JacobianTape):
 
     **Gradients of expectation values**
 
-    For a variational evolution :math:`U(mathbf{p})\vert 0\rangle` with :math:`N` parameters :math:`mathbf{p}`,
+    For a variational evolution :math:`U(\mathbf{p}) \vert 0\rangle` with
+    :math:`N` parameters :math:`\mathbf{p}`,
 
     consider the expectation value of an observable :math:`O`:
 
     .. math::
 
-        f(mathbf{p})  = \langle hat{O} \rangle(mathbf{p}) = \langle 0 \vert
-        U(mathbf{p})^\dagger hat{O} U(mathbf{p}) \vert 0\rangle.
+        f(\mathbf{p})  = \langle \hat{O} \rangle(\mathbf{p}) = \langle 0 \vert
+        U(\mathbf{p})^\dagger \hat{O} U(\mathbf{p}) \vert 0\rangle.
 
 
     The gradient of this expectation value can be calculated using :math:`2N` expectation
@@ -57,26 +58,31 @@ class QubitParamShiftTape(JacobianTape):
 
     .. math::
 
-        \frac{\partial f}{\partial mathbf{p}} = \frac{1}{2\sin s} \left[ f(mathbf{p} + s) -
-        f(mathbf{p} -s) \right].
+        \frac{\partial f}{\partial \mathbf{p}} = \frac{1}{2\sin s} \left[ f(\mathbf{p} + s) -
+        f(\mathbf{p} -s) \right].
 
     **Gradients of variances**
 
     We can extend this to the variance,
-    :math:`g(mathbf{p})=\langle hat{O}^2 \rangle (mathbf{p}) - [\langle hat{O} \rangle(mathbf{p})]^2`,
+    :math:`g(\mathbf{p})=\langle \hat{O}^2 \rangle (\mathbf{p}) - [\langle \hat{O}
+    \rangle(\mathbf{p})]^2`,
     by noting that:
 
     .. math::
 
-        \frac{\partial g}{\partial mathbf{p}}= \frac{\partial}{\partial mathbf{p}} \langle hat{O}^2 \rangle (mathbf{p})
-        - 2 f(mathbf{p}) \frac{\partial f}{\partial mathbf{p}}.
+        \frac{\partial g}{\partial \mathbf{p}}= \frac{\partial}{\partial
+        \mathbf{p}} \langle \hat{O}^2 \rangle (\mathbf{p})
+        - 2 f(\mathbf{p}) \frac{\partial f}{\partial \mathbf{p}}.
 
     This results in :math:`4N + 1` evaluations.
 
-    In the case where :math:`O` is involutory (:math:`hat{O}^2 = I`), the first term in the above
+    In the case where :math:`O` is involutory (:math:`\hat{O}^2 = I`), the first term in the above
     expression vanishes, and we are simply left with
 
-    .. math:: \frac{\partial g}{\partial mathbf{p}} = - 2 f(mathbf{p}) \frac{\partial f}{\partial mathbf{p}},
+    .. math::
+
+      \frac{\partial g}{\partial \mathbf{p}} = - 2 f(\mathbf{p})
+      \frac{\partial f}{\partial \mathbf{p}},
 
     allowing us to compute the gradient using :math:`2N + 1` evaluations.
     """
