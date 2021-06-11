@@ -3032,7 +3032,26 @@ class Projector(Observable):
 
 
 class SparseHamiltonian(Observable):
-    r""" """
+    r"""SparseHamiltonian(H)
+    A sparse matrix Hamiltonian observable.
+
+    The expectation value of this observable is
+
+    .. math::
+        E = \langle \psi | H | \psi \rangle
+
+    which is computed directly with a sparse matrix-vector multiplication operation.
+
+    **Details:**
+
+    * Number of wires: Any
+    * Number of parameters: 1
+    * Gradient recipe: None
+
+    Args:
+        H (coo_matrix): a sparse matrix in scipy coordinate list (COO) format with dimension
+        :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
+    """
     num_wires = AnyWires
     num_params = 1
     par_domain = None
