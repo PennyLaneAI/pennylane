@@ -724,7 +724,7 @@ class QNode:
     def specs(self):
         """
         Returns:
-            A dictionary of information about qnode structure
+            a dictionary listing properties of the qnode
 
         **Example**
 
@@ -769,7 +769,7 @@ class QNode:
         else:
             info["diff_method"] = self.qtape.jacobian_options["method"]
 
-        # tape's do not accurately track parameters for backprop
+        # tapes do not accurately track parameters for backprop
         # TODO: calculate number of trainable parameters in backprop
         # find better syntax for determining if backprop
         if info["diff_method"] == "backprop":

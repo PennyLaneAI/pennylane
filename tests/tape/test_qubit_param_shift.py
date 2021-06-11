@@ -87,7 +87,7 @@ class TestGradMethod:
 
 
 def test_specs_num_parameter_shift_executions():
-    """Tests specs has the correct number of ps executions"""
+    """Tests specs has the correct number of parameter-shift executions"""
 
     dev = qml.device("default.qubit", wires=3)
     x = 0.543

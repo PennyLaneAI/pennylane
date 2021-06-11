@@ -1033,7 +1033,7 @@ class TestSpecs:
         return qfunc_inner
 
     def test_specs_error(self, qfunc):
-        """Tests an error is raised if tape is not constructed."""
+        """Tests an error is raised if the tape is not constructed."""
 
         dev = qml.device("default.qubit", wires=4)
 
@@ -1043,7 +1043,7 @@ class TestSpecs:
             circuit.specs
 
     def test_specs_backprop(self, qfunc):
-        """Tests specs property with backprop"""
+        """Tests the specs property with backprop"""
 
         dev = qml.device("default.qubit", wires=4)
 
@@ -1069,7 +1069,7 @@ class TestSpecs:
         assert info["diff_method"] == "backprop"
 
     def test_specs_parametershift(self, qfunc):
-        """Tests specs property with parameter-shift"""
+        """Tests the specs property with parameter-shift"""
 
         dev = qml.device("default.qubit", wires=4)
 
@@ -1098,7 +1098,7 @@ class TestSpecs:
         assert info["diff_method"] == "parameter-shift"
 
     def test_specs_adjoint(self, qfunc):
-        """Tests specs property with adjoint"""
+        """Tests the specs property with adjoint"""
 
         dev = qml.device("default.qubit", wires=4)
 

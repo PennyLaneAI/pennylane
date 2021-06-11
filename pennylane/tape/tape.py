@@ -1053,10 +1053,10 @@ class QuantumTape(AnnotatedQueue):
 
     @property
     def specs(self):
-        """Resource requirements of a quantum circuit.
+        """Resource information about a quantum circuit.
 
         Returns:
-            dict[str, Union[defaultdict,int]]: how many times constituent operations are applied
+            dict[str, Union[defaultdict,int]]: dictionaries that contain information on how many times constituent operations are applied
 
         **Example**
 
@@ -1071,14 +1071,14 @@ class QuantumTape(AnnotatedQueue):
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        Asking for the resources produces a dictionary as shown below:
+        Asking for the specs produces a dictionary as shown below:
 
         >>> tape.specs['by_size']
         defaultdict(int, {1: 4, 2: 2})
         >>> tape.specs['by_name']
         defaultdict(int, {'Hadamard': 2, 'RZ': 1, 'CNOT': 2, 'Rot': 1})
 
-        As `defaultdict` objects, any key not present in the dictionary returns 0.
+        As ``defaultdict`` objects, any key not present in the dictionary returns 0.
 
         >>> tape.specs['by_name']['RX']
         0
@@ -1088,9 +1088,8 @@ class QuantumTape(AnnotatedQueue):
             self._specs = {"by_size": defaultdict(int), "by_name": defaultdict(int)}
 
             for op in self.operations:
-                # don't use op.num_wires to allow for flexible gate classes like hermitian
+                # don't use op.num_wires to allow for flexible gate classes like QubitUnitary
                 self._specs["by_size"][len(op.wires)] += 1
-
                 self._specs["by_name"][op.name] += 1
 
             self._specs["total_operations"] = len(self.operations)

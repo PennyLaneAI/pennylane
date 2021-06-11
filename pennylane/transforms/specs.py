@@ -18,14 +18,11 @@ def specs(qnode, max_expansion=None):
     """
 
     Args:
-        qnode (.QNode): the QNode to calculation the specifications for
+        qnode (.QNode): the QNode to calculate the specifications for
 
     Keyword Args:
-        max_expansion=None (int): The number of times the internal circuit should be expanded when
-            executed on a device. Expansion occurs when an operation or measurement is not
-            supported, and results in a gate decomposition. If any operations in the decomposition
-            remain unsupported by the device, another expansion occurs. Defaults to
-            ``qnode.max_expansion``.
+        max_expansion (int): The number of times the internal circuit should be expanded when
+            calculating the specification. Defaults to ``qnode.max_expansion``.
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function
