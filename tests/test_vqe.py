@@ -990,6 +990,62 @@ class TestVQE:
 
         assert np.allclose(c1, c2)
 
+    @pytest.mark.parametrize("interface", ["tf", "torch", "autograd"])
+    def test_optimize_multiple_terms(self, interface, tf_support, torch_support):
+        """Test that an ExpvalCost with observable optimization gives the same
+        result as another ExpvalCost without observable optimization even when there
+        are non-unique Hamiltonian terms."""
+        if interface == "tf" and not tf_support:
+            pytest.skip("This test requires TensorFlow")
+        if interface == "torch" and not torch_support:
+            pytest.skip("This test requires Torch")
+
+        dev = qml.device("default.qubit", wires=5)
+        obs = [
+            qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[4]),  # <---- These two terms
+            qml.PauliZ(wires=[4]) @ qml.PauliZ(wires=[2]),  # <---- are equal
+            qml.PauliZ(wires=[1]),
+            qml.PauliZ(wires=[2]),
+            qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
+            qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[0]),
+            qml.PauliZ(wires=[3]) @ qml.PauliZ(wires=[1]),
+            qml.PauliZ(wires=[4]) @ qml.PauliZ(wires=[3]),
+        ]
+
+        coefs = (np.random.rand(len(obs)) - 0.5) * 2
+        hamiltonian = qml.Hamiltonian(coefs, obs)
+
+        cost = qml.ExpvalCost(
+            qml.templates.StronglyEntanglingLayers,
+            hamiltonian,
+            dev,
+            optimize=True,
+            interface=interface,
+            diff_method="parameter-shift",
+        )
+        cost2 = qml.ExpvalCost(
+            qml.templates.StronglyEntanglingLayers,
+            hamiltonian,
+            dev,
+            optimize=False,
+            interface=interface,
+            diff_method="parameter-shift",
+        )
+
+        w = qml.init.strong_ent_layers_uniform(2, 5, seed=1967)
+
+        c1 = cost(w)
+        exec_opt = dev.num_executions
+        dev._num_executions = 0
+
+        c2 = cost2(w)
+        exec_no_opt = dev.num_executions
+
+        assert exec_opt == 1  # Number of groups in the Hamiltonian
+        assert exec_no_opt == 8
+
+        assert np.allclose(c1, c2)
+
     def test_optimize_grad(self):
         """Test that the gradient of ExpvalCost is accessible and correct when using observable
         optimization and the autograd interface."""
