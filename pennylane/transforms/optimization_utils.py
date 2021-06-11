@@ -48,7 +48,7 @@ def yzy_to_zyz(y1, z, y2):
         (float, float, float): A tuple of rotation angles in the ZYZ representation.
     """
     # Catch the case where everything is close to 0
-    if np.isclose(np.linalg.norm([y1, z, y2]), 0.0):
+    if allclose(np.array([y1, z, y2]), np.zeros(3)):
         return (0.0, 0.0, 0.0)
 
     # First, compute the quaternion representation
