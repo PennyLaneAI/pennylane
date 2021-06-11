@@ -19,7 +19,7 @@ from pennylane.wires import Wires
 from pennylane.transforms import qfunc_transform
 from pennylane.ops.qubit import Rot
 
-from .optimization_utils import fuse_rot, convert_to_rot
+from .optimization_utils import fuse_rot
 
 
 def _find_next_gate(wires, op_list):
