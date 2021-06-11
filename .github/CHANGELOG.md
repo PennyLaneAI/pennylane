@@ -45,6 +45,47 @@
   The tape methods `get_resources` and `get_depth` are superseded by `specs` and will be
   deprecated after one release cycle.
 
+- Math docstrings in class `QubitParamShiftTape` now rendered properly.
+  [(#1402)](https://github.com/PennyLaneAI/pennylane/pull/1402)
+
+* Adds the new template `AllSinglesDoubles` to prepare quantum states of molecules
+  using the `SingleExcitation` and `DoubleExcitation` operations.
+  The new template reduces significantly the number of operations
+  and the depth of the quantum circuit with respect to the traditional UCCSD
+  unitary.
+  [(#1383)](https://github.com/PennyLaneAI/pennylane/pull/1383)
+
+  For example, consider the case of two particles and four qubits.
+  First, we define the Hartree-Fock initial state and generate all
+  possible single and double excitations.
+
+  ```python
+  import pennylane as qml
+  from pennylane import numpy as np
+
+  electrons = 2
+  qubits = 4
+
+  hf_state = qml.qchem.hf_state(electrons, qubits)
+  singles, doubles = qml.qchem.excitations(electrons, qubits)
+  ```
+  Now we can use the template ``AllSinglesDoubles`` to define the
+  quantum circuit,
+
+  ```python
+  from pennylane.templates import AllSinglesDoubles
+
+  wires = range(qubits)
+
+  @qml.qnode(dev)
+  def circuit(weights, hf_state, singles, doubles):
+      AllSinglesDoubles(weights, wires, hf_state, singles, doubles)
+      return qml.expval(qml.PauliZ(0))
+
+  params = np.random.normal(0, np.pi, len(singles) + len(doubles))
+  circuit(params, hf_state, singles=singles, doubles=doubles)
+  ```
+
 * The ``argnum`` keyword argument can now be specified for a QNode to define a
   subset of trainable parameters used to estimate the Jacobian.
   [(#1371)](https://github.com/PennyLaneAI/pennylane/pull/1371)
@@ -157,8 +198,9 @@
   that help with investigating the Fourier representation of functions
   implemented by quantum circuits.
   [(#1160)](https://github.com/PennyLaneAI/pennylane/pull/1160)
+  [(#1378)](https://github.com/PennyLaneAI/pennylane/pull/1378)
 
-  For example, one can plot distributions over Fourier series coefficients like
+  For example, one can plot distributions over Fourier series coefficients like 
   this one:
 
   <img src="https://pennylane.readthedocs.io/en/latest/_static/fourier.png" width=70%/>
@@ -290,6 +332,8 @@ K_test = qml.kernels.kernel_matrix(X_train, X_test, kernel)
   [(#1214)](https://github.com/PennyLaneAI/pennylane/pull/1214)
   [(#1283)](https://github.com/PennyLaneAI/pennylane/pull/1283)
   [(#1297)](https://github.com/PennyLaneAI/pennylane/pull/1297)
+  [(#1396)](https://github.com/PennyLaneAI/pennylane/pull/1396)
+  [(#1403)](https://github.com/PennyLaneAI/pennylane/pull/1403)
 
   The `max_weight_cycle` function returns the appropriate cost and mixer Hamiltonians:
 
@@ -542,9 +586,6 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Documentation</h3>
 
-* Fix typo in the documentation of `qml.qaoa.cycle.loss_hamiltonian`.
-  [(#1396)](https://github.com/PennyLaneAI/pennylane/pull/1396)
-
 * Fix typo in the documentation of qml.templates.layers.StronglyEntanglingLayers.
 
   [(#1367)](https://github.com/PennyLaneAI/pennylane/pull/1367)
@@ -571,8 +612,9 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 This release contains contributions from (in alphabetical order):
 
 Marius Aglitoiu, Vishnu Ajith, Thomas Bromley, Jack Ceroni, Alaric Cheng, Miruna Daian, Olivia Di Matteo,
-Tanya Garg, Christian Gogolin, Diego Guala, Anthony Hayes, Ryan Hill, Josh Izaac, Pavan Jayasinha, Christina Lee, Ryan Levy, Nahum Sá, Maria Schuld,
-Johannes Jakob Meyer, Brian Shi, Antal Száva, David Wierichs, Vincent Wong, Alberto Maldonado, Ashish Panigrahi.
+Tanya Garg, Christian Gogolin, Diego Guala, Anthony Hayes, Ryan Hill, Josh Izaac, Pavan Jayasinha, Nathan Killoran, 
+Christina Lee, Ryan Levy, Nahum Sá, Maria Schuld, Johannes Jakob Meyer, Brian Shi, Antal Száva, David Wierichs, 
+Vincent Wong, Alberto Maldonado, Ashish Panigrahi.
 
 
 # Release 0.15.1 (current release)
