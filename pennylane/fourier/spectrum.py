@@ -13,7 +13,7 @@
 # limitations under the License.
 """Contains a transform that computes the frequency spectrum of a quantum
 circuit."""
-from itertools import product
+from itertools import chain, combinations
 from functools import wraps
 import numpy as np
 import pennylane as qml
@@ -54,9 +54,11 @@ def _get_spectrum(op):
     evals = qml.math.real(np.linalg.eigvals(matrix))
 
     # compute all differences of eigenvalues
-    frequencies = [np.round(e1 - e2, decimals=8) for e1, e2 in product(evals, evals)]
-    unique_frequencies = list(set(frequencies))
+    unique_frequencies = set(chain.from_iterable((diff := np.round(x[1] - x[0], decimals=8), -diff)
+                                                 for x in combinations(evals, 2)))
+    unique_frequencies = unique_frequencies.union({0})
     return sorted(unique_frequencies)
+
 
 
 def _join_spectra(spec1, spec2):
