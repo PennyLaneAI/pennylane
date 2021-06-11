@@ -2,8 +2,11 @@
 
 <h3>New features since last release</h3>
 
+- Math docstrings in class `QubitParamShiftTape` now rendered properly.
+  [(#1402)](https://github.com/PennyLaneAI/pennylane/pull/1402)
+
 * Adds the new template `AllSinglesDoubles` to prepare quantum states of molecules
-  using the `SingleExcitation` and `DoubleExcitation` operations. 
+  using the `SingleExcitation` and `DoubleExcitation` operations.
   The new template reduces significantly the number of operations
   and the depth of the quantum circuit with respect to the traditional UCCSD
   unitary.
@@ -11,7 +14,7 @@
 
   For example, consider the case of two particles and four qubits.
   First, we define the Hartree-Fock initial state and generate all
-  possible single and double excitations. 
+  possible single and double excitations.
 
   ```python
   import pennylane as qml
