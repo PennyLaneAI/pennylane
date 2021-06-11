@@ -54,11 +54,13 @@ def _get_spectrum(op):
     evals = qml.math.real(np.linalg.eigvals(matrix))
 
     # compute all differences of eigenvalues
-    unique_frequencies = set(chain.from_iterable((diff := np.round(x[1] - x[0], decimals=8), -diff)
-                                                 for x in combinations(evals, 2)))
+    unique_frequencies = set(
+        chain.from_iterable(
+            (diff := np.round(x[1] - x[0], decimals=8), -diff) for x in combinations(evals, 2)
+        )
+    )
     unique_frequencies = unique_frequencies.union({0})
     return sorted(unique_frequencies)
-
 
 
 def _join_spectra(spec1, spec2):
