@@ -385,3 +385,68 @@ class QubitParamShiftTape(JacobianTape):
             return np.apply_along_axis(dot, 0, results)
 
         return tapes, processing_fn
+
+    @property
+    def specs(self):
+        """Resource information about a quantum circuit.
+
+        Returns:
+            dict[str, Union[defaultdict,int]]: dictionaries that contain tape specifications
+
+        **Example**
+
+        .. code-block:: python3
+
+            with qml.tape.QubitParamShiftTape() as tape:
+                qml.Hadamard(wires=0)
+                qml.RZ(0.26, wires=1)
+                qml.CNOT(wires=[1, 0])
+                qml.Rot(1.8, -2.7, 0.2, wires=0)
+                qml.Hadamard(wires=1)
+                qml.CNOT(wires=[0, 1])
+                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        Asking for the specs produces a dictionary as shown below:
+
+        >>> tape.specs['gate_sizes']
+        defaultdict(int, {1: 4, 2: 2})
+        >>> tape.specs['gate_types']
+        defaultdict(int, {'Hadamard': 2, 'RZ': 1, 'CNOT': 2, 'Rot': 1})
+
+        As ``defaultdict`` objects, any key not present in the dictionary returns 0.
+
+        >>> tape.specs['gate_types']['RX']
+        0
+
+        In parameter-shift tapes, the number of device executions necessary for a gradient
+        is calulated as well:
+
+        >>> tape.specs['num_parameter_shift_executions]
+        9
+
+        """
+
+        info = super().specs
+
+        if any(m.return_type is qml.operation.State for m in self.measurements):
+            return info
+
+        if len(self._par_info) > 0:
+            if "grad_method" not in self._par_info[0]:
+                self._update_gradient_info()
+
+        # Initialize with the forward pass execution
+        num_executions = 1
+        # Loop over all variables
+        for _, grad_info in self._par_info.items():
+
+            # if this variable uses parameter-shift
+            if grad_info["grad_method"] == "A":
+
+                # get_parameter_shift returns operation specific derivative formula
+                # for ops with 4-term gradients, the array will contain 4 pieces of data.
+                num_executions += len(grad_info["op"].get_parameter_shift(grad_info["p_idx"]))
+
+        info["num_parameter_shift_executions"] = num_executions
+
+        return info
