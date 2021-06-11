@@ -447,7 +447,21 @@ class DefaultQubit(QubitDevice):
         return self._stack([state[sl_0], phase * state[sl_1]], axis=axes[0])
 
     def expval(self, observable, shot_range=None, bin_size=None):
-        """..."""
+        """Return the expectation value of a Hamiltonian observable represented as a sparse matrix.
+
+        Args:
+            observable (~.Observable): a PennyLane observable
+            shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
+                to use. If not specified, all samples are used.
+            bin_size (int): Divides the shot range into bins of size ``bin_size``, and
+                returns the measurement statistic separately over each bin. If not
+                provided, the entire shot range is treated as a single bin.
+
+        Returns:
+            float[real]/callable: returns the expectation value of the observable if it is a sparse
+            matrix in scipy coordinate list (COO) format or returns the :func:`~.expval` function
+            from the parent class
+        """
         if observable.name == "SparseHamiltonian" and self.shots == None:
 
             state_sparse = scipy.sparse.coo_matrix(self.state)
