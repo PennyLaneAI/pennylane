@@ -15,7 +15,9 @@
 
 
 def specs(qnode, max_expansion=None):
-    """
+    """Resource information about a quantum circuit.
+
+    This transform performs a tape construction without execution in order to access ``QNode.specs``.
 
     Args:
         qnode (.QNode): the QNode to calculate the specifications for
