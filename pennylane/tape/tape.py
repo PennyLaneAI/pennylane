@@ -1012,7 +1012,7 @@ class QuantumTape(AnnotatedQueue):
             UserWarning,
         )
 
-        return self.specs["by_name"]
+        return self.specs["gate_types"]
 
     def get_depth(self):
         """Depth of the quantum circuit.
@@ -1094,6 +1094,7 @@ class QuantumTape(AnnotatedQueue):
 
             self._specs["total_operations"] = len(self.operations)
             self._specs["total_observables"] = len(self.observables)
+            self._specs["total_diagonalizing_gates"] = len(self.diagonalizing_gates)
             self._specs["num_used_wires"] = self.num_wires
             self._specs["depth"] = self.graph.get_depth()
             self._specs["num_trainable_params"] = self.num_params

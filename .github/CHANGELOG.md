@@ -17,7 +17,7 @@
       qml.RX(x[0], wires=0)
       qml.Toffoli(wires=(0, 1, 2))
       qml.CRY(x[1], wires=(0, 1))
-      qml.Rot(x[2], x[3], y, wires=2)
+      qml.Rot(x[2], x[3], y, wires=0)
       return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
   x = np.array([0.05, 0.1, 0.2, 0.3], requires_grad=True)
@@ -29,17 +29,17 @@
 
   ```pycon
   >>> info
-  {'by_size': defaultdict(int, {1: 2, 3: 1, 2: 1}),
-  'by_name': defaultdict(int, {'RX': 1, 'Toffoli': 1, 'CRY': 1, 'Rot': 1}),
-  'total_operations': 4,
-  'total_observables': 2,
-  'num_tape_wires': 3,
-  'depth': 3,
-  'num_trainable_params': 4,
-  'num_parameter_shift_executions': 7,
-  'num_device_wires': 4,
-  'device_name': 'default.qubit',
-  'diff_method': 'parameter-shift'}
+  {'gate_sizes': defaultdict(int, {1: 2, 3: 1, 2: 1}),
+   'gate_types': defaultdict(int, {'RX': 1, 'Toffoli': 1, 'CRY': 1, 'Rot': 1}),
+   'total_operations': 4,
+   'total_observables': 2,
+   'num_used_wires': 3,
+   'depth': 4,
+   'num_trainable_params': 4,
+   'num_parameter_shift_executions': 11,
+   'num_device_wires': 4,
+   'device_name': 'default.qubit',
+   'diff_method': 'parameter-shift'}
   ```
 
   The tape methods `get_resources` and `get_depth` are superseded by `specs` and will be

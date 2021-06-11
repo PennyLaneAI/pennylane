@@ -1021,35 +1021,32 @@ class TestShots:
 class TestSpecs:
     """Tests for the qnode property specs"""
 
-    @pytest.fixture
-    def qfunc(self):
-        def qfunc_inner(x, y):
-            qml.RX(x[0], wires=0)
-            qml.Toffoli(wires=(0, 1, 2))
-            qml.CRY(x[1], wires=(0, 1))
-            qml.Rot(x[2], x[3], y, wires=2)
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
-
-        return qfunc_inner
-
-    def test_specs_error(self, qfunc):
+    def test_specs_error(self):
         """Tests an error is raised if the tape is not constructed."""
 
         dev = qml.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(qfunc, dev)
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(qml.QuantumFunctionError, match=r"The QNode specifications"):
             circuit.specs
 
-    @pytest.mark.parametrize("diff_method, len_info", [("backprop", 9), ("parameter-shift", 11), 
-        ("adjoint", 10)])
-    def test_specs(self, qfunc, diff_method, len_info):
+    @pytest.mark.parametrize("diff_method, len_info", [("backprop", 10), ("parameter-shift", 12), 
+        ("adjoint", 11)])
+    def test_specs(self, diff_method, len_info):
         """Tests the specs property with backprop"""
 
         dev = qml.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(qfunc, dev, diff_method=diff_method)
+        @qml.qnode(dev, diff_method=diff_method)
+        def circuit(x, y):
+            qml.RX(x[0], wires=0)
+            qml.Toffoli(wires=(0, 1, 2))
+            qml.CRY(x[1], wires=(0, 1))
+            qml.Rot(x[2], x[3], y, wires=2)
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
 
         x = pnp.array([0.05, 0.1, 0.2, 0.3], requires_grad=True)
         y = pnp.array(0.1, requires_grad=False)
@@ -1064,7 +1061,8 @@ class TestSpecs:
         assert info["gate_types"] == defaultdict(int, {"RX": 1, "Toffoli": 1, "CRY": 1, "Rot": 1})
         assert info["total_operations"] == 4
         assert info["total_observables"] == 2
-        assert info["num_tape_wires"] == 3
+        assert info["total_diagonalizing_gates"] == 1
+        assert info["num_used_wires"] == 3
         assert info["depth"] == 3
         assert info["num_device_wires"] == 4
         

@@ -349,16 +349,17 @@ class TestResourceEstimation:
         """Test specs attribute on an empty tape"""
         tape = make_empty_tape
 
-        assert tape.specs["by_size"] == defaultdict(int)
-        assert tape.specs["by_name"] == defaultdict(int)
+        assert tape.specs["gate_sizes"] == defaultdict(int)
+        assert tape.specs["gate_types"] == defaultdict(int)
 
         assert tape.specs["total_operations"] == 0
         assert tape.specs["total_observables"] == 1
-        assert tape.specs["num_tape_wires"] == 2
+        assert tape.specs["total_diagonalizing_gates"] == 0
+        assert tape.specs["num_used_wires"] == 2
         assert tape.specs["num_trainable_params"] == 0
         assert tape.specs["depth"] == 0
 
-        assert len(tape.specs) == 7
+        assert len(tape.specs) == 8
 
     def test_specs_tape(self, make_tape):
         """Tests that regular tapes return correct specifications"""
@@ -366,13 +367,14 @@ class TestResourceEstimation:
 
         specs = tape.specs
 
-        assert len(specs) == 7
+        assert len(specs) == 8
 
-        assert specs["by_size"] == defaultdict(int, {1: 3, 2: 1})
-        assert specs["by_name"] == defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
+        assert specs["gate_sizes"] == defaultdict(int, {1: 3, 2: 1})
+        assert specs["gate_types"] == defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
         assert specs["total_operations"] == 4
         assert specs["total_observables"] == 2
-        assert specs["num_tape_wires"] == 3
+        assert specs["total_diagonalizing_gates"] == 1
+        assert specs["num_used_wires"] == 3
         assert specs["num_trainable_params"] == 5
         assert specs["depth"] == 3
 
@@ -382,12 +384,13 @@ class TestResourceEstimation:
         tape = make_extendible_tape
         specs1 = tape.specs
 
-        assert len(specs1) == 7
-        assert specs1["by_size"] == defaultdict(int, {1: 3, 2: 1})
-        assert specs1["by_name"] == defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
+        assert len(specs1) == 8
+        assert specs1["gate_sizes"] == defaultdict(int, {1: 3, 2: 1})
+        assert specs1["gate_types"] == defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
         assert specs1["total_operations"] == 4
         assert specs1["total_observables"] == 0
-        assert specs1["num_tape_wires"] == 3
+        assert specs1["total_diagonalizing_gates"] == 0
+        assert specs1["num_used_wires"] == 3
         assert specs1["num_trainable_params"] == 5
         assert specs1["depth"] == 3
 
@@ -399,12 +402,13 @@ class TestResourceEstimation:
 
         specs2 = tape.specs
 
-        assert len(specs2) == 7
-        assert specs2["by_size"] == defaultdict(int, {1: 4, 2: 2})
-        assert specs2["by_name"] == defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 2, "RZ": 1})
+        assert len(specs2) == 8
+        assert specs2["gate_sizes"] == defaultdict(int, {1: 4, 2: 2})
+        assert specs2["gate_types"] == defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 2, "RZ": 1})
         assert specs2["total_operations"] == 6
         assert specs2["total_observables"] == 2
-        assert specs2["num_tape_wires"] == 5
+        assert specs2["total_diagonalizing_gates"] == 1
+        assert specs2["num_used_wires"] == 5
         assert specs2["num_trainable_params"] == 6
         assert specs2["depth"] == 4
 
@@ -412,11 +416,11 @@ class TestResourceEstimation:
         """Test that empty tapes return empty resource counts."""
         tape = make_empty_tape
 
-        with pytest.warns(UserWarning, match=r"``tape.get_resources`` will be deprecated"):
+        with pytest.warns(UserWarning, match=r"``tape.get_resources``is now deprecated"):
             info = tape.get_resources()
         assert len(info) == 0
 
-        with pytest.warns(UserWarning, match=r"``tape.get_depth`` will be deprecated"):
+        with pytest.warns(UserWarning, match=r"``tape.get_depth`` is now deprecated"):
             depth = tape.get_depth()
         assert depth == 0
 
@@ -424,12 +428,12 @@ class TestResourceEstimation:
         """Test that regular tapes return correct number of resources."""
         tape = make_tape
 
-        with pytest.warns(UserWarning, match=r"``tape.get_depth`` will be deprecated"):
+        with pytest.warns(UserWarning, match=r"``tape.get_depth`` is now deprecated"):
             depth = tape.get_depth()
         assert depth == 3
 
         # Verify resource counts
-        with pytest.warns(UserWarning, match=r"``tape.get_resources`` will be deprecated"):
+        with pytest.warns(UserWarning, match=r"``tape.get_resources``is now deprecated"):
             resources = tape.get_resources()
         assert len(resources) == 3
         assert resources["RX"] == 2
@@ -440,11 +444,11 @@ class TestResourceEstimation:
         """Test that tapes return correct number of resources after adding to them."""
         tape = make_extendible_tape
 
-        with pytest.warns(UserWarning, match=r"``tape.get_depth`` will be deprecated"):
+        with pytest.warns(UserWarning, match=r"``tape.get_depth`` is now deprecated"):
             depth = tape.get_depth()
         assert depth == 3
 
-        with pytest.warns(UserWarning, match=r"``tape.get_resources`` will be deprecated"):
+        with pytest.warns(UserWarning, match=r"``tape.get_resources``is now deprecated"):
             resources = tape.get_resources()
         assert len(resources) == 3
         assert resources["RX"] == 2
@@ -457,10 +461,10 @@ class TestResourceEstimation:
             qml.expval(qml.PauliX(wires="a"))
             qml.probs(wires=[0, "a"])
 
-        with pytest.warns(UserWarning, match=r"``tape.get_depth`` will be deprecated"):
+        with pytest.warns(UserWarning, match=r"``tape.get_depth`` is now deprecated"):
             assert tape.get_depth() == 4
 
-        with pytest.warns(UserWarning, match=r"``tape.get_resources`` will be deprecated"):
+        with pytest.warns(UserWarning, match=r"``tape.get_resources``is now deprecated"):
             resources = tape.get_resources()
         assert len(resources) == 4
         assert resources["RX"] == 2
