@@ -78,7 +78,6 @@
   >>> qnode2 = qml.QNode(circuit, dev, diff_method="parameter-shift", argnum=[0])
   >>> print(qml.grad(qnode2)(x,y))
   (array(0.31434679), array(0.))
->>>>>>> master
   ```
 
 * The `quantum_monte_carlo` transform has been added, allowing an input circuit to be transformed
@@ -156,8 +155,9 @@
   that help with investigating the Fourier representation of functions
   implemented by quantum circuits.
   [(#1160)](https://github.com/PennyLaneAI/pennylane/pull/1160)
+  [(#1378)](https://github.com/PennyLaneAI/pennylane/pull/1378)
 
-  For example, one can plot distributions over Fourier series coefficients like
+  For example, one can plot distributions over Fourier series coefficients like 
   this one:
 
   <img src="https://pennylane.readthedocs.io/en/latest/_static/fourier.png" width=70%/>
