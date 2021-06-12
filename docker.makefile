@@ -1,13 +1,3 @@
-#Dockerfile vars
-#
-# ARG BASE_IMAGE=18.04
-# ARG PYTHON_VERSION=3.7
-# ARG TENSORFLOW_VERSION=2.5
-# ARG PyTorch_VERSION=1.8.1
-# #ARG Jax_VERSION=
-
-#make -f docker.makefile build-base
-
 #vars
 IMAGENAME=pennylane-build
 BUILDNAME=pennylane
@@ -42,7 +32,7 @@ build-tensorflow:
 	    @docker build -t pennylane-tensorflow -f docker/tensorflow.dockerfile .
 
 build-torch:
-	     @docker build -t pennylane-torch -f docker/pytorch.dockerfile .
+	     @docker build -t pennylane-torch -f docker/torch.dockerfile .
 
 build-jax:
 	     @docker build -t pennylane-jax -f docker/jax.dockerfile .
@@ -59,5 +49,5 @@ build-torch-gpu:
 build-all:
 			 	@docker build -t pennylane -f docker/pennylane.dockerfile .
 				&& @docker build -t pennylane -f docker/tensorflow.dockerfile .
-				&& @docker build -t pennylane -f docker/pytorch.dockerfile . 
+				&& @docker build -t pennylane -f docker/pytorch.dockerfile .
 				&&  @docker build -t pennylane -f docker/jax.dockerfile .
