@@ -127,7 +127,13 @@ You can also build Qchem packages. Use following commands:
 
 ```
 make -f docker.makefile build-qchem
-``
+```
+
+To build all three interfaces(Torch, TensorFlow or Jax) using single command run following.(under-testing!)
+
+```
+make -f docker.makefile build-all
+```
 
 
 ## Contributing to PennyLane
