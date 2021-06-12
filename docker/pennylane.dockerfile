@@ -1,46 +1,42 @@
+FROM ubuntu:20.04 AS compile-image
 
-ARG BASE_IMAGE=ubuntu:18.04
-ARG PYTHON_VERSION=3.7
-ARG PyTorch_VERSION=1.8.1
-
-
-# Setup develop base image packages(build-essentials etc)
-FROM ${BASE_IMAGE} as dev-base
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        build-essential \
+# Setup and install Basic packages
+RUN apt-get update && apt-get install -y --no-install-recommends
+RUN DEBIAN_FRONTEND="noninteractive" apt-get install tzdata
+RUN apt-get install -y build-essential \
+        tzdata \
         ca-certificates \
         ccache \
         cmake \
         curl \
-        git \
+	      git \
+	      python3 \
+        python3-pip \
+        python3-venv \
         libjpeg-dev \
         libpng-dev && \
     rm -rf /var/lib/apt/lists/*
 RUN /usr/sbin/update-ccache-symlinks
 RUN mkdir /opt/ccache && ccache --set-config=cache_dir=/opt/ccache
-ENV PATH /opt/conda/bin:$PATH
 
-# Setup Miniconda
-FROM dev-base as conda
-ARG PYTHON_VERSION=3.7
-RUN curl -fsSL -v -o ~/miniconda.sh -O  https://repo.anaconda.com/miniconda/Miniconda3-py39_4.9.2-Linux-x86_64.sh  && \
-    chmod +x ~/miniconda.sh && \
-    ~/miniconda.sh -b -p /opt/conda && \
-    rm ~/miniconda.sh && \
-    /opt/conda/bin/conda clean -ya
+# Create and activate VirtualENV
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
-# Setup as Submodule-intermediate image for pennylane
-FROM dev-base as submodule-update
-COPY --from=conda /opt/conda /opt/conda
+#Setup and Build pennylane
 WORKDIR /opt/pennylane
 COPY  . .
 RUN git submodule update --init --recursive
-RUN conda create -q -n docker-environment python=${PYTHON_VERSION} -y \
-        && conda init bash  \
-        && . /root/.bashrc \
-        && conda update conda  \
-        && conda activate docker-environment \
-        && pip3 install -r requirements.txt \
-        && python setup.py install \
-        && pip3 install pytest pytest-cov pytest-mock flaky \
+RUN  pip install -r requirements.txt \
+        && python3 setup.py install \
+        && pip install jax jaxlib \
+        && pip install pytest pytest-cov pytest-mock flaky \
         && make test
+
+# create Second small build.
+FROM ubuntu:20.04
+COPY --from=compile-image /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-pip python3-venv
+# Image completed, Exit Now.
+CMD echo "Docker image Builing process is Successful"
