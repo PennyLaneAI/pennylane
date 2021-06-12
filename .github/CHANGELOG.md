@@ -2,8 +2,55 @@
 
 <h3>New features since last release</h3>
 
+* The `specs` QNode transform creates a function that produces the specifications for a circuit
+  at given arguments and keywords. Specifications can also be viewed after execution of a QNode or
+  tape by accessing their `specs` property. 
+  [(#1245)](https://github.com/PennyLaneAI/pennylane/pull/1245)
+
+  For example:
+
+  ```python
+  dev = qml.device('default.qubit', wires=4)
+
+  @qml.qnode(dev, diff_method='parameter-shift')
+  def circuit(x, y):
+      qml.RX(x[0], wires=0)
+      qml.Toffoli(wires=(0, 1, 2))
+      qml.CRY(x[1], wires=(0, 1))
+      qml.Rot(x[2], x[3], y, wires=0)
+      return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
+
+  x = np.array([0.05, 0.1, 0.2, 0.3], requires_grad=True)
+  y = np.array(0.4, requires_grad=False)
+
+  specs_func = qml.specs(circuit)
+  info = specs_func(x, y)
+  ```
+
+  ```pycon
+  >>> info
+  {'gate_sizes': defaultdict(int, {1: 2, 3: 1, 2: 1}),
+   'gate_types': defaultdict(int, {'RX': 1, 'Toffoli': 1, 'CRY': 1, 'Rot': 1}),
+   'num_operations': 4,
+   'num_observables': 2,
+   'num_diagonalizing_gates': 1,
+   'num_used_wires': 3,
+   'depth': 4,
+   'num_trainable_params': 4,
+   'num_parameter_shift_executions': 11,
+   'num_device_wires': 4,
+   'device_name': 'default.qubit',
+   'diff_method': 'parameter-shift'}
+  ```
+
+  The tape methods `get_resources` and `get_depth` are superseded by `specs` and will be
+  deprecated after one release cycle.
+
+- Math docstrings in class `QubitParamShiftTape` now rendered properly.
+  [(#1402)](https://github.com/PennyLaneAI/pennylane/pull/1402)
+
 * Adds the new template `AllSinglesDoubles` to prepare quantum states of molecules
-  using the `SingleExcitation` and `DoubleExcitation` operations. 
+  using the `SingleExcitation` and `DoubleExcitation` operations.
   The new template reduces significantly the number of operations
   and the depth of the quantum circuit with respect to the traditional UCCSD
   unitary.
@@ -11,7 +58,7 @@
 
   For example, consider the case of two particles and four qubits.
   First, we define the Hartree-Fock initial state and generate all
-  possible single and double excitations. 
+  possible single and double excitations.
 
   ```python
   import pennylane as qml
@@ -75,7 +122,6 @@
   >>> qnode2 = qml.QNode(circuit, dev, diff_method="parameter-shift", argnum=[0])
   >>> print(qml.grad(qnode2)(x,y))
   (array(0.31434679), array(0.))
->>>>>>> master
   ```
 
 * The `quantum_monte_carlo` transform has been added, allowing an input circuit to be transformed
@@ -153,8 +199,9 @@
   that help with investigating the Fourier representation of functions
   implemented by quantum circuits.
   [(#1160)](https://github.com/PennyLaneAI/pennylane/pull/1160)
+  [(#1378)](https://github.com/PennyLaneAI/pennylane/pull/1378)
 
-  For example, one can plot distributions over Fourier series coefficients like
+  For example, one can plot distributions over Fourier series coefficients like 
   this one:
 
   <img src="https://pennylane.readthedocs.io/en/latest/_static/fourier.png" width=70%/>
@@ -500,6 +547,10 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where multiple identical Hamiltonian terms will produce a
+  different result with ``optimize=True`` using ``ExpvalCost``.
+  [(#1405)](https://github.com/XanaduAI/pennylane/pull/1405)
+
 * Fixes bug where `shots=None` was not reset when changing shots temporarily in a QNode call
   like `circuit(0.1, shots=3)`.
   [(#1392)](https://github.com/XanaduAI/pennylane/pull/1392)
@@ -566,8 +617,9 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 This release contains contributions from (in alphabetical order):
 
 Marius Aglitoiu, Vishnu Ajith, Thomas Bromley, Jack Ceroni, Alaric Cheng, Miruna Daian, Olivia Di Matteo,
-Tanya Garg, Christian Gogolin, Diego Guala, Anthony Hayes, Ryan Hill, Josh Izaac, Pavan Jayasinha, Christina Lee, Ryan Levy, Nahum Sá, Maria Schuld,
-Johannes Jakob Meyer, Brian Shi, Antal Száva, David Wierichs, Vincent Wong, Alberto Maldonado, Ashish Panigrahi.
+Tanya Garg, Christian Gogolin, Diego Guala, Anthony Hayes, Ryan Hill, Josh Izaac, Pavan Jayasinha, Nathan Killoran, 
+Christina Lee, Ryan Levy, Nahum Sá, Maria Schuld, Johannes Jakob Meyer, Brian Shi, Antal Száva, David Wierichs, 
+Vincent Wong, Alberto Maldonado, Ashish Panigrahi.
 
 
 # Release 0.15.1 (current release)

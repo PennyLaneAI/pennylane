@@ -15,15 +15,18 @@
 This module contains the high-level Pauli-word-partitioning functionality used in measurement optimization.
 """
 
-from pennylane.wires import Wires
+from copy import copy
+
+import numpy as np
+
+from pennylane.grouping.graph_colouring import largest_first, recursive_largest_first
 from pennylane.grouping.utils import (
-    observables_to_binary_matrix,
-    binary_to_pauli,
     are_identical_pauli_words,
+    binary_to_pauli,
+    observables_to_binary_matrix,
     qwc_complement_adj_matrix,
 )
-from pennylane.grouping.graph_colouring import largest_first, recursive_largest_first
-import numpy as np
+from pennylane.wires import Wires
 
 GROUPING_TYPES = frozenset(["qwc", "commuting", "anticommuting"])
 GRAPH_COLOURING_METHODS = {"lf": largest_first, "rlf": recursive_largest_first}
@@ -236,11 +239,16 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
 
     partitioned_coeffs = [[0] * len(g) for g in partitioned_paulis]
 
+    observables = copy(observables)
+    coefficients = copy(coefficients)
     for i, partition in enumerate(partitioned_paulis):
         for j, pauli_word in enumerate(partition):
             for observable in observables:
                 if are_identical_pauli_words(pauli_word, observable):
-                    partitioned_coeffs[i][j] = coefficients[observables.index(observable)]
+                    ind = observables.index(observable)
+                    partitioned_coeffs[i][j] = coefficients[ind]
+                    observables.pop(ind)
+                    coefficients.pop(ind)
                     break
 
     return partitioned_paulis, partitioned_coeffs

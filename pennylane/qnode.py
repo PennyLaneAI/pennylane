@@ -720,6 +720,65 @@ class QNode:
             charset=charset, wire_order=wire_order, show_all_wires=show_all_wires
         )
 
+    @property
+    def specs(self):
+        """Resource information about a quantum circuit.
+
+        Returns:
+        dict[str, Union[defaultdict,int]]: dictionaries that contain QNode specifications
+
+        **Example**
+
+        .. code-block:: python3
+
+            dev = qml.device('default.qubit', wires=2)
+            @qml.qnode(dev)
+            def circuit(x):
+                qml.RX(x[0], wires=0)
+                qml.RY(x[1], wires=1)
+                qml.CNOT(wires=(0,1))
+                return qml.probs(wires=(0,1))
+
+            x = np.array([0.1, 0.2])
+            res = circuit(x)
+
+        >>> circuit.specs
+        {'gate_sizes': defaultdict(int, {1: 2, 2: 1}),
+        'gate_types': defaultdict(int, {'RX': 1, 'RY': 1, 'CNOT': 1}),
+        'num_operations': 3,
+        'num_observables': 1,
+        'num_diagonalizing_gates': 0,
+        'num_used_wires': 2,
+        'depth': 2,
+        'num_device_wires': 2,
+        'device_name': 'default.qubit.autograd',
+        'diff_method': 'backprop'}
+
+        """
+        if self.qtape is None:
+            raise qml.QuantumFunctionError(
+                "The QNode specifications can only be calculated after its quantum tape has been constructed."
+            )
+
+        info = self.qtape.specs.copy()
+
+        info["num_device_wires"] = self.device.num_wires
+        info["device_name"] = self.device.short_name
+
+        # TODO: use self.diff_method when that value gets updated
+        if self.diff_method != "best":
+            info["diff_method"] = self.diff_method
+        else:
+            info["diff_method"] = self.qtape.jacobian_options["method"]
+
+        # tapes do not accurately track parameters for backprop
+        # TODO: calculate number of trainable parameters in backprop
+        # find better syntax for determining if backprop
+        if info["diff_method"] == "backprop":
+            del info["num_trainable_params"]
+
+        return info
+
     def to_tf(self, dtype=None):
         """Apply the TensorFlow interface to the internal quantum tape.
 
