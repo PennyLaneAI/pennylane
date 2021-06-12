@@ -1812,7 +1812,7 @@ class U3(Operation):
 
 class IsingXX(Operation):
     r"""IsingXX(phi, wires)
-    The Ising XX coupling gate
+    Ising XX coupling gate
 
     .. math:: XX(\phi) = \begin{bmatrix}
             \cos(\phi / 2) & 0 & 0 & -i \sin(\phi / 2) \\
@@ -1840,17 +1840,11 @@ class IsingXX(Operation):
     @classmethod
     def _matrix(cls, *params):
         phi = params[0]
-        cos = np.cos(phi / 2)
-        isin = 1j * np.sin(phi / 2)
+        c = math.cos(phi / 2)
+        s = math.sin(phi / 2)
 
         return np.array(
-            [
-                [cos, 0, 0, -isin],
-                [0, cos, -isin, 0],
-                [0, -isin, cos, 0],
-                [-isin, 0, 0, cos],
-            ],
-            dtype=complex,
+            [[c, 0, 0, -1j * s], [0, c, -1j * s, 0], [0, -1j * s, c, 0], [-1j * s, 0, 0, c]]
         )
 
     @staticmethod
