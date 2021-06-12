@@ -123,7 +123,7 @@ To build a PennyLane image using a given interface (Torch, TensorFlow or Jax) wi
 make -f docker.makefile build-tensorflow-gpu
 ```
 
-You can also build Qchem packages. Use following commands:
+You can also build an image with the PennyLane Qchem package and its dependencies. Use following commands:
 
 ```
 make -f docker.makefile build-qchem
