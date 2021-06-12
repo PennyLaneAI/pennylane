@@ -36,22 +36,28 @@ build-base:
 	    @docker build -t pennylane -f docker/pennylane.dockerfile .
 
 build-qchem:
-	    @docker build -t pennylane -f docker/qchem.dockerfile .
+	    @docker build -t pennylane-qchem -f docker/qchem.dockerfile .
 
 build-tensorflow:
-	    @docker build -t pennylane -f docker/tensorflow.dockerfile .
+	    @docker build -t pennylane-tensorflow -f docker/tensorflow.dockerfile .
 
 build-torch:
-	     @docker build -t pennylane -f docker/pytorch.dockerfile .
+	     @docker build -t pennylane-torch -f docker/pytorch.dockerfile .
 
 build-jax:
-	     @docker build -t pennylane -f docker/jax.dockerfile .
+	     @docker build -t pennylane-jax -f docker/jax.dockerfile .
 
 build-tensorflow-gpu:
-			 	@docker build -t pennylane -f docker/gpu-cuda/tensorflow.dockerfile .
+			 	@docker build -t pennylane-tensorflow-gpu -f docker/gpu-cuda/tensorflow.dockerfile .
 
 build-jax-gpu:
-			 	@docker build -t pennylane -f docker/gpu-cuda/tensorflow.dockerfile .
+			 	@docker build -t pennylane-jax-gpu -f docker/gpu-cuda/tensorflow.dockerfile .
 
 build-torch-gpu:
-			 	@docker build -t pennylane -f docker/gpu-cuda/tensorflow.dockerfile .
+			 	@docker build -t pennylane-torch-gpu -f docker/gpu-cuda/tensorflow.dockerfile .
+
+build-all:
+			 	@docker build -t pennylane -f docker/pennylane.dockerfile .
+				&& @docker build -t pennylane -f docker/tensorflow.dockerfile .
+				&& @docker build -t pennylane -f docker/pytorch.dockerfile . 
+				&&  @docker build -t pennylane -f docker/jax.dockerfile .
