@@ -3311,6 +3311,7 @@ ops = {
     "U2",
     "U3",
     "IsingXX",
+    "IsingYY",
     "IsingZZ",
     "BasisState",
     "QubitStateVector",
