@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -64,11 +64,7 @@ OBSERVABLES = [
 
 # Hermitian matrices, their corresponding eigenvalues and eigenvectors.
 EIGVALS_TEST_DATA = [
-    (
-        np.array([[1, 0], [0, 1]]),
-        np.array([1.0, 1.0]),
-        np.array([[1.0, 0.0], [0.0, 1.0]]),
-    ),
+    (np.array([[1, 0], [0, 1]]), np.array([1.0, 1.0]), np.array([[1.0, 0.0], [0.0, 1.0]])),
     (
         np.array([[0, 1], [1, 0]]),
         np.array([-1.0, 1.0]),
@@ -78,17 +74,10 @@ EIGVALS_TEST_DATA = [
         np.array([[0, -1j], [1j, 0]]),
         np.array([-1.0, 1.0]),
         np.array(
-            [
-                [-0.70710678 + 0.0j, -0.70710678 + 0.0j],
-                [0.0 + 0.70710678j, 0.0 - 0.70710678j],
-            ]
+            [[-0.70710678 + 0.0j, -0.70710678 + 0.0j], [0.0 + 0.70710678j, 0.0 - 0.70710678j]]
         ),
     ),
-    (
-        np.array([[1, 0], [0, -1]]),
-        np.array([-1.0, 1.0]),
-        np.array([[0.0, 1.0], [1.0, 0.0]]),
-    ),
+    (np.array([[1, 0], [0, -1]]), np.array([-1.0, 1.0]), np.array([[0.0, 1.0], [1.0, 0.0]])),
     (
         1 / np.sqrt(2) * np.array([[1, 1], [1, -1]]),
         np.array([-1.0, 1.0]),
@@ -1437,8 +1426,7 @@ class TestSingleExcitation:
         assert np.allclose(res, exp)
 
     @pytest.mark.parametrize(
-        "excitation",
-        [qml.SingleExcitation, qml.SingleExcitationPlus, qml.SingleExcitationMinus],
+        "excitation", [qml.SingleExcitation, qml.SingleExcitationPlus, qml.SingleExcitationMinus]
     )
     def test_autograd(self, excitation):
         """Tests that operations are computed correctly using the
@@ -1732,8 +1720,7 @@ class TestDoubleExcitation:
         assert np.allclose(res, exp)
 
     @pytest.mark.parametrize(
-        "excitation",
-        [qml.DoubleExcitation, qml.DoubleExcitationPlus, qml.DoubleExcitationMinus],
+        "excitation", [qml.DoubleExcitation, qml.DoubleExcitationPlus, qml.DoubleExcitationMinus]
     )
     def test_autograd(self, excitation):
         """Tests that operations are computed correctly using the
@@ -1757,8 +1744,7 @@ class TestDoubleExcitation:
         assert np.allclose(state, circuit(np.pi / 2))
 
     @pytest.mark.parametrize(
-        "excitation",
-        [qml.DoubleExcitation, qml.DoubleExcitationPlus, qml.DoubleExcitationMinus],
+        "excitation", [qml.DoubleExcitation, qml.DoubleExcitationPlus, qml.DoubleExcitationMinus]
     )
     def test_tf(self, excitation):
         """Tests that operations are computed correctly using the
@@ -1782,8 +1768,7 @@ class TestDoubleExcitation:
         assert np.allclose(state, circuit(np.pi / 2))
 
     @pytest.mark.parametrize(
-        "excitation",
-        [qml.DoubleExcitation, qml.DoubleExcitationPlus, qml.DoubleExcitationMinus],
+        "excitation", [qml.DoubleExcitation, qml.DoubleExcitationPlus, qml.DoubleExcitationMinus]
     )
     def test_jax(self, excitation):
         """Tests that operations are computed correctly using the
@@ -2444,18 +2429,8 @@ class TestControlledQubitUnitary:
         "control_wires,wires,control_values,expected_error_message",
         [
             ([0, 1], 2, "ab", "String of control values can contain only '0' or '1'."),
-            (
-                [0, 1],
-                2,
-                "011",
-                "Length of control bit string must equal number of control wires.",
-            ),
-            (
-                [0, 1],
-                2,
-                [0, 1],
-                "Alternative control values must be passed as a binary string.",
-            ),
+            ([0, 1], 2, "011", "Length of control bit string must equal number of control wires."),
+            ([0, 1], 2, [0, 1], "Alternative control values must be passed as a binary string."),
         ],
     )
     def test_invalid_mixed_polarity_controls(
@@ -2467,10 +2442,7 @@ class TestControlledQubitUnitary:
 
         with pytest.raises(ValueError, match=expected_error_message):
             qml.ControlledQubitUnitary(
-                X,
-                control_wires=control_wires,
-                wires=target_wires,
-                control_values=control_values,
+                X, control_wires=control_wires, wires=target_wires, control_values=control_values
             )
 
     @pytest.mark.parametrize(
@@ -2507,10 +2479,7 @@ class TestControlledQubitUnitary:
             qml.templates.ArbitraryStatePreparation(target_state_weights, wires=target_wires)
 
             qml.ControlledQubitUnitary(
-                U,
-                control_wires=control_wires,
-                wires=target_wires,
-                control_values=control_values,
+                U, control_wires=control_wires, wires=target_wires, control_values=control_values
             )
             return qml.state()
 
@@ -2550,18 +2519,8 @@ class TestMultiControlledX:
         "control_wires,wires,control_values,expected_error_message",
         [
             ([0, 1], 2, "ab", "String of control values can contain only '0' or '1'."),
-            (
-                [0, 1],
-                2,
-                "011",
-                "Length of control bit string must equal number of control wires.",
-            ),
-            (
-                [0, 1],
-                2,
-                [0, 1],
-                "Alternative control values must be passed as a binary string.",
-            ),
+            ([0, 1], 2, "011", "Length of control bit string must equal number of control wires."),
+            ([0, 1], 2, [0, 1], "Alternative control values must be passed as a binary string."),
             (
                 [0, 1],
                 [2, 3],
@@ -2579,9 +2538,7 @@ class TestMultiControlledX:
 
         with pytest.raises(ValueError, match=expected_error_message):
             qml.MultiControlledX(
-                control_wires=control_wires,
-                wires=target_wires,
-                control_values=control_values,
+                control_wires=control_wires, wires=target_wires, control_values=control_values
             )
 
     @pytest.mark.parametrize(
@@ -2615,9 +2572,7 @@ class TestMultiControlledX:
             qml.templates.ArbitraryStatePreparation(target_state_weights, wires=target_wires)
 
             qml.MultiControlledX(
-                control_wires=control_wires,
-                wires=target_wires,
-                control_values=control_values,
+                control_wires=control_wires, wires=target_wires, control_values=control_values
             )
             return qml.state()
 
@@ -2757,9 +2712,7 @@ class TestMultiControlledX:
         def f(bitstring):
             qml.BasisState(bitstring, wires=range(n_ctrl_wires + 1))
             qml.MultiControlledX(
-                control_wires=control_wires,
-                wires=target_wire,
-                control_values=control_values,
+                control_wires=control_wires, wires=target_wire, control_values=control_values
             ).inv()
             for op in tape.operations:
                 op.queue()
