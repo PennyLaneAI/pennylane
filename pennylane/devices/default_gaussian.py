@@ -78,7 +78,7 @@ def partitions(s, include_singles=True):
                 yield ((item_partition),) + p
 
 
-def fock_prob(mu, cov, event, hbar=2.0):
+def fock_prob(cov, mu, event, hbar=2.0):
     r"""Returns the probability of detection of a particular PNR detection event.
 
     For more details, see:
@@ -92,8 +92,8 @@ def fock_prob(mu, cov, event, hbar=2.0):
       <https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.119.170501>`_
 
     Args:
-        mu (array): length-:math:`2N` means vector
         cov (array): :math:`2N\times 2N` covariance matrix
+        mu (array): length-:math:`2N` means vector
         event (array): length-:math:`N` array of non-negative integers representing the
             PNR detection event of the multi-mode system.
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
@@ -179,17 +179,17 @@ def displacement(state, wire, alpha, hbar=2):
     """Displacement in the phase space.
 
     Args:
-        state (tuple): contains means vector and covariance matrix
+        state (tuple): contains covariance matrix and means vector
         wire (int): wire that the displacement acts on
         alpha (float): complex displacement
 
     Returns:
         tuple: contains the vector of means and covariance matrix
     """
-    mu = state[0]
+    mu = state[1]
     mu[wire] += alpha.real * math.sqrt(2 * hbar)
     mu[wire + len(mu) // 2] += alpha.imag * math.sqrt(2 * hbar)
-    return mu, state[1]
+    return state[0], mu
 
 
 def squeezing(r, phi):
@@ -357,7 +357,7 @@ def vacuum_state(wires, hbar=2.0):
     """
     means = np.zeros((2 * wires))
     cov = np.identity(2 * wires) * hbar / 2
-    state = [means, cov]
+    state = [cov, means]
     return state
 
 
@@ -375,7 +375,7 @@ def coherent_state(a, phi=0, hbar=2.0):
     alpha = a * cmath.exp(1j * phi)
     means = np.array([alpha.real, alpha.imag]) * math.sqrt(2 * hbar)
     cov = np.identity(2) * hbar / 2
-    state = [means, cov]
+    state = [cov, means]
     return state
 
 
@@ -392,7 +392,7 @@ def squeezed_state(r, phi, hbar=2.0):
         array: the squeezed state
     """
     means = np.zeros((2))
-    state = [means, squeezed_cov(r, phi, hbar)]
+    state = [squeezed_cov(r, phi, hbar), means]
     return state
 
 
@@ -412,7 +412,7 @@ def displaced_squeezed_state(a, phi_a, r, phi_r, hbar=2.0):
     """
     alpha = a * cmath.exp(1j * phi_a)
     means = np.array([alpha.real, alpha.imag]) * math.sqrt(2 * hbar)
-    state = [means, squeezed_cov(r, phi_r, hbar)]
+    state = [squeezed_cov(r, phi_r, hbar), means]
     return state
 
 
@@ -428,7 +428,7 @@ def thermal_state(nbar, hbar=2.0):
         array: the thermal state
     """
     means = np.zeros([2])
-    state = [means, (2 * nbar + 1) * np.identity(2) * hbar / 2]
+    state = [(2 * nbar + 1) * np.identity(2) * hbar / 2, means]
     return state
 
 
@@ -457,10 +457,10 @@ def gaussian_state(cov, mu, hbar=2.0):
     # pylint: disable=unused-argument
 
     # Note: the internal order of mu and cov is different to the one used in Strawberry Fields
-    return mu, cov
+    return cov, mu
 
 
-def set_state(state, wire, mu, cov):
+def set_state(state, wire, cov, mu):
     r"""Inserts a single mode Gaussian into the
     state representation of the complete system.
 
@@ -468,14 +468,14 @@ def set_state(state, wire, mu, cov):
         state (tuple): contains means vector
             and covariance matrix of existing state
         wire (Wires): wire corresponding to the new Gaussian state
-        mu (array): vector of means to insert
         cov (array): covariance matrix to insert
+        mu (array): vector of means to insert
 
     Returns:
         tuple: contains the vector of means and covariance matrix.
     """
-    mu0 = state[0]
-    cov0 = state[1]
+    mu0 = state[1]
+    cov0 = state[0]
     N = len(mu0) // 2
 
     # insert the new state into the means vector
@@ -487,7 +487,7 @@ def set_state(state, wire, mu, cov):
     cols = ind.reshape(1, -1)
     cov0[rows, cols] = cov
 
-    return mu0, cov0
+    return cov0, mu0
 
 
 # ========================================================
@@ -495,12 +495,12 @@ def set_state(state, wire, mu, cov):
 # ========================================================
 
 
-def photon_number(mu, cov, params, hbar=2.0):
+def photon_number(cov, mu, params, hbar=2.0):
     r"""Calculates the mean photon number for a given one-mode state.
 
     Args:
-        mu (array): length-2 vector of means
         cov (array): :math:`2\times 2` covariance matrix
+        mu (array): length-2 vector of means
         params (None): no parameters are used for this expectation value
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`
@@ -511,7 +511,7 @@ def photon_number(mu, cov, params, hbar=2.0):
     # pylint: disable=unused-argument
     ex = (np.trace(cov) + mu.T @ mu) / (2 * hbar) - 1 / 2
     var = (np.trace(cov @ cov) + 2 * mu.T @ cov @ mu) / (2 * hbar ** 2) - 1 / 4
-    return ex, var
+    return var, ex
 
 
 def homodyne(phi=None):
@@ -527,34 +527,34 @@ def homodyne(phi=None):
     """
     if phi is not None:
 
-        def _homodyne(mu, cov, params, hbar=2.0):
+        def _homodyne(cov, mu, params, hbar=2.0):
             """Arbitrary angle homodyne expectation."""
             # pylint: disable=unused-argument
             rot = rotation(phi)
             muphi = rot.T @ mu
             covphi = rot.T @ cov @ rot
-            return muphi[0], covphi[0, 0]
+            return covphi[0, 0], muphi[0]
 
         return _homodyne
 
-    def _homodyne(mu, cov, params, hbar=2.0):
+    def _homodyne(cov, mu, params, hbar=2.0):
         """Arbitrary angle homodyne expectation."""
         # pylint: disable=unused-argument
         rot = rotation(params[0])
         muphi = rot.T @ mu
         covphi = rot.T @ cov @ rot
-        return muphi[0], covphi[0, 0]
+        return covphi[0, 0], muphi[0]
 
     return _homodyne
 
 
-def poly_quad_expectations(mu, cov, wires, device_wires, params, hbar=2.0):
+def poly_quad_expectations(cov, mu, wires, device_wires, params, hbar=2.0):
     r"""Calculates the expectation and variance for an arbitrary
     polynomial of quadrature operators.
 
     Args:
-        mu (array): vector of means
         cov (array): covariance matrix
+        mu (array): vector of means
         wires (Wires): wires to calculate the expectation for
         device_wires (Wires): corresponding wires on the device
         params (array): a :math:`(2N+1)\times (2N+1)` array containing the linear
@@ -575,7 +575,7 @@ def poly_quad_expectations(mu, cov, wires, device_wires, params, hbar=2.0):
 
     if Q.ndim == 1:
         d = np.r_[Q[1::2], Q[2::2]]
-        return d.T @ mu + Q[0], d.T @ cov @ d
+        return d.T @ cov @ d, d.T @ mu + Q[0]
 
     # convert to the (I, x1,x2,..., p1,p2...) ordering
     M = np.vstack((Q[0:1, :], Q[1::2, :], Q[2::2, :]))
@@ -597,15 +597,15 @@ def poly_quad_expectations(mu, cov, wires, device_wires, params, hbar=2.0):
     groenewald_correction = np.sum([np.linalg.det(hbar * A[:, m][n]) for m in modes for n in modes])
     var -= groenewald_correction
 
-    return ex, var
+    return var, ex
 
 
-def fock_expectation(mu, cov, params, hbar=2.0):
+def fock_expectation(cov, mu, params, hbar=2.0):
     r"""Calculates the expectation and variance of a Fock state probability.
 
     Args:
-        mu (array): length-:math:`2N` vector of means
         cov (array): :math:`2N\times 2N` covariance matrix
+        mu (array): length-:math:`2N` vector of means
         params (Sequence[int]): the Fock state to return the expectation value for
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`
@@ -614,11 +614,11 @@ def fock_expectation(mu, cov, params, hbar=2.0):
         tuple: the Fock state expectation and variance
     """
     # pylint: disable=unused-argument
-    ex = fock_prob(mu, cov, params[0], hbar=hbar)
+    ex = fock_prob(cov, mu, params[0], hbar=hbar)
 
     # var[|n><n|] = E[|n><n|^2] -  E[|n><n|]^2 = E[|n><n|] -  E[|n><n|]^2
     var = ex - ex ** 2
-    return ex, var
+    return var, ex
 
 
 def identity(*_, **__):
@@ -627,7 +627,7 @@ def identity(*_, **__):
     Returns:
         tuple: the Fock state expectation and variance
     """
-    return 1, 0
+    return 0, 1
 
 
 # ========================================================
@@ -727,9 +727,9 @@ class DefaultGaussian(Device):
 
         if "State" in operation:
             # set the new device state
-            mu, cov = self._operation_map[operation](*par, hbar=self.hbar)
+            cov, mu = self._operation_map[operation](*par, hbar=self.hbar)
             # state preparations only act on at most 1 subsystem
-            self._state = set_state(self._state, device_wires[:1], mu, cov)
+            self._state = set_state(self._state, device_wires[:1], cov, mu)
             return  # we are done here
 
         # get the symplectic matrix
@@ -739,11 +739,11 @@ class DefaultGaussian(Device):
         S = self.expand(S, device_wires)
 
         # apply symplectic matrix to the means vector
-        means = S @ self._state[0]
+        means = S @ self._state[1]
         # apply symplectic matrix to the covariance matrix
-        cov = S @ self._state[1] @ S.T
+        cov = S @ self._state[0] @ S.T
 
-        self._state = [means, cov]
+        self._state = [cov, means]
 
     def expand(self, S, wires):
         r"""Expands a Symplectic matrix S to act on the entire subsystem.
@@ -778,13 +778,13 @@ class DefaultGaussian(Device):
     def expval(self, observable, wires, par):
 
         if observable == "PolyXP":
-            mu, cov = self._state
-            ev, var = self._observable_map[observable](
-                mu, cov, wires, self.wires, par, hbar=self.hbar
+            cov, mu = self._state
+            var, ev = self._observable_map[observable](
+                cov, mu, wires, self.wires, par, hbar=self.hbar
             )
         else:
-            mu, cov = self.reduced_state(wires)
-            ev, var = self._observable_map[observable](mu, cov, par, hbar=self.hbar)
+            cov, mu = self.reduced_state(wires)
+            var, ev = self._observable_map[observable](cov, mu, par, hbar=self.hbar)
 
         if self.shots is not None:
             # estimate the ev
@@ -796,14 +796,14 @@ class DefaultGaussian(Device):
 
     def var(self, observable, wires, par):
 
-        mu, cov = self.reduced_state(wires)
+        cov, mu = self.reduced_state(wires)
 
         if observable == "PolyXP":
-            _, var = self._observable_map[observable](
-                mu, cov, wires, self.wires, par, hbar=self.hbar
+            var, _ = self._observable_map[observable](
+                cov, mu, wires, self.wires, par, hbar=self.hbar
             )
         else:
-            _, var = self._observable_map[observable](mu, cov, par, hbar=self.hbar)
+            var, _ = self._observable_map[observable](cov, mu, par, hbar=self.hbar)
         return var
 
     def sample(self, observable, wires, par):
@@ -838,7 +838,7 @@ class DefaultGaussian(Device):
                 "default.gaussian does not support sampling {}".format(observable)
             )
 
-        mu, cov = self.reduced_state(wires)
+        cov, mu = self.reduced_state(wires)
         rot = rotation(phi)
 
         muphi = rot.T @ mu
@@ -854,13 +854,13 @@ class DefaultGaussian(Device):
         self._state = vacuum_state(self.num_wires, self.hbar)
 
     def reduced_state(self, wires):
-        r"""Returns the vector of means and the covariance matrix of the specified wires.
+        r"""Returns the covariance matrix and the vector of means of the specified wires.
 
         Args:
             wires (Wires): requested wires
 
         Returns:
-            tuple (means, cov): means is an array containing the vector of means,
+            tuple (cov, means): means is an array containing the vector of means,
             and cov is a square array containing the covariance matrix
         """
         if len(wires) == self.num_wires:
@@ -875,7 +875,7 @@ class DefaultGaussian(Device):
         rows = ind.reshape(-1, 1)
         cols = ind.reshape(1, -1)
 
-        return self._state[0][ind], self._state[1][rows, cols]
+        return self._state[0][rows, cols], self._state[1][ind]
 
     @property
     def operations(self):

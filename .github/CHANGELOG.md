@@ -2,6 +2,9 @@
 
 <h3>New features since last release</h3>
 
+* Change the order of the covariance matrix and the vector of means internally
+  in default.gaussian for the gaussian_state. [(#1331)](https://github.com/PennyLaneAI/pennylane/pull/1331)
+  
 * The `specs` QNode transform creates a function that produces the specifications for a circuit
   at given arguments and keywords. Specifications can also be viewed after execution of a QNode or
   tape by accessing their `specs` property. 
