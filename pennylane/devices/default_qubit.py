@@ -462,7 +462,7 @@ class DefaultQubit(QubitDevice):
             matrix in scipy coordinate list (COO) format or returns the :func:`~.expval` function
             from the parent class
         """
-        if observable.name is "SparseHamiltonian" and self.shots is None:
+        if observable.name == "SparseHamiltonian" and self.shots is None:
 
             state_sparse = scipy.sparse.coo_matrix(self.state)
             state_trans = scipy.sparse.coo_matrix(self.state.reshape(len(self.state), 1))
