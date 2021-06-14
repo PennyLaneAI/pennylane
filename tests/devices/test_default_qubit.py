@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -120,29 +120,13 @@ class TestApply:
 
     test_data_no_parameters = [
         (qml.PauliX, [1, 0], np.array([0, 1])),
-        (
-            qml.PauliX,
-            [1 / math.sqrt(2), 1 / math.sqrt(2)],
-            [1 / math.sqrt(2), 1 / math.sqrt(2)],
-        ),
+        (qml.PauliX, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / math.sqrt(2), 1 / math.sqrt(2)]),
         (qml.PauliY, [1, 0], [0, 1j]),
-        (
-            qml.PauliY,
-            [1 / math.sqrt(2), 1 / math.sqrt(2)],
-            [-1j / math.sqrt(2), 1j / math.sqrt(2)],
-        ),
+        (qml.PauliY, [1 / math.sqrt(2), 1 / math.sqrt(2)], [-1j / math.sqrt(2), 1j / math.sqrt(2)]),
         (qml.PauliZ, [1, 0], [1, 0]),
-        (
-            qml.PauliZ,
-            [1 / math.sqrt(2), 1 / math.sqrt(2)],
-            [1 / math.sqrt(2), -1 / math.sqrt(2)],
-        ),
+        (qml.PauliZ, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / math.sqrt(2), -1 / math.sqrt(2)]),
         (qml.S, [1, 0], [1, 0]),
-        (
-            qml.S,
-            [1 / math.sqrt(2), 1 / math.sqrt(2)],
-            [1 / math.sqrt(2), 1j / math.sqrt(2)],
-        ),
+        (qml.S, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / math.sqrt(2), 1j / math.sqrt(2)]),
         (qml.T, [1, 0], [1, 0]),
         (
             qml.T,
@@ -155,29 +139,13 @@ class TestApply:
 
     test_data_no_parameters_inverses = [
         (qml.PauliX, [1, 0], np.array([0, 1])),
-        (
-            qml.PauliX,
-            [1 / math.sqrt(2), 1 / math.sqrt(2)],
-            [1 / math.sqrt(2), 1 / math.sqrt(2)],
-        ),
+        (qml.PauliX, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / math.sqrt(2), 1 / math.sqrt(2)]),
         (qml.PauliY, [1, 0], [0, 1j]),
-        (
-            qml.PauliY,
-            [1 / math.sqrt(2), 1 / math.sqrt(2)],
-            [-1j / math.sqrt(2), 1j / math.sqrt(2)],
-        ),
+        (qml.PauliY, [1 / math.sqrt(2), 1 / math.sqrt(2)], [-1j / math.sqrt(2), 1j / math.sqrt(2)]),
         (qml.PauliZ, [1, 0], [1, 0]),
-        (
-            qml.PauliZ,
-            [1 / math.sqrt(2), 1 / math.sqrt(2)],
-            [1 / math.sqrt(2), -1 / math.sqrt(2)],
-        ),
+        (qml.PauliZ, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / math.sqrt(2), -1 / math.sqrt(2)]),
         (qml.S, [1, 0], [1, 0]),
-        (
-            qml.S,
-            [1 / math.sqrt(2), 1 / math.sqrt(2)],
-            [1 / math.sqrt(2), -1j / math.sqrt(2)],
-        ),
+        (qml.S, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / math.sqrt(2), -1j / math.sqrt(2)]),
         (qml.T, [1, 0], [1, 0]),
         (
             qml.T,
@@ -269,10 +237,7 @@ class TestApply:
         qubit_device_2_wires.apply([operation(wires=[0, 1])])
 
         assert np.allclose(
-            qubit_device_2_wires._state.flatten(),
-            np.array(expected_output),
-            atol=tol,
-            rtol=0,
+            qubit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
         )
 
     all_two_wires_no_parameters_inv = test_data_two_wires_no_parameters + test_data_iswap_inv
@@ -311,10 +276,7 @@ class TestApply:
         qubit_device_3_wires.apply([operation(wires=[0, 1, 2])])
 
         assert np.allclose(
-            qubit_device_3_wires._state.flatten(),
-            np.array(expected_output),
-            atol=tol,
-            rtol=0,
+            qubit_device_3_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
         )
 
     @pytest.mark.parametrize("operation,input,expected_output", test_data_three_wires_no_parameters)
@@ -328,10 +290,7 @@ class TestApply:
         qubit_device_3_wires.apply([operation(wires=[0, 1, 2]).inv()])
 
         assert np.allclose(
-            qubit_device_3_wires._state.flatten(),
-            np.array(expected_output),
-            atol=tol,
-            rtol=0,
+            qubit_device_3_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
         )
 
     @pytest.mark.parametrize(
@@ -366,10 +325,7 @@ class TestApply:
         qubit_device_2_wires.apply([operation(par, wires=[0, 1])])
 
         assert np.allclose(
-            qubit_device_2_wires._state.flatten(),
-            np.array(expected_output),
-            atol=tol,
-            rtol=0,
+            qubit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
         )
 
     test_data_single_wire_with_parameters = [
@@ -408,12 +364,7 @@ class TestApply:
             [1 / 2 - 1j / 2, 1 / 2 + 1j / 2],
             [math.pi / 2],
         ),
-        (
-            qml.Rot,
-            [1, 0],
-            [1 / math.sqrt(2) - 1j / math.sqrt(2), 0],
-            [math.pi / 2, 0, 0],
-        ),
+        (qml.Rot, [1, 0], [1 / math.sqrt(2) - 1j / math.sqrt(2), 0], [math.pi / 2, 0, 0]),
         (qml.Rot, [1, 0], [1 / math.sqrt(2), 1 / math.sqrt(2)], [0, math.pi / 2, 0]),
         (
             qml.Rot,
@@ -555,8 +506,7 @@ class TestApply:
         assert np.allclose(qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
-        "operation,input,expected_output,par",
-        test_data_single_wire_with_parameters_inverses,
+        "operation,input,expected_output,par", test_data_single_wire_with_parameters_inverses
     )
     def test_apply_operation_single_wire_with_parameters_inverse(
         self, qubit_device_1_wire, tol, operation, input, expected_output, par
@@ -578,12 +528,7 @@ class TestApply:
             [0, 1 / math.sqrt(2), 1 / 2, -1j / 2],
             [math.pi / 2],
         ),
-        (
-            qml.CRY,
-            [0, 0, 0, 1],
-            [0, 0, -1 / math.sqrt(2), 1 / math.sqrt(2)],
-            [math.pi / 2],
-        ),
+        (qml.CRY, [0, 0, 0, 1], [0, 0, -1 / math.sqrt(2), 1 / math.sqrt(2)], [math.pi / 2]),
         (qml.CRY, [0, 0, 0, 1], [0, 0, -1, 0], [math.pi]),
         (
             qml.CRY,
@@ -591,12 +536,7 @@ class TestApply:
             [1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0],
             [math.pi / 2],
         ),
-        (
-            qml.CRZ,
-            [0, 0, 0, 1],
-            [0, 0, 0, 1 / math.sqrt(2) + 1j / math.sqrt(2)],
-            [math.pi / 2],
-        ),
+        (qml.CRZ, [0, 0, 0, 1], [0, 0, 0, 1 / math.sqrt(2) + 1j / math.sqrt(2)], [math.pi / 2]),
         (qml.CRZ, [0, 0, 0, 1], [0, 0, 0, 1j], [math.pi]),
         (
             qml.CRZ,
@@ -604,12 +544,7 @@ class TestApply:
             [1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0],
             [math.pi / 2],
         ),
-        (
-            qml.MultiRZ,
-            [0, 0, 0, 1],
-            [0, 0, 0, 1 / math.sqrt(2) - 1j / math.sqrt(2)],
-            [math.pi / 2],
-        ),
+        (qml.MultiRZ, [0, 0, 0, 1], [0, 0, 0, 1 / math.sqrt(2) - 1j / math.sqrt(2)], [math.pi / 2]),
         (qml.MultiRZ, [0, 0, 1, 0], [0, 0, 1j, 0], [math.pi]),
         (
             qml.MultiRZ,
@@ -623,12 +558,7 @@ class TestApply:
             [0, 0, 0, 1 / math.sqrt(2) + 1j / math.sqrt(2)],
             [math.pi / 2, 0, 0],
         ),
-        (
-            qml.CRot,
-            [0, 0, 0, 1],
-            [0, 0, -1 / math.sqrt(2), 1 / math.sqrt(2)],
-            [0, math.pi / 2, 0],
-        ),
+        (qml.CRot, [0, 0, 0, 1], [0, 0, -1 / math.sqrt(2), 1 / math.sqrt(2)], [0, math.pi / 2, 0]),
         (
             qml.CRot,
             [0, 0, 1 / math.sqrt(2), 1 / math.sqrt(2)],
@@ -692,78 +622,23 @@ class TestApply:
                 )
             ],
         ),
-        (
-            qml.DiagonalQubitUnitary,
-            [1, 0, 0, 0],
-            [-1, 0, 0, 0],
-            [np.array([-1, 1, 1, -1])],
-        ),
+        (qml.DiagonalQubitUnitary, [1, 0, 0, 0], [-1, 0, 0, 0], [np.array([-1, 1, 1, -1])]),
         (
             qml.DiagonalQubitUnitary,
             [1 / math.sqrt(2), 0, 0, 1 / math.sqrt(2)],
             [1 / math.sqrt(2), 0, 0, -1 / math.sqrt(2)],
             [np.array([1, 1, 1, -1])],
         ),
-        (
-            qml.DiagonalQubitUnitary,
-            [0, 0, 1, 0],
-            [0, 0, 1j, 0],
-            [np.array([-1, 1j, 1j, -1])],
-        ),
-        (
-            qml.IsingXX,
-            [0, 0, 1, 0],
-            [0, -1j / math.sqrt(2), 1 / math.sqrt(2), 0],
-            [math.pi / 2],
-        ),
-        (
-            qml.IsingXX,
-            [0, 0, 0, 1],
-            [-1j / math.sqrt(2), 0, 0, 1 / math.sqrt(2)],
-            [math.pi / 2],
-        ),
-        (
-            qml.IsingXX,
-            [1, 0, 0, 0],
-            [1 / math.sqrt(2), 0, 0, -1j / math.sqrt(2)],
-            [math.pi / 2],
-        ),
-        (
-            qml.IsingYY,
-            [0, 0, 1, 0],
-            [0, -1j / math.sqrt(2), 1 / math.sqrt(2), 0],
-            [math.pi / 2],
-        ),
-        (
-            qml.IsingYY,
-            [0, 0, 0, 1],
-            [1j / math.sqrt(2), 0, 0, 1 / math.sqrt(2)],
-            [math.pi / 2],
-        ),
-        (
-            qml.IsingYY,
-            [1, 0, 0, 0],
-            [1 / math.sqrt(2), 0, 0, 1j / math.sqrt(2)],
-            [math.pi / 2],
-        ),
-        (
-            qml.IsingZZ,
-            [0, 0, 1, 0],
-            [0, 0, 1 / math.sqrt(2) + 1j / math.sqrt(2), 0],
-            [math.pi / 2],
-        ),
-        (
-            qml.IsingZZ,
-            [0, 0, 0, 1],
-            [0, 0, 0, 1 / math.sqrt(2) - 1j / math.sqrt(2)],
-            [math.pi / 2],
-        ),
-        (
-            qml.IsingZZ,
-            [1, 0, 0, 0],
-            [1 / math.sqrt(2) - 1j / math.sqrt(2), 0, 0, 0],
-            [math.pi / 2],
-        ),
+        (qml.DiagonalQubitUnitary, [0, 0, 1, 0], [0, 0, 1j, 0], [np.array([-1, 1j, 1j, -1])]),
+        (qml.IsingXX, [0, 0, 1, 0], [0, -1j / math.sqrt(2), 1 / math.sqrt(2), 0], [math.pi / 2]),
+        (qml.IsingXX, [0, 0, 0, 1], [-1j / math.sqrt(2), 0, 0, 1 / math.sqrt(2)], [math.pi / 2]),
+        (qml.IsingXX, [1, 0, 0, 0], [1 / math.sqrt(2), 0, 0, -1j / math.sqrt(2)], [math.pi / 2]),
+        (qml.IsingYY, [0, 0, 1, 0], [0, -1j / math.sqrt(2), 1 / math.sqrt(2), 0], [math.pi / 2]),
+        (qml.IsingYY, [0, 0, 0, 1], [1j / math.sqrt(2), 0, 0, 1 / math.sqrt(2)], [math.pi / 2]),
+        (qml.IsingYY, [1, 0, 0, 0], [1 / math.sqrt(2), 0, 0, 1j / math.sqrt(2)], [math.pi / 2]),
+        (qml.IsingZZ, [0, 0, 1, 0], [0, 0, 1 / math.sqrt(2) + 1j / math.sqrt(2), 0], [math.pi / 2]),
+        (qml.IsingZZ, [0, 0, 0, 1], [0, 0, 0, 1 / math.sqrt(2) - 1j / math.sqrt(2)], [math.pi / 2]),
+        (qml.IsingZZ, [1, 0, 0, 0], [1 / math.sqrt(2) - 1j / math.sqrt(2), 0, 0, 0], [math.pi / 2]),
     ]
 
     test_data_two_wires_with_parameters_inverses = [
@@ -775,12 +650,7 @@ class TestApply:
             [0, 1 / math.sqrt(2), 1 / 2, 1j / 2],
             [math.pi / 2],
         ),
-        (
-            qml.MultiRZ,
-            [0, 0, 0, 1],
-            [0, 0, 0, 1 / math.sqrt(2) + 1j / math.sqrt(2)],
-            [math.pi / 2],
-        ),
+        (qml.MultiRZ, [0, 0, 0, 1], [0, 0, 0, 1 / math.sqrt(2) + 1j / math.sqrt(2)], [math.pi / 2]),
         (qml.MultiRZ, [0, 0, 1, 0], [0, 0, -1j, 0], [math.pi]),
         (
             qml.MultiRZ,
@@ -788,24 +658,14 @@ class TestApply:
             [1 / 2 + 1j / 2, 1 / 2 - 1j / 2, 0, 0],
             [math.pi / 2],
         ),
-        (
-            qml.DiagonalQubitUnitary,
-            [1, 0, 0, 0],
-            [-1, 0, 0, 0],
-            [np.array([-1, 1, 1, -1])],
-        ),
+        (qml.DiagonalQubitUnitary, [1, 0, 0, 0], [-1, 0, 0, 0], [np.array([-1, 1, 1, -1])]),
         (
             qml.DiagonalQubitUnitary,
             [1 / math.sqrt(2), 0, 0, 1 / math.sqrt(2)],
             [1 / math.sqrt(2), 0, 0, -1 / math.sqrt(2)],
             [np.array([1, 1, 1, -1])],
         ),
-        (
-            qml.DiagonalQubitUnitary,
-            [0, 0, 1, 0],
-            [0, 0, -1j, 0],
-            [np.array([-1, 1j, 1j, -1])],
-        ),
+        (qml.DiagonalQubitUnitary, [0, 0, 1, 0], [0, 0, -1j, 0], [np.array([-1, 1j, 1j, -1])]),
     ]
 
     @pytest.mark.parametrize(
@@ -821,15 +681,11 @@ class TestApply:
         qubit_device_2_wires.apply([operation(*par, wires=[0, 1])])
 
         assert np.allclose(
-            qubit_device_2_wires._state.flatten(),
-            np.array(expected_output),
-            atol=tol,
-            rtol=0,
+            qubit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
         )
 
     @pytest.mark.parametrize(
-        "operation,input,expected_output,par",
-        test_data_two_wires_with_parameters_inverses,
+        "operation,input,expected_output,par", test_data_two_wires_with_parameters_inverses
     )
     def test_apply_operation_two_wires_with_parameters_inverse(
         self, qubit_device_2_wires, tol, operation, input, expected_output, par
@@ -841,10 +697,7 @@ class TestApply:
         qubit_device_2_wires.apply([operation(*par, wires=[0, 1]).inv()])
 
         assert np.allclose(
-            qubit_device_2_wires._state.flatten(),
-            np.array(expected_output),
-            atol=tol,
-            rtol=0,
+            qubit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
         )
 
     def test_apply_errors_qubit_state_vector(self, qubit_device_2_wires):
@@ -863,10 +716,7 @@ class TestApply:
         ):
             qubit_device_2_wires.reset()
             qubit_device_2_wires.apply(
-                [
-                    qml.RZ(0.5, wires=[0]),
-                    qml.QubitStateVector(np.array([0, 1, 0, 0]), wires=[0, 1]),
-                ]
+                [qml.RZ(0.5, wires=[0]), qml.QubitStateVector(np.array([0, 1, 0, 0]), wires=[0, 1])]
             )
 
     def test_apply_errors_basis_state(self, qubit_device_2_wires):
@@ -923,8 +773,7 @@ class TestExpval:
 
         qubit_device_1_wire.reset()
         qubit_device_1_wire.apply(
-            [qml.QubitStateVector(np.array(input), wires=[0])],
-            obs.diagonalizing_gates(),
+            [qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates()
         )
         res = qubit_device_1_wire.expval(obs)
 
@@ -935,12 +784,7 @@ class TestExpval:
         [
             (qml.Hermitian, [1, 0], 1, [[1, 1j], [-1j, 1]]),
             (qml.Hermitian, [0, 1], 1, [[1, 1j], [-1j, 1]]),
-            (
-                qml.Hermitian,
-                [1 / math.sqrt(2), -1 / math.sqrt(2)],
-                1,
-                [[1, 1j], [-1j, 1]],
-            ),
+            (qml.Hermitian, [1 / math.sqrt(2), -1 / math.sqrt(2)], 1, [[1, 1j], [-1j, 1]]),
         ],
     )
     def test_expval_single_wire_with_parameters(
@@ -952,8 +796,7 @@ class TestExpval:
 
         qubit_device_1_wire.reset()
         qubit_device_1_wire.apply(
-            [qml.QubitStateVector(np.array(input), wires=[0])],
-            obs.diagonalizing_gates(),
+            [qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates()
         )
         res = qubit_device_1_wire.expval(obs)
 
@@ -982,12 +825,7 @@ class TestExpval:
             ),
             (
                 qml.Hermitian,
-                [
-                    1 / math.sqrt(3),
-                    -1 / math.sqrt(3),
-                    1 / math.sqrt(6),
-                    1 / math.sqrt(6),
-                ],
+                [1 / math.sqrt(3), -1 / math.sqrt(3), 1 / math.sqrt(6), 1 / math.sqrt(6)],
                 1,
                 [[1, 1j, 0, 0.5j], [-1j, 1, 0, 0], [0, 0, 1, -1j], [-0.5j, 0, 1j, 1]],
             ),
@@ -1014,8 +852,7 @@ class TestExpval:
 
         qubit_device_2_wires.reset()
         qubit_device_2_wires.apply(
-            [qml.QubitStateVector(np.array(input), wires=[0, 1])],
-            obs.diagonalizing_gates(),
+            [qml.QubitStateVector(np.array(input), wires=[0, 1])], obs.diagonalizing_gates()
         )
         res = qubit_device_2_wires.expval(obs)
 
@@ -1069,8 +906,7 @@ class TestVar:
 
         qubit_device_1_wire.reset()
         qubit_device_1_wire.apply(
-            [qml.QubitStateVector(np.array(input), wires=[0])],
-            obs.diagonalizing_gates(),
+            [qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates()
         )
         res = qubit_device_1_wire.var(obs)
 
@@ -1081,12 +917,7 @@ class TestVar:
         [
             (qml.Hermitian, [1, 0], 1, [[1, 1j], [-1j, 1]]),
             (qml.Hermitian, [0, 1], 1, [[1, 1j], [-1j, 1]]),
-            (
-                qml.Hermitian,
-                [1 / math.sqrt(2), -1 / math.sqrt(2)],
-                1,
-                [[1, 1j], [-1j, 1]],
-            ),
+            (qml.Hermitian, [1 / math.sqrt(2), -1 / math.sqrt(2)], 1, [[1, 1j], [-1j, 1]]),
         ],
     )
     def test_var_single_wire_with_parameters(
@@ -1098,8 +929,7 @@ class TestVar:
 
         qubit_device_1_wire.reset()
         qubit_device_1_wire.apply(
-            [qml.QubitStateVector(np.array(input), wires=[0])],
-            obs.diagonalizing_gates(),
+            [qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates()
         )
         res = qubit_device_1_wire.var(obs)
 
@@ -1149,8 +979,7 @@ class TestVar:
 
         qubit_device_2_wires.reset()
         qubit_device_2_wires.apply(
-            [qml.QubitStateVector(np.array(input), wires=[0, 1])],
-            obs.diagonalizing_gates(),
+            [qml.QubitStateVector(np.array(input), wires=[0, 1])], obs.diagonalizing_gates()
         )
         res = qubit_device_2_wires.var(obs)
 
@@ -1389,23 +1218,9 @@ class TestDefaultQubitIntegration:
             ),
             (
                 "Hermitian",
-                [
-                    1 / math.sqrt(3),
-                    -1 / math.sqrt(3),
-                    1 / math.sqrt(6),
-                    1 / math.sqrt(6),
-                ],
+                [1 / math.sqrt(3), -1 / math.sqrt(3), 1 / math.sqrt(6), 1 / math.sqrt(6)],
                 1,
-                [
-                    np.array(
-                        [
-                            [1, 1j, 0, 0.5j],
-                            [-1j, 1, 0, 0],
-                            [0, 0, 1, -1j],
-                            [-0.5j, 0, 1j, 1],
-                        ]
-                    )
-                ],
+                [np.array([[1, 1j, 0, 0.5j], [-1j, 1, 0, 0], [0, 0, 1, -1j], [-0.5j, 0, 1j, 1]])],
             ),
             (
                 "Hermitian",
@@ -1642,10 +1457,7 @@ class TestTensorExpval:
         dev = qml.device("default.qubit", wires=2)
 
         A = np.array(
-            [
-                [1.02789352, 1.61296440 - 0.3498192j],
-                [1.61296440 + 0.3498192j, 1.23920938 + 0j],
-            ]
+            [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
         )
 
         obs = qml.Hermitian(A, wires=[0]) @ qml.Identity(wires=[1])
@@ -1669,10 +1481,7 @@ class TestTensorExpval:
         dev = qml.device("default.qubit", wires=3)
 
         A = np.array(
-            [
-                [1.02789352, 1.61296440 - 0.3498192j],
-                [1.61296440 + 0.3498192j, 1.23920938 + 0j],
-            ]
+            [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
         )
         Identity = np.array([[1, 0], [0, 1]])
         H = np.kron(np.kron(Identity, Identity), A)
