@@ -1837,13 +1837,8 @@ class IsingYY(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe:
-
-    .. math::
-         \frac{d}{d\phi} f(YY(\phi))
-         = \frac{1}{2} \left[ f(YY(\phi + \pi/2)) - f(YY(\phi - \pi/2)) \right]
-
-       where :math:`f` is an expectation value depending on :math:`YY(\phi)`.
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(YY(\phi)) = \frac{1}{2}\left[f(YY(\phi +\pi/2)) - f(YY(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`YY(\phi)`.
 
     Args:
         phi (float): the phase angle
