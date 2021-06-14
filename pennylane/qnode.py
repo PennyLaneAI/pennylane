@@ -419,6 +419,13 @@ class QNode:
                 f"The {device.short_name} device does not support adjoint differentiation."
             )
 
+        if device.shots is not None:
+            warnings.warn(
+                "Adjoint diff requested on device with finite shots. Adjoint"
+                " diff always calculated exactly.",
+                UserWarning,
+            )
+
         jac_options = {"method": "device", "jacobian_method": "adjoint_jacobian"}
         # reuse the forward pass
         # torch and tensorflow can cache the state

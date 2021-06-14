@@ -39,6 +39,17 @@ class TestAdjointJacobian:
         with pytest.raises(qml.QuantumFunctionError, match="Adjoint differentiation method does"):
             dev.adjoint_jacobian(tape)
 
+    def test_finite_shots_warns(self):
+        """Tests warning raised when finite shots specified"""
+
+        dev = qml.device("default.qubit", wires=1, shots=1)
+
+        with qml.tape.JacobianTape() as tape:
+            qml.expval(qml.PauliZ(0))
+
+        with pytest.warns(UserWarning, match="Adjoint diff called on device with finite shots."):
+            dev.adjoint_jacobian(tape)
+
     def test_unsupported_op(self, dev):
         """Test if a QuantumFunctionError is raised for an unsupported operation, i.e.,
         multi-parameter operations that are not qml.Rot"""

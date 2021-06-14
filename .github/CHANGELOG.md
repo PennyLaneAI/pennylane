@@ -577,6 +577,8 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Bug fixes</h3>
 
+* Warns when adjoint differentiation specified or called on device with finite shots.
+
 * Fixes a bug where multiple identical Hamiltonian terms will produce a
   different result with ``optimize=True`` using ``ExpvalCost``.
   [(#1405)](https://github.com/XanaduAI/pennylane/pull/1405)

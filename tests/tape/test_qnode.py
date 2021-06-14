@@ -261,6 +261,14 @@ class TestValidation:
         with pytest.raises(ValueError, match="The default.gaussian device does not"):
             QNode._validate_adjoint_method(dev, "tf")
 
+    def test_validate_adjoint_finite_shots(self):
+        """Test that a UserWarning is raised when device has finite shots"""
+
+        dev = qml.device("default.qubit", wires=1, shots=1)
+
+        with pytest.warns(UserWarning, match="Adjoint diff requested on device with finite shots."):
+            QNode._validate_adjoint_method(dev, "autograd")
+
     def test_qnode_print(self):
         """Test that printing a QNode object yields the right information."""
         dev = qml.device("default.qubit", wires=1)
