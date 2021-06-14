@@ -15,10 +15,11 @@
 This module contains the base quantum tape.
 """
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods
-from collections import Counter, deque
+from collections import Counter, deque, defaultdict
 import contextlib
 import copy
 from threading import RLock
+import warnings
 
 import numpy as np
 
@@ -317,7 +318,7 @@ class QuantumTape(AnnotatedQueue):
 
         self._trainable_params = set()
         self._graph = None
-        self._resources = None
+        self._specs = None
         self._depth = None
         self._output_dim = 0
 
@@ -500,7 +501,7 @@ class QuantumTape(AnnotatedQueue):
     def _update(self):
         """Update all internal tape metadata regarding processed operations and observables"""
         self._graph = None
-        self._resources = None
+        self._specs = None
         self._depth = None
         self._update_circuit_info()
         self._update_par_info()
@@ -1002,23 +1003,23 @@ class QuantumTape(AnnotatedQueue):
 
         >>> tape.get_resources()
         {'Hadamard': 2, 'RZ': 1, 'CNOT': 2, 'Rot': 1}
+
         """
-        if self._resources is None:
-            self._resources = {}
 
-            for op in self.operations:
-                if op.name not in self._resources.keys():
-                    self._resources[op.name] = 1
-                else:
-                    self._resources[op.name] += 1
+        warnings.warn(
+            "``tape.get_resources``is now deprecated and will be removed in v0.17. "
+            "Please use the more general ``tape.specs`` instead.",
+            UserWarning,
+        )
 
-        return self._resources
+        return self.specs["gate_types"]
 
     def get_depth(self):
         """Depth of the quantum circuit.
 
         Returns:
-            int: Circuit depth, computed as the longest path in the circuit's directed acyclic graph representation.
+            int: Circuit depth, computed as the longest path in the
+            circuit's directed acyclic graph representation.
 
         **Example**
 
@@ -1036,11 +1037,69 @@ class QuantumTape(AnnotatedQueue):
 
         >>> tape.get_depth()
         4
+
         """
+
+        warnings.warn(
+            "``tape.get_depth`` is now deprecated and will be removed in v0.17. "
+            "Please use the more general ``tape.specs`` instead.",
+            UserWarning,
+        )
+
         if self._depth is None:
             self._depth = self.graph.get_depth()
 
         return self._depth
+
+    @property
+    def specs(self):
+        """Resource information about a quantum circuit.
+
+        Returns:
+            dict[str, Union[defaultdict,int]]: dictionaries that contain tape specifications
+
+        **Example**
+
+        .. code-block:: python3
+
+            with qml.tape.QuantumTape() as tape:
+                qml.Hadamard(wires=0)
+                qml.RZ(0.26, wires=1)
+                qml.CNOT(wires=[1, 0])
+                qml.Rot(1.8, -2.7, 0.2, wires=0)
+                qml.Hadamard(wires=1)
+                qml.CNOT(wires=[0, 1])
+                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        Asking for the specs produces a dictionary as shown below:
+
+        >>> tape.specs['gate_sizes']
+        defaultdict(int, {1: 4, 2: 2})
+        >>> tape.specs['gate_types']
+        defaultdict(int, {'Hadamard': 2, 'RZ': 1, 'CNOT': 2, 'Rot': 1})
+
+        As ``defaultdict`` objects, any key not present in the dictionary returns 0.
+
+        >>> tape.specs['gate_types']['RX']
+        0
+
+        """
+        if self._specs is None:
+            self._specs = {"gate_sizes": defaultdict(int), "gate_types": defaultdict(int)}
+
+            for op in self.operations:
+                # don't use op.num_wires to allow for flexible gate classes like QubitUnitary
+                self._specs["gate_sizes"][len(op.wires)] += 1
+                self._specs["gate_types"][op.name] += 1
+
+            self._specs["num_operations"] = len(self.operations)
+            self._specs["num_observables"] = len(self.observables)
+            self._specs["num_diagonalizing_gates"] = len(self.diagonalizing_gates)
+            self._specs["num_used_wires"] = self.num_wires
+            self._specs["depth"] = self.graph.get_depth()
+            self._specs["num_trainable_params"] = self.num_params
+
+        return self._specs
 
     def draw(self, charset="unicode", wire_order=None, show_all_wires=False):
         """Draw the quantum tape as a circuit diagram.

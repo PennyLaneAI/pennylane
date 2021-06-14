@@ -18,10 +18,11 @@ to the ``QuantumTape`` class.
 # pylint: disable=too-many-branches
 
 import itertools
+import warnings
+
 import numpy as np
 
 import pennylane as qml
-
 from pennylane.operation import State
 from pennylane.tape import QuantumTape
 
@@ -398,6 +399,47 @@ class JacobianTape(QuantumTape):
         """
         raise NotImplementedError
 
+    def _choose_params_with_methods(self, diff_methods, argnum):
+        """Chooses the trainable parameters to use for computing the Jacobian
+        by returning a map of their indices and differentiation methods.
+
+        When there are fewer parameters specified than the total number of
+        trainable parameters, the Jacobian is estimated by using the parameters
+        specified using the ``argnum`` keyword argument.
+
+        Args:
+            diff_methods (list): the ordered list of differentiation methods
+                for each parameter
+            argnum (int, list(int), None): Indices for which argument(s) to
+                compute the Jacobian with respect to.
+
+        Returns:
+            enumerate or list: map of the trainable parameter indices and
+            differentiation methods
+        """
+        if argnum is None:
+            return enumerate(diff_methods)
+
+        if isinstance(argnum, int):
+            argnum = [argnum]
+
+        if not all(ind in self.trainable_params for ind in argnum):
+            raise ValueError(
+                "Incorrect trainable parameters were specified for the argnum argument."
+            )
+
+        num_params = len(argnum)
+
+        if num_params == 0:
+            warnings.warn(
+                "No trainable parameters were specified for computing the Jacobian.",
+                UserWarning,
+            )
+            return []
+
+        diff_methods_to_use = map(diff_methods.__getitem__, argnum)
+        return zip(argnum, diff_methods_to_use)
+
     def jacobian(self, device, params=None, **options):
         r"""Compute the Jacobian of the parametrized quantum circuit recorded by the quantum tape.
 
@@ -446,6 +488,9 @@ class JacobianTape(QuantumTape):
             order=1 (int): The order of the finite difference method to use. ``1`` corresponds
                 to forward finite differences, ``2`` to centered finite differences.
             shift=pi/2 (float): the size of the shift for two-term parameter-shift gradient computations
+            argnum=None (int, list(int), None): Which argument(s) to compute the Jacobian
+                with respect to. When there are fewer parameters specified than the
+                total number of trainable parameters, the jacobian is being estimated.
 
         Returns:
             array[float]: 2-dimensional array of shape ``(tape.output_dim, tape.num_params)``
@@ -554,7 +599,11 @@ class JacobianTape(QuantumTape):
         processing_fns = []
         nonzero_grad_idx = []
 
-        for trainable_idx, param_method in enumerate(diff_methods):
+        argnum = options.get("argnum", None)
+
+        params_with_methods = self._choose_params_with_methods(diff_methods, argnum)
+
+        for trainable_idx, param_method in params_with_methods:
             if param_method == "0":
                 continue
 
