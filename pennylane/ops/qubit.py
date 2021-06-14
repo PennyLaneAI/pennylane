@@ -3049,8 +3049,8 @@ class SparseHamiltonian(Observable):
     * Gradient recipe: None
 
     Args:
-        H (coo_matrix): a sparse matrix in scipy coordinate list (COO) format with dimension
-        :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
+        H (coo_matrix): a sparse matrix in scipy coordinate list (COO) format with
+            dimension :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
     """
     num_wires = AnyWires
     num_params = 1
