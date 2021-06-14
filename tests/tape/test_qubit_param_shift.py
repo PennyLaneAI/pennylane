@@ -86,6 +86,28 @@ class TestGradMethod:
         assert tape._grad_method(2) == "A"
 
 
+def test_specs_num_parameter_shift_executions():
+    """Tests specs has the correct number of parameter-shift executions"""
+
+    dev = qml.device("default.qubit", wires=3)
+    x = 0.543
+    y = -0.654
+
+    with qml.tape.QubitParamShiftTape() as tape:
+        qml.CRX(x, wires=[0, 1])
+        qml.RY(y, wires=[1])
+        qml.CNOT(wires=[0, 1])
+        qml.RY(0.12345, wires=2)
+        qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+    num_exec = tape.specs["num_parameter_shift_executions"]
+    assert num_exec == 7
+
+    jac = tape.jacobian(dev)
+
+    assert num_exec == (dev.num_executions + 1)
+
+
 class TestParameterShiftRule:
     """Tests for the parameter shift implementation"""
 
