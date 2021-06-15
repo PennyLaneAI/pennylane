@@ -59,4 +59,5 @@ build-all:
 			 	@docker build -t pennylane/base -f docker/pennylane.dockerfile . \
 				&& docker build -t pennylane/tensorflow -f docker/tensorflow.dockerfile . \
 				&& docker build -t pennylane/torch -f docker/torch.dockerfile . \
+				&& docker build -t pennylane/qchem -f docker/qchem.dockerfile . \
 				&& docker build -t pennylane/jax -f docker/jax.dockerfile .
