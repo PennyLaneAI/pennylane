@@ -467,10 +467,8 @@ class DefaultQubit(QubitDevice):
             state_sparse = scipy.sparse.coo_matrix(self.state)
             state_trans = scipy.sparse.coo_matrix(self.state.reshape(len(self.state), 1))
             h_sparse = observable.matrix
-
-            ev = scipy.sparse.coo_matrix.dot(
-                state_sparse, scipy.sparse.coo_matrix.dot(h_sparse, state_trans)
-            )
+            ev = scipy.sparse.coo_matrix.dot(h_sparse, state_trans)
+            ev = scipy.sparse.coo_matrix.dot(state_sparse, ev)
 
             return np.real(ev.toarray()[0])
 
