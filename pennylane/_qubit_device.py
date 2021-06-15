@@ -535,7 +535,7 @@ class QubitDevice(Device):
         This is an auxiliary method to the generate_samples method.
 
         Args:
-            samples (array): integer samples of basis states in base 10 representation
+            samples (array[int]): samples of basis states in base 10 representation
             num_wires (int): the number of qubits
             dtype (type): Type of the internal integer array to be used. Can be
                 important to specify for large systems for memory allocation
