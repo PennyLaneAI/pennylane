@@ -1,4 +1,4 @@
-From pennylane:latest
+From pennylane/base:latest
 
 # Update and install Torch
 RUN apt-get update && pip3 install torch==1.8.1

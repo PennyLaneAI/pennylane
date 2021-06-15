@@ -1,4 +1,4 @@
-From pennylane:latest
+From pennylane/base:latest
 
 # Update and install TensorFlow
 RUN apt-get update && pip3 install tensorflow==2.5.0

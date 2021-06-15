@@ -1,4 +1,4 @@
-From pennylane:latest
+From pennylane/base:latest
 
 # Update and install Jax
 RUN apt-get update && pip3 install jax jaxlib
