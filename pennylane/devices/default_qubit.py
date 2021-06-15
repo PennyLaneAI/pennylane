@@ -464,11 +464,12 @@ class DefaultQubit(QubitDevice):
         """
         if observable.name == "SparseHamiltonian" and self.shots is None:
 
-            state_sparse = coo_matrix(self.state)
-            state_trans = coo_matrix(self.state.reshape(len(self.state), 1))
-            h_sparse = observable.matrix
-
-            ev = coo_matrix.dot(state_sparse, coo_matrix.dot(h_sparse, state_trans))
+            ev = coo_matrix.dot(
+                coo_matrix(self.state),
+                coo_matrix.dot(
+                    observable.matrix, coo_matrix(self.state.reshape(len(self.state), 1))
+                ),
+            )
 
             return np.real(ev.toarray()[0])
 
