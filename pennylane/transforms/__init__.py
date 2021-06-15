@@ -45,6 +45,7 @@ containing quantum operations) that are used to construct QNodes.
     ~adjoint
     ~ctrl
     ~transforms.invisible
+    ~apply_controlled_Q
     ~quantum_monte_carlo
 
 Transforms that act on tapes
