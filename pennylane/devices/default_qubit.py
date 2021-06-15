@@ -474,9 +474,7 @@ class DefaultQubit(QubitDevice):
 
             return np.real(ev.toarray()[0])
 
-        else:
-
-            return super().expval(observable, shot_range=shot_range, bin_size=bin_size)
+        return super().expval(observable, shot_range=shot_range, bin_size=bin_size)
 
     def _get_unitary_matrix(self, unitary):  # pylint: disable=no-self-use
         """Return the matrix representing a unitary operation.
