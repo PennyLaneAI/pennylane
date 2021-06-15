@@ -23,7 +23,7 @@ import functools
 from string import ascii_letters as ABC
 
 import numpy as np
-import scipy
+from scipy.sparse import coo_matrix
 
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
 from pennylane.operation import DiagonalOperation
@@ -464,11 +464,11 @@ class DefaultQubit(QubitDevice):
         """
         if observable.name == "SparseHamiltonian" and self.shots is None:
 
-            state_sparse = scipy.sparse.coo_matrix(self.state)
-            state_trans = scipy.sparse.coo_matrix(self.state.reshape(len(self.state), 1))
+            state_sparse = coo_matrix(self.state)
+            state_trans = coo_matrix(self.state.reshape(len(self.state), 1))
             h_sparse = observable.matrix
-            ev = scipy.sparse.coo_matrix.dot(h_sparse, state_trans)
-            ev = scipy.sparse.coo_matrix.dot(state_sparse, ev)
+
+            ev = coo_matrix.dot(state_sparse, coo_matrix.dot(h_sparse, state_trans))
 
             return np.real(ev.toarray()[0])
 
