@@ -16,15 +16,14 @@ Unit tests for the :mod:`pennylane.plugin.DefaultGaussian` device.
 """
 # pylint: disable=protected-access,cell-var-from-loop,no-self-use
 
-import pytest
-from scipy.special import factorial as fac
-from scipy.linalg import block_diag
 import numpy as np
 import numpy.random
+import pytest
+from scipy.linalg import block_diag
+from scipy.special import factorial as fac
 
 import pennylane as qml
 from pennylane import DeviceError
-from pennylane.wires import Wires
 from pennylane.devices.default_gaussian import (
     fock_prob,
     rotation,
@@ -41,7 +40,7 @@ from pennylane.devices.default_gaussian import (
     thermal_state,
     DefaultGaussian,
 )
-
+from pennylane.wires import Wires
 
 U = np.array(
     [
@@ -49,7 +48,6 @@ U = np.array(
         [-0.23889780 - 0.28101519j, -0.88031770 - 0.29832709j],
     ]
 )
-
 
 U2 = np.array(
     [
@@ -80,9 +78,7 @@ U2 = np.array(
     ]
 )
 
-
 H = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
-
 
 hbar = 2
 
@@ -121,8 +117,8 @@ def test_analytic_deprecation():
     msg += "Please use shots=None instead of analytic=True."
 
     with pytest.raises(
-        DeviceError,
-        match=msg,
+            DeviceError,
+            match=msg,
     ):
         qml.device("default.gaussian", wires=1, shots=1, analytic=True)
 
@@ -141,7 +137,7 @@ class TestExceptions:
             raise NotImplementedError()
 
         with pytest.raises(
-            NotImplementedError, match="default.gaussian does not support sampling NumberOperator"
+                NotImplementedError, match="default.gaussian does not support sampling NumberOperator"
         ):
             circuit()
 
@@ -155,15 +151,15 @@ class TestAuxillaryFunctions:
         # an arbitrary two-mode Gaussian state generated using Strawberry Fields
         mu = np.array([0.6862, 0.4002, 0.09, 0.558]) * np.sqrt(hbar)
         cov = (
-            np.array(
-                [
-                    [0.50750512, -0.04125979, -0.21058229, -0.07866912],
-                    [-0.04125979, 0.50750512, -0.07866912, -0.21058229],
-                    [-0.21058229, -0.07866912, 0.95906208, 0.27133391],
-                    [-0.07866912, -0.21058229, 0.27133391, 0.95906208],
-                ]
-            )
-            * hbar
+                np.array(
+                    [
+                        [0.50750512, -0.04125979, -0.21058229, -0.07866912],
+                        [-0.04125979, 0.50750512, -0.07866912, -0.21058229],
+                        [-0.21058229, -0.07866912, 0.95906208, 0.27133391],
+                        [-0.07866912, -0.21058229, 0.27133391, 0.95906208],
+                    ]
+                )
+                * hbar
         )
 
         # expected Fock state probabilities
@@ -451,7 +447,7 @@ class TestDefaultGaussianDevice:
                         # reorder from symmetric ordering to xp-ordering
                         S = block_diag(S, np.identity(2))[:, [0, 2, 1, 3]][[0, 2, 1, 3]]
 
-                    expected_out =  S @ gaussian_dev._state[0] @ S.T, S @ gaussian_dev._state[1]
+                    expected_out = S @ gaussian_dev._state[0] @ S.T, S @ gaussian_dev._state[1]
 
             gaussian_dev.apply(gate_name, wires=Wires(w), par=p)
 
@@ -512,10 +508,10 @@ class TestDefaultGaussianDevice:
         dev.apply("SqueezedState", wires=Wires([0]), par=[r, 0])
         mean = dev.expval("FockStateProjector", Wires([0]), [np.array([2 * n])])
         expected = (
-            np.abs(
-                np.sqrt(fac(2 * n)) / (2 ** n * fac(n)) * (-np.tanh(r)) ** n / np.sqrt(np.cosh(r))
-            )
-            ** 2
+                np.abs(
+                    np.sqrt(fac(2 * n)) / (2 ** n * fac(n)) * (-np.tanh(r)) ** n / np.sqrt(np.cosh(r))
+                )
+                ** 2
         )
         assert mean == pytest.approx(expected, abs=tol)
 
@@ -569,10 +565,10 @@ class TestDefaultGaussianDevice:
         dev.apply("SqueezedState", wires=Wires([0]), par=[r, 0])
         var = dev.var("FockStateProjector", Wires([0]), [np.array([2 * n])])
         mean = (
-            np.abs(
-                np.sqrt(fac(2 * n)) / (2 ** n * fac(n)) * (-np.tanh(r)) ** n / np.sqrt(np.cosh(r))
-            )
-            ** 2
+                np.abs(
+                    np.sqrt(fac(2 * n)) / (2 ** n * fac(n)) * (-np.tanh(r)) ** n / np.sqrt(np.cosh(r))
+                )
+                ** 2
         )
         assert var == pytest.approx(mean * (1 - mean), abs=tol)
 
@@ -619,7 +615,7 @@ class TestSample:
 
     @pytest.mark.parametrize("alpha", [0.324 - 0.59j, 2.3 + 1.2j, 1.3j, -1.2])
     def test_sampling_parameters_coherent_quad_operator(
-        self, tol, gaussian_device_1_wire, alpha, monkeypatch
+            self, tol, gaussian_device_1_wire, alpha, monkeypatch
     ):
         """Tests that the np.random.normal is called with the correct parameters that reflect
         the underlying distribution for a coherent state when using QuadOperator."""
