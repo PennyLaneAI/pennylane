@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 
+=======
+>>>>>>> 9609b7777edf1eab44d038ec58e1338fb232378f
 ARG BASE_IMAGE=ubuntu:18.04
 ARG PYTHON_VERSION=3.7
 ARG PyTorch_VERSION=1.8.1

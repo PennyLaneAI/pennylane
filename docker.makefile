@@ -1,13 +1,3 @@
-#Dockerfile vars
-#
-# ARG BASE_IMAGE=18.04
-# ARG PYTHON_VERSION=3.7
-# ARG TENSORFLOW_VERSION=2.5
-# ARG PyTorch_VERSION=1.8.1
-# #ARG Jax_VERSION=
-
-#make -f docker.makefile build-base
-
 #vars
 IMAGENAME=pennylane-build
 BUILDNAME=pennylane
@@ -36,15 +26,20 @@ build-base:
 	    @docker build -t pennylane -f docker/pennylane.dockerfile .
 
 build-qchem:
+<<<<<<< HEAD
 	    @docker build -t pennylane -f docker/qchem.dockerfile .
+=======
+	    @docker build -t pennylane-qchem -f docker/qchem.dockerfile .
+>>>>>>> 9609b7777edf1eab44d038ec58e1338fb232378f
 
 build-tensorflow:
-	    @docker build -t pennylane -f docker/tensorflow.dockerfile .
+	    @docker build -t pennylane-tensorflow -f docker/tensorflow.dockerfile .
 
 build-torch:
-	     @docker build -t pennylane -f docker/pytorch.dockerfile .
+	     @docker build -t pennylane-torch -f docker/torch.dockerfile .
 
 build-jax:
+<<<<<<< HEAD
 	     @docker build -t pennylane -f docker/jax.dockerfile .
 
 build-tensorflow-gpu:
@@ -55,3 +50,21 @@ build-jax-gpu:
 
 build-torch-gpu:
 			 	@docker build -t pennylane -f docker/gpu-cuda/tensorflow.dockerfile .
+=======
+	     @docker build -t pennylane-jax -f docker/jax.dockerfile .
+
+build-tensorflow-gpu:
+			 	@docker build -t pennylane-tensorflow-gpu -f docker/gpu-cuda/tensorflow.dockerfile .
+
+build-jax-gpu:
+			 	@docker build -t pennylane-jax-gpu -f docker/gpu-cuda/tensorflow.dockerfile .
+
+build-torch-gpu:
+			 	@docker build -t pennylane-torch-gpu -f docker/gpu-cuda/tensorflow.dockerfile .
+
+build-all:
+			 	@docker build -t pennylane -f docker/pennylane.dockerfile . \
+				&& docker build -t pennylane -f docker/tensorflow.dockerfile . \
+				&& docker build -t pennylane -f docker/torch.dockerfile . \
+				&& docker build -t pennylane -f docker/jax.dockerfile .
+>>>>>>> 9609b7777edf1eab44d038ec58e1338fb232378f

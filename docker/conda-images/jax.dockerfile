@@ -1,7 +1,10 @@
 
 ARG BASE_IMAGE=ubuntu:18.04
 ARG PYTHON_VERSION=3.7
+<<<<<<< HEAD
 ARG JAX_VERSION=
+=======
+>>>>>>> 9609b7777edf1eab44d038ec58e1338fb232378f
 # Setup develop base image packages(build-essentials etc)
 FROM ${BASE_IMAGE} as dev-base
 

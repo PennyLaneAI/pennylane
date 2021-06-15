@@ -104,30 +104,49 @@ guide](https://pennylane.ai/qml/demos_submission.html).
 ## Build using Docker
 
 
-Buid using CPU as well GPU(Nvidia CUDA11.1) is also supported.
+Build using CPU as well GPU (Nvidia CUDA 11.1+) is also supported.
 
+<<<<<<< HEAD
 To Build using Basic Pennylane without any interface(Torch,Tensorflow or Jax) run following:
+=======
+To build a basic PennyLane image without any additional interfaces (Torch, TensorFlow, or Jax) run following:
+
+>>>>>>> 9609b7777edf1eab44d038ec58e1338fb232378f
 ```
 make -f docker.makefile build-base
 ```
-To Build using interface(Torch,Tensorflow or Jax) run following:
+To build a PennyLane image using a given interface (Torch, TensorFlow or Jax) run following:
 
 ```
 make -f docker.makefile build-tensorflow
 ```
 
-To Build using interface(Torch,Tensorflow or Jax) and GPU support run following:
+To build a PennyLane image using a given interface (Torch, TensorFlow or Jax) with GPU support run following:
 
 ```
 make -f docker.makefile build-tensorflow-gpu
 ```
 
+<<<<<<< HEAD
 You can also build Qchem packages. Use following commands:
+=======
+You can also build an image with the PennyLane Qchem package and its dependencies. Use following commands:
+>>>>>>> 9609b7777edf1eab44d038ec58e1338fb232378f
 
 ```
 make -f docker.makefile build-qchem
 ```
 
+<<<<<<< HEAD
+=======
+To build all three interfaces(Torch, TensorFlow or Jax) using single command run following.(under-testing!)
+
+```
+make -f docker.makefile build-all
+```
+
+
+>>>>>>> 9609b7777edf1eab44d038ec58e1338fb232378f
 ## Contributing to PennyLane
 
 We welcome contributions—simply fork the PennyLane repository, and then make a [pull

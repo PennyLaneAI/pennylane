@@ -87,10 +87,70 @@ available to a quantum model, the larger the class of functions that model can
 represent, potentially leading to greater utility for quantum machine learning
 applications.
 
+Calculating the frequencies supported by a circuit
+--------------------------------------------------
+
+For certain circuits, information on the frequency spectra :math:`\Omega_j`
+can be derived solely from the structure of the gates
+that encode the corresponding inputs :math:`x_j` (see for example `Schuld,
+Sweke, and Meyer (2020) <https://arxiv.org/abs/2008.08605>`__). More precisely, if
+all input-encoding gates are of the form :math:`e^{-ix_j G}`, where :math:`G` is
+a Hermitian operator that "generates" the operation, we can deduce a maximum set of frequencies
+that can theoretically appear in :math:`\Omega_j`.  Depending on the non-input-encoding
+gates in the circuit, some of these theoretically supported frequencies may end up
+having vanishing Fourier coefficients, and :math:`\Omega_j` effectively turns out to be smaller.
+However, estimates based on the input-encoding strategy can still be useful to understand
+the potential expressivity of a type of ansatz.
+
+The theoretically supported frequencies can be computed
+using the :func:`~.pennylane.fourier.spectrum` function. To mark which gates encode
+inputs (and, for example, which ones are only used for trainable parameters), we
+have to give input-encoding gates an ``id``:
+
+.. code::
+
+    import pennylane as qml
+
+    dev = qml.device('default.qubit', wires=2)
+
+    @qml.qnode(dev)
+    def simple_circuit_marked(x):
+        qml.RX(x[0], wires=0, id="x")
+        qml.RY(x[0], wires=1, id="x")
+        qml.CNOT(wires=[1, 0])
+        return qml.expval(qml.PauliZ(0))
+
+We can then compute the frequencies supported by the input-encoding gates as:
+
+.. code::
+
+   >>> from pennylane.fourier import spectrum
+   >>> freqs = spectrum(simple_circuit_marked)([0.1])
+   >>> for k, v in freqs.items():
+   >>>     print(k, ":", v)
+
+   x : [-2.0, -1.0, 0.0, 1.0, 2.0]
+
+.. note::
+
+    Some encoding-gate types may give rise to non-integer-valued frequencies. In this case,
+    the :func:`~.pennylane.fourier.spectrum` function computes the frequency sets :math:`\Omega_j`
+    of the *Fourier sum* of the form
+
+    .. math::
+
+        f(x) = \sum \limits_{\omega_1\in \Omega_1} \dots \sum \limits_{\omega_N \in \Omega_N}
+        c_{\omega_1,\dots, \omega_N} e^{-i x_1 \omega_1} \dots e^{-i x_N \omega_N},
+
+    with :math:`\omega \in \mathbb{R}`. Just like any other function, such a sum can be turned into a
+    proper Fourier series, but the mapping from non-integer-valued to integer-valued frequencies
+    is not always trivial.
+
 Calculating the Fourier coefficients
 ------------------------------------
 
-The Fourier coefficients can be numerically calculated with the
+To get a more accurate picture of the Fourier series representation of a quantum circuit,
+we have to compute the Fourier coefficients :math:`c_{n_1,\ldots,n_N}`. This is done using numerical methods in the
 :func:`~.pennylane.fourier.coefficients` function:
 
 .. code::
@@ -120,7 +180,7 @@ For more details and examples of coefficient calculation, please see the
 documentation for :func:`~.pennylane.fourier.coefficients`.
 
 Fourier coefficient visualization
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 A key application of the Fourier module is to analyze the *expressivity* of
 classes of quantum circuit families. The set of frequencies in the Fourier
