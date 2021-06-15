@@ -20,6 +20,7 @@ import cmath
 import math
 
 import pytest
+import scipy
 import pennylane as qml
 from pennylane import numpy as np, DeviceError
 from pennylane.devices.default_qubit import _get_slice, DefaultQubit
@@ -869,6 +870,20 @@ class TestExpval:
         # With 3 samples we are guaranteed to see a difference between
         # an estimated variance an an analytically calculated one
         assert expval != 0.0
+
+    def test_sparse_hamiltonian_expval(self):
+        """Test that expectation values of sparse hamiltonians are properly calculated."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        H = scipy.sparse.coo_matrix(np.eye(4))
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit():
+            return qml.expval(qml.SparseHamiltonian(H, wires=[0]))
+
+        expval = circuit()
+        assert expval == 1.0
 
 
 class TestVar:
