@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-
-=======
->>>>>>> 9609b7777edf1eab44d038ec58e1338fb232378f
 ARG BASE_IMAGE=ubuntu:18.04
 ARG PYTHON_VERSION=3.7
 ARG TensorFlow_VERSION=2.5.0
