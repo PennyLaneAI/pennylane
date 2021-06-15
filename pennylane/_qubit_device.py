@@ -542,7 +542,7 @@ class QubitDevice(Device):
                 purposes.
 
         Returns:
-            array: basis states in binary representation
+            array[int]: basis states in binary representation
         """
         powers_of_two = 1 << np.arange(num_wires, dtype=dtype)
         states_sampled_base_ten = samples[:, None] & powers_of_two
