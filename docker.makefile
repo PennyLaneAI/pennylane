@@ -61,3 +61,9 @@ build-all:
 				&& docker build -t pennylane/torch -f docker/torch.dockerfile . \
 				&& docker build -t pennylane/qchem -f docker/qchem.dockerfile . \
 				&& docker build -t pennylane/jax -f docker/jax.dockerfile .
+
+build-all-gpu:
+	@docker build -t pennylane/cuda/base -f docker/gpu-cuda/cuda-base.dockerfile . \
+	&& docker build -t pennylane/tensorflow/gpu -f docker/gpu-cuda/tensorflow.dockerfile . \
+	&& docker build -t pennylane/torch/gpu -f docker/gpu-cuda/torch.dockerfile . \
+	&& docker build -t pennylane/jax/gpu -f docker/gpu-cuda/jax.dockerfile .
