@@ -106,7 +106,7 @@ guide](https://pennylane.ai/qml/demos_submission.html).
 
 Build using CPU as well GPU (Nvidia CUDA 11.1+) is also supported.
 
-To build a basic PennyLane image without any additional interfaces (Torch, TensorFlow or Jax) run following:
+To build a basic PennyLane image without any additional interfaces (Torch, TensorFlow, or Jax) run following:
 
 ```
 make -f docker.makefile build-base
