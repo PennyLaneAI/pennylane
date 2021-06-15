@@ -2,6 +2,36 @@
 
 <h3>New features since last release</h3>
 
+* Added functionality to compute the sparse matrix representation of a `qml.Hamiltonian` object.
+  [(#1394)](https://github.com/PennyLaneAI/pennylane/pull/1394)
+
+  Example:
+  
+  ```python
+  coeffs = [1, -0.45]
+  obs = [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1)]
+  H = qml.Hamiltonian(coeffs, obs)
+  H_sparse = sparse_hamiltonian(H)
+  ```
+ 
+  The resulting matrix is a sparse matrix in scipy coordinate list (COO) format:
+
+  ```python
+  >>> H_sparse
+  <4x4 sparse matrix of type '<class 'numpy.complex128'>'
+      with 2 stored elements in COOrdinate format>
+  ```
+
+  The sparse matrix can be converted to an array as:
+
+  ```python
+  >>> H_sparse.toarray()
+  array([[ 1.+0.j  ,  0.+0.j  ,  0.+0.45j,  0.+0.j  ],
+         [ 0.+0.j  , -1.+0.j  ,  0.+0.j  ,  0.-0.45j],
+         [ 0.-0.45j,  0.+0.j  , -1.+0.j  ,  0.+0.j  ],
+         [ 0.+0.j  ,  0.+0.45j,  0.+0.j  ,  1.+0.j  ]])
+  ```
+
 * The `specs` QNode transform creates a function that produces the specifications for a circuit
   at given arguments and keywords. Specifications can also be viewed after execution of a QNode or
   tape by accessing their `specs` property. 
