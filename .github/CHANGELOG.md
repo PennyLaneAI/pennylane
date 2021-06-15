@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* Added s sparse hamiltonian observable and the functionality to support computing its expectation value.
+  [(#1398)](https://github.com/PennyLaneAI/pennylane/pull/1398)
+
+
 * Added functionality to compute the sparse matrix representation of a `qml.Hamiltonian` object.
   [(#1394)](https://github.com/PennyLaneAI/pennylane/pull/1394)
 
