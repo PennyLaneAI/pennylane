@@ -516,7 +516,7 @@ class QubitDevice(Device):
             dtype=np.uint32 (type): the data type of the arrays to use
 
         Returns:
-            array: the sampled basis states
+            array[int]: the sampled basis states
         """
         if 2 < num_wires < 32:
             states_base_ten = np.arange(2 ** num_wires, dtype=dtype)
