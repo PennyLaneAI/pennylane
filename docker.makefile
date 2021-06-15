@@ -47,7 +47,7 @@ build-torch-gpu:
 			 	@docker build -t pennylane-torch-gpu -f docker/gpu-cuda/tensorflow.dockerfile .
 
 build-all:
-			 	@docker build -t pennylane -f docker/pennylane.dockerfile .
-				&& @docker build -t pennylane -f docker/tensorflow.dockerfile .
-				&& @docker build -t pennylane -f docker/pytorch.dockerfile .
-				&&  @docker build -t pennylane -f docker/jax.dockerfile .
+			 	@docker build -t pennylane -f docker/pennylane.dockerfile . \
+				&& docker build -t pennylane -f docker/tensorflow.dockerfile . \
+				&& docker build -t pennylane -f docker/torch.dockerfile . \
+				&& docker build -t pennylane -f docker/jax.dockerfile .
