@@ -15,6 +15,9 @@ RUN  pip install wheel && pip install openfermionpsi4 && pip install -r requirem
         && pip install pytest pytest-cov pytest-mock flaky \
         && make test
 
+# Image completed, Exit Now.
+CMD echo "Successfully built Docker image"
+
 ## Left for some Experiments on More Concise Build
 # create Second small build.
 ##FROM ubuntu:20.04
