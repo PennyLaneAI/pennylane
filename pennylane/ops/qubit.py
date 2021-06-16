@@ -3035,13 +3035,6 @@ class SparseHamiltonian(Observable):
     r"""SparseHamiltonian(H)
     A Hamiltonian represented directly as a sparse matrix in coordinate list (COO) format.
 
-    The expectation value of this observable is
-
-    .. math::
-        E = \langle \psi | H | \psi \rangle
-
-    which is computed directly with a sparse matrix-vector multiplication operation.
-
     **Details:**
 
     * Number of wires: Any

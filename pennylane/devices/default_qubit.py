@@ -447,7 +447,9 @@ class DefaultQubit(QubitDevice):
         return self._stack([state[sl_0], phase * state[sl_1]], axis=axes[0])
 
     def expval(self, observable, shot_range=None, bin_size=None):
-        """Return the expectation value of a Hamiltonian observable represented as a sparse matrix.
+        """Returns the expectation value of a Hamiltonian observable. When the observable is a
+         `SparseHamiltonian` object, the expectation value is computed directly, which leads to
+          faster execution.
 
         Args:
             observable (~.Observable): a PennyLane observable
