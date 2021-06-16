@@ -337,3 +337,41 @@ def where(condition, x, y):
     tensor([ 0.6000,  0.2300,  0.7000, -4.0000, -5.0000], grad_fn=<SWhereBackward>)
     """
     return np.where(condition, x, y, like=_multi_dispatch([condition, x, y]))
+
+
+def frobenius_inner_product(A, B, normalize=False):
+    r"""Frobenius inner product between two matrices.
+
+    .. math::
+
+        \langle A, B \rangle_F = \sum_{i,j=1}^n A_{ij} B_{ij} = \operatorname{tr} (A^T B)
+
+    The Frobenius inner product is equivalent to the Hilbert-Schmidt inner product for
+    matrices with real-valued entries.
+
+    Args:
+        A (tensor_like[float]): First matrix, assumed to be a square array.
+        B (tensor_like[float]): Second matrix, assumed to be a square array.
+        normalize (bool): If True, divide the inner_product by the Frobenius norms of A and B.
+            Defaults to False.
+
+    Returns:
+        float: Frobenius inner product of A and B
+
+    **Example**
+
+    >>> A = np.random.random((3,3))
+    >>> B = np.random.random((3,3))
+    >>> qml.math.frobenius_inner_product(A, B)
+    3.091948202943376
+    """
+    interface = _multi_dispatch([A, B])
+    A, B = np.coerce([A, B], like=interface)
+
+    inner_product = np.sum(A * B)
+
+    if normalize:
+        norm = np.linalg.norm(A, "fro") * np.linalg.norm(B, "fro")
+        inner_product = inner_product / norm
+
+    return inner_product
