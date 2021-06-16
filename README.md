@@ -104,7 +104,8 @@ guide](https://pennylane.ai/qml/demos_submission.html).
 ## Build using Docker
 
 
-Build using CPU as well GPU (Nvidia CUDA 11.1+) is also supported.
+Docker support exists for building using CPU and GPU (Nvidia CUDA 11.1+) images.
+
 
 To build a basic PennyLane image without any additional interfaces (Torch, TensorFlow, or Jax) run following:
 
