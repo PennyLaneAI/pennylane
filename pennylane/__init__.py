@@ -53,6 +53,7 @@ from pennylane.transforms import (
     qfunc_transform,
     single_tape_transform,
     quantum_monte_carlo,
+    apply_controlled_Q,
 )
 from pennylane.utils import inv
 from pennylane.vqe import ExpvalCost, Hamiltonian, VQECost
