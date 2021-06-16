@@ -384,6 +384,27 @@ class TestGradients:
 class TestQNodeIntegration:
     """Test QNode integration with the reversible method"""
 
+    def test_finite_shots_warning(self):
+        """ "Tests that a warning is raised if used on a device with finite shots"""
+
+        dev = qml.device("default.qubit", wires=1, shots=1)
+
+        with pytest.warns(
+            UserWarning,
+            match="Requested reversible differentiation to be computed with finite shots.",
+        ):
+
+            @qml.qnode(dev, diff_method="reversible")
+            def circ(x):
+                qml.RX(x, wires=0)
+                return qml.expval(qml.PauliZ(0))
+
+        with pytest.warns(
+            UserWarning,
+            match="Requested reversible differentiation to be computed with finite shots.",
+        ):
+            qml.grad(circ)(0.1)
+
     def test_qnode(self, mocker, tol):
         """Test that specifying diff_method allows the reversible
         method to be selected"""
