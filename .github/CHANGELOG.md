@@ -15,7 +15,7 @@
   def circuit(param, H):
       qml.PauliX(0)
       qml.SingleExcitation(param, wires = [0, 1])    
-      return qml.expval(qml.SparseHamiltonian(H))
+      return qml.expval(qml.SparseHamiltonian(H, wires=[]))
 
   >>> print(circuit([0.5], scipy.sparse.eye(4).tocoo()))
   0.9999999999999999
