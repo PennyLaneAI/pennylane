@@ -2,9 +2,27 @@
 
 <h3>New features since last release</h3>
 
-* Added a sparse hamiltonian observable and the functionality to support computing its expectation value.
-  [(#1398)](https://github.com/PennyLaneAI/pennylane/pull/1398)
+* Added a sparse hamiltonian observable and the functionality to support computing its expectation
+  value. [(#1398)](https://github.com/PennyLaneAI/pennylane/pull/1398)
 
+  For example, the expectation value of a sparse hamiltonian, an identity matrix in this example,
+  can be computed as:
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev, diff_method="parameter-shift")
+  def circuit(param, H):
+      qml.PauliX(0)
+      qml.SingleExcitation(param, wires = [0, 1])    
+      return qml.expval(qml.SparseHamiltonian(H))
+
+  >>> print(circuit([0.5], scipy.sparse.eye(4).tocoo()))
+  0.9999999999999999
+  ```
+
+  The expectation value of the sparse hamiltonian is computed directly, which leads to executions
+  that are faster by 1-3 orders of magnitude. 
 
 * Added functionality to compute the sparse matrix representation of a `qml.Hamiltonian` object.
   [(#1394)](https://github.com/PennyLaneAI/pennylane/pull/1394)
