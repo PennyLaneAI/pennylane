@@ -1824,7 +1824,7 @@ class IsingXX(Operation):
 
 class IsingYY(Operation):
     r"""IsingYY(phi, wires)
-    The Ising YY coupling gate
+    Ising YY coupling gate
 
     .. math:: \mathtt{YY}(\phi) = \begin{bmatrix}
         \cos(\phi / 2) & 0 & 0 & i \sin(\phi / 2) \\
