@@ -284,6 +284,7 @@ X_test = np.random.random((5, 6))
 # Compute kernel between test and training data.
 K_test = qml.kernels.kernel_matrix(X_train, X_test, kernel)
 ```
+
   [(#1388)](https://github.com/PennyLaneAI/pennylane/pull/1388)
 
 * QNodes now display readable information when in interactive environments or when printed.
