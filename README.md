@@ -129,7 +129,8 @@ You can also build an image with the PennyLane Qchem package and its dependencie
 make -f docker.makefile build-qchem
 ```
 
-To build all three interfaces(Torch, TensorFlow or Jax) using single command run following.(under-testing!)
+To build all three interfaces (Torch, TensorFlow, or Jax) using a single command run following:
+
 
 ```
 make -f docker.makefile build-all
