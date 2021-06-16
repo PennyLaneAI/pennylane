@@ -24,6 +24,7 @@ import numpy as np
 import pennylane as qml
 import pennylane.queuing
 import pennylane.utils as pu
+import scipy.sparse
 
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane.operation import Tensor
@@ -133,6 +134,72 @@ class TestDecomposition:
 
         linear_comb = sum([decomposed_coeff[i] * o.matrix for i, o in enumerate(decomposed_obs)])
         assert np.allclose(hamiltonian, linear_comb)
+
+
+class TestSparse:
+    """Tests the sparse_hamiltonian function"""
+
+    @pytest.mark.parametrize(
+        ("coeffs", "obs", "ref_matrix"),
+        [
+            (
+                [1, -0.45],
+                [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1)],
+                np.array(
+                    [
+                        [1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.45j, 0.0 + 0.0j],
+                        [0.0 + 0.0j, -1.0 + 0.0j, 0.0 + 0.0j, 0.0 - 0.45j],
+                        [0.0 - 0.45j, 0.0 + 0.0j, -1.0 + 0.0j, 0.0 + 0.0j],
+                        [0.0 + 0.0j, 0.0 + 0.45j, 0.0 + 0.0j, 1.0 + 0.0j],
+                    ]
+                ),
+            ),
+            (
+                [0.21, -0.78, 0.52],
+                [
+                    qml.PauliZ(0) @ qml.PauliZ(1),
+                    qml.PauliX(0) @ qml.PauliZ(1),
+                    qml.PauliY(0) @ qml.PauliZ(1),
+                ],
+                np.array(
+                    [
+                        [0.21 + 0.0j, 0.0 + 0.0j, -0.78 - 0.52j, 0.0 + 0.0j],
+                        [0.0 + 0.0j, -0.21 + 0.0j, 0.0 + 0.0j, 0.78 + 0.52j],
+                        [-0.78 + 0.52j, 0.0 + 0.0j, -0.21 + 0.0j, 0.0 + 0.0j],
+                        [0.0 + 0.0j, 0.78 - 0.52j, 0.0 + 0.0j, 0.21 + 0.0j],
+                    ]
+                ),
+            ),
+        ],
+    )
+    def test_sparse_matrix(self, coeffs, obs, ref_matrix):
+        """Tests that sparse_hamiltonian returns a correct sparse matrix"""
+        H = qml.Hamiltonian(coeffs, obs)
+
+        sparse_matrix = qml.utils.sparse_hamiltonian(H)
+
+        assert np.allclose(sparse_matrix.toarray(), ref_matrix)
+
+    def test_sparse_format(self):
+        """Tests that sparse_hamiltonian returns a scipy.sparse.coo_matrix object"""
+
+        coeffs = [-0.25, 0.75]
+        obs = [
+            qml.PauliX(wires=[0]) @ qml.PauliZ(wires=[1]),
+            qml.PauliY(wires=[0]) @ qml.PauliZ(wires=[1]),
+        ]
+        H = qml.Hamiltonian(coeffs, obs)
+
+        sparse_matrix = qml.utils.sparse_hamiltonian(H)
+
+        assert isinstance(sparse_matrix, scipy.sparse.coo_matrix)
+
+    def test_sparse_typeerror(self):
+        """Tests that sparse_hamiltonian raises an error if the given Hamiltonian is not of type
+        `qml.Hamiltonian`"""
+
+        with pytest.raises(TypeError, match="Passed Hamiltonian must be of type"):
+            qml.utils.sparse_hamiltonian(np.eye(2))
 
 
 class TestFlatten:
