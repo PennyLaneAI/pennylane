@@ -94,7 +94,7 @@ def coefficients(f, n_inputs, degree, lowpass_filter=False, filter_threshold=Non
     ``weights``:
 
     >>> from functools import partial
-    >>> weights = weights = np.array([[0.1, 0.2, 0.3], [-4.1, 3.2, 1.3]])
+    >>> weights = np.array([[0.1, 0.2, 0.3], [-4.1, 3.2, 1.3]])
     >>> partial_circuit = partial(circuit, weights)
 
     Now we must specify the number of inputs, and the maximum desired
