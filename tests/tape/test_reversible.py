@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for the qubit parameter-shift QubitParamShiftTape"""
+"""Unit tests for the ReversibleTape"""
 import pytest
 from pennylane import numpy as np
 
@@ -159,6 +159,21 @@ class TestReversibleTape:
 
 class TestGradients:
     """Jacobian integration tests for qubit expectations."""
+
+    def test_finite_shots_warning(self):
+        """Test warning raised when calling jacobian with a device with finite shots"""
+
+        with ReversibleTape() as tape:
+            qml.RX(0.1, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        dev = qml.device("default.qubit", wires=1, shots=1)
+
+        with pytest.warns(
+            UserWarning,
+            match="Requested reversible differentiation to be computed with finite shots.",
+        ):
+            tape.jacobian(dev)
 
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
     @pytest.mark.parametrize("G", [qml.RX, qml.RY, qml.RZ])

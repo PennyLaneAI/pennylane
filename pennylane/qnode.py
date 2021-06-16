@@ -263,8 +263,8 @@ class QNode:
         This method attempts to determine support for differentiation
         methods using the following order:
 
-        * ``"backprop"``
         * ``"device"``
+        * ``"backprop"``
         * ``"parameter-shift"``
         * ``"finite-diff"``
 
@@ -386,6 +386,13 @@ class QNode:
                 f"The {device.short_name} device does not support reversible differentiation."
             )
 
+        if device.shots is not None:
+            warnings.warn(
+                "Requested reversible differentiation to be computed with finite shots."
+                " Reversible differentiation always calculated exactly.",
+                UserWarning,
+            )
+
         return ReversibleTape, interface, device, {"method": "analytic"}
 
     @staticmethod
@@ -421,8 +428,8 @@ class QNode:
 
         if device.shots is not None:
             warnings.warn(
-                "Adjoint diff requested on device with finite shots. Adjoint"
-                " diff always calculated exactly.",
+                "Requested adjoint differentiation to be computed with finite shots."
+                " Adjoint differentiation always calculated exactly.",
                 UserWarning,
             )
 

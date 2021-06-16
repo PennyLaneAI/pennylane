@@ -856,8 +856,8 @@ class QubitDevice(Device):
 
         if self.shots is not None:
             warnings.warn(
-                "Adjoint diff called on device with finite shots. Adjoint diff always"
-                " calculated exactly.",
+                "Requested adjoint differentiation to be computed with finite shots."
+                " This computation is always exact when using the adjoint differentiation method.",
                 UserWarning,
             )
 

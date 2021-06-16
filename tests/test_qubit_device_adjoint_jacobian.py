@@ -47,7 +47,9 @@ class TestAdjointJacobian:
         with qml.tape.JacobianTape() as tape:
             qml.expval(qml.PauliZ(0))
 
-        with pytest.warns(UserWarning, match="Adjoint diff called on device with finite shots."):
+        with pytest.warns(
+            UserWarning, match="Requested adjoint differentiation to be computed with finite shots."
+        ):
             dev.adjoint_jacobian(tape)
 
     def test_unsupported_op(self, dev):
