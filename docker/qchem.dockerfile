@@ -30,7 +30,6 @@ COPY  . .
 RUN git submodule update --init --recursive
 RUN  pip install wheel && pip install -r requirements.txt \
         && python3 setup.py install \
-        && pip install jax jaxlib \
         && pip install pytest pytest-cov pytest-mock flaky \
         && make test
 
@@ -38,7 +37,7 @@ RUN  pip install wheel && pip install -r requirements.txt \
 WORKDIR /opt/pennylane/qchem
 COPY  . .
 RUN git submodule update --init --recursive
-RUN  pip install wheel && pip install psi4 psi4-rt python=python3 -c psi4 && pip install -r requirements.txt \
+RUN  pip install wheel && pip install openfermionpsi4 && pip install -r requirements.txt \
         && python3 setup.py install \
         && pip install pytest pytest-cov pytest-mock flaky \
         && make test
