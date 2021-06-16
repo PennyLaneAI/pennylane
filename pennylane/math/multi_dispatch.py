@@ -371,7 +371,7 @@ def frobenius_inner_product(A, B, normalize=False):
     inner_product = np.sum(A * B)
 
     if normalize:
-        norm = np.linalg.norm(A, "fro") * np.linalg.norm(B, "fro")
+        norm = np.sqrt(np.sum(A * A) * np.sum(B * B))
         inner_product = inner_product / norm
 
     return inner_product
