@@ -576,9 +576,7 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
   [(#1228)](https://github.com/XanaduAI/pennylane/pull/1228)
 
 <h3>Bug fixes</h3>
-* Review of new features and fix some documentation problems.
-  [(#1409)](https://github.com/XanaduAI/pennylane/pull/1409)
-  
+
 * Fixes a bug where multiple identical Hamiltonian terms will produce a
   different result with ``optimize=True`` using ``ExpvalCost``.
   [(#1405)](https://github.com/XanaduAI/pennylane/pull/1405)
