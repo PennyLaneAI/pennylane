@@ -3033,7 +3033,7 @@ class Projector(Observable):
 
 class SparseHamiltonian(Observable):
     r"""SparseHamiltonian(H)
-    A sparse matrix Hamiltonian observable.
+    A Hamiltonian represented directly as a sparse matrix in coordinate list (COO) format.
 
     The expectation value of this observable is
 
