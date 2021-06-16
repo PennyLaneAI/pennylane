@@ -13,28 +13,93 @@
 # limitations under the License.
 """Unit tests for the basic functions in qml.math
 """
-import numpy as np
+import numpy as onp
+from pennylane import numpy as np
 import pytest
 
 from pennylane import math as fn
 
+tf = pytest.importorskip("tensorflow", minversion="2.1")
+torch = pytest.importorskip("torch")
+jax = pytest.importorskip("jax")
+jnp = pytest.importorskip("jax.numpy")
 
 class TestFrobeniusInnerProduct:
     @pytest.mark.parametrize(
         "A,B,normalize,expected",
         [
-            (np.eye(2), np.eye(2), False, 2.0),
-            (np.eye(2), np.zeros((2, 2)), False, 0.0),
+            (onp.eye(2), onp.eye(2), False, 2.0),
+            (onp.eye(2), onp.zeros((2, 2)), False, 0.0),
+            (
+                onp.array([[1.0, 2.3], [-1.3, 2.4]]),
+                onp.array([[0.7, -7.3], [-1.0, -2.9]]),
+                False,
+                -21.75,
+            ),
+            (onp.eye(2), onp.eye(2), True, 1.0),
+            (
+                onp.array([[1.0, 2.3], [-1.3, 2.4]]),
+                onp.array([[0.7, -7.3], [-1.0, -2.9]]),
+                True,
+                -0.7381450594,
+            ),
             (
                 np.array([[1.0, 2.3], [-1.3, 2.4]]),
                 np.array([[0.7, -7.3], [-1.0, -2.9]]),
                 False,
                 -21.75,
             ),
-            (np.eye(2), np.eye(2), True, 1.0),
             (
                 np.array([[1.0, 2.3], [-1.3, 2.4]]),
                 np.array([[0.7, -7.3], [-1.0, -2.9]]),
+                True,
+                -0.7381450594,
+            ),
+            (
+                jnp.array([[1.0, 2.3], [-1.3, 2.4]]),
+                jnp.array([[0.7, -7.3], [-1.0, -2.9]]),
+                False,
+                -21.75,
+            ),
+            (
+                jnp.array([[1.0, 2.3], [-1.3, 2.4]]),
+                jnp.array([[0.7, -7.3], [-1.0, -2.9]]),
+                True,
+                -0.7381450594,
+            ),
+            (
+                torch.tensor([[1.0, 2.3], [-1.3, 2.4]], dtype=torch.complex128),
+                torch.tensor([[0.7, -7.3], [-1.0, -2.9]], dtype=torch.complex128),
+                False,
+                -21.75,
+            ),
+            (
+                torch.tensor([[1.0, 2.3], [-1.3, 2.4]], dtype=torch.complex128),
+                torch.tensor([[0.7, -7.3], [-1.0, -2.9]], dtype=torch.complex128),
+                True,
+                -0.7381450594,
+            ),
+            (
+                tf.Variable([[1.0, 2.3], [-1.3, 2.4]], dtype=tf.complex128),
+                tf.Variable([[0.7, -7.3], [-1.0, -2.9]], dtype=tf.complex128),
+                False,
+                -21.75,
+            ),
+            (
+                tf.Variable([[1.0, 2.3], [-1.3, 2.4]], dtype=tf.complex128),
+                tf.Variable([[0.7, -7.3], [-1.0, -2.9]], dtype=tf.complex128),
+                True,
+                -0.7381450594,
+            ),
+            (
+                tf.constant([[1.0, 2.3], [-1.3, 2.4]], dtype=tf.complex128),
+                tf.constant([[0.7, -7.3], [-1.0, -2.9]], dtype=tf.complex128),
+                False,
+                -21.75,
+            ),
+            (
+                tf.constant([[1.0, 2.3], [-1.3, 2.4]], dtype=tf.complex128),
+                tf.constant([[0.7, -7.3], [-1.0, -2.9]], dtype=tf.complex128),
                 True,
                 -0.7381450594,
             ),
