@@ -14,6 +14,7 @@ RUN apt-get install -y build-essential \
         python3-pip \
         python3-venv \
         libjpeg-dev \
+        openbabel \
         libpng-dev && \
     rm -rf /var/lib/apt/lists/*
 RUN /usr/sbin/update-ccache-symlinks
@@ -37,7 +38,7 @@ RUN  pip install wheel && pip install -r requirements.txt \
 WORKDIR /opt/pennylane/qchem
 COPY  . .
 RUN git submodule update --init --recursive
-RUN  pip install wheel && pip install -r requirements.txt \
+RUN  pip install wheel && pip install psi4 psi4-rt python=python3 -c psi4 && pip install -r requirements.txt \
         && python3 setup.py install \
         && pip install pytest pytest-cov pytest-mock flaky \
         && make test
