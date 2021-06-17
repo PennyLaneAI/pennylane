@@ -4,6 +4,9 @@
 
 <h3>Improvements</h3>
 
+* Eases the PySCF dependency to ``pyscf>=1.7.2``.
+  [(#1254)](https://github.com/PennyLaneAI/pennylane/pull/1254)
+
 <h3>Bug fixes</h3>
 
 * Include tolerance in the``convert_observable`` function to check if the input QubitOperator
