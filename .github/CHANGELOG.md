@@ -368,6 +368,8 @@ K_test = qml.kernels.kernel_matrix(X_train, X_test, kernel)
 
   wires = range(qubits)
 
+  dev = qml.device('default.qubit', wires=wires)
+
   @qml.qnode(dev)
   def circuit(weights, hf_state, singles, doubles):
       AllSinglesDoubles(weights, wires, hf_state, singles, doubles)
@@ -413,7 +415,7 @@ K_test = qml.kernels.kernel_matrix(X_train, X_test, kernel)
   probs = circuit()
   bitstrings = tuple(itertools.product([0, 1], repeat = 2))
   indx = np.argwhere(probs == 1).flatten()[0]
-  output = eitstrings[indx]
+  output = bitstrings[indx]
   ```
 
   ```pycon
@@ -477,13 +479,13 @@ K_test = qml.kernels.kernel_matrix(X_train, X_test, kernel)
   random number generation using a local, rather than global seed.
   [(#1267)](https://github.com/PennyLaneAI/pennylane/pull/1267)
 
-```python
-from pennylane import numpy as np
+  ```python
+  from pennylane import numpy as np
 
-rng = np.random.default_rng()
-random_mat1 = rng.random((3,2))
-random_mat2 = rng.standard_normal(3, requires_grad=False)
-```
+  rng = np.random.default_rng()
+  random_mat1 = rng.random((3,2))
+  random_mat2 = rng.standard_normal(3, requires_grad=False)
+  ```
 
 * The `qml.inv()` function is now deprecated with a warning to use the more general `qml.adjoint()`.
   [(#1325)](https://github.com/PennyLaneAI/pennylane/pull/1325)
@@ -526,7 +528,7 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
   ```pycon
   >>> tape = tape.expand(depth=2)
-  >>> print(tape.draw(wire_order=Wires(all_wires)))
+  >>> print(tape.draw(wire_order=qml.wires.Wires(all_wires)))
    c0: ──────────────╭C──────────────────────╭C──────────┤
    c1: ──────────────├C──────────────────────├C──────────┤
    c2: ──────────╭C──│───╭C──────────────╭C──│───╭C──────┤
@@ -650,7 +652,8 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
   [(#1271)](https://github.com/PennyLaneAI/pennylane/pull/1271)
 
 * Updated the docstring of `qml.PolyXP` to reference the new location of internal
-  usage. [(#1262)](https://github.com/PennyLaneAI/pennylane/pull/1262)
+  usage.
+  [(#1262)](https://github.com/PennyLaneAI/pennylane/pull/1262)
 
 * Removes occurrences of the deprecated device argument ``analytic`` from the documentation.
   [(#1261)](https://github.com/PennyLaneAI/pennylane/pull/1261)
@@ -663,9 +666,9 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 This release contains contributions from (in alphabetical order):
 
 Marius Aglitoiu, Vishnu Ajith, Thomas Bromley, Jack Ceroni, Alaric Cheng, Miruna Daian, Olivia Di Matteo,
-Tanya Garg, Christian Gogolin, Diego Guala, Anthony Hayes, Ryan Hill, Josh Izaac, Pavan Jayasinha, Nathan Killoran,
-Christina Lee, Ryan Levy, Alberto Maldonado, Johannes Jakob Meyer, Romain Moyard, Ashish Panigrahi, Nahum Sá,
-Maria Schuld, Brian Shi, Antal Száva, David Wierichs, Vincent Wong.
+Tanya Garg, Christian Gogolin, Alain Delgado Gran, Diego Guala, Anthony Hayes, Ryan Hill, Josh Izaac, Soran Jahangiri,
+Pavan Jayasinha, Nathan Killoran, Christina Lee, Ryan Levy, Alberto Maldonado, Johannes Jakob Meyer, Romain Moyard,
+Ashish Panigrahi, Nahum Sá, Maria Schuld, Brian Shi, Antal Száva, David Wierichs, Vincent Wong.
 
 
 # Release 0.15.1
