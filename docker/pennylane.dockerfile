@@ -14,7 +14,6 @@ RUN apt-get install -y build-essential \
         python3-pip \
         python3-venv \
         libjpeg-dev \
-        openbabel \
         libpng-dev && \
     rm -rf /var/lib/apt/lists/*
 RUN /usr/sbin/update-ccache-symlinks
