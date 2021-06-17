@@ -1,9 +1,9 @@
 FROM ubuntu:20.04 AS compile-image
 
 # Setup and install Basic packages
-RUN apt-get update && apt-get install -y apt-utils --no-install-recommends
-RUN DEBIAN_FRONTEND="noninteractive" apt-get install tzdata
-RUN apt-get install -y build-essential \
+RUN apt-get update && apt-get install -y apt-utils --no-install-recommends && rm -rf /var/lib/apt/lists/*
+RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends tzdata && rm -rf /var/lib/apt/lists/*
+RUN apt-get install -y --no-install-recommends build-essential \
         tzdata \
         ca-certificates \
         ccache \
@@ -39,6 +39,6 @@ COPY --from=compile-image /opt/venv /opt/venv
 # Get PennyLane Source to use for Unit-test at later stage
 COPY --from=compile-image /opt/pennylane /opt/pennylane
 ENV PATH="/opt/venv/bin:$PATH"
-RUN apt-get update && apt-get install -y apt-utils --no-install-recommends python3 python3-pip python3-venv
+RUN apt-get update && apt-get install -y apt-utils --no-install-recommends python3 python3-pip python3-venv && rm -rf /var/lib/apt/lists/*
 # Image completed, Exit Now.
 CMD echo "Successfully built Docker image"

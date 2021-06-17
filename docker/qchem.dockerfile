@@ -1,7 +1,7 @@
 From pennylane/base:latest
 
 # Update and install Qchem
-RUN apt-get update && apt-get install -y make git
+RUN apt-get update && apt-get install -y --no-install-recommends make git &&  rm -rf /var/lib/apt/lists/*
 # Create and activate VirtualENV
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"*" "
