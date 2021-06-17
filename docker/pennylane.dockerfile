@@ -1,7 +1,7 @@
 FROM ubuntu:20.04 AS compile-image
 
 # Setup and install Basic packages
-RUN apt-get update &&  apt-utils apt-get install -y apt-utils --no-install-recommends
+RUN apt-get update && apt-get install -y apt-utils --no-install-recommends
 RUN DEBIAN_FRONTEND="noninteractive" apt-get install tzdata
 RUN apt-get install -y build-essential \
         tzdata \
