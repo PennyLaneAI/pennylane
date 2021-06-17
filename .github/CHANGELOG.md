@@ -98,7 +98,7 @@ K_test = qml.kernels.kernel_matrix(X_train, X_test, kernel)
   + (0.25) [X5 X4 X0]
   + (0.25) [Y5 Y4 X0]
   + (0.25) [Y5 X4 Y0]
-  >>> mapping
+  >>> print(mapping)
   {0: (0, 1), 1: (0, 2), 2: (1, 0), 3: (1, 2), 4: (2, 0), 5: (2, 1)}
   ```
  Additional functionality can be found in the `qml.qaoa.cycle` module.
@@ -278,9 +278,33 @@ K_test = qml.kernels.kernel_matrix(X_train, X_test, kernel)
 
   ```pycon
   >>> circuit(x, transform_weights)
-  0.006728293438238053
+  tensor(0.00672829, requires_grad=True)
   >>> qml.grad(circuit)(x, transform_weights)
   (array([ 0.00671711, -0.00207359]), array([6.69695008e-02, 3.73694364e-06]))
+  ```
+
+* Adds a `hamiltonian_expand` tape transform. This takes a tape ending in
+  `qml.expval(H)`, where `H` is a Hamiltonian, and maps it to a collection
+  of tapes which can be executed and passed into a post-processing function yielding
+  the expectation value.
+  [(#1142)](https://github.com/PennyLaneAI/pennylane/pull/1142)
+
+  Example use:
+
+  ```python
+  H = qml.PauliZ(0) + 3 * qml.PauliZ(0) @ qml.PauliX(1)
+
+  with qml.tape.QuantumTape() as tape:
+      qml.Hadamard(wires=1)
+      qml.expval(H)
+
+  tapes, fn = qml.transforms.hamiltonian_expand(tape)
+  dev = qml.device("default.qubit", wires=3)
+  res = dev.batch_execute(tapes)
+  ```
+  ```pycon
+  >>> fn(res)
+  3.999999999999999
   ```
 
 <h4>Extended operations and templates</h4>
@@ -389,7 +413,7 @@ K_test = qml.kernels.kernel_matrix(X_train, X_test, kernel)
   probs = circuit()
   bitstrings = tuple(itertools.product([0, 1], repeat = 2))
   indx = np.argwhere(probs == 1).flatten()[0]
-  output = bitstrings[indx]
+  output = eitstrings[indx]
   ```
 
   ```pycon
@@ -398,44 +422,6 @@ K_test = qml.kernels.kernel_matrix(X_train, X_test, kernel)
   ```
 
 <h3>Improvements</h3>
-
-* PennyLane NumPy now includes the
-  [random module's](https://numpy.org/doc/stable/reference/random/index.html#module-numpy.random)
-  `Generator` objects, the recommended way of random number generation. This allows for
-  random number generation using a local, rather than global seed.
-  [(#1267)](https://github.com/PennyLaneAI/pennylane/pull/1267)
-
-```python
-from pennylane import numpy as np
-
-rng = np.random.default_rng()
-random_mat1 = rng.random((3,2))
-random_mat2 = rng.standard_normal(3, requires_grad=False)
-```
-
-* The `qml.SWAP` operation now has a decomposition over elementary gates.
-  [(#1329)](https://github.com/PennyLaneAI/pennylane/pull/1329)
-
-* The `qml.Toffoli` operation now has a decomposition over elementary gates.
-  [(#1320)](https://github.com/PennyLaneAI/pennylane/pull/1320)
-
-* Added CPhase operation as an alias for ControlledPhaseShift operation
-  [(#1319)](https://github.com/PennyLaneAI/pennylane/pull/1319).
-
-* It is now possible
-  to create custom Observables and corresponding devices whose return type can
-  be an arbitrary object and QNodes using such Observable remain
-  differentiable with `qml.grad` as long as the class of the returned object
-  implements the operations of a field. See `tests/tape/test_jacobian_tape.py`
-  for an example.
-  [(1291)](https://github.com/PennyLaneAI/pennylane/pull/1291)
-
-* QNodes now display readable information when in interactive environments or when printed.
-  [(#1359)](https://github.com/PennyLaneAI/pennylane/pull/1359).
-
-* Added validation for noise channel parameters. Invalid noise parameters now
-  raise a `ValueError`.
-  [(#1357)](https://github.com/PennyLaneAI/pennylane/pull/1357)
 
 * The ``argnum`` keyword argument can now be specified for a QNode to define a
   subset of trainable parameters used to estimate the Jacobian.
@@ -474,6 +460,34 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
   (array(0.31434679), array(0.))
   ```
 
+* It is now possible
+  to create custom Observables and corresponding devices whose return type can
+  be an arbitrary object and QNodes using such Observable remain
+  differentiable with `qml.grad` as long as the class of the returned object
+  implements the operations of a field. See `tests/tape/test_jacobian_tape.py`
+  for an example.
+  [(1291)](https://github.com/PennyLaneAI/pennylane/pull/1291)
+
+* QNodes now display readable information when in interactive environments or when printed.
+  [(#1359)](https://github.com/PennyLaneAI/pennylane/pull/1359).
+
+* PennyLane NumPy now includes the
+  [random module's](https://numpy.org/doc/stable/reference/random/index.html#module-numpy.random)
+  `Generator` objects, the recommended way of random number generation. This allows for
+  random number generation using a local, rather than global seed.
+  [(#1267)](https://github.com/PennyLaneAI/pennylane/pull/1267)
+
+```python
+from pennylane import numpy as np
+
+rng = np.random.default_rng()
+random_mat1 = rng.random((3,2))
+random_mat2 = rng.standard_normal(3, requires_grad=False)
+```
+
+* The `qml.inv()` function is now deprecated with a warning to use the more general `qml.adjoint()`.
+  [(#1325)](https://github.com/PennyLaneAI/pennylane/pull/1325)
+
 * The adjoint jacobian differentiation method reuses the state computed on the forward pass.
   This can be turned off to save memory with the Torch and TensorFlow interfaces by passing
   `adjoint_cache=False` during QNode creation.
@@ -493,9 +507,6 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 *  A decomposition has been added for the `qml.CSWAP` operation.
   [(#1306)](https://github.com/PennyLaneAI/pennylane/issues/1306)
-
-* The `qml.inv()` function is now deprecated with a warning to use the more general `qml.adjoint()`.
-  [(#1325)](https://github.com/PennyLaneAI/pennylane/pull/1325)
 
 * The `MultiControlledX` gate now has a decomposition defined. When controlling on three or more wires,
   an ancilla register of worker wires is required to support the decomposition.
@@ -536,6 +547,15 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
   have decompositions over elementary gates.
   [(#1278)](https://github.com/PennyLaneAI/pennylane/pull/1278)
 
+* The `qml.SWAP` operation now has a decomposition over elementary gates.
+  [(#1329)](https://github.com/PennyLaneAI/pennylane/pull/1329)
+
+* The `qml.Toffoli` operation now has a decomposition over elementary gates.
+  [(#1320)](https://github.com/PennyLaneAI/pennylane/pull/1320)
+
+* Added CPhase operation as an alias for ControlledPhaseShift operation
+  [(#1319)](https://github.com/PennyLaneAI/pennylane/pull/1319).
+
 * The `Device` class now uses caching when mapping wires.
   [(#1270)](https://github.com/PennyLaneAI/pennylane/pull/1270)
 
@@ -545,36 +565,16 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 * Added custom gate application for Toffoli in `default.qubit`.
   [(#1249)](https://github.com/PennyLaneAI/pennylane/pull/1249)
 
+* Added validation for noise channel parameters. Invalid noise parameters now
+  raise a `ValueError`.
+  [(#1357)](https://github.com/PennyLaneAI/pennylane/pull/1357)
+
 * The device test suite now provides test cases for checking gates by comparing
   expectation values.
   [(#1212)](https://github.com/PennyLaneAI/pennylane/pull/1212)
 
 * PennyLane's test suite is now code-formatted using `black -l 100`.
   [(#1222)](https://github.com/PennyLaneAI/pennylane/pull/1222)
-
-* Adds a `hamiltonian_expand` tape transform. This takes a tape ending in
-  `qml.expval(H)`, where `H` is a Hamiltonian, and maps it to a collection
-  of tapes which can be executed and passed into a post-processing function yielding
-  the expectation value.
-  [(#1142)](https://github.com/PennyLaneAI/pennylane/pull/1142)
-
-  Example use:
-
-  ```python
-  H = qml.PauliZ(0) + 3 * qml.PauliZ(0) @ qml.PauliX(1)
-
-  with qml.tape.QuantumTape() as tape:
-      qml.Hadamard(wires=1)
-      return qml.expval(H)
-
-  tapes, fn = qml.transforms.hamiltonian_expand(tape)
-  dev = qml.device("default.qubit", wires=3)
-  res = dev.batch_execute(tapes)
-  ```
-  ```pycon
-  >>> fn(res)
-  4.0
-  ```
 
 * PennyLane's `qchem` package and tests are now code-formatted using `black -l 100`.
   [(#1311)](https://github.com/PennyLaneAI/pennylane/pull/1311)
@@ -587,7 +587,7 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 <h3>Bug fixes</h3>
 
 * Fixes the differentiability of the operations `IsingXX` and `IsingZZ` for Autograd, Jax and Tensorflow.
-[(#1390)](https://github.com/PennyLaneAI/pennylane/pull/1390)
+  [(#1390)](https://github.com/PennyLaneAI/pennylane/pull/1390)
 
 * Fixes a bug where multiple identical Hamiltonian terms will produce a
   different result with ``optimize=True`` using ``ExpvalCost``.
@@ -598,7 +598,7 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
   [(#1392)](https://github.com/XanaduAI/pennylane/pull/1392)
 
 * Fixes floating point errors with `diff_method="finite-diff"` and `order=1` when parameters are `float32`.
-[(#1381)](https://github.com/PennyLaneAI/pennylane/pull/1381)
+  [(#1381)](https://github.com/PennyLaneAI/pennylane/pull/1381)
 
 * Fixes a bug where `qml.ctrl` would fail to transform gates that had no
   control defined and no decomposition defined.
@@ -663,10 +663,9 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 This release contains contributions from (in alphabetical order):
 
 Marius Aglitoiu, Vishnu Ajith, Thomas Bromley, Jack Ceroni, Alaric Cheng, Miruna Daian, Olivia Di Matteo,
-
 Tanya Garg, Christian Gogolin, Diego Guala, Anthony Hayes, Ryan Hill, Josh Izaac, Pavan Jayasinha, Nathan Killoran,
-Christina Lee, Ryan Levy, Johannes Jakob Meyer, Romain Moyard, Nahum Sá, Maria Schuld, Brian Shi, Antal Száva,
-David Wierichs, Vincent Wong, Alberto Maldonado, Ashish Panigrahi.
+Christina Lee, Ryan Levy, Alberto Maldonado, Johannes Jakob Meyer, Romain Moyard, Ashish Panigrahi, Nahum Sá,
+Maria Schuld, Brian Shi, Antal Száva, David Wierichs, Vincent Wong.
 
 
 # Release 0.15.1
