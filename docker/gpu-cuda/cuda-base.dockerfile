@@ -1,7 +1,7 @@
 FROM nvidia/cuda:11.1-base AS compile-image
 
 # Setup and install Basic packages
-RUN apt-get update && apt-get -y install apt-utils
+RUN apt-get update && apt-get install -y apt-utils --no-install-recommends
 RUN DEBIAN_FRONTEND="noninteractive" apt-get install tzdata
 RUN apt-get install -y build-essential \
         tzdata \
@@ -38,6 +38,6 @@ COPY --from=compile-image /opt/venv /opt/venv
 # Get PennyLane Source to use for Unit-test at later stage
 COPY --from=compile-image /opt/pennylane /opt/pennylane
 ENV PATH="/opt/venv/bin:$PATH"
-RUN apt-get update && apt-get install -y apt-utils --no-install-recommends python3 python3-pip python3-venv  && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y  apt-utils --no-install-recommends python3 python3-pip python3-venv
 # Image completed, Exit Now.
 CMD echo "Successfully built Docker image"
