@@ -476,7 +476,7 @@ class QubitDevice(Device):
             state_probability (array[float]): the computational basis probability vector
 
         Returns:
-            List[int]: the sampled basis states
+            array[int]: the sampled basis states
         """
         if self.shots is None:
             warnings.warn(
@@ -516,7 +516,7 @@ class QubitDevice(Device):
             dtype=np.uint32 (type): the data type of the arrays to use
 
         Returns:
-            np.ndarray: the sampled basis states
+            array[int]: the sampled basis states
         """
         if 2 < num_wires < 32:
             states_base_ten = np.arange(2 ** num_wires, dtype=dtype)
@@ -535,14 +535,14 @@ class QubitDevice(Device):
         This is an auxiliary method to the generate_samples method.
 
         Args:
-            samples (List[int]): samples of basis states in base 10 representation
+            samples (array[int]): samples of basis states in base 10 representation
             num_wires (int): the number of qubits
             dtype (type): Type of the internal integer array to be used. Can be
                 important to specify for large systems for memory allocation
                 purposes.
 
         Returns:
-            List[int]: basis states in binary representation
+            array[int]: basis states in binary representation
         """
         powers_of_two = 1 << np.arange(num_wires, dtype=dtype)
         states_sampled_base_ten = samples[:, None] & powers_of_two
@@ -598,7 +598,7 @@ class QubitDevice(Device):
                 marginal probabilities for. Wires not provided are traced out of the system.
 
         Returns:
-            List[float]: list of the probabilities
+            array[float]: list of the probabilities
         """
         raise NotImplementedError
 
@@ -616,7 +616,7 @@ class QubitDevice(Device):
                 provided, the entire shot range is treated as a single bin.
 
         Returns:
-            List[float]: list of the probabilities
+            array[float]: list of the probabilities
         """
 
         wires = wires or self.wires
@@ -663,7 +663,7 @@ class QubitDevice(Device):
                 marginal probabilities for. Wires not provided are traced out of the system.
 
         Returns:
-            List[float]: list of the probabilities
+            array[float]: list of the probabilities
         """
 
         if self.shots is None:
