@@ -1,7 +1,9 @@
 From pennylane/base:latest
 
 # Update and install Qchem
-RUN apt-get update && apt-get -y install --no-install-recommends make git openbabel &&  rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get -y install --no-install-recommends make git openbabel  \
+    &&  rm -rf /var/lib/apt/lists/*
+    
 # Create and activate VirtualENV
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"*" "
