@@ -448,7 +448,7 @@ class DefaultQubit(QubitDevice):
 
     def expval(self, observable, shot_range=None, bin_size=None):
         """Returns the expectation value of a Hamiltonian observable. When the observable is a
-         `SparseHamiltonian` object, the expectation value is computed directly, which leads to
+         ``SparseHamiltonian`` object, the expectation value is computed directly, which leads to
           faster execution.
 
         Args:
@@ -460,9 +460,7 @@ class DefaultQubit(QubitDevice):
                 provided, the entire shot range is treated as a single bin.
 
         Returns:
-            float[real]/callable: returns the expectation value of the observable if it is a sparse
-            matrix in scipy coordinate list (COO) format or returns the :func:`~.expval` function
-            from the parent class
+            float: returns the expectation value of the observable
         """
         if observable.name == "SparseHamiltonian" and self.shots is None:
 
