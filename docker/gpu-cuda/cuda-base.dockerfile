@@ -35,6 +35,8 @@ RUN  pip install wheel && pip install -r requirements.txt \
 # create Second small build.
 FROM ubuntu:20.04
 COPY --from=compile-image /opt/venv /opt/venv
+# Get PennyLane Source to use for Unit-test at later stage
+COPY --from=compile-image /opt/pennylane /opt/pennylane
 ENV PATH="/opt/venv/bin:$PATH"
 RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-pip python3-venv
 # Image completed, Exit Now.

@@ -1,7 +1,7 @@
 FROM ubuntu:20.04 AS compile-image
 
 # Setup and install Basic packages
-RUN apt-get update && apt-get install -y --no-install-recommends
+RUN apt-get update &&  apt-utils apt-get install -y apt-utils --no-install-recommends
 RUN DEBIAN_FRONTEND="noninteractive" apt-get install tzdata
 RUN apt-get install -y build-essential \
         tzdata \
@@ -14,6 +14,7 @@ RUN apt-get install -y build-essential \
         python3-pip \
         python3-venv \
         libjpeg-dev \
+        openbabel \
         libpng-dev && \
     rm -rf /var/lib/apt/lists/*
 RUN /usr/sbin/update-ccache-symlinks
@@ -35,7 +36,9 @@ RUN  pip install wheel && pip install -r requirements.txt \
 # create Second small build.
 FROM ubuntu:20.04
 COPY --from=compile-image /opt/venv /opt/venv
+# Get PennyLane Source to use for Unit-test at later stage
+COPY --from=compile-image /opt/pennylane /opt/pennylane
 ENV PATH="/opt/venv/bin:$PATH"
-RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-pip python3-venv
+RUN apt-get update && apt-get install -y apt-utils --no-install-recommends python3 python3-pip python3-venv
 # Image completed, Exit Now.
 CMD echo "Successfully built Docker image"
