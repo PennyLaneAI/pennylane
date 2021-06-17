@@ -9,8 +9,8 @@ RUN apt-get install -y --no-install-recommends build-essential \
         ccache \
         cmake \
         curl \
-	      git \
-	      python3 \
+        git \
+        python3 \
         python3-pip \
         python3-venv \
         libjpeg-dev \
