@@ -1,7 +1,5 @@
 # Release 0.16.0-dev
 
-<h3>New features</h3>
-
 <h3>Improvements</h3>
 
 * Eases the PySCF dependency to ``pyscf>=1.7.2``.
@@ -17,8 +15,6 @@
   to the ``convert_observable`` function. At present, the ``vqe.Hamiltonian`` class does not
   support complex coefficients.
   [(#1277)](https://github.com/PennyLaneAI/pennylane/pull/1277)
-
-<h3>Breaking changes</h3>
 
 <h3>Contributors</h3>
 
