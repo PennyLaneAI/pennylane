@@ -2201,17 +2201,6 @@ class ControlledQubitUnitary(QubitUnitary):
 
         super().__init__(*params, wires=wires, do_queue=do_queue)
 
-    def __copy__(self):
-        new_op = ControlledQubitUnitary(
-            self.U,
-            control_wires=self.control_wires,
-            wires=self._target_wires,
-            control_values=self.control_values,
-            do_queue=False,
-        )
-        new_op._inverse = self._inverse
-        return new_op
-
     def _matrix(self, *params):
         if self._CU is None:
             self._CU = block_diag(np.eye(self._padding_left), self.U, np.eye(self._padding_right))
