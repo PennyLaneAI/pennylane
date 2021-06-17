@@ -652,7 +652,7 @@ This release contains contributions from (in alphabetical order):
 Marius Aglitoiu, Vishnu Ajith, Thomas Bromley, Jack Ceroni, Alaric Cheng, Miruna Daian, Olivia Di Matteo,
 
 Tanya Garg, Christian Gogolin, Diego Guala, Anthony Hayes, Ryan Hill, Josh Izaac, Pavan Jayasinha, Nathan Killoran, 
-Christina Lee, Ryan Levy, Romain Moyard, Nahum Sá, Maria Schuld, Johannes Jakob Meyer, Brian Shi, Antal Száva,
+Christina Lee, Ryan Levy, Johannes Jakob Meyer, Romain Moyard, Nahum Sá, Maria Schuld, Brian Shi, Antal Száva,
 David Wierichs, Vincent Wong, Alberto Maldonado, Ashish Panigrahi.
 
 

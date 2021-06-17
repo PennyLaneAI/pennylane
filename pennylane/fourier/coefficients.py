@@ -80,10 +80,10 @@ def coefficients(f, n_inputs, degree, lowpass_filter=False, filter_threshold=Non
         @qml.qnode(dev)
         def circuit(weights, inpt):
             qml.RX(inpt[0], wires='a')
-            qml.Rot(0.1, 0.2, 0.3, wires='a')
+            qml.Rot(*weights[0], wires='a')
 
             qml.RY(inpt[1], wires='a')
-            qml.Rot(-4.1, 3.2, 1.3, wires='a')
+            qml.Rot(*weights[1], wires='a')
 
             return qml.expval(qml.PauliZ(wires='a'))
 
@@ -94,7 +94,7 @@ def coefficients(f, n_inputs, degree, lowpass_filter=False, filter_threshold=Non
     ``weights``:
 
     >>> from functools import partial
-    >>> weights = np.array([0.5, 0.2])
+    >>> weights = np.array([[0.1, 0.2, 0.3], [-4.1, 3.2, 1.3]])
     >>> partial_circuit = partial(circuit, weights)
 
     Now we must specify the number of inputs, and the maximum desired
