@@ -439,6 +439,7 @@ class TestSparse:
     def test_sparse_gradient(self, tol):
         """Tests that gradients are computed correctly for a SparseHamiltonian observable."""
         dev = qml.device("default.qubit", wires=2, shots=None)
+
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(param):
             qml.RX(param, wires=0)
