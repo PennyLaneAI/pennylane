@@ -406,9 +406,7 @@ class TestSparse:
         """Test that the diagonalizing_gates property of the SparseHamiltonian class returns empty."""
         num_wires = len(sparse_hamiltonian[0])
         sparse_hamiltonian = scipy.sparse.coo_matrix(sparse_hamiltonian)
-        diag_gates = qml.SparseHamiltonian(
-            sparse_hamiltonian, wires=range(num_wires)
-        ).diagonalizing_gates()
+        diag_gates = qml.SparseHamiltonian(sparse_hamiltonian).diagonalizing_gates()
 
         assert diag_gates == []
 
@@ -422,7 +420,7 @@ class TestSparse:
 
         @qml.qnode(dev)
         def circuit(sparse_hamiltonian, num_wires):
-            obs = qml.SparseHamiltonian(sparse_hamiltonian, wires=range(num_wires))
+            obs = qml.SparseHamiltonian(sparse_hamiltonian)
             return qml.expval(obs)
 
         with pytest.raises(TypeError, match="Observable must be a scipy sparse coo_matrix"):
@@ -433,7 +431,7 @@ class TestSparse:
         """Test that the matrix property of the SparseHamiltonian class returns the correct matrix."""
         num_wires = len(sparse_hamiltonian[0])
         sparse_hamiltonian = scipy.sparse.coo_matrix(sparse_hamiltonian)
-        returned_matrix = qml.SparseHamiltonian(sparse_hamiltonian, wires=range(num_wires)).matrix
+        returned_matrix = qml.SparseHamiltonian(sparse_hamiltonian).matrix
         assert np.allclose(
             returned_matrix.toarray(), sparse_hamiltonian.toarray(), atol=tol, rtol=0
         )

@@ -935,7 +935,7 @@ class TestExpval:
 
         dev = qml.device("default.qubit", wires=qubits, shots=None)
         dev.apply(operations)
-        expval = dev.expval(qml.SparseHamiltonian(hamiltonian, wires=[0]))[0]
+        expval = dev.expval(qml.SparseHamiltonian(hamiltonian))[0]
 
         assert np.allclose(expval, expected_output, atol=tol, rtol=0)
 
