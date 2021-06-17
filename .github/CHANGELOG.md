@@ -17,6 +17,8 @@
 
 This release contains contributions from (in alphabetical order):
 
+Ashish Panigrahi
+
 # Release 0.16.0 (current release)
 
 <h3>New features since last release</h3>
