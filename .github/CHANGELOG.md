@@ -2,6 +2,9 @@
 
 <h3>New features since last release</h3>
 
+* Ising YY gate functionality added.
+  [(#1358)](https://github.com/PennyLaneAI/pennylane/pull/1358)
+
 <h3>Improvements</h3>
 
 <h3>Breaking changes</h3>
@@ -467,9 +470,6 @@ rng = np.random.default_rng()
 random_mat1 = rng.random((3,2))
 random_mat2 = rng.standard_normal(3, requires_grad=False)
 ```
-
-* Ising YY gate functionality added.
-  [(#1358)](https://github.com/PennyLaneAI/pennylane/pull/1358)
 
 * Ising ZZ gate functionality added.
   [(#1199)](https://github.com/PennyLaneAI/pennylane/pull/1199)
