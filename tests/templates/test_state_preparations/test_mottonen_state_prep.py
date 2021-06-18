@@ -374,4 +374,4 @@ class TestScalar:
             return qml.probs(wires=[0, 1])
 
         inputs = inputs / torch.linalg.norm(inputs)
-        res = torch.sum(torch.sin(circuit(inputs, weights)))
+        res = circuit(inputs, weights)
