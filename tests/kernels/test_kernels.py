@@ -507,7 +507,7 @@ class TestMitigation:
         num_wires = 6
         wires = range(num_wires)
 
-        dev = qml.device('default.qubit', wires=num_wires)
+        dev = qml.device("default.qubit", wires=num_wires)
 
         @qml.qnode(dev)
         def kernel_circuit(x1, x2):
@@ -527,7 +527,7 @@ class TestMitigation:
         N = np.random.randn(10, 10)
         K += (N + N.T) / 2
 
-        K6 = qml.kernels.mitigate_depolarizing_noise(K, num_wires, method='split_channel')
+        K6 = qml.kernels.mitigate_depolarizing_noise(K, num_wires, method="split_channel")
 
         # Check that no warning was raised
         assert len(recwarn) == 0
