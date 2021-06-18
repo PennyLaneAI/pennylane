@@ -577,8 +577,8 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Bug fixes</h3>
 
-* Fixes bug where error: `expected scalar type float but found double` was raised when using 
-  `MottonenStatePreparation`.
+* Fixes a bug with `qml.math.cast` where the `MottonenStatePreparation` operation expected
+  a float type instead of double.
   [(#1400)](https://github.com/XanaduAI/pennylane/pull/1400)
   
 * Warns when adjoint or reversible differentiation specified or called on a device with finite shots.
