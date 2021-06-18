@@ -346,7 +346,7 @@ class TestGradient:
         qml.grad(circuit)(state_vector)
 
 
-class TestScalar:
+class TestCasting:
     """Test that the Mottonen state preparation does not raise the error 'expected scalar type
     float but found double'"""
 
