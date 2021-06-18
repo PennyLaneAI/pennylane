@@ -495,6 +495,7 @@ class TestMitigation:
         output = kern.mitigate_depolarizing_noise(input, self.num_wires, "split_channel")
         assert np.allclose(output, expected_output)
 
+
 class TestErrorForNonRealistic:
     """Tests that the noise mitigation techniques raise an error whenever the
     used quantities are too small."""
@@ -504,7 +505,9 @@ class TestErrorForNonRealistic:
         with pytest.raises(
             ValueError, match="Incorrect noise depolarization mitigation method specified"
         ):
-            K1 = qml.kernels.mitigate_depolarizing_noise(np.array([0]), 4, method="some_dummy_strat")
+            K1 = qml.kernels.mitigate_depolarizing_noise(
+                np.array([0]), 4, method="some_dummy_strat"
+            )
 
     def test_mitigate_depolarizing_noise_split_error(self, recwarn):
         """Test that an error is raised when using the split method for the
