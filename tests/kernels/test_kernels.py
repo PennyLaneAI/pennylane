@@ -494,3 +494,40 @@ class TestMitigation:
         noise rates per datapoint."""
         output = kern.mitigate_depolarizing_noise(input, self.num_wires, "split_channel")
         assert np.allclose(output, expected_output)
+
+    def test_mitigate_depolarizing_noise_split_no_warn(self, recwarn):
+        """Test that no warning is raised when using the split method for the
+        mitigation of depolarizing noise.
+
+        The code below would produce a zero-like denominator and raise a
+        RuntimeWarning when using true_divide. This test is meant to check that
+        this is not the case with the modified version of the
+        mitigate_depolarizing_noise method.
+        """
+        num_wires = 6
+        wires = range(num_wires)
+
+        dev = qml.device('default.qubit', wires=num_wires)
+
+        @qml.qnode(dev)
+        def kernel_circuit(x1, x2):
+            qml.templates.AngleEmbedding(x1, wires=wires)
+            qml.adjoint(qml.templates.AngleEmbedding)(x2, wires=wires)
+            return qml.probs(wires)
+
+        kernel = lambda x1, x2: kernel_circuit(x1, x2)[0]
+
+        # "Training feature vectors"
+        X_train = np.random.random((10, 6))
+
+        # Create symmetric square kernel matrix (for training)
+        K = qml.kernels.square_kernel_matrix(X_train, kernel)
+
+        # Add some (symmetric) Gaussian noise to the kernel matrix.
+        N = np.random.randn(10, 10)
+        K += (N + N.T) / 2
+
+        K6 = qml.kernels.mitigate_depolarizing_noise(K, num_wires, method='split_channel')
+
+        # Check that no warning was raised
+        assert len(recwarn) == 0
