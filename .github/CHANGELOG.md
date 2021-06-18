@@ -1,4 +1,25 @@
-# Release 0.16.0-dev (development release)
+# Release 0.17.0-dev (development release)
+
+<h3>New features since last release</h3>
+
+* Ising YY gate functionality added.
+  [(#1358)](https://github.com/PennyLaneAI/pennylane/pull/1358)
+
+<h3>Improvements</h3>
+
+<h3>Breaking changes</h3>
+
+<h3>Bug fixes</h3>
+
+<h3>Documentation</h3>
+
+<h3>Contributors</h3>
+
+This release contains contributions from (in alphabetical order):
+
+Ashish Panigrahi
+
+# Release 0.16.0 (current release)
 
 <h3>New features since last release</h3>
 
@@ -6,14 +27,14 @@
   [(#1394)](https://github.com/PennyLaneAI/pennylane/pull/1394)
 
   Example:
-  
+
   ```python
   coeffs = [1, -0.45]
   obs = [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1)]
   H = qml.Hamiltonian(coeffs, obs)
   H_sparse = sparse_hamiltonian(H)
   ```
- 
+
   The resulting matrix is a sparse matrix in scipy coordinate list (COO) format:
 
   ```python
@@ -34,7 +55,7 @@
 
 * The `specs` QNode transform creates a function that produces the specifications for a circuit
   at given arguments and keywords. Specifications can also be viewed after execution of a QNode or
-  tape by accessing their `specs` property. 
+  tape by accessing their `specs` property.
   [(#1245)](https://github.com/PennyLaneAI/pennylane/pull/1245)
 
   For example:
@@ -231,7 +252,7 @@
   [(#1160)](https://github.com/PennyLaneAI/pennylane/pull/1160)
   [(#1378)](https://github.com/PennyLaneAI/pennylane/pull/1378)
 
-  For example, one can plot distributions over Fourier series coefficients like 
+  For example, one can plot distributions over Fourier series coefficients like
   this one:
 
   <img src="https://pennylane.readthedocs.io/en/latest/_static/fourier.png" width=70%/>
@@ -650,13 +671,11 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 This release contains contributions from (in alphabetical order):
 
 Marius Aglitoiu, Vishnu Ajith, Thomas Bromley, Jack Ceroni, Alaric Cheng, Miruna Daian, Olivia Di Matteo,
-
 Tanya Garg, Christian Gogolin, Diego Guala, Anthony Hayes, Ryan Hill, Josh Izaac, Pavan Jayasinha, Nathan Killoran, 
 Christina Lee, Ryan Levy, Johannes Jakob Meyer, Romain Moyard, Nahum Sá, Maria Schuld, Brian Shi, Antal Száva,
 David Wierichs, Vincent Wong, Alberto Maldonado, Ashish Panigrahi.
 
-
-# Release 0.15.1 (current release)
+# Release 0.15.1
 
 <h3>Bug fixes</h3>
 
