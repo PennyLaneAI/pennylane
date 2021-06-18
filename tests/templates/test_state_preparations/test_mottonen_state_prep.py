@@ -347,8 +347,8 @@ class TestGradient:
 
 
 class TestCasting:
-    """Test that the Mottonen state preparation does not raise the error 'expected scalar type
-    float but found double'"""
+    """Test that the Mottonen state preparation ensures the compatibility with
+    interfaces by using casting'"""
 
     @pytest.mark.parametrize(
         "inputs,weights",
