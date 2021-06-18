@@ -295,6 +295,11 @@ def mitigate_depolarizing_noise(K, num_wires, method, use_entries=None):
             + noise_rates.reshape((1, len(K)))
             + noise_rates.reshape((len(K), 1))
         )
-        mitigated_matrix = (K - inverse_noise / dim) / (1 - inverse_noise)
+
+        # Substitute zeros with ones to avoid division issues
+        inv_noise_diff = 1 - inverse_noise
+        inv_noise_diff[inv_noise_diff==0] = 1
+
+        mitigated_matrix = (K - inverse_noise / dim) / inv_noise_diff
 
     return mitigated_matrix
