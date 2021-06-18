@@ -15,6 +15,7 @@
 Unit tests for the ArbitraryStatePreparation template.
 """
 import pytest
+import torch
 import numpy as np
 import pennylane as qml
 from pennylane import numpy as pnp
@@ -342,3 +343,32 @@ class TestGradient:
             return qml.expval(qml.PauliZ(0))
 
         qml.grad(circuit)(state_vector)
+
+
+class TestScalar:
+    """Test that the Mottonen state preparation does not raise the error expected scalar type float but found double"""
+
+    @pytest.mark.parametrize(
+        "inputs,weights",
+        [
+            (
+                torch.tensor([0.1, 0.2, 0.3, 0.4], requires_grad=True),
+                torch.ones([3, 2, 3], requires_grad=True),
+            ),
+            (
+                torch.tensor([0.4, 0.3, 0.2, 0.1], requires_grad=True),
+                torch.ones([3, 2, 3], requires_grad=True),
+            ),
+        ],
+    )
+    def test_scalar_torch(self, inputs, weights):
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="torch")
+        def circuit(inputs, weights):
+            qml.templates.MottonenStatePreparation(inputs, wires=[0, 1])
+            qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
+            return qml.probs(wires=[0, 1])
+
+        inputs = inputs / torch.linalg.norm(inputs)
+        res = torch.sum(torch.sin(circuit(inputs, weights)))

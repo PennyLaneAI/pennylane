@@ -387,7 +387,7 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
   ```
 
   ```pycon
-  >>> tape = tape.expand(depth=2)
+  >>> tape = tape.expand(depth=1)
   >>> print(tape.draw(wire_order=Wires(all_wires)))
    c0: ──────────────╭C──────────────────────╭C──────────┤
    c1: ──────────────├C──────────────────────├C──────────┤
@@ -458,6 +458,10 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
   [(#1228)](https://github.com/XanaduAI/pennylane/pull/1228)
 
 <h3>Bug fixes</h3>
+
+* Fixes bug where error: `expected scalar type float but found double` was raised when using 
+  `MottonenStatePreparation`.
+  [(#1400)](https://github.com/XanaduAI/pennylane/pull/1400)
 
 * Fixes bug where `shots=None` was not reset when changing shots temporarily in a QNode call
   like `circuit(0.1, shots=3)`.
