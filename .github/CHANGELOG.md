@@ -661,14 +661,18 @@ K_test = qml.kernels.kernel_matrix(X_train, X_test, kernel)
 * Updated PyTorch and TensorFlow interface introductions.
   [(#1333)](https://github.com/PennyLaneAI/pennylane/pull/1333)
 
+* Fixes the qchem introduction to accommodate changes.
+  [(#1227)](https://github.com/PennyLaneAI/pennylane/pull/1227)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Marius Aglitoiu, Vishnu Ajith, Thomas Bromley, Jack Ceroni, Alaric Cheng, Miruna Daian, Olivia Di Matteo,
-Tanya Garg, Christian Gogolin, Alain Delgado Gran, Diego Guala, Anthony Hayes, Ryan Hill, Josh Izaac, Soran Jahangiri,
-Pavan Jayasinha, Nathan Killoran, Christina Lee, Ryan Levy, Alberto Maldonado, Johannes Jakob Meyer, Romain Moyard,
-Ashish Panigrahi, Nahum Sá, Maria Schuld, Brian Shi, Antal Száva, David Wierichs, Vincent Wong.
+Marius Aglitoiu, Vishnu Ajith, Juan Miguel Arrazola, Thomas Bromley, Jack Ceroni, Alaric Cheng, Miruna Daian,
+Olivia Di Matteo, Tanya Garg, Christian Gogolin, Alain Delgado Gran, Diego Guala, Anthony Hayes, Ryan Hill,
+Theodor Isacsson, Josh Izaac, Soran Jahangiri, Pavan Jayasinha, Nathan Killoran, Christina Lee, Ryan Levy,
+Alberto Maldonado, Johannes Jakob Meyer, Romain Moyard, Ashish Panigrahi, Nahum Sá, Maria Schuld, Brian Shi,
+Antal Száva, David Wierichs, Vincent Wong.
 
 
 # Release 0.15.1

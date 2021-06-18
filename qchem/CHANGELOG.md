@@ -20,7 +20,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Alain Delgado Gran
+Alain Delgado Gran, Zeyue Niu.
 
 # Release 0.15.1
 
