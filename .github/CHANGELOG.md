@@ -100,10 +100,6 @@
 
 <h4>New transforms</h4>
 
-* The `quantum_monte_carlo` transform has been added, allowing an input circuit to be transformed
-  into the full quantum Monte Carlo algorithm.
-  [(#1316)](https://github.com/PennyLaneAI/pennylane/pull/1316)
-
 * The `specs` QNode transform creates a function that produces the specifications for a circuit
   at given arguments and keywords. Specifications can also be viewed after execution of a QNode or
   tape by accessing their `specs` property.
@@ -234,6 +230,11 @@
   >>> fn(res)
   3.999999999999999
   ```
+
+* The `quantum_monte_carlo` transform has been added, allowing an input circuit to be transformed
+  into the full quantum Monte Carlo algorithm.
+  [(#1316)](https://github.com/PennyLaneAI/pennylane/pull/1316)
+
 
 <h4>Extended QAOA module</h4>
 
