@@ -2,49 +2,65 @@
 
 <h3>New features since last release</h3>
 
-<h4>New and improved modules</h4>
+<h4>First class support for quantum kernels</h4>
 
 * PennyLane now has a ``kernels`` module.
   It provides basic functionalities for working with quantum kernels as well as
   post-processing methods to mitigate sampling errors and device noise:
 
-```python
-import pennylane as qml
-from pennylane import numpy as np
+  ```python
+  import pennylane as qml
+  from pennylane import numpy as np
 
-num_wires = 6
-wires = range(num_wires)
+  num_wires = 6
+  wires = range(num_wires)
 
-dev = qml.device('default.qubit', wires=num_wires)
+  dev = qml.device('default.qubit', wires=num_wires)
 
-@qml.qnode(dev)
-def kernel_circuit(x1, x2):
-    qml.templates.AngleEmbedding(x1, wires=wires)
-    qml.adjoint(qml.templates.AngleEmbedding)(x2, wires=wires)
-    return qml.probs(wires)
+  @qml.qnode(dev)
+  def kernel_circuit(x1, x2):
+      qml.templates.AngleEmbedding(x1, wires=wires)
+      qml.adjoint(qml.templates.AngleEmbedding)(x2, wires=wires)
+      return qml.probs(wires)
 
-kernel = lambda x1, x2: kernel_circuit(x1, x2)[0]
+  kernel = lambda x1, x2: kernel_circuit(x1, x2)[0]
 
-# "Training feature vectors"
-X_train = np.random.random((10, 6))
-# Create symmetric square kernel matrix (for training)
-K = qml.kernels.square_kernel_matrix(X_train, kernel)
-# Add some (symmetric) Gaussian noise to the kernel matrix.
-N = np.random.randn(10, 10)
-K += (N + N.T) / 2
+  # "Training feature vectors"
+  X_train = np.random.random((10, 6))
+  # Create symmetric square kernel matrix (for training)
+  K = qml.kernels.square_kernel_matrix(X_train, kernel)
+  # Add some (symmetric) Gaussian noise to the kernel matrix.
+  N = np.random.randn(10, 10)
+  K += (N + N.T) / 2
 
-K1 = qml.kernels.displace_matrix(K)
-K2 = qml.kernels.closest_psd_matrix(K)
-K3 = qml.kernels.threshold_matrix(K)
-K4 = qml.kernels.mitigate_depolarizing_noise(K, num_wires, method='single')
-K5 = qml.kernels.mitigate_depolarizing_noise(K, num_wires, method='average')
-K6 = qml.kernels.mitigate_depolarizing_noise(K, num_wires, method='split_channel')
+  K1 = qml.kernels.displace_matrix(K)
+  K2 = qml.kernels.closest_psd_matrix(K)
+  K3 = qml.kernels.threshold_matrix(K)
+  K4 = qml.kernels.mitigate_depolarizing_noise(K, num_wires, method='single')
+  K5 = qml.kernels.mitigate_depolarizing_noise(K, num_wires, method='average')
+  K6 = qml.kernels.mitigate_depolarizing_noise(K, num_wires, method='split_channel')
 
-# "Testing feature vectors"
-X_test = np.random.random((5, 6))
-# Compute kernel between test and training data.
-K_test = qml.kernels.kernel_matrix(X_train, X_test, kernel)
-```
+  # "Testing feature vectors"
+  X_test = np.random.random((5, 6))
+  # Compute kernel between test and training data.
+  K_test = qml.kernels.kernel_matrix(X_train, X_test, kernel)
+  ```
+
+<h4>Extract the fourier representation of quantum circuits</h4>
+
+* PennyLane now has a `fourier` module, which hosts a [growing library
+  of methods](https://pennylane.readthedocs.io/en/stable/code/qml_fourier.html)
+  that help with investigating the Fourier representation of functions
+  implemented by quantum circuits.
+  [(#1160)](https://github.com/PennyLaneAI/pennylane/pull/1160)
+  [(#1378)](https://github.com/PennyLaneAI/pennylane/pull/1378)
+
+  For example, one can plot distributions over Fourier series coefficients like
+  this one:
+
+  <img src="https://pennylane.readthedocs.io/en/latest/_static/fourier.png" width=70%/>
+
+<h4>Extended QAOA and grouping modules</h4>
 
 * Functionality to support solving the maximum-weighted cycle problem has been added to the `qaoa`
   module.
@@ -102,18 +118,6 @@ K_test = qml.kernels.kernel_matrix(X_train, X_test, kernel)
   {0: (0, 1), 1: (0, 2), 2: (1, 0), 3: (1, 2), 4: (2, 0), 5: (2, 1)}
   ```
  Additional functionality can be found in the `qml.qaoa.cycle` module.
-
-* PennyLane now has a `fourier` module, which hosts a [growing library
-  of methods](https://pennylane.readthedocs.io/en/stable/code/qml_fourier.html)
-  that help with investigating the Fourier representation of functions
-  implemented by quantum circuits.
-  [(#1160)](https://github.com/PennyLaneAI/pennylane/pull/1160)
-  [(#1378)](https://github.com/PennyLaneAI/pennylane/pull/1378)
-
-  For example, one can plot distributions over Fourier series coefficients like
-  this one:
-
-  <img src="https://pennylane.readthedocs.io/en/latest/_static/fourier.png" width=70%/>
 
 * Added functionality for constructing and manipulating the Pauli group
   [(#1181)](https://github.com/PennyLaneAI/pennylane/pull/1181).
