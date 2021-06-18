@@ -274,11 +274,24 @@ def mitigate_depolarizing_noise(K, num_wires, method, use_entries=None):
     if method == "single":
         if use_entries is None:
             use_entries = (0,)
+
+        if K[use_entries[0], use_entries[0]]=<1/dim:
+            raise ValueError(
+                "The single channel noise mitigation method cannot be applied "
+                "as the single diagonal element specified is too small."
+            )
+
         diagonal_element = K[use_entries[0], use_entries[0]]
         noise_rate = (1 - diagonal_element) * dim / (dim - 1)
         mitigated_matrix = (K - noise_rate / dim) / (1 - noise_rate)
 
     elif method == "average":
+        if np.mean(np.diag(K)[use_entries])=<1/dim:
+            raise ValueError(
+                "The average channel noise mitigation method cannot be applied "
+                "as the average of the used diagonal terms is too small."
+            )
+
         if use_entries is None:
             diagonal_elements = np.diag(K)
         else:
@@ -288,9 +301,9 @@ def mitigate_depolarizing_noise(K, num_wires, method, use_entries=None):
         mitigated_matrix = (K - mean_noise_rate / dim) / (1 - mean_noise_rate)
 
     elif method == "split_channel":
-        if np.any(np.diag(K) < 1 / dim):
+        if np.any(np.diag(K) =< 1 / dim):
             raise ValueError(
-                "The split channel noise mitigation method cannot be applied"
+                "The split channel noise mitigation method cannot be applied "
                 "for the input matrix as its diagonal terms are too small."
             )
 
@@ -303,5 +316,9 @@ def mitigate_depolarizing_noise(K, num_wires, method, use_entries=None):
         )
 
         mitigated_matrix = (K - inverse_noise / dim) / (1 - inverse_noise)
+    else:
+        raise ValueError(
+            "Incorrect noise depolarization mitigation method specified. "
+            "Accepted strategies are: 'single', 'average' and 'split_channel'")
 
     return mitigated_matrix
