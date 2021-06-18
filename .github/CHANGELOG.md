@@ -292,7 +292,9 @@
   >>> print(mapping)
   {0: (0, 1), 1: (0, 2), 2: (1, 0), 3: (1, 2), 4: (2, 0), 5: (2, 1)}
   ```
- Additional functionality can be found in the `qml.qaoa.cycle` module.
+  Additional functionality can be found in the
+  [qml.qaoa.cycle](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.qaoa.cycle.html)
+  module.
 
 
 <h4>Extended operations and templates</h4>
