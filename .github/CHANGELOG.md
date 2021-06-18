@@ -577,6 +577,9 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Bug fixes</h3>
 
+* Warns when adjoint or reversible differentiation specified or called on a device with finite shots.
+[(#1406)](https://github.com/PennyLaneAI/pennylane/pull/1406)
+
 * Fixes the differentiability of the operations `IsingXX` and `IsingZZ` for Autograd, Jax and Tensorflow.
 [(#1390)](https://github.com/PennyLaneAI/pennylane/pull/1390)
 

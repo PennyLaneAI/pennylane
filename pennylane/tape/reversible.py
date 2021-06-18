@@ -18,6 +18,7 @@ Quantum tape that implements reversible backpropagation.
 import copy
 from functools import reduce
 from string import ascii_letters as ABC
+import warnings
 
 import numpy as np
 
@@ -35,7 +36,7 @@ class ReversibleTape(JacobianTape):
 
     .. note::
 
-        The reversible analytic differentation method has the following restrictions:
+        The reversible analytic differentiation method has the following restrictions:
 
         * As it requires knowledge of the statevector, only statevector simulator devices can be used.
 
@@ -246,6 +247,13 @@ class ReversibleTape(JacobianTape):
 
         # before each Jacobian call, so that the statevector is calculated only once.
         self._final_state = None
+        if device.shots is not None:
+            warnings.warn(
+                "Requested reversible differentiation to be computed with finite shots."
+                " Reversible differentiation always calculated exactly.",
+                UserWarning,
+            )
+
         return super().jacobian(device, params, **options)
 
     def analytic_pd(self, idx, params, **options):

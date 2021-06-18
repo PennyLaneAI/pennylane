@@ -261,6 +261,60 @@ class TestValidation:
         with pytest.raises(ValueError, match="The default.gaussian device does not"):
             QNode._validate_adjoint_method(dev, "tf")
 
+    def test_validate_adjoint_finite_shots(self):
+        """Test that a UserWarning is raised when device has finite shots"""
+
+        dev = qml.device("default.qubit", wires=1, shots=1)
+
+        with pytest.warns(
+            UserWarning, match="Requested adjoint differentiation to be computed with finite shots."
+        ):
+            QNode._validate_adjoint_method(dev, "autograd")
+
+    def test_adjoint_finite_shots(self):
+        """Tests that UserWarning is raised with the adjoint differentiation method
+        on QNode construction when the device has finite shots
+        """
+
+        dev = qml.device("default.qubit", wires=1, shots=1)
+
+        with pytest.warns(
+            UserWarning, match="Requested adjoint differentiation to be computed with finite shots."
+        ):
+
+            @qml.qnode(dev, diff_method="adjoint")
+            def circ():
+                return qml.expval(qml.PauliZ(0))
+
+    def test_validate_reversible_finite_shots(self):
+        """Test that a UserWarning is raised when validating the reversible differentiation method
+        and using a device that has finite shots
+        """
+
+        dev = qml.device("default.qubit", wires=1, shots=1)
+
+        with pytest.warns(
+            UserWarning,
+            match="Requested reversible differentiation to be computed with finite shots.",
+        ):
+            QNode._validate_reversible_method(dev, "autograd")
+
+    def test_reversible_finite_shots(self):
+        """Tests that UserWarning is raised with the reversible differentiation method
+        on QNode construction when the device has finite shots
+        """
+
+        dev = qml.device("default.qubit", wires=1, shots=1)
+
+        with pytest.warns(
+            UserWarning,
+            match="Requested reversible differentiation to be computed with finite shots.",
+        ):
+
+            @qml.qnode(dev, diff_method="reversible")
+            def circ():
+                return qml.expval(qml.PauliZ(0))
+
     def test_qnode_print(self):
         """Test that printing a QNode object yields the right information."""
         dev = qml.device("default.qubit", wires=1)
