@@ -546,7 +546,9 @@ class TestErrorForNonRealistic:
         ):
             K1 = qml.kernels.mitigate_depolarizing_noise(K, num_wires, method="single_channel")
 
-    @pytest.mark.parametrize("msg, method", [("single", "single"), ("split channel", "split_channel")])
+    @pytest.mark.parametrize(
+        "msg, method", [("single", "single"), ("split channel", "split_channel")]
+    )
     def test_mitigate_depolarizing_noise_split_error(self, msg, method):
         """Test that an error is raised for the mitigation of depolarizing
         noise with a matrix that has too small specified entries."""

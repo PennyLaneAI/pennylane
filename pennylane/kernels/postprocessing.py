@@ -277,7 +277,7 @@ def mitigate_depolarizing_noise(K, num_wires, method, use_entries=None):
 
         if K[use_entries[0], use_entries[0]] <= (1 / dim):
             raise ValueError(
-                "The single channel noise mitigation method cannot be applied "
+                "The single noise mitigation method cannot be applied "
                 "as the single diagonal element specified is too small."
             )
 
@@ -294,7 +294,7 @@ def mitigate_depolarizing_noise(K, num_wires, method, use_entries=None):
 
         if np.mean(diagonal_elements) <= 1 / dim:
             raise ValueError(
-                "The average channel noise mitigation method cannot be applied "
+                "The average noise mitigation method cannot be applied "
                 "as the average of the used diagonal terms is too small."
             )
 
