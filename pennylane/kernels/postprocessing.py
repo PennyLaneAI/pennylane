@@ -288,6 +288,10 @@ def mitigate_depolarizing_noise(K, num_wires, method, use_entries=None):
         mitigated_matrix = (K - mean_noise_rate / dim) / (1 - mean_noise_rate)
 
     elif method == "split_channel":
+        if np.any(np.diag(K) < 1/dim):
+            raise ValueError("The split channel noise mitigation method cannot be applied"\
+                             "for the input matrix as its diagonal terms are too small.")
+
         eff_noise_rates = np.clip((1 - np.diag(K)) * dim / (dim - 1), 0.0, 1.0)
         noise_rates = 1 - np.sqrt(1 - eff_noise_rates)
         inverse_noise = (
@@ -296,10 +300,6 @@ def mitigate_depolarizing_noise(K, num_wires, method, use_entries=None):
             + noise_rates.reshape((len(K), 1))
         )
 
-        # Substitute zeros with ones to avoid division issues
-        inv_noise_diff = 1 - inverse_noise
-        inv_noise_diff[inv_noise_diff == 0] = 1
-
-        mitigated_matrix = (K - inverse_noise / dim) / inv_noise_diff
+        mitigated_matrix = (K - inverse_noise / dim) / (1 - inverse_noise)
 
     return mitigated_matrix

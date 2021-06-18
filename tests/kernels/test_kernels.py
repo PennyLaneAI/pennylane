@@ -518,16 +518,15 @@ class TestMitigation:
         kernel = lambda x1, x2: kernel_circuit(x1, x2)[0]
 
         # "Training feature vectors"
-        X_train = np.random.random((10, 6))
+        X_train = qml.numpy.tensor([[0.39375865, 0.50895605, 0.30720779],
+                            [0.34389837, 0.7043728 , 0.40067889]], requires_grad=True)
 
         # Create symmetric square kernel matrix (for training)
         K = qml.kernels.square_kernel_matrix(X_train, kernel)
 
         # Add some (symmetric) Gaussian noise to the kernel matrix.
-        N = np.random.randn(10, 10)
+        N = qml.numpy.tensor([[-1.15035284,  0.36726945],[ 0.26436627, -0.59287149]], requires_grad=True)
         K += (N + N.T) / 2
 
-        K6 = qml.kernels.mitigate_depolarizing_noise(K, num_wires, method="split_channel")
-
-        # Check that no warning was raised
-        assert len(recwarn) == 0
+        with pytest.raises(ValueError, match="The split channel noise mitigation method cannot be applied"):
+            K6 = qml.kernels.mitigate_depolarizing_noise(K, num_wires, method="split_channel")
