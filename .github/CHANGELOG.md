@@ -527,7 +527,7 @@ K_test = qml.kernels.kernel_matrix(X_train, X_test, kernel)
   ```
 
   ```pycon
-  >>> tape = tape.expand(depth=2)
+  >>> tape = tape.expand(depth=1)
   >>> print(tape.draw(wire_order=qml.wires.Wires(all_wires)))
    c0: ──────────────╭C──────────────────────╭C──────────┤
    c1: ──────────────├C──────────────────────├C──────────┤
