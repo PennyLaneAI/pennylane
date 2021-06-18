@@ -100,9 +100,10 @@
 
 <h4>New transforms</h4>
 
-* The `specs` QNode transform creates a function that produces the specifications for a circuit
-  at given arguments and keywords. Specifications can also be viewed after execution of a QNode or
-  tape by accessing their `specs` property.
+* The `specs` QNode transform creates a function that returns specifications or
+  details about the QNode, including depth, number of gates, and number of
+  gradient executions required. Specifications can also be viewed after execution
+  of a QNode or tape by accessing their `specs` property.
   [(#1245)](https://github.com/PennyLaneAI/pennylane/pull/1245)
 
   For example:
