@@ -580,7 +580,10 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 * Fixes a bug with `qml.math.cast` where the `MottonenStatePreparation` operation expected
   a float type instead of double.
   [(#1400)](https://github.com/XanaduAI/pennylane/pull/1400)
-  
+
+* Fixes a bug where a copy of `qml.ControlledQubitUnitary` was non-functional as it did not have all the necessary information.
+[(#1411)](https://github.com/PennyLaneAI/pennylane/pull/1411)
+
 * Warns when adjoint or reversible differentiation specified or called on a device with finite shots.
   [(#1406)](https://github.com/PennyLaneAI/pennylane/pull/1406)
 
