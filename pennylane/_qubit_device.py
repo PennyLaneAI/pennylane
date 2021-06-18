@@ -854,6 +854,13 @@ class QubitDevice(Device):
             if not hasattr(m.obs, "base_name"):
                 m.obs.base_name = None  # This is needed for when the observable is a tensor product
 
+        if self.shots is not None:
+            warnings.warn(
+                "Requested adjoint differentiation to be computed with finite shots."
+                " The derivative is always exact when using the adjoint differentiation method.",
+                UserWarning,
+            )
+
         # Initialization of state
         if starting_state is not None:
             ket = self._reshape(starting_state, [2] * self.num_wires)
