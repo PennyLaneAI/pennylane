@@ -546,6 +546,8 @@ class QNode:
                         "Operator {} must act on all wires".format(obj.name)
                     )
 
+        for obj in self.qtape.observables:
+
             if (
                 isinstance(obj, qml.ops.qubit.SparseHamiltonian)
                 and self.diff_method != "parameter-shift"
