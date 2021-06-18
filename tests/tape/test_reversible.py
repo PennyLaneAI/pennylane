@@ -161,7 +161,7 @@ class TestGradients:
     """Jacobian integration tests for qubit expectations."""
 
     def test_finite_shots_warning(self):
-        """Test warning raised when calling jacobian with a device with finite shots"""
+        """Test that a warning is raised when calling the jacobian with a device with finite shots"""
 
         with ReversibleTape() as tape:
             qml.RX(0.1, wires=0)
@@ -385,7 +385,7 @@ class TestQNodeIntegration:
     """Test QNode integration with the reversible method"""
 
     def test_finite_shots_warning(self):
-        """ "Tests that a warning is raised if used on a device with finite shots"""
+        """Test that a warning is raised when calling the jacobian with a device with finite shots"""
 
         dev = qml.device("default.qubit", wires=1, shots=1)
 

@@ -272,7 +272,9 @@ class TestValidation:
             QNode._validate_adjoint_method(dev, "autograd")
 
     def test_adjoint_finite_shots(self):
-        """Tests that UserWarning is raised on QNode construction when device has finite shots"""
+        """Tests that UserWarning is raised with the adjoint differentiation method
+        on QNode construction when the device has finite shots
+        """
 
         dev = qml.device("default.qubit", wires=1, shots=1)
 
@@ -285,7 +287,9 @@ class TestValidation:
                 return qml.expval(qml.PauliZ(0))
 
     def test_validate_reversible_finite_shots(self):
-        """Test that a UserWarning is raised when device has finite shots"""
+        """Test that a UserWarning is raised when validating the reversible differentiation method
+        and using a device that has finite shots
+        """
 
         dev = qml.device("default.qubit", wires=1, shots=1)
 
@@ -296,7 +300,9 @@ class TestValidation:
             QNode._validate_reversible_method(dev, "autograd")
 
     def test_reversible_finite_shots(self):
-        """Tests that UserWarning is raised on QNode construction when device has finite shots"""
+        """Tests that UserWarning is raised with the reversible differentiation method
+        on QNode construction when the device has finite shots
+        """
 
         dev = qml.device("default.qubit", wires=1, shots=1)
 
