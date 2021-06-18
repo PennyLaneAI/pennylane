@@ -425,12 +425,8 @@
   (array(0.31434679), array(0.))
   ```
 
-* It is now possible
-  to create custom Observables and corresponding devices whose return type can
-  be an arbitrary object and QNodes using such Observable remain
-  differentiable with `qml.grad` as long as the class of the returned object
-  implements the operations of a field. See `tests/tape/test_jacobian_tape.py`
-  for an example.
+* Allows creating differentiable observables that return custom objects such
+  that the observable is supported by devices.
   [(1291)](https://github.com/PennyLaneAI/pennylane/pull/1291)
 
 * QNodes now display readable information when in interactive environments or when printed.
