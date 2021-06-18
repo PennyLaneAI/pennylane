@@ -205,7 +205,7 @@ K_test = qml.kernels.kernel_matrix(X_train, X_test, kernel)
   >>> info
   {'gate_sizes': defaultdict(int, {1: 2, 3: 1, 2: 1}),
    'gate_types': defaultdict(int, {'RX': 1, 'Toffoli': 1, 'CRY': 1, 'Rot': 1}),
-   'num_perations': 4,
+   'num_operations': 4,
    'num_observables': 2,
    'num_diagonalizing_gates': 1,
    'num_used_wires': 3,
