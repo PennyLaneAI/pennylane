@@ -22,7 +22,8 @@
   ```
 
   The expectation value of the sparse hamiltonian is computed directly, which leads to executions
-  that are faster by 1-3 orders of magnitude. 
+  that are faster by orders of magnitude. Note that "parameter-shift" is the only differentiation
+  method that is currently supported when the observable is a sparse hamiltonian.
 
 * Added functionality to compute the sparse matrix representation of a `qml.Hamiltonian` object.
   [(#1394)](https://github.com/PennyLaneAI/pennylane/pull/1394)
