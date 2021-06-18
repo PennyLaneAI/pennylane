@@ -473,6 +473,9 @@ class DefaultQubit(QubitDevice):
 
             return np.real(ev.toarray()[0])
 
+        elif observable.name == "SparseHamiltonian" and self.shots is not None:
+            raise DeviceError("SparseHamiltonian must be used with shots=None")
+
         return super().expval(observable, shot_range=shot_range, bin_size=bin_size)
 
     def _get_unitary_matrix(self, unitary):  # pylint: disable=no-self-use

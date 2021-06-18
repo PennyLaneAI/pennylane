@@ -939,6 +939,16 @@ class TestExpval:
 
         assert np.allclose(expval, expected_output, atol=tol, rtol=0)
 
+    def test_sparse_expval_error(self):
+        """Test that the expval function raises a DeviceError when the observable is
+        SparseHamiltonian and finite shots is requested."""
+        hamiltonian = coo_matrix(np.array([[1.0, 0.0], [0.0, 1.0]]))
+
+        dev = qml.device("default.qubit", wires=1, shots=1)
+
+        with pytest.raises(DeviceError, match="SparseHamiltonian must be used with shots=None"):
+            dev.expval(qml.SparseHamiltonian(hamiltonian))[0]
+
 
 class TestVar:
     """Tests that variances are properly calculated."""
