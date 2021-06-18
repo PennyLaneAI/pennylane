@@ -346,7 +346,8 @@ class TestGradient:
 
 
 class TestScalar:
-    """Test that the Mottonen state preparation does not raise the error expected scalar type float but found double"""
+    """Test that the Mottonen state preparation does not raise the error 'expected scalar type
+    float but found double'"""
 
     @pytest.mark.parametrize(
         "inputs,weights",
