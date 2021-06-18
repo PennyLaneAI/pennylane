@@ -418,7 +418,7 @@ class TestSparse:
 
         dev = qml.device("default.qubit", wires=num_wires)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(sparse_hamiltonian, num_wires):
             obs = qml.SparseHamiltonian(sparse_hamiltonian)
             return qml.expval(obs)
