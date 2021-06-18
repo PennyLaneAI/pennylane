@@ -103,7 +103,7 @@
 * The `specs` QNode transform creates a function that returns specifications or
   details about the QNode, including depth, number of gates, and number of
   gradient executions required. Specifications can also be viewed after execution
-  of a QNode or tape by accessing their `specs` property.
+  of a QNode by accessing their `specs` property.
   [(#1245)](https://github.com/PennyLaneAI/pennylane/pull/1245)
 
   For example:
@@ -345,22 +345,6 @@
   params = np.random.normal(0, np.pi, len(singles) + len(doubles))
   circuit(params, hf_state, singles=singles, doubles=doubles)
   ```
-
-* Added Projector observable, which is available on all devices inheriting from the `QubitDevice` class.
-  [(#1356)](https://github.com/PennyLaneAI/pennylane/pull/1356)
-
-* Ising XX gate functionality added.
-  [(#1194)](https://github.com/PennyLaneAI/pennylane/pull/1194)
-
-* Ising ZZ gate functionality added.
-  [(#1199)](https://github.com/PennyLaneAI/pennylane/pull/1199)
-
-* The ISWAP operation has been added to the `default_qubit` device.
-  [(#1298)](https://github.com/PennyLaneAI/pennylane/pull/1298)
-
-* Added a new noise channel, `qml.ResetError`.
-  [(#1321)](https://github.com/PennyLaneAI/pennylane/pull/1321).
-
 * Adds `QubitCarry` and `QubitSum` operations for basic arithmetic.
   [(#1169)](https://github.com/PennyLaneAI/pennylane/pull/1169)
 
@@ -389,6 +373,18 @@
   >>> print(output)
   (0, 1)
   ```
+
+* Added Projector observable, which is available on all devices inheriting from
+  the `QubitDevice` class.
+  [(#1356)](https://github.com/PennyLaneAI/pennylane/pull/1356)
+
+* The following new operations have been added:
+
+  - The IsingXX gate `qml.IsingXX` [(#1194)](https://github.com/PennyLaneAI/pennylane/pull/1194)
+  - The IsingZZ gate `qml.IsingZZ` [(#1199)](https://github.com/PennyLaneAI/pennylane/pull/1199)
+  - The ISWAP gate `qml.ISWAP` [(#1298)](https://github.com/PennyLaneAI/pennylane/pull/1298)
+  - The reset error noise channel `qml.ResetError` [(#1321)](https://github.com/PennyLaneAI/pennylane/pull/1321)
+
 
 <h3>Improvements</h3>
 
