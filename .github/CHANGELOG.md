@@ -429,9 +429,6 @@
   that the observable is supported by devices.
   [(1291)](https://github.com/PennyLaneAI/pennylane/pull/1291)
 
-* QNodes now display readable information when in interactive environments or when printed.
-  [(#1359)](https://github.com/PennyLaneAI/pennylane/pull/1359).
-
 * PennyLane NumPy now includes the
   [random module's](https://numpy.org/doc/stable/reference/random/index.html#module-numpy.random)
   `Generator` objects, the recommended way of random number generation. This allows for
@@ -445,9 +442,6 @@
   random_mat1 = rng.random((3,2))
   random_mat2 = rng.standard_normal(3, requires_grad=False)
   ```
-
-* The `qml.inv()` function is now deprecated with a warning to use the more general `qml.adjoint()`.
-  [(#1325)](https://github.com/PennyLaneAI/pennylane/pull/1325)
 
 * The adjoint jacobian differentiation method reuses the state computed on the forward pass.
   This can be turned off to save memory with the Torch and TensorFlow interfaces by passing
@@ -542,10 +536,16 @@
 
 <h3>Breaking changes</h3>
 
+* The `qml.inv()` function is now deprecated with a warning to use the more general `qml.adjoint()`.
+  [(#1325)](https://github.com/PennyLaneAI/pennylane/pull/1325)
+
 * Removes support for Python 3.6 and begin testing for Python 3.9.
   [(#1228)](https://github.com/XanaduAI/pennylane/pull/1228)
 
 <h3>Bug fixes</h3>
+
+* QNodes now display readable information when in interactive environments or when printed.
+  [(#1359)](https://github.com/PennyLaneAI/pennylane/pull/1359).
 
 * Fixes the differentiability of the operations `IsingXX` and `IsingZZ` for Autograd, Jax and Tensorflow.
   [(#1390)](https://github.com/PennyLaneAI/pennylane/pull/1390)
