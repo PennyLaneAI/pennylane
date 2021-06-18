@@ -15,10 +15,11 @@
 Unit tests for the ArbitraryStatePreparation template.
 """
 import pytest
-import torch
 import numpy as np
 import pennylane as qml
 from pennylane import numpy as pnp
+
+torch = pytest.importorskip("torch", minversion="1.3")
 from pennylane.templates.state_preparations.mottonen import gray_code, _get_alpha_y
 
 
@@ -363,6 +364,7 @@ class TestScalar:
         ],
     )
     def test_scalar_torch(self, inputs, weights):
+
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface="torch")
