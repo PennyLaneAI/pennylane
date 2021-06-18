@@ -364,7 +364,7 @@ class TestCasting:
         ],
     )
     def test_scalar_torch(self, inputs, weights):
-
+    """Test that MottonenStatePreparation can be correctly used with the Torch interface."""
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface="torch")
