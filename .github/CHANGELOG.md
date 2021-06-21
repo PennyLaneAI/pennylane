@@ -597,7 +597,7 @@
 
 <h3>Documentation</h3>
 
-* Math docstrings in class `QubitParamShiftTape` now rendered properly.
+* Math present in the `QubitParamShiftTape` class docstring now renders correctly.
   [(#1402)](https://github.com/PennyLaneAI/pennylane/pull/1402)
 
 * Fix typo in the documentation of qml.templates.layers.StronglyEntanglingLayers.
