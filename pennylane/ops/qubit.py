@@ -3050,7 +3050,7 @@ class SparseHamiltonian(Observable):
     par_domain = None
     grad_method = None
 
-    def __init__(self, *params, wires=[0, 1]):
+    def __init__(self, *params, wires=[0]):
         super().__init__(*params, wires=wires)
 
     @classmethod

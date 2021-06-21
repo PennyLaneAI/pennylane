@@ -553,7 +553,8 @@ class QNode:
                 and self.diff_method != "parameter-shift"
             ):
                 raise qml.QuantumFunctionError(
-                    "SparseHamiltonian observable must be used with the parameter-shift method"
+                    "SparseHamiltonian observable must be used with the parameter-shift"
+                    " differentiation method"
                 )
 
         # pylint: disable=protected-access

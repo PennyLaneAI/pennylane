@@ -448,8 +448,8 @@ class DefaultQubit(QubitDevice):
 
     def expval(self, observable, shot_range=None, bin_size=None):
         """Returns the expectation value of a Hamiltonian observable. When the observable is a
-         ``SparseHamiltonian`` object, the expectation value is computed directly, which leads to
-          faster execution.
+         ``SparseHamiltonian`` object, the expectation value is computed directly for the full
+         Hamiltonian, which leads to faster execution.
 
         Args:
             observable (~.Observable): a PennyLane observable

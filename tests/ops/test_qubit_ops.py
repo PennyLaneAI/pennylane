@@ -447,6 +447,20 @@ class TestSparse:
 
         assert np.allclose(qml.grad(circuit)([0.5]), -0.47942554, atol=tol, rtol=0)
 
+    def test_sparse_diffmethod_error(self):
+        """Test that an error is raised when the observable is SparseHamiltonian and the
+        differentiation method is not parameter-shift."""
+        dev = qml.device("default.qubit", wires=2, shots=None)
+
+        @qml.qnode(dev, diff_method="backprop")
+        def circuit(param):
+            qml.RX(param, wires=0)
+            return qml.expval(qml.SparseHamiltonian(coo_matrix(np.eye(4))))
+
+        with pytest.raises(qml.QuantumFunctionError, match="SparseHamiltonian observable must be"
+                                        " used with the parameter-shift differentiation method"):
+            qml.grad(circuit)([0.5])
+
 
 # Non-parametrized operations and their matrix representation
 NON_PARAMETRIZED_OPERATIONS = [
