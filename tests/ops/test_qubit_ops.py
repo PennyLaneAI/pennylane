@@ -457,8 +457,11 @@ class TestSparse:
             qml.RX(param, wires=0)
             return qml.expval(qml.SparseHamiltonian(coo_matrix(np.eye(4))))
 
-        with pytest.raises(qml.QuantumFunctionError, match="SparseHamiltonian observable must be"
-                                        " used with the parameter-shift differentiation method"):
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="SparseHamiltonian observable must be"
+            " used with the parameter-shift differentiation method",
+        ):
             qml.grad(circuit)([0.5])
 
 
