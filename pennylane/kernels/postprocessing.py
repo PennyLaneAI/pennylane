@@ -321,7 +321,7 @@ def mitigate_depolarizing_noise(K, num_wires, method, use_entries=None):
     else:
         raise ValueError(
             "Incorrect noise depolarization mitigation method specified. "
-            "Accepted strategies are: 'single', 'average' and 'split_channel'"
+            "Accepted strategies are: 'single', 'average' and 'split_channel'."
         )
 
     return mitigated_matrix
