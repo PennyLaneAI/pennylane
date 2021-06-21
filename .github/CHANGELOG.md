@@ -283,8 +283,6 @@
 * Added functionality to compute the sparse matrix representation of a `qml.Hamiltonian` object.
   [(#1394)](https://github.com/PennyLaneAI/pennylane/pull/1394)
 
-  Example:
-
   ```python
   coeffs = [1, -0.45]
   obs = [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1)]
