@@ -600,7 +600,7 @@
 * Math present in the `QubitParamShiftTape` class docstring now renders correctly.
   [(#1402)](https://github.com/PennyLaneAI/pennylane/pull/1402)
 
-* Fix typo in the documentation of qml.templates.layers.StronglyEntanglingLayers.
+* Fix typo in the documentation of `qml.StronglyEntanglingLayers`.
   [(#1367)](https://github.com/PennyLaneAI/pennylane/pull/1367)
 
 * Fixed typo on TensorFlow interface documentation
