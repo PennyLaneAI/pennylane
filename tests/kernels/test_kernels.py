@@ -548,7 +548,8 @@ class TestErrorForNonRealistic:
     )
     def test_mitigate_depolarizing_noise_error(self, msg, method):
         """Test that an error is raised for the mitigation of depolarizing
-        noise with a matrix that has too small specified entries."""
+        noise with a matrix that has too small specified entries for the
+        single and the split channel strategies."""
         num_wires = 6
         wires = range(num_wires)
 
