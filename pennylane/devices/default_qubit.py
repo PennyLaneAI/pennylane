@@ -85,8 +85,8 @@ class DefaultQubit(QubitDevice):
 
     name = "Default qubit PennyLane plugin"
     short_name = "default.qubit"
-    pennylane_requires = "0.16"
-    version = "0.16.0"
+    pennylane_requires = "0.17"
+    version = "0.17.0"
     author = "Xanadu Inc."
 
     operations = {
@@ -124,6 +124,7 @@ class DefaultQubit(QubitDevice):
         "CRot",
         "QFT",
         "IsingXX",
+        "IsingYY",
         "IsingZZ",
         "SingleExcitation",
         "SingleExcitationPlus",
