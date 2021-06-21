@@ -244,7 +244,7 @@
   a standard normal distribution. We can calculate the expectation value analytically as
   `0.432332`, but we can also estimate using the quantum Monte Carlo algorithm. The first step is to
   discretize the problem:
-  
+
   ```python
   from scipy.stats import norm
 
@@ -260,9 +260,9 @@
   func = lambda i: np.sin(xs[i]) ** 2
   r_rotations = np.array([2 * np.arcsin(np.sqrt(func(i))) for i in range(M)])
   ```
-  
+
   The `quantum_monte_carlo` transform can then be used:
-  
+
   ```python
   from pennylane.templates.state_preparations.mottonen import (
       _uniform_rotation_dagger as r_unitary,
@@ -291,12 +291,12 @@
   ```
 
   The estimated value can be retrieved using:
-  
+
   ```pycon
   >>> (1 - np.cos(np.pi * phase_estimated)) / 2
   0.42663476277231915
   ```
-  
+
   The resources required to perform the quantum Monte Carlo algorithm can also be inspected using
   the `specs` transform.
 
@@ -441,10 +441,41 @@
   (0, 1)
   ```
 
-* Added Projector observable, which is available on all devices inheriting from
-  the `QubitDevice` class.
+* Added the `qml.Projector` observable, which is available on all devices
+  inheriting from the `QubitDevice` class.
   [(#1356)](https://github.com/PennyLaneAI/pennylane/pull/1356)
   [(#1368)](https://github.com/PennyLaneAI/pennylane/pull/1368)
+
+  Using `qml.Projector`, we can define the basis state projectors to use when
+  computing expectation values. Let us take for example a circuit that prepares
+  Bell states:
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(basis_state):
+      qml.Hadamard(wires=[0])
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.Projector(basis_state, wires=[0, 1]))
+  ```
+
+  We can then specify the `|00>` basis state to construct the `|00><00|`
+  projector and compute the expectation value:
+
+  ```pycon
+  >>> basis_state = [0, 0]
+  >>> circuit(basis_state)
+  tensor(0.5, requires_grad=True)
+  ```
+
+  As expected, we get similar results when specifying the `|11>` basis state:
+
+  ```pycon
+  >>> basis_state = [1, 1]
+  >>> circuit(basis_state)
+  tensor(0.5, requires_grad=True)
+  ```
 
 * The following new operations have been added:
 
