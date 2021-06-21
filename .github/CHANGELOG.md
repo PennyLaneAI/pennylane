@@ -470,6 +470,10 @@
 * Decompositions in terms of elementary gates has been added for:
 
   - `qml.CSWAP` [(#1306)](https://github.com/PennyLaneAI/pennylane/issues/1306)
+  - `qml.SWAP` [(#1329)](https://github.com/PennyLaneAI/pennylane/pull/1329)
+  - `qml.SingleExcitation` [(#1303)](https://github.com/PennyLaneAI/pennylane/pull/1303)
+  - `qml.SingleExcitationPlus` and `qml.SingleExcitationMinus` [(#1278)](https://github.com/PennyLaneAI/pennylane/pull/1278)
+  - `qml.DoubleExcitation` [(#1303)](https://github.com/PennyLaneAI/pennylane/pull/1303)
   - `qml.Toffoli` [(#1320)](https://github.com/PennyLaneAI/pennylane/pull/1320)
   - `qml.MultiControlledX`. [(#1287)](https://github.com/PennyLaneAI/pennylane/pull/1287)
     When controlling on three or more wires, an ancilla
@@ -501,21 +505,6 @@
      w2: ──├C──╰X──────────────╰X──├C──╰X──────────────╰X──┤
      t0: ──╰X──────────────────────╰X──────────────────────┤
     ```
-
-* The `qml.SingleExcitation` and `qml.DoubleExcitation` operations now
-  have decompositions over elementary gates, and their gradient recipes
-  have been updated to use the four-term parameter-shift rules.
-  [(#1303)](https://github.com/PennyLaneAI/pennylane/pull/1303)
-
-* The `qml.SingleExcitationPlus` and `qml.SingleExcitationMinus` operations now
-  have decompositions over elementary gates.
-  [(#1278)](https://github.com/PennyLaneAI/pennylane/pull/1278)
-
-* The `qml.SWAP` operation now has a decomposition over elementary gates.
-  [(#1329)](https://github.com/PennyLaneAI/pennylane/pull/1329)
-
-* The `qml.Toffoli` operation now has a decomposition over elementary gates.
-  [(#1320)](https://github.com/PennyLaneAI/pennylane/pull/1320)
 
 * Added CPhase operation as an alias for ControlledPhaseShift operation
   [(#1319)](https://github.com/PennyLaneAI/pennylane/pull/1319).
