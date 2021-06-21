@@ -540,6 +540,16 @@
 * Removes support for Python 3.6 and begin testing for Python 3.9.
   [(#1228)](https://github.com/XanaduAI/pennylane/pull/1228)
 
+* The tape methods `get_resources` and `get_depth` are superseded by `specs` and will be
+  deprecated after one release cycle.
+  [(#1245)](https://github.com/PennyLaneAI/pennylane/pull/1245)
+
+* Using the `qml.sample()` measurement on devices with `shots=None` continue to
+  raise a warning with this functionality being fully deprecated and raising an
+  error after one release cycle.
+  [(#1079)](https://github.com/PennyLaneAI/pennylane/pull/1079)
+  [(#1196)](https://github.com/PennyLaneAI/pennylane/pull/1196)
+
 <h3>Bug fixes</h3>
 
 * QNodes now display readable information when in interactive environments or when printed.
@@ -550,7 +560,7 @@
   [(#1400)](https://github.com/XanaduAI/pennylane/pull/1400)
 
 * Fixes a bug where a copy of `qml.ControlledQubitUnitary` was non-functional as it did not have all the necessary information.
-[(#1411)](https://github.com/PennyLaneAI/pennylane/pull/1411)
+  [(#1411)](https://github.com/PennyLaneAI/pennylane/pull/1411)
 
 * Warns when adjoint or reversible differentiation specified or called on a device with finite shots.
   [(#1406)](https://github.com/PennyLaneAI/pennylane/pull/1406)
