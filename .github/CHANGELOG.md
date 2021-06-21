@@ -352,7 +352,7 @@
   coeffs = [1, -0.45]
   obs = [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1)]
   H = qml.Hamiltonian(coeffs, obs)
-  H_sparse = sparse_hamiltonian(H)
+  H_sparse = qml.utils.sparse_hamiltonian(H)
   ```
 
   The resulting matrix is a sparse matrix in scipy coordinate list (COO) format:
