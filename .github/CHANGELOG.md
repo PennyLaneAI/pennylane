@@ -506,7 +506,7 @@
      t0: ──╰X──────────────────────╰X──────────────────────┤
     ```
 
-* Added CPhase operation as an alias for ControlledPhaseShift operation
+* Added `qml.CPhase` as an alias for the existing `qml.ControlledPhaseShift` operation.
   [(#1319)](https://github.com/PennyLaneAI/pennylane/pull/1319).
 
 * The `Device` class now uses caching when mapping wires.
@@ -537,7 +537,7 @@
 * The `qml.inv()` function is now deprecated with a warning to use the more general `qml.adjoint()`.
   [(#1325)](https://github.com/PennyLaneAI/pennylane/pull/1325)
 
-* Removes support for Python 3.6 and begin testing for Python 3.9.
+* Removes support for Python 3.6 and adds support for Python 3.9.
   [(#1228)](https://github.com/XanaduAI/pennylane/pull/1228)
 
 * The tape methods `get_resources` and `get_depth` are superseded by `specs` and will be
