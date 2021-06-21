@@ -385,6 +385,7 @@
 * Added Projector observable, which is available on all devices inheriting from
   the `QubitDevice` class.
   [(#1356)](https://github.com/PennyLaneAI/pennylane/pull/1356)
+  [(#1368)](https://github.com/PennyLaneAI/pennylane/pull/1368)
 
 * The following new operations have been added:
 
@@ -461,9 +462,6 @@
   now have an `id` attribute, which can mark an operator in a circuit, for example to
   identify it on the tape by a tape transform.
   [(#1377)](https://github.com/PennyLaneAI/pennylane/pull/1377)
-
-* Implement special handling for measuring the variance of Projector observables to improve memory usage.
-  [(#1368)](https://github.com/PennyLaneAI/pennylane/pull/1368)
 
 * The `benchmark` module was deleted, since it was outdated and is superseded by
   the new separate [benchmark repository](https://github.com/PennyLaneAI/benchmark).
