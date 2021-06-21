@@ -622,7 +622,7 @@
 * Updated PyTorch and TensorFlow interface introductions.
   [(#1333)](https://github.com/PennyLaneAI/pennylane/pull/1333)
 
-* Fixes the qchem introduction to accommodate changes.
+* Updates the quantum chemistry quickstart to reflect recent changes to the `qchem` module.
   [(#1227)](https://github.com/PennyLaneAI/pennylane/pull/1227)
 
 <h3>Contributors</h3>
