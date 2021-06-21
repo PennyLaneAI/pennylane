@@ -451,9 +451,10 @@
   random_mat2 = rng.standard_normal(3, requires_grad=False)
   ```
 
-* The adjoint jacobian differentiation method reuses the state computed on the forward pass.
-  This can be turned off to save memory with the Torch and TensorFlow interfaces by passing
-  `adjoint_cache=False` during QNode creation.
+* The performance of adjoint jacobian differentiation was significantly
+  improved as the method now reuses the state computed on the forward pass.
+  This can be turned off to save memory with the Torch and TensorFlow
+  interfaces by passing `adjoint_cache=False` during QNode creation.
   [(#1341)](https://github.com/PennyLaneAI/pennylane/pull/1341)
 
 * The `Operator` (and by inheritance, the `Operation` and `Observable` class and their children)
