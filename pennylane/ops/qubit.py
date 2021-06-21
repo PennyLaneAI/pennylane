@@ -3106,6 +3106,7 @@ class SparseHamiltonian(Observable):
     grad_method = None
 
     wires = Wires([0])
+
     def __init__(self, *params, wires=wires):
         super().__init__(*params, wires=wires)
 
