@@ -331,6 +331,7 @@
   hf_state = qml.qchem.hf_state(electrons, qubits)
   singles, doubles = qml.qchem.excitations(electrons, qubits)
   ```
+
   Now we can use the template ``AllSinglesDoubles`` to define the
   quantum circuit,
 
@@ -347,8 +348,13 @@
       return qml.expval(qml.PauliZ(0))
 
   params = np.random.normal(0, np.pi, len(singles) + len(doubles))
-  circuit(params, hf_state, singles=singles, doubles=doubles)
   ```
+  and execute it:
+  ```pycon
+  >>> circuit(params, hf_state, singles=singles, doubles=doubles)
+  tensor(-0.73772194, requires_grad=True)
+  ```
+
 * Adds `QubitCarry` and `QubitSum` operations for basic arithmetic.
   [(#1169)](https://github.com/PennyLaneAI/pennylane/pull/1169)
 
