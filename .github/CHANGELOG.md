@@ -528,6 +528,88 @@
   that the observable is supported by devices.
   [(1291)](https://github.com/PennyLaneAI/pennylane/pull/1291)
 
+  As an example, first we define `NewObservable` class:
+
+  ```python
+  from pennylane.devices import DefaultQubit
+
+  class NewObservable(qml.operation.Observable):
+      """NewObservable"""
+
+      num_wires = qml.operation.AnyWires
+      num_params = 0
+      par_domain = None
+
+      def diagonalizing_gates(self):
+          """Diagonalizing gates"""
+          return []
+  ```
+
+  Once we have this new observable class, we define a `SpecialObject` class
+  that can be used to encode data in an observable and a new device that supports
+  our new observable and returns a `SpecialObject` as the expectation value:
+
+  ```python
+  class SpecialObject:
+
+      def __init__(self, val):
+          self.val = val
+
+      def __mul__(self, other):
+          new = SpecialObject(self.val)
+          new *= other
+          return new
+
+      def __imul__(self, other):
+          self.val *= other
+          return self
+
+      def __rmul__(self, other):
+          return self * other
+
+      def __iadd__(self, other):
+          self.val += other.val if isinstance(other, self.__class__) else other
+          return self
+
+      def __add__(self, other):
+          new = SpecialObject(self.val)
+          new += other.val if isinstance(other, self.__class__) else other
+          return new
+
+      def __radd__(self, other):
+          return self + other
+
+  class DeviceSupportingNewObservable(DefaultQubit):
+      name = "Device supporting NewObservable"
+      short_name = "default.qubit.newobservable"
+      observables = DefaultQubit.observables.union({"NewObservable"})
+
+      def expval(self, observable, **kwargs):
+          if self.shots is None and isinstance(observable, NewObservable):
+              val = super().expval(qml.PauliZ(wires=0), **kwargs)
+              return SpecialObject(val)
+
+          return super().expval(observable, **kwargs)
+  ```
+
+  At this point, we can create a device that will support the differentiation
+  of a `NewObservable` object by returning a `SpecialObject`:
+
+  ```pycon
+  dev = DeviceSupportingNewObservable(wires=1, shots=None)
+
+  @qml.qnode(dev, diff_method="parameter-shift")
+  def qnode(x):
+      qml.RY(x, wires=0)
+      return qml.expval(NewObservable(wires=0))
+
+  >>> result = qml.jacobian(qnode)(0.2)
+  >>> print(result)
+  <__main__.SpecialObject object at 0x7fd2c54721f0>
+  >>> print(result.item().val)
+  -0.19866933079506116
+  ```
+
 * PennyLane NumPy now includes the
   [random module's](https://numpy.org/doc/stable/reference/random/index.html#module-numpy.random)
   `Generator` objects, the recommended way of random number generation. This allows for
