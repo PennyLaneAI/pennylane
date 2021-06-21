@@ -240,6 +240,73 @@
   into the full quantum Monte Carlo algorithm.
   [(#1316)](https://github.com/PennyLaneAI/pennylane/pull/1316)
 
+  We can use the `qml.quantum_monte_carlo` transform to create a quantum
+  function that can be used in a QNode. This can be showcased by gathering some
+  example unitaries and defining an auxiliary function that returns the unitary
+  of a circuit:
+
+  ```python
+  from pennylane.templates.subroutines.qmc import make_Q
+  from scipy.stats import unitary_group
+  import itertools
+
+  def get_unitary(circ, n_wires):
+      """Helper function to find the unitary of a circuit"""
+      dev = qml.device("default.qubit", wires=range(n_wires))
+
+      @qml.qnode(dev)
+      def unitary_z(basis_state):
+          qml.BasisState(basis_state, wires=range(n_wires))
+          circ()
+          return qml.state()
+
+      bitstrings = list(itertools.product([0, 1], repeat=n_wires))
+      u = [unitary_z(bitstring).numpy() for bitstring in bitstrings]
+      u = np.array(u).T
+      return u
+
+  n_wires = 2
+
+  wires = range(n_wires)
+  target_wire = n_wires - 1
+  estimation_wires = range(n_wires, 2 * n_wires)
+
+  a_mat = unitary_group.rvs(2 ** (n_wires - 1), random_state=1967)
+  r_mat = unitary_group.rvs(2 ** n_wires, random_state=1967)
+  q_mat = make_Q(a_mat, r_mat)
+
+  def fn():
+      qml.QubitUnitary(a_mat, wires=wires[:-1])
+      qml.QubitUnitary(r_mat, wires=wires)
+  ```
+
+  Once we have a function that will encode the unitaries that we have selected,
+  we can use the transform to get a quantum function (`circ`) and double-check
+  the unitary of the resulting circuit:
+
+  ```pycon
+  >>> circ = qml.quantum_monte_carlo(
+      fn, wires=wires, target_wire=target_wire, estimation_wires=estimation_wires
+  )
+  >>> get_unitary(circ, 2 * n_wires)
+  tensor([[ 0.13284814-0.25576057j, -0.02513743+0.04839484j,
+           -0.05499203+0.10587121j, -0.02492961+0.04799474j,
+           -0.12554643+0.25627571j,  0.02874044+0.07695341j,
+            0.06287418+0.1683475j , -0.01189701-0.0318546j ,
+            0.38535212-0.42734631j,  0.00989885+0.00948231j,
+            0.02165528+0.02074402j, -0.0040976 -0.00392517j,
+            0.49549344+0.44304315j, -0.00934578+0.01009469j,
+           -0.02044534+0.0220837j ,  0.00386865-0.00417866j],
+         (...)
+          [-0.19053346-0.19104838j, -0.10822789+0.24716231j,
+           -0.28907342-0.0508479j , -0.25092322+0.1522711j ,
+            0.14431194-0.11255335j,  0.03435866-0.17976005j,
+           -0.41143017+0.02559476j,  0.17373146+0.37568656j,
+            0.01352971-0.02737941j, -0.0078687 -0.02950879j,
+           -0.04200748-0.23648208j, -0.21680873+0.0258952j ,
+            0.02770426+0.01310857j,  0.02947556-0.00839953j,
+           -0.2689201 -0.0758025j , -0.05929908+0.28838576j]], requires_grad=True)
+  ```
 
 <h4>Extended QAOA module</h4>
 
