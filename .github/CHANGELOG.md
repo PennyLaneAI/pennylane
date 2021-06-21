@@ -506,7 +506,7 @@
      t0: ──╰X──────────────────────╰X──────────────────────┤
     ```
 
-* Added CPhase operation as an alias for ControlledPhaseShift operation
+* Added `qml.CPhase` as an alias for the existing `qml.ControlledPhaseShift` operation.
   [(#1319)](https://github.com/PennyLaneAI/pennylane/pull/1319).
 
 * The `Device` class now uses caching when mapping wires.
