@@ -470,37 +470,40 @@
 *  A decomposition has been added for the `qml.CSWAP` operation.
   [(#1306)](https://github.com/PennyLaneAI/pennylane/issues/1306)
 
-* The `MultiControlledX` gate now has a decomposition defined. When controlling on three or more wires,
-  an ancilla register of worker wires is required to support the decomposition.
-  [(#1287)](https://github.com/PennyLaneAI/pennylane/pull/1287)
+* Decompositions in terms of elementary gates has been added for:
 
-  ```python
-  ctrl_wires = [f"c{i}" for i in range(5)]
-  work_wires = [f"w{i}" for i in range(3)]
-  target_wires = ["t0"]
-  all_wires = ctrl_wires + work_wires + target_wires
+  - `qml.CSWAP` [(#1306)](https://github.com/PennyLaneAI/pennylane/issues/1306)
+  - `qml.Toffoli` [(#1320)](https://github.com/PennyLaneAI/pennylane/pull/1320)
+  - `qml.MultiControlledX`. [(#1287)](https://github.com/PennyLaneAI/pennylane/pull/1287)
+    When controlling on three or more wires, an ancilla
+    register of worker wires is required to support the decomposition.
 
-  dev = qml.device("default.qubit", wires=all_wires)
+    ```python
+    ctrl_wires = [f"c{i}" for i in range(5)]
+    work_wires = [f"w{i}" for i in range(3)]
+    target_wires = ["t0"]
+    all_wires = ctrl_wires + work_wires + target_wires
 
-  with qml.tape.QuantumTape() as tape:
-      qml.MultiControlledX(control_wires=ctrl_wires, wires=target_wires, work_wires=work_wires)
-  ```
+    dev = qml.device("default.qubit", wires=all_wires)
 
-  ```pycon
-  >>> tape = tape.expand(depth=1)
+    with qml.tape.QuantumTape() as tape:
+        qml.MultiControlledX(control_wires=ctrl_wires, wires=target_wires, work_wires=work_wires)
+    ```
 
-  >>> print(tape.draw(wire_order=qml.wires.Wires(all_wires)))
+    ```pycon
+    >>> tape = tape.expand(depth=1)
+    >>> print(tape.draw(wire_order=qml.wires.Wires(all_wires)))
 
-   c0: ──────────────╭C──────────────────────╭C──────────┤
-   c1: ──────────────├C──────────────────────├C──────────┤
-   c2: ──────────╭C──│───╭C──────────────╭C──│───╭C──────┤
-   c3: ──────╭C──│───│───│───╭C──────╭C──│───│───│───╭C──┤
-   c4: ──╭C──│───│───│───│───│───╭C──│───│───│───│───│───┤
-   w0: ──│───│───├C──╰X──├C──│───│───│───├C──╰X──├C──│───┤
-   w1: ──│───├C──╰X──────╰X──├C──│───├C──╰X──────╰X──├C──┤
-   w2: ──├C──╰X──────────────╰X──├C──╰X──────────────╰X──┤
-   t0: ──╰X──────────────────────╰X──────────────────────┤
-  ```
+     c0: ──────────────╭C──────────────────────╭C──────────┤
+     c1: ──────────────├C──────────────────────├C──────────┤
+     c2: ──────────╭C──│───╭C──────────────╭C──│───╭C──────┤
+     c3: ──────╭C──│───│───│───╭C──────╭C──│───│───│───╭C──┤
+     c4: ──╭C──│───│───│───│───│───╭C──│───│───│───│───│───┤
+     w0: ──│───│───├C──╰X──├C──│───│───│───├C──╰X──├C──│───┤
+     w1: ──│───├C──╰X──────╰X──├C──│───├C──╰X──────╰X──├C──┤
+     w2: ──├C──╰X──────────────╰X──├C──╰X──────────────╰X──┤
+     t0: ──╰X──────────────────────╰X──────────────────────┤
+    ```
 
 * The `qml.SingleExcitation` and `qml.DoubleExcitation` operations now
   have decompositions over elementary gates, and their gradient recipes
