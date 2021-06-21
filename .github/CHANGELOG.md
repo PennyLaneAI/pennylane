@@ -303,7 +303,7 @@ K_test = qml.kernels.kernel_matrix(X_train, X_test, kernel)
   [(#1181)](https://github.com/PennyLaneAI/pennylane/pull/1181).
   The function `pennylane.grouping.pauli_group` provides a generator to
   easily loop over the group, or construct and store it in its entirety.
-  For example, we can construct the 3-qubit Pauli group like so:
+  For example, we can construct the single-qubit Pauli group like so:
 
   ```pycon
   >>> from pennylane.grouping import pauli_group
