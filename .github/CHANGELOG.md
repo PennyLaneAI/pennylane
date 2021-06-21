@@ -467,9 +467,6 @@
   the new separate [benchmark repository](https://github.com/PennyLaneAI/benchmark).
   [(#1343)](https://github.com/PennyLaneAI/pennylane/pull/1343)
 
-*  A decomposition has been added for the `qml.CSWAP` operation.
-  [(#1306)](https://github.com/PennyLaneAI/pennylane/issues/1306)
-
 * Decompositions in terms of elementary gates has been added for:
 
   - `qml.CSWAP` [(#1306)](https://github.com/PennyLaneAI/pennylane/issues/1306)
