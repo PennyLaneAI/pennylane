@@ -505,7 +505,7 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
   ```
 
   ```pycon
-  >>> tape = tape.expand(depth=2)
+  >>> tape = tape.expand(depth=1)
   >>> print(tape.draw(wire_order=Wires(all_wires)))
    c0: ──────────────╭C──────────────────────╭C──────────┤
    c1: ──────────────├C──────────────────────├C──────────┤
@@ -577,6 +577,19 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug with `qml.math.cast` where the `MottonenStatePreparation` operation expected
+  a float type instead of double.
+  [(#1400)](https://github.com/XanaduAI/pennylane/pull/1400)
+
+* Fixes a bug where a copy of `qml.ControlledQubitUnitary` was non-functional as it did not have all the necessary information.
+[(#1411)](https://github.com/PennyLaneAI/pennylane/pull/1411)
+
+* Warns when adjoint or reversible differentiation specified or called on a device with finite shots.
+  [(#1406)](https://github.com/PennyLaneAI/pennylane/pull/1406)
+
+* Fixes the differentiability of the operations `IsingXX` and `IsingZZ` for Autograd, Jax and Tensorflow.
+  [(#1390)](https://github.com/PennyLaneAI/pennylane/pull/1390)
+
 * Fixes a bug where multiple identical Hamiltonian terms will produce a
   different result with ``optimize=True`` using ``ExpvalCost``.
   [(#1405)](https://github.com/XanaduAI/pennylane/pull/1405)
@@ -586,7 +599,7 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
   [(#1392)](https://github.com/XanaduAI/pennylane/pull/1392)
 
 * Fixes floating point errors with `diff_method="finite-diff"` and `order=1` when parameters are `float32`.
-[(#1381)](https://github.com/PennyLaneAI/pennylane/pull/1381)
+  [(#1381)](https://github.com/PennyLaneAI/pennylane/pull/1381)
 
 * Fixes a bug where `qml.ctrl` would fail to transform gates that had no
   control defined and no decomposition defined.
@@ -647,9 +660,10 @@ random_mat2 = rng.standard_normal(3, requires_grad=False)
 This release contains contributions from (in alphabetical order):
 
 Marius Aglitoiu, Vishnu Ajith, Thomas Bromley, Jack Ceroni, Alaric Cheng, Miruna Daian, Olivia Di Matteo,
+
 Tanya Garg, Christian Gogolin, Diego Guala, Anthony Hayes, Ryan Hill, Josh Izaac, Pavan Jayasinha, Nathan Killoran, 
-Christina Lee, Ryan Levy, Nahum Sá, Maria Schuld, Johannes Jakob Meyer, Brian Shi, Antal Száva, David Wierichs, 
-Vincent Wong, Alberto Maldonado, Ashish Panigrahi.
+Christina Lee, Ryan Levy, Johannes Jakob Meyer, Romain Moyard, Nahum Sá, Maria Schuld, Brian Shi, Antal Száva,
+David Wierichs, Vincent Wong, Alberto Maldonado, Ashish Panigrahi.
 
 
 # Release 0.15.1 (current release)
