@@ -283,8 +283,6 @@
 * Added functionality to compute the sparse matrix representation of a `qml.Hamiltonian` object.
   [(#1394)](https://github.com/PennyLaneAI/pennylane/pull/1394)
 
-  Example:
-
   ```python
   coeffs = [1, -0.45]
   obs = [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1)]
@@ -605,13 +603,13 @@
 
 <h3>Documentation</h3>
 
-* Math docstrings in class `QubitParamShiftTape` now rendered properly.
+* Math present in the `QubitParamShiftTape` class docstring now renders correctly.
   [(#1402)](https://github.com/PennyLaneAI/pennylane/pull/1402)
 
-* Fix typo in the documentation of qml.templates.layers.StronglyEntanglingLayers.
+* Fix typo in the documentation of `qml.StronglyEntanglingLayers`.
   [(#1367)](https://github.com/PennyLaneAI/pennylane/pull/1367)
 
-* Fixed typo on TensorFlow interface documentation
+* Fixed typo in TensorFlow interface documentation
   [(#1312)](https://github.com/PennyLaneAI/pennylane/pull/1312)
 
 * Fixed typos in the mathematical expressions in documentation of `qml.DoubleExcitation`.
@@ -630,7 +628,7 @@
 * Updated PyTorch and TensorFlow interface introductions.
   [(#1333)](https://github.com/PennyLaneAI/pennylane/pull/1333)
 
-* Fixes the qchem introduction to accommodate changes.
+* Updates the quantum chemistry quickstart to reflect recent changes to the `qchem` module.
   [(#1227)](https://github.com/PennyLaneAI/pennylane/pull/1227)
 
 <h3>Contributors</h3>
