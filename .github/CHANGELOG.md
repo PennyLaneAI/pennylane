@@ -120,6 +120,9 @@
       return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
   ```
 
+  We can now use the `qml.specs` transform to generate a function that returns
+  details and resource information:
+
   ```pycon
   >>> x = np.array([0.05, 0.1, 0.2, 0.3], requires_grad=True)
   >>> y = np.array(0.4, requires_grad=False)
@@ -221,10 +224,14 @@
       qml.expval(H)
 
   tapes, fn = qml.transforms.hamiltonian_expand(tape)
-  dev = qml.device("default.qubit", wires=3)
-  res = dev.batch_execute(tapes)
   ```
+
+  We can now evaluate the transformed tapes, and apply the post-processing
+  function:
+
   ```pycon
+  >>> dev = qml.device("default.qubit", wires=3)
+  >>> res = dev.batch_execute(tapes)
   >>> fn(res)
   3.999999999999999
   ```
