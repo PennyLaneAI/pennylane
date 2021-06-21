@@ -11,6 +11,11 @@
   [(#1102)](https://github.com/PennyLaneAI/pennylane/pull/1102)
 
   ```python
+
+  num_wires = 6
+  wires = range(num_wires)
+  dev = qml.device('default.qubit', wires=wires)
+
   @qml.qnode(dev)
   def kernel_circuit(x1, x2):
       qml.templates.AngleEmbedding(x1, wires=wires)
