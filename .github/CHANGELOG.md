@@ -42,7 +42,7 @@
 
   <img src="https://pennylane.readthedocs.io/en/latest/_static/fourier.png" width=70%/>
 
-<h4>Seamless support for constructing the Pauli group</h4>
+<h4>Seamless support for working with the Pauli group</h4>
 
 * Added functionality for constructing and manipulating the Pauli group
   [(#1181)](https://github.com/PennyLaneAI/pennylane/pull/1181).
