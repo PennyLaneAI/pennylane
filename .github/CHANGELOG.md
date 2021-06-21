@@ -537,7 +537,7 @@
 * The `qml.inv()` function is now deprecated with a warning to use the more general `qml.adjoint()`.
   [(#1325)](https://github.com/PennyLaneAI/pennylane/pull/1325)
 
-* Removes support for Python 3.6 and begin testing for Python 3.9.
+* Removes support for Python 3.6 and adds support for Python 3.9.
   [(#1228)](https://github.com/XanaduAI/pennylane/pull/1228)
 
 <h3>Bug fixes</h3>
