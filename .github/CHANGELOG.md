@@ -489,7 +489,9 @@
 
   ```pycon
   >>> tape = tape.expand(depth=1)
+
   >>> print(tape.draw(wire_order=qml.wires.Wires(all_wires)))
+
    c0: ──────────────╭C──────────────────────╭C──────────┤
    c1: ──────────────├C──────────────────────├C──────────┤
    c2: ──────────╭C──│───╭C──────────────╭C──│───╭C──────┤
@@ -554,6 +556,16 @@
 
 * QNodes now display readable information when in interactive environments or when printed.
   [(#1359)](https://github.com/PennyLaneAI/pennylane/pull/1359).
+
+* Fixes a bug with `qml.math.cast` where the `MottonenStatePreparation` operation expected
+  a float type instead of double.
+  [(#1400)](https://github.com/XanaduAI/pennylane/pull/1400)
+
+* Fixes a bug where a copy of `qml.ControlledQubitUnitary` was non-functional as it did not have all the necessary information.
+[(#1411)](https://github.com/PennyLaneAI/pennylane/pull/1411)
+
+* Warns when adjoint or reversible differentiation specified or called on a device with finite shots.
+  [(#1406)](https://github.com/PennyLaneAI/pennylane/pull/1406)
 
 * Fixes the differentiability of the operations `IsingXX` and `IsingZZ` for Autograd, Jax and Tensorflow.
   [(#1390)](https://github.com/PennyLaneAI/pennylane/pull/1390)
