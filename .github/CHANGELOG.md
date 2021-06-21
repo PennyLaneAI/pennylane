@@ -360,7 +360,7 @@
   ```python
   >>> H_sparse
   <4x4 sparse matrix of type '<class 'numpy.complex128'>'
-      with 2 stored elements in COOrdinate format>
+      with 8 stored elements in COOrdinate format>
   ```
 
   The sparse matrix can be converted to an array as:
@@ -599,16 +599,20 @@
   ```
 
   At this point, we can create a device that will support the differentiation
-  of a `NewObservable` object by returning a `SpecialObject`:
+  of a `NewObservable` object:
 
-  ```pycon
+  ```python
   dev = DeviceSupportingNewObservable(wires=1, shots=None)
 
   @qml.qnode(dev, diff_method="parameter-shift")
   def qnode(x):
       qml.RY(x, wires=0)
       return qml.expval(NewObservable(wires=0))
+  ```
 
+  We can then compute the jacobian of this object:
+
+  ```pycon
   >>> result = qml.jacobian(qnode)(0.2)
   >>> print(result)
   <__main__.SpecialObject object at 0x7fd2c54721f0>
