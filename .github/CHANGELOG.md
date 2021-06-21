@@ -290,7 +290,7 @@
   phase_estimated = np.argmax(qmc()[:int(N / 2)]) / N
   ```
 
-  The estimated value can be retrieved:
+  The estimated value can be retrieved using:
   
   ```pycon
   >>> (1 - np.cos(np.pi * phase_estimated)) / 2
