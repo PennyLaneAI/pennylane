@@ -2161,35 +2161,36 @@ class QubitUnitary(Operation):
     def decomposition(U, wires):
         # Decompose arbitrary single-qubit unitaries as the form RZ RY RZ
         if U.shape[0] == 2:
-            # Checks validity of input
-            U = QubitUnitary._matrix(U)
-
             wires = Wires(wires)
 
             # Remove the global phase if present; cannot just divide by square root of det
             # because sometimes it is negative.
-            det = np.linalg.det(U)
-            if not np.isclose(det, 1):
-                U = U * (np.exp(-1j * np.angle(det) / 2))
+            det = U[0, 0] * U[1, 1] - U[0, 1] * U[1, 0]
+            if not qml.math.isclose(det, 1):
+                U = U * (qml.math.exp(-1j * qml.math.angle(det) / 2))
 
             # Compute the angle of the RY
-            theta = 2 * np.arcsin(np.abs(U[0, 1]))
+            theta = 2 * qml.math.arccos(qml.math.sqrt(U[0, 0] * U[1, 1]))
 
             # If it's close to 0, the matrix is diagonal and we have just an RZ rotation
-            if np.isclose(theta, 0):
-                omega = 2 * np.angle(U[1, 1])
+            if qml.math.isclose(theta, 0, atol=1e-7):
+                omega = 2 * qml.math.angle(U[1, 1])
                 return [RZ(omega, wires=wires[0])]
 
             # Otherwise recover the decomposition as a Rot, which can be further decomposed
             # if desired. If the top left element is 0, can only use the off-diagonal elements
-            if np.isclose(U[0, 0], 0):
-                phi = (1j * np.log(U[0, 1] / U[1, 0])).real
-                omega = -phi - 2 * np.angle(U[1, 0])
+            if qml.math.isclose(U[0, 0], 0):
+                phi = 1j * qml.math.log(U[0, 1] / U[1, 0])
+                omega = -phi - 2 * qml.math.angle(U[1, 0])
             else:
-                omega = (1j * np.log(np.tan(theta / 2) * U[0, 0] / U[1, 0])).real
-                phi = -omega - 2 * np.angle(U[0, 0])
+                omega = 1j * qml.math.log(qml.math.tan(theta / 2) * U[0, 0] / U[1, 0])
+                phi = -omega - 2 * qml.math.angle(U[0, 0])
 
-            return [qml.Rot(phi, theta, omega, wires=wires[0])]
+            return [
+                qml.Rot(
+                    qml.math.real(phi), qml.math.real(theta), qml.math.real(omega), wires=wires[0]
+                )
+            ]
         else:
             return NotImplementedError
 
