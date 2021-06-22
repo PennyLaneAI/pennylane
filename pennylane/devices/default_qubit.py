@@ -124,6 +124,7 @@ class DefaultQubit(QubitDevice):
         "CRot",
         "QFT",
         "IsingXX",
+        "IsingYY",
         "IsingZZ",
         "SingleExcitation",
         "SingleExcitationPlus",
