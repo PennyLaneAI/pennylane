@@ -423,6 +423,7 @@ PARAMETRIZED_OPERATIONS = [
     qml.CSWAP(wires=[0, 1, 2]),
     qml.PauliRot(0.123, "Y", wires=0),
     qml.IsingXX(0.123, wires=[0, 1]),
+    qml.IsingYY(0.123, wires=[0, 1]),
     qml.IsingZZ(0.123, wires=[0, 1]),
     qml.Rot(0.123, 0.456, 0.789, wires=0),
     qml.Toffoli(wires=[0, 1, 2]),
@@ -2296,7 +2297,7 @@ class TestPauliRot:
         assert decomp_ops[4].data[0] == -np.pi / 2
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
-    @pytest.mark.parametrize("pauli_word", ["XX", "ZZ"])
+    @pytest.mark.parametrize("pauli_word", ["XX", "YY", "ZZ"])
     def test_differentiability(self, angle, pauli_word, tol):
         """Test that differentiation of PauliRot works."""
 
