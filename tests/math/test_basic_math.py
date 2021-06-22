@@ -28,7 +28,7 @@ jnp = pytest.importorskip("jax.numpy")
 
 class TestFrobeniusInnerProduct:
     """Test the frobenius_inner_product method."""
-    
+
     @pytest.mark.parametrize(
         "A,B,normalize,expected",
         [
