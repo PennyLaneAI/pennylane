@@ -11,13 +11,16 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes the differentiability of the operation`IsingYY` for Autograd, Jax and Tensorflow.
+  [(#1425)](https://github.com/PennyLaneAI/pennylane/pull/1425)
+  
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Ashish Panigrahi
+Romain Moyard, Ashish Panigrahi
 
 
 # Release 0.16.0 (current release)
