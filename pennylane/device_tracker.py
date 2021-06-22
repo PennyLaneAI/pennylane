@@ -109,6 +109,10 @@ class PrintCurrent(DefaultTracker):
         print()
 
 class PrintCustom(DefaultTracker):
+    def __init__(self, dev=None, reset_on_enter=True, custom_recorder=None):
+        self.custom_recorder=custom_recorder
+        super(PrintCustom, self).__init__(dev=dev, reset_on_enter=reset_on_enter)
+
     def record(self):
         """
         Use user provided logging function
@@ -122,7 +126,7 @@ def track(dev, record=None, update=None, **kwargs):
     r"""Creates a tracking context and applies it to a device.
 
     Args:
-        dev (~.Device): a PennyLane-compatible device
+        dev (Device): a PennyLane-compatible device
         version (str): name of tracker to use.  The current options are
             `default` and `timing`.
 
@@ -201,10 +205,10 @@ def track(dev, record=None, update=None, **kwargs):
     class temp_class(*mixin_list):
         pass
 
-    tracker = temp_class(dev, **kwargs)
-
     if callable(record):
-        tracker.custom_recorder = record
+        tracker = temp_class(dev, custom_recorder=record, **kwargs)
+    else:
+        tracker = temp_class(dev, **kwargs)
 
     return tracker
 
