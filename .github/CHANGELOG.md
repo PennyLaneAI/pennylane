@@ -553,7 +553,9 @@
 
   Once we have this new observable class, we define a `SpecialObject` class
   that can be used to encode data in an observable and a new device that supports
-  our new observable and returns a `SpecialObject` as the expectation value:
+  our new observable and returns a `SpecialObject` as the expectation value
+  (the code is shortened for brevity, the extended example can be found as a
+  test in the previously referenced pull request):
 
   ```python
   class SpecialObject:
@@ -566,24 +568,7 @@
           new *= other
           return new
 
-      def __imul__(self, other):
-          self.val *= other
-          return self
-
-      def __rmul__(self, other):
-          return self * other
-
-      def __iadd__(self, other):
-          self.val += other.val if isinstance(other, self.__class__) else other
-          return self
-
-      def __add__(self, other):
-          new = SpecialObject(self.val)
-          new += other.val if isinstance(other, self.__class__) else other
-          return new
-
-      def __radd__(self, other):
-          return self + other
+      ...
 
   class DeviceSupportingNewObservable(DefaultQubit):
       name = "Device supporting NewObservable"
