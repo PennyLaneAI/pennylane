@@ -1,4 +1,4 @@
-# Release 0.16.0-dev
+# Release 0.16.0
 
 <h3>Improvements</h3>
 
