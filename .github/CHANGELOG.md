@@ -4,8 +4,7 @@
 
 <h4>First class support for quantum kernels</h4>
 
-* PennyLane now has a ``kernels`` module.
-  It provides basic functionalities for [working with quantum
+* The new `qml.kernels` module provides basic functionalities for [working with quantum
   kernels](https://pennylane.readthedocs.io/en/stable/code/qml_kernels.html) as
   well as post-processing methods to mitigate sampling errors and device noise:
   [(#1102)](https://github.com/PennyLaneAI/pennylane/pull/1102)
