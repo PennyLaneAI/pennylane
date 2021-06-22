@@ -434,6 +434,7 @@ class TestOperations:
             qml.CSWAP(wires=[0, 1, 2]),
             qml.PauliRot(0.123, "Y", wires=0),
             qml.IsingXX(0.123, wires=[0, 1]),
+            qml.IsingYY(0.123, wires=[0, 1]),
             qml.IsingZZ(0.123, wires=[0, 1]),
             qml.Rot(0.123, 0.456, 0.789, wires=0),
             qml.Toffoli(wires=[0, 1, 2]),
@@ -769,6 +770,34 @@ class TestOperations:
         for i in reversed(res):
             if i.wires == Wires([3]):
                 # RX gate
+                mats.append(np.kron(i.matrix, np.eye(2)))
+            else:
+                mats.append(i.matrix)
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+
+        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
+
+    def test_isingyy_decomposition(self, tol):
+        """Tests that the decomposition of the IsingYY gate is correct"""
+        param = 0.1234
+        op = qml.IsingYY(param, wires=[3, 2])
+        res = op.decomposition(param, op.wires)
+
+        assert len(res) == 3
+
+        assert res[0].wires == Wires([3, 2])
+        assert res[1].wires == Wires([3])
+        assert res[2].wires == Wires([3, 2])
+
+        assert res[0].name == "CY"
+        assert res[1].name == "RY"
+        assert res[2].name == "CY"
+
+        mats = []
+        for i in reversed(res):
+            if i.wires == Wires([3]):
+                # RY gate
                 mats.append(np.kron(i.matrix, np.eye(2)))
             else:
                 mats.append(i.matrix)
@@ -2010,7 +2039,7 @@ class TestPauliRot:
         assert decomp_ops[4].data[0] == -np.pi / 2
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
-    @pytest.mark.parametrize("pauli_word", ["XX", "ZZ"])
+    @pytest.mark.parametrize("pauli_word", ["XX", "YY", "ZZ"])
     def test_differentiability(self, angle, pauli_word, tol):
         """Test that differentiation of PauliRot works."""
 
