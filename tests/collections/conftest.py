@@ -41,7 +41,7 @@ def qnodes(interface, tf_support, torch_support, jax_support):
         pytest.skip("Skipped, no tf support")
 
     if interface == "jax" and not jax_support:
-        pytest.skip("Skipped, no tf support")
+        pytest.skip("Skipped, no jax support")
 
     dev1 = qml.device("default.qubit", wires=2)
     dev2 = qml.device("default.qubit", wires=2)

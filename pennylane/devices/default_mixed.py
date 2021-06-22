@@ -27,6 +27,7 @@ import numpy as np
 from pennylane import QubitDevice, QubitStateVector, BasisState, DeviceError
 from pennylane.operation import DiagonalOperation, Channel
 from pennylane.wires import Wires
+from .._version import __version__
 
 ABC_ARRAY = np.array(list(ABC))
 tolerance = 1e-10
@@ -50,8 +51,8 @@ class DefaultMixed(QubitDevice):
 
     name = "Default mixed-state qubit PennyLane plugin"
     short_name = "default.mixed"
-    pennylane_requires = "0.17"
-    version = "0.17.0"
+    pennylane_requires = __version__
+    version = __version__
     author = "Xanadu Inc."
 
     operations = {
