@@ -11,7 +11,6 @@ jobs:
         with:
           title-or-body: "title"
           parameters: '[
-                         {"keywords": ["[BUG]", "bug"], "labels": ["bug :bug:"], "assignees": ["antalszava"]},
-                         {"keywords": ["unitaryHACK", "unitaryhack"], "labels": ["unitaryhack"], "assignees": ["antalszava"]}
+                         {"keywords": ["[BUG]", "bug"], "labels": ["bug :bug:"], "assignees": ["antalszava"]}
                         ]'
           github-token: "${{ secrets.GITHUB_TOKEN }}"

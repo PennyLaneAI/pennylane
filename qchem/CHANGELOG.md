@@ -12,11 +12,13 @@
 
 This release contains contributions from (in alphabetical order):
 
+
 # Release 0.16.0
 
-<h3>New features</h3>
-
 <h3>Improvements</h3>
+
+* Eases the PySCF dependency to ``pyscf>=1.7.2``.
+  [(#1254)](https://github.com/PennyLaneAI/pennylane/pull/1254)
 
 <h3>Bug fixes</h3>
 
@@ -29,13 +31,11 @@ This release contains contributions from (in alphabetical order):
   support complex coefficients.
   [(#1277)](https://github.com/PennyLaneAI/pennylane/pull/1277)
 
-<h3>Breaking changes</h3>
-
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Alain Delgado Gran
+Alain Delgado Gran, Zeyue Niu.
 
 # Release 0.15.1
 
