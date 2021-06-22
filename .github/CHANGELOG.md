@@ -39,7 +39,8 @@
 * PennyLane now has a `fourier` module, which hosts a [growing library
   of methods](https://pennylane.readthedocs.io/en/stable/code/qml_fourier.html)
   that help with investigating the Fourier representation of functions
-  implemented by quantum circuits.
+  implemented by quantum circuits. The Fourier representation can be used
+  to examine and characterize the expressivity of the quantum circuit.
   [(#1160)](https://github.com/PennyLaneAI/pennylane/pull/1160)
   [(#1378)](https://github.com/PennyLaneAI/pennylane/pull/1378)
 
