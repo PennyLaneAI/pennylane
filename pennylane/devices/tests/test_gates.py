@@ -206,6 +206,7 @@ two_qubit_param = [
     (qml.CRY, cry),
     (qml.CRZ, crz),
     (qml.IsingXX, IsingXX),
+    (qml.IsingYY, IsingYY),
     (qml.IsingZZ, IsingZZ),
 ]
 two_qubit_multi_param = [(qml.CRot, crot)]
