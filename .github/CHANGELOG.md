@@ -53,7 +53,7 @@
 * Added functionality for constructing and manipulating the Pauli group
   [(#1181)](https://github.com/PennyLaneAI/pennylane/pull/1181).
 
-  The function `pennylane.grouping.pauli_group` provides a generator to
+  The function `qml.grouping.pauli_group` provides a generator to
   easily loop over the group, or construct and store it in its entirety.
   For example, we can construct the single-qubit Pauli group like so:
 
