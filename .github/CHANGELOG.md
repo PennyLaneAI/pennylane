@@ -26,8 +26,7 @@ Ashish Panigrahi
 * Added a sparse Hamiltonian observable and the functionality to support computing its expectation
   value. [(#1398)](https://github.com/PennyLaneAI/pennylane/pull/1398)
 
-  For example, the expectation value of a sparse Hamiltonian, an identity matrix in this example,
-  can be computed as:
+  For example, the following QNode returns the expectation value of a sparse Hamiltonian:
 
   ```python
   dev = qml.device("default.qubit", wires=2)
@@ -36,8 +35,12 @@ Ashish Panigrahi
   def circuit(param, H):
       qml.PauliX(0)
       qml.SingleExcitation(param, wires = [0, 1])    
-      return qml.expval(qml.SparseHamiltonian(H, wires=[]))
+      return qml.expval(qml.SparseHamiltonian(H))
+  ```
+  
+  We can execute this QNode, passing in a sparse identity matrix:
 
+  ```pycon
   >>> print(circuit([0.5], scipy.sparse.eye(4).tocoo()))
   0.9999999999999999
   ```
