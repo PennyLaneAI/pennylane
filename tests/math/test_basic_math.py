@@ -27,6 +27,8 @@ jnp = pytest.importorskip("jax.numpy")
 
 
 class TestFrobeniusInnerProduct:
+    """Test the frobenius_inner_product method."""
+    
     @pytest.mark.parametrize(
         "A,B,normalize,expected",
         [
@@ -108,9 +110,11 @@ class TestFrobeniusInnerProduct:
         ],
     )
     def test_frobenius_inner_product(self, A, B, normalize, expected):
+        """Test that the calculated inner product is as expected."""
         assert expected == pytest.approx(fn.frobenius_inner_product(A, B, normalize=normalize))
 
     def test_frobenius_inner_product_gradient(self):
+        """Test that the calculated gradient is correct."""
         A = np.array([[1.0, 2.3], [-1.3, 2.4]])
         B = torch.autograd.Variable(torch.randn(2, 2).type(torch.float), requires_grad=True)
         result = fn.frobenius_inner_product(A, B)
