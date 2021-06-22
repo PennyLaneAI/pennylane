@@ -23,10 +23,10 @@ Ashish Panigrahi
 
 <h3>New features since last release</h3>
 
-* Added a sparse hamiltonian observable and the functionality to support computing its expectation
+* Added a sparse Hamiltonian observable and the functionality to support computing its expectation
   value. [(#1398)](https://github.com/PennyLaneAI/pennylane/pull/1398)
 
-  For example, the expectation value of a sparse hamiltonian, an identity matrix in this example,
+  For example, the expectation value of a sparse Hamiltonian, an identity matrix in this example,
   can be computed as:
 
   ```python
@@ -42,9 +42,9 @@ Ashish Panigrahi
   0.9999999999999999
   ```
 
-  The expectation value of the sparse hamiltonian is computed directly, which leads to executions
+  The expectation value of the sparse Hamiltonian is computed directly, which leads to executions
   that are faster by orders of magnitude. Note that "parameter-shift" is the only differentiation
-  method that is currently supported when the observable is a sparse hamiltonian.
+  method that is currently supported when the observable is a sparse Hamiltonian.
 
 * Added functionality to compute the sparse matrix representation of a `qml.Hamiltonian` object.
   [(#1394)](https://github.com/PennyLaneAI/pennylane/pull/1394)
