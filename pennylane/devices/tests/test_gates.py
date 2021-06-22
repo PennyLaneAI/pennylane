@@ -70,6 +70,7 @@ ops = {
     "Toffoli": qml.Toffoli(wires=[0, 1, 2]),
     "QFT": qml.QFT(wires=[0, 1, 2]),
     "IsingXX": qml.IsingXX(0, wires=[0, 1]),
+    "IsingYY": qml.IsingYY(0, wires=[0, 1]),
     "IsingZZ": qml.IsingZZ(0, wires=[0, 1]),
     "SingleExcitation": qml.SingleExcitation(0, wires=[0, 1]),
     "SingleExcitationPlus": qml.SingleExcitationPlus(0, wires=[0, 1]),
