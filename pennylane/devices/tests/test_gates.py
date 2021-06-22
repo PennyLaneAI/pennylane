@@ -149,12 +149,22 @@ crot = lambda phi, theta, omega: np.array(
         ],
     ]
 )
+
 IsingXX = lambda phi: np.array(
     [
         [cos(phi / 2), 0, 0, -1j * sin(phi / 2)],
         [0, cos(phi / 2), -1j * sin(phi / 2), 0],
         [0, -1j * sin(phi / 2), cos(phi / 2), 0],
         [-1j * sin(phi / 2), 0, 0, cos(phi / 2)],
+    ]
+)
+
+IsingYY = lambda phi: np.array(
+    [
+        [cos(phi / 2), 0, 0, 1j * sin(phi / 2)],
+        [0, cos(phi / 2), -1j * sin(phi / 2), 0],
+        [0, -1j * sin(phi / 2), cos(phi / 2), 0],
+        [1j * sin(phi / 2), 0, 0, cos(phi / 2)],
     ]
 )
 
