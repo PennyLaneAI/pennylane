@@ -107,7 +107,7 @@
 
 <h4>New transforms</h4>
 
-* The `specs` QNode transform creates a function that returns specifications or
+* The `qml.specs` QNode transform creates a function that returns specifications or
   details about the QNode, including depth, number of gates, and number of
   gradient executions required.
   [(#1245)](https://github.com/PennyLaneAI/pennylane/pull/1245)
