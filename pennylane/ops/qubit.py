@@ -1797,6 +1797,7 @@ class IsingXX(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
+    generator = [np.array([[0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0], [1, 0, 0, 0]]), -1 / 2]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1820,6 +1821,61 @@ class IsingXX(Operation):
     def adjoint(self):
         (phi,) = self.parameters
         return IsingXX(-phi, wires=self.wires)
+
+
+class IsingYY(Operation):
+    r"""IsingYY(phi, wires)
+    Ising YY coupling gate
+
+    .. math:: \mathtt{YY}(\phi) = \begin{bmatrix}
+        \cos(\phi / 2) & 0 & 0 & i \sin(\phi / 2) \\
+        0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
+        0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
+        i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
+        \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 1
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(YY(\phi)) = \frac{1}{2}\left[f(YY(\phi +\pi/2)) - f(YY(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`YY(\phi)`.
+
+    Args:
+        phi (float): the phase angle
+        wires (int): the subsystem the gate acts on
+    """
+    num_params = 1
+    num_wires = 2
+    par_domain = "R"
+    grad_method = "A"
+
+    @staticmethod
+    def decomposition(phi, wires):
+        return [
+            qml.CY(wires=wires),
+            qml.RY(phi, wires=[wires[0]]),
+            qml.CY(wires=wires),
+        ]
+
+    @classmethod
+    def _matrix(cls, *params):
+        phi = params[0]
+        cos = np.cos(phi / 2)
+        isin = 1.0j * np.sin(phi / 2)
+        return np.array(
+            [
+                [cos, 0.0, 0.0, isin],
+                [0.0, cos, -isin, 0.0],
+                [0.0, -isin, cos, 0.0],
+                [isin, 0.0, 0.0, cos],
+            ],
+            dtype=complex,
+        )
+
+    def adjoint(self):
+        (phi,) = self.parameters
+        return IsingYY(-phi, wires=self.wires)
 
 
 class IsingZZ(Operation):
@@ -1848,6 +1904,7 @@ class IsingZZ(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
+    generator = [np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]), -1 / 2]
 
     @staticmethod
     def decomposition(phi, wires):
@@ -3256,6 +3313,7 @@ ops = {
     "U2",
     "U3",
     "IsingXX",
+    "IsingYY",
     "IsingZZ",
     "BasisState",
     "QubitStateVector",
