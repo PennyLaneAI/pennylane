@@ -28,6 +28,7 @@ Z = tf.constant([[1, 0], [0, -1]], dtype=C_DTYPE)
 
 II = tf.eye(4, dtype=C_DTYPE)
 ZZ = tf.constant(kron(Z, Z), dtype=C_DTYPE)
+XX = tf.constant(kron(X, X), dtype=C_DTYPE)
 
 IX = tf.constant(kron(I, X), dtype=C_DTYPE)
 IY = tf.constant(kron(I, Y), dtype=C_DTYPE)
@@ -191,6 +192,46 @@ def CRot(a, b, c):
         :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R(a,b,c)`
     """
     return tf.linalg.diag(CRZ(c)) @ (CRY(b) @ tf.linalg.diag(CRZ(a)))
+
+
+def IsingXX(phi):
+    r"""Ising XX coupling gate
+
+    .. math:: XX(\phi) = \begin{bmatrix}
+        \cos(\phi / 2) & 0 & 0 & -i \sin(\phi / 2) \\
+        0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
+        0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
+        -i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
+        \end{bmatrix}.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+    Returns:
+        tf.Tensor[complex]: unitary 4x4 rotation matrix
+    """
+    phi = tf.cast(phi, dtype=C_DTYPE)
+    return tf.cos(phi / 2) * II - 1j * tf.sin(phi / 2) * XX
+
+
+def IsingZZ(phi):
+    r"""Ising ZZ coupling gate
+
+    .. math:: ZZ(\phi) = \begin{bmatrix}
+        e^{-i \phi / 2} & 0 & 0 & 0 \\
+        0 & e^{i \phi / 2} & 0 & 0 \\
+        0 & 0 & e^{i \phi / 2} & 0 \\
+        0 & 0 & 0 & e^{-i \phi / 2}
+        \end{bmatrix}.
+
+    Args:
+        phi (float): rotation :math:`\phi`
+    Returns:
+        tf.Tensor[complex]: unitary 4x4 rotation matrix
+    """
+    phi = tf.cast(phi, dtype=C_DTYPE)
+    e_m = tf.exp(-1j * phi / 2)
+    e = tf.exp(1j * phi / 2)
+    return tf.convert_to_tensor([[e_m, 0, 0, 0], [0, e, 0, 0], [0, 0, e, 0], [0, 0, 0, e_m]])
 
 
 def SingleExcitation(phi):

@@ -23,6 +23,7 @@ import numpy as np
 from pennylane._device import Device
 from pennylane.beta.devices import numpy_ops as ops
 from pennylane.wires import Wires
+from ..._version import __version__
 
 try:
     import tensornetwork as tn
@@ -99,8 +100,8 @@ class DefaultTensor(Device):
     # pylint: disable=attribute-defined-outside-init
     name = "PennyLane TensorNetwork simulator plugin"
     short_name = "default.tensor"
-    pennylane_requires = "0.17"
-    version = "0.17.0"
+    pennylane_requires = __version__
+    version = __version__
     author = "Xanadu Inc."
 
     _operation_map = {

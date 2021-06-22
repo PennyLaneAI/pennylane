@@ -18,10 +18,12 @@ import itertools
 import re
 import pytest
 import functools
+import copy
 import numpy as np
 from numpy.linalg import multi_dot
 from scipy.stats import unitary_group
 from scipy.linalg import expm
+from pennylane import numpy as npp
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -406,9 +408,78 @@ NON_PARAMETRIZED_OPERATIONS = [
     (qml.Toffoli, Toffoli),
 ]
 
+PARAMETRIZED_OPERATIONS = [
+    qml.RX(0.123, wires=0),
+    qml.RY(1.434, wires=0),
+    qml.RZ(2.774, wires=0),
+    qml.S(wires=0),
+    qml.SX(wires=0),
+    qml.T(wires=0),
+    qml.CNOT(wires=[0, 1]),
+    qml.CZ(wires=[0, 1]),
+    qml.CY(wires=[0, 1]),
+    qml.SWAP(wires=[0, 1]),
+    qml.ISWAP(wires=[0, 1]),
+    qml.CSWAP(wires=[0, 1, 2]),
+    qml.PauliRot(0.123, "Y", wires=0),
+    qml.IsingXX(0.123, wires=[0, 1]),
+    qml.IsingYY(0.123, wires=[0, 1]),
+    qml.IsingZZ(0.123, wires=[0, 1]),
+    qml.Rot(0.123, 0.456, 0.789, wires=0),
+    qml.Toffoli(wires=[0, 1, 2]),
+    qml.PhaseShift(2.133, wires=0),
+    qml.ControlledPhaseShift(1.777, wires=[0, 2]),
+    qml.CPhase(1.777, wires=[0, 2]),
+    qml.MultiRZ(0.112, wires=[1, 2, 3]),
+    qml.CRX(0.836, wires=[2, 3]),
+    qml.CRY(0.721, wires=[2, 3]),
+    qml.CRZ(0.554, wires=[2, 3]),
+    qml.U1(0.123, wires=0),
+    qml.U2(3.556, 2.134, wires=0),
+    qml.U3(2.009, 1.894, 0.7789, wires=0),
+    qml.Hadamard(wires=0),
+    qml.PauliX(wires=0),
+    qml.PauliZ(wires=0),
+    qml.PauliY(wires=0),
+    qml.CRot(0.123, 0.456, 0.789, wires=[0, 1]),
+    qml.QubitUnitary(np.eye(2) * 1j, wires=0),
+    qml.DiagonalQubitUnitary(np.array([1.0, 1.0j]), wires=1),
+    qml.ControlledQubitUnitary(np.eye(2) * 1j, wires=[0], control_wires=[2]),
+    qml.MultiControlledX(control_wires=[0, 1], wires=2, control_values="01"),
+    qml.SingleExcitation(0.123, wires=[0, 3]),
+    qml.SingleExcitationPlus(0.123, wires=[0, 3]),
+    qml.SingleExcitationMinus(0.123, wires=[0, 3]),
+    qml.DoubleExcitation(0.123, wires=[0, 1, 2, 3]),
+    qml.DoubleExcitationPlus(0.123, wires=[0, 1, 2, 3]),
+    qml.DoubleExcitationMinus(0.123, wires=[0, 1, 2, 3]),
+    qml.QubitSum(wires=[0, 1, 2]),
+]
+
 
 class TestOperations:
     """Tests for the operations"""
+
+    @pytest.mark.parametrize("op_cls, mat", NON_PARAMETRIZED_OPERATIONS)
+    def test_nonparametrized_op_copy(self, op_cls, mat, tol):
+        """Tests that copied nonparametrized ops function as expected"""
+        op = op_cls(wires=range(op_cls.num_wires))
+        copied_op = copy.copy(op)
+        np.testing.assert_allclose(op.matrix, copied_op.matrix, atol=tol)
+
+        op._inverse = True
+        copied_op2 = copy.copy(op)
+        np.testing.assert_allclose(op.matrix, copied_op2.matrix, atol=tol)
+
+    @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
+    def test_parametrized_op_copy(self, op, tol):
+        """Tests that copied parametrized ops function as expected"""
+        copied_op = copy.copy(op)
+        np.testing.assert_allclose(op.matrix, copied_op.matrix, atol=tol)
+
+        op.inv()
+        copied_op2 = copy.copy(op)
+        np.testing.assert_allclose(op.matrix, copied_op2.matrix, atol=tol)
+        op.inv()
 
     @pytest.mark.parametrize("ops, mat", NON_PARAMETRIZED_OPERATIONS)
     def test_matrices(self, ops, mat, tol):
@@ -417,55 +488,7 @@ class TestOperations:
         res = op.matrix
         assert np.allclose(res, mat, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize(
-        "op",
-        [
-            qml.RX(0.123, wires=0),
-            qml.RY(1.434, wires=0),
-            qml.RZ(2.774, wires=0),
-            qml.S(wires=0),
-            qml.SX(wires=0),
-            qml.T(wires=0),
-            qml.CNOT(wires=[0, 1]),
-            qml.CZ(wires=[0, 1]),
-            qml.CY(wires=[0, 1]),
-            qml.SWAP(wires=[0, 1]),
-            qml.ISWAP(wires=[0, 1]),
-            qml.CSWAP(wires=[0, 1, 2]),
-            qml.PauliRot(0.123, "Y", wires=0),
-            qml.IsingXX(0.123, wires=[0, 1]),
-            qml.IsingYY(0.123, wires=[0, 1]),
-            qml.IsingZZ(0.123, wires=[0, 1]),
-            qml.Rot(0.123, 0.456, 0.789, wires=0),
-            qml.Toffoli(wires=[0, 1, 2]),
-            qml.PhaseShift(2.133, wires=0),
-            qml.ControlledPhaseShift(1.777, wires=[0, 2]),
-            qml.CPhase(1.777, wires=[0, 2]),
-            qml.MultiRZ(0.112, wires=[1, 2, 3]),
-            qml.CRX(0.836, wires=[2, 3]),
-            qml.CRY(0.721, wires=[2, 3]),
-            qml.CRZ(0.554, wires=[2, 3]),
-            qml.U1(0.123, wires=0),
-            qml.U2(3.556, 2.134, wires=0),
-            qml.U3(2.009, 1.894, 0.7789, wires=0),
-            qml.Hadamard(wires=0),
-            qml.PauliX(wires=0),
-            qml.PauliZ(wires=0),
-            qml.PauliY(wires=0),
-            qml.CRot(0.123, 0.456, 0.789, wires=[0, 1]),
-            qml.QubitUnitary(np.eye(2) * 1j, wires=0),
-            qml.DiagonalQubitUnitary(np.array([1.0, 1.0j]), wires=1),
-            qml.ControlledQubitUnitary(np.eye(2) * 1j, wires=[0], control_wires=[2]),
-            qml.MultiControlledX(control_wires=[0, 1], wires=2, control_values="01"),
-            qml.SingleExcitation(0.123, wires=[0, 3]),
-            qml.SingleExcitationPlus(0.123, wires=[0, 3]),
-            qml.SingleExcitationMinus(0.123, wires=[0, 3]),
-            qml.DoubleExcitation(0.123, wires=[0, 1, 2, 3]),
-            qml.DoubleExcitationPlus(0.123, wires=[0, 1, 2, 3]),
-            qml.DoubleExcitationMinus(0.123, wires=[0, 1, 2, 3]),
-            qml.QubitSum(wires=[0, 1, 2]),
-        ],
-    )
+    @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
     def test_adjoint_unitaries(self, op, tol):
         op_d = op.adjoint()
         res1 = np.dot(op.matrix, op_d.matrix)
@@ -805,6 +828,241 @@ class TestOperations:
         decomposed_matrix = np.linalg.multi_dot(mats)
 
         assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
+
+    device_methods = [
+        ["default.qubit", "finite-diff"],
+        ["default.qubit", "parameter-shift"],
+        ["default.qubit", "backprop"],
+        ["default.qubit", "adjoint"],
+    ]
+
+    phis = [0.1, 0.2, 0.3]
+
+    configuration = []
+
+    for phi in phis:
+        for device, method in device_methods:
+            configuration.append([device, method, phi])
+
+    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
+    def test_isingxx_autograd_grad(self, tol, dev_name, diff_method, phi):
+        """Test the gradient for the gate IsingXX."""
+        dev = qml.device(dev_name, wires=2)
+
+        psi_0 = 0.1
+        psi_1 = 0.2
+        psi_2 = 0.3
+        psi_3 = 0.4
+
+        init_state = npp.array([psi_0, psi_1, psi_2, psi_3], requires_grad=False)
+        norm = np.linalg.norm(init_state)
+        init_state /= norm
+
+        @qml.qnode(dev, diff_method=diff_method, interface="autograd")
+        def circuit(phi):
+            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.IsingXX(phi, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        phi = npp.array(0.1, requires_grad=True)
+
+        expected = (
+            0.5
+            * (1 / norm ** 2)
+            * (
+                -np.sin(phi) * (psi_0 ** 2 + psi_1 ** 2 - psi_2 ** 2 - psi_3 ** 2)
+                + 2
+                * np.sin(phi / 2)
+                * np.cos(phi / 2)
+                * (-(psi_0 ** 2) - psi_1 ** 2 + psi_2 ** 2 + psi_3 ** 2)
+            )
+        )
+
+        res = qml.grad(circuit)(phi)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
+    def test_isingzz_autograd_grad(self, tol, dev_name, diff_method, phi):
+        """Test the gradient for the gate IsingZZ."""
+        dev = qml.device(dev_name, wires=2)
+
+        psi_0 = 0.1
+        psi_1 = 0.2
+        psi_2 = 0.3
+        psi_3 = 0.4
+
+        init_state = npp.array([psi_0, psi_1, psi_2, psi_3], requires_grad=False)
+        norm = np.linalg.norm(init_state)
+        init_state /= norm
+
+        @qml.qnode(dev, diff_method=diff_method, interface="autograd")
+        def circuit(phi):
+            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.IsingZZ(phi, wires=[0, 1])
+            return qml.expval(qml.PauliX(0))
+
+        phi = npp.array(0.1, requires_grad=True)
+
+        expected = (1 / norm ** 2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
+
+        res = qml.grad(circuit)(phi)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
+    def test_isingxx_jax_grad(self, tol, dev_name, diff_method, phi):
+        """Test the gradient for the gate IsingXX."""
+
+        if diff_method in {"finite-diff"}:
+            pytest.skip("Test does not support finite-diff")
+
+        if diff_method in {"parameter-shift"}:
+            pytest.skip("Test does not support parameter-shift")
+
+        jax = pytest.importorskip("jax")
+        jnp = pytest.importorskip("jax.numpy")
+
+        dev = qml.device(dev_name, wires=2)
+
+        psi_0 = 0.1
+        psi_1 = 0.2
+        psi_2 = 0.3
+        psi_3 = 0.4
+
+        init_state = jnp.array([psi_0, psi_1, psi_2, psi_3])
+        norm = jnp.linalg.norm(init_state)
+        init_state = init_state / norm
+
+        @qml.qnode(dev, diff_method=diff_method, interface="jax")
+        def circuit(phi):
+            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.IsingXX(phi, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        phi = jnp.array(0.1)
+
+        expected = (
+            0.5
+            * (1 / norm ** 2)
+            * (
+                -np.sin(phi) * (psi_0 ** 2 + psi_1 ** 2 - psi_2 ** 2 - psi_3 ** 2)
+                + 2
+                * np.sin(phi / 2)
+                * np.cos(phi / 2)
+                * (-(psi_0 ** 2) - psi_1 ** 2 + psi_2 ** 2 + psi_3 ** 2)
+            )
+        )
+
+        res = jax.grad(circuit, argnums=0)(phi)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
+    def test_isingzz_jax_grad(self, tol, dev_name, diff_method, phi):
+        """Test the gradient for the gate IsingZZ."""
+
+        if diff_method in {"finite-diff"}:
+            pytest.skip("Test does not support finite-diff")
+
+        if diff_method in {"parameter-shift"}:
+            pytest.skip("Test does not support parameter-shift")
+
+        jax = pytest.importorskip("jax")
+        jnp = pytest.importorskip("jax.numpy")
+
+        dev = qml.device(dev_name, wires=2)
+
+        psi_0 = 0.1
+        psi_1 = 0.2
+        psi_2 = 0.3
+        psi_3 = 0.4
+
+        init_state = jnp.array([psi_0, psi_1, psi_2, psi_3])
+        norm = jnp.linalg.norm(init_state)
+        init_state = init_state / norm
+
+        @qml.qnode(dev, diff_method=diff_method, interface="jax")
+        def circuit(phi):
+            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.IsingZZ(phi, wires=[0, 1])
+            return qml.expval(qml.PauliX(0))
+
+        phi = jnp.array(0.1)
+
+        expected = (1 / norm ** 2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
+
+        res = jax.grad(circuit, argnums=0)(phi)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
+    def test_isingxx_tf_grad(self, tol, dev_name, diff_method, phi):
+        """Test the gradient for the gate IsingXX."""
+        tf = pytest.importorskip("tensorflow", minversion="2.1")
+
+        dev = qml.device(dev_name, wires=2)
+
+        psi_0 = tf.Variable(0.1, dtype=tf.complex128)
+        psi_1 = tf.Variable(0.2, dtype=tf.complex128)
+        psi_2 = tf.Variable(0.3, dtype=tf.complex128)
+        psi_3 = tf.Variable(0.4, dtype=tf.complex128)
+
+        init_state = tf.Variable([psi_0, psi_1, psi_2, psi_3], dtype=tf.complex128)
+        norm = tf.norm(init_state)
+        init_state = init_state / norm
+
+        @qml.qnode(dev, interface="tf", diff_method=diff_method)
+        def circuit(phi):
+            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.IsingXX(phi, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        phi = tf.Variable(0.1, dtype=tf.complex128)
+
+        expected = (
+            0.5
+            * (1 / norm ** 2)
+            * (
+                -tf.sin(phi) * (psi_0 ** 2 + psi_1 ** 2 - psi_2 ** 2 - psi_3 ** 2)
+                + 2
+                * tf.sin(phi / 2)
+                * tf.cos(phi / 2)
+                * (-(psi_0 ** 2) - psi_1 ** 2 + psi_2 ** 2 + psi_3 ** 2)
+            )
+        )
+
+        with tf.GradientTape() as tape:
+            result = circuit(phi)
+        res = tape.gradient(result, phi)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
+    def test_isingzz_tf_grad(self, tol, dev_name, diff_method, phi):
+        """Test the gradient for the gate IsingZZ."""
+        tf = pytest.importorskip("tensorflow", minversion="2.1")
+
+        dev = qml.device(dev_name, wires=2)
+
+        psi_0 = tf.Variable(0.1, dtype=tf.complex128)
+        psi_1 = tf.Variable(0.2, dtype=tf.complex128)
+        psi_2 = tf.Variable(0.3, dtype=tf.complex128)
+        psi_3 = tf.Variable(0.4, dtype=tf.complex128)
+
+        init_state = tf.Variable([psi_0, psi_1, psi_2, psi_3], dtype=tf.complex128)
+        norm = tf.norm(init_state)
+        init_state = init_state / norm
+
+        @qml.qnode(dev, interface="tf", diff_method=diff_method)
+        def circuit(phi):
+            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.IsingZZ(phi, wires=[0, 1])
+            return qml.expval(qml.PauliX(0))
+
+        phi = tf.Variable(0.1, dtype=tf.complex128)
+
+        expected = (1 / norm ** 2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
+
+        with tf.GradientTape() as tape:
+            result = circuit(phi)
+        res = tape.gradient(result, phi)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_isingzz_decomposition(self, tol):
         """Tests that the decomposition of the IsingZZ gate is correct"""

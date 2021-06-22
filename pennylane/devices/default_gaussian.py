@@ -30,6 +30,7 @@ from scipy.special import factorial as fac
 
 import pennylane as qml
 from pennylane import Device
+from .._version import __version__
 
 # tolerance for numerical errors
 tolerance = 1e-10
@@ -649,8 +650,8 @@ class DefaultGaussian(Device):
     """
     name = "Default Gaussian PennyLane plugin"
     short_name = "default.gaussian"
-    pennylane_requires = "0.17"
-    version = "0.17.0"
+    pennylane_requires = __version__
+    version = __version__
     author = "Xanadu Inc."
 
     _operation_map = {
