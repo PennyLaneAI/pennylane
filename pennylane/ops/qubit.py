@@ -476,14 +476,7 @@ class CY(Operation):
     num_params = 0
     num_wires = 2
     par_domain = None
-    matrix = np.array(
-        [
-            [1, 0, 0, 0],
-            [0, 1, 0, 0],
-            [0, 0, 0, -1j],
-            [0, 0, 1j, 0],
-        ]
-    )
+    matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0],])
 
     @classmethod
     def _matrix(cls, *params):
@@ -1202,8 +1195,7 @@ class PauliRot(Operation):
 
         # now we conjugate with Hadamard and RX to create the Pauli string
         conjugation_matrix = functools.reduce(
-            np.kron,
-            [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
+            np.kron, [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
         )
 
         return expand(
@@ -1498,14 +1490,7 @@ class CRZ(DiagonalOperation):
     @classmethod
     def _eigvals(cls, *params):
         theta = params[0]
-        return np.array(
-            [
-                1,
-                1,
-                cmath.exp(-0.5j * theta),
-                cmath.exp(0.5j * theta),
-            ]
-        )
+        return np.array([1, 1, cmath.exp(-0.5j * theta), cmath.exp(0.5j * theta),])
 
     @staticmethod
     def decomposition(lam, wires):
@@ -2156,6 +2141,41 @@ class QubitUnitary(Operation):
             raise ValueError("Operator must be unitary.")
 
         return U
+
+    @staticmethod
+    def decomposition(U, wires):
+        # Single-qubit unitaries
+        if U.shape[0] == 2:
+            # Check validity of input
+            U = QubitUnitary._matrix(U)
+
+            wires = Wires(wires)
+
+            # First remove the global phase; cannot just divide by the square root
+            # because sometimes the determinant of a unitary matrix is negative.
+            det = np.linalg.det(U)
+            U = U * (np.exp(-1j * np.angle(det) / 2))
+
+            # Compute the angle of the Y rotation
+            theta = 2 * np.arcsin(np.abs(U[0, 1]))
+
+            # If it's close to 0, the matrix is diagonal and we have just an RZ rotation
+            if np.isclose(theta, 0):
+                omega = 2 * np.angle(U[0, 0])
+                return [RZ(omega, wires=wires[0])]
+
+            # If not diagonal, we actually have to work out the details and recover
+            # a decomposition of the form RZ(omega) RY(theta) RZ(phi)
+            if np.isclose(U[0, 0], 0):
+                phi = (1j * np.log(U[0, 1] / U[1, 0])).real
+                omega = -phi - 2 * np.angle(U[1, 0])
+            else:
+                omega = (1j * np.log(np.tan(theta / 2) * U[0, 0] / U[1, 0])).real
+                phi = -omega - 2 * np.angle(U[0, 0])
+
+            return [RZ(phi, wires=wires[0]), RY(theta, wires=wires[0]), RZ(omega, wires=wires[0])]
+        else:
+            return NotImplementedError
 
     def adjoint(self):
         return QubitUnitary(qml.math.T(qml.math.conj(self.matrix)), wires=self.wires)
