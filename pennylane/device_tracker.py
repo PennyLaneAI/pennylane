@@ -15,10 +15,110 @@
 import time
 from collections import defaultdict
 
-import pennylane as qml
+class DefaultTracker:
+    """
+    Class docstring
+    """
 
+    def __init__(self, dev=None, reset_on_enter=True):
+        """
+        docstring
+        """
+        self.reset_on_enter = reset_on_enter
 
-def track(dev, version="default", **kwargs):
+        self.reset()
+        self.tracking = False
+
+        if dev is not None:
+            dev.tracker = self
+
+    def __enter__(self):
+        """
+        docstring for enter
+        """
+        if self.reset_on_enter:
+            self.reset()
+
+        self.tracking = True
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        """
+        docstring for exit
+        """
+        self.tracking = False
+
+    def update(self, **current):
+        """updating data"""
+        self.current = current
+
+        for key, value in current.items():
+            # update history
+            self.history[key].append(value)
+
+            # updating totals
+            if value is not None:
+                self.totals[key] += value
+
+    def reset(self):
+        """reseting data"""
+        self.totals = defaultdict(int)
+        self.history = defaultdict(list)
+        self.current = dict()
+
+    def record(self):
+        """
+        record data somehow
+        """
+        pass
+
+class TimingsMixin(DefaultTracker):
+
+    def update(self, **current):
+
+        current_time = time.time()
+        current["time"] = current_time - self._time_last
+        self._time_last = current_time
+
+        super(TimingsMixin, self).update(**current)
+
+    def reset(self):
+        super(TimingsMixin, self).reset()
+        self._time_last = time.time()
+
+class PrintTotals(DefaultTracker):
+
+    def record(self):
+        """
+        Print out totals 
+        """
+        print("Total: ", end="")
+        for key, value in self.totals.items():
+            print(f"{key} = {value}", end="\t")
+        print()
+
+class PrintCurrent(DefaultTracker):
+
+    def record(self):
+        """
+        Print out current values
+        """
+        print("Current: ", end="")
+        for key, value in self.current.items():
+            print(f"{key} = {value}", end="\t")
+        print()
+
+class PrintCustom(DefaultTracker):
+    def record(self):
+        """
+        Use user provided logging function
+        """
+        self.custom_recorder(current=self.current, totals=self.totals, history=self.history)
+
+record_mapping = {"totals": PrintTotals, "current": PrintCurrent, "custom": PrintCustom}
+update_mapping = {"timings": TimingsMixin}
+
+def track(dev, record=None, update=None, **kwargs):
     r"""Creates a tracking context and applies it to a device.
 
     Args:
@@ -84,95 +184,27 @@ def track(dev, version="default", **kwargs):
     Total: executions = 2
 
     """
-    if version == "timing":
-        return TimingTracker(dev, **kwargs)
-    elif version == "default":
-        return DefaultTracker(dev, **kwargs)
-    else:
-        raise qml.QuantumFunctionError(
-            f"version {version} supplied to track. " f"Current options are `timing` and `default`."
-        )
+    mixin_list = []
 
+    if update is not None:
+        update_class = update_mapping.get(update)
+        mixin_list.append(update_class)
 
-class DefaultTracker:
-    """
-    Class docstring
-    """
+    if callable(record):
+        mixin_list.append(record_mapping.get("custom"))
+    elif record is not None:
+        record_class = record_mapping.get(record)
+        mixin_list.append(record_class)
+    
+    mixin_list.append(DefaultTracker)
 
-    def __init__(self, dev=None, reset_on_enter=True):
-        """
-        docstring
-        """
-        self.reset_on_enter = reset_on_enter
-
-        self.reset()
-        self.tracking = False
-
-        if dev is not None:
-            dev.tracker = self
-
-    def __enter__(self):
-        """
-        docstring for enter
-        """
-        if self.reset_on_enter:
-            self.reset()
-
-        self.tracking = True
-        return self
-
-    def __exit__(self, exc_type, exc_value, exc_traceback):
-        """
-        docstring for exit
-        """
-        self.tracking = False
-
-    def update(self, **current):
-        """updating data"""
-        self.current = current
-
-        for key, value in current.items():
-            # update history
-            self.history[key].append(value)
-
-            # updating totals
-            if value is not None:
-                self.totals[key] += value
-
-    def reset(self):
-        """reseting data"""
-        self.totals = defaultdict(int)
-        self.history = defaultdict(list)
-        self.current = dict()
-
-    def record(self):
-        """
-        record data somehow
-        """
+    class temp_class(*mixin_list):
         pass
 
+    tracker = temp_class(dev, **kwargs)
 
-class PrintTotalsMixin(DefaultTracker):
+    if callable(record):
+        tracker.custom_recorder = record
 
-    def record(self):
-        """
-        Print out totals 
-        """
-        print("Total: ", end="")
-        for key, value in self.totals.items():
-            print(f"{key} = {value}", end="\t")
-        print()
+    return tracker
 
-class TimingsMixin(DefaultTracker):
-
-    def update(self, **current):
-
-        current_time = time.time()
-        current["time"] = current_time - self._time_last
-        self._time_last = current_time
-
-        super(TimingsMixin, self).update(**current)
-
-    def reset(self):
-        super(TimingsMixin, self).reset()
-        self._time_last = time.time()
