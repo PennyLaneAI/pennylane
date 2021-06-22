@@ -305,17 +305,24 @@ def quantum_monte_carlo(fn, wires, target_wire, estimation_wires):
         algorithm
 
         >>> qtape = qmc.qtape.expand(depth=1)
-        >>> qtape.get_resources()
-        {'RY': 14674,
-         'CNOT': 15686,
-         'PhaseShift': 1020,
-         'RX': 510,
-         'CZ': 126,
-         'PauliX': 1260,
-         'Toffoli': 2016,
-         'SWAP': 3,
-         'Hadamard': 6,
-         'ControlledPhaseShift': 15}
+        >>> qml.specs(qmc)()
+        {'gate_sizes': defaultdict(int, {1: 15943, 2: 15812, 7: 126, 6: 1}),
+         'gate_types': defaultdict(int,
+                     {'RY': 15433,
+                      'CNOT': 15686,
+                      'Hadamard': 258,
+                      'CZ': 126,
+                      'PauliX': 252,
+                      'MultiControlledX': 126,
+                      'QFT.inv': 1}),
+         'num_operations': 31882,
+         'num_observables': 1,
+         'num_diagonalizing_gates': 0,
+         'num_used_wires': 12,
+         'depth': 30610,
+         'num_device_wires': 12,
+         'device_name': 'default.qubit.autograd',
+         'diff_method': 'backprop'}
     """
     wires = Wires(wires)
     target_wire = Wires(target_wire)
