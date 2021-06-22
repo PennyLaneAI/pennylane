@@ -1826,17 +1826,21 @@ class IsingXX(Operation):
 class IsingYY(Operation):
     r"""IsingYY(phi, wires)
     Ising YY coupling gate
+
     .. math:: \mathtt{YY}(\phi) = \begin{bmatrix}
         \cos(\phi / 2) & 0 & 0 & i \sin(\phi / 2) \\
         0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
         0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
         i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
         \end{bmatrix}.
+
     **Details:**
+
     * Number of wires: 2
     * Number of parameters: 1
     * Gradient recipe: :math:`\frac{d}{d\phi}f(YY(\phi)) = \frac{1}{2}\left[f(YY(\phi +\pi/2)) - f(YY(\phi-\pi/2))\right]`
       where :math:`f` is an expectation value depending on :math:`YY(\phi)`.
+
     Args:
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
