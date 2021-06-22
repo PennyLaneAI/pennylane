@@ -14,6 +14,7 @@
 """Unit tests for the basic functions in qml.math
 """
 import numpy as onp
+import pennylane as qml
 from pennylane import numpy as np
 import pytest
 
@@ -23,6 +24,7 @@ tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
+
 
 class TestFrobeniusInnerProduct:
     @pytest.mark.parametrize(
@@ -107,3 +109,12 @@ class TestFrobeniusInnerProduct:
     )
     def test_frobenius_inner_product(self, A, B, normalize, expected):
         assert expected == pytest.approx(fn.frobenius_inner_product(A, B, normalize=normalize))
+
+    def test_frobenius_inner_product_gradient(self):
+        A = np.array([[1.0, 2.3], [-1.3, 2.4]])
+        B = torch.autograd.Variable(torch.randn(2, 2).type(torch.float), requires_grad=True)
+        result = fn.frobenius_inner_product(A, B)
+        result.backward()
+        grad = B.grad
+
+        assert np.allclose(grad, A)
