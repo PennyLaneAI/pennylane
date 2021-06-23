@@ -3,12 +3,10 @@ Device Tracker
 
 .. currentmodule:: pennylane.device_tracker
 
-.. code:: ipython3
+.. code-block:: python
 
     import pennylane as qml
     from pennylane import numpy as np
-
-.. code:: ipython3
 
     dev = qml.device('default.qubit', wires=1, shots=100)
     
@@ -22,22 +20,14 @@ Device Tracker
 Default usage
 -------------
 
-.. code:: ipython3
+.. code-block:: python
 
     with qml.track(dev) as tracker:
         g = qml.grad(circuit)(x)
         circuit(x, shots=10)
 
-.. code:: ipython3
-
-    tracker.totals
-
-
-
-
-.. parsed-literal::
-
-    defaultdict(int, {'executions': 4, 'shots': 310})
+>>> tracker.totals
+defaultdict(int, {'executions': 4, 'shots': 310})
 
 
 
