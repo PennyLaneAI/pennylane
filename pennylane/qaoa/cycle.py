@@ -408,7 +408,7 @@ def _inner_out_flow_constraint_hamiltonian(graph: nx.DiGraph, node) -> Hamiltoni
 
         d_{i}^{out}(d_{i}^{out} - 2)\mathbb{I}
         - 2(d_{i}^{out}-1)\sum_{j,(i,j)\in E}\hat{Z}_{ij} +
-        ( \sum_{j,(i,j)\in E}\hat{Z}_{ij}) )^{2}
+        ( \sum_{j,(i,j)\in E}\hat{Z}_{ij} )^{2}
 
     Args:
         graph (nx.DiGraph): the directed graph specifying possible edges

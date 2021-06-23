@@ -14,8 +14,10 @@
 """Unit tests for the QNode"""
 import pytest
 import numpy as np
+from collections import defaultdict
 
 import pennylane as qml
+from pennylane import numpy as pnp
 from pennylane import QNodeCollection
 from pennylane import qnode, QNode
 from pennylane.transforms import draw
@@ -258,6 +260,60 @@ class TestValidation:
 
         with pytest.raises(ValueError, match="The default.gaussian device does not"):
             QNode._validate_adjoint_method(dev, "tf")
+
+    def test_validate_adjoint_finite_shots(self):
+        """Test that a UserWarning is raised when device has finite shots"""
+
+        dev = qml.device("default.qubit", wires=1, shots=1)
+
+        with pytest.warns(
+            UserWarning, match="Requested adjoint differentiation to be computed with finite shots."
+        ):
+            QNode._validate_adjoint_method(dev, "autograd")
+
+    def test_adjoint_finite_shots(self):
+        """Tests that UserWarning is raised with the adjoint differentiation method
+        on QNode construction when the device has finite shots
+        """
+
+        dev = qml.device("default.qubit", wires=1, shots=1)
+
+        with pytest.warns(
+            UserWarning, match="Requested adjoint differentiation to be computed with finite shots."
+        ):
+
+            @qml.qnode(dev, diff_method="adjoint")
+            def circ():
+                return qml.expval(qml.PauliZ(0))
+
+    def test_validate_reversible_finite_shots(self):
+        """Test that a UserWarning is raised when validating the reversible differentiation method
+        and using a device that has finite shots
+        """
+
+        dev = qml.device("default.qubit", wires=1, shots=1)
+
+        with pytest.warns(
+            UserWarning,
+            match="Requested reversible differentiation to be computed with finite shots.",
+        ):
+            QNode._validate_reversible_method(dev, "autograd")
+
+    def test_reversible_finite_shots(self):
+        """Tests that UserWarning is raised with the reversible differentiation method
+        on QNode construction when the device has finite shots
+        """
+
+        dev = qml.device("default.qubit", wires=1, shots=1)
+
+        with pytest.warns(
+            UserWarning,
+            match="Requested reversible differentiation to be computed with finite shots.",
+        ):
+
+            @qml.qnode(dev, diff_method="reversible")
+            def circ():
+                return qml.expval(qml.PauliZ(0))
 
     def test_qnode_print(self):
         """Test that printing a QNode object yields the right information."""
@@ -1014,6 +1070,67 @@ class TestShots:
         res = circuit(0.8, shots=2)
         assert len(res) == 2
         assert dev.shots == 3
+
+
+class TestSpecs:
+    """Tests for the qnode property specs"""
+
+    def test_specs_error(self):
+        """Tests an error is raised if the tape is not constructed."""
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(qml.QuantumFunctionError, match=r"The QNode specifications"):
+            circuit.specs
+
+    @pytest.mark.parametrize(
+        "diff_method, len_info", [("backprop", 10), ("parameter-shift", 12), ("adjoint", 11)]
+    )
+    def test_specs(self, diff_method, len_info):
+        """Tests the specs property with backprop"""
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def circuit(x, y):
+            qml.RX(x[0], wires=0)
+            qml.Toffoli(wires=(0, 1, 2))
+            qml.CRY(x[1], wires=(0, 1))
+            qml.Rot(x[2], x[3], y, wires=2)
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
+
+        x = pnp.array([0.05, 0.1, 0.2, 0.3], requires_grad=True)
+        y = pnp.array(0.1, requires_grad=False)
+
+        res = circuit(x, y)
+
+        info = circuit.specs
+
+        assert len(info) == len_info
+
+        assert info["gate_sizes"] == defaultdict(int, {1: 2, 3: 1, 2: 1})
+        assert info["gate_types"] == defaultdict(int, {"RX": 1, "Toffoli": 1, "CRY": 1, "Rot": 1})
+        assert info["num_operations"] == 4
+        assert info["num_observables"] == 2
+        assert info["num_diagonalizing_gates"] == 1
+        assert info["num_used_wires"] == 3
+        assert info["depth"] == 3
+        assert info["num_device_wires"] == 4
+
+        assert info["diff_method"] == diff_method
+
+        if diff_method == "parameter-shift":
+            assert info["num_parameter_shift_executions"] == 7
+
+        if diff_method != "backprop":
+            assert info["device_name"] == "default.qubit"
+            assert info["num_trainable_params"] == 4
+        else:
+            assert info["device_name"] == "default.qubit.autograd"
 
 
 def test_finitediff_float32(tol):

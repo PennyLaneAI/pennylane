@@ -494,3 +494,91 @@ class TestMitigation:
         noise rates per datapoint."""
         output = kern.mitigate_depolarizing_noise(input, self.num_wires, "split_channel")
         assert np.allclose(output, expected_output)
+
+
+class TestErrorForNonRealistic:
+    """Tests that the noise mitigation techniques raise an error whenever the
+    used quantities are too small."""
+
+    def test_mitigate_depolarizing_noise_wrong_method(self, recwarn):
+        """Test that an error is raised when specifying an incorrect method."""
+        with pytest.raises(
+            ValueError, match="Incorrect noise depolarization mitigation method specified"
+        ):
+            qml.kernels.mitigate_depolarizing_noise(np.array([0]), 4, method="some_dummy_strat")
+
+    def test_mitigate_depolarizing_noise_average_method_error(self, recwarn):
+        """Test that an error is raised when using the average method for the
+        mitigation of depolarizing noise with a matrix that has too small diagonal
+        entries."""
+        num_wires = 6
+        wires = range(num_wires)
+
+        dev = qml.device("default.qubit", wires=num_wires)
+
+        @qml.qnode(dev)
+        def kernel_circuit(x1, x2):
+            qml.templates.AngleEmbedding(x1, wires=wires)
+            qml.adjoint(qml.templates.AngleEmbedding)(x2, wires=wires)
+            return qml.probs(wires)
+
+        kernel = lambda x1, x2: kernel_circuit(x1, x2)[0]
+
+        # "Training feature vectors"
+        X_train = qml.numpy.tensor(
+            [[0.73096199, 0.19012506, 0.57223395], [0.78126872, 0.53535039, 0.31160784]],
+            requires_grad=True,
+        )
+
+        # Create symmetric square kernel matrix (for training)
+        K = qml.kernels.square_kernel_matrix(X_train, kernel)
+
+        # Add some (symmetric) Gaussian noise to the kernel matrix.
+        N = qml.numpy.tensor(
+            [[-2.33010045, -2.22195441], [-0.40680862, 0.21785961]], requires_grad=True
+        )
+        K += (N + N.T) / 2
+        with pytest.raises(
+            ValueError, match="The average noise mitigation method cannot be applied"
+        ):
+            qml.kernels.mitigate_depolarizing_noise(K, num_wires, method="average")
+
+    @pytest.mark.parametrize(
+        "msg, method", [("single", "single"), ("split channel", "split_channel")]
+    )
+    def test_mitigate_depolarizing_noise_error(self, msg, method):
+        """Test that an error is raised for the mitigation of depolarizing
+        noise with a matrix that has too small specified entries for the
+        single and the split channel strategies."""
+        num_wires = 6
+        wires = range(num_wires)
+
+        dev = qml.device("default.qubit", wires=num_wires)
+
+        @qml.qnode(dev)
+        def kernel_circuit(x1, x2):
+            qml.templates.AngleEmbedding(x1, wires=wires)
+            qml.adjoint(qml.templates.AngleEmbedding)(x2, wires=wires)
+            return qml.probs(wires)
+
+        kernel = lambda x1, x2: kernel_circuit(x1, x2)[0]
+
+        # "Training feature vectors"
+        X_train = qml.numpy.tensor(
+            [[0.39375865, 0.50895605, 0.30720779], [0.34389837, 0.7043728, 0.40067889]],
+            requires_grad=True,
+        )
+
+        # Create symmetric square kernel matrix (for training)
+        K = qml.kernels.square_kernel_matrix(X_train, kernel)
+
+        # Add some (symmetric) Gaussian noise to the kernel matrix.
+        N = qml.numpy.tensor(
+            [[-1.15035284, 0.36726945], [0.26436627, -0.59287149]], requires_grad=True
+        )
+        K += (N + N.T) / 2
+
+        with pytest.raises(
+            ValueError, match=f"The {msg} noise mitigation method cannot be applied"
+        ):
+            qml.kernels.mitigate_depolarizing_noise(K, num_wires, method=method)
