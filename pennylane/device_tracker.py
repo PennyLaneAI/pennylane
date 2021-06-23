@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+This module contains the device tracker stuff.
+"""
 
 import time
 from collections import defaultdict
@@ -117,7 +120,7 @@ class PrintCustom(DefaultTracker):
         """
         Use user provided logging function
         """
-        self.custom_recorder(current=self.current, totals=self.totals, history=self.history)
+        self.custom_recorder(totals=self.totals, history=self.history, current=self.current,)
 
 record_mapping = {"totals": PrintTotals, "current": PrintCurrent, "custom": PrintCustom}
 update_mapping = {"timings": TimingsMixin}
@@ -127,8 +130,10 @@ def track(dev, record=None, update=None, **kwargs):
 
     Args:
         dev (Device): a PennyLane-compatible device
-        version (str): name of tracker to use.  The current options are
-            `default` and `timing`.
+        record (callable or str or None): If callable, this function is used to record information. Must be a 
+            function of ``current``, ``totals`` and ``history`` keywords. If string, selects an built record method.
+            Current available options are ``"totals"`` and ``"current"``. If ``None``, no recording happens.
+        update (str or None): if ``"timings"``
 
     Keyword Args:
         reset_on_enter=True (bool): whether or not to reset information
