@@ -194,9 +194,9 @@ class _TorchInterface(torch.autograd.Function):
         # back to the GPU if required.
         if dyv.is_cuda or jac_res.is_cuda:
             if not dyv.is_cuda:
-                dyv = dyv.cuda()
+                dyv = torch.as_tensor(dyv, device=jac_res.get_device())
             if not jac_res.is_cuda:
-                jac_res = jac_res.cuda()
+                jac_res = torch.as_tensor(jac_res, device=dyv.get_device())
 
         vjp = dyv @ jac_res
         vjp = torch.unbind(vjp.view(-1))

@@ -11,13 +11,16 @@
 
 <h3>Bug fixes</h3>
 
+* Fixed a bug in the `torch` interface that prevented gradients from being
+  computed on a GPU [(#1426)](https://github.com/PennyLaneAI/pennylane/pull/1426).
+
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Ashish Panigrahi
+Olivia Di Matteo, Ashish Panigrahi
 
 
 # Release 0.16.0 (current release)
