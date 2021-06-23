@@ -50,9 +50,11 @@ from pennylane.transforms import (
     ctrl,
     measurement_grouping,
     metric_tensor,
+    specs,
     qfunc_transform,
     single_tape_transform,
     quantum_monte_carlo,
+    apply_controlled_Q,
 )
 from pennylane.utils import inv
 from pennylane.vqe import ExpvalCost, Hamiltonian, VQECost
