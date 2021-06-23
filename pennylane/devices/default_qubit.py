@@ -27,6 +27,7 @@ import numpy as np
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
 from pennylane.operation import DiagonalOperation
 from pennylane.wires import WireError
+from .._version import __version__
 
 ABC_ARRAY = np.array(list(ABC))
 
@@ -84,8 +85,8 @@ class DefaultQubit(QubitDevice):
 
     name = "Default qubit PennyLane plugin"
     short_name = "default.qubit"
-    pennylane_requires = "0.17"
-    version = "0.17.0"
+    pennylane_requires = __version__
+    version = __version__
     author = "Xanadu Inc."
 
     operations = {

@@ -256,11 +256,9 @@ class Operator(abc.ABC):
         cls = self.__class__
         copied_op = cls.__new__(cls)
         copied_op.data = self.data.copy()
-        copied_op._wires = self.wires
-        copied_op._name = self._name
-
-        if hasattr(self, "_inverse"):
-            copied_op._inverse = self._inverse
+        for attr, value in vars(self).items():
+            if attr != "data":
+                setattr(copied_op, attr, value)
 
         return copied_op
 

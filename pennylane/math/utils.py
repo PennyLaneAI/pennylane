@@ -117,7 +117,7 @@ def cast_like(tensor1, tensor2):
 
     >>> x = torch.tensor([1, 2])
     >>> y = torch.tensor([3., 4.])
-    >>> cast(x, y)
+    >>> cast_like(x, y)
     tensor([1., 2.])
     """
     dtype = ar.to_numpy(tensor2).dtype.type
@@ -139,7 +139,7 @@ def convert_like(tensor1, tensor2):
 
     >>> x = np.array([1, 2])
     >>> y = tf.Variable([3, 4])
-    >>> cast(x, y)
+    >>> convert_like(x, y)
     <tf.Tensor: shape=(2,), dtype=int64, numpy=array([1, 2])>
     """
     return np.asarray(tensor1, like=get_interface(tensor2))
@@ -189,7 +189,6 @@ def requires_grad(tensor):
 
         For example, Torch tensors and PennyLane tensors track trainability
         as a property of the tensor itself. TensorFlow, on the other hand,
-
         only tracks trainability if being watched by a gradient tape.
 
     Args:

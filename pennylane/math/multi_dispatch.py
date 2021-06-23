@@ -173,13 +173,13 @@ def diag(values, k=0):
     **Example**
 
     >>> x = [1., 2., tf.Variable(3.)]
-    >>> diag(x)
+    >>> qml.math.diag(x)
     <tf.Tensor: shape=(3, 3), dtype=float32, numpy=
     array([[1., 0., 0.],
            [0., 2., 0.],
            [0., 0., 3.]], dtype=float32)>
     >>> y = tf.Variable([0.65, 0.2, 0.1])
-    >>> diag(y, k=-1)
+    >>> qml.math.diag(y, k=-1)
     <tf.Tensor: shape=(4, 4), dtype=float32, numpy=
     array([[0.  , 0.  , 0.  , 0.  ],
            [0.65, 0.  , 0.  , 0.  ],
@@ -219,6 +219,9 @@ def dot(tensor1, tensor2):
     Args:
         tensor1 (tensor_like): input tensor
         tensor2 (tensor_like): input tensor
+
+    Returns:
+        tensor_like: the matrix or dot product of two tensors
     """
     interface = _multi_dispatch([tensor1, tensor2])
     x, y = np.coerce([tensor1, tensor2], like=interface)

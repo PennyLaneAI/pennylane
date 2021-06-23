@@ -150,6 +150,7 @@ crot = lambda phi, theta, omega: np.array(
         ],
     ]
 )
+
 IsingXX = lambda phi: np.array(
     [
         [cos(phi / 2), 0, 0, -1j * sin(phi / 2)],
@@ -158,6 +159,7 @@ IsingXX = lambda phi: np.array(
         [-1j * sin(phi / 2), 0, 0, cos(phi / 2)],
     ]
 )
+
 IsingYY = lambda phi: np.array(
     [
         [cos(phi / 2), 0, 0, 1j * sin(phi / 2)],
@@ -166,6 +168,7 @@ IsingYY = lambda phi: np.array(
         [1j * sin(phi / 2), 0, 0, cos(phi / 2)],
     ]
 )
+
 IsingZZ = lambda phi: np.array(
     [
         [exp(-1.0j * phi / 2), 0, 0, 0],
@@ -196,13 +199,7 @@ single_qubit_param = [
     (qml.RZ, rz),
 ]
 # list of all non-parametrized two-qubit gates
-two_qubit = [
-    (qml.CNOT, CNOT),
-    (qml.SWAP, SWAP),
-    (qml.ISWAP, ISWAP),
-    (qml.CZ, CZ),
-    (qml.CY, CY),
-]
+two_qubit = [(qml.CNOT, CNOT), (qml.SWAP, SWAP), (qml.ISWAP, ISWAP), (qml.CZ, CZ), (qml.CY, CY)]
 # list of all parametrized two-qubit gates
 two_qubit_param = [
     (qml.CRX, crx),
