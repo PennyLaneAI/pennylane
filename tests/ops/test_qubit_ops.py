@@ -23,7 +23,6 @@ import numpy as np
 from numpy.linalg import multi_dot
 from scipy.stats import unitary_group
 from scipy.linalg import expm
-from scipy.sparse import coo_matrix, csr_matrix
 from pennylane import numpy as npp
 
 import pennylane as qml
@@ -95,9 +94,6 @@ PROJECTOR_EIGVALS_TEST_DATA = [
     (np.array([0, 0])),
     (np.array([1, 0, 1])),
 ]
-
-# Testing SparseHamiltonian observable.
-SPARSE_HAMILTONIAN_TEST_DATA = [(np.array([[1, 0], [-1.5, 0]])), (np.eye(4))]
 
 
 @pytest.mark.usefixtures("tear_down_hermitian")
@@ -398,73 +394,6 @@ class TestProjector:
         with pytest.raises(ValueError, match="Basis state must only consist of 0s"):
             basis_state = np.array([0, 2])
             circuit(basis_state)
-
-
-class TestSparse:
-    """Tests for sparse hamiltonian observable"""
-
-    @pytest.mark.parametrize("sparse_hamiltonian", SPARSE_HAMILTONIAN_TEST_DATA)
-    def test_sparse_diagonalization(self, sparse_hamiltonian):
-        """Test that the diagonalizing_gates property of the SparseHamiltonian class returns empty."""
-        num_wires = len(sparse_hamiltonian[0])
-        sparse_hamiltonian = coo_matrix(sparse_hamiltonian)
-        diag_gates = qml.SparseHamiltonian(sparse_hamiltonian).diagonalizing_gates()
-
-        assert diag_gates == []
-
-    @pytest.mark.parametrize("sparse_hamiltonian", SPARSE_HAMILTONIAN_TEST_DATA)
-    def test_sparse_typeerror(self, sparse_hamiltonian):
-        """Test that the matrix property of the SparseHamiltonian class raises a TypeError on incorrect inputs."""
-        num_wires = len(sparse_hamiltonian[0])
-        sparse_hamiltonian = csr_matrix(sparse_hamiltonian)
-
-        dev = qml.device("default.qubit", wires=num_wires)
-
-        @qml.qnode(dev, diff_method="parameter-shift")
-        def circuit(sparse_hamiltonian, num_wires):
-            obs = qml.SparseHamiltonian(sparse_hamiltonian)
-            return qml.expval(obs)
-
-        with pytest.raises(TypeError, match="Observable must be a scipy sparse coo_matrix"):
-            circuit(sparse_hamiltonian, num_wires)
-
-    @pytest.mark.parametrize("sparse_hamiltonian", SPARSE_HAMILTONIAN_TEST_DATA)
-    def test_sparse_matrix(self, sparse_hamiltonian, tol):
-        """Test that the matrix property of the SparseHamiltonian class returns the correct matrix."""
-        num_wires = len(sparse_hamiltonian[0])
-        sparse_hamiltonian = coo_matrix(sparse_hamiltonian)
-        returned_matrix = qml.SparseHamiltonian(sparse_hamiltonian).matrix
-        assert np.allclose(
-            returned_matrix.toarray(), sparse_hamiltonian.toarray(), atol=tol, rtol=0
-        )
-
-    def test_sparse_gradient(self, tol):
-        """Tests that gradients are computed correctly for a SparseHamiltonian observable."""
-        dev = qml.device("default.qubit", wires=2, shots=None)
-
-        @qml.qnode(dev, diff_method="parameter-shift")
-        def circuit(param):
-            qml.RX(param, wires=0)
-            return qml.expval(qml.SparseHamiltonian(coo_matrix(np.eye(4))))
-
-        assert np.allclose(qml.grad(circuit)([0.5]), -0.47942554, atol=tol, rtol=0)
-
-    def test_sparse_diffmethod_error(self):
-        """Test that an error is raised when the observable is SparseHamiltonian and the
-        differentiation method is not parameter-shift."""
-        dev = qml.device("default.qubit", wires=2, shots=None)
-
-        @qml.qnode(dev, diff_method="backprop")
-        def circuit(param):
-            qml.RX(param, wires=0)
-            return qml.expval(qml.SparseHamiltonian(coo_matrix(np.eye(4))))
-
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="SparseHamiltonian observable must be"
-            " used with the parameter-shift differentiation method",
-        ):
-            qml.grad(circuit)([0.5])
 
 
 # Non-parametrized operations and their matrix representation

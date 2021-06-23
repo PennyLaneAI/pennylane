@@ -21,7 +21,6 @@ import math
 
 import pytest
 import pennylane as qml
-from scipy.sparse import coo_matrix
 from pennylane import numpy as np, DeviceError
 from pennylane.devices.default_qubit import _get_slice, DefaultQubit
 from pennylane.wires import Wires, WireError
@@ -873,84 +872,6 @@ class TestExpval:
         # With 3 samples we are guaranteed to see a difference between
         # an estimated variance an an analytically calculated one
         assert expval != 0.0
-
-    H_row = np.array([0, 1, 2, 3, 3, 4, 5, 6, 6, 7, 8, 9, 9, 10, 11, 12, 12, 13, 14, 15])
-    H_col = np.array([0, 1, 2, 3, 12, 4, 5, 6, 9, 7, 8, 6, 9, 10, 11, 3, 12, 13, 14, 15])
-    H_data = np.array(
-        [
-            0.72004228 + 0.0j,
-            0.24819411 + 0.0j,
-            0.24819411 + 0.0j,
-            0.47493347 + 0.0j,
-            0.18092703 + 0.0j,
-            -0.5363422 + 0.0j,
-            -0.52452263 + 0.0j,
-            -0.34359561 + 0.0j,
-            -0.18092703 + 0.0j,
-            0.3668115 + 0.0j,
-            -0.5363422 + 0.0j,
-            -0.18092703 + 0.0j,
-            -0.34359561 + 0.0j,
-            -0.52452263 + 0.0j,
-            0.3668115 + 0.0j,
-            0.18092703 + 0.0j,
-            -1.11700225 + 0.0j,
-            -0.44058791 + 0.0j,
-            -0.44058791 + 0.0j,
-            0.93441396 + 0.0j,
-        ]
-    )
-    H_hydrogen = coo_matrix((H_data, (H_row, H_col)), shape=(16, 16)).toarray()
-
-    @pytest.mark.parametrize(
-        "qubits, operations, hamiltonian, expected_output",
-        [
-            (1, [], np.array([[1.0, 0.0], [0.0, 1.0]]), 1.0),
-            (
-                2,
-                [qml.PauliX(0), qml.PauliY(1)],
-                np.array(
-                    [
-                        [1.0, 0.0, 0.0, 0.0],
-                        [0.0, 1.0, 0.0, 0.0],
-                        [0.0, 0.0, 1.0, 0.0],
-                        [0.0, 0.0, 0.0, 1.0],
-                    ]
-                ),
-                -1.0,
-            ),
-            (
-                4,
-                [
-                    qml.PauliX(0),
-                    qml.PauliX(1),
-                    qml.DoubleExcitation(0.22350048065138242, wires=[0, 1, 2, 3]),
-                ],
-                H_hydrogen,
-                -1.1373060481,
-            ),
-        ],
-    )
-    def test_sparse_hamiltonian_expval(self, qubits, operations, hamiltonian, expected_output, tol):
-        """Test that expectation values of sparse hamiltonians are properly calculated."""
-
-        hamiltonian = coo_matrix(hamiltonian)
-
-        dev = qml.device("default.qubit", wires=qubits, shots=None)
-        dev.apply(operations)
-        expval = dev.expval(qml.SparseHamiltonian(hamiltonian))[0]
-
-        assert np.allclose(expval, expected_output, atol=tol, rtol=0)
-
-    def test_sparse_expval_error(self):
-        """Test that the expval function raises a DeviceError when the observable is
-        SparseHamiltonian and finite shots is requested."""
-        hamiltonian = coo_matrix(np.array([[1.0, 0.0], [0.0, 1.0]]))
-
-        dev = qml.device("default.qubit", wires=1, shots=1)
-
-        with pytest.raises(DeviceError, match="SparseHamiltonian must be used with shots=None"):
-            dev.expval(qml.SparseHamiltonian(hamiltonian))[0]
 
 
 class TestVar:
