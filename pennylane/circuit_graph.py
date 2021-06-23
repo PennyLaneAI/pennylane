@@ -68,7 +68,7 @@ def _list_at_index_or_none(ls, idx):
     return None
 
 
-def is_returned_observable(op):
+def _is_returned_observable(op):
     """Helper for the condition of having an observable or
     measurement process in the return statement.
 
@@ -523,7 +523,7 @@ class CircuitGraph:
                 observables[wire] = [None] * self.max_simultaneous_measurements
 
                 for op in self._grid[wire]:
-                    if is_returned_observable(op):
+                    if _is_returned_observable(op):
                         obs_idx = mp_map[op]
                         observables[wire][obs_idx] = op
 
