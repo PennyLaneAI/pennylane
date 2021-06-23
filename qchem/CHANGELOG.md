@@ -15,6 +15,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Romain Moyard.
 
 # Release 0.16.0
 
