@@ -28,8 +28,14 @@ class DefaultTracker:
             a runtime context.
     """
 
-    def __init__(self, dev=None, persistent=False):
+    def __init__(self, dev=None, persistent=False, record_function=None):
         self.persistent = persistent
+
+        if record_function is None:
+            def record_function(**kwargs):
+                pass
+
+        self.record_function = record_function
 
         self.reset()
         self.tracking = False
@@ -89,41 +95,32 @@ class DefaultTracker:
 
         While blank for the default base class, inheriting classes can print or log the data.
         """
-        pass
+        self.record_function(totals = self.totals, history=self.history, latest = self.latest)
 
 class UpdateTimings(DefaultTracker):
 
-    def update(self, **current):
+    def update(self, **kwargs):
         current_time = time.time()
         current["time"] = current_time - self._time_last
         self._time_last = current_time
 
-        super(UpdateTimings, self).update(**current)
+        super().update(**kwargs)
 
     def reset(self):
-        super(UpdateTimings, self).reset()
+        super().reset()
         self._time_last = time.time()
 
-class PrintCustom(DefaultTracker):
-    def __init__(self, dev=None, persistent=False, custom_recorder=None):
-        self.custom_recorder=custom_recorder
-        super(PrintCustom, self).__init__(dev=dev, persistent=persistent)
 
-    def record(self):
-        """Executes user-provided record function."""
-        self.custom_recorder(totals=self.totals, history=self.history, latest=self.latest)
-
-
-def track(dev=None, record=None, update=None, **kwargs):
+def track(dev=None, record=None, timings=False, **kwargs):
     r"""Creates a tracking context and applies it to a device.
 
     Args:
         dev (Device): a PennyLane-compatible device
         record (callable or str or None): If callable, this function is used to record information. Must be a
             function of ``current``, ``totals`` and ``history`` keywords.
+        timings=False (bool): whether to calculate time differences in the update function
 
     Keyword Args:
-        timings=False (bool): whether to calculate time differences in the update function
         persistent=False (bool): whether or not to reset information
             entering the context
 
@@ -166,9 +163,9 @@ def track(dev=None, record=None, update=None, **kwargs):
     function passed must accept ``totals``, ``history``, and ``latest`` as 
     keyword arguments:
 
-    >>> def just_shot_info(totals=dict(), history=dict(), latest=dict()):
+    >>> def shots_info(totals=dict(), history=dict(), latest=dict()):
     ...     print("Total shots: ", totals['shots'])
-    >>> with qml.track(circuit.device, record=just_shot_info) as tracker:
+    >>> with qml.track(circuit.device, record=shots_info) as tracker:
     ...     qml.grad(circuit)(0.1)
     Total shots:  100
     Total shots:  200
@@ -194,23 +191,9 @@ def track(dev=None, record=None, update=None, **kwargs):
     2
 
     """
-    mixin_list = []
 
     if timings:
-        mixin_list.append(UpdateTimings)
+        return UpdateTimings(dev, record_function=record, **kwargs)
 
-    if record is not None:
-        mixin_list.append(PrintCustom)
-    
-    mixin_list.append(DefaultTracker)
-
-    class Tracker(*mixin_list):
-        pass
-
-    if record is not None:
-        tracker = Tracker(dev, custom_recorder=record, **kwargs)
-    else:
-        tracker = Tracker(dev, **kwargs)
-
-    return tracker
+    return DefaultTracker(dev, record_function=record, **kwargs)
 
