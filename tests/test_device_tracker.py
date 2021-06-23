@@ -20,87 +20,84 @@ from itertools import count
 import time
 
 import pennylane as qml
-from pennylane.device_tracker import DefaultTracker, TimingTracker
+from pennylane import track
+from pennylane.device_tracker import DefaultTracker
 
 
-@pytest.mark.parametrize("tracker_version", [DefaultTracker, TimingTracker])
+def custom_recorder(totals={}, history={}, current={}):
+    print("Hello world")
+
+@pytest.mark.parametrize("record", (None, "totals", "current", custom_recorder))
+@pytest.mark.parametrize("update", (None, "timings"))
 class TestTrackerCoreBehaviour:
-    def test_default_initialization(self, tracker_version):
+    def test_default_initialization(self, record, update):
         """Tests default initializalition"""
 
-        tracker = tracker_version()
+        tracker = track(record=record, update=update)
 
         assert tracker.reset_on_enter == True
         assert tracker.tracking == False
-        assert tracker.history == defaultdict(list)
-        assert tracker.totals == defaultdict(int)
+        assert tracker.history == dict()
+        assert tracker.totals == dict()
+        assert tracker.current == dict()
 
-    def test_device_assignment(self, tracker_version):
+    def test_device_assignment(self, record, update):
         """Assert gets assigned to device"""
         dev = qml.device("default.qubit", wires=2)
 
-        tracker = tracker_version(dev=dev)
+        tracker = track(dev=dev, record=record, update=update)
 
         assert id(dev.tracker) == id(tracker)
 
-    def test_reset(self, tracker_version):
+    def test_reset(self, record, update):
         """Assert reset empties totals and history"""
 
-        tracker = tracker_version()
+        tracker = track(record=record, update=update)
 
         tracker.totals = {"a": 1}
         tracker.history = {"a": [1]}
+        tracker.current = {"a": 1}
 
         tracker.reset()
 
-        assert tracker.totals == defaultdict(int)
-        assert tracker.history == defaultdict(list)
+        assert tracker.totals == dict()
+        assert tracker.history == dict()
+        assert tracker.current == dict()
 
-    def test_enter_and_exit(self, tracker_version):
+    def test_enter_and_exit(self, record=record, update=update):
         """Assert entering and exit work as expected"""
 
-        tracker = tracker_version()
+        tracker = track(record=record, update=update)
         tracker.totals = {"a": 1}
         tracker.history = {"a": [1]}
+        tracker.current = {"a": 1}
 
         returned = tracker.__enter__()
 
         assert id(tracker) == id(returned)
         assert tracker.tracking == True
 
-        assert tracker.totals == defaultdict(int)
-        assert tracker.history == defaultdict(list)
+        assert tracker.totals == dict()
+        assert tracker.history == dict()
+        assert tracker.current == dict()
 
         tracker.__exit__(1, 1, 1)
 
         assert tracker.tracking == False
 
-    def test_context(self, tracker_version):
+    def test_context(self, record, update):
         """Assert works with runtime context"""
 
-        with tracker_version() as tracker:
-            assert isinstance(tracker, tracker_version)
+        with track(record=record, update=update) as tracker:
+            assert isinstance(tracker, DefaultTracker)
             assert tracker.tracking == True
 
         assert tracker.tracking == False
 
-    def test_update_and_record(self, mocker, tracker_version):
-        """Assert update and record calls both functions"""
-
-        spy_update = mocker.spy(tracker_version, "update")
-        spy_record = mocker.spy(tracker_version, "record")
-
-        tracker = tracker_version()
-        tracker.update_and_record(a=1)
-
-        spy_update.assert_called_once()
-        # spy_update.assert_called_with((), {"a": 1})
-        spy_record.assert_called_once()
-
-    def test_update(self, tracker_version):
+    def test_update(self, record, update):
         """Checks update stores to history and totals"""
 
-        tracker = tracker_version()
+        tracker = track(record=record, update=update)
 
         tracker.update(a=1, b=2, c=None)
 
@@ -112,12 +109,28 @@ class TestTrackerCoreBehaviour:
         assert tracker.totals["b"] == 2
         assert tracker.totals["c"] == 0
 
-    def test_record(self, tracker_version, capsys):
+
+class TestRecordOptions:
+
+    def test_None(self, capsys):
         """Check record prints information properly"""
 
-        tracker = tracker_version()
-
+        tracker = track()
         tracker.totals = {"a": 1, "b": 2}
+        tracker.record()
+
+        captured = capsys.readouterr()
+
+        predicted = ""
+
+        assert captured.out == predicted
+
+    def test_totals(self, capsys):
+        """Check record totals prints correctly"""
+
+        tracker = track(record="totals")
+        tracker.totals = {"a": 1, "b":2}
+
         tracker.record()
 
         captured = capsys.readouterr()
@@ -125,7 +138,43 @@ class TestTrackerCoreBehaviour:
         predicted = "Total: a = 1\tb = 2\t\n"
 
         assert captured.out == predicted
+    
+    def test_current(self, capsys):
+        """Check record current print correctly"""
 
+        tracker = track(record="current")
+        tracker.current = {"a": 1, "b": 2}
+
+        tracker.record()
+
+        captured = capsys.readouterr()
+
+        predicted = "Current: a = 1\tb = 2\t\n"
+
+        assert caputred.out == predicted
+
+    def test_custom(self, capsys):
+        """Test custom record works"""
+
+        def custom(totals = {}, history={}, current={}):
+            global gtotals = totals
+            global ghistory = history
+            global gcurrent = current
+            print("hello world")
+
+        tracker = track(record=custom)
+        tracker.totals = {"a":1}
+        tracker.history = {"a": [1]}
+        tracker.current = {"a": 1}
+
+        tracker.record()
+        captured = capsys.readouterr()
+
+        assert captured.out == "hello world"
+        assert gtotals == tracker.totals
+        assert ghistory == tracker.history
+        assert gcurrent == tracker.current
+        
 
 class TestTimeTracker:
     def test_time(self, monkeypatch):

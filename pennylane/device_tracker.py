@@ -24,12 +24,12 @@ class DefaultTracker:
         dev (Device): a PennyLane compatible device
 
     Keyword Args:
-        reset_on_enter=True : whether to reset stored information upon entering 
+        persistent=False (bool): whether to reset stored information upon entering 
             a runtime context.
     """
 
-    def __init__(self, dev=None, reset_on_enter=True):
-        self.reset_on_enter = reset_on_enter
+    def __init__(self, dev=None, persistent=False):
+        self.persistent = persistent
 
         self.reset()
         self.tracking = False
@@ -38,7 +38,7 @@ class DefaultTracker:
             dev.tracker = self
 
     def __enter__(self):
-        if self.reset_on_enter:
+        if not self.persistent:
             self.reset()
 
         self.tracking = True
@@ -47,14 +47,13 @@ class DefaultTracker:
     def __exit__(self, exc_type, exc_value, exc_traceback):
         self.tracking = False
 
-    def update(self, **current):
-        """Store passed keyword-value pairs into ``totals``,``history``, and ``current`` attributes.
+    def update(self, **kwargs):
+        """Store passed keyword-value pairs into ``totals``,``history``, and ``latest`` attributes.
 
-        There is no restriction on information passed to this function, other than python
-        must be able to add the value to `0`.
+        There is no restriction on the key-value pairs passed.
 
         >>> tracker.update(a=1, b=2)
-        >>> tracker.current
+        >>> tracker.latest
         {"a":1, "b":2}
         >>> tracker.history
         {"a": [1], "b": [2]}
@@ -62,9 +61,9 @@ class DefaultTracker:
         {"a": 1, "b": 2}
 
         """
-        self.current = current
+        self.latest = kwargs
 
-        for key, value in current.items():
+        for key, value in kwargs.items():
             # update history
             if key in self.history.keys():
                 self.history[key].append(value)
@@ -73,13 +72,17 @@ class DefaultTracker:
 
             # updating totals
             if value is not None:
-                self.totals[key] = value + self.totals.get(key, 0)
+                # Only total numeric values
+                try:
+                    self.totals[key] = value + self.totals.get(key, 0)
+                except TypeError:
+                    pass
 
     def reset(self):
         """Resets stored information."""
         self.totals = dict()
         self.history = dict()
-        self.current = dict()
+        self.latest = dict()
 
     def record(self):
         """Move stored information to some other location.
@@ -101,51 +104,27 @@ class UpdateTimings(DefaultTracker):
         super(UpdateTimings, self).reset()
         self._time_last = time.time()
 
-class PrintTotals(DefaultTracker):
-
-    def record(self):
-        """Print all key-value pairs stored in ``totals``.
-        """
-        print("Total: ", end="")
-        for key, value in self.totals.items():
-            print(f"{key} = {value}", end="\t")
-        print()
-
-class PrintCurrent(DefaultTracker):
-
-    def record(self):
-        """Print all key-value pairs stored in ``current``.
-        """
-        print("Current: ", end="")
-        for key, value in self.current.items():
-            print(f"{key} = {value}", end="\t")
-        print()
-
 class PrintCustom(DefaultTracker):
-    def __init__(self, dev=None, reset_on_enter=True, custom_recorder=None):
+    def __init__(self, dev=None, persistent=False, custom_recorder=None):
         self.custom_recorder=custom_recorder
-        super(PrintCustom, self).__init__(dev=dev, reset_on_enter=reset_on_enter)
+        super(PrintCustom, self).__init__(dev=dev, persistent=persistent)
 
     def record(self):
         """Executes user-provided record function."""
-        self.custom_recorder(totals=self.totals, history=self.history, current=self.current,)
+        self.custom_recorder(totals=self.totals, history=self.history, latest=self.latest)
 
-record_mapping = {"totals": PrintTotals, "current": PrintCurrent, "custom": PrintCustom}
-update_mapping = {"timings": UpdateTimings}
 
-def track(dev, record=None, update=None, **kwargs):
+def track(dev=None, record=None, update=None, **kwargs):
     r"""Creates a tracking context and applies it to a device.
 
     Args:
         dev (Device): a PennyLane-compatible device
         record (callable or str or None): If callable, this function is used to record information. Must be a
-            function of ``current``, ``totals`` and ``history`` keywords. If string, selects an built record method.
-            Current available options are ``"totals"`` and ``"current"``. If ``None``, no recording happens.
-        update (str or None): if ``"timings"``, the update method will also store the length of system time between
-            subsequent `update` calls.
+            function of ``current``, ``totals`` and ``history`` keywords.
 
     Keyword Args:
-        reset_on_enter=True (bool): whether or not to reset information
+        timings=False (bool): whether to calculate time differences in the update function
+        persistent=False (bool): whether or not to reset information
             entering the context
 
     **Example**
@@ -168,13 +147,13 @@ def track(dev, record=None, update=None, **kwargs):
         with qml.track(dev) as tracker:
             qml.grad(circuit)(0.1)
 
-        You can then access the tabulated information through ``totals``, ``history``, and ``current``:
+        You can then access the tabulated information through ``totals``, ``history``, and ``latest``:
 
         >>> tracker.totals
         {'executions': 3, 'shots': 300}
         >>> tracker.history
         {'executions': [1, 1, 1], 'shots': [100, 100, 100]}
-        >>> tracker.current
+        >>> tracker.latest
         {'executions': 1, 'shots': 100}
 
     .. UsageDetails::
@@ -183,48 +162,31 @@ def track(dev, record=None, update=None, **kwargs):
         With backpropagation, this functions should take ``qnode.device``
         instead of the device used to create the QNode.
 
-    For a print out of information on each execution, use one of the ``"record"``
-    keywords. You can use the `"totals"` keyword:
-
-    >>> with qml.track(circuit.device, record="totals") as tracker:
-    ...    qml.grad(circuit)(0.1)
-    Total: executions = 1	shots = 100	
-    Total: executions = 2	shots = 200	
-    Total: executions = 3	shots = 300
-
-    or the ``"current"`` keyword:
-
-    >>> with qml.track(circuit.device, record="current") as tracker:
-    ...    qml.grad(circuit)(0.1)
-    Current: executions = 1	shots = 100	
-    Current: executions = 1	shots = 100	
-    Current: executions = 1	shots = 100	
-
-    Users can also pass a custom record function to the record keyword.  The 
-    function passed must accept ``totals``, ``history``, and ``current`` as 
+    Users can pass a custom record function to the record keyword.  The 
+    function passed must accept ``totals``, ``history``, and ``latest`` as 
     keyword arguments:
 
-    >>> def just_shot_info(totals=dict(), history=dict(), current=dict()):
-    ...     print("Totals shots: ", totals['shots'])
+    >>> def just_shot_info(totals=dict(), history=dict(), latest=dict()):
+    ...     print("Total shots: ", totals['shots'])
     >>> with qml.track(circuit.device, record=just_shot_info) as tracker:
     ...     qml.grad(circuit)(0.1)
-    Totals shots:  100
-    Totals shots:  200
-    Totals shots:  300
+    Total shots:  100
+    Total shots:  200
+    Total shots:  300
 
-    By passing ``update="timings"``, the tracker also stores the time difference between
+    By passing ``timings=True``, the tracker also stores the time difference between
     `update` calls.
 
-    >>> with qml.track(circuit.device, update="timings") as timing_tracker:
+    >>> with qml.track(circuit.device, timings=True) as timing_tracker:
     ...    circuit(0.1)
     ...    circuit(0.2)
     >>> timing_tracker.history['time']
     [0.0010597705841064453, 0.0011420249938964844]
 
-    By specifying ``reset_on_enter=False``, you can reuse the same tracker accross
+    By specifying ``persistent=False``, you can reuse the same tracker accross
     multiple runtime contexts.
 
-    >>> with qml.track(circuit.device, reset_on_enter=False) as tracker:
+    >>> with qml.track(circuit.device, persistent=False) as tracker:
     ...     circuit(0.1)
     >>> with tracker:
     ...     circuit(0.2)
@@ -234,24 +196,19 @@ def track(dev, record=None, update=None, **kwargs):
     """
     mixin_list = []
 
-    if update is not None:
-        update_class = update_mapping.get(update)
-        mixin_list.append(update_class)
+    if timings:
+        mixin_list.append(UpdateTimings)
 
-    if callable(record):
-        mixin_list.append(record_mapping.get("custom"))
-    elif record is not None:
-        record_class = record_mapping.get(record)
-        mixin_list.append(record_class)
+    if record is not None:
+        mixin_list.append(PrintCustom)
     
     mixin_list.append(DefaultTracker)
 
     class Tracker(*mixin_list):
         pass
 
-    if callable(record):
+    if record is not None:
         tracker = Tracker(dev, custom_recorder=record, **kwargs)
-        
     else:
         tracker = Tracker(dev, **kwargs)
 
