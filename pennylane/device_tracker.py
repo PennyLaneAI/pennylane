@@ -16,7 +16,6 @@ This module contains the device tracker stuff.
 """
 
 import time
-from collections import defaultdict
 
 class DefaultTracker:
     """
@@ -57,16 +56,19 @@ class DefaultTracker:
 
         for key, value in current.items():
             # update history
-            self.history[key].append(value)
+            if key in self.history.keys():
+                self.history[key].append(value)
+            else:
+                self.history[key] = [value]
 
             # updating totals
             if value is not None:
-                self.totals[key] += value
+                self.totals[key] = value + self.totals.get(key, 0)
 
     def reset(self):
         """reseting data"""
-        self.totals = defaultdict(int)
-        self.history = defaultdict(list)
+        self.totals = dict()
+        self.history = dict()
         self.current = dict()
 
     def record(self):
@@ -130,7 +132,7 @@ def track(dev, record=None, update=None, **kwargs):
 
     Args:
         dev (Device): a PennyLane-compatible device
-        record (callable or str or None): If callable, this function is used to record information. Must be a 
+        record (callable or str or None): If callable, this function is used to record information. Must be a
             function of ``current``, ``totals`` and ``history`` keywords. If string, selects an built record method.
             Current available options are ``"totals"`` and ``"current"``. If ``None``, no recording happens.
         update (str or None): if ``"timings"``
@@ -139,10 +141,11 @@ def track(dev, record=None, update=None, **kwargs):
         reset_on_enter=True (bool): whether or not to reset information
             entering the context
 
-    **Usage Information**
+    **Example**
 
-    Note that with backpropagation, this functions should take ``qnode.device``
-    instead of the device used to create the QNode.
+    With the default settings on most devices, the tracker will store execution and shot information without 
+    printing or logging of the information.  This information can be accessed through the `totals`, `history`,
+    and `current` attributes of the tracker.
 
     .. code-block:: python
 
@@ -152,6 +155,14 @@ def track(dev, record=None, update=None, **kwargs):
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
+
+     .. UsageDetails::
+
+    .. note::
+        With backpropagation, this functions should take ``qnode.device``
+        instead of the device used to create the QNode.
+
+
 
     With the default version, total execution information is printed on
     each device execution.  The printed data depends on the device and tracker version,
