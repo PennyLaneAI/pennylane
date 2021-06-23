@@ -6,7 +6,7 @@
 
 <h3>Bug fixes</h3>
 
-* Requires H5Py dependency to be ``H5Py<=3.2.1`` due to problems between ``pyscf>=1.7.2`` and ``H5Py==3.3.0``.
+* Requires the H5Py dependency to be `H5Py<=3.2.1` due to incompatibilities between `pyscf>=1.7.2` and `H5Py==3.3.0`.
   [(#1430)](https://github.com/PennyLaneAI/pennylane/pull/1430)
 
 <h3>Breaking changes</h3>
