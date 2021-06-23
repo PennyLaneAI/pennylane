@@ -2160,7 +2160,7 @@ class QubitUnitary(Operation):
     @staticmethod
     def decomposition(U, wires):
         # Decompose arbitrary single-qubit unitaries as the form RZ RY RZ
-        if U.shape[0] == 2:
+        if qml.math.shape(U)[0] == 2:
             wires = Wires(wires)
 
             # Remove the global phase if present; cannot just divide by square root of det
@@ -2191,8 +2191,7 @@ class QubitUnitary(Operation):
                     qml.math.real(phi), qml.math.real(theta), qml.math.real(omega), wires=wires[0]
                 )
             ]
-        else:
-            return NotImplementedError
+        return NotImplementedError("Decompositions only supported for single-qubit unitaries")
 
     def adjoint(self):
         return QubitUnitary(qml.math.T(qml.math.conj(self.matrix)), wires=self.wires)
