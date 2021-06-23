@@ -18,14 +18,17 @@ This module contains the device tracker stuff.
 import time
 
 class DefaultTracker:
-    """
-    Class docstring
+    """Default base class for device trackers.
+
+    Args:
+        dev (Device): a PennyLane compatible device
+
+    Keyword Args:
+        reset_on_enter=True : whether to reset stored information upon entering 
+            a runtime context.
     """
 
     def __init__(self, dev=None, reset_on_enter=True):
-        """
-        docstring
-        """
         self.reset_on_enter = reset_on_enter
 
         self.reset()
@@ -35,9 +38,6 @@ class DefaultTracker:
             dev.tracker = self
 
     def __enter__(self):
-        """
-        docstring for enter
-        """
         if self.reset_on_enter:
             self.reset()
 
@@ -45,13 +45,23 @@ class DefaultTracker:
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        """
-        docstring for exit
-        """
         self.tracking = False
 
     def update(self, **current):
-        """updating data"""
+        """Store passed keyword-value pairs into ``totals``,``history``, and ``current`` attributes.
+
+        There is no restriction on information passed to this function, other than python
+        must be able to add the value to `0`.
+
+        >>> tracker.update(a=1, b=2)
+        >>> tracker.current
+        {"a":1, "b":2}
+        >>> tracker.history
+        {"a": [1], "b": [2]}
+        >>> tracker.totals
+        {"a": 1, "b": 2}
+
+        """
         self.current = current
 
         for key, value in current.items():
@@ -66,36 +76,35 @@ class DefaultTracker:
                 self.totals[key] = value + self.totals.get(key, 0)
 
     def reset(self):
-        """reseting data"""
+        """Resets stored information."""
         self.totals = dict()
         self.history = dict()
         self.current = dict()
 
     def record(self):
-        """
-        record data somehow
+        """Move stored information to some other location.
+
+        While blank for the default base class, inheriting classes can print or log the data.
         """
         pass
 
-class TimingsMixin(DefaultTracker):
+class UpdateTimings(DefaultTracker):
 
     def update(self, **current):
-
         current_time = time.time()
         current["time"] = current_time - self._time_last
         self._time_last = current_time
 
-        super(TimingsMixin, self).update(**current)
+        super(UpdateTimings, self).update(**current)
 
     def reset(self):
-        super(TimingsMixin, self).reset()
+        super(UpdateTimings, self).reset()
         self._time_last = time.time()
 
 class PrintTotals(DefaultTracker):
 
     def record(self):
-        """
-        Print out totals 
+        """Print all key-value pairs stored in ``totals``.
         """
         print("Total: ", end="")
         for key, value in self.totals.items():
@@ -105,8 +114,7 @@ class PrintTotals(DefaultTracker):
 class PrintCurrent(DefaultTracker):
 
     def record(self):
-        """
-        Print out current values
+        """Print all key-value pairs stored in ``current``.
         """
         print("Current: ", end="")
         for key, value in self.current.items():
@@ -119,13 +127,11 @@ class PrintCustom(DefaultTracker):
         super(PrintCustom, self).__init__(dev=dev, reset_on_enter=reset_on_enter)
 
     def record(self):
-        """
-        Use user provided logging function
-        """
+        """Executes user-provided record function."""
         self.custom_recorder(totals=self.totals, history=self.history, current=self.current,)
 
 record_mapping = {"totals": PrintTotals, "current": PrintCurrent, "custom": PrintCustom}
-update_mapping = {"timings": TimingsMixin}
+update_mapping = {"timings": UpdateTimings}
 
 def track(dev, record=None, update=None, **kwargs):
     r"""Creates a tracking context and applies it to a device.
@@ -135,7 +141,8 @@ def track(dev, record=None, update=None, **kwargs):
         record (callable or str or None): If callable, this function is used to record information. Must be a
             function of ``current``, ``totals`` and ``history`` keywords. If string, selects an built record method.
             Current available options are ``"totals"`` and ``"current"``. If ``None``, no recording happens.
-        update (str or None): if ``"timings"``
+        update (str or None): if ``"timings"``, the update method will also store the length of system time between
+            subsequent `update` calls.
 
     Keyword Args:
         reset_on_enter=True (bool): whether or not to reset information
@@ -205,24 +212,14 @@ def track(dev, record=None, update=None, **kwargs):
     Totals shots:  200
     Totals shots:  300
 
-    In with the ``'timing'`` implementation, the instance also tracks the time
-    between entering the context and the completion of an execution.
+    By passing ``update="timings"``, the tracker also stores the time difference between
+    `update` calls.
 
-    >>> with qml.track(circuit.device, version='timing') as timing_tracker:
+    >>> with qml.track(circuit.device, update="timings") as timing_tracker:
     ...    circuit(0.1)
     ...    circuit(0.2)
-    Total: executions = 1	time = 0.0011134147644042969
-    Total: executions = 2	time = 0.0027322769165039062
-
-    After completion, one can also access the recorded information:
-
-    >>> timing_tracker.totals
-    defaultdict(int, {'executions': 2, 'shots': 30, 'time': 0.00311279296875})
-    >>> timing_tracker.history
-    defaultdict(list,
-            {'executions': [1, 1],
-             'shots': [None, None],
-             'time': [0.0012764930725097656, 0.0018362998962402344]})
+    >>> timing_tracker.history['time']
+    [0.0010597705841064453, 0.0011420249938964844]
 
     By specifying ``reset_on_enter=False``, you can reuse the same tracker accross
     multiple runtime contexts.
@@ -249,13 +246,14 @@ def track(dev, record=None, update=None, **kwargs):
     
     mixin_list.append(DefaultTracker)
 
-    class temp_class(*mixin_list):
+    class Tracker(*mixin_list):
         pass
 
     if callable(record):
-        tracker = temp_class(dev, custom_recorder=record, **kwargs)
+        tracker = Tracker(dev, custom_recorder=record, **kwargs)
+        
     else:
-        tracker = temp_class(dev, **kwargs)
+        tracker = Tracker(dev, **kwargs)
 
     return tracker
 
