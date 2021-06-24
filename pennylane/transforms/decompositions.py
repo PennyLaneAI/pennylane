@@ -19,7 +19,7 @@ import numpy as np
 from pennylane.transforms import qfunc_transform
 
 
-def _convert_to_su2(U, zero_tol=1e-6):
+def _convert_to_su2(U):
     r"""Check unitarity of a matrix and convert it to :math:`SU(2)` if possible.
 
     Args:
@@ -35,7 +35,7 @@ def _convert_to_su2(U, zero_tol=1e-6):
 
     # Check unitarity
     if not qml.math.allclose(
-        qml.math.dot(U, qml.math.T(qml.math.conj(U))), qml.math.eye(2), atol=zero_tol
+            qml.math.dot(U, qml.math.T(qml.math.conj(U))), qml.math.eye(2), atol=1e-7
     ):
         raise ValueError("Operator must be unitary.")
 
@@ -43,14 +43,14 @@ def _convert_to_su2(U, zero_tol=1e-6):
     det = U[0, 0] * U[1, 1] - U[0, 1] * U[1, 0]
 
     # Convert to SU(2) if it's not close to 1
-    if not qml.math.allclose(det, [1.0], atol=zero_tol):
+    if not qml.math.allclose(det, [1.0]):
         exp_angle = -1j * qml.math.cast_like(qml.math.angle(det), 1j) / 2
         U = U * (qml.math.exp(exp_angle))
 
     return U
 
 
-def _zyz_decomposition(U, wire, zero_tol=1e-6):
+def _zyz_decomposition(U, wire):
     r"""Helper function to recover the rotation angles of a single-qubit matrix :math:`U`.
 
     The set of angles are chosen so as to implement :math:`U` up to a global phase.
@@ -64,22 +64,22 @@ def _zyz_decomposition(U, wire, zero_tol=1e-6):
         (float, float, float): A set of angles (:math:`\phi`, :math:`\theta`, :math:`\omega`)
         that implement U as a sequence :math:`U = RZ(\omega) RY(\theta) RZ(\phi)`.
     """
-    U = _convert_to_su2(U, zero_tol)
+    U = _convert_to_su2(U)
 
-    # Compute the angle of the RY
-    cos2_theta_over_2 = qml.math.abs(U[0, 0] * U[1, 1])
-    theta = 2 * qml.math.arccos(qml.math.sqrt(cos2_theta_over_2))
-
-    # If it's close to 0, the matrix is diagonal and we have just an RZ rotation
-    if qml.math.allclose(theta, [0.0], atol=zero_tol):
+    # Check if the matrix is diagonal; only need to check one corner.
+    # If it is diagonal, we don't need a full Rot, just return an RZ.
+    if qml.math.allclose(U[0, 1], [0.0]):
         omega = 2 * qml.math.angle(U[1, 1])
         return [qml.RZ(omega, wires=wire)]
 
-    # Otherwise recover the decomposition as a Rot, which can be further decomposed
-    # if desired. If the top left element is 0, can only use the off-diagonal elements
-    # We have to be very careful with the math here to ensure things that get multiplied
-    # together are of the correct type.
-    if qml.math.allclose(U[0, 0], [0.0], atol=zero_tol):
+    # If not diagonal, compute the angle of the RY
+    cos2_theta_over_2 = qml.math.abs(U[0, 0] * U[1, 1])
+    theta = 2 * qml.math.arccos(qml.math.sqrt(cos2_theta_over_2))
+
+    # If the top left element is 0, can only use the off-diagonal elements We
+    # have to be very careful with the math here to ensure things that get
+    # multiplied together are of the correct type in the different interfaces.
+    if qml.math.allclose(U[0, 0], [0.0]):
         phi = 1j * qml.math.log(U[0, 1] / U[1, 0])
         omega = -phi - qml.math.cast_like(2 * qml.math.angle(U[1, 0]), phi)
     else:
