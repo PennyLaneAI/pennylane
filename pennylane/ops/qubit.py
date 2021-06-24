@@ -29,7 +29,7 @@ from pennylane.operation import AnyWires, AllWires, DiagonalOperation, Observabl
 from pennylane.templates.decorator import template
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 from pennylane.utils import expand, pauli_eigs
-from pennylane.wires import Wires, WireError
+from pennylane.wires import Wires
 
 INV_SQRT2 = 1 / math.sqrt(2)
 

@@ -19,7 +19,7 @@ import numpy as np
 from scipy.sparse import coo_matrix, csr_matrix
 import pennylane as qml
 from pennylane import DeviceError
-from pennylane.wires import Wires, WireError
+from pennylane.wires import Wires
 
 
 SPARSE_HAMILTONIAN_TEST_DATA = [(np.array([[1, 0], [-1.5, 0]])), (np.eye(4))]
