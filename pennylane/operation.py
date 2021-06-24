@@ -1116,7 +1116,7 @@ class Tensor(Observable):
         self._args = args
         self.queue(init=True)
 
-    def queue(self, context=qml.QueuingContext, init=False):
+    def queue(self, context=qml.QueuingContext, init=False):  # pylint: disable=arguments-differ
         for o in self._args:
 
             if init:
