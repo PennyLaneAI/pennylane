@@ -278,5 +278,3 @@ def apply_op(op, context=QueuingContext):
     else:
         # append the operator directly to the relevant queuing context
         context.append(op)
-
-    return
