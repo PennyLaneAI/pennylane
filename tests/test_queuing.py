@@ -535,3 +535,19 @@ class TestApplyOp:
 
         assert tape1.measurements == [op2]
         assert tape2.measurements == [op1]
+
+    def test_apply_no_queue_method(self):
+        """Test that an object with no queue method is still
+        added to the queuing context"""
+        with qml.tape.QuantumTape() as tape1:
+            with qml.tape.QuantumTape() as tape2:
+                op1 = qml.apply_op(5)
+                op2 = qml.apply_op(6, tape1)
+
+        assert tape1.queue == [tape2, op2]
+        assert tape2.queue == [op1]
+
+        # note that tapes don't know how to process integers,
+        # so they are not included after queue processing
+        assert tape1.operations == [tape2]
+        assert tape2.operations == []
