@@ -19,7 +19,7 @@ import numpy as np
 from scipy.sparse import coo_matrix, csr_matrix
 import pennylane as qml
 from pennylane import DeviceError
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WireError
 
 
 SPARSE_HAMILTONIAN_TEST_DATA = [(np.array([[1, 0], [-1.5, 0]])), (np.eye(4))]
@@ -33,7 +33,9 @@ class TestSparse:
         """Test that the diagonalizing_gates property of the SparseHamiltonian class returns empty."""
         num_wires = len(sparse_hamiltonian[0])
         sparse_hamiltonian = coo_matrix(sparse_hamiltonian)
-        diag_gates = qml.SparseHamiltonian(sparse_hamiltonian).diagonalizing_gates()
+        diag_gates = qml.SparseHamiltonian(
+            sparse_hamiltonian, range(num_wires)
+        ).diagonalizing_gates()
 
         assert diag_gates == []
 
@@ -47,7 +49,7 @@ class TestSparse:
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(sparse_hamiltonian, num_wires):
-            obs = qml.SparseHamiltonian(sparse_hamiltonian)
+            obs = qml.SparseHamiltonian(sparse_hamiltonian, range(num_wires))
             return qml.expval(obs)
 
         with pytest.raises(TypeError, match="Observable must be a scipy sparse coo_matrix"):
@@ -58,7 +60,7 @@ class TestSparse:
         """Test that the matrix property of the SparseHamiltonian class returns the correct matrix."""
         num_wires = len(sparse_hamiltonian[0])
         sparse_hamiltonian = coo_matrix(sparse_hamiltonian)
-        returned_matrix = qml.SparseHamiltonian(sparse_hamiltonian).matrix
+        returned_matrix = qml.SparseHamiltonian(sparse_hamiltonian, range(num_wires)).matrix
         assert np.allclose(
             returned_matrix.toarray(), sparse_hamiltonian.toarray(), atol=tol, rtol=0
         )
@@ -70,7 +72,7 @@ class TestSparse:
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(param):
             qml.RX(param, wires=0)
-            return qml.expval(qml.SparseHamiltonian(coo_matrix(np.eye(4))))
+            return qml.expval(qml.SparseHamiltonian(coo_matrix(np.eye(4)), [0, 1]))
 
         assert np.allclose(qml.grad(circuit)([0.5]), -0.47942554, atol=tol, rtol=0)
 
@@ -82,7 +84,7 @@ class TestSparse:
         @qml.qnode(dev, diff_method="backprop")
         def circuit(param):
             qml.RX(param, wires=0)
-            return qml.expval(qml.SparseHamiltonian(coo_matrix(np.eye(4))))
+            return qml.expval(qml.SparseHamiltonian(coo_matrix(np.eye(4)), [0, 1]))
 
         with pytest.raises(
             qml.QuantumFunctionError,
@@ -155,7 +157,7 @@ class TestSparse:
 
         dev = qml.device("default.qubit", wires=qubits, shots=None)
         dev.apply(operations)
-        expval = dev.expval(qml.SparseHamiltonian(hamiltonian))[0]
+        expval = dev.expval(qml.SparseHamiltonian(hamiltonian, range(qubits)))[0]
 
         assert np.allclose(expval, expected_output, atol=tol, rtol=0)
 
@@ -167,4 +169,4 @@ class TestSparse:
         dev = qml.device("default.qubit", wires=1, shots=1)
 
         with pytest.raises(DeviceError, match="SparseHamiltonian must be used with shots=None"):
-            dev.expval(qml.SparseHamiltonian(hamiltonian))[0]
+            dev.expval(qml.SparseHamiltonian(hamiltonian, [0]))[0]

@@ -25,11 +25,11 @@ import scipy
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.operation import AnyWires, DiagonalOperation, Observable, Operation
+from pennylane.operation import AnyWires, AllWires, DiagonalOperation, Observable, Operation
 from pennylane.templates.decorator import template
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 from pennylane.utils import expand, pauli_eigs
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WireError
 
 INV_SQRT2 = 1 / math.sqrt(2)
 
@@ -3090,7 +3090,9 @@ class Projector(Observable):
 
 class SparseHamiltonian(Observable):
     r"""SparseHamiltonian(H)
-    A Hamiltonian represented directly as a sparse matrix in coordinate list (COO) format.
+    A Hamiltonian represented directly as a sparse matrix in coordinate list (COO) format. The only
+    measurment type available for the SparseHamiltonian observable is computing the expectation
+    value. Note that the SparseHamiltonian observable should not be used with a subset of wires.
 
     **Details:**
 
@@ -3102,15 +3104,10 @@ class SparseHamiltonian(Observable):
         H (coo_matrix): a sparse matrix in scipy coordinate list (COO) format with
             dimension :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
     """
-    num_wires = AnyWires
+    num_wires = AllWires
     num_params = 1
     par_domain = None
     grad_method = None
-
-    wires = Wires([0])
-
-    def __init__(self, *params, wires=wires):
-        super().__init__(*params, wires=wires)
 
     @classmethod
     def _matrix(cls, *params):
