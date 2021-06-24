@@ -106,7 +106,7 @@ def decompose_single_qubit_unitaries(tape):
             if dim_U != 2:
                 continue
 
-            decomp = _zyz_decomposition(op.parameters[0], op.wire)
+            decomp = _zyz_decomposition(op.parameters[0], op.wires[0])
 
             for d_op in decomp:
                 d_op.queue()

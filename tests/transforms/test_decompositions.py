@@ -41,7 +41,14 @@ single_qubit_decomps = [
     (np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix, qml.Rot, [-1.0, 2.0, -3.0]),
 ]
 
-class TestQubitUnitaryDecompositionHelpers:
+# A simple quantum function for testing
+def qfunc(U):
+    qml.Hadamard(wires="a")
+    qml.QubitUnitary(U, wires="a")
+    qml.CNOT(wires=["b", "a"])
+
+
+class TestQubitUnitaryZYZDecomposition:
     """Test that the decompsoitions are correct."""
 
     def test_zyz_decomposition_invalid_input(self):
@@ -69,12 +76,11 @@ class TestQubitUnitaryDecompositionHelpers:
         obtained_gates = _zyz_decomposition(U, wire="a")
 
         assert len(obtained_gates) == 1
-
-        obtained_params = [x.detach() for x in obtained_gates[0].parameters]
-
         assert isinstance(obtained_gates[0], expected_gate)
         assert obtained_gates[0].wires == Wires("a")
-        assert qml.math.allclose(obtained_params, expected_params)
+        assert qml.math.allclose(
+            [x.detach() for x in obtained_gates[0].parameters], expected_params
+        )
 
     @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
     def test_zyz_decomposition_tf(self, U, expected_gate, expected_params):
@@ -86,27 +92,110 @@ class TestQubitUnitaryDecompositionHelpers:
         obtained_gates = _zyz_decomposition(U, wire="a")
 
         assert len(obtained_gates) == 1
-
-        obtained_params = [x.numpy() for x in obtained_gates[0].parameters]
-
         assert isinstance(obtained_gates[0], expected_gate)
         assert obtained_gates[0].wires == Wires("a")
-        assert qml.math.allclose(obtained_params, expected_params)
+        assert qml.math.allclose([x.numpy() for x in obtained_gates[0].parameters], expected_params)
 
     @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
     def test_zyz_decomposition_jax(self, U, expected_gate, expected_params):
         """Test that a one-qubit operation in JAX is correctly decomposed."""
         jax = pytest.importorskip("jax")
-        from jax import numpy as jnp
 
-        U = jnp.array(U, dtype=jnp.complex64)
+        U = jax.numpy.array(U, dtype=jax.numpy.complex64)
 
         obtained_gates = _zyz_decomposition(U, wire="a")
 
         assert len(obtained_gates) == 1
-
-        obtained_params = [jnp.asarray(x) for x in obtained_gates[0].parameters]
-
         assert isinstance(obtained_gates[0], expected_gate)
         assert obtained_gates[0].wires == Wires("a")
-        assert qml.math.allclose(obtained_params, expected_params)
+        assert qml.math.allclose(
+            [jax.numpy.asarray(x) for x in obtained_gates[0].parameters], expected_params
+        )
+
+
+class TestDecomposeSingleQubitUnitary:
+    """Tests to ensure the transform itself works in all interfaces."""
+
+    @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
+    def test_decompose_single_qubit_unitaries(self, U, expected_gate, expected_params):
+        transformed_qfunc = decompose_single_qubit_unitaries(qfunc)
+
+        ops = qml.transforms.make_tape(transformed_qfunc)(U).operations
+
+        assert len(ops) == 3
+
+        assert isinstance(ops[0], qml.Hadamard)
+        assert ops[0].wires == Wires("a")
+
+        assert isinstance(ops[1], expected_gate)
+        assert ops[1].wires == Wires("a")
+        assert qml.math.allclose(ops[1].parameters, expected_params)
+
+        assert isinstance(ops[2], qml.CNOT)
+        assert ops[2].wires == Wires(["b", "a"])
+
+    @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
+    def test_decompose_single_qubit_unitaries_torch(self, U, expected_gate, expected_params):
+        torch = pytest.importorskip("torch")
+
+        U = torch.tensor(U, dtype=torch.complex64)
+
+        transformed_qfunc = decompose_single_qubit_unitaries(qfunc)
+
+        ops = qml.transforms.make_tape(transformed_qfunc)(U).operations
+
+        assert len(ops) == 3
+
+        assert isinstance(ops[0], qml.Hadamard)
+        assert ops[0].wires == Wires("a")
+
+        assert isinstance(ops[1], expected_gate)
+        assert ops[1].wires == Wires("a")
+        assert qml.math.allclose([x.detach() for x in ops[1].parameters], expected_params)
+
+        assert isinstance(ops[2], qml.CNOT)
+        assert ops[2].wires == Wires(["b", "a"])
+
+    @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
+    def test_decompose_single_qubit_unitaries_tf(self, U, expected_gate, expected_params):
+        tf = pytest.importorskip("tensorflow")
+
+        U = tf.Variable(U, dtype=tf.complex64)
+
+        transformed_qfunc = decompose_single_qubit_unitaries(qfunc)
+
+        ops = qml.transforms.make_tape(transformed_qfunc)(U).operations
+
+        assert len(ops) == 3
+
+        assert isinstance(ops[0], qml.Hadamard)
+        assert ops[0].wires == Wires("a")
+
+        assert isinstance(ops[1], expected_gate)
+        assert ops[1].wires == Wires("a")
+        assert qml.math.allclose([x.numpy() for x in ops[1].parameters], expected_params)
+
+        assert isinstance(ops[2], qml.CNOT)
+        assert ops[2].wires == Wires(["b", "a"])
+
+    @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
+    def test_decompose_single_qubit_unitaries_jax(self, U, expected_gate, expected_params):
+        jax = pytest.importorskip("jax")
+
+        U = jax.numpy.array(U, dtype=jax.numpy.complex64)
+
+        transformed_qfunc = decompose_single_qubit_unitaries(qfunc)
+
+        ops = qml.transforms.make_tape(transformed_qfunc)(U).operations
+
+        assert len(ops) == 3
+
+        assert isinstance(ops[0], qml.Hadamard)
+        assert ops[0].wires == Wires("a")
+
+        assert isinstance(ops[1], expected_gate)
+        assert ops[1].wires == Wires("a")
+        assert qml.math.allclose([jax.numpy.asarray(x) for x in ops[1].parameters], expected_params)
+
+        assert isinstance(ops[2], qml.CNOT)
+        assert ops[2].wires == Wires(["b", "a"])
