@@ -24,7 +24,7 @@ class DefaultTracker:
 
     Args:
         dev (Device): a PennyLane compatible device
-        record=None (callable or None): a function of the keywords ``totals``,
+        callback=None (callable or None): a function of the keywords ``totals``,
             ``history`` and ``latest``.  Run on each ``record`` call with current values of
             the corresponding attributes.
 
@@ -56,10 +56,10 @@ class DefaultTracker:
 
     """
 
-    def __init__(self, dev=None, record=None, persistent=False, print_totals=False):
+    def __init__(self, dev=None, callback=None, persistent=False, print_totals=False):
         self.persistent = persistent
 
-        self.record_function = record
+        self.callback = callback
         self.print_totals = print_totals
 
         self.reset()
@@ -118,12 +118,10 @@ class DefaultTracker:
         self.latest = dict()
 
     def record(self):
-        """Move stored information to some other location.
-
-        If a ``record_function`` is passed to the class upon initialization, it is called.
+        """If a ``callback`` is passed to the class upon initialization, it is called.
         """
-        if self.record_function is not None:
-            self.record_function(totals=self.totals, history=self.history, latest=self.latest)
+        if self.callback is not None:
+            self.callback(totals=self.totals, history=self.history, latest=self.latest)
 
 
 def track(dev=None, **kwargs):
@@ -133,7 +131,7 @@ def track(dev=None, **kwargs):
         dev (Device): a PennyLane-compatible device.
 
     Keyword Args:
-        record=None (callable or None): This function is used to record information. Must be a
+        callback=None (callable or None): This function is used to record information. Must be a
             function of ``totals``, ``history``, and ``latest`` keywords.
         persistent=False (bool): whether or not to reset information
             entering the context
@@ -158,14 +156,14 @@ def track(dev=None, **kwargs):
         with qml.track(dev) as tracker:
             qml.grad(circuit)(0.1)
 
-        You can then access the tabulated information through ``totals``, ``history``, and ``latest``:
+    You can then access the tabulated information through ``totals``, ``history``, and ``latest``:
 
-        >>> tracker.totals
-        {'executions': 3, 'shots': 300}
-        >>> tracker.history
-        {'executions': [1, 1, 1], 'shots': [100, 100, 100]}
-        >>> tracker.latest
-        {'executions': 1, 'shots': 100}
+    >>> tracker.totals
+    {'executions': 3, 'shots': 300}
+    >>> tracker.history
+    {'executions': [1, 1, 1], 'shots': [100, 100, 100]}
+    >>> tracker.latest
+    {'executions': 1, 'shots': 100}
 
     .. UsageDetails::
 
@@ -173,26 +171,18 @@ def track(dev=None, **kwargs):
         With backpropagation, this functions should take ``qnode.device``
         instead of the device used to create the QNode.
 
-    Users can pass a custom record function to the record keyword.  The
+    Users can pass a custom callback function to the ``callback`` keyword. This
+    function is run each time ``record()`` is called. The
     function passed must accept ``totals``, ``history``, and ``latest`` as
     keyword arguments:
 
     >>> def shots_info(totals=dict(), history=dict(), latest=dict()):
     ...     print("Total shots: ", totals['shots'])
-    >>> with qml.track(circuit.device, record=shots_info) as tracker:
+    >>> with qml.track(circuit.device, callback=shots_info) as tracker:
     ...     qml.grad(circuit)(0.1)
     Total shots:  100
     Total shots:  200
     Total shots:  300
-
-    By passing ``timings=True``, the tracker also stores the time difference between
-    ``update`` calls.
-
-    >>> with qml.track(circuit.device, timings=True) as timing_tracker:
-    ...    circuit(0.1)
-    ...    circuit(0.2)
-    >>> timing_tracker.history['time']
-    [0.0010597705841064453, 0.0011420249938964844]
 
     By specifying ``persistent=False``, you can reuse the same tracker accross
     multiple runtime contexts.

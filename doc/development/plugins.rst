@@ -118,7 +118,7 @@ as well as potential further capabilities, by providing the following class attr
   *  ``'supports_tensor_observables'`` (*bool*): ``True`` if the device supports observables composed from tensor
      products such as ``PauliZ(wires=0) @ PauliZ(wires=1)``.
 
-  * ``'supports_tracker'`` (*bool)*: ``True`` if it has a device tracker attribute and updates information with
+  *  ``'supports_tracker'`` (*bool*): ``True`` if it has a device tracker attribute and updates information with
      it.
 
   Some capabilities are queried by PennyLane core to make decisions on how to best run computations, others are used
@@ -359,13 +359,24 @@ object.
 As a convention, devices should do the translation and unpacking as late as possible in the function tree, and
 where possible pass the original :class:`~.wires.Wires` objects around.
 
-Device Tracker Usage
---------------------
+Device Tracker Support
+----------------------
 
-The device tracker stores and records information like the number of executions and 
-the number of shots, though the tracker can store any information relevant to a given 
-device.  A compatible device should have a placeholder :class:`~.device_tracker.DefaultTracker` initialized
-to the ``tracker`` attribute. We recommend adding the following code to the end of the ``execute`` method:
+The device tracker stores and records information when tracking mode is turned on. Devices can store data like
+the number of executions, number of shots, number of batches, or remote simulator cost for users to interact with
+in a customizable way.
+
+Three aspects of the :class:`~.device_tracker.DefaultTracker` class are relevant to plugin designers:
+
+* ``tracking`` attribute that denotes whether or not to update and record
+* ``update`` method which accepts keyword-value pairs and stores the information
+* ``record`` method which users can customize to log, print, or otherwise do something with the stored information
+
+To gain any of the device tracker functionality, a device should initialize with a placeholder 
+:class:`~.device_tracker.DefaultTracker` instance.  The :func:`~.track` function accepts the device and overwrites the 
+``tracker`` attribute with a new instance, but the device needs some sort of tracker all the time.
+
+We recommend placing the following code near the end of the ``execute`` method:
 
 .. code-block:: python
 
@@ -373,7 +384,7 @@ to the ``tracker`` attribute. We recommend adding the following code to the end 
     self.tracker.update(executions=1, shots=self._shots)
     self.tracker.record()
 
-and similar code to the ``batch_execute`` method:
+And similar code in the ``batch_execute`` method:
 
 .. code-block:: python
 
@@ -381,7 +392,10 @@ and similar code to the ``batch_execute`` method:
     self.tracker.update(batches=1)
     self.tracker.record()
 
-The ``update`` and ``record`` methods can be called at any location within the device. Also, the :meth:`~.device_tracker.DefaultTracker.update` method can accept any combination of keyword-value pairs.  For example, a device could also track cost via:
+While this is the recommended usage, the ``update`` and ``record`` methods can be called at any location
+within the device. While the above example tracks executions, shots, and batches, the 
+:meth:`~.device_tracker.DefaultTracker.update` method can accept any combination of
+keyword-value pairs.  For example, a device could also track cost via:
 
 .. code-block:: python
 
