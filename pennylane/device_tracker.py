@@ -12,23 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-This module contains a constructor and classes for tracking device execution 
+This module contains a constructor and classes for tracking device execution
 information.
 """
 
 import time
+
 
 class DefaultTracker:
     """Default base class for device trackers.
 
     Args:
         dev (Device): a PennyLane compatible device
-        record_function=None (callable or None): a function of the keywords ``totals``, 
-            ``history`` and ``latest``.  Run on each ``record`` call with current values of 
+        record=None (callable or None): a function of the keywords ``totals``,
+            ``history`` and ``latest``.  Run on each ``record`` call with current values of
             the corresponding attributes.
 
     Keyword Args:
-        persistent=False (bool): whether to reset stored information upon entering 
+        persistent=False (bool): whether to reset stored information upon entering
             a runtime context.
         print_totals=False (bool): whether to print out the ``totals`` attribute on each record call.
 
@@ -56,10 +57,10 @@ class DefaultTracker:
 
     """
 
-    def __init__(self, dev=None, record_function=None, persistent=False, print_totals=False):
+    def __init__(self, dev=None, record=None, persistent=False, print_totals=False):
         self.persistent = persistent
 
-        self.record_function = record_function
+        self.record_function = record
         self.print_totals = print_totals
 
         self.reset()
@@ -124,12 +125,12 @@ class DefaultTracker:
         is printed out.
         """
         if self.record_function is not None:
-            self.record_function(totals = self.totals, history=self.history, latest = self.latest)
+            self.record_function(totals=self.totals, history=self.history, latest=self.latest)
         if self.print_totals:
             print(self.totals)
 
-class UpdateTimings(DefaultTracker):
 
+class UpdateTimings(DefaultTracker):
     def update(self, **kwargs):
         current_time = time.time()
         current["time"] = current_time - self._time_last
@@ -142,34 +143,35 @@ class UpdateTimings(DefaultTracker):
         self._time_last = time.time()
 
 
-def track(dev=None, record=None, timings=False, **kwargs):
+def track(dev=None, timings=False, **kwargs):
     r"""Creates a tracking context and applies it to a device.
 
     Args:
         dev (Device): a PennyLane-compatible device
-        record (callable or str or None): This function is used to record information. Must be a
-            function of ``current``, ``totals`` and ``history`` keywords.
         timings=False (bool): whether to calculate time differences in the update function
 
     Keyword Args:
+        record=None (callable or str or None): This function is used to record information. Must be a
+            function of ``current``, ``totals`` and ``history`` keywords.
         persistent=False (bool): whether or not to reset information
             entering the context
+        print_totals=False (bool): whether to print out the ``totals`` attribute on each record call.
 
     **Example**
 
-    With the default settings on most devices, the tracker will store execution and shot information without 
+    With the default settings on most devices, the tracker will store execution and shot information without
     printing or logging of the information.  This information can be accessed through the `totals`, `history`,
     and `current` attributes of the tracker.
 
     .. code-block:: python
 
         dev = qml.device('default.qubit', wires=1, shots=100)
-        
+
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
-        
+
         x = np.array(0.1)
 
         with qml.track(dev) as tracker:
@@ -190,8 +192,8 @@ def track(dev=None, record=None, timings=False, **kwargs):
         With backpropagation, this functions should take ``qnode.device``
         instead of the device used to create the QNode.
 
-    Users can pass a custom record function to the record keyword.  The 
-    function passed must accept ``totals``, ``history``, and ``latest`` as 
+    Users can pass a custom record function to the record keyword.  The
+    function passed must accept ``totals``, ``history``, and ``latest`` as
     keyword arguments:
 
     >>> def shots_info(totals=dict(), history=dict(), latest=dict()):
@@ -224,7 +226,6 @@ def track(dev=None, record=None, timings=False, **kwargs):
     """
 
     if timings:
-        return UpdateTimings(dev, record_function=record, **kwargs)
+        return UpdateTimings(dev, **kwargs)
 
-    return DefaultTracker(dev, record_function=record, **kwargs)
-
+    return DefaultTracker(dev, **kwargs)
