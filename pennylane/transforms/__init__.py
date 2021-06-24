@@ -75,14 +75,15 @@ to help build custom QNode, quantum function, and tape transforms:
     ~qfunc_transform
     ~transforms.make_tape
 """
+from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
 from .adjoint import adjoint
 from .classical_jacobian import classical_jacobian
 from .control import ControlledOperation, ctrl
+from .decompositions import decompose_single_qubit_unitaries
 from .draw import draw
 from .hamiltonian_expand import hamiltonian_expand
 from .invisible import invisible
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor, metric_tensor_tape
 from .specs import specs
-from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
 from .qmc import apply_controlled_Q, quantum_monte_carlo
