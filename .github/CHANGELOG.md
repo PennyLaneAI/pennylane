@@ -2,6 +2,28 @@
 
 <h3>New features since last release</h3>
 
+* The new ``qml.apply_op`` function can be used to add operations that might have
+  already been instantiated elsewhere to the QNode:
+  [(#1433)](https://github.com/PennyLaneAI/pennylane/pull/1433)
+
+  ```python
+  op = qml.RX(0.4, wires=0)
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.RY(x, wires=0)
+      qml.apply_op(op)
+      return qml.expval(qml.PauliZ(0))
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)(0.6))
+  0: ──RY(0.6)──RX(0.4)──┤ ⟨Z⟩
+  ```
+
+  Previously instantiated measurements can also be applied to QNodes.
+
 * Ising YY gate functionality added.
   [(#1358)](https://github.com/PennyLaneAI/pennylane/pull/1358)
 
@@ -17,7 +39,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ashish Panigrahi
+Josh Izaac, Ashish Panigrahi
 
 
 # Release 0.16.0 (current release)
