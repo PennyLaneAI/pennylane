@@ -16,12 +16,12 @@ This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
 from importlib import reload
+import pkg_resources
 
 import numpy as _np
-import pkg_resources
 from semantic_version import Spec, Version
 
-from .queuing import apply_op, QueuingContext
+from pennylane.queuing import apply_op, QueuingContext
 
 import pennylane.init
 import pennylane.fourier
