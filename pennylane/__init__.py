@@ -21,6 +21,8 @@ import numpy as _np
 import pkg_resources
 from semantic_version import Spec, Version
 
+from .queuing import apply_op, QueuingContext
+
 import pennylane.init
 import pennylane.fourier
 import pennylane.kernels
@@ -60,7 +62,6 @@ from pennylane.vqe import ExpvalCost, Hamiltonian, VQECost
 
 # QueuingContext and collections needs to be imported after all other pennylane imports
 from .collections import QNodeCollection, apply, dot, map, sum
-from .queuing import QueuingContext
 import pennylane.grouping  # pylint:disable=wrong-import-order
 
 # Look for an existing configuration file

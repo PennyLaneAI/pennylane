@@ -220,6 +220,9 @@ class Queue(QueuingContext):
     def _remove(self, obj):
         self.queue.remove(obj)
 
+    append = _append
+    remove = _remove
+
 
 class AnnotatedQueue(QueuingContext):
     """Lightweight class that maintains a basic queue of operations, in addition
@@ -246,7 +249,34 @@ class AnnotatedQueue(QueuingContext):
 
         return self._queue[obj]
 
+    append = _append
+    remove = _remove
+    update_info = _update_info
+    get_info = _get_info
+
     @property
     def queue(self):
         """Returns a list of objects in the annotated queue"""
         return list(self._queue.keys())
+
+
+def apply_op(op, context=QueuingContext):
+    """Apply an instantiated ``Operator`` to a queuing context.
+
+    Args:
+        op (.Operator): the Operator to apply/queue
+        context (.QueuingContext): The queuing context to queue the operator to.
+            Note that if no context is specified, the operator is
+            applied to currently active queuing context.
+    """
+    if QueuingContext.recording() is None:
+        raise RuntimeError("No queuing context available to append operation to.")
+
+    if hasattr(op, "queue"):
+        # operator provides its own logic for queuing
+        op.queue(context=context)
+    else:
+        # append the operator directly to the relevant queuing context
+        context.append(op)
+
+    return
