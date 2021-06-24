@@ -41,7 +41,6 @@ single_qubit_decomps = [
     (np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix, qml.Rot, [-1.0, 2.0, -3.0]),
 ]
 
-
 class TestQubitUnitaryDecompositionHelpers:
     """Test that the decompsoitions are correct."""
 
@@ -107,9 +106,6 @@ class TestQubitUnitaryDecompositionHelpers:
         assert len(obtained_gates) == 1
 
         obtained_params = [jnp.asarray(x) for x in obtained_gates[0].parameters]
-
-        print(f"Expected = {expected_params}")
-        print(f"Obtained = {obtained_params}")
 
         assert isinstance(obtained_gates[0], expected_gate)
         assert obtained_gates[0].wires == Wires("a")
