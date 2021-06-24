@@ -65,7 +65,7 @@ class TestQubitUnitaryDecompositionHelpers:
         """Test that a one-qubit operation in Torch is correctly decomposed."""
         torch = pytest.importorskip("torch")
 
-        U = torch.tensor(U, dtype=torch.complex128)
+        U = torch.tensor(U, dtype=torch.complex64)
 
         obtained_gates = _zyz_decomposition(U, wire="a")
 
@@ -82,7 +82,7 @@ class TestQubitUnitaryDecompositionHelpers:
         """Test that a one-qubit operation in Tensorflow is correctly decomposed."""
         tf = pytest.importorskip("tensorflow")
 
-        U = tf.Variable(U, dtype=tf.complex128)
+        U = tf.Variable(U, dtype=tf.complex64)
 
         obtained_gates = _zyz_decomposition(U, wire="a")
 
@@ -113,4 +113,4 @@ class TestQubitUnitaryDecompositionHelpers:
 
         assert isinstance(obtained_gates[0], expected_gate)
         assert obtained_gates[0].wires == Wires("a")
-        assert qml.math.allclose(obtained_params, expected_params, atol=1e-7)
+        assert qml.math.allclose(obtained_params, expected_params)

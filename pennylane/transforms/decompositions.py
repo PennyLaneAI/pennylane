@@ -35,7 +35,7 @@ def _convert_to_su2(U):
 
     # Check unitarity
     if not qml.math.allclose(
-            qml.math.dot(U, qml.math.T(qml.math.conj(U))), qml.math.eye(2), atol=1e-7
+        qml.math.dot(U, qml.math.T(qml.math.conj(U))), qml.math.eye(2), atol=1e-7
     ):
         raise ValueError("Operator must be unitary.")
 
@@ -45,7 +45,7 @@ def _convert_to_su2(U):
     # Convert to SU(2) if it's not close to 1
     if not qml.math.allclose(det, [1.0]):
         exp_angle = -1j * qml.math.cast_like(qml.math.angle(det), 1j) / 2
-        U = U * (qml.math.exp(exp_angle))
+        U = qml.math.cast_like(U, exp_angle) * qml.math.exp(exp_angle)
 
     return U
 
