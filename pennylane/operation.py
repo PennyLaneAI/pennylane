@@ -1114,12 +1114,12 @@ class Tensor(Observable):
         self._eigvals_cache = None
         self.obs = []
         self._args = args
-        self.queue()
+        self.queue(init=True)
 
-    def queue(self, context=qml.QueuingContext):
+    def queue(self, context=qml.QueuingContext, init=False):
         for o in self._args:
 
-            if not self.obs:
+            if init:
                 if isinstance(o, Tensor):
                     self.obs.extend(o.obs)
                 elif isinstance(o, Observable):
