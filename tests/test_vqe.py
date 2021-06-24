@@ -827,8 +827,6 @@ class TestHamiltonian:
             qml.PauliX(wires=0)
             H.queue()
 
-        print(tape.queue[-1].ops)
-
         assert np.all([q1.compare(q2) for q1, q2 in zip(tape.queue, queue)])
 
         # Inside of tape

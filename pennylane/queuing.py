@@ -15,6 +15,7 @@
 This module contains the :class:`QueuingContext` abstract base class.
 """
 import abc
+import copy
 from collections import OrderedDict, deque
 
 
@@ -269,8 +270,11 @@ def apply_op(op, context=QueuingContext):
             Note that if no context is specified, the operator is
             applied to currently active queuing context.
     """
-    if QueuingContext.recording() is None:
+    if not QueuingContext.recording():
         raise RuntimeError("No queuing context available to append operation to.")
+
+    if op in getattr(context, "queue", QueuingContext.active_context().queue):
+        op = copy.copy(op)
 
     if hasattr(op, "queue"):
         # operator provides its own logic for queuing
@@ -278,3 +282,5 @@ def apply_op(op, context=QueuingContext):
     else:
         # append the operator directly to the relevant queuing context
         context.append(op)
+
+    return op
