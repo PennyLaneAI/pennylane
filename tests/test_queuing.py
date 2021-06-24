@@ -319,29 +319,10 @@ class TestAnnotatedQueue:
     def test_append_annotating_object(self):
         """Test appending an object that writes annotations when queuing itself"""
 
-        class AnnotatingTensor(qml.operation.Tensor):
-            """Dummy tensor class that queues itself on initialization
-            to an annotating queue."""
-
-            def __init__(self, *args):
-                super().__init__(*args)
-                self.queue()
-
-            def queue(self):
-                QueuingContext.append(self, owns=tuple(self.obs))
-
-                for o in self.obs:
-                    try:
-                        QueuingContext.update_info(o, owner=self)
-                    except AttributeError:
-                        pass
-
-                return self
-
         with AnnotatedQueue() as q:
             A = qml.PauliZ(0)
             B = qml.PauliY(1)
-            tensor_op = AnnotatingTensor(A, B)
+            tensor_op = qml.operation.Tensor(A, B)
 
         assert q.queue == [A, B, tensor_op]
         assert q._get_info(A) == {"owner": tensor_op}
