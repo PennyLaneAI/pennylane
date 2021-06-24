@@ -1117,7 +1117,12 @@ class Tensor(Observable):
         self.queue(init=True)
 
     def queue(self, context=qml.QueuingContext, init=False):  # pylint: disable=arguments-differ
-        for o in self._args:
+        constituents = self.obs
+
+        if init:
+            constituents = self._args
+
+        for o in constituents:
 
             if init:
                 if isinstance(o, Tensor):
@@ -1135,7 +1140,7 @@ class Tensor(Observable):
             except NotImplementedError:
                 pass
 
-        context.append(self, owns=tuple(self._args))
+        context.append(self, owns=tuple(constituents))
         return self
 
     def __copy__(self):

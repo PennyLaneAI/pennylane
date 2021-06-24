@@ -810,6 +810,8 @@ class TestHamiltonian:
         queue = [
             qml.Hadamard(wires=1),
             qml.PauliX(wires=0),
+            qml.PauliZ(0),
+            qml.PauliZ(2),
             qml.PauliZ(0) @ qml.PauliZ(2),
             qml.PauliX(1),
             qml.PauliZ(1),
@@ -824,6 +826,8 @@ class TestHamiltonian:
             qml.Hadamard(wires=1)
             qml.PauliX(wires=0)
             H.queue()
+
+        print(tape.queue[-1].ops)
 
         assert np.all([q1.compare(q2) for q1, q2 in zip(tape.queue, queue)])
 
