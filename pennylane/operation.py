@@ -1114,6 +1114,7 @@ class Tensor(Observable):
         self._eigvals_cache = None
         self.obs = []
         self._args = args
+        self.queue()
 
     def queue(self, context=qml.QueuingContext):
         for o in self._args:
