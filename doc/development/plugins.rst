@@ -118,6 +118,9 @@ as well as potential further capabilities, by providing the following class attr
   *  ``'supports_tensor_observables'`` (*bool*): ``True`` if the device supports observables composed from tensor
      products such as ``PauliZ(wires=0) @ PauliZ(wires=1)``.
 
+  * ``'supports_tracker'`` (*bool)*: ``True`` if it has a device tracker attribute and updates information with
+     it.
+
   Some capabilities are queried by PennyLane core to make decisions on how to best run computations, others are used
   by external apps built on top of the device ecosystem.
 
@@ -139,9 +142,9 @@ following arguments:
 
 * ``wires`` (*int* or *Iterable[Number, str]*): The number of subsystems represented by the device,
   or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
-  and/or strings (``['ancilla', 'q1', 'q2']``).
+  and/or strings (``['auxiliary', 'q1', 'q2']``).
 
-* ``shots=1000`` (*None*, *int* or *List[iint]*): number of circuit
+* ``shots=1000`` (*None*, *int* or *List[int]*): number of circuit
   evaluations/random samples used to estimate probabilities, expectation
   values, variances  of observables in non-analytic mode. If ``None``, the device
   calculates probability, expectation values, and variances analytically.  If an
@@ -275,8 +278,6 @@ this may have unintended side-effects and is not recommended.
 
 :html:`</div></div>`
 
-.. _installing_plugin:
-
 
 Wire handling
 -------------
@@ -292,9 +293,9 @@ For example:
 
     from pennylane.wires import Wires
 
-    wires = Wires(['ancilla', 0, 1])
-    print(wires[0]) # <Wires = ['ancilla']>
-    print(wires.labels) # ('ancilla', 0, 1)
+    wires = Wires(['auxiliary', 0, 1])
+    print(wires[0]) # <Wires = ['auxiliary']>
+    print(wires.labels) # ('auxiliary', 0, 1)
 
 As shown in the section on :doc:`/introduction/circuits`, a device can be created with custom wire labels:
 
@@ -357,6 +358,37 @@ object.
 
 As a convention, devices should do the translation and unpacking as late as possible in the function tree, and
 where possible pass the original :class:`~.wires.Wires` objects around.
+
+Device Tracker Usage
+--------------------
+
+The device tracker stores and records information like the number of executions and 
+the number of shots, though the tracker can store any information relevant to a given 
+device.  A compatible device should have a placeholder :class:`~.device_tracker.DefaultTracker` initialized
+to the ``tracker`` attribute. We recommend adding the following code to the end of the ``execute`` method:
+
+.. code-block:: python
+
+  if self.tracker.tracking:
+    self.tracker.update(executions=1, shots=self._shots)
+    self.tracker.record()
+
+and similar code to the ``batch_execute`` method:
+
+.. code-block:: python
+
+  if self.tracker.tracking:
+    self.tracker.update(batches=1)
+    self.tracker.record()
+
+The ``update`` and ``record`` methods can be called at any location within the device. Also, the :meth:`~.device_tracker.DefaultTracker.update` method can accept any combination of keyword-value pairs.  For example, a device could also track cost via:
+
+.. code-block:: python
+
+  price_for_execution = 0.10
+  self.tracker.update(price = price_for_execution)
+
+.. _installing_plugin:
 
 Identifying and installing your device
 --------------------------------------

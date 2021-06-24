@@ -31,7 +31,6 @@ class DefaultTracker:
     Keyword Args:
         persistent=False (bool): whether to reset stored information upon entering
             a runtime context.
-        print_totals=False (bool): whether to print out the ``totals`` attribute on each record call.
 
     **Example**
 
@@ -67,6 +66,8 @@ class DefaultTracker:
         self.tracking = False
 
         if dev is not None:
+            if not dev.capabilities().get("supports_tracker", False):
+                raise Error(f"Device {dev.name} does not support device tracking")
             dev.tracker = self
 
     def __enter__(self):
@@ -120,48 +121,28 @@ class DefaultTracker:
         """Move stored information to some other location.
 
         If a ``record_function`` is passed to the class upon initialization, it is called.
-
-        If ``print_totals=True`` is specified upon initialization, then the ``self.totals`` dictionary
-        is printed out.
         """
         if self.record_function is not None:
             self.record_function(totals=self.totals, history=self.history, latest=self.latest)
-        if self.print_totals:
-            print(self.totals)
 
 
-class UpdateTimings(DefaultTracker):
-    def update(self, **kwargs):
-        current_time = time.time()
-        current["time"] = current_time - self._time_last
-        self._time_last = current_time
-
-        super().update(**kwargs)
-
-    def reset(self):
-        super().reset()
-        self._time_last = time.time()
-
-
-def track(dev=None, timings=False, **kwargs):
+def track(dev=None, **kwargs):
     r"""Creates a tracking context and applies it to a device.
 
     Args:
-        dev (Device): a PennyLane-compatible device
-        timings=False (bool): whether to calculate time differences in the update function
+        dev (Device): a PennyLane-compatible device.
 
     Keyword Args:
-        record=None (callable or str or None): This function is used to record information. Must be a
-            function of ``current``, ``totals`` and ``history`` keywords.
+        record=None (callable or None): This function is used to record information. Must be a
+            function of ``totals``, ``history``, and ``latest`` keywords.
         persistent=False (bool): whether or not to reset information
             entering the context
-        print_totals=False (bool): whether to print out the ``totals`` attribute on each record call.
 
     **Example**
 
     With the default settings on most devices, the tracker will store execution and shot information without
-    printing or logging of the information.  This information can be accessed through the `totals`, `history`,
-    and `current` attributes of the tracker.
+    printing or logging of the information.  This information can be accessed through the ``totals``, ``history``,
+    and ``latest`` attributes of the tracker.
 
     .. code-block:: python
 
@@ -224,8 +205,7 @@ def track(dev=None, timings=False, **kwargs):
     2
 
     """
-
-    if timings:
-        return UpdateTimings(dev, **kwargs)
+    # New features may be added later
+    # Hence why this function exists
 
     return DefaultTracker(dev, **kwargs)

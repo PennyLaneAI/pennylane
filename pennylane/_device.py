@@ -113,6 +113,7 @@ class Device(abc.ABC):
     # pylint: disable=too-many-public-methods
     _capabilities = {
         "model": None,
+        "supports_tracker": True
     }
     """The capabilities dictionary stores the properties of a device. Devices can add their
     own custom properties and overwrite existing ones by overriding the ``capabilities()`` method."""
@@ -491,6 +492,10 @@ class Device(abc.ABC):
 
             res = self.execute(circuit.operations, circuit.observables)
             results.append(res)
+
+        if self.tracker.tracking:
+            self.tracker.update(batches=1, batch_len = len(circuits))
+            self.tracker.record()
 
         return results
 
