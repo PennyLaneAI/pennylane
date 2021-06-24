@@ -11,8 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-This module contains the device tracker stuff.
+r"""
+This module contains a constructor and classes for tracking device execution 
+information.
 """
 
 import time
@@ -22,20 +23,44 @@ class DefaultTracker:
 
     Args:
         dev (Device): a PennyLane compatible device
+        record_function=None (callable or None): a function of the keywords ``totals``, 
+            ``history`` and ``latest``.  Run on each ``record`` call with current values of 
+            the corresponding attributes.
 
     Keyword Args:
         persistent=False (bool): whether to reset stored information upon entering 
             a runtime context.
+        print_totals=False (bool): whether to print out the ``totals`` attribute on each record call.
+
+    **Example**
+
+    ..code-block :: python
+
+        dev = qml.device('default.qubit', wires=1. shots=10)
+
+        @qml.qnode(dev, wires=1, diff_method="parameter-shift")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        with qml.device_tracker.DefaultTracker(circuit.device) as tracker:
+            qml.grad(circuit)(0.1)
+            circuit(0.1, shots=100)
+
+    >>> tracker.totals
+    {'executions': 4, 'shots': 130}
+    >>> tracker.history
+    {'executions': [1, 1, 1, 1], 'shots': [10, 10, 10, 100]}
+    >>> tracker.latest
+    {'executions': 1, 'shots': 100}
+
     """
 
-    def __init__(self, dev=None, persistent=False, record_function=None):
+    def __init__(self, dev=None, record_function=None, persistent=False, print_totals=False):
         self.persistent = persistent
 
-        if record_function is None:
-            def record_function(**kwargs):
-                pass
-
         self.record_function = record_function
+        self.print_totals = print_totals
 
         self.reset()
         self.tracking = False
@@ -93,9 +118,15 @@ class DefaultTracker:
     def record(self):
         """Move stored information to some other location.
 
-        While blank for the default base class, inheriting classes can print or log the data.
+        If a ``record_function`` is passed to the class upon initialization, it is called.
+
+        If ``print_totals=True`` is specified upon initialization, then the ``self.totals`` dictionary
+        is printed out.
         """
-        self.record_function(totals = self.totals, history=self.history, latest = self.latest)
+        if self.record_function is not None:
+            self.record_function(totals = self.totals, history=self.history, latest = self.latest)
+        if self.print_totals:
+            print(self.totals)
 
 class UpdateTimings(DefaultTracker):
 
@@ -116,7 +147,7 @@ def track(dev=None, record=None, timings=False, **kwargs):
 
     Args:
         dev (Device): a PennyLane-compatible device
-        record (callable or str or None): If callable, this function is used to record information. Must be a
+        record (callable or str or None): This function is used to record information. Must be a
             function of ``current``, ``totals`` and ``history`` keywords.
         timings=False (bool): whether to calculate time differences in the update function
 
@@ -172,7 +203,7 @@ def track(dev=None, record=None, timings=False, **kwargs):
     Total shots:  300
 
     By passing ``timings=True``, the tracker also stores the time difference between
-    `update` calls.
+    ``update`` calls.
 
     >>> with qml.track(circuit.device, timings=True) as timing_tracker:
     ...    circuit(0.1)
