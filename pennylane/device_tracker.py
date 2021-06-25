@@ -16,9 +16,6 @@ This module contains a constructor and classes for tracking device execution
 information.
 """
 
-import time
-
-
 class DefaultTracker:
     """Default base class for device trackers.
 
