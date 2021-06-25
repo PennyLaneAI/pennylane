@@ -68,7 +68,7 @@ class DefaultTracker:
 
         if dev is not None:
             if not dev.capabilities().get("supports_tracker", False):
-                raise Exception(f"Device {dev.name} does not support device tracking")
+                raise Exception(f"Device '{dev.short_name}' does not support device tracking")
             dev.tracker = self
 
     def __enter__(self):

@@ -41,6 +41,15 @@ class TestTrackerCoreBehaviour:
 
         assert id(dev.tracker) == id(tracker)
 
+    def test_incompatiable_device_assignment(self):
+        """Assert exception raised when `supports_tracker` not True"""
+        dev = qml.device('default.qubit', wires=2)
+
+        del dev._capabilities['supports_tracker']
+
+        with pytest.raises(Exception, match=r"Device 'default.qubit' does not support device tracking"):
+            DefaultTracker(dev=dev)
+
     def test_reset(self):
         """Assert reset empties totals and history"""
 
