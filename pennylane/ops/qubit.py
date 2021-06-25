@@ -18,7 +18,7 @@ quantum operations supported by PennyLane, as well as their conventions.
 import cmath
 import functools
 
-# pylint:disable=abstract-method,arguments-differ,protected-access,too-many-branches
+# pylint:disable=abstract-method,arguments-differ,protected-access
 import math
 import numpy as np
 import scipy
