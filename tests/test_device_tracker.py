@@ -20,6 +20,7 @@ import pennylane as qml
 from pennylane import track
 from pennylane.device_tracker import DefaultTracker
 
+
 class TestTrackerCoreBehaviour:
     def test_default_initialization(self):
         """Tests default initializalition"""
@@ -36,7 +37,7 @@ class TestTrackerCoreBehaviour:
         """Assert gets assigned to device"""
         dev = qml.device("default.qubit", wires=2)
 
-        tracker = DefaultTracker(dev = dev)
+        tracker = DefaultTracker(dev=dev)
 
         assert id(dev.tracker) == id(tracker)
 
@@ -47,7 +48,7 @@ class TestTrackerCoreBehaviour:
 
         tracker.totals = {"a": 1}
         tracker.history = {"a": [1]}
-        tracker.latest= {"a": 1}
+        tracker.latest = {"a": 1}
 
         tracker.reset()
 
@@ -91,7 +92,7 @@ class TestTrackerCoreBehaviour:
         tracker = DefaultTracker()
 
         tracker.update(a=1, b="b", c=None)
-        tracker.update(a=2, c = 1)
+        tracker.update(a=2, c=1)
 
         assert tracker.history == {"a": [1, 2], "b": ["b"], "c": [None, 1]}
 
@@ -100,28 +101,28 @@ class TestTrackerCoreBehaviour:
         assert tracker.latest == {"a": 2, "c": 1}
 
     def test_record_callback(self, mocker):
-
         class callback_wrapper:
             @staticmethod
             def callback(totals=dict(), history=dict(), latest=dict()):
                 pass
-        
+
         wrapper = callback_wrapper()
         spy = mocker.spy(wrapper, "callback")
 
-        tracker = DefaultTracker(callback = wrapper.callback)
+        tracker = DefaultTracker(callback=wrapper.callback)
 
-        tracker.totals = {"a": 1, "b":2}
-        tracker.history = {"a": [1], "b": [1,1]}
+        tracker.totals = {"a": 1, "b": 2}
+        tracker.history = {"a": [1], "b": [1, 1]}
         tracker.latest = {"a": 1, "b": 1}
 
         tracker.record()
 
         args_called, kwargs_called = spy.call_args_list[-1]
 
-        assert kwargs_called['totals'] == tracker.totals
-        assert kwargs_called['history'] == tracker.history
-        assert kwargs_called['latest'] == tracker.latest
+        assert kwargs_called["totals"] == tracker.totals
+        assert kwargs_called["history"] == tracker.history
+        assert kwargs_called["latest"] == tracker.latest
+
 
 class TestDefaultTrackerIntegration:
     def test_single_execution_default(self, mocker):
@@ -131,7 +132,7 @@ class TestDefaultTrackerIntegration:
             @staticmethod
             def callback(totals=dict(), history=dict(), latest=dict()):
                 pass
-        
+
         wrapper = callback_wrapper()
         spy = mocker.spy(wrapper, "callback")
 
@@ -147,13 +148,12 @@ class TestDefaultTrackerIntegration:
         assert tracker.totals == {"executions": 1}
         assert tracker.history == {"executions": [1], "shots": [None]}
         assert tracker.latest == {"executions": 1, "shots": None}
-        
+
         args_called, kwargs_called = spy.call_args_list[-1]
 
-        assert kwargs_called['totals'] == {"executions": 1}
-        assert kwargs_called['history'] == {"executions": [1], "shots": [None]}
-        assert kwargs_called['latest'] == {"executions": 1, "shots": None}
-
+        assert kwargs_called["totals"] == {"executions": 1}
+        assert kwargs_called["history"] == {"executions": [1], "shots": [None]}
+        assert kwargs_called["latest"] == {"executions": 1, "shots": None}
 
     def test_shots_execution_default(self, mocker):
         """Test correct tracks shots as well."""
@@ -162,7 +162,7 @@ class TestDefaultTrackerIntegration:
             @staticmethod
             def callback(totals=dict(), history=dict(), latest=dict()):
                 pass
-        
+
         wrapper = callback_wrapper()
         spy = mocker.spy(wrapper, "callback")
 
@@ -172,17 +172,17 @@ class TestDefaultTrackerIntegration:
         def circuit():
             return qml.expval(qml.PauliZ(0))
 
-        with DefaultTracker(circuit.device, callback = wrapper.callback) as tracker:
+        with DefaultTracker(circuit.device, callback=wrapper.callback) as tracker:
             circuit(shots=10)
             circuit(shots=20)
 
         assert tracker.totals == {"executions": 2, "shots": 30}
-        assert tracker.history == {"executions": [1,1], "shots": [10, 20]}
-        assert tracker.latest == {"executions": 1, "shots":20}
+        assert tracker.history == {"executions": [1, 1], "shots": [10, 20]}
+        assert tracker.latest == {"executions": 1, "shots": 20}
 
         assert spy.call_count == 2
 
         args_called, kwargs_called = spy.call_args_list[-1]
-        assert kwargs_called['totals'] == {"executions": 2, "shots": 30}
-        assert kwargs_called['history'] == {"executions": [1,1], "shots": [10, 20]}
-        assert kwargs_called['latest'] == {"executions": 1, "shots":20}
+        assert kwargs_called["totals"] == {"executions": 2, "shots": 30}
+        assert kwargs_called["history"] == {"executions": [1, 1], "shots": [10, 20]}
+        assert kwargs_called["latest"] == {"executions": 1, "shots": 20}

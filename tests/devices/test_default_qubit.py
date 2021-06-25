@@ -1068,6 +1068,7 @@ class TestDefaultQubitIntegration:
         cap = dev.capabilities()
         capabilities = {
             "model": "qubit",
+            "supports_tracker": True,
             "supports_finite_shots": True,
             "supports_tensor_observables": True,
             "returns_probs": True,
