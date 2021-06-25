@@ -219,20 +219,19 @@ angle_pairs = [(0.3, 0.3), (np.pi, -0.65), (0.0, np.pi / 2), (np.pi / 3, 0.0)]
 class TestQubitUnitaryDifferentiability:
     """Tests to ensure the transform is fully differentiable in all interfaces."""
 
-    @pytest.mark.parametrize("x_rot,z_rot", angle_pairs)
-    def test_gradient_qubit_unitary(self, x_rot, z_rot):
+    @pytest.mark.parametrize("z_rot,x_rot", angle_pairs)
+    def test_gradient_qubit_unitary(self, z_rot, x_rot):
         """Tests differentiability in autograd interface."""
 
         def qfunc_with_qubit_unitary(angles):
             z = angles[0]
             x = angles[1]
-            Z_mat = np.array([[np.exp(-1j * z / 2), 0], [0, np.exp(1j * z / 2)]])
-            X_mat = np.array(
-                [
-                    [np.cos(x / 2), -1j * np.sin(x / 2)],
-                    [-1j * np.sin(x / 2), np.cos(x / 2)],
-                ]
-            )
+
+            Z_mat = np.array([[np.exp(-1j * z / 2), 0.0], [0.0, np.exp(1j * z / 2)]])
+
+            c = np.cos(x / 2)
+            s = np.sin(x / 2) * 1j
+            X_mat = np.array([[c, -s], [-s, c]])
 
             qml.Hadamard(wires="a")
             qml.QubitUnitary(Z_mat, wires="a")
@@ -253,24 +252,30 @@ class TestQubitUnitaryDifferentiability:
 
         assert qml.math.allclose(original_grad, transformed_grad)
 
-    @pytest.mark.parametrize("x_rot,z_rot", angle_pairs)
-    def test_gradient_qubit_unitary_torch(self, x_rot, z_rot):
+    @pytest.mark.parametrize("z_rot,x_rot", angle_pairs)
+    def test_gradient_qubit_unitary_torch(self, z_rot, x_rot):
         """Tests differentiability in torch interface."""
         torch = pytest.importorskip("torch")
 
         def qfunc_with_qubit_unitary(angles):
             z = angles[0]
             x = angles[1]
-            Z_mat = torch.tensor(
-                [[torch.exp(-1j * z / 2), 0.0], [0.0, torch.exp(1j * z / 2)]], requires_grad=True
-            )
-            X_mat = torch.tensor(
+
+            # Had to do this in order to make a torch tensor of torch tensors
+            Z_mat = torch.stack(
                 [
-                    [torch.cos(x / 2), -1j * torch.sin(x / 2)],
-                    [-1j * torch.sin(x / 2), torch.cos(x / 2)],
-                ],
-                requires_grad=True,
-            )
+                    torch.exp(-1j * z / 2),
+                    torch.tensor(0.0),
+                    torch.tensor(0.0),
+                    torch.exp(1j * z / 2),
+                ]
+            ).reshape(2, 2)
+
+            # Variables need to be complex
+            c = torch.cos(x / 2).type(torch.complex64)
+            s = torch.sin(x / 2) * 1j
+
+            X_mat = torch.stack([c, -s, -s, c]).reshape(2, 2)
 
             qml.Hadamard(wires="a")
             qml.QubitUnitary(Z_mat, wires="a")
@@ -279,12 +284,12 @@ class TestQubitUnitaryDifferentiability:
             return qml.expval(qml.PauliX(wires="a"))
 
         original_qnode = qml.QNode(original_qfunc_for_grad, dev, interface="torch")
-        original_input = torch.tensor([z_rot, x_rot], requires_grad=True)
+        original_input = torch.tensor([z_rot, x_rot], dtype=torch.float64, requires_grad=True)
         original_result = original_qnode(original_input)
 
         transformed_qfunc = decompose_single_qubit_unitaries(qfunc_with_qubit_unitary)
         transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="torch")
-        transformed_input = torch.tensor([z_rot, x_rot], requires_grad=True)
+        transformed_input = torch.tensor([z_rot, x_rot], dtype=torch.float64, requires_grad=True)
         transformed_result = transformed_qnode(transformed_input)
 
         assert qml.math.allclose(original_result, transformed_result)
@@ -294,21 +299,20 @@ class TestQubitUnitaryDifferentiability:
 
         assert qml.math.allclose(original_input.grad, transformed_input.grad)
 
-    @pytest.mark.parametrize("x_rot,z_rot", angle_pairs)
-    def test_decompose_single_qubit_unitaries_tf(self, x_rot, z_rot):
+    @pytest.mark.parametrize("z_rot,x_rot", angle_pairs)
+    def test_decompose_single_qubit_unitaries_tf(self, z_rot, x_rot):
         """Tests differentiability in tensorflow interface."""
         tf = pytest.importorskip("tensorflow")
 
         def qfunc_with_qubit_unitary(angles):
-            z = angles[0]
-            x = angles[1]
-            Z_mat = tf.Variable([[tf.math.exp(-1j * z / 2), 0.0], [0.0, tf.math.exp(1j * z / 2)]])
-            X_mat = tf.Variable(
-                [
-                    [tf.math.cos(x / 2), -1j * tf.math.sin(x / 2)],
-                    [-1j * tf.math.sin(x / 2), tf.math.cos(x / 2)],
-                ]
-            )
+            z = tf.cast(angles[0], tf.complex64)
+            x = tf.cast(angles[1], tf.complex64)
+
+            c = tf.cos(x / 2)
+            s = tf.sin(x / 2) * 1j
+
+            Z_mat = tf.convert_to_tensor([[tf.exp(-1j * z / 2), 0.0], [0.0, tf.exp(1j * z / 2)]])
+            X_mat = tf.convert_to_tensor([[c, -s], [-s, c]])
 
             qml.Hadamard(wires="a")
             qml.QubitUnitary(Z_mat, wires="a")
@@ -317,12 +321,12 @@ class TestQubitUnitaryDifferentiability:
             return qml.expval(qml.PauliX(wires="a"))
 
         original_qnode = qml.QNode(original_qfunc_for_grad, dev, interface="tf")
-        original_input = tf.Variable([z_rot, x_rot], dtype=tf.complex64)
+        original_input = tf.Variable([z_rot, x_rot], dtype=tf.float64)
         original_result = original_qnode(original_input)
 
         transformed_qfunc = decompose_single_qubit_unitaries(qfunc_with_qubit_unitary)
         transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="tf")
-        transformed_input = tf.Variable([z_rot, x_rot], dtype=tf.complex64)
+        transformed_input = tf.Variable([z_rot, x_rot], dtype=tf.float64)
         transformed_result = transformed_qnode(transformed_input)
 
         assert qml.math.allclose(original_result, transformed_result)
@@ -335,10 +339,11 @@ class TestQubitUnitaryDifferentiability:
             loss = transformed_qnode(transformed_input)
         transformed_grad = tape.gradient(loss, transformed_input)
 
-        assert qml.math.allclose(original_grad, transformed_grad)
+        # For 64bit values, need to slightly increase the tolerance threshold
+        assert qml.math.allclose(original_grad, transformed_grad, atol=1e-7)
 
-    @pytest.mark.parametrize("x_rot,z_rot", angle_pairs)
-    def test_decompose_single_qubit_unitaries_jax(self, x_rot, z_rot):
+    @pytest.mark.parametrize("z_rot,x_rot", angle_pairs)
+    def test_decompose_single_qubit_unitaries_jax(self, z_rot, x_rot):
         """Tests differentiability in jax interface."""
         jax = pytest.importorskip("jax")
         from jax import numpy as jnp
@@ -346,15 +351,12 @@ class TestQubitUnitaryDifferentiability:
         def qfunc_with_qubit_unitary(angles):
             z = angles[0]
             x = angles[1]
-            Z_mat = jnp.array(
-                [[jnp.exp(-1j * z / 2), 0.0], [0.0, jnp.exp(1j * z / 2)]],
-            )
-            X_mat = jnp.array(
-                [
-                    [jnp.cos(x / 2), -1j * jnp.sin(x / 2)],
-                    [-1j * jnp.sin(x / 2), jnp.cos(x / 2)],
-                ],
-            )
+
+            Z_mat = jnp.array([[jnp.exp(-1j * z / 2), 0.0], [0.0, jnp.exp(1j * z / 2)]])
+
+            c = jnp.cos(x / 2)
+            s = jnp.sin(x / 2) * 1j
+            X_mat = jnp.array([[c, -s], [-s, c]])
 
             qml.Hadamard(wires="a")
             qml.QubitUnitary(Z_mat, wires="a")
@@ -362,16 +364,17 @@ class TestQubitUnitaryDifferentiability:
             qml.CNOT(wires=["b", "a"])
             return qml.expval(qml.PauliX(wires="a"))
 
-        input = jnp.array([z_rot, x_rot], dtype=jnp.complex64)
+        # Setting the dtype to complex64 causes the gradients to be complex...
+        input = jnp.array([z_rot, x_rot], dtype=jnp.float64)
 
-        original_qnode = qml.QNode(original_qfunc_for_grad, dev, interface="jax", diff_method="backprop")
+        original_qnode = qml.QNode(original_qfunc_for_grad, dev, interface="jax")
         original_result = original_qnode(input)
 
         transformed_qfunc = decompose_single_qubit_unitaries(qfunc_with_qubit_unitary)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="jax", diff_method="backprop")
+        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="jax")
         transformed_result = transformed_qnode(input)
         assert qml.math.allclose(original_result, transformed_result)
 
         original_grad = jax.grad(original_qnode)(input)
         transformed_grad = jax.grad(transformed_qnode)(input)
-        assert qml.math.allclose(original_grad, transformed_grad)
+        assert qml.math.allclose(original_grad, transformed_grad, atol=1e-7)
