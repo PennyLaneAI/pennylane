@@ -36,7 +36,7 @@ Ashish Panigrahi
   def circuit(param, H):
       qml.PauliX(0)
       qml.SingleExcitation(param, wires = [0, 1])    
-      return qml.expval(qml.SparseHamiltonian(H))
+      return qml.expval(qml.SparseHamiltonian(H, [0, 1]))
   ```
   
   We can execute this QNode, passing in a sparse identity matrix:
