@@ -16,6 +16,7 @@ This module contains a constructor and classes for tracking device execution
 information.
 """
 
+
 class DefaultTracker:
     """Default base class for device trackers.
 
@@ -53,18 +54,21 @@ class DefaultTracker:
 
     """
 
-    def __init__(self, dev=None, callback=None, persistent=False, print_totals=False):
+    def __init__(self, dev=None, callback=None, persistent=False):
         self.persistent = persistent
 
         self.callback = callback
-        self.print_totals = print_totals
 
-        self.reset()
+        # same code as self.reset
+        self.totals = dict()
+        self.history = dict()
+        self.latest = dict()
+
         self.tracking = False
 
         if dev is not None:
             if not dev.capabilities().get("supports_tracker", False):
-                raise Error(f"Device {dev.name} does not support device tracking")
+                raise Exception(f"Device {dev.name} does not support device tracking")
             dev.tracker = self
 
     def __enter__(self):
@@ -115,8 +119,7 @@ class DefaultTracker:
         self.latest = dict()
 
     def record(self):
-        """If a ``callback`` is passed to the class upon initialization, it is called.
-        """
+        """If a ``callback`` is passed to the class upon initialization, it is called."""
         if self.callback is not None:
             self.callback(totals=self.totals, history=self.history, latest=self.latest)
 
