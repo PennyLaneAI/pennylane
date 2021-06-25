@@ -35,7 +35,7 @@ Ashish Panigrahi
   @qml.qnode(dev, diff_method="parameter-shift")
   def circuit(param, H):
       qml.PauliX(0)
-      qml.SingleExcitation(param, wires = [0, 1])    
+      qml.SingleExcitation(param, wires=[0, 1])
       return qml.expval(qml.SparseHamiltonian(H, [0, 1]))
   ```
   

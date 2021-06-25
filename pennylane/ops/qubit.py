@@ -3090,18 +3090,23 @@ class Projector(Observable):
 
 class SparseHamiltonian(Observable):
     r"""SparseHamiltonian(H)
-    A Hamiltonian represented directly as a sparse matrix in coordinate list (COO) format. The only
-    measurment type available for the SparseHamiltonian observable is computing the expectation
-    value. Note that the SparseHamiltonian observable should not be used with a subset of wires.
+    A Hamiltonian represented directly as a sparse matrix in coordinate list (COO) format.
+    
+    .. warning::
+    
+        ``SparseHamiltonian`` observables can only be used to return expectation values.
+        Variances and samples are not supported.
+        
+    .. note:: Note that the ``SparseHamiltonian`` observable should not be used with a subset of wires.
 
     **Details:**
 
-    * Number of wires: Any
+    * Number of wires: All
     * Number of parameters: 1
     * Gradient recipe: None
 
     Args:
-        H (coo_matrix): a sparse matrix in scipy coordinate list (COO) format with
+        H (coo_matrix): a sparse matrix in SciPy coordinate list (COO) format with
             dimension :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
     """
     num_wires = AllWires
