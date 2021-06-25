@@ -464,13 +464,14 @@ class DefaultQubit(QubitDevice):
         Returns:
             float: returns the expectation value of the observable
         """
-        if observable.name == "SparseHamiltonian" and self.shots is not None:
-            raise DeviceError("SparseHamiltonian must be used with shots=None")
+        if observable.name == "SparseHamiltonian":
+            if self.shots is not None:
+                raise DeviceError("SparseHamiltonian must be used with shots=None")
 
         if observable.name == "SparseHamiltonian" and self.shots is None:
 
             ev = coo_matrix.dot(
-                coo_matrix(self.state),
+                coo_matrix(self._conj(self.state)),
                 coo_matrix.dot(
                     observable.matrix, coo_matrix(self.state.reshape(len(self.state), 1))
                 ),

@@ -3091,12 +3091,12 @@ class Projector(Observable):
 class SparseHamiltonian(Observable):
     r"""SparseHamiltonian(H)
     A Hamiltonian represented directly as a sparse matrix in coordinate list (COO) format.
-    
+
     .. warning::
-    
+
         ``SparseHamiltonian`` observables can only be used to return expectation values.
         Variances and samples are not supported.
-        
+
     .. note:: Note that the ``SparseHamiltonian`` observable should not be used with a subset of wires.
 
     **Details:**
