@@ -980,6 +980,15 @@ class QuantumTape(AnnotatedQueue):
 
         return self._graph
 
+    @property
+    def commutation_dag(self):
+
+        if self._commutation_dag is None:
+            self._graph = qml.CommutationDAG(self.operations, self.observables)
+
+        return self._graph
+
+
     def get_resources(self):
         """Resource requirements of a quantum circuit.
 

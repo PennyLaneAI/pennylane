@@ -793,6 +793,17 @@ class QNode:
 
         return info
 
+    @property
+    def commutation_dag(self):
+        
+        if self.qtape is None:
+            raise qml.QuantumFunctionError(
+                "The QNode specifications can only be calculated after its quantum tape has been constructed."
+            )
+
+        dag = self.qtape.commutation_dag
+        return dag
+
     def to_tf(self, dtype=None):
         """Apply the TensorFlow interface to the internal quantum tape.
 

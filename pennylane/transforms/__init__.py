@@ -84,5 +84,6 @@ from .invisible import invisible
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor, metric_tensor_tape
 from .specs import specs
+from .commutation_dag import commutation_dag
 from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
 from .qmc import apply_controlled_Q, quantum_monte_carlo

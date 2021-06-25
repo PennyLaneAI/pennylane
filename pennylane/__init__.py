@@ -35,6 +35,7 @@ from pennylane._qubit_device import QubitDevice
 from pennylane._version import __version__
 from pennylane.about import about
 from pennylane.circuit_graph import CircuitGraph
+from pennylane.commutation_dag import CommutationDAG
 from pennylane.configuration import Configuration
 from pennylane.io import *
 from pennylane.measure import density_matrix, expval, probs, sample, state, var
