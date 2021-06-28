@@ -24,6 +24,34 @@ from pennylane.wires import Wires
 
 SPARSE_HAMILTONIAN_TEST_DATA = [(np.array([[1, 0], [-1.5, 0]])), (np.eye(4))]
 
+H_row = np.array([0, 1, 2, 3, 3, 4, 5, 6, 6, 7, 8, 9, 9, 10, 11, 12, 12, 13, 14, 15])
+H_col = np.array([0, 1, 2, 3, 12, 4, 5, 6, 9, 7, 8, 6, 9, 10, 11, 3, 12, 13, 14, 15])
+H_data = np.array(
+    [
+        0.72004228 + 0.0j,
+        0.24819411 + 0.0j,
+        0.24819411 + 0.0j,
+        0.47493347 + 0.0j,
+        0.18092703 + 0.0j,
+        -0.5363422 + 0.0j,
+        -0.52452263 + 0.0j,
+        -0.34359561 + 0.0j,
+        -0.18092703 + 0.0j,
+        0.3668115 + 0.0j,
+        -0.5363422 + 0.0j,
+        -0.18092703 + 0.0j,
+        -0.34359561 + 0.0j,
+        -0.52452263 + 0.0j,
+        0.3668115 + 0.0j,
+        0.18092703 + 0.0j,
+        -1.11700225 + 0.0j,
+        -0.44058791 + 0.0j,
+        -0.44058791 + 0.0j,
+        0.93441396 + 0.0j,
+    ]
+)
+H_hydrogen = coo_matrix((H_data, (H_row, H_col)), shape=(16, 16)).toarray()
+
 
 class TestSparse:
     """Tests for sparse hamiltonian observable"""
@@ -65,17 +93,6 @@ class TestSparse:
             returned_matrix.toarray(), sparse_hamiltonian.toarray(), atol=tol, rtol=0
         )
 
-    def test_sparse_gradient(self, tol):
-        """Tests that gradients are computed correctly for a SparseHamiltonian observable."""
-        dev = qml.device("default.qubit", wires=2, shots=None)
-
-        @qml.qnode(dev, diff_method="parameter-shift")
-        def circuit(param):
-            qml.RX(param, wires=0)
-            return qml.expval(qml.SparseHamiltonian(coo_matrix(np.eye(4)), [0, 1]))
-
-        assert np.allclose(qml.grad(circuit)([0.5]), 0.0, atol=tol, rtol=0)
-
     def test_sparse_diffmethod_error(self):
         """Test that an error is raised when the observable is SparseHamiltonian and the
         differentiation method is not parameter-shift."""
@@ -93,33 +110,21 @@ class TestSparse:
         ):
             qml.grad(circuit)([0.5])
 
-    H_row = np.array([0, 1, 2, 3, 3, 4, 5, 6, 6, 7, 8, 9, 9, 10, 11, 12, 12, 13, 14, 15])
-    H_col = np.array([0, 1, 2, 3, 12, 4, 5, 6, 9, 7, 8, 6, 9, 10, 11, 3, 12, 13, 14, 15])
-    H_data = np.array(
-        [
-            0.72004228 + 0.0j,
-            0.24819411 + 0.0j,
-            0.24819411 + 0.0j,
-            0.47493347 + 0.0j,
-            0.18092703 + 0.0j,
-            -0.5363422 + 0.0j,
-            -0.52452263 + 0.0j,
-            -0.34359561 + 0.0j,
-            -0.18092703 + 0.0j,
-            0.3668115 + 0.0j,
-            -0.5363422 + 0.0j,
-            -0.18092703 + 0.0j,
-            -0.34359561 + 0.0j,
-            -0.52452263 + 0.0j,
-            0.3668115 + 0.0j,
-            0.18092703 + 0.0j,
-            -1.11700225 + 0.0j,
-            -0.44058791 + 0.0j,
-            -0.44058791 + 0.0j,
-            0.93441396 + 0.0j,
-        ]
-    )
-    H_hydrogen = coo_matrix((H_data, (H_row, H_col)), shape=(16, 16)).toarray()
+    @pytest.mark.parametrize("qubits, hamiltonian, expected_output", [(4, H_hydrogen, -0.18092703)])
+    def test_sparse_gradient(self, qubits, hamiltonian, expected_output, tol):
+        """Tests that gradients are computed correctly for a SparseHamiltonian observable."""
+        dev = qml.device("default.qubit", wires=qubits, shots=None)
+
+        hamiltonian = coo_matrix(hamiltonian)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit(param):
+            qml.PauliX(0)
+            qml.PauliX(1)
+            qml.DoubleExcitation(param, wires=[0, 1, 2, 3])
+            return qml.expval(qml.SparseHamiltonian(hamiltonian, wires=range(qubits)))
+
+        assert np.allclose(qml.grad(circuit)([0.0]), expected_output, atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
         "qubits, operations, hamiltonian, expected_output",
