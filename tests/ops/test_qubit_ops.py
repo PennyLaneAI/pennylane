@@ -1447,7 +1447,7 @@ class TestOperations:
 
     def test_qubit_matrix(self, tol):
         """Test that QubitMatrix produces the correct output."""
-        A = 0.5*np.array([[1, -1j], [1j, 1]])
+        A = 0.5 * np.array([[1, -1j], [1j, 1]])
         out = qml.QubitMatrix(A, wires=0).matrix
 
         # verify output type
@@ -1457,15 +1457,15 @@ class TestOperations:
         assert np.allclose(out, A, atol=tol, rtol=0)
 
     def test_qubit_matrix_exceptions(self):
-        """Tests that the unitary operator raises the proper errors."""
-        A1 = np.array([[1, 1 ,1, -1]])
+        """Tests that the QubitMatrix operator raises the expected errors."""
+        A1 = np.array([[1, 1, 1, -1]])
 
         # test non-square matrix
         with pytest.raises(ValueError, match="must be a square matrix"):
             qml.QubitMatrix(A1, wires=0).matrix
 
         # test non-Hermitian matrix
-        A2 = np.array([[0, 1j],[1j , 0]])
+        A2 = np.array([[0, 1j], [1j, 0]])
         with pytest.raises(ValueError, match="must be Hermitian"):
             qml.QubitMatrix(A2, wires=0).matrix
 
