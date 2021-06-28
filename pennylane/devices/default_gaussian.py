@@ -350,7 +350,7 @@ def vacuum_state(wires, hbar=2.0):
     r"""Returns the vacuum state.
 
     Args:
-        basis (str): Returns the vector of means and the covariance matrix
+        wires (int): the number of wires to create the vacuum for
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`
     Returns:
