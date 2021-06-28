@@ -144,6 +144,7 @@ class _TorchInterface(torch.autograd.Function):
 
                 if torch.squeeze(ddy).ndim > 1:
                     vhp = ctx_.dy.view(1, -1) @ ddy @ hessian @ ctx_.dy.view(-1, 1)
+                    vhp = vhp / torch.linalg.norm(ctx_.dy) ** 2
                 else:
                     vhp = ddy @ hessian
 
