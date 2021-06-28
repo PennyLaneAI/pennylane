@@ -271,6 +271,37 @@ class TestQFuncTransforms:
         assert ops[0].parameters == [x]
         assert ops[1].name == "CZ"
 
+    def test_transform_single_measurement(self):
+        """Test that transformed functions return a scalar value when there is only
+        a single measurement."""
+
+        @qml.qfunc_transform
+        def expand_hadamards(tape):
+            for op in tape.operations + tape.measurements:
+                if op.name == "Hadamard":
+                    qml.RZ(np.pi, wires=op.wires)
+                    qml.RY(np.pi / 2, wires=op.wires)
+                else:
+                    op.queue()
+
+        def ansatz():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliX(wires=1))
+
+        dev = qml.device("default.qubit", wires=2)
+
+        normal_qnode = qml.QNode(ansatz, dev)
+
+        transformed_ansatz = expand_hadamards(ansatz)
+        transformed_qnode = qml.QNode(transformed_ansatz, dev)
+
+        normal_result = normal_qnode()
+        transformed_result = transformed_qnode()
+
+        assert np.allclose(normal_result, transformed_result)
+        assert normal_result.shape == transformed_result.shape
+
 
 ############################################
 # Test transform, ansatz, and qfunc function
