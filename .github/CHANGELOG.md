@@ -14,6 +14,10 @@
 * Fixed a bug in the `torch` interface that prevented gradients from being
   computed on a GPU [(#1426)](https://github.com/PennyLaneAI/pennylane/pull/1426).
 
+* Quantum function transforms now preserve the format of the measurement
+  results, so that a single measurement returns a single value rather than
+  an array with a single element. [(#1434)](https://github.com/PennyLaneAI/pennylane/pull/1434/files)
+
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
