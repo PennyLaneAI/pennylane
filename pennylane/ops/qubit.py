@@ -2164,6 +2164,36 @@ class QubitUnitary(Operation):
         ControlledQubitUnitary(*self.parameters, control_wires=wire, wires=self.wires)
 
 
+class QubitMatrix(Operation):
+    r"""QubitMatrix(A, wires)
+    Apply an arbitrary fixed matrix.
+
+    **Details:**
+
+    * Number of wires: Any (the operation can act on any number of wires)
+    * Number of parameters: 1
+    * Gradient recipe: None
+
+    Args:
+        A (array[complex]): square matrix
+        wires (Sequence[int] or int): the wire(s) the operation acts on
+    """
+
+    num_wires = AnyWires
+    num_params = 1
+    par_domain = "A"
+    grad_method = None
+
+    @classmethod
+    def _matrix(cls, *params):
+        A = np.asarray(params[0])
+
+        if A.shape[0] != A.shape[1]:
+            raise ValueError("Operator must be a square matrix.")
+
+        return A
+
+
 class ControlledQubitUnitary(QubitUnitary):
     r"""ControlledQubitUnitary(U, control_wires, wires, control_values)
     Apply an arbitrary fixed unitary to ``wires`` with control from the ``control_wires``.
@@ -3318,6 +3348,7 @@ ops = {
     "BasisState",
     "QubitStateVector",
     "QubitUnitary",
+    "QubitMatrix",
     "ControlledQubitUnitary",
     "MultiControlledX",
     "DiagonalQubitUnitary",

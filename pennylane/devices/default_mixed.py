@@ -59,6 +59,7 @@ class DefaultMixed(QubitDevice):
         "BasisState",
         "QubitStateVector",
         "QubitUnitary",
+        "QubitMatrix",
         "ControlledQubitUnitary",
         "MultiControlledX",
         "DiagonalQubitUnitary",
