@@ -443,6 +443,7 @@ PARAMETRIZED_OPERATIONS = [
     qml.PauliY(wires=0),
     qml.CRot(0.123, 0.456, 0.789, wires=[0, 1]),
     qml.QubitUnitary(np.eye(2) * 1j, wires=0),
+    qml.QubitMatrix(np.eye(2) * 1j, wires=0),
     qml.DiagonalQubitUnitary(np.array([1.0, 1.0j]), wires=1),
     qml.ControlledQubitUnitary(np.eye(2) * 1j, wires=[0], control_wires=[2]),
     qml.MultiControlledX(control_wires=[0, 1], wires=2, control_values="01"),
