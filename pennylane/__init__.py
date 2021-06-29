@@ -22,6 +22,7 @@ import pkg_resources
 from semantic_version import Spec, Version
 
 import pennylane.init
+import pennylane.fourier
 import pennylane.kernels
 import pennylane.math
 import pennylane.operation
@@ -48,9 +49,12 @@ from pennylane.transforms import (
     ctrl,
     measurement_grouping,
     metric_tensor,
+    specs,
     qfunc_transform,
-    batch_reduce,
     single_tape_transform,
+    batch_reduce,
+    quantum_monte_carlo,
+    apply_controlled_Q,
 )
 from pennylane.utils import inv
 from pennylane.vqe import ExpvalCost, Hamiltonian, VQECost
@@ -59,7 +63,6 @@ from pennylane.vqe import ExpvalCost, Hamiltonian, VQECost
 from .collections import QNodeCollection, apply, dot, map, sum
 from .queuing import QueuingContext
 import pennylane.grouping  # pylint:disable=wrong-import-order
-
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")

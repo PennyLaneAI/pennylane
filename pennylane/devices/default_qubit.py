@@ -27,6 +27,7 @@ import numpy as np
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
 from pennylane.operation import DiagonalOperation
 from pennylane.wires import WireError
+from .._version import __version__
 
 ABC_ARRAY = np.array(list(ABC))
 
@@ -84,8 +85,8 @@ class DefaultQubit(QubitDevice):
 
     name = "Default qubit PennyLane plugin"
     short_name = "default.qubit"
-    pennylane_requires = "0.16"
-    version = "0.16.0"
+    pennylane_requires = __version__
+    version = __version__
     author = "Xanadu Inc."
 
     operations = {
@@ -123,6 +124,7 @@ class DefaultQubit(QubitDevice):
         "CRot",
         "QFT",
         "IsingXX",
+        "IsingYY",
         "IsingZZ",
         "SingleExcitation",
         "SingleExcitationPlus",
@@ -134,7 +136,7 @@ class DefaultQubit(QubitDevice):
         "QubitSum",
     }
 
-    observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}
+    observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity", "Projector"}
 
     def __init__(self, wires, *, shots=None, cache=0, analytic=None):
         super().__init__(wires, shots, cache=cache, analytic=analytic)

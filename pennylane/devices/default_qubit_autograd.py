@@ -94,6 +94,8 @@ class DefaultQubitAutograd(DefaultQubit):
         "CRZ": autograd_ops.CRZ,
         "CRot": autograd_ops.CRot,
         "MultiRZ": autograd_ops.MultiRZ,
+        "IsingXX": autograd_ops.IsingXX,
+        "IsingZZ": autograd_ops.IsingZZ,
         "SingleExcitation": autograd_ops.SingleExcitation,
         "SingleExcitationPlus": autograd_ops.SingleExcitationPlus,
         "SingleExcitationMinus": autograd_ops.SingleExcitationMinus,

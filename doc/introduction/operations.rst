@@ -74,6 +74,7 @@ Qubit gates
     ~pennylane.SWAP
     ~pennylane.ISWAP
     ~pennylane.IsingXX
+    ~pennylane.IsingYY
     ~pennylane.IsingZZ
     ~pennylane.U1
     ~pennylane.U2
@@ -154,6 +155,7 @@ Qubit observables
     ~pennylane.PauliX
     ~pennylane.PauliY
     ~pennylane.PauliZ
+    ~pennylane.Projector
 
 :html:`</div>`
 

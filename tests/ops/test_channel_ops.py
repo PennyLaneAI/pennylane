@@ -73,6 +73,10 @@ class TestAmplitudeDamping:
         ]
         assert np.allclose(op(0.1, wires=0).kraus_matrices, expected, atol=tol, rtol=0)
 
+    def test_gamma_invalid_parameter(self):
+        with pytest.raises(ValueError, match="gamma must be between"):
+            channel.AmplitudeDamping(1.5, wires=0).kraus_matrices
+
 
 class TestGeneralizedAmplitudeDamping:
     """Tests for the quantum channel GeneralizedAmplitudeDamping"""
@@ -95,6 +99,14 @@ class TestGeneralizedAmplitudeDamping:
         expected_K3 = np.array([[0.0, 0.0], [0.2236068, 0.0]])
         assert np.allclose(op(0.1, 0.5, wires=0).kraus_matrices[3], expected_K3, atol=tol, rtol=0)
 
+    def test_gamma_invalid_parameter(self):
+        with pytest.raises(ValueError, match="gamma must be between"):
+            channel.GeneralizedAmplitudeDamping(1.5, 0.0, wires=0).kraus_matrices
+
+    def test_p_invalid_parameter(self):
+        with pytest.raises(ValueError, match="p must be between"):
+            channel.GeneralizedAmplitudeDamping(0.0, 1.5, wires=0).kraus_matrices
+
 
 class TestPhaseDamping:
     """Tests for the quantum channel PhaseDamping"""
@@ -113,6 +125,10 @@ class TestPhaseDamping:
             np.array([[0.0, 0.0], [0.0, 0.31622777]]),
         ]
         assert np.allclose(op(0.1, wires=0).kraus_matrices, expected, atol=tol, rtol=0)
+
+    def test_gamma_invalid_parameter(self):
+        with pytest.raises(ValueError, match="gamma must be between"):
+            channel.PhaseDamping(1.5, wires=0).kraus_matrices
 
 
 class TestBitFlip:
@@ -147,6 +163,10 @@ class TestBitFlip:
         assert gradient == circuit(1) - circuit(0)
         assert np.allclose(gradient, (-2 * np.cos(angle)))
 
+    def test_p_invalid_parameter(self):
+        with pytest.raises(ValueError, match="p must be between"):
+            channel.BitFlip(1.5, wires=0).kraus_matrices
+
 
 class TestPhaseFlip:
     """Test that various values of p give correct Kraus matrices"""
@@ -179,6 +199,10 @@ class TestPhaseFlip:
         gradient = np.squeeze(qml.grad(circuit)(prob))
         assert gradient == circuit(1) - circuit(0)
         assert np.allclose(gradient, 0.0)
+
+    def test_p_invalid_parameter(self):
+        with pytest.raises(ValueError, match="p must be between"):
+            channel.PhaseFlip(1.5, wires=0).kraus_matrices
 
 
 class TestDepolarizingChannel:
@@ -215,6 +239,10 @@ class TestDepolarizingChannel:
         assert gradient == circuit(1) - circuit(0)
         assert np.allclose(gradient, -(4 / 3) * np.cos(angle))
 
+    def test_p_invalid_parameter(self):
+        with pytest.raises(ValueError, match="p must be between"):
+            channel.DepolarizingChannel(1.5, wires=0).kraus_matrices
+
 
 class TestResetError:
     """Tests for the quantum channel ResetError"""
@@ -238,6 +266,18 @@ class TestResetError:
 
         expected_K4 = np.sqrt(p_1) * np.array([[0, 0], [0, 1]])
         assert np.allclose(op(p_0, p_1, wires=0).kraus_matrices[4], expected_K4, atol=tol, rtol=0)
+
+    def test_p0_invalid_parameter(self):
+        with pytest.raises(ValueError, match="p_0 must be between"):
+            channel.ResetError(1.5, 0.0, wires=0).kraus_matrices
+
+    def test_p1_invalid_parameter(self):
+        with pytest.raises(ValueError, match="p_1 must be between"):
+            channel.ResetError(0.0, 1.5, wires=0).kraus_matrices
+
+    def test_p0_p1_sum_not_normalized(self):
+        with pytest.raises(ValueError, match="must be between"):
+            channel.ResetError(1.0, 1.0, wires=0).kraus_matrices
 
 
 class TestQubitChannel:

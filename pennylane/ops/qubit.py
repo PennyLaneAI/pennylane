@@ -1797,6 +1797,7 @@ class IsingXX(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
+    generator = [np.array([[0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0], [1, 0, 0, 0]]), -1 / 2]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1820,6 +1821,61 @@ class IsingXX(Operation):
     def adjoint(self):
         (phi,) = self.parameters
         return IsingXX(-phi, wires=self.wires)
+
+
+class IsingYY(Operation):
+    r"""IsingYY(phi, wires)
+    Ising YY coupling gate
+
+    .. math:: \mathtt{YY}(\phi) = \begin{bmatrix}
+        \cos(\phi / 2) & 0 & 0 & i \sin(\phi / 2) \\
+        0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
+        0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
+        i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
+        \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 1
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(YY(\phi)) = \frac{1}{2}\left[f(YY(\phi +\pi/2)) - f(YY(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`YY(\phi)`.
+
+    Args:
+        phi (float): the phase angle
+        wires (int): the subsystem the gate acts on
+    """
+    num_params = 1
+    num_wires = 2
+    par_domain = "R"
+    grad_method = "A"
+
+    @staticmethod
+    def decomposition(phi, wires):
+        return [
+            qml.CY(wires=wires),
+            qml.RY(phi, wires=[wires[0]]),
+            qml.CY(wires=wires),
+        ]
+
+    @classmethod
+    def _matrix(cls, *params):
+        phi = params[0]
+        cos = np.cos(phi / 2)
+        isin = 1.0j * np.sin(phi / 2)
+        return np.array(
+            [
+                [cos, 0.0, 0.0, isin],
+                [0.0, cos, -isin, 0.0],
+                [0.0, -isin, cos, 0.0],
+                [isin, 0.0, 0.0, cos],
+            ],
+            dtype=complex,
+        )
+
+    def adjoint(self):
+        (phi,) = self.parameters
+        return IsingYY(-phi, wires=self.wires)
 
 
 class IsingZZ(Operation):
@@ -1848,6 +1904,7 @@ class IsingZZ(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
+    generator = [np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]), -1 / 2]
 
     @staticmethod
     def decomposition(phi, wires):
@@ -2961,6 +3018,75 @@ class Hermitian(Observable):
         return [QubitUnitary(self.eigendecomposition["eigvec"].conj().T, wires=list(self.wires))]
 
 
+class Projector(Observable):
+    r"""Projector(basis_state, wires)
+    Observable corresponding to the computational basis state projector :math:`P=\ket{i}\bra{i}`.
+
+    The expectation of this observable returns the value
+
+    .. math::
+        |\langle \psi | i \rangle |^2
+
+    corresponding to the probability of measuring the quantum state in the :math:`i` -th eigenstate of the specified :math:`n` qubits.
+
+    For example, the projector :math:`\ket{11}\bra{11}` , or in integer notation :math:`\ket{3}\bra{3}`, is created by ``basis_state=np.array([1, 1])``.
+
+    **Details:**
+
+    * Number of wires: Any
+    * Number of parameters: 1
+    * Gradient recipe: None
+
+    Args:
+        basis_state (tensor-like): binary input of shape ``(n, )``
+        wires (Iterable): wires that the projector acts on
+    """
+    num_wires = AnyWires
+    num_params = 1
+    par_domain = "A"
+
+    def __init__(self, basis_state, wires, do_queue=True):
+        wires = Wires(wires)
+        shape = qml.math.shape(basis_state)
+
+        if len(shape) != 1:
+            raise ValueError(f"Basis state must be one-dimensional; got shape {shape}.")
+
+        n_basis_state = shape[0]
+        if n_basis_state != len(wires):
+            raise ValueError(
+                f"Basis state must be of length {len(wires)}; got length {n_basis_state}."
+            )
+
+        basis_state = list(qml.math.toarray(basis_state))
+
+        if not set(basis_state).issubset({0, 1}):
+            raise ValueError(f"Basis state must only consist of 0s and 1s; got {basis_state}")
+
+        super().__init__(basis_state, wires=wires, do_queue=do_queue)
+
+    @classmethod
+    def _eigvals(cls, *params):
+        """Eigenvalues of the specific projector operator.
+
+        Returns:
+            array: eigenvalues of the projector observable in the computational basis
+        """
+        w = np.zeros(2 ** len(params[0]))
+        idx = int("".join(str(i) for i in params[0]), 2)
+        w[idx] = 1
+        return w
+
+    def diagonalizing_gates(self):
+        """Return the gate set that diagonalizes a circuit according to the
+        specified Projector observable.
+
+        Returns:
+            list: list containing the gates diagonalizing the projector observable
+        """
+        return []
+
+
 # =============================================================================
 # Arithmetic
 # =============================================================================
@@ -3187,6 +3313,7 @@ ops = {
     "U2",
     "U3",
     "IsingXX",
+    "IsingYY",
     "IsingZZ",
     "BasisState",
     "QubitStateVector",
@@ -3206,7 +3333,7 @@ ops = {
 }
 
 
-obs = {"Hadamard", "PauliX", "PauliY", "PauliZ", "Hermitian"}
+obs = {"Hadamard", "PauliX", "PauliY", "PauliZ", "Hermitian", "Projector"}
 
 
 __all__ = list(ops | obs)

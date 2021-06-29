@@ -203,6 +203,10 @@ def _get_alpha_y(a, n, k):
     with np.errstate(divide="ignore", invalid="ignore"):
         division = numerator / denominator
 
+    # Cast the numerator and denominator to ensure compatibility with interfaces
+    division = qml.math.cast(division, np.float64)
+    denominator = qml.math.cast(denominator, np.float64)
+
     division = qml.math.where(denominator != 0.0, division, 0.0)
 
     return 2 * qml.math.arcsin(qml.math.sqrt(division))
