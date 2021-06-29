@@ -22,15 +22,15 @@ from pennylane.transforms.decompositions import zyz_decomposition
 
 @qfunc_transform
 def decompose_single_qubit_unitaries(tape):
-    """Quantum function transform to decomposes all instances of single-qubit QubitUnitary
+    """Quantum function transform to decomposes all instances of single-qubit :class:`~.QubitUnitary`
     operations to parametrized single-qubit operations.
 
-    Diagonal operations will be converted to a single ``RZ`` gate, while non-diagonal
-    operations will be converted to a ``Rot`` gate that implements the original operation
+    Diagonal operations will be converted to a single :class:`.RZ` gate, while non-diagonal
+    operations will be converted to a :class:`.Rot` gate that implements the original operation
     up to a global phase.
 
     Args:
-        tape (qml.tape.QuantumTape): A quantum tape.
+        qfunc (function): a quantum function
 
     **Example**
 
@@ -52,7 +52,7 @@ def decompose_single_qubit_unitaries(tape):
 
         def qfunc():
             qml.QubitUnitary(U, wires=0)
-            return qml.expval(qml.PauliZ(0)
+            return qml.expval(qml.PauliZ(0))
 
     The original circuit is:
 

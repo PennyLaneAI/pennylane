@@ -47,8 +47,8 @@ def zyz_decomposition(U, wire):
     r"""Recover the decomposition of a single-qubit matrix :math:`U` in terms of
     elementary operations.
 
-    Diagonal operations will be converted to a single ``RZ`` gate, while non-diagonal
-    operations will be converted to a ``Rot`` gate that implements the original operation
+    Diagonal operations will be converted to a single :class:`.RZ` gate, while non-diagonal
+    operations will be converted to a :class:`.Rot` gate that implements the original operation
     up to a global phase in the form :math:`RZ(\omega) RY(\theta) RZ(\phi)`.
 
     Args:
