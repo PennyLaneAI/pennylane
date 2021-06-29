@@ -45,6 +45,7 @@ containing quantum operations) that are used to construct QNodes.
 
     ~adjoint
     ~ctrl
+    ~transforms.decompose_single_qubit_unitaries
     ~transforms.invisible
     ~apply_controlled_Q
     ~quantum_monte_carlo
@@ -80,7 +81,8 @@ from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
 from .adjoint import adjoint
 from .classical_jacobian import classical_jacobian
 from .control import ControlledOperation, ctrl
-from .decompositions import decompose_single_qubit_unitaries
+from .decompositions import zyz_decomposition
+from .decompose_single_qubit_unitaries import decompose_single_qubit_unitaries
 from .draw import draw
 from .hamiltonian_expand import hamiltonian_expand
 from .invisible import invisible

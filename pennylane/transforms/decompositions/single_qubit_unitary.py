@@ -11,12 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-Contains transforms for decomposing arbitrary unitary operations into elementary gates.
+"""Contains transforms and helpers functions for decomposing arbitrary unitary
+operations into elementary gates.
 """
 import pennylane as qml
 from pennylane import math
-from pennylane.transforms import qfunc_transform
 
 
 def _convert_to_su2(U):
@@ -36,9 +35,7 @@ def _convert_to_su2(U):
         raise ValueError(f"Cannot convert matrix with shape {shape} to SU(2).")
 
     # Check unitarity
-    if not math.allclose(
-        math.dot(U, math.T(math.conj(U))), math.eye(2), atol=1e-7
-    ):
+    if not math.allclose(math.dot(U, math.T(math.conj(U))), math.eye(2), atol=1e-7):
         raise ValueError("Operator must be unitary.")
 
     # Compute the determinant
@@ -52,19 +49,40 @@ def _convert_to_su2(U):
     return U
 
 
-def _zyz_decomposition(U, wire):
-    r"""Helper function to recover the rotation angles of a single-qubit matrix :math:`U`.
+def zyz_decomposition(U, wire):
+    r"""Recover the decomposition of a single-qubit matrix :math:`U` in terms of
+    elementary operations.
 
-    The set of angles are chosen so as to implement :math:`U` up to a global phase.
+    Diagonal operations will be converted to a single ``RZ`` gate, while non-diagonal
+    operations will be converted to a ``Rot`` gate that implements the original operation
+    up to a global phase in the form :math:`RZ(\omega) RY(\theta) RZ(\phi)`.
 
     Args:
         U (tensor): A 2 x 2 unitary matrix.
-        tol (float): The tolerance at which an angle is considered to be close enough
-            to 0. Needed to deal with varying precision across interfaces.
+        wire (Union[Wires, Sequence[int] or int]): The wire on which to apply the operation.
 
     Returns:
-        (float, float, float): A set of angles (:math:`\phi`, :math:`\theta`, :math:`\omega`)
-        that implement U as a sequence :math:`U = RZ(\omega) RY(\theta) RZ(\phi)`.
+        list[qml.Operation]: A ``Rot`` gate on the specified wire that implements ``U``
+        up to a global phase, or an equivalent ``RZ`` gate if ``U`` is diagonal.
+
+    **Example**
+
+    Suppose we would like to apply the following unitary operation:
+
+    .. code-block:: python3
+
+        U = np.array([
+            [-0.28829348-0.78829734j,  0.30364367+0.45085995j],
+            [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]
+        ])
+
+    For PennyLane devices that cannot natively implement ``QubitUnitary``, we
+    can instead recover a ``Rot`` gate that implements the same operation, up
+    to a global phase:
+
+    >>> decomp = zyz_decomposition(U, 0)
+    >>> decomp
+    [Rot(-0.24209529417800013, 1.14938178234275, 1.7330581433950871, wires=[0])]
     """
     U = _convert_to_su2(U)
 
@@ -91,26 +109,3 @@ def _zyz_decomposition(U, wire):
         phi = -omega - math.cast_like(2 * math.angle(U[0, 0]), omega)
 
     return [qml.Rot(math.real(phi), math.real(theta), math.real(omega), wires=wire)]
-
-
-@qfunc_transform
-def decompose_single_qubit_unitaries(tape):
-    """Quantum function transform to decomposes all instances of single-qubit QubitUnitary
-    operations to a sequence of rotations of the form ``RZ``, ``RY``, ``RZ``.
-
-    Args:
-        tape (qml.tape.QuantumTape): A quantum tape.
-    """
-    for op in tape.operations + tape.measurements:
-        if isinstance(op, qml.QubitUnitary):
-            dim_U = math.shape(op.parameters[0])[0]
-
-            if dim_U != 2:
-                continue
-
-            decomp = _zyz_decomposition(op.parameters[0], op.wires[0])
-
-            for d_op in decomp:
-                d_op.queue()
-        else:
-            op.queue()

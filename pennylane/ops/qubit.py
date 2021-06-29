@@ -2162,7 +2162,7 @@ class QubitUnitary(Operation):
         # Decompose arbitrary single-qubit unitaries as the form RZ RY RZ
         if qml.math.shape(U)[0] == 2:
             wire = Wires(wires)[0]
-            decomp_ops = qml.transforms.decompositions._zyz_decomposition(U, wire)
+            decomp_ops = qml.transforms.decompositions.zyz_decomposition(U, wire)
             return decomp_ops
 
         return NotImplementedError("Decompositions only supported for single-qubit unitaries")
