@@ -7,12 +7,16 @@
 
 <h3>Improvements</h3>
 
+* Added the `id` attribute to templates, which was missing from 
+  PR [(#1377)](https://github.com/PennyLaneAI/pennylane/pull/1377).
+  [(#1438)](https://github.com/PennyLaneAI/pennylane/pull/1438)
+  
 <h3>Breaking changes</h3>
 
 <h3>Bug fixes</h3>
 
 * Fixed a bug in the `torch` interface that prevented gradients from being
-  computed on a GPU [(#1426)](https://github.com/PennyLaneAI/pennylane/pull/1426).
+  computed on a GPU. [(#1426)](https://github.com/PennyLaneAI/pennylane/pull/1426)
 
 * Quantum function transforms now preserve the format of the measurement
   results, so that a single measurement returns a single value rather than
@@ -24,7 +28,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Ashish Panigrahi
+Olivia Di Matteo, Ashish Panigrahi, Maria Schuld
 
 
 # Release 0.16.0 (current release)
