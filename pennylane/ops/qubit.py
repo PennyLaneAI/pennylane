@@ -2160,7 +2160,7 @@ class QubitUnitary(Operation):
     @staticmethod
     def decomposition(U, wires):
         # Decompose arbitrary single-qubit unitaries as the form RZ RY RZ
-        if qml.math.shape(U)[0] == 2:
+        if qml.math.shape(U) == (2, 2):
             wire = Wires(wires)[0]
             decomp_ops = qml.transforms.decompositions.zyz_decomposition(U, wire)
             return decomp_ops

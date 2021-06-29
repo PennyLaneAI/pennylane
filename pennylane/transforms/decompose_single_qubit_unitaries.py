@@ -74,9 +74,8 @@ def decompose_single_qubit_unitaries(tape):
     """
     for op in tape.operations + tape.measurements:
         if isinstance(op, qml.QubitUnitary):
-            dim_U = math.shape(op.parameters[0])[0]
-
-            if dim_U != 2:
+            # Only act on single-qubit unitary operations
+            if math.shape(op.parameters[0]) != (2, 2):
                 continue
 
             decomp = zyz_decomposition(op.parameters[0], op.wires[0])
