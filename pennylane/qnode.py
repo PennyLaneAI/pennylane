@@ -15,6 +15,7 @@
 This module contains the QNode class and qnode decorator.
 """
 # pylint: disable=import-outside-toplevel
+# pylint:disable=too-many-branches
 from collections.abc import Sequence
 from functools import lru_cache, update_wrapper
 import warnings
@@ -552,12 +553,22 @@ class QNode:
             )
 
         for obj in self.qtape.operations + self.qtape.observables:
+
             if getattr(obj, "num_wires", None) is qml.operation.WiresEnum.AllWires:
                 # check here only if enough wires
                 if len(obj.wires) != self.device.num_wires:
                     raise qml.QuantumFunctionError(
                         "Operator {} must act on all wires".format(obj.name)
                     )
+
+            if (
+                isinstance(obj, qml.ops.qubit.SparseHamiltonian)
+                and self.diff_method != "parameter-shift"
+            ):
+                raise qml.QuantumFunctionError(
+                    "SparseHamiltonian observable must be used with the parameter-shift"
+                    " differentiation method"
+                )
 
         # pylint: disable=protected-access
         obs_on_same_wire = len(self.qtape._obs_sharing_wires) > 0
