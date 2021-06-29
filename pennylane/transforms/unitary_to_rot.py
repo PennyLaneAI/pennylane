@@ -21,7 +21,7 @@ from pennylane.transforms.decompositions import zyz_decomposition
 
 
 @qfunc_transform
-def decompose_single_qubit_unitaries(tape):
+def unitary_to_rot(tape):
     """Quantum function transform to decomposes all instances of single-qubit :class:`~.QubitUnitary`
     operations to parametrized single-qubit operations.
 
@@ -43,7 +43,7 @@ def decompose_single_qubit_unitaries(tape):
             [ 0.25053735+0.75164238j,  0.60700543-0.06171855j]
         ])
 
-    The ``decompose_single_qubit_unitaries`` transform enables us to decompose
+    The ``unitary_to_rot`` transform enables us to decompose
     such numerical operations (as well as unitaries that may be defined by parameters
     within the QNode, and instantiated therein), while preserving differentiability.
 
@@ -66,7 +66,7 @@ def decompose_single_qubit_unitaries(tape):
 
     We can use the transform to decompose the gate:
 
-    >>> transformed_qfunc = decompose_single_qubit_unitaries(qfunc)
+    >>> transformed_qfunc = unitary_to_rot(qfunc)
     >>> transformed_qnode = qml.QNode(transformed_qfunc, dev)
     >>> print(qml.draw(transformed_qnode)())
      0: ──Rot(-1.35, 1.83, -0.606)──┤ ⟨Z⟩
