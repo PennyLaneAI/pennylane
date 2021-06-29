@@ -2145,13 +2145,14 @@ class QubitUnitary(Operation):
     par_domain = "A"
     grad_method = None
 
-    def __init__(self, *params, wires=None, do_queue=True):
+    def __init__(self, *params, wires, do_queue=True):
+        wires = Wires(wires)
+
         # For pure QubitUnitary operations (not controlled), check that the number
         # of wires fits the dimensions of the matrix
         if not isinstance(self, ControlledQubitUnitary):
             U = np.asarray(params[0])
 
-            wires = Wires(wires)
             dim = 2 ** len(wires)
 
             if U.shape != (dim, dim):
