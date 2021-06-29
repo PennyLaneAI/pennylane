@@ -227,7 +227,7 @@ class TestToQasmUnitTests:
     def test_unsupported_gate(self):
         """Test an exception is raised if an unsupported operation is
         applied."""
-        U = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+        U = qml.CRY(0.5, wires=[0, 1]).matrix
 
         with qml.tape.QuantumTape() as circuit:
             qml.S(wires=0), qml.QubitUnitary(U, wires=[0, 1])
@@ -578,13 +578,13 @@ class TestQNodeQasmIntegrationTests:
     def test_unsupported_gate(self):
         """Test an exception is raised if an unsupported operation is
         applied."""
-        U = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
-        dev = qml.device("default.qubit", wires=1)
+        U = qml.CRY(0.5, wires=[0, 1]).matrix
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def qnode():
             qml.S(wires=0)
-            qml.QubitUnitary(U, wires=0)
+            qml.QubitUnitary(U, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
         qnode()
