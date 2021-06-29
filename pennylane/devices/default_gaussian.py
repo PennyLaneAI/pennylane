@@ -350,7 +350,7 @@ def vacuum_state(wires, hbar=2.0):
     r"""Returns the vacuum state.
 
     Args:
-        wires (int): the number of wires to create the vacuum for
+        wires (int): the number of wires to initialize in the vacuum state
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`
     Returns:
