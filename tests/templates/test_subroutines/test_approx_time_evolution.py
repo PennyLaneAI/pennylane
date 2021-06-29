@@ -204,6 +204,12 @@ class TestInputs:
         ):
             circuit()
 
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        h = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliY(0)])
+        template = qml.templates.ApproxTimeEvolution(h, 2, 3, id="a")
+        assert template.id == "a"
+
 
 # test data for gradient tests
 

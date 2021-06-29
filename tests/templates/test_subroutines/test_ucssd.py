@@ -269,6 +269,18 @@ class TestInputs:
                 init_state=init_state,
             )
 
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        template = qml.templates.UCCSD(
+            [0.1, 0.2],
+            wires=range(4),
+            s_wires=[[0, 1]],
+            d_wires=[[[0, 1], [2, 3]]],
+            init_state=np.array([0, 1, 0, 1]),
+            id="a",
+        )
+        assert template.id == "a"
+
 
 def circuit_template(weights):
     qml.templates.UCCSD(
