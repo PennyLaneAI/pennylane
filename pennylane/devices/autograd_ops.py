@@ -203,7 +203,7 @@ def IsingXX(phi):
 
 
 def IsingYY(phi):
-    r"""Ising YY coupling gate
+    r"""Ising YY coupling gate.
 
     .. math:: YY(\phi) = \begin{bmatrix}
         \cos(\phi / 2) & 0 & 0 & i \sin(\phi / 2) \\
