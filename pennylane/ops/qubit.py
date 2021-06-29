@@ -2191,9 +2191,6 @@ class QubitMatrix(Operation):
         if A.shape[0] != A.shape[1]:
             raise ValueError("Operator must be a square matrix.")
 
-        if not np.allclose(A, A.conj().T):
-            raise ValueError("Observable must be Hermitian.")
-
         return A
 
 

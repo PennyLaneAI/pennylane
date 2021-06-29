@@ -1464,10 +1464,6 @@ class TestOperations:
         with pytest.raises(ValueError, match="must be a square matrix"):
             qml.QubitMatrix(A1, wires=0).matrix
 
-        # test non-Hermitian matrix
-        A2 = np.array([[0, 1j], [1j, 0]])
-        with pytest.raises(ValueError, match="must be Hermitian"):
-            qml.QubitMatrix(A2, wires=0).matrix
 
     def test_iswap_eigenval(self):
         """Tests that the ISWAP eigenvalue matches the numpy eigenvalues of the ISWAP matrix"""
