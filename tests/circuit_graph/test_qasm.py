@@ -230,7 +230,7 @@ class TestToQasmUnitTests:
         U = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
 
         with qml.tape.QuantumTape() as circuit:
-            qml.S(wires=0), qml.QubitUnitary(U, wires=[0, 1])
+            qml.S(wires=0), qml.QubitUnitary(U, wires=[0])
 
         with pytest.raises(ValueError, match="QubitUnitary not supported by the QASM serializer"):
             res = circuit.to_openqasm()
