@@ -2167,7 +2167,7 @@ class QubitUnitary(Operation):
 
 class QubitMatrix(Operation):
     r"""QubitMatrix(A, wires)
-    Apply an arbitrary fixed matrix.
+    Apply an arbitrary square matrix.
 
     **Details:**
 

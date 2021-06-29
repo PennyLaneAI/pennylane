@@ -27,7 +27,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Ashish Panigrahi
+Olivia Di Matteo, Anthony Hayes, Ashish Panigrahi
 
 
 # Release 0.16.0 (current release)
