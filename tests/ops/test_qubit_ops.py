@@ -1425,7 +1425,7 @@ class TestOperations:
         U = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
 
         # test non-square matrix
-        with pytest.raises(ValueError, match="must be a square matrix"):
+        with pytest.raises(ValueError, match="must be of shape"):
             qml.QubitUnitary(U[1:], wires=0).matrix
 
         # test non-unitary matrix
@@ -1433,6 +1433,10 @@ class TestOperations:
         U3[0, 0] += 0.5
         with pytest.raises(ValueError, match="must be unitary"):
             qml.QubitUnitary(U3, wires=0).matrix
+
+        # test incorrect number of wires
+        with pytest.raises(ValueError, match="must be of shape"):
+            qml.QubitUnitary(U, wires=[0, 1]).matrix
 
     @pytest.mark.parametrize(
         "U", [np.array([0]), np.array([1, 0, 0, 1]), np.array([[[1, 0], [0, 1]]])]
@@ -1442,7 +1446,7 @@ class TestOperations:
         that are not two-dimensional."""
 
         # test non-square matrix
-        with pytest.raises(ValueError, match="must be a square matrix"):
+        with pytest.raises(ValueError, match="must be of shape"):
             qml.QubitUnitary(U, wires=0).matrix
 
     def test_iswap_eigenval(self):
