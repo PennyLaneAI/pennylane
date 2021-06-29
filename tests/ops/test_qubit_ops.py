@@ -912,7 +912,6 @@ class TestOperations:
         )
 
         res = qml.grad(circuit)(phi)
-        print(res, expected)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
