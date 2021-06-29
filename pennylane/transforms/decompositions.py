@@ -28,9 +28,11 @@ def _convert_to_su2(U):
         array[complex]: A :math:`2 \times 2` matrix in :math:`SU(2)` that is
         equivalent to U up to a global phase.
     """
+    shape = qml.math.shape(U)
+
     # Check dimensions
-    if qml.math.shape(U)[0] != 2 or qml.math.shape(U)[1] != 2:
-        raise ValueError("Cannot convert matrix with shape {qml.math.shape(U)} to SU(2).")
+    if shape != (2, 2):
+        raise ValueError(f"Cannot convert matrix with shape {shape} to SU(2).")
 
     # Check unitarity
     if not qml.math.allclose(
