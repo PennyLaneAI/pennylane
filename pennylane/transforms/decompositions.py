@@ -15,7 +15,6 @@
 Contains transforms for decomposing arbitrary unitary operations into elementary gates.
 """
 import pennylane as qml
-import numpy as np
 from pennylane.transforms import qfunc_transform
 
 
