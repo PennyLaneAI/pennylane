@@ -7,6 +7,9 @@
 
 <h3>Improvements</h3>
 
+* Add QubitMatrix operator for custom operator implementation
+[(#1435)](https://github.com/PennyLaneAI/pennylane/pull/1435)
+
 <h3>Breaking changes</h3>
 
 <h3>Bug fixes</h3>
@@ -45,7 +48,7 @@ Olivia Di Matteo, Ashish Panigrahi
       qml.SingleExcitation(param, wires=[0, 1])
       return qml.expval(qml.SparseHamiltonian(H, [0, 1]))
   ```
-  
+
   We can execute this QNode, passing in a sparse identity matrix:
 
   ```pycon
