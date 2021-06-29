@@ -2166,7 +2166,7 @@ class QubitUnitary(Operation):
             decomp_ops = qml.transforms.decompositions.zyz_decomposition(U, wire)
             return decomp_ops
 
-        return NotImplementedError("Decompositions only supported for single-qubit unitaries")
+        raise NotImplementedError("Decompositions only supported for single-qubit unitaries")
 
     def adjoint(self):
         return QubitUnitary(qml.math.T(qml.math.conj(self.matrix)), wires=self.wires)

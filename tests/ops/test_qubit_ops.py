@@ -1462,11 +1462,19 @@ class TestOperations:
         ],
     )
     def test_qubit_unitary_decomposition(self, U, expected_gate, expected_params):
+        """Tests that single-qubit QubitUnitary decompositions are performed."""
         decomp = qml.QubitUnitary.decomposition(U, wires=0)
 
         assert len(decomp) == 1
         assert isinstance(decomp[0], expected_gate)
         assert np.allclose(decomp[0].parameters, expected_params)
+
+    def test_qubit_unitary_decomposition_multiqubit_invalid(self):
+        """Test that QubitUnitary is not decomposed for more than a single qubit."""
+        U = qml.CRZ(0.3, wires=[0, 1]).matrix
+
+        with pytest.raises(NotImplementedError, match="only supported for single-qubit"):
+            qml.QubitUnitary.decomposition(U, wires=[0, 1])
 
     def test_iswap_eigenval(self):
         """Tests that the ISWAP eigenvalue matches the numpy eigenvalues of the ISWAP matrix"""
