@@ -31,6 +31,35 @@ Olivia Di Matteo, Ashish Panigrahi
 
 <h3>New features since last release</h3>
 
+* Added a sparse Hamiltonian observable and the functionality to support computing its expectation
+  value. [(#1398)](https://github.com/PennyLaneAI/pennylane/pull/1398)
+
+  For example, the following QNode returns the expectation value of a sparse Hamiltonian:
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev, diff_method="parameter-shift")
+  def circuit(param, H):
+      qml.PauliX(0)
+      qml.SingleExcitation(param, wires=[0, 1])
+      return qml.expval(qml.SparseHamiltonian(H, [0, 1]))
+  ```
+  
+  We can execute this QNode, passing in a sparse identity matrix:
+
+  ```pycon
+  >>> print(circuit([0.5], scipy.sparse.eye(4).tocoo()))
+  0.9999999999999999
+  ```
+
+  The expectation value of the sparse Hamiltonian is computed directly, which leads to executions
+  that are faster by orders of magnitude. Note that "parameter-shift" is the only differentiation
+  method that is currently supported when the observable is a sparse Hamiltonian.
+
+* Added functionality to compute the sparse matrix representation of a `qml.Hamiltonian` object.
+  [(#1394)](https://github.com/PennyLaneAI/pennylane/pull/1394)
+
 <h4>First class support for quantum kernels</h4>
 
 * The new `qml.kernels` module provides basic functionalities for [working with quantum
