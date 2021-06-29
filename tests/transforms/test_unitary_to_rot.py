@@ -158,7 +158,7 @@ class TestQubitUnitaryDifferentiability:
     """Tests to ensure the transform is fully differentiable in all interfaces."""
 
     @pytest.mark.parametrize("z_rot,x_rot", angle_pairs)
-    def test_gradient_qubit_unitary(self, z_rot, x_rot):
+    def test_gradient_unitary_to_rot(self, z_rot, x_rot):
         """Tests differentiability in autograd interface."""
 
         def qfunc_with_qubit_unitary(angles):
@@ -191,9 +191,9 @@ class TestQubitUnitaryDifferentiability:
         assert qml.math.allclose(original_grad, transformed_grad)
 
     @pytest.mark.parametrize("z_rot,x_rot", angle_pairs)
-    def test_gradient_qubit_unitary_torch(self, z_rot, x_rot):
+    def test_gradient_unitary_to_rot_torch(self, z_rot, x_rot):
         """Tests differentiability in torch interface."""
-        torch = pytest.importorskip("torch")
+        torch = pytest.importorskip("torch", minversion="1.8")
 
         def qfunc_with_qubit_unitary(angles):
             z = angles[0]
@@ -238,7 +238,7 @@ class TestQubitUnitaryDifferentiability:
         assert qml.math.allclose(original_input.grad, transformed_input.grad)
 
     @pytest.mark.parametrize("z_rot,x_rot", angle_pairs)
-    def test_unitary_to_rot_tf(self, z_rot, x_rot):
+    def test_gradient_unitary_to_rot_tf(self, z_rot, x_rot):
         """Tests differentiability in tensorflow interface."""
         tf = pytest.importorskip("tensorflow")
 
@@ -281,7 +281,7 @@ class TestQubitUnitaryDifferentiability:
         assert qml.math.allclose(original_grad, transformed_grad, atol=1e-7)
 
     @pytest.mark.parametrize("z_rot,x_rot", angle_pairs)
-    def test_unitary_to_rot_jax(self, z_rot, x_rot):
+    def test_gradient_unitary_to_rot_jax(self, z_rot, x_rot):
         """Tests differentiability in jax interface."""
         jax = pytest.importorskip("jax")
         from jax import numpy as jnp
