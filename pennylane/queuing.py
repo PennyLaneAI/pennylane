@@ -261,7 +261,7 @@ class AnnotatedQueue(QueuingContext):
         return list(self._queue.keys())
 
 
-def apply_op(op, context=QueuingContext):
+def apply(op, context=QueuingContext):
     """Apply an instantiated operator or measurement to a queuing context.
 
     Args:
@@ -278,7 +278,7 @@ def apply_op(op, context=QueuingContext):
     In PennyLane, operations and measurements are 'queued' or applied to a QNode
     when they are instantiated.
 
-    The ``apply_op`` function can be used to add operations that might have
+    The ``apply`` function can be used to add operations that might have
     already been instantiated elsewhere to the QNode:
 
     .. code-block:: python
@@ -289,7 +289,7 @@ def apply_op(op, context=QueuingContext):
         @qml.qnode(dev)
         def circuit(x):
             qml.RY(x, wires=0)
-            qml.apply_op(op)
+            qml.apply(op)
             return qml.expval(qml.PauliZ(0))
 
     >>> print(qml.draw(circuit)(0.6))
@@ -301,9 +301,9 @@ def apply_op(op, context=QueuingContext):
 
         @qml.qnode(dev)
         def circuit(x):
-            qml.apply_op(op)
+            qml.apply(op)
             qml.RY(x, wires=0)
-            qml.apply_op(op)
+            qml.apply(op)
             return qml.expval(qml.PauliZ(0))
 
     >>> print(qml.draw(circuit)(0.6))
@@ -312,7 +312,7 @@ def apply_op(op, context=QueuingContext):
     .. UsageDetails::
 
         Instantiated measurements can also be applied to queuing contexts
-        using ``apply_op``:
+        using ``apply``:
 
         .. code-block:: python
 
@@ -323,13 +323,13 @@ def apply_op(op, context=QueuingContext):
             def circuit(x):
                 qml.RY(x, wires=0)
                 qml.CNOT(wires=[0, 1])
-                return qml.apply_op(meas)
+                return qml.apply(meas)
 
         >>> print(qml.draw(circuit)(0.6))
          0: ──RY(0.6)──╭C──╭┤ ⟨Z ⊗ Y⟩
          1: ───────────╰X──╰┤ ⟨Z ⊗ Y⟩
 
-        By default, ``apply_op`` will queue operators to the currently
+        By default, ``apply`` will queue operators to the currently
         active queuing context.
 
         When working with low-level queuing contexts such as quantum tapes,
@@ -346,7 +346,7 @@ def apply_op(op, context=QueuingContext):
 
                     # apply the same operation to tape1
                     # without leaving the tape2 context
-                    qml.apply_op(op1, context=tape1)
+                    qml.apply(op1, context=tape1)
 
                     qml.RZ(0.2, wires=0)
 

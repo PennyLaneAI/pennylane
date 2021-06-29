@@ -2,8 +2,8 @@
 
 <h3>New features since last release</h3>
 
-* The new ``qml.apply_op`` function can be used to add operations that might have
-  already been instantiated elsewhere to the QNode:
+* The new ``qml.apply`` function can be used to add operations that might have
+  already been instantiated elsewhere to the QNode and other queuing contexts:
   [(#1433)](https://github.com/PennyLaneAI/pennylane/pull/1433)
 
   ```python
@@ -13,7 +13,7 @@
   @qml.qnode(dev)
   def circuit(x):
       qml.RY(x, wires=0)
-      qml.apply_op(op)
+      qml.apply(op)
       return qml.expval(qml.PauliZ(0))
   ```
 
@@ -30,6 +30,11 @@
 <h3>Improvements</h3>
 
 <h3>Breaking changes</h3>
+
+* The existing `pennylane.collections.apply` function is no longer accessible
+  via `qml.apply`, and needs to be imported directly from the ``collections``
+  package.
+  [(#1358)](https://github.com/PennyLaneAI/pennylane/pull/1358)
 
 <h3>Bug fixes</h3>
 

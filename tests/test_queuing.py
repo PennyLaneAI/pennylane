@@ -438,20 +438,20 @@ test_observables = [
 
 
 class TestApplyOp:
-    """Tests for the apply_op function"""
+    """Tests for the apply function"""
 
     def test_error(self):
         """Test that applying an operation without an active
         context raises an error"""
         with pytest.raises(RuntimeError, match="No queuing context"):
-            qml.apply_op(qml.PauliZ(0))
+            qml.apply(qml.PauliZ(0))
 
     def test_default_queue_operation_inside(self):
         """Test applying an operation instantiated within the queuing
         context to the existing active queue"""
         with qml.tape.QuantumTape() as tape:
             op1 = qml.PauliZ(0)
-            op2 = qml.apply_op(op1)
+            op2 = qml.apply(op1)
 
         assert tape.operations == [op1, op2]
 
@@ -461,7 +461,7 @@ class TestApplyOp:
         op = qml.PauliZ(0)
 
         with qml.tape.QuantumTape() as tape:
-            qml.apply_op(op)
+            qml.apply(op)
 
         assert tape.operations == [op]
 
@@ -472,7 +472,7 @@ class TestApplyOp:
         op = qml.expval(obs)
 
         with qml.tape.QuantumTape() as tape:
-            qml.apply_op(op)
+            qml.apply(op)
 
         assert tape.measurements == [op]
 
@@ -483,7 +483,7 @@ class TestApplyOp:
 
         with qml.tape.QuantumTape() as tape:
             op1 = qml.expval(obs)
-            op2 = qml.apply_op(op1)
+            op2 = qml.apply(op1)
 
         assert tape.measurements == [op1, op2]
 
@@ -493,7 +493,7 @@ class TestApplyOp:
         with qml.tape.QuantumTape() as tape1:
             with qml.tape.QuantumTape() as tape2:
                 op1 = qml.PauliZ(0)
-                op2 = qml.apply_op(op1, tape1)
+                op2 = qml.apply(op1, tape1)
 
         assert tape1.operations == [tape2, op2]
         assert tape2.operations == [op1]
@@ -505,7 +505,7 @@ class TestApplyOp:
 
         with qml.tape.QuantumTape() as tape1:
             with qml.tape.QuantumTape() as tape2:
-                qml.apply_op(op, tape1)
+                qml.apply(op, tape1)
 
         assert tape1.operations == [tape2, op]
         assert tape2.operations == []
@@ -518,7 +518,7 @@ class TestApplyOp:
 
         with qml.tape.QuantumTape() as tape1:
             with qml.tape.QuantumTape() as tape2:
-                qml.apply_op(op, tape1)
+                qml.apply(op, tape1)
 
         assert tape1.measurements == [op]
         assert tape2.measurements == []
@@ -531,7 +531,7 @@ class TestApplyOp:
         with qml.tape.QuantumTape() as tape1:
             with qml.tape.QuantumTape() as tape2:
                 op1 = qml.expval(obs)
-                op2 = qml.apply_op(op1, tape1)
+                op2 = qml.apply(op1, tape1)
 
         assert tape1.measurements == [op2]
         assert tape2.measurements == [op1]
@@ -541,8 +541,8 @@ class TestApplyOp:
         added to the queuing context"""
         with qml.tape.QuantumTape() as tape1:
             with qml.tape.QuantumTape() as tape2:
-                op1 = qml.apply_op(5)
-                op2 = qml.apply_op(6, tape1)
+                op1 = qml.apply(5)
+                op2 = qml.apply(6, tape1)
 
         assert tape1.queue == [tape2, op2]
         assert tape2.queue == [op1]
