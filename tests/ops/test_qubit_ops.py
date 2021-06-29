@@ -1464,7 +1464,6 @@ class TestOperations:
         with pytest.raises(ValueError, match="must be a square matrix"):
             qml.QubitMatrix(A1, wires=0).matrix
 
-
     def test_iswap_eigenval(self):
         """Tests that the ISWAP eigenvalue matches the numpy eigenvalues of the ISWAP matrix"""
         op = qml.ISWAP(wires=[0, 1])
