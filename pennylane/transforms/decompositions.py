@@ -15,6 +15,7 @@
 Contains transforms for decomposing arbitrary unitary operations into elementary gates.
 """
 import pennylane as qml
+from pennylane import math
 from pennylane.transforms import qfunc_transform
 
 
@@ -28,15 +29,15 @@ def _convert_to_su2(U):
         array[complex]: A :math:`2 \times 2` matrix in :math:`SU(2)` that is
         equivalent to U up to a global phase.
     """
-    shape = qml.math.shape(U)
+    shape = math.shape(U)
 
     # Check dimensions
     if shape != (2, 2):
         raise ValueError(f"Cannot convert matrix with shape {shape} to SU(2).")
 
     # Check unitarity
-    if not qml.math.allclose(
-        qml.math.dot(U, qml.math.T(qml.math.conj(U))), qml.math.eye(2), atol=1e-7
+    if not math.allclose(
+        math.dot(U, math.T(math.conj(U))), math.eye(2), atol=1e-7
     ):
         raise ValueError("Operator must be unitary.")
 
@@ -44,9 +45,9 @@ def _convert_to_su2(U):
     det = U[0, 0] * U[1, 1] - U[0, 1] * U[1, 0]
 
     # Convert to SU(2) if it's not close to 1
-    if not qml.math.allclose(det, [1.0]):
-        exp_angle = -1j * qml.math.cast_like(qml.math.angle(det), 1j) / 2
-        U = qml.math.cast_like(U, exp_angle) * qml.math.exp(exp_angle)
+    if not math.allclose(det, [1.0]):
+        exp_angle = -1j * math.cast_like(math.angle(det), 1j) / 2
+        U = math.cast_like(U, exp_angle) * math.exp(exp_angle)
 
     return U
 
@@ -69,27 +70,27 @@ def _zyz_decomposition(U, wire):
 
     # Check if the matrix is diagonal; only need to check one corner.
     # If it is diagonal, we don't need a full Rot, just return an RZ.
-    if qml.math.allclose(U[0, 1], [0.0]):
-        omega = 2 * qml.math.angle(U[1, 1])
+    if math.allclose(U[0, 1], [0.0]):
+        omega = 2 * math.angle(U[1, 1])
         return [qml.RZ(omega, wires=wire)]
 
     # If not diagonal, compute the angle of the RY
-    cos2_theta_over_2 = qml.math.abs(U[0, 0] * U[1, 1])
-    theta = 2 * qml.math.arccos(qml.math.sqrt(cos2_theta_over_2))
+    cos2_theta_over_2 = math.abs(U[0, 0] * U[1, 1])
+    theta = 2 * math.arccos(math.sqrt(cos2_theta_over_2))
 
     # If the top left element is 0, can only use the off-diagonal elements We
     # have to be very careful with the math here to ensure things that get
     # multiplied together are of the correct type in the different interfaces.
-    if qml.math.allclose(U[0, 0], [0.0]):
-        phi = 1j * qml.math.log(U[0, 1] / U[1, 0])
-        omega = -phi - qml.math.cast_like(2 * qml.math.angle(U[1, 0]), phi)
+    if math.allclose(U[0, 0], [0.0]):
+        phi = 1j * math.log(U[0, 1] / U[1, 0])
+        omega = -phi - math.cast_like(2 * math.angle(U[1, 0]), phi)
     else:
         el_division = U[0, 0] / U[1, 0]
-        tan_part = qml.math.cast_like(qml.math.tan(theta / 2), el_division)
-        omega = 1j * qml.math.log(tan_part * el_division)
-        phi = -omega - qml.math.cast_like(2 * qml.math.angle(U[0, 0]), omega)
+        tan_part = math.cast_like(math.tan(theta / 2), el_division)
+        omega = 1j * math.log(tan_part * el_division)
+        phi = -omega - math.cast_like(2 * math.angle(U[0, 0]), omega)
 
-    return [qml.Rot(qml.math.real(phi), qml.math.real(theta), qml.math.real(omega), wires=wire)]
+    return [qml.Rot(math.real(phi), math.real(theta), math.real(omega), wires=wire)]
 
 
 @qfunc_transform
@@ -102,7 +103,7 @@ def decompose_single_qubit_unitaries(tape):
     """
     for op in tape.operations + tape.measurements:
         if isinstance(op, qml.QubitUnitary):
-            dim_U = qml.math.shape(op.parameters[0])[0]
+            dim_U = math.shape(op.parameters[0])[0]
 
             if dim_U != 2:
                 continue
