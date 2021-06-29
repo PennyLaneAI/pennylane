@@ -545,7 +545,11 @@ class TestQNode:
             res = circuit(x, y)
 
         expected = np.array(
-            [tf.cos(x), (1 + tf.cos(x) * tf.cos(y)) / 2, (1 - tf.cos(x) * tf.cos(y)) / 2]
+            [
+                tf.cos(x),
+                (1 + tf.cos(x) * tf.cos(y)) / 2,
+                (1 - tf.cos(x) * tf.cos(y)) / 2,
+            ]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -693,7 +697,10 @@ class TestQNode:
 
         a, b = x * 1.0
 
-        expected_res = [0.5 + 0.5 * tf.cos(a) * tf.cos(b), 0.5 - 0.5 * tf.cos(a) * tf.cos(b)]
+        expected_res = [
+            0.5 + 0.5 * tf.cos(a) * tf.cos(b),
+            0.5 - 0.5 * tf.cos(a) * tf.cos(b),
+        ]
         assert np.allclose(res, expected_res, atol=tol, rtol=0)
 
         expected_g = [
@@ -780,6 +787,104 @@ class TestQNode:
         np.testing.assert_allclose(hess, expected_hess, atol=tol, rtol=0, verbose=True)
 
 
+class Test_adjoint:
+    def test_adjoint_default_save_state(self, mocker):
+        """Tests that the state will be saved by default"""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method="adjoint", interface="tf")
+        def circ(x):
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=1)
+            qml.CNOT(wires=(0, 1))
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
+
+        expected_grad = lambda x: np.array([-np.sin(x[0]), np.cos(x[1])])
+
+        spy = mocker.spy(dev, "adjoint_jacobian")
+
+        x1 = tf.Variable([0.1, 0.2])
+        x2 = tf.Variable([0.3, 0.4])
+
+        with tf.GradientTape() as tape1:
+            res1 = circ(x1)
+
+        with tf.GradientTape() as tape2:
+            res2 = circ(x2)
+
+        grad1 = tape1.gradient(res1, x1)
+        grad2 = tape2.gradient(res2, x2)
+
+        assert np.allclose(grad1, expected_grad(x1))
+        assert np.allclose(grad2, expected_grad(x2))
+
+        assert circ.device.num_executions == 2
+        spy.assert_called_with(mocker.ANY, starting_state=mocker.ANY)
+
+    def test_adjoint_save_state(self, mocker):
+        """Tests that the tf interface reuses device state when prompted by `cache_state=True`.
+        Also makes sure executing a second circuit before backward pass does not interfere
+        with answer.
+        """
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method="adjoint", interface="tf", adjoint_cache=True)
+        def circ(x):
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=1)
+            qml.CNOT(wires=(0, 1))
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
+
+        expected_grad = lambda x: np.array([-np.sin(x[0]), np.cos(x[1])])
+
+        spy = mocker.spy(dev, "adjoint_jacobian")
+
+        x1 = tf.Variable([0.1, 0.2])
+        x2 = tf.Variable([0.3, 0.4])
+
+        with tf.GradientTape() as tape1:
+            res1 = circ(x1)
+
+        with tf.GradientTape() as tape2:
+            res2 = circ(x2)
+
+        grad1 = tape1.gradient(res1, x1)
+        grad2 = tape2.gradient(res2, x2)
+
+        assert np.allclose(grad1, expected_grad(x1))
+        assert np.allclose(grad2, expected_grad(x2))
+
+        assert circ.device.num_executions == 2
+        spy.assert_called_with(mocker.ANY, starting_state=mocker.ANY)
+
+        assert circ.qtape.jacobian_options["adjoint_cache"] == True
+
+    def test_adjoint_no_save_state(self, mocker):
+        """Tests that with `adjoint_cache=False`, the state is not cached"""
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, diff_method="adjoint", interface="tf", adjoint_cache=False)
+        def circ(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        spy = mocker.spy(dev, "adjoint_jacobian")
+
+        x = tf.Variable(0.1)
+        with tf.GradientTape() as tape:
+            res = circ(x)
+
+        grad = tape.gradient(res, x)
+
+        assert circ.device.num_executions == 2
+        spy.assert_called_with(mocker.ANY)
+
+        assert circ.qtape.jacobian_options.get("adjoint_cache", False) == False
+
+
 def qtransform(qnode, a, framework=tf):
     """Transforms every RY(y) gate in a circuit to RX(-a*cos(y))"""
 
@@ -817,7 +922,8 @@ def qtransform(qnode, a, framework=tf):
 
 
 @pytest.mark.parametrize(
-    "dev_name,diff_method", [("default.qubit", "finite-diff"), ("default.qubit.tf", "backprop")]
+    "dev_name,diff_method",
+    [("default.qubit", "finite-diff"), ("default.qubit.tf", "backprop")],
 )
 def test_transform(dev_name, diff_method, tol):
     """Test an example transform"""

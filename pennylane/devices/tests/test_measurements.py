@@ -816,8 +816,8 @@ class TestTensorSample:
 
         skip_if(dev, {"supports_tensor_observables": False})
 
-        theta = 0.432
-        phi = 0.123
+        theta = 1.432
+        phi = 1.123
         varphi = -0.543
 
         @qml.qnode(dev)

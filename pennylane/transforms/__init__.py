@@ -32,6 +32,7 @@ that compute the desired quantity.
     ~transforms.classical_jacobian
     ~draw
     ~metric_tensor
+    ~specs
 
 Transforms that act on quantum functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -49,6 +50,7 @@ containing quantum operations) that are used to construct QNodes.
     ~transforms.diag_behind_controls
     ~transforms.invisible
     ~transforms.merge_rotations
+    ~apply_controlled_Q
     ~quantum_monte_carlo
     ~transforms.single_qubit_fusion
 
@@ -86,6 +88,7 @@ from .hamiltonian_expand import hamiltonian_expand
 from .invisible import invisible
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor, metric_tensor_tape
+from .specs import specs
 from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
 from .optimization import (
     cancel_inverses,
@@ -95,4 +98,5 @@ from .optimization import (
 )
 from .transpilation import cnot_to_cz
 from .compile import compile
-from .qmc import quantum_monte_carlo
+from .qmc import apply_controlled_Q, quantum_monte_carlo
+
