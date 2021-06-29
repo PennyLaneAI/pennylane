@@ -18,6 +18,10 @@
   results, so that a single measurement returns a single value rather than
   an array with a single element. [(#1434)](https://github.com/PennyLaneAI/pennylane/pull/1434/files)
 
+* Fixed a bug in the initialization of `QubitUnitary` where the size of
+  the matrix was not checked against the number of wires.
+  [(#1439)](https://github.com/PennyLaneAI/pennylane/pull/1439)].
+
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
