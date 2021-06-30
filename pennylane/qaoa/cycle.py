@@ -195,7 +195,7 @@ def loss_hamiltonian(graph: nx.Graph) -> Hamiltonian:
     weights, as outlined `here <https://1qbit.com/whitepaper/arbitrage/>`__. The product of weights
     of a subset of edges in a graph is given by
 
-    .. math:: P = \prod_{(i, j) \in E} x_{ij} c_{ij}
+    .. math:: P = \prod_{(i, j) \in E} [(c_{ij} - 1)x_{ij} + 1]
 
     where :math:`E` are the edges of the graph, :math:`x_{ij}` is a binary number that selects
     whether to include the edge :math:`(i, j)` and :math:`c_{ij}` is the corresponding edge weight.
@@ -408,7 +408,7 @@ def _inner_out_flow_constraint_hamiltonian(graph: nx.DiGraph, node) -> Hamiltoni
 
         d_{i}^{out}(d_{i}^{out} - 2)\mathbb{I}
         - 2(d_{i}^{out}-1)\sum_{j,(i,j)\in E}\hat{Z}_{ij} +
-        ( \sum_{j,(i,j)\in E}\hat{Z}_{ij}) )^{2}
+        ( \sum_{j,(i,j)\in E}\hat{Z}_{ij} )^{2}
 
     Args:
         graph (nx.DiGraph): the directed graph specifying possible edges
