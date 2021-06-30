@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import pytest
-
+from pennylane import numpy as np
 import pennylane as qml
 from pennylane.wires import Wires
 from pennylane.transforms.optimization import cancel_inverses
@@ -177,3 +177,145 @@ class TestCancelInverses:
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
         assert len(ops) == 0
+
+
+# Example QNode and device for interface testing
+dev = qml.device("default.qubit", wires=3)
+
+
+def qfunc(theta):
+    qml.Hadamard(wires=0)
+    qml.PauliX(wires=1)
+    qml.Hadamard(wires=0)
+    qml.CNOT(wires=[0, 1])
+    qml.RZ(theta[0], wires=2)
+    qml.PauliX(wires=1)
+    qml.CZ(wires=[1, 0])
+    qml.RY(theta[1], wires=2)
+    qml.CZ(wires=[0, 1])
+    return qml.expval(qml.PauliX(0) @ qml.PauliX(2))
+
+
+transformed_qfunc = cancel_inverses(qfunc)
+
+expected_op_list = ["PauliX", "CNOT", "RZ", "PauliX", "RY"]
+expected_wires_list = [Wires(1), Wires([0, 1]), Wires(2), Wires(1), Wires(2)]
+
+
+class TestCancelInversesInterfaces:
+    """Test that adjacent inverse gates are cancelled in all interfaces."""
+
+    def test_cancel_inverses_autograd(self):
+        """Test QNode and gradient in autograd interface."""
+
+        original_qnode = qml.QNode(qfunc, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+
+        input = np.array([0.1, 0.2], requires_grad=True)
+
+        # Check that the numerical output is the same
+        assert qml.math.allclose(original_qnode(input), transformed_qnode(input))
+
+        # Check that the gradient is the same
+        assert qml.math.allclose(
+            qml.grad(original_qnode)(input), qml.grad(transformed_qnode)(input)
+        )
+
+        # Check operation list
+        ops = transformed_qnode.qtape.operations
+        assert len(ops) == 5
+        assert all([op.name == expected_name for (op, expected_name) in zip(ops, expected_op_list)])
+        assert all(
+            [op.wires == expected_wires for (op, expected_wires) in zip(ops, expected_wires_list)]
+        )
+
+    def test_cancel_inverses_torch(self):
+        """Test QNode and gradient in torch interface."""
+        torch = pytest.importorskip("torch", minversion="1.8")
+
+        original_qnode = qml.QNode(qfunc, dev, interface="torch")
+        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="torch")
+
+        original_input = torch.tensor([0.1, 0.2], requires_grad=True)
+        transformed_input = torch.tensor([0.1, 0.2], requires_grad=True)
+
+        original_result = original_qnode(original_input)
+        transformed_result = transformed_qnode(transformed_input)
+
+        # Check that the numerical output is the same
+        assert qml.math.allclose(original_result, transformed_result)
+
+        # Check that the gradient is the same
+        original_result.backward()
+        transformed_result.backward()
+
+        assert qml.math.allclose(original_input.grad, transformed_input.grad)
+
+        # Check operation list
+        ops = transformed_qnode.qtape.operations
+        assert len(ops) == 5
+        assert all([op.name == expected_name for (op, expected_name) in zip(ops, expected_op_list)])
+        assert all(
+            [op.wires == expected_wires for (op, expected_wires) in zip(ops, expected_wires_list)]
+        )
+
+    def test_cancel_inverses_tf(self):
+        """Test QNode and gradient in tensorflow interface."""
+        tf = pytest.importorskip("tensorflow")
+
+        original_qnode = qml.QNode(qfunc, dev, interface="tf")
+        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="tf")
+
+        original_input = tf.Variable([0.1, 0.2])
+        transformed_input = tf.Variable([0.1, 0.2])
+
+        original_result = original_qnode(original_input)
+        transformed_result = transformed_qnode(transformed_input)
+
+        # Check that the numerical output is the same
+        assert qml.math.allclose(original_result, transformed_result)
+
+        # Check that the gradient is the same
+        with tf.GradientTape() as tape:
+            loss = original_qnode(original_input)
+        original_grad = tape.gradient(loss, original_input)
+
+        with tf.GradientTape() as tape:
+            loss = transformed_qnode(transformed_input)
+        transformed_grad = tape.gradient(loss, transformed_input)
+
+        assert qml.math.allclose(original_grad, transformed_grad)
+
+        # Check operation list
+        ops = transformed_qnode.qtape.operations
+        assert len(ops) == 5
+        assert all([op.name == expected_name for (op, expected_name) in zip(ops, expected_op_list)])
+        assert all(
+            [op.wires == expected_wires for (op, expected_wires) in zip(ops, expected_wires_list)]
+        )
+
+    def test_cancel_inverses_jax(self):
+        """Test QNode and gradient in JAX interface."""
+        jax = pytest.importorskip("jax")
+        from jax import numpy as jnp
+
+        original_qnode = qml.QNode(qfunc, dev, interface="jax")
+        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="jax")
+
+        input = jnp.array([0.1, 0.2], dtype=jnp.float64)
+
+        # Check that the numerical output is the same
+        assert qml.math.allclose(original_qnode(input), transformed_qnode(input))
+
+        # Check that the gradient is the same
+        assert qml.math.allclose(
+            jax.grad(original_qnode)(input), jax.grad(transformed_qnode)(input)
+        )
+
+        # Check operation list
+        ops = transformed_qnode.qtape.operations
+        assert len(ops) == 5
+        assert all([op.name == expected_name for (op, expected_name) in zip(ops, expected_op_list)])
+        assert all(
+            [op.wires == expected_wires for (op, expected_wires) in zip(ops, expected_wires_list)]
+        )
