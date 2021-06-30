@@ -1465,6 +1465,29 @@ class TestOperations:
         with pytest.raises(ValueError, match="must be a square matrix"):
             qml.QubitOperator(A1, wires=0).matrix
 
+    @pytest.mark.parametrize(
+        ("A", "expected_state") ,
+        [
+            (np.array([[1,0],[0,0]]), 2**(-.5)*np.array([1, 0, 0, 0])),
+            (np.array([[0,0],[0,1j]]), 2**(-.5)*np.array([0, 0, 0, 1j]))
+        ]
+    )
+    def test_qubit_operator_circuit_output(self, A, expected_state):
+        """Test that the expected circuit output is returned when using QubitOperator for a
+        Hermitian and a non-Hermitian operator"""
+
+        dev = qml.device("default.qubit.tf", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0,1])
+            qml.QubitOperator(A, wires=0)
+
+            return qml.state()
+
+        assert np.allclose(expected_state, circuit())
+
     def test_iswap_eigenval(self):
         """Tests that the ISWAP eigenvalue matches the numpy eigenvalues of the ISWAP matrix"""
         op = qml.ISWAP(wires=[0, 1])
