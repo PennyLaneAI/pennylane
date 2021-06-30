@@ -69,7 +69,7 @@ class NumpyMimic(ar.autoray.NumpyMimic):
     def __getattribute__(self, fn):
         if fn == "fft":
             return numpy_fft
-        return super().__getattribute__(self, fn)
+        return super().__getattribute__(fn)
 
 
 numpy_mimic = NumpyMimic()
