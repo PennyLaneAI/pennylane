@@ -221,6 +221,9 @@ class Queue(QueuingContext):
     def _remove(self, obj):
         self.queue.remove(obj)
 
+    # Overwrite the inherited class methods, so that if queue.append is called,
+    # it is appended to the instantiated queue (rather than being added to the
+    # currently active queuing context, which may be a different queue).
     append = _append
     remove = _remove
 
@@ -250,6 +253,9 @@ class AnnotatedQueue(QueuingContext):
 
         return self._queue[obj]
 
+    # Overwrite the inherited class methods, so that if annotated_queue.append is called,
+    # it is appended to the instantiated queue (rather than being added to the
+    # currently active queuing context, which may be a different queue).
     append = _append
     remove = _remove
     update_info = _update_info
@@ -274,7 +280,7 @@ def apply(op, context=QueuingContext):
 
     **Example**
 
-    In PennyLane, **operations and measurements are 'queued' or applied to a QNode
+    In PennyLane, **operations and measurements are 'queued' or added to a circuit
     when they are instantiated**.
 
     The ``apply`` function can be used to add operations that might have
