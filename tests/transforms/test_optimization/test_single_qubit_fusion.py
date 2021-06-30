@@ -13,196 +13,200 @@
 # limitations under the License.
 
 import pytest
-import numpy as np
+from pennylane import numpy as np
 
 import pennylane as qml
 from pennylane.wires import Wires
-from pennylane import apply
-
-from gate_data import I
-
 from pennylane.transforms.optimization import single_qubit_fusion
+from gate_data import I
 
 
 class TestSingleQubitFusion:
-    """Test fusion of groups of adjacent single-qubit gates."""
+    """Test that sequences of any single-qubit rotations are fully fused."""
 
-    @pytest.mark.parametrize(
-        ("op_list"),
-        [
-            ([qml.Rot(0.0, 0.5, 0.0, wires=0), qml.RY(-0.5, wires=0)]),
-            ([qml.RZ(0.3, wires=3), qml.Rot(0.0, 0.0, -0.3, wires=3)]),
-            ([qml.Rot(0.0, 0.0, -0.3, wires=3), qml.RZ(0.3, wires=3)]),
-            ([qml.RZ(-np.pi / 2, wires=0), qml.S(wires=0)]),
-        ],
-    )
-    def test_single_qubit_fusion_zero_angles(self, op_list):
-        """Test a sequence of single-qubit operations that cancel upon fusion actually do so."""
+    def test_single_qubit_full_fusion(self):
+        """Test that a single-qubit circuit with adjacent rotation along the same
+        axis either merge, or cancel if the angles sum to 0."""
 
         def qfunc():
-            for op in op_list:
-                apply(op)
+            qml.RZ(0.3, wires=0)
+            qml.Hadamard(wires=0)
+            qml.Rot(0.1, 0.2, 0.3, wires=0)
+            qml.RX(0.1, wires=0)
+            qml.SX(wires=0)
 
         transformed_qfunc = single_qubit_fusion(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        original_ops = qml.transforms.make_tape(qfunc)().operations
+        transformed_ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
-        assert len(ops) == 0
+        assert len(transformed_ops) == 1
 
-    @pytest.mark.parametrize(
-        ("op_list"),
-        [
-            ([qml.Rot(0.0, 0.0, 0.0, wires=3), qml.Rot(0.3, 0.4, 0.5, wires=3)]),
-            ([qml.Rot(0.0, 0.3, 0.0, wires=0), qml.RY(0.3, wires=0)]),
-            ([qml.RZ(0.1, wires=0), qml.RX(0.2, wires=0), qml.Hadamard(wires=0)]),
-            (
-                [
-                    qml.Rot(0.1, 0.2, 0.3, wires="a"),
-                    qml.PhaseShift(0.2, wires="a"),
-                    qml.S(wires="a"),
-                    qml.RY(0.2, wires="a"),
-                ]
-            ),
-        ],
-    )
-    def test_single_qubit_fusion_same_wire(self, op_list):
-        """Test a sequence of single-qubit operations on the same wire are fused to a single Rot"""
+        matrix_expected = I
+        for op in original_ops:
+            matrix_expected = np.dot(op.matrix, matrix_expected)
 
-        def qfunc():
-            for op in op_list:
-                apply(op)
+        matrix_obtained = transformed_ops[0].matrix
 
-        transformed_qfunc = single_qubit_fusion(qfunc)
-
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
-
-        assert len(ops) == 1
-        assert ops[0].name == "Rot"
-
-        # Compare matrix representations (up to a global phase)
-        expected_mat = I
-        for op in op_list:
-            expected_mat = np.dot(op.matrix, expected_mat)
-
-        obtained_mat = ops[0].matrix
-
-        # Check equivalence by seeing if U^\dagger U is I up to a phase
-        mat_product = np.dot(np.conj(obtained_mat.T), expected_mat)
+        # Check if U^\dag U is close to the identity
+        mat_product = np.dot(np.conj(matrix_obtained.T), matrix_expected)
         mat_product /= mat_product[0, 0]
 
-        assert qml.math.allclose(mat_product, I)
+        assert np.allclose(mat_product, I)
 
-    @pytest.mark.parametrize(
-        ("op_list_q1,op_list_q2"),
-        [
-            (
-                [qml.Rot(0.0, 0.0, 0.0, wires=3), qml.Rot(0.3, 0.4, 0.5, wires=3)],
-                [qml.RZ(0.2, wires=2), qml.T(wires=2), qml.PauliX(wires=2)],
-            ),
-            (
-                [qml.PauliX(wires="a"), qml.PauliZ(wires="a"), qml.RY(-0.2, wires="a")],
-                [qml.RZ(0.2, wires="b"), qml.S(wires="b"), qml.PhaseShift(0.5, wires="b")],
-            ),
-            (
-                [qml.PauliY(wires=0), qml.PauliZ(wires=0), qml.PauliY(wires=0)],
-                [qml.SX(wires="b"), qml.RX(0.0, wires="b")],
-            ),
-        ],
-    )
-    def test_single_qubit_fusion_two_wires(self, op_list_q1, op_list_q2):
-        """Test that independent sequences of rotations on different qubits properly fuse."""
+    def test_single_qubit_cancelled_fusion(self):
+        """Test that a single-qubit circuit with adjacent rotation along the same
+        axis either merge, or cancel if the angles sum to 0."""
 
         def qfunc():
-            for op in op_list_q1 + op_list_q2:
-                apply(op)
+            qml.RZ(0.1, wires=0)
+            qml.RX(0.2, wires=0)
+            qml.RX(-0.2, wires=0)
+            qml.RZ(-0.1, wires=0)
 
         transformed_qfunc = single_qubit_fusion(qfunc)
+        transformed_ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        assert len(transformed_ops) == 0
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
-        assert len(ops) == 2
+# Example QNode and device for interface testing
+dev = qml.device("default.qubit", wires=3)
 
-        assert ops[0].name == "Rot"
-        assert ops[1].name == "Rot"
+# Test each of single-qubit, two-qubit, and Rot gates
+def qfunc(theta):
+    qml.Hadamard(wires=0)
+    qml.RZ(theta[0], wires=0)
+    qml.PauliY(wires=1)
+    qml.RZ(theta[1], wires=0)
+    qml.CNOT(wires=[1, 2])
+    qml.CRY(theta[2], wires=[1, 2])
+    qml.PauliZ(wires=0)
+    qml.CRY(theta[3], wires=[1, 2])
+    qml.Rot(theta[0], theta[1], theta[2], wires=1)
+    qml.Rot(theta[2], theta[3], theta[0], wires=1)
+    return qml.expval(qml.PauliX(0) @ qml.PauliX(2))
 
-        # Compare matrix representations (up to a global phase)
-        expected_mat_q1 = I
-        for op in op_list_q1:
-            expected_mat_q1 = np.dot(op.matrix, expected_mat_q1)
 
-        expected_mat_q2 = I
-        for op in op_list_q2:
-            expected_mat_q2 = np.dot(op.matrix, expected_mat_q2)
+transformed_qfunc = single_qubit_fusion(qfunc)
 
-        # Check equivalence by seeing if U^\dagger U is I up to a phase
-        mat_product_1 = np.dot(np.conj(ops[0].matrix.T), expected_mat_q1)
-        mat_product_1 /= mat_product_1[0, 0]
+expected_op_list = ["Rot", "Rot", "CNOT", "CRY", "CRY", "Rot"]
+expected_wires_list = [Wires(0), Wires(1), Wires([1, 2]), Wires([1, 2]), Wires([1, 2]), Wires(1)]
 
-        mat_product_2 = np.dot(np.conj(ops[1].matrix.T), expected_mat_q2)
-        mat_product_2 /= mat_product_2[0, 0]
 
-        assert qml.math.allclose(mat_product_1, I)
-        assert qml.math.allclose(mat_product_2, I)
+class TestSingleQubitFusionInterfaces:
+    """Test that rotation merging works in all interfaces."""
 
-    @pytest.mark.parametrize(
-        ("op_list_1,op_list_2"),
-        [
-            (
-                [qml.Rot(0.0, 0.0, 0.0, wires=3), qml.Rot(0.3, 0.4, 0.5, wires=3)],
-                [qml.RZ(0.2, wires=3), qml.T(wires=3), qml.PauliX(wires=3)],
-            ),
-            (
-                [qml.PauliX(wires="a"), qml.PauliZ(wires="a"), qml.RY(-0.2, wires="a")],
-                [qml.RZ(0.2, wires="a"), qml.S(wires="a"), qml.PhaseShift(0.5, wires="a")],
-            ),
-            (
-                [qml.PauliY(wires=0), qml.PauliZ(wires=0), qml.PauliY(wires=0)],
-                [qml.SX(wires=0), qml.RX(0.0, wires=0)],
-            ),
-        ],
-    )
-    def test_single_qubit_fusion_blocked_by_cnot(self, op_list_1, op_list_2):
-        """Test that sequences of rotations on each side of a CNOT fuse independently."""
+    def test_merge_rotations_autograd(self):
+        """Test QNode and gradient in autograd interface."""
 
-        def qfunc():
-            for op in op_list_1:
-                apply(op)
+        original_qnode = qml.QNode(qfunc, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
-            qml.CNOT(wires=[op_list_1[0].wires[0], "c"])
+        input = np.array([0.1, 0.2, 0.3, 0.4], requires_grad=True)
 
-            for op in op_list_2:
-                apply(op)
+        # Check that the numerical output is the same
+        assert qml.math.allclose(original_qnode(input), transformed_qnode(input))
 
-        transformed_qfunc = single_qubit_fusion(qfunc)
+        # Check that the gradient is the same
+        assert qml.math.allclose(
+            qml.grad(original_qnode)(input), qml.grad(transformed_qnode)(input)
+        )
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        # Check operation list
+        ops = transformed_qnode.qtape.operations
+        assert len(ops) == len(expected_op_list)
+        assert all([op.name == expected_name for (op, expected_name) in zip(ops, expected_op_list)])
+        assert all(
+            [op.wires == expected_wires for (op, expected_wires) in zip(ops, expected_wires_list)]
+        )
 
-        assert len(ops) == 3
+    def test_merge_rotations_torch(self):
+        """Test QNode and gradient in torch interface."""
+        torch = pytest.importorskip("torch", minversion="1.8")
 
-        assert ops[0].name == "Rot"
-        assert ops[0].wires[0] == op_list_1[0].wires[0]
+        original_qnode = qml.QNode(qfunc, dev, interface="torch")
+        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="torch")
 
-        assert ops[1].name == "CNOT"
-        assert ops[1].wires == Wires([op_list_1[0].wires[0], "c"])
+        original_input = torch.tensor([0.1, 0.2, 0.3, 0.4], requires_grad=True)
+        transformed_input = torch.tensor([0.1, 0.2, 0.3, 0.4], requires_grad=True)
 
-        assert ops[2].name == "Rot"
-        assert ops[2].wires[0] == op_list_2[0].wires[0]
+        original_result = original_qnode(original_input)
+        transformed_result = transformed_qnode(transformed_input)
 
-        # Compare matrix representations (up to a global phase)
-        expected_mat_1 = I
-        for op in op_list_1:
-            expected_mat_1 = np.dot(op.matrix, expected_mat_1)
+        # Check that the numerical output is the same
+        assert qml.math.allclose(original_result, transformed_result.detach().numpy())
 
-        expected_mat_2 = I
-        for op in op_list_2:
-            expected_mat_2 = np.dot(op.matrix, expected_mat_2)
+        # Check that the gradient is the same
+        original_result.backward()
+        transformed_result.backward()
 
-        # Check equivalence by seeing if U^\dagger U is I up to a phase
-        mat_product_1 = np.dot(np.conj(ops[0].matrix.T), expected_mat_1)
-        mat_product_1 /= mat_product_1[0, 0]
+        assert qml.math.allclose(original_input.grad, transformed_input.grad)
 
-        mat_product_2 = np.dot(np.conj(ops[2].matrix.T), expected_mat_2)
-        mat_product_2 /= mat_product_2[0, 0]
+        # Check operation list
+        ops = transformed_qnode.qtape.operations
+        assert len(ops) == len(expected_op_list)
+        assert all([op.name == expected_name for (op, expected_name) in zip(ops, expected_op_list)])
+        assert all(
+            [op.wires == expected_wires for (op, expected_wires) in zip(ops, expected_wires_list)]
+        )
 
-        assert qml.math.allclose(mat_product_1, I)
-        assert qml.math.allclose(mat_product_2, I)
+    def test_merge_rotations_tf(self):
+        """Test QNode and gradient in tensorflow interface."""
+        tf = pytest.importorskip("tensorflow")
+
+        original_qnode = qml.QNode(qfunc, dev, interface="tf")
+        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="tf")
+
+        original_input = tf.Variable([0.1, 0.2, 0.3, 0.4])
+        transformed_input = tf.Variable([0.1, 0.2, 0.3, 0.4])
+
+        original_result = original_qnode(original_input)
+        transformed_result = transformed_qnode(transformed_input)
+
+        # Check that the numerical output is the same
+        assert qml.math.allclose(original_result, transformed_result)
+
+        # Check that the gradient is the same
+        with tf.GradientTape() as tape:
+            loss = original_qnode(original_input)
+        original_grad = tape.gradient(loss, original_input)
+
+        with tf.GradientTape() as tape:
+            loss = transformed_qnode(transformed_input)
+        transformed_grad = tape.gradient(loss, transformed_input)
+
+        assert qml.math.allclose(original_grad, transformed_grad)
+
+        # Check operation list
+        ops = transformed_qnode.qtape.operations
+        assert len(ops) == len(expected_op_list)
+        assert all([op.name == expected_name for (op, expected_name) in zip(ops, expected_op_list)])
+        assert all(
+            [op.wires == expected_wires for (op, expected_wires) in zip(ops, expected_wires_list)]
+        )
+
+    def test_merge_rotations_jax(self):
+        """Test QNode and gradient in JAX interface."""
+        jax = pytest.importorskip("jax")
+        from jax import numpy as jnp
+
+        original_qnode = qml.QNode(qfunc, dev, interface="jax")
+        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="jax")
+
+        input = jnp.array([0.1, 0.2, 0.3, 0.4], dtype=jnp.float64)
+
+        # Check that the numerical output is the same
+        assert qml.math.allclose(original_qnode(input), transformed_qnode(input))
+
+        # Check that the gradient is the same
+        assert qml.math.allclose(
+            jax.grad(original_qnode)(input), jax.grad(transformed_qnode)(input)
+        )
+
+        # Check operation list
+        ops = transformed_qnode.qtape.operations
+        assert len(ops) == len(expected_op_list)
+        assert all([op.name == expected_name for (op, expected_name) in zip(ops, expected_op_list)])
+        assert all(
+            [op.wires == expected_wires for (op, expected_wires) in zip(ops, expected_wires_list)]
+        )
