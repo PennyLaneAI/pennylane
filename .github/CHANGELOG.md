@@ -7,7 +7,7 @@
 
 <h3>Improvements</h3>
 
-* Add QubitMatrix operator for custom operator implementation
+* Add `QubitMatrix` operation for custom operator implementation
 [(#1435)](https://github.com/PennyLaneAI/pennylane/pull/1435)
 
 <h3>Breaking changes</h3>
