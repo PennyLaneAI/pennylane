@@ -23,6 +23,7 @@ from pennylane.math import isclose
 
 from .optimization_utils import _find_next_gate
 
+
 @qfunc_transform
 def commute_z_behind_controls(tape):
     """Quantum function transform to push controlled gates past diagonal gates that occur

@@ -21,6 +21,7 @@ from pennylane.math import isclose, allclose
 
 from .optimization_utils import _find_next_gate, _fuse_rot_angles
 
+
 @qfunc_transform
 def single_qubit_fusion(tape):
     """Quantum function transform to fuse together groups of single-qubit
@@ -111,4 +112,3 @@ def single_qubit_fusion(tape):
     # Queue the measurements normally
     for m in tape.measurements:
         apply(m)
-

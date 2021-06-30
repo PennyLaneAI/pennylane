@@ -20,6 +20,7 @@ from pennylane.ops.qubit import PauliX, RX, CNOT, CRX, Toffoli
 
 from .optimization_utils import _find_next_gate
 
+
 @qfunc_transform
 def commute_x_behind_targets(tape):
     """Quantum function transform to push X rotation gates to behind the target
@@ -40,7 +41,7 @@ def commute_x_behind_targets(tape):
             qml.PauliX(wires=1)
             return qml.expval(qml.PauliX(0))
 
-    In this circuit, the ``PauliX`` and the ``CNOT`` commute because the ``PauliX`` is 
+    In this circuit, the ``PauliX`` and the ``CNOT`` commute because the ``PauliX`` is
     on the target of the CNOT. This means that we can push the ``PauliX`` behind
     the CNOT.
 

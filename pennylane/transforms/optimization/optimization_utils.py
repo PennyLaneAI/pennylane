@@ -17,6 +17,7 @@ from pennylane import numpy as np
 from pennylane.math import allclose, isclose, sin, cos, arccos, arctan2
 from pennylane.wires import Wires
 
+
 def _find_next_gate(wires, op_list):
     """Given a list of operations, finds the next operation that acts on at least one of
     the same set of wires, if present.
@@ -137,7 +138,7 @@ def _fuse_rot_angles(angles_1, angles_2):
         if isclose(middle_yzy[2], 0.0):
             return np.array([leftmost_z + middle_yzy[1] + rightmost_z, 0.0, 0.0])
         return np.array([leftmost_z + middle_yzy[1], middle_yzy[2], rightmost_z])
-    
+
     # If c + d is close to 0, then we have the case RZ(a) RY(b + e) RZ(f)
     elif isclose(middle_yzy[1], 0.0):
         # If b + e is 0, we have RZ(a + f)
