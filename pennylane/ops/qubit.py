@@ -2187,9 +2187,10 @@ class QubitMatrix(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        A = np.asarray(params[0])
+        A = params[0]
+        shape = qml.math.shape(A)
 
-        if A.shape[0] != A.shape[1]:
+        if shape[0] != shape[1]:
             raise ValueError("Operator must be a square matrix.")
 
         return A
