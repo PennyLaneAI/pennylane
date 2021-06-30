@@ -1466,11 +1466,11 @@ class TestOperations:
             qml.QubitOperator(A1, wires=0).matrix
 
     @pytest.mark.parametrize(
-        ("A", "expected_state") ,
+        ("A", "expected_state"),
         [
-            (np.array([[1,0],[0,0]]), 2**(-.5)*np.array([1, 0, 0, 0])),
-            (np.array([[0,0],[0,1j]]), 2**(-.5)*np.array([0, 0, 0, 1j]))
-        ]
+            (np.array([[1, 0], [0, 0]]), 2 ** (-0.5) * np.array([1, 0, 0, 0])),
+            (np.array([[0, 0], [0, 1j]]), 2 ** (-0.5) * np.array([0, 0, 0, 1j])),
+        ],
     )
     def test_qubit_operator_circuit_output(self, A, expected_state):
         """Test that the expected circuit output is returned when using QubitOperator for a
@@ -1481,7 +1481,7 @@ class TestOperations:
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0,1])
+            qml.CNOT(wires=[0, 1])
             qml.QubitOperator(A, wires=0)
 
             return qml.state()
