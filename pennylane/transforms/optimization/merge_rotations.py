@@ -13,11 +13,9 @@
 # limitations under the License.
 """Transform for merging adjacent rotations of the same type in a quantum circuit."""
 
-from pennylane import numpy as np
 from pennylane import apply
-from pennylane.wires import Wires
 from pennylane.transforms import qfunc_transform
-from pennylane.math import allclose
+from pennylane.math import allclose, stack, cast_like, zeros
 
 from .optimization_utils import _find_next_gate, _fuse_rot_angles
 
@@ -90,8 +88,8 @@ def merge_rotations(tape):
             list_copy.pop(0)
             continue
 
-        # Cumulative rotation angle(s)
-        cumulative_angles = current_gate.parameters
+        # We need to use stack to get this to work and be differentiable in all interfaces
+        cumulative_angles = stack(current_gate.parameters)
 
         # As long as there is a valid next gate, check if we can merge the angles
         while next_gate_idx is not None:
@@ -104,10 +102,15 @@ def merge_rotations(tape):
 
                 # The Rot gate must be treated separately
                 if current_gate.name == "Rot":
-                    cumulative_angles = _fuse_rot_angles(cumulative_angles, next_gate.parameters)
+                    cumulative_angles = _fuse_rot_angles(
+                        cumulative_angles, cast_like(stack(next_gate.parameters), cumulative_angles)
+                    )
+                    print(f"After fusion cumulative angles is {cumulative_angles}")
                 # Other, single-parameter rotation gates just have the angle summed
                 else:
-                    cumulative_angles[0] = cumulative_angles[0] + next_gate.parameters[0]
+                    cumulative_angles = cumulative_angles + cast_like(
+                        stack(next_gate.parameters), cumulative_angles
+                    )
             # If it is not, we need to stop
             else:
                 break
@@ -115,8 +118,7 @@ def merge_rotations(tape):
             # If we did merge, look now at the next gate
             next_gate_idx = _find_next_gate(current_gate.wires, list_copy[1:])
 
-        # If the cumulative angle is not close to 0, apply the cumulative gate
-        if not allclose(np.array(cumulative_angles), np.zeros(len(cumulative_angles))):
+        if not allclose(cumulative_angles, zeros(len(cumulative_angles))):
             current_gate.__class__(*cumulative_angles, wires=current_gate.wires)
 
         # Remove the first gate gate from the working list

@@ -13,8 +13,8 @@
 # limitations under the License.
 """Utility functions for circuit optimization."""
 
-from pennylane import numpy as np
-from pennylane.math import allclose, isclose, sin, cos, arccos, arctan2
+import pennylane.math as math
+from pennylane.math import allclose, sin, cos, zeros, cast_like, stack
 from pennylane.wires import Wires
 
 
@@ -41,7 +41,7 @@ def _find_next_gate(wires, op_list):
     return next_gate_idx
 
 
-def _yzy_to_zyz(y1, z, y2):
+def _yzy_to_zyz(middle_yzy):
     """Converts a set of angles representing a sequence of rotations RY, RZ, RY into
     an equivalent sequence of the form RZ, RY, RZ.
 
@@ -70,11 +70,12 @@ def _yzy_to_zyz(y1, z, y2):
         y2 (float): The angle of the second ``RY`` rotation.
 
     Returns:
-        (float, float, float): A tuple of rotation angles in the ZYZ representation.
+        [float, float, float]: A list of rotation angles in the ZYZ representation.
     """
-    # Catch the case where everything is close to 0
-    if allclose(np.array([y1, z, y2]), np.zeros(3)):
-        return (0.0, 0.0, 0.0)
+    if allclose(stack(middle_yzy), cast_like(zeros(3), stack(middle_yzy))):
+        return stack([0.0, 0.0, 0.0])
+
+    y1, z, y2 = middle_yzy[0], middle_yzy[1], middle_yzy[2]
 
     # First, compute the quaternion representation
     # https://ntrs.nasa.gov/api/citations/19770024290/downloads/19770024290.pdf
@@ -87,15 +88,28 @@ def _yzy_to_zyz(y1, z, y2):
     # Source: http://bediyap.com/programming/convert-quaternion-to-euler-rotations/
     z1_arg1 = 2 * (qy * qz - qw * qx)
     z1_arg2 = 2 * (qx * qz + qw * qy)
-    z1 = arctan2(z1_arg1, z1_arg2)
 
-    y = arccos(qw ** 2 - qx ** 2 - qy ** 2 + qz ** 2)
+    # Numpy/JAX and Tensorflow/Torch have different names for arccos/arctan2
+    # so we have to figure out which one it is before applying it.
+    try:
+        z1 = math.atan2(z1_arg1, z1_arg2)
+    except AttributeError:
+        z1 = math.arctan2(z1_arg1, z1_arg2)
+
+    try:
+        y = math.acos(qw ** 2 - qx ** 2 - qy ** 2 + qz ** 2)
+    except AttributeError:
+        y = math.arccos(qw ** 2 - qx ** 2 - qy ** 2 + qz ** 2)
 
     z2_arg1 = 2 * (qy * qz + qw * qx)
     z2_arg2 = -2 * (qx * qz - qw * qy)
-    z2 = arctan2(z2_arg1, z2_arg2)
 
-    return (z1, y, z2)
+    try:
+        z2 = math.atan2(z2_arg1, z2_arg2)
+    except AttributeError:
+        z2 = math.arctan2(z2_arg1, z2_arg2)
+
+    return stack([z1, y, z2])
 
 
 def _fuse_rot_angles(angles_1, angles_2):
@@ -114,15 +128,15 @@ def _fuse_rot_angles(angles_1, angles_2):
         array[float]: A tuple of rotation angles for a single ``qml.Rot`` operation
         that implements the same operation as the two sets of input angles.
     """
-    are_angles_1_zero = allclose(np.array(angles_1), np.zeros(3))
-    are_angles_2_zero = allclose(np.array(angles_2), np.zeros(3))
+    are_angles_1_zero = allclose(angles_1, zeros(3))
+    are_angles_2_zero = allclose(angles_2, zeros(3))
 
     if are_angles_1_zero and are_angles_2_zero:
-        return np.array([0.0, 0.0, 0.0])
-    elif are_angles_1_zero:
-        return np.array(angles_2)
-    elif are_angles_2_zero:
-        return np.array(angles_1)
+        return zeros(3)
+    if are_angles_1_zero:
+        return angles_2
+    if are_angles_2_zero:
+        return angles_1
 
     # RZ(a) RY(b) RZ(c) fused with RZ(d) RY(e) RZ(f)
     # first produces RZ(a) RY(b) RZ(c+d) RY(e) RZ(f)
@@ -133,30 +147,30 @@ def _fuse_rot_angles(angles_1, angles_2):
     # There are a few other cases to consider where things can be 0 and
     # avoid having to use the quaternion conversion routine
     # If b = 0, then we have RZ(a + c + d) RY(e) RZ(f)
-    if isclose(middle_yzy[0], 0.0):
+    if allclose(middle_yzy[0], 0.0):
         # Then if e is close to zero, return a single rotation RZ(a + c + d + f)
-        if isclose(middle_yzy[2], 0.0):
-            return np.array([leftmost_z + middle_yzy[1] + rightmost_z, 0.0, 0.0])
-        return np.array([leftmost_z + middle_yzy[1], middle_yzy[2], rightmost_z])
+        if allclose(middle_yzy[2], 0.0):
+            return [leftmost_z + middle_yzy[1] + rightmost_z, 0.0, 0.0]
+        return stack([leftmost_z + middle_yzy[1], middle_yzy[2], rightmost_z])
 
     # If c + d is close to 0, then we have the case RZ(a) RY(b + e) RZ(f)
-    elif isclose(middle_yzy[1], 0.0):
+    if allclose(middle_yzy[1], 0.0):
         # If b + e is 0, we have RZ(a + f)
-        if isclose(middle_yzy[0] + middle_yzy[2], 0.0):
-            return np.array([leftmost_z + rightmost_z, 0.0, 0.0])
-        return np.array([leftmost_z, middle_yzy[0] + middle_yzy[2], rightmost_z])
+        if allclose(middle_yzy[0] + middle_yzy[2], 0.0):
+            return [leftmost_z + rightmost_z, 0.0, 0.0]
+        return stack([leftmost_z, middle_yzy[0] + middle_yzy[2], rightmost_z])
 
     # If e is close to 0, then we have the case RZ(a) RY(b) RZ(c + d + f)
-    elif isclose(middle_yzy[2], 0.0):
+    if allclose(middle_yzy[2], 0.0):
         # If b is close to 0, we again have RZ(a + c + d + f)
-        if isclose(middle_yzy[0], 0.0):
-            return np.array([leftmost_z + middle_yzy[1] + rightmost_z, 0.0, 0.0])
-        return np.array([leftmost_z, middle_yzy[0], middle_yzy[1] + rightmost_z])
+        if allclose(middle_yzy[0], 0.0):
+            return [leftmost_z + middle_yzy[1] + rightmost_z, 0.0, 0.0]
+        return stack([leftmost_z, middle_yzy[0], middle_yzy[1] + rightmost_z])
 
     # Otherwise, we need to turn the RY(b) RZ(c+d) RY(e) into something
     # of the form RZ(u) RY(v) RZ(w)
-    u, v, w = _yzy_to_zyz(*middle_yzy)
+    u, v, w = _yzy_to_zyz(middle_yzy)
 
     # Then we can combine to create
     # RZ(a + u) RY(v) RZ(w + f)
-    return np.array([leftmost_z + u, v, w + rightmost_z])
+    return stack([leftmost_z + u, v, w + rightmost_z])

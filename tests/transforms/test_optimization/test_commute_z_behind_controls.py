@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import pytest
-
+from pennylane import numpy as np
 import pennylane as qml
 from pennylane.wires import Wires
 from pennylane.transforms.optimization import commute_z_behind_controls
@@ -155,3 +155,142 @@ class TestCommuteZBehindControls:
 
         assert ops[3].name == "S"
         assert ops[3].wires == Wires(0)
+
+
+# Example QNode and device for interface testing
+dev = qml.device("default.qubit", wires=3)
+
+
+def qfunc(theta):
+    qml.Hadamard(wires=0)
+    qml.CNOT(wires=[0, 1])
+    qml.RZ(theta[0], wires=0)
+    qml.PauliY(wires=1)
+    qml.CNOT(wires=[1, 2])
+    qml.PauliZ(wires=1)
+    return qml.expval(qml.PauliX(0) @ qml.PauliX(2))
+
+
+transformed_qfunc = commute_z_behind_controls(qfunc)
+
+expected_op_list = ["Hadamard", "RZ", "CNOT", "PauliY", "PauliZ", "CNOT"]
+expected_wires_list = [Wires(0), Wires(0), Wires([0, 1]), Wires(1), Wires(1), Wires([1, 2])]
+
+
+class TestCommuteZBehindControlsInterfaces:
+    """Test that Z gates can be pushed behind Z-based targets in all interfaces."""
+
+    def test_commute_z_behind_controls_autograd(self):
+        """Test QNode and gradient in autograd interface."""
+
+        original_qnode = qml.QNode(qfunc, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+
+        input = np.array([0.1], requires_grad=True)
+
+        # Check that the numerical output is the same
+        assert qml.math.allclose(original_qnode(input), transformed_qnode(input))
+
+        # Check that the gradient is the same
+        assert qml.math.allclose(
+            qml.grad(original_qnode)(input), qml.grad(transformed_qnode)(input)
+        )
+
+        # Check operation list
+        ops = transformed_qnode.qtape.operations
+        assert len(ops) == 6
+        assert all([op.name == expected_name for (op, expected_name) in zip(ops, expected_op_list)])
+        assert all(
+            [op.wires == expected_wires for (op, expected_wires) in zip(ops, expected_wires_list)]
+        )
+
+    def test_commute_z_behind_controls_torch(self):
+        """Test QNode and gradient in torch interface."""
+        torch = pytest.importorskip("torch", minversion="1.8")
+
+        original_qnode = qml.QNode(qfunc, dev, interface="torch")
+        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="torch")
+
+        original_input = torch.tensor([0.1], requires_grad=True)
+        transformed_input = torch.tensor([0.1], requires_grad=True)
+
+        original_result = original_qnode(original_input)
+        transformed_result = transformed_qnode(transformed_input)
+
+        # Check that the numerical output is the same
+        assert qml.math.allclose(original_result, transformed_result)
+
+        # Check that the gradient is the same
+        original_result.backward()
+        transformed_result.backward()
+
+        assert qml.math.allclose(original_input.grad, transformed_input.grad)
+
+        # Check operation list
+        ops = transformed_qnode.qtape.operations
+        assert len(ops) == 6
+        assert all([op.name == expected_name for (op, expected_name) in zip(ops, expected_op_list)])
+        assert all(
+            [op.wires == expected_wires for (op, expected_wires) in zip(ops, expected_wires_list)]
+        )
+
+    def test_commute_z_behind_controls_tf(self):
+        """Test QNode and gradient in tensorflow interface."""
+        tf = pytest.importorskip("tensorflow")
+
+        original_qnode = qml.QNode(qfunc, dev, interface="tf")
+        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="tf")
+
+        original_input = tf.Variable([0.1])
+        transformed_input = tf.Variable([0.1])
+
+        original_result = original_qnode(original_input)
+        transformed_result = transformed_qnode(transformed_input)
+
+        # Check that the numerical output is the same
+        assert qml.math.allclose(original_result, transformed_result)
+
+        # Check that the gradient is the same
+        with tf.GradientTape() as tape:
+            loss = original_qnode(original_input)
+        original_grad = tape.gradient(loss, original_input)
+
+        with tf.GradientTape() as tape:
+            loss = transformed_qnode(transformed_input)
+        transformed_grad = tape.gradient(loss, transformed_input)
+
+        assert qml.math.allclose(original_grad, transformed_grad)
+
+        # Check operation list
+        ops = transformed_qnode.qtape.operations
+        assert len(ops) == 6
+        assert all([op.name == expected_name for (op, expected_name) in zip(ops, expected_op_list)])
+        assert all(
+            [op.wires == expected_wires for (op, expected_wires) in zip(ops, expected_wires_list)]
+        )
+
+    def test_commute_z_behind_controls_jax(self):
+        """Test QNode and gradient in JAX interface."""
+        jax = pytest.importorskip("jax")
+        from jax import numpy as jnp
+
+        original_qnode = qml.QNode(qfunc, dev, interface="jax")
+        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="jax")
+
+        input = jnp.array([0.1], dtype=jnp.float64)
+
+        # Check that the numerical output is the same
+        assert qml.math.allclose(original_qnode(input), transformed_qnode(input))
+
+        # Check that the gradient is the same
+        assert qml.math.allclose(
+            jax.grad(original_qnode)(input), jax.grad(transformed_qnode)(input)
+        )
+
+        # Check operation list
+        ops = transformed_qnode.qtape.operations
+        assert len(ops) == 6
+        assert all([op.name == expected_name for (op, expected_name) in zip(ops, expected_op_list)])
+        assert all(
+            [op.wires == expected_wires for (op, expected_wires) in zip(ops, expected_wires_list)]
+        )

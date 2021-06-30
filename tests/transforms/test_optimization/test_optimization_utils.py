@@ -18,18 +18,7 @@ import numpy as np
 import pennylane as qml
 
 from pennylane.transforms.optimization.optimization_utils import _yzy_to_zyz, _fuse_rot_angles
-
-
-def normalize_angle(theta):
-    """Normalize an angle into the range -np.pi to np.pi.
-
-    Useful for testing matrix equivalence up to a global phase.
-    """
-    if theta > np.pi:
-        theta -= 2 * np.pi * np.ceil(theta // np.pi)
-    elif theta < -np.pi:
-        theta += 2 * np.pi * np.ceil(theta // np.pi)
-    return theta
+from gate_data import I
 
 
 class TestRotGateFusion:
@@ -42,21 +31,23 @@ class TestRotGateFusion:
     def test_yzy_to_zyz(self, angles):
         """Test that a set of rotations of the form YZY is correctly converted
         to a sequence of the form ZYZ."""
-        angles = [normalize_angle(x) for x in angles]
-
-        z1, y, z2 = _yzy_to_zyz(*angles)
+        z1, y, z2 = _yzy_to_zyz(angles)
 
         Y1 = qml.RY(angles[0], wires=0).matrix
         Z = qml.RZ(angles[1], wires=0).matrix
         Y2 = qml.RY(angles[2], wires=0).matrix
-        product_yzy = np.linalg.multi_dot([Y1, Z, Y2])
+        product_yzy = np.linalg.multi_dot([Y2, Z, Y1])
 
         Z1 = qml.RZ(z1, wires=0).matrix
         Y = qml.RY(y, wires=0).matrix
         Z2 = qml.RZ(z2, wires=0).matrix
-        product_zyz = np.linalg.multi_dot([Z1, Y, Z2])
+        product_zyz = np.linalg.multi_dot([Z2, Y, Z1])
 
-        assert np.allclose(product_yzy, product_zyz)
+        # Check if U^\dag U is close to the identity
+        mat_product = np.dot(np.conj(product_yzy.T), product_zyz)
+        mat_product /= mat_product[0, 0]
+
+        assert np.allclose(mat_product, I)
 
     @pytest.mark.parametrize(
         ("angles_1", "angles_2"),
@@ -70,18 +61,17 @@ class TestRotGateFusion:
     def test_full_rot_fusion(self, angles_1, angles_2):
         """Test that the fusion of two Rot gates has the same effect as
         applying the Rots sequentially."""
-        angles_1 = [normalize_angle(x) for x in angles_1]
-        angles_2 = [normalize_angle(x) for x in angles_2]
 
         rot_1_mat = qml.Rot(*angles_1, wires=0).matrix
         rot_2_mat = qml.Rot(*angles_2, wires=0).matrix
         matrix_expected = np.dot(rot_2_mat, rot_1_mat)
 
-        fused_angles = [normalize_angle(x) for x in _fuse_rot_angles(angles_1, angles_2)]
-        print(fused_angles)
+        fused_angles = _fuse_rot_angles(angles_1, angles_2)
+
         matrix_obtained = qml.Rot(*fused_angles, wires=0).matrix
 
-        print(matrix_expected)
-        print(matrix_obtained)
+        # Check if U^\dag U is close to the identity
+        mat_product = np.dot(np.conj(matrix_obtained.T), matrix_expected)
+        mat_product /= mat_product[0, 0]
 
-        assert np.allclose(matrix_obtained, matrix_expected)
+        assert np.allclose(mat_product, I)
