@@ -41,6 +41,8 @@ ar.register_function("numpy", "block_diag", lambda x: _scipy_block_diag(*x))
 ar.register_function("builtins", "block_diag", lambda x: _scipy_block_diag(*x))
 ar.register_function("numpy", "gather", lambda x, indices: x[np.array(indices)])
 
+ar.register_function("numpy", "fft.fft", _i("numpy").fft.fft)
+
 
 def _scatter_element_add_numpy(tensor, index, value):
     """In-place addition of a multidimensional value over various
@@ -120,6 +122,20 @@ ar.autoray._SUBMODULE_ALIASES["tensorflow", "arctan"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "diag"] = "tensorflow.linalg"
 
 
+tf_fft_functions = [
+    "fft",
+    "ifft",
+    "fft2",
+    "ifft2",
+]
+
+
+for fn in tf_fft_functions:
+    ar.autoray._SUBMODULE_ALIASES["tensorflow", "fft." + fn] = "tensorflow.signal"
+
+ar.autoray._FUNC_ALIASES["tensorflow", "fft.fft2"] = "fft2d"
+ar.autoray._FUNC_ALIASES["tensorflow", "fft.ifft2"] = "ifft2d"
+
 ar.autoray._FUNC_ALIASES["tensorflow", "arcsin"] = "asin"
 ar.autoray._FUNC_ALIASES["tensorflow", "arccos"] = "acos"
 ar.autoray._FUNC_ALIASES["tensorflow", "arctan"] = "atan"
@@ -136,6 +152,29 @@ ar.register_function(
         _i("tf").cast(x, "float64") if x.dtype.name in ("int64", "int32") else x
     ),
 )
+
+
+def _ifft2_tf(a, s=None, axes=(-2, -1), norm=None):
+    if axes != (-2, -1):
+        raise ValueError(
+            "TensorFlow does not support passing axes; the ifft "
+            "will always be performed over the inner-most 2 dimensions."
+        )
+
+    if norm is not None:
+        raise ValueError("TensorFlow does not support the 'norm' keyword argument.")
+
+    # TensorFlow only supports FFT of complex tensors
+    if a.dtype not in [_i("tf").complex64, _i("tf").complex128]:
+        if a.dtype is _i("tf").float64:
+            a = _i("tf").cast(a, dtype=_i("tf").complex128)
+        else:
+            a = _i("tf").cast(a, dtype=_i("tf").complex64)
+
+    return _i("tf").signal.ifft2d(input=a)
+
+
+ar.register_function("tensorflow", "fft.ifft2", _ifft2_tf)
 
 
 def _take_tf(tensor, indices, axis=None):
@@ -234,6 +273,17 @@ ar.register_function("torch", "diag", lambda x, k=0: _i("torch").diag(x, diagona
 ar.register_function("torch", "expand_dims", lambda x, axis: _i("torch").unsqueeze(x, dim=axis))
 ar.register_function("torch", "shape", lambda x: tuple(x.shape))
 ar.register_function("torch", "gather", lambda x, indices: x[indices])
+
+
+def _ifft2_torch(a, s=None, axes=-1, norm=None):
+    if isinstance(axes, tuple):
+        raise ValueError("Torch does not support passing a tuple of axes.")
+
+    return _i("torch").fft.ifft2(input=a, s=s, dim=axes, norm=norm)
+
+
+ar.register_function("torch", "fft.ifft2", _ifft2_torch)
+
 
 ar.register_function(
     "torch",
