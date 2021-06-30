@@ -16,17 +16,20 @@ Contains the Grover Operation template.
 """
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
-from pennylane.ops import Hadamard, PauliX, PauliZ, MultiControlledX
+from pennylane.ops import Hadamard, PauliZ, MultiControlledX
 
-class GroverDiffusionOperator(Operation):
+
+class GroverOperator(Operation):
     r"""Performs the Grover Diffusion Operator.
 
     .. math::
 
-        G = 2 |s \rangle \langle s | - I \\
+        G = 2 |s \rangle \langle s | - I
         = H^{\bigotimes n} \left( 2 |0\rangle \langle 0| - I ) H^{\bigotimes n}
 
-    For this template, the operator is implemented with 
+
+    For this template, the operator is implemented with a layer of Hadamards, an
+    effective multi-controlled Z gate, and another layer of Hadamards.
 
     .. figure:: ../../_static/templates/subroutines/grover.png
         :align: center
@@ -45,8 +48,8 @@ class GroverDiffusionOperator(Operation):
         n_wires = 3
         wires = list(range(n_wires))
         dev = qml.device('default.qubit', wires=wires)
-    
-    The Grover Diffusion Operator amplifies the magnitude of the component with 
+
+    The Grover Diffusion Operator amplifies the magnitude of the component with
     a negative phase.  For example, if we wanted to select out the :math:`|111\rangle`
     state, we could use an oracle implementing a `CCZ` gate:
 
@@ -56,7 +59,7 @@ class GroverDiffusionOperator(Operation):
             qml.Hadamard(wires[-1])
             qml.Toffoli(wires=wires)
             qml.Hadamard(wires[-1])
-    
+
     We can then implement the entire Grover Search Algorithm for ``n`` iterations:
 
     .. code-block:: python
@@ -68,10 +71,10 @@ class GroverDiffusionOperator(Operation):
 
             for _ in range(n):
                 oracle()
-                qml.templates.GroverDiffusionOperator(wires=wires)
+                qml.templates.GroverOperator(wires=wires)
             return qml.probs(wires)
 
-    >>> GroverSearch(n=1)  
+    >>> GroverSearch(n=1)
     tensor([0.03125, 0.03125, 0.03125, 0.03125, 0.03125, 0.03125, 0.03125,
             0.78125], requires_grad=True)
     >>> GroverSearch(n=2)
@@ -85,16 +88,18 @@ class GroverDiffusionOperator(Operation):
 
     def expand(self):
         cntrl_str = "0" * (len(self.wires) - 1)
-    
+
         with qml.tape.QuantumTape() as tape:
             for wire in self.wires[:-1]:
                 Hadamard(wire)
-            
+
             PauliZ(self.wires[-1])
-            MultiControlledX(control_values = cntrl_str, control_wires=self.wires[:-1], wires=self.wires[-1])
+            MultiControlledX(
+                control_values=cntrl_str, control_wires=self.wires[:-1], wires=self.wires[-1]
+            )
             PauliZ(self.wires[-1])
-            
+
             for wire in self.wires[:-1]:
                 Hadamard(wire)
-                
+
         return tape
