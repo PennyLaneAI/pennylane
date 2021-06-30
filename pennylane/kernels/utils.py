@@ -14,6 +14,7 @@
 """
 This file contains functionalities that simplify working with kernels.
 """
+import pennylane as qml
 from pennylane import numpy as np
 
 
@@ -149,8 +150,8 @@ def kernel_eigensystem(X, kernel):
 
     .. note::
 
-        This function implements an eigenvalue decomposition and is
-        currently not differentiable.
+        This function calls differentiable eigendecomposition methods provided by the different interfaces,
+        and differentiation may not always be numerically stable.
 
     Args:
         X (tensor_like): tensor or list of datapoints
@@ -162,17 +163,47 @@ def kernel_eigensystem(X, kernel):
     """
 
     K = square_kernel_matrix(X, kernel)
-    return np.linalg.eigh(K) # Todo: do we need to invert here to get the evals? should be np.allclose(A @ v - v @ np.diag(w), np.zeros((4, 4)))
+    return qml.math.eigh(K) # Todo: do we need to invert here to get the evals? should be np.allclose(A @ v - v @ np.diag(w), np.zeros((4, 4)))
 
 
-def teacher_weights(X, y, kernel, return_evals=False):
+def task_weights(X, y, kernel, return_evals=False):
+    """Approximates the coefficients when expanding a target function that produced a supervised dataset
+    with respect to the eigenfunctions of a kernel.
 
-    if set(np.unique(y)) != {0, 1}:
-        raise ValueError(f"Target labels have to be 0 or 1; got {set(np.unique(y))}")
+    Let :math:`\{\phi_k(x)\}`, :math:`\{\lambda_k\}` be the eigenfunctions and eigenvalues of a kernel `\kappa(x, x')`,
+    which means that the kernel can be written as :math:`\kappa(x, x') = \sum_k \lambda_k \phi_k(x)\phi_k(x')`.
+    Consider now a regression task in which the target function :math:`f(x)` (sometimes called a "teacher")
+    creates target labels for datapoints :math:`x`.
 
+    We can express this function in terms of the eigenfunctions of the kernel:
+
+    .. maths::
+
+        f(x) = \sum_k w_k \sqrt{\lambda_k} \phi_k(x).
+
+    The :math:`\{w_k\}` are the "task weights" (or "teacher weights").
+
+    This function approximates the task weights by using the data samples it produced.
+
+    .. note::
+
+        This function calls differentiable eigendecomposition methods provided by the different interfaces,
+        and differentiation may not always be numerically stable.
+
+    Args:
+        X (tensor_like): tensor of data points
+        y (tensor_like): tensor of target labels
+        kernel ((datapoint, datapoint) -> float): Kernel function that maps datapoints to kernel value.
+        return_evals (bool): If True, the return value becomes a tuple where the second argument is a tensor
+            of kernel eigenvalues. This can be useful when computing generalization properties of the kernel.
+
+    Returns:
+        tensor_like: Shape (M,) tensor of weights
+    """
     evecs, evals = kernel_eigensystem(X, kernel)
-    weights = np.diag(evals) @ evecs.T @ y  # TODO: -1/2 power
+    weights = qml.math.inverse(qml.math.diag(evals)) @ qml.math.inverse(evecs) @ y
 
     if return_evals:
         return weights, evals
+
     return weights

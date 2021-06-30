@@ -16,9 +16,10 @@ This file contains functionalities for kernel related costs.
 See `here <https://www.doi.org/10.1007/s10462-012-9369-4>`_ for a review.
 """
 from pennylane import numpy as np
+import pennylane as qml
 from ..utils import frobenius_inner_product
 from .utils import square_kernel_matrix
-from .utils import teacher_weights
+from .utils import task_weights
 
 
 def polarity(
@@ -179,20 +180,30 @@ def target_alignment(
 
 
 def task_model_alignment(
-    k,
+    N,
     X,
     y,
     kernel,
 ):
-    r"""Task-model alignment for a given kernel function.
+    r"""Task-model alignment for a given kernel function as proposed in [].
 
-    Proposed in [] , this function measures how much of the signal of
-    f is captured in the principal components up to threshold component.
+    This function measures how much of the target function producing a supervised dataset is
+    captured in the kernel's first :math:`N` eigenvalues.
 
-    C(i) = P j≤ia2j(Pja2j) −1.
+    Let :math:`w_k` be the task weights for the target function that produced a supervised dataset as specified
+    by the :doc:`pennylane.kernels.utils.task_weights` function, and :math:`\lambda_k` the eigenvalues of the kernel
+    used to compute these weights. The task-model alignment is defined as:
 
+    .. math::
+
+        C(l) = \frac{\sum_{k \leq N} w_k^2 \lambda_k}{\sum_{k} w_k^2 \lambda_k}.
+
+    Evidence put forward in Ref [] and other papers shows that this alignment is closely related to the generalization
+    error of a kernel method.
 
     Args:
+        N (int): compute the task-model alignment for components up this index; has to be smaller or equal to the
+            number of data points
         X (tensor_like): tensor of datapoints
         y (tensor_like): tensor of 0/1 target labels for a binary classification task
         kernel ((datapoint, datapoint) -> float): Kernel function that maps datapoints to kernel value.
@@ -222,6 +233,12 @@ def task_model_alignment(
     tensor(...)
 
     """
-    weights, evals = teacher_weights(X, y, kernel, return_evals=True)
-    return np.dot(weights[:k], evals[:k]) / np.dot(weights, evals)
+    num_data = qml.math.shape(X)[0]
+    if N > num_data:
+        raise ValueError(f"N has to be smaller or equal to the number of data points {num_data}; got {N}")
 
+    weights, evals = task_weights(X, y, kernel, return_evals=True)
+    numerator = qml.math.dot(weights[:N], evals[:N])
+    denominator = qml.math.dot(weights, evals)
+
+    return numerator / denominator
