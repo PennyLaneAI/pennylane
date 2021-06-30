@@ -17,7 +17,7 @@ from pennylane import numpy as np
 from pennylane import apply
 from pennylane.transforms import qfunc_transform
 from pennylane.ops.qubit import Rot
-from pennylane.math import isclose, allclose
+from pennylane.math import allclose, cast_like, stack, zeros
 
 from .optimization_utils import _find_next_gate, _fuse_rot_angles
 
@@ -83,7 +83,7 @@ def single_qubit_fusion(tape):
             continue
 
         # Set up a cumulative Rot starting from the angles of the initial gate
-        cumulative_angles = current_gate.as_rot_angles()
+        cumulative_angles = stack(current_gate.as_rot_angles())
 
         # Loop as long as a valid next gate exists
         while next_gate_idx is not None:
@@ -96,14 +96,16 @@ def single_qubit_fusion(tape):
 
                 # Merge the angles
                 next_gate_angles = next_gate.as_rot_angles()
-                cumulative_angles = _fuse_rot_angles(cumulative_angles, next_gate_angles)
+                cumulative_angles = _fuse_rot_angles(
+                    cumulative_angles, cast_like(stack(next_gate_angles), cumulative_angles)
+                )
             else:
                 break
 
             next_gate_idx = _find_next_gate(current_gate.wires, list_copy[1:])
 
         # Only apply if the cumulative angle is not close to 0
-        if not allclose(np.array(cumulative_angles), np.zeros(3)):
+        if not allclose(cumulative_angles, zeros(3)):
             Rot(*cumulative_angles, wires=current_gate.wires)
 
         # Remove the starting gate from the list
