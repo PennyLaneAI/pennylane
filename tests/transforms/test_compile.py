@@ -18,7 +18,8 @@ import numpy as np
 import pennylane as qml
 from pennylane.wires import Wires
 
-from pennylane.transforms import cancel_inverses, cnot_to_cz, merge_rotations
+from pennylane.transforms.optimization import cancel_inverses, merge_rotations
+from pennylane.transforms import cnot_to_cz
 from pennylane import compile
 
 dev = qml.device("default.qubit", wires=3)
