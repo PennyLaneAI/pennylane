@@ -268,8 +268,7 @@ def apply(op, context=QueuingContext):
         op (.Operator or .MeasurementProcess): the operator or measurement to apply/queue
         context (.QueuingContext): The queuing context to queue the operator to.
             Note that if no context is specified, the operator is
-            applied to currently active queuing context.
-
+            applied to the currently active queuing context.
     Returns:
         .Operator or .MeasurementProcess: the input operator is returned for convenience
 
