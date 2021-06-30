@@ -122,11 +122,30 @@ def kernel_matrix(X1, X2, kernel):
     return np.array(matrix).reshape((N, M))
 
 
-def kernel_eigenspectrum(X, kernel):
-    """Calculates the eigenvalues of a kernel using data.
+def kernel_eigensystem(X, kernel):
+    """Calculates the eigenvalues and eigenfunctions of a kernel using data.
 
-    EXPLAIN with equations
-    CITE rasmussen
+    Consider a data distribution :math:`p(x)` and an arbitrary kernel :math:`\kappa(x, x')` that
+    maps two data points to a real value. Just like with matrices, we can write down an
+    eigenvalue equation of the kernel, which decomposes the function into eigenfunctions :math:`\phi_k(x)`
+    weighted by eigenvalues :math:`\lambda_k`:
+
+    .. maths::
+
+        \int p(x) \kappa(x, x')\phi_k(x) dx = \lambda_k \phi_k(x')
+
+    In practice, we only have :math:`M` data samples from the distribution :math:`p(x)`, and can approximate the
+    eigenvalues as well as (values of) the eigenfunctions by computing the eigensystem of the
+    :math:`M \times M`-dimensional kernel (Gram) matrix :math:`\mathbf{K}` with entries
+    :math:`\mathbf{K}_{ij} = \kappa(x^i, x^j)`. Here, :math:`x^i, x^j` are data points (see also [Rasmussen]).
+
+    .. maths::
+
+        \mathbf{K} \boldsymbol\phi_k = \lambda_k \boldsymbol\phi_k
+
+    The vectors :math:`\boldsymbol\phi_k` contain the values of the eigenfunction :math:`\phi_k(x)` at the data points
+    :math:`x^1,...,x^M`. (This can also be derived by assuming that :math:`p(x) = \frac{1}{M} \sum_{m=1}^M \delta(x-x^m)`
+    is a distribution with peaks only at the sampled data points, for which the approximation becomes exact.)
 
     .. note::
 
@@ -135,14 +154,25 @@ def kernel_eigenspectrum(X, kernel):
 
     Args:
         X (tensor_like): tensor or list of datapoints
-        kernel ((datapoint, datapoint) -> float): Kernel function that maps
-            datapoints to kernel value.
+        kernel ((datapoint, datapoint) -> float): Kernel function that maps datapoints to kernel value.
 
     Returns:
-        array[float]: array of eigenvalues, sorted in descending order
-
+        tuple[array, array]: Shape (M,) array of eigenvalues and shape (M, M) array where the values of the
+        k'th eigenfunction are represented by the k'th row.
     """
 
     K = square_kernel_matrix(X, kernel)
-    spectrum = np.linalg.evals(K)
-    return sorted(spectrum)
+    return np.linalg.eigh(K) # Todo: do we need to invert here to get the evals? should be np.allclose(A @ v - v @ np.diag(w), np.zeros((4, 4)))
+
+
+def teacher_weights(X, y, kernel, return_evals=False):
+
+    if set(np.unique(y)) != {0, 1}:
+        raise ValueError(f"Target labels have to be 0 or 1; got {set(np.unique(y))}")
+
+    evecs, evals = kernel_eigensystem(X, kernel)
+    weights = np.diag(evals) @ evecs.T @ y  # TODO: -1/2 power
+
+    if return_evals:
+        return weights, evals
+    return weights

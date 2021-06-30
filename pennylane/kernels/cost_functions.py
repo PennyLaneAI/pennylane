@@ -18,6 +18,7 @@ See `here <https://www.doi.org/10.1007/s10462-012-9369-4>`_ for a review.
 from pennylane import numpy as np
 from ..utils import frobenius_inner_product
 from .utils import square_kernel_matrix
+from .utils import teacher_weights
 
 
 def polarity(
@@ -178,10 +179,10 @@ def target_alignment(
 
 
 def task_model_alignment(
+    k,
     X,
+    y,
     kernel,
-    target_weights,
-    threshold_component
 ):
     r"""Task-model alignment for a given kernel function.
 
@@ -193,9 +194,8 @@ def task_model_alignment(
 
     Args:
         X (tensor_like): tensor of datapoints
+        y (tensor_like): tensor of 0/1 target labels for a binary classification task
         kernel ((datapoint, datapoint) -> float): Kernel function that maps datapoints to kernel value.
-        target_weights (tensor_like): 1-d tensor representing the target functions' weight vector
-        threshold (int):
     Returns:
         float: The task-model alignment of the kernel on the dataset.
 
@@ -222,5 +222,6 @@ def task_model_alignment(
     tensor(...)
 
     """
+    weights, evals = teacher_weights(X, y, kernel, return_evals=True)
+    return np.dot(weights[:k], evals[:k]) / np.dot(weights, evals)
 
-    return
