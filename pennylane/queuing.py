@@ -274,8 +274,8 @@ def apply(op, context=QueuingContext):
 
     **Example**
 
-    In PennyLane, operations and measurements are 'queued' or applied to a QNode
-    when they are instantiated.
+    In PennyLane, **operations and measurements are 'queued' or applied to a QNode
+    when they are instantiated**.
 
     The ``apply`` function can be used to add operations that might have
     already been instantiated elsewhere to the QNode:
@@ -287,8 +287,8 @@ def apply(op, context=QueuingContext):
 
         @qml.qnode(dev)
         def circuit(x):
-            qml.RY(x, wires=0)
-            qml.apply(op)
+            qml.RY(x, wires=0)  # applied during instantiation
+            qml.apply(op)  # manually applied
             return qml.expval(qml.PauliZ(0))
 
     >>> print(qml.draw(circuit)(0.6))
@@ -341,10 +341,15 @@ def apply(op, context=QueuingContext):
                 qml.Hadamard(wires=1)
 
                 with qml.tape.QuantumTape() as tape2:
+                    # Due to the nesting behaviour of queuing contexts,
+                    # tape2 will be queued to tape1.
+
+                    # The following PauliX operation will be queued
+                    # to the active queuing context, tape2, during instantiation.
                     op1 = qml.PauliX(wires=0)
 
-                    # apply the same operation to tape1
-                    # without leaving the tape2 context
+                    # We can use qml.apply to apply the same operation to tape1
+                    # without leaving the tape2 context.
                     qml.apply(op1, context=tape1)
 
                     qml.RZ(0.2, wires=0)
