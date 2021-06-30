@@ -16,10 +16,12 @@ This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
 from importlib import reload
+import pkg_resources
 
 import numpy as _np
-import pkg_resources
 from semantic_version import Spec, Version
+
+from pennylane.queuing import apply, QueuingContext
 
 import pennylane.init
 import pennylane.fourier
@@ -59,8 +61,7 @@ from pennylane.utils import inv
 from pennylane.vqe import ExpvalCost, Hamiltonian, VQECost
 
 # QueuingContext and collections needs to be imported after all other pennylane imports
-from .collections import QNodeCollection, apply, dot, map, sum
-from .queuing import QueuingContext
+from .collections import QNodeCollection, dot, map, sum
 import pennylane.grouping  # pylint:disable=wrong-import-order
 
 # Look for an existing configuration file
