@@ -160,13 +160,13 @@ of other templates.
 
 .. customgalleryitem::
     :link: ../code/api/pennylane.templates.subroutines.GroverOperator.html
-    :description: Interferometer
-    :figure: ../_static/templates/subroutines/interferometer.png
+    :description: Grover Diffusion Operator
+    :figure: ../_static/templates/subroutines/grover.png
 
 .. customgalleryitem::
     :link: ../code/api/pennylane.templates.subroutines.Interferometer.html
-    :description: Grover Diffusion Operator
-    :figure: ../_static/templates/subroutines/grover.png
+    :description: Interferometer
+    :figure: ../_static/templates/subroutines/interferometer.png
 
 .. customgalleryitem::
     :link: ../code/api/pennylane.templates.subroutines.SingleExcitationUnitary.html
