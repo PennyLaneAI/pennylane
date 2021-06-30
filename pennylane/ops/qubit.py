@@ -2165,8 +2165,8 @@ class QubitUnitary(Operation):
         ControlledQubitUnitary(*self.parameters, control_wires=wire, wires=self.wires)
 
 
-class QubitMatrix(Operation):
-    r"""QubitMatrix(A, wires)
+class QubitOperator(Operation):
+    r"""QubitOperator(A, wires)
     Apply an arbitrary square matrix.
 
     **Details:**
@@ -2196,7 +2196,7 @@ class QubitMatrix(Operation):
         return A
 
     def adjoint(self):
-        return QubitMatrix(qml.math.T(qml.math.conj(self.matrix)), wires=self.wires)
+        return QubitOperator(qml.math.T(qml.math.conj(self.matrix)), wires=self.wires)
 
 
 class ControlledQubitUnitary(QubitUnitary):
@@ -3392,7 +3392,7 @@ ops = {
     "BasisState",
     "QubitStateVector",
     "QubitUnitary",
-    "QubitMatrix",
+    "QubitOperator",
     "ControlledQubitUnitary",
     "MultiControlledX",
     "DiagonalQubitUnitary",

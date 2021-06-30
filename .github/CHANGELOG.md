@@ -7,8 +7,27 @@
 
 <h3>Improvements</h3>
 
-* Add `QubitMatrix` operation for custom operator implementation
+* Add `QubitOperator` operation for custom operator implementation
 [(#1435)](https://github.com/PennyLaneAI/pennylane/pull/1435)
+
+  Example Usage:
+  ```python
+  wires = range(2)
+  dev = qml.device("default.qubit", wires=len(wires))
+
+  eigenstate = 2**(-.5)*np.array([1, 1j])
+  P = np.outer(eplus_i, np.conjugate(eigenstate)) # Projector
+
+  @qml.qnode(dev)
+  def circuit():
+
+      qml.Hadamard(wires=0)
+      qml.CNOT(wires=[0,1])
+
+      qml.QubitOperator(P, wires=1)
+
+      return qml.density_matrix(wires)
+  ```
 
 <h3>Breaking changes</h3>
 

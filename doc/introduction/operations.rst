@@ -86,7 +86,7 @@ Qubit gates
     ~pennylane.Toffoli
     ~pennylane.CSWAP
     ~pennylane.QubitUnitary
-    ~pennylane.QubitMatrix
+    ~pennylane.QubitOperator
     ~pennylane.ControlledQubitUnitary
     ~pennylane.MultiControlledX
     ~pennylane.DiagonalQubitUnitary

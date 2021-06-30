@@ -443,7 +443,7 @@ PARAMETRIZED_OPERATIONS = [
     qml.PauliY(wires=0),
     qml.CRot(0.123, 0.456, 0.789, wires=[0, 1]),
     qml.QubitUnitary(np.eye(2) * 1j, wires=0),
-    qml.QubitMatrix(np.eye(2) * 1j, wires=0),
+    qml.QubitOperator(np.eye(2) * 1j, wires=0),
     qml.DiagonalQubitUnitary(np.array([1.0, 1.0j]), wires=1),
     qml.ControlledQubitUnitary(np.eye(2) * 1j, wires=[0], control_wires=[2]),
     qml.MultiControlledX(control_wires=[0, 1], wires=2, control_values="01"),
@@ -1446,10 +1446,10 @@ class TestOperations:
         with pytest.raises(ValueError, match="must be a square matrix"):
             qml.QubitUnitary(U, wires=0).matrix
 
-    def test_qubit_matrix(self, tol):
-        """Test that QubitMatrix produces the correct output."""
+    def test_qubit_operator(self, tol):
+        """Test that QubitOperator produces the correct output."""
         A = 0.5 * np.array([[1, -1j], [1j, 1]])
-        out = qml.QubitMatrix(A, wires=0).matrix
+        out = qml.QubitOperator(A, wires=0).matrix
 
         # verify output type
         assert isinstance(out, np.ndarray)
@@ -1457,13 +1457,13 @@ class TestOperations:
         # verify equivalent to input state
         assert np.allclose(out, A, atol=tol, rtol=0)
 
-    def test_qubit_matrix_exceptions(self):
-        """Tests that the QubitMatrix operator raises the expected errors."""
+    def test_qubit_operator_exceptions(self):
+        """Tests that the QubitOperator operator raises the expected errors."""
         A1 = np.array([[1, 1, 1, -1]])
 
         # test non-square matrix
         with pytest.raises(ValueError, match="must be a square matrix"):
-            qml.QubitMatrix(A1, wires=0).matrix
+            qml.QubitOperator(A1, wires=0).matrix
 
     def test_iswap_eigenval(self):
         """Tests that the ISWAP eigenvalue matches the numpy eigenvalues of the ISWAP matrix"""
