@@ -2,6 +2,9 @@
 
 <h3>New features since last release</h3>
 
+* Grover Diffusion Operator template added.
+  [(#1442)](https://github.com/PennyLaneAI/pennylane/pull/1442)
+
 * Ising YY gate functionality added.
   [(#1358)](https://github.com/PennyLaneAI/pennylane/pull/1358)
 
