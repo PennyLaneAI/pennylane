@@ -45,8 +45,7 @@ class grad:
         argnum (int, list(int), None): Which argument(s) to take the gradient
             with respect to. By default, the arguments themselves are used
             to determine differentiability, by examining the ``requires_grad``
-            property. Providing this keyword argument overrides this behaviour,
-            allowing argument differentiability to be defined manually for the returned gradient function.
+            property.
 
     Returns:
         function: The function that returns the gradient of the input

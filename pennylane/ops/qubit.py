@@ -21,10 +21,11 @@ import functools
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import math
 import numpy as np
+import scipy
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.operation import AnyWires, DiagonalOperation, Observable, Operation
+from pennylane.operation import AnyWires, AllWires, DiagonalOperation, Observable, Operation
 from pennylane.templates.decorator import template
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 from pennylane.utils import expand, pauli_eigs
@@ -1928,6 +1929,7 @@ class IsingXX(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
+    generator = [np.array([[0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0], [1, 0, 0, 0]]), -1 / 2]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1951,6 +1953,61 @@ class IsingXX(Operation):
     def adjoint(self):
         (phi,) = self.parameters
         return IsingXX(-phi, wires=self.wires)
+
+
+class IsingYY(Operation):
+    r"""IsingYY(phi, wires)
+    Ising YY coupling gate
+
+    .. math:: \mathtt{YY}(\phi) = \begin{bmatrix}
+        \cos(\phi / 2) & 0 & 0 & i \sin(\phi / 2) \\
+        0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
+        0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
+        i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
+        \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 1
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(YY(\phi)) = \frac{1}{2}\left[f(YY(\phi +\pi/2)) - f(YY(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`YY(\phi)`.
+
+    Args:
+        phi (float): the phase angle
+        wires (int): the subsystem the gate acts on
+    """
+    num_params = 1
+    num_wires = 2
+    par_domain = "R"
+    grad_method = "A"
+
+    @staticmethod
+    def decomposition(phi, wires):
+        return [
+            qml.CY(wires=wires),
+            qml.RY(phi, wires=[wires[0]]),
+            qml.CY(wires=wires),
+        ]
+
+    @classmethod
+    def _matrix(cls, *params):
+        phi = params[0]
+        cos = np.cos(phi / 2)
+        isin = 1.0j * np.sin(phi / 2)
+        return np.array(
+            [
+                [cos, 0.0, 0.0, isin],
+                [0.0, cos, -isin, 0.0],
+                [0.0, -isin, cos, 0.0],
+                [isin, 0.0, 0.0, cos],
+            ],
+            dtype=complex,
+        )
+
+    def adjoint(self):
+        (phi,) = self.parameters
+        return IsingYY(-phi, wires=self.wires)
 
 
 class IsingZZ(Operation):
@@ -1979,6 +2036,7 @@ class IsingZZ(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
+    generator = [np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]), -1 / 2]
 
     @staticmethod
     def decomposition(phi, wires):
@@ -3161,6 +3219,45 @@ class Projector(Observable):
         return []
 
 
+class SparseHamiltonian(Observable):
+    r"""SparseHamiltonian(H)
+    A Hamiltonian represented directly as a sparse matrix in coordinate list (COO) format.
+
+    .. warning::
+
+        ``SparseHamiltonian`` observables can only be used to return expectation values.
+        Variances and samples are not supported.
+
+    .. note::
+
+        Note that the ``SparseHamiltonian`` observable should not be used with a subset of wires.
+
+    **Details:**
+
+    * Number of wires: All
+    * Number of parameters: 1
+    * Gradient recipe: None
+
+    Args:
+        H (coo_matrix): a sparse matrix in SciPy coordinate list (COO) format with
+            dimension :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
+    """
+    num_wires = AllWires
+    num_params = 1
+    par_domain = None
+    grad_method = None
+
+    @classmethod
+    def _matrix(cls, *params):
+        A = params[0]
+        if not isinstance(A, scipy.sparse.coo_matrix):
+            raise TypeError("Observable must be a scipy sparse coo_matrix.")
+        return A
+
+    def diagonalizing_gates(self):
+        return []
+
+
 # =============================================================================
 # Arithmetic
 # =============================================================================
@@ -3387,6 +3484,7 @@ ops = {
     "U2",
     "U3",
     "IsingXX",
+    "IsingYY",
     "IsingZZ",
     "BasisState",
     "QubitStateVector",
@@ -3406,7 +3504,7 @@ ops = {
 }
 
 
-obs = {"Hadamard", "PauliX", "PauliY", "PauliZ", "Hermitian", "Projector"}
+obs = {"Hadamard", "PauliX", "PauliY", "PauliZ", "Hermitian", "Projector", "SparseHamiltonian"}
 
 
 __all__ = list(ops | obs)
