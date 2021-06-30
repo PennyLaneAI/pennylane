@@ -15,9 +15,32 @@
 
 from pennylane import numpy as np
 from pennylane.math import allclose, isclose, sin, cos, arccos, arctan2
+from pennylane.wires import Wires
+
+def _find_next_gate(wires, op_list):
+    """Given a list of operations, finds the next operation that acts on at least one of
+    the same set of wires, if present.
+
+    Args:
+        wires (Wires): A set of wires acted on by a quantum operation.
+        op_list (list[Operation]): A list of operations that are implemented after the
+            operation that acts on ``wires``.
+
+    Returns:
+        int or None: The index, in `op_list`, of the earliest gate that uses one or more
+            of the same wires, or None if no such gate is present.
+    """
+    next_gate_idx = None
+
+    for op_idx, op in enumerate(op_list):
+        if len(Wires.shared_wires([wires, op.wires])) > 0:
+            next_gate_idx = op_idx
+            break
+
+    return next_gate_idx
 
 
-def yzy_to_zyz(y1, z, y2):
+def _yzy_to_zyz(y1, z, y2):
     """Converts a set of angles representing a sequence of rotations RY, RZ, RY into
     an equivalent sequence of the form RZ, RY, RZ.
 
@@ -74,7 +97,7 @@ def yzy_to_zyz(y1, z, y2):
     return (z1, y, z2)
 
 
-def fuse_rot(angles_1, angles_2):
+def _fuse_rot_angles(angles_1, angles_2):
     """Computed the set of rotation angles that is obtained when composing
     two ``qml.Rot`` operations.
 
@@ -110,17 +133,28 @@ def fuse_rot(angles_1, angles_2):
     # avoid having to use the quaternion conversion routine
     # If b = 0, then we have RZ(a + c + d) RY(e) RZ(f)
     if isclose(middle_yzy[0], 0.0):
+        # Then if e is close to zero, return a single rotation RZ(a + c + d + f)
+        if isclose(middle_yzy[2], 0.0):
+            return np.array([leftmost_z + middle_yzy[1] + rightmost_z, 0.0, 0.0])
         return np.array([leftmost_z + middle_yzy[1], middle_yzy[2], rightmost_z])
+    
     # If c + d is close to 0, then we have the case RZ(a) RY(b + e) RZ(f)
     elif isclose(middle_yzy[1], 0.0):
+        # If b + e is 0, we have RZ(a + f)
+        if isclose(middle_yzy[0] + middle_yzy[2], 0.0):
+            return np.array([leftmost_z + rightmost_z, 0.0, 0.0])
         return np.array([leftmost_z, middle_yzy[0] + middle_yzy[2], rightmost_z])
+
     # If e is close to 0, then we have the case RZ(a) RY(b) RZ(c + d + f)
     elif isclose(middle_yzy[2], 0.0):
+        # If b is close to 0, we again have RZ(a + c + d + f)
+        if isclose(middle_yzy[0], 0.0):
+            return np.array([leftmost_z + middle_yzy[1] + rightmost_z, 0.0, 0.0])
         return np.array([leftmost_z, middle_yzy[0], middle_yzy[1] + rightmost_z])
 
     # Otherwise, we need to turn the RY(b) RZ(c+d) RY(e) into something
     # of the form RZ(u) RY(v) RZ(w)
-    u, v, w = yzy_to_zyz(*middle_yzy)
+    u, v, w = _yzy_to_zyz(*middle_yzy)
 
     # Then we can combine to create
     # RZ(a + u) RY(v) RZ(w + f)

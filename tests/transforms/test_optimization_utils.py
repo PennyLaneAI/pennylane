@@ -17,7 +17,7 @@ import numpy as np
 
 import pennylane as qml
 
-from pennylane.transforms.optimization_utils import yzy_to_zyz, fuse_rot
+from pennylane.transforms.optimization.optimization_utils import _yzy_to_zyz, _fuse_rot_angles
 
 
 def normalize_angle(theta):
@@ -44,7 +44,7 @@ class TestRotGateFusion:
         to a sequence of the form ZYZ."""
         angles = [normalize_angle(x) for x in angles]
 
-        z1, y, z2 = yzy_to_zyz(*angles)
+        z1, y, z2 = _yzy_to_zyz(*angles)
 
         Y1 = qml.RY(angles[0], wires=0).matrix
         Z = qml.RZ(angles[1], wires=0).matrix
@@ -77,7 +77,7 @@ class TestRotGateFusion:
         rot_2_mat = qml.Rot(*angles_2, wires=0).matrix
         matrix_expected = np.dot(rot_2_mat, rot_1_mat)
 
-        fused_angles = [normalize_angle(x) for x in fuse_rot(angles_1, angles_2)]
+        fused_angles = [normalize_angle(x) for x in _fuse_rot_angles(angles_1, angles_2)]
         print(fused_angles)
         matrix_obtained = qml.Rot(*fused_angles, wires=0).matrix
 

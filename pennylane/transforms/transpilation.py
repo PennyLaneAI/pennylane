@@ -13,6 +13,7 @@
 # limitations under the License.
 """Transforms for transpiling and rewriting quantum circuits."""
 
+from pennylane import apply
 from pennylane.ops.qubit import Hadamard, CZ
 from pennylane.transforms import qfunc_transform
 
@@ -58,4 +59,4 @@ def cnot_to_cz(tape):
 
         # If it's not a CNOT, simply add it to the tape
         else:
-            op.queue()
+            apply(op)

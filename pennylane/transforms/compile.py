@@ -19,11 +19,13 @@ import pennylane.templates as templates
 # Get a list of the names of existing templates in PennyLane
 template_list = [cls[0] for cls in getmembers(templates, isclass)]
 
+from pennylane import apply
 from pennylane.tape import get_active_tape
 
-from pennylane.transforms import invisible, qfunc_transform, cancel_inverses, cnot_to_cz
+from pennylane.transforms import qfunc_transform
+from pennylane.transforms.optimization import cancel_inverses, merge_rotations
 
-default_pipeline = [cancel_inverses]
+default_pipeline = [cancel_inverses, merge_rotations]
 
 
 @qfunc_transform
@@ -86,4 +88,4 @@ def compile(tape, pipeline=default_pipeline, basis_set=None, num_passes=1):
 
     # Queue the operations on the optimized tape
     for op in expanded_tape.operations + expanded_tape.measurements:
-        op.queue()
+        apply(op)
