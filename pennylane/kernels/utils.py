@@ -21,7 +21,7 @@ def square_kernel_matrix(X, kernel, assume_normalized_kernel=False):
     r"""Computes the square matrix of pairwise kernel values for a given dataset.
 
     Args:
-        X (list[datapoint]): List of datapoints
+        X (tensor_like): tensor or list of datapoints
         kernel ((datapoint, datapoint) -> float): Kernel function that maps
             datapoints to kernel value.
         assume_normalized_kernel (bool, optional): Assume that the kernel is normalized, in
@@ -74,8 +74,8 @@ def kernel_matrix(X1, X2, kernel):
     r"""Computes the matrix of pairwise kernel values for two given datasets.
 
     Args:
-        X1 (list[datapoint]): List of datapoints (first argument)
-        X2 (list[datapoint]): List of datapoints (second argument)
+        X1 (tensor_like): tensor or list of datapoints (first argument)
+        X2 (tensor_like): tensor or list of datapoints (second argument)
         kernel ((datapoint, datapoint) -> float): Kernel function that maps datapoints to kernel value.
 
     Returns:
@@ -120,3 +120,29 @@ def kernel_matrix(X1, X2, kernel):
             matrix[M * i + j] = kernel(X1[i], X2[j])
 
     return np.array(matrix).reshape((N, M))
+
+
+def kernel_eigenspectrum(X, kernel):
+    """Calculates the eigenvalues of a kernel using data.
+
+    EXPLAIN with equations
+    CITE rasmussen
+
+    .. note::
+
+        This function implements an eigenvalue decomposition and is
+        currently not differentiable.
+
+    Args:
+        X (tensor_like): tensor or list of datapoints
+        kernel ((datapoint, datapoint) -> float): Kernel function that maps
+            datapoints to kernel value.
+
+    Returns:
+        array[float]: array of eigenvalues, sorted in descending order
+
+    """
+
+    K = square_kernel_matrix(X, kernel)
+    spectrum = np.linalg.evals(K)
+    return sorted(spectrum)

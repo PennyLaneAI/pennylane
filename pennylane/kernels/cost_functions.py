@@ -175,3 +175,52 @@ def target_alignment(
         rescale_class_labels=rescale_class_labels,
         normalize=True,
     )
+
+
+def task_model_alignment(
+    X,
+    kernel,
+    target_weights,
+    threshold_component
+):
+    r"""Task-model alignment for a given kernel function.
+
+    Proposed in [] , this function measures how much of the signal of
+    f is captured in the principal components up to threshold component.
+
+    C(i) = P j≤ia2j(Pja2j) −1.
+
+
+    Args:
+        X (tensor_like): tensor of datapoints
+        kernel ((datapoint, datapoint) -> float): Kernel function that maps datapoints to kernel value.
+        target_weights (tensor_like): 1-d tensor representing the target functions' weight vector
+        threshold (int):
+    Returns:
+        float: The task-model alignment of the kernel on the dataset.
+
+    **Example:**
+
+    Consider a simple kernel function based on :class:`~.templates.embeddings.AngleEmbedding`:
+
+    .. code-block :: python
+
+        dev = qml.device('default.qubit', wires=2, shots=None)
+        @qml.qnode(dev)
+        def circuit(x1, x2):
+            qml.templates.AngleEmbedding(x1, wires=dev.wires)
+            qml.adjoint(qml.templates.AngleEmbedding)(x2, wires=dev.wires)
+            return qml.probs(wires=dev.wires)
+
+        kernel = lambda x1, x2: circuit(x1, x2)[0]
+
+    We can then compute the task-model alignment on a set of 4 (random)
+    feature vectors ``X`` via
+
+    >>> X = np.random.random((4, 2))
+    >>> qml.kernels.task_model_alignment(X, kernel)
+    tensor(...)
+
+    """
+
+    return
