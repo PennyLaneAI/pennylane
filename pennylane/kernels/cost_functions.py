@@ -181,14 +181,14 @@ def target_alignment(
 
 def task_model_alignment(
     N,
-    X,
-    y,
-    kernel,
+    task_weights,
+    kernel_evals,
 ):
     r"""Task-model alignment for a given kernel function as proposed in [].
 
     This function measures how much of the target function producing a supervised dataset is
-    captured in the kernel's first :math:`N` eigenvalues.
+    captured in the kernel's first :math:`N` eigenvalues. More colloquially, it measures how much the basis functions
+    available to the kernel are used by the target function that we seek to learn with the kernel.
 
     Let :math:`w_k` be the task weights for the target function that produced a supervised dataset as specified
     by the :doc:`pennylane.kernels.utils.task_weights` function, and :math:`\lambda_k` the eigenvalues of the kernel
@@ -204,9 +204,7 @@ def task_model_alignment(
     Args:
         N (int): compute the task-model alignment for components up this index; has to be smaller or equal to the
             number of data points
-        X (tensor_like): tensor of datapoints
-        y (tensor_like): tensor of 0/1 target labels for a binary classification task
-        kernel ((datapoint, datapoint) -> float): Kernel function that maps datapoints to kernel value.
+
     Returns:
         float: The task-model alignment of the kernel on the dataset.
 
@@ -217,13 +215,12 @@ def task_model_alignment(
     .. code-block :: python
 
         dev = qml.device('default.qubit', wires=2, shots=None)
+
         @qml.qnode(dev)
-        def circuit(x1, x2):
+        def kernel(x1, x2):
             qml.templates.AngleEmbedding(x1, wires=dev.wires)
             qml.adjoint(qml.templates.AngleEmbedding)(x2, wires=dev.wires)
-            return qml.probs(wires=dev.wires)
-
-        kernel = lambda x1, x2: circuit(x1, x2)[0]
+            return qml.expval(qml.Projector([0, 0]), wires=[0, 1]))
 
     We can then compute the task-model alignment on a set of 4 (random)
     feature vectors ``X`` via
@@ -233,12 +230,6 @@ def task_model_alignment(
     tensor(...)
 
     """
-    num_data = qml.math.shape(X)[0]
-    if N > num_data:
-        raise ValueError(f"N has to be smaller or equal to the number of data points {num_data}; got {N}")
-
-    weights, evals = task_weights(X, y, kernel, return_evals=True)
-    numerator = qml.math.dot(weights[:N], evals[:N])
-    denominator = qml.math.dot(weights, evals)
-
+    numerator = qml.math.dot(task_weights[:N], kernel_evals[:N])
+    denominator = qml.math.dot(task_weights, kernel_evals)
     return numerator / denominator

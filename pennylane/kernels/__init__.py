@@ -68,6 +68,7 @@ using the methods in this module.
 from .cost_functions import (
     polarity,
     target_alignment,
+    task_model_alignment,
 )
 from .postprocessing import (
     threshold_matrix,
@@ -79,4 +80,6 @@ from .postprocessing import (
 from .utils import (
     kernel_matrix,
     square_kernel_matrix,
+    kernel_eigensystem,
+    task_weights,
 )

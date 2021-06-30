@@ -158,12 +158,17 @@ def kernel_eigensystem(X, kernel):
         kernel ((datapoint, datapoint) -> float): Kernel function that maps datapoints to kernel value.
 
     Returns:
-        tuple[array, array]: Shape (M,) array of eigenvalues and shape (M, M) array where the values of the
-        k'th eigenfunction are represented by the k'th row.
+        tuple[array, array]: Shape (M,) tensor of eigenvalues and shape (M, M) tensor where the values of the
+            k'th eigenfunction are represented by the k'th column.
     """
 
     K = square_kernel_matrix(X, kernel)
-    return qml.math.eigh(K) # Todo: do we need to invert here to get the evals? should be np.allclose(A @ v - v @ np.diag(w), np.zeros((4, 4)))
+    evals, evecs = qml.math.linalg.eigh(K) # Todo: do we need to invert here to get the evals? should be np.allclose(A @ v - v @ np.diag(w), np.zeros((4, 4)))
+    # reverse sorting to have descending evals
+    evecs = qml.math.flip(evecs)
+    evals = qml.math.flip(evals)
+    #evals = qml.math.round(evals, 10)
+    return evals, evecs
 
 
 def task_weights(X, y, kernel, return_evals=False):
@@ -200,8 +205,9 @@ def task_weights(X, y, kernel, return_evals=False):
     Returns:
         tensor_like: Shape (M,) tensor of weights
     """
-    evecs, evals = kernel_eigensystem(X, kernel)
-    weights = qml.math.inverse(qml.math.diag(evals)) @ qml.math.inverse(evecs) @ y
+    evals, evecs = kernel_eigensystem(X, kernel)
+
+    weights = qml.math.diag(1/qml.math.sqrt(evals)) @ qml.math.linalg.inv(evecs) @ y
 
     if return_evals:
         return weights, evals

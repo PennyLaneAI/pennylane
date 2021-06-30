@@ -81,6 +81,22 @@ class TestKernelMatrix:
         assert np.allclose(K2, K2_expected)
 
 
+class TestKernelEigensystem:
+    """Tests for the kernel_eigensystem function."""
+
+    def test_decomposition(self):
+        """Test that the eigendecomposition is correct."""
+
+        kernel = lambda a, b: np.dot(a, b)
+        X = np.array([[i] for i in range(5)])
+        K = kern.square_kernel_matrix(X, kernel)
+
+        evals, evecs = kern.utils.kernel_eigensystem(X, kernel)
+        reconstruction = evecs.T @ np.diag(evals) @ evecs
+
+        assert np.allclose(reconstruction, K)
+
+
 class TestKernelPolarity:
     """Tests kernel methods to compute polarity."""
 
