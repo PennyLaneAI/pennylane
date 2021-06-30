@@ -25,7 +25,7 @@ class GroverOperator(Operation):
     .. math::
 
         G = 2 |s \rangle \langle s | - I
-        = H^{\bigotimes n} \left( 2 |0\rangle \langle 0| - I ) H^{\bigotimes n}
+        = H^{\bigotimes n} \left( 2 |0\rangle \langle 0| - I \right) H^{\bigotimes n}
 
 
     For this template, the operator is implemented with a layer of Hadamards, an
