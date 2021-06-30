@@ -272,15 +272,13 @@ ar.register_function("torch", "expand_dims", lambda x, axis: _i("torch").unsquee
 ar.register_function("torch", "shape", lambda x: tuple(x.shape))
 ar.register_function("torch", "gather", lambda x, indices: x[indices])
 
-
-def _ifft2_torch(a, s=None, axes=-1, norm=None):
-    if isinstance(axes, tuple):
-        raise ValueError("Torch does not support passing a tuple of axes.")
-
-    return _i("torch").fft.ifft2(input=a, s=s, dim=axes, norm=norm)
-
-
-ar.register_function("torch", "fft.ifft2", _ifft2_torch)
+ar.register_function(
+    "torch",
+    "fft.ifft2",
+    lambda a, s=None, axes=(-2, -1), norm=None: _i("torch").fft.ifft2(
+        input=a, s=s, dim=axes, norm=norm
+    ),
+)
 
 
 ar.register_function(
