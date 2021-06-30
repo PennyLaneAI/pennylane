@@ -1476,7 +1476,7 @@ class TestOperations:
         """Test that the expected circuit output is returned when using QubitOperator for a
         Hermitian and a non-Hermitian operator"""
 
-        dev = qml.device("default.qubit.tf", wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def circuit():
