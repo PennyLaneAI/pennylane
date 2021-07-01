@@ -335,7 +335,7 @@ def sample(op=None, wires=None):
     """
     if not isinstance(op, Observable) and op is not None:  # None type is also allowed for op
         raise qml.QuantumFunctionError(
-            "{} is not an observable: cannot be used with sample".format(op)
+            "{} is not an observable: cannot be used with sample".format(op.name)
         )
 
     if wires is not None:
