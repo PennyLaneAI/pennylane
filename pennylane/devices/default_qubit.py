@@ -23,6 +23,7 @@ import functools
 from string import ascii_letters as ABC
 
 import numpy as np
+from scipy.sparse import coo_matrix
 
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
 from pennylane.operation import DiagonalOperation
@@ -136,7 +137,16 @@ class DefaultQubit(QubitDevice):
         "QubitSum",
     }
 
-    observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity", "Projector"}
+    observables = {
+        "PauliX",
+        "PauliY",
+        "PauliZ",
+        "Hadamard",
+        "Hermitian",
+        "Identity",
+        "Projector",
+        "SparseHamiltonian",
+    }
 
     def __init__(self, wires, *, shots=None, cache=0, analytic=None):
         super().__init__(wires, shots, cache=cache, analytic=analytic)
@@ -437,6 +447,39 @@ class DefaultQubit(QubitDevice):
 
         phase = self._conj(parameters) if inverse else parameters
         return self._stack([state[sl_0], phase * state[sl_1]], axis=axes[0])
+
+    def expval(self, observable, shot_range=None, bin_size=None):
+        """Returns the expectation value of a Hamiltonian observable. When the observable is a
+         ``SparseHamiltonian`` object, the expectation value is computed directly for the full
+         Hamiltonian, which leads to faster execution.
+
+        Args:
+            observable (~.Observable): a PennyLane observable
+            shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
+                to use. If not specified, all samples are used.
+            bin_size (int): Divides the shot range into bins of size ``bin_size``, and
+                returns the measurement statistic separately over each bin. If not
+                provided, the entire shot range is treated as a single bin.
+
+        Returns:
+            float: returns the expectation value of the observable
+        """
+        if observable.name == "SparseHamiltonian":
+            if self.shots is not None:
+                raise DeviceError("SparseHamiltonian must be used with shots=None")
+
+        if observable.name == "SparseHamiltonian" and self.shots is None:
+
+            ev = coo_matrix.dot(
+                coo_matrix(self._conj(self.state)),
+                coo_matrix.dot(
+                    observable.matrix, coo_matrix(self.state.reshape(len(self.state), 1))
+                ),
+            )
+
+            return np.real(ev.toarray()[0])
+
+        return super().expval(observable, shot_range=shot_range, bin_size=bin_size)
 
     def _get_unitary_matrix(self, unitary):  # pylint: disable=no-self-use
         """Return the matrix representing a unitary operation.

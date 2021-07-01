@@ -259,7 +259,7 @@ class AutogradInterface(AnnotatedQueue):
                     hessian = _evaluate_grad_matrix(p, "hessian")
 
                     if dy.size > 1:
-                        vhp = dy @ ddy @ hessian @ dy.T
+                        vhp = dy @ ddy @ hessian @ dy.T / np.linalg.norm(dy) ** 2
                     else:
                         vhp = ddy @ hessian
                         vhp = vhp.flatten()
