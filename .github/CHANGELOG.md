@@ -43,7 +43,12 @@
 
 * Quantum function transforms now preserve the format of the measurement
   results, so that a single measurement returns a single value rather than
-  an array with a single element. [(#1434)](https://github.com/PennyLaneAI/pennylane/pull/1434/files)
+  an array with a single element. [(#1434)](https://github.com/PennyLaneAI/pennylane/pull/1434)
+
+* Fixed a bug in the parameter-shift Hessian implementation, which resulted
+  in the incorrect Hessian being returned for a cost function
+  that performed post-processing on a vector-valued QNode.
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
 
 <h3>Documentation</h3>
 
@@ -51,7 +56,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Ashish Panigrahi
+Olivia Di Matteo, Josh Izaac, Ashish Panigrahi.
 
 
 # Release 0.16.0 (current release)
