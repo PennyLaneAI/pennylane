@@ -111,31 +111,31 @@ Docker support exists for building using CPU and GPU (Nvidia CUDA 11.1+) images.
 To build a basic PennyLane image without any additional interfaces (Torch, TensorFlow, or Jax) run following:
 
 ```
-make -f /docker/docker.makefile build-base
+make -f docker/docker.makefile build-base
 ```
 To build a PennyLane image using a given interface (Torch, TensorFlow or Jax) run following:
 
 ```
-make -f /docker/docker.makefile build-tensorflow
+make -f docker/docker.makefile build-tensorflow
 ```
 
 To build a PennyLane image using a given interface (Torch, TensorFlow or Jax) with GPU support run following:
 
 ```
-make -f /docker/docker.makefile build-tensorflow-gpu
+make -f docker/docker.makefile build-tensorflow-gpu
 ```
 
 You can also build an image with the PennyLane Qchem package and its dependencies. Use following commands:
 
 ```
-make -f /docker/docker.makefile build-qchem
+make -f docker/docker.makefile build-qchem
 ```
 
 To build all three interfaces (Torch, TensorFlow, or Jax) using a single command run following:
 
 
 ```
-make -f /docker/docker.makefile build-all
+make -f docker/docker.makefile build-all
 ```
 
 ## Contributing to PennyLane
