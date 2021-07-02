@@ -15,8 +15,7 @@
 This module contains functions for adding the Autograd interface
 to a PennyLane Device class.
 """
-# pylint: disable=protected-access
-import copy
+# pylint: disable=protected-access,too-many-arguments
 import contextlib
 
 import autograd.extend
@@ -102,7 +101,9 @@ def convert_to_numpy(tensors):
     return unwrapped_tensors
 
 
-def batch_execute(tapes, device, gradient_fn=None, cache=[], _n=1):
+def batch_execute(
+    tapes, device, gradient_fn=None, cache=[], _n=1
+):  # pylint: disable=dangerous-default-value
     """Execute a batch of tapes with NumPy parameters on a device.
 
     Args:
@@ -229,7 +230,9 @@ def _batch_execute(parameters, tapes=None, device=None, gradient_fn=None, cache=
     return res
 
 
-def vjp(ans, parameters, tapes=None, device=None, gradient_fn=None, cache=[], _n=1):
+def vjp(
+    ans, parameters, tapes=None, device=None, gradient_fn=None, cache=[], _n=1
+):  # pylint: disable=dangerous-default-value,unused-argument
     """Returns the vector-Jacobian product operator for a batch of quantum tapes.
 
     Args:
@@ -285,7 +288,7 @@ def vjp(ans, parameters, tapes=None, device=None, gradient_fn=None, cache=[], _n
                 processing_fns[-1].append(fn)
 
         results = batch_execute(gradient_tapes, device, gradient_fn=None, cache=cache, _n=_n + 1)
-        vjp = []
+        vjps = []
         start = 0
 
         for t, d in zip(range(len(tapes)), dy):
@@ -293,7 +296,7 @@ def vjp(ans, parameters, tapes=None, device=None, gradient_fn=None, cache=[], _n
             jac = []
 
             if num_params == 0:
-                vjp.append(None)
+                vjps.append(None)
                 continue
 
             for fn, res_len in zip(processing_fns[t], reshape_info):
@@ -307,9 +310,9 @@ def vjp(ans, parameters, tapes=None, device=None, gradient_fn=None, cache=[], _n
             dy_row = np.reshape(d, [-1])
             jac = np.transpose(np.stack(jac))
             jac = np.reshape(jac, [-1, num_params])
-            vjp.append(np.tensordot(dy_row, jac, axes=[[0], [0]]))
+            vjps.append(np.tensordot(dy_row, jac, axes=[[0], [0]]))
 
-        return [_unwrap_arraybox(v, max_depth=_n) for v in vjp]
+        return [_unwrap_arraybox(v, max_depth=_n) for v in vjps]
 
     return grad_fn
 

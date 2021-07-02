@@ -16,7 +16,6 @@ This module contains functions for adding the TensorFlow interface
 to a PennyLane Device class.
 """
 # pylint: disable=protected-access
-import copy
 import contextlib
 
 import tensorflow as tf
