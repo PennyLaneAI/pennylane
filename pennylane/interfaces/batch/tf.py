@@ -276,6 +276,8 @@ def batch_execute(tapes, device, gradient_fn=None, cache=[]):
 
             vjp.append(tf.tensordot(dy_row, jac, axes=[[0], [0]]))
 
+        # Append None to account for the ``dev`` positional argument.
+        # Note that if device is passed as a keyword argument, an error will occur!
         vjp.append(None)
         return (vjp, variables) if variables is not None else vjp
 

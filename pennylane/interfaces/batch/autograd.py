@@ -135,7 +135,7 @@ class UnwrapTape:
 
     def __enter__(self):
         self.tape.trainable_params, self._original_params = get_trainable_params(self.tape)
-        self._unwrapped_params =  convert_to_numpy(self._original_params)
+        self._unwrapped_params = convert_to_numpy(self._original_params)
         self.tape.set_parameters(self._unwrapped_params, trainable_only=False)
 
         return self.tape
@@ -231,8 +231,12 @@ def batch_execute(tapes, device, gradient_fn=None, cache=[], _n=1):
     if gradient_fn is None:
         gradient_fn = qml.transforms.gradients.qubit_parameter_shift.expval_grad
 
-    parameters = autograd.builtins.tuple([autograd.builtins.list(t.get_parameters()) for t in tapes])
-    return _batch_execute(parameters, tapes=tapes, device=device, gradient_fn=gradient_fn, cache=cache, _n=_n)
+    parameters = autograd.builtins.tuple(
+        [autograd.builtins.list(t.get_parameters()) for t in tapes]
+    )
+    return _batch_execute(
+        parameters, tapes=tapes, device=device, gradient_fn=gradient_fn, cache=cache, _n=_n
+    )
 
 
 @autograd.extend.primitive
@@ -345,6 +349,7 @@ def vjp(ans, parameters, tapes=None, device=None, gradient_fn=None, cache=[], _n
             vjp.append(np.tensordot(dy_row, jac, axes=[[0], [0]]))
 
         return [_unwrap_arraybox(v, max_depth=_n) for v in vjp]
+
     return grad_fn
 
 
