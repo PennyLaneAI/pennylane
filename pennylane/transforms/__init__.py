@@ -79,6 +79,7 @@ from .adjoint import adjoint
 from .classical_jacobian import classical_jacobian
 from .control import ControlledOperation, ctrl
 from .draw import draw
+from .gradients import qubit_parameter_shift
 from .hamiltonian_expand import hamiltonian_expand
 from .invisible import invisible
 from .measurement_grouping import measurement_grouping
