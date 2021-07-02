@@ -85,11 +85,46 @@ def convert_to_numpy(tensors):
 class BatchExecute(torch.autograd.Function):
     @staticmethod
     def forward(ctx, kwargs, *parameters):
+        """Implements the forward pass batch tape evaluation.
+
+        The signature of this ``torch.autograd.Function`` is designed to
+        workaround Torch restrictions.
+
+        In particular, ``torch.autograd.Function``:
+
+        - Cannot accept keyword arguments. As a result, we pass a dictionary
+          as the first argument ``kwargs``. This dictionary **must** contain:
+
+          * ``"tapes"``: the quantum tapes to batch evaluate
+          * ``"device"``: the device to use to evaluate the tapes
+          * ``"gradient_fn"``: The gradient transform function to use
+            for backward passes.
+          * ``"cache"``: the cache list
+
+        Further, ote that the ``parameters`` argument is dependent on the
+        ``tapes``; this Function should always be called
+        with the parameters extracted directly from the tapes as follows:
+
+        >>> parameters = []
+        >>> [parameters.extend(t.get_parameters()) for t in tapes])
+        >>> kwargs = {"tapes": tapes, "device": device, "gradient_fn": gradient_fn}
+        >>> BatchExecute.apply(kwargs, parameters, tapes=tapes, device=device)
+
+        In particular:
+
+        - ``parameters`` is dependent on the provided tapes: always extract them as above
+        - ``tapes`` is a *required* argument
+        - ``device`` is a *required* argument
+
+        The private argument ``_n`` is used to track nesting of derivatives, for example
+        if the nth-order derivative is requested. Do not set this argument unless you
+        understand the consequences!
+        """
         ctx.tapes = kwargs["tapes"]
         ctx.device = kwargs["device"]
         ctx.gradient_fn = kwargs["gradient_fn"]
-        ctx.cache = kwargs["cache"]
-        ctx._n = kwargs["_n"]
+        ctx.cache = kwargs.get("cache", [])
+        ctx._n = kwargs.get("_n", 1)
 
         with contextlib.ExitStack() as stack:
             unwrapped_tapes = [
