@@ -15,10 +15,9 @@
 This module contains functions for adding the TensorFlow interface
 to a PennyLane Device class.
 """
+# pylint: disable=protected-access
 import copy
 import contextlib
-
-import numpy as np
 
 import tensorflow as tf
 from tensorflow.python.eager.tape import should_record_backprop
@@ -26,16 +25,14 @@ from tensorflow.python.eager.tape import should_record_backprop
 import pennylane as qml
 
 
-def conversion_func(value, dtype=None, name=None, as_ref=False):
+def conversion_func(value, dtype=None, name=None, as_ref=False):  # pylint: disable=unused-argument
     """To convert a tape to a tf.Tensor, simply stack the parameters
     of the tape."""
     return tf.stack(value.get_parameters())
 
 
 # Register the tf.Tensor conversion function for quantum tapes
-tf.register_tensor_conversion_function(
-    qml.tape.QuantumTape, conversion_func, priority=100
-)
+tf.register_tensor_conversion_function(qml.tape.QuantumTape, conversion_func, priority=100)
 
 
 # Register the tf.Tensor conversion function for devices.
@@ -118,6 +115,8 @@ class UnwrapTape:
 
     def __init__(self, tape):
         self.tape = tape
+        self._original_params = None
+        self._unwrapped_params = None
 
     def __enter__(self):
         self.tape.trainable_params = get_trainable_params(self.tape)
@@ -262,7 +261,7 @@ def batch_execute(tapes, device, gradient_fn=None, cache=[]):
                 vjp.append(None)
                 continue
 
-            for i, (fn, res_len) in enumerate(zip(processing_fns[t], reshape_info)):
+            for fn, res_len in zip(processing_fns[t], reshape_info):
                 # extract the correct results from the flat list
                 res = results[start : start + res_len]
                 start += res_len
