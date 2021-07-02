@@ -15,7 +15,7 @@
 This module contains the mixin interface class for creating differentiable quantum tapes with
 PyTorch.
 """
-# pylint: disable=protected-access, attribute-defined-outside-init, arguments-differ, no-member, import-self
+# pylint: disable=protected-access, attribute-defined-outside-init, arguments-differ, no-member, import-self, too-many-statements
 import numpy as np
 import semantic_version
 import torch
@@ -144,6 +144,7 @@ class _TorchInterface(torch.autograd.Function):
 
                 if torch.squeeze(ddy).ndim > 1:
                     vhp = ctx_.dy.view(1, -1) @ ddy @ hessian @ ctx_.dy.view(-1, 1)
+                    vhp = vhp / torch.linalg.norm(ctx_.dy) ** 2
                 else:
                     vhp = ddy @ hessian
 
@@ -184,7 +185,21 @@ class _TorchInterface(torch.autograd.Function):
     def backward(ctx, dy):  # pragma: no cover
         """Implements the backwards pass QNode vector-Jacobian product"""
         ctx.dy = dy
-        vjp = dy.view(1, -1) @ ctx.jacobian.apply(ctx, *ctx.saved_tensors)
+
+        dyv = dy.view(1, -1)
+        jac_res = ctx.jacobian.apply(ctx, *ctx.saved_tensors)
+
+        # When using CUDA, dyv seems to remain on the GPU, while the result
+        # of jac_res is returned on CPU, even though the saved_tensors arguments are
+        # themselves on the GPU. Check whether this has happened, and move things
+        # back to the GPU if required.
+        if dyv.is_cuda or jac_res.is_cuda:
+            if not dyv.is_cuda:
+                dyv = torch.as_tensor(dyv, device=jac_res.get_device())
+            if not jac_res.is_cuda:
+                jac_res = torch.as_tensor(jac_res, device=dyv.get_device())
+
+        vjp = dyv @ jac_res
         vjp = torch.unbind(vjp.view(-1))
         return (None,) + tuple(vjp)
 

@@ -21,10 +21,11 @@ import functools
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import math
 import numpy as np
+import scipy
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.operation import AnyWires, DiagonalOperation, Observable, Operation
+from pennylane.operation import AnyWires, AllWires, DiagonalOperation, Observable, Operation
 from pennylane.templates.decorator import template
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 from pennylane.utils import expand, pauli_eigs
@@ -3087,6 +3088,45 @@ class Projector(Observable):
         return []
 
 
+class SparseHamiltonian(Observable):
+    r"""SparseHamiltonian(H)
+    A Hamiltonian represented directly as a sparse matrix in coordinate list (COO) format.
+
+    .. warning::
+
+        ``SparseHamiltonian`` observables can only be used to return expectation values.
+        Variances and samples are not supported.
+
+    .. note::
+
+        Note that the ``SparseHamiltonian`` observable should not be used with a subset of wires.
+
+    **Details:**
+
+    * Number of wires: All
+    * Number of parameters: 1
+    * Gradient recipe: None
+
+    Args:
+        H (coo_matrix): a sparse matrix in SciPy coordinate list (COO) format with
+            dimension :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
+    """
+    num_wires = AllWires
+    num_params = 1
+    par_domain = None
+    grad_method = None
+
+    @classmethod
+    def _matrix(cls, *params):
+        A = params[0]
+        if not isinstance(A, scipy.sparse.coo_matrix):
+            raise TypeError("Observable must be a scipy sparse coo_matrix.")
+        return A
+
+    def diagonalizing_gates(self):
+        return []
+
+
 # =============================================================================
 # Arithmetic
 # =============================================================================
@@ -3333,7 +3373,7 @@ ops = {
 }
 
 
-obs = {"Hadamard", "PauliX", "PauliY", "PauliZ", "Hermitian", "Projector"}
+obs = {"Hadamard", "PauliX", "PauliY", "PauliZ", "Hermitian", "Projector", "SparseHamiltonian"}
 
 
 __all__ = list(ops | obs)

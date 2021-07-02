@@ -15,6 +15,7 @@
 This module contains the :class:`QueuingContext` abstract base class.
 """
 import abc
+import copy
 from collections import OrderedDict, deque
 
 
@@ -220,6 +221,12 @@ class Queue(QueuingContext):
     def _remove(self, obj):
         self.queue.remove(obj)
 
+    # Overwrite the inherited class methods, so that if queue.append is called,
+    # it is appended to the instantiated queue (rather than being added to the
+    # currently active queuing context, which may be a different queue).
+    append = _append
+    remove = _remove
+
 
 class AnnotatedQueue(QueuingContext):
     """Lightweight class that maintains a basic queue of operations, in addition
@@ -246,7 +253,133 @@ class AnnotatedQueue(QueuingContext):
 
         return self._queue[obj]
 
+    # Overwrite the inherited class methods, so that if annotated_queue.append is called,
+    # it is appended to the instantiated queue (rather than being added to the
+    # currently active queuing context, which may be a different queue).
+    append = _append
+    remove = _remove
+    update_info = _update_info
+    get_info = _get_info
+
     @property
     def queue(self):
         """Returns a list of objects in the annotated queue"""
         return list(self._queue.keys())
+
+
+def apply(op, context=QueuingContext):
+    """Apply an instantiated operator or measurement to a queuing context.
+
+    Args:
+        op (.Operator or .MeasurementProcess): the operator or measurement to apply/queue
+        context (.QueuingContext): The queuing context to queue the operator to.
+            Note that if no context is specified, the operator is
+            applied to the currently active queuing context.
+    Returns:
+        .Operator or .MeasurementProcess: the input operator is returned for convenience
+
+    **Example**
+
+    In PennyLane, **operations and measurements are 'queued' or added to a circuit
+    when they are instantiated**.
+
+    The ``apply`` function can be used to add operations that might have
+    already been instantiated elsewhere to the QNode:
+
+    .. code-block:: python
+
+        op = qml.RX(0.4, wires=0)
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RY(x, wires=0)  # applied during instantiation
+            qml.apply(op)  # manually applied
+            return qml.expval(qml.PauliZ(0))
+
+    >>> print(qml.draw(circuit)(0.6))
+    0: ──RY(0.6)──RX(0.4)──┤ ⟨Z⟩
+
+    It can also be used to apply functions repeatedly:
+
+    .. code-block:: python
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.apply(op)
+            qml.RY(x, wires=0)
+            qml.apply(op)
+            return qml.expval(qml.PauliZ(0))
+
+    >>> print(qml.draw(circuit)(0.6))
+    0: ──RX(0.4)──RY(0.6)──RX(0.4)──┤ ⟨Z⟩
+
+    .. UsageDetails::
+
+        Instantiated measurements can also be applied to queuing contexts
+        using ``apply``:
+
+        .. code-block:: python
+
+            meas = qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
+            dev = qml.device("default.qubit", wires=2)
+
+            @qml.qnode(dev)
+            def circuit(x):
+                qml.RY(x, wires=0)
+                qml.CNOT(wires=[0, 1])
+                return qml.apply(meas)
+
+        >>> print(qml.draw(circuit)(0.6))
+         0: ──RY(0.6)──╭C──╭┤ ⟨Z ⊗ Y⟩
+         1: ───────────╰X──╰┤ ⟨Z ⊗ Y⟩
+
+        By default, ``apply`` will queue operators to the currently
+        active queuing context.
+
+        When working with low-level queuing contexts such as quantum tapes,
+        the desired context to queue the operation to can be explicitly
+        passed:
+
+        .. code-block:: python
+
+            with qml.tape.QuantumTape() as tape1:
+                qml.Hadamard(wires=1)
+
+                with qml.tape.QuantumTape() as tape2:
+                    # Due to the nesting behaviour of queuing contexts,
+                    # tape2 will be queued to tape1.
+
+                    # The following PauliX operation will be queued
+                    # to the active queuing context, tape2, during instantiation.
+                    op1 = qml.PauliX(wires=0)
+
+                    # We can use qml.apply to apply the same operation to tape1
+                    # without leaving the tape2 context.
+                    qml.apply(op1, context=tape1)
+
+                    qml.RZ(0.2, wires=0)
+
+                qml.CNOT(wires=[0, 1])
+
+        >>> tape1.operations
+        [Hadamard(wires=[1]), <QuantumTape: wires=[0], params=1>, PauliX(wires=[0]), CNOT(wires=[0, 1])]
+        >>> tape2.operations
+        [PauliX(wires=[0]), RZ(0.2, wires=[0])]
+    """
+    if not QueuingContext.recording():
+        raise RuntimeError("No queuing context available to append operation to.")
+
+    if op in getattr(context, "queue", QueuingContext.active_context().queue):
+        # Queuing contexts can only contain unique objects.
+        # If the object to be queued already exists, copy it.
+        op = copy.copy(op)
+
+    if hasattr(op, "queue"):
+        # operator provides its own logic for queuing
+        op.queue(context=context)
+    else:
+        # append the operator directly to the relevant queuing context
+        context.append(op)
+
+    return op
