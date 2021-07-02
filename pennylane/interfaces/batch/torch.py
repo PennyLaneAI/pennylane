@@ -24,7 +24,7 @@ import torch
 import pennylane as qml
 
 
-from .unwrap import UnwrapTape
+from .unwrap import UnwrapTape, batch_vjp
 
 
 def get_trainable_params(tape):
@@ -133,48 +133,21 @@ class BatchExecute(torch.autograd.Function):
     def backward(ctx, *dy):
         """Returns the vector-Jacobian product with given
         parameter values p and output gradient dy"""
-        reshape_info = []
-        gradient_tapes = []
-        processing_fns = []
 
-        for t in ctx.tapes:
-            processing_fns.append([])
+        def vjp_fn(vjps, dy, jac):
+            vjps.extend(torch.tensordot(dy, jac, dims=[[0], [0]]))
 
-            for idx, _ in enumerate(t.trainable_params):
-                g_tapes, fn = ctx.gradient_fn(t, idx)
-
-                reshape_info.append(len(g_tapes))
-                gradient_tapes.extend(g_tapes)
-                processing_fns[-1].append(fn)
-
-        results = batch_execute(
-            gradient_tapes, ctx.device, gradient_fn=ctx.gradient_fn, cache=ctx.cache
+        vjps = batch_vjp(
+            dy,
+            ctx.tapes,
+            batch_execute,
+            ctx.gradient_fn,
+            vjp_fn,
+            device=ctx.device,
+            cache=ctx.cache,
+            _n=ctx._n + 1,
         )
-        vjp = []
-        start = 0
-
-        for t, d in zip(range(len(ctx.tapes)), dy):
-            num_params = len(ctx.tapes[t].trainable_params)
-            jac = []
-
-            if num_params == 0:
-                vjp.extend([None])
-                continue
-
-            for fn, res_len in zip(processing_fns[t], reshape_info):
-                # extract the correct results from the flat list
-                res = results[start : start + res_len]
-                start += res_len
-
-                # postprocess results to compute the gradient
-                jac.append(fn(res))
-
-            dy_row = d.view(-1)
-            jac = qml.math.T(torch.stack(jac))
-            jac = torch.reshape(jac, [-1, num_params])
-            vjp.extend(torch.tensordot(dy_row, jac, dims=[[0], [0]]))
-
-        return (None,) + tuple(vjp)
+        return (None,) + tuple(vjps)
 
 
 def batch_execute(

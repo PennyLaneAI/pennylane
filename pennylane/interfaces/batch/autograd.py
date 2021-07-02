@@ -27,7 +27,7 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
-from .unwrap import UnwrapTape
+from .unwrap import UnwrapTape, batch_vjp
 
 
 def get_trainable_params(tape):
@@ -275,47 +275,12 @@ def vjp(
         """Returns the vector-Jacobian product with given
         parameter values p and output gradient dy"""
 
-        reshape_info = []
-        gradient_tapes = []
-        processing_fns = []
+        def vjp_fn(vjps, dy, jac):
+            vjps.append(np.tensordot(dy, jac, axes=[[0], [0]]))
 
-        for t in tapes:
-            processing_fns.append([])
-
-            for idx, _ in enumerate(t.trainable_params):
-                g_tapes, fn = gradient_fn(t, idx)
-
-                reshape_info.append(len(g_tapes))
-                gradient_tapes.extend(g_tapes)
-                processing_fns[-1].append(fn)
-
-        results = batch_execute(
-            gradient_tapes, device, gradient_fn=gradient_fn, cache=cache, _n=_n + 1
+        vjps = batch_vjp(
+            dy, tapes, batch_execute, gradient_fn, vjp_fn, device=device, cache=cache, _n=_n + 1
         )
-        vjps = []
-        start = 0
-
-        for t, d in zip(range(len(tapes)), dy):
-            num_params = len(tapes[t].trainable_params)
-            jac = []
-
-            if num_params == 0:
-                vjps.append(None)
-                continue
-
-            for fn, res_len in zip(processing_fns[t], reshape_info):
-                # extract the correct results from the flat list
-                res = results[start : start + res_len]
-                start += res_len
-
-                # postprocess results to compute the gradient
-                jac.append(fn(res))
-
-            dy_row = np.reshape(d, [-1])
-            jac = np.transpose(np.stack(jac))
-            jac = np.reshape(jac, [-1, num_params])
-            vjps.append(np.tensordot(dy_row, jac, axes=[[0], [0]]))
-
         return [np.asarray(_unwrap_arraybox(v, max_depth=_n)) for v in vjps]
 
     return grad_fn

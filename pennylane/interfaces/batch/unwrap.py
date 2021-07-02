@@ -14,6 +14,7 @@
 """
 This module contains a context manager for unwrapping tapes
 """
+import pennylane as qml
 
 
 class UnwrapTape:
@@ -59,3 +60,46 @@ class UnwrapTape:
 
     def __exit__(self, exception_type, exception_value, traceback):
         self.tape.set_parameters(self._original_params, trainable_only=False)
+
+
+def batch_vjp(dy, tapes, execute_fn, gradient_fn, vjp_fn, **kwargs):
+    reshape_info = []
+    gradient_tapes = []
+    processing_fns = []
+
+    for t in tapes:
+        processing_fns.append([])
+
+        for idx, _ in enumerate(t.trainable_params):
+            g_tapes, fn = gradient_fn(t, idx)
+
+            reshape_info.append(len(g_tapes))
+            gradient_tapes.extend(g_tapes)
+            processing_fns[-1].append(fn)
+
+    results = execute_fn(gradient_tapes, gradient_fn=gradient_fn, **kwargs)
+    vjps = []
+    start = 0
+
+    for t, d in zip(range(len(tapes)), dy):
+        num_params = len(tapes[t].trainable_params)
+        jac = []
+
+        if num_params == 0:
+            vjps.append(None)
+            continue
+
+        for fn, res_len in zip(processing_fns[t], reshape_info):
+            # extract the correct results from the flat list
+            res = results[start : start + res_len]
+            start += res_len
+
+            # postprocess results to compute the gradient
+            jac.append(fn(res))
+
+        dy_row = qml.math.reshape(d, [-1])
+        jac = qml.math.transpose(qml.math.stack(jac))
+        jac = qml.math.reshape(jac, [-1, num_params])
+        vjp_fn(vjps, dy_row, jac)
+
+    return vjps
