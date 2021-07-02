@@ -28,23 +28,6 @@ import pennylane as qml
 from .unwrap import UnwrapTape
 
 
-def conversion_func(value, dtype=None, name=None, as_ref=False):  # pylint: disable=unused-argument
-    """To convert a tape to a tf.Tensor, simply stack the parameters
-    of the tape."""
-    return tf.stack(value.get_parameters())
-
-
-# Register the tf.Tensor conversion function for quantum tapes
-tf.register_tensor_conversion_function(qml.tape.QuantumTape, conversion_func, priority=100)
-
-
-# Register the tf.Tensor conversion function for devices.
-# Here, we simply treat quantum devices as a constant.
-tf.register_tensor_conversion_function(
-    qml.Device, lambda *args, **kwargs: tf.constant(0.1), priority=100
-)
-
-
 def get_trainable_params(tape):
     """Gets the trainable TensorFlow parameters of a tape.
 
@@ -91,7 +74,103 @@ def convert_to_numpy(tensors):
 
 
 @tf.custom_gradient
-def batch_execute(tapes, device, gradient_fn=None, cache=[]):
+def _batch_execute(*parameters, **kwargs):
+    """Implements the forward pass batch tape evaluation.
+
+    The signature of this function` is designed to
+    workaround ``@tf.custom_gradient`` restrictions.
+
+    In particular:
+
+    - Positional arguments **must** be TensorFlow tensors, so
+      we extract the parameters from all tapes. To pass the other
+      data, we pass keyword arguments. These keyword arguments
+      are **required**, and must contain the following:
+
+      * ``"tapes"``: the quantum tapes to batch evaluate
+      * ``"device"``: the device to use to evaluate the tapes
+      * ``"gradient_fn"``: The gradient transform function to use
+        for backward passes.
+      * ``"cache"``: the cache list
+
+    Further, note that the ``parameters`` argument is dependent on the
+    ``tapes``; this Function should always be called
+    with the parameters extracted directly from the tapes as follows:
+
+    >>> parameters = []
+    >>> [parameters.extend(t.get_parameters()) for t in tapes])
+    >>> _batch_execute(*parameters, tapes=tapes, device=device, ...)
+
+    The private argument ``_n`` is used to track nesting of derivatives, for example
+    if the nth-order derivative is requested. Do not set this argument unless you
+    understand the consequences!
+    """
+
+    tapes = kwargs["tapes"]
+    device = kwargs["device"]
+    gradient_fn = kwargs["gradient_fn"]
+    cache = kwargs.get("cache", [])
+    _n = kwargs.get("_n", 1)
+
+    with contextlib.ExitStack() as stack:
+        unwrapped_tapes = [
+            stack.enter_context(UnwrapTape(t, convert_to_numpy, get_trainable_params))
+            for t in tapes
+        ]
+        res = device.batch_execute(unwrapped_tapes)
+
+    res = [tf.convert_to_tensor(r) for r in res]
+
+    def grad_fn(*dy, **tfkwargs):
+        variables = tfkwargs.get("variables", None)
+
+        reshape_info = []
+        gradient_tapes = []
+        processing_fns = []
+
+        for t in tapes:
+            processing_fns.append([])
+
+            for idx, _ in enumerate(t.trainable_params):
+                g_tapes, fn = gradient_fn(t, idx)
+
+                reshape_info.append(len(g_tapes))
+                gradient_tapes.extend(g_tapes)
+                processing_fns[-1].append(fn)
+
+        results = batch_execute(gradient_tapes, device, gradient_fn=None, cache=cache, _n=_n)
+        vjp = []
+        start = 0
+
+        for t, d in zip(range(len(tapes)), dy):
+            num_params = len(tapes[t].trainable_params)
+            jac = []
+
+            if num_params == 0:
+                vjp.append(None)
+                continue
+
+            for fn, res_len in zip(processing_fns[t], reshape_info):
+                # extract the correct results from the flat list
+                res = results[start : start + res_len]
+                start += res_len
+
+                # postprocess results to compute the gradient
+                jac.append(fn(res))
+
+            dy_row = tf.reshape(d, [-1])
+            jac = tf.transpose(tf.stack(jac))
+            jac = tf.reshape(jac, [-1, num_params])
+            jac = tf.cast(jac, tf.float64)
+
+            vjp.extend(tf.tensordot(dy_row, jac, axes=[[0], [0]]))
+
+        return (vjp, variables) if variables is not None else vjp
+
+    return res, grad_fn
+
+
+def batch_execute(tapes, device, gradient_fn=None, cache=[], _n=1):
     """Execute a batch of tapes with TensorFlow parameters on a device.
 
     Args:
@@ -185,62 +264,9 @@ def batch_execute(tapes, device, gradient_fn=None, cache=[]):
     if gradient_fn is None:
         gradient_fn = qml.transforms.gradients.qubit_parameter_shift.expval_grad
 
-    with contextlib.ExitStack() as stack:
-        unwrapped_tapes = [
-            stack.enter_context(UnwrapTape(t, convert_to_numpy, get_trainable_params))
-            for t in tapes
-        ]
-        res = device.batch_execute(unwrapped_tapes)
+    parameters = []
+    for t in tapes:
+        parameters.extend(t.get_parameters())
 
-    res = [tf.convert_to_tensor(r) for r in res]
-
-    def grad_fn(*dy, **tfkwargs):
-        variables = tfkwargs.get("variables", None)
-
-        reshape_info = []
-        gradient_tapes = []
-        processing_fns = []
-
-        for t in tapes:
-            processing_fns.append([])
-
-            for idx, _ in enumerate(t.trainable_params):
-                g_tapes, fn = gradient_fn(t, idx)
-
-                reshape_info.append(len(g_tapes))
-                gradient_tapes.extend(g_tapes)
-                processing_fns[-1].append(fn)
-
-        results = batch_execute(gradient_tapes, device, gradient_fn=None, cache=cache)
-        vjp = []
-        start = 0
-
-        for t, d in zip(range(len(tapes)), dy):
-            num_params = len(tapes[t].trainable_params)
-            jac = []
-
-            if num_params == 0:
-                vjp.append(None)
-                continue
-
-            for fn, res_len in zip(processing_fns[t], reshape_info):
-                # extract the correct results from the flat list
-                res = results[start : start + res_len]
-                start += res_len
-
-                # postprocess results to compute the gradient
-                jac.append(fn(res))
-
-            dy_row = tf.reshape(d, [-1])
-            jac = tf.transpose(tf.stack(jac))
-            jac = tf.reshape(jac, [-1, num_params])
-            jac = tf.cast(jac, tf.float64)
-
-            vjp.append(tf.tensordot(dy_row, jac, axes=[[0], [0]]))
-
-        # Append None to account for the ``dev`` positional argument.
-        # Note that if device is passed as a keyword argument, an error will occur!
-        vjp.append(None)
-        return (vjp, variables) if variables is not None else vjp
-
-    return res, grad_fn
+    kwargs = dict(tapes=tapes, device=device, gradient_fn=gradient_fn, cache=cache, _n=_n)
+    return _batch_execute(*parameters, **kwargs)

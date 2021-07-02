@@ -101,20 +101,14 @@ class BatchExecute(torch.autograd.Function):
             for backward passes.
           * ``"cache"``: the cache list
 
-        Further, ote that the ``parameters`` argument is dependent on the
+        Further, note that the ``parameters`` argument is dependent on the
         ``tapes``; this Function should always be called
         with the parameters extracted directly from the tapes as follows:
 
         >>> parameters = []
         >>> [parameters.extend(t.get_parameters()) for t in tapes])
         >>> kwargs = {"tapes": tapes, "device": device, "gradient_fn": gradient_fn}
-        >>> BatchExecute.apply(kwargs, parameters, tapes=tapes, device=device)
-
-        In particular:
-
-        - ``parameters`` is dependent on the provided tapes: always extract them as above
-        - ``tapes`` is a *required* argument
-        - ``device`` is a *required* argument
+        >>> BatchExecute.apply(kwargs, *parameters)
 
         The private argument ``_n`` is used to track nesting of derivatives, for example
         if the nth-order derivative is requested. Do not set this argument unless you
@@ -137,6 +131,8 @@ class BatchExecute(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, *dy):
+        """Returns the vector-Jacobian product with given
+        parameter values p and output gradient dy"""
         reshape_info = []
         gradient_tapes = []
         processing_fns = []
