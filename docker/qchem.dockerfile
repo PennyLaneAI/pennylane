@@ -7,7 +7,6 @@ RUN apt-get update && apt-get -y install --no-install-recommends make git openba
 
 # Setup and Build Qchem
 WORKDIR /opt/pennylane/qchem
-COPY  . .
 RUN git submodule update --init --recursive
 RUN pip install wheel && pip install openfermionpyscf && pip install -r requirements.txt \
         && python3 setup.py install \
