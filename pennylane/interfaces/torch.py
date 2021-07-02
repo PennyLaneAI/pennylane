@@ -15,7 +15,7 @@
 This module contains the mixin interface class for creating differentiable quantum tapes with
 PyTorch.
 """
-# pylint: disable=protected-access, attribute-defined-outside-init, arguments-differ, no-member, import-self
+# pylint: disable=protected-access, attribute-defined-outside-init, arguments-differ, no-member, import-self, too-many-statements
 import numpy as np
 import semantic_version
 import torch
@@ -144,6 +144,7 @@ class _TorchInterface(torch.autograd.Function):
 
                 if torch.squeeze(ddy).ndim > 1:
                     vhp = ctx_.dy.view(1, -1) @ ddy @ hessian @ ctx_.dy.view(-1, 1)
+                    vhp = vhp / torch.linalg.norm(ctx_.dy) ** 2
                 else:
                     vhp = ddy @ hessian
 
