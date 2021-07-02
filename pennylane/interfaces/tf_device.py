@@ -103,7 +103,7 @@ class UnwrapTape:
     ...         qml.RX(tf.Variable(0.1), wires=0)
     ...         qml.RY(tf.constant(0.2), wires=0)
     ...         qml.RZ(tf.Variable(0.3), wires=0)
-    ...     with UnwrapTapeTF(tape) as unwrapped_tape:
+    ...     with UnwrapTape(tape) as unwrapped_tape:
     ...         print("Trainable params:", unwrapped_tape.trainable_params)
     ...         print("Unwrapped params:", unwrapped_tape.get_parameters())
     Trainable params: {0, 2}
