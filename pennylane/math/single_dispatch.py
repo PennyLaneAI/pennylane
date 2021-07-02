@@ -40,7 +40,7 @@ ar.register_function("numpy", "coerce", lambda x: x)
 ar.register_function("numpy", "block_diag", lambda x: _scipy_block_diag(*x))
 ar.register_function("builtins", "block_diag", lambda x: _scipy_block_diag(*x))
 ar.register_function("numpy", "gather", lambda x, indices: x[np.array(indices)])
-ar.register_function("numpy", "unstack", lambda x: [i for i in x])
+ar.register_function("numpy", "unstack", list)
 
 
 def _scatter_element_add_numpy(tensor, index, value):
@@ -70,7 +70,7 @@ ar.register_function("autograd", "flatten", lambda x: x.flatten())
 ar.register_function("autograd", "coerce", lambda x: x)
 ar.register_function("autograd", "block_diag", lambda x: _scipy_block_diag(*x))
 ar.register_function("autograd", "gather", lambda x, indices: x[np.array(indices)])
-ar.register_function("autograd", "unstack", lambda x: list(x))
+ar.register_function("autograd", "unstack", list)
 
 
 def _to_numpy_autograd(x):
