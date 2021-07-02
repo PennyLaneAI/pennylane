@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains functions for adding the TensorFlow interface
+This module contains functions for adding the Autograd interface
 to a PennyLane Device class.
 """
 # pylint: disable=protected-access
@@ -21,13 +21,8 @@ import contextlib
 
 import autograd.extend
 import autograd.builtins
-import autograd.tracer
 
 from autograd.numpy.numpy_boxes import ArrayBox
-from autograd.tracer import Box
-from autograd.numpy.numpy_vspaces import ComplexArrayVSpace, ArrayVSpace
-from autograd.core import VSpace
-
 
 import pennylane as qml
 from pennylane import numpy as np
