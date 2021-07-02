@@ -13,6 +13,7 @@
 # limitations under the License.
 """ """
 
+
 def commutation_dag(qnode):
 
     return qnode.commutation_dag

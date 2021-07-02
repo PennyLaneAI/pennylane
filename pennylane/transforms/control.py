@@ -90,20 +90,24 @@ class ControlledOperation(Operation):
     par_domain = "A"
     num_wires = AnyWires
     num_params = property(lambda self: self.subtape.num_params)
+    is_controlled = True
 
     def __init__(self, tape, control_wires, do_queue=True):
         self.subtape = tape
         """QuantumTape: The tape that defines the underlying operation."""
 
-        self.control_wires = Wires(control_wires)
+        self.c_wires = Wires(control_wires)
         """Wires: The control wires."""
 
-        wires = self.control_wires + tape.wires
+        wires = self.c_wires + tape.wires
         super().__init__(*tape.get_parameters(), wires=wires, do_queue=do_queue)
+
+    def control_wires(self):
+        return self.c_wires
 
     def expand(self):
         tape = self.subtape
-        for wire in self.control_wires:
+        for wire in self.c_wires:
             tape = expand_with_control(tape, wire)
         return tape
 

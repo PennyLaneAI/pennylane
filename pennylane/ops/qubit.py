@@ -401,6 +401,8 @@ class CNOT(Operation):
     num_wires = 2
     par_domain = None
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+    is_controlled = True
+    target_operation = "PauliX"
 
     @classmethod
     def _matrix(cls, *params):
@@ -411,6 +413,12 @@ class CNOT(Operation):
 
     def _controlled(self, wire):
         Toffoli(wires=Wires(wire) + self.wires)
+
+    def control_wires(self):
+        return self.wires.subset(0)
+
+    def target_wires(self):
+        return self.wires.subset(1)
 
 
 class CZ(DiagonalOperation):
@@ -439,6 +447,8 @@ class CZ(DiagonalOperation):
     par_domain = None
     eigvals = np.array([1, 1, 1, -1])
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
+    is_controlled = True
+    target_operation = "PauliZ"
 
     @classmethod
     def _matrix(cls, *params):
@@ -450,6 +460,12 @@ class CZ(DiagonalOperation):
 
     def adjoint(self):
         return CZ(wires=self.wires)
+
+    def control_wires(self):
+        return self.wires.subset(0)
+
+    def target_wires(self):
+        return self.wires.subset(1)
 
 
 class CY(Operation):
@@ -484,6 +500,8 @@ class CY(Operation):
             [0, 0, 1j, 0],
         ]
     )
+    is_controlled = True
+    target_operation = "PauliY"
 
     @classmethod
     def _matrix(cls, *params):
@@ -496,6 +514,12 @@ class CY(Operation):
 
     def adjoint(self):
         return CY(wires=self.wires)
+
+    def control_wires(self):
+        return self.wires.subset(0)
+
+    def target_wires(self):
+        return self.wires.subset(1)
 
 
 class SWAP(Operation):
@@ -629,6 +653,8 @@ class CSWAP(Operation):
             [0, 0, 0, 0, 0, 0, 0, 1],
         ]
     )
+    is_controlled = True
+    target_operation = "SWAP"
 
     @classmethod
     def _matrix(cls, *params):
@@ -645,6 +671,12 @@ class CSWAP(Operation):
 
     def adjoint(self):
         return CSWAP(wires=self.wires)
+
+    def control_wires(self):
+        return self.wires.subset(0)
+
+    def target_wires(self):
+        return self.wires.subset([1, 2])
 
 
 class Toffoli(Operation):
@@ -688,6 +720,8 @@ class Toffoli(Operation):
             [0, 0, 0, 0, 0, 0, 1, 0],
         ]
     )
+    is_controlled = True
+    target_operation = "PauliX"
 
     @classmethod
     def _matrix(cls, *params):
@@ -716,6 +750,12 @@ class Toffoli(Operation):
 
     def adjoint(self):
         return Toffoli(wires=self.wires)
+
+    def control_wires(self):
+        return self.wires.subset([0, 1])
+
+    def target_wires(self):
+        return self.wires.subset(2)
 
 
 class RX(Operation):
@@ -924,6 +964,8 @@ class ControlledPhaseShift(DiagonalOperation):
     par_domain = "R"
     grad_method = "A"
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), 1]
+    is_controlled = True
+    target_operation = "PhaseShift"
 
     @classmethod
     def _matrix(cls, *params):
@@ -948,6 +990,12 @@ class ControlledPhaseShift(DiagonalOperation):
 
     def adjoint(self):
         return ControlledPhaseShift(-self.data[0], wires=self.wires)
+
+    def control_wires(self):
+        return self.wires.subset(0)
+
+    def target_wires(self):
+        return self.wires.subset(1)
 
 
 CPhase = ControlledPhaseShift
@@ -1343,6 +1391,8 @@ class CRX(Operation):
     grad_recipe = four_term_grad_recipe
 
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), -1 / 2]
+    is_controlled = True
+    target_operation = "RX"
 
     @classmethod
     def _matrix(cls, *params):
@@ -1366,6 +1416,12 @@ class CRX(Operation):
 
     def adjoint(self):
         return CRX(-self.data[0], wires=self.wires)
+
+    def control_wires(self):
+        return self.wires.subset(0)
+
+    def target_wires(self):
+        return self.wires.subset(1)
 
 
 class CRY(Operation):
@@ -1410,6 +1466,8 @@ class CRY(Operation):
     par_domain = "R"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
+    is_controlled = True
+    target_operation = "RY"
 
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]), -1 / 2]
 
@@ -1433,6 +1491,12 @@ class CRY(Operation):
 
     def adjoint(self):
         return CRY(-self.data[0], wires=self.wires)
+
+    def control_wires(self):
+        return self.wires.subset(0)
+
+    def target_wires(self):
+        return self.wires.subset(1)
 
 
 class CRZ(DiagonalOperation):
@@ -1480,6 +1544,8 @@ class CRZ(DiagonalOperation):
     par_domain = "R"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
+    is_controlled = True
+    target_operation = "RZ"
 
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]), -1 / 2]
 
@@ -1519,6 +1585,12 @@ class CRZ(DiagonalOperation):
 
     def adjoint(self):
         return CRZ(-self.data[0], wires=self.wires)
+
+    def control_wires(self):
+        return self.wires.subset(0)
+
+    def target_wires(self):
+        return self.wires.subset(1)
 
 
 class CRot(Operation):
@@ -1563,6 +1635,8 @@ class CRot(Operation):
     par_domain = "R"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe * 3
+    is_controlled = True
+    target_operation = "Rot"
 
     @classmethod
     def _matrix(cls, *params):
@@ -1595,6 +1669,12 @@ class CRot(Operation):
     def adjoint(self):
         phi, theta, omega = self.parameters
         return CRot(-omega, -theta, -phi, wires=self.wires)
+
+    def control_wires(self):
+        return self.wires.subset(0)
+
+    def target_wires(self):
+        return self.wires.subset(1)
 
 
 class U1(Operation):
@@ -2212,6 +2292,8 @@ class ControlledQubitUnitary(QubitUnitary):
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
+    is_controlled = True
+    target_operation = "QubitUnitary"
 
     def __init__(self, *params, control_wires=None, wires=None, control_values=None, do_queue=True):
         if control_wires is None:
@@ -2287,6 +2369,9 @@ class ControlledQubitUnitary(QubitUnitary):
         ctrl_wires = sorted(self.control_wires + wire)
         ControlledQubitUnitary(*self.parameters, control_wires=ctrl_wires, wires=self._target_wires)
 
+    def control_wires(self):
+        return self.control_wires
+
 
 class MultiControlledX(ControlledQubitUnitary):
     r"""MultiControlledX(control_wires, wires, control_values)
@@ -2345,6 +2430,8 @@ class MultiControlledX(ControlledQubitUnitary):
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
+    is_controlled = True
+    target_operation = "PauliX"
 
     # pylint: disable=too-many-arguments
     def __init__(
@@ -2479,6 +2566,9 @@ class MultiControlledX(ControlledQubitUnitary):
         ]
 
         return gates
+
+    def control_wires(self):
+        return self.control_wires
 
 
 class DiagonalQubitUnitary(DiagonalOperation):

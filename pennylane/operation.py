@@ -589,6 +589,14 @@ class Operation(Operator):
         return [None, 1]
 
     @property
+    def is_controlled(self):
+        return False
+
+    @property
+    def target_operation(self):
+        return self.__class__.__name__
+
+    @property
     def inverse(self):
         """Boolean determining if the inverse of the operation was requested."""
         return self._inverse
@@ -607,6 +615,12 @@ class Operation(Operator):
             The adjointed operation.
         """
         raise NotImplementedError
+
+    def control_wires(self):
+        return []
+
+    def target_wires(self):
+        return self._wires
 
     @inverse.setter
     def inverse(self, boolean):

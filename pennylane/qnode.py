@@ -795,7 +795,7 @@ class QNode:
 
     @property
     def commutation_dag(self):
-        
+
         if self.qtape is None:
             raise qml.QuantumFunctionError(
                 "The QNode specifications can only be calculated after its quantum tape has been constructed."

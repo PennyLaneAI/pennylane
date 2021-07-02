@@ -988,7 +988,6 @@ class QuantumTape(AnnotatedQueue):
 
         return self._graph
 
-
     def get_resources(self):
         """Resource requirements of a quantum circuit.
 
