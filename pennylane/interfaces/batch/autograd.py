@@ -229,7 +229,7 @@ def _batch_execute(
         ]
         res = device.batch_execute(unwrapped_tapes)
 
-    return res
+    return [np.tensor(r) for r in res]
 
 
 def vjp(
@@ -289,7 +289,9 @@ def vjp(
                 gradient_tapes.extend(g_tapes)
                 processing_fns[-1].append(fn)
 
-        results = batch_execute(gradient_tapes, device, gradient_fn=None, cache=cache, _n=_n + 1)
+        results = batch_execute(
+            gradient_tapes, device, gradient_fn=gradient_fn, cache=cache, _n=_n + 1
+        )
         vjps = []
         start = 0
 
@@ -314,7 +316,7 @@ def vjp(
             jac = np.reshape(jac, [-1, num_params])
             vjps.append(np.tensordot(dy_row, jac, axes=[[0], [0]]))
 
-        return [_unwrap_arraybox(v, max_depth=_n) for v in vjps]
+        return [np.asarray(_unwrap_arraybox(v, max_depth=_n)) for v in vjps]
 
     return grad_fn
 

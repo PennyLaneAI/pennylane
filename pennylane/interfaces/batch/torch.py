@@ -147,7 +147,9 @@ class BatchExecute(torch.autograd.Function):
                 gradient_tapes.extend(g_tapes)
                 processing_fns[-1].append(fn)
 
-        results = batch_execute(gradient_tapes, ctx.device, gradient_fn=None, cache=ctx.cache)
+        results = batch_execute(
+            gradient_tapes, ctx.device, gradient_fn=ctx.gradient_fn, cache=ctx.cache
+        )
         vjp = []
         start = 0
 
