@@ -181,4 +181,7 @@ class DefaultQubitAutograd(DefaultQubit):
         if isinstance(unitary, DiagonalOperation):
             return unitary.eigvals
 
+        if op_name == "QubitUnitary":
+            return unitary.data[0] + 0j
+
         return unitary.matrix
