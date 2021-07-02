@@ -28,6 +28,9 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
+from .unwrap import UnwrapTape
+
+
 def get_trainable_params(tape):
     """Gets the trainable Autograd parameters of a tape.
 
@@ -39,8 +42,9 @@ def get_trainable_params(tape):
         tape (.QuantumTape): a quantum tape
 
     Returns:
-        set[int]: a set containing integers corresponding to tape
-        parameters that are differentiable Autograd tensors
+        tuple[set[int], list[Any]: a tuple returning both a set containing
+        integers corresponding to tape parameters that are differentiable Autograd tensors,
+        as well as the full list of tape parameters.
 
     **Example**
 
@@ -96,47 +100,6 @@ def convert_to_numpy(tensors):
             unwrapped_tensors.append(t)
 
     return unwrapped_tensors
-
-
-class UnwrapTape:
-    """A context manager that unwraps a tape with Autograd parameters
-    to NumPy arrays.
-
-    Args:
-        tape (.QuantumTape): the quantum tape to unwrap
-
-    Returns:
-        .QuantumTape: the unwrapped quantum tape
-
-    **Example**
-
-    >>> with qml.tape.QuantumTape() as tape:
-    ...     qml.RX(np.array(0.1, requires_grad=True), wires=0)
-    ...     qml.RY(0.2, wires=0)
-    ...     qml.RZ(np.array(0.3, requires_grad=True), wires=0)
-    >>> with UnwrapTape(tape) as unwrapped_tape:
-    ...     print("Trainable params:", unwrapped_tape.trainable_params)
-    ...     print("Unwrapped params:", unwrapped_tape.get_parameters())
-    Trainable params: {0, 2}
-    Unwrapped params: [0.1, 0.3]
-    >>> print("Original parameters:", tape.get_parameters())
-    Original parameters: [tensor(0.1, requires_grad=True), tensor(0.3, requires_grad=True)]
-    """
-
-    def __init__(self, tape):
-        self.tape = tape
-        self._original_params = None
-        self._unwrapped_params = None
-
-    def __enter__(self):
-        self.tape.trainable_params, self._original_params = get_trainable_params(self.tape)
-        self._unwrapped_params = convert_to_numpy(self._original_params)
-        self.tape.set_parameters(self._unwrapped_params, trainable_only=False)
-
-        return self.tape
-
-    def __exit__(self, exception_type, exception_value, traceback):
-        self.tape.set_parameters(self._original_params, trainable_only=False)
 
 
 def batch_execute(tapes, device, gradient_fn=None, cache=[], _n=1):
@@ -257,7 +220,10 @@ def _batch_execute(parameters, tapes=None, device=None, gradient_fn=None, cache=
     understand the consequences!
     """
     with contextlib.ExitStack() as stack:
-        unwrapped_tapes = [stack.enter_context(UnwrapTape(t)) for t in tapes]
+        unwrapped_tapes = [
+            stack.enter_context(UnwrapTape(t, convert_to_numpy, get_trainable_params))
+            for t in tapes
+        ]
         res = device.batch_execute(unwrapped_tapes)
 
     return res

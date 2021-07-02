@@ -83,7 +83,7 @@ def expval_grad(tape, idx, gradient_recipe=None):
         gradient_recipe = op.get_parameter_shift(p_idx, shift=np.pi / 2)
 
     params = qml.math.stack(tape.get_parameters())
-    shift = np.zeros_like(params)
+    shift = np.zeros_like(qml.math.toarray(params))
     coeffs = []
     tapes = []
 

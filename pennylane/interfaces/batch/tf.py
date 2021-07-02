@@ -25,6 +25,9 @@ from tensorflow.python.eager.tape import should_record_backprop
 import pennylane as qml
 
 
+from .unwrap import UnwrapTape
+
+
 def conversion_func(value, dtype=None, name=None, as_ref=False):  # pylint: disable=unused-argument
     """To convert a tape to a tf.Tensor, simply stack the parameters
     of the tape."""
@@ -54,8 +57,9 @@ def get_trainable_params(tape):
         tape (.QuantumTape): a quantum tape
 
     Returns:
-        set[int]: a set containing integers corresponding to tape
-        parameters that are differentiable TensorFlow tensors
+        tuple[set[int], list[Any]: a tuple returning both a set containing
+        integers corresponding to tape parameters that are differentiable TensorFlow tensors,
+        as well as the full list of tape parameters.
 
     **Example**
 
@@ -78,57 +82,12 @@ def get_trainable_params(tape):
         ):
             trainable_params.add(idx)
 
-    return trainable_params
+    return trainable_params, params
 
 
 def convert_to_numpy(tensors):
     """Converts any TensorFlow tensors in a sequence to NumPy arrays."""
     return [i.numpy() if isinstance(i, (tf.Variable, tf.Tensor)) else i for i in tensors]
-
-
-class UnwrapTape:
-    """A context manager that unwraps a tape with TensorFlow parameters
-    to NumPy arrays.
-
-    Args:
-        tape (.QuantumTape): the quantum tape to unwrap
-
-    Returns:
-        .QuantumTape: the unwrapped quantum tape
-
-    **Example**
-
-    >>> with tf.GradientTape():
-    ...     with qml.tape.QuantumTape() as tape:
-    ...         qml.RX(tf.Variable(0.1), wires=0)
-    ...         qml.RY(tf.constant(0.2), wires=0)
-    ...         qml.RZ(tf.Variable(0.3), wires=0)
-    ...     with UnwrapTape(tape) as unwrapped_tape:
-    ...         print("Trainable params:", unwrapped_tape.trainable_params)
-    ...         print("Unwrapped params:", unwrapped_tape.get_parameters())
-    Trainable params: {0, 2}
-    Unwrapped params: [0.1, 0.3]
-    >>> print("Original parameters:", tape.get_parameters())
-    Original parameters: [<tf.Variable 'Variable:0' shape=() dtype=float32, numpy=0.1>,
-      <tf.Variable 'Variable:0' shape=() dtype=float32, numpy=0.3>]
-    """
-
-    def __init__(self, tape):
-        self.tape = tape
-        self._original_params = None
-        self._unwrapped_params = None
-
-    def __enter__(self):
-        self.tape.trainable_params = get_trainable_params(self.tape)
-
-        self._original_params = self.tape.get_parameters(trainable_only=False)
-        self._unwrapped_params = convert_to_numpy(self._original_params)
-
-        self.tape.set_parameters(self._unwrapped_params, trainable_only=False)
-        return self.tape
-
-    def __exit__(self, exception_type, exception_value, traceback):
-        self.tape.set_parameters(self._original_params, trainable_only=False)
 
 
 @tf.custom_gradient
@@ -227,7 +186,10 @@ def batch_execute(tapes, device, gradient_fn=None, cache=[]):
         gradient_fn = qml.transforms.gradients.qubit_parameter_shift.expval_grad
 
     with contextlib.ExitStack() as stack:
-        unwrapped_tapes = [stack.enter_context(UnwrapTape(t)) for t in tapes]
+        unwrapped_tapes = [
+            stack.enter_context(UnwrapTape(t, convert_to_numpy, get_trainable_params))
+            for t in tapes
+        ]
         res = device.batch_execute(unwrapped_tapes)
 
     res = [tf.convert_to_tensor(r) for r in res]
