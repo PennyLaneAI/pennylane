@@ -20,13 +20,19 @@ from pennylane.wires import Wires
 from pennylane.transforms.optimization import single_qubit_fusion
 from gate_data import I
 
+from utils import (
+    _compute_matrix_from_ops_one_qubit,
+    _compute_matrix_from_ops_two_qubit,
+    _check_matrix_equivalence,
+    _compare_operation_lists,
+)
+
 
 class TestSingleQubitFusion:
     """Test that sequences of any single-qubit rotations are fully fused."""
 
     def test_single_qubit_full_fusion(self):
-        """Test that a single-qubit circuit with adjacent rotation along the same
-        axis either merge, or cancel if the angles sum to 0."""
+        """Test that a sequence of single-qubit gates all fuse."""
 
         def qfunc():
             qml.RZ(0.3, wires=0)
@@ -42,21 +48,13 @@ class TestSingleQubitFusion:
 
         assert len(transformed_ops) == 1
 
-        matrix_expected = I
-        for op in original_ops:
-            matrix_expected = np.dot(op.matrix, matrix_expected)
-
-        matrix_obtained = transformed_ops[0].matrix
-
-        # Check if U^\dag U is close to the identity
-        mat_product = np.dot(np.conj(matrix_obtained.T), matrix_expected)
-        mat_product /= mat_product[0, 0]
-
-        assert np.allclose(mat_product, I)
+        # Compare matrices
+        matrix_expected = _compute_matrix_from_ops_one_qubit(original_ops)
+        matrix_obtained = _compute_matrix_from_ops_one_qubit(transformed_ops)
+        assert _check_matrix_equivalence(matrix_expected, matrix_obtained)
 
     def test_single_qubit_cancelled_fusion(self):
-        """Test that a single-qubit circuit with adjacent rotation along the same
-        axis either merge, or cancel if the angles sum to 0."""
+        """Test if a sequence of single-qubit gates that all cancel yields no operations."""
 
         def qfunc():
             qml.RZ(0.1, wires=0)
@@ -67,6 +65,31 @@ class TestSingleQubitFusion:
         transformed_qfunc = single_qubit_fusion(qfunc)
         transformed_ops = qml.transforms.make_tape(transformed_qfunc)().operations
         assert len(transformed_ops) == 0
+
+    def test_single_qubit_fusion_multiple_qubits(self):
+        """Test if a sequence of single-qubit gates that all cancel yields no operations."""
+
+        def qfunc():
+            qml.RZ(0.3, wires="a")
+            qml.Rot(0.1, 0.2, 0.3, wires="b")
+            qml.RX(0.1, wires="a")
+            qml.CNOT(wires=["b", "a"])
+            qml.SX(wires="b")
+            qml.S(wires="b")
+
+        transformed_qfunc = single_qubit_fusion(qfunc)
+
+        original_ops = qml.transforms.make_tape(qfunc)().operations
+        transformed_ops = qml.transforms.make_tape(transformed_qfunc)().operations
+
+        names_expected = ["Rot", "Rot", "CNOT", "Rot"]
+        wires_expected = [Wires("a"), Wires("b"), Wires(["b", "a"]), Wires("b")]
+        _compare_operation_lists(transformed_ops, names_expected, wires_expected)
+
+        # Check matrix representation
+        matrix_expected = _compute_matrix_from_ops_two_qubit(original_ops, ["a", "b"])
+        matrix_obtained = _compute_matrix_from_ops_two_qubit(transformed_ops, ["a", "b"])
+        assert _check_matrix_equivalence(matrix_expected, matrix_obtained)
 
 
 # Example QNode and device for interface testing
@@ -96,7 +119,7 @@ expected_wires_list = [Wires(0), Wires(1), Wires([1, 2]), Wires([1, 2]), Wires([
 class TestSingleQubitFusionInterfaces:
     """Test that rotation merging works in all interfaces."""
 
-    def test_merge_rotations_autograd(self):
+    def test_single_qubit_fusion_autograd(self):
         """Test QNode and gradient in autograd interface."""
 
         original_qnode = qml.QNode(qfunc, dev)
@@ -114,13 +137,9 @@ class TestSingleQubitFusionInterfaces:
 
         # Check operation list
         ops = transformed_qnode.qtape.operations
-        assert len(ops) == len(expected_op_list)
-        assert all([op.name == expected_name for (op, expected_name) in zip(ops, expected_op_list)])
-        assert all(
-            [op.wires == expected_wires for (op, expected_wires) in zip(ops, expected_wires_list)]
-        )
+        _compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
-    def test_merge_rotations_torch(self):
+    def test_single_qubit_fusion_torch(self):
         """Test QNode and gradient in torch interface."""
         torch = pytest.importorskip("torch", minversion="1.8")
 
@@ -144,13 +163,9 @@ class TestSingleQubitFusionInterfaces:
 
         # Check operation list
         ops = transformed_qnode.qtape.operations
-        assert len(ops) == len(expected_op_list)
-        assert all([op.name == expected_name for (op, expected_name) in zip(ops, expected_op_list)])
-        assert all(
-            [op.wires == expected_wires for (op, expected_wires) in zip(ops, expected_wires_list)]
-        )
+        _compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
-    def test_merge_rotations_tf(self):
+    def test_single_qubit_fusion_tf(self):
         """Test QNode and gradient in tensorflow interface."""
         tf = pytest.importorskip("tensorflow")
 
@@ -179,13 +194,9 @@ class TestSingleQubitFusionInterfaces:
 
         # Check operation list
         ops = transformed_qnode.qtape.operations
-        assert len(ops) == len(expected_op_list)
-        assert all([op.name == expected_name for (op, expected_name) in zip(ops, expected_op_list)])
-        assert all(
-            [op.wires == expected_wires for (op, expected_wires) in zip(ops, expected_wires_list)]
-        )
+        _compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
-    def test_merge_rotations_jax(self):
+    def test_single_qubit_fusion_jax(self):
         """Test QNode and gradient in JAX interface."""
         jax = pytest.importorskip("jax")
         from jax import numpy as jnp
@@ -205,8 +216,4 @@ class TestSingleQubitFusionInterfaces:
 
         # Check operation list
         ops = transformed_qnode.qtape.operations
-        assert len(ops) == len(expected_op_list)
-        assert all([op.name == expected_name for (op, expected_name) in zip(ops, expected_op_list)])
-        assert all(
-            [op.wires == expected_wires for (op, expected_wires) in zip(ops, expected_wires_list)]
-        )
+        _compare_operation_lists(ops, expected_op_list, expected_wires_list)

@@ -17,6 +17,7 @@ from pennylane import numpy as np
 import pennylane as qml
 from pennylane.wires import Wires
 from pennylane.transforms.optimization import cancel_inverses
+from utils import _compare_operation_lists
 
 
 class TestCancelInverses:
@@ -47,16 +48,9 @@ class TestCancelInverses:
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
-        assert len(ops) == 3
-
-        assert ops[0].name == "Hadamard"
-        assert ops[0].wires == Wires(0)
-
-        assert ops[1].name == "RZ"
-        assert ops[1].wires == Wires(0)
-
-        assert ops[2].name == "Hadamard"
-        assert ops[2].wires == Wires(0)
+        names_expected = ["Hadamard", "RZ", "Hadamard"]
+        wires_expected = [Wires(0)] * 3
+        _compare_operation_lists(ops, names_expected, wires_expected)
 
     def test_two_qubits_no_inverse(self):
         """Test that a two-qubit circuit self-inverse on each qubit does not cancel."""
@@ -69,13 +63,9 @@ class TestCancelInverses:
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
-        assert len(ops) == 2
-
-        assert ops[0].name == "Hadamard"
-        assert ops[0].wires == Wires(0)
-
-        assert ops[1].name == "Hadamard"
-        assert ops[1].wires == Wires(1)
+        names_expected = ["Hadamard"] * 2
+        wires_expected = [Wires(0), Wires(1)]
+        _compare_operation_lists(ops, names_expected, wires_expected)
 
     def test_three_qubits_inverse_after_cnot(self):
         """Test that a three-qubit circuit with a CNOT still allows cancellation."""
@@ -91,16 +81,9 @@ class TestCancelInverses:
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
-        assert len(ops) == 3
-
-        assert ops[0].name == "Hadamard"
-        assert ops[0].wires == Wires(0)
-
-        assert ops[1].name == "CNOT"
-        assert ops[1].wires == Wires([0, 2])
-
-        assert ops[2].name == "RZ"
-        assert ops[2].wires == Wires(2)
+        names_expected = ["Hadamard", "CNOT", "RZ"]
+        wires_expected = [Wires(0), Wires([0, 2]), Wires(2)]
+        _compare_operation_lists(ops, names_expected, wires_expected)
 
     def test_three_qubits_blocking_cnot(self):
         """Test that a three-qubit circuit with a blocking CNOT causes no cancellation."""
@@ -116,22 +99,9 @@ class TestCancelInverses:
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
-        assert len(ops) == 5
-
-        assert ops[0].name == "Hadamard"
-        assert ops[0].wires == Wires(0)
-
-        assert ops[1].name == "PauliX"
-        assert ops[1].wires == Wires(1)
-
-        assert ops[2].name == "CNOT"
-        assert ops[2].wires == Wires([0, 1])
-
-        assert ops[3].name == "RZ"
-        assert ops[3].wires == Wires(2)
-
-        assert ops[4].name == "PauliX"
-        assert ops[4].wires == Wires(1)
+        names_expected = ["Hadamard", "PauliX", "CNOT", "RZ", "PauliX"]
+        wires_expected = [Wires(0), Wires(1), Wires([0, 1]), Wires(2), Wires(1)]
+        _compare_operation_lists(ops, names_expected, wires_expected)
 
     def test_two_qubits_cnot_same_direction(self):
         """Test that two adjacent CNOTs cancel."""
@@ -157,13 +127,9 @@ class TestCancelInverses:
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
-        assert len(ops) == 2
-
-        assert ops[0].name == "CNOT"
-        assert ops[0].wires == Wires([0, 1])
-
-        assert ops[1].name == "CNOT"
-        assert ops[1].wires == Wires([1, 0])
+        names_expected = ["CNOT"] * 2
+        wires_expected = [Wires([0, 1]), Wires([1, 0])]
+        _compare_operation_lists(ops, names_expected, wires_expected)
 
     def test_two_qubits_cz_opposite_direction(self):
         """Test that two adjacent CZ with the control/target flipped do cancel due to symmetry."""
@@ -223,11 +189,7 @@ class TestCancelInversesInterfaces:
 
         # Check operation list
         ops = transformed_qnode.qtape.operations
-        assert len(ops) == 5
-        assert all([op.name == expected_name for (op, expected_name) in zip(ops, expected_op_list)])
-        assert all(
-            [op.wires == expected_wires for (op, expected_wires) in zip(ops, expected_wires_list)]
-        )
+        _compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     def test_cancel_inverses_torch(self):
         """Test QNode and gradient in torch interface."""
@@ -253,11 +215,7 @@ class TestCancelInversesInterfaces:
 
         # Check operation list
         ops = transformed_qnode.qtape.operations
-        assert len(ops) == 5
-        assert all([op.name == expected_name for (op, expected_name) in zip(ops, expected_op_list)])
-        assert all(
-            [op.wires == expected_wires for (op, expected_wires) in zip(ops, expected_wires_list)]
-        )
+        _compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     def test_cancel_inverses_tf(self):
         """Test QNode and gradient in tensorflow interface."""
@@ -288,11 +246,7 @@ class TestCancelInversesInterfaces:
 
         # Check operation list
         ops = transformed_qnode.qtape.operations
-        assert len(ops) == 5
-        assert all([op.name == expected_name for (op, expected_name) in zip(ops, expected_op_list)])
-        assert all(
-            [op.wires == expected_wires for (op, expected_wires) in zip(ops, expected_wires_list)]
-        )
+        _compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     def test_cancel_inverses_jax(self):
         """Test QNode and gradient in JAX interface."""
@@ -314,8 +268,4 @@ class TestCancelInversesInterfaces:
 
         # Check operation list
         ops = transformed_qnode.qtape.operations
-        assert len(ops) == 5
-        assert all([op.name == expected_name for (op, expected_name) in zip(ops, expected_op_list)])
-        assert all(
-            [op.wires == expected_wires for (op, expected_wires) in zip(ops, expected_wires_list)]
-        )
+        _compare_operation_lists(ops, expected_op_list, expected_wires_list)

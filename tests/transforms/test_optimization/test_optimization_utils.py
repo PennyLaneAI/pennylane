@@ -13,12 +13,12 @@
 # limitations under the License.
 
 import pytest
-import numpy as np
 
-import pennylane as qml
-
+from pennylane.ops.qubit import RZ, RY, Rot
 from pennylane.transforms.optimization.optimization_utils import _yzy_to_zyz, _fuse_rot_angles
+
 from gate_data import I
+from utils import _check_matrix_equivalence, _compute_matrix_from_ops_one_qubit
 
 
 class TestRotGateFusion:
@@ -31,23 +31,15 @@ class TestRotGateFusion:
     def test_yzy_to_zyz(self, angles):
         """Test that a set of rotations of the form YZY is correctly converted
         to a sequence of the form ZYZ."""
+
+        original_ops = [RY(angles[0], wires=0), RZ(angles[1], wires=0), RY(angles[2], wires=0)]
+        product_yzy = _compute_matrix_from_ops_one_qubit(original_ops)
+
         z1, y, z2 = _yzy_to_zyz(angles)
+        transformed_ops = [RZ(z1, wires=0), RY(y, wires=0), RZ(z2, wires=0)]
+        product_zyz = _compute_matrix_from_ops_one_qubit(transformed_ops)
 
-        Y1 = qml.RY(angles[0], wires=0).matrix
-        Z = qml.RZ(angles[1], wires=0).matrix
-        Y2 = qml.RY(angles[2], wires=0).matrix
-        product_yzy = np.linalg.multi_dot([Y2, Z, Y1])
-
-        Z1 = qml.RZ(z1, wires=0).matrix
-        Y = qml.RY(y, wires=0).matrix
-        Z2 = qml.RZ(z2, wires=0).matrix
-        product_zyz = np.linalg.multi_dot([Z2, Y, Z1])
-
-        # Check if U^\dag U is close to the identity
-        mat_product = np.dot(np.conj(product_yzy.T), product_zyz)
-        mat_product /= mat_product[0, 0]
-
-        assert np.allclose(mat_product, I)
+        assert _check_matrix_equivalence(product_yzy, product_zyz)
 
     @pytest.mark.parametrize(
         ("angles_1", "angles_2"),
@@ -62,16 +54,10 @@ class TestRotGateFusion:
         """Test that the fusion of two Rot gates has the same effect as
         applying the Rots sequentially."""
 
-        rot_1_mat = qml.Rot(*angles_1, wires=0).matrix
-        rot_2_mat = qml.Rot(*angles_2, wires=0).matrix
-        matrix_expected = np.dot(rot_2_mat, rot_1_mat)
+        original_ops = [Rot(*angles_1, wires=0), Rot(*angles_2, wires=0)]
+        matrix_expected = _compute_matrix_from_ops_one_qubit(original_ops)
 
         fused_angles = _fuse_rot_angles(angles_1, angles_2)
+        matrix_obtained = Rot(*fused_angles, wires=0).matrix
 
-        matrix_obtained = qml.Rot(*fused_angles, wires=0).matrix
-
-        # Check if U^\dag U is close to the identity
-        mat_product = np.dot(np.conj(matrix_obtained.T), matrix_expected)
-        mat_product /= mat_product[0, 0]
-
-        assert np.allclose(mat_product, I)
+        assert _check_matrix_equivalence(matrix_expected, matrix_obtained)

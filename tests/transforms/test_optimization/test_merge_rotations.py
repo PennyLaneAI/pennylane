@@ -18,6 +18,7 @@ from pennylane import numpy as np
 import pennylane as qml
 from pennylane.wires import Wires
 from pennylane.transforms.optimization import merge_rotations
+from utils import _compare_operation_lists
 
 
 class TestMergeRotations:
@@ -114,14 +115,11 @@ class TestMergeRotations:
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
-        assert len(ops) == 3
+        names_expected = ["RX", "Hadamard", "RX"]
+        wires_expected = [Wires(0)] * 3
+        _compare_operation_lists(ops, names_expected, wires_expected)
 
-        assert ops[0].name == "RX"
         assert ops[0].parameters[0] == 0.5
-
-        assert ops[1].name == "Hadamard"
-
-        assert ops[2].name == "RX"
         assert ops[2].parameters[0] == 0.4
 
     def test_two_qubits_rotation_blocked(self):
@@ -137,35 +135,37 @@ class TestMergeRotations:
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
-        assert len(ops) == 3
+        names_expected = ["RX", "CNOT", "RX"]
+        wires_expected = [Wires(0), Wires([0, 1]), Wires(0)]
+        _compare_operation_lists(ops, names_expected, wires_expected)
 
-        assert ops[0].name == "RX"
-        assert ops[0].wires == Wires(0)
         assert ops[0].parameters[0] == -0.42
-
-        assert ops[1].name == "CNOT"
-        assert ops[1].wires == Wires([0, 1])
-
-        assert ops[2].name == "RX"
-        assert ops[2].wires == Wires(0)
         assert ops[2].parameters[0] == 0.8
 
-    def test_controlled_rotation_merge(self):
+    @pytest.mark.parametrize(
+        ("theta_1", "theta_2", "expected_ops"),
+        [
+            (0.3, -0.2, [qml.CRY(0.1, wires=["w1", "w2"])]),
+            (0.15, -0.15, []),
+        ],
+    )
+    def test_controlled_rotation_merge(self, theta_1, theta_2, expected_ops):
         """Test that adjacent controlled rotations on the same wires in same order get merged."""
 
         def qfunc():
-            qml.CRY(0.2, wires=["w1", "w2"])
-            qml.CRY(0.3, wires=["w1", "w2"])
+            qml.CRY(theta_1, wires=["w1", "w2"])
+            qml.CRY(theta_2, wires=["w1", "w2"])
 
         transformed_qfunc = merge_rotations(qfunc)
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
-        assert len(ops) == 1
+        assert len(ops) == len(expected_ops)
 
-        assert ops[0].name == "CRY"
-        assert ops[0].wires == Wires(["w1", "w2"])
-        assert ops[0].parameters[0] == 0.5
+        # Check that all operations and parameter values are as expected
+        for op_obtained, op_expected in zip(ops, expected_ops):
+            assert op_obtained.name == op_expected.name
+            assert np.allclose(op_obtained.parameters, op_expected.parameters)
 
     def test_controlled_rotation_no_merge(self):
         """Test that adjacent controlled rotations on the same wires in different order don't merge."""
@@ -178,14 +178,11 @@ class TestMergeRotations:
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
-        assert len(ops) == 2
+        names_expected = ["CRX", "CRX"]
+        wires_expected = [Wires(["w1", "w2"]), Wires(["w2", "w1"])]
+        _compare_operation_lists(ops, names_expected, wires_expected)
 
-        assert ops[0].name == "CRX"
-        assert ops[0].wires == Wires(["w1", "w2"])
         assert ops[0].parameters[0] == 0.2
-
-        assert ops[1].name == "CRX"
-        assert ops[1].wires == Wires(["w2", "w1"])
         assert ops[1].parameters[0] == 0.3
 
 
@@ -242,11 +239,7 @@ class TestMergeRotationsInterfaces:
 
         # Check operation list
         ops = transformed_qnode.qtape.operations
-        assert len(ops) == len(expected_op_list)
-        assert all([op.name == expected_name for (op, expected_name) in zip(ops, expected_op_list)])
-        assert all(
-            [op.wires == expected_wires for (op, expected_wires) in zip(ops, expected_wires_list)]
-        )
+        _compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     def test_merge_rotations_torch(self):
         """Test QNode and gradient in torch interface."""
@@ -272,11 +265,7 @@ class TestMergeRotationsInterfaces:
 
         # Check operation list
         ops = transformed_qnode.qtape.operations
-        assert len(ops) == len(expected_op_list)
-        assert all([op.name == expected_name for (op, expected_name) in zip(ops, expected_op_list)])
-        assert all(
-            [op.wires == expected_wires for (op, expected_wires) in zip(ops, expected_wires_list)]
-        )
+        _compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     def test_merge_rotations_tf(self):
         """Test QNode and gradient in tensorflow interface."""
@@ -307,11 +296,7 @@ class TestMergeRotationsInterfaces:
 
         # Check operation list
         ops = transformed_qnode.qtape.operations
-        assert len(ops) == len(expected_op_list)
-        assert all([op.name == expected_name for (op, expected_name) in zip(ops, expected_op_list)])
-        assert all(
-            [op.wires == expected_wires for (op, expected_wires) in zip(ops, expected_wires_list)]
-        )
+        _compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     def test_merge_rotations_jax(self):
         """Test QNode and gradient in JAX interface."""
@@ -333,8 +318,4 @@ class TestMergeRotationsInterfaces:
 
         # Check operation list
         ops = transformed_qnode.qtape.operations
-        assert len(ops) == len(expected_op_list)
-        assert all([op.name == expected_name for (op, expected_name) in zip(ops, expected_op_list)])
-        assert all(
-            [op.wires == expected_wires for (op, expected_wires) in zip(ops, expected_wires_list)]
-        )
+        _compare_operation_lists(ops, expected_op_list, expected_wires_list)

@@ -17,6 +17,7 @@ from pennylane import numpy as np
 import pennylane as qml
 from pennylane.wires import Wires
 from pennylane.transforms.optimization import commute_z_behind_controls
+from utils import _compare_operation_lists
 
 
 class TestCommuteZBehindControls:
@@ -34,16 +35,9 @@ class TestCommuteZBehindControls:
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
-        assert len(ops) == 3
-
-        assert ops[0].name == "Hadamard"
-        assert ops[0].wires == Wires(0)
-
-        assert ops[1].name == "PauliZ"
-        assert ops[1].wires == Wires(0)
-
-        assert ops[2].name == "CNOT"
-        assert ops[2].wires == Wires([0, 2])
+        names_expected = ["Hadamard", "PauliZ", "CNOT"]
+        wires_expected = [Wires(0), Wires(0), Wires([0, 2])]
+        _compare_operation_lists(ops, names_expected, wires_expected)
 
     def test_multiple_z_after_cnot_gate(self):
         """Test that multiple Z rotations after a CNOT both get pushed behind."""
@@ -58,20 +52,9 @@ class TestCommuteZBehindControls:
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
-        assert len(ops) == 4
-
-        assert ops[0].name == "Hadamard"
-        assert ops[0].wires == Wires("a")
-
-        assert ops[1].name == "RZ"
-        assert ops[1].parameters[0] == 0.2
-        assert ops[1].wires == Wires("b")
-
-        assert ops[2].name == "PauliZ"
-        assert ops[2].wires == Wires("b")
-
-        assert ops[3].name == "CNOT"
-        assert ops[3].wires == Wires(["b", "a"])
+        names_expected = ["Hadamard", "RZ", "PauliZ", "CNOT"]
+        wires_expected = [Wires("a"), Wires("b"), Wires("b"), Wires(["b", "a"])]
+        _compare_operation_lists(ops, names_expected, wires_expected)
 
     def test_single_z_after_cry_gate(self):
         """Test that a single Z rotation after a CRY is pushed behind."""
@@ -85,18 +68,12 @@ class TestCommuteZBehindControls:
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
-        assert len(ops) == 3
+        names_expected = ["Hadamard", "RZ", "CRY"]
+        wires_expected = [Wires(0), Wires(0), Wires([0, "a"])]
+        _compare_operation_lists(ops, names_expected, wires_expected)
 
-        assert ops[0].name == "Hadamard"
-        assert ops[0].wires == Wires(0)
-
-        assert ops[1].name == "RZ"
         assert ops[1].parameters[0] == 0.2
-        assert ops[1].wires == Wires(0)
-
-        assert ops[2].name == "CRY"
         assert ops[2].parameters[0] == 0.1
-        assert ops[2].wires == Wires([0, "a"])
 
     def test_multiple_z_after_crx_gate(self):
         """Test that multiple Z rotations after a CRX are pushed behind."""
@@ -111,21 +88,12 @@ class TestCommuteZBehindControls:
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
-        assert len(ops) == 4
+        names_expected = ["Hadamard", "PhaseShift", "T", "CRX"]
+        wires_expected = [Wires("a"), Wires("b"), Wires("b"), Wires(["b", "a"])]
+        _compare_operation_lists(ops, names_expected, wires_expected)
 
-        assert ops[0].name == "Hadamard"
-        assert ops[0].wires == Wires("a")
-
-        assert ops[1].name == "PhaseShift"
         assert ops[1].parameters[0] == 0.2
-        assert ops[1].wires == Wires("b")
-
-        assert ops[2].name == "T"
-        assert ops[2].wires == Wires("b")
-
-        assert ops[3].name == "CRX"
         assert ops[3].parameters[0] == 0.3
-        assert ops[3].wires == Wires(["b", "a"])
 
     def test_no_commuting_gates_after_crx(self):
         """Test that pushing commuting X gates behind targets is properly 'blocked'."""
@@ -141,20 +109,11 @@ class TestCommuteZBehindControls:
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
-        assert len(ops) == 4
+        names_expected = ["Hadamard", "CRX", "Hadamard", "S"]
+        wires_expected = [Wires(0), Wires([0, "a"]), Wires(0), Wires(0)]
+        _compare_operation_lists(ops, names_expected, wires_expected)
 
-        assert ops[0].name == "Hadamard"
-        assert ops[0].wires == Wires(0)
-
-        assert ops[1].name == "CRX"
         assert ops[1].parameters[0] == 0.1
-        assert ops[1].wires == Wires([0, "a"])
-
-        assert ops[2].name == "Hadamard"
-        assert ops[2].wires == Wires(0)
-
-        assert ops[3].name == "S"
-        assert ops[3].wires == Wires(0)
 
 
 # Example QNode and device for interface testing
@@ -198,11 +157,7 @@ class TestCommuteZBehindControlsInterfaces:
 
         # Check operation list
         ops = transformed_qnode.qtape.operations
-        assert len(ops) == 6
-        assert all([op.name == expected_name for (op, expected_name) in zip(ops, expected_op_list)])
-        assert all(
-            [op.wires == expected_wires for (op, expected_wires) in zip(ops, expected_wires_list)]
-        )
+        _compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     def test_commute_z_behind_controls_torch(self):
         """Test QNode and gradient in torch interface."""
@@ -228,11 +183,7 @@ class TestCommuteZBehindControlsInterfaces:
 
         # Check operation list
         ops = transformed_qnode.qtape.operations
-        assert len(ops) == 6
-        assert all([op.name == expected_name for (op, expected_name) in zip(ops, expected_op_list)])
-        assert all(
-            [op.wires == expected_wires for (op, expected_wires) in zip(ops, expected_wires_list)]
-        )
+        _compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     def test_commute_z_behind_controls_tf(self):
         """Test QNode and gradient in tensorflow interface."""
@@ -263,11 +214,7 @@ class TestCommuteZBehindControlsInterfaces:
 
         # Check operation list
         ops = transformed_qnode.qtape.operations
-        assert len(ops) == 6
-        assert all([op.name == expected_name for (op, expected_name) in zip(ops, expected_op_list)])
-        assert all(
-            [op.wires == expected_wires for (op, expected_wires) in zip(ops, expected_wires_list)]
-        )
+        _compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     def test_commute_z_behind_controls_jax(self):
         """Test QNode and gradient in JAX interface."""
@@ -289,8 +236,4 @@ class TestCommuteZBehindControlsInterfaces:
 
         # Check operation list
         ops = transformed_qnode.qtape.operations
-        assert len(ops) == 6
-        assert all([op.name == expected_name for (op, expected_name) in zip(ops, expected_op_list)])
-        assert all(
-            [op.wires == expected_wires for (op, expected_wires) in zip(ops, expected_wires_list)]
-        )
+        _compare_operation_lists(ops, expected_op_list, expected_wires_list)

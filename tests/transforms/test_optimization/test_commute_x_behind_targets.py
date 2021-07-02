@@ -18,6 +18,7 @@ import pennylane as qml
 from pennylane.wires import Wires
 
 from pennylane.transforms.optimization import commute_x_behind_targets
+from utils import _compare_operation_lists
 
 
 class TestCommuteXBehindTargets:
@@ -35,16 +36,9 @@ class TestCommuteXBehindTargets:
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
-        assert len(ops) == 3
-
-        assert ops[0].name == "Hadamard"
-        assert ops[0].wires == Wires(0)
-
-        assert ops[1].name == "PauliX"
-        assert ops[1].wires == Wires(2)
-
-        assert ops[2].name == "CNOT"
-        assert ops[2].wires == Wires([0, 2])
+        names_expected = ["Hadamard", "PauliX", "CNOT"]
+        wires_expected = [Wires(0), Wires(2), Wires([0, 2])]
+        _compare_operation_lists(ops, names_expected, wires_expected)
 
     def test_multiple_x_after_cnot_gate(self):
         """Test that multiple X rotations after a CNOT both get pushed behind."""
@@ -59,20 +53,9 @@ class TestCommuteXBehindTargets:
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
-        assert len(ops) == 4
-
-        assert ops[0].name == "Hadamard"
-        assert ops[0].wires == Wires("a")
-
-        assert ops[1].name == "RX"
-        assert ops[1].parameters[0] == 0.2
-        assert ops[1].wires == Wires("a")
-
-        assert ops[2].name == "PauliX"
-        assert ops[2].wires == Wires("a")
-
-        assert ops[3].name == "CNOT"
-        assert ops[3].wires == Wires(["b", "a"])
+        names_expected = ["Hadamard", "RX", "PauliX", "CNOT"]
+        wires_expected = [Wires("a"), Wires("a"), Wires("a"), Wires(["b", "a"])]
+        _compare_operation_lists(ops, names_expected, wires_expected)
 
     def test_single_x_after_crx_gate(self):
         """Test that a single X rotation after a CRX is pushed behind."""
@@ -86,18 +69,12 @@ class TestCommuteXBehindTargets:
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
-        assert len(ops) == 3
+        names_expected = ["Hadamard", "RX", "CRX"]
+        wires_expected = [Wires(0), Wires("a"), Wires([0, "a"])]
+        _compare_operation_lists(ops, names_expected, wires_expected)
 
-        assert ops[0].name == "Hadamard"
-        assert ops[0].wires == Wires(0)
-
-        assert ops[1].name == "RX"
         assert ops[1].parameters[0] == 0.2
-        assert ops[1].wires == Wires("a")
-
-        assert ops[2].name == "CRX"
         assert ops[2].parameters[0] == 0.1
-        assert ops[2].wires == Wires([0, "a"])
 
     def test_multiple_x_after_crx_gate(self):
         """Test that multiple X rotations after a CRX are pushed behind."""
@@ -112,21 +89,12 @@ class TestCommuteXBehindTargets:
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
-        assert len(ops) == 4
+        names_expected = ["Hadamard", "PauliX", "RX", "CRX"]
+        wires_expected = [Wires("a"), Wires("a"), Wires("a"), Wires(["b", "a"])]
+        _compare_operation_lists(ops, names_expected, wires_expected)
 
-        assert ops[0].name == "Hadamard"
-        assert ops[0].wires == Wires("a")
-
-        assert ops[1].name == "PauliX"
-        assert ops[1].wires == Wires("a")
-
-        assert ops[2].name == "RX"
         assert ops[2].parameters[0] == 0.1
-        assert ops[2].wires == Wires("a")
-
-        assert ops[3].name == "CRX"
         assert ops[3].parameters[0] == 0.3
-        assert ops[3].wires == Wires(["b", "a"])
 
     def test_single_x_after_toffoli_gate(self):
         """Test that a single X rotation after a Toffoli is pushed behind."""
@@ -140,17 +108,11 @@ class TestCommuteXBehindTargets:
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
-        assert len(ops) == 3
+        names_expected = ["Hadamard", "RX", "Toffoli"]
+        wires_expected = [Wires(0), Wires("a"), Wires([0, 3, "a"])]
+        _compare_operation_lists(ops, names_expected, wires_expected)
 
-        assert ops[0].name == "Hadamard"
-        assert ops[0].wires == Wires(0)
-
-        assert ops[1].name == "RX"
         assert ops[1].parameters[0] == 0.2
-        assert ops[1].wires == Wires("a")
-
-        assert ops[2].name == "Toffoli"
-        assert ops[2].wires == Wires([0, 3, "a"])
 
     def test_multiple_x_after_toffoli_gate(self):
         """Test that multiple X rotations after a Toffoli are pushed behind."""
@@ -166,24 +128,12 @@ class TestCommuteXBehindTargets:
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
-        assert len(ops) == 5
+        names_expected = ["Hadamard", "RX", "RX", "Toffoli", "PauliX"]
+        wires_expected = [Wires("a"), Wires("a"), Wires("a"), Wires(["b", "c", "a"]), Wires("b")]
+        _compare_operation_lists(ops, names_expected, wires_expected)
 
-        assert ops[0].name == "Hadamard"
-        assert ops[0].wires == Wires("a")
-
-        assert ops[1].name == "RX"
         assert ops[1].parameters[0] == 0.1
-        assert ops[1].wires == Wires("a")
-
-        assert ops[2].name == "RX"
         assert ops[2].parameters[0] == 0.2
-        assert ops[2].wires == Wires("a")
-
-        assert ops[3].name == "Toffoli"
-        assert ops[3].wires == Wires(["b", "c", "a"])
-
-        assert ops[4].name == "PauliX"
-        assert ops[4].wires == Wires(["b"])
 
     def test_no_commuting_gates_after_crx(self):
         """Test that pushing commuting X gates behind targets is properly 'blocked'."""
@@ -199,20 +149,11 @@ class TestCommuteXBehindTargets:
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
-        assert len(ops) == 4
+        names_expected = ["Hadamard", "CRX", "Hadamard", "PauliX"]
+        wires_expected = [Wires(0), Wires([0, "a"]), Wires("a"), Wires("a")]
+        _compare_operation_lists(ops, names_expected, wires_expected)
 
-        assert ops[0].name == "Hadamard"
-        assert ops[0].wires == Wires(0)
-
-        assert ops[1].name == "CRX"
         assert ops[1].parameters[0] == 0.1
-        assert ops[1].wires == Wires([0, "a"])
-
-        assert ops[2].name == "Hadamard"
-        assert ops[2].wires == Wires("a")
-
-        assert ops[3].name == "PauliX"
-        assert ops[3].wires == Wires("a")
 
 
 # Example QNode and device for interface testing
@@ -256,11 +197,7 @@ class TestCommuteXBehindTargetsInterfaces:
 
         # Check operation list
         ops = transformed_qnode.qtape.operations
-        assert len(ops) == 6
-        assert all([op.name == expected_name for (op, expected_name) in zip(ops, expected_op_list)])
-        assert all(
-            [op.wires == expected_wires for (op, expected_wires) in zip(ops, expected_wires_list)]
-        )
+        _compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     def test_commute_x_behind_targets_torch(self):
         """Test QNode and gradient in torch interface."""
@@ -286,11 +223,7 @@ class TestCommuteXBehindTargetsInterfaces:
 
         # Check operation list
         ops = transformed_qnode.qtape.operations
-        assert len(ops) == 6
-        assert all([op.name == expected_name for (op, expected_name) in zip(ops, expected_op_list)])
-        assert all(
-            [op.wires == expected_wires for (op, expected_wires) in zip(ops, expected_wires_list)]
-        )
+        _compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     def test_commute_x_behind_targets_tf(self):
         """Test QNode and gradient in tensorflow interface."""
@@ -321,11 +254,7 @@ class TestCommuteXBehindTargetsInterfaces:
 
         # Check operation list
         ops = transformed_qnode.qtape.operations
-        assert len(ops) == 6
-        assert all([op.name == expected_name for (op, expected_name) in zip(ops, expected_op_list)])
-        assert all(
-            [op.wires == expected_wires for (op, expected_wires) in zip(ops, expected_wires_list)]
-        )
+        _compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     def test_commute_x_behind_targets_jax(self):
         """Test QNode and gradient in JAX interface."""
@@ -347,8 +276,4 @@ class TestCommuteXBehindTargetsInterfaces:
 
         # Check operation list
         ops = transformed_qnode.qtape.operations
-        assert len(ops) == 6
-        assert all([op.name == expected_name for (op, expected_name) in zip(ops, expected_op_list)])
-        assert all(
-            [op.wires == expected_wires for (op, expected_wires) in zip(ops, expected_wires_list)]
-        )
+        _compare_operation_lists(ops, expected_op_list, expected_wires_list)
