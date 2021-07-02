@@ -2,12 +2,39 @@
 
 <h3>New features since last release</h3>
 
+* The new ``qml.apply`` function can be used to add operations that might have
+  already been instantiated elsewhere to the QNode and other queuing contexts:
+  [(#1433)](https://github.com/PennyLaneAI/pennylane/pull/1433)
+
+  ```python
+  op = qml.RX(0.4, wires=0)
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.RY(x, wires=0)
+      qml.apply(op)
+      return qml.expval(qml.PauliZ(0))
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)(0.6))
+  0: ──RY(0.6)──RX(0.4)──┤ ⟨Z⟩
+  ```
+
+  Previously instantiated measurements can also be applied to QNodes.
+
 * Ising YY gate functionality added.
   [(#1358)](https://github.com/PennyLaneAI/pennylane/pull/1358)
 
 <h3>Improvements</h3>
 
 <h3>Breaking changes</h3>
+
+* The existing `pennylane.collections.apply` function is no longer accessible
+  via `qml.apply`, and needs to be imported directly from the ``collections``
+  package.
+  [(#1358)](https://github.com/PennyLaneAI/pennylane/pull/1358)
 
 <h3>Bug fixes</h3>
 
@@ -16,7 +43,12 @@
 
 * Quantum function transforms now preserve the format of the measurement
   results, so that a single measurement returns a single value rather than
-  an array with a single element. [(#1434)](https://github.com/PennyLaneAI/pennylane/pull/1434/files)
+  an array with a single element. [(#1434)](https://github.com/PennyLaneAI/pennylane/pull/1434)
+
+* Fixed a bug in the parameter-shift Hessian implementation, which resulted
+  in the incorrect Hessian being returned for a cost function
+  that performed post-processing on a vector-valued QNode.
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
 
 <h3>Documentation</h3>
 
@@ -24,12 +56,41 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Ashish Panigrahi
+Olivia Di Matteo, Josh Izaac, Ashish Panigrahi.
 
 
 # Release 0.16.0 (current release)
 
 <h3>New features since last release</h3>
+
+* Added a sparse Hamiltonian observable and the functionality to support computing its expectation
+  value. [(#1398)](https://github.com/PennyLaneAI/pennylane/pull/1398)
+
+  For example, the following QNode returns the expectation value of a sparse Hamiltonian:
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev, diff_method="parameter-shift")
+  def circuit(param, H):
+      qml.PauliX(0)
+      qml.SingleExcitation(param, wires=[0, 1])
+      return qml.expval(qml.SparseHamiltonian(H, [0, 1]))
+  ```
+  
+  We can execute this QNode, passing in a sparse identity matrix:
+
+  ```pycon
+  >>> print(circuit([0.5], scipy.sparse.eye(4).tocoo()))
+  0.9999999999999999
+  ```
+
+  The expectation value of the sparse Hamiltonian is computed directly, which leads to executions
+  that are faster by orders of magnitude. Note that "parameter-shift" is the only differentiation
+  method that is currently supported when the observable is a sparse Hamiltonian.
+
+* Added functionality to compute the sparse matrix representation of a `qml.Hamiltonian` object.
+  [(#1394)](https://github.com/PennyLaneAI/pennylane/pull/1394)
 
 <h4>First class support for quantum kernels</h4>
 

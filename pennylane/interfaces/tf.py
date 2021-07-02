@@ -212,7 +212,11 @@ class TFInterface(AnnotatedQueue):
 
                     vhp = tf.cond(
                         tf.rank(hessian) > 2,
-                        lambda: dy_row @ ddy @ hessian @ tf.transpose(dy_row),
+                        lambda: dy_row
+                        @ ddy
+                        @ hessian
+                        @ tf.transpose(dy_row)
+                        / tf.linalg.norm(dy_row) ** 2,
                         lambda: ddy @ hessian,
                     )
 
