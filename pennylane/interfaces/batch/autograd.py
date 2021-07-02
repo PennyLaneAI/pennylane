@@ -274,12 +274,15 @@ def vjp(
     def grad_fn(dy):
         """Returns the vector-Jacobian product with given
         parameter values p and output gradient dy"""
-
-        def vjp_fn(vjps, dy, jac):
-            vjps.append(np.tensordot(dy, jac, axes=[[0], [0]]))
-
         vjps = batch_vjp(
-            dy, tapes, batch_execute, gradient_fn, vjp_fn, device=device, cache=cache, _n=_n + 1
+            dy,
+            tapes,
+            batch_execute,
+            gradient_fn,
+            method="append",
+            device=device,
+            cache=cache,
+            _n=_n + 1,
         )
         return [np.asarray(_unwrap_arraybox(v, max_depth=_n)) for v in vjps]
 

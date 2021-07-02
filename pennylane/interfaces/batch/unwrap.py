@@ -62,7 +62,7 @@ class UnwrapTape:
         self.tape.set_parameters(self._original_params, trainable_only=False)
 
 
-def batch_vjp(dy, tapes, execute_fn, gradient_fn, vjp_fn, **kwargs):
+def batch_vjp(dy, tapes, execute_fn, gradient_fn, method="append", **kwargs):
     reshape_info = []
     gradient_tapes = []
     processing_fns = []
@@ -100,6 +100,7 @@ def batch_vjp(dy, tapes, execute_fn, gradient_fn, vjp_fn, **kwargs):
         dy_row = qml.math.reshape(d, [-1])
         jac = qml.math.transpose(qml.math.stack(jac))
         jac = qml.math.reshape(jac, [-1, num_params])
-        vjp_fn(vjps, dy_row, jac)
+
+        getattr(vjps, method)(qml.math.tensordot(jac, dy_row, [[0], [0]]))
 
     return vjps

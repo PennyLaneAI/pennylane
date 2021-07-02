@@ -133,16 +133,12 @@ class BatchExecute(torch.autograd.Function):
     def backward(ctx, *dy):
         """Returns the vector-Jacobian product with given
         parameter values p and output gradient dy"""
-
-        def vjp_fn(vjps, dy, jac):
-            vjps.extend(torch.tensordot(dy, jac, dims=[[0], [0]]))
-
         vjps = batch_vjp(
             dy,
             ctx.tapes,
             batch_execute,
             ctx.gradient_fn,
-            vjp_fn,
+            method="extend",
             device=ctx.device,
             cache=ctx.cache,
             _n=ctx._n + 1,

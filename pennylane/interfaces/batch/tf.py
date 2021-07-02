@@ -121,14 +121,17 @@ def _batch_execute(*parameters, **kwargs):  # pylint: disable=unused-argument
     res = [tf.convert_to_tensor(r) for r in res]
 
     def grad_fn(*dy, **tfkwargs):
-        variables = tfkwargs.get("variables", None)
-
-        def vjp_fn(vjps, dy, jac):
-            vjps.extend(tf.tensordot(dy, jac, axes=[[0], [0]]))
-
         vjps = batch_vjp(
-            dy, tapes, batch_execute, gradient_fn, vjp_fn, device=device, cache=cache, _n=_n + 1
+            dy,
+            tapes,
+            batch_execute,
+            gradient_fn,
+            method="extend",
+            device=device,
+            cache=cache,
+            _n=_n + 1,
         )
+        variables = tfkwargs.get("variables", None)
         return (vjps, variables) if variables is not None else vjps
 
     return res, grad_fn
