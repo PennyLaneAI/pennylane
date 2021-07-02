@@ -199,7 +199,9 @@ def batch_execute(
 
 
 @autograd.extend.primitive
-def _batch_execute(parameters, tapes=None, device=None, gradient_fn=None, cache=[], _n=1):
+def _batch_execute(
+    parameters, tapes=None, device=None, gradient_fn=None, cache=[], _n=1
+):  # pylint: disable=dangerous-default-value,unused-argument
     """Autodifferentiable wrapper around ``Device.batch_execute``.
 
     The signature of this function is designed to workaround Autograd restrictions.

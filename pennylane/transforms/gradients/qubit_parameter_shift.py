@@ -15,7 +15,7 @@
 This module contains functions for computing the parameter-shift gradient
 of a qubit quantum tape.
 """
-# pylint: disable=protected-member
+# pylint: disable=protected-access
 import numpy as np
 
 import pennylane as qml

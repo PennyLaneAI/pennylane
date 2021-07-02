@@ -83,37 +83,37 @@ def convert_to_numpy(tensors):
 
 
 class BatchExecute(torch.autograd.Function):
+    """The signature of this ``torch.autograd.Function`` is designed to
+    workaround Torch restrictions.
+
+    In particular, ``torch.autograd.Function``:
+
+    - Cannot accept keyword arguments. As a result, we pass a dictionary
+      as the first argument ``kwargs``. This dictionary **must** contain:
+
+      * ``"tapes"``: the quantum tapes to batch evaluate
+      * ``"device"``: the device to use to evaluate the tapes
+      * ``"gradient_fn"``: The gradient transform function to use
+        for backward passes.
+      * ``"cache"``: the cache list
+
+    Further, note that the ``parameters`` argument is dependent on the
+    ``tapes``; this Function should always be called
+    with the parameters extracted directly from the tapes as follows:
+
+    >>> parameters = []
+    >>> [parameters.extend(t.get_parameters()) for t in tapes])
+    >>> kwargs = {"tapes": tapes, "device": device, "gradient_fn": gradient_fn}
+    >>> BatchExecute.apply(kwargs, *parameters)
+
+    The private argument ``_n`` is used to track nesting of derivatives, for example
+    if the nth-order derivative is requested. Do not set this argument unless you
+    understand the consequences!
+    """
+
     @staticmethod
-    def forward(ctx, kwargs, *parameters):
-        """Implements the forward pass batch tape evaluation.
-
-        The signature of this ``torch.autograd.Function`` is designed to
-        workaround Torch restrictions.
-
-        In particular, ``torch.autograd.Function``:
-
-        - Cannot accept keyword arguments. As a result, we pass a dictionary
-          as the first argument ``kwargs``. This dictionary **must** contain:
-
-          * ``"tapes"``: the quantum tapes to batch evaluate
-          * ``"device"``: the device to use to evaluate the tapes
-          * ``"gradient_fn"``: The gradient transform function to use
-            for backward passes.
-          * ``"cache"``: the cache list
-
-        Further, note that the ``parameters`` argument is dependent on the
-        ``tapes``; this Function should always be called
-        with the parameters extracted directly from the tapes as follows:
-
-        >>> parameters = []
-        >>> [parameters.extend(t.get_parameters()) for t in tapes])
-        >>> kwargs = {"tapes": tapes, "device": device, "gradient_fn": gradient_fn}
-        >>> BatchExecute.apply(kwargs, *parameters)
-
-        The private argument ``_n`` is used to track nesting of derivatives, for example
-        if the nth-order derivative is requested. Do not set this argument unless you
-        understand the consequences!
-        """
+    def forward(ctx, kwargs, *parameters):  # pylint: disable=unused-argument
+        """Implements the forward pass batch tape evaluation."""
         ctx.tapes = kwargs["tapes"]
         ctx.device = kwargs["device"]
         ctx.gradient_fn = kwargs["gradient_fn"]
@@ -127,7 +127,7 @@ class BatchExecute(torch.autograd.Function):
             ]
             res = ctx.device.batch_execute(unwrapped_tapes)
 
-        return tuple([torch.as_tensor(torch.from_numpy(r)) for r in res])
+        return tuple(torch.as_tensor(torch.from_numpy(r)) for r in res)
 
     @staticmethod
     def backward(ctx, *dy):
@@ -175,7 +175,9 @@ class BatchExecute(torch.autograd.Function):
         return (None,) + tuple(vjp)
 
 
-def batch_execute(tapes, device, gradient_fn=None, cache=[], _n=1):
+def batch_execute(
+    tapes, device, gradient_fn=None, cache=[], _n=1
+):  # pylint: disable=dangerous-default-value
     """Execute a batch of tapes with Torch tensors on a device.
 
     Args:

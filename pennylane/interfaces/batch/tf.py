@@ -73,7 +73,7 @@ def convert_to_numpy(tensors):
 
 
 @tf.custom_gradient
-def _batch_execute(*parameters, **kwargs):
+def _batch_execute(*parameters, **kwargs):  # pylint: disable=unused-argument
     """Implements the forward pass batch tape evaluation.
 
     The signature of this function` is designed to
@@ -169,7 +169,9 @@ def _batch_execute(*parameters, **kwargs):
     return res, grad_fn
 
 
-def batch_execute(tapes, device, gradient_fn=None, cache=[], _n=1):
+def batch_execute(
+    tapes, device, gradient_fn=None, cache=[], _n=1
+):  # pylint: disable=dangerous-default-value
     """Execute a batch of tapes with TensorFlow parameters on a device.
 
     Args:
