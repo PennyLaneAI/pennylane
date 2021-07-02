@@ -15,5 +15,29 @@
 This subpackage defines functions for interfacing devices with batch execution
 capabilities with different machine learning libraries.
 """
+# pylint: disable=import-outside-toplevel)
+import functools
 
 from .unwrap import UnwrapTape
+from .autograd import batch_execute as batch_execute_autograd
+
+
+@functools.wraps(batch_execute_autograd)
+def batch_execute(*args, interface="autograd", **kwargs):
+    """Execute a batch of tapes with NumPy parameters on a device.
+    This function is a wrapper that dispatches to the correct interface."""
+
+    if interface == "autograd":
+        return batch_execute_autograd(*args, **kwargs)
+
+    if interface in ["tf", "tensorflow"]:
+        from .tf import batch_execute as batch_execute_tf
+
+        return batch_execute_tf(*args, **kwargs)
+
+    if interface in ["torch"]:
+        from .torch import batch_execute as batch_execute_torch
+
+        return batch_execute_torch(*args, **kwargs)
+
+    raise ValueError(f"Unknown interface {interface}")
