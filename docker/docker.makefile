@@ -28,7 +28,7 @@ build-qchem:
 
 build-interface:
 	  @docker build -t pennylane/base -f docker/pennylane.dockerfile . \
-		&& docker build -t pennylane/$(interface-name) -f docker/build-interface.dockerfile \
+		&& docker build -t pennylane/$(interface-name) -f docker/build_interface.dockerfile \
 		--build-arg INTERFACE_NAME=$(interface-name) .
 
 build-tensorflow:
