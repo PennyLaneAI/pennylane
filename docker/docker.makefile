@@ -27,8 +27,7 @@ build-qchem:
 		&& docker build -t pennylane/qchem -f docker/qchem.dockerfile .
 
 build-interface:
-	  echo "this is interface-name"$(interface-name)
-		@docker build -t pennylane/base -f docker/pennylane.dockerfile . \
+	  @docker build -t pennylane/base -f docker/pennylane.dockerfile . \
 		&& docker build -t pennylane/$(interface-name) -f docker/build-interface.dockerfile \
 		--build-arg INTERFACE_NAME=$(interface-name) .
 
