@@ -1,4 +1,4 @@
-.PHONY: help build-base build-tensorflow build-torch build-jax build-jax-gpu build-tensorflow-gpu build-torch-gpu
+.PHONY: help build-base build-interface build-interface-gpu
 
 help:
 		@echo "Makefile arguments:"
@@ -11,16 +11,12 @@ help:
 		@echo ""
 		@echo "Makefile commands:"
 		@echo "build-base"
-		@echo "build-tensorflow"
-		@echo "build-torch"
-		@echo "build-jax"
-		@echo "build-tensorflow-gpu"
-		@echo "build-jax-gpu"
-		@echo "build-torch-gpu"
+		@echo "build-qchem"
+		@echo "build-interface"
+		@echo "build-interface-gpu"
 
 build-base:
-	  echo "this is value of fooo" $(FOO)
-		@docker build -t pennylane/base -f docker/pennylane.dockerfile .
+    @docker build -t pennylane/base -f docker/pennylane.dockerfile .
 
 build-qchem:
 		@docker build -t pennylane/base -f docker/pennylane.dockerfile . \
@@ -31,39 +27,7 @@ build-interface:
 		&& docker build -t pennylane/$(interface-name) -f docker/build_interface.dockerfile \
 		--build-arg INTERFACE_NAME=$(interface-name) .
 
-build-tensorflow:
-		@docker build -t pennylane/base -f docker/pennylane.dockerfile .  \
-		&& docker build -t pennylane/tensorflow -f docker/tensorflow.dockerfile .
-
-build-torch:
-		@docker build -t pennylane/base -f docker/pennylane.dockerfile . \
-		&& docker build -t pennylane/torch -f docker/torch.dockerfile .
-
-build-jax:
-		@docker build -t pennylane/base -f docker/pennylane.dockerfile . \
-		&& docker build -t pennylane/jax -f docker/jax.dockerfile .
-
-build-tensorflow-gpu:
-		@docker build -t pennylane/cuda/base -f docker/gpu-cuda/cuda-base.dockerfile . \
-		&& docker build -t pennylane/tensorflow/gpu -f docker/gpu-cuda/tensorflow.dockerfile .
-
-build-jax-gpu:
-		@docker build -t pennylane/cuda/base -f docker/gpu-cuda/cuda-base.dockerfile . \
-		&& docker build -t pennylane/jax/gpu -f docker/gpu-cuda/jax.dockerfile .
-
-build-torch-gpu:
-		@docker build -t pennylane/cuda/base -f docker/gpu-cuda/cuda-base.dockerfile . \
-		&& docker build -t pennylane/torch/gpu -f docker/gpu-cuda/torch.dockerfile .
-
-build-all:
-		@docker build -t pennylane/base -f docker/pennylane.dockerfile . \
-		&& docker build -t pennylane/tensorflow -f docker/tensorflow.dockerfile . \
-		&& docker build -t pennylane/torch -f docker/torch.dockerfile . \
-		&& docker build -t pennylane/qchem -f docker/qchem.dockerfile . \
-		&& docker build -t pennylane/jax -f docker/jax.dockerfile .
-
-build-all-gpu:
-		@docker build -t pennylane/cuda/base -f docker/gpu-cuda/cuda-base.dockerfile . \
-		&& docker build -t pennylane/tensorflow/gpu -f docker/gpu-cuda/tensorflow.dockerfile . \
-		&& docker build -t pennylane/torch/gpu -f docker/gpu-cuda/torch.dockerfile . \
-		&& docker build -t pennylane/jax/gpu -f docker/gpu-cuda/jax.dockerfile .
+build-interface-gpu:
+    @docker build -t pennylane/base -f docker/pennylane.dockerfile . \
+		&& docker build -t pennylane/$(interface-name) -f docker/build_interface.dockerfile \
+		--build-arg INTERFACE_NAME=$(interface-name) .

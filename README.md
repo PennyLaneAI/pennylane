@@ -116,13 +116,12 @@ make -f docker/docker.makefile build-base
 To build a PennyLane image using a given interface (Torch, TensorFlow or Jax) run following:
 
 ```
-make -f docker/docker.makefile build-tensorflow
+make -f docker/docker.makefile build-interface interface-name=tensorflow
 ```
-
 To build a PennyLane image using a given interface (Torch, TensorFlow or Jax) with GPU support run following:
 
 ```
-make -f docker/docker.makefile build-tensorflow-gpu
+make -f docker/docker.makefile build-interface-gpu interface-name=tensorflow
 ```
 
 You can also build an image with the PennyLane Qchem package and its dependencies. Use following commands:
@@ -130,12 +129,15 @@ You can also build an image with the PennyLane Qchem package and its dependencie
 ```
 make -f docker/docker.makefile build-qchem
 ```
-
 To build all three interfaces (Torch, TensorFlow, or Jax) using a single command run following:
 
+```
+make -f docker/docker.makefile build-interface interface-name=all
+```
+For GPU run following:
 
 ```
-make -f docker/docker.makefile build-all
+make -f docker/docker.makefile build-interface-gpu interface-name=all
 ```
 
 ## Contributing to PennyLane
