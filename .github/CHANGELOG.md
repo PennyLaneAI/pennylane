@@ -38,6 +38,9 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes the differentiability of the operation`IsingYY` for Autograd, Jax and Tensorflow.
+  [(#1425)](https://github.com/PennyLaneAI/pennylane/pull/1425)
+  
 * Fixed a bug in the `torch` interface that prevented gradients from being
   computed on a GPU [(#1426)](https://github.com/PennyLaneAI/pennylane/pull/1426).
 
@@ -56,7 +59,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Ashish Panigrahi.
+Olivia Di Matteo, Josh Izaac, Romain Moyard, Ashish Panigrahi.
 
 
 # Release 0.16.0 (current release)
