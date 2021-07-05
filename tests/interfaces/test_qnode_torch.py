@@ -735,6 +735,60 @@ class TestQNode:
         ]
         assert np.allclose(hess.detach(), expected_hess, atol=tol, rtol=0)
 
+    def test_hessian_vector_valued_postprocessing(self, dev_name, diff_method, mocker, tol):
+        """Test hessian calculation of a vector valued QNode with post-processing"""
+        if diff_method not in {"parameter-shift", "backprop"}:
+            pytest.skip("Test only supports parameter-shift or backprop")
+
+        dev = qml.device(dev_name, wires=1)
+
+        @qnode(dev, diff_method=diff_method, interface="torch")
+        def circuit(x):
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=0)
+            return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(0))]
+
+        x = torch.tensor([0.76, -0.87], requires_grad=True, dtype=torch.float64)
+
+        def cost_fn(x):
+            return x @ circuit(x)
+
+        a, b = x.detach().numpy()
+
+        res = cost_fn(x)
+        expected_res = np.array([a, b]) @ [np.cos(a) * np.cos(b), np.cos(a) * np.cos(b)]
+        assert np.allclose(res.detach(), expected_res, atol=tol, rtol=0)
+
+        res.backward()
+
+        g = x.grad
+        expected_g = [
+            np.cos(b) * (np.cos(a) - (a + b) * np.sin(a)),
+            np.cos(a) * (np.cos(b) - (a + b) * np.sin(b)),
+        ]
+        assert np.allclose(g.detach(), expected_g, atol=tol, rtol=0)
+
+        spy = mocker.spy(JacobianTape, "hessian")
+        hess = hessian(cost_fn, x)
+
+        if diff_method == "backprop":
+            spy.assert_not_called()
+        elif diff_method == "parameter-shift":
+            spy.assert_called_once()
+
+        expected_hess = [
+            [
+                -(np.cos(b) * ((a + b) * np.cos(a) + 2 * np.sin(a))),
+                -(np.cos(b) * np.sin(a)) + (-np.cos(a) + (a + b) * np.sin(a)) * np.sin(b),
+            ],
+            [
+                -(np.cos(b) * np.sin(a)) + (-np.cos(a) + (a + b) * np.sin(a)) * np.sin(b),
+                -(np.cos(a) * ((a + b) * np.cos(b) + 2 * np.sin(b))),
+            ],
+        ]
+
+        assert np.allclose(hess.detach(), expected_hess, atol=tol, rtol=0)
+
 
 class Test_adjoint:
     def test_adjoint_default_save_state(self, mocker):
