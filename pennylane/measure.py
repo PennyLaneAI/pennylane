@@ -276,7 +276,8 @@ def var(op):
 def sample(op=None, wires=None):
     r"""Sample from the supplied observable, with the number of shots
     determined from the ``dev.shots`` attribute of the corresponding device.
-    If no observable is provided then sample from the device specific raw samples.
+    If no observable is provided then basis state samples are returned directly
+    from the device.
 
     The samples are drawn from the eigenvalues :math:`\{\lambda_i\}` of the observable.
     The probability of drawing eigenvalue :math:`\lambda_i` is given by
