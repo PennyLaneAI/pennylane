@@ -13,8 +13,7 @@
 # limitations under the License.
 """Utility functions for circuit optimization."""
 
-import pennylane.math as math
-from pennylane.math import allclose, sin, cos, zeros, cast_like, stack
+from pennylane.math import allclose, sin, cos, arccos, arctan2, zeros, cast_like, stack
 from pennylane.wires import Wires
 
 
@@ -88,26 +87,13 @@ def _yzy_to_zyz(middle_yzy):
     # Source: http://bediyap.com/programming/convert-quaternion-to-euler-rotations/
     z1_arg1 = 2 * (qy * qz - qw * qx)
     z1_arg2 = 2 * (qx * qz + qw * qy)
+    z1 = arctan2(z1_arg1, z1_arg2)
 
-    # Numpy/JAX and Tensorflow/Torch have different names for arccos/arctan2
-    # so we have to figure out which one it is before applying it.
-    try:
-        z1 = math.atan2(z1_arg1, z1_arg2)
-    except AttributeError:
-        z1 = math.arctan2(z1_arg1, z1_arg2)
-
-    try:
-        y = math.acos(qw ** 2 - qx ** 2 - qy ** 2 + qz ** 2)
-    except AttributeError:
-        y = math.arccos(qw ** 2 - qx ** 2 - qy ** 2 + qz ** 2)
+    y = arccos(qw ** 2 - qx ** 2 - qy ** 2 + qz ** 2)
 
     z2_arg1 = 2 * (qy * qz + qw * qx)
     z2_arg2 = -2 * (qx * qz - qw * qy)
-
-    try:
-        z2 = math.atan2(z2_arg1, z2_arg2)
-    except AttributeError:
-        z2 = math.arctan2(z2_arg1, z2_arg2)
+    z2 = arctan2(z2_arg1, z2_arg2)
 
     return stack([z1, y, z2])
 
