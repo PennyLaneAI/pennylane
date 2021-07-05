@@ -284,11 +284,7 @@ def sample(op=None, wires=None):
     :math:`p(\lambda_i) = |\langle \xi_i | \psi \rangle|^2`, where :math:`| \xi_i \rangle`
     is the corresponding basis state from the observable's eigenbasis.
 
-    If no observable was provided then the raw samples obtained from device are returned
-    (eg. for a qubit device, samples from the computational device are returned). In this
-    case, `wires` can be specified so that sample results only include measurement results
-    of the qubits of interest.
-    **Example 1:**
+    **Example**
 
     .. code-block:: python3
 
