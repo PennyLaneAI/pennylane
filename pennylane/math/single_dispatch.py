@@ -245,7 +245,7 @@ ar.register_function(
     ),
 )
 
-ar.autoray._SUBMODULE_ALIASES["torch", "arctan"] = "torch"
+ar.autoray._SUBMODULE_ALIASES["torch", "arctan2"] = "torch"
 ar.autoray._FUNC_ALIASES["torch", "arctan2"] = "atan2"
 
 
