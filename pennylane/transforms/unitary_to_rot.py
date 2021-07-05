@@ -15,7 +15,6 @@
 A transform for decomposing arbitrary single-qubit QubitUnitary gates into elementary gates.
 """
 import pennylane as qml
-from pennylane import math
 from pennylane.transforms import qfunc_transform
 from pennylane.transforms.decompositions import zyz_decomposition
 
@@ -75,12 +74,12 @@ def unitary_to_rot(tape):
     for op in tape.operations + tape.measurements:
         if isinstance(op, qml.QubitUnitary):
             # Only act on single-qubit unitary operations
-            if math.shape(op.parameters[0]) != (2, 2):
+            if qml.math.shape(op.parameters[0]) != (2, 2):
                 continue
 
             decomp = zyz_decomposition(op.parameters[0], op.wires[0])
 
             for d_op in decomp:
-                d_op.queue()
+                qml.apply(d_op)
         else:
-            op.queue()
+            qml.apply(op)
