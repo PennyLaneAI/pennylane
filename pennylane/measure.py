@@ -342,7 +342,7 @@ def sample(op=None, wires=None):
 
     if wires is not None:
         if op is not None:
-            raise ValueError("Cannot specify the wires to sample if an observable is" 
+            raise ValueError("Cannot specify the wires to sample if an observable is"
                              "provided. The wires to sample will be determined directly from the observable.")
 
         return MeasurementProcess(Sample, obs=op, wires=qml.wires.Wires(wires))

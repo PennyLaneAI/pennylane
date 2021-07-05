@@ -587,9 +587,7 @@ class TestSample:
         generated_samples = np.array([[1, 0], [1, 1]])
         dev._samples = generated_samples
 
-        with monkeypatch.context() as m:
-            res = dev.sample(obs)
-
+        res = dev.sample(obs)
         assert np.array_equal(res, generated_samples)
 
     def test_sample_with_no_observable_and_with_wires(
@@ -603,9 +601,7 @@ class TestSample:
         dev._samples = generated_samples
 
         wire_samples = np.array([[0], [1]])
-
-        with monkeypatch.context() as m:
-            res = dev.sample(obs)
+        res = dev.sample(obs)
 
         assert np.array_equal(res, wire_samples)
 

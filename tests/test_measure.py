@@ -279,6 +279,8 @@ class TestSample:
             assert res.wires == qml.wires.Wires([])
             return res
 
+        circuit()
+
     def test_providing_no_observable_and_wires(self):
         """Test that we can provide no observable but specify wires to the sample function"""
         wires = [0, 2]
@@ -293,6 +295,8 @@ class TestSample:
             assert res.obs is None
             assert res.wires == wires_obj
             return res
+
+        circuit()
 
 
 @pytest.mark.parametrize(
