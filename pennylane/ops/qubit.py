@@ -2153,7 +2153,7 @@ class QubitUnitary(Operation):
         # For pure QubitUnitary operations (not controlled), check that the number
         # of wires fits the dimensions of the matrix
         if not isinstance(self, ControlledQubitUnitary):
-            U = np.asarray(params[0])
+            U = params[0]
 
             dim = 2 ** len(wires)
 
@@ -2162,14 +2162,16 @@ class QubitUnitary(Operation):
                     f"Input unitary must be of shape {(dim, dim)} to act on {len(wires)} wires."
                 )
 
-            if not np.allclose(U @ U.conj().T, np.identity(U.shape[0])):
+            if not qml.math.allclose(
+                qml.math.dot(U, qml.math.T(qml.math.conj(U))), qml.math.eye(qml.math.shape(U)[0])
+            ):
                 raise ValueError("Operator must be unitary.")
 
         super().__init__(*params, wires=wires, do_queue=do_queue)
 
     @classmethod
     def _matrix(cls, *params):
-        return np.asarray(params[0])
+        return params[0]
 
     def adjoint(self):
         return QubitUnitary(qml.math.T(qml.math.conj(self.matrix)), wires=self.wires)
