@@ -17,6 +17,8 @@ Tests for the QubitUnitary decomposition transforms.
 
 import pytest
 
+from itertools import product
+
 import pennylane as qml
 from pennylane import numpy as np
 
@@ -151,14 +153,16 @@ def original_qfunc_for_grad(angles):
 
 dev = qml.device("default.qubit", wires=["a", "b"])
 
-angle_pairs = [(0.3, 0.3), (np.pi, -0.65), (0.0, np.pi / 2), (np.pi / 3, 0.0)]
+angle_pairs = [[0.3, 0.3], [np.pi, -0.65], [0.0, np.pi / 2], [np.pi / 3, 0.0]]
+diff_methods = ["parameter-shift", "backprop"]
+angle_diff_pairs = list(product(angle_pairs, diff_methods))
 
 
 class TestQubitUnitaryDifferentiability:
     """Tests to ensure the transform is fully differentiable in all interfaces."""
 
-    @pytest.mark.parametrize("z_rot,x_rot", angle_pairs)
-    def test_gradient_unitary_to_rot(self, z_rot, x_rot):
+    @pytest.mark.parametrize("rot_angles,diff_method", angle_diff_pairs)
+    def test_gradient_unitary_to_rot(self, rot_angles, diff_method):
         """Tests differentiability in autograd interface."""
 
         def qfunc_with_qubit_unitary(angles):
@@ -177,12 +181,12 @@ class TestQubitUnitaryDifferentiability:
             qml.CNOT(wires=["b", "a"])
             return qml.expval(qml.PauliX(wires="a"))
 
-        original_qnode = qml.QNode(original_qfunc_for_grad, dev)
+        original_qnode = qml.QNode(original_qfunc_for_grad, dev, diff_method=diff_method)
 
         transformed_qfunc = unitary_to_rot(qfunc_with_qubit_unitary)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev, diff_method=diff_method)
 
-        input = np.array([z_rot, x_rot], requires_grad=True)
+        input = np.array(rot_angles, requires_grad=True)
         assert qml.math.allclose(original_qnode(input), transformed_qnode(input))
 
         original_grad = qml.grad(original_qnode)(input)
@@ -190,9 +194,10 @@ class TestQubitUnitaryDifferentiability:
 
         assert qml.math.allclose(original_grad, transformed_grad)
 
-    @pytest.mark.parametrize("z_rot,x_rot", angle_pairs)
-    def test_gradient_unitary_to_rot_torch(self, z_rot, x_rot):
-        """Tests differentiability in torch interface."""
+    @pytest.mark.parametrize("rot_angles", angle_pairs)
+    def test_gradient_unitary_to_rot_torch(self, rot_angles):
+        """Tests differentiability in torch interface. Torch interface doesn't use
+        backprop so we test only with parameter-shift."""
         torch = pytest.importorskip("torch", minversion="1.8")
 
         def qfunc_with_qubit_unitary(angles):
@@ -221,13 +226,17 @@ class TestQubitUnitaryDifferentiability:
             qml.CNOT(wires=["b", "a"])
             return qml.expval(qml.PauliX(wires="a"))
 
-        original_qnode = qml.QNode(original_qfunc_for_grad, dev, interface="torch")
-        original_input = torch.tensor([z_rot, x_rot], dtype=torch.float64, requires_grad=True)
+        original_qnode = qml.QNode(
+            original_qfunc_for_grad, dev, interface="torch", diff_method="parameter-shift"
+        )
+        original_input = torch.tensor(rot_angles, dtype=torch.float64, requires_grad=True)
         original_result = original_qnode(original_input)
 
         transformed_qfunc = unitary_to_rot(qfunc_with_qubit_unitary)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="torch")
-        transformed_input = torch.tensor([z_rot, x_rot], dtype=torch.float64, requires_grad=True)
+        transformed_qnode = qml.QNode(
+            transformed_qfunc, dev, interface="torch", diff_method="parameter-shift"
+        )
+        transformed_input = torch.tensor(rot_angles, dtype=torch.float64, requires_grad=True)
         transformed_result = transformed_qnode(transformed_input)
 
         assert qml.math.allclose(original_result, transformed_result)
@@ -237,8 +246,8 @@ class TestQubitUnitaryDifferentiability:
 
         assert qml.math.allclose(original_input.grad, transformed_input.grad)
 
-    @pytest.mark.parametrize("z_rot,x_rot", angle_pairs)
-    def test_gradient_unitary_to_rot_tf(self, z_rot, x_rot):
+    @pytest.mark.parametrize("rot_angles,diff_method", angle_diff_pairs)
+    def test_gradient_unitary_to_rot_tf(self, rot_angles, diff_method):
         """Tests differentiability in tensorflow interface."""
         tf = pytest.importorskip("tensorflow")
 
@@ -258,13 +267,17 @@ class TestQubitUnitaryDifferentiability:
             qml.CNOT(wires=["b", "a"])
             return qml.expval(qml.PauliX(wires="a"))
 
-        original_qnode = qml.QNode(original_qfunc_for_grad, dev, interface="tf")
-        original_input = tf.Variable([z_rot, x_rot], dtype=tf.float64)
+        original_qnode = qml.QNode(
+            original_qfunc_for_grad, dev, interface="tf", diff_method=diff_method
+        )
+        original_input = tf.Variable(rot_angles, dtype=tf.float64)
         original_result = original_qnode(original_input)
 
         transformed_qfunc = unitary_to_rot(qfunc_with_qubit_unitary)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="tf")
-        transformed_input = tf.Variable([z_rot, x_rot], dtype=tf.float64)
+        transformed_qnode = qml.QNode(
+            transformed_qfunc, dev, interface="tf", diff_method=diff_method
+        )
+        transformed_input = tf.Variable(rot_angles, dtype=tf.float64)
         transformed_result = transformed_qnode(transformed_input)
 
         assert qml.math.allclose(original_result, transformed_result)
@@ -280,8 +293,8 @@ class TestQubitUnitaryDifferentiability:
         # For 64bit values, need to slightly increase the tolerance threshold
         assert qml.math.allclose(original_grad, transformed_grad, atol=1e-7)
 
-    @pytest.mark.parametrize("z_rot,x_rot", angle_pairs)
-    def test_gradient_unitary_to_rot_jax(self, z_rot, x_rot):
+    @pytest.mark.parametrize("rot_angles,diff_method", angle_diff_pairs)
+    def test_gradient_unitary_to_rot_jax(self, rot_angles, diff_method):
         """Tests differentiability in jax interface."""
         jax = pytest.importorskip("jax")
         from jax import numpy as jnp
@@ -303,13 +316,13 @@ class TestQubitUnitaryDifferentiability:
             return qml.expval(qml.PauliX(wires="a"))
 
         # Setting the dtype to complex64 causes the gradients to be complex...
-        input = jnp.array([z_rot, x_rot], dtype=jnp.float64)
+        input = jnp.array(rot_angles, dtype=jnp.float64)
 
-        original_qnode = qml.QNode(original_qfunc_for_grad, dev, interface="jax")
+        original_qnode = qml.QNode(original_qfunc_for_grad, dev, interface="jax", diff_method=diff_method)
         original_result = original_qnode(input)
 
         transformed_qfunc = unitary_to_rot(qfunc_with_qubit_unitary)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="jax")
+        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="jax", diff_method=diff_method)
         transformed_result = transformed_qnode(input)
         assert qml.math.allclose(original_result, transformed_result)
 
