@@ -329,7 +329,7 @@ def sample(op=None, wires=None):
 
     Args:
         op (Observable or None): a quantum observable object
-        wires (Sequence[int] or int or None): the wires we wish to sample from
+        wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY set wires if op is None
 
     Raises:
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
@@ -342,8 +342,8 @@ def sample(op=None, wires=None):
 
     if wires is not None:
         if op is not None:
-            raise ValueError("Cannot specify the wires to sample if an observable is 
-            "provided. The wires to sample will be determined directly from the observable.")
+            raise ValueError("Cannot specify the wires to sample if an observable is" 
+                             "provided. The wires to sample will be determined directly from the observable.")
 
         return MeasurementProcess(Sample, obs=op, wires=qml.wires.Wires(wires))
 
