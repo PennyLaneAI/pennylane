@@ -26,6 +26,47 @@
 
 * Ising YY gate functionality added.
   [(#1358)](https://github.com/PennyLaneAI/pennylane/pull/1358)
+  
+* Added functionality to `qml.sample()` to extract samples from the basis states of
+the device (currently only for qubit devices). Additionally, `wires` can be
+specified to only return samples from those wires. 
+
+```python
+dev = qml.device("default.qubit", wires=3, shots=5)
+
+@qml.qnode(dev)
+def circuit_1():
+    qml.Hadamard(wires=0)
+    qml.Hadamard(wires=1)
+    return qml.sample()    # no observable provided
+
+@qml.qnode(dev)
+def circuit_2():
+    qml.Hadamard(wires=0)
+    qml.Hadamard(wires=1)
+    return qml.sample(wires=[0,2])    # no observable provided and wires specified 
+``` 
+
+  ```pycon
+  >>> print(circuit_2())
+  [[1, 0, 0],
+   [1, 1, 0],
+   [1, 0, 0],
+   [0, 0, 0],
+   [0, 1, 0]]
+
+  >>> print(circuit_2())
+  [[1, 0],
+   [1, 0],
+   [1, 0],
+   [0, 0],
+   [0, 0]]
+
+  >>> print(qml.draw(circuit_2))
+ 0: ──H──╭┤ Sample[basis]
+ 1: ──H──│┤
+ 2: ──H──╰┤ Sample[basis]
+  ```
 
 <h3>Improvements</h3>
 
@@ -59,7 +100,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Romain Moyard, Ashish Panigrahi.
+Josh Izaac, Olivia Di Matteo, Romain Moyard, Ashish Panigrahi, Jay Soni.
 
 
 # Release 0.16.0 (current release)
