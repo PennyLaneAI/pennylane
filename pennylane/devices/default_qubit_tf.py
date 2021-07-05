@@ -142,6 +142,7 @@ class DefaultQubitTF(DefaultQubit):
         "CRZ": tf_ops.CRZ,
         "CRot": tf_ops.CRot,
         "IsingXX": tf_ops.IsingXX,
+        "IsingYY": tf_ops.IsingYY,
         "IsingZZ": tf_ops.IsingZZ,
         "SingleExcitation": tf_ops.SingleExcitation,
         "SingleExcitationPlus": tf_ops.SingleExcitationPlus,
