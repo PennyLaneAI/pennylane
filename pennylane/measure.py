@@ -302,7 +302,10 @@ def sample(op=None, wires=None):
     >>> circuit(0.5)
     array([ 1.,  1.,  1., -1.])
 
-    **Example 2:**
+    If no observable is provided, then the raw basis state samples obtained
+    from device are returned (e.g., for a qubit device, samples from the
+    computational device are returned). In this case, ``wires`` can be specified
+    so that sample results only include measurement results of the qubits of interest.
 
     .. code-block:: python3
 
