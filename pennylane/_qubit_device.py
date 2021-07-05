@@ -793,8 +793,12 @@ class QubitDevice(Device):
             # Process samples for observables with eigenvalues {1, -1}
             samples = 1 - 2 * self._samples[sample_slice, device_wires[0]]
 
-        elif isinstance(observable, MeasurementProcess):  # if no observable was provided then return the raw samples
-            if len(observable.wires) != 0:  # if wires are provided, then we only return samples from those wires
+        elif isinstance(
+            observable, MeasurementProcess
+        ):  # if no observable was provided then return the raw samples
+            if (
+                len(observable.wires) != 0
+            ):  # if wires are provided, then we only return samples from those wires
                 samples = self._samples[sample_slice, np.array(device_wires)]
             else:
                 samples = self._samples[sample_slice]

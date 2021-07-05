@@ -333,7 +333,7 @@ class RepresentationResolver:
             if op.obs is not None:
                 op = op.obs
             else:
-                return "basis"   # when no observable is provided we perform a raw measurement
+                return "basis"  # when no observable is provided we perform a raw measurement
 
         if isinstance(op, qml.operation.Tensor):
             constituent_representations = [

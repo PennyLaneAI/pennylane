@@ -264,8 +264,11 @@ class TestSample:
             qml.Hadamard(wires=0)
             return qml.sample(qml.PauliZ(0), wires=[0, 1])
 
-        with pytest.raises(ValueError, match="Cannot specify the wires to sample if an observable is provided." 
-                                             " The wires to sample will be determined directly from the observable."):
+        with pytest.raises(
+            ValueError,
+            match="Cannot specify the wires to sample if an observable is provided."
+            " The wires to sample will be determined directly from the observable.",
+        ):
             res = circuit()
 
     def test_providing_no_observable_and_no_wires(self):
