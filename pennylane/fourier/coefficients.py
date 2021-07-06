@@ -55,7 +55,8 @@ def coefficients(f, n_inputs, degree, lowpass_filter=False, filter_threshold=Non
     :math:`c_{n_1,\ldots,n_N}` are Fourier coefficients.
 
     Args:
-        f (callable): Function that takes a 1D tensor of ``n_inputs`` scalar inputs.
+        f (callable): Function that takes a 1D tensor of ``n_inputs`` scalar inputs. The function can be a QNode, but
+            has to return a single real value (such as an expectation) only.
         n_inputs (int): number of function inputs
         degree (int): max frequency of Fourier coeffs to be computed. For degree :math:`d`,
             the coefficients from frequencies :math:`-d, -d+1,...0,..., d-1, d` will be computed.
