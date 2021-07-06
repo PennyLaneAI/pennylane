@@ -85,17 +85,37 @@ class TestKernelEigensystem:
     """Tests for the kernel_eigensystem function."""
 
     def test_decomposition(self):
-        """Test that the eigendecomposition is correct."""
+        """Test that the eigendecomposition is correct by reconstructing
+        a simple kernel matrix."""
 
         kernel = lambda a, b: np.dot(a, b)
         X = np.array([[i] for i in range(5)])
         K = kern.square_kernel_matrix(X, kernel)
 
         evals, evecs = kern.utils.kernel_eigensystem(X, kernel)
-        reconstruction = evecs.T @ np.diag(evals) @ evecs
+        # we need to undo the reverse sorting of the eigenvalues and vectors
+        reconstruction = np.flip(evecs) @ np.diag(np.flip(evals)) @ np.flip(evecs).T
 
         assert np.allclose(reconstruction, K)
 
+    # def test_autograd(self):
+    #     """Test that the eigendecomposition is differentiable in the autograd interface."""
+    #
+    #     # TODO: currently not working because the eigenvalues are flipped
+    #
+    #     kernel = lambda a, b: pnp.dot(a, b)
+    #     X = pnp.array([[float(i)] for i in range(3)], requires_grad=True)
+    #
+    #     def some_processing(X):
+    #         evals, evecs = kern.kernel_eigensystem(X, kernel)
+    #         return pnp.sum(evals)
+    #
+    #     grad_fn = qml.grad(some_processing)
+    #     assert grad_fn(X).shape == (9,)
+
+
+class TestTaskWeights:
+    """Tests for the task_weights function."""
 
 class TestKernelPolarity:
     """Tests kernel methods to compute polarity."""
@@ -300,6 +320,11 @@ class TestKernelTargetAlignment:
 
         assert alignment == expected_alignment
         assert alignment == alignment_assume
+
+
+class TestKernelTaskModelAlignment:
+    """Tests for the task_model_alignment function."""
+
 
 
 class TestRegularization:

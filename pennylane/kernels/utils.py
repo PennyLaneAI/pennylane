@@ -57,7 +57,7 @@ def square_kernel_matrix(X, kernel, assume_normalized_kernel=False):
             [0.96864001, 0.99727485, 1.        , 0.96605621],
             [0.90932897, 0.95685561, 0.96605621, 1.        ]], requires_grad=True)
     """
-    N = len(X)
+    N = qml.math.shape(X)[0]
     matrix = [0] * N ** 2
 
     for i in range(N):
