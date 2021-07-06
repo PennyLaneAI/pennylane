@@ -252,8 +252,8 @@ class TestQubitUnitaryDifferentiability:
         tf = pytest.importorskip("tensorflow")
 
         def qfunc_with_qubit_unitary(angles):
-            z = tf.cast(angles[0], tf.complex64)
-            x = tf.cast(angles[1], tf.complex64)
+            z = tf.cast(angles[0], tf.complex128)
+            x = tf.cast(angles[1], tf.complex128)
 
             c = tf.cos(x / 2)
             s = tf.sin(x / 2) * 1j
@@ -288,6 +288,7 @@ class TestQubitUnitaryDifferentiability:
 
         with tf.GradientTape() as tape:
             loss = transformed_qnode(transformed_input)
+
         transformed_grad = tape.gradient(loss, transformed_input)
 
         # For 64bit values, need to slightly increase the tolerance threshold
@@ -318,11 +319,15 @@ class TestQubitUnitaryDifferentiability:
         # Setting the dtype to complex64 causes the gradients to be complex...
         input = jnp.array(rot_angles, dtype=jnp.float64)
 
-        original_qnode = qml.QNode(original_qfunc_for_grad, dev, interface="jax", diff_method=diff_method)
+        original_qnode = qml.QNode(
+            original_qfunc_for_grad, dev, interface="jax", diff_method=diff_method
+        )
         original_result = original_qnode(input)
 
         transformed_qfunc = unitary_to_rot(qfunc_with_qubit_unitary)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="jax", diff_method=diff_method)
+        transformed_qnode = qml.QNode(
+            transformed_qfunc, dev, interface="jax", diff_method=diff_method
+        )
         transformed_result = transformed_qnode(input)
         assert qml.math.allclose(original_result, transformed_result)
 
