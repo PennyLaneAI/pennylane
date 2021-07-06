@@ -148,6 +148,7 @@ class DefaultQubitJax(DefaultQubit):
         "CRot": jax_ops.CRot,
         "MultiRZ": jax_ops.MultiRZ,
         "IsingXX": jax_ops.IsingXX,
+        "IsingYY": jax_ops.IsingYY,
         "IsingZZ": jax_ops.IsingZZ,
         "SingleExcitation": jax_ops.SingleExcitation,
         "SingleExcitationPlus": jax_ops.SingleExcitationPlus,
