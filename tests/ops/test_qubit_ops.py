@@ -569,7 +569,7 @@ class TestOperations:
             assert np.allclose(0, circ(n_qubits)[i], tol)
 
     @pytest.mark.parametrize("n_qubits", range(2, 6))
-    def test_QFT_adjoint_decompoosition(self, n_qubits, tol):
+    def test_QFT_adjoint_decomposition(self, n_qubits, tol):
         """Test if the QFT adjoint operation has the right decomposition"""
 
         # QFT adjoint has right decompositions
