@@ -116,7 +116,9 @@ def _batch_execute(*parameters, **kwargs):  # pylint: disable=unused-argument
             stack.enter_context(UnwrapTape(t, convert_to_numpy, get_trainable_params))
             for t in tapes
         ]
+        device._cache = 1000000000
         res = device.batch_execute(unwrapped_tapes)
+        device._cache = False
 
     res = [tf.convert_to_tensor(r) for r in res]
 
@@ -126,7 +128,7 @@ def _batch_execute(*parameters, **kwargs):  # pylint: disable=unused-argument
             tapes,
             batch_execute,
             gradient_fn,
-            method="extend",
+            reduction="extend",
             device=device,
             cache=cache,
             _n=_n + 1,

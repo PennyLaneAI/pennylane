@@ -279,7 +279,7 @@ def vjp(
             tapes,
             batch_execute,
             gradient_fn,
-            method="append",
+            reduction="append",
             device=device,
             cache=cache,
             _n=_n + 1,

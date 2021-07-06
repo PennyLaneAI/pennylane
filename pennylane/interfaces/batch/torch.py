@@ -138,7 +138,7 @@ class BatchExecute(torch.autograd.Function):
             ctx.tapes,
             batch_execute,
             ctx.gradient_fn,
-            method="extend",
+            reduction="extend",
             device=ctx.device,
             cache=ctx.cache,
             _n=ctx._n + 1,

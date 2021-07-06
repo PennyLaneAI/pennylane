@@ -62,7 +62,14 @@ class UnwrapTape:
         self.tape.set_parameters(self._original_params, trainable_only=False)
 
 
-def batch_vjp(dy, tapes, execute_fn, gradient_fn, method="append", **kwargs):
+def _vector_jacobian_product(dy, jac, num_params):
+    dy_row = qml.math.reshape(dy, [-1])
+    jac = qml.math.transpose(qml.math.stack(jac))
+    jac = qml.math.reshape(jac, [-1, num_params])
+    return qml.math.tensordot(jac, dy_row, [[0], [0]])
+
+
+def batch_vjp(dy, tapes, execute_fn, gradient_fn, reduction="append", **kwargs):
     reshape_info = []
     gradient_tapes = []
     processing_fns = []
@@ -97,10 +104,6 @@ def batch_vjp(dy, tapes, execute_fn, gradient_fn, method="append", **kwargs):
             # postprocess results to compute the gradient
             jac.append(fn(res))
 
-        dy_row = qml.math.reshape(d, [-1])
-        jac = qml.math.transpose(qml.math.stack(jac))
-        jac = qml.math.reshape(jac, [-1, num_params])
-
-        getattr(vjps, method)(qml.math.tensordot(jac, dy_row, [[0], [0]]))
+        getattr(vjps, reduction)(_vector_jacobian_product(d, jac, num_params))
 
     return vjps
