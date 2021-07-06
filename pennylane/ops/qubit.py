@@ -2161,7 +2161,8 @@ class QubitUnitary(Operation):
 
     @staticmethod
     def decomposition(U, wires):
-        # Decompose arbitrary single-qubit unitaries as the form RZ RY RZ
+        # Decomposes arbitrary single-qubit unitaries as Rot gates (RZ - RY - RZ format),
+        # or a single RZ for diagonal matrices.
         if qml.math.shape(U) == (2, 2):
             wire = Wires(wires)[0]
             decomp_ops = qml.transforms.decompositions.zyz_decomposition(U, wire)
