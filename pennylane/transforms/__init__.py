@@ -50,6 +50,14 @@ containing quantum operations) that are used to construct QNodes.
     ~apply_controlled_Q
     ~quantum_monte_carlo
 
+There are also utility functions and decompositions available that assist with
+both transforms, and decompositions within the larger PennyLane codebase.
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.zyz_decomposition
+
 Transforms that act on tapes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
