@@ -551,8 +551,8 @@ class TestOperations:
         assert np.allclose(reconstructed_unitary, expected_unitary)
 
     @pytest.mark.parametrize("n_qubits", range(2, 6))
-    def test_QFT_adjoint(self, n_qubits, tol):
-        """Test if the QFT adjoint operation."""
+    def test_QFT_adjoint_identity(self, n_qubits, tol):
+        """Test if the QFT adjoint operation is the inverse of QFT."""
 
         # QFT adjoint is QFT inverse
         dev = qml.device("default.qubit", wires=n_qubits)
@@ -569,8 +569,8 @@ class TestOperations:
             assert np.allclose(0, circ(n_qubits)[i], tol)
 
     @pytest.mark.parametrize("n_qubits", range(2, 6))
-    def test_QFT_adjoint(self, n_qubits, tol):
-        """Test if the QFT adjoint operation."""
+    def test_QFT_adjoint_decompoosition(self, n_qubits, tol):
+        """Test if the QFT adjoint operation has the right decomposition"""
 
         # QFT adjoint has right decompositions
         qft = qml.QFT(wires=range(n_qubits))
