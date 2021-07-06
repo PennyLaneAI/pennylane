@@ -1,7 +1,6 @@
 From pennylane/base:latest
 
 ARG INTERFACE_NAME=tensorflow
-
 # Build Jax interface
 RUN if [ "$INTERFACE_NAME" = "jax" ] ; then \
     apt-get update && apt-get -y install --no-install-recommends make \
