@@ -77,9 +77,6 @@ def unitary_to_rot(tape):
             if qml.math.shape(op.parameters[0]) != (2, 2):
                 continue
 
-            decomp = zyz_decomposition(op.parameters[0], op.wires[0])
-
-            for d_op in decomp:
-                qml.apply(d_op)
+            zyz_decomposition(op.parameters[0], op.wires[0])
         else:
             qml.apply(op)
