@@ -9,8 +9,8 @@ RUN apt-get update && apt-get -y install --no-install-recommends make git openba
 WORKDIR /opt/pennylane/qchem
 RUN git submodule update --init --recursive
 RUN pip install wheel && pip install openfermionpyscf && pip install -r requirements.txt \
-        && python3 setup.py install \
-        && make test
+    && python3 setup.py install \
+    && make test
 
 # Image completed, Exit Now.
 CMD echo "Successfully built Docker image"
