@@ -6,7 +6,7 @@
   single-qubit case fully differentiable in all interfaces. Furthermore,
   a quantum function transform, ``unitary_to_rot()``, has been added to decompose all
   single-qubit instances of ``QubitUnitary`` in a quantum circuit.
-  [(#1427)](https://github.com/PennyLaneAI/pennylane/pull/1427).
+  [(#1427)](https://github.com/PennyLaneAI/pennylane/pull/1427)
 
   Instances of ``QubitUnitary`` may now be decomposed directly to ``Rot``
   operations, or ``RZ`` operations if the input matrix is diagonal. For
