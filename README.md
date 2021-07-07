@@ -103,43 +103,62 @@ guide](https://pennylane.ai/qml/demos_submission.html).
 
 ## Build using Docker
 
+**Docker**  support exists for building using **CPU** and **GPU** (Nvidia CUDA 11.1+) images.
 
-Docker support exists for building using CPU and GPU (Nvidia CUDA 11.1+) images.
+**Note:** Docker builds using "make" will work on Linux and MAC only, For MS Windows one can use [WSL](https://docs.microsoft.com/en-us/windows/wsl/install-win10)  
 
-**Note: Docker builds using "make" will work on Linux and MAC only, For MS Windows one can use [WSL](https://docs.microsoft.com/en-us/windows/wsl/install-win10)  
+### Build Basic Pennylane using Docker
+- To build a basic PennyLane image without any additional interfaces (Torch, TensorFlow, or Jax) and **plugins** (qiskit, amazon-bracket, cirq, rigetti) run following:
 
-To build a basic PennyLane image without any additional interfaces (Torch, TensorFlow, or Jax) run following:
-
-```
+```console
 make -f docker/Makefile build-base
 ```
-To build a PennyLane image using a given interface (Torch, TensorFlow or Jax) run following:
+### Build Pennylane Interfaces using Docker
+- To build a PennyLane image using a given 
+  **interface** (Torch, TensorFlow or Jax) 
 
-```
+```console
 make -f docker/Makefile build-interface interface-name=tensorflow
 ```
-To build a PennyLane image using a given interface (Torch, TensorFlow or Jax) with GPU support run following:
+- To build a PennyLane image using a given interface (Torch, TensorFlow or Jax) with GPU support run following:
 
-```
+```console
 make -f docker/Makefile build-interface-gpu interface-name=tensorflow
 ```
+- To build all three interfaces (Torch, TensorFlow, or Jax) using a single command run following:
 
-You can also build an image with the PennyLane Qchem package and its dependencies. Use following commands:
-
-```
-make -f docker/Makefile build-qchem
-```
-To build all three interfaces (Torch, TensorFlow, or Jax) using a single command run following:
-
-```
+```console
 make -f docker/Makefile build-interface interface-name=all
 ```
-For GPU run following:
+- For GPU run following:
 
-```
+```console
 make -f docker/Makefile build-interface-gpu interface-name=all
 ```
 
+### Build Pennylane plugins using Docker
+- To build a PennyLane image using a given plugin (qiskit, amazon-bracket, cirq, rigetti and many more) run following:
+
+```console
+make -f docker/Makefile build-plugin plugin-name=qiskit
+```
+
+### Build Qchem-Pennylane using Docker 
+- You can also build an image with the PennyLane Qchem package and its dependencies. Use following commands:
+
+```console
+make -f docker/Makefile build-qchem
+```
+- #### To check all available interfaces run following
+
+```console
+make -f docker/Makefile available-interfaces
+```
+- #### To check all available plugins run following
+
+```console
+make -f docker/Makefile available-plugins
+```
 ## Contributing to PennyLane
 
 We welcome contributions—simply fork the PennyLane repository, and then make a [pull
