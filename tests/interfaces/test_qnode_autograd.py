@@ -917,6 +917,60 @@ class TestQNode:
         ]
         assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
 
+    def test_hessian_vector_valued_postprocessing(self, dev_name, diff_method, mocker, tol):
+        """Test hessian calculation of a vector valued QNode with post-processing"""
+        if diff_method not in {"parameter-shift", "backprop"}:
+            pytest.skip("Test only supports parameter-shift or backprop")
+
+        dev = qml.device(dev_name, wires=1)
+
+        @qnode(dev, diff_method=diff_method, interface="autograd")
+        def circuit(x):
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=0)
+            return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(0))]
+
+        def cost_fn(x):
+            return x @ circuit(x)
+
+        x = np.array([0.76, -0.87], requires_grad=True)
+        res = cost_fn(x)
+
+        a, b = x
+
+        expected_res = x @ [np.cos(a) * np.cos(b), np.cos(a) * np.cos(b)]
+        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+
+        grad_fn = qml.grad(cost_fn)
+        g = grad_fn(x)
+
+        expected_g = [
+            np.cos(b) * (np.cos(a) - (a + b) * np.sin(a)),
+            np.cos(a) * (np.cos(b) - (a + b) * np.sin(b)),
+        ]
+        assert np.allclose(g, expected_g, atol=tol, rtol=0)
+
+        spy = mocker.spy(JacobianTape, "hessian")
+        hess = qml.jacobian(grad_fn)(x)
+
+        if diff_method == "backprop":
+            spy.assert_not_called()
+        elif diff_method == "parameter-shift":
+            spy.assert_called_once()
+
+        expected_hess = [
+            [
+                -(np.cos(b) * ((a + b) * np.cos(a) + 2 * np.sin(a))),
+                -(np.cos(b) * np.sin(a)) + (-np.cos(a) + (a + b) * np.sin(a)) * np.sin(b),
+            ],
+            [
+                -(np.cos(b) * np.sin(a)) + (-np.cos(a) + (a + b) * np.sin(a)) * np.sin(b),
+                -(np.cos(a) * ((a + b) * np.cos(b) + 2 * np.sin(b))),
+            ],
+        ]
+
+        assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
+
     def test_hessian_vector_valued_separate_args(self, dev_name, diff_method, mocker, tol):
         """Test hessian calculation of a vector valued QNode that has separate input arguments"""
         if diff_method not in {"parameter-shift", "backprop"}:
