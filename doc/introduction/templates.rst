@@ -161,7 +161,7 @@ of other templates.
 .. customgalleryitem::
     :link: ../code/api/pennylane.templates.subroutines.GroverOperator.html
     :description: Grover Diffusion Operator
-    :figure: ../_static/templates/subroutines/grover.png
+    :figure: ../_static/templates/subroutines/grover.svg
 
 .. customgalleryitem::
     :link: ../code/api/pennylane.templates.subroutines.Interferometer.html

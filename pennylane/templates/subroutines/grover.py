@@ -31,13 +31,15 @@ class GroverOperator(Operation):
     For this template, the operator is implemented with a layer of Hadamards, an
     effective multi-controlled Z gate, and another layer of Hadamards.
 
-    .. figure:: ../../_static/templates/subroutines/grover.png
+    .. figure:: ../../_static/templates/subroutines/grover.svg
         :align: center
         :width: 60%
         :target: javascript:void(0);
 
     Args:
         wires (Union[Wires, Sequence[int], or int]): the wires to apply to
+        work_wires (Union[Wires, Sequence[int], or int]): these auxiliary wire assist
+            in the decomposition of :class:`~.ops.qubit.MultiControlledX`.
 
     **Example**
 
@@ -86,8 +88,12 @@ class GroverOperator(Operation):
     num_wires = AnyWires
     par_domain = None
 
+    def __init__(self, wires=None, work_wires=None, **kwargs):
+        self.work_wires = work_wires
+        super().__init__(wires=wires, **kwargs)
+
     def expand(self):
-        cntrl_str = "0" * (len(self.wires) - 1)
+        ctrl_str = "0" * (len(self.wires) - 1)
 
         with qml.tape.QuantumTape() as tape:
             for wire in self.wires[:-1]:
@@ -95,7 +101,10 @@ class GroverOperator(Operation):
 
             PauliZ(self.wires[-1])
             MultiControlledX(
-                control_values=cntrl_str, control_wires=self.wires[:-1], wires=self.wires[-1]
+                control_values=ctrl_str,
+                control_wires=self.wires[:-1],
+                wires=self.wires[-1],
+                work_wires=self.work_wires,
             )
             PauliZ(self.wires[-1])
 
