@@ -45,9 +45,18 @@ containing quantum operations) that are used to construct QNodes.
 
     ~adjoint
     ~ctrl
+    ~transforms.unitary_to_rot
     ~transforms.invisible
     ~apply_controlled_Q
     ~quantum_monte_carlo
+
+There are also utility functions and decompositions available that assist with
+both transforms, and decompositions within the larger PennyLane codebase.
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.zyz_decomposition
 
 Transforms that act on tapes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -75,9 +84,12 @@ to help build custom QNode, quantum function, and tape transforms:
     ~qfunc_transform
     ~transforms.make_tape
 """
+# Import the decorators first to prevent circular imports when used in other transforms
+from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
 from .adjoint import adjoint
 from .classical_jacobian import classical_jacobian
 from .control import ControlledOperation, ctrl
+from .decompositions import zyz_decomposition
 from .draw import draw
 from .gradients import qubit_parameter_shift
 from .hamiltonian_expand import hamiltonian_expand
@@ -85,5 +97,5 @@ from .invisible import invisible
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor, metric_tensor_tape
 from .specs import specs
-from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
 from .qmc import apply_controlled_Q, quantum_monte_carlo
+from .unitary_to_rot import unitary_to_rot
