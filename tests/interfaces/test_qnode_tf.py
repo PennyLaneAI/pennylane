@@ -722,6 +722,58 @@ class TestQNode:
 
         np.testing.assert_allclose(hess, expected_hess, atol=tol, rtol=0, verbose=True)
 
+    def test_hessian_vector_valued_postprocessing(self, dev_name, diff_method, mocker, tol):
+        """Test hessian calculation of a vector valued QNode with post-processing"""
+        if diff_method not in {"parameter-shift", "backprop"}:
+            pytest.skip("Test only supports parameter-shift or backprop")
+
+        dev = qml.device(dev_name, wires=1)
+
+        @qnode(dev, diff_method=diff_method, interface="tf")
+        def circuit(x):
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=0)
+            return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(0))]
+
+        x = tf.Variable([0.76, -0.87], dtype=tf.float64)
+
+        with tf.GradientTape(persistent=True) as tape1:
+            with tf.GradientTape(persistent=True) as tape2:
+                res = tf.tensordot(x, circuit(x), axes=[0, 0])
+
+            spy = mocker.spy(JacobianTape, "hessian")
+            g = tape2.jacobian(res, x, experimental_use_pfor=False)
+
+        hess = tape1.jacobian(g, x, experimental_use_pfor=False)
+
+        if diff_method == "parameter-shift":
+            spy.assert_called_once()
+        elif diff_method == "backprop":
+            spy.assert_not_called()
+
+        a, b = x * 1.0
+
+        expected_res = a * tf.cos(a) * tf.cos(b) + b * tf.cos(a) * tf.cos(b)
+        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+
+        expected_g = [
+            tf.cos(b) * (tf.cos(a) - (a + b) * tf.sin(a)),
+            tf.cos(a) * (tf.cos(b) - (a + b) * tf.sin(b)),
+        ]
+        assert np.allclose(g, expected_g, atol=tol, rtol=0)
+
+        expected_hess = [
+            [
+                -(tf.cos(b) * ((a + b) * tf.cos(a) + 2 * tf.sin(a))),
+                -(tf.cos(b) * tf.sin(a)) + (-tf.cos(a) + (a + b) * tf.sin(a)) * tf.sin(b),
+            ],
+            [
+                -(tf.cos(b) * tf.sin(a)) + (-tf.cos(a) + (a + b) * tf.sin(a)) * tf.sin(b),
+                -(tf.cos(a) * ((a + b) * tf.cos(b) + 2 * tf.sin(b))),
+            ],
+        ]
+        assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
+
     def test_hessian_ragged(self, dev_name, diff_method, mocker, tol):
         """Test hessian calculation of a ragged QNode"""
         if diff_method not in {"parameter-shift", "backprop"}:
