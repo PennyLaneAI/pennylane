@@ -554,7 +554,6 @@ class TestOperations:
     def test_QFT_adjoint_identity(self, n_qubits, tol):
         """Test if the QFT adjoint operation is the inverse of QFT."""
 
-        # QFT adjoint is QFT inverse
         dev = qml.device("default.qubit", wires=n_qubits)
 
         @qml.qnode(dev)
