@@ -17,6 +17,7 @@ quantum operations supported by PennyLane, as well as their conventions.
 """
 import cmath
 import functools
+import warnings
 
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import math
@@ -2147,17 +2148,37 @@ class QubitUnitary(Operation):
     par_domain = "A"
     grad_method = None
 
+    def __init__(self, *params, wires, do_queue=True):
+        wires = Wires(wires)
+
+        # For pure QubitUnitary operations (not controlled), check that the number
+        # of wires fits the dimensions of the matrix
+        if not isinstance(self, ControlledQubitUnitary):
+            U = params[0]
+
+            dim = 2 ** len(wires)
+
+            if U.shape != (dim, dim):
+                raise ValueError(
+                    f"Input unitary must be of shape {(dim, dim)} to act on {len(wires)} wires."
+                )
+
+            # Check for unitarity; due to variable precision across the different ML frameworks,
+            # here we issue a warning to check the operation, instead of raising an error outright.
+            if not qml.math.allclose(
+                qml.math.dot(U, qml.math.T(qml.math.conj(U))), qml.math.eye(qml.math.shape(U)[0])
+            ):
+                warnings.warn(
+                    f"Operator {U}\n may not be unitary."
+                    "Verify unitarity of operation, or use a datatype with increased precision.",
+                    UserWarning,
+                )
+
+        super().__init__(*params, wires=wires, do_queue=do_queue)
+
     @classmethod
     def _matrix(cls, *params):
-        U = np.asarray(params[0])
-
-        if U.ndim != 2 or U.shape[0] != U.shape[1]:
-            raise ValueError("Operator must be a square matrix.")
-
-        if not np.allclose(U @ U.conj().T, np.identity(U.shape[0])):
-            raise ValueError("Operator must be unitary.")
-
-        return U
+        return params[0]
 
     @staticmethod
     def decomposition(U, wires):
