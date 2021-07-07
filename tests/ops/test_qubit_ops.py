@@ -1566,6 +1566,37 @@ class TestOperations:
         with pytest.raises(ValueError, match="must be a square matrix"):
             qml.QubitUnitary(U, wires=0).matrix
 
+    @pytest.mark.parametrize(
+        "U,expected_gate,expected_params",
+        [  # First set of gates are diagonal and converted to RZ
+            (I, qml.RZ, [0]),
+            (Z, qml.RZ, [np.pi]),
+            (S, qml.RZ, [np.pi / 2]),
+            (T, qml.RZ, [np.pi / 4]),
+            (qml.RZ(0.3, wires=0).matrix, qml.RZ, [0.3]),
+            (qml.RZ(-0.5, wires=0).matrix, qml.RZ, [-0.5]),
+            # Next set of gates are non-diagonal and decomposed as Rots
+            (H, qml.Rot, [np.pi, np.pi / 2, 0]),
+            (X, qml.Rot, [0.0, np.pi, np.pi]),
+            (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix, qml.Rot, [0.2, 0.5, -0.3]),
+            (np.exp(1j * 0.02) * qml.Rot(-1, 2, -3, wires=0).matrix, qml.Rot, [-1, 2, -3]),
+        ],
+    )
+    def test_qubit_unitary_decomposition(self, U, expected_gate, expected_params):
+        """Tests that single-qubit QubitUnitary decompositions are performed."""
+        decomp = qml.QubitUnitary.decomposition(U, wires=0)
+
+        assert len(decomp) == 1
+        assert isinstance(decomp[0], expected_gate)
+        assert np.allclose(decomp[0].parameters, expected_params)
+
+    def test_qubit_unitary_decomposition_multiqubit_invalid(self):
+        """Test that QubitUnitary is not decomposed for more than a single qubit."""
+        U = qml.CRZ(0.3, wires=[0, 1]).matrix
+
+        with pytest.raises(NotImplementedError, match="only supported for single-qubit"):
+            qml.QubitUnitary.decomposition(U, wires=[0, 1])
+
     def test_iswap_eigenval(self):
         """Tests that the ISWAP eigenvalue matches the numpy eigenvalues of the ISWAP matrix"""
         op = qml.ISWAP(wires=[0, 1])
