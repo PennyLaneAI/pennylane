@@ -29,6 +29,7 @@ Z = tf.constant([[1, 0], [0, -1]], dtype=C_DTYPE)
 II = tf.eye(4, dtype=C_DTYPE)
 ZZ = tf.constant(kron(Z, Z), dtype=C_DTYPE)
 XX = tf.constant(kron(X, X), dtype=C_DTYPE)
+YY = tf.constant(kron(Y, Y), dtype=C_DTYPE)
 
 IX = tf.constant(kron(I, X), dtype=C_DTYPE)
 IY = tf.constant(kron(I, Y), dtype=C_DTYPE)
@@ -211,6 +212,25 @@ def IsingXX(phi):
     """
     phi = tf.cast(phi, dtype=C_DTYPE)
     return tf.cos(phi / 2) * II - 1j * tf.sin(phi / 2) * XX
+
+
+def IsingYY(phi):
+    r"""Ising YY coupling gate
+
+    .. math:: YY(\phi) = \begin{bmatrix}
+        \cos(\phi / 2) & 0 & 0 & i \sin(\phi / 2) \\
+        0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
+        0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
+        i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
+        \end{bmatrix}.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+    Returns:
+        tf.Tensor[complex]: unitary 4x4 rotation matrix
+    """
+    phi = tf.cast(phi, dtype=C_DTYPE)
+    return tf.cos(phi / 2) * II - 1j * tf.sin(phi / 2) * YY
 
 
 def IsingZZ(phi):

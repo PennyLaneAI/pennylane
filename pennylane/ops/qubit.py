@@ -1850,6 +1850,7 @@ class IsingYY(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
+    generator = [np.array([[0, 0, 0, -1], [0, 0, 1, 0], [0, 1, 0, 0], [-1, 0, 0, 0]]), -1 / 2]
 
     @staticmethod
     def decomposition(phi, wires):
@@ -2157,6 +2158,17 @@ class QubitUnitary(Operation):
             raise ValueError("Operator must be unitary.")
 
         return U
+
+    @staticmethod
+    def decomposition(U, wires):
+        # Decomposes arbitrary single-qubit unitaries as Rot gates (RZ - RY - RZ format),
+        # or a single RZ for diagonal matrices.
+        if qml.math.shape(U) == (2, 2):
+            wire = Wires(wires)[0]
+            decomp_ops = qml.transforms.decompositions.zyz_decomposition(U, wire)
+            return decomp_ops
+
+        raise NotImplementedError("Decompositions only supported for single-qubit unitaries")
 
     def adjoint(self):
         return QubitUnitary(qml.math.T(qml.math.conj(self.matrix)), wires=self.wires)
