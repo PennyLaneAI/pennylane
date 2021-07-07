@@ -126,7 +126,7 @@ class TestOperation:
         "Operation subclass initialization."
 
         if test_class == qml.QubitUnitary:
-            pytest.skip("QubitUnitary can act on any wires and has a special-purpose __init__.")
+            pytest.skip("QubitUnitary can act on any number of wires.")
 
         if test_class in (qml.ControlledQubitUnitary, qml.MultiControlledX):
             pytest.skip("ControlledQubitUnitary alters the input params and wires in its __init__")
@@ -173,18 +173,6 @@ class TestOperation:
 
         if n == 0:
             return
-
-    def test_qubit_unitary_init(self):
-        """Test for the init of QubitUnitary"""
-        wires = [0]
-        U = qml.RX(0.3, wires=0).matrix
-
-        op = qml.QubitUnitary(U, wires=wires)
-
-        assert op.name == qml.QubitUnitary.__name__
-        assert np.allclose([U], op.data)
-        assert np.allclose(op.matrix, U)
-        assert op._wires == Wires(wires)
 
     def test_controlled_qubit_unitary_init(self):
         """Test for the init of ControlledQubitUnitary"""
