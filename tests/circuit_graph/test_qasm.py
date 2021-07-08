@@ -227,12 +227,12 @@ class TestToQasmUnitTests:
     def test_unsupported_gate(self):
         """Test an exception is raised if an unsupported operation is
         applied."""
-        U = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
-
         with qml.tape.QuantumTape() as circuit:
-            qml.S(wires=0), qml.QubitUnitary(U, wires=[0, 1])
+            qml.S(wires=0), qml.DoubleExcitationPlus(0.5, wires=[0, 1, 2, 3])
 
-        with pytest.raises(ValueError, match="QubitUnitary not supported by the QASM serializer"):
+        with pytest.raises(
+            ValueError, match="DoubleExcitationPlus not supported by the QASM serializer"
+        ):
             res = circuit.to_openqasm()
 
     def test_rotations(self):
@@ -578,18 +578,19 @@ class TestQNodeQasmIntegrationTests:
     def test_unsupported_gate(self):
         """Test an exception is raised if an unsupported operation is
         applied."""
-        U = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit", wires=4)
 
         @qml.qnode(dev)
         def qnode():
             qml.S(wires=0)
-            qml.QubitUnitary(U, wires=0)
+            qml.DoubleExcitationPlus(0.5, wires=[0, 1, 2, 3])
             return qml.expval(qml.PauliZ(0))
 
         qnode()
 
-        with pytest.raises(ValueError, match="QubitUnitary not supported by the QASM serializer"):
+        with pytest.raises(
+            ValueError, match="DoubleExcitationPlus not supported by the QASM serializer"
+        ):
             qnode.qtape.to_openqasm()
 
     def test_rotations(self):
