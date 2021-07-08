@@ -64,9 +64,9 @@ def circuit_2():
    [0, 0]]
 
   >>> print(qml.draw(circuit_2))
- 0: ──H──╭┤ Sample[basis]
- 1: ──H──│┤
- 2: ──H──╰┤ Sample[basis]
+   0: ──H──╭┤ Sample[basis]
+   1: ──H──│┤
+   2: ──H──╰┤ Sample[basis]
   ```
 
 <h3>Improvements</h3>
