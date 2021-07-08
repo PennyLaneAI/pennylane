@@ -245,6 +245,13 @@ class TestInputs:
         with pytest.raises(ValueError, match=msg_match):
             circuit()
 
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        template = qml.templates.ParticleConservingU1(
+            weights=np.array([[[0.2, -0.6]]]), wires=range(2), init_state=np.array([1, 1]), id="a"
+        )
+        assert template.id == "a"
+
 
 class TestAttributes:
     """Tests additional methods and attributes"""

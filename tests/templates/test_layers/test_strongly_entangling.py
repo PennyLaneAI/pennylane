@@ -160,6 +160,13 @@ class TestInputs:
             weights = np.random.randn(1, 2, 3)
             circuit(weights, ranges=[0])
 
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        template = qml.templates.StronglyEntanglingLayers(
+            np.array([[[1, 2, 3]]]), wires=[0], id="a"
+        )
+        assert template.id == "a"
+
 
 class TestAttributes:
     """Tests additional methods and attributes"""

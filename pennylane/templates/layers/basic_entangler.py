@@ -14,7 +14,7 @@
 r"""
 Contains the BasicEntanglerLayers template.
 """
-# pylint: disable=consider-using-enumerate
+# pylint: disable=consider-using-enumerate,too-many-arguments
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
 
@@ -125,7 +125,7 @@ class BasicEntanglerLayers(Operation):
     num_wires = AnyWires
     par_domain = "A"
 
-    def __init__(self, weights, wires=None, rotation=None, do_queue=True):
+    def __init__(self, weights, wires=None, rotation=None, do_queue=True, id=None):
 
         self.rotation = rotation or qml.RX
 
@@ -137,7 +137,7 @@ class BasicEntanglerLayers(Operation):
                 f"Weights tensor must have second dimension of length {len(wires)}; got {shape[1]}"
             )
 
-        super().__init__(weights, wires=wires, do_queue=do_queue)
+        super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 
     def expand(self):
 

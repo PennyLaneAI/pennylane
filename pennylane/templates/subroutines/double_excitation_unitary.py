@@ -477,7 +477,7 @@ class DoubleExcitationUnitary(Operation):
     num_wires = AnyWires
     par_domain = "A"
 
-    def __init__(self, weight, wires1=None, wires2=None, do_queue=True):
+    def __init__(self, weight, wires1=None, wires2=None, do_queue=True, id=None):
 
         if len(wires1) < 2:
             raise ValueError(
@@ -498,7 +498,7 @@ class DoubleExcitationUnitary(Operation):
         self.wires2 = list(wires2)
         wires = wires1 + wires2
 
-        super().__init__(weight, wires=wires, do_queue=do_queue)
+        super().__init__(weight, wires=wires, do_queue=do_queue, id=id)
 
     def expand(self):
 
