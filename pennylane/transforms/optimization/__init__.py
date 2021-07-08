@@ -16,7 +16,4 @@ This subpackage contains QNode, quantum function, device, and tape transforms.
 """
 
 from .cancel_inverses import cancel_inverses
-from .commute_x_behind_targets import commute_x_behind_targets
-from .commute_z_behind_controls import commute_z_behind_controls
 from .merge_rotations import merge_rotations
-from .single_qubit_fusion import single_qubit_fusion
