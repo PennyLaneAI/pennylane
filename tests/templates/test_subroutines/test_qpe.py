@@ -141,3 +141,10 @@ class TestInputs:
             qml.templates.QuantumPhaseEstimation(
                 np.eye(2), target_wires=[0, 1], estimation_wires=[1, 2]
             )
+
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        template = qml.templates.QuantumPhaseEstimation(
+            np.eye(2), target_wires=[0, 1], estimation_wires=[2, 3], id="a"
+        )
+        assert template.id == "a"
