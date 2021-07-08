@@ -100,7 +100,7 @@ valid_hamiltonians_repr = [
     "<Hamiltonian: terms=2, wires=[1]>",
     "<Hamiltonian: terms=2, wires=['a', 'b']>",
     "<Hamiltonian: terms=3, wires=[0, 2]>",
-    "<Hamiltonian: terms=2, wires=[0, 1, 2]>",
+    "<Hamiltonian: terms=2, wires=[0, 2, 1]>",
     "<Hamiltonian: terms=2, wires=[0, 2]>",
     "<Hamiltonian: terms=2, wires=[0, 1]>",
     "<Hamiltonian: terms=2, wires=[0, 1]>",
@@ -656,15 +656,6 @@ class TestHamiltonian:
         combination of coefficients and ops"""
         with pytest.raises(ValueError, match="number of coefficients and operators does not match"):
             H = qml.vqe.Hamiltonian(coeffs, ops)
-
-    @pytest.mark.parametrize("coeffs", [[0.2, -1j], [0.5j, 2 - 1j]])
-    def test_hamiltonian_complex(self, coeffs):
-        """Tests that an exception is raised when
-        a complex Hamiltonian is given"""
-        obs = [qml.PauliX(0), qml.PauliZ(1)]
-
-        with pytest.raises(ValueError, match="coefficients are not real-valued"):
-            H = qml.vqe.Hamiltonian(coeffs, obs)
 
     @pytest.mark.parametrize(
         "obs", [[qml.PauliX(0), qml.CNOT(wires=[0, 1])], [qml.PauliZ, qml.PauliZ(0)]]

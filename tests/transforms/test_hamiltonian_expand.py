@@ -98,10 +98,10 @@ class TestHamiltonianExpval:
 
     def test_hamiltonian_dif_autograd(self):
         """Tests that the hamiltonian_expand tape transform is differentiable with the Autograd interface"""
+        coeffs = [-0.2, 0.5, 1]
+        obs = [qml.PauliX(1), qml.PauliZ(1) @ qml.PauliY(2), qml.PauliZ(0)]
+        H = qml.Hamiltonian(coeffs, obs)
 
-        H = qml.Hamiltonian(
-            [-0.2, 0.5, 1], [qml.PauliX(1), qml.PauliZ(1) @ qml.PauliY(2), qml.PauliZ(0)]
-        )
         var = np.array([0.1, 0.67, 0.3, 0.4, -0.5, 0.7])
         output = 0.42294409781940356
         output2 = [

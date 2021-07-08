@@ -29,20 +29,20 @@ from pennylane.wires import Wires
 OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identity": "I"}
 
 
-class Hamiltonian:
+class Hamiltonian(qml.operation.Operator):
     r"""Lightweight class for representing Hamiltonians for Variational Quantum
     Eigensolver problems.
 
-    Hamiltonians can be expressed as linear combinations of observables, e.g.,
+    Represents a Hamiltonian as a linear combinations of observables, e.g.,
     :math:`\sum_{k=0}^{N-1} c_k O_k`.
 
-    This class keeps track of the terms (coefficients and observables) separately.
-
     Args:
-        coeffs (Iterable[float]): coefficients of the Hamiltonian expression
-        observables (Iterable[Observable]): observables in the Hamiltonian expression
+        coeffs (tensor_like): tensor or list of coefficients of the Hamiltonian expression
+        observables (Iterable[Observable]): observables in the Hamiltonian expression, of the same length as coeffs
         simplify (bool): Specifies whether the Hamiltonian is simplified upon initialization
                          (like-terms are combined). The default value is `False`.
+        group (book): Specifies whether commuting observables and their coefficients shall be grouped into fewer
+            observables.
 
     .. seealso:: :class:`~.ExpvalCost`, :func:`~.molecular_hamiltonian`
 
@@ -89,18 +89,16 @@ class Hamiltonian:
 
         Note that this issue also arises when calling the ``simplify()`` method.
     """
+    num_params = 0
+    num_wires = qml.operation.AnyWires
+    par_domain = "N"
 
-    def __init__(self, coeffs, observables, simplify=False):
+    def __init__(self, coeffs=None, observables=None, simplify=False, id=None):
 
-        if len(coeffs) != len(observables):
+        if qml.math.shape(coeffs)[0] != len(observables):
             raise ValueError(
                 "Could not create valid Hamiltonian; "
                 "number of coefficients and operators does not match."
-            )
-
-        if any(np.imag(coeffs) != 0):
-            raise ValueError(
-                "Could not create valid Hamiltonian; " "coefficients are not real-valued."
             )
 
         for obs in observables:
@@ -111,21 +109,20 @@ class Hamiltonian:
 
         self._coeffs = list(coeffs)
         self._ops = list(observables)
-
-        self.data = []
-        self.return_type = None
+        wires = Wires.all_wires([op.wires for op in self._ops])
 
         if simplify:
             self.simplify()
 
         self.queue()
+        super().__init__(wires=wires, id=id, do_queue=False)
 
     @property
     def coeffs(self):
         """Return the coefficients defining the Hamiltonian.
 
         Returns:
-            Iterable[float]): coefficients in the Hamiltonian expression
+            tensor_like: coefficients in the Hamiltonian expression
         """
         return self._coeffs
 
@@ -134,7 +131,7 @@ class Hamiltonian:
         """Return the operators defining the Hamiltonian.
 
         Returns:
-            Iterable[Observable]): observables in the Hamiltonian expression
+            list[Observable]): observables in the Hamiltonian expression
         """
         return self._ops
 
@@ -149,12 +146,12 @@ class Hamiltonian:
 
     @property
     def wires(self):
-        r"""The sorted union of wires from all operators.
+        r"""The union of wires from all operators.
 
         Returns:
-            (Wires): Combined wires present in all terms, sorted.
+            (Wires): All wires that the observables act on
         """
-        return qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
+        return self._wires
 
     @property
     def name(self):
