@@ -32,21 +32,21 @@
   specified to only return samples from those wires. 
   [(#1441)](https://github.com/PennyLaneAI/pennylane/pull/1441)
 
-```python
-dev = qml.device("default.qubit", wires=3, shots=5)
+  ```python
+  dev = qml.device("default.qubit", wires=3, shots=5)
 
-@qml.qnode(dev)
-def circuit_1():
-    qml.Hadamard(wires=0)
-    qml.Hadamard(wires=1)
-    return qml.sample()
+  @qml.qnode(dev)
+  def circuit_1():
+      qml.Hadamard(wires=0)
+      qml.Hadamard(wires=1)
+      return qml.sample()
 
-@qml.qnode(dev)
-def circuit_2():
-    qml.Hadamard(wires=0)
-    qml.Hadamard(wires=1)
-    return qml.sample(wires=[0,2])    # no observable provided and wires specified 
-``` 
+  @qml.qnode(dev)
+  def circuit_2():
+      qml.Hadamard(wires=0)
+      qml.Hadamard(wires=1)
+      return qml.sample(wires=[0,2])    # no observable provided and wires specified 
+  ``` 
 
   ```pycon
   >>> print(circuit_1())
