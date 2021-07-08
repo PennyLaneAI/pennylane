@@ -356,3 +356,19 @@ class TestQuantumMonteCarlo:
 
         exact = 0.432332358381693654
         assert np.allclose(mu_estimated, exact, rtol=1e-3)
+
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        xs = np.linspace(-np.pi, np.pi, 2 ** 5)
+        probs = np.array([norm().pdf(x) for x in xs])
+        probs /= np.sum(probs)
+        func = lambda i: np.cos(xs[i]) ** 2
+
+        target_wires = [0, "a", -1.1, -10, "bbb", 1000]
+        estimation_wires = ["bob", -3, 42, "penny", "lane", 247, "straw", "berry", 5.5, 6.6]
+
+        template = qml.templates.QuantumMonteCarlo(
+            probs, func, target_wires=target_wires, estimation_wires=estimation_wires, id="a"
+        )
+
+        assert template.id == "a"

@@ -96,7 +96,7 @@ class ArbitraryUnitary(Operation):
     num_wires = AnyWires
     par_domain = "A"
 
-    def __init__(self, weights, wires, do_queue=True):
+    def __init__(self, weights, wires, do_queue=True, id=None):
 
         shape = qml.math.shape(weights)
         if shape != (4 ** len(wires) - 1,):
@@ -104,7 +104,7 @@ class ArbitraryUnitary(Operation):
                 f"Weights tensor must be of shape {(4 ** len(wires) - 1,)}; got {shape}."
             )
 
-        super().__init__(weights, wires=wires, do_queue=do_queue)
+        super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 
     def expand(self):
 

@@ -149,3 +149,8 @@ class TestInputs:
         with pytest.raises(ValueError, match="Basis state must only consist of"):
             basis_state = np.array([0, 2])
             circuit(basis_state)
+
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        template = qml.templates.BasisStatePreparation(np.array([0, 1]), wires=[0, 1], id="a")
+        assert template.id == "a"
