@@ -88,6 +88,10 @@ def coefficients(f, n_inputs, degree, lowpass_filter=False, filter_threshold=Non
 
             return qml.expval(qml.PauliZ(wires='a'))
 
+    .. note::
+
+        The QNode has to return a scalar value (such as a single expectation).
+
     Unless otherwise specified, the coefficients will be computed for all input
     values. To compute coefficients with respect to only a subset of the input
     values, it is necessary to use a wrapper function (e.g.,
