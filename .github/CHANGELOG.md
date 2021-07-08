@@ -39,7 +39,7 @@ dev = qml.device("default.qubit", wires=3, shots=5)
 def circuit_1():
     qml.Hadamard(wires=0)
     qml.Hadamard(wires=1)
-    return qml.sample()    # no observable provided
+    return qml.sample()
 
 @qml.qnode(dev)
 def circuit_2():
