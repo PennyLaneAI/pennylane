@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Transforms for cancelling adjacent inverse gates in quantum circuits."""
+"""Transform for cancelling adjacent inverse gates in quantum circuits."""
 
 from pennylane import apply
 from pennylane.wires import Wires

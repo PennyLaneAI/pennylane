@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This subpackage contains QNode, quantum function, device, and tape transforms.
+This subpackage contains quantum function transforms for optimizing quantum circuits.
 """
 
 from .cancel_inverses import cancel_inverses
