@@ -28,9 +28,9 @@
   [(#1358)](https://github.com/PennyLaneAI/pennylane/pull/1358)
   
 * Added functionality to `qml.sample()` to extract samples from the basis states of
-the device (currently only for qubit devices). Additionally, `wires` can be
-specified to only return samples from those wires. 
-[(#1441)](https://github.com/PennyLaneAI/pennylane/pull/1441)
+  the device (currently only for qubit devices). Additionally, `wires` can be
+  specified to only return samples from those wires. 
+  [(#1441)](https://github.com/PennyLaneAI/pennylane/pull/1441)
 
 ```python
 dev = qml.device("default.qubit", wires=3, shots=5)
