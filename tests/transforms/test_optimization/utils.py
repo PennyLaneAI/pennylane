@@ -13,6 +13,7 @@
 # limitations under the License.
 """Convenient utility functions for testing optimization transforms."""
 
+
 def _compare_operation_lists(ops_obtained, names_expected, wires_expected):
     """Compare two lists of operations."""
     assert len(ops_obtained) == len(names_expected)

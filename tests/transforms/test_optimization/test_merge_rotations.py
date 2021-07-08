@@ -301,6 +301,12 @@ class TestMergeRotationsInterfaces:
     def test_merge_rotations_jax(self):
         """Test QNode and gradient in JAX interface."""
         jax = pytest.importorskip("jax")
+
+        from jax.config import config
+
+        remember = config.read("jax_enable_x64")
+        config.update("jax_enable_x64", True)
+
         from jax import numpy as jnp
 
         original_qnode = qml.QNode(qfunc, dev, interface="jax")
