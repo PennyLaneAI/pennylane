@@ -126,9 +126,9 @@ def _fuse_rot_angles(angles_1, angles_2):
 
     # RZ(a) RY(b) RZ(c) fused with RZ(d) RY(e) RZ(f)
     # first produces RZ(a) RY(b) RZ(c+d) RY(e) RZ(f)
-    leftmost_z = angles_1[0]
+    left_z = angles_1[0]
     middle_yzy = angles_1[1], angles_1[2] + angles_2[0], angles_2[1]
-    rightmost_z = angles_2[2]
+    right_z = angles_2[2]
 
     # There are a few other cases to consider where things can be 0 and
     # avoid having to use the quaternion conversion routine
@@ -136,22 +136,22 @@ def _fuse_rot_angles(angles_1, angles_2):
     if allclose(middle_yzy[0], 0.0):
         # Then if e is close to zero, return a single rotation RZ(a + c + d + f)
         if allclose(middle_yzy[2], 0.0):
-            return [leftmost_z + middle_yzy[1] + rightmost_z, 0.0, 0.0]
-        return stack([leftmost_z + middle_yzy[1], middle_yzy[2], rightmost_z])
+            return [left_z + middle_yzy[1] + right_z, 0.0, 0.0]
+        return stack([left_z + middle_yzy[1], middle_yzy[2], right_z])
 
     # If c + d is close to 0, then we have the case RZ(a) RY(b + e) RZ(f)
     if allclose(middle_yzy[1], 0.0):
         # If b + e is 0, we have RZ(a + f)
         if allclose(middle_yzy[0] + middle_yzy[2], 0.0):
-            return [leftmost_z + rightmost_z, 0.0, 0.0]
-        return stack([leftmost_z, middle_yzy[0] + middle_yzy[2], rightmost_z])
+            return [left_z + right_z, 0.0, 0.0]
+        return stack([left_z, middle_yzy[0] + middle_yzy[2], right_z])
 
     # If e is close to 0, then we have the case RZ(a) RY(b) RZ(c + d + f)
     if allclose(middle_yzy[2], 0.0):
         # If b is close to 0, we again have RZ(a + c + d + f)
         if allclose(middle_yzy[0], 0.0):
-            return [leftmost_z + middle_yzy[1] + rightmost_z, 0.0, 0.0]
-        return stack([leftmost_z, middle_yzy[0], middle_yzy[1] + rightmost_z])
+            return [left_z + middle_yzy[1] + right_z, 0.0, 0.0]
+        return stack([left_z, middle_yzy[0], middle_yzy[1] + right_z])
 
     # Otherwise, we need to turn the RY(b) RZ(c+d) RY(e) into something
     # of the form RZ(u) RY(v) RZ(w)
@@ -159,4 +159,4 @@ def _fuse_rot_angles(angles_1, angles_2):
 
     # Then we can combine to create
     # RZ(a + u) RY(v) RZ(w + f)
-    return stack([leftmost_z + u, v, w + rightmost_z])
+    return stack([left_z + u, v, w + right_z])
