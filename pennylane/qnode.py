@@ -605,8 +605,19 @@ class QNode:
             # construct the tape
             self.construct(args, kwargs)
 
-        # execute the tape
-        res = self.qtape.execute(device=self.device)
+        # todo(Maria): the following if statement will be removed when Hamiltonians are
+        # treated and unpacked inside the device
+        if "Hamiltonian" in [obs.name for obs in self.qtape.observables]:
+            try:
+                tapes, fn = qml.transforms.hamiltonian_expand(self.qtape)
+            except ValueError:
+                raise ValueError("At the moment, only single measurement of Hamiltonian observables are supported.")
+
+            results = [tape.execute(device=self.device) for tape in tapes]
+            res = fn(results)
+        else:
+            # execute the tape
+            res = self.qtape.execute(device=self.device)
 
         # if shots was changed
         if original_shots != -1:

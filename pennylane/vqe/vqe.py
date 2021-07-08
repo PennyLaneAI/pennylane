@@ -107,7 +107,7 @@ class Hamiltonian(qml.operation.Operator):
                     "Could not create circuits. Some or all observables are not valid."
                 )
 
-        self._coeffs = list(coeffs)
+        self._coeffs = coeffs
         self._ops = list(observables)
         wires = Wires.all_wires([op.wires for op in self._ops])
 
