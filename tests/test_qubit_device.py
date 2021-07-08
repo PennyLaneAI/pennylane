@@ -578,7 +578,7 @@ class TestSample:
         assert np.array_equal(res, np.array([-1, 1]))
 
     def test_sample_with_no_observable_and_no_wires(
-        self, mock_qubit_device_with_original_statistics, monkeypatch, tol
+        self, mock_qubit_device_with_original_statistics, tol
     ):
         """Test that when we sample a device without providing an observable or wires then it
         will return the raw samples"""
