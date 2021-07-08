@@ -157,6 +157,11 @@ class Hamiltonian(qml.operation.Operator):
     def name(self):
         return "Hamiltonian"
 
+    @property
+    def sparse_matrix(self):
+        #Todo: make diffable
+        return qml.utils.sparse_hamiltonian(self)
+
     def simplify(self):
         r"""Simplifies the Hamiltonian by combining like-terms.
 
@@ -415,6 +420,8 @@ class Hamiltonian(qml.operation.Operator):
         context.append(self, owns=tuple(self.ops))
         return self
 
+    def diagonalizing_gates(self):
+        return []
 
 class ExpvalCost:
     """Create a cost function that gives the expectation value of an input Hamiltonian.

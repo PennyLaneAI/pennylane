@@ -145,7 +145,7 @@ class DefaultQubit(QubitDevice):
         "Hermitian",
         "Identity",
         "Projector",
-        "SparseHamiltonian",
+        "Hamiltonian",
     }
 
     def __init__(self, wires, *, shots=None, cache=0, analytic=None):
@@ -464,16 +464,14 @@ class DefaultQubit(QubitDevice):
         Returns:
             float: returns the expectation value of the observable
         """
-        if observable.name == "SparseHamiltonian":
-            if self.shots is not None:
-                raise DeviceError("SparseHamiltonian must be used with shots=None")
+        # todo(maria) replace by hassatr(observable, "sparse_matrix")
+        if observable.name == "Hamiltonian" and self.shots is None:
 
-        if observable.name == "SparseHamiltonian" and self.shots is None:
-
+            # todo: make diffable
             ev = coo_matrix.dot(
                 coo_matrix(self._conj(self.state)),
                 coo_matrix.dot(
-                    observable.matrix, coo_matrix(self.state.reshape(len(self.state), 1))
+                    observable.sparse_matrix(), coo_matrix(self.state.reshape(len(self.state), 1))
                 ),
             )
 

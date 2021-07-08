@@ -137,6 +137,7 @@ def sparse_hamiltonian(H):
            [ 0.-0.45j,  0.+0.j  , -1.+0.j  ,  0.+0.j  ],
            [ 0.+0.j  ,  0.+0.45j,  0.+0.j  ,  1.+0.j  ]])
     """
+
     if not isinstance(H, qml.Hamiltonian):
         raise TypeError("Passed Hamiltonian must be of type `qml.Hamiltonian`")
 
