@@ -125,7 +125,9 @@ class AmplitudeEmbedding(Operation):
     num_wires = AnyWires
     par_domain = "A"
 
-    def __init__(self, features, wires, pad_with=None, normalize=False, pad=None, do_queue=True):
+    def __init__(
+        self, features, wires, pad_with=None, normalize=False, pad=None, do_queue=True, id=None
+    ):
 
         # pad is replaced with the more verbose pad_with
         if pad is not None:
@@ -141,7 +143,7 @@ class AmplitudeEmbedding(Operation):
         self.normalize = normalize
 
         features = self._preprocess(features, wires, pad_with, normalize)
-        super().__init__(features, wires=wires, do_queue=do_queue)
+        super().__init__(features, wires=wires, do_queue=do_queue, id=id)
 
     def adjoint(self):  # pylint: disable=arguments-differ
         return qml.adjoint(qml.templates.MottonenStatePreparation)(

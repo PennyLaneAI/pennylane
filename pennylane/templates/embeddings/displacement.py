@@ -49,7 +49,7 @@ class DisplacementEmbedding(Operation):
     num_wires = AnyWires
     par_domain = "A"
 
-    def __init__(self, features, wires, method="amplitude", c=0.1, do_queue=True):
+    def __init__(self, features, wires, method="amplitude", c=0.1, do_queue=True, id=None):
 
         shape = qml.math.shape(features)
         constants = [c] * shape[0]
@@ -71,7 +71,7 @@ class DisplacementEmbedding(Operation):
         else:
             raise ValueError(f"did not recognize method {method}")
 
-        super().__init__(pars, wires=wires, do_queue=do_queue)
+        super().__init__(pars, wires=wires, do_queue=do_queue, id=id)
 
     def expand(self):
 

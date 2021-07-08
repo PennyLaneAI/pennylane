@@ -249,7 +249,7 @@ class MottonenStatePreparation(Operation):
     num_wires = AnyWires
     par_domain = "A"
 
-    def __init__(self, state_vector, wires, do_queue=True):
+    def __init__(self, state_vector, wires, do_queue=True, id=None):
 
         shape = qml.math.shape(state_vector)
 
@@ -266,7 +266,7 @@ class MottonenStatePreparation(Operation):
         if not qml.math.allclose(norm, 1.0, atol=1e-3):
             raise ValueError("State vector has to be of norm 1.0, got {}".format(norm))
 
-        super().__init__(state_vector, wires=wires, do_queue=do_queue)
+        super().__init__(state_vector, wires=wires, do_queue=do_queue, id=id)
 
     def expand(self):
 
