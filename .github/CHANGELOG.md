@@ -38,7 +38,7 @@
 
 <h3>Bug fixes</h3>
 
-* Fixes the adjoint of the operation`QFT`.
+* Fixes the adjoint of the operation`QFT` and the adjoint function.
   [(#1451)](https://github.com/PennyLaneAI/pennylane/pull/1451)
 
 * Fixes the differentiability of the operation`IsingYY` for Autograd, Jax and Tensorflow.
