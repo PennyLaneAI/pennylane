@@ -192,6 +192,13 @@ class TestInputs:
             weights = np.zeros(12)
             circuit(weights)
 
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        template = qml.templates.ArbitraryStatePreparation(
+            np.random.random(size=(2 ** 4 - 2)), wires=[0, 1, 2], id="a"
+        )
+        assert template.id == "a"
+
 
 class TestAttributes:
     """Tests additional methods and attributes"""

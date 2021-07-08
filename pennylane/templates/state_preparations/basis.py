@@ -52,7 +52,7 @@ class BasisStatePreparation(Operation):
     num_wires = AnyWires
     par_domain = "A"
 
-    def __init__(self, basis_state, wires, do_queue=True):
+    def __init__(self, basis_state, wires, do_queue=True, id=None):
 
         shape = qml.math.shape(basis_state)
 
@@ -69,7 +69,7 @@ class BasisStatePreparation(Operation):
         if not all(bit in [0, 1] for bit in basis_state):
             raise ValueError(f"Basis state must only consist of 0s and 1s; got {basis_state}")
 
-        super().__init__(basis_state, wires=wires, do_queue=do_queue)
+        super().__init__(basis_state, wires=wires, do_queue=do_queue, id=id)
 
     def expand(self):
 
