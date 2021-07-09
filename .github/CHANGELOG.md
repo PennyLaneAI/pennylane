@@ -97,6 +97,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where the adjoint of `qml.QFT` when using the `qml.adjoint` function
+  was not correctly computed.
+  [(#1451)](https://github.com/PennyLaneAI/pennylane/pull/1451)
+
 * Fixes the differentiability of the operation`IsingYY` for Autograd, Jax and Tensorflow.
   [(#1425)](https://github.com/PennyLaneAI/pennylane/pull/1425)
   
