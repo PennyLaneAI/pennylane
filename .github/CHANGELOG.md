@@ -87,6 +87,10 @@
 
 <h3>Improvements</h3>
 
+* Added the `id` attribute to templates, which was missing from 
+  PR [(#1377)](https://github.com/PennyLaneAI/pennylane/pull/1377).
+  [(#1438)](https://github.com/PennyLaneAI/pennylane/pull/1438)
+  
 <h3>Breaking changes</h3>
 
 * The existing `pennylane.collections.apply` function is no longer accessible
@@ -96,11 +100,15 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where the adjoint of `qml.QFT` when using the `qml.adjoint` function
+  was not correctly computed.
+  [(#1451)](https://github.com/PennyLaneAI/pennylane/pull/1451)
+
 * Fixes the differentiability of the operation`IsingYY` for Autograd, Jax and Tensorflow.
   [(#1425)](https://github.com/PennyLaneAI/pennylane/pull/1425)
   
 * Fixed a bug in the `torch` interface that prevented gradients from being
-  computed on a GPU [(#1426)](https://github.com/PennyLaneAI/pennylane/pull/1426).
+  computed on a GPU. [(#1426)](https://github.com/PennyLaneAI/pennylane/pull/1426)
 
 * Quantum function transforms now preserve the format of the measurement
   results, so that a single measurement returns a single value rather than
@@ -111,13 +119,17 @@
   that performed post-processing on a vector-valued QNode.
   [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
 
+* Fixed a bug in the initialization of `QubitUnitary` where the size of
+  the matrix was not checked against the number of wires.
+  [(#1439)](https://github.com/PennyLaneAI/pennylane/pull/1439)
+
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Romain Moyard, Ashish Panigrahi.
+Olivia Di Matteo, Josh Izaac, Romain Moyard, Ashish Panigrahi, Maria Schuld.
 
 
 # Release 0.16.0 (current release)

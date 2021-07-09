@@ -54,7 +54,6 @@ from gate_data import (
     DoubleExcitationMinus,
 )
 
-
 # Standard observables, their matrix representation, and eigenvalues
 OBSERVABLES = [
     (qml.PauliX, X, [1, -1]),
@@ -500,7 +499,6 @@ class TestOperations:
     @pytest.mark.parametrize(
         "op_builder",
         [
-            lambda: qml.QFT(wires=[1, 2, 3]),
             lambda: qml.QubitCarry(wires=[0, 1, 2, 3]),
         ],
     )
@@ -550,6 +548,42 @@ class TestOperations:
         expected_unitary = qml.QFT(wires=range(n_qubits)).matrix
 
         assert np.allclose(reconstructed_unitary, expected_unitary)
+
+    @pytest.mark.parametrize("n_qubits", range(2, 6))
+    def test_QFT_adjoint_identity(self, n_qubits, tol):
+        """Test if the QFT adjoint operation is the inverse of QFT."""
+
+        dev = qml.device("default.qubit", wires=n_qubits)
+
+        @qml.qnode(dev)
+        def circ(n_qubits):
+            qml.adjoint(qml.QFT)(wires=range(n_qubits))
+            qml.QFT(wires=range(n_qubits))
+            return qml.state()
+
+        assert np.allclose(1, circ(n_qubits)[0], tol)
+
+        for i in range(1, n_qubits):
+            assert np.allclose(0, circ(n_qubits)[i], tol)
+
+    @pytest.mark.parametrize("n_qubits", range(2, 6))
+    def test_QFT_adjoint_decomposition(self, n_qubits, tol):
+        """Test if the QFT adjoint operation has the right decomposition"""
+
+        # QFT adjoint has right decompositions
+        qft = qml.QFT(wires=range(n_qubits))
+        qft_dec = qft.expand().operations
+
+        expected_op = [x.adjoint() for x in qft_dec]
+        expected_op.reverse()
+
+        adj = qml.QFT(wires=range(n_qubits)).adjoint()
+        op = adj.expand().operations
+
+        for j in range(0, len(op)):
+            assert op[j].name == expected_op[j].name
+            assert op[j].wires == expected_op[j].wires
+            assert op[j].parameters == expected_op[j].parameters
 
     def test_x_decomposition(self, tol):
         """Tests that the decomposition of the PauliX is correct"""
@@ -1529,73 +1563,6 @@ class TestOperations:
         )
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_qubit_unitary(self, tol):
-        """Test that the unitary operator produces the correct output."""
-        U = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
-        out = qml.QubitUnitary(U, wires=0).matrix
-
-        # verify output type
-        assert isinstance(out, np.ndarray)
-
-        # verify equivalent to input state
-        assert np.allclose(out, U, atol=tol, rtol=0)
-
-    def test_qubit_unitary_exceptions(self):
-        """Tests that the unitary operator raises the proper errors."""
-        U = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
-
-        # test non-square matrix
-        with pytest.raises(ValueError, match="must be a square matrix"):
-            qml.QubitUnitary(U[1:], wires=0).matrix
-
-        # test non-unitary matrix
-        U3 = U.copy()
-        U3[0, 0] += 0.5
-        with pytest.raises(ValueError, match="must be unitary"):
-            qml.QubitUnitary(U3, wires=0).matrix
-
-    @pytest.mark.parametrize(
-        "U", [np.array([0]), np.array([1, 0, 0, 1]), np.array([[[1, 0], [0, 1]]])]
-    )
-    def test_qubit_unitary_not_matrix_exception(self, U):
-        """Tests that the unitary operator raises the proper errors for arrays
-        that are not two-dimensional."""
-
-        # test non-square matrix
-        with pytest.raises(ValueError, match="must be a square matrix"):
-            qml.QubitUnitary(U, wires=0).matrix
-
-    @pytest.mark.parametrize(
-        "U,expected_gate,expected_params",
-        [  # First set of gates are diagonal and converted to RZ
-            (I, qml.RZ, [0]),
-            (Z, qml.RZ, [np.pi]),
-            (S, qml.RZ, [np.pi / 2]),
-            (T, qml.RZ, [np.pi / 4]),
-            (qml.RZ(0.3, wires=0).matrix, qml.RZ, [0.3]),
-            (qml.RZ(-0.5, wires=0).matrix, qml.RZ, [-0.5]),
-            # Next set of gates are non-diagonal and decomposed as Rots
-            (H, qml.Rot, [np.pi, np.pi / 2, 0]),
-            (X, qml.Rot, [0.0, np.pi, np.pi]),
-            (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix, qml.Rot, [0.2, 0.5, -0.3]),
-            (np.exp(1j * 0.02) * qml.Rot(-1, 2, -3, wires=0).matrix, qml.Rot, [-1, 2, -3]),
-        ],
-    )
-    def test_qubit_unitary_decomposition(self, U, expected_gate, expected_params):
-        """Tests that single-qubit QubitUnitary decompositions are performed."""
-        decomp = qml.QubitUnitary.decomposition(U, wires=0)
-
-        assert len(decomp) == 1
-        assert isinstance(decomp[0], expected_gate)
-        assert np.allclose(decomp[0].parameters, expected_params)
-
-    def test_qubit_unitary_decomposition_multiqubit_invalid(self):
-        """Test that QubitUnitary is not decomposed for more than a single qubit."""
-        U = qml.CRZ(0.3, wires=[0, 1]).matrix
-
-        with pytest.raises(NotImplementedError, match="only supported for single-qubit"):
-            qml.QubitUnitary.decomposition(U, wires=[0, 1])
 
     def test_iswap_eigenval(self):
         """Tests that the ISWAP eigenvalue matches the numpy eigenvalues of the ISWAP matrix"""
@@ -2701,6 +2668,154 @@ class TestMultiRZ:
         spy.assert_not_called()
 
 
+class TestQubitUnitary:
+    """Tests for the QubitUnitary class."""
+
+    @pytest.mark.parametrize("U,num_wires", [(H, 1), (np.kron(H, H), 2)])
+    def test_qubit_unitary_autograd(self, U, num_wires):
+        """Test that the unitary operator produces the correct output and
+        catches incorrect input with autograd."""
+
+        out = qml.QubitUnitary(U, wires=range(num_wires)).matrix
+
+        # verify output type
+        assert isinstance(out, np.ndarray)
+
+        # verify equivalent to input state
+        assert qml.math.allclose(out, U)
+
+        # test non-square matrix
+        with pytest.raises(ValueError, match="must be of shape"):
+            qml.QubitUnitary(U[1:], wires=range(num_wires)).matrix
+
+        # test non-unitary matrix
+        U3 = U.copy()
+        U3[0, 0] += 0.5
+        with pytest.warns(UserWarning, match="may not be unitary"):
+            qml.QubitUnitary(U3, wires=range(num_wires)).matrix
+
+        # test an error is thrown when constructed with incorrect number of wires
+        with pytest.raises(ValueError, match="must be of shape"):
+            qml.QubitUnitary(U, wires=range(num_wires + 1)).matrix
+
+    @pytest.mark.parametrize("U,num_wires", [(H, 1), (np.kron(H, H), 2)])
+    def test_qubit_unitary_torch(self, U, num_wires):
+        """Test that the unitary operator produces the correct output and
+        catches incorrect input with torch."""
+        torch = pytest.importorskip("torch")
+
+        U = torch.tensor(U)
+        out = qml.QubitUnitary(U, wires=range(num_wires)).matrix
+
+        # verify output type
+        assert isinstance(out, torch.Tensor)
+
+        # verify equivalent to input state
+        assert qml.math.allclose(out, U)
+
+        # test non-square matrix
+        with pytest.raises(ValueError, match="must be of shape"):
+            qml.QubitUnitary(U[1:], wires=range(num_wires)).matrix
+
+        # test non-unitary matrix
+        U3 = U.detach().clone()
+        U3[0, 0] += 0.5
+        with pytest.warns(UserWarning, match="may not be unitary"):
+            qml.QubitUnitary(U3, wires=range(num_wires)).matrix
+
+        # test an error is thrown when constructed with incorrect number of wires
+        with pytest.raises(ValueError, match="must be of shape"):
+            qml.QubitUnitary(U, wires=range(num_wires + 1)).matrix
+
+    @pytest.mark.parametrize("U,num_wires", [(H, 1), (np.kron(H, H), 2)])
+    def test_qubit_unitary_tf(self, U, num_wires):
+        """Test that the unitary operator produces the correct output and
+        catches incorrect input with tensorflow."""
+        tf = pytest.importorskip("tensorflow")
+
+        U = tf.Variable(U)
+        out = qml.QubitUnitary(U, wires=range(num_wires)).matrix
+
+        # verify output type
+        assert isinstance(out, tf.Variable)
+
+        # verify equivalent to input state
+        assert qml.math.allclose(out, U)
+
+        # test non-square matrix
+        with pytest.raises(ValueError, match="must be of shape"):
+            qml.QubitUnitary(U[1:], wires=range(num_wires)).matrix
+
+        # test non-unitary matrix
+        U3 = tf.Variable(U + 0.5)
+        with pytest.warns(UserWarning, match="may not be unitary"):
+            qml.QubitUnitary(U3, wires=range(num_wires)).matrix
+
+        # test an error is thrown when constructed with incorrect number of wires
+        with pytest.raises(ValueError, match="must be of shape"):
+            qml.QubitUnitary(U, wires=range(num_wires + 1)).matrix
+
+    @pytest.mark.parametrize("U,num_wires", [(H, 1), (np.kron(H, H), 2)])
+    def test_qubit_unitary_jax(self, U, num_wires):
+        """Test that the unitary operator produces the correct output and
+        catches incorrect input with autograd."""
+        jax = pytest.importorskip("jax")
+        from jax import numpy as jnp
+
+        U = jnp.array(U)
+        out = qml.QubitUnitary(U, wires=range(num_wires)).matrix
+
+        # verify output type
+        assert isinstance(out, jnp.ndarray)
+
+        # verify equivalent to input state
+        assert qml.math.allclose(out, U)
+
+        # test non-square matrix
+        with pytest.raises(ValueError, match="must be of shape"):
+            qml.QubitUnitary(U[1:], wires=range(num_wires)).matrix
+
+        # test non-unitary matrix
+        U3 = U + 0.5
+        with pytest.warns(UserWarning, match="may not be unitary"):
+            qml.QubitUnitary(U3, wires=range(num_wires)).matrix
+
+        # test an error is thrown when constructed with incorrect number of wires
+        with pytest.raises(ValueError, match="must be of shape"):
+            qml.QubitUnitary(U, wires=range(num_wires + 1)).matrix
+
+    @pytest.mark.parametrize(
+        "U,expected_gate,expected_params",
+        [  # First set of gates are diagonal and converted to RZ
+            (I, qml.RZ, [0]),
+            (Z, qml.RZ, [np.pi]),
+            (S, qml.RZ, [np.pi / 2]),
+            (T, qml.RZ, [np.pi / 4]),
+            (qml.RZ(0.3, wires=0).matrix, qml.RZ, [0.3]),
+            (qml.RZ(-0.5, wires=0).matrix, qml.RZ, [-0.5]),
+            # Next set of gates are non-diagonal and decomposed as Rots
+            (H, qml.Rot, [np.pi, np.pi / 2, 0]),
+            (X, qml.Rot, [0.0, np.pi, np.pi]),
+            (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix, qml.Rot, [0.2, 0.5, -0.3]),
+            (np.exp(1j * 0.02) * qml.Rot(-1, 2, -3, wires=0).matrix, qml.Rot, [-1, 2, -3]),
+        ],
+    )
+    def test_qubit_unitary_decomposition(self, U, expected_gate, expected_params):
+        """Tests that single-qubit QubitUnitary decompositions are performed."""
+        decomp = qml.QubitUnitary.decomposition(U, wires=0)
+
+        assert len(decomp) == 1
+        assert isinstance(decomp[0], expected_gate)
+        assert np.allclose(decomp[0].parameters, expected_params)
+
+    def test_qubit_unitary_decomposition_multiqubit_invalid(self):
+        """Test that QubitUnitary is not decomposed for more than a single qubit."""
+        U = qml.CRZ(0.3, wires=[0, 1]).matrix
+
+        with pytest.raises(NotImplementedError, match="only supported for single-qubit"):
+            qml.QubitUnitary.decomposition(U, wires=[0, 1])
+
+
 class TestDiagonalQubitUnitary:
     """Test the DiagonalQubitUnitary operation."""
 
@@ -3292,8 +3407,10 @@ class TestArithmetic:
             ([2, 0, 1], [0, 0, 0, 1, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0, 0, 0], True),
             ([1, 2, 0], [0, 0, 0, 1, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0, 0, 0], True),
             ([0, 1, 2], [0.5, 0, 0.5, 0, 0.5, 0, 0.5, 0], [0.5, 0, 0, 0.5, 0, 0.5, 0.5, 0], True),
-            ([0, 1, 2], [np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8)],
-            [np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8)], True),
+            ([0, 1, 2], [np.sqrt(1 / 8), np.sqrt(1 / 8), np.sqrt(1 / 8), np.sqrt(1 / 8), np.sqrt(1 / 8), np.sqrt(1 / 8),
+                         np.sqrt(1 / 8), np.sqrt(1 / 8)],
+             [np.sqrt(1 / 8), np.sqrt(1 / 8), np.sqrt(1 / 8), np.sqrt(1 / 8), np.sqrt(1 / 8), np.sqrt(1 / 8),
+              np.sqrt(1 / 8), np.sqrt(1 / 8)], True),
             ([0, 1, 2], [1, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0], False),
             ([0, 1, 2], [0, 1, 0, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0, 0, 0], False),
             ([0, 1, 2], [0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0, 0, 0], False),
@@ -3305,8 +3422,10 @@ class TestArithmetic:
             ([2, 0, 1], [0, 0, 0, 1, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0, 0, 0], False),
             ([1, 2, 0], [0, 0, 0, 1, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0, 0, 0], False),
             ([0, 1, 2], [0.5, 0, 0.5, 0, 0.5, 0, 0.5, 0], [0.5, 0, 0, 0.5, 0, 0.5, 0.5, 0], False),
-            ([0, 1, 2], [np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8)],
-            [np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8)], False),
+            ([0, 1, 2], [np.sqrt(1 / 8), np.sqrt(1 / 8), np.sqrt(1 / 8), np.sqrt(1 / 8), np.sqrt(1 / 8), np.sqrt(1 / 8),
+                         np.sqrt(1 / 8), np.sqrt(1 / 8)],
+             [np.sqrt(1 / 8), np.sqrt(1 / 8), np.sqrt(1 / 8), np.sqrt(1 / 8), np.sqrt(1 / 8), np.sqrt(1 / 8),
+              np.sqrt(1 / 8), np.sqrt(1 / 8)], False),
         ],
     )
     # fmt: on

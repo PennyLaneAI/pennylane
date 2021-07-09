@@ -68,7 +68,7 @@ class StronglyEntanglingLayers(Operation):
     num_wires = AnyWires
     par_domain = "A"
 
-    def __init__(self, weights, wires, ranges=None, imprimitive=None, do_queue=True):
+    def __init__(self, weights, wires, ranges=None, imprimitive=None, do_queue=True, id=None):
 
         shape = qml.math.shape(weights)
         self.n_layers = shape[0]
@@ -106,7 +106,7 @@ class StronglyEntanglingLayers(Operation):
 
         self.imprimitive = imprimitive or qml.CNOT
 
-        super().__init__(weights, wires=wires, do_queue=do_queue)
+        super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 
     def expand(self):
 

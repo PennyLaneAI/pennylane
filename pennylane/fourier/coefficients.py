@@ -55,7 +55,8 @@ def coefficients(f, n_inputs, degree, lowpass_filter=False, filter_threshold=Non
     :math:`c_{n_1,\ldots,n_N}` are Fourier coefficients.
 
     Args:
-        f (callable): Function that takes a 1D tensor of ``n_inputs`` scalar inputs.
+        f (callable): Function that takes a 1D tensor of ``n_inputs`` scalar inputs. The function can be a QNode, but
+            has to return a real scalar value (such as an expectation).
         n_inputs (int): number of function inputs
         degree (int): max frequency of Fourier coeffs to be computed. For degree :math:`d`,
             the coefficients from frequencies :math:`-d, -d+1,...0,..., d-1, d` will be computed.
@@ -86,6 +87,10 @@ def coefficients(f, n_inputs, degree, lowpass_filter=False, filter_threshold=Non
             qml.Rot(*weights[1], wires='a')
 
             return qml.expval(qml.PauliZ(wires='a'))
+
+    .. note::
+
+        The QNode has to return a scalar value (such as a single expectation).
 
     Unless otherwise specified, the coefficients will be computed for all input
     values. To compute coefficients with respect to only a subset of the input
