@@ -17,7 +17,6 @@ Unit tests for the ArbitraryStatePreparation template.
 import pytest
 import numpy as np
 import pennylane as qml
-from pennylane import numpy as pnp
 
 torch = pytest.importorskip("torch", minversion="1.3")
 from pennylane.templates.state_preparations.mottonen import gray_code, _get_alpha_y
@@ -321,6 +320,11 @@ class TestInputs:
 
         with pytest.raises(ValueError, match="State vector must be a one-dimensional"):
             qml.templates.MottonenStatePreparation(state_vector, 2)
+
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        template = qml.templates.MottonenStatePreparation(np.array([0, 1]), wires=[0], id="a")
+        assert template.id == "a"
 
 
 class TestGradient:

@@ -240,6 +240,13 @@ class TestInputs:
         shape = qml.templates.QAOAEmbedding.shape(n_layers, n_wires)
         assert shape == expected_shape
 
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        template = qml.templates.QAOAEmbedding(
+            np.array([0]), weights=np.array([[0]]), wires=[0], id="a"
+        )
+        assert template.id == "a"
+
 
 def circuit_template(features, weights):
     qml.templates.QAOAEmbedding(features, weights, range(2))

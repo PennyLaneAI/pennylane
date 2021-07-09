@@ -464,10 +464,9 @@ class Operator(abc.ABC):
         """Current parameter values."""
         return self.data.copy()
 
-    def queue(self):
+    def queue(self, context=qml.QueuingContext):
         """Append the operator to the Operator queue."""
-        qml.QueuingContext.append(self)
-
+        context.append(self)
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
 
@@ -1112,27 +1111,37 @@ class Tensor(Observable):
     par_domain = None
 
     def __init__(self, *args):  # pylint: disable=super-init-not-called
-
         self._eigvals_cache = None
         self.obs = []
+        self._args = args
+        self.queue(init=True)
 
-        for o in args:
-            if isinstance(o, Tensor):
-                self.obs.extend(o.obs)
-            elif isinstance(o, Observable):
-                self.obs.append(o)
-            else:
-                raise ValueError("Can only perform tensor products between observables.")
+    def queue(self, context=qml.QueuingContext, init=False):  # pylint: disable=arguments-differ
+        constituents = self.obs
+
+        if init:
+            constituents = self._args
+
+        for o in constituents:
+
+            if init:
+                if isinstance(o, Tensor):
+                    self.obs.extend(o.obs)
+                elif isinstance(o, Observable):
+                    self.obs.append(o)
+                else:
+                    raise ValueError("Can only perform tensor products between observables.")
 
             try:
-                qml.QueuingContext.update_info(o, owner=self)
+                context.update_info(o, owner=self)
             except qml.queuing.QueuingError:
-                o.queue()
-                qml.QueuingContext.update_info(o, owner=self)
+                o.queue(context=context)
+                context.update_info(o, owner=self)
             except NotImplementedError:
                 pass
 
-        qml.QueuingContext.append(self, owns=tuple(args))
+        context.append(self, owns=tuple(constituents))
+        return self
 
     def __copy__(self):
         cls = self.__class__

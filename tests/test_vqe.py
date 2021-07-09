@@ -810,6 +810,8 @@ class TestHamiltonian:
         queue = [
             qml.Hadamard(wires=1),
             qml.PauliX(wires=0),
+            qml.PauliZ(0),
+            qml.PauliZ(2),
             qml.PauliZ(0) @ qml.PauliZ(2),
             qml.PauliX(1),
             qml.PauliZ(1),
