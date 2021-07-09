@@ -88,9 +88,9 @@ class GroverOperator(Operation):
     num_wires = AnyWires
     par_domain = None
 
-    def __init__(self, wires=None, work_wires=None, **kwargs):
+    def __init__(self, wires=None, work_wires=None, do_queue=True, id=None):
         self.work_wires = work_wires
-        super().__init__(wires=wires, **kwargs)
+        super().__init__(wires=wires, do_queue=do_queue, id=id)
 
     def expand(self):
         ctrl_str = "0" * (len(self.wires) - 1)
