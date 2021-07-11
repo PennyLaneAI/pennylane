@@ -4,7 +4,7 @@ ARG INTERFACE_NAME=tensorflow
 # Build Jax interface
 RUN if [ "$INTERFACE_NAME" = "jax" ] ; then \
     apt-get update && apt-get -y install --no-install-recommends make \
-    && rm -rf /var/lib/apt/lists/* && pip3 install jax==0.2.14
+    && rm -rf /var/lib/apt/lists/* && pip3 install jax==0.2.14 \
     jaxlib==0.1.67+cuda111 -f https://storage.googleapis.com/jax-releases/jax_releases.html;fi
 
 # Build TensorFlow interface
