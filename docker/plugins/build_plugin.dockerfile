@@ -19,7 +19,7 @@ RUN if [ "$PLUGIN_NAME" = "sf" ] ; then \
 # Build Cirq Plugin
 RUN if [ "$PLUGIN_NAME" = "cirq" ] ; then \
     apt-get update && apt-get -y install --no-install-recommends make \
-    && rm -rf /var/lib/apt/lists/* && $ pip3 install pennylane-cirq;fi
+    && rm -rf /var/lib/apt/lists/* && pip3 install pennylane-cirq;fi
 
 # Build Qulacs Plugin
 RUN if [ "$PLUGIN_NAME" = "qulacs" ] ; then \
