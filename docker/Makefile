@@ -30,8 +30,8 @@ build-interface:
 	--build-arg INTERFACE_NAME=$(interface-name) .
 
 build-interface-gpu:
-	@docker build -t pennylane/base -f docker/pennylane.dockerfile . \
-	&& docker build -t pennylane/$(interface-name) -f docker/build_interface.dockerfile \
+	@docker build -t pennylane/base -f docker/gpu-cuda/cuda-base.dockerfile . \
+	&& docker build -t pennylane/$(interface-name) -f docker/gpu-cuda/build_interface_gpu.dockerfile \
 	--build-arg INTERFACE_NAME=$(interface-name)
 
 build-plugin:
