@@ -1,5 +1,5 @@
 From pennylane/base:latest
-ARG PLUGIN_NAME=tensorflow
+ARG PLUGIN_NAME=qiskit
 
 # Build Qiskit Plugin
 RUN if [ "$PLUGIN_NAME" = "qiskit" ] ; then \
