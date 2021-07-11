@@ -125,17 +125,6 @@ make -f docker/Makefile build-interface interface-name=tensorflow
 ```console
 make -f docker/Makefile build-interface-gpu interface-name=tensorflow
 ```
-- To build all three interfaces (Torch, TensorFlow, or Jax) using a single command run following:
-
-```console
-make -f docker/Makefile build-interface interface-name=all
-```
-- For GPU run following:
-
-```console
-make -f docker/Makefile build-interface-gpu interface-name=all
-```
-
 ### Build Pennylane plugins using Docker
 - To build a PennyLane image using a given plugin (qiskit, amazon-bracket, cirq, rigetti and many more) run following:
 

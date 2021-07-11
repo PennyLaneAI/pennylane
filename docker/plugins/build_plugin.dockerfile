@@ -61,22 +61,6 @@ RUN if [ "$PLUGIN_NAME" = "ionq" ] ; then \
     apt-get update && apt-get -y install --no-install-recommends make \
     && rm -rf /var/lib/apt/lists/* && pip3 install pennylane-ionq;fi
 
-# Build All Plugins together
-RUN if [ "$PLUGIN_NAME" = "all" ] ; then \
-    apt-get update && apt-get -y install --no-install-recommends make \
-    && rm -rf /var/lib/apt/lists/* && pip3 install pennylane-qiskit \
-    amazon-braket-pennylane-plugin \
-    pennylane-sf \
-    pennylane-cirq \
-    qulacs pennylane-qulacs \
-    pennylane-aqt \
-    pennylane-honeywell \
-    pennylane_pq \
-    pennylane-qsharp \
-    pennylane-forest \
-    pennylane-orquestra \
-    pennylane-ionq;fi
-
 # Run Unit-Tests again
 WORKDIR /opt/pennylane
 RUN make test
