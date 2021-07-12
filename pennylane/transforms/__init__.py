@@ -44,7 +44,9 @@ containing quantum operations) that are used to construct QNodes.
     :toctree: api
 
     ~adjoint
+    ~transforms.cancel_inverses
     ~ctrl
+    ~transforms.merge_rotations
     ~transforms.unitary_to_rot
     ~transforms.invisible
     ~apply_controlled_Q
