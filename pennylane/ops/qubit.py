@@ -2666,6 +2666,9 @@ class QFT(Operation):
 
         return decomp_ops
 
+    def adjoint(self):
+        return QFT(wires=self.wires).inv()
+
 
 # =============================================================================
 # Quantum chemistry
