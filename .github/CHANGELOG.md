@@ -5,6 +5,46 @@
 * Grover Diffusion Operator template added.
   [(#1442)](https://github.com/PennyLaneAI/pennylane/pull/1442)
 
+  For example, if we have an oracle that marks the $|111\rangle$ state with a
+  negative sign:
+
+  ```python
+  n_wires = 3
+  wires = list(range(n_wires))
+
+  def oracle():
+    qml.Hadamard(wires[-1])
+    qml.Toffoli(wires=wires)
+    qml.Hadamard(wires[-1])
+  ```
+
+  We can perform the [Grover's Search Algorithm](https://en.wikipedia.org/wiki/Grover%27s_algorithm):
+
+  ```python
+  dev = qml.device('default.qubit', wires=wires)
+
+  @qml.qnode(dev)
+  def GroverSearch(num_iterations=1):
+      for wire in wires:
+          qml.Hadamard(wire)
+
+      for _ in range(num_iterations):
+          oracle()
+          qml.templates.GroverOperator(wires=wires)
+      return qml.probs(wires)
+  ```
+
+  We can see this circuit selects out the marked $|111\rangle$ state:
+
+  ```pycon
+  >>> GroverSearch(num_iterations=1)
+  tensor([0.03125, 0.03125, 0.03125, 0.03125, 0.03125, 0.03125, 0.03125,
+          0.78125], requires_grad=True)
+  >>> GroverSearch(num_iterations=2)
+  tensor([0.0078125, 0.0078125, 0.0078125, 0.0078125, 0.0078125, 0.0078125,
+      0.0078125, 0.9453125], requires_grad=True)
+  ```
+
 * A decomposition has been added to ``QubitUnitary`` that makes the
   single-qubit case fully differentiable in all interfaces. Furthermore,
   a quantum function transform, ``unitary_to_rot()``, has been added to decompose all
