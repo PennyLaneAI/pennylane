@@ -27,11 +27,11 @@ class GroverOperator(Operation):
         G = 2 |s \rangle \langle s | - I
         = H^{\bigotimes n} \left( 2 |0\rangle \langle 0| - I \right) H^{\bigotimes n}
 
-    where :math:`n` is the number of wires and :math:`|s\rangle` is the uniform superposition:
+    where :math:`n` is the number of wires, and :math:`|s\rangle` is the uniform superposition:
 
     .. math::
 
-        |s\rangle = H^{\bigotimes n} |0\rangle =  \frac{1}{\sqrt{2**n}} \sum_{i=0}^{n} | i \rangle
+        |s\rangle = H^{\bigotimes n} |0\rangle =  \frac{1}{\sqrt{2^n}} \sum_{i=0}^{2^n} | i \rangle
 
     For this template, the operator is implemented with a layer of Hadamards, an
     effective multi-controlled Z gate, and another layer of Hadamards.
@@ -51,23 +51,17 @@ class GroverOperator(Operation):
     Args:
         wires (Union[Wires, Sequence[int], or int]): the wires to apply to
         work_wires (Union[Wires, Sequence[int], or int]): optional auxiliary wires to assist
-            in the decomposition of :class:`~.ops.qubit.MultiControlledX`.
+            in the decomposition of :class:`~.MultiControlledX`.
 
     **Example**
-
-    For this example, we will be using three wires and ``"default.qubit"``:
-
-    .. code-block:: python
-
-        n_wires = 3
-        wires = list(range(n_wires))
-        dev = qml.device('default.qubit', wires=wires)
 
     The Grover Diffusion Operator amplifies the magnitude of the basis state with
     a negative phase.  For example, if the solution to the search problem is the :math:`|111\rangle`
     state, we require an oracle that flips its phase; this could be implemented using a `CCZ` gate:
 
     .. code-block:: python
+        n_wires = 3
+        wires = list(range(n_wires))
 
         def oracle():
             qml.Hadamard(wires[-1])
@@ -77,6 +71,8 @@ class GroverOperator(Operation):
     We can then implement the entire Grover Search Algorithm for ``n`` iterations by alternating calls to the oracle and the diffusion operator:
 
     .. code-block:: python
+
+        dev = qml.device('default.qubit', wires=wires)
 
         @qml.qnode(dev)
         def GroverSearch(num_iterations=1):
@@ -105,6 +101,9 @@ class GroverOperator(Operation):
     par_domain = None
 
     def __init__(self, wires=None, work_wires=None, do_queue=True, id=None):
+        if (not hasattr(wires, "__len__")) or (len(wires) < 2):
+            raise ValueError("GroverOperator must have at least two wires provided.")
+
         self.work_wires = work_wires
         super().__init__(wires=wires, do_queue=do_queue, id=id)
 
