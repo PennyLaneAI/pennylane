@@ -38,7 +38,7 @@ class GroverOperator(Operation):
 
     Args:
         wires (Union[Wires, Sequence[int], or int]): the wires to apply to
-        work_wires (Union[Wires, Sequence[int], or int]): these auxiliary wire assist
+        work_wires (Union[Wires, Sequence[int], or int]): optional auxiliary wires to assist
             in the decomposition of :class:`~.ops.qubit.MultiControlledX`.
 
     **Example**
@@ -51,9 +51,9 @@ class GroverOperator(Operation):
         wires = list(range(n_wires))
         dev = qml.device('default.qubit', wires=wires)
 
-    The Grover Diffusion Operator amplifies the magnitude of the component with
-    a negative phase.  For example, if we wanted to select out the :math:`|111\rangle`
-    state, we could use an oracle implementing a `CCZ` gate:
+    The Grover Diffusion Operator amplifies the magnitude of the basis state with
+    a negative phase.  For example, if the solution to the search problem is the :math:`|111\rangle`
+    state, we require an oracle that flips its phase; this could be implemented using a `CCZ` gate:
 
     .. code-block:: python
 
@@ -62,7 +62,7 @@ class GroverOperator(Operation):
             qml.Toffoli(wires=wires)
             qml.Hadamard(wires[-1])
 
-    We can then implement the entire Grover Search Algorithm for ``n`` iterations:
+    We can then implement the entire Grover Search Algorithm for ``n`` iterations by alternating calls to the oracle and the diffusion operator:
 
     .. code-block:: python
 

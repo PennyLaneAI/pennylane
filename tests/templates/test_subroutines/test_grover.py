@@ -20,7 +20,7 @@ import pennylane as qml
 
 
 def test_work_wires():
-    """assert work wires get passed to MultiControlledX"""
+    """Assert work wires get passed to MultiControlledX"""
     wires = ("a", "b")
     work_wire = ("aux",)
 
