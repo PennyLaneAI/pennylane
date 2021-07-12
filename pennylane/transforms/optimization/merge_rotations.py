@@ -105,7 +105,6 @@ def merge_rotations(tape):
                     cumulative_angles = _fuse_rot_angles(
                         cumulative_angles, cast_like(stack(next_gate.parameters), cumulative_angles)
                     )
-                    print(f"After fusion cumulative angles is {cumulative_angles}")
                 # Other, single-parameter rotation gates just have the angle summed
                 else:
                     cumulative_angles = cumulative_angles + cast_like(
