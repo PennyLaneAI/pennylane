@@ -27,11 +27,23 @@ class GroverOperator(Operation):
         G = 2 |s \rangle \langle s | - I
         = H^{\bigotimes n} \left( 2 |0\rangle \langle 0| - I \right) H^{\bigotimes n}
 
+    where :math:`n` is the number of wires and :math:`|s\rangle` is the uniform superposition:
+
+    .. math::
+
+        |s\rangle = H^{\bigotimes n} |0\rangle =  \frac{1}{\sqrt{2**n}} \sum_{i=0}^{n} | i \rangle
 
     For this template, the operator is implemented with a layer of Hadamards, an
     effective multi-controlled Z gate, and another layer of Hadamards.
 
     .. figure:: ../../_static/templates/subroutines/grover.svg
+        :align: center
+        :width: 60%
+        :target: javascript:void(0);
+
+    This decomposition for the circuit is equivalent to:
+
+    .. figure:: ../../_static/templates/subroutines/grover2.svg
         :align: center
         :width: 60%
         :target: javascript:void(0);
@@ -67,21 +79,25 @@ class GroverOperator(Operation):
     .. code-block:: python
 
         @qml.qnode(dev)
-        def GroverSearch(n=1):
+        def GroverSearch(num_iterations=1):
             for wire in wires:
                 qml.Hadamard(wire)
 
-            for _ in range(n):
+            for _ in range(num_iterations):
                 oracle()
                 qml.templates.GroverOperator(wires=wires)
             return qml.probs(wires)
 
-    >>> GroverSearch(n=1)
+    >>> GroverSearch(num_iterations=1)
     tensor([0.03125, 0.03125, 0.03125, 0.03125, 0.03125, 0.03125, 0.03125,
             0.78125], requires_grad=True)
-    >>> GroverSearch(n=2)
+    >>> GroverSearch(num_iterations=2)
     tensor([0.0078125, 0.0078125, 0.0078125, 0.0078125, 0.0078125, 0.0078125,
         0.0078125, 0.9453125], requires_grad=True)
+
+    We can see that the marked :math:`|111\rangle` state has the greatest probability amplitude.
+
+    Optimally, the oracle-operator pairing should be repeated :math:`\frac{\pi}{4}\sqrt{2^{n}}$ times.
 
     """
     num_params = 0
