@@ -79,4 +79,36 @@ def hamiltonian_expand(tape):
         )
 
     hamiltonian.simplify()
-    return qml.transforms.measurement_grouping(tape, hamiltonian.ops, hamiltonian.coeffs)
+
+    if hamiltonian.grouped_coeffs is not None and hamiltonian.grouped_coeffs is not None:
+        # if the group() method of the hamiltonian has been called, extract the groups
+        obs_groupings = hamiltonian.grouped_ops
+        coeffs_groupings = hamiltonian.grouped_coeffs
+    else:
+        # else make a single group
+        obs_groupings = [hamiltonian.ops]
+        coeffs_groupings = [hamiltonian.coeffs]
+
+    tapes = []
+
+    for obs in obs_groupings:
+
+        with tape.__class__() as new_tape:
+            for op in tape.operations:
+                op.queue()
+
+            for o in obs:
+                qml.expval(o)
+
+        new_tape = new_tape.expand(stop_at=lambda obj: True)
+        tapes.append(new_tape)
+
+    def processing_fn(res):
+        dot_products = [
+            qml.math.dot(qml.math.convert_like(c, r), r) for c, r in zip(coeffs_groupings, res)
+        ]
+        return qml.math.sum(qml.math.stack(dot_products))
+
+    return tapes, processing_fn
+
+

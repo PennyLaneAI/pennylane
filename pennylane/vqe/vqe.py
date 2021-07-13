@@ -343,6 +343,35 @@ class Hamiltonian(qml.operation.Observable):
 
         raise ValueError("Can only compare a Hamiltonian, and a Hamiltonian/Observable/Tensor.")
 
+    def __matmul__(self, H):
+        r"""The tensor product operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
+        coeffs1 = copy(self.coeffs)
+        ops1 = self.ops.copy()
+
+        if isinstance(H, Hamiltonian):
+            shared_wires = Wires.shared_wires([self.wires, H.wires])
+            if len(shared_wires) > 0:
+                raise ValueError(
+                    "Hamiltonians can only be multiplied together if they act on "
+                    "different sets of wires"
+                )
+
+            coeffs2 = H.coeffs
+            ops2 = H.ops
+
+            coeffs = qml.math.kron(coeffs1, coeffs2)
+            ops_list = itertools.product(ops1, ops2)
+            terms = [qml.operation.Tensor(t[0], t[1]) for t in ops_list]
+
+            return qml.Hamiltonian(coeffs, terms, simplify=True)
+
+        if isinstance(H, (Tensor, Observable)):
+            terms = [op @ H for op in ops1]
+
+            return qml.Hamiltonian(coeffs1, terms, simplify=True)
+
+        raise ValueError(f"Cannot tensor product Hamiltonian and {type(H)}")
+
     def queue(self, context=qml.QueuingContext):
         """Queues a qml.Hamiltonian instance"""
         for o in self.ops:
@@ -374,12 +403,6 @@ class Hamiltonian(qml.operation.Observable):
 
         raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
 
-    def __sub__(self, H):
-        r"""The subtraction operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
-        if isinstance(H, (Hamiltonian, Tensor, Observable)):
-            return self.__add__(H.__mul__(-1))
-        raise ValueError(f"Cannot subtract {type(H)} from Hamiltonian")
-
     def __mul__(self, a):
         r"""The scalar multiplication operation between a scalar and a Hamiltonian."""
         if isinstance(a, (int, float)):
@@ -391,34 +414,11 @@ class Hamiltonian(qml.operation.Observable):
 
     __rmul__ = __mul__
 
-    def __matmul__(self, H):
-        r"""The tensor product operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
-        coeffs1 = copy(self.coeffs)
-        ops1 = self.ops.copy()
-
-        if isinstance(H, Hamiltonian):
-            shared_wires = Wires.shared_wires([self.wires, H.wires])
-            if len(shared_wires) > 0:
-                raise ValueError(
-                    "Hamiltonians can only be multiplied together if they act on "
-                    "different sets of wires"
-                )
-
-            coeffs2 = H.coeffs
-            ops2 = H.ops
-
-            coeffs = qml.math.kron(coeffs1, coeffs2)
-            ops_list = itertools.product(ops1, ops2)
-            terms = [qml.operation.Tensor(t[0], t[1]) for t in ops_list]
-
-            return qml.Hamiltonian(coeffs, terms, simplify=True)
-
-        if isinstance(H, (Tensor, Observable)):
-            terms = [op @ H for op in ops1]
-
-            return qml.Hamiltonian(coeffs1, terms, simplify=True)
-
-        raise ValueError(f"Cannot tensor product Hamiltonian and {type(H)}")
+    def __sub__(self, H):
+        r"""The subtraction operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
+        if isinstance(H, (Hamiltonian, Tensor, Observable)):
+            return self.__add__(H.__mul__(-1))
+        raise ValueError(f"Cannot subtract {type(H)} from Hamiltonian")
 
     def __iadd__(self, H):
         r"""The inplace addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
