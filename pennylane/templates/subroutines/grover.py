@@ -91,7 +91,7 @@ class GroverOperator(Operation):
 
     We can see that the marked :math:`|111\rangle` state has the greatest probability amplitude.
 
-    Optimally, the oracle-operator pairing should be repeated :math:`\frac{\pi}{4}\sqrt{2^{n}}$ times.
+    Optimally, the oracle-operator pairing should be repeated :math:`\frac{\pi}{4}\sqrt{2^{n}}` times.
 
     """
     num_params = 0
