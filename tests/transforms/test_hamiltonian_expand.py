@@ -102,7 +102,9 @@ class TestHamiltonianExpval:
         H = qml.Hamiltonian(
             [-0.2, 0.5, 1], [qml.PauliX(1), qml.PauliZ(1) @ qml.PauliY(2), qml.PauliZ(0)]
         )
-        var = np.array([0.1, 0.67, 0.3, 0.4, -0.5, 0.7])
+        H.group()
+        var = [np.array(0.1), np.array(0.67), np.array(0.3), np.array(0.4), np.array(-0.5), np.array(0.7),
+               np.array([0.4, -0.5, 0.7])]
         output = 0.42294409781940356
         output2 = [
             9.68883500e-02,
@@ -111,6 +113,7 @@ class TestHamiltonianExpval:
             -1.94289029e-09,
             3.50307411e-01,
             -3.41123470e-01,
+            [0., 0., 0.]
         ]
 
         with qml.tape.JacobianTape() as tape:
@@ -133,7 +136,9 @@ class TestHamiltonianExpval:
             return fn(res)
 
         assert np.isclose(cost(var), output)
-        assert np.allclose(qml.grad(cost)(var), output2)
+        grad = qml.grad(cost)(var)
+        for g, o in zip(grad, output2):
+            assert np.allclose(g, o)
 
     def test_hamiltonian_dif_tensorflow(self):
         """Tests that the hamiltonian_expand tape transform is differentiable with the Tensorflow interface"""
@@ -144,6 +149,7 @@ class TestHamiltonianExpval:
         H = qml.Hamiltonian(
             [-0.2, 0.5, 1], [qml.PauliX(1), qml.PauliZ(1) @ qml.PauliY(2), qml.PauliZ(0)]
         )
+        H.group()
         var = tf.Variable([[0.1, 0.67, 0.3], [0.4, -0.5, 0.7]], dtype=tf.float64)
         output = 0.42294409781940356
         output2 = [
@@ -174,3 +180,4 @@ class TestHamiltonianExpval:
 
             g = gtape.gradient(res, var)
             assert np.allclose(list(g[0]) + list(g[1]), output2)
+            #TODO(Maria): test Hamiltonian params

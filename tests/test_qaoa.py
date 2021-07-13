@@ -1252,7 +1252,7 @@ class TestCycles:
 
         expected_coeffs = [2, 2, -2, -2]
 
-        assert expected_coeffs == h.coeffs
+        assert np.allclose(expected_coeffs, h.coeffs)
         for i, expected_op in enumerate(expected_ops):
             assert str(h.ops[i]) == str(expected_op)
         assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
@@ -1274,7 +1274,7 @@ class TestCycles:
         ]
         expected_coeffs = [4, 2, -2, -2, -2, -2, 2]
 
-        assert expected_coeffs == h.coeffs
+        assert np.allclose(expected_coeffs, h.coeffs)
         for i, expected_op in enumerate(expected_ops):
             assert str(h.ops[i]) == str(expected_op)
         assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
@@ -1290,7 +1290,7 @@ class TestCycles:
         expected_ops = [qml.PauliZ(wires=[0])]
         expected_coeffs = [0]
 
-        assert expected_coeffs == h.coeffs
+        assert np.allclose(expected_coeffs, h.coeffs)
         for i, expected_op in enumerate(expected_ops):
             assert str(h.ops[i]) == str(expected_op)
         assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
@@ -1313,7 +1313,7 @@ class TestCycles:
         ]
         expected_coeffs = [4, -2, -2, 2, 2, -2, -2]
 
-        assert expected_coeffs == h.coeffs
+        assert np.allclose(expected_coeffs, h.coeffs)
         for i, expected_op in enumerate(expected_ops):
             assert str(h.ops[i]) == str(expected_op)
         assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])

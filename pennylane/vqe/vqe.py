@@ -96,7 +96,7 @@ class Hamiltonian(qml.operation.Observable):
     num_params = 1
     par_domain = "A"
 
-    def __init__(self, coeffs, observables, simplify=False, id=None):
+    def __init__(self, coeffs, observables, simplify=False, group=False, id=None):
 
         if qml.math.shape(coeffs)[0] != len(observables):
             raise ValueError(
@@ -122,10 +122,12 @@ class Hamiltonian(qml.operation.Observable):
 
         if simplify:
             self.simplify()
+        if group:
+            self.group()
 
         self.queue()
 
-        super().__init__(coeffs, wires=self._wires, id=id, do_queue=False)
+        super().__init__(coeffs, wires=self._wires, id=id, do_queue=True)
 
     @property
     def coeffs(self):
@@ -578,7 +580,7 @@ class ExpvalCost:
         self._multiple_devices = isinstance(device, Sequence)
         """Bool: Records if multiple devices are input"""
 
-        if all(c == 0 for c in coeffs) or not coeffs:
+        if np.isclose(qml.math.toarray(qml.math.count_nonzero(coeffs)), 0):
             self.cost_fn = lambda *args, **kwargs: np.array(0)
             return
 
