@@ -29,7 +29,7 @@ def merge_rotations(tape):
     neither gate will be applied.
 
     Args:
-        tape (.QuantumTape): A quantum tape.
+        qfunc (function): A quantum function.
 
     **Example**
 

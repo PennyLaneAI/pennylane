@@ -27,8 +27,8 @@ def _find_next_gate(wires, op_list):
             operation that acts on ``wires``.
 
     Returns:
-        int or None: The index, in `op_list`, of the earliest gate that uses one or more
-            of the same wires, or None if no such gate is present.
+        int or None: The index, in ``op_list``, of the earliest gate that uses one or more
+        of the same wires, or ``None`` if no such gate is present.
     """
     next_gate_idx = None
 
@@ -69,7 +69,7 @@ def _yzy_to_zyz(middle_yzy):
         y2 (float): The angle of the second ``RY`` rotation.
 
     Returns:
-        [float, float, float]: A list of rotation angles in the ZYZ representation.
+        tuple[float, float, float]: A list of rotation angles in the ZYZ representation.
     """
     if allclose(stack(middle_yzy), cast_like(zeros(3), stack(middle_yzy))):
         return stack([0.0, 0.0, 0.0])

@@ -6,7 +6,7 @@
   removal of redundant gates in quantum circuits.
   [(#1455)](https://github.com/PennyLaneAI/pennylane/pull/1455)
 
-  The ``cancel_inverses`` transform loops through a list of operations,
+  The `cancel_inverses` transform loops through a list of operations,
   and removes adjacent pairs of operations that cancel out. For example,
 
   ```python
@@ -33,7 +33,7 @@
    1: ──Z──┤
   ```
 
-  The ``merge_rotations`` transform combines adjacent rotation gates of
+  The `merge_rotations` transform combines adjacent rotation gates of
   the same type into a single gate, including controlled rotations.
 
   ```python

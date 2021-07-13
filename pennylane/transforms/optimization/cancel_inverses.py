@@ -26,7 +26,7 @@ def cancel_inverses(tape):
     (self-)inverse.
 
     Args:
-        tape (.QuantumTape): A quantum tape.
+        qfunc (function): A quantum function.
 
     **Example**
 
