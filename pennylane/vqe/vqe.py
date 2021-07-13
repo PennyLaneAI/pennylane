@@ -372,20 +372,6 @@ class Hamiltonian(qml.operation.Observable):
 
         raise ValueError(f"Cannot tensor product Hamiltonian and {type(H)}")
 
-    def queue(self, context=qml.QueuingContext):
-        """Queues a qml.Hamiltonian instance"""
-        for o in self.ops:
-            try:
-                context.update_info(o, owner=self)
-            except QueuingError:
-                o.queue(context=context)
-                context.update_info(o, owner=self)
-            except NotImplementedError:
-                pass
-
-        context.append(self, owns=tuple(self.ops))
-        return self
-
     def __add__(self, H):
         r"""The addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
         ops = self.ops.copy()
@@ -450,6 +436,20 @@ class Hamiltonian(qml.operation.Observable):
             self.__iadd__(H.__mul__(-1))
             return self
         raise ValueError(f"Cannot subtract {type(H)} from Hamiltonian")
+
+    def queue(self, context=qml.QueuingContext):
+        """Queues a qml.Hamiltonian instance"""
+        for o in self.ops:
+            try:
+                context.update_info(o, owner=self)
+            except QueuingError:
+                o.queue(context=context)
+                context.update_info(o, owner=self)
+            except NotImplementedError:
+                pass
+
+        context.append(self, owns=tuple(self.ops))
+        return self
 
 
 class ExpvalCost:
