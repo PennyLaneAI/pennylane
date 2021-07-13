@@ -85,9 +85,9 @@ def hamiltonian_expand(tape):
         obs_groupings = hamiltonian.grouped_ops
         coeffs_groupings = hamiltonian.grouped_coeffs
     else:
-        # else make a single group
-        obs_groupings = [hamiltonian.ops]
-        coeffs_groupings = [hamiltonian.coeffs]
+        # else every observable is its own group
+        obs_groupings = [[ob] for ob in hamiltonian.ops]
+        coeffs_groupings = [hamiltonian.coeffs[i] for i in range(qml.math.shape(hamiltonian.coeffs)[0])]
 
     tapes = []
 

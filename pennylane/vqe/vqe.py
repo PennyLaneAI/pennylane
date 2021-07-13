@@ -578,7 +578,7 @@ class ExpvalCost:
         self._multiple_devices = isinstance(device, Sequence)
         """Bool: Records if multiple devices are input"""
 
-        if int(qml.math.toarray(qml.math.count_nonzero(coeffs))) == 0:
+        if all(c == 0 for c in coeffs) or not coeffs:
             self.cost_fn = lambda *args, **kwargs: np.array(0)
             return
 
