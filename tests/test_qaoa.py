@@ -623,7 +623,7 @@ MWC = list(zip(DIGRAPHS, MWC_CONSTRAINED, COST_HAMILTONIANS, MIXER_HAMILTONIANS,
 
 def decompose_hamiltonian(hamiltonian):
 
-    coeffs = hamiltonian.coeffs
+    coeffs = list(qml.math.toarray(hamiltonian.coeffs))
     ops = [i.name for i in hamiltonian.ops]
     wires = [i.wires for i in hamiltonian.ops]
 

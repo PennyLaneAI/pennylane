@@ -17,14 +17,16 @@ computations using PennyLane.
 """
 # pylint: disable=too-many-arguments, too-few-public-methods
 from collections.abc import Sequence
-import itertools
 import warnings
+import itertools
+from copy import deepcopy
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import Observable, Tensor
 from pennylane.queuing import QueuingError
 from pennylane.wires import Wires
+
 
 OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identity": "I"}
 
@@ -248,8 +250,8 @@ class Hamiltonian(qml.operation.Observable):
         (1, frozenset({('PauliX', <Wires = [1]>, ()), ('PauliX', <Wires = [0]>, ())}))}
         """
         data = set()
-        coeffs_list = qml.math.toarray(self.coeffs)
-        for co, op in zip(coeffs_list, self.ops):
+        coeffs_arr = qml.math.toarray(self.coeffs)
+        for co, op in zip(coeffs_arr, self.ops):
             obs = op.non_identity_obs if isinstance(op, Tensor) else [op]
             tensor = []
             for ob in obs:
@@ -327,6 +329,100 @@ class Hamiltonian(qml.operation.Observable):
 
         context.append(self, owns=tuple(self.ops))
         return self
+
+    def __add__(self, H):
+        r"""The addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
+        ops = self.ops.copy()
+        self_coeffs = deepcopy(self.coeffs)
+
+        if isinstance(H, Hamiltonian):
+            coeffs = qml.math.concatenate([self_coeffs, H.coeffs.copy()], axis=0)
+            ops.extend(H.ops.copy())
+            return qml.Hamiltonian(coeffs, ops, simplify=True)
+
+        if isinstance(H, (Tensor, Observable)):
+            coeffs = qml.math.concatenate([self_coeffs, qml.math.cast_like([1.], self_coeffs)], axis=0)
+            ops.append(H)
+            return qml.Hamiltonian(coeffs, ops, simplify=True)
+
+        raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
+
+    def __sub__(self, H):
+        r"""The subtraction operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
+        if isinstance(H, (Hamiltonian, Tensor, Observable)):
+            return self.__add__(H.__mul__(-1))
+        raise ValueError(f"Cannot subtract {type(H)} from Hamiltonian")
+
+    def __mul__(self, a):
+        r"""The scalar multiplication operation between a scalar and a Hamiltonian."""
+        if isinstance(a, (int, float)):
+            self_coeffs = deepcopy(self.coeffs)
+            coeffs = qml.math.multiply(qml.math.cast_like([a], self_coeffs), self_coeffs)
+            return qml.Hamiltonian(coeffs, self.ops.copy())
+
+        raise ValueError(f"Cannot multiply Hamiltonian by {type(a)}")
+
+    __rmul__ = __mul__
+
+    def __matmul__(self, H):
+        r"""The tensor product operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
+        coeffs1 = deepcopy(self.coeffs)
+        ops1 = self.ops.copy()
+
+        if isinstance(H, Hamiltonian):
+            shared_wires = Wires.shared_wires([self.wires, H.wires])
+            if len(shared_wires) > 0:
+                raise ValueError(
+                    "Hamiltonians can only be multiplied together if they act on "
+                    "different sets of wires"
+                )
+
+            coeffs2 = H.coeffs
+            ops2 = H.ops
+
+            coeffs = qml.math.kron(coeffs1, coeffs2)
+            ops_list = itertools.product(ops1, ops2)
+            terms = [qml.operation.Tensor(t[0], t[1]) for t in ops_list]
+
+            return qml.Hamiltonian(coeffs, terms, simplify=True)
+
+        if isinstance(H, (Tensor, Observable)):
+            terms = [op @ H for op in ops1]
+
+            return qml.Hamiltonian(coeffs1, terms, simplify=True)
+
+        raise ValueError(f"Cannot tensor product Hamiltonian and {type(H)}")
+
+    def __iadd__(self, H):
+        r"""The inplace addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
+        if isinstance(H, Hamiltonian):
+            self._coeffs = qml.math.concatenate([self._coeffs, H.coeffs], axis=0)
+            self._ops.extend(H.ops.copy())
+            self.simplify()
+            return self
+
+        if isinstance(H, (Tensor, Observable)):
+            self._coeffs = qml.math.concatenate([self._coeffs, qml.math.cast_like([1.], self._coeffs)], axis=0)
+            self._ops.append(H)
+            self.simplify()
+            return self
+
+        raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
+
+    def __imul__(self, a):
+        r"""The inplace scalar multiplication operation between a scalar and a Hamiltonian."""
+        if isinstance(a, (int, float)):
+            self._coeffs = qml.math.multiply(qml.math.cast_like([a], self._coeffs), self._coeffs)
+            return self
+
+        raise ValueError(f"Cannot multiply Hamiltonian by {type(a)}")
+
+    def __isub__(self, H):
+        r"""The inplace subtraction operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
+        if isinstance(H, (Hamiltonian, Tensor, Observable)):
+            self.__iadd__(H.__mul__(-1))
+            return self
+        raise ValueError(f"Cannot subtract {type(H)} from Hamiltonian")
 
 
 class ExpvalCost:

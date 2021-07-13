@@ -1009,7 +1009,7 @@ class Observable(Operator):
         tensor = set()
 
         for ob in obs:
-            parameters = tuple(str(param) for param in ob.parameters)
+            parameters = tuple(param.tostring() for param in ob.parameters)
             tensor.add((ob.name, ob.wires, parameters))
 
         return tensor
@@ -1043,10 +1043,10 @@ class Observable(Operator):
         >>> ob1.compare(ob2)
         False
         """
-        if isinstance(other, (Tensor, Observable)):
-            return other._obs_data() == self._obs_data()
         if isinstance(other, qml.Hamiltonian):
             return other.compare(self)
+        if isinstance(other, (Tensor, Observable)):
+            return other._obs_data() == self._obs_data()
 
         raise ValueError(
             "Can only compare an Observable/Tensor, and a Hamiltonian/Observable/Tensor."
@@ -1054,11 +1054,11 @@ class Observable(Operator):
 
     def __add__(self, other):
         r"""The addition operation between Observables/Tensors/qml.Hamiltonian objects."""
-        if isinstance(other, (Observable, Tensor)):
-            return qml.Hamiltonian([1, 1], [self, other], simplify=True)
-
         if isinstance(other, qml.Hamiltonian):
             return other + self
+
+        if isinstance(other, (Observable, Tensor)):
+            return qml.Hamiltonian([1, 1], [self, other], simplify=True)
 
         raise ValueError(f"Cannot add Observable and {type(other)}")
 
