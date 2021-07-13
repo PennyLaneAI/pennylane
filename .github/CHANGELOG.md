@@ -5,7 +5,7 @@
 * Grover Diffusion Operator template added.
   [(#1442)](https://github.com/PennyLaneAI/pennylane/pull/1442)
 
-  For example, if we have an oracle that marks the :math:`|111\rangle` state with a
+  For example, if we have an oracle that marks the "all ones" state with a
   negative sign:
 
   ```python
@@ -34,7 +34,7 @@
       return qml.probs(wires)
   ```
 
-  We can see this circuit selects out the marked :math:`|111\rangle` state:
+  We can see this circuit selects out the marked state:
 
   ```pycon
   >>> GroverSearch(num_iterations=1)
