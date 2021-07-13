@@ -41,12 +41,10 @@ class GroverOperator(Operation):
         :width: 60%
         :target: javascript:void(0);
 
-    This decomposition for the circuit is equivalent to:
-
-    .. figure:: ../../_static/templates/subroutines/grover2.svg
-        :align: center
-        :width: 60%
-        :target: javascript:void(0);
+    The open circles on the controlled gate indicates control on 0 instead of 1.
+    The ``Z`` gates on the last wire are a simplification of ``H X H``, where
+    where the last ``H`` gate converts the multi-controlled X gate into a
+    multi-controlled Z gate.
 
     Args:
         wires (Union[Wires, Sequence[int], or int]): the wires to apply to
