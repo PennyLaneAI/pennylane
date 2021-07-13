@@ -19,7 +19,7 @@ computations using PennyLane.
 from collections.abc import Sequence
 import warnings
 import itertools
-from copy import deepcopy
+from copy import copy
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -117,6 +117,9 @@ class Hamiltonian(qml.operation.Observable):
         self.data = []
         self.return_type = None
 
+        self._grouped_coeffs = None
+        self._grouped_obs = None
+
         if simplify:
             self.simplify()
 
@@ -141,6 +144,26 @@ class Hamiltonian(qml.operation.Observable):
             Iterable[Observable]): observables in the Hamiltonian expression
         """
         return self._ops
+
+    @property
+    def grouped_coeffs(self):
+        """Return a list of coefficient tensors. Each coefficient tensor corresponds to a group
+        of commuting observables.
+
+        Returns:
+            list[tensor_like]): list of coefficients of grouped observables
+        """
+        return self._grouped_coeffs
+
+    @property
+    def grouped_ops(self):
+        """Return a list of observable lists. Each observable list contains a group
+        of commuting observables.
+
+        Returns:
+            list[list[Observable]]): list of coefficients of grouped observables
+        """
+        return self._grouped_obs
 
     @property
     def terms(self):
@@ -202,11 +225,15 @@ class Hamiltonian(qml.operation.Observable):
         self._coeffs = qml.math.cast_like(coeffs, self.coeffs)
         self._ops = ops
 
+    def group(self):
+        self._grouped_obs, self._grouped_coeffs = qml.grouping.group_observables(self._ops, self._coeffs)
+
     def __str__(self):
         # Lambda function that formats the wires
         wires_print = lambda ob: "'".join(map(str, ob.wires.tolist()))
 
-        paired_coeff_obs = list(zip(self.coeffs, self.ops))
+        self_coeffs = qml.math.toarray(self.coeffs)
+        paired_coeff_obs = list(zip(self_coeffs, self.ops))
         paired_coeff_obs.sort(key=lambda pair: (len(pair[1].wires), pair[0]))
 
         terms_ls = []
@@ -333,7 +360,7 @@ class Hamiltonian(qml.operation.Observable):
     def __add__(self, H):
         r"""The addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
         ops = self.ops.copy()
-        self_coeffs = deepcopy(self.coeffs)
+        self_coeffs = copy(self.coeffs)
 
         if isinstance(H, Hamiltonian):
             coeffs = qml.math.concatenate([self_coeffs, H.coeffs.copy()], axis=0)
@@ -356,7 +383,7 @@ class Hamiltonian(qml.operation.Observable):
     def __mul__(self, a):
         r"""The scalar multiplication operation between a scalar and a Hamiltonian."""
         if isinstance(a, (int, float)):
-            self_coeffs = deepcopy(self.coeffs)
+            self_coeffs = copy(self.coeffs)
             coeffs = qml.math.multiply(qml.math.cast_like([a], self_coeffs), self_coeffs)
             return qml.Hamiltonian(coeffs, self.ops.copy())
 
@@ -366,7 +393,7 @@ class Hamiltonian(qml.operation.Observable):
 
     def __matmul__(self, H):
         r"""The tensor product operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
-        coeffs1 = deepcopy(self.coeffs)
+        coeffs1 = copy(self.coeffs)
         ops1 = self.ops.copy()
 
         if isinstance(H, Hamiltonian):
@@ -551,7 +578,7 @@ class ExpvalCost:
         self._multiple_devices = isinstance(device, Sequence)
         """Bool: Records if multiple devices are input"""
 
-        if all(c == 0 for c in coeffs) or not coeffs:
+        if int(qml.math.toarray(qml.math.count_nonzero(coeffs))) == 0:
             self.cost_fn = lambda *args, **kwargs: np.array(0)
             return
 

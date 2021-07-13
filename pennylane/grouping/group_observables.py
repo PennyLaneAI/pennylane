@@ -18,6 +18,7 @@ This module contains the high-level Pauli-word-partitioning functionality used i
 from copy import copy
 
 import numpy as np
+import pennylane as qml
 
 from pennylane.grouping.graph_colouring import largest_first, recursive_largest_first
 from pennylane.grouping.utils import (
@@ -224,7 +225,7 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
     """
 
     if coefficients is not None:
-        if len(coefficients) != len(observables):
+        if qml.math.shape(coefficients)[0] != len(observables):
             raise IndexError(
                 "The coefficients list must be the same length as the observables list."
             )
@@ -237,10 +238,10 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
     if coefficients is None:
         return partitioned_paulis
 
-    partitioned_coeffs = [[0] * len(g) for g in partitioned_paulis]
+    partitioned_coeffs = [qml.math.cast_like([0] * len(g), coefficients) for g in partitioned_paulis]
 
     observables = copy(observables)
-    coefficients = copy(coefficients)
+    coefficients = [coefficients[i] for i in range(qml.math.shape(coefficients)[0])]
     for i, partition in enumerate(partitioned_paulis):
         for j, pauli_word in enumerate(partition):
             for observable in observables:
