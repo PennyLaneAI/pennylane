@@ -58,71 +58,63 @@ def test_id():
     assert op.id == "hello"
 
 
-def decomposition(wires):
-    with qml.tape.QuantumTape() as tape:
-        qml.Hadamard(wires[0])
-        qml.Hadamard(wires[1])
+decomp_3wires = [
+    qml.Hadamard,
+    qml.Hadamard,
+    qml.PauliZ,
+    qml.MultiControlledX,
+    qml.PauliZ,
+    qml.Hadamard,
+    qml.Hadamard,
+]
 
 
-class TestDecomposition:
-    def test_expand(self):
-        """Tests correct expansion"""
-        wires = tuple(range(3))
-
-        op = qml.templates.GroverOperator(wires=wires)
-
-        ops = op.expand().operations
-
-        assert isinstance(ops[0], qml.Hadamard)
-        assert isinstance(ops[1], qml.Hadamard)
-        assert isinstance(ops[2], qml.PauliZ)
-        assert isinstance(ops[3], qml.MultiControlledX)
-        assert isinstance(ops[4], qml.PauliZ)
-        assert isinstance(ops[5], qml.Hadamard)
-        assert isinstance(ops[6], qml.Hadamard)
-
-        assert ops[0].wires == (0,)
-        assert ops[1].wires == (1,)
-        assert ops[2].wires == (2,)
-        assert ops[3].wires == wires
-        assert ops[4].wires == (2,)
-        assert ops[5].wires == (0,)
-        assert ops[6].wires == (1,)
-
-    def test_custom_labels(self):
-        """assert decomposition works with string labels"""
-        wires = ("a", "b")
-
-        op = qml.templates.GroverOperator(wires=wires)
-        ops = op.expand().operations
-
-        assert ops[0].wires == ("a",)
-        assert ops[1].wires == ("b",)
-        assert ops[2].wires == wires
-        assert ops[3].wires == ("b",)
-        assert ops[4].wires == ("a",)
+def decomposition_wires(wires):
+    wire_order = [
+        (wires[0],),
+        (wires[1],),
+        (wires[2],),
+        wires,
+        (wires[2],),
+        (wires[0],),
+        (wires[1],),
+    ]
+    return wire_order
 
 
-class TestIntegration:
-    def test_findstate(self):
-        """Asserts can find state marked by oracle."""
-        wires = range(6)
+@pytest.mark.parametrize("wires", ((0, 1, 2), ("a", "c", "b")))
+def test_expand(wires):
+    """Asserts decomposition uses expected operations and wires"""
+    op = qml.templates.GroverOperator(wires=wires)
 
-        dev = qml.device("default.qubit", wires=wires)
+    decomp = op.expand().operations
 
-        @qml.qnode(dev)
-        def circ():
-            for wire in wires:
-                qml.Hadamard(wire)
+    expected_wires = decomposition_wires(wires)
 
-            for _ in range(5):
-                qml.Hadamard(wires[0])
-                qml.MultiControlledX(wires=wires[0], control_wires=wires[1:])
-                qml.Hadamard(wires[0])
-                qml.templates.GroverOperator(wires=wires)
+    for actual_op, expected_class, expected_wires in zip(decomp, decomp_3wires, expected_wires):
+        assert isinstance(actual_op, expected_class)
+        assert actual_op.wires == expected_wires
 
-            return qml.probs(wires=wires)
 
-        probs = circ()
+def test_findstate():
+    """Asserts can find state marked by oracle."""
+    wires = range(6)
 
-        assert np.argmax(probs) == len(probs) - 1
+    dev = qml.device("default.qubit", wires=wires)
+
+    @qml.qnode(dev)
+    def circ():
+        for wire in wires:
+            qml.Hadamard(wire)
+
+        for _ in range(5):
+            qml.Hadamard(wires[0])
+            qml.MultiControlledX(wires=wires[0], control_wires=wires[1:])
+            qml.Hadamard(wires[0])
+            qml.templates.GroverOperator(wires=wires)
+
+        return qml.probs(wires=wires)
+
+    probs = circ()
+
+    assert np.argmax(probs) == len(probs) - 1
