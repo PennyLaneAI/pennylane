@@ -35,7 +35,7 @@ def test_work_wires():
 
 @pytest.mark.parametrize("bad_wires", [0, (0,), tuple()])
 def test_single_wire_error(bad_wires):
-    """Assert error raise with called with only a single wire"""
+    """Assert error raised when called with only a single wire"""
 
     with pytest.raises(ValueError, match="GroverOperator must have at least"):
         op = qml.templates.GroverOperator(wires=bad_wires)

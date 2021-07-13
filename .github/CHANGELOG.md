@@ -13,12 +13,12 @@
   wires = list(range(n_wires))
 
   def oracle():
-    qml.Hadamard(wires[-1])
-    qml.Toffoli(wires=wires)
-    qml.Hadamard(wires[-1])
+      qml.Hadamard(wires[-1])
+      qml.Toffoli(wires=wires)
+      qml.Hadamard(wires[-1])
   ```
 
-  We can perform the [Grover's Search Algorithm](https://en.wikipedia.org/wiki/Grover%27s_algorithm):
+  We can perform [Grover's Search Algorithm](https://en.wikipedia.org/wiki/Grover%27s_algorithm):
 
   ```python
   dev = qml.device('default.qubit', wires=wires)
@@ -34,7 +34,7 @@
       return qml.probs(wires)
   ```
 
-  We can see this circuit selects out the marked state:
+  We can see this circuit yields the marked state with high probability:
 
   ```pycon
   >>> GroverSearch(num_iterations=1)

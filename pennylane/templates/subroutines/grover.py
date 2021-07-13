@@ -31,20 +31,21 @@ class GroverOperator(Operation):
 
     .. math::
 
-        |s\rangle = H^{\bigotimes n} |0\rangle =  \frac{1}{\sqrt{2^n}} \sum_{i=0}^{2^n} | i \rangle
+        |s\rangle = H^{\bigotimes n} |0\rangle =  \frac{1}{\sqrt{2^n}} \sum_{i=0}^{2^n-1} | i \rangle.
 
-    For this template, the operator is implemented with a layer of Hadamards, an
-    effective multi-controlled Z gate, and another layer of Hadamards.
+    For this template, the operator is implemented with a layer of Hadamards, a layer of :math:`X`,
+    followed by a multi-controlled :math:`Z` gate, then another layer of :math:`X` and Hadamards.
+    This is expressed in a compact form by the circuit below: 
 
     .. figure:: ../../_static/templates/subroutines/grover.svg
         :align: center
         :width: 60%
         :target: javascript:void(0);
 
-    The open circles on the controlled gate indicates control on 0 instead of 1.
-    The ``Z`` gates on the last wire are a simplification of ``H X H``, where
-    where the last ``H`` gate converts the multi-controlled X gate into a
-    multi-controlled Z gate.
+    The open circles on the controlled gate indicate control on 0 instead of 1.
+    The ``Z`` gates on the last wire result from leveraging the circuit identity :math:`HXH = Z`, 
+    where the last ``H`` gate converts the multi-controlled :math:`Z` gate into a
+    multi-controlled :math:`X` gate.
 
     Args:
         wires (Union[Wires, Sequence[int], or int]): the wires to apply to
@@ -67,7 +68,7 @@ class GroverOperator(Operation):
             qml.Toffoli(wires=wires)
             qml.Hadamard(wires[-1])
 
-    We can then implement the entire Grover Search Algorithm for ``n`` iterations by alternating calls to the oracle and the diffusion operator:
+    We can then implement the entire Grover Search Algorithm for ``num_iterations`` iterations by alternating calls to the oracle and the diffusion operator:
 
     .. code-block:: python
 
@@ -92,7 +93,7 @@ class GroverOperator(Operation):
 
     We can see that the marked :math:`|111\rangle` state has the greatest probability amplitude.
 
-    Optimally, the oracle-operator pairing should be repeated :math:`\frac{\pi}{4}\sqrt{2^{n}}` times.
+    Optimally, the oracle-operator pairing should be repeated :math:`\lceil \frac{\pi}{4}\sqrt{2^{n}} \rceil` times.
 
     """
     num_params = 0
