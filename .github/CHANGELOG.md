@@ -2,6 +2,61 @@
 
 <h3>New features since last release</h3>
 
+* A decomposition has been added to ``QubitUnitary`` that makes the
+  single-qubit case fully differentiable in all interfaces. Furthermore,
+  a quantum function transform, ``unitary_to_rot()``, has been added to decompose all
+  single-qubit instances of ``QubitUnitary`` in a quantum circuit.
+  [(#1427)](https://github.com/PennyLaneAI/pennylane/pull/1427)
+
+  Instances of ``QubitUnitary`` may now be decomposed directly to ``Rot``
+  operations, or ``RZ`` operations if the input matrix is diagonal. For
+  example, let
+
+  ```python
+  >>> U = np.array([
+      [-0.28829348-0.78829734j,  0.30364367+0.45085995j],
+      [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]
+  ])
+  ```
+
+  Then, we can compute the decomposition as:
+
+  ```pycon
+  >>> qml.QubitUnitary.decomposition(U, wires=0)
+  [Rot(-0.24209530281458358, 1.1493817777199102, 1.733058145303424, wires=[0])]
+  ```
+
+  We can also apply the transform directly to a quantum function, and compute the
+  gradients of parameters used to construct the unitary matrices.
+
+  ```python
+  def qfunc_with_qubit_unitary(angles):
+      z, x = angles[0], angles[1]
+
+      Z_mat = np.array([[np.exp(-1j * z / 2), 0.0], [0.0, np.exp(1j * z / 2)]])
+
+      c = np.cos(x / 2)
+      s = np.sin(x / 2) * 1j
+      X_mat = np.array([[c, -s], [-s, c]])
+
+      qml.Hadamard(wires="a")
+      qml.QubitUnitary(Z_mat, wires="a")
+      qml.QubitUnitary(X_mat, wires="b")
+      qml.CNOT(wires=["b", "a"])
+      return qml.expval(qml.PauliX(wires="a"))
+  ```
+
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=["a", "b"])
+  >>> transformed_qfunc = qml.transforms.unitary_to_rot(qfunc_with_qubit_unitary)
+  >>> transformed_qnode = qml.QNode(transformed_qfunc, dev)
+  >>> input = np.array([0.3, 0.4], requires_grad=True)
+  >>> transformed_qnode(input)
+  tensor(0.95533649, requires_grad=True)
+  >>> qml.grad(transformed_qnode)(input)
+  array([-0.29552021,  0.        ])
+  ```
+
 * The new ``qml.apply`` function can be used to add operations that might have
   already been instantiated elsewhere to the QNode and other queuing contexts:
   [(#1433)](https://github.com/PennyLaneAI/pennylane/pull/1433)
@@ -29,6 +84,10 @@
 
 <h3>Improvements</h3>
 
+* Added the `id` attribute to templates, which was missing from 
+  PR [(#1377)](https://github.com/PennyLaneAI/pennylane/pull/1377).
+  [(#1438)](https://github.com/PennyLaneAI/pennylane/pull/1438)
+  
 <h3>Breaking changes</h3>
 
 * The existing `pennylane.collections.apply` function is no longer accessible
@@ -38,8 +97,15 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where the adjoint of `qml.QFT` when using the `qml.adjoint` function
+  was not correctly computed.
+  [(#1451)](https://github.com/PennyLaneAI/pennylane/pull/1451)
+
+* Fixes the differentiability of the operation`IsingYY` for Autograd, Jax and Tensorflow.
+  [(#1425)](https://github.com/PennyLaneAI/pennylane/pull/1425)
+  
 * Fixed a bug in the `torch` interface that prevented gradients from being
-  computed on a GPU [(#1426)](https://github.com/PennyLaneAI/pennylane/pull/1426).
+  computed on a GPU. [(#1426)](https://github.com/PennyLaneAI/pennylane/pull/1426)
 
 * Quantum function transforms now preserve the format of the measurement
   results, so that a single measurement returns a single value rather than
@@ -50,13 +116,17 @@
   that performed post-processing on a vector-valued QNode.
   [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
 
+* Fixed a bug in the initialization of `QubitUnitary` where the size of
+  the matrix was not checked against the number of wires.
+  [(#1439)](https://github.com/PennyLaneAI/pennylane/pull/1439)
+
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Ashish Panigrahi.
+Olivia Di Matteo, Josh Izaac, Romain Moyard, Ashish Panigrahi, Maria Schuld.
 
 
 # Release 0.16.0 (current release)

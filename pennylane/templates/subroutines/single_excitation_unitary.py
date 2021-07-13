@@ -116,7 +116,7 @@ class SingleExcitationUnitary(Operation):
     num_wires = AnyWires
     par_domain = "A"
 
-    def __init__(self, weight, wires=None, do_queue=True):
+    def __init__(self, weight, wires=None, do_queue=True, id=None):
         if len(wires) < 2:
             raise ValueError("expected at least two wires; got {}".format(len(wires)))
 
@@ -124,7 +124,7 @@ class SingleExcitationUnitary(Operation):
         if shape != ():
             raise ValueError(f"Weight must be a scalar tensor {()}; got shape {shape}.")
 
-        super().__init__(weight, wires=wires, do_queue=do_queue)
+        super().__init__(weight, wires=wires, do_queue=do_queue, id=id)
 
     def expand(self):
 

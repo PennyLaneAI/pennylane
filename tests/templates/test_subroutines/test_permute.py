@@ -334,3 +334,8 @@ class TestInputs:
         with qml.tape.QuantumTape() as tape:
             with pytest.raises(ValueError, match=expected_error_message):
                 qml.templates.Permute(permutation_order, wires=wire_labels)
+
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        template = qml.templates.Permute([0, 1, 2], wires=[0, 1, 2], id="a")
+        assert template.id == "a"

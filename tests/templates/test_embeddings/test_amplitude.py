@@ -244,6 +244,11 @@ class TestInputs:
         ):
             circuit(x=inputs)
 
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        template = qml.templates.AmplitudeEmbedding(np.array([1, 0]), wires=[0], id="a")
+        assert template.id == "a"
+
 
 def circuit_template(features):
     qml.templates.AmplitudeEmbedding(features, wires=range(3))
