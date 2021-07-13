@@ -71,13 +71,13 @@ decomp_3wires = [
 
 def decomposition_wires(wires):
     wire_order = [
-        (wires[0],),
-        (wires[1],),
-        (wires[2],),
+        wires[0],
+        wires[1],
+        wires[2],
         wires,
-        (wires[2],),
-        (wires[0],),
-        (wires[1],),
+        wires[2],
+        wires[0],
+        wires[1],
     ]
     return wire_order
 
@@ -93,7 +93,7 @@ def test_expand(wires):
 
     for actual_op, expected_class, expected_wires in zip(decomp, decomp_3wires, expected_wires):
         assert isinstance(actual_op, expected_class)
-        assert actual_op.wires == expected_wires
+        assert actual_op.wires == qml.wires.Wires(expected_wires)
 
 
 def test_findstate():
