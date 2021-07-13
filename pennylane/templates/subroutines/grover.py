@@ -58,7 +58,7 @@ class GroverOperator(Operation):
     state, we require an oracle that flips its phase; this could be implemented using a `CCZ` gate:
 
     .. code-block:: python
-    
+
         n_wires = 3
         wires = list(range(n_wires))
 
