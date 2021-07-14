@@ -64,5 +64,5 @@ RUN if [ "$PLUGIN_NAME" = "ionq" ] ; then \
 # Run Unit-Tests again
 WORKDIR /opt/pennylane
 RUN make test
-# Image completed, Exit Now.
+# Image build completed.
 CMD echo "Successfully built Docker image!"
