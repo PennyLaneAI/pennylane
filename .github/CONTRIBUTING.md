@@ -30,6 +30,8 @@ Sometimes, it might take us a couple of hours to reply - please be patient!
 
 It's up to you!
 
+* **Community Demos** - Show off your PennyLane application on [our community page](https://pennylane.ai/qml/demos_community.html). We take Jupyter notebooks, scripts with explanations, or full repositories.  Community demos are a great way to showcase research and new paper.
+
 * **Be a part of our community** - respond to questions, issues, and
   provide exciting updates of the projects/experiments you are investigating with PennyLane
 
@@ -49,12 +51,20 @@ It's up to you!
 
 * **Contribute to our documentation, or to PennyLane directly** - if you would like to add
   to our documentation, or suggest improvements/changes, let us know - or even submit a pull request directly. All authors
-  who have contributed to the PennyLane codebase will be listed alongside the latest release.
+  who have contributed to the PennyLane codebase will be listed alongside the latest release. Even Pull Requests fixing
+  rendering issues, grammar, or a code example that doesn't work as expected can really help us out. Take a look at
+  the [documentation page](https://pennylane.readthedocs.io/en/stable/development/guide/documentation.html) for more specifics.
+
+
+* **Add a new Template or Operation** - Circuit structures crop up in literature faster than we can add them, so we are 
+  always looking for help. Take a look at the page on 
+  [Contributing templates](https://pennylane.readthedocs.io/en/stable/development/adding_templates.html)
+  for more information.
 
 * **Develop a PennyLane plugin** - PennyLane is designed to be device and quantum-framework agnostic;
   the quantum node device can be switched out to any other compatible devices, with no code changes necessary.
   We would love to support even more devices and quantum frameworks. If you would like to write a PennyLane plugin,
-  see the [developer overview](https://pennylane.readthedocs.io/en/stable/development/guide.html) section of our documentation.
+  see the page on ["Building a plugin"](https://pennylane.readthedocs.io/en/stable/development/plugins.html).
 
   Ask us if you have any questions, and send a link to your plugin to support@xanadu.ai so we can highlight it in
   our documentation!
