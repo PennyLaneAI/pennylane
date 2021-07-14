@@ -3,11 +3,8 @@ Submitting a pull request
 
 Before submitting a pull request, please make sure the following is done:
 
-* **All new features must include a unit test.** If you've fixed a bug or added
-  code that should be tested, add a test to the ``tests`` directory.
-
-  PennyLane uses pytest for testing; common fixtures can be found in the ``tests/conftest.py``
-  file.
+* **All new features must include tests.** If you've fixed a bug or added
+  code that should be tested, add a test to the ``tests`` directory. See :doc:`tests.rst` for more information.
 
 * **All new functions and code must be clearly commented and documented.**
 
@@ -64,9 +61,14 @@ automatically to the comment box when you create a new issue.
     of PennyLane covered by the test suite, to ensure that all new code additions
     are adequately tested.
 
-  - Finally, the **code quality** is calculated by
+  - The **code quality** is calculated by
     `Codefactor <https://www.codefactor.io/repository/github/pennylaneai/pennylane>`_,
     to ensure all new code additions adhere to our code quality standards.
+
+  - The **documentation** is built and temporarily hosted.  By double checking the relevant documentation page on every PR, we can make sure we do not introduce any rendering errors.  See more information on documentation at :doc:`documentation.rst`.  You can access the temporary website by clicking on "Details", as show in the following image.
+
+.. image:: view_doc_build.png
+    :width: 800px
 
 Based on these reports, we may ask you to make small changes to your branch before
 merging the pull request into the master branch. Alternatively, you can also
