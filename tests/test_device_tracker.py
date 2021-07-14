@@ -203,3 +203,47 @@ class TestDefaultTrackerIntegration:
         assert kwargs_called["totals"] == {"executions": 2, "shots": 30}
         assert kwargs_called["history"] == {"executions": [1, 1], "shots": [10, 20]}
         assert kwargs_called["latest"] == {"executions": 1, "shots": 20}
+
+
+class TestConstructor:
+    def test_track(self):
+        """Tests that track assigns a tracker class to a device"""
+
+        tracker = track()
+
+        assert isinstance(tracker, DefaultTracker)
+
+    def test_track_device_assignment(self):
+        """Tests device passed through with track."""
+
+        dev = qml.device("default.qubit", wires=1)
+
+        tracker = track(dev)
+
+        assert id(tracker) == id(dev.tracker)
+
+    def test_callback_passed(self, mocker):
+        """Assert callback function passed through track."""
+
+        class callback_wrapper:
+            @staticmethod
+            def callback(totals=dict(), history=dict(), latest=dict()):
+                pass
+
+        wrapper = callback_wrapper()
+        spy = mocker.spy(wrapper, "callback")
+
+        tracker = track(callback=wrapper.callback)
+
+        tracker.record()
+
+        assert spy.call_count == 1
+
+        assert id(wrapper.callback) == id(tracker.callback)
+
+    def test_persistent_passed(self):
+        """Test persistent keyword passed"""
+
+        tracker = track(persistent=True)
+
+        assert tracker.persistent
