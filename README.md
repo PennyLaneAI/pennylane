@@ -108,7 +108,7 @@ guide](https://pennylane.ai/qml/demos_submission.html).
 **Note:** Docker builds using "make" will work on Linux and MacOS only. For MS Windows one can use [WSL](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
 
 ### Build a basic PennyLane image
-- To build a basic PennyLane image without any additional interfaces (Torch, TensorFlow, or Jax) and **plugins** (qiskit, amazon-bracket, cirq, rigetti) run following:
+- To build a basic PennyLane image without any additional interfaces (Torch, TensorFlow, or Jax) and **plugins** (qiskit, amazon-braket, cirq, forest) run the following:
 
 ```console
 make -f docker/Makefile build-base
