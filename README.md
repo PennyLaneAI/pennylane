@@ -101,7 +101,7 @@ scripts.
 If you would like to contribute your own demo, see our [demo submission
 guide](https://pennylane.ai/qml/demos_submission.html).
 
-## Build using Docker
+## Build a PennyLane Docker image
 
 **Docker**  support exists for building using **CPU** and **GPU** (Nvidia CUDA 11.1+) images.
 
