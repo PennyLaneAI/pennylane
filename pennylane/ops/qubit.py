@@ -445,7 +445,7 @@ class CZ(DiagonalOperation):
     num_wires = 2
     par_domain = None
     is_self_inverse = True
-    is_symmetric_over_wires = True
+    is_symmetric_over_all_wires = True
     eigvals = np.array([1, 1, 1, -1])
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 
@@ -531,7 +531,7 @@ class SWAP(Operation):
     num_wires = 2
     par_domain = None
     is_self_inverse = True
-    is_symmetric_over_wires = True
+    is_symmetric_over_all_wires = True
     matrix = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
     @classmethod
@@ -689,6 +689,7 @@ class Toffoli(Operation):
     num_wires = 3
     par_domain = None
     is_self_inverse = True
+    is_symmetric_over_control_wires = True
     matrix = np.array(
         [
             [1, 0, 0, 0, 0, 0, 0, 0],

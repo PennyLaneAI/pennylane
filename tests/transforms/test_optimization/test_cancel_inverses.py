@@ -116,6 +116,25 @@ class TestCancelInverses:
         wires_expected = [Wires(0), Wires(1), Wires([0, 1]), Wires(2), Wires(1)]
         _compare_operation_lists(ops, names_expected, wires_expected)
 
+    def test_three_qubits_toffolis(self):
+        """Test that Toffolis on different permutations of wires cancel correctly."""
+
+        def qfunc():
+            # These two will cancel
+            qml.Toffoli(wires=["a", "b", "c"])
+            qml.Toffoli(wires=["b", "a", "c"])
+            # These two will not cancel
+            qml.Toffoli(wires=["a", "b", "c"])
+            qml.Toffoli(wires=["a", "c", "b"])
+
+        transformed_qfunc = cancel_inverses(qfunc)
+
+        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+
+        names_expected = ["Toffoli"] * 2
+        wires_expected = [Wires(["a", "b", "c"]), Wires(["a", "c", "b"])]
+        _compare_operation_lists(ops, names_expected, wires_expected)
+
     def test_two_qubits_cnot_same_direction(self):
         """Test that two adjacent CNOTs cancel."""
 

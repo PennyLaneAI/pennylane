@@ -73,7 +73,7 @@ def cancel_inverses(tape):
 
     while len(list_copy) > 0:
         current_gate = list_copy[0]
-
+        print(f"Working with current gate {current_gate}")
         # Find the next gate that acts on at least one of the same wires
         next_gate_idx = _find_next_gate(current_gate.wires, list_copy[1:])
 
@@ -115,10 +115,21 @@ def cancel_inverses(tape):
                     apply(current_gate)
                 # There is full overlap, but the wires are in a different order
                 else:
-                    # If the wires are in a different order, only gates that are "symmetric"
-                    # over the wires (e.g., CZ), can be cancelled.
-                    if current_gate.is_symmetric_over_wires:
+                    # If the wires are in a different order, gates that are "symmetric"
+                    # over all wires (e.g., CZ), can be cancelled.
+                    if current_gate.is_symmetric_over_all_wires:
                         list_copy.pop(next_gate_idx + 1)
+                    # For other gates, as long as the control wires are the same, we can still
+                    # cancel (e.g., the Toffoli gate).
+                    elif current_gate.is_symmetric_over_control_wires:
+                        if (
+                            len(Wires.shared_wires([current_gate.wires[:-1], next_gate.wires[:-1]]))
+                            == len(current_gate.wires) - 1
+                        ):
+                            list_copy.pop(next_gate_idx + 1)
+                        else:
+                            apply(current_gate)
+                    # Apply gate any cases where there is no wire symmetry
                     else:
                         apply(current_gate)
         # If neither of the flags are true, queue and move on to the next item
