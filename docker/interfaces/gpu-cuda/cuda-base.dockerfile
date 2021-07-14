@@ -37,7 +37,8 @@ COPY --from=compile-image /opt/venv /opt/venv
 # Get PennyLane Source to use for Unit-tests at later stage
 COPY --from=compile-image /opt/pennylane /opt/pennylane
 ENV PATH="/opt/venv/bin:$PATH"
-RUN apt-get update && apt-get install -y apt-utils \
+RUN apt-get update \
+    && apt-get install -y apt-utils \
     --no-install-recommends python3 python3-pip python3-venv
 # Image completed, Exit Now.
 CMD echo "Successfully built Docker image for GPU"
