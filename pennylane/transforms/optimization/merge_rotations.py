@@ -21,7 +21,7 @@ from .optimization_utils import find_next_gate, fuse_rot_angles
 
 
 @qfunc_transform
-def merge_rotations(tape):
+def merge_rotations(tape, tol=1e-8, specify_ops=None):
     """Quantum function transform to combine rotation gates of the same type
     that act sequentially.
 
@@ -30,6 +30,13 @@ def merge_rotations(tape):
 
     Args:
         qfunc (function): A quantum function.
+        tol (float): A tolerance for which to apply a rotation after merging.
+            If the parameter of the merge rotation is less than this value, the
+            rotation will not be applied.
+        specify_ops (None or list[str]): A list of specific operations to merge. If
+            set to ``None`` (default), all operations with the ``is_composable_rotation``
+            attribute set to ``True`` will be merged. Otherwise, only the operations whose
+            names match those in the list will undergo merging.
 
     **Example**
 
@@ -52,19 +59,30 @@ def merge_rotations(tape):
     >>> dev = qml.device('default.qubit', wires=3)
     >>> qnode = qml.QNode(qfunc, dev)
     >>> print(qml.draw(qnode)(1, 2, 3))
-    0: ───RX(1)──RX(2)──────────╭RZ(3)──┤ ⟨Z⟩
-    1: ──╭C──────RY(2)──RY(-2)──│───────┤
-    2: ──╰X──────H──────────────╰C──────┤
+     0: ───RX(1)──RX(2)──────────╭RZ(3)──┤ ⟨Z⟩
+     1: ──╭C──────RY(2)──RY(-2)──│───────┤
+     2: ──╰X──────H──────────────╰C──────┤
 
     By inspection, we can combine the two ``RX`` rotations on the first qubit.
     On the second qubit, we have a cumulative angle of 0, and the gates will cancel.
 
-    >>> optimized_qfunc = merge_rotations(qfunc)
+    >>> optimized_qfunc = merge_rotations()(qfunc)
     >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
     >>> print(qml.draw(optimized_qnode)(1, 2, 3))
-    0: ───RX(3)─────╭RZ(3)──┤ ⟨Z⟩
-    1: ──╭C─────────│───────┤
-    2: ──╰X──────H──╰C──────┤
+     0: ───RX(3)─────╭RZ(3)──┤ ⟨Z⟩
+     1: ──╭C─────────│───────┤
+     2: ──╰X──────H──╰C──────┤
+
+    It is also possible to explicitly specify which rotations ``merge_rotations`` should
+    be merged using the ``specify_ops`` argument. For example, if in the above
+    circuit we wanted only to merge the "RX" gates, we could do so as follows:
+
+    >>> optimized_qfunc = merge_rotations(specify_ops=["RX"])(qfunc)
+    >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
+    >>> print(qml.draw(optimized_qnode)(1, 2, 3))
+     0: ───RX(3)─────────────────╭RZ(3)──┤ ⟨Z⟩
+     1: ──╭C──────RY(2)──RY(-2)──│───────┤
+     2: ──╰X──────H──────────────╰C──────┤
     """
     # Make a working copy of the list to traverse
     list_copy = tape.operations.copy()
@@ -72,13 +90,21 @@ def merge_rotations(tape):
     while len(list_copy) > 0:
         current_gate = list_copy[0]
 
-        # Normally queue any non-rotation gates
+        # If a specific list of operations is specified, check and see if our
+        # op is in it, then try to merge. If not, queue and move on.
+        if specify_ops is not None:
+            if current_gate.name not in specify_ops:
+                apply(current_gate)
+                list_copy.pop(0)
+                continue
+
+        # Check if the rotation is composable; if it is not, move on.
         if not current_gate.is_composable_rotation:
             apply(current_gate)
             list_copy.pop(0)
             continue
 
-        # Otherwise, find the next gate that acts on the same wires
+        # Find the next gate that acts on the same wires
         next_gate_idx = find_next_gate(current_gate.wires, list_copy[1:])
 
         # If no such gate is found (either there simply is none, or there are other gates
@@ -117,7 +143,7 @@ def merge_rotations(tape):
             # If we did merge, look now at the next gate
             next_gate_idx = find_next_gate(current_gate.wires, list_copy[1:])
 
-        if not allclose(cumulative_angles, zeros(len(cumulative_angles))):
+        if not allclose(cumulative_angles, zeros(len(cumulative_angles)), atol=tol):
             current_gate.__class__(*cumulative_angles, wires=current_gate.wires)
 
         # Remove the first gate gate from the working list

@@ -39,7 +39,7 @@ class TestMergeRotations:
             qml.RZ(theta_1, wires=0)
             qml.RZ(theta_2, wires=0)
 
-        transformed_qfunc = merge_rotations(qfunc)
+        transformed_qfunc = merge_rotations()(qfunc)
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
@@ -65,7 +65,7 @@ class TestMergeRotations:
             qml.RZ(theta_1, wires=0)
             qml.RZ(theta_2, wires=1)
 
-        transformed_qfunc = merge_rotations(qfunc)
+        transformed_qfunc = merge_rotations()(qfunc)
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
@@ -74,6 +74,27 @@ class TestMergeRotations:
         for op_obtained, op_expected in zip(ops, expected_ops):
             assert op_obtained.name == op_expected.name
             assert np.allclose(op_obtained.parameters, op_expected.parameters)
+
+    def test_two_qubits_rotation_merge_tolerance(self):
+        """Test whether tolerance argument is respected for merging."""
+
+        def qfunc():
+            qml.RZ(1e-7, wires=0)
+            qml.RZ(-2e-7, wires=0)
+
+        # Try with default tolerance; these ops should still be applied
+        transformed_qfunc = merge_rotations()(qfunc)
+
+        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+
+        assert len(ops) == 1
+        assert ops[0].name == "RZ"
+        assert ops[0].parameters[0] == -1e-7
+
+        # Now try with higher tolerance threshold; the ops should cancel
+        transformed_qfunc = merge_rotations(tol=1e-5)(qfunc)
+        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        assert len(ops) == 0
 
     @pytest.mark.parametrize(
         ("theta_11", "theta_12", "theta_21", "theta_22", "expected_ops"),
@@ -93,7 +114,7 @@ class TestMergeRotations:
             qml.RX(theta_12, wires=0)
             qml.RY(theta_22, wires=1)
 
-        transformed_qfunc = merge_rotations(qfunc)
+        transformed_qfunc = merge_rotations()(qfunc)
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
@@ -121,7 +142,7 @@ class TestMergeRotations:
             qml.adjoint(qml.CRX)(theta_12, wires=[0, 1])
             qml.RY(theta_22, wires=2)
 
-        transformed_qfunc = merge_rotations(qfunc)
+        transformed_qfunc = merge_rotations()(qfunc)
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
@@ -131,6 +152,30 @@ class TestMergeRotations:
             assert op_obtained.name == op_expected.name
             assert np.allclose(op_obtained.parameters, op_expected.parameters)
 
+    def test_two_qubits_merge_gate_subset(self):
+        """Test that specifying a subset of operations produces correct results merged."""
+
+        def qfunc():
+            qml.CRX(0.1, wires=[0, 1])
+            qml.CRX(0.2, wires=[0, 1])
+            qml.RY(0.3, wires=["a"])
+            qml.RY(0.5, wires=["a"])
+            qml.RX(-0.5, wires=[2])
+            qml.RX(0.2, wires=[2])
+
+        transformed_qfunc = merge_rotations(specify_ops=["RX", "CRX"])(qfunc)
+
+        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+
+        names_expected = ["CRX", "RY", "RY", "RX"]
+        wires_expected = [Wires([0, 1]), Wires("a"), Wires("a"), Wires(2)]
+        compare_operation_lists(ops, names_expected, wires_expected)
+
+        assert qml.math.isclose(ops[0].parameters[0], 0.3)
+        assert qml.math.isclose(ops[1].parameters[0], 0.3)
+        assert qml.math.isclose(ops[2].parameters[0], 0.5)
+        assert qml.math.isclose(ops[3].parameters[0], -0.3)
+
     def test_one_qubit_rotation_blocked(self):
         """Test that rotations on one-qubit separated by a "blocking" operation don't merge."""
 
@@ -139,7 +184,7 @@ class TestMergeRotations:
             qml.Hadamard(wires=0)
             qml.RX(0.4, wires=0)
 
-        transformed_qfunc = merge_rotations(qfunc)
+        transformed_qfunc = merge_rotations()(qfunc)
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
@@ -159,7 +204,7 @@ class TestMergeRotations:
             qml.CNOT(wires=[0, 1])
             qml.RX(0.8, wires=0)
 
-        transformed_qfunc = merge_rotations(qfunc)
+        transformed_qfunc = merge_rotations()(qfunc)
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
@@ -184,7 +229,7 @@ class TestMergeRotations:
             qml.CRY(theta_1, wires=["w1", "w2"])
             qml.CRY(theta_2, wires=["w1", "w2"])
 
-        transformed_qfunc = merge_rotations(qfunc)
+        transformed_qfunc = merge_rotations()(qfunc)
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
@@ -202,7 +247,7 @@ class TestMergeRotations:
             qml.CRX(0.2, wires=["w1", "w2"])
             qml.CRX(0.3, wires=["w2", "w1"])
 
-        transformed_qfunc = merge_rotations(qfunc)
+        transformed_qfunc = merge_rotations()(qfunc)
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
@@ -232,7 +277,7 @@ def qfunc(theta):
     return qml.expval(qml.PauliX(0) @ qml.PauliX(2))
 
 
-transformed_qfunc = merge_rotations(qfunc)
+transformed_qfunc = merge_rotations()(qfunc)
 
 expected_op_list = ["Hadamard", "RZ", "PauliY", "CNOT", "CRY", "PauliZ", "Rot"]
 expected_wires_list = [
