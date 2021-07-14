@@ -588,6 +588,7 @@ class TestInterfaceDeviceIntegration:
             "returns_state": False,
             "supports_analytic_computation": True,
             "passthru_interface": "tf",
+            "supports_tracker": True,
         }
         assert cap == capabilities
 

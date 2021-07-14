@@ -908,6 +908,7 @@ class TestQNodeIntegration:
                 "tf": "default.qubit.tf",
                 "autograd": "default.qubit.autograd",
                 "jax": "default.qubit.jax",
+            "supports_tracker": True,
             },
         }
         assert cap == capabilities

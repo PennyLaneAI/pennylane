@@ -168,7 +168,7 @@ def track(dev=None, **kwargs):
     .. UsageDetails::
 
     .. note::
-        With backpropagation, this functions should take ``qnode.device``
+        With backpropagation, this function should take ``qnode.device``
         instead of the device used to create the QNode.
 
     Users can pass a custom callback function to the ``callback`` keyword. This
