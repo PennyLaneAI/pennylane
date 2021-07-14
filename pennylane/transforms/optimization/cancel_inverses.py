@@ -17,7 +17,7 @@ from pennylane import apply
 from pennylane.wires import Wires
 from pennylane.transforms import qfunc_transform
 
-from .optimization_utils import _find_next_gate
+from .optimization_utils import find_next_gate
 
 
 @qfunc_transform
@@ -75,7 +75,7 @@ def cancel_inverses(tape):
         current_gate = list_copy[0]
         print(f"Working with current gate {current_gate}")
         # Find the next gate that acts on at least one of the same wires
-        next_gate_idx = _find_next_gate(current_gate.wires, list_copy[1:])
+        next_gate_idx = find_next_gate(current_gate.wires, list_copy[1:])
 
         # If no such gate is found queue the operation and move on
         if next_gate_idx is None:

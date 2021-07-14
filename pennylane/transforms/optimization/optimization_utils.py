@@ -17,7 +17,7 @@ from pennylane.math import allclose, sin, cos, arccos, arctan2, zeros, cast_like
 from pennylane.wires import Wires
 
 
-def _find_next_gate(wires, op_list):
+def find_next_gate(wires, op_list):
     """Given a list of operations, finds the next operation that acts on at least one of
     the same set of wires, if present.
 
@@ -98,7 +98,7 @@ def _yzy_to_zyz(middle_yzy):
     return stack([z1, y, z2])
 
 
-def _fuse_rot_angles(angles_1, angles_2):
+def fuse_rot_angles(angles_1, angles_2):
     """Computed the set of rotation angles that is obtained when composing
     two ``qml.Rot`` operations.
 

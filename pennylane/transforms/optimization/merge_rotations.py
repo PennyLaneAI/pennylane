@@ -17,7 +17,7 @@ from pennylane import apply
 from pennylane.transforms import qfunc_transform
 from pennylane.math import allclose, stack, cast_like, zeros
 
-from .optimization_utils import _find_next_gate, _fuse_rot_angles
+from .optimization_utils import find_next_gate, fuse_rot_angles
 
 
 @qfunc_transform
@@ -79,7 +79,7 @@ def merge_rotations(tape):
             continue
 
         # Otherwise, find the next gate that acts on the same wires
-        next_gate_idx = _find_next_gate(current_gate.wires, list_copy[1:])
+        next_gate_idx = find_next_gate(current_gate.wires, list_copy[1:])
 
         # If no such gate is found (either there simply is none, or there are other gates
         # "in the way", queue the operation and move on
@@ -102,7 +102,7 @@ def merge_rotations(tape):
 
                 # The Rot gate must be treated separately
                 if current_gate.name == "Rot":
-                    cumulative_angles = _fuse_rot_angles(
+                    cumulative_angles = fuse_rot_angles(
                         cumulative_angles, cast_like(stack(next_gate.parameters), cumulative_angles)
                     )
                 # Other, single-parameter rotation gates just have the angle summed
@@ -115,7 +115,7 @@ def merge_rotations(tape):
                 break
 
             # If we did merge, look now at the next gate
-            next_gate_idx = _find_next_gate(current_gate.wires, list_copy[1:])
+            next_gate_idx = find_next_gate(current_gate.wires, list_copy[1:])
 
         if not allclose(cumulative_angles, zeros(len(cumulative_angles))):
             current_gate.__class__(*cumulative_angles, wires=current_gate.wires)
