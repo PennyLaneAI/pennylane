@@ -28,10 +28,13 @@ class TestTrackerCoreBehaviour:
         tracker = DefaultTracker()
 
         assert tracker.persistent == False
-        assert tracker.tracking == False
+        assert tracker.callback is None
+
         assert tracker.history == dict()
         assert tracker.totals == dict()
         assert tracker.latest == dict()
+
+        assert tracker.tracking == False
 
     def test_device_assignment(self):
         """Assert gets assigned to device"""
@@ -41,16 +44,20 @@ class TestTrackerCoreBehaviour:
 
         assert id(dev.tracker) == id(tracker)
 
-    def test_incompatiable_device_assignment(self):
+    def test_incompatible_device_assignment(self):
         """Assert exception raised when `supports_tracker` not True"""
-        dev = qml.device("default.qubit", wires=2)
+        
+        class TempDevice():
+            short_name = "temp"
+            def capabilities(self):
+                return dict()
 
-        del dev._capabilities["supports_tracker"]
+        temp = TempDevice()
 
         with pytest.raises(
-            Exception, match=r"Device 'default.qubit' does not support device tracking"
+            Exception, match=r"Device 'temp' does not support device tracking"
         ):
-            DefaultTracker(dev=dev)
+            DefaultTracker(dev=temp)
 
     def test_reset(self):
         """Assert reset empties totals and history"""
@@ -128,7 +135,7 @@ class TestTrackerCoreBehaviour:
 
         tracker.record()
 
-        args_called, kwargs_called = spy.call_args_list[-1]
+        _, kwargs_called = spy.call_args_list[-1]
 
         assert kwargs_called["totals"] == tracker.totals
         assert kwargs_called["history"] == tracker.history
@@ -160,7 +167,7 @@ class TestDefaultTrackerIntegration:
         assert tracker.history == {"executions": [1], "shots": [None]}
         assert tracker.latest == {"executions": 1, "shots": None}
 
-        args_called, kwargs_called = spy.call_args_list[-1]
+        _, kwargs_called = spy.call_args_list[-1]
 
         assert kwargs_called["totals"] == {"executions": 1}
         assert kwargs_called["history"] == {"executions": [1], "shots": [None]}
@@ -193,7 +200,7 @@ class TestDefaultTrackerIntegration:
 
         assert spy.call_count == 2
 
-        args_called, kwargs_called = spy.call_args_list[-1]
+        _, kwargs_called = spy.call_args_list[-1]
         assert kwargs_called["totals"] == {"executions": 2, "shots": 30}
         assert kwargs_called["history"] == {"executions": [1, 1], "shots": [10, 20]}
         assert kwargs_called["latest"] == {"executions": 1, "shots": 20}
