@@ -32,7 +32,7 @@ RUN git submodule update --init --recursive \
     && make test
 
 # create Second small build.
-FROM ubuntu:20.04
+FROM ubuntu:latest
 COPY --from=compile-image /opt/venv /opt/venv
 # Get PennyLane Source to use for Unit-tests at later stage
 COPY --from=compile-image /opt/pennylane /opt/pennylane
