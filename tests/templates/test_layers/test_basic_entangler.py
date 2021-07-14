@@ -124,6 +124,11 @@ class TestInputs:
         with pytest.raises(ValueError, match="Weights tensor must have second dimension of length"):
             circuit([[1, 0], [1, 0]])
 
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        template = qml.templates.BasicEntanglerLayers(np.array([[1]]), wires=[0], id="a")
+        assert template.id == "a"
+
 
 class TestAttributes:
     """Tests additional methods and attributes"""

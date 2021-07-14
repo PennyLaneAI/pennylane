@@ -144,7 +144,9 @@ class UCCSD(Operation):
     num_wires = AnyWires
     par_domain = "A"
 
-    def __init__(self, weights, wires, s_wires=None, d_wires=None, init_state=None, do_queue=True):
+    def __init__(
+        self, weights, wires, s_wires=None, d_wires=None, init_state=None, do_queue=True, id=None
+    ):
 
         if (not s_wires) and (not d_wires):
             raise ValueError(
@@ -178,7 +180,7 @@ class UCCSD(Operation):
 
         self.init_state_flipped = np.flip(init_state)
 
-        super().__init__(weights, wires=wires, do_queue=do_queue)
+        super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 
     def expand(self):
 
