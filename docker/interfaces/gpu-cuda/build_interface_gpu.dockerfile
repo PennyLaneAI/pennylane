@@ -1,4 +1,4 @@
-From pennylane/cuda/base:latest
+FROM pennylane/cuda/base:latest
 
 ARG INTERFACE_NAME=tensorflow
 # Build Jax interface
