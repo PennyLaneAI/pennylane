@@ -51,7 +51,7 @@ RUN if [ "$PLUGIN_NAME" = "forest" ] ; then \
     apt-get update && apt-get -y install --no-install-recommends make \
     && rm -rf /var/lib/apt/lists/* && pip3 install pennylane-forest;fi
 
-# Build orquestra Plugin
+# Build Orquestra Plugin
 RUN if [ "$PLUGIN_NAME" = "orquestra" ] ; then \
     apt-get update && apt-get -y install --no-install-recommends make \
     && rm -rf /var/lib/apt/lists/* && pip3 install pennylane-orquestra;fi
