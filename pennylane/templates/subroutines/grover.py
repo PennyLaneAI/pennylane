@@ -35,7 +35,7 @@ class GroverOperator(Operation):
 
     For this template, the operator is implemented with a layer of Hadamards, a layer of :math:`X`,
     followed by a multi-controlled :math:`Z` gate, then another layer of :math:`X` and Hadamards.
-    This is expressed in a compact form by the circuit below: 
+    This is expressed in a compact form by the circuit below:
 
     .. figure:: ../../_static/templates/subroutines/grover.svg
         :align: center
@@ -43,7 +43,7 @@ class GroverOperator(Operation):
         :target: javascript:void(0);
 
     The open circles on the controlled gate indicate control on 0 instead of 1.
-    The ``Z`` gates on the last wire result from leveraging the circuit identity :math:`HXH = Z`, 
+    The ``Z`` gates on the last wire result from leveraging the circuit identity :math:`HXH = Z`,
     where the last ``H`` gate converts the multi-controlled :math:`Z` gate into a
     multi-controlled :math:`X` gate.
 
