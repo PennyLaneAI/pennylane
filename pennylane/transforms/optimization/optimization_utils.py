@@ -114,15 +114,12 @@ def fuse_rot_angles(angles_1, angles_2):
         array[float]: A tuple of rotation angles for a single ``qml.Rot`` operation
         that implements the same operation as the two sets of input angles.
     """
+    # Check for all-zero instances; if there are some, we can just return the sum.
     are_angles_1_zero = allclose(angles_1, zeros(3))
     are_angles_2_zero = allclose(angles_2, zeros(3))
 
-    if are_angles_1_zero and are_angles_2_zero:
-        return zeros(3)
-    if are_angles_1_zero:
-        return angles_2
-    if are_angles_2_zero:
-        return angles_1
+    if are_angles_1_zero or are_angles_2_zero:
+        return stack([angles_1[i] + angles_2[i] for i in range(3)])
 
     # RZ(a) RY(b) RZ(c) fused with RZ(d) RY(e) RZ(f)
     # first produces RZ(a) RY(b) RZ(c+d) RY(e) RZ(f)

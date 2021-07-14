@@ -274,6 +274,7 @@ def qfunc(theta):
     qml.CRY(theta[3], wires=[1, 2])
     qml.Rot(theta[0], theta[1], theta[2], wires=1)
     qml.Rot(theta[2], theta[3], theta[0], wires=1)
+    qml.Rot(0.0, 0.0, 0.0, wires=1)
     return qml.expval(qml.PauliX(0) @ qml.PauliX(2))
 
 
