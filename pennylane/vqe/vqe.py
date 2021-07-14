@@ -127,7 +127,7 @@ class Hamiltonian(qml.operation.Observable):
 
         self.queue()
 
-        super().__init__(coeffs, wires=self._wires, id=id, do_queue=True)
+        super().__init__(coeffs, wires=self._wires, id=id, do_queue=False)
 
     @property
     def coeffs(self):

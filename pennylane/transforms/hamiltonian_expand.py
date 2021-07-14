@@ -78,8 +78,6 @@ def hamiltonian_expand(tape):
             "Passed tape must end in `qml.expval(H)`, where H is of type `qml.Hamiltonian`"
         )
 
-    hamiltonian.simplify()
-
     if hamiltonian.grouped_coeffs is not None and hamiltonian.grouped_coeffs is not None:
         # if the group() method of the hamiltonian has been called, extract the groups
         obs_groupings = hamiltonian.grouped_ops
@@ -105,7 +103,7 @@ def hamiltonian_expand(tape):
 
     def processing_fn(res):
         dot_products = [
-            qml.math.dot(qml.math.convert_like(c, r), r) for c, r in zip(coeffs_groupings, res)
+            qml.math.dot(c, r[0]) for c, r in zip(coeffs_groupings, res)
         ]
         return qml.math.sum(qml.math.stack(dot_products))
 
