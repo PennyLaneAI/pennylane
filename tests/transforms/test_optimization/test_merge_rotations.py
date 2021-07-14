@@ -103,7 +103,35 @@ class TestMergeRotations:
             assert op_obtained.name == op_expected.name
             assert np.allclose(op_obtained.parameters, op_expected.parameters)
 
-    def test_one_qubits_rotation_blocked(self):
+    @pytest.mark.parametrize(
+        ("theta_11", "theta_12", "theta_21", "theta_22", "expected_ops"),
+        [
+            (0.3, -0.2, 0.5, -0.8, [qml.CRX(0.5, wires=[0, 1]), qml.RY(-1.3, wires=1)]),
+            (0.3, 0.3, 0.7, -0.1, [qml.RY(-0.8, wires=1)]),
+        ],
+    )
+    def test_two_qubits_merge_with_adjoint(
+        self, theta_11, theta_12, theta_21, theta_22, expected_ops
+    ):
+        """Test that adjoint rotations on different qubits get merged."""
+
+        def qfunc():
+            qml.CRX(theta_11, wires=[0, 1])
+            qml.adjoint(qml.RY)(theta_21, wires=2)
+            qml.adjoint(qml.CRX)(theta_12, wires=[0, 1])
+            qml.RY(theta_22, wires=2)
+
+        transformed_qfunc = merge_rotations(qfunc)
+
+        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+
+        assert len(ops) == len(expected_ops)
+
+        for op_obtained, op_expected in zip(ops, expected_ops):
+            assert op_obtained.name == op_expected.name
+            assert np.allclose(op_obtained.parameters, op_expected.parameters)
+
+    def test_one_qubit_rotation_blocked(self):
         """Test that rotations on one-qubit separated by a "blocking" operation don't merge."""
 
         def qfunc():
@@ -301,13 +329,11 @@ class TestMergeRotationsInterfaces:
     def test_merge_rotations_jax(self):
         """Test QNode and gradient in JAX interface."""
         jax = pytest.importorskip("jax")
+        from jax import numpy as jnp
 
         from jax.config import config
-
         remember = config.read("jax_enable_x64")
         config.update("jax_enable_x64", True)
-
-        from jax import numpy as jnp
 
         original_qnode = qml.QNode(qfunc, dev, interface="jax")
         transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="jax")

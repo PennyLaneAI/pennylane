@@ -74,13 +74,7 @@ def cancel_inverses(tape):
     while len(list_copy) > 0:
         current_gate = list_copy[0]
 
-        # Normally queue any gates that are not their own inverse
-        if not current_gate.is_self_inverse:
-            apply(current_gate)
-            list_copy.pop(0)
-            continue
-
-        # If a gate does has a self-inverse, find the next gate that acts on the same wires
+        # Find the next gate that acts on at least one of the same wires
         next_gate_idx = _find_next_gate(current_gate.wires, list_copy[1:])
 
         # If no such gate is found queue the operation and move on
@@ -92,15 +86,29 @@ def cancel_inverses(tape):
         # Otherwise, get the next gate
         next_gate = list_copy[next_gate_idx + 1]
 
-        # If next gate is the same (self inverse), we can potentially remove it
-        # This implicitly ensures that the number of wires for the gates is also the same
-        if current_gate.name == next_gate.name:
-            # If the wires are the same, then we can safely remove
+        # There are then three possibilities that may lead to inverse cancellation. For a gate U,
+        # 1. U is self-inverse, and the next gate is also U
+        # 2. The current gate is U.inv and the next gate is U
+        # 3. The current gate is U and the next gate is U.inv
+
+        # Case 1
+        are_self_inverses = current_gate.is_self_inverse and current_gate.name == next_gate.name
+
+        # Cases 2 and 3
+        are_inverses = False
+        name_set = set([current_gate.name, next_gate.name])
+        shortest_name = min(name_set)
+        if set([shortest_name, shortest_name + ".inv"]) == name_set:
+            are_inverses = True
+
+        # If either of the two flags is true, we can potentially cancel the gates
+        if are_self_inverses or are_inverses:
+            # If the wires are the same, then we can safely remove both
             if current_gate.wires == next_gate.wires:
                 list_copy.pop(next_gate_idx + 1)
             # If wires are not equal, there are two things that can happen
             else:
-                # There is not full overlap in the wires
+                # There is not full overlap in the wires; we cannot cancel
                 if len(Wires.shared_wires([current_gate.wires, next_gate.wires])) != len(
                     current_gate.wires
                 ):
@@ -113,7 +121,7 @@ def cancel_inverses(tape):
                         list_copy.pop(next_gate_idx + 1)
                     else:
                         apply(current_gate)
-        # Otherwise, queue and move on to the next item
+        # If neither of the flags are true, queue and move on to the next item
         else:
             apply(current_gate)
 

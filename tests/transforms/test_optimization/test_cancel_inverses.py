@@ -23,12 +23,25 @@ from utils import _compare_operation_lists
 class TestCancelInverses:
     """Test that adjacent inverse gates are cancelled."""
 
-    def test_one_qubit_cancel_adjacent_inverse(self):
-        """Test that a single-qubit circuit with adjacent gates cancels."""
+    def test_one_qubit_cancel_adjacent_self_inverse(self):
+        """Test that a single-qubit circuit with adjacent self-inverse gate cancels."""
 
         def qfunc():
             qml.Hadamard(wires=0)
             qml.Hadamard(wires=0)
+
+        transformed_qfunc = cancel_inverses(qfunc)
+
+        new_tape = qml.transforms.make_tape(transformed_qfunc)()
+
+        assert len(new_tape.operations) == 0
+
+    def test_one_qubit_cancel_adjacent_inverse(self):
+        """Test that a single-qubit circuit with adjacent inverse gate cancels."""
+
+        def qfunc():
+            qml.S(wires=0)
+            qml.adjoint(qml.S)(wires=0)
 
         transformed_qfunc = cancel_inverses(qfunc)
 
@@ -152,6 +165,8 @@ dev = qml.device("default.qubit", wires=3)
 def qfunc(theta):
     qml.Hadamard(wires=0)
     qml.PauliX(wires=1)
+    qml.S(wires=1)
+    qml.adjoint(qml.S)(wires=1)
     qml.Hadamard(wires=0)
     qml.CNOT(wires=[0, 1])
     qml.RZ(theta[0], wires=2)
@@ -252,6 +267,11 @@ class TestCancelInversesInterfaces:
         """Test QNode and gradient in JAX interface."""
         jax = pytest.importorskip("jax")
         from jax import numpy as jnp
+
+        # Enable float64 support
+        from jax.config import config
+        remember = config.read("jax_enable_x64")
+        config.update("jax_enable_x64", True)
 
         original_qnode = qml.QNode(qfunc, dev, interface="jax")
         transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="jax")
