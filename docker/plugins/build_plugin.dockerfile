@@ -65,4 +65,4 @@ RUN if [ "$PLUGIN_NAME" = "ionq" ] ; then \
 WORKDIR /opt/pennylane
 RUN make test
 # Image build completed.
-CMD echo "Successfully built Docker image!"
+CMD echo "Successfully built Docker image"
