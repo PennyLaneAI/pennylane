@@ -217,7 +217,7 @@ class TestApply:
         else:
             sfn = np.sum
 
-        cost = qml.apply(sfn, qc)
+        cost = qml.collections.apply(sfn, qc)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -250,7 +250,7 @@ class TestApply:
             sinfn = np.sin
             sfn = np.sum
 
-        cost = qml.apply(sfn, qml.apply(sinfn, qc))
+        cost = qml.collections.apply(sfn, qml.collections.apply(sinfn, qc))
 
         params = [0.5643, -0.45]
         res = cost(params)

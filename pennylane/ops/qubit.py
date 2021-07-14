@@ -17,14 +17,16 @@ quantum operations supported by PennyLane, as well as their conventions.
 """
 import cmath
 import functools
+import warnings
 
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import math
 import numpy as np
+import scipy
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.operation import AnyWires, DiagonalOperation, Observable, Operation
+from pennylane.operation import AnyWires, AllWires, DiagonalOperation, Observable, Operation
 from pennylane.templates.decorator import template
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 from pennylane.utils import expand, pauli_eigs
@@ -1849,6 +1851,7 @@ class IsingYY(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
+    generator = [np.array([[0, 0, 0, -1], [0, 0, 1, 0], [0, 1, 0, 0], [-1, 0, 0, 0]]), -1 / 2]
 
     @staticmethod
     def decomposition(phi, wires):
@@ -2145,17 +2148,48 @@ class QubitUnitary(Operation):
     par_domain = "A"
     grad_method = None
 
+    def __init__(self, *params, wires, do_queue=True):
+        wires = Wires(wires)
+
+        # For pure QubitUnitary operations (not controlled), check that the number
+        # of wires fits the dimensions of the matrix
+        if not isinstance(self, ControlledQubitUnitary):
+            U = params[0]
+
+            dim = 2 ** len(wires)
+
+            if U.shape != (dim, dim):
+                raise ValueError(
+                    f"Input unitary must be of shape {(dim, dim)} to act on {len(wires)} wires."
+                )
+
+            # Check for unitarity; due to variable precision across the different ML frameworks,
+            # here we issue a warning to check the operation, instead of raising an error outright.
+            if not qml.math.allclose(
+                qml.math.dot(U, qml.math.T(qml.math.conj(U))), qml.math.eye(qml.math.shape(U)[0])
+            ):
+                warnings.warn(
+                    f"Operator {U}\n may not be unitary."
+                    "Verify unitarity of operation, or use a datatype with increased precision.",
+                    UserWarning,
+                )
+
+        super().__init__(*params, wires=wires, do_queue=do_queue)
+
     @classmethod
     def _matrix(cls, *params):
-        U = np.asarray(params[0])
+        return params[0]
 
-        if U.ndim != 2 or U.shape[0] != U.shape[1]:
-            raise ValueError("Operator must be a square matrix.")
+    @staticmethod
+    def decomposition(U, wires):
+        # Decomposes arbitrary single-qubit unitaries as Rot gates (RZ - RY - RZ format),
+        # or a single RZ for diagonal matrices.
+        if qml.math.shape(U) == (2, 2):
+            wire = Wires(wires)[0]
+            decomp_ops = qml.transforms.decompositions.zyz_decomposition(U, wire)
+            return decomp_ops
 
-        if not np.allclose(U @ U.conj().T, np.identity(U.shape[0])):
-            raise ValueError("Operator must be unitary.")
-
-        return U
+        raise NotImplementedError("Decompositions only supported for single-qubit unitaries")
 
     def adjoint(self):
         return QubitUnitary(qml.math.T(qml.math.conj(self.matrix)), wires=self.wires)
@@ -2611,6 +2645,9 @@ class QFT(Operation):
             decomp_ops.append(swap)
 
         return decomp_ops
+
+    def adjoint(self):
+        return QFT(wires=self.wires).inv()
 
 
 # =============================================================================
@@ -3087,6 +3124,45 @@ class Projector(Observable):
         return []
 
 
+class SparseHamiltonian(Observable):
+    r"""SparseHamiltonian(H)
+    A Hamiltonian represented directly as a sparse matrix in coordinate list (COO) format.
+
+    .. warning::
+
+        ``SparseHamiltonian`` observables can only be used to return expectation values.
+        Variances and samples are not supported.
+
+    .. note::
+
+        Note that the ``SparseHamiltonian`` observable should not be used with a subset of wires.
+
+    **Details:**
+
+    * Number of wires: All
+    * Number of parameters: 1
+    * Gradient recipe: None
+
+    Args:
+        H (coo_matrix): a sparse matrix in SciPy coordinate list (COO) format with
+            dimension :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
+    """
+    num_wires = AllWires
+    num_params = 1
+    par_domain = None
+    grad_method = None
+
+    @classmethod
+    def _matrix(cls, *params):
+        A = params[0]
+        if not isinstance(A, scipy.sparse.coo_matrix):
+            raise TypeError("Observable must be a scipy sparse coo_matrix.")
+        return A
+
+    def diagonalizing_gates(self):
+        return []
+
+
 # =============================================================================
 # Arithmetic
 # =============================================================================
@@ -3333,7 +3409,7 @@ ops = {
 }
 
 
-obs = {"Hadamard", "PauliX", "PauliY", "PauliZ", "Hermitian", "Projector"}
+obs = {"Hadamard", "PauliX", "PauliY", "PauliZ", "Hermitian", "Projector", "SparseHamiltonian"}
 
 
 __all__ = list(ops | obs)

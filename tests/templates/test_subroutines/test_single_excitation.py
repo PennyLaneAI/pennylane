@@ -155,6 +155,11 @@ class TestInputs:
         with pytest.raises(ValueError, match=msg_match):
             qnode(weight=weight)
 
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        template = qml.templates.SingleExcitationUnitary(0.4, wires=[1, 0, 2], id="a")
+        assert template.id == "a"
+
 
 def circuit_template(weight):
     qml.templates.SingleExcitationUnitary(weight, wires=[0, 1])

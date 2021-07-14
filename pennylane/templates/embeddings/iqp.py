@@ -167,7 +167,7 @@ class IQPEmbedding(Operation):
     num_wires = AnyWires
     par_domain = "A"
 
-    def __init__(self, features, wires, n_repeats=1, pattern=None, do_queue=True):
+    def __init__(self, features, wires, n_repeats=1, pattern=None, do_queue=True, id=None):
 
         shape = qml.math.shape(features)
 
@@ -185,7 +185,7 @@ class IQPEmbedding(Operation):
         self.pattern = pattern
         self.n_repeats = n_repeats
 
-        super().__init__(features, wires=wires, do_queue=do_queue)
+        super().__init__(features, wires=wires, do_queue=do_queue, id=id)
 
     def expand(self):
 
