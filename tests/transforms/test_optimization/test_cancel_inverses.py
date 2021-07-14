@@ -123,16 +123,17 @@ class TestCancelInverses:
             # These two will cancel
             qml.Toffoli(wires=["a", "b", "c"])
             qml.Toffoli(wires=["b", "a", "c"])
-            # These two will not cancel
+            # These three will not cancel
             qml.Toffoli(wires=["a", "b", "c"])
             qml.Toffoli(wires=["a", "c", "b"])
+            qml.Toffoli(wires=["a", "c", "d"])
 
         transformed_qfunc = cancel_inverses(qfunc)
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
-        names_expected = ["Toffoli"] * 2
-        wires_expected = [Wires(["a", "b", "c"]), Wires(["a", "c", "b"])]
+        names_expected = ["Toffoli"] * 3
+        wires_expected = [Wires(["a", "b", "c"]), Wires(["a", "c", "b"]), Wires(["a", "c", "d"])]
         _compare_operation_lists(ops, names_expected, wires_expected)
 
     def test_two_qubits_cnot_same_direction(self):
@@ -289,6 +290,7 @@ class TestCancelInversesInterfaces:
 
         # Enable float64 support
         from jax.config import config
+
         remember = config.read("jax_enable_x64")
         config.update("jax_enable_x64", True)
 

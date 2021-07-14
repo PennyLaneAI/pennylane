@@ -332,6 +332,7 @@ class TestMergeRotationsInterfaces:
         from jax import numpy as jnp
 
         from jax.config import config
+
         remember = config.read("jax_enable_x64")
         config.update("jax_enable_x64", True)
 
