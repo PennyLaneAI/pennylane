@@ -40,5 +40,5 @@ ENV PATH="/opt/venv/bin:$PATH"
 RUN apt-get update \
     && apt-get install -y apt-utils \
     --no-install-recommends python3 python3-pip python3-venv
-# Image completed, Exit Now.
+# Image build completed.
 CMD echo "Successfully built Docker image for GPU"
