@@ -2,6 +2,44 @@
 
 <h3>New features since last release</h3>
 
+* The new Device Tracker capabilities allows for flexible and versatile tracking of executions, even inside parameter-shift gradients. This functionality will improve the ease of monitoring large batches and remote jobs.
+[(#1355)](https://github.com/PennyLaneAI/pennylane/pull/1355)
+
+```python
+dev = qml.device('default.qubit', wires=1, shots=100)
+
+@qml.qnode(dev, diff_method="parameter-shift")
+def circuit(x):
+    qml.RX(x, wires=0)
+    return qml.expval(qml.PauliZ(0))
+
+x = np.array(0.1)
+
+with qml.track(circuit.device) as tracker:
+    qml.grad(circuit)(0.1)
+```
+
+```pycon
+>>> tracker.totals
+{'executions': 3, 'shots': 300}
+>>> tracker.history
+{'executions': [1, 1, 1], 'shots': [100, 100, 100]}
+>>> tracker.latest
+{'executions': 1, 'shots': 100}
+```
+
+Users can also provide a custom function to the `callback` keyword that gets called each time the information is updated:
+
+```pycon
+  >>> def shots_info(totals, history, latest):
+  ...     print("Total shots: ", totals['shots'])
+  >>> with qml.track(circuit.device, callback=shots_info) as tracker:
+  ...     qml.grad(circuit)(0.1)
+  Total shots:  100
+  Total shots:  200
+  Total shots:  300
+```
+
 * A decomposition has been added to ``QubitUnitary`` that makes the
   single-qubit case fully differentiable in all interfaces. Furthermore,
   a quantum function transform, ``unitary_to_rot()``, has been added to decompose all
