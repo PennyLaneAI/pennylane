@@ -109,13 +109,13 @@ class TestTrackerCoreBehaviour:
         tracker = DefaultTracker()
 
         tracker.update(a=1, b="b", c=None)
-        tracker.update(a=2, c=1)
+        tracker.update(a=2, b="b2", c=1)
 
-        assert tracker.history == {"a": [1, 2], "b": ["b"], "c": [None, 1]}
+        assert tracker.history == {"a": [1, 2], "b": ["b", "b2"], "c": [None, 1]}
 
         assert tracker.totals == {"a": 3, "c": 1}
 
-        assert tracker.latest == {"a": 2, "c": 1}
+        assert tracker.latest == {"a": 2, "b": "b2", "c": 1}
 
     def test_record_callback(self, mocker):
         class callback_wrapper:
