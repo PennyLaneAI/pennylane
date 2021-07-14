@@ -1,4 +1,4 @@
-FROM ubuntu:20.04 AS compile-image
+FROM ubuntu:latest AS compile-image
 
 # Setup and install Basic packages
 RUN apt-get update && apt-get install -y apt-utils --no-install-recommends
