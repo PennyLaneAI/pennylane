@@ -19,6 +19,8 @@ import pennylane as qml
 
 
 class TestTracker:
+    """Tests that the device uses a tracker attribute properly"""
+    
     def test_tracker_initialization(self, device):
         """Tests a tracker instance is assigned at initialization."""
 
