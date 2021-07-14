@@ -41,7 +41,7 @@ RUN if [ "$PLUGIN_NAME" = "pq" ] ; then \
     apt-get update && apt-get -y install --no-install-recommends make \
     && rm -rf /var/lib/apt/lists/* && pip3 install pennylane-pq;fi
 
-# Build Qsharp Plugin
+# Build Q# Plugin
 RUN if [ "$PLUGIN_NAME" = "qsharp" ] ; then \
     apt-get update && apt-get -y install --no-install-recommends make \
     && rm -rf /var/lib/apt/lists/* && pip3 install pennylane-qsharp;fi
