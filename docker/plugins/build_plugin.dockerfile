@@ -39,7 +39,7 @@ RUN if [ "$PLUGIN_NAME" = "honeywell" ] ; then \
 # Build PQ Plugin
 RUN if [ "$PLUGIN_NAME" = "pq" ] ; then \
     apt-get update && apt-get -y install --no-install-recommends make \
-    && rm -rf /var/lib/apt/lists/* && pip3 install pennylane_pq;fi
+    && rm -rf /var/lib/apt/lists/* && pip3 install pennylane-pq;fi
 
 # Build Qsharp Plugin
 RUN if [ "$PLUGIN_NAME" = "qsharp" ] ; then \
