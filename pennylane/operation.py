@@ -567,11 +567,11 @@ class Operation(Operator):
     ``qml.Toffoli(wires=[0, 2, 1])``.
 
     If ``None``, all instances of the operation will be ignored during
-    compilation transforms that check for wire symmetry.
+    compilation transforms that check for control-wire symmetry.
     """
 
     is_composable_rotation = None
-    """bool or None: ``True`` if the composing multiple copies of the operation
+    """bool or None: ``True`` if composing multiple copies of the operation
     results in an addition (or alternative accumulation) of parameters.
 
     For example, ``qml.RZ`` is a composable rotation. Applying ``qml.RZ(0.1,
