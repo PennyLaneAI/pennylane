@@ -13,8 +13,31 @@
 # limitations under the License.
 """Convenient utility functions for testing optimization transforms."""
 
+import pennylane as qml
 
-def _compare_operation_lists(ops_obtained, names_expected, wires_expected):
+from gate_data import I
+
+
+def compute_matrix_from_ops_one_qubit(ops):
+    """Given a list of single-qubit operations, construct its matrix representation."""
+
+    mat = I
+
+    for op in ops:
+        mat = qml.math.dot(op.matrix, mat)
+    return mat
+
+
+def check_matrix_equivalence(matrix_expected, matrix_obtained):
+    """Takes two matrices and checks if multiplying one by the conjugate
+    transpose of the other gives the identity."""
+
+    mat_product = qml.math.dot(qml.math.conj(matrix_obtained.T), matrix_expected)
+    mat_product /= mat_product[0, 0]
+    return qml.math.allclose(mat_product, qml.math.eye(matrix_expected.shape[0]))
+
+
+def compare_operation_lists(ops_obtained, names_expected, wires_expected):
     """Compare two lists of operations."""
     assert len(ops_obtained) == len(names_expected)
     assert all([op.name == exp_name for (op, exp_name) in zip(ops_obtained, names_expected)])

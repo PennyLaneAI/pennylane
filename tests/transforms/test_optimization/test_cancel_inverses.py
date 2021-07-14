@@ -17,7 +17,7 @@ from pennylane import numpy as np
 import pennylane as qml
 from pennylane.wires import Wires
 from pennylane.transforms.optimization import cancel_inverses
-from utils import _compare_operation_lists
+from utils import compare_operation_lists
 
 
 class TestCancelInverses:
@@ -63,7 +63,7 @@ class TestCancelInverses:
 
         names_expected = ["Hadamard", "RZ", "Hadamard"]
         wires_expected = [Wires(0)] * 3
-        _compare_operation_lists(ops, names_expected, wires_expected)
+        compare_operation_lists(ops, names_expected, wires_expected)
 
     def test_two_qubits_no_inverse(self):
         """Test that a two-qubit circuit self-inverse on each qubit does not cancel."""
@@ -78,7 +78,7 @@ class TestCancelInverses:
 
         names_expected = ["Hadamard"] * 2
         wires_expected = [Wires(0), Wires(1)]
-        _compare_operation_lists(ops, names_expected, wires_expected)
+        compare_operation_lists(ops, names_expected, wires_expected)
 
     def test_three_qubits_inverse_after_cnot(self):
         """Test that a three-qubit circuit with a CNOT still allows cancellation."""
@@ -96,7 +96,7 @@ class TestCancelInverses:
 
         names_expected = ["Hadamard", "CNOT", "RZ"]
         wires_expected = [Wires(0), Wires([0, 2]), Wires(2)]
-        _compare_operation_lists(ops, names_expected, wires_expected)
+        compare_operation_lists(ops, names_expected, wires_expected)
 
     def test_three_qubits_blocking_cnot(self):
         """Test that a three-qubit circuit with a blocking CNOT causes no cancellation."""
@@ -114,7 +114,7 @@ class TestCancelInverses:
 
         names_expected = ["Hadamard", "PauliX", "CNOT", "RZ", "PauliX"]
         wires_expected = [Wires(0), Wires(1), Wires([0, 1]), Wires(2), Wires(1)]
-        _compare_operation_lists(ops, names_expected, wires_expected)
+        compare_operation_lists(ops, names_expected, wires_expected)
 
     def test_three_qubits_toffolis(self):
         """Test that Toffolis on different permutations of wires cancel correctly."""
@@ -134,7 +134,7 @@ class TestCancelInverses:
 
         names_expected = ["Toffoli"] * 3
         wires_expected = [Wires(["a", "b", "c"]), Wires(["a", "c", "b"]), Wires(["a", "c", "d"])]
-        _compare_operation_lists(ops, names_expected, wires_expected)
+        compare_operation_lists(ops, names_expected, wires_expected)
 
     def test_two_qubits_cnot_same_direction(self):
         """Test that two adjacent CNOTs cancel."""
@@ -162,7 +162,7 @@ class TestCancelInverses:
 
         names_expected = ["CNOT"] * 2
         wires_expected = [Wires([0, 1]), Wires([1, 0])]
-        _compare_operation_lists(ops, names_expected, wires_expected)
+        compare_operation_lists(ops, names_expected, wires_expected)
 
     def test_two_qubits_cz_opposite_direction(self):
         """Test that two adjacent CZ with the control/target flipped do cancel due to symmetry."""
@@ -224,7 +224,7 @@ class TestCancelInversesInterfaces:
 
         # Check operation list
         ops = transformed_qnode.qtape.operations
-        _compare_operation_lists(ops, expected_op_list, expected_wires_list)
+        compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     def test_cancel_inverses_torch(self):
         """Test QNode and gradient in torch interface."""
@@ -250,7 +250,7 @@ class TestCancelInversesInterfaces:
 
         # Check operation list
         ops = transformed_qnode.qtape.operations
-        _compare_operation_lists(ops, expected_op_list, expected_wires_list)
+        compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     def test_cancel_inverses_tf(self):
         """Test QNode and gradient in tensorflow interface."""
@@ -281,7 +281,7 @@ class TestCancelInversesInterfaces:
 
         # Check operation list
         ops = transformed_qnode.qtape.operations
-        _compare_operation_lists(ops, expected_op_list, expected_wires_list)
+        compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     def test_cancel_inverses_jax(self):
         """Test QNode and gradient in JAX interface."""
@@ -309,4 +309,4 @@ class TestCancelInversesInterfaces:
 
         # Check operation list
         ops = transformed_qnode.qtape.operations
-        _compare_operation_lists(ops, expected_op_list, expected_wires_list)
+        compare_operation_lists(ops, expected_op_list, expected_wires_list)

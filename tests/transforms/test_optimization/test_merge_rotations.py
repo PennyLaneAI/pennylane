@@ -18,7 +18,7 @@ from pennylane import numpy as np
 import pennylane as qml
 from pennylane.wires import Wires
 from pennylane.transforms.optimization import merge_rotations
-from utils import _compare_operation_lists
+from utils import compare_operation_lists
 
 
 class TestMergeRotations:
@@ -145,7 +145,7 @@ class TestMergeRotations:
 
         names_expected = ["RX", "Hadamard", "RX"]
         wires_expected = [Wires(0)] * 3
-        _compare_operation_lists(ops, names_expected, wires_expected)
+        compare_operation_lists(ops, names_expected, wires_expected)
 
         assert ops[0].parameters[0] == 0.5
         assert ops[2].parameters[0] == 0.4
@@ -165,7 +165,7 @@ class TestMergeRotations:
 
         names_expected = ["RX", "CNOT", "RX"]
         wires_expected = [Wires(0), Wires([0, 1]), Wires(0)]
-        _compare_operation_lists(ops, names_expected, wires_expected)
+        compare_operation_lists(ops, names_expected, wires_expected)
 
         assert ops[0].parameters[0] == -0.42
         assert ops[2].parameters[0] == 0.8
@@ -208,7 +208,7 @@ class TestMergeRotations:
 
         names_expected = ["CRX", "CRX"]
         wires_expected = [Wires(["w1", "w2"]), Wires(["w2", "w1"])]
-        _compare_operation_lists(ops, names_expected, wires_expected)
+        compare_operation_lists(ops, names_expected, wires_expected)
 
         assert ops[0].parameters[0] == 0.2
         assert ops[1].parameters[0] == 0.3
@@ -267,7 +267,7 @@ class TestMergeRotationsInterfaces:
 
         # Check operation list
         ops = transformed_qnode.qtape.operations
-        _compare_operation_lists(ops, expected_op_list, expected_wires_list)
+        compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     def test_merge_rotations_torch(self):
         """Test QNode and gradient in torch interface."""
@@ -293,7 +293,7 @@ class TestMergeRotationsInterfaces:
 
         # Check operation list
         ops = transformed_qnode.qtape.operations
-        _compare_operation_lists(ops, expected_op_list, expected_wires_list)
+        compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     def test_merge_rotations_tf(self):
         """Test QNode and gradient in tensorflow interface."""
@@ -324,7 +324,7 @@ class TestMergeRotationsInterfaces:
 
         # Check operation list
         ops = transformed_qnode.qtape.operations
-        _compare_operation_lists(ops, expected_op_list, expected_wires_list)
+        compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     def test_merge_rotations_jax(self):
         """Test QNode and gradient in JAX interface."""
@@ -351,4 +351,4 @@ class TestMergeRotationsInterfaces:
 
         # Check operation list
         ops = transformed_qnode.qtape.operations
-        _compare_operation_lists(ops, expected_op_list, expected_wires_list)
+        compare_operation_lists(ops, expected_op_list, expected_wires_list)
