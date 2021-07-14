@@ -46,17 +46,16 @@ class TestTrackerCoreBehaviour:
 
     def test_incompatible_device_assignment(self):
         """Assert exception raised when `supports_tracker` not True"""
-        
-        class TempDevice():
+
+        class TempDevice:
             short_name = "temp"
+
             def capabilities(self):
                 return dict()
 
         temp = TempDevice()
 
-        with pytest.raises(
-            Exception, match=r"Device 'temp' does not support device tracking"
-        ):
+        with pytest.raises(Exception, match=r"Device 'temp' does not support device tracking"):
             DefaultTracker(dev=temp)
 
     def test_reset(self):
