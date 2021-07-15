@@ -118,7 +118,7 @@ def _batch_execute(*parameters, **kwargs):  # pylint: disable=unused-argument
         ]
         device._cache = 1000000000
         res = device.batch_execute(unwrapped_tapes)
-        # device._cache = False
+        device._cache = False
 
     res = [tf.convert_to_tensor(r) for r in res]
 

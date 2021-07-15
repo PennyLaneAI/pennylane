@@ -92,27 +92,27 @@ class Hamiltonian:
 
     def __init__(self, coeffs, observables, simplify=False):
 
-        if len(coeffs) != len(observables):
-            raise ValueError(
-                "Could not create valid Hamiltonian; "
-                "number of coefficients and operators does not match."
-            )
+        # if len(coeffs) != len(observables):
+        #     raise ValueError(
+        #         "Could not create valid Hamiltonian; "
+        #         "number of coefficients and operators does not match."
+        #     )
 
-        if any(np.imag(coeffs) != 0):
-            raise ValueError(
-                "Could not create valid Hamiltonian; " "coefficients are not real-valued."
-            )
+        # if any(np.imag(coeffs) != 0):
+        #     raise ValueError(
+        #         "Could not create valid Hamiltonian; " "coefficients are not real-valued."
+        #     )
 
-        for obs in observables:
-            if not isinstance(obs, Observable):
-                raise ValueError(
-                    "Could not create circuits. Some or all observables are not valid."
-                )
+        # for obs in observables:
+        #     if not isinstance(obs, Observable):
+        #         raise ValueError(
+        #             "Could not create circuits. Some or all observables are not valid."
+        #         )
 
-        self._coeffs = list(coeffs)
+        self._coeffs = coeffs
         self._ops = list(observables)
 
-        self.data = []
+        self.data = qml.math.unstack(self.coeffs)
         self.return_type = None
 
         if simplify:

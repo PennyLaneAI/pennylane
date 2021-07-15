@@ -194,33 +194,19 @@ def batch_execute(
         [autograd.builtins.list(t.get_parameters()) for t in tapes]
     )
 
-
-    unsupported_op = lambda op: op.grad_recipe is None
-    supported_op = lambda op: op.grad_recipe is not None
-    trainable_op = lambda op: any(qml.math.requires_grad(p) for p in op.parameters)
-
-    g_tapes = []
-
-    for t in tapes:
-
-        if any(unsupported_op(op) and trainable_op(op) for op in t.operations):
-
-            g_tapes.append(t.expand(
-                depth=10,
-                stop_at=lambda obj: not isinstance(obj, qml.measure.MeasurementProcess)
-                and ((supported_op(obj) and trainable_op(obj)) or not trainable_op(obj))
-            ))
-        else:
-            g_tapes.append(t)
-
     return _batch_execute(
-        parameters, tapes=tapes, gradient_tapes=g_tapes, device=device, gradient_fn=gradient_fn, cache=cache, _n=_n
+        parameters,
+        tapes=tapes,
+        device=device,
+        gradient_fn=gradient_fn,
+        cache=cache,
+        _n=_n,
     )
 
 
 @autograd.extend.primitive
 def _batch_execute(
-    parameters, tapes=None, gradient_tapes=g_tapes, device=None, gradient_fn=None, cache=[], _n=1
+    parameters, tapes=None, device=None, gradient_fn=None, cache=[], _n=1
 ):  # pylint: disable=dangerous-default-value,unused-argument
     """Autodifferentiable wrapper around ``Device.batch_execute``.
 

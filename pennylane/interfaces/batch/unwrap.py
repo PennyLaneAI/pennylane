@@ -75,33 +75,8 @@ def batch_vjp(dy, tapes, execute_fn, gradient_fn, reduction="append", **kwargs):
     reshape_info = []
     gradient_tapes = []
     processing_fns = []
-    classical_jacs = []
-
-    unsupported_op = lambda op: op.grad_recipe is None
-    supported_op = lambda op: op.grad_recipe is not None
-    trainable_op = lambda op: any(qml.math.requires_grad(p) for p in op.parameters)
 
     for t in tapes:
-
-        if any(unsupported_op(op) and trainable_op(op) for op in t.operations):
-
-            def classical_gate_processing(*x):
-                t.set_parameters(x)
-                t._expanded_tape = t.expand(
-                    depth=10,
-                    stop_at=lambda obj: not isinstance(obj, qml.measure.MeasurementProcess)
-                    and ((supported_op(obj) and trainable_op(obj)) or not trainable_op(obj))
-                )
-                return qml.math.stack(t._expanded_tape.get_parameters())
-
-            params = t.get_parameters()
-            c_jac = [qml.jacobian(classical_gate_processing, argnum=i)(*params) for i in range(len(params))][0]
-            t._expanded_tape.set_parameters([qml.math.toarray(t) for t in t._expanded_tape.get_parameters()])
-            t = t._expanded_tape
-
-        else:
-            c_jac = None
-
         g_tapes, fns = gradient_fn(t)
         reshape_info.extend([len(t) for t in g_tapes])
 
@@ -109,7 +84,6 @@ def batch_vjp(dy, tapes, execute_fn, gradient_fn, reduction="append", **kwargs):
 
         processing_fns.append(fns)
         gradient_tapes.extend(g_tapes)
-        classical_jacs.append(c_jac)
 
     results = execute_fn(gradient_tapes, gradient_fn=gradient_fn, **kwargs)
     vjps = []
@@ -132,8 +106,5 @@ def batch_vjp(dy, tapes, execute_fn, gradient_fn, reduction="append", **kwargs):
             jac.append(fn(res))
 
         getattr(vjps, reduction)(_vector_jacobian_product(d, jac))
-
-        if classical_jacs[t] is not None:
-            vjps[-1] = qml.math.tensordot(vjps[-1], classical_jacs[t], axes=[[0], [0]])
 
     return vjps

@@ -201,8 +201,8 @@ class QubitDevice(Device):
 
         if any(obs.name == "Hamiltonian" for obs in circuit.observables):
             tapes, fn = qml.transforms.hamiltonian_expand(circuit)
-            res = fn(self.batch_execute(tapes, **kwargs))
-            return [res]
+            self._batch_results = self.batch_execute(tapes, **kwargs)
+            return [fn(self._batch_results)]
 
         if self._cache:
             circuit_hash = circuit.graph.hash

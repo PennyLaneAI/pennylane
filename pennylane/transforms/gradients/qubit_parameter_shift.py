@@ -114,12 +114,37 @@ def expval_grad(tape, idx, gradient_recipe=None, shift=np.pi / 2):
     return tapes, processing_fn
 
 
+def hamiltonian_grad(tape, idx):
+    t_idx = list(tape.trainable_params)[idx]
+    op = tape._par_info[t_idx]["op"]
+    p_idx = tape._par_info[t_idx]["p_idx"]
+
+    new_tape = tape.copy(copy_operations=True)
+    new_tape._measurements = [qml.expval(op.ops[p_idx])]
+
+    new_tape._par_info = {}
+    new_tape._update()
+
+    return [new_tape], lambda x: qml.math.squeeze(x)
+
+
 def grad(tape, shift=np.pi / 2):
     gradient_tapes = []
     processing_fns = []
 
+    tape._par_info = {}
+    tape._update()
+
     for idx, _ in enumerate(tape.trainable_params):
-        g_tapes, fn = expval_grad(tape, idx, shift=shift)
+
+        t_idx = list(tape.trainable_params)[idx]
+        op = tape._par_info[t_idx]["op"]
+
+        if isinstance(op, qml.Hamiltonian):
+            g_tapes, fn = hamiltonian_grad(tape, idx)
+        else:
+            g_tapes, fn = expval_grad(tape, idx, shift=shift)
+
         gradient_tapes.append(g_tapes)
         processing_fns.append(fn)
 
