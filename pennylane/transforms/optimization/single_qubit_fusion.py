@@ -25,7 +25,7 @@ from .optimization_utils import find_next_gate, fuse_rot_angles
 @qfunc_transform
 def single_qubit_fusion(tape, tol=1e-8):
     """Quantum function transform to fuse together groups of single-qubit
-    operations into the general single-qubit unitary form (~.Rot).
+    operations into the general single-qubit unitary form (:class:`~.Rot`).
 
     Args:
         qfunc (function): A quantum function.
@@ -69,8 +69,11 @@ def single_qubit_fusion(tape, tol=1e-8):
     while len(list_copy) > 0:
         current_gate = list_copy[0]
 
-        # Normally queue any multi-qubit gates
-        if current_gate.num_wires > 1:
+        # Look for as_rot_angles; if not available, queue and move on.
+        # If available, grab the angles and try to fuse.
+        try:
+            cumulative_angles = stack(current_gate.as_rot_angles())
+        except:
             apply(current_gate)
             list_copy.pop(0)
             continue
@@ -78,30 +81,28 @@ def single_qubit_fusion(tape, tol=1e-8):
         # Find the next gate that acts on the same wires
         next_gate_idx = find_next_gate(current_gate.wires, list_copy[1:])
 
-        # If no such gate is found (either there simply is none, or there are other gates
-        # "in the way", queue the operation and move on
         if next_gate_idx is None:
             apply(current_gate)
             list_copy.pop(0)
             continue
-
-        # Set up a cumulative Rot starting from the angles of the initial gate
-        cumulative_angles = stack(current_gate.as_rot_angles())
 
         # Loop as long as a valid next gate exists
         while next_gate_idx is not None:
             # Get the next gate
             next_gate = list_copy[next_gate_idx + 1]
 
-            # If next gate is on the same qubit, we can fuse them
+            # Try to merge the angles if next gate is on the same qubit; can
+            # only do so if the as_rot_angles method is implemented.
             if current_gate.wires == next_gate.wires:
-                list_copy.pop(next_gate_idx + 1)
+                try:
+                    next_gate_angles = next_gate.as_rot_angles()
+                except:
+                    break
 
-                # Merge the angles
-                next_gate_angles = next_gate.as_rot_angles()
                 cumulative_angles = fuse_rot_angles(
                     cumulative_angles, cast_like(stack(next_gate_angles), cumulative_angles)
                 )
+                list_copy.pop(next_gate_idx + 1)
             else:
                 break
 

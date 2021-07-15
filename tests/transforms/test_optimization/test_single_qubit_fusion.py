@@ -34,6 +34,8 @@ class TestSingleQubitFusion:
             qml.Rot(0.1, 0.2, 0.3, wires=0)
             qml.RX(0.1, wires=0)
             qml.SX(wires=0)
+            qml.T(wires=0)
+            qml.PauliX(wires=0)
 
         transformed_qfunc = single_qubit_fusion()(qfunc)
 
@@ -60,16 +62,38 @@ class TestSingleQubitFusion:
         transformed_ops = qml.transforms.make_tape(transformed_qfunc)().operations
         assert len(transformed_ops) == 0
 
+    def test_single_qubit_fusion_not_implemented(self):
+        """Test that fusion is correctly skipped for single-qubit gates where
+        the rotation angles are not specified."""
+
+        def qfunc():
+            qml.RZ(0.1, wires=0)
+            qml.Hadamard(wires=0)
+            # No rotation angles specified for PauliRot since it is a gate that
+            # in principle acts on an arbitrary number of wires.
+            qml.PauliRot(0.2, "X", wires=0)
+            qml.RZ(0.1, wires=0)
+            qml.Hadamard(wires=0)
+
+        transformed_qfunc = single_qubit_fusion()(qfunc)
+        transformed_ops = qml.transforms.make_tape(transformed_qfunc)().operations
+
+        names_expected = ["Rot", "PauliRot", "Rot"]
+        wires_expected = [Wires(0)] * 3
+        compare_operation_lists(transformed_ops, names_expected, wires_expected)
+
     def test_single_qubit_fusion_multiple_qubits(self):
-        """Test if a sequence of single-qubit gates that all cancel yields no operations."""
+        """Test that all sequences of single-qubit gates across multiple qubits fuse properly."""
 
         def qfunc():
             qml.RZ(0.3, wires="a")
+            qml.RY(0.5, wires="a")
             qml.Rot(0.1, 0.2, 0.3, wires="b")
             qml.RX(0.1, wires="a")
             qml.CNOT(wires=["b", "a"])
             qml.SX(wires="b")
             qml.S(wires="b")
+            qml.PhaseShift(0.3, wires="b")
 
         transformed_qfunc = single_qubit_fusion()(qfunc)
 
@@ -194,6 +218,12 @@ class TestSingleQubitFusionInterfaces:
         """Test QNode and gradient in JAX interface."""
         jax = pytest.importorskip("jax")
         from jax import numpy as jnp
+
+        # Enable float64 support
+        from jax.config import config
+
+        remember = config.read("jax_enable_x64")
+        config.update("jax_enable_x64", True)
 
         original_qnode = qml.QNode(qfunc, dev, interface="jax")
         transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="jax")
