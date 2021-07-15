@@ -582,6 +582,18 @@ class Operation(Operator):
     transforms that merge adjacent rotations.
     """
 
+    @property
+    def as_rot_angles(self):
+        """The parameters required to implement a single-qubit gate as an
+        equivalent ``Rot`` gate, up to a global phase.
+
+        Returns:
+            [float, float, float]: A list of values :math:`[\phi, \theta, \omega]`
+            such that :math:`RZ(\omega) RY(\theta) RZ(\phi)` is equivalent to the
+            original operation.
+        """
+        raise NotImplementedError
+
     def get_parameter_shift(self, idx, shift=np.pi / 2):
         """Multiplier and shift for the given parameter, based on its gradient recipe.
 
