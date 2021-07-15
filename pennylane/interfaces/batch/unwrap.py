@@ -15,6 +15,7 @@
 This module contains a context manager for unwrapping tapes
 """
 import pennylane as qml
+import numpy as np
 
 
 class UnwrapTape:
@@ -62,7 +63,8 @@ class UnwrapTape:
         self.tape.set_parameters(self._original_params, trainable_only=False)
 
 
-def _vector_jacobian_product(dy, jac, num_params):
+def _vector_jacobian_product(dy, jac):
+    num_params = len(jac)
     dy_row = qml.math.reshape(dy, [-1])
     jac = qml.math.transpose(qml.math.stack(jac))
     jac = qml.math.reshape(jac, [-1, num_params])
@@ -73,16 +75,41 @@ def batch_vjp(dy, tapes, execute_fn, gradient_fn, reduction="append", **kwargs):
     reshape_info = []
     gradient_tapes = []
     processing_fns = []
+    classical_jacs = []
+
+    unsupported_op = lambda op: op.grad_recipe is None
+    supported_op = lambda op: op.grad_recipe is not None
+    trainable_op = lambda op: any(qml.math.requires_grad(p) for p in op.parameters)
 
     for t in tapes:
-        processing_fns.append([])
 
-        for idx, _ in enumerate(t.trainable_params):
-            g_tapes, fn = gradient_fn(t, idx)
+        if any(unsupported_op(op) and trainable_op(op) for op in t.operations):
 
-            reshape_info.append(len(g_tapes))
-            gradient_tapes.extend(g_tapes)
-            processing_fns[-1].append(fn)
+            def classical_gate_processing(*x):
+                t.set_parameters(x)
+                t._expanded_tape = t.expand(
+                    depth=10,
+                    stop_at=lambda obj: not isinstance(obj, qml.measure.MeasurementProcess)
+                    and ((supported_op(obj) and trainable_op(obj)) or not trainable_op(obj))
+                )
+                return qml.math.stack(t._expanded_tape.get_parameters())
+
+            params = t.get_parameters()
+            c_jac = [qml.jacobian(classical_gate_processing, argnum=i)(*params) for i in range(len(params))][0]
+            t._expanded_tape.set_parameters([qml.math.toarray(t) for t in t._expanded_tape.get_parameters()])
+            t = t._expanded_tape
+
+        else:
+            c_jac = None
+
+        g_tapes, fns = gradient_fn(t)
+        reshape_info.extend([len(t) for t in g_tapes])
+
+        g_tapes = [item for sublist in g_tapes for item in sublist]
+
+        processing_fns.append(fns)
+        gradient_tapes.extend(g_tapes)
+        classical_jacs.append(c_jac)
 
     results = execute_fn(gradient_tapes, gradient_fn=gradient_fn, **kwargs)
     vjps = []
@@ -104,6 +131,9 @@ def batch_vjp(dy, tapes, execute_fn, gradient_fn, reduction="append", **kwargs):
             # postprocess results to compute the gradient
             jac.append(fn(res))
 
-        getattr(vjps, reduction)(_vector_jacobian_product(d, jac, num_params))
+        getattr(vjps, reduction)(_vector_jacobian_product(d, jac))
+
+        if classical_jacs[t] is not None:
+            vjps[-1] = qml.math.tensordot(vjps[-1], classical_jacs[t], axes=[[0], [0]])
 
     return vjps

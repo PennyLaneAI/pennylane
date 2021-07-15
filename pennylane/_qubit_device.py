@@ -117,6 +117,7 @@ class QubitDevice(Device):
         "Hermitian",
         "Identity",
         "Projector",
+        "Hamiltonian",
     }
 
     def __init__(self, wires=1, shots=None, cache=0, analytic=None):
@@ -180,6 +181,28 @@ class QubitDevice(Device):
         Returns:
             array[float]: measured value(s)
         """
+
+        # pylint: disable=protected-access
+        obs_on_same_wire = len(circuit._obs_sharing_wires) > 0
+        ops_not_supported = any(
+            isinstance(op, qml.tape.QuantumTape)  # nested tapes must be expanded
+            or not self.supports_operation(op.name)  # unsupported ops must be expanded
+            for op in circuit.operations
+        )
+
+        # expand out the tape, if nested tapes are present, any operations are not supported on the
+        # device, or multiple observables are measured on the same wire
+        if ops_not_supported or obs_on_same_wire:
+            circuit = circuit.expand(
+                depth=10,
+                stop_at=lambda obj: not isinstance(obj, qml.tape.QuantumTape)
+                and self.supports_operation(obj.name),
+            )
+
+        if any(obs.name == "Hamiltonian" for obs in circuit.observables):
+            tapes, fn = qml.transforms.hamiltonian_expand(circuit)
+            res = fn(self.batch_execute(tapes, **kwargs))
+            return [res]
 
         if self._cache:
             circuit_hash = circuit.graph.hash

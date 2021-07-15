@@ -118,7 +118,7 @@ def _batch_execute(*parameters, **kwargs):  # pylint: disable=unused-argument
         ]
         device._cache = 1000000000
         res = device.batch_execute(unwrapped_tapes)
-        device._cache = False
+        # device._cache = False
 
     res = [tf.convert_to_tensor(r) for r in res]
 
@@ -233,7 +233,7 @@ def batch_execute(
      [ 0.          0.         -0.95533649]], shape=(3, 3), dtype=float64)
     """
     if gradient_fn is None:
-        gradient_fn = qml.transforms.gradients.qubit_parameter_shift.expval_grad
+        gradient_fn = qml.transforms.gradients.qubit_parameter_shift.grad
 
     parameters = []
     for t in tapes:

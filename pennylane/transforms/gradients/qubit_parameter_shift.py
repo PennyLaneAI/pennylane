@@ -21,7 +21,7 @@ import numpy as np
 import pennylane as qml
 
 
-def expval_grad(tape, idx, gradient_recipe=None):
+def expval_grad(tape, idx, gradient_recipe=None, shift=np.pi / 2):
     r"""Generate the parameter-shift tapes and postprocessing methods required
     to compute the gradient of an expectation value with respect to an
     expectation value.
@@ -81,7 +81,7 @@ def expval_grad(tape, idx, gradient_recipe=None):
     p_idx = tape._par_info[t_idx]["p_idx"]
 
     if gradient_recipe is None:
-        gradient_recipe = op.get_parameter_shift(p_idx, shift=np.pi / 2)
+        gradient_recipe = op.get_parameter_shift(p_idx, shift=shift)
 
     params = qml.math.stack(tape.get_parameters())
     shift = np.zeros(qml.math.shape(params))
@@ -112,3 +112,15 @@ def expval_grad(tape, idx, gradient_recipe=None):
         return sum([c * r for c, r in zip(coeffs, results)])
 
     return tapes, processing_fn
+
+
+def grad(tape, shift=np.pi / 2):
+    gradient_tapes = []
+    processing_fns = []
+
+    for idx, _ in enumerate(tape.trainable_params):
+        g_tapes, fn = expval_grad(tape, idx, shift=shift)
+        gradient_tapes.append(g_tapes)
+        processing_fns.append(fn)
+
+    return gradient_tapes, processing_fns

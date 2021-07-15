@@ -236,7 +236,7 @@ def batch_execute(
            [ 0.0000,  0.0000, -0.8384]])
     """
     if gradient_fn is None:
-        gradient_fn = qml.transforms.gradients.qubit_parameter_shift.expval_grad
+        gradient_fn = qml.transforms.gradients.qubit_parameter_shift.grad
 
     parameters = []
     for t in tapes:
