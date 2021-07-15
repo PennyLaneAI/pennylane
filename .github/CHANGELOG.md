@@ -7,8 +7,8 @@
   [(#1458)](https://github.com/PennyLaneAI/pennylane/pull/1455)
 
   The `single_qubit_fusion` transform acts on all sequences of
-  single-qubit operations in a quantum function. For example, given
-  given the circuit:
+  single-qubit operations in a quantum function, and converts the
+  sequences to a single `Rot` gate.. For example given the circuit:
 
   ```python
   def circuit(x, y, z):
