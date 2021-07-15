@@ -69,10 +69,11 @@ It's up to you!
   Ask us if you have any questions, and send a link to your plugin to support@xanadu.ai so we can highlight it in
   our documentation!
 
-Appetite whetted? Keep reading below for all the nitty-gritty on reporting bugs, contributing to the documentation,
-and submitting pull requests.
+Appetite whetted? Let's get into some helpful specifics.
 
-## Reporting bugs
+## Details
+
+### Reporting bugs
 
 We use the [GitHub issue tracker](https://github.com/XanaduAI/pennylane/issues) to keep track of all reported
 bugs and issues. If you find a bug, or have an issue with PennyLane, please submit a bug report! User
@@ -88,10 +89,11 @@ To submit a bug report, please work your way through the following checklist:
   box when you create a new issue. Please try and add as many details as possible!
 
 * Try and make your issue as **clear, concise, and descriptive** as possible. Include a clear and descriptive title,
-  and include all code snippets/commands required to reproduce the problem. If you're not sure what caused the issue,
-  describe what you were doing when the issue occurred.
+  and include all code snippets/commands required to reproduce the problem. Try and find the simplest code that
+  reproduces the problem you are seeing. If you're not sure what caused the issue,
+  describe what you were doing when the issue occurred. Please also include the output of `import pennylane as qml; qml.about()`.
 
-## Suggesting features, document additions, and enhancements
+### Suggesting features, document additions, and enhancements
 
 To suggest features and enhancements, please use the GitHub tracker. There is no template required for
 feature requests and enhancements, but here are a couple of suggestions for things to include.
@@ -115,47 +117,8 @@ then when ready, submit a [pull request](https://help.github.com/articles/about-
 to have a go forking and modifying the PennyLane source code, however, we have a couple of guidelines on pull
 requests to ensure the main master branch of PennyLane conforms to existing standards and quality.
 
-### General guidelines
-
-* **Do not make a pull request for minor typos/cosmetic code changes** - make an issue instead.
-* **For major features, consider making an independent app** that runs on top of PennyLane, rather than modifying
-  PennyLane directly.
-
-### Before submitting
-
-Before submitting a pull request, please make sure the following is done:
-
-* **All new features must include a unit test.** If you've fixed a bug or added code that should be tested,
-  add a test to the test directory!
-* **All new functions and code must be clearly commented and documented.** Have a look through the source code at some of
-  the existing function docstrings - the easiest approach is to simply copy an existing docstring and modify it as appropriate.
-  If you do make documentation changes, make sure that the docs build and render correctly by running `make docs`.
-* **Ensure that the test suite passes**, by running `make test`.
-* **Make sure the modified code in the pull request conforms to the PEP8 coding standard.** The PennyLane source code
-  conforms to [PEP8 standards](https://www.python.org/dev/peps/pep-0008/). We check all of our code against
-  [Pylint](https://www.pylint.org/). To lint modified files, simply install `pip install pylint`, and then from the source code
-  directory, run `pylint pennylane/path/to/file.py`.
-
-### Submitting the pull request
-* When ready, submit your fork as a [pull request](https://help.github.com/articles/about-pull-requests) to the PennyLane
-  repository, filling out the [pull request template](PULL_REQUEST_TEMPLATE.md). This template is added automatically
-  to the comment box when you create a new issue.
-
-* When describing the pull request, please include as much detail as possible regarding the changes made/new features
-  added/performance improvements. If including any bug fixes, mention the issue numbers associated with the bugs.
-
-* Once you have submitted the pull request, three things will automatically occur:
-
-  - The **test suite** will automatically run as a GitHub action to ensure that the all tests
-    continue to pass.
-  - Once the test suite is finished, a **code coverage report** will be generated on
-    [Codecov](https://codecov.io/gh/XanaduAI/pennylane). This will calculate the percentage of PennyLane
-    covered by the test suite, to ensure that all new code additions are adequately tested.
-  - Finally, the **code quality** is calculated by [Codacy](https://app.codacy.com/app/XanaduAI/pennylane/dashboard),
-    to ensure all new code additions adhere to our code quality standards.
-
-  Based on these reports, we may ask you to make small changes to your branch before merging the pull request into the master branch. Alternatively, you can also
-  [grant us permission to make changes to your pull request branch](https://help.github.com/articles/allowing-changes-to-a-pull-request-branch-created-from-a-fork/).
+For more information, see our [Development Guide](https://pennylane.readthedocs.io/en/stable/development/guide.html),
+and the page on [submitting a pull request](https://pennylane.readthedocs.io/en/stable/development/guide/pullrequests.html) in particular.
 
 :fireworks: Thank you for contributing to PennyLane! :fireworks:
 
