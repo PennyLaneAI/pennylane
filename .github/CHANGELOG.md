@@ -42,13 +42,13 @@
 
   ```python
   def circuit():
-    qml.Hadamard(wires=0)
-    qml.PauliZ(wires=1)
-    qml.Hadamard(wires=0)
-    qml.T(wires=0)
-    qml.CZ(wires=[0, 1])
-    qml.CZ(wires=[1, 0])
-    return qml.expval(qml.PauliX(wires=0))
+      qml.Hadamard(wires=0)
+      qml.PauliZ(wires=1)
+      qml.Hadamard(wires=0)
+      qml.T(wires=0)
+      qml.CZ(wires=[0, 1])
+      qml.CZ(wires=[1, 0])
+      return qml.expval(qml.PauliX(wires=0))
   ```
 
   ```pycon
@@ -69,13 +69,13 @@
 
   ```python
   def circuit(x, y, z):
-    qml.RX(x, wires=0)
-    qml.RX(x, wires=0)
-    qml.Rot(x, y, z, wires=1)
-    qml.Rot(y, z, x, wires=1)
-    qml.CRY(y, wires=[0, 1])
-    qml.CRY(y + z, wires=[0, 1])
-    return qml.expval(qml.PauliX(wires=0))
+      qml.RX(x, wires=0)
+      qml.RX(x, wires=0)
+      qml.Rot(x, y, z, wires=1)
+      qml.Rot(y, z, x, wires=1)
+      qml.CRY(y, wires=[0, 1])
+      qml.CRY(y + z, wires=[0, 1])
+      return qml.expval(qml.PauliX(wires=0))
   ```
 
   ```pycon
