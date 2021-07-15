@@ -52,7 +52,7 @@
   >>> print(qml.draw(qnode)(0.1, 0.2, 0.3))
    0: ──RX(0.1)─────────────RX(0.1)─────────────╭C────────╭C────────┤ ⟨X⟩
    1: ──Rot(0.1, 0.2, 0.3)──Rot(0.2, 0.3, 0.1)──╰RY(0.2)──╰RY(0.5)──┤
-  >>> optimized_circuit = qml.transforms.merge_rotations(circuit)
+  >>> optimized_circuit = qml.transforms.merge_rotations()(circuit)
   >>> optimized_qnode = qml.QNode(optimized_circuit, dev)
   >>> print(qml.draw(optimized_qnode)(0.1, 0.2, 0.3))
    0: ──RX(0.2)───────────────────╭C────────┤ ⟨X⟩
