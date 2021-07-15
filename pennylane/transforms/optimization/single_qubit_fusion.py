@@ -25,13 +25,13 @@ from .optimization_utils import find_next_gate, fuse_rot_angles
 @qfunc_transform
 def single_qubit_fusion(tape, tol=1e-8):
     """Quantum function transform to fuse together groups of single-qubit
-    operations into the general single-qubit unitary form.
+    operations into the general single-qubit unitary form (~.Rot).
 
     Args:
         qfunc (function): A quantum function.
-        tol (float): A tolerance for which to apply a rotation after merging.
-            If the parameter of the rotation is less than this value, the
-            rotation will not be applied.
+        tol (float): A tolerance for which to apply a rotation after fusion.
+            If all the angles of rotation are smaller than this amount, no
+            ``Rot`` gate will be applied.
 
     **Example**
 
