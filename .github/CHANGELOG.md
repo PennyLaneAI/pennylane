@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-* A new quantum function has been added to perform full fusion of
+* A new quantum function transform has been added to perform full fusion of
   arbitrary-length sequences of single-qubit gates.
   [(#1458)](https://github.com/PennyLaneAI/pennylane/pull/1455)
 
