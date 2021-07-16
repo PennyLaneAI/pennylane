@@ -99,7 +99,7 @@ class TestSingleQubitFusion:
         transformed_qfunc = single_qubit_fusion(exclude_gates=["RZ"])(qfunc)
         transformed_ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
-        names_expected = ["RZ", "Rot", "CNOT", "RZ", "Rot"]
+        names_expected = ["RZ", "Rot", "CNOT", "RZ", "Hadamard"]
         wires_expected = [Wires(0)] * 2 + [Wires([0, 1])] + [Wires(0)] * 2
         compare_operation_lists(transformed_ops, names_expected, wires_expected)
 
