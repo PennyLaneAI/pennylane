@@ -44,7 +44,7 @@ class TestFindNextGate:
             ("c", sample_op_list, 3),
         ],
     )
-    def test_yzy_to_zyz(self, wires, op_list, next_gate_idx):
+    def test_find_next_gate(self, wires, op_list, next_gate_idx):
         """Test find_next_gate correctly identifies the next gate in a list of operations that share any number of wires."""
         assert find_next_gate(qml.wires.Wires(wires), op_list) == next_gate_idx
 
