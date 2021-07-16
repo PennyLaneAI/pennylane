@@ -73,7 +73,7 @@ def cancel_inverses(tape):
 
     while len(list_copy) > 0:
         current_gate = list_copy[0]
-        print(f"Working with current gate {current_gate}")
+
         # Find the next gate that acts on at least one of the same wires
         next_gate_idx = find_next_gate(current_gate.wires, list_copy[1:])
 

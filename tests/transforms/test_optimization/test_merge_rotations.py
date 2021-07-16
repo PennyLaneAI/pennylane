@@ -92,7 +92,7 @@ class TestMergeRotations:
         assert ops[0].parameters[0] == -1e-7
 
         # Now try with higher tolerance threshold; the ops should cancel
-        transformed_qfunc = merge_rotations(tol=1e-5)(qfunc)
+        transformed_qfunc = merge_rotations(atol=1e-5)(qfunc)
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
         assert len(ops) == 0
 
@@ -153,7 +153,7 @@ class TestMergeRotations:
             assert np.allclose(op_obtained.parameters, op_expected.parameters)
 
     def test_two_qubits_merge_gate_subset(self):
-        """Test that specifying a subset of operations produces correct results merged."""
+        """Test that specifying a subset of operations to include merges correctly."""
 
         def qfunc():
             qml.CRX(0.1, wires=[0, 1])
@@ -163,7 +163,7 @@ class TestMergeRotations:
             qml.RX(-0.5, wires=[2])
             qml.RX(0.2, wires=[2])
 
-        transformed_qfunc = merge_rotations(specify_ops=["RX", "CRX"])(qfunc)
+        transformed_qfunc = merge_rotations(include_gates=["RX", "CRX"])(qfunc)
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
