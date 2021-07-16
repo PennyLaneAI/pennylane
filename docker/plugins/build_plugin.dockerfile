@@ -15,7 +15,7 @@
 From pennylane/base:latest
 ARG PLUGIN_NAME=tensorflow
 WORKDIR /opt/pennylane/docker
-RUN chmod +x install.sh && ./install-plugin.sh $PLUGIN_NAME
+RUN chmod +x install-plugin.sh && ./install-plugin.sh $PLUGIN_NAME
 # Run Unit-Tests again
 WORKDIR /opt/pennylane
 RUN make test
