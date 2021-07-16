@@ -4,7 +4,7 @@
 
 * A new quantum function transform has been added to perform full fusion of
   arbitrary-length sequences of single-qubit gates.
-  [(#1458)](https://github.com/PennyLaneAI/pennylane/pull/1455)
+  [(#1458)](https://github.com/PennyLaneAI/pennylane/pull/1458)
 
   The `single_qubit_fusion` transform acts on all sequences of
   single-qubit operations in a quantum function, and converts each
