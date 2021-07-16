@@ -28,7 +28,7 @@ def single_qubit_fusion(tape, atol=1e-8, exclude_gates=None):
     operations into a general single-qubit unitary operation (:class:`~.Rot`).
 
     Fusion is performed only between gates that implement the property
-    ``single_qubit_rot_angles``. Any sequence of one or more single-qubit gates
+    ``single_qubit_rot_angles``. Any sequence of two or more single-qubit gates
     (on the same qubit) with that property defined will be fused into one ``Rot``.
 
     Args:
@@ -97,8 +97,7 @@ def single_qubit_fusion(tape, atol=1e-8, exclude_gates=None):
         next_gate_idx = find_next_gate(current_gate.wires, list_copy[1:])
 
         if next_gate_idx is None:
-            # Apply the Rot equivalent of the gate, for consistency
-            Rot(*cumulative_angles, wires=current_gate.wires)
+            apply(current_gate)
             list_copy.pop(0)
             continue
 
@@ -130,7 +129,7 @@ def single_qubit_fusion(tape, atol=1e-8, exclude_gates=None):
             next_gate_idx = find_next_gate(current_gate.wires, list_copy[1:])
 
         # Only apply if the cumulative angle is not close to 0
-        if not allclose(cumulative_angles, zeros(3), atol=atol):
+        if not allclose(cumulative_angles, zeros(3), atol=atol, rtol=0):
             Rot(*cumulative_angles, wires=current_gate.wires)
 
         # Remove the starting gate from the list
