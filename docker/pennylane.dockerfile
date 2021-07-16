@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,11 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-FROM ubuntu:20.04 AS compile-image
-=======
 FROM ubuntu:latest AS compile-image
->>>>>>> 7d2d7942655b1118b4234b9278440aed2174465c
 
 # Setup and install Basic packages
 RUN apt-get update && apt-get install -y apt-utils --no-install-recommends

@@ -27,5 +27,5 @@ RUN pip install wheel && pip install openfermionpyscf && pip install -r requirem
     && python3 setup.py install \
     && make test
 
-# Image completed, Exit Now.
+# Image build completed.
 CMD echo "Successfully built Docker image"

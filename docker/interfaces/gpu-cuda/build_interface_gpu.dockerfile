@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,11 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-From pennylane/cuda/base:latest
-=======
 FROM pennylane/cuda/base:latest
->>>>>>> 7d2d7942655b1118b4234b9278440aed2174465c
-
 ARG INTERFACE_NAME=tensorflow
 # Build Jax interface
 RUN if [ "$INTERFACE_NAME" = "jax" ] ; then \
