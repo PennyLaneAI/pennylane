@@ -21,7 +21,7 @@ from .optimization_utils import find_next_gate, fuse_rot_angles
 
 
 @qfunc_transform
-def merge_rotations(tape, tol=1e-8, specify_ops=None):
+def merge_rotations(tape, atol=1e-8, include_gates=None):
     """Quantum function transform to combine rotation gates of the same type
     that act sequentially.
 
@@ -30,10 +30,9 @@ def merge_rotations(tape, tol=1e-8, specify_ops=None):
 
     Args:
         qfunc (function): A quantum function.
-        tol (float): A tolerance for which to apply a rotation after merging.
-            If the parameter of the merge rotation is less than this value, the
-            rotation will not be applied.
-        specify_ops (None or list[str]): A list of specific operations to merge. If
+        atol (float): An absolute tolerance for which to apply a rotation after merging.
+            If the result of comparison to 0 via ``isclose`` is True, the rotation will not be applied.
+        include_gates (None or list[str]): A list of specific operations to merge. If
             set to ``None`` (default), all operations with the ``is_composable_rotation``
             attribute set to ``True`` will be merged. Otherwise, only the operations whose
             names match those in the list will undergo merging.
@@ -92,8 +91,8 @@ def merge_rotations(tape, tol=1e-8, specify_ops=None):
 
         # If a specific list of operations is specified, check and see if our
         # op is in it, then try to merge. If not, queue and move on.
-        if specify_ops is not None:
-            if current_gate.name not in specify_ops:
+        if include_gates is not None:
+            if current_gate.name not in include_gates:
                 apply(current_gate)
                 list_copy.pop(0)
                 continue
@@ -143,7 +142,7 @@ def merge_rotations(tape, tol=1e-8, specify_ops=None):
             # If we did merge, look now at the next gate
             next_gate_idx = find_next_gate(current_gate.wires, list_copy[1:])
 
-        if not allclose(cumulative_angles, zeros(len(cumulative_angles)), atol=tol):
+        if not allclose(cumulative_angles, zeros(len(cumulative_angles)), atol=atol):
             current_gate.__class__(*cumulative_angles, wires=current_gate.wires)
 
         # Remove the first gate gate from the working list
