@@ -22,7 +22,7 @@ from .optimization_utils import find_next_gate, fuse_rot_angles
 
 @qfunc_transform
 def merge_rotations(tape, atol=1e-8, include_gates=None):
-    """Quantum function transform to combine rotation gates of the same type
+    r"""Quantum function transform to combine rotation gates of the same type
     that act sequentially.
 
     If the combination of two rotation produces an angle that is close to 0,
