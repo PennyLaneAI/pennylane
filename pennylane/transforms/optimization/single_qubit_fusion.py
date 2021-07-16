@@ -23,15 +23,19 @@ from .optimization_utils import find_next_gate, fuse_rot_angles
 
 
 @qfunc_transform
-def single_qubit_fusion(tape, tol=1e-8):
+def single_qubit_fusion(tape, atol=1e-8):
     """Quantum function transform to fuse together groups of single-qubit
-    operations into the general single-qubit unitary form (:class:`~.Rot`).
+    operations into a general single-qubit unitary operation (:class:`~.Rot`).
+
+    Fusion is performed only between gates that implement the property
+    ``single_qubit_rot_angles``. Any sequence of one or more single-qubit gates
+    (on the same qubit) with that property defined will be fused into one ``Rot``.
 
     Args:
         qfunc (function): A quantum function.
-        tol (float): A tolerance for which to apply a rotation after fusion.
-            If all the angles of rotation are smaller than this amount, no
-            ``Rot`` gate will be applied.
+        atol (float): An absolute tolerance for which to apply a rotation after
+            fusion. If comparison of all fused angles to 0 via ``allclose`` with
+            this ``atol`` returns True, no ``Rot`` gate will be applied.
 
     **Example**
 
@@ -72,7 +76,7 @@ def single_qubit_fusion(tape, tol=1e-8):
         # Look for as_rot_angles; if not available, queue and move on.
         # If available, grab the angles and try to fuse.
         try:
-            cumulative_angles = stack(current_gate.as_rot_angles())
+            cumulative_angles = stack(current_gate.single_qubit_rot_angles())
         except (NotImplementedError, AttributeError):
             apply(current_gate)
             list_copy.pop(0)
@@ -95,7 +99,7 @@ def single_qubit_fusion(tape, tol=1e-8):
             # only do so if the as_rot_angles method is implemented.
             if current_gate.wires == next_gate.wires:
                 try:
-                    next_gate_angles = next_gate.as_rot_angles()
+                    next_gate_angles = next_gate.single_qubit_rot_angles()
                 except (NotImplementedError, AttributeError):
                     break
 
@@ -109,7 +113,7 @@ def single_qubit_fusion(tape, tol=1e-8):
             next_gate_idx = find_next_gate(current_gate.wires, list_copy[1:])
 
         # Only apply if the cumulative angle is not close to 0
-        if not allclose(cumulative_angles, zeros(3), atol=tol):
+        if not allclose(cumulative_angles, zeros(3), atol=atol):
             Rot(*cumulative_angles, wires=current_gate.wires)
 
         # Remove the starting gate from the list
