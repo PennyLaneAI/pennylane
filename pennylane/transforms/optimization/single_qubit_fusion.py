@@ -34,8 +34,8 @@ def single_qubit_fusion(tape, atol=1e-8, exclude_gates=None):
     Args:
         qfunc (function): A quantum function.
         atol (float): An absolute tolerance for which to apply a rotation after
-            fusion. If comparison of all fused angles to 0 via ``allclose`` with
-            this ``atol`` returns True, no ``Rot`` gate will be applied.
+            fusion. After fusion of gates, if the fused angles :math:`\theta` are such that
+            :math:`|theta|\leq \text{atol}`, no rotation gate will be applied.
         exclude_gates (None or list[str]): A list of gates that should be excluded
             from full fusion. If set to ``None``, all single-qubit gates that can
             be fused will be fused.
