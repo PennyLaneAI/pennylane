@@ -3,7 +3,7 @@
 Thank you for taking the time to contribute to PennyLane!
 :confetti_ball: :tada: :fireworks: :balloon:
 
-PennyLane is a collaborative effort with the quantum computation and machine learning community. We invite you to join our team in whatever capacity works best for you.
+PennyLane is a collaborative effort with the quantum computation and machine learning communities. We invite you to join our team in whatever capacity works best for you.
 
 Learn more about contributing to open source in general with [this great guide](https://opensource.guide/).
 
@@ -37,16 +37,13 @@ It's up to you!
 
 What to help with the repository itself?  There are several different avenues for that:
 
-- **Good first issues 🐣** - Want to help but don't know where to start? Take a look at our ["good first issue 🐣" label](https://github.com/PennyLaneAI/pennylane/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue+%3Ahatching_chick%3A%22).  Issues with this label *should* require less expertise and contain fewer tricky bits.  If the issue ends up trickier than we assumed, you can start a conversation on the issue page or open up a "Work in Progress" PR to ask for help.
+- **Good first issues 🐣** - Don't know where to start? Take a look at our ["good first issue 🐣" label](https://github.com/PennyLaneAI/pennylane/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue+%3Ahatching_chick%3A%22).  Issues with this label *should* require less expertise and contain fewer tricky bits.  If the issue ends up trickier than we assumed, you can start a conversation on the issue page or open up a "Work in Progress" PR to ask for help.
 
-- **Documentation**- If you would like to add to our documentation or suggest improvements/changes, let us know or submit a pull request directly. Even Pull Requests fixing rendering issues, grammar, or a code example that doesn't work as expected can help us. Take a look at the [documentation guide](https://pennylane.readthedocs.io/en/stable/development/guide/documentation.html) for more specifics.
+- **Documentation**- If you would like to add to our documentation or suggest improvements/changes, let us know or submit a pull request directly. Even Pull Requests fixing rendering issues, grammar, or a broken code example can help us. Take a look at the [documentation guide](https://pennylane.readthedocs.io/en/stable/development/guide/documentation.html) for more specifics.
 
 - **Add a new Template or Operation.** Circuit structures crop up in literature faster than we can add them, so we are always looking for help. Take a look at the page on [Contributing templates](https://pennylane.readthedocs.io/en/stable/development/adding_templates.html) for more information.
 
 - **Develop a PennyLane plugin** - PennyLane is designed to be device and quantum-framework agnostic. Users can switch a circuit's device to any other compatible device with no code changes. We would love to support even more devices and quantum frameworks. If you would like to write a PennyLane plugin, see the page on ["Building a plugin"](https://pennylane.readthedocs.io/en/stable/development/plugins.html).
-
-
-Ask us if you have any questions, and send a link to your plugin to support@xanadu.ai so we can highlight it in our documentation!
 
 Did we catch your interest? Let's get into some helpful specifics.
 
@@ -60,12 +57,11 @@ reports help us make PennyLane better on all fronts.
 
 To submit a bug report, please consider the following checklist:
 
-* **Search the issue tracker to make sure someone did not already report the bug**. If it was, you could add a comment to expand on the issue.
+* **Search the issue tracker to make sure someone did not already report the bug**. If it was already reported, you can add a comment providing more context to those solving the problem.
 
 * **Fill out the issue template**. If you cannot find an existing issue addressing the problem, create a new issue by filling out the [issue template](ISSUE_TEMPLATE.md). This template is added automatically to the comment box when you create a new issue. Please try and add as many details as possible!
 
-* Try and make your issue as **clear, concise, and descriptive** as possible. Include a clear and descriptive title,
-  and include all code snippets/commands required to reproduce the problem. Try and find the simplest code that reproduces the problem you are seeing. If you're not sure what caused the issue,
+* Try and make your issue as **clear, concise, and descriptive** as possible. Include an informative title and all code snippets/commands required to reproduce the problem. Try and find the simplest code that reproduces the error you see. If you're not sure what caused the issue,
   describe what you were doing when the issue occurred. Please also include the output of `import pennylane as qml; qml.about()`.
 
 ### Suggesting features, document additions, and enhancements
@@ -84,7 +80,7 @@ feature requests and enhancements, but here are a couple of suggestions for thin
 ## Pull requests
 
 If you would like to contribute directly to the PennyLane codebase, make a fork of the master branch and submit a [pull request](https://help.github.com/articles/about-pull-requests). We encourage everyone to fork and modify the PennyLane source code. However, we have a couple of guidelines on pull
-requests to ensure the main master branch of PennyLane conforms to existing standards and quality. We can help you meet these standards during our code review process, so don't let those stop you from getting started. Pull Requests do not need to be big and complicated.  We appreciate even minor bug fixes or documentation improvements. 
+requests to ensure the master branch of PennyLane conforms to existing standards and quality. We can help you meet these standards during our code review process, so don't let those stop you from getting started. Pull Requests do not need to be big and complicated.  We appreciate even minor bug fixes or documentation improvements. 
 
 See our [Development Guide](https://pennylane.readthedocs.io/en/stable/development/guide.html)
 and the page on [submitting a pull request](https://pennylane.readthedocs.io/en/stable/development/guide/pullrequests.html) in particular for more information.

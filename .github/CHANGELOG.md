@@ -122,11 +122,14 @@
 
 <h3>Documentation</h3>
 
+* Improved Contribution Guide and Pull Requests Guide.
+  [(#1461)](https://github.com/PennyLaneAI/pennylane/pull/1461)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Romain Moyard, Ashish Panigrahi, Maria Schuld.
+Olivia Di Matteo, Josh Izaac, Christina Lee, Romain Moyard, Ashish Panigrahi, Maria Schuld.
 
 
 # Release 0.16.0 (current release)
