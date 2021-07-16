@@ -30,8 +30,8 @@ def merge_rotations(tape, atol=1e-8, include_gates=None):
 
     Args:
         qfunc (function): A quantum function.
-        atol (float): An absolute tolerance for which to apply a rotation after merging.
-            If the result of comparison to 0 via ``isclose`` is True, the rotation will not be applied.
+        atol (float): After fusion of gates, if the fused angle :math:`\theta` is such that
+            :math:`|theta|\leq \text{atol}`, no rotation gate will be applied.
         include_gates (None or list[str]): A list of specific operations to merge. If
             set to ``None`` (default), all operations with the ``is_composable_rotation``
             attribute set to ``True`` will be merged. Otherwise, only the operations whose
@@ -142,7 +142,7 @@ def merge_rotations(tape, atol=1e-8, include_gates=None):
             # If we did merge, look now at the next gate
             next_gate_idx = find_next_gate(current_gate.wires, list_copy[1:])
 
-        if not allclose(cumulative_angles, zeros(len(cumulative_angles)), atol=atol):
+        if not allclose(cumulative_angles, zeros(len(cumulative_angles)), atol=atol, rtol=0):
             current_gate.__class__(*cumulative_angles, wires=current_gate.wires)
 
         # Remove the first gate gate from the working list
