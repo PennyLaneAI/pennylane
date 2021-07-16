@@ -73,7 +73,7 @@ def single_qubit_fusion(tape, tol=1e-8):
         # If available, grab the angles and try to fuse.
         try:
             cumulative_angles = stack(current_gate.as_rot_angles())
-        except:
+        except (NotImplementedError, AttributeError):
             apply(current_gate)
             list_copy.pop(0)
             continue
@@ -96,7 +96,7 @@ def single_qubit_fusion(tape, tol=1e-8):
             if current_gate.wires == next_gate.wires:
                 try:
                     next_gate_angles = next_gate.as_rot_angles()
-                except:
+                except (NotImplementedError, AttributeError):
                     break
 
                 cumulative_angles = fuse_rot_angles(

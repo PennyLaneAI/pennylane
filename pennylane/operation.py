@@ -588,7 +588,7 @@ class Operation(Operator):
         equivalent ``Rot`` gate, up to a global phase.
 
         Returns:
-            [float, float, float]: A list of values :math:`[\phi, \theta, \omega]`
+            tuple[float, float, float]: A list of values :math:`[\phi, \theta, \omega]`
             such that :math:`RZ(\omega) RY(\theta) RZ(\phi)` is equivalent to the
             original operation.
         """
