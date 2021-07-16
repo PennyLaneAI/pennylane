@@ -583,7 +583,7 @@ class Operation(Operator):
     """
 
     @property
-    def as_rot_angles(self):
+    def single_qubit_rot_angles(self):
         """The parameters required to implement a single-qubit gate as an
         equivalent ``Rot`` gate, up to a global phase.
 
