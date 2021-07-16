@@ -82,6 +82,32 @@ class TestSingleQubitFusion:
         wires_expected = [Wires(0)] * 3
         compare_operation_lists(transformed_ops, names_expected, wires_expected)
 
+    def test_single_qubit_fusion_exclude_gates(self):
+        """Test that fusion is correctly skipped for gates explicitly on an
+        exclusion list."""
+
+        def qfunc():
+            qml.RZ(0.1, wires=0)
+            qml.Hadamard(wires=0)
+            qml.PauliX(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(0.1, wires=0)
+            qml.Hadamard(wires=0)
+
+        original_ops = qml.transforms.make_tape(qfunc)().operations
+
+        transformed_qfunc = single_qubit_fusion(exclude_gates=["RZ"])(qfunc)
+        transformed_ops = qml.transforms.make_tape(transformed_qfunc)().operations
+
+        names_expected = ["RZ", "Rot", "CNOT", "RZ", "Rot"]
+        wires_expected = [Wires(0)] * 2 + [Wires([0, 1])] + [Wires(0)] * 2
+        compare_operation_lists(transformed_ops, names_expected, wires_expected)
+
+        # Compare matrices
+        matrix_expected = compute_matrix_from_ops_two_qubit(original_ops, wire_order=[0, 1])
+        matrix_obtained = compute_matrix_from_ops_two_qubit(transformed_ops, wire_order=[0, 1])
+        assert check_matrix_equivalence(matrix_expected, matrix_obtained)
+
     def test_single_qubit_fusion_multiple_qubits(self):
         """Test that all sequences of single-qubit gates across multiple qubits fuse properly."""
 

@@ -23,7 +23,7 @@ from .optimization_utils import find_next_gate, fuse_rot_angles
 
 
 @qfunc_transform
-def single_qubit_fusion(tape, atol=1e-8):
+def single_qubit_fusion(tape, atol=1e-8, exclude_gates=None):
     """Quantum function transform to fuse together groups of single-qubit
     operations into a general single-qubit unitary operation (:class:`~.Rot`).
 
@@ -36,6 +36,9 @@ def single_qubit_fusion(tape, atol=1e-8):
         atol (float): An absolute tolerance for which to apply a rotation after
             fusion. If comparison of all fused angles to 0 via ``allclose`` with
             this ``atol`` returns True, no ``Rot`` gate will be applied.
+        exclude_gates (None or list[str]): A list of gates that should be excluded
+            from full fusion. If set to ``None``, all single-qubit gates that can
+            be fused will be fused.
 
     **Example**
 
@@ -73,7 +76,15 @@ def single_qubit_fusion(tape, atol=1e-8):
     while len(list_copy) > 0:
         current_gate = list_copy[0]
 
-        # Look for as_rot_angles; if not available, queue and move on.
+        # If the gate should be excluded, queue it and move on regardless
+        # of fusion potential
+        if exclude_gates is not None:
+            if current_gate.name in exclude_gates:
+                apply(current_gate)
+                list_copy.pop(0)
+                continue
+
+        # Look for single_qubit_rot_angles; if not available, queue and move on.
         # If available, grab the angles and try to fuse.
         try:
             cumulative_angles = stack(current_gate.single_qubit_rot_angles())
@@ -86,7 +97,8 @@ def single_qubit_fusion(tape, atol=1e-8):
         next_gate_idx = find_next_gate(current_gate.wires, list_copy[1:])
 
         if next_gate_idx is None:
-            apply(current_gate)
+            # Apply the Rot equivalent of the gate, for consistency
+            Rot(*cumulative_angles, wires=current_gate.wires)
             list_copy.pop(0)
             continue
 
@@ -95,9 +107,14 @@ def single_qubit_fusion(tape, atol=1e-8):
             # Get the next gate
             next_gate = list_copy[next_gate_idx + 1]
 
-            # Try to merge the angles if next gate is on the same qubit; can
-            # only do so if the as_rot_angles method is implemented.
+            # Try to merge the angles if next gate is on the same qubit.
+            # Only do so if the single_qubit_rot_angles property is implemented.
             if current_gate.wires == next_gate.wires:
+                # Check first if the next gate is in the exclusion list
+                if exclude_gates is not None:
+                    if next_gate.name in exclude_gates:
+                        break
+
                 try:
                     next_gate_angles = next_gate.single_qubit_rot_angles()
                 except (NotImplementedError, AttributeError):
