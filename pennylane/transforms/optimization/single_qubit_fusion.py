@@ -24,7 +24,7 @@ from .optimization_utils import find_next_gate, fuse_rot_angles
 
 @qfunc_transform
 def single_qubit_fusion(tape, atol=1e-8, exclude_gates=None):
-    """Quantum function transform to fuse together groups of single-qubit
+    r"""Quantum function transform to fuse together groups of single-qubit
     operations into a general single-qubit unitary operation (:class:`~.Rot`).
 
     Fusion is performed only between gates that implement the property
