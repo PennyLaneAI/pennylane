@@ -1,3 +1,12 @@
+---
+name: Feature request
+about: Suggest a new feature
+title: ''
+labels: enhancement
+assignees: ''
+
+---
+
 <!--
 Before posting a bug report
 
