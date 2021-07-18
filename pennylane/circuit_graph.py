@@ -23,8 +23,8 @@ import networkx as nx
 import pennylane as qml
 import numpy as np
 
-from .circuit_drawer import CHARSETS, CircuitDrawer
 from pennylane.wires import Wires
+from .circuit_drawer import CHARSETS, CircuitDrawer
 
 
 def _by_idx(x):
