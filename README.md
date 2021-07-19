@@ -132,7 +132,7 @@ make -f docker/Makefile build-plugin plugin-name=qiskit
 ```
 
 ### Build Qchem-Pennylane using Docker 
-- You can also build an image with the PennyLane Qchem package and its dependencies. Use following commands:
+- You can also build an image with the PennyLane Qchem package and its dependencies. Use the following commands:
 
 ```console
 make -f docker/Makefile build-qchem
