@@ -8,9 +8,9 @@ assignees: ''
 ---
 
 <!--
-Before posting a bug report
+Before posting a feature request
 
-Search existing GitHub issues to make sure the issue does not already exist:
+Search existing GitHub issues to make sure the feature request does not already exist:
 https://github.com/xanaduai/pennylane/issues
 
 For general technical details check out our documentation:
