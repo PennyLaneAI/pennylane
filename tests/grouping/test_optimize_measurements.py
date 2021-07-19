@@ -109,7 +109,8 @@ class TestOptimizeMeasurements:
         assert len(grouped_coeffs) == len(grouped_coeffs)
 
         assert all(
-            np.allclose(grouped_coeffs[i], grouped_coeffs_sol[i]) for i in range(len(grouped_coeffs_sol))
+            np.allclose(grouped_coeffs[i], grouped_coeffs_sol[i])
+            for i in range(len(grouped_coeffs_sol))
         )
 
     @pytest.mark.parametrize(
@@ -141,7 +142,8 @@ class TestOptimizeMeasurements:
         assert len(grouped_coeffs) == len(grouped_coeffs)
 
         assert all(
-            np.allclose(grouped_coeffs[i], grouped_coeffs_sol[i]) for i in range(len(grouped_coeffs_sol))
+            np.allclose(grouped_coeffs[i], grouped_coeffs_sol[i])
+            for i in range(len(grouped_coeffs_sol))
         )
 
     def test_optimize_measurements_not_implemented_catch(self):

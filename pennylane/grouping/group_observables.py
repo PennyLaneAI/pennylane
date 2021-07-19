@@ -238,7 +238,9 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
     if coefficients is None:
         return partitioned_paulis
 
-    partitioned_coeffs = [qml.math.cast_like([0] * len(g), coefficients) for g in partitioned_paulis]
+    partitioned_coeffs = [
+        qml.math.cast_like([0] * len(g), coefficients) for g in partitioned_paulis
+    ]
 
     observables = copy(observables)
     coefficients = [coefficients[i] for i in range(qml.math.shape(coefficients)[0])]

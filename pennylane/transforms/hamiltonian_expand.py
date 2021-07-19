@@ -85,7 +85,9 @@ def hamiltonian_expand(tape):
     else:
         # else every observable is its own group
         obs_groupings = [[ob] for ob in hamiltonian.ops]
-        coeffs_groupings = [hamiltonian.coeffs[i] for i in range(qml.math.shape(hamiltonian.coeffs)[0])]
+        coeffs_groupings = [
+            hamiltonian.coeffs[i] for i in range(qml.math.shape(hamiltonian.coeffs)[0])
+        ]
 
     tapes = []
 
@@ -102,11 +104,7 @@ def hamiltonian_expand(tape):
         tapes.append(new_tape)
 
     def processing_fn(res):
-        dot_products = [
-            qml.math.dot(c, r[0]) for c, r in zip(coeffs_groupings, res)
-        ]
+        dot_products = [qml.math.dot(c, r[0]) for c, r in zip(coeffs_groupings, res)]
         return qml.math.sum(qml.math.stack(dot_products))
 
     return tapes, processing_fn
-
-

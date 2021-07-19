@@ -115,7 +115,7 @@ class Hamiltonian(qml.operation.Observable):
         self._ops = list(observables)
         self._wires = qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
 
-        self.data = []
+        self.data = self.coeffs
         self.return_type = None
 
         self._grouped_coeffs = None
@@ -218,7 +218,7 @@ class Hamiltonian(qml.operation.Observable):
 
             if ind is not None:
                 coeffs[ind] += c
-                if np.isclose(qml.math.toarray(coeffs[ind]), np.array(0.)):
+                if np.isclose(qml.math.toarray(coeffs[ind]), np.array(0.0)):
                     del coeffs[ind]
                     del ops[ind]
             else:
@@ -229,7 +229,9 @@ class Hamiltonian(qml.operation.Observable):
         self._ops = ops
 
     def group(self):
-        self._grouped_obs, self._grouped_coeffs = qml.grouping.group_observables(self._ops, self._coeffs)
+        self._grouped_obs, self._grouped_coeffs = qml.grouping.group_observables(
+            self._ops, self._coeffs
+        )
 
     def __str__(self):
         # Lambda function that formats the wires
@@ -386,7 +388,9 @@ class Hamiltonian(qml.operation.Observable):
             return qml.Hamiltonian(coeffs, ops, simplify=True)
 
         if isinstance(H, (Tensor, Observable)):
-            coeffs = qml.math.concatenate([self_coeffs, qml.math.cast_like([1.], self_coeffs)], axis=0)
+            coeffs = qml.math.concatenate(
+                [self_coeffs, qml.math.cast_like([1.0], self_coeffs)], axis=0
+            )
             ops.append(H)
             return qml.Hamiltonian(coeffs, ops, simplify=True)
 
@@ -418,7 +422,9 @@ class Hamiltonian(qml.operation.Observable):
             return self
 
         if isinstance(H, (Tensor, Observable)):
-            self._coeffs = qml.math.concatenate([self._coeffs, qml.math.cast_like([1.], self._coeffs)], axis=0)
+            self._coeffs = qml.math.concatenate(
+                [self._coeffs, qml.math.cast_like([1.0], self._coeffs)], axis=0
+            )
             self._ops.append(H)
             self.simplify()
             return self
