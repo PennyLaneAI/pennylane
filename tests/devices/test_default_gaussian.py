@@ -16,15 +16,14 @@ Unit tests for the :mod:`pennylane.plugin.DefaultGaussian` device.
 """
 # pylint: disable=protected-access,cell-var-from-loop,no-self-use
 
-import pytest
-from scipy.special import factorial as fac
-from scipy.linalg import block_diag
 import numpy as np
 import numpy.random
+import pytest
+from scipy.linalg import block_diag
+from scipy.special import factorial as fac
 
 import pennylane as qml
 from pennylane import DeviceError
-from pennylane.wires import Wires
 from pennylane.devices.default_gaussian import (
     fock_prob,
     rotation,
@@ -41,7 +40,7 @@ from pennylane.devices.default_gaussian import (
     thermal_state,
     DefaultGaussian,
 )
-
+from pennylane.wires import Wires
 
 U = np.array(
     [
@@ -49,7 +48,6 @@ U = np.array(
         [-0.23889780 - 0.28101519j, -0.88031770 - 0.29832709j],
     ]
 )
-
 
 U2 = np.array(
     [
@@ -80,9 +78,7 @@ U2 = np.array(
     ]
 )
 
-
 H = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
-
 
 hbar = 2
 
@@ -171,7 +167,7 @@ class TestAuxillaryFunctions:
         probs = [0.430461524043, 0.163699407559, 0.0582788388927, 0.00167706931355]
 
         for idx, e in enumerate(events):
-            res = fock_prob(mu, cov, e, hbar=hbar)
+            res = fock_prob(cov, mu, e, hbar=hbar)
             assert res == pytest.approx(probs[idx], abs=tol)
 
 
@@ -308,14 +304,14 @@ class TestStates:
     def test_vacuum_state(self, tol):
         """Test the vacuum state is correct."""
         wires = 3
-        means, cov = vacuum_state(wires, hbar=hbar)
+        cov, means = vacuum_state(wires, hbar=hbar)
         assert means == pytest.approx(np.zeros([2 * wires]), abs=tol)
         assert cov == pytest.approx(np.identity(2 * wires) * hbar / 2, abs=tol)
 
     def test_coherent_state(self, tol):
         """Test the coherent state is correct."""
         a = 0.432 - 0.123j
-        means, cov = coherent_state(a, hbar=hbar)
+        cov, means = coherent_state(a, hbar=hbar)
         assert means == pytest.approx(np.array([a.real, a.imag]) * np.sqrt(2 * hbar), abs=tol)
         assert cov == pytest.approx(np.identity(2) * hbar / 2, abs=tol)
 
@@ -323,7 +319,7 @@ class TestStates:
         """Test the squeezed state is correct."""
         r = 0.432
         phi = 0.123
-        means, cov = squeezed_state(r, phi, hbar=hbar)
+        cov, means = squeezed_state(r, phi, hbar=hbar)
 
         # test vector of means is zero
         assert means == pytest.approx(np.zeros([2]), abs=tol)
@@ -340,7 +336,7 @@ class TestStates:
         phi_a = np.angle(alpha)
         r = 0.432
         phi_r = 0.123
-        means, cov = displaced_squeezed_state(a, phi_a, r, phi_r, hbar=hbar)
+        cov, means = displaced_squeezed_state(a, phi_a, r, phi_r, hbar=hbar)
 
         # test vector of means is correct
         assert means == pytest.approx(
@@ -355,7 +351,7 @@ class TestStates:
     def thermal_state(self, tol):
         """Test the thermal state is correct."""
         nbar = 0.5342
-        means, cov = thermal_state(nbar, hbar=hbar)
+        cov, means = thermal_state(nbar, hbar=hbar)
         assert means == pytest.approx(np.zeros([2]), abs=tol)
         assert np.all((cov.diag * 2 / hbar - 1) / 2 == nbar)
 
@@ -415,12 +411,12 @@ class TestDefaultGaussianDevice:
                     mu = np.array([0.432, 0.123, 0.342, 0.123])
                     p = [cov, mu]
                     w = list(range(2))
-                    expected_out = [mu, cov]
+                    expected_out = [cov, mu]
                 elif gate_name == "Interferometer":
                     w = list(range(2))
                     p = [U]
                     S = fn(*p)
-                    expected_out = S @ gaussian_dev._state[0], S @ gaussian_dev._state[1] @ S.T
+                    expected_out = S @ gaussian_dev._state[0] @ S.T, S @ gaussian_dev._state[1]
             else:
                 # the parameter is a float
                 p = [0.432423, -0.12312, 0.324, 0.751][: op.num_params]
@@ -428,19 +424,19 @@ class TestDefaultGaussianDevice:
                 if gate_name == "Displacement":
                     alpha = p[0] * np.exp(1j * p[1])
                     state = gaussian_dev._state
-                    mu = state[0].copy()
+                    mu = state[1].copy()
                     mu[w[0]] += alpha.real * np.sqrt(2 * hbar)
                     mu[w[0] + 2] += alpha.imag * np.sqrt(2 * hbar)
-                    expected_out = mu, state[1]
+                    expected_out = state[0], mu
                 elif "State" in gate_name:
-                    mu, cov = fn(*p, hbar=hbar)
+                    cov, mu = fn(*p, hbar=hbar)
                     expected_out = gaussian_dev._state
-                    expected_out[0][[w[0], w[0] + 2]] = mu
+                    expected_out[1][[w[0], w[0] + 2]] = mu
 
                     ind = np.concatenate([np.array([w[0]]), np.array([w[0]]) + 2])
                     rows = ind.reshape(-1, 1)
                     cols = ind.reshape(1, -1)
-                    expected_out[1][rows, cols] = cov
+                    expected_out[0][rows, cols] = cov
                 else:
                     # if the default.gaussian is an operation accepting parameters,
                     # initialise it using the parameters generated above.
@@ -451,7 +447,7 @@ class TestDefaultGaussianDevice:
                         # reorder from symmetric ordering to xp-ordering
                         S = block_diag(S, np.identity(2))[:, [0, 2, 1, 3]][[0, 2, 1, 3]]
 
-                    expected_out = S @ gaussian_dev._state[0], S @ gaussian_dev._state[1] @ S.T
+                    expected_out = S @ gaussian_dev._state[0] @ S.T, S @ gaussian_dev._state[1]
 
             gaussian_dev.apply(gate_name, wires=Wires(w), par=p)
 
@@ -791,7 +787,7 @@ class TestDefaultGaussianIntegration:
                 return (alpha + a).real * np.sqrt(2 * hbar)
 
             if "State" in g:
-                mu, _ = qop(*x, hbar=hbar)
+                _, mu = qop(*x, hbar=hbar)
                 return mu[0]
 
             S = qop(*x)
