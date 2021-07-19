@@ -141,6 +141,9 @@
 
 <h3>Improvements</h3>
 
+* Change the order of the covariance matrix and the vector of means internally
+  in `default.gaussian`. [(#1331)](https://github.com/PennyLaneAI/pennylane/pull/1331)
+
 * Added the `id` attribute to templates, which was missing from 
   PR [(#1377)](https://github.com/PennyLaneAI/pennylane/pull/1377).
   [(#1438)](https://github.com/PennyLaneAI/pennylane/pull/1438)
@@ -183,7 +186,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Romain Moyard, Ashish Panigrahi, Maria Schuld.
+Olivia Di Matteo, Josh Izaac, Leonhard Kunczik, Romain Moyard, Ashish Panigrahi, Maria Schuld.
 
 
 # Release 0.16.0 (current release)
