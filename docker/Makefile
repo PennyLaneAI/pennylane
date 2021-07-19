@@ -9,7 +9,7 @@ help:
 	@echo "build-interface-gpu"
 
 available-interfaces:
-	@echo "Following interfaces are available for Pennylane"
+	@echo "The following interfaces are available for PennyLane:"
 	@echo "1.tensorflow 2.torch 3.jax"
 
 available-plugins:
