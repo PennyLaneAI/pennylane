@@ -44,7 +44,7 @@ class TestFindNextGate:
             ("c", sample_op_list, 3),
         ],
     )
-    def test_yzy_to_zyz(self, wires, op_list, next_gate_idx):
+    def test_find_next_gate(self, wires, op_list, next_gate_idx):
         """Test find_next_gate correctly identifies the next gate in a list of operations that share any number of wires."""
         assert find_next_gate(qml.wires.Wires(wires), op_list) == next_gate_idx
 
@@ -84,6 +84,9 @@ class TestRotGateFusion:
             ([0.05, -1.34, 4.12], [-0.8, 0.2, 0.12]),
             ([0.05, 0.0, 4.12], [-0.8, 0.2, 0.12]),
             ([0.05, -1.34, 0.0], [-0.8, 0.2, 0.12]),
+            ([0.05, 0.0, 0.1], [-0.2, 0.0, 0.12]),
+            ([0.05, 0.0, 0.0], [0.0, 0.0, 0.12]),
+            ([0.05, 0.2, 0.0], [0.0, -0.6, 0.12]),
             ([0.05, -1.34, 4.12], [0.0, 0.2, 0.12]),
             ([0.05, -1.34, 4.12], [0.3, 0.0, 0.12]),
         ],

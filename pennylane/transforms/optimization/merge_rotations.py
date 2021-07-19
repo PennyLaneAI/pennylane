@@ -22,7 +22,7 @@ from .optimization_utils import find_next_gate, fuse_rot_angles
 
 @qfunc_transform
 def merge_rotations(tape, atol=1e-8, include_gates=None):
-    """Quantum function transform to combine rotation gates of the same type
+    r"""Quantum function transform to combine rotation gates of the same type
     that act sequentially.
 
     If the combination of two rotation produces an angle that is close to 0,
@@ -31,7 +31,7 @@ def merge_rotations(tape, atol=1e-8, include_gates=None):
     Args:
         qfunc (function): A quantum function.
         atol (float): After fusion of gates, if the fused angle :math:`\theta` is such that
-            :math:`|theta|\leq \text{atol}`, no rotation gate will be applied.
+            :math:`|\theta|\leq \text{atol}`, no rotation gate will be applied.
         include_gates (None or list[str]): A list of specific operations to merge. If
             set to ``None`` (default), all operations with the ``is_composable_rotation``
             attribute set to ``True`` will be merged. Otherwise, only the operations whose
@@ -73,10 +73,10 @@ def merge_rotations(tape, atol=1e-8, include_gates=None):
      2: ──╰X──────H──╰C──────┤
 
     It is also possible to explicitly specify which rotations ``merge_rotations`` should
-    be merged using the ``specify_ops`` argument. For example, if in the above
+    be merged using the ``include_gates`` argument. For example, if in the above
     circuit we wanted only to merge the "RX" gates, we could do so as follows:
 
-    >>> optimized_qfunc = merge_rotations(specify_ops=["RX"])(qfunc)
+    >>> optimized_qfunc = merge_rotations(include_gates=["RX"])(qfunc)
     >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
     >>> print(qml.draw(optimized_qnode)(1, 2, 3))
      0: ───RX(3)─────────────────╭RZ(3)──┤ ⟨Z⟩
