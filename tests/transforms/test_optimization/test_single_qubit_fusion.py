@@ -49,6 +49,20 @@ class TestSingleQubitFusion:
         matrix_obtained = compute_matrix_from_ops_one_qubit(transformed_ops)
         assert check_matrix_equivalence(matrix_expected, matrix_obtained)
 
+    def test_single_qubit_fusion_no_gates_after(self):
+        """Test that gates with nothing after are applied without modification."""
+
+        def qfunc():
+            qml.RZ(0.1, wires=0)
+            qml.Hadamard(wires=1)
+
+        transformed_qfunc = single_qubit_fusion()(qfunc)
+        transformed_ops = qml.transforms.make_tape(transformed_qfunc)().operations
+
+        names_expected = ["RZ", "Hadamard"]
+        wires_expected = [Wires(0), Wires(1)]
+        compare_operation_lists(transformed_ops, names_expected, wires_expected)
+
     def test_single_qubit_cancelled_fusion(self):
         """Test if a sequence of single-qubit gates that all cancel yields no operations."""
 
@@ -87,23 +101,29 @@ class TestSingleQubitFusion:
         exclusion list."""
 
         def qfunc():
+            # Excluded gate at the start
             qml.RZ(0.1, wires=0)
             qml.Hadamard(wires=0)
             qml.PauliX(wires=0)
             qml.RZ(0.1, wires=1)
             qml.CNOT(wires=[0, 1])
             qml.Hadamard(wires=0)
+            # Excluded gate after another gate
             qml.RZ(0.1, wires=0)
             qml.PauliX(wires=1)
             qml.PauliZ(wires=1)
+            # Excluded gate after multiple others
+            qml.RZ(0.2, wires=1)
 
         original_ops = qml.transforms.make_tape(qfunc)().operations
 
         transformed_qfunc = single_qubit_fusion(exclude_gates=["RZ"])(qfunc)
         transformed_ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
-        names_expected = ["RZ", "Rot", "RZ", "CNOT", "Hadamard", "RZ", "Rot"]
-        wires_expected = [Wires(0)] * 2 + [Wires(1)] + [Wires([0, 1])] + [Wires(0)] * 2 + [Wires(1)]
+        names_expected = ["RZ", "Rot", "RZ", "CNOT", "Hadamard", "RZ", "Rot", "RZ"]
+        wires_expected = (
+            [Wires(0)] * 2 + [Wires(1)] + [Wires([0, 1])] + [Wires(0)] * 2 + [Wires(1)] * 2
+        )
         compare_operation_lists(transformed_ops, names_expected, wires_expected)
 
         # Compare matrices
