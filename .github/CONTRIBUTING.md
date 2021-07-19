@@ -83,6 +83,4 @@ requests to ensure the master branch of PennyLane conforms to existing standards
 See our [Development Guide](https://pennylane.readthedocs.io/en/stable/development/guide.html)
 and the page on [submitting a pull request](https://pennylane.readthedocs.io/en/stable/development/guide/pullrequests.html) in particular for more information.
 
-Thank you for your interest in PennyLane! :fireworks:
-
-The PennyLane team
+Thank you for your interest in PennyLane! 🎆
