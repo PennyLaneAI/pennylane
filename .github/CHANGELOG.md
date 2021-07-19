@@ -2,6 +2,63 @@
 
 <h3>New features since last release</h3>
 
+* Two new quantum function transforms have been added to enable the
+  removal of redundant gates in quantum circuits.
+  [(#1455)](https://github.com/PennyLaneAI/pennylane/pull/1455)
+
+  The `cancel_inverses` transform loops through a list of operations,
+  and removes adjacent pairs of operations that cancel out. For example,
+
+  ```python
+  def circuit():
+      qml.Hadamard(wires=0)
+      qml.PauliZ(wires=1)
+      qml.Hadamard(wires=0)
+      qml.T(wires=0)
+      qml.CZ(wires=[0, 1])
+      qml.CZ(wires=[1, 0])
+      return qml.expval(qml.PauliX(wires=0))
+  ```
+
+  ```pycon
+  >>> dev = qml.device('default.qubit', wires=2)
+  >>> qnode = qml.QNode(circuit, dev)
+  >>> print(qml.draw(qnode)())
+   0: ──H──H──T──╭C──╭Z──┤ ⟨X⟩
+   1: ──Z────────╰Z──╰C──┤
+  >>> optimized_circuit = qml.transforms.cancel_inverses(circuit)
+  >>> optimized_qnode = qml.QNode(optimized_circuit, dev)
+  >>> print(qml.draw(optimized_qnode)())
+   0: ──T──┤ ⟨X⟩
+   1: ──Z──┤
+  ```
+
+  The `merge_rotations` transform combines adjacent rotation gates of
+  the same type into a single gate, including controlled rotations.
+
+  ```python
+  def circuit(x, y, z):
+      qml.RX(x, wires=0)
+      qml.RX(x, wires=0)
+      qml.Rot(x, y, z, wires=1)
+      qml.Rot(y, z, x, wires=1)
+      qml.CRY(y, wires=[0, 1])
+      qml.CRY(y + z, wires=[0, 1])
+      return qml.expval(qml.PauliX(wires=0))
+  ```
+
+  ```pycon
+  >>> qnode = qml.QNode(circuit, dev)
+  >>> print(qml.draw(qnode)(0.1, 0.2, 0.3))
+   0: ──RX(0.1)─────────────RX(0.1)─────────────╭C────────╭C────────┤ ⟨X⟩
+   1: ──Rot(0.1, 0.2, 0.3)──Rot(0.2, 0.3, 0.1)──╰RY(0.2)──╰RY(0.5)──┤
+  >>> optimized_circuit = qml.transforms.merge_rotations()(circuit)
+  >>> optimized_qnode = qml.QNode(optimized_circuit, dev)
+  >>> print(qml.draw(optimized_qnode)(0.1, 0.2, 0.3))
+   0: ──RX(0.2)───────────────────╭C────────┤ ⟨X⟩
+   1: ──Rot(0.409, 0.485, 0.306)──╰RY(0.7)──┤
+  ```
+
 * A decomposition has been added to ``QubitUnitary`` that makes the
   single-qubit case fully differentiable in all interfaces. Furthermore,
   a quantum function transform, ``unitary_to_rot()``, has been added to decompose all

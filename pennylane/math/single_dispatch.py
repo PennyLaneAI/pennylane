@@ -117,12 +117,14 @@ ar.autoray._SUBMODULE_ALIASES["tensorflow", "angle"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "arcsin"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "arccos"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "arctan"] = "tensorflow.math"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "arctan2"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "diag"] = "tensorflow.linalg"
 
 
 ar.autoray._FUNC_ALIASES["tensorflow", "arcsin"] = "asin"
 ar.autoray._FUNC_ALIASES["tensorflow", "arccos"] = "acos"
 ar.autoray._FUNC_ALIASES["tensorflow", "arctan"] = "atan"
+ar.autoray._FUNC_ALIASES["tensorflow", "arctan2"] = "atan2"
 ar.autoray._FUNC_ALIASES["tensorflow", "diag"] = "diag"
 
 
@@ -242,6 +244,9 @@ ar.register_function(
         x.to(_i("torch").float64) if x.dtype in (_i("torch").int64, _i("torch").int32) else x
     ),
 )
+
+ar.autoray._SUBMODULE_ALIASES["torch", "arctan2"] = "torch"
+ar.autoray._FUNC_ALIASES["torch", "arctan2"] = "atan2"
 
 
 def _take_torch(tensor, indices, axis=None):
