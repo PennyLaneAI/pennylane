@@ -102,7 +102,7 @@ class SimplifiedTwoDesign(Operation):
     num_wires = AnyWires
     par_domain = "A"
 
-    def __init__(self, initial_layer_weights, weights, wires, do_queue=True):
+    def __init__(self, initial_layer_weights, weights, wires, do_queue=True, id=None):
 
         shape = qml.math.shape(weights)
 
@@ -125,7 +125,7 @@ class SimplifiedTwoDesign(Operation):
 
         self.n_layers = shape[0]
 
-        super().__init__(initial_layer_weights, weights, wires=wires, do_queue=do_queue)
+        super().__init__(initial_layer_weights, weights, wires=wires, do_queue=do_queue, id=id)
 
     def expand(self):
 

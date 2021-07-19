@@ -151,7 +151,7 @@ class ParticleConservingU2(Operation):
     num_wires = AnyWires
     par_domain = "A"
 
-    def __init__(self, weights, wires, init_state=None, do_queue=True):
+    def __init__(self, weights, wires, init_state=None, do_queue=True, id=None):
 
         if len(wires) < 2:
             raise ValueError(
@@ -174,7 +174,7 @@ class ParticleConservingU2(Operation):
         # since init_state can never be differentiable
         self.init_state = qml.math.toarray(init_state)
 
-        super().__init__(weights, wires=wires, do_queue=do_queue)
+        super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 
     def expand(self):
 

@@ -188,6 +188,7 @@ class RandomLayers(Operation):
         rotations=None,
         seed=42,
         do_queue=True,
+        id=None,
     ):
 
         self.seed = seed
@@ -201,7 +202,7 @@ class RandomLayers(Operation):
         self.imprimitive = imprimitive or qml.CNOT
         self.ratio_imprimitive = ratio_imprim
 
-        super().__init__(weights, wires=wires, do_queue=do_queue)
+        super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 
     def expand(self):
 
