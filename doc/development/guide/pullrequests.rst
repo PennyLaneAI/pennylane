@@ -20,12 +20,15 @@ Continuous Integration Checks
 
 Once a PR is opened on the repository, GitHub runs a series of checks on the
 branch.  All tests need to pass (green check) for the PR to get approved and
-merged. Sometimes, a check can be troublesome, especially test coverage,
-in which case designated core developers can override and merge anyway.
+merged.
 
-* **Formatting check**: This check makes sure `black` (described above) would not change any code.
+* **Formatting check**: We use `black <https://black.readthedocs.io/en/stable/>`_ to autoformat our code to `PEP8 <https://www.python.org/dev/peps/pep-0008/>`_ standards. You should run ``black`` locally on changed files, as the CI check just determines whether or not ``black`` would change anything. Black installs with ``pip``. We run black on both the source folder ``pennylane`` and the ``tests`` folder. We format with a line length of 100. From the PennyLane's root folder, you can run:
 
-* **Code factor**:  `Code factor <https://www.codefactor.io/>`_ checks several common code quality characteristics.
+  .. code-block:: bash
+
+      black -l 100 pennylane tests
+
+* **Code factor**:  `Code factor <https://www.codefactor.io/>`_ checks several common code quality characteristics. 
 
 * **Tests**: Github Actions runs the core tests and device tests for a series of different Python versions and interface installations.
 
@@ -46,11 +49,7 @@ A review-ready pull request (PR) includes the following:
 
 * **All changes must include tests.** If you fix a bug, write a test that would fail before the bugfix. See :doc:`Tests <tests>` for more information.
 
-* **Code conforms to PEP8 standards.** We format both source files and testing files. You can autoformat your code with `Black <https://github.com/psf/black>`_ set with a maximum line length of 100:
-
-.. code-block:: bash
-
-    black -l 100 path/to/file.py
+* **Code conforms to PEP8 standards.** As mentioned in the section above, all code needs to be formatted via `Black <https://black.readthedocs.io/en/stable/>`_ with a line length of 100.
 
 * **Write a changelog entry for all Pull Requests.** The changelog entry should include a link back to the PR. More significant user-facing changes should include a code example. In addition to the changelog entry itself, add your name to the alphabetical contributors' list at the bottom of each release's section.
 

@@ -15,6 +15,11 @@ of PennyLane, plugins, and devices.
     :link: guide/installation.html
 
 .. titlecard::
+    :name: Contribution guide
+    :description: How to get involved in the PennyLane community.
+    :link: guide/contributing.html
+
+.. titlecard::
     :name: Software tests
     :description: Installing dependencies, running the PennyLane test suite and measuring coverage.
     :link: guide/tests.html
