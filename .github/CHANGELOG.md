@@ -142,7 +142,7 @@
 <h3>Improvements</h3>
 
 * Change the order of the covariance matrix and the vector of means internally
-  in default.gaussian for the gaussian_state. [(#1331)](https://github.com/PennyLaneAI/pennylane/pull/1331)
+  in `default.gaussian`. [(#1331)](https://github.com/PennyLaneAI/pennylane/pull/1331)
 
 * Added the `id` attribute to templates, which was missing from 
   PR [(#1377)](https://github.com/PennyLaneAI/pennylane/pull/1377).
