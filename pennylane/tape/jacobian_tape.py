@@ -225,7 +225,7 @@ class JacobianTape(QuantumTape):
             diff_methods (Sequence[str]): The corresponding differentiation method for each parameter.
                 A differentiation method of ``"0"`` corresponds to a constant parameter.
         """
-        return params.size and not all(g == "0" for g in diff_methods)
+        return len(params) != 0 and not all(g == "0" for g in diff_methods)
 
     @staticmethod
     def _flatten_processing_result(g):
@@ -562,8 +562,6 @@ class JacobianTape(QuantumTape):
         if params is None:
             params = self.get_parameters()
 
-        params = np.array(params)
-
         if method == "device":
             # Using device mode; simply query the device for the Jacobian
             return self.device_pd(device, params=params, **options)
@@ -576,16 +574,16 @@ class JacobianTape(QuantumTape):
             # parameters. Simply return an empty Jacobian.
             return np.zeros((self.output_dim, len(params)), dtype=float)
 
-        if method == "numeric" or "F" in diff_methods:
-            # there exist parameters that will be differentiated numerically
-
-            if options.get("order", 1) == 1:
-                # First order (forward) finite-difference will be performed.
-                # Compute the value of the tape at the current parameters here. This ensures
-                # this computation is only performed once, for all parameters.
-                # convert to float64 to eliminate floating point errors when params float32
-                params_f64 = np.array(params, dtype=np.float64)
-                options["y0"] = np.asarray(self.execute_device(params_f64, device))
+        # if method == "numeric" or "F" in diff_methods:
+        #     # there exist parameters that will be differentiated numerically
+        #
+        #     if options.get("order", 1) == 1:
+        #         # First order (forward) finite-difference will be performed.
+        #         # Compute the value of the tape at the current parameters here. This ensures
+        #         # this computation is only performed once, for all parameters.
+        #         # convert to float64 to eliminate floating point errors when params float32
+        #         params_f64 = np.array(params, dtype=np.float64)
+        #         options["y0"] = np.asarray(self.execute_device(params_f64, device))
 
         # some gradient methods need the device or the device wires
         options["device"] = device

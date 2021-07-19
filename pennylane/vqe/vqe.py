@@ -95,6 +95,7 @@ class Hamiltonian(qml.operation.Observable):
     num_wires = qml.operation.AnyWires
     num_params = 1
     par_domain = "A"
+    grad_method = "A"  # supports analytic gradients
 
     def __init__(self, coeffs, observables, simplify=False, group=False, id=None):
 
