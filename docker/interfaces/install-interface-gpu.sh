@@ -18,22 +18,22 @@ apt-get update
 apt-get -y install --no-install-recommends make
 rm -rf /var/lib/apt/lists/*
 case $INTERFACE_NAME in
-# Build Jax interface
+# Build Jax GPU interface
   "jax")
-  echo "##########-Installing" "$INTERFACE_NAME" "INTERFACE-##########"
-	pip3 install jax jaxlib
+  echo "##########-Installing" "$INTERFACE_NAME" "GPU INTERFACE-##########"
+	pip3 install jax==0.2.14 jaxlib==0.1.67+cuda111 -f https://storage.googleapis.com/jax-releases/jax_releases.html
   ;;
-# Build Torch interface
+# Build Torch GPU interface
   "torch")
-  echo "##########-Installing" "$INTERFACE_NAME" "INTERFACE-##########"
+  echo "##########-Installing" "$INTERFACE_NAME" "GPU INTERFACE-##########"
   pip3 install torch==1.8.1
   ;;
-# Build Tensorflow interface
+# Build Tensorflow GPU interface
   "tensorflow")
-  echo "##########-Installing" "$INTERFACE_NAME" "INTERFACE-##########"
+  echo "##########-Installing" "$INTERFACE_NAME" "GPU INTERFACE-##########"
   pip3 install tensorflow==2.5.0
   ;;
 	*)
-  echo "##########-No-Interface-Installed-##########"
+  echo "##########-No-GPU-Interface-Installed-##########"
   ;;
   esac
