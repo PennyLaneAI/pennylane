@@ -29,12 +29,13 @@ in which case designated core developers can override and merge anyway.
 
 * **Tests**: Github Actions runs the core tests and device tests for a series of different Python versions and interface installations.
 
-* **Code Coverage**: `codecov <https://app.codecov.io/gh/PennyLaneAI/pennylane/>`_ determines if all lines are executed during the automated testing and tells you which ones are not. We want all lines to be covered, but that is insufficient to determine if the testing is complete enough. That takes thought and thinking through the design.
+* **Code Coverage**: `codecov <https://app.codecov.io/gh/PennyLaneAI/pennylane/>`_ determines if all lines are executed during the automated testing and tells you which ones are not. We want all lines to be covered, but that is insufficient to determine if the testing is complete enough. That takes thought and thinking through the test design, to ensure that all edge cases are being tested.
 
 * **Documentation**: The "Documentation check" determines if there are any issues with the build, but you also need to inspect the relevant pages in the website build visually. You can access the temporary website by clicking on ``Details`` for ``docs/readthedocs.org:pennylane``, as shown in the following image.
 
 .. image:: view_doc_build.png
     :width: 400px
+    :align: center
 
 Ready for review?
 -----------------

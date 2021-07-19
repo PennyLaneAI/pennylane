@@ -5,7 +5,7 @@ Thank you for taking the time to contribute to PennyLane!
 
 PennyLane is a collaborative effort with the quantum computation and machine learning communities. We invite you to join our team in whatever capacity works best for you.
 
-Learn more about contributing to open source in general with [this great guide](https://opensource.guide/).
+Learn more about contributing to open source in general with [this great guide](https://opensource.guide/how-to-contribute/).
 
 ## How can I get involved in the community?
 
