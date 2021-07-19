@@ -119,6 +119,11 @@ class TestInputs:
         with pytest.raises(ValueError, match="Weights tensor must be 2-dimensional"):
             circuit(phi)
 
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        template = qml.templates.RandomLayers(np.random.random(size=(1, 3)), wires=range(3), id="a")
+        assert template.id == "a"
+
 
 class TestAttributes:
     """Tests additional methods and attributes"""

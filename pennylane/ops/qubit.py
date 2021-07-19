@@ -17,6 +17,7 @@ quantum operations supported by PennyLane, as well as their conventions.
 """
 import cmath
 import functools
+import warnings
 
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import math
@@ -57,6 +58,7 @@ class Hadamard(Observable, Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
+    is_self_inverse = True
     eigvals = pauli_eigs(1)
     matrix = np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
 
@@ -114,6 +116,7 @@ class PauliX(Observable, Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
+    is_self_inverse = True
     eigvals = pauli_eigs(1)
     matrix = np.array([[0, 1], [1, 0]])
 
@@ -172,6 +175,7 @@ class PauliY(Observable, Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
+    is_self_inverse = True
     eigvals = pauli_eigs(1)
     matrix = np.array([[0, -1j], [1j, 0]])
 
@@ -232,6 +236,7 @@ class PauliZ(Observable, DiagonalOperation):
     num_params = 0
     num_wires = 1
     par_domain = None
+    is_self_inverse = True
     eigvals = pauli_eigs(1)
     matrix = np.array([[1, 0], [0, -1]])
 
@@ -401,6 +406,7 @@ class CNOT(Operation):
     num_params = 0
     num_wires = 2
     par_domain = None
+    is_self_inverse = True
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
     @classmethod
@@ -438,6 +444,8 @@ class CZ(DiagonalOperation):
     num_params = 0
     num_wires = 2
     par_domain = None
+    is_self_inverse = True
+    is_symmetric_over_all_wires = True
     eigvals = np.array([1, 1, 1, -1])
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 
@@ -477,6 +485,7 @@ class CY(Operation):
     num_params = 0
     num_wires = 2
     par_domain = None
+    is_self_inverse = True
     matrix = np.array(
         [
             [1, 0, 0, 0],
@@ -521,6 +530,8 @@ class SWAP(Operation):
     num_params = 0
     num_wires = 2
     par_domain = None
+    is_self_inverse = True
+    is_symmetric_over_all_wires = True
     matrix = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
     @classmethod
@@ -677,6 +688,8 @@ class Toffoli(Operation):
     num_params = 0
     num_wires = 3
     par_domain = None
+    is_self_inverse = True
+    is_symmetric_over_control_wires = True
     matrix = np.array(
         [
             [1, 0, 0, 0, 0, 0, 0, 0],
@@ -742,6 +755,7 @@ class RX(Operation):
     num_params = 1
     num_wires = 1
     par_domain = "R"
+    is_composable_rotation = True
     grad_method = "A"
     generator = [PauliX, -1 / 2]
 
@@ -783,6 +797,7 @@ class RY(Operation):
     num_params = 1
     num_wires = 1
     par_domain = "R"
+    is_composable_rotation = True
     grad_method = "A"
     generator = [PauliY, -1 / 2]
 
@@ -824,6 +839,7 @@ class RZ(DiagonalOperation):
     num_params = 1
     num_wires = 1
     par_domain = "R"
+    is_composable_rotation = True
     grad_method = "A"
     generator = [PauliZ, -1 / 2]
 
@@ -871,6 +887,7 @@ class PhaseShift(DiagonalOperation):
     num_params = 1
     num_wires = 1
     par_domain = "R"
+    is_composable_rotation = True
     grad_method = "A"
     generator = [np.array([[0, 0], [0, 1]]), 1]
 
@@ -923,6 +940,7 @@ class ControlledPhaseShift(DiagonalOperation):
     num_params = 1
     num_wires = 2
     par_domain = "R"
+    is_composable_rotation = True
     grad_method = "A"
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), 1]
 
@@ -987,6 +1005,7 @@ class Rot(Operation):
     num_params = 3
     num_wires = 1
     par_domain = "R"
+    is_composable_rotation = True
     grad_method = "A"
 
     @classmethod
@@ -1340,6 +1359,7 @@ class CRX(Operation):
     num_params = 1
     num_wires = 2
     par_domain = "R"
+    is_composable_rotation = True
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
@@ -1409,6 +1429,7 @@ class CRY(Operation):
     num_params = 1
     num_wires = 2
     par_domain = "R"
+    is_composable_rotation = True
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
@@ -1479,6 +1500,7 @@ class CRZ(DiagonalOperation):
     num_params = 1
     num_wires = 2
     par_domain = "R"
+    is_composable_rotation = True
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
@@ -2147,17 +2169,48 @@ class QubitUnitary(Operation):
     par_domain = "A"
     grad_method = None
 
+    def __init__(self, *params, wires, do_queue=True):
+        wires = Wires(wires)
+
+        # For pure QubitUnitary operations (not controlled), check that the number
+        # of wires fits the dimensions of the matrix
+        if not isinstance(self, ControlledQubitUnitary):
+            U = params[0]
+
+            dim = 2 ** len(wires)
+
+            if U.shape != (dim, dim):
+                raise ValueError(
+                    f"Input unitary must be of shape {(dim, dim)} to act on {len(wires)} wires."
+                )
+
+            # Check for unitarity; due to variable precision across the different ML frameworks,
+            # here we issue a warning to check the operation, instead of raising an error outright.
+            if not qml.math.allclose(
+                qml.math.dot(U, qml.math.T(qml.math.conj(U))), qml.math.eye(qml.math.shape(U)[0])
+            ):
+                warnings.warn(
+                    f"Operator {U}\n may not be unitary."
+                    "Verify unitarity of operation, or use a datatype with increased precision.",
+                    UserWarning,
+                )
+
+        super().__init__(*params, wires=wires, do_queue=do_queue)
+
     @classmethod
     def _matrix(cls, *params):
-        U = np.asarray(params[0])
+        return params[0]
 
-        if U.ndim != 2 or U.shape[0] != U.shape[1]:
-            raise ValueError("Operator must be a square matrix.")
+    @staticmethod
+    def decomposition(U, wires):
+        # Decomposes arbitrary single-qubit unitaries as Rot gates (RZ - RY - RZ format),
+        # or a single RZ for diagonal matrices.
+        if qml.math.shape(U) == (2, 2):
+            wire = Wires(wires)[0]
+            decomp_ops = qml.transforms.decompositions.zyz_decomposition(U, wire)
+            return decomp_ops
 
-        if not np.allclose(U @ U.conj().T, np.identity(U.shape[0])):
-            raise ValueError("Operator must be unitary.")
-
-        return U
+        raise NotImplementedError("Decompositions only supported for single-qubit unitaries")
 
     def adjoint(self):
         return QubitUnitary(qml.math.T(qml.math.conj(self.matrix)), wires=self.wires)
@@ -2613,6 +2666,9 @@ class QFT(Operation):
             decomp_ops.append(swap)
 
         return decomp_ops
+
+    def adjoint(self):
+        return QFT(wires=self.wires).inv()
 
 
 # =============================================================================

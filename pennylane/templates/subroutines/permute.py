@@ -144,7 +144,7 @@ class Permute(Operation):
     num_wires = AnyWires
     par_domain = "A"
 
-    def __init__(self, permutation, wires, do_queue=True):
+    def __init__(self, permutation, wires, do_queue=True, id=None):
 
         if len(permutation) <= 1 or len(wires) <= 1:
             raise ValueError("Permutations must involve at least 2 qubits.")
@@ -162,7 +162,7 @@ class Permute(Operation):
             if label not in wires:
                 raise ValueError(f"Cannot permute wire {label} not present in wire set.")
 
-        super().__init__(permutation, wires=wires, do_queue=do_queue)
+        super().__init__(permutation, wires=wires, do_queue=do_queue, id=id)
 
     def expand(self):
 
