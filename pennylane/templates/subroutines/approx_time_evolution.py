@@ -101,7 +101,7 @@ class ApproxTimeEvolution(Operation):
     num_wires = AnyWires
     par_domain = "A"
 
-    def __init__(self, hamiltonian, time, n, do_queue=True):
+    def __init__(self, hamiltonian, time, n, do_queue=True, id=None):
 
         if not isinstance(hamiltonian, qml.vqe.vqe.Hamiltonian):
             raise ValueError(
@@ -114,7 +114,7 @@ class ApproxTimeEvolution(Operation):
         wire_list = [term.wires for term in hamiltonian.ops]
         unique_wires = list(set(wire_list))
 
-        super().__init__(hamiltonian, time, n, wires=unique_wires, do_queue=do_queue)
+        super().__init__(hamiltonian, time, n, wires=unique_wires, do_queue=do_queue, id=id)
 
     def expand(self):
 

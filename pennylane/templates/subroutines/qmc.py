@@ -14,6 +14,7 @@
 """
 Contains the QuantumMonteCarlo template and utility functions.
 """
+# pylint: disable=too-many-arguments
 import numpy as np
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
@@ -330,7 +331,7 @@ class QuantumMonteCarlo(Operation):
     num_wires = AnyWires
     par_domain = "A"
 
-    def __init__(self, probs, func, target_wires, estimation_wires, do_queue=True):
+    def __init__(self, probs, func, target_wires, estimation_wires, do_queue=True, id=None):
         if isinstance(probs, np.ndarray) and probs.ndim != 1:
             raise ValueError("The probability distribution must be specified as a flat array")
 
@@ -356,7 +357,7 @@ class QuantumMonteCarlo(Operation):
         A = probs_to_unitary(probs)
         R = func_to_unitary(func, dim_p)
         Q = make_Q(A, R)
-        super().__init__(A, R, Q, wires=wires, do_queue=do_queue)
+        super().__init__(A, R, Q, wires=wires, do_queue=do_queue, id=id)
 
     def expand(self):
         A, R, Q = self.parameters
