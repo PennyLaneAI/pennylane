@@ -41,7 +41,7 @@ def find_next_gate(wires, op_list):
 
 
 def _yzy_to_zyz(middle_yzy):
-    """Converts a set of angles representing a sequence of rotations RY, RZ, RY into
+    r"""Converts a set of angles representing a sequence of rotations RY, RZ, RY into
     an equivalent sequence of the form RZ, RY, RZ.
 
     Any rotation in 3-dimensional space (or, equivalently, any single-qubit unitary)

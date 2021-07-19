@@ -13,7 +13,6 @@
 # limitations under the License.
 """Transforms for optimizing quantum circuits."""
 
-from pennylane import numpy as np
 from pennylane import apply
 from pennylane.transforms import qfunc_transform
 from pennylane.ops.qubit import Rot
@@ -101,31 +100,39 @@ def single_qubit_fusion(tape, atol=1e-8, exclude_gates=None):
             list_copy.pop(0)
             continue
 
+        # Before entering the loop, we check to make sure the next gate is not in the
+        # exclusion list. If it is, we should apply the original gate as-is, and not the
+        # Rot version (example in test test_single_qubit_fusion_exclude_gates).
+        if exclude_gates is not None:
+            next_gate = list_copy[next_gate_idx + 1]
+            if next_gate.name in exclude_gates:
+                apply(current_gate)
+                list_copy.pop(0)
+                continue
+
         # Loop as long as a valid next gate exists
         while next_gate_idx is not None:
-            # Get the next gate
             next_gate = list_copy[next_gate_idx + 1]
 
-            # Try to merge the angles if next gate is on the same qubit.
-            # Only do so if the single_qubit_rot_angles property is implemented.
-            if current_gate.wires == next_gate.wires:
-                # Check first if the next gate is in the exclusion list
-                if exclude_gates is not None:
-                    if next_gate.name in exclude_gates:
-                        break
-
-                try:
-                    next_gate_angles = next_gate.single_qubit_rot_angles()
-                except (NotImplementedError, AttributeError):
+            # Check first if the next gate is in the exclusion list
+            if exclude_gates is not None:
+                if next_gate.name in exclude_gates:
                     break
 
-                cumulative_angles = fuse_rot_angles(
-                    cumulative_angles, cast_like(stack(next_gate_angles), cumulative_angles)
-                )
-                list_copy.pop(next_gate_idx + 1)
-            else:
+            # Try to extract the angles; since the Rot angles are implemented
+            # solely for single-qubit gates, and we used find_next_gate to obtain
+            # the gate in question, only valid single-qubit gates on the same
+            # wire as the current gate will be fused.
+            try:
+                next_gate_angles = next_gate.single_qubit_rot_angles()
+            except (NotImplementedError, AttributeError):
                 break
 
+            cumulative_angles = fuse_rot_angles(
+                cumulative_angles, cast_like(stack(next_gate_angles), cumulative_angles)
+            )
+
+            list_copy.pop(next_gate_idx + 1)
             next_gate_idx = find_next_gate(current_gate.wires, list_copy[1:])
 
         # Only apply if the cumulative angle is not close to 0
