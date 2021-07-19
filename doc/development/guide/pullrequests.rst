@@ -36,7 +36,7 @@ merged.
 
 * **Documentation**: The "Documentation check" determines if there are any issues with the build, but you also need to inspect the relevant pages in the website build visually. You can access the temporary website by clicking on ``Details`` for ``docs/readthedocs.org:pennylane``, as shown in the following image.
 
-.. image:: view_doc_build.png
+.. image:: view_doc_build.jpeg
     :width: 400px
     :align: center
 
@@ -55,4 +55,4 @@ A review-ready pull request (PR) includes the following:
 
 Stuck? You can make a "Work in Progress" PR with ``[WIP]`` in the title or with the "WIP" label.  That way, we can see your work and give feedback early.
 
-Please note that our review process can take some time and require a bit of back and forth, but hopefully, we all learn something along the way.
+Please note that our review process can take some time and require a bit of back and forth. We try and enforce a high level of detail in reviews to reduce future bugs and prevent technical debt from accruing.  You can speed the review process by keeping pull requests small and fully explaining decisions in the pull request introduction.
