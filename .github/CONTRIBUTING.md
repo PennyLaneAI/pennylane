@@ -1,7 +1,6 @@
 # Contributing to PennyLane
 
 Thank you for taking the time to contribute to PennyLane!
-:confetti_ball: :tada: :fireworks: :balloon:
 
 PennyLane is a collaborative effort with the quantum computation and machine learning communities. We invite you to join our team in whatever capacity works best for you.
 
@@ -84,6 +83,6 @@ requests to ensure the master branch of PennyLane conforms to existing standards
 See our [Development Guide](https://pennylane.readthedocs.io/en/stable/development/guide.html)
 and the page on [submitting a pull request](https://pennylane.readthedocs.io/en/stable/development/guide/pullrequests.html) in particular for more information.
 
-:fireworks: Thank you for your interest in PennyLane! :fireworks:
+Thank you for your interest in PennyLane! :fireworks:
 
-\- The PennyLane team
+The PennyLane team
