@@ -355,7 +355,7 @@ def frobenius_inner_product(A, B, normalize=False):
     Args:
         A (tensor_like[float]): First matrix, assumed to be a square array.
         B (tensor_like[float]): Second matrix, assumed to be a square array.
-        normalize (bool): If True, divide the inner_product by the Frobenius norms of A and B.
+        normalize (bool): If True, divide the inner product by the Frobenius norms of A and B.
 
     Returns:
         float: Frobenius inner product of A and B
