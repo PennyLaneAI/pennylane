@@ -539,6 +539,49 @@ class Operation(Operator):
         s_1]=[-1/2, 1, -\pi/2]` is assumed for every parameter.
     """
 
+    # Attributes for compilation transforms
+    is_self_inverse = None
+    """bool or None: ``True`` if the operation is its own inverse.
+
+    If ``None``, all instances of the given operation will be ignored during
+    compilation transforms involving inverse cancellation.
+    """
+
+    is_symmetric_over_all_wires = None
+    """bool or None: ``True`` if the operation is the same if you exchange the order
+    of wires.
+
+    For example, ``qml.CZ(wires=[0, 1])`` has the same effect as ``qml.CZ(wires=[1,
+    0])`` due to symmetry of the operation.
+
+    If ``None``, all instances of the operation will be ignored during
+    compilation transforms that check for wire symmetry.
+    """
+
+    is_symmetric_over_control_wires = None
+    """bool or None: ``True`` if the operation is the same if you exchange the order
+    of all but the last wire.
+
+    For example, ``qml.Toffoli(wires=[0, 1, 2])`` has the same effect as
+    ``qml.Toffoli(wires=[1, 0, 2])``, but neither are the same as
+    ``qml.Toffoli(wires=[0, 2, 1])``.
+
+    If ``None``, all instances of the operation will be ignored during
+    compilation transforms that check for control-wire symmetry.
+    """
+
+    is_composable_rotation = None
+    """bool or None: ``True`` if composing multiple copies of the operation
+    results in an addition (or alternative accumulation) of parameters.
+
+    For example, ``qml.RZ`` is a composable rotation. Applying ``qml.RZ(0.1,
+    wires=0)`` followed by ``qml.RZ(0.2, wires=0)`` is equivalent to performing
+    a single rotation ``qml.RZ(0.3, wires=0)``.
+
+    If set to ``None``, the operation will be ignored during compilation
+    transforms that merge adjacent rotations.
+    """
+
     def get_parameter_shift(self, idx, shift=np.pi / 2):
         """Multiplier and shift for the given parameter, based on its gradient recipe.
 
