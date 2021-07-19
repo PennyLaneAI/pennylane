@@ -512,7 +512,7 @@ def photon_number(cov, mu, params, hbar=2.0):
     # pylint: disable=unused-argument
     ex = (np.trace(cov) + mu.T @ mu) / (2 * hbar) - 1 / 2
     var = (np.trace(cov @ cov) + 2 * mu.T @ cov @ mu) / (2 * hbar ** 2) - 1 / 4
-    return var, ex
+    return ex, var
 
 
 def homodyne(phi=None):
@@ -534,7 +534,7 @@ def homodyne(phi=None):
             rot = rotation(phi)
             muphi = rot.T @ mu
             covphi = rot.T @ cov @ rot
-            return covphi[0, 0], muphi[0]
+            return muphi[0], covphi[0, 0]
 
         return _homodyne
 
@@ -544,7 +544,7 @@ def homodyne(phi=None):
         rot = rotation(params[0])
         muphi = rot.T @ mu
         covphi = rot.T @ cov @ rot
-        return covphi[0, 0], muphi[0]
+        return muphi[0], covphi[0, 0]
 
     return _homodyne
 
@@ -576,7 +576,7 @@ def poly_quad_expectations(cov, mu, wires, device_wires, params, hbar=2.0):
 
     if Q.ndim == 1:
         d = np.r_[Q[1::2], Q[2::2]]
-        return d.T @ cov @ d, d.T @ mu + Q[0]
+        return d.T @ mu + Q[0], d.T @ cov @ d
 
     # convert to the (I, x1,x2,..., p1,p2...) ordering
     M = np.vstack((Q[0:1, :], Q[1::2, :], Q[2::2, :]))
@@ -598,7 +598,7 @@ def poly_quad_expectations(cov, mu, wires, device_wires, params, hbar=2.0):
     groenewald_correction = np.sum([np.linalg.det(hbar * A[:, m][n]) for m in modes for n in modes])
     var -= groenewald_correction
 
-    return var, ex
+    return ex, var
 
 
 def fock_expectation(cov, mu, params, hbar=2.0):
@@ -619,7 +619,7 @@ def fock_expectation(cov, mu, params, hbar=2.0):
 
     # var[|n><n|] = E[|n><n|^2] -  E[|n><n|]^2 = E[|n><n|] -  E[|n><n|]^2
     var = ex - ex ** 2
-    return var, ex
+    return ex, var
 
 
 def identity(*_, **__):
@@ -628,7 +628,7 @@ def identity(*_, **__):
     Returns:
         tuple: the Fock state expectation and variance
     """
-    return 0, 1
+    return 1, 0
 
 
 # ========================================================
@@ -720,7 +720,7 @@ class DefaultGaussian(Device):
         if operation == "GaussianState":
             if len(device_wires) != self.num_wires:
                 raise ValueError(
-                    "GaussianState means vector or covariance matrix is "
+                    "GaussianState covariance matrix or means vector is "
                     "the incorrect size for the number of subsystems."
                 )
             self._state = self._operation_map[operation](*par, hbar=self.hbar)
@@ -780,12 +780,12 @@ class DefaultGaussian(Device):
 
         if observable == "PolyXP":
             cov, mu = self._state
-            var, ev = self._observable_map[observable](
+            ev, var = self._observable_map[observable](
                 cov, mu, wires, self.wires, par, hbar=self.hbar
             )
         else:
             cov, mu = self.reduced_state(wires)
-            var, ev = self._observable_map[observable](cov, mu, par, hbar=self.hbar)
+            ev, var = self._observable_map[observable](cov, mu, par, hbar=self.hbar)
 
         if self.shots is not None:
             # estimate the ev
@@ -800,11 +800,11 @@ class DefaultGaussian(Device):
         cov, mu = self.reduced_state(wires)
 
         if observable == "PolyXP":
-            var, _ = self._observable_map[observable](
+            _, var = self._observable_map[observable](
                 cov, mu, wires, self.wires, par, hbar=self.hbar
             )
         else:
-            var, _ = self._observable_map[observable](cov, mu, par, hbar=self.hbar)
+            _, var = self._observable_map[observable](cov, mu, par, hbar=self.hbar)
         return var
 
     def sample(self, observable, wires, par):
@@ -862,7 +862,7 @@ class DefaultGaussian(Device):
 
         Returns:
             tuple (cov, means): cov is a square array containing the covariance matrix,
-            and means is an array containing the vector of means 
+            and means is an array containing the vector of means
         """
         if len(wires) == self.num_wires:
             # reduced state is full state
