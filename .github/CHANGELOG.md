@@ -141,6 +141,9 @@
 
 <h3>Improvements</h3>
 
+* Change the order of the covariance matrix and the vector of means internally
+  in default.gaussian for the gaussian_state. [(#1331)](https://github.com/PennyLaneAI/pennylane/pull/1331)
+
 * Added the `id` attribute to templates, which was missing from 
   PR [(#1377)](https://github.com/PennyLaneAI/pennylane/pull/1377).
   [(#1438)](https://github.com/PennyLaneAI/pennylane/pull/1438)
@@ -183,7 +186,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Romain Moyard, Ashish Panigrahi, Maria Schuld.
+Olivia Di Matteo, Josh Izaac, Leonhard Kunczik, Romain Moyard, Ashish Panigrahi, Maria Schuld.
 
 
 # Release 0.16.0 (current release)
@@ -709,9 +712,6 @@ Olivia Di Matteo, Josh Izaac, Romain Moyard, Ashish Panigrahi, Maria Schuld.
 
 
 <h3>Improvements</h3>
-
-* Change the order of the covariance matrix and the vector of means internally
-  in default.gaussian for the gaussian_state. [(#1331)](https://github.com/PennyLaneAI/pennylane/pull/1331)
 
 * The ``argnum`` keyword argument can now be specified for a QNode to define a
   subset of trainable parameters used to estimate the Jacobian.
