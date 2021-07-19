@@ -185,7 +185,7 @@ def displacement(state, wire, alpha, hbar=2):
         alpha (float): complex displacement
 
     Returns:
-        tuple: contains the vector of means and covariance matrix
+        tuple: contains the covariance matrix and the vector of means
     """
     mu = state[1]
     mu[wire] += alpha.real * math.sqrt(2 * hbar)
@@ -466,8 +466,8 @@ def set_state(state, wire, cov, mu):
     state representation of the complete system.
 
     Args:
-        state (tuple): contains means vector
-            and covariance matrix of existing state
+        state (tuple): contains covariance matrix
+            and means vector of existing state
         wire (Wires): wire corresponding to the new Gaussian state
         cov (array): covariance matrix to insert
         mu (array): vector of means to insert
@@ -475,8 +475,8 @@ def set_state(state, wire, cov, mu):
     Returns:
         tuple: contains the vector of means and covariance matrix.
     """
-    mu0 = state[1]
     cov0 = state[0]
+    mu0 = state[1]
     N = len(mu0) // 2
 
     # insert the new state into the means vector
@@ -861,8 +861,8 @@ class DefaultGaussian(Device):
             wires (Wires): requested wires
 
         Returns:
-            tuple (cov, means): means is an array containing the vector of means,
-            and cov is a square array containing the covariance matrix
+            tuple (cov, means): cov is a square array containing the covariance matrix,
+            and means is an array containing the vector of means 
         """
         if len(wires) == self.num_wires:
             # reduced state is full state
