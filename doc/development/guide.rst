@@ -17,7 +17,7 @@ of PennyLane, plugins, and devices.
 
 .. titlecard::
     :name: Contribution guide
-    :description: How to get involved in the PennyLane community.
+    :description: How to get involved in the PennyLane community and help improve to the PennyLane codebase.
     :link: guide/contributing.html
 
 .. titlecard::
