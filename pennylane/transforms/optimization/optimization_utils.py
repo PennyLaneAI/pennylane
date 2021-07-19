@@ -144,10 +144,9 @@ def fuse_rot_angles(angles_1, angles_2):
         return stack([left_z, middle_yzy[0] + middle_yzy[2], right_z])
 
     # If e is close to 0, then we have the case RZ(a) RY(b) RZ(c + d + f)
+    # The case where b is 0 actually already covered in the first loop,
+    # so only one case here.
     if allclose(middle_yzy[2], 0.0):
-        # If b is close to 0, we again have RZ(a + c + d + f)
-        if allclose(middle_yzy[0], 0.0):
-            return [left_z + middle_yzy[1] + right_z, 0.0, 0.0]
         return stack([left_z, middle_yzy[0], middle_yzy[1] + right_z])
 
     # Otherwise, we need to turn the RY(b) RZ(c+d) RY(e) into something
