@@ -40,9 +40,6 @@ def batch_execute(tapes, device, gradient_fn=None, interface="autograd", **kwarg
                 and ((supported_op(obj) and trainable_op(obj)) or not trainable_op(obj)),
             )
 
-    else:
-        c_jac = None
-
     if interface == "autograd":
         return batch_execute_autograd(tapes, device, gradient_fn=gradient_fn, **kwargs)
 
