@@ -113,7 +113,6 @@ def commute_through_controls_targets(tape):
         while next_gate_idx is not None:
             # Get the next gate
             next_gate = list_copy[where_should_we_put_it + next_gate_idx + 1]
-            # print(f"Next gate is {next_gate.name}")
 
             # If the next gate is not controlled, we cannot push the gate further
             if next_gate.is_controlled is None:
@@ -126,7 +125,6 @@ def commute_through_controls_targets(tape):
 
             # Case 1: the overlap is on the control wires. Only Z-type gates go through
             if len(shared_controls) > 0:
-                # print(f"share controls")
                 # If the gate is a Z-basis gate, it can be pushed through
                 if current_gate.name in commuting_gates["Z"]:
                     where_should_we_put_it += next_gate_idx + 1
@@ -148,7 +146,6 @@ def commute_through_controls_targets(tape):
         # After we have gone as far as possible, move the gate to new location
         list_copy.insert(where_should_we_put_it + 1, current_gate)
         list_copy.pop(current_location)
-
         current_location -= 1
 
     # Once the list is rearranged, queue all the operations
