@@ -116,9 +116,9 @@ def _batch_execute(*parameters, **kwargs):  # pylint: disable=unused-argument
             stack.enter_context(UnwrapTape(t, convert_to_numpy, get_trainable_params))
             for t in tapes
         ]
-        device._cache = 1000000000
+        # device._cache = 1000000000
         res = device.batch_execute(unwrapped_tapes)
-        device._cache = False
+        # device._cache = False
 
     res = [tf.convert_to_tensor(r) for r in res]
 
@@ -131,7 +131,7 @@ def _batch_execute(*parameters, **kwargs):  # pylint: disable=unused-argument
             reduction="extend",
             device=device,
             cache=cache,
-            _n=_n + 1,
+            _n=_n,
         )
         variables = tfkwargs.get("variables", None)
         return (vjps, variables) if variables is not None else vjps
@@ -140,7 +140,7 @@ def _batch_execute(*parameters, **kwargs):  # pylint: disable=unused-argument
 
 
 def batch_execute(
-    tapes, device, gradient_fn=None, cache=[], _n=1
+    tapes, device, gradient_fn=None, cache={}, _n=1
 ):  # pylint: disable=dangerous-default-value
     """Execute a batch of tapes with TensorFlow parameters on a device.
 

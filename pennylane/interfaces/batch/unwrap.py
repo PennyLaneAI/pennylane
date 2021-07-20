@@ -71,21 +71,31 @@ def _vector_jacobian_product(dy, jac):
     return qml.math.tensordot(jac, dy_row, [[0], [0]])
 
 
+
 def batch_vjp(dy, tapes, execute_fn, gradient_fn, reduction="append", **kwargs):
     reshape_info = []
     gradient_tapes = []
     processing_fns = []
 
-    for t in tapes:
-        g_tapes, fns = gradient_fn(t)
-        reshape_info.extend([len(t) for t in g_tapes])
+    _n = kwargs.pop("_n")
 
-        g_tapes = [item for sublist in g_tapes for item in sublist]
+    for t, d in zip(tapes, dy):
+        t._par_info = {}
+        t._update()
+
+        if qml.math.allclose(d, 0):
+            g_tapes = []
+            fns = []
+            reshape_info.append([0])
+        else:
+            g_tapes, fns = gradient_fn(t, _n=_n)
+            reshape_info.append([len(t) for t in g_tapes])
+            g_tapes = [item for sublist in g_tapes for item in sublist]
 
         processing_fns.append(fns)
         gradient_tapes.extend(g_tapes)
 
-    results = execute_fn(gradient_tapes, gradient_fn=gradient_fn, **kwargs)
+    results = execute_fn(gradient_tapes, gradient_fn=gradient_fn, _n=_n+1, **kwargs)
     vjps = []
     start = 0
 
@@ -97,7 +107,12 @@ def batch_vjp(dy, tapes, execute_fn, gradient_fn, reduction="append", **kwargs):
             vjps.append(None)
             continue
 
-        for fn, res_len in zip(processing_fns[t], reshape_info):
+        if qml.math.allclose(d, 0):
+            vjp = qml.math.convert_like(np.zeros([num_params]), d)
+            getattr(vjps, reduction)(vjp)
+            continue
+
+        for fn, res_len in zip(processing_fns[t], reshape_info[t]):
             # extract the correct results from the flat list
             res = results[start : start + res_len]
             start += res_len

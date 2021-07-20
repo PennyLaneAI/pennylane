@@ -78,7 +78,7 @@ def _unwrap_arraybox(arraybox, max_depth=None, _n=0):
     if max_depth is not None and _n == max_depth:
         return arraybox
 
-    val = arraybox._value
+    val = getattr(arraybox, "_value", arraybox)
 
     if isinstance(val, ArrayBox):
         return _unwrap_arraybox(val, max_depth=max_depth, _n=_n + 1)

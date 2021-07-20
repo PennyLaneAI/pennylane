@@ -70,12 +70,6 @@ def expval_grad(tape, idx, gradient_recipe=None, shift=np.pi / 2):
         f(\mathbf{p} -s) \right].
 
     """
-    # check if the quantum tape contains any variance measurements
-    var_mask = [m.return_type is qml.operation.Variance for m in tape.measurements]
-
-    if any(var_mask):
-        raise ValueError("Does not support gradients of tapes with variance output.")
-
     t_idx = list(tape.trainable_params)[idx]
     op = tape._par_info[t_idx]["op"]
     p_idx = tape._par_info[t_idx]["p_idx"]
@@ -128,12 +122,15 @@ def hamiltonian_grad(tape, idx):
     return [new_tape], lambda x: qml.math.squeeze(x)
 
 
-def grad(tape, shift=np.pi / 2):
+def grad(tape, shift=np.pi / 2, _n=1):
     gradient_tapes = []
     processing_fns = []
 
-    tape._par_info = {}
-    tape._update()
+    # check if the quantum tape contains any variance measurements
+    var_mask = [m.return_type is qml.operation.Variance for m in tape.measurements]
+
+    if any(var_mask):
+        raise ValueError("Does not support gradients of tapes with variance output.")
 
     for idx, _ in enumerate(tape.trainable_params):
 
