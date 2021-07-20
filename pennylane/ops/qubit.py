@@ -17,14 +17,16 @@ quantum operations supported by PennyLane, as well as their conventions.
 """
 import cmath
 import functools
+import warnings
 
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import math
 import numpy as np
+import scipy
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.operation import AnyWires, DiagonalOperation, Observable, Operation
+from pennylane.operation import AnyWires, AllWires, DiagonalOperation, Observable, Operation
 from pennylane.templates.decorator import template
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 from pennylane.utils import expand, pauli_eigs
@@ -56,6 +58,7 @@ class Hadamard(Observable, Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
+    is_self_inverse = True
     eigvals = pauli_eigs(1)
     matrix = np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
 
@@ -95,6 +98,10 @@ class Hadamard(Observable, Operation):
     def adjoint(self):
         return Hadamard(wires=self.wires)
 
+    def single_qubit_rot_angles(self):
+        # H = RZ(\pi) RY(\pi/2) RZ(0)
+        return [np.pi, np.pi / 2, 0.0]
+
 
 class PauliX(Observable, Operation):
     r"""PauliX(wires)
@@ -113,6 +120,7 @@ class PauliX(Observable, Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
+    is_self_inverse = True
     eigvals = pauli_eigs(1)
     matrix = np.array([[0, 1], [1, 0]])
 
@@ -153,6 +161,10 @@ class PauliX(Observable, Operation):
     def _controlled(self, wire):
         CNOT(wires=Wires(wire) + self.wires)
 
+    def single_qubit_rot_angles(self):
+        # X = RZ(-\pi/2) RY(\pi) RZ(\pi/2)
+        return [np.pi / 2, np.pi, -np.pi / 2]
+
 
 class PauliY(Observable, Operation):
     r"""PauliY(wires)
@@ -171,6 +183,7 @@ class PauliY(Observable, Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
+    is_self_inverse = True
     eigvals = pauli_eigs(1)
     matrix = np.array([[0, -1j], [1j, 0]])
 
@@ -213,6 +226,10 @@ class PauliY(Observable, Operation):
     def _controlled(self, wire):
         CY(wires=Wires(wire) + self.wires)
 
+    def single_qubit_rot_angles(self):
+        # Y = RZ(0) RY(\pi) RZ(0)
+        return [0.0, np.pi, 0.0]
+
 
 class PauliZ(Observable, DiagonalOperation):
     r"""PauliZ(wires)
@@ -231,6 +248,7 @@ class PauliZ(Observable, DiagonalOperation):
     num_params = 0
     num_wires = 1
     par_domain = None
+    is_self_inverse = True
     eigvals = pauli_eigs(1)
     matrix = np.array([[1, 0], [0, -1]])
 
@@ -255,6 +273,10 @@ class PauliZ(Observable, DiagonalOperation):
 
     def _controlled(self, wire):
         CZ(wires=Wires(wire) + self.wires)
+
+    def single_qubit_rot_angles(self):
+        # Z = RZ(\pi) RY(0) RZ(0)
+        return [np.pi, 0.0, 0.0]
 
 
 class S(DiagonalOperation):
@@ -294,6 +316,10 @@ class S(DiagonalOperation):
     def adjoint(self):
         return S(wires=self.wires).inv()
 
+    def single_qubit_rot_angles(self):
+        # S = RZ(\pi/2) RY(0) RZ(0)
+        return [np.pi / 2, 0.0, 0.0]
+
 
 class T(DiagonalOperation):
     r"""T(wires)
@@ -331,6 +357,10 @@ class T(DiagonalOperation):
 
     def adjoint(self):
         return T(wires=self.wires).inv()
+
+    def single_qubit_rot_angles(self):
+        # T = RZ(\pi/4) RY(0) RZ(0)
+        return [np.pi / 4, 0.0, 0.0]
 
 
 class SX(Operation):
@@ -375,6 +405,10 @@ class SX(Operation):
     def adjoint(self):
         return SX(wires=self.wires).inv()
 
+    def single_qubit_rot_angles(self):
+        # SX = RZ(-\pi/2) RY(\pi/2) RZ(\pi/2)
+        return [np.pi / 2, np.pi / 2, -np.pi / 2]
+
 
 class CNOT(Operation):
     r"""CNOT(wires)
@@ -400,6 +434,7 @@ class CNOT(Operation):
     num_params = 0
     num_wires = 2
     par_domain = None
+    is_self_inverse = True
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
     @classmethod
@@ -437,6 +472,8 @@ class CZ(DiagonalOperation):
     num_params = 0
     num_wires = 2
     par_domain = None
+    is_self_inverse = True
+    is_symmetric_over_all_wires = True
     eigvals = np.array([1, 1, 1, -1])
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 
@@ -476,6 +513,7 @@ class CY(Operation):
     num_params = 0
     num_wires = 2
     par_domain = None
+    is_self_inverse = True
     matrix = np.array(
         [
             [1, 0, 0, 0],
@@ -520,6 +558,8 @@ class SWAP(Operation):
     num_params = 0
     num_wires = 2
     par_domain = None
+    is_self_inverse = True
+    is_symmetric_over_all_wires = True
     matrix = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
     @classmethod
@@ -676,6 +716,8 @@ class Toffoli(Operation):
     num_params = 0
     num_wires = 3
     par_domain = None
+    is_self_inverse = True
+    is_symmetric_over_control_wires = True
     matrix = np.array(
         [
             [1, 0, 0, 0, 0, 0, 0, 0],
@@ -741,6 +783,7 @@ class RX(Operation):
     num_params = 1
     num_wires = 1
     par_domain = "R"
+    is_composable_rotation = True
     grad_method = "A"
     generator = [PauliX, -1 / 2]
 
@@ -757,6 +800,10 @@ class RX(Operation):
 
     def _controlled(self, wire):
         CRX(*self.parameters, wires=wire + self.wires)
+
+    def single_qubit_rot_angles(self):
+        # RX(\theta) = RZ(-\pi/2) RY(\theta) RZ(\pi/2)
+        return [np.pi / 2, self.data[0], -np.pi / 2]
 
 
 class RY(Operation):
@@ -782,6 +829,7 @@ class RY(Operation):
     num_params = 1
     num_wires = 1
     par_domain = "R"
+    is_composable_rotation = True
     grad_method = "A"
     generator = [PauliY, -1 / 2]
 
@@ -798,6 +846,10 @@ class RY(Operation):
 
     def _controlled(self, wire):
         CRY(*self.parameters, wires=wire + self.wires)
+
+    def single_qubit_rot_angles(self):
+        # RY(\theta) = RZ(0) RY(\theta) RZ(0)
+        return [0.0, self.data[0], 0.0]
 
 
 class RZ(DiagonalOperation):
@@ -823,6 +875,7 @@ class RZ(DiagonalOperation):
     num_params = 1
     num_wires = 1
     par_domain = "R"
+    is_composable_rotation = True
     grad_method = "A"
     generator = [PauliZ, -1 / 2]
 
@@ -845,6 +898,10 @@ class RZ(DiagonalOperation):
 
     def _controlled(self, wire):
         CRZ(*self.parameters, wires=wire + self.wires)
+
+    def single_qubit_rot_angles(self):
+        # RZ(\theta) = RZ(\theta) RY(0) RZ(0)
+        return [self.data[0], 0.0, 0.0]
 
 
 class PhaseShift(DiagonalOperation):
@@ -870,6 +927,7 @@ class PhaseShift(DiagonalOperation):
     num_params = 1
     num_wires = 1
     par_domain = "R"
+    is_composable_rotation = True
     grad_method = "A"
     generator = [np.array([[0, 0], [0, 1]]), 1]
 
@@ -893,6 +951,10 @@ class PhaseShift(DiagonalOperation):
 
     def _controlled(self, wire):
         ControlledPhaseShift(*self.parameters, wires=wire + self.wires)
+
+    def single_qubit_rot_angles(self):
+        # PhaseShift(\theta) = RZ(\theta) RY(0) RZ(0)
+        return [self.data[0], 0.0, 0.0]
 
 
 class ControlledPhaseShift(DiagonalOperation):
@@ -922,6 +984,7 @@ class ControlledPhaseShift(DiagonalOperation):
     num_params = 1
     num_wires = 2
     par_domain = "R"
+    is_composable_rotation = True
     grad_method = "A"
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), 1]
 
@@ -986,6 +1049,7 @@ class Rot(Operation):
     num_params = 3
     num_wires = 1
     par_domain = "R"
+    is_composable_rotation = True
     grad_method = "A"
 
     @classmethod
@@ -1012,6 +1076,9 @@ class Rot(Operation):
 
     def _controlled(self, wire):
         CRot(*self.parameters, wires=wire + self.wires)
+
+    def single_qubit_rot_angles(self):
+        return self.data
 
 
 class MultiRZ(DiagonalOperation):
@@ -1339,6 +1406,7 @@ class CRX(Operation):
     num_params = 1
     num_wires = 2
     par_domain = "R"
+    is_composable_rotation = True
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
@@ -1408,6 +1476,7 @@ class CRY(Operation):
     num_params = 1
     num_wires = 2
     par_domain = "R"
+    is_composable_rotation = True
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
@@ -1478,6 +1547,7 @@ class CRZ(DiagonalOperation):
     num_params = 1
     num_wires = 2
     par_domain = "R"
+    is_composable_rotation = True
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
@@ -1797,6 +1867,7 @@ class IsingXX(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
+    generator = [np.array([[0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0], [1, 0, 0, 0]]), -1 / 2]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1820,6 +1891,62 @@ class IsingXX(Operation):
     def adjoint(self):
         (phi,) = self.parameters
         return IsingXX(-phi, wires=self.wires)
+
+
+class IsingYY(Operation):
+    r"""IsingYY(phi, wires)
+    Ising YY coupling gate
+
+    .. math:: \mathtt{YY}(\phi) = \begin{bmatrix}
+        \cos(\phi / 2) & 0 & 0 & i \sin(\phi / 2) \\
+        0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
+        0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
+        i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
+        \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 1
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(YY(\phi)) = \frac{1}{2}\left[f(YY(\phi +\pi/2)) - f(YY(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`YY(\phi)`.
+
+    Args:
+        phi (float): the phase angle
+        wires (int): the subsystem the gate acts on
+    """
+    num_params = 1
+    num_wires = 2
+    par_domain = "R"
+    grad_method = "A"
+    generator = [np.array([[0, 0, 0, -1], [0, 0, 1, 0], [0, 1, 0, 0], [-1, 0, 0, 0]]), -1 / 2]
+
+    @staticmethod
+    def decomposition(phi, wires):
+        return [
+            qml.CY(wires=wires),
+            qml.RY(phi, wires=[wires[0]]),
+            qml.CY(wires=wires),
+        ]
+
+    @classmethod
+    def _matrix(cls, *params):
+        phi = params[0]
+        cos = np.cos(phi / 2)
+        isin = 1.0j * np.sin(phi / 2)
+        return np.array(
+            [
+                [cos, 0.0, 0.0, isin],
+                [0.0, cos, -isin, 0.0],
+                [0.0, -isin, cos, 0.0],
+                [isin, 0.0, 0.0, cos],
+            ],
+            dtype=complex,
+        )
+
+    def adjoint(self):
+        (phi,) = self.parameters
+        return IsingYY(-phi, wires=self.wires)
 
 
 class IsingZZ(Operation):
@@ -1848,6 +1975,7 @@ class IsingZZ(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
+    generator = [np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]), -1 / 2]
 
     @staticmethod
     def decomposition(phi, wires):
@@ -2088,17 +2216,48 @@ class QubitUnitary(Operation):
     par_domain = "A"
     grad_method = None
 
+    def __init__(self, *params, wires, do_queue=True):
+        wires = Wires(wires)
+
+        # For pure QubitUnitary operations (not controlled), check that the number
+        # of wires fits the dimensions of the matrix
+        if not isinstance(self, ControlledQubitUnitary):
+            U = params[0]
+
+            dim = 2 ** len(wires)
+
+            if U.shape != (dim, dim):
+                raise ValueError(
+                    f"Input unitary must be of shape {(dim, dim)} to act on {len(wires)} wires."
+                )
+
+            # Check for unitarity; due to variable precision across the different ML frameworks,
+            # here we issue a warning to check the operation, instead of raising an error outright.
+            if not qml.math.allclose(
+                qml.math.dot(U, qml.math.T(qml.math.conj(U))), qml.math.eye(qml.math.shape(U)[0])
+            ):
+                warnings.warn(
+                    f"Operator {U}\n may not be unitary."
+                    "Verify unitarity of operation, or use a datatype with increased precision.",
+                    UserWarning,
+                )
+
+        super().__init__(*params, wires=wires, do_queue=do_queue)
+
     @classmethod
     def _matrix(cls, *params):
-        U = np.asarray(params[0])
+        return params[0]
 
-        if U.ndim != 2 or U.shape[0] != U.shape[1]:
-            raise ValueError("Operator must be a square matrix.")
+    @staticmethod
+    def decomposition(U, wires):
+        # Decomposes arbitrary single-qubit unitaries as Rot gates (RZ - RY - RZ format),
+        # or a single RZ for diagonal matrices.
+        if qml.math.shape(U) == (2, 2):
+            wire = Wires(wires)[0]
+            decomp_ops = qml.transforms.decompositions.zyz_decomposition(U, wire)
+            return decomp_ops
 
-        if not np.allclose(U @ U.conj().T, np.identity(U.shape[0])):
-            raise ValueError("Operator must be unitary.")
-
-        return U
+        raise NotImplementedError("Decompositions only supported for single-qubit unitaries")
 
     def adjoint(self):
         return QubitUnitary(qml.math.T(qml.math.conj(self.matrix)), wires=self.wires)
@@ -2554,6 +2713,9 @@ class QFT(Operation):
             decomp_ops.append(swap)
 
         return decomp_ops
+
+    def adjoint(self):
+        return QFT(wires=self.wires).inv()
 
 
 # =============================================================================
@@ -3030,6 +3192,45 @@ class Projector(Observable):
         return []
 
 
+class SparseHamiltonian(Observable):
+    r"""SparseHamiltonian(H)
+    A Hamiltonian represented directly as a sparse matrix in coordinate list (COO) format.
+
+    .. warning::
+
+        ``SparseHamiltonian`` observables can only be used to return expectation values.
+        Variances and samples are not supported.
+
+    .. note::
+
+        Note that the ``SparseHamiltonian`` observable should not be used with a subset of wires.
+
+    **Details:**
+
+    * Number of wires: All
+    * Number of parameters: 1
+    * Gradient recipe: None
+
+    Args:
+        H (coo_matrix): a sparse matrix in SciPy coordinate list (COO) format with
+            dimension :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
+    """
+    num_wires = AllWires
+    num_params = 1
+    par_domain = None
+    grad_method = None
+
+    @classmethod
+    def _matrix(cls, *params):
+        A = params[0]
+        if not isinstance(A, scipy.sparse.coo_matrix):
+            raise TypeError("Observable must be a scipy sparse coo_matrix.")
+        return A
+
+    def diagonalizing_gates(self):
+        return []
+
+
 # =============================================================================
 # Arithmetic
 # =============================================================================
@@ -3256,6 +3457,7 @@ ops = {
     "U2",
     "U3",
     "IsingXX",
+    "IsingYY",
     "IsingZZ",
     "BasisState",
     "QubitStateVector",
@@ -3275,7 +3477,7 @@ ops = {
 }
 
 
-obs = {"Hadamard", "PauliX", "PauliY", "PauliZ", "Hermitian", "Projector"}
+obs = {"Hadamard", "PauliX", "PauliY", "PauliZ", "Hermitian", "Projector", "SparseHamiltonian"}
 
 
 __all__ = list(ops | obs)

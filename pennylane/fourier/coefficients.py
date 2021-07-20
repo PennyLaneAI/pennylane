@@ -55,7 +55,8 @@ def coefficients(f, n_inputs, degree, lowpass_filter=False, filter_threshold=Non
     :math:`c_{n_1,\ldots,n_N}` are Fourier coefficients.
 
     Args:
-        f (callable): Function that takes a 1D tensor of ``n_inputs`` scalar inputs.
+        f (callable): Function that takes a 1D tensor of ``n_inputs`` scalar inputs. The function can be a QNode, but
+            has to return a real scalar value (such as an expectation).
         n_inputs (int): number of function inputs
         degree (int): max frequency of Fourier coeffs to be computed. For degree :math:`d`,
             the coefficients from frequencies :math:`-d, -d+1,...0,..., d-1, d` will be computed.
@@ -80,12 +81,16 @@ def coefficients(f, n_inputs, degree, lowpass_filter=False, filter_threshold=Non
         @qml.qnode(dev)
         def circuit(weights, inpt):
             qml.RX(inpt[0], wires='a')
-            qml.Rot(0.1, 0.2, 0.3, wires='a')
+            qml.Rot(*weights[0], wires='a')
 
             qml.RY(inpt[1], wires='a')
-            qml.Rot(-4.1, 3.2, 1.3, wires='a')
+            qml.Rot(*weights[1], wires='a')
 
             return qml.expval(qml.PauliZ(wires='a'))
+
+    .. note::
+
+        The QNode has to return a scalar value (such as a single expectation).
 
     Unless otherwise specified, the coefficients will be computed for all input
     values. To compute coefficients with respect to only a subset of the input
@@ -94,7 +99,7 @@ def coefficients(f, n_inputs, degree, lowpass_filter=False, filter_threshold=Non
     ``weights``:
 
     >>> from functools import partial
-    >>> weights = np.array([0.5, 0.2])
+    >>> weights = np.array([[0.1, 0.2, 0.3], [-4.1, 3.2, 1.3]])
     >>> partial_circuit = partial(circuit, weights)
 
     Now we must specify the number of inputs, and the maximum desired

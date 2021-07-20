@@ -14,6 +14,7 @@
 """
 Contains the QuantumPhaseEstimation template.
 """
+# pylint: disable=too-many-arguments
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.ops import Hadamard, ControlledQubitUnitary, QFT
@@ -107,7 +108,7 @@ class QuantumPhaseEstimation(Operation):
     num_wires = AnyWires
     par_domain = "A"
 
-    def __init__(self, unitary, target_wires, estimation_wires, do_queue=True):
+    def __init__(self, unitary, target_wires, estimation_wires, do_queue=True, id=None):
         self.target_wires = list(target_wires)
         self.estimation_wires = list(estimation_wires)
 
@@ -118,7 +119,7 @@ class QuantumPhaseEstimation(Operation):
                 "The target wires and estimation wires must be different"
             )
 
-        super().__init__(unitary, wires=wires, do_queue=do_queue)
+        super().__init__(unitary, wires=wires, do_queue=do_queue, id=id)
 
     def expand(self):
         unitary = self.parameters[0]

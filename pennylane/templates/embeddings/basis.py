@@ -41,7 +41,7 @@ class BasisEmbedding(Operation):
     num_wires = AnyWires
     par_domain = "A"
 
-    def __init__(self, features, wires, do_queue=True):
+    def __init__(self, features, wires, do_queue=True, id=None):
 
         wires = Wires(wires)
         shape = qml.math.shape(features)
@@ -58,7 +58,7 @@ class BasisEmbedding(Operation):
         if not set(features).issubset({0, 1}):
             raise ValueError(f"Basis state must only consist of 0s and 1s; got {features}")
 
-        super().__init__(features, wires=wires, do_queue=do_queue)
+        super().__init__(features, wires=wires, do_queue=do_queue, id=id)
 
     def expand(self):
 

@@ -146,6 +146,11 @@ class TestInputs:
         with pytest.raises(ValueError, match="Features must be a one-dimensional"):
             circuit(x=[[1], [0]])
 
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        template = qml.templates.SqueezingEmbedding(np.array([1, 2]), wires=[0, 1], id="a")
+        assert template.id == "a"
+
 
 def circuit_template(features):
     qml.templates.SqueezingEmbedding(features, range(3))

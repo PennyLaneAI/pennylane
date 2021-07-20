@@ -23,6 +23,7 @@ import networkx as nx
 import pennylane as qml
 import numpy as np
 
+from pennylane.wires import Wires
 from .circuit_drawer import CHARSETS, CircuitDrawer
 
 
@@ -68,7 +69,7 @@ def _list_at_index_or_none(ls, idx):
     return None
 
 
-def is_returned_observable(op):
+def _is_returned_observable(op):
     """Helper for the condition of having an observable or
     measurement process in the return statement.
 
@@ -145,11 +146,17 @@ class CircuitGraph:
         for k, op in enumerate(queue):
             op.queue_idx = k  # store the queue index in the Operator
 
-            if hasattr(op, "return_type") and op.return_type is qml.operation.State:
-                # State measurements contain no wires by default, but wires are
-                # required for the circuit drawer, so we recreate the state
-                # measurement with all wires
-                op = qml.measure.MeasurementProcess(qml.operation.State, wires=wires)
+            if hasattr(op, "return_type"):
+                if op.return_type is qml.operation.State:
+                    # State measurements contain no wires by default, but wires are
+                    # required for the circuit drawer, so we recreate the state
+                    # measurement with all wires
+                    op = qml.measure.MeasurementProcess(qml.operation.State, wires=wires)
+
+                elif op.return_type is qml.operation.Sample and op.wires == Wires([]):
+                    # Sampling without specifying wires is treated as sampling all wires
+                    op = qml.measure.MeasurementProcess(qml.operation.Sample, wires=wires)
+
                 op.queue_idx = k
 
             for w in op.wires:
@@ -523,7 +530,7 @@ class CircuitGraph:
                 observables[wire] = [None] * self.max_simultaneous_measurements
 
                 for op in self._grid[wire]:
-                    if is_returned_observable(op):
+                    if _is_returned_observable(op):
                         obs_idx = mp_map[op]
                         observables[wire][obs_idx] = op
 

@@ -203,6 +203,10 @@ def _get_alpha_y(a, n, k):
     with np.errstate(divide="ignore", invalid="ignore"):
         division = numerator / denominator
 
+    # Cast the numerator and denominator to ensure compatibility with interfaces
+    division = qml.math.cast(division, np.float64)
+    denominator = qml.math.cast(denominator, np.float64)
+
     division = qml.math.where(denominator != 0.0, division, 0.0)
 
     return 2 * qml.math.arcsin(qml.math.sqrt(division))
@@ -245,7 +249,7 @@ class MottonenStatePreparation(Operation):
     num_wires = AnyWires
     par_domain = "A"
 
-    def __init__(self, state_vector, wires, do_queue=True):
+    def __init__(self, state_vector, wires, do_queue=True, id=None):
 
         shape = qml.math.shape(state_vector)
 
@@ -262,7 +266,7 @@ class MottonenStatePreparation(Operation):
         if not qml.math.allclose(norm, 1.0, atol=1e-3):
             raise ValueError("State vector has to be of norm 1.0, got {}".format(norm))
 
-        super().__init__(state_vector, wires=wires, do_queue=do_queue)
+        super().__init__(state_vector, wires=wires, do_queue=do_queue, id=id)
 
     def expand(self):
 

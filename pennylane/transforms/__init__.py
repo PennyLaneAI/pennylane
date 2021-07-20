@@ -17,10 +17,13 @@ This subpackage contains QNode, quantum function, device, and tape transforms.
 
 .. currentmodule:: pennylane
 
-QNode transforms
-----------------
+Transforms
+----------
 
-The following transforms act on QNodes. They return new transformed functions
+Transforms that act on QNodes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Thes transforms accept QNodes, and return new transformed functions
 that compute the desired quantity.
 
 .. autosummary::
@@ -29,24 +32,39 @@ that compute the desired quantity.
     ~transforms.classical_jacobian
     ~draw
     ~metric_tensor
+    ~specs
 
-Quantum function transforms
----------------------------
+Transforms that act on quantum functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The following transforms act on quantum functions (Python functions
-containing quantum operations) that are used *inside* QNodes.
+These transforms accept quantum functions (Python functions
+containing quantum operations) that are used to construct QNodes.
 
 .. autosummary::
     :toctree: api
 
     ~adjoint
+    ~transforms.cancel_inverses
     ~ctrl
+    ~transforms.merge_rotations
+    ~transforms.single_qubit_fusion
+    ~transforms.unitary_to_rot
     ~transforms.invisible
+    ~apply_controlled_Q
+    ~quantum_monte_carlo
 
-Tape transforms
----------------
+There are also utility functions and decompositions available that assist with
+both transforms, and decompositions within the larger PennyLane codebase.
 
-The following transforms act on quantum tapes, and return one or
+.. autosummary::
+    :toctree: api
+
+    ~transforms.zyz_decomposition
+
+Transforms that act on tapes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+These transforms accept quantum tapes, and return one or
 more tapes as well as a classical processing function.
 
 .. autosummary::
@@ -55,12 +73,32 @@ more tapes as well as a classical processing function.
     ~transforms.measurement_grouping
     ~transforms.metric_tensor_tape
     ~transforms.hamiltonian_expand
+
+Decorators and utility functions
+--------------------------------
+
+The following decorators and convenience functions are provided
+to help build custom QNode, quantum function, and tape transforms:
+
+.. autosummary::
+    :toctree: api
+
+    ~single_tape_transform
+    ~qfunc_transform
+    ~transforms.make_tape
 """
+# Import the decorators first to prevent circular imports when used in other transforms
+from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
 from .adjoint import adjoint
 from .classical_jacobian import classical_jacobian
 from .control import ControlledOperation, ctrl
+from .decompositions import zyz_decomposition
 from .draw import draw
+from .hamiltonian_expand import hamiltonian_expand
 from .invisible import invisible
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor, metric_tensor_tape
-from .hamiltonian_expand import hamiltonian_expand
+from .optimization import cancel_inverses, merge_rotations, single_qubit_fusion
+from .specs import specs
+from .qmc import apply_controlled_Q, quantum_monte_carlo
+from .unitary_to_rot import unitary_to_rot
