@@ -98,6 +98,10 @@ class Hadamard(Observable, Operation):
     def adjoint(self):
         return Hadamard(wires=self.wires)
 
+    def single_qubit_rot_angles(self):
+        # H = RZ(\pi) RY(\pi/2) RZ(0)
+        return [np.pi, np.pi / 2, 0.0]
+
 
 class PauliX(Observable, Operation):
     r"""PauliX(wires)
@@ -156,6 +160,10 @@ class PauliX(Observable, Operation):
 
     def _controlled(self, wire):
         CNOT(wires=Wires(wire) + self.wires)
+
+    def single_qubit_rot_angles(self):
+        # X = RZ(-\pi/2) RY(\pi) RZ(\pi/2)
+        return [np.pi / 2, np.pi, -np.pi / 2]
 
 
 class PauliY(Observable, Operation):
@@ -218,6 +226,10 @@ class PauliY(Observable, Operation):
     def _controlled(self, wire):
         CY(wires=Wires(wire) + self.wires)
 
+    def single_qubit_rot_angles(self):
+        # Y = RZ(0) RY(\pi) RZ(0)
+        return [0.0, np.pi, 0.0]
+
 
 class PauliZ(Observable, DiagonalOperation):
     r"""PauliZ(wires)
@@ -262,6 +274,10 @@ class PauliZ(Observable, DiagonalOperation):
     def _controlled(self, wire):
         CZ(wires=Wires(wire) + self.wires)
 
+    def single_qubit_rot_angles(self):
+        # Z = RZ(\pi) RY(0) RZ(0)
+        return [np.pi, 0.0, 0.0]
+
 
 class S(DiagonalOperation):
     r"""S(wires)
@@ -300,6 +316,10 @@ class S(DiagonalOperation):
     def adjoint(self):
         return S(wires=self.wires).inv()
 
+    def single_qubit_rot_angles(self):
+        # S = RZ(\pi/2) RY(0) RZ(0)
+        return [np.pi / 2, 0.0, 0.0]
+
 
 class T(DiagonalOperation):
     r"""T(wires)
@@ -337,6 +357,10 @@ class T(DiagonalOperation):
 
     def adjoint(self):
         return T(wires=self.wires).inv()
+
+    def single_qubit_rot_angles(self):
+        # T = RZ(\pi/4) RY(0) RZ(0)
+        return [np.pi / 4, 0.0, 0.0]
 
 
 class SX(Operation):
@@ -380,6 +404,10 @@ class SX(Operation):
 
     def adjoint(self):
         return SX(wires=self.wires).inv()
+
+    def single_qubit_rot_angles(self):
+        # SX = RZ(-\pi/2) RY(\pi/2) RZ(\pi/2)
+        return [np.pi / 2, np.pi / 2, -np.pi / 2]
 
 
 class CNOT(Operation):
@@ -773,6 +801,10 @@ class RX(Operation):
     def _controlled(self, wire):
         CRX(*self.parameters, wires=wire + self.wires)
 
+    def single_qubit_rot_angles(self):
+        # RX(\theta) = RZ(-\pi/2) RY(\theta) RZ(\pi/2)
+        return [np.pi / 2, self.data[0], -np.pi / 2]
+
 
 class RY(Operation):
     r"""RY(phi, wires)
@@ -814,6 +846,10 @@ class RY(Operation):
 
     def _controlled(self, wire):
         CRY(*self.parameters, wires=wire + self.wires)
+
+    def single_qubit_rot_angles(self):
+        # RY(\theta) = RZ(0) RY(\theta) RZ(0)
+        return [0.0, self.data[0], 0.0]
 
 
 class RZ(DiagonalOperation):
@@ -863,6 +899,10 @@ class RZ(DiagonalOperation):
     def _controlled(self, wire):
         CRZ(*self.parameters, wires=wire + self.wires)
 
+    def single_qubit_rot_angles(self):
+        # RZ(\theta) = RZ(\theta) RY(0) RZ(0)
+        return [self.data[0], 0.0, 0.0]
+
 
 class PhaseShift(DiagonalOperation):
     r"""PhaseShift(phi, wires)
@@ -911,6 +951,10 @@ class PhaseShift(DiagonalOperation):
 
     def _controlled(self, wire):
         ControlledPhaseShift(*self.parameters, wires=wire + self.wires)
+
+    def single_qubit_rot_angles(self):
+        # PhaseShift(\theta) = RZ(\theta) RY(0) RZ(0)
+        return [self.data[0], 0.0, 0.0]
 
 
 class ControlledPhaseShift(DiagonalOperation):
@@ -1032,6 +1076,9 @@ class Rot(Operation):
 
     def _controlled(self, wire):
         CRot(*self.parameters, wires=wire + self.wires)
+
+    def single_qubit_rot_angles(self):
+        return self.data
 
 
 class MultiRZ(DiagonalOperation):
