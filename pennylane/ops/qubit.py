@@ -58,6 +58,7 @@ class Hadamard(Observable, Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
+    is_self_inverse = True
     eigvals = pauli_eigs(1)
     matrix = np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
 
@@ -97,6 +98,10 @@ class Hadamard(Observable, Operation):
     def adjoint(self):
         return Hadamard(wires=self.wires)
 
+    def single_qubit_rot_angles(self):
+        # H = RZ(\pi) RY(\pi/2) RZ(0)
+        return [np.pi, np.pi / 2, 0.0]
+
 
 class PauliX(Observable, Operation):
     r"""PauliX(wires)
@@ -115,6 +120,7 @@ class PauliX(Observable, Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
+    is_self_inverse = True
     eigvals = pauli_eigs(1)
     matrix = np.array([[0, 1], [1, 0]])
 
@@ -155,6 +161,10 @@ class PauliX(Observable, Operation):
     def _controlled(self, wire):
         CNOT(wires=Wires(wire) + self.wires)
 
+    def single_qubit_rot_angles(self):
+        # X = RZ(-\pi/2) RY(\pi) RZ(\pi/2)
+        return [np.pi / 2, np.pi, -np.pi / 2]
+
 
 class PauliY(Observable, Operation):
     r"""PauliY(wires)
@@ -173,6 +183,7 @@ class PauliY(Observable, Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
+    is_self_inverse = True
     eigvals = pauli_eigs(1)
     matrix = np.array([[0, -1j], [1j, 0]])
 
@@ -215,6 +226,10 @@ class PauliY(Observable, Operation):
     def _controlled(self, wire):
         CY(wires=Wires(wire) + self.wires)
 
+    def single_qubit_rot_angles(self):
+        # Y = RZ(0) RY(\pi) RZ(0)
+        return [0.0, np.pi, 0.0]
+
 
 class PauliZ(Observable, DiagonalOperation):
     r"""PauliZ(wires)
@@ -233,6 +248,7 @@ class PauliZ(Observable, DiagonalOperation):
     num_params = 0
     num_wires = 1
     par_domain = None
+    is_self_inverse = True
     eigvals = pauli_eigs(1)
     matrix = np.array([[1, 0], [0, -1]])
 
@@ -257,6 +273,10 @@ class PauliZ(Observable, DiagonalOperation):
 
     def _controlled(self, wire):
         CZ(wires=Wires(wire) + self.wires)
+
+    def single_qubit_rot_angles(self):
+        # Z = RZ(\pi) RY(0) RZ(0)
+        return [np.pi, 0.0, 0.0]
 
 
 class S(DiagonalOperation):
@@ -296,6 +316,10 @@ class S(DiagonalOperation):
     def adjoint(self):
         return S(wires=self.wires).inv()
 
+    def single_qubit_rot_angles(self):
+        # S = RZ(\pi/2) RY(0) RZ(0)
+        return [np.pi / 2, 0.0, 0.0]
+
 
 class T(DiagonalOperation):
     r"""T(wires)
@@ -333,6 +357,10 @@ class T(DiagonalOperation):
 
     def adjoint(self):
         return T(wires=self.wires).inv()
+
+    def single_qubit_rot_angles(self):
+        # T = RZ(\pi/4) RY(0) RZ(0)
+        return [np.pi / 4, 0.0, 0.0]
 
 
 class SX(Operation):
@@ -377,6 +405,10 @@ class SX(Operation):
     def adjoint(self):
         return SX(wires=self.wires).inv()
 
+    def single_qubit_rot_angles(self):
+        # SX = RZ(-\pi/2) RY(\pi/2) RZ(\pi/2)
+        return [np.pi / 2, np.pi / 2, -np.pi / 2]
+
 
 class CNOT(Operation):
     r"""CNOT(wires)
@@ -402,6 +434,7 @@ class CNOT(Operation):
     num_params = 0
     num_wires = 2
     par_domain = None
+    is_self_inverse = True
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
     @classmethod
@@ -439,6 +472,8 @@ class CZ(DiagonalOperation):
     num_params = 0
     num_wires = 2
     par_domain = None
+    is_self_inverse = True
+    is_symmetric_over_all_wires = True
     eigvals = np.array([1, 1, 1, -1])
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 
@@ -478,6 +513,7 @@ class CY(Operation):
     num_params = 0
     num_wires = 2
     par_domain = None
+    is_self_inverse = True
     matrix = np.array(
         [
             [1, 0, 0, 0],
@@ -522,6 +558,8 @@ class SWAP(Operation):
     num_params = 0
     num_wires = 2
     par_domain = None
+    is_self_inverse = True
+    is_symmetric_over_all_wires = True
     matrix = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
     @classmethod
@@ -678,6 +716,8 @@ class Toffoli(Operation):
     num_params = 0
     num_wires = 3
     par_domain = None
+    is_self_inverse = True
+    is_symmetric_over_control_wires = True
     matrix = np.array(
         [
             [1, 0, 0, 0, 0, 0, 0, 0],
@@ -743,6 +783,7 @@ class RX(Operation):
     num_params = 1
     num_wires = 1
     par_domain = "R"
+    is_composable_rotation = True
     grad_method = "A"
     generator = [PauliX, -1 / 2]
 
@@ -759,6 +800,10 @@ class RX(Operation):
 
     def _controlled(self, wire):
         CRX(*self.parameters, wires=wire + self.wires)
+
+    def single_qubit_rot_angles(self):
+        # RX(\theta) = RZ(-\pi/2) RY(\theta) RZ(\pi/2)
+        return [np.pi / 2, self.data[0], -np.pi / 2]
 
 
 class RY(Operation):
@@ -784,6 +829,7 @@ class RY(Operation):
     num_params = 1
     num_wires = 1
     par_domain = "R"
+    is_composable_rotation = True
     grad_method = "A"
     generator = [PauliY, -1 / 2]
 
@@ -800,6 +846,10 @@ class RY(Operation):
 
     def _controlled(self, wire):
         CRY(*self.parameters, wires=wire + self.wires)
+
+    def single_qubit_rot_angles(self):
+        # RY(\theta) = RZ(0) RY(\theta) RZ(0)
+        return [0.0, self.data[0], 0.0]
 
 
 class RZ(DiagonalOperation):
@@ -825,6 +875,7 @@ class RZ(DiagonalOperation):
     num_params = 1
     num_wires = 1
     par_domain = "R"
+    is_composable_rotation = True
     grad_method = "A"
     generator = [PauliZ, -1 / 2]
 
@@ -847,6 +898,10 @@ class RZ(DiagonalOperation):
 
     def _controlled(self, wire):
         CRZ(*self.parameters, wires=wire + self.wires)
+
+    def single_qubit_rot_angles(self):
+        # RZ(\theta) = RZ(\theta) RY(0) RZ(0)
+        return [self.data[0], 0.0, 0.0]
 
 
 class PhaseShift(DiagonalOperation):
@@ -872,6 +927,7 @@ class PhaseShift(DiagonalOperation):
     num_params = 1
     num_wires = 1
     par_domain = "R"
+    is_composable_rotation = True
     grad_method = "A"
     generator = [np.array([[0, 0], [0, 1]]), 1]
 
@@ -895,6 +951,10 @@ class PhaseShift(DiagonalOperation):
 
     def _controlled(self, wire):
         ControlledPhaseShift(*self.parameters, wires=wire + self.wires)
+
+    def single_qubit_rot_angles(self):
+        # PhaseShift(\theta) = RZ(\theta) RY(0) RZ(0)
+        return [self.data[0], 0.0, 0.0]
 
 
 class ControlledPhaseShift(DiagonalOperation):
@@ -924,6 +984,7 @@ class ControlledPhaseShift(DiagonalOperation):
     num_params = 1
     num_wires = 2
     par_domain = "R"
+    is_composable_rotation = True
     grad_method = "A"
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), 1]
 
@@ -988,6 +1049,7 @@ class Rot(Operation):
     num_params = 3
     num_wires = 1
     par_domain = "R"
+    is_composable_rotation = True
     grad_method = "A"
 
     @classmethod
@@ -1014,6 +1076,9 @@ class Rot(Operation):
 
     def _controlled(self, wire):
         CRot(*self.parameters, wires=wire + self.wires)
+
+    def single_qubit_rot_angles(self):
+        return self.data
 
 
 class MultiRZ(DiagonalOperation):
@@ -1341,6 +1406,7 @@ class CRX(Operation):
     num_params = 1
     num_wires = 2
     par_domain = "R"
+    is_composable_rotation = True
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
@@ -1410,6 +1476,7 @@ class CRY(Operation):
     num_params = 1
     num_wires = 2
     par_domain = "R"
+    is_composable_rotation = True
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
@@ -1480,6 +1547,7 @@ class CRZ(DiagonalOperation):
     num_params = 1
     num_wires = 2
     par_domain = "R"
+    is_composable_rotation = True
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
