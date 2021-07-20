@@ -598,7 +598,7 @@ class Operation(Operator):
     """
 
     @property
-    def control_wires(self):
+    def comp_control_wires(self):
         r"""For operations where ``is_controlled`` is ``True``, returns the
         set of control wires.
 
@@ -608,7 +608,7 @@ class Operation(Operator):
         raise NotImplementedError
 
     @property
-    def target_wires(self):
+    def comp_target_wires(self):
         r"""For operations where ``is_controlled`` is ``True``, returns the
         set of target wires.
 

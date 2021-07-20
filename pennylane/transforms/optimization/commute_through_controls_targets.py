@@ -120,7 +120,7 @@ def commute_through_controls_targets(tape):
 
             # If the next gate is controlled, we need to check the shared wires
             shared_controls = Wires.shared_wires(
-                [Wires(current_gate.wires), next_gate.control_wires]
+                [Wires(current_gate.wires), next_gate.comp_control_wires]
             )
 
             # Case 1: the overlap is on the control wires. Only Z-type gates go through

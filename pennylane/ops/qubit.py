@@ -450,11 +450,11 @@ class CNOT(Operation):
         Toffoli(wires=Wires(wire) + self.wires)
 
     @property
-    def control_wires(self):
+    def comp_control_wires(self):
         return Wires(self.wires[0])
 
     @property
-    def target_wires(self):
+    def comp_target_wires(self):
         return Wires(self.wires[1])
 
 
@@ -501,11 +501,11 @@ class CZ(DiagonalOperation):
         return CZ(wires=self.wires)
 
     @property
-    def control_wires(self):
+    def comp_control_wires(self):
         return Wires(self.wires[0])
 
     @property
-    def target_wires(self):
+    def comp_target_wires(self):
         return Wires(self.wires[1])
 
 
@@ -558,11 +558,11 @@ class CY(Operation):
         return CY(wires=self.wires)
 
     @property
-    def control_wires(self):
+    def comp_control_wires(self):
         return Wires(self.wires[0])
 
     @property
-    def target_wires(self):
+    def comp_target_wires(self):
         return Wires(self.wires[1])
 
 
@@ -792,11 +792,11 @@ class Toffoli(Operation):
         return Toffoli(wires=self.wires)
 
     @property
-    def control_wires(self):
+    def comp_control_wires(self):
         return Wires(self.wires[:2])
 
     @property
-    def target_wires(self):
+    def comp_target_wires(self):
         return Wires(self.wires[2])
 
 
@@ -1055,11 +1055,11 @@ class ControlledPhaseShift(DiagonalOperation):
         return ControlledPhaseShift(-self.data[0], wires=self.wires)
 
     @property
-    def control_wires(self):
+    def comp_control_wires(self):
         return Wires(self.wires[0])
 
     @property
-    def target_wires(self):
+    def comp_target_wires(self):
         return Wires(self.wires[1])
 
 
@@ -1488,11 +1488,11 @@ class CRX(Operation):
         return CRX(-self.data[0], wires=self.wires)
 
     @property
-    def control_wires(self):
+    def comp_control_wires(self):
         return Wires(self.wires[0])
 
     @property
-    def target_wires(self):
+    def comp_target_wires(self):
         return Wires(self.wires[1])
 
 
@@ -1566,11 +1566,11 @@ class CRY(Operation):
         return CRY(-self.data[0], wires=self.wires)
 
     @property
-    def control_wires(self):
+    def comp_control_wires(self):
         return Wires(self.wires[0])
 
     @property
-    def target_wires(self):
+    def comp_target_wires(self):
         return Wires(self.wires[1])
 
 
@@ -1663,11 +1663,11 @@ class CRZ(DiagonalOperation):
         return CRZ(-self.data[0], wires=self.wires)
 
     @property
-    def control_wires(self):
+    def comp_control_wires(self):
         return Wires(self.wires[0])
 
     @property
-    def target_wires(self):
+    def comp_target_wires(self):
         return Wires(self.wires[1])
 
 
