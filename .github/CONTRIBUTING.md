@@ -34,15 +34,15 @@ It's up to you!
 
 ### Ways to contribute to the PennyLane repository
 
-What to help with the repository itself?  There are several different avenues for that:
+Want to help with the repository itself?  There are several different avenues for that:
 
-- **Good first issues** - Don't know where to start? Take a look at our ["good first issue" label](https://github.com/PennyLaneAI/pennylane/contribute).  Issues with this label *should* require less expertise and contain fewer tricky bits.  If the issue ends up trickier than we assumed, you can start a conversation on the issue page or open up a "Work in Progress" PR to ask for help.
+- **Good first issues** - Don't know where to start? Take a look at our ["good first issue" label](https://github.com/PennyLaneAI/pennylane/contribute).  Issues with this label are meant for newcomers and *should* contain fewer challenging bits.  If the issue ends up trickier than we assumed, you can start a conversation on the issue page or open up a "Work in Progress" PR to ask for help.
 
-- **Documentation**- If you would like to add to our documentation or suggest improvements/changes, let us know or submit a pull request directly. Even Pull Requests fixing rendering issues, grammar, or a broken code example can help us. Take a look at the [documentation guide](https://pennylane.readthedocs.io/en/stable/development/guide/documentation.html) for more specifics.
+- **Documentation**- If you would like to add to our documentation or suggest improvements/changes, let us know or submit a pull request directly. Changes that fix rendering issues, grammar, or a broken code example help us a lot too. Take a look at the [documentation guide](https://pennylane.readthedocs.io/en/stable/development/guide/documentation.html) for more specifics.
 
-- **Add a new Template or Operation.** Circuit structures crop up in literature faster than we can add them, so we are always looking for help. Take a look at the page on [Contributing templates](https://pennylane.readthedocs.io/en/stable/development/adding_templates.html) for more information.
+- **Add a new Template or Operation.** Circuit structures crop up in literature faster than we can add them, so we are always looking for help. Take a look at the [Contributing templates](https://pennylane.readthedocs.io/en/stable/development/adding_templates.html) page for more information.
 
-- **Develop a PennyLane plugin** - PennyLane is designed to be device and quantum-framework agnostic. Users can switch a circuit's device to any other compatible device with no code changes. We would love to support even more devices and quantum frameworks. If you would like to write a PennyLane plugin, see the page on ["Building a plugin"](https://pennylane.readthedocs.io/en/stable/development/plugins.html).
+- **Develop a PennyLane plugin** - PennyLane is designed to be device and quantum-framework agnostic. Users can switch a circuit's device to any other compatible device with barely any code changes. We would love to support even more devices and quantum frameworks. If you would like to write a PennyLane plugin, see the page on ["Building a plugin"](https://pennylane.readthedocs.io/en/stable/development/plugins.html).
 
 Did we catch your interest? Let's get into some helpful specifics.
 
