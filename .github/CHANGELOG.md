@@ -31,6 +31,7 @@
       for _ in range(num_iterations):
           oracle()
           qml.templates.GroverOperator(wires=wires)
+
       return qml.probs(wires)
   ```
 
