@@ -17,8 +17,12 @@ from pennylane import numpy as np
 import pennylane as qml
 from pennylane.wires import Wires
 
-from pennylane.transforms.optimization import commute_behind_controls_targets
-from utils import compare_operation_lists
+from pennylane.transforms.optimization import commute_through_controls_targets
+from utils import (
+    compare_operation_lists,
+    compute_matrix_from_ops_two_qubit,
+    check_matrix_equivalence,
+)
 
 
 class TestCommuteBehindControlsTargets:
@@ -28,27 +32,27 @@ class TestCommuteBehindControlsTargets:
         """Test that X-basis gates after controlled-X-type gates on targets get pushed behind."""
 
         def qfunc():
-            qml.CNOT(wires=[0, 2])
             qml.PauliX(wires=2)
-
-            qml.Toffoli(wires=[0, 1, 2])
+            qml.CNOT(wires=[0, 2])
             qml.RX(0.2, wires=2)
-
-            qml.CRX(0.1, wires=[0, 1])
+            qml.Toffoli(wires=[0, 1, 2])
             qml.SX(wires=1)
+            qml.PauliX(wires=1)
+            qml.CRX(0.1, wires=[0, 1])
 
-        transformed_qfunc = commute_behind_controls_targets(qfunc)
+        transformed_qfunc = commute_through_controls_targets(qfunc)
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
-        names_expected = ["PauliX", "CNOT", "RX", "Toffoli", "SX", "CRX"]
+        names_expected = ["CNOT", "Toffoli", "PauliX", "RX", "CRX", "SX", "PauliX"]
         wires_expected = [
-            Wires(2),
             Wires([0, 2]),
-            Wires(2),
             Wires([0, 1, 2]),
-            Wires(1),
+            Wires(2),
+            Wires(2),
             Wires([0, 1]),
+            Wires(1),
+            Wires(1),
         ]
         compare_operation_lists(ops, names_expected, wires_expected)
 
@@ -58,35 +62,35 @@ class TestCommuteBehindControlsTargets:
         """
 
         def qfunc():
-            qml.CNOT(wires=["a", "c"])
             qml.PauliX(wires="a")
-            qml.Toffoli(wires=["c", "b", "a"])
-            qml.RX(0.2, wires="b")
+            qml.CNOT(wires=["a", "c"])
+            qml.RX(0.2, wires="a")
+            qml.Toffoli(wires=["c", "a", "b"])
 
-        transformed_qfunc = commute_behind_controls_targets(qfunc)
+        transformed_qfunc = commute_through_controls_targets(qfunc)
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
-        names_expected = ["CNOT", "PauliX", "Toffoli", "RX"]
-        wires_expected = [Wires(["a", "c"]), Wires("a"), Wires(["c", "b", "a"]), Wires("b")]
+        names_expected = ["PauliX", "CNOT", "RX", "Toffoli"]
+        wires_expected = [Wires("a"), Wires(["a", "c"]), Wires("a"), Wires(["c", "a", "b"])]
         compare_operation_lists(ops, names_expected, wires_expected)
 
     def test_push_behind_y_gates(self):
         """Test that Y-basis gates after controlled-Y-type gates on targets get pushed behind."""
 
         def qfunc():
-            qml.CRY(-0.5, wires=["a", 2])
             qml.PauliY(wires=2)
+            qml.CRY(-0.5, wires=["a", 2])
             qml.CNOT(wires=[1, 2])
-            qml.CY(wires=["a", 1])
             qml.RY(0.3, wires=1)
+            qml.CY(wires=["a", 1])
 
-        transformed_qfunc = commute_behind_controls_targets(qfunc)
+        transformed_qfunc = commute_through_controls_targets(qfunc)
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
-        names_expected = ["PauliY", "CRY", "CNOT", "RY", "CY"]
-        wires_expected = [Wires(2), Wires(["a", 2]), Wires([1, 2]), Wires(1), Wires(["a", 1])]
+        names_expected = ["CRY", "PauliY", "CNOT", "CY", "RY"]
+        wires_expected = [Wires(["a", 2]), Wires(2), Wires([1, 2]), Wires(["a", 1]), Wires(1)]
         compare_operation_lists(ops, names_expected, wires_expected)
 
     def test_dont_push_y_behind_controls(self):
@@ -101,7 +105,7 @@ class TestCommuteBehindControlsTargets:
             qml.CY(wires=["a", 1])
             qml.RY(0.3, wires="a")
 
-        transformed_qfunc = commute_behind_controls_targets(qfunc)
+        transformed_qfunc = commute_through_controls_targets(qfunc)
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
@@ -114,80 +118,57 @@ class TestCommuteBehindControlsTargets:
         targets get pushed behind."""
 
         def qfunc():
-            qml.CZ(wires=[0, 2])
             qml.PauliZ(wires=2)
             qml.S(wires=0)
+            qml.CZ(wires=[0, 2])
 
             qml.CNOT(wires=[0, 1])
 
-            qml.CRZ(0.5, wires=[0, 1])
             qml.PhaseShift(0.2, wires=2)
             qml.T(wires=0)
             qml.PauliZ(wires=0)
+            qml.CRZ(0.5, wires=[0, 1])
 
-        transformed_qfunc = commute_behind_controls_targets(qfunc)
+        transformed_qfunc = commute_through_controls_targets(qfunc)
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
-        names_expected = ["PauliZ", "S", "CZ", "CNOT", "T", "PauliZ", "CRZ", "PhaseShift"]
+        names_expected = ["CZ", "PauliZ", "CNOT", "PhaseShift", "CRZ", "S", "T", "PauliZ"]
         wires_expected = (
-            [Wires(2), Wires(0), Wires([0, 2]), Wires([0, 1])]
-            + [Wires(0)] * 2
-            + [Wires([0, 1]), Wires(2)]
+            [Wires([0, 2]), Wires(2), Wires([0, 1]), Wires(2)] + [Wires([0, 1])] + [Wires(0)] * 3
         )
+
         compare_operation_lists(ops, names_expected, wires_expected)
 
-    def test_push_behind_mixed(self):
+    def test_push_behind_mixed_with_matrix(self):
         """Test that Z-basis gates after controlled-Z-type gates on controls *and*
         targets get pushed behind."""
 
         def qfunc():
-            qml.CZ(wires=[0, 2])
-            qml.PauliX(wires=2)
+            qml.PauliX(wires=1)
             qml.S(wires=0)
-
-            qml.CNOT(wires=[0, 1])
-
-            qml.CRY(0.5, wires=[0, 1])
+            qml.CZ(wires=[0, 1])
+            qml.CNOT(wires=[1, 0])
+            qml.PauliY(wires=1)
+            qml.CRY(0.5, wires=[1, 0])
             qml.PhaseShift(0.2, wires=0)
             qml.PauliY(wires=1)
-
-            qml.Toffoli(wires=[0, 1, 2])
             qml.T(wires=0)
-            qml.RZ(0.2, wires=1)
-            qml.CNOT(wires=[0, 1])
+            qml.RZ(0.2, wires=0)
+            qml.PauliX(wires=1)
+            qml.CRY(0.2, wires=[1, 0])
 
-        transformed_qfunc = commute_behind_controls_targets(qfunc)
+        transformed_qfunc = commute_through_controls_targets(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        original_ops = qml.transforms.make_tape(qfunc)().operations
+        transformed_ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
-        names_expected = [
-            "S",
-            "CZ",
-            "PauliX",
-            "CNOT",
-            "PhaseShift",
-            "PauliY",
-            "CRY",
-            "T",
-            "RZ",
-            "Toffoli",
-            "CNOT",
-        ]
-        wires_expected = [
-            Wires(0),
-            Wires([0, 2]),
-            Wires(2),
-            Wires([0, 1]),
-            Wires(0),
-            Wires(1),
-            Wires([0, 1]),
-            Wires(0),
-            Wires(1),
-            Wires([0, 1, 2]),
-            Wires([0, 1]),
-        ]
-        compare_operation_lists(ops, names_expected, wires_expected)
+        assert len(original_ops) == len(transformed_ops)
+
+        # Compare matrices
+        matrix_expected = compute_matrix_from_ops_two_qubit(original_ops, wire_order=[0, 1])
+        matrix_obtained = compute_matrix_from_ops_two_qubit(transformed_ops, wire_order=[0, 1])
+        assert check_matrix_equivalence(matrix_expected, matrix_obtained)
 
 
 # # Example QNode and device for interface testing

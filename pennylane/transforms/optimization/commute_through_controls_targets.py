@@ -13,6 +13,8 @@
 # limitations under the License.
 """Transforms for pushing commuting gates through targets/control qubits."""
 
+from itertools import chain
+
 from pennylane import apply
 from pennylane.wires import Wires
 from pennylane.transforms import qfunc_transform
@@ -26,9 +28,11 @@ commuting_gates = {
     "Z": ["PauliZ", "RZ", "PhaseShift", "S", "T"],
 }
 
+movable_gates = list(chain(*commuting_gates.values()))
+
 
 @qfunc_transform
-def commute_behind_controls_targets(tape):
+def commute_through_controls_targets(tape):
     """Quantum function transform to move commuting gates behind
     control and target qubits of controlled operations.
 
@@ -61,66 +65,71 @@ def commute_behind_controls_targets(tape):
     # Make a working copy of the list to traverse
     list_copy = tape.operations.copy()
 
-    while len(list_copy) > 0:
-        current_gate = list_copy[0]
+    # We will go through the list backwards; whenever we find a single-qubit
+    # gate, we will extract it and push it through 2-qubit gates as far as
+    # possible to the right.
+    current_location = len(list_copy) - 1
 
-        # Consider only gates that have is_controlled set to True
-        if current_gate.is_controlled is None:
-            apply(current_gate)
-            list_copy.pop(0)
+    while current_location >= 0:
+
+        current_gate = list_copy[current_location]
+
+        # We are looking only at the gates that can be pushed through controls/targets
+        if current_gate.name not in movable_gates:
+            current_location -= 1
             continue
 
-        # Find the next gate that acts on any subset of the wires
-        next_gate_idx = find_next_gate(current_gate.wires, list_copy[1:])
+        # Find the next gate that contains an overlapping wire
+        next_gate_idx = find_next_gate(current_gate.wires, list_copy[current_location + 1 :])
 
         if next_gate_idx is None:
-            apply(current_gate)
-            list_copy.pop(0)
+            current_location -= 1
             continue
 
-        # For this transform, we need to check through all the wires this gate has.
-        # It might be that the adjacent gate cannot be moved, but a subsequent one can be.
-        wire_count = 0
+        where_should_we_put_it = current_location
 
         # Loop as long as a valid next gate exists
-        while next_gate_idx is not None and wire_count <= len(current_gate.wires):
+        while next_gate_idx is not None:
             # Get the next gate
-            next_gate = list_copy[next_gate_idx + 1 + wire_count]
+            next_gate = list_copy[where_should_we_put_it + next_gate_idx + 1]
+            # print(f"Next gate is {next_gate.name}")
 
-            # This transform only works for pushing single-qubit operations
-            if len(next_gate.wires) != 1:
+            # If the next gate is not controlled, we cannot push the gate further
+            if next_gate.is_controlled is None:
                 break
 
+            # If the next gate is controlled, we need to check the shared wires
             shared_controls = Wires.shared_wires(
-                [Wires(current_gate.control_wires), Wires(next_gate.wires)]
+                [Wires(current_gate.wires), next_gate.control_wires]
             )
 
-            # Case 1: the overlap is on the control wires
+            # Case 1: the overlap is on the control wires. Only Z-type gates go through
             if len(shared_controls) > 0:
+                # print(f"share controls")
                 # If the gate is a Z-basis gate, it can be pushed through
-                if next_gate.name in commuting_gates["Z"]:
-                    list_copy.pop(next_gate_idx + 1 + wire_count)
-                    apply(next_gate)
-                # Otherwise, we increment the wire count to indicate we checked this wire
+                if current_gate.name in commuting_gates["Z"]:
+                    where_should_we_put_it += next_gate_idx + 1
                 else:
-                    wire_count += 1
+                    break
 
             # Case 2: since we know the gates overlap somewhere, and it's a
             # single-qubit gate, if it wasn't on a control it's the target.
             else:
-                if next_gate.name in commuting_gates[current_gate.target_gate_basis]:
-                    list_copy.pop(next_gate_idx + 1 + wire_count)
-                    apply(next_gate)
+                if current_gate.name in commuting_gates[next_gate.target_gate_basis]:
+                    where_should_we_put_it += next_gate_idx + 1
                 else:
-                    wire_count += 1
+                    break
 
-            next_gate_idx = find_next_gate(current_gate.wires, list_copy[1 + wire_count :])
+            next_gate_idx = find_next_gate(
+                current_gate.wires, list_copy[where_should_we_put_it + 1 :]
+            )
 
-        # After we have found all possible  gates to push through,
-        # apply the original gate
-        apply(current_gate)
-        list_copy.pop(0)
+        # After we have gone as far as possible, move the gate to new location
+        list_copy.insert(where_should_we_put_it + 1, current_gate)
+        list_copy.pop(current_location)
 
-    # Queue the measurements normally
-    for m in tape.measurements:
-        apply(m)
+        current_location -= 1
+
+    # Once the list is rearranged, queue all the operations
+    for op in list_copy + tape.measurements:
+        apply(op)
