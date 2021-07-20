@@ -73,7 +73,7 @@ class TestTracker:
         spy_update = mocker.spy(dev.tracker, "update")
         spy_record = mocker.spy(dev.tracker, "record")
 
-        res = circ()
+        circ()
         dev.tracker.tracking = True
         dev.batch_execute([circ.qtape])
 

@@ -151,7 +151,7 @@ class Device(abc.ABC):
         return "{}\nShort name: {}\nPackage: {}\nPlugin version: {}\nAuthor: {}\nWires: {}\nShots: {}".format(
             self.name,
             self.short_name,
-            self.__module__.split(".")[0],
+            self.__module__.split(".", maxsplit=1)[0],
             self.version,
             self.author,
             self.num_wires,
@@ -375,6 +375,7 @@ class Device(abc.ABC):
         """
         return cls._capabilities
 
+    # pylint: disable=too-many-branches
     def execute(self, queue, observables, parameters={}, **kwargs):
         """Execute a queue of quantum operations on the device and then measure the given observables.
 
