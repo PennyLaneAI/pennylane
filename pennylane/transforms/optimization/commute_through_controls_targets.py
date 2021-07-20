@@ -103,10 +103,6 @@ def commute_through_controls_targets(tape):
         # Find the next gate that contains an overlapping wire
         next_gate_idx = find_next_gate(current_gate.wires, list_copy[current_location + 1 :])
 
-        if next_gate_idx is None:
-            current_location -= 1
-            continue
-
         where_should_we_put_it = current_location
 
         # Loop as long as a valid next gate exists
