@@ -373,8 +373,8 @@ Three aspects of the :class:`~.Tracker` class are relevant to plugin designers:
 * ``record`` method which users can customize to log, print, or otherwise do something with the stored information
 
 To gain any of the device tracker functionality, a device should initialize with a placeholder 
-:class:`~.device_tracker.DefaultTracker` instance.  The :func:`~.track` function accepts the device and overwrites the 
-``tracker`` attribute with a new instance, but the device needs some sort of tracker all the time.
+:class:`~.Tracker` instance. Users can overwrite this attribute by initializing a new instance with
+the device as an argument.
 
 We recommend placing the following code near the end of the ``execute`` method:
 
