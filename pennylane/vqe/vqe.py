@@ -115,7 +115,6 @@ class Hamiltonian(qml.operation.Observable):
         self._ops = list(observables)
         self._wires = qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
 
-        # legacy code: data is used to extract parameters of a tape, and requires a flat list of scalar parameters
         if isinstance(coeffs, list):
             coeffs = np.array(coeffs)
         self.data = [coeffs]
@@ -129,8 +128,6 @@ class Hamiltonian(qml.operation.Observable):
             self.simplify()
         if group:
             self.group()
-
-        self.queue()
 
         super().__init__(coeffs, wires=self._wires, id=id, do_queue=False)
 
@@ -449,20 +446,6 @@ class Hamiltonian(qml.operation.Observable):
             self.__iadd__(H.__mul__(-1))
             return self
         raise ValueError(f"Cannot subtract {type(H)} from Hamiltonian")
-
-    def queue(self, context=qml.QueuingContext):
-        """Queues a qml.Hamiltonian instance"""
-        for o in self.ops:
-            try:
-                context.update_info(o, owner=self)
-            except QueuingError:
-                o.queue(context=context)
-                context.update_info(o, owner=self)
-            except NotImplementedError:
-                pass
-
-        context.append(self, owns=tuple(self.ops))
-        return self
 
 
 class ExpvalCost:
