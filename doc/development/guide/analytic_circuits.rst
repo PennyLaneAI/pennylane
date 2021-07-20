@@ -5,6 +5,11 @@ When possible, we recommend checking circuits against analytic results in ``pyte
 results computed via a different route in PennyLane.  So you don't need to calculate anything out
 on pen and paper, we provide circuits here.
 
+.. code-block:: python
+
+    import pennylane as qml
+    from pennylane import math
+
 Circuit 1
 ---------
 
@@ -20,15 +25,29 @@ State and probabilities
 
 .. code-block:: python
 
-    state = np.array( [[np.cos(x/2)*np.cos(y/2), np.cos(x/2)*np.sin(y/2)],
-                    [-1j*np.sin(x/2)*np.sin(y/2), 1j*np.sin(x/2)*np.cos(y/2)]])
+    state = math.array( [[math.cos(x/2)*math.cos(y/2), math.cos(x/2)*math.sin(y/2)],
+                    [-1j*math.sin(x/2)*math.sin(y/2), 1j*math.sin(x/2)*math.cos(y/2)]])
 
     prob = state**2
+
+
+.. list-table:: Measurements
+    :widths: 50 50
+    :header-row: 0
+
+    * - ..code-block:: python
+            qml.expval(qml.PauliZ(0))
+      - ..code-block:: python
+            math.cos(x)
+    * - ..code-block:: python
+            qml.expval(qml.PauliX(1))
+      - ..code-block:: python
+            math.sin(y)
 
 ================================================== ==========================
 Measurement                                              Value
 ================================================== ==========================
-``qml.expval(qml.PauliZ(0))``                       ``np.cos(x)``
+``qml.expval(qml.PauliZ(0))``                       ``qml.math.cos(x)``
 ``qml.expval(qml.PauliX(1))``                       ``np.sin(y)``
 ``qml.expval(qml.PauliZ(0) @ qml.PauliX(1))``       ``np.cos(x)*np.sin(y)``
 ================================================== ==========================
