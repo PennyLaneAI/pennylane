@@ -1099,7 +1099,6 @@ class Observable(Operator):
         r"""The addition operation between Observables/Tensors/qml.Hamiltonian objects."""
         if isinstance(other, qml.Hamiltonian):
             return other + self
-
         if isinstance(other, (Observable, Tensor)):
             return qml.Hamiltonian([1, 1], [self, other], simplify=True)
 

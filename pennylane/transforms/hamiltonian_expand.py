@@ -78,34 +78,19 @@ def hamiltonian_expand(tape):
             "Passed tape must end in `qml.expval(H)`, where H is of type `qml.Hamiltonian`"
         )
 
-    if hamiltonian.grouped_coeffs is not None and hamiltonian.grouped_coeffs is not None:
-        # if the group() method of the hamiltonian has been called, extract the groups
-        obs_groupings = hamiltonian.grouped_ops
-        coeffs_groupings = hamiltonian.grouped_coeffs
-    else:
-        # else every observable is its own group
-        obs_groupings = [[ob] for ob in hamiltonian.ops]
-        coeffs_groupings = [
-            [hamiltonian.coeffs[i]] for i in range(qml.math.shape(hamiltonian.coeffs)[0])
-        ]
-
+    # create tapes that measure the Pauli-words in the Hamiltonian
     tapes = []
-
-    for obs in obs_groupings:
-
+    for ob in hamiltonian.ops:
         with tape.__class__() as new_tape:
             for op in tape.operations:
                 qml.apply(op)
-
-            for ob in obs:
-                qml.expval(ob)
-
+            qml.expval(ob)
         new_tape = new_tape.expand(stop_at=lambda obj: True)
         tapes.append(new_tape)
 
     def processing_fn(res):
         dot_products = [
-            qml.math.dot(qml.math.convert_like(c, r), r) for c, r in zip(coeffs_groupings, res)
+            qml.math.dot(qml.math.squeeze(res[i]), hamiltonian.coeffs[i]) for i in range(len(res))
         ]
         return qml.math.sum(qml.math.stack(dot_products))
 

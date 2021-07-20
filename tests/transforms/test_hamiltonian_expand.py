@@ -24,18 +24,13 @@ dev = qml.device("default.qubit", wires=4)
 
 """Defines circuits to be used in queueing/output tests"""
 
+H1 = qml.Hamiltonian([1.5], [qml.PauliZ(0) @ qml.PauliZ(1)])
+
 with pennylane.tape.QuantumTape() as tape1:
     qml.PauliX(0)
-    H1 = qml.Hamiltonian([1.5], [qml.PauliZ(0) @ qml.PauliZ(1)])
     qml.expval(H1)
 
-with pennylane.tape.QuantumTape() as tape2:
-    qml.Hadamard(0)
-    qml.Hadamard(1)
-    qml.PauliZ(1)
-    qml.PauliX(2)
-
-    H2 = qml.Hamiltonian(
+H2 = qml.Hamiltonian(
         [1, 3, -2, 1, 1],
         [
             qml.PauliX(0) @ qml.PauliZ(2),
@@ -45,6 +40,12 @@ with pennylane.tape.QuantumTape() as tape2:
             qml.PauliZ(0) @ qml.PauliX(1),
         ],
     )
+
+with pennylane.tape.QuantumTape() as tape2:
+    qml.Hadamard(0)
+    qml.Hadamard(1)
+    qml.PauliZ(1)
+    qml.PauliX(2)
     qml.expval(H2)
 
 H3 = 1.5 * qml.PauliZ(0) @ qml.PauliZ(1) + 0.3 * qml.PauliX(1)

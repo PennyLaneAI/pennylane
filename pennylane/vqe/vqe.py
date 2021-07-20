@@ -447,6 +447,19 @@ class Hamiltonian(qml.operation.Observable):
             return self
         raise ValueError(f"Cannot subtract {type(H)} from Hamiltonian")
 
+    def queue(self, context=qml.QueuingContext):
+        """Queues a qml.Hamiltonian instance"""
+        for o in self.ops:
+            try:
+                context.update_info(o, owner=self)
+            except QueuingError:
+                o.queue(context=context)
+                context.update_info(o, owner=self)
+            except NotImplementedError:
+                pass
+
+        context.append(self, owns=tuple(self.ops))
+        return self
 
 class ExpvalCost:
     """Create a cost function that gives the expectation value of an input Hamiltonian.

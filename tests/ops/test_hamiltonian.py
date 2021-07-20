@@ -52,13 +52,13 @@ except ImportError:
 
 def circuit1(param):
     qml.RX(param, wires=0)
-    qml.CNOT(wires=[0, 1])
+    qml.RY(param, wires=0)
     return qml.expval(qml.PauliX(0))
 
 
 def circuit2(param):
     qml.RX(param, wires=0)
-    qml.CNOT(wires=[0, 1])
+    qml.RY(param, wires=0)
     return qml.expval(qml.PauliZ(0))
 
 
@@ -100,19 +100,19 @@ class TestVQEEvaluation:
         @qml.qnode(dev, interface=interface)
         def circuit():
             qml.RX(param, wires=0)
-            qml.CNOT(wires=[0, 1])
+            qml.RY(param, wires=0)
             return qml.expval(H)
 
         @qml.qnode(dev, interface=interface)
         def circuit1():
             qml.RX(param, wires=0)
-            qml.CNOT(wires=[0, 1])
+            qml.RY(param, wires=0)
             return qml.expval(qml.PauliX(0))
 
         @qml.qnode(dev, interface=interface)
         def circuit2():
             qml.RX(param, wires=0)
-            qml.CNOT(wires=[0, 1])
+            qml.RY(param, wires=0)
             return qml.expval(qml.PauliZ(0))
 
         res = circuit()
@@ -129,7 +129,7 @@ class TestVQEdifferentiation:
         @qml.qnode(dev, interface="autograd")
         def circuit(coeffs, param):
             qml.RX(param, wires=0)
-            qml.CNOT(wires=[0, 1])
+            qml.RY(param, wires=0)
             return qml.expval(qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)]))
 
         grad_fn = qml.grad(circuit)
@@ -160,7 +160,7 @@ class TestVQEdifferentiation:
         @qml.qnode(dev, interface="jax")
         def circuit(coeffs, param):
             qml.RX(param, wires=0)
-            qml.CNOT(wires=[0, 1])
+            qml.RY(param, wires=0)
             return qml.expval(qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)]))
 
         grad_fn = jax.grad(circuit)
@@ -190,7 +190,7 @@ class TestVQEdifferentiation:
         @qml.qnode(dev, interface="torch")
         def circuit(coeffs, param):
             qml.RX(param, wires=0)
-            qml.CNOT(wires=[0, 1])
+            qml.RY(param, wires=0)
             return qml.expval(qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)]))
 
         res = circuit(coeffs, param)
@@ -199,15 +199,18 @@ class TestVQEdifferentiation:
 
         # differentiating a cost that combines circuits with
         # measurements expval(Pauli)
+        coeffs2 = torch.tensor([-0.05, 0.17], requires_grad=True)
+        param2 = torch.tensor(1.7, requires_grad=True)
+
         half1 = qml.QNode(circuit1, dev, interface="torch")
         half2 = qml.QNode(circuit2, dev, interface="torch")
 
         def combine(coeffs, param):
             return coeffs[0] * half1(param) + coeffs[1] * half2(param)
 
-        res_expected = combine(coeffs, param)
+        res_expected = combine(coeffs2, param2)
         res_expected.backward()
-        grad_expected = (coeffs.grad, param.grad)
+        grad_expected = (coeffs2.grad, param2.grad)
 
         assert np.allclose(grad[0], grad_expected[0])
         assert np.allclose(grad[1], grad_expected[1])
@@ -221,7 +224,7 @@ class TestVQEdifferentiation:
         @qml.qnode(dev, interface="tf")
         def circuit(coeffs, param):
             qml.RX(param, wires=0)
-            qml.CNOT(wires=[0, 1])
+            qml.RY(param, wires=0)
             return qml.expval(qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)]))
 
         with tf.GradientTape() as tape:
@@ -230,6 +233,8 @@ class TestVQEdifferentiation:
 
         # differentiating a cost that combines circuits with
         # measurements expval(Pauli)
+        coeffs2 = tf.Variable([-0.05, 0.17], dtype=tf.double)
+        param2 = tf.Variable(1.7, dtype=tf.double)
         half1 = qml.QNode(circuit1, dev, interface="tf")
         half2 = qml.QNode(circuit2, dev, interface="tf")
 
@@ -237,8 +242,8 @@ class TestVQEdifferentiation:
             return coeffs[0] * half1(param) + coeffs[1] * half2(param)
 
         with tf.GradientTape() as tape2:
-            res_expected = combine(coeffs, param)
-        grad_expected = tape2.gradient(res_expected, [coeffs, param])
+            res_expected = combine(coeffs2, param2)
+        grad_expected = tape2.gradient(res_expected, [coeffs2, param2])
 
         assert np.allclose(grad[0], grad_expected[0])
         assert np.allclose(grad[1], grad_expected[1])

@@ -605,25 +605,26 @@ class QNode:
             # construct the tape
             self.construct(args, kwargs)
 
-        # ************************
+        # todo(maria): once interfaces are moved to device,
+        #  do not split the tape here any more, but pass to device
+        # where the tape is either split and executed in batch,
+        # or a native execution method used
         supports_hamiltonian = self.device.supports_observable("Hamiltonian")
         hamiltonian_in_obs = "Hamiltonian" in [obs.name for obs in self.qtape.observables]
 
         if hamiltonian_in_obs and (self.device.shots is not None or not supports_hamiltonian):
             try:
                 tapes, fn = qml.transforms.hamiltonian_expand(self.qtape)
-            except ValueError:
+            except ValueError as e:
                 raise ValueError(
                     "At the moment, only single expectations of Hamiltonian observables can be returned"
                     "on the {} device.".format(self.device.name)
-                )
+                ) from e
 
             results = [tape.execute(device=self.device) for tape in tapes]
             res = fn(results)
         else:
-            # this is what currently happens with the tape
             res = self.qtape.execute(device=self.device)
-        # *************************
 
         # if shots was changed
         if original_shots != -1:
