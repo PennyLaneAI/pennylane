@@ -24,10 +24,39 @@ COEFFS_INTERFACE = [
     ([-0.05, 0.17], "autograd"),
     (np.array([-0.05, 0.17]), "autograd"),
     (pnp.array([-0.05, 0.17], requires_grad=True), "autograd"),
-    (jnp.array([-0.05, 0.17]), "jax"),
-    (tf.Variable([-0.05, 0.17], dtype=tf.double), "tf"),
-    (torch.tensor([-0.05, 0.17]), "torch")
 ]
+
+try:
+    from jax import numpy as jnp
+    COEFFS_INTERFACE.append((jnp.array([-0.05, 0.17]), "jax"))
+except ImportError:
+    pass
+
+try:
+    import tf
+    COEFFS_INTERFACE.append((tf.Variable([-0.05, 0.17], dtype=tf.double), "tf"))
+except ImportError:
+    pass
+
+try:
+    import torch
+    COEFFS_INTERFACE.append((torch.tensor([-0.05, 0.17]), "torch"))
+except ImportError:
+    pass
+
+def circuit1(param):
+    qml.RX(param, wires=0)
+    qml.CNOT(wires=[0, 1])
+    return qml.expval(qml.PauliX(0))
+
+
+def circuit2(param):
+    qml.RX(param, wires=0)
+    qml.CNOT(wires=[0, 1])
+    return qml.expval(qml.PauliZ(0))
+
+
+dev = qml.device('default.qubit', wires=2)
 
 
 class TestHamiltonianCoefficients:
@@ -37,6 +66,7 @@ class TestHamiltonianCoefficients:
         H = qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)])
         assert qml.math.allclose(coeffs, H.coeffs)
 
+    @pytest.mark.parametrize("coeffs", [el[0] for el in COEFFS_INTERFACE])
     def test_grouping_different_coeff_types(self, coeffs):
         H = qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(1)])
         H.group()
@@ -46,12 +76,14 @@ class TestHamiltonianCoefficients:
         assert H.grouped_ops[0][0].name == "PauliX"
         assert H.grouped_ops[0][1].name == "PauliZ"
 
+    @pytest.mark.parametrize("coeffs", [el[0] for el in COEFFS_INTERFACE])
     def test_simplify_different_coeff_types(self, coeffs):
         H1 = qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(1)])
         H2 = qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.Identity(0) @ qml.PauliZ(1)])
         H2.simplify()
 
         assert H1.compare(H2)
+
 
 class TestVQEEvaluation:
 
@@ -83,28 +115,6 @@ class TestVQEEvaluation:
         assert np.isclose(res, res_expected)
 
 
-# Test data
-def circuit(coeffs, param):
-    qml.RX(param, wires=0)
-    qml.CNOT(wires=[0, 1])
-    return qml.expval(qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)]))
-
-
-def circuit1(param):
-    qml.RX(param, wires=0)
-    qml.CNOT(wires=[0, 1])
-    return qml.expval(qml.PauliX(0))
-
-
-def circuit2(param):
-    qml.RX(param, wires=0)
-    qml.CNOT(wires=[0, 1])
-    return qml.expval(qml.PauliZ(0))
-
-
-dev = qml.device('default.qubit', wires=2)
-
-
 class TestVQEdifferentiation:
 
     def test_vqe_differentiation_autograd(self):
@@ -112,17 +122,22 @@ class TestVQEdifferentiation:
         param = pnp.array(1.7, requires_grad=True)
 
         # differentiating a circuit with measurement expval(H)
-        qml.QNode(circuit, dev, interface="autograd")
+        @qml.qnode(dev, interface="autograd")
+        def circuit(coeffs, param):
+            qml.RX(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)]))
+
         grad_fn = qml.grad(circuit)
         grad = grad_fn(coeffs, param)
 
         # differentiating a cost that combines circuits with
         # measurements expval(Pauli)
-        qml.QNode(circuit1, dev, interface="autograd")
-        qml.QNode(circuit2, dev, interface="autograd")
+        half1 = qml.QNode(circuit1, dev, interface="autograd")
+        half2 = qml.QNode(circuit2, dev, interface="autograd")
 
         def combine(coeffs, param):
-            return coeffs[0] * circuit1(param) + coeffs[1] * circuit2(param)
+            return coeffs[0] * half1(param) + coeffs[1] * half2(param)
 
         grad_fn_expected = qml.grad(combine)
         grad_expected = grad_fn_expected(coeffs, param)
@@ -138,17 +153,22 @@ class TestVQEdifferentiation:
         param = jnp.array(1.7)
 
         # differentiating a circuit with measurement expval(H)
-        qml.QNode(circuit, dev, interface="jax")
+        @qml.qnode(dev, interface="jax")
+        def circuit(coeffs, param):
+            qml.RX(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)]))
+
         grad_fn = jax.grad(circuit)
         grad = grad_fn(coeffs, param)
 
         # differentiating a cost that combines circuits with
         # measurements expval(Pauli)
-        qml.QNode(circuit1, dev, interface="jax")
-        qml.QNode(circuit2, dev, interface="jax")
+        half1 = qml.QNode(circuit1, dev, interface="jax")
+        half2 = qml.QNode(circuit2, dev, interface="jax")
 
         def combine(coeffs, param):
-            return coeffs[0] * circuit1(param) + coeffs[1] * circuit2(param)
+            return coeffs[0] * half1(param) + coeffs[1] * half2(param)
 
         grad_fn_expected = jax.grad(combine)
         grad_expected = grad_fn_expected(coeffs, param)
@@ -163,7 +183,11 @@ class TestVQEdifferentiation:
         param = torch.tensor(1.7, requires_grad=True)
 
         # differentiating a circuit with measurement expval(H)
-        qml.QNode(circuit, dev, interface="torch")
+        @qml.qnode(dev, interface="torch")
+        def circuit(coeffs, param):
+            qml.RX(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)]))
 
         res = circuit(coeffs, param)
         res.backward()
@@ -171,11 +195,11 @@ class TestVQEdifferentiation:
 
         # differentiating a cost that combines circuits with
         # measurements expval(Pauli)
-        qml.QNode(circuit1, dev, interface="torch")
-        qml.QNode(circuit2, dev, interface="torch")
+        half1 = qml.QNode(circuit1, dev, interface="torch")
+        half2 = qml.QNode(circuit2, dev, interface="torch")
 
         def combine(coeffs, param):
-            return coeffs[0] * circuit1(param) + coeffs[1] * circuit2(param)
+            return coeffs[0] * half1(param) + coeffs[1] * half2(param)
 
         res_expected = combine(coeffs, param)
         res_expected.backward()
@@ -190,7 +214,11 @@ class TestVQEdifferentiation:
         param = tf.Variable(1.7, dtype=tf.double)
 
         # differentiating a circuit with measurement expval(H)
-        qml.QNode(circuit, dev, interface="tf")
+        @qml.qnode(dev, interface="tf")
+        def circuit(coeffs, param):
+            qml.RX(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)]))
 
         with tf.GradientTape() as tape:
             res = circuit(coeffs, param)
@@ -198,11 +226,11 @@ class TestVQEdifferentiation:
 
         # differentiating a cost that combines circuits with
         # measurements expval(Pauli)
-        qml.QNode(circuit1, dev, interface="tf")
-        qml.QNode(circuit2, dev, interface="tf")
+        half1 = qml.QNode(circuit1, dev, interface="tf")
+        half2 = qml.QNode(circuit2, dev, interface="tf")
 
         def combine(coeffs, param):
-            return coeffs[0] * circuit1(param) + coeffs[1] * circuit2(param)
+            return coeffs[0] * half1(param) + coeffs[1] * half2(param)
 
         with tf.GradientTape() as tape2:
             res_expected = combine(coeffs, param)
