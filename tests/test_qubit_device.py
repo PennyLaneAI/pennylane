@@ -577,6 +577,34 @@ class TestSample:
 
         assert np.array_equal(res, np.array([-1, 1]))
 
+    def test_sample_with_no_observable_and_no_wires(
+        self, mock_qubit_device_with_original_statistics, tol
+    ):
+        """Test that when we sample a device without providing an observable or wires then it
+        will return the raw samples"""
+        obs = qml.measure.sample(op=None, wires=None)
+        dev = mock_qubit_device_with_original_statistics(wires=2)
+        generated_samples = np.array([[1, 0], [1, 1]])
+        dev._samples = generated_samples
+
+        res = dev.sample(obs)
+        assert np.array_equal(res, generated_samples)
+
+    def test_sample_with_no_observable_and_with_wires(
+        self, mock_qubit_device_with_original_statistics, tol
+    ):
+        """Test that when we sample a device without providing an observable but we specify
+        wires then it returns the generated samples for only those wires"""
+        obs = qml.measure.sample(op=None, wires=[1])
+        dev = mock_qubit_device_with_original_statistics(wires=2)
+        generated_samples = np.array([[1, 0], [1, 1]])
+        dev._samples = generated_samples
+
+        wire_samples = np.array([[0], [1]])
+        res = dev.sample(obs)
+
+        assert np.array_equal(res, wire_samples)
+
 
 class TestEstimateProb:
     """Test the estimate_probability method"""

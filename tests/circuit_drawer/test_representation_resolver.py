@@ -203,6 +203,8 @@ class TestRepresentationResolver:
             (qml.Toffoli(wires=[0, 2, 1]).inv(), 1, "X⁻¹"),
             (qml.Toffoli(wires=[0, 2, 1]).inv(), 0, "C"),
             (qml.Toffoli(wires=[0, 2, 1]).inv(), 2, "C"),
+            (qml.measure.sample(wires=[0, 1]), 0, "basis"),  # not providing an observable in
+            (qml.measure.sample(wires=[0, 1]), 1, "basis"),  # sample gets displayed as raw
         ],
     )
     def test_operator_representation_unicode(
@@ -343,6 +345,8 @@ class TestRepresentationResolver:
             (qml.Toffoli(wires=[0, 2, 1]).inv(), 1, "X^-1"),
             (qml.Toffoli(wires=[0, 2, 1]).inv(), 0, "C"),
             (qml.Toffoli(wires=[0, 2, 1]).inv(), 2, "C"),
+            (qml.measure.sample(wires=[0, 1]), 0, "basis"),  # not providing an observable in
+            (qml.measure.sample(wires=[0, 1]), 1, "basis"),  # sample gets displayed as raw
         ],
     )
     def test_operator_representation_ascii(self, ascii_representation_resolver, op, wire, target):
