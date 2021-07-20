@@ -592,8 +592,7 @@ class Operation(Operator):
 
     @property
     def comp_control_wires(self):
-        r"""For operations where ``is_controlled`` is ``True``, returns the
-        set of control wires.
+        r"""For operations that are controlled, returns the set of control wires.
 
         Returns:
             Wires: The set of control wires of the operation.
