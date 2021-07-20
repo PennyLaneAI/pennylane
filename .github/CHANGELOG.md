@@ -2,6 +2,37 @@
 
 <h3>New features since last release</h3>
 
+* A new quantum function transform has been added to perform full fusion of
+  arbitrary-length sequences of single-qubit gates.
+  [(#1458)](https://github.com/PennyLaneAI/pennylane/pull/1458)
+
+  The `single_qubit_fusion` transform acts on all sequences of
+  single-qubit operations in a quantum function, and converts each
+  sequence to a single `Rot` gate. For example given the circuit:
+
+  ```python
+  def circuit(x, y, z):
+      qml.Hadamard(wires=0)
+      qml.PauliZ(wires=1)
+      qml.RX(x, wires=0)
+      qml.RY(y, wires=1)
+      qml.CZ(wires=[1, 0])
+      qml.T(wires=0)
+      qml.SX(wires=0)
+      qml.Rot(x, y, z, wires=1)
+      qml.Rot(z, y, x, wires=1)
+      return qml.expval(qml.PauliX(wires=0))
+  ```
+
+  ```pycon
+  >>> optimized_circuit = qml.transforms.single_qubit_fusion()(circuit)
+  >>> dev = qml.device('default.qubit', wires=2)
+  >>> qnode = qml.QNode(optimized_circuit, dev)
+  >>> print(qml.draw(qnode)(0.1, 0.2, 0.3))
+   0: ──Rot(3.24, 1.57, 0)──╭Z──Rot(2.36, 1.57, -1.57)────┤ ⟨X⟩
+   1: ──Rot(3.14, 0.2, 0)───╰C──Rot(0.406, 0.382, 0.406)──┤
+  ```
+
 * Two new quantum function transforms have been added to enable the
   removal of redundant gates in quantum circuits.
   [(#1455)](https://github.com/PennyLaneAI/pennylane/pull/1455)
