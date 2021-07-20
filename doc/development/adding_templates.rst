@@ -92,7 +92,7 @@ and invert the wires that the operation acts on.
         num_wires = AnyWires
         par_domain = "A"  # note: this attribute will be deprecated soon
 
-        def __init__(weights, raw_wires)
+        def __init__(weights, raw_wires, id=None)
 
             shp = qml.math.shape(weights)
             if len(shp) != 1:
@@ -104,8 +104,9 @@ and invert the wires that the operation acts on.
             # pre-process wires
             inverted_wires = wires[::-1]
 
-            # initialise operation with pre-processed parameters and wires
-            super().__init__(new_weights, wires=inverted_wires)
+            # initialise operation with pre-processed parameters and wires,
+            # and possibly with a custom id
+            super().__init__(new_weights, wires=inverted_wires, id=id)
 
 
         def expand(self):

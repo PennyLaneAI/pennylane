@@ -115,7 +115,9 @@ class AllSinglesDoubles(Operation):
     num_wires = AnyWires
     par_domain = "A"
 
-    def __init__(self, weights, wires, hf_state, singles=None, doubles=None, do_queue=True):
+    def __init__(
+        self, weights, wires, hf_state, singles=None, doubles=None, do_queue=True, id=None
+    ):
 
         if len(wires) < 2:
             raise ValueError(
@@ -155,7 +157,7 @@ class AllSinglesDoubles(Operation):
         if hf_state.dtype != np.dtype("int"):
             raise ValueError(f"Elements of 'hf_state' must be integers; got {hf_state.dtype}")
 
-        super().__init__(weights, wires=wires, do_queue=do_queue)
+        super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 
     def expand(self):
 

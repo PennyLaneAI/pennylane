@@ -201,7 +201,7 @@ class QAOAEmbedding(Operation):
     num_wires = AnyWires
     par_domain = "A"
 
-    def __init__(self, features, weights, wires, local_field="Y", do_queue=True):
+    def __init__(self, features, weights, wires, local_field="Y", do_queue=True, id=None):
 
         if local_field == "Z":
             self.local_field = qml.RZ
@@ -213,7 +213,7 @@ class QAOAEmbedding(Operation):
             raise ValueError(f"did not recognize local field {local_field}")
 
         self._preprocess(features, weights, wires)
-        super().__init__(features, weights, wires=wires, do_queue=do_queue)
+        super().__init__(features, weights, wires=wires, do_queue=do_queue, id=id)
 
     def expand(self):
 
