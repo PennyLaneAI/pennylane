@@ -366,7 +366,7 @@ The device tracker stores and records information when tracking mode is turned o
 the number of executions, number of shots, number of batches, or remote simulator cost for users to interact with
 in a customizable way.
 
-Three aspects of the :class:`~.device_tracker.DefaultTracker` class are relevant to plugin designers:
+Three aspects of the :class:`~.Tracker` class are relevant to plugin designers:
 
 * ``tracking`` attribute that denotes whether or not to update and record
 * ``update`` method which accepts keyword-value pairs and stores the information

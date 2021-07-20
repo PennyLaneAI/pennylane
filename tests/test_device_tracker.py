@@ -17,15 +17,14 @@ Unit tests for the DeviceTracker and constructor
 import pytest
 
 import pennylane as qml
-from pennylane import track
-from pennylane.device_tracker import DefaultTracker
+from pennylane import Tracker
 
 
 class TestTrackerCoreBehaviour:
     def test_default_initialization(self):
         """Tests default initializalition"""
 
-        tracker = DefaultTracker()
+        tracker = Tracker()
 
         assert tracker.persistent == False
         assert tracker.callback is None
@@ -40,7 +39,7 @@ class TestTrackerCoreBehaviour:
         """Assert gets assigned to device"""
         dev = qml.device("default.qubit", wires=2)
 
-        tracker = DefaultTracker(dev=dev)
+        tracker = Tracker(dev=dev)
 
         assert id(dev.tracker) == id(tracker)
 
@@ -56,12 +55,12 @@ class TestTrackerCoreBehaviour:
         temp = TempDevice()
 
         with pytest.raises(Exception, match=r"Device 'temp' does not support device tracking"):
-            DefaultTracker(dev=temp)
+            Tracker(dev=temp)
 
     def test_reset(self):
         """Assert reset empties totals and history"""
 
-        tracker = DefaultTracker()
+        tracker = Tracker()
 
         tracker.totals = {"a": 1}
         tracker.history = {"a": [1]}
@@ -76,7 +75,7 @@ class TestTrackerCoreBehaviour:
     def test_enter_and_exit(self):
         """Assert entering and exit work as expected"""
 
-        tracker = DefaultTracker()
+        tracker = Tracker()
         tracker.totals = {"a": 1}
         tracker.history = {"a": [1]}
         tracker.latest = {"a": 1}
@@ -97,8 +96,8 @@ class TestTrackerCoreBehaviour:
     def test_context(self):
         """Assert works with runtime context"""
 
-        with DefaultTracker() as tracker:
-            assert isinstance(tracker, DefaultTracker)
+        with Tracker() as tracker:
+            assert isinstance(tracker, Tracker)
             assert tracker.tracking == True
 
         assert tracker.tracking == False
@@ -106,7 +105,7 @@ class TestTrackerCoreBehaviour:
     def test_update(self):
         """Checks update stores to history and totals"""
 
-        tracker = DefaultTracker()
+        tracker = Tracker()
 
         tracker.update(a=1, b="b", c=None)
         tracker.update(a=2, b="b2", c=1)
@@ -120,13 +119,13 @@ class TestTrackerCoreBehaviour:
     def test_record_callback(self, mocker):
         class callback_wrapper:
             @staticmethod
-            def callback(totals=dict(), history=dict(), latest=dict()):
+            def callback(totals, history, latest):
                 pass
 
         wrapper = callback_wrapper()
         spy = mocker.spy(wrapper, "callback")
 
-        tracker = DefaultTracker(callback=wrapper.callback)
+        tracker = Tracker(callback=wrapper.callback)
 
         tracker.totals = {"a": 1, "b": 2}
         tracker.history = {"a": [1], "b": [1, 1]}
@@ -159,7 +158,7 @@ class TestDefaultTrackerIntegration:
         def circuit():
             return qml.expval(qml.PauliZ(0))
 
-        with DefaultTracker(circuit.device, callback=wrapper.callback) as tracker:
+        with Tracker(circuit.device, callback=wrapper.callback) as tracker:
             circuit()
 
         assert tracker.totals == {"executions": 1}
@@ -189,7 +188,7 @@ class TestDefaultTrackerIntegration:
         def circuit():
             return qml.expval(qml.PauliZ(0))
 
-        with DefaultTracker(circuit.device, callback=wrapper.callback) as tracker:
+        with Tracker(circuit.device, callback=wrapper.callback) as tracker:
             circuit(shots=10)
             circuit(shots=20)
 
@@ -203,47 +202,3 @@ class TestDefaultTrackerIntegration:
         assert kwargs_called["totals"] == {"executions": 2, "shots": 30}
         assert kwargs_called["history"] == {"executions": [1, 1], "shots": [10, 20]}
         assert kwargs_called["latest"] == {"executions": 1, "shots": 20}
-
-
-class TestConstructor:
-    def test_track(self):
-        """Tests that track assigns a tracker class to a device"""
-
-        tracker = track()
-
-        assert isinstance(tracker, DefaultTracker)
-
-    def test_track_device_assignment(self):
-        """Tests device passed through with track."""
-
-        dev = qml.device("default.qubit", wires=1)
-
-        tracker = track(dev)
-
-        assert id(tracker) == id(dev.tracker)
-
-    def test_callback_passed(self, mocker):
-        """Assert callback function passed through track."""
-
-        class callback_wrapper:
-            @staticmethod
-            def callback(totals=dict(), history=dict(), latest=dict()):
-                pass
-
-        wrapper = callback_wrapper()
-        spy = mocker.spy(wrapper, "callback")
-
-        tracker = track(callback=wrapper.callback)
-
-        tracker.record()
-
-        assert spy.call_count == 1
-
-        assert id(wrapper.callback) == id(tracker.callback)
-
-    def test_persistent_passed(self):
-        """Test persistent keyword passed"""
-
-        tracker = track(persistent=True)
-
-        assert tracker.persistent

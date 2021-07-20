@@ -34,7 +34,6 @@ from pennylane.operation import (
     Tensor,
 )
 from pennylane.wires import Wires, WireError
-from pennylane.device_tracker import DefaultTracker
 
 
 ShotTuple = namedtuple("ShotTuple", ["shots", "copies"])
@@ -139,7 +138,7 @@ class Device(abc.ABC):
         self._obs_queue = None
         self._parameters = None
 
-        self.tracker = DefaultTracker()
+        self.tracker = qml.Tracker()
 
     def __repr__(self):
         """String representation."""

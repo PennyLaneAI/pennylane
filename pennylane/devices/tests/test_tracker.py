@@ -29,9 +29,7 @@ class TestTracker:
         if not dev.capabilities().get("supports_tracker", False):
             pytest.skip("Device does not support a tracker")
 
-        dev = qml.device("default.qubit.autograd", wires=1)
-
-        assert isinstance(dev.tracker, qml.device_tracker.DefaultTracker)
+        assert isinstance(dev.tracker, qml.Tracker)
 
     def test_tracker_updated_in_execution_mode(self, device, mocker):
         """Tests that device update and records during tracking mode"""
@@ -59,3 +57,25 @@ class TestTracker:
 
         assert spy_update.call_count == 1
         assert spy_record.call_count == 1
+
+    def test_tracker_batch_execute(self, device, mocker):
+        """Asserts tracker updates and records upon both batch execute and standard execute."""
+
+        dev = device(1)
+
+        if not dev.capabilities().get("supports_tracker", False):
+            pytest.skip("Device does not support a tracker")
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circ():
+            return qml.expval(qml.PauliX(wires=[0]))
+
+        spy_update = mocker.spy(dev.tracker, "update")
+        spy_record = mocker.spy(dev.tracker, "record")
+
+        res = circ()
+        dev.tracker.tracking = True
+        dev.batch_execute([circ.qtape])
+
+        assert spy_update.call_count == 2
+        assert spy_record.call_count == 2
