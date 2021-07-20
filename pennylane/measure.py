@@ -273,16 +273,18 @@ def var(op):
     return MeasurementProcess(Variance, obs=op)
 
 
-def sample(op):
+def sample(op=None, wires=None):
     r"""Sample from the supplied observable, with the number of shots
     determined from the ``dev.shots`` attribute of the corresponding device.
+    If no observable is provided then basis state samples are returned directly
+    from the device.
 
     The samples are drawn from the eigenvalues :math:`\{\lambda_i\}` of the observable.
     The probability of drawing eigenvalue :math:`\lambda_i` is given by
     :math:`p(\lambda_i) = |\langle \xi_i | \psi \rangle|^2`, where :math:`| \xi_i \rangle`
     is the corresponding basis state from the observable's eigenbasis.
 
-    **Example:**
+    **Example**
 
     .. code-block:: python3
 
@@ -300,16 +302,52 @@ def sample(op):
     >>> circuit(0.5)
     array([ 1.,  1.,  1., -1.])
 
+    If no observable is provided, then the raw basis state samples obtained
+    from device are returned (e.g., for a qubit device, samples from the
+    computational device are returned). In this case, ``wires`` can be specified
+    so that sample results only include measurement results of the qubits of interest.
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2, shots=4)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.Hadamard(wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.sample()
+
+    Executing this QNode:
+
+    >>> circuit(0.5)
+    array([[0, 1],
+           [0, 0],
+           [1, 1],
+           [0, 0]])
+
+
     Args:
-        op (Observable): a quantum observable object
+        op (Observable or None): a quantum observable object
+        wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY set wires if op is None
 
     Raises:
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
+        ValueError: Cannot set wires if an observable is provided
     """
-    if not isinstance(op, Observable):
+    if not isinstance(op, Observable) and op is not None:  # None type is also allowed for op
         raise qml.QuantumFunctionError(
             "{} is not an observable: cannot be used with sample".format(op.name)
         )
+
+    if wires is not None:
+        if op is not None:
+            raise ValueError(
+                "Cannot specify the wires to sample if an observable is "
+                "provided. The wires to sample will be determined directly from the observable."
+            )
+
+        return MeasurementProcess(Sample, obs=op, wires=qml.wires.Wires(wires))
 
     return MeasurementProcess(Sample, obs=op)
 
