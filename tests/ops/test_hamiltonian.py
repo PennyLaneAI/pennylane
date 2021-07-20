@@ -121,6 +121,35 @@ class TestVQEEvaluation:
 
 
 class TestVQEdifferentiation:
+
+    def test_vqe_differentiation_paramshift(self):
+        coeffs = np.array([-0.05, 0.17])
+        param = np.array(1.7)
+
+        # differentiating a circuit with measurement expval(H)
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit(coeffs, param):
+            qml.RX(param, wires=0)
+            qml.RY(param, wires=0)
+            return qml.expval(qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)]))
+
+        grad_fn = qml.grad(circuit)
+        grad = grad_fn(coeffs, param)
+
+        # differentiating a cost that combines circuits with
+        # measurements expval(Pauli)
+        half1 = qml.QNode(circuit1, dev, diff_method="parameter-shift")
+        half2 = qml.QNode(circuit2, dev, diff_method="parameter-shift")
+
+        def combine(coeffs, param):
+            return coeffs[0] * half1(param) + coeffs[1] * half2(param)
+
+        grad_fn_expected = qml.grad(combine)
+        grad_expected = grad_fn_expected(coeffs, param)
+
+        assert np.allclose(grad[0], grad_expected[0])
+        assert np.allclose(grad[1], grad_expected[1])
+
     def test_vqe_differentiation_autograd(self):
         coeffs = pnp.array([-0.05, 0.17], requires_grad=True)
         param = pnp.array(1.7, requires_grad=True)
@@ -199,6 +228,8 @@ class TestVQEdifferentiation:
 
         # differentiating a cost that combines circuits with
         # measurements expval(Pauli)
+
+        # we need to create new tensors here
         coeffs2 = torch.tensor([-0.05, 0.17], requires_grad=True)
         param2 = torch.tensor(1.7, requires_grad=True)
 
@@ -233,6 +264,9 @@ class TestVQEdifferentiation:
 
         # differentiating a cost that combines circuits with
         # measurements expval(Pauli)
+
+
+        # we need to create new tensors here
         coeffs2 = tf.Variable([-0.05, 0.17], dtype=tf.double)
         param2 = tf.Variable(1.7, dtype=tf.double)
         half1 = qml.QNode(circuit1, dev, interface="tf")
