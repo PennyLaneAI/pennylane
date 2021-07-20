@@ -582,13 +582,6 @@ class Operation(Operator):
     transforms that merge adjacent rotations.
     """
 
-    is_controlled = None
-    """bool or None: ``True`` if the operation is controlled.
-
-    If set to ``None``, the operation will be ignored during a compilation
-    transform that tries to push commuting gates through control/target wires.
-    """
-
     target_gate_basis = None
     """str or None: The basis of the target operation of a controlled gate.
     If not ``None``, should take a value of ``"X"``, ``"Y"``, or ``"Z"``.
@@ -604,16 +597,6 @@ class Operation(Operator):
 
         Returns:
             Wires: The set of control wires of the operation.
-        """
-        raise NotImplementedError
-
-    @property
-    def comp_target_wires(self):
-        r"""For operations where ``is_controlled`` is ``True``, returns the
-        set of target wires.
-
-        Returns:
-            Wires: The set of target wires of the operation.
         """
         raise NotImplementedError
 

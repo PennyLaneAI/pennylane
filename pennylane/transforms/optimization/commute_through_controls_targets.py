@@ -114,14 +114,14 @@ def commute_through_controls_targets(tape):
             # Get the next gate
             next_gate = list_copy[where_should_we_put_it + next_gate_idx + 1]
 
-            # If the next gate is not controlled, we cannot push the gate further
-            if next_gate.is_controlled is None:
+            # If the next gate does not have comp_control_wires defined, it is not
+            # controlled so we can't push through.
+            try:
+                shared_controls = Wires.shared_wires(
+                    [Wires(current_gate.wires), next_gate.comp_control_wires]
+                )
+            except (NotImplementedError, AttributeError):
                 break
-
-            # If the next gate is controlled, we need to check the shared wires
-            shared_controls = Wires.shared_wires(
-                [Wires(current_gate.wires), next_gate.comp_control_wires]
-            )
 
             # Case 1: the overlap is on the control wires. Only Z-type gates go through
             if len(shared_controls) > 0:
@@ -134,7 +134,13 @@ def commute_through_controls_targets(tape):
             # Case 2: since we know the gates overlap somewhere, and it's a
             # single-qubit gate, if it wasn't on a control it's the target.
             else:
-                if current_gate.name in commuting_gates[next_gate.target_gate_basis]:
+                # Ensure a valid basis is defined
+                try:
+                    target_gate_basis = next_gate.target_gate_basis
+                except KeyError:
+                    break
+
+                if current_gate.name in commuting_gates[target_gate_basis]:
                     where_should_we_put_it += next_gate_idx + 1
                 else:
                     break
