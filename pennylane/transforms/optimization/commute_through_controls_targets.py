@@ -37,7 +37,7 @@ def commute_through_controls_targets(tape):
     control and target qubits of controlled operations.
 
     Args:
-        tape (.QuantumTape): A quantum tape.
+        qfunc (function): A quantum function.
 
     **Example**
 
