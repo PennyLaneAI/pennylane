@@ -16,5 +16,6 @@ This subpackage contains quantum function transforms for optimizing quantum circ
 """
 
 from .cancel_inverses import cancel_inverses
+from .commute_behind_controls_targets import commute_behind_controls_targets
 from .merge_rotations import merge_rotations
 from .single_qubit_fusion import single_qubit_fusion

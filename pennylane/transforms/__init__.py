@@ -45,6 +45,7 @@ containing quantum operations) that are used to construct QNodes.
 
     ~adjoint
     ~transforms.cancel_inverses
+    ~transforms.commute_behind_controls_targets
     ~ctrl
     ~transforms.merge_rotations
     ~transforms.single_qubit_fusion

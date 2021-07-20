@@ -435,6 +435,8 @@ class CNOT(Operation):
     num_wires = 2
     par_domain = None
     is_self_inverse = True
+    is_controlled = True
+    target_gate_basis = "X"
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
     @classmethod
@@ -446,6 +448,14 @@ class CNOT(Operation):
 
     def _controlled(self, wire):
         Toffoli(wires=Wires(wire) + self.wires)
+
+    @property
+    def control_wires(self):
+        return Wires(self.wires[0])
+
+    @property
+    def target_wires(self):
+        return Wires(self.wires[1])
 
 
 class CZ(DiagonalOperation):
@@ -474,6 +484,8 @@ class CZ(DiagonalOperation):
     par_domain = None
     is_self_inverse = True
     is_symmetric_over_all_wires = True
+    is_controlled = True
+    target_gate_basis = "Z"
     eigvals = np.array([1, 1, 1, -1])
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 
@@ -487,6 +499,14 @@ class CZ(DiagonalOperation):
 
     def adjoint(self):
         return CZ(wires=self.wires)
+
+    @property
+    def control_wires(self):
+        return Wires(self.wires[0])
+
+    @property
+    def target_wires(self):
+        return Wires(self.wires[1])
 
 
 class CY(Operation):
@@ -514,6 +534,8 @@ class CY(Operation):
     num_wires = 2
     par_domain = None
     is_self_inverse = True
+    is_controlled = True
+    target_gate_basis = "Y"
     matrix = np.array(
         [
             [1, 0, 0, 0],
@@ -534,6 +556,14 @@ class CY(Operation):
 
     def adjoint(self):
         return CY(wires=self.wires)
+
+    @property
+    def control_wires(self):
+        return Wires(self.wires[0])
+
+    @property
+    def target_wires(self):
+        return Wires(self.wires[1])
 
 
 class SWAP(Operation):
@@ -718,6 +748,8 @@ class Toffoli(Operation):
     par_domain = None
     is_self_inverse = True
     is_symmetric_over_control_wires = True
+    is_controlled = True
+    target_gate_basis = "X"
     matrix = np.array(
         [
             [1, 0, 0, 0, 0, 0, 0, 0],
@@ -758,6 +790,14 @@ class Toffoli(Operation):
 
     def adjoint(self):
         return Toffoli(wires=self.wires)
+
+    @property
+    def control_wires(self):
+        return Wires(self.wires[:2])
+
+    @property
+    def target_wires(self):
+        return Wires(self.wires[2])
 
 
 class RX(Operation):
@@ -985,6 +1025,8 @@ class ControlledPhaseShift(DiagonalOperation):
     num_wires = 2
     par_domain = "R"
     is_composable_rotation = True
+    is_controlled = True
+    target_gate_basis = "Z"
     grad_method = "A"
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), 1]
 
@@ -1011,6 +1053,14 @@ class ControlledPhaseShift(DiagonalOperation):
 
     def adjoint(self):
         return ControlledPhaseShift(-self.data[0], wires=self.wires)
+
+    @property
+    def control_wires(self):
+        return Wires(self.wires[0])
+
+    @property
+    def target_wires(self):
+        return Wires(self.wires[1])
 
 
 CPhase = ControlledPhaseShift
@@ -1407,6 +1457,8 @@ class CRX(Operation):
     num_wires = 2
     par_domain = "R"
     is_composable_rotation = True
+    is_controlled = True
+    target_gate_basis = "X"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
@@ -1434,6 +1486,14 @@ class CRX(Operation):
 
     def adjoint(self):
         return CRX(-self.data[0], wires=self.wires)
+
+    @property
+    def control_wires(self):
+        return Wires(self.wires[0])
+
+    @property
+    def target_wires(self):
+        return Wires(self.wires[1])
 
 
 class CRY(Operation):
@@ -1477,6 +1537,8 @@ class CRY(Operation):
     num_wires = 2
     par_domain = "R"
     is_composable_rotation = True
+    is_controlled = True
+    target_gate_basis = "Y"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
@@ -1502,6 +1564,14 @@ class CRY(Operation):
 
     def adjoint(self):
         return CRY(-self.data[0], wires=self.wires)
+
+    @property
+    def control_wires(self):
+        return Wires(self.wires[0])
+
+    @property
+    def target_wires(self):
+        return Wires(self.wires[1])
 
 
 class CRZ(DiagonalOperation):
@@ -1548,6 +1618,8 @@ class CRZ(DiagonalOperation):
     num_wires = 2
     par_domain = "R"
     is_composable_rotation = True
+    is_controlled = True
+    target_gate_basis = "Z"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
@@ -1589,6 +1661,14 @@ class CRZ(DiagonalOperation):
 
     def adjoint(self):
         return CRZ(-self.data[0], wires=self.wires)
+
+    @property
+    def control_wires(self):
+        return Wires(self.wires[0])
+
+    @property
+    def target_wires(self):
+        return Wires(self.wires[1])
 
 
 class CRot(Operation):
