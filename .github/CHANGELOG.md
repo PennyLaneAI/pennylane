@@ -15,7 +15,7 @@ def circuit(x):
 
 x = np.array(0.1)
 
-with qml.track(circuit.device) as tracker:
+with qml.Tracker(circuit.device) as tracker:
     qml.grad(circuit)(0.1)
 ```
 
@@ -33,7 +33,7 @@ Users can also provide a custom function to the `callback` keyword that gets cal
 ```pycon
   >>> def shots_info(totals, history, latest):
   ...     print("Total shots: ", totals['shots'])
-  >>> with qml.track(circuit.device, callback=shots_info) as tracker:
+  >>> with qml.Tracker(circuit.device, callback=shots_info) as tracker:
   ...     qml.grad(circuit)(0.1)
   Total shots:  100
   Total shots:  200
