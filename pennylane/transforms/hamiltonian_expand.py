@@ -95,10 +95,10 @@ def hamiltonian_expand(tape):
 
         with tape.__class__() as new_tape:
             for op in tape.operations:
-                op.queue()
+                qml.apply(op)
 
-            for o in obs:
-                qml.expval(o)
+            for ob in obs:
+                qml.expval(ob)
 
         new_tape = new_tape.expand(stop_at=lambda obj: True)
         tapes.append(new_tape)

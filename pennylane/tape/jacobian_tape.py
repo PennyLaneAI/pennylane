@@ -562,6 +562,8 @@ class JacobianTape(QuantumTape):
         if params is None:
             params = self.get_parameters()
 
+        params = np.array(params)
+
         if method == "device":
             # Using device mode; simply query the device for the Jacobian
             return self.device_pd(device, params=params, **options)

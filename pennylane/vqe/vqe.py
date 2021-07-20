@@ -115,7 +115,11 @@ class Hamiltonian(qml.operation.Observable):
         self._ops = list(observables)
         self._wires = qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
 
-        self.data = self.coeffs
+        # legacy code: data is used to extract parameters of a tape, and requires a flat list of scalar parameters
+        if isinstance(coeffs, list):
+            coeffs = np.array(coeffs)
+        self.data = [coeffs]
+
         self.return_type = None
 
         self._grouped_coeffs = None

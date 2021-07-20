@@ -146,7 +146,6 @@ class DefaultQubit(QubitDevice):
         "Identity",
         "Projector",
         "SparseHamiltonian",
-        "Hamiltonian",
     }
 
     def __init__(self, wires, *, shots=None, cache=0, analytic=None):
