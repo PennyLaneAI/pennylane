@@ -839,9 +839,11 @@ class TestHamiltonian:
         with qml.tape.QuantumTape() as tape:
             qml.Hadamard(wires=1)
             qml.PauliX(wires=0)
-            qml.expval(qml.Hamiltonian(
-                [1, 3, 1], [qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(1)]
-            ))
+            qml.expval(
+                qml.Hamiltonian(
+                    [1, 3, 1], [qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(1)]
+                )
+            )
 
         assert np.all([q1.compare(q2) for q1, q2 in zip(tape.queue, queue)])
 

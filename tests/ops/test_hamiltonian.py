@@ -23,34 +23,32 @@ from pennylane import numpy as pnp
 COEFFS_PARAM_INTERFACE = [
     ([-0.05, 0.17], 1.7, "autograd"),
     (np.array([-0.05, 0.17]), np.array(1.7), "autograd"),
-    (pnp.array([-0.05, 0.17], requires_grad=True),
-     pnp.array(1.7, requires_grad=True),
-     "autograd"),
+    (pnp.array([-0.05, 0.17], requires_grad=True), pnp.array(1.7, requires_grad=True), "autograd"),
 ]
 
 try:
     from jax import numpy as jnp
-    COEFFS_PARAM_INTERFACE.append((jnp.array([-0.05, 0.17]),
-                                   jnp.array(1.7),
-                                   "jax"))
+
+    COEFFS_PARAM_INTERFACE.append((jnp.array([-0.05, 0.17]), jnp.array(1.7), "jax"))
 except ImportError:
     pass
 
 try:
     import tf
-    COEFFS_PARAM_INTERFACE.append((tf.Variable([-0.05, 0.17], dtype=tf.double),
-                                   tf.Variable(1.7, dtype=tf.double),
-                                   "tf"))
+
+    COEFFS_PARAM_INTERFACE.append(
+        (tf.Variable([-0.05, 0.17], dtype=tf.double), tf.Variable(1.7, dtype=tf.double), "tf")
+    )
 except ImportError:
     pass
 
 try:
     import torch
-    COEFFS_PARAM_INTERFACE.append((torch.tensor([-0.05, 0.17]),
-                                   torch.tensor([1.7]),
-                                   "torch"))
+
+    COEFFS_PARAM_INTERFACE.append((torch.tensor([-0.05, 0.17]), torch.tensor([1.7]), "torch"))
 except ImportError:
     pass
+
 
 def circuit1(param):
     qml.RX(param, wires=0)
@@ -64,11 +62,10 @@ def circuit2(param):
     return qml.expval(qml.PauliZ(0))
 
 
-dev = qml.device('default.qubit', wires=2)
+dev = qml.device("default.qubit", wires=2)
 
 
 class TestHamiltonianCoefficients:
-
     @pytest.mark.parametrize("coeffs", [el[0] for el in COEFFS_PARAM_INTERFACE])
     def test_creation_different_coeff_types(self, coeffs):
         H = qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)])
@@ -94,10 +91,9 @@ class TestHamiltonianCoefficients:
 
 
 class TestVQEEvaluation:
-
     @pytest.mark.parametrize("coeffs, param, interface", COEFFS_PARAM_INTERFACE)
     def test_vqe_forward_different_coeff_types(self, coeffs, param, interface):
-        dev = qml.device('default.qubit', wires=2)
+        dev = qml.device("default.qubit", wires=2)
         H = qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)])
         H.group()
 
@@ -125,7 +121,6 @@ class TestVQEEvaluation:
 
 
 class TestVQEdifferentiation:
-
     def test_vqe_differentiation_autograd(self):
         coeffs = pnp.array([-0.05, 0.17], requires_grad=True)
         param = pnp.array(1.7, requires_grad=True)
