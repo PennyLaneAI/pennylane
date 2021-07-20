@@ -121,7 +121,6 @@ class TestVQEEvaluation:
 
 
 class TestVQEdifferentiation:
-
     def test_vqe_differentiation_paramshift(self):
         coeffs = np.array([-0.05, 0.17])
         param = np.array(1.7)
@@ -264,7 +263,6 @@ class TestVQEdifferentiation:
 
         # differentiating a cost that combines circuits with
         # measurements expval(Pauli)
-
 
         # we need to create new tensors here
         coeffs2 = tf.Variable([-0.05, 0.17], dtype=tf.double)

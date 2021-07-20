@@ -461,6 +461,7 @@ class Hamiltonian(qml.operation.Observable):
         context.append(self, owns=tuple(self.ops))
         return self
 
+
 class ExpvalCost:
     """Create a cost function that gives the expectation value of an input Hamiltonian.
 

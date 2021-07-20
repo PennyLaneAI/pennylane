@@ -31,15 +31,15 @@ with pennylane.tape.QuantumTape() as tape1:
     qml.expval(H1)
 
 H2 = qml.Hamiltonian(
-        [1, 3, -2, 1, 1],
-        [
-            qml.PauliX(0) @ qml.PauliZ(2),
-            qml.PauliZ(2),
-            qml.PauliX(0),
-            qml.PauliX(2),
-            qml.PauliZ(0) @ qml.PauliX(1),
-        ],
-    )
+    [1, 3, -2, 1, 1],
+    [
+        qml.PauliX(0) @ qml.PauliZ(2),
+        qml.PauliZ(2),
+        qml.PauliX(0),
+        qml.PauliX(2),
+        qml.PauliZ(0) @ qml.PauliX(1),
+    ],
+)
 
 with pennylane.tape.QuantumTape() as tape2:
     qml.Hadamard(0)
