@@ -33,7 +33,7 @@ movable_gates = list(chain(*commuting_gates.values()))
 
 @qfunc_transform
 def commute_through_controls_targets(tape):
-    """Quantum function transform to move commuting gates behind
+    """Quantum function transform to move commuting gates past
     control and target qubits of controlled operations.
 
     Args:
@@ -45,22 +45,43 @@ def commute_through_controls_targets(tape):
 
     .. code-block:: python
 
-        def qfunc_with_many_rots():
-            qml.Hadamard(wires=0)
+        def qfunc(theta):
+            qml.CZ(wires=[0, 2])
+            qml.PauliX(wires=2)
+            qml.S(wires=0)
+
             qml.CNOT(wires=[0, 1])
+
+            qml.PauliY(wires=1)
+            qml.CRY(theta, wires=[0, 1])
+            qml.PhaseShift(theta/2, wires=0)
+
+            qml.Toffoli(wires=[0, 1, 2])
             qml.T(wires=0)
-            return qml.expval(qml.PauliX(0))
+            qml.RZ(theta/2, wires=1)
 
-    In this circuit, the ``PauliZ`` and the ``CNOT`` commute; this means
-    that the they can swap places, and then the ``PauliZ`` can be fused with the
-    ``Hadamard`` gate if desired:
+            return qml.expval(qml.PauliZ(0))
 
-    >>> optimized_qfunc = qml.compile(pipeline=[diag_behind_controls, single_qubit_fusion])(qfunc)
+    >>> dev = qml.device('default.qubit', wires=3)
+    >>> qnode = qml.QNode(qfunc, dev)
+    >>> print(qml.draw(qnode)(0.5))
+     0: ──╭C──S──╭C─────╭C────────Rϕ(0.25)──╭C──T─────────┤ ⟨Z⟩
+     1: ──│──────╰X──Y──╰RY(0.5)────────────├C──RZ(0.25)──┤
+     2: ──╰Z──X─────────────────────────────╰X────────────┤
+
+    Diagonal gates on either side of control qubits do not affect the outcome
+    of controlled gates; thus we can push all the single-qubit gates on the
+    first qubit together on the right (and fuse them if desired). Similarly, X
+    gates commute with the target of ``CNOT`` and ``Toffoli`` (and ``PauliY``
+    with ``CRY``). We can use the transform to push single-qubit gates as
+    far as possible through the controlled operations:
+
+    >>> optimized_qfunc = commute_through_controls_targets(qfunc)
     >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
-    >>> print(qml.draw(optimized_qnode)())
-    0: ──Rot(3.14, 1.57, 0.785)──╭C──┤ ⟨X⟩
-    1: ──────────────────────────╰X──┤
-
+    >>> print(qml.draw(optimized_qnode)(0.5))
+     0: ──╭C──╭C──╭C───────────╭C──S─────────Rϕ(0.25)──T──┤ ⟨Z⟩
+     1: ──│───╰X──╰RY(0.5)──Y──├C──RZ(0.25)───────────────┤
+     2: ──╰Z───────────────────╰X──X──────────────────────┤
     """
     # Make a working copy of the list to traverse
     list_copy = tape.operations.copy()
