@@ -2,6 +2,50 @@
 
 <h3>New features since last release</h3>
 
+* Grover Diffusion Operator template added.
+  [(#1442)](https://github.com/PennyLaneAI/pennylane/pull/1442)
+
+  For example, if we have an oracle that marks the "all ones" state with a
+  negative sign:
+
+  ```python
+  n_wires = 3
+  wires = list(range(n_wires))
+
+  def oracle():
+      qml.Hadamard(wires[-1])
+      qml.Toffoli(wires=wires)
+      qml.Hadamard(wires[-1])
+  ```
+
+  We can perform [Grover's Search Algorithm](https://en.wikipedia.org/wiki/Grover%27s_algorithm):
+
+  ```python
+  dev = qml.device('default.qubit', wires=wires)
+
+  @qml.qnode(dev)
+  def GroverSearch(num_iterations=1):
+      for wire in wires:
+          qml.Hadamard(wire)
+
+      for _ in range(num_iterations):
+          oracle()
+          qml.templates.GroverOperator(wires=wires)
+
+      return qml.probs(wires)
+  ```
+
+  We can see this circuit yields the marked state with high probability:
+
+  ```pycon
+  >>> GroverSearch(num_iterations=1)
+  tensor([0.03125, 0.03125, 0.03125, 0.03125, 0.03125, 0.03125, 0.03125,
+          0.78125], requires_grad=True)
+  >>> GroverSearch(num_iterations=2)
+  tensor([0.0078125, 0.0078125, 0.0078125, 0.0078125, 0.0078125, 0.0078125,
+      0.0078125, 0.9453125], requires_grad=True)
+  ```
+
 * A new quantum function transform has been added to perform full fusion of
   arbitrary-length sequences of single-qubit gates.
   [(#1458)](https://github.com/PennyLaneAI/pennylane/pull/1458)
@@ -263,8 +307,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Leonhard Kunczik, Romain Moyard, Ashish Panigrahi, Maria Schuld,
-Jay Soni, Antal Száva
+Olivia Di Matteo, Josh Izaac, Leonhard Kunczik, Christina Lee, Romain Moyard, Ashish Panigrahi,
+Maria Schuld, Jay Soni, Antal Száva
 
 
 # Release 0.16.0 (current release)
