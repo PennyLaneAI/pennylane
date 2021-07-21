@@ -27,7 +27,6 @@ def _commute_controlled_right(op_list):
 
     Args:
         op_list (list[Operation]): The initial list of operations.
-
     Returns:
         list[Operation]: The modified list of operations with all single-qubit
         gates as far right as possible.
@@ -55,7 +54,6 @@ def _commute_controlled_right(op_list):
 
         # Loop as long as a valid next gate exists
         while next_gate_idx is not None:
-            # Get the next gate
             next_gate = op_list[new_location + next_gate_idx + 1]
 
             # Only go ahead if information is available
@@ -71,9 +69,8 @@ def _commute_controlled_right(op_list):
             except (NotImplementedError, AttributeError):
                 break
 
-            # Case 1: the overlap is on the control wires. Only Z-type gates go through
+            # Case 1: overlap is on the control wires. Only Z-type gates go through
             if len(shared_controls) > 0:
-                # If the gate is a Z-basis gate, it can be pushed through
                 if current_gate.basis == "Z":
                     new_location += next_gate_idx + 1
                 else:
@@ -93,6 +90,68 @@ def _commute_controlled_right(op_list):
         op_list.insert(new_location + 1, current_gate)
         op_list.pop(current_location)
         current_location -= 1
+
+    return op_list
+
+
+def _commute_controlled_left(op_list):
+    """Push commuting single qubit gates to the left of controlled gates.
+
+    Args:
+        op_list (list[Operation]): The initial list of operations.
+
+    Returns:
+        list[Operation]: The modified list of operations with all single-qubit
+        gates as far left as possible.
+    """
+    # We will go through the list forwards; whenever we find a single-qubit
+    # gate, we will extract it and push it through 2-qubit gates as far as
+    # possible back to the left.
+    current_location = 0
+
+    while current_location < len(op_list):
+
+        current_gate = op_list[current_location]
+
+        if current_gate.basis is None or len(current_gate.wires) != 1:
+            current_location += 1
+            continue
+
+        # Pass a backwards copy of the list
+        prev_gate_idx = find_next_gate(current_gate.wires, op_list[:current_location][::-1])
+
+        new_location = current_location
+
+        while prev_gate_idx is not None:
+            prev_gate = op_list[new_location - prev_gate_idx - 1]
+
+            if prev_gate.basis is None:
+                break
+
+            try:
+                shared_controls = Wires.shared_wires(
+                    [Wires(current_gate.wires), prev_gate.comp_control_wires]
+                )
+            except (NotImplementedError, AttributeError):
+                break
+
+            if len(shared_controls) > 0:
+                if current_gate.basis == "Z":
+                    new_location = new_location - prev_gate_idx - 1
+                else:
+                    break
+
+            else:
+                if current_gate.basis == prev_gate.basis:
+                    new_location = new_location - prev_gate_idx - 1
+                else:
+                    break
+
+            prev_gate_idx = find_next_gate(current_gate.wires, op_list[:new_location][::-1])
+
+        op_list.pop(current_location)
+        op_list.insert(new_location, current_gate)
+        current_location += 1
 
     return op_list
 
@@ -162,7 +221,7 @@ def commute_controlled(tape, direction="right"):
     if direction == "right":
         op_list = _commute_controlled_right(tape.operations)
     else:
-        op_list = tape.operations
+        op_list = _commute_controlled_left(tape.operations)
 
     # Once the list is rearranged, queue all the operations
     for op in op_list + tape.measurements:
