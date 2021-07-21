@@ -28,6 +28,19 @@ from utils import (
 class TestCommuteControlled:
     """Tests for single-qubit gates being pushed to the right of controlld gates."""
 
+    def test_invalid_direction(self):
+        """Test that anything direction than 'left' or 'right' raises an error."""
+
+        def qfunc():
+            qml.PauliX(wires=2)
+            qml.CNOT(wires=[0, 2])
+            qml.RX(0.2, wires=2)
+
+        transformed_qfunc = commute_controlled(direction="sideways")(qfunc)
+
+        with pytest.raises(ValueError, match="must be 'left' or 'right'"):
+            ops = qml.transforms.make_tape(transformed_qfunc)().operations
+
     def test_push_x_gates_right(self):
         """Test that X-basis gates before controlled-X-type gates on targets get pushed ahead."""
 
