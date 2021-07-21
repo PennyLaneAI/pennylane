@@ -214,6 +214,9 @@
 
 <h3>Improvements</h3>
 
+* The `./pennylane/ops/qubit.py` file is broken up into a folder of eight separate files.
+[(#1467)](https://github.com/PennyLaneAI/pennylane/pull/1467)
+
 * Change the order of the covariance matrix and the vector of means internally
   in `default.gaussian`. [(#1331)](https://github.com/PennyLaneAI/pennylane/pull/1331)
 
