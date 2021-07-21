@@ -26,9 +26,18 @@ import scipy
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.operation import AnyWires, AllWires, DiagonalOperation, Observable, Operation
+from pennylane.operation import (
+    AnyWires,
+    AllWires,
+    DiagonalOperation,
+    Observable,
+    Operation,
+)
 from pennylane.templates.decorator import template
-from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
+from pennylane.templates.state_preparations import (
+    BasisStatePreparation,
+    MottonenStatePreparation,
+)
 from pennylane.utils import expand, pauli_eigs
 from pennylane.wires import Wires
 
@@ -217,7 +226,10 @@ class QubitSum(Operation):
 
     @staticmethod
     def decomposition(wires):
-        decomp_ops = [qml.CNOT(wires=[wires[1], wires[2]]), qml.CNOT(wires=[wires[0], wires[2]])]
+        decomp_ops = [
+            qml.CNOT(wires=[wires[1], wires[2]]),
+            qml.CNOT(wires=[wires[0], wires[2]]),
+        ]
         return decomp_ops
 
     def adjoint(self):

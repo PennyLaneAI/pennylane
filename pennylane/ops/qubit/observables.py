@@ -26,9 +26,18 @@ import scipy
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.operation import AnyWires, AllWires, DiagonalOperation, Observable, Operation
+from pennylane.operation import (
+    AnyWires,
+    AllWires,
+    DiagonalOperation,
+    Observable,
+    Operation,
+)
 from pennylane.templates.decorator import template
-from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
+from pennylane.templates.state_preparations import (
+    BasisStatePreparation,
+    MottonenStatePreparation,
+)
 from pennylane.utils import expand, pauli_eigs
 from pennylane.wires import Wires
 
@@ -119,7 +128,11 @@ class Hermitian(Observable):
         Returns:
             list: list containing the gates diagonalizing the Hermitian observable
         """
-        return [QubitUnitary(self.eigendecomposition["eigvec"].conj().T, wires=list(self.wires))]
+        return [
+            QubitUnitary(
+                self.eigendecomposition["eigvec"].conj().T, wires=list(self.wires)
+            )
+        ]
 
 
 class Projector(Observable):
@@ -165,7 +178,9 @@ class Projector(Observable):
         basis_state = list(qml.math.toarray(basis_state))
 
         if not set(basis_state).issubset({0, 1}):
-            raise ValueError(f"Basis state must only consist of 0s and 1s; got {basis_state}")
+            raise ValueError(
+                f"Basis state must only consist of 0s and 1s; got {basis_state}"
+            )
 
         super().__init__(basis_state, wires=wires, do_queue=do_queue)
 
@@ -228,5 +243,3 @@ class SparseHamiltonian(Observable):
 
     def diagonalizing_gates(self):
         return []
-
-

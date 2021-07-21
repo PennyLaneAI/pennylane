@@ -418,7 +418,9 @@ class ControlledAddition(CVOperation):
         return U
 
     def adjoint(self, do_queue=False):
-        return ControlledAddition(-self.parameters[0], wires=self.wires, do_queue=do_queue)
+        return ControlledAddition(
+            -self.parameters[0], wires=self.wires, do_queue=do_queue
+        )
 
 
 class ControlledPhase(CVOperation):
@@ -606,7 +608,9 @@ class Interferometer(CVOperation):
 
     def adjoint(self, do_queue=False):
         U = self.parameters[0]
-        return Interferometer(qml_math.T(qml_math.conj(U)), wires=self.wires, do_queue=do_queue)
+        return Interferometer(
+            qml_math.T(qml_math.conj(U)), wires=self.wires, do_queue=do_queue
+        )
 
 
 # =============================================================================

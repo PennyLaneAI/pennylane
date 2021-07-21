@@ -26,9 +26,18 @@ import scipy
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.operation import AnyWires, AllWires, DiagonalOperation, Observable, Operation
+from pennylane.operation import (
+    AnyWires,
+    AllWires,
+    DiagonalOperation,
+    Observable,
+    Operation,
+)
 from pennylane.templates.decorator import template
-from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
+from pennylane.templates.state_preparations import (
+    BasisStatePreparation,
+    MottonenStatePreparation,
+)
 from pennylane.utils import expand, pauli_eigs
 from pennylane.wires import Wires
 
@@ -68,7 +77,10 @@ class IsingXX(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
-    generator = [np.array([[0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0], [1, 0, 0, 0]]), -1 / 2]
+    generator = [
+        np.array([[0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0], [1, 0, 0, 0]]),
+        -1 / 2,
+    ]
 
     @classmethod
     def _matrix(cls, *params):
@@ -77,7 +89,12 @@ class IsingXX(Operation):
         s = math.sin(phi / 2)
 
         return np.array(
-            [[c, 0, 0, -1j * s], [0, c, -1j * s, 0], [0, -1j * s, c, 0], [-1j * s, 0, 0, c]]
+            [
+                [c, 0, 0, -1j * s],
+                [0, c, -1j * s, 0],
+                [0, -1j * s, c, 0],
+                [-1j * s, 0, 0, c],
+            ]
         )
 
     @staticmethod
@@ -120,7 +137,10 @@ class IsingYY(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
-    generator = [np.array([[0, 0, 0, -1], [0, 0, 1, 0], [0, 1, 0, 0], [-1, 0, 0, 0]]), -1 / 2]
+    generator = [
+        np.array([[0, 0, 0, -1], [0, 0, 1, 0], [0, 1, 0, 0], [-1, 0, 0, 0]]),
+        -1 / 2,
+    ]
 
     @staticmethod
     def decomposition(phi, wires):
@@ -176,7 +196,10 @@ class IsingZZ(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
-    generator = [np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]), -1 / 2]
+    generator = [
+        np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]),
+        -1 / 2,
+    ]
 
     @staticmethod
     def decomposition(phi, wires):
@@ -248,7 +271,10 @@ class SingleExcitation(Operation):
     par_domain = "R"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
-    generator = [np.array([[0, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 0]]), -1 / 2]
+    generator = [
+        np.array([[0, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 0]]),
+        -1 / 2,
+    ]
 
     @classmethod
     def _matrix(cls, *params):
@@ -299,7 +325,10 @@ class SingleExcitationMinus(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
-    generator = [np.array([[1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]]), -1 / 2]
+    generator = [
+        np.array([[1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]]),
+        -1 / 2,
+    ]
 
     @classmethod
     def _matrix(cls, *params):
@@ -357,7 +386,10 @@ class SingleExcitationPlus(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
-    generator = [np.array([[-1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, -1]]), -1 / 2]
+    generator = [
+        np.array([[-1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, -1]]),
+        -1 / 2,
+    ]
 
     @classmethod
     def _matrix(cls, *params):
@@ -620,4 +652,3 @@ class DoubleExcitationMinus(Operation):
     def adjoint(self):
         (theta,) = self.parameters
         return DoubleExcitationMinus(-theta, wires=self.wires)
-

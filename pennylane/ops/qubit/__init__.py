@@ -78,7 +78,15 @@ ops = {
 }
 
 
-obs = {"Hadamard", "PauliX", "PauliY", "PauliZ", "Hermitian", "Projector", "SparseHamiltonian"}
+obs = {
+    "Hadamard",
+    "PauliX",
+    "PauliY",
+    "PauliZ",
+    "Hermitian",
+    "Projector",
+    "SparseHamiltonian",
+}
 
 
 __all__ = list(ops | obs)

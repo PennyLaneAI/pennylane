@@ -26,9 +26,18 @@ import scipy
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.operation import AnyWires, AllWires, DiagonalOperation, Observable, Operation
+from pennylane.operation import (
+    AnyWires,
+    AllWires,
+    DiagonalOperation,
+    Observable,
+    Operation,
+)
 from pennylane.templates.decorator import template
-from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
+from pennylane.templates.state_preparations import (
+    BasisStatePreparation,
+    MottonenStatePreparation,
+)
 from pennylane.utils import expand, pauli_eigs
 from pennylane.wires import Wires
 
@@ -72,7 +81,8 @@ class QubitUnitary(Operation):
             # Check for unitarity; due to variable precision across the different ML frameworks,
             # here we issue a warning to check the operation, instead of raising an error outright.
             if not qml.math.allclose(
-                qml.math.dot(U, qml.math.T(qml.math.conj(U))), qml.math.eye(qml.math.shape(U)[0])
+                qml.math.dot(U, qml.math.T(qml.math.conj(U))),
+                qml.math.eye(qml.math.shape(U)[0]),
             ):
                 warnings.warn(
                     f"Operator {U}\n may not be unitary."
@@ -95,7 +105,9 @@ class QubitUnitary(Operation):
             decomp_ops = qml.transforms.decompositions.zyz_decomposition(U, wire)
             return decomp_ops
 
-        raise NotImplementedError("Decompositions only supported for single-qubit unitaries")
+        raise NotImplementedError(
+            "Decompositions only supported for single-qubit unitaries"
+        )
 
     def adjoint(self):
         return QubitUnitary(qml.math.T(qml.math.conj(self.matrix)), wires=self.wires)
@@ -153,7 +165,14 @@ class ControlledQubitUnitary(QubitUnitary):
     par_domain = "A"
     grad_method = None
 
-    def __init__(self, *params, control_wires=None, wires=None, control_values=None, do_queue=True):
+    def __init__(
+        self,
+        *params,
+        control_wires=None,
+        wires=None,
+        control_values=None,
+        do_queue=True,
+    ):
         if control_wires is None:
             raise ValueError("Must specify control wires")
 
@@ -168,7 +187,9 @@ class ControlledQubitUnitary(QubitUnitary):
         U = params[0]
         target_dim = 2 ** len(wires)
         if len(U) != target_dim:
-            raise ValueError(f"Input unitary must be of shape {(target_dim, target_dim)}")
+            raise ValueError(
+                f"Input unitary must be of shape {(target_dim, target_dim)}"
+            )
 
         # Saving for the circuit drawer
         self._target_wires = wires
@@ -200,7 +221,9 @@ class ControlledQubitUnitary(QubitUnitary):
 
     def _matrix(self, *params):
         if self._CU is None:
-            self._CU = block_diag(np.eye(self._padding_left), self.U, np.eye(self._padding_right))
+            self._CU = block_diag(
+                np.eye(self._padding_left), self.U, np.eye(self._padding_right)
+            )
 
         params = list(params)
         params[0] = self._CU
@@ -211,21 +234,29 @@ class ControlledQubitUnitary(QubitUnitary):
         """Ensure any user-specified control strings have the right format."""
         if isinstance(control_values, str):
             if len(control_values) != len(control_wires):
-                raise ValueError("Length of control bit string must equal number of control wires.")
+                raise ValueError(
+                    "Length of control bit string must equal number of control wires."
+                )
 
             # Make sure all values are either 0 or 1
             if any(x not in ["0", "1"] for x in control_values):
-                raise ValueError("String of control values can contain only '0' or '1'.")
+                raise ValueError(
+                    "String of control values can contain only '0' or '1'."
+                )
 
             control_int = int(control_values, 2)
         else:
-            raise ValueError("Alternative control values must be passed as a binary string.")
+            raise ValueError(
+                "Alternative control values must be passed as a binary string."
+            )
 
         return control_int
 
     def _controlled(self, wire):
         ctrl_wires = sorted(self.control_wires + wire)
-        ControlledQubitUnitary(*self.parameters, control_wires=ctrl_wires, wires=self._target_wires)
+        ControlledQubitUnitary(
+            *self.parameters, control_wires=ctrl_wires, wires=self._target_wires
+        )
 
 
 class DiagonalQubitUnitary(DiagonalOperation):
@@ -272,6 +303,7 @@ class DiagonalQubitUnitary(DiagonalOperation):
 
 # When this gate no longer depends on ``ControlledQubitUnitary
 # please move it to ``non_parametric_ops.py``
+
 
 class MultiControlledX(ControlledQubitUnitary):
     r"""MultiControlledX(control_wires, wires, control_values)
@@ -333,7 +365,12 @@ class MultiControlledX(ControlledQubitUnitary):
 
     # pylint: disable=too-many-arguments
     def __init__(
-        self, control_wires=None, wires=None, control_values=None, work_wires=None, do_queue=True
+        self,
+        control_wires=None,
+        wires=None,
+        control_values=None,
+        work_wires=None,
+        do_queue=True,
     ):
         wires = Wires(wires)
         control_wires = Wires(control_wires)
@@ -345,7 +382,9 @@ class MultiControlledX(ControlledQubitUnitary):
         if Wires.shared_wires([wires, work_wires]) or Wires.shared_wires(
             [control_wires, work_wires]
         ):
-            raise ValueError("The work wires must be different from the control and target wires")
+            raise ValueError(
+                "The work wires must be different from the control and target wires"
+            )
 
         self._target_wire = wires[0]
         self._work_wires = work_wires
@@ -362,7 +401,9 @@ class MultiControlledX(ControlledQubitUnitary):
     def decomposition(self, *args, **kwargs):
 
         if len(self.control_wires) > 2 and len(self._work_wires) == 0:
-            raise ValueError(f"At least one work wire is required to decompose operation: {self}")
+            raise ValueError(
+                f"At least one work wire is required to decompose operation: {self}"
+            )
 
         flips1 = [
             qml.PauliX(self.control_wires[i])
@@ -450,18 +491,25 @@ class MultiControlledX(ControlledQubitUnitary):
 
         gates = [
             MultiControlledX(
-                control_wires=first_part, wires=work_wire, work_wires=second_part + target_wire
+                control_wires=first_part,
+                wires=work_wire,
+                work_wires=second_part + target_wire,
             ),
             MultiControlledX(
-                control_wires=second_part + work_wire, wires=target_wire, work_wires=first_part
+                control_wires=second_part + work_wire,
+                wires=target_wire,
+                work_wires=first_part,
             ),
             MultiControlledX(
-                control_wires=first_part, wires=work_wire, work_wires=second_part + target_wire
+                control_wires=first_part,
+                wires=work_wire,
+                work_wires=second_part + target_wire,
             ),
             MultiControlledX(
-                control_wires=second_part + work_wire, wires=target_wire, work_wires=first_part
+                control_wires=second_part + work_wire,
+                wires=target_wire,
+                work_wires=first_part,
             ),
         ]
 
         return gates
-

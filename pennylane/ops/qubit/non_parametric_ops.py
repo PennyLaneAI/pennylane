@@ -26,15 +26,22 @@ import scipy
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.operation import AnyWires, AllWires, DiagonalOperation, Observable, Operation
+from pennylane.operation import (
+    AnyWires,
+    AllWires,
+    DiagonalOperation,
+    Observable,
+    Operation,
+)
 from pennylane.templates.decorator import template
-from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
+from pennylane.templates.state_preparations import (
+    BasisStatePreparation,
+    MottonenStatePreparation,
+)
 from pennylane.utils import expand, pauli_eigs
 from pennylane.wires import Wires
 
 INV_SQRT2 = 1 / math.sqrt(2)
-
-
 
 
 class Hadamard(Observable, Operation):
@@ -205,7 +212,11 @@ class PauliY(Observable, Operation):
             list(~.Operation): A list of gates that diagonalize PauliY in the
                 computational basis.
         """
-        return [PauliZ(wires=self.wires), S(wires=self.wires), Hadamard(wires=self.wires)]
+        return [
+            PauliZ(wires=self.wires),
+            S(wires=self.wires),
+            Hadamard(wires=self.wires),
+        ]
 
     @staticmethod
     def decomposition(wires):
@@ -754,4 +765,3 @@ class Toffoli(Operation):
 
     def adjoint(self):
         return Toffoli(wires=self.wires)
-

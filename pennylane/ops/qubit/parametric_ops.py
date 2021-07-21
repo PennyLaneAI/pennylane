@@ -26,9 +26,18 @@ import scipy
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.operation import AnyWires, AllWires, DiagonalOperation, Observable, Operation
+from pennylane.operation import (
+    AnyWires,
+    AllWires,
+    DiagonalOperation,
+    Observable,
+    Operation,
+)
 from pennylane.templates.decorator import template
-from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
+from pennylane.templates.state_preparations import (
+    BasisStatePreparation,
+    MottonenStatePreparation,
+)
 from pennylane.utils import expand, pauli_eigs
 from pennylane.wires import Wires
 
@@ -268,7 +277,9 @@ class ControlledPhaseShift(DiagonalOperation):
     @classmethod
     def _matrix(cls, *params):
         phi = params[0]
-        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, cmath.exp(1j * phi)]])
+        return np.array(
+            [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, cmath.exp(1j * phi)]]
+        )
 
     @classmethod
     def _eigvals(cls, *params):
@@ -337,14 +348,24 @@ class Rot(Operation):
 
         return np.array(
             [
-                [cmath.exp(-0.5j * (phi + omega)) * c, -cmath.exp(0.5j * (phi - omega)) * s],
-                [cmath.exp(-0.5j * (phi - omega)) * s, cmath.exp(0.5j * (phi + omega)) * c],
+                [
+                    cmath.exp(-0.5j * (phi + omega)) * c,
+                    -cmath.exp(0.5j * (phi - omega)) * s,
+                ],
+                [
+                    cmath.exp(-0.5j * (phi - omega)) * s,
+                    cmath.exp(0.5j * (phi + omega)) * c,
+                ],
             ]
         )
 
     @staticmethod
     def decomposition(phi, theta, omega, wires):
-        decomp_ops = [RZ(phi, wires=wires), RY(theta, wires=wires), RZ(omega, wires=wires)]
+        decomp_ops = [
+            RZ(phi, wires=wires),
+            RY(theta, wires=wires),
+            RZ(omega, wires=wires),
+        ]
         return decomp_ops
 
     def adjoint(self):
@@ -580,12 +601,17 @@ class PauliRot(Operation):
             # now we conjugate with Hadamard and RX to create the Pauli string
             conjugation_matrix = functools.reduce(
                 np.kron,
-                [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
+                [
+                    PauliRot._PAULI_CONJUGATION_MATRICES[gate]
+                    for gate in non_identity_gates
+                ],
             )
 
             self._generator = [
                 expand(
-                    conjugation_matrix.T.conj() @ multi_Z_rot_generator @ conjugation_matrix,
+                    conjugation_matrix.T.conj()
+                    @ multi_Z_rot_generator
+                    @ conjugation_matrix,
                     non_identity_wires,
                     list(range(len(pauli_word))),
                 ),
@@ -687,7 +713,10 @@ class CRX(Operation):
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
-    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), -1 / 2]
+    generator = [
+        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]),
+        -1 / 2,
+    ]
 
     @classmethod
     def _matrix(cls, *params):
@@ -757,7 +786,10 @@ class CRY(Operation):
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
-    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]), -1 / 2]
+    generator = [
+        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]),
+        -1 / 2,
+    ]
 
     @classmethod
     def _matrix(cls, *params):
@@ -828,7 +860,10 @@ class CRZ(DiagonalOperation):
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
-    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]), -1 / 2]
+    generator = [
+        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]),
+        -1 / 2,
+    ]
 
     @classmethod
     def _matrix(cls, *params):
@@ -921,8 +956,18 @@ class CRot(Operation):
             [
                 [1, 0, 0, 0],
                 [0, 1, 0, 0],
-                [0, 0, cmath.exp(-0.5j * (phi + omega)) * c, -cmath.exp(0.5j * (phi - omega)) * s],
-                [0, 0, cmath.exp(-0.5j * (phi - omega)) * s, cmath.exp(0.5j * (phi + omega)) * c],
+                [
+                    0,
+                    0,
+                    cmath.exp(-0.5j * (phi + omega)) * c,
+                    -cmath.exp(0.5j * (phi - omega)) * s,
+                ],
+                [
+                    0,
+                    0,
+                    cmath.exp(-0.5j * (phi - omega)) * s,
+                    cmath.exp(0.5j * (phi + omega)) * c,
+                ],
             ]
         )
 
@@ -1030,7 +1075,10 @@ class U2(Operation):
     def _matrix(cls, *params):
         phi, lam = params
         return INV_SQRT2 * np.array(
-            [[1, -cmath.exp(1j * lam)], [cmath.exp(1j * phi), cmath.exp(1j * (phi + lam))]]
+            [
+                [1, -cmath.exp(1j * lam)],
+                [cmath.exp(1j * phi), cmath.exp(1j * (phi + lam))],
+            ]
         )
 
     @staticmethod
@@ -1116,5 +1164,3 @@ class U3(Operation):
         new_lam = (np.pi - phi) % (2 * np.pi)
         new_phi = (np.pi - lam) % (2 * np.pi)
         return U3(theta, new_phi, new_lam, wires=self.wires)
-
-
