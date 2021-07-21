@@ -479,7 +479,8 @@ class DefaultQubit(QubitDevice):
             return np.real(ev.toarray()[0])
 
         if observable.name == "Hamiltonian":
-            return np.array(-100.)
+            # Dummy for now
+            return np.real(self.state[0])
 
         return super().expval(observable, shot_range=shot_range, bin_size=bin_size)
 

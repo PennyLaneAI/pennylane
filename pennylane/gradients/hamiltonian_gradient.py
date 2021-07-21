@@ -15,12 +15,13 @@
 import pennylane as qml
 
 
-def hamiltonian_grad(tape, idx):
+def hamiltonian_grad(tape, idx, params=None):
     t_idx = list(tape.trainable_params)[idx]
     op = tape._par_info[t_idx]["op"]
     p_idx = tape._par_info[t_idx]["p_idx"]
 
-    new_tape = tape.copy(copy_operations=True)
+    new_tape = tape.copy(copy_operations=True, tape_cls=qml.tape.QuantumTape)
+    new_tape.set_parameters(params=params)
     new_tape._measurements = [qml.expval(op.ops[p_idx])]
 
     new_tape._par_info = {}
