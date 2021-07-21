@@ -308,7 +308,7 @@ def IsingXX(phi, device):
     Args:
         phi (float): rotation angle :math:`\phi`
         device: torch device on which the computation is made 'cpu' or 'cuda'
-
+    
     Returns:
         torch.Tensor[complex]:: unitary 4x4 rotation matrix
     """
@@ -331,7 +331,7 @@ def IsingYY(phi, device):
         device: torch device on which the computation is made 'cpu' or 'cuda'
 
     Returns:
-        tf.Tensor[complex]: unitary 4x4 rotation matrix
+        torch.Tensor[complex]:: unitary 4x4 rotation matrix
     """
     phi = torch.as_tensor(phi, dtype=C_DTYPE, device=device)
     return torch.cos(phi / 2) * II - 1j * torch.sin(phi / 2) * YY
@@ -352,7 +352,7 @@ def IsingZZ(phi, device):
         device: torch device on which the computation is made 'cpu' or 'cuda'
 
     Returns:
-        tf.Tensor[complex]: unitary 4x4 rotation matrix
+        torch.Tensor[complex]:: unitary 4x4 rotation matrix
     """
     phi = torch.as_tensor(phi, dtype=C_DTYPE, device=device)
     e_m = torch.exp(-1j * phi / 2)
