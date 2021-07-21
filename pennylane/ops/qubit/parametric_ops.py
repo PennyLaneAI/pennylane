@@ -17,31 +17,18 @@ quantum operations supported by PennyLane, as well as their conventions.
 """
 import cmath
 import functools
-import warnings
 
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import math
 import numpy as np
-import scipy
-from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.operation import (
-    AnyWires,
-    AllWires,
-    DiagonalOperation,
-    Observable,
-    Operation,
-)
+from pennylane.operation import AnyWires, DiagonalOperation, Operation
 from pennylane.templates.decorator import template
-from pennylane.templates.state_preparations import (
-    BasisStatePreparation,
-    MottonenStatePreparation,
-)
 from pennylane.utils import expand, pauli_eigs
 from pennylane.wires import Wires
 
-from .non_parametric_ops import PauliX, PauliY, PauliZ, Hadamard
+from .non_parametric_ops import PauliX, PauliY, PauliZ, Hadamard, CNOT
 
 INV_SQRT2 = 1 / math.sqrt(2)
 
@@ -277,9 +264,7 @@ class ControlledPhaseShift(DiagonalOperation):
     @classmethod
     def _matrix(cls, *params):
         phi = params[0]
-        return np.array(
-            [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, cmath.exp(1j * phi)]]
-        )
+        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, cmath.exp(1j * phi)]])
 
     @classmethod
     def _eigvals(cls, *params):
@@ -290,9 +275,9 @@ class ControlledPhaseShift(DiagonalOperation):
     def decomposition(phi, wires):
         decomp_ops = [
             qml.PhaseShift(phi / 2, wires=wires[0]),
-            qml.CNOT(wires=wires),
+            CNOT(wires=wires),
             qml.PhaseShift(-phi / 2, wires=wires[1]),
-            qml.CNOT(wires=wires),
+            CNOT(wires=wires),
             qml.PhaseShift(phi / 2, wires=wires[1]),
         ]
         return decomp_ops
@@ -601,17 +586,12 @@ class PauliRot(Operation):
             # now we conjugate with Hadamard and RX to create the Pauli string
             conjugation_matrix = functools.reduce(
                 np.kron,
-                [
-                    PauliRot._PAULI_CONJUGATION_MATRICES[gate]
-                    for gate in non_identity_gates
-                ],
+                [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
             )
 
             self._generator = [
                 expand(
-                    conjugation_matrix.T.conj()
-                    @ multi_Z_rot_generator
-                    @ conjugation_matrix,
+                    conjugation_matrix.T.conj() @ multi_Z_rot_generator @ conjugation_matrix,
                     non_identity_wires,
                     list(range(len(pauli_word))),
                 ),

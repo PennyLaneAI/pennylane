@@ -16,32 +16,16 @@ This module contains the available built-in discrete-variable
 quantum operations supported by PennyLane, as well as their conventions.
 """
 import cmath
-import functools
-import warnings
 
 # pylint:disable=abstract-method,arguments-differ,protected-access
-import math
 import numpy as np
-import scipy
-from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.operation import (
-    AnyWires,
-    AllWires,
-    DiagonalOperation,
-    Observable,
-    Operation,
-)
-from pennylane.templates.decorator import template
-from pennylane.templates.state_preparations import (
-    BasisStatePreparation,
-    MottonenStatePreparation,
-)
-from pennylane.utils import expand, pauli_eigs
+from pennylane.operation import AnyWires, AllWires, DiagonalOperation, Observable, Operation
+from pennylane.utils import pauli_eigs
 from pennylane.wires import Wires
 
-INV_SQRT2 = 1 / math.sqrt(2)
+INV_SQRT2 = 1 / qml.math.sqrt(2)
 
 
 class Hadamard(Observable, Operation):
@@ -87,14 +71,14 @@ class Hadamard(Observable, Operation):
             list(~.Operation): A list of gates that diagonalize Hadamard in
             the computational basis.
         """
-        return [RY(-np.pi / 4, wires=self.wires)]
+        return [qml.RY(-np.pi / 4, wires=self.wires)]
 
     @staticmethod
     def decomposition(wires):
         decomp_ops = [
-            PhaseShift(np.pi / 2, wires=wires),
-            RX(np.pi / 2, wires=wires),
-            PhaseShift(np.pi / 2, wires=wires),
+            qml.PhaseShift(np.pi / 2, wires=wires),
+            qml.RX(np.pi / 2, wires=wires),
+            qml.PhaseShift(np.pi / 2, wires=wires),
         ]
         return decomp_ops
 
@@ -152,9 +136,9 @@ class PauliX(Observable, Operation):
     @staticmethod
     def decomposition(wires):
         decomp_ops = [
-            PhaseShift(np.pi / 2, wires=wires),
-            RX(np.pi, wires=wires),
-            PhaseShift(np.pi / 2, wires=wires),
+            qml.PhaseShift(np.pi / 2, wires=wires),
+            qml.RX(np.pi, wires=wires),
+            qml.PhaseShift(np.pi / 2, wires=wires),
         ]
         return decomp_ops
 
@@ -221,9 +205,9 @@ class PauliY(Observable, Operation):
     @staticmethod
     def decomposition(wires):
         decomp_ops = [
-            PhaseShift(np.pi / 2, wires=wires),
-            RY(np.pi, wires=wires),
-            PhaseShift(np.pi / 2, wires=wires),
+            qml.PhaseShift(np.pi / 2, wires=wires),
+            qml.RY(np.pi, wires=wires),
+            qml.PhaseShift(np.pi / 2, wires=wires),
         ]
         return decomp_ops
 
@@ -272,7 +256,7 @@ class PauliZ(Observable, DiagonalOperation):
 
     @staticmethod
     def decomposition(wires):
-        decomp_ops = [PhaseShift(np.pi, wires=wires)]
+        decomp_ops = [qml.PhaseShift(np.pi, wires=wires)]
         return decomp_ops
 
     def adjoint(self):
@@ -317,7 +301,7 @@ class S(DiagonalOperation):
 
     @staticmethod
     def decomposition(wires):
-        decomp_ops = [PhaseShift(np.pi / 2, wires=wires)]
+        decomp_ops = [qml.PhaseShift(np.pi / 2, wires=wires)]
         return decomp_ops
 
     def adjoint(self):
@@ -359,7 +343,7 @@ class T(DiagonalOperation):
 
     @staticmethod
     def decomposition(wires):
-        decomp_ops = [PhaseShift(np.pi / 4, wires=wires)]
+        decomp_ops = [qml.PhaseShift(np.pi / 4, wires=wires)]
         return decomp_ops
 
     def adjoint(self):
@@ -402,10 +386,10 @@ class SX(Operation):
     @staticmethod
     def decomposition(wires):
         decomp_ops = [
-            RZ(np.pi / 2, wires=wires),
-            RY(np.pi / 2, wires=wires),
-            RZ(-np.pi, wires=wires),
-            PhaseShift(np.pi / 2, wires=wires),
+            qml.RZ(np.pi / 2, wires=wires),
+            qml.RY(np.pi / 2, wires=wires),
+            qml.RZ(-np.pi, wires=wires),
+            qml.PhaseShift(np.pi / 2, wires=wires),
         ]
         return decomp_ops
 
@@ -536,7 +520,7 @@ class CY(Operation):
 
     @staticmethod
     def decomposition(wires):
-        decomp_ops = [CRY(np.pi, wires=wires), S(wires=wires[0])]
+        decomp_ops = [qml.CRY(np.pi, wires=wires), S(wires=wires[0])]
         return decomp_ops
 
     def adjoint(self):

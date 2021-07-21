@@ -15,33 +15,15 @@
 This module contains the available built-in discrete-variable
 quantum operations supported by PennyLane, as well as their conventions.
 """
-import cmath
-import functools
 import warnings
 
 # pylint:disable=abstract-method,arguments-differ,protected-access
-import math
 import numpy as np
-import scipy
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.operation import (
-    AnyWires,
-    AllWires,
-    DiagonalOperation,
-    Observable,
-    Operation,
-)
-from pennylane.templates.decorator import template
-from pennylane.templates.state_preparations import (
-    BasisStatePreparation,
-    MottonenStatePreparation,
-)
-from pennylane.utils import expand, pauli_eigs
+from pennylane.operation import AnyWires, DiagonalOperation, Operation
 from pennylane.wires import Wires
-
-INV_SQRT2 = 1 / math.sqrt(2)
 
 
 class QubitUnitary(Operation):
@@ -105,9 +87,7 @@ class QubitUnitary(Operation):
             decomp_ops = qml.transforms.decompositions.zyz_decomposition(U, wire)
             return decomp_ops
 
-        raise NotImplementedError(
-            "Decompositions only supported for single-qubit unitaries"
-        )
+        raise NotImplementedError("Decompositions only supported for single-qubit unitaries")
 
     def adjoint(self):
         return QubitUnitary(qml.math.T(qml.math.conj(self.matrix)), wires=self.wires)
@@ -187,9 +167,7 @@ class ControlledQubitUnitary(QubitUnitary):
         U = params[0]
         target_dim = 2 ** len(wires)
         if len(U) != target_dim:
-            raise ValueError(
-                f"Input unitary must be of shape {(target_dim, target_dim)}"
-            )
+            raise ValueError(f"Input unitary must be of shape {(target_dim, target_dim)}")
 
         # Saving for the circuit drawer
         self._target_wires = wires
@@ -221,9 +199,7 @@ class ControlledQubitUnitary(QubitUnitary):
 
     def _matrix(self, *params):
         if self._CU is None:
-            self._CU = block_diag(
-                np.eye(self._padding_left), self.U, np.eye(self._padding_right)
-            )
+            self._CU = block_diag(np.eye(self._padding_left), self.U, np.eye(self._padding_right))
 
         params = list(params)
         params[0] = self._CU
@@ -234,29 +210,21 @@ class ControlledQubitUnitary(QubitUnitary):
         """Ensure any user-specified control strings have the right format."""
         if isinstance(control_values, str):
             if len(control_values) != len(control_wires):
-                raise ValueError(
-                    "Length of control bit string must equal number of control wires."
-                )
+                raise ValueError("Length of control bit string must equal number of control wires.")
 
             # Make sure all values are either 0 or 1
             if any(x not in ["0", "1"] for x in control_values):
-                raise ValueError(
-                    "String of control values can contain only '0' or '1'."
-                )
+                raise ValueError("String of control values can contain only '0' or '1'.")
 
             control_int = int(control_values, 2)
         else:
-            raise ValueError(
-                "Alternative control values must be passed as a binary string."
-            )
+            raise ValueError("Alternative control values must be passed as a binary string.")
 
         return control_int
 
     def _controlled(self, wire):
         ctrl_wires = sorted(self.control_wires + wire)
-        ControlledQubitUnitary(
-            *self.parameters, control_wires=ctrl_wires, wires=self._target_wires
-        )
+        ControlledQubitUnitary(*self.parameters, control_wires=ctrl_wires, wires=self._target_wires)
 
 
 class DiagonalQubitUnitary(DiagonalOperation):
@@ -382,9 +350,7 @@ class MultiControlledX(ControlledQubitUnitary):
         if Wires.shared_wires([wires, work_wires]) or Wires.shared_wires(
             [control_wires, work_wires]
         ):
-            raise ValueError(
-                "The work wires must be different from the control and target wires"
-            )
+            raise ValueError("The work wires must be different from the control and target wires")
 
         self._target_wire = wires[0]
         self._work_wires = work_wires
@@ -401,9 +367,7 @@ class MultiControlledX(ControlledQubitUnitary):
     def decomposition(self, *args, **kwargs):
 
         if len(self.control_wires) > 2 and len(self._work_wires) == 0:
-            raise ValueError(
-                f"At least one work wire is required to decompose operation: {self}"
-            )
+            raise ValueError(f"At least one work wire is required to decompose operation: {self}")
 
         flips1 = [
             qml.PauliX(self.control_wires[i])
