@@ -4,7 +4,7 @@
 
 
 * A new quantum function transform has been added to push commuting
-  single-qubit gates ahead of controlled operations.
+  single-qubit gates through controlled operations.
   [(#1464)](https://github.com/PennyLaneAI/pennylane/pull/1464)
 
   The `commute_controlled` transform works as follows:
@@ -21,7 +21,7 @@
   ```
 
   ```pycon
-  >>> optimized_circuit = qml.transforms.commute_controlled(circuit)
+  >>> optimized_circuit = qml.transforms.commute_controlled(direction="right")(circuit)
   >>> dev = qml.device('default.qubit', wires=3)
   >>> qnode = qml.QNode(optimized_circuit, dev)
   >>> print(qml.draw(qnode)(0.5))

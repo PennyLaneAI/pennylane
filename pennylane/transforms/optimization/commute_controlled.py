@@ -25,6 +25,7 @@ def _commute_controlled_right(op_list):
 
     Args:
         op_list (list[Operation]): The initial list of operations.
+
     Returns:
         list[Operation]: The modified list of operations with all single-qubit
         gates as far right as possible.
