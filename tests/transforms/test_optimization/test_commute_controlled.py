@@ -26,10 +26,10 @@ from utils import (
 
 
 class TestCommuteControlled:
-    """Tests for single-qubit gates being pushed to the right of controlld gates."""
+    """Tests for single-qubit gates being pushed through controlled gates."""
 
     def test_invalid_direction(self):
-        """Test that anything direction than 'left' or 'right' raises an error."""
+        """Test that any direction other than 'left' or 'right' raises an error."""
 
         def qfunc():
             qml.PauliX(wires=2)
