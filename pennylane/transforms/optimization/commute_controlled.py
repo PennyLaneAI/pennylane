@@ -23,7 +23,7 @@ from .optimization_utils import find_next_gate
 
 
 @qfunc_transform
-def commute_through_controls_targets(tape):
+def commute_controlled(tape):
     """Quantum function transform to move commuting gates past
     control and target qubits of controlled operations.
 
@@ -67,7 +67,7 @@ def commute_through_controls_targets(tape):
     with ``CRY``). We can use the transform to push single-qubit gates as
     far as possible through the controlled operations:
 
-    >>> optimized_qfunc = commute_through_controls_targets(qfunc)
+    >>> optimized_qfunc = commute_controlled(qfunc)
     >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
     >>> print(qml.draw(optimized_qnode)(0.5))
      0: ──╭C──╭C──╭C───────────╭C──S─────────Rϕ(0.25)──T──┤ ⟨Z⟩
