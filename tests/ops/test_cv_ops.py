@@ -121,34 +121,10 @@ class TestCV:
         true_matrix = np.array(
             [
                 [1, 0, 0, 0, 0],
-                [
-                    0,
-                    np.cos(theta),
-                    0,
-                    -np.cos(phi) * np.sin(theta),
-                    -np.sin(phi) * np.sin(theta),
-                ],
-                [
-                    0,
-                    0,
-                    np.cos(theta),
-                    np.sin(phi) * np.sin(theta),
-                    -np.cos(phi) * np.sin(theta),
-                ],
-                [
-                    0,
-                    np.cos(phi) * np.sin(theta),
-                    -np.sin(phi) * np.sin(theta),
-                    np.cos(theta),
-                    0,
-                ],
-                [
-                    0,
-                    np.sin(phi) * np.sin(theta),
-                    np.cos(phi) * np.sin(theta),
-                    0,
-                    np.cos(theta),
-                ],
+                [0, np.cos(theta), 0, -np.cos(phi) * np.sin(theta), -np.sin(phi) * np.sin(theta)],
+                [0, 0, np.cos(theta), np.sin(phi) * np.sin(theta), -np.cos(phi) * np.sin(theta)],
+                [0, np.cos(phi) * np.sin(theta), -np.sin(phi) * np.sin(theta), np.cos(theta), 0],
+                [0, np.sin(phi) * np.sin(theta), np.cos(phi) * np.sin(theta), 0, np.cos(theta)],
             ]
         )
         assert np.allclose(matrix, true_matrix)
@@ -182,13 +158,7 @@ class TestCV:
         """ops: Tests the Heisenberg representation of ControlledAddition gate."""
         matrix = cv.ControlledAddition._heisenberg_rep([s])
         true_matrix = np.array(
-            [
-                [1, 0, 0, 0, 0],
-                [0, 1, 0, 0, 0],
-                [0, 0, 1, 0, -s],
-                [0, s, 0, 1, 0],
-                [0, 0, 0, 0, 1],
-            ]
+            [[1, 0, 0, 0, 0], [0, 1, 0, 0, 0], [0, 0, 1, 0, -s], [0, s, 0, 1, 0], [0, 0, 0, 0, 1]]
         )
         assert np.allclose(matrix, true_matrix)
 
@@ -197,13 +167,7 @@ class TestCV:
         """Tests the Heisenberg representation of the ControlledPhase gate."""
         matrix = cv.ControlledPhase._heisenberg_rep([s])
         true_matrix = np.array(
-            [
-                [1, 0, 0, 0, 0],
-                [0, 1, 0, 0, 0],
-                [0, 0, 1, s, 0],
-                [0, 0, 0, 1, 0],
-                [0, s, 0, 0, 1],
-            ]
+            [[1, 0, 0, 0, 0], [0, 1, 0, 0, 0], [0, 0, 1, s, 0], [0, 0, 0, 1, 0], [0, s, 0, 0, 1]]
         )
         assert np.allclose(matrix, true_matrix)
 

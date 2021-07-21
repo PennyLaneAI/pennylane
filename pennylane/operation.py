@@ -411,7 +411,9 @@ class Operator(abc.ABC):
         # pylint: disable=too-many-branches
         self._name = self.__class__.__name__  #: str: name of the operator
         self._id = id
-        self.queue_idx = None  #: int, None: index of the Operator in the circuit queue, or None if not in a queue
+        self.queue_idx = (
+            None
+        )  #: int, None: index of the Operator in the circuit queue, or None if not in a queue
 
         if wires is None:
             raise ValueError("Must specify the wires that {} acts on".format(self.name))
@@ -467,7 +469,9 @@ class Operator(abc.ABC):
     def queue(self, context=qml.QueuingContext):
         """Append the operator to the Operator queue."""
         context.append(self)
-        return self  # so pre-constructed Observable instances can be queued and returned in a single statement
+        return (
+            self
+        )  # so pre-constructed Observable instances can be queued and returned in a single statement
 
 
 # =============================================================================
@@ -1712,7 +1716,9 @@ class CVObservable(CV, Observable):
     returning an array of the correct dimension.
     """
     # pylint: disable=abstract-method
-    ev_order = None  #: None, int: if not None, the observable is a polynomial of the given order in `(x, p)`.
+    ev_order = (
+        None
+    )  #: None, int: if not None, the observable is a polynomial of the given order in `(x, p)`.
 
     def heisenberg_obs(self, wires):
         r"""Representation of the observable in the position/momentum operator basis.

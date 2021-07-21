@@ -500,13 +500,7 @@ class TestDefaultTensorNetworkParametrize:
         assert len(dev._nodes["state"]) == 5
         node_names = [n.name for n in dev._nodes["state"]]
         assert set(node_names) == set(
-            [
-                "ZeroState(0,)",
-                "ZeroState(1,)",
-                "NewNodeX(0,)",
-                "NewNodeY(1,)",
-                "NewNodeZ(0, 1)",
-            ]
+            ["ZeroState(0,)", "ZeroState(1,)", "NewNodeX(0,)", "NewNodeY(1,)", "NewNodeZ(0, 1)"]
         )
         shape = (1, 2, 1) if rep == "mps" else (2,)
         tensors = [n.tensor for n in dev._nodes["state"]]
@@ -622,10 +616,7 @@ class TestDefaultTensorNetworkRepresentationDependentParametrize:
 
     @pytest.mark.parametrize(
         "rep,num_nodes,node_names",
-        [
-            ("exact", 1, ["BellState(0, 1)"]),
-            ("mps", 2, ["BellState(0,)", "BellState(1,)"]),
-        ],
+        [("exact", 1, ["BellState(0, 1)"]), ("mps", 2, ["BellState(0,)", "BellState(1,)"])],
     )
     def test_add_initial_state_nodes_2_wires_entangled(self, rep, num_nodes, node_names):
         """Tests that entangled initial states are properly created for a 2 wire device."""
@@ -655,11 +646,7 @@ class TestDefaultTensorNetworkRepresentationDependentParametrize:
         dev = qml.device("default.tensor", wires=3, representation=rep)
         dev._clear_network_data()
 
-        tensors = [
-            np.array([1.0, 0.0]),
-            np.array([1, -1j]) / np.sqrt(2),
-            np.array([0.0, 1.0]),
-        ]
+        tensors = [np.array([1.0, 0.0]), np.array([1, -1j]) / np.sqrt(2), np.array([0.0, 1.0])]
         wires = [Wires([0]), Wires([1]), Wires([2])]
         names = ["AliceState", "BobState", "CharlieState"]
         dev._add_initial_state_nodes(tensors, wires, names)
@@ -693,11 +680,7 @@ class TestDefaultTensorNetworkRepresentationDependentParametrize:
         "rep,num_nodes,node_names",
         [
             ("exact", 2, ["AliceState(0,)", "BobCharlieState(1, 2)"]),
-            (
-                "mps",
-                3,
-                ["AliceState(0,)", "BobCharlieState(1,)", "BobCharlieState(2,)"],
-            ),
+            ("mps", 3, ["AliceState(0,)", "BobCharlieState(1,)", "BobCharlieState(2,)"]),
         ],
     )
     def test_add_initial_state_nodes_3_wires_biseparable_A_BC(self, rep, num_nodes, node_names):
@@ -887,10 +870,7 @@ class TestDefaultTensorIntegration:
 
             return qml.expval(qml.X(0))
 
-        with pytest.raises(
-            qml._device.DeviceError,
-            match="not supported on device default.tensor",
-        ):
+        with pytest.raises(qml._device.DeviceError, match="not supported on device default.tensor"):
             x = np.random.random([op.num_params])
             circuit(*x)
 
@@ -913,10 +893,7 @@ class TestDefaultTensorIntegration:
             x = prep_par(x, op)
             return qml.expval(op(*x, wires=wires))
 
-        with pytest.raises(
-            qml._device.DeviceError,
-            match="not supported on device default.tensor",
-        ):
+        with pytest.raises(qml._device.DeviceError, match="not supported on device default.tensor"):
             x = np.random.random([op.num_params])
             circuit(*x)
 
@@ -953,13 +930,7 @@ class TestDefaultTensorIntegration:
 
     # This test is ran against the state |0> with one Z expval
     @pytest.mark.parametrize(
-        "name,expected_output",
-        [
-            ("PauliX", -1),
-            ("PauliY", -1),
-            ("PauliZ", 1),
-            ("Hadamard", 0),
-        ],
+        "name,expected_output", [("PauliX", -1), ("PauliY", -1), ("PauliZ", 1), ("Hadamard", 0)]
     )
     def test_supported_gate_single_wire_no_parameters(self, rep, tol, name, expected_output):
         """Tests supported gates that act on a single wire that are not parameterized"""
@@ -980,11 +951,7 @@ class TestDefaultTensorIntegration:
     # This test is ran against the state |Phi+> with two Z expvals
     @pytest.mark.parametrize(
         "name,expected_output",
-        [
-            ("CNOT", [-1 / 2, 1]),
-            ("SWAP", [-1 / 2, -1 / 2]),
-            ("CZ", [-1 / 2, -1 / 2]),
-        ],
+        [("CNOT", [-1 / 2, 1]), ("SWAP", [-1 / 2, -1 / 2]), ("CZ", [-1 / 2, -1 / 2])],
     )
     def test_supported_gate_two_wires_no_parameters(self, rep, tol, name, expected_output):
         """Tests supported gates that act on two wires that are not parameterized"""
@@ -1003,12 +970,7 @@ class TestDefaultTensorIntegration:
 
         assert np.allclose(circuit(), expected_output, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize(
-        "name,expected_output",
-        [
-            ("CSWAP", [-1, -1, 1]),
-        ],
-    )
+    @pytest.mark.parametrize("name,expected_output", [("CSWAP", [-1, -1, 1])])
     def test_supported_gate_three_wires_no_parameters(self, rep, tol, name, expected_output):
         """Tests supported gates that act on three wires that are not parameterized"""
 
@@ -1023,11 +985,7 @@ class TestDefaultTensorIntegration:
         def circuit():
             qml.BasisState(np.array([1, 0, 1]), wires=[0, 1, 2])
             op(wires=[0, 1, 2])
-            return (
-                qml.expval(qml.PauliZ(0)),
-                qml.expval(qml.PauliZ(1)),
-                qml.expval(qml.PauliZ(2)),
-            )
+            return (qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliZ(2)))
 
         assert np.allclose(circuit(), expected_output, atol=tol, rtol=0)
 
@@ -1277,23 +1235,9 @@ class TestDefaultTensorIntegration:
             ),
             (
                 "Hermitian",
-                [
-                    1 / math.sqrt(3),
-                    -1 / math.sqrt(3),
-                    1 / math.sqrt(6),
-                    1 / math.sqrt(6),
-                ],
+                [1 / math.sqrt(3), -1 / math.sqrt(3), 1 / math.sqrt(6), 1 / math.sqrt(6)],
                 1,
-                [
-                    np.array(
-                        [
-                            [1, 1j, 0, 0.5j],
-                            [-1j, 1, 0, 0],
-                            [0, 0, 1, -1j],
-                            [-0.5j, 0, 1j, 1],
-                        ]
-                    )
-                ],
+                [np.array([[1, 1j, 0, 0.5j], [-1j, 1, 0, 0], [0, 0, 1, -1j], [-0.5j, 0, 1j, 1]])],
             ),
             (
                 "Hermitian",
@@ -1526,10 +1470,7 @@ class TestTensorExpval:
         dev.apply("CNOT", wires=Wires([0, 1]), par=[])
 
         A = np.array(
-            [
-                [1.02789352, 1.61296440 - 0.3498192j],
-                [1.61296440 + 0.3498192j, 1.23920938 + 0j],
-            ]
+            [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
         )
 
         res = dev.expval(["Hermitian", "Identity"], [Wires([0]), Wires([1])], [[A], []])

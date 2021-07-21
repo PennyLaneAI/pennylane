@@ -514,14 +514,7 @@ class CY(Operation):
     num_wires = 2
     par_domain = None
     is_self_inverse = True
-    matrix = np.array(
-        [
-            [1, 0, 0, 0],
-            [0, 1, 0, 0],
-            [0, 0, 0, -1j],
-            [0, 0, 1j, 0],
-        ]
-    )
+    matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]])
 
     @classmethod
     def _matrix(cls, *params):
@@ -1269,8 +1262,7 @@ class PauliRot(Operation):
 
         # now we conjugate with Hadamard and RX to create the Pauli string
         conjugation_matrix = functools.reduce(
-            np.kron,
-            [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
+            np.kron, [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates]
         )
 
         return expand(
@@ -1302,8 +1294,7 @@ class PauliRot(Operation):
 
             # now we conjugate with Hadamard and RX to create the Pauli string
             conjugation_matrix = functools.reduce(
-                np.kron,
-                [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
+                np.kron, [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates]
             )
 
             self._generator = [
@@ -1568,14 +1559,7 @@ class CRZ(DiagonalOperation):
     @classmethod
     def _eigvals(cls, *params):
         theta = params[0]
-        return np.array(
-            [
-                1,
-                1,
-                cmath.exp(-0.5j * theta),
-                cmath.exp(0.5j * theta),
-            ]
-        )
+        return np.array([1, 1, cmath.exp(-0.5j * theta), cmath.exp(0.5j * theta)])
 
     @staticmethod
     def decomposition(lam, wires):
@@ -1881,11 +1865,7 @@ class IsingXX(Operation):
 
     @staticmethod
     def decomposition(phi, wires):
-        decomp_ops = [
-            CNOT(wires=wires),
-            RX(phi, wires=[wires[0]]),
-            CNOT(wires=wires),
-        ]
+        decomp_ops = [CNOT(wires=wires), RX(phi, wires=[wires[0]]), CNOT(wires=wires)]
         return decomp_ops
 
     def adjoint(self):
@@ -1923,11 +1903,7 @@ class IsingYY(Operation):
 
     @staticmethod
     def decomposition(phi, wires):
-        return [
-            qml.CY(wires=wires),
-            qml.RY(phi, wires=[wires[0]]),
-            qml.CY(wires=wires),
-        ]
+        return [qml.CY(wires=wires), qml.RY(phi, wires=[wires[0]]), qml.CY(wires=wires)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1979,11 +1955,7 @@ class IsingZZ(Operation):
 
     @staticmethod
     def decomposition(phi, wires):
-        return [
-            qml.CNOT(wires=wires),
-            qml.RZ(phi, wires=[wires[1]]),
-            qml.CNOT(wires=wires),
-        ]
+        return [qml.CNOT(wires=wires), qml.RZ(phi, wires=[wires[1]]), qml.CNOT(wires=wires)]
 
     @classmethod
     def _matrix(cls, *params):

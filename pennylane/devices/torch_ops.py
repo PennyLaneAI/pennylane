@@ -295,6 +295,7 @@ def CRot(a, b, c, device):
     """
     return torch.diag(CRZ(c, device)) @ CRY(b, device) @ torch.diag(CRZ(a, device))
 
+
 def IsingXX(phi, device):
     r"""Ising XX coupling gate
 

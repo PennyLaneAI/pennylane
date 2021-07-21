@@ -158,10 +158,7 @@ class DefaultTensor(Device):
         super().__init__(wires, shots)
         if representation not in ["exact", "mps"]:
             raise ValueError("Invalid representation. Must be one of 'exact' or 'mps'.")
-        self._operation_and_observable_map = {
-            **self._operation_map,
-            **self._observable_map,
-        }
+        self._operation_and_observable_map = {**self._operation_map, **self._observable_map}
         self._rep = representation
         self._contraction_method = contraction_method
         self.reset()
@@ -294,9 +291,7 @@ class DefaultTensor(Device):
                             node = self._add_node(DV, wires=wire, name=name)
                         nodes.append(node)
             self.mps = tn.matrixproductstates.finite_mps.FiniteMPS(
-                [node.tensor for node in nodes],
-                canonicalize=False,
-                backend=self.backend,
+                [node.tensor for node in nodes], canonicalize=False, backend=self.backend
             )
             self._free_wire_edges = [node[1] for node in self.mps.nodes]
 

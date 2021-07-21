@@ -96,8 +96,7 @@ def decompose_hamiltonian(H, hide_identity=False):
             if not all(t is qml.Identity for t in term) and hide_identity:
                 obs.append(
                     functools.reduce(
-                        matmul,
-                        [t(i) for i, t in enumerate(term) if t is not qml.Identity],
+                        matmul, [t(i) for i, t in enumerate(term) if t is not qml.Identity]
                     )
                 )
             else:
@@ -349,8 +348,7 @@ def inv(operation_list):
     """
 
     warnings.warn(
-        "Use of qml.inv() is deprecated and should be replaced with qml.adjoint().",
-        UserWarning,
+        "Use of qml.inv() is deprecated and should be replaced with qml.adjoint().", UserWarning
     )
     if isinstance(operation_list, qml.operation.Operation):
         operation_list = [operation_list]

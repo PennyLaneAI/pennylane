@@ -106,10 +106,7 @@ def test_analytic_deprecation():
     msg = "The analytic argument has been replaced by shots=None. "
     msg += "Please use shots=None instead of analytic=True."
 
-    with pytest.raises(
-        DeviceError,
-        match=msg,
-    ):
+    with pytest.raises(DeviceError, match=msg):
         qml.device("default.qubit", wires=1, shots=1, analytic=True)
 
 
@@ -253,10 +250,7 @@ class TestApply:
         qubit_device_2_wires.apply([operation(wires=[0, 1]).inv()])
 
         assert np.allclose(
-            qubit_device_2_wires._state.flatten(),
-            np.array(expected_output),
-            atol=tol,
-            rtol=0,
+            qubit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
         )
 
     test_data_three_wires_no_parameters = [
@@ -1989,9 +1983,7 @@ class TestApplyOps:
         (qml.SWAP, dev._apply_swap),
         (qml.CZ, dev._apply_cz),
     ]
-    three_qubit_ops = [
-        (qml.Toffoli, dev._apply_toffoli),
-    ]
+    three_qubit_ops = [(qml.Toffoli, dev._apply_toffoli)]
 
     @pytest.mark.parametrize("op, method", single_qubit_ops)
     def test_apply_single_qubit_op(self, op, method, inverse):

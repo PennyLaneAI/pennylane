@@ -66,12 +66,7 @@ crz = lambda theta: np.array(
 single_qubit = [(qml.PauliX, X), (qml.PauliY, Y), (qml.PauliZ, Z), (qml.Hadamard, H)]
 
 
-single_qubit_param = [
-    (qml.PhaseShift, phase_shift),
-    (qml.RX, rx),
-    (qml.RY, ry),
-    (qml.RZ, rz),
-]
+single_qubit_param = [(qml.PhaseShift, phase_shift), (qml.RX, rx), (qml.RY, ry), (qml.RZ, rz)]
 two_qubit = [(qml.CNOT, CNOT), (qml.SWAP, SWAP)]
 two_qubit_param = [(qml.CRZ, crz)]
 three_qubit = [(qml.Toffoli, Toffoli), (qml.CSWAP, CSWAP)]
@@ -496,11 +491,7 @@ class TestJacobianIntegration:
 
         res = qml.jacobian(circuit)(p)
         expected = np.array(
-            [
-                -np.cos(x) * np.sin(y) ** 2,
-                -2 * (np.sin(x) + 1) * np.sin(y) * np.cos(y),
-                0,
-            ]
+            [-np.cos(x) * np.sin(y) ** 2, -2 * (np.sin(x) + 1) * np.sin(y) * np.cos(y), 0]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 

@@ -1189,24 +1189,7 @@ class TestCycles:
         coeffs = [1, -1, -1, 1]
         ops = [qml.Identity(0), qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(3)]
 
-        expected_coeffs = [
-            1,
-            -1,
-            -1,
-            1,
-            -1,
-            1,
-            1,
-            -1,
-            -1,
-            1,
-            1,
-            -1,
-            1,
-            -1,
-            -1,
-            1,
-        ]
+        expected_coeffs = [1, -1, -1, 1, -1, 1, 1, -1, -1, 1, 1, -1, 1, -1, -1, 1]
         expected_ops = [
             qml.Identity(0),
             qml.PauliZ(0),

@@ -256,24 +256,14 @@ class TestInputs:
             weights=weights, wires=wires, hf_state=hf_state, singles=singles, doubles=doubles
         ):
             qml.templates.AllSinglesDoubles(
-                weights=weights,
-                wires=wires,
-                hf_state=hf_state,
-                singles=singles,
-                doubles=doubles,
+                weights=weights, wires=wires, hf_state=hf_state, singles=singles, doubles=doubles
             )
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, dev)
 
         with pytest.raises(ValueError, match=msg_match):
-            qnode(
-                weights=weights,
-                wires=wires,
-                hf_state=hf_state,
-                singles=singles,
-                doubles=doubles,
-            )
+            qnode(weights=weights, wires=wires, hf_state=hf_state, singles=singles, doubles=doubles)
 
     def test_id(self):
         """Tests that the id attribute can be set."""

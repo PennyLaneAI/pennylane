@@ -29,16 +29,8 @@ def mock_queuing_context(monkeypatch):
     """A mock instance of the abstract QueuingContext class."""
     with monkeypatch.context() as m:
         m.setattr(QueuingContext, "__abstractmethods__", frozenset())
-        m.setattr(
-            QueuingContext,
-            "_append",
-            lambda self, operator: self.queue.append(operator),
-        )
-        m.setattr(
-            QueuingContext,
-            "_remove",
-            lambda self, operator: self.queue.remove(operator),
-        )
+        m.setattr(QueuingContext, "_append", lambda self, operator: self.queue.append(operator))
+        m.setattr(QueuingContext, "_remove", lambda self, operator: self.queue.remove(operator))
         context = QueuingContext()
         context.queue = []
 
@@ -50,16 +42,8 @@ def three_mock_queuing_contexts(monkeypatch):
     """A list of three mock instances of the abstract QueuingContext class."""
     with monkeypatch.context() as m:
         m.setattr(QueuingContext, "__abstractmethods__", frozenset())
-        m.setattr(
-            QueuingContext,
-            "_append",
-            lambda self, operator: self.queue.append(operator),
-        )
-        m.setattr(
-            QueuingContext,
-            "_remove",
-            lambda self, operator: self.queue.remove(operator),
-        )
+        m.setattr(QueuingContext, "_append", lambda self, operator: self.queue.append(operator))
+        m.setattr(QueuingContext, "_remove", lambda self, operator: self.queue.remove(operator))
 
         contexts = [QueuingContext() for _ in range(3)]
         for context in contexts:

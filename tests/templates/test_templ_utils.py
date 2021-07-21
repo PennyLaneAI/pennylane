@@ -84,30 +84,17 @@ SHAPE_LST_FAIL = [
     ([[-2.3, 0.1], -1.0], [(3,), ()], "min"),
 ]
 
-LAYERS_PASS = [
-    ([[1], [2], [3]], 1),
-    ([[[1], [2], [3]], [[1], [2], [3]]], 3),
-]
+LAYERS_PASS = [([[1], [2], [3]], 1), ([[[1], [2], [3]], [[1], [2], [3]]], 3)]
 
-LAYERS_FAIL = [
-    ([[[1], [2], [3]], 1], 5),
-    ([[[1], [2], [3]], [[1], [2]]], 4),
-]
+LAYERS_FAIL = [([[[1], [2], [3]], 1], 5), ([[[1], [2], [3]], [[1], [2]]], 4)]
 
 OPTIONS_PASS = [("a", ["a", "b"])]
 
 OPTIONS_FAIL = [("c", ["a", "b"])]
 
-TYPE_PASS = [
-    (["a"], list, type(None)),
-    (1, int, type(None)),
-    ("a", int, str),
-]
+TYPE_PASS = [(["a"], list, type(None)), (1, int, type(None)), ("a", int, str)]
 
-TYPE_FAIL = [
-    ("a", list, type(None)),
-    (type(None), int, list),
-]
+TYPE_FAIL = [("a", list, type(None)), (type(None), int, list)]
 
 
 ##############################
