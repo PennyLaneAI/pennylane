@@ -13,8 +13,6 @@
 # limitations under the License.
 """Transforms for pushing commuting gates through targets/control qubits."""
 
-from itertools import chain
-
 from pennylane import apply
 from pennylane.wires import Wires
 from pennylane.transforms import qfunc_transform
