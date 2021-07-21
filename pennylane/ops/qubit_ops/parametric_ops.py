@@ -32,6 +32,8 @@ from pennylane.templates.state_preparations import BasisStatePreparation, Motton
 from pennylane.utils import expand, pauli_eigs
 from pennylane.wires import Wires
 
+from .non_parametric_ops import PauliX, PauliY, PauliZ, Hadamard
+
 INV_SQRT2 = 1 / math.sqrt(2)
 
 

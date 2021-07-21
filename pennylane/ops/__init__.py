@@ -24,15 +24,16 @@ from pennylane.operation import AnyWires, Observable, CVObservable
 
 from .cv import *
 #from .qubit import *
+from .qubit_ops import *
 from .channel import *
 
 from .cv import __all__ as _cv__all__
 from .cv import ops as _cv__ops__
 from .cv import obs as _cv__obs__
 
-from .qubit import __all__ as _qubit__all__
-from .qubit import ops as _qubit__ops__
-from .qubit import obs as _qubit__obs__
+from .qubit_ops import __all__ as _qubit__all__
+from .qubit_ops import ops as _qubit__ops__
+from .qubit_ops import obs as _qubit__obs__
 
 from .channel import __all__ as _channel__ops__
 

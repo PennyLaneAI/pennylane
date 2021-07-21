@@ -15,7 +15,7 @@
 # pylint: disable=too-many-branches
 from pennylane import apply
 from pennylane.transforms import qfunc_transform
-from pennylane.ops.qubit import Rot
+from pennylane.ops.qubit_ops import Rot
 from pennylane.math import allclose, cast_like, stack, zeros
 
 from .optimization_utils import find_next_gate, fuse_rot_angles

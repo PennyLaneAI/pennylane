@@ -34,6 +34,13 @@ from pennylane.wires import Wires
 
 INV_SQRT2 = 1 / math.sqrt(2)
 
+# Four term gradient recipe for controlled rotations
+c1 = INV_SQRT2 * (np.sqrt(2) + 1) / 4
+c2 = INV_SQRT2 * (np.sqrt(2) - 1) / 4
+a = np.pi / 2
+b = 3 * np.pi / 2
+four_term_grad_recipe = ([[c1, 1, a], [-c1, 1, -a], [-c2, 1, b], [c2, 1, -b]],)
+
 
 class IsingXX(Operation):
     r"""IsingXX(phi, wires)
