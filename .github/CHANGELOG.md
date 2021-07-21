@@ -258,6 +258,10 @@
 
 <h3>Improvements</h3>
 
+* Changed to using `np.object_` instead of `np.object` as per the NumPy
+  deprecations starting version 1.20.
+  [(#1466)](https://github.com/PennyLaneAI/pennylane/pull/1466)
+
 * Change the order of the covariance matrix and the vector of means internally
   in `default.gaussian`. [(#1331)](https://github.com/PennyLaneAI/pennylane/pull/1331)
 
@@ -304,7 +308,7 @@
 This release contains contributions from (in alphabetical order):
 
 Olivia Di Matteo, Josh Izaac, Leonhard Kunczik, Christina Lee, Romain Moyard, Ashish Panigrahi,
-Maria Schuld, Jay Soni
+Maria Schuld, Jay Soni, Antal Száva
 
 
 # Release 0.16.0 (current release)
