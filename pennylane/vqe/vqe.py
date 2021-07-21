@@ -463,6 +463,7 @@ class Hamiltonian(qml.operation.Observable):
     def diagonalizing_gates(self):
         return []
 
+
 class ExpvalCost:
     """Create a cost function that gives the expectation value of an input Hamiltonian.
 

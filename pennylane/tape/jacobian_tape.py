@@ -614,7 +614,9 @@ class JacobianTape(QuantumTape):
 
             if op.name == "Hamiltonian":
                 # divert Hamiltonian differentiation to special recipe
-                tapes, processing_fn = qml.gradients.hamiltonian_grad(self, trainable_idx, params=params)
+                tapes, processing_fn = qml.gradients.hamiltonian_grad(
+                    self, trainable_idx, params=params
+                )
 
             elif (method == "best" and param_method[0] == "F") or (method == "numeric"):
                 # numeric method

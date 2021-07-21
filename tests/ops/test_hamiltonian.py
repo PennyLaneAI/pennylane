@@ -91,37 +91,36 @@ class TestHamiltonianCoefficients:
 
 
 # class TestVQEEvaluation:
-    # @pytest.mark.parametrize("coeffs, param, interface", COEFFS_PARAM_INTERFACE)
-    # def test_vqe_forward_different_coeff_types(self, coeffs, param, interface):
-    #     dev = qml.device("default.qubit", wires=2)
-    #     H = qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)])
-    #     H.group()
-    #
-    #     @qml.qnode(dev, interface=interface)
-    #     def circuit():
-    #         qml.RX(param, wires=0)
-    #         qml.RY(param, wires=0)
-    #         return qml.expval(H)
-    #
-    #     @qml.qnode(dev, interface=interface)
-    #     def circuit1():
-    #         qml.RX(param, wires=0)
-    #         qml.RY(param, wires=0)
-    #         return qml.expval(qml.PauliX(0))
-    #
-    #     @qml.qnode(dev, interface=interface)
-    #     def circuit2():
-    #         qml.RX(param, wires=0)
-    #         qml.RY(param, wires=0)
-    #         return qml.expval(qml.PauliZ(0))
-    #
-    #     res = circuit()
-    #     res_expected = coeffs[0] * circuit1() + coeffs[1] * circuit2()
-    #     assert np.isclose(res, res_expected)
+# @pytest.mark.parametrize("coeffs, param, interface", COEFFS_PARAM_INTERFACE)
+# def test_vqe_forward_different_coeff_types(self, coeffs, param, interface):
+#     dev = qml.device("default.qubit", wires=2)
+#     H = qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)])
+#     H.group()
+#
+#     @qml.qnode(dev, interface=interface)
+#     def circuit():
+#         qml.RX(param, wires=0)
+#         qml.RY(param, wires=0)
+#         return qml.expval(H)
+#
+#     @qml.qnode(dev, interface=interface)
+#     def circuit1():
+#         qml.RX(param, wires=0)
+#         qml.RY(param, wires=0)
+#         return qml.expval(qml.PauliX(0))
+#
+#     @qml.qnode(dev, interface=interface)
+#     def circuit2():
+#         qml.RX(param, wires=0)
+#         qml.RY(param, wires=0)
+#         return qml.expval(qml.PauliZ(0))
+#
+#     res = circuit()
+#     res_expected = coeffs[0] * circuit1() + coeffs[1] * circuit2()
+#     assert np.isclose(res, res_expected)
 
 
 class TestVQEdifferentiation:
-
     def test_vqe_differentiation_paramshift(self):
         coeffs = pnp.array([-0.05, 0.17], requires_grad=True)
         param = pnp.array(1.7, requires_grad=True)
@@ -149,7 +148,7 @@ class TestVQEdifferentiation:
 
         assert np.allclose(grad[0], grad_expected[0])
         # currently returning a wrong result due to hack implementing hamiltonian obs
-        #assert np.allclose(grad[1], grad_expected[1])
+        # assert np.allclose(grad[1], grad_expected[1])
 
     # def test_vqe_differentiation_autograd(self):
     #     coeffs = pnp.array([-0.05, 0.17], requires_grad=True)
