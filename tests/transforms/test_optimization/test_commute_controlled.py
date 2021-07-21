@@ -25,11 +25,11 @@ from utils import (
 )
 
 
-class TestCommuteBehindControlsTargets:
-    """Test that X rotations are properly pushed behind targets of X-based controlled operations."""
+class TestCommuteControlledRight:
+    """Tests for single-qubit gates being pushed to the right of controlld gates."""
 
-    def test_push_behind_x_gates(self):
-        """Test that X-basis gates after controlled-X-type gates on targets get pushed behind."""
+    def test_push_x_gates_right(self):
+        """Test that X-basis gates before controlled-X-type gates on targets get pushed ahead."""
 
         def qfunc():
             qml.PauliX(wires=2)
@@ -56,9 +56,10 @@ class TestCommuteBehindControlsTargets:
         ]
         compare_operation_lists(ops, names_expected, wires_expected)
 
-    def test_dont_push_x_behind_controls(self):
-        """Test that X-basis gates after controlled-X-type gates on controls do not get
-        pushed behind.
+    def test_dont_push_x_gates_right(self):
+        """Test that X-basis gates before controlled-X-type gates on controls do not get
+        pushed ahead.
+
         """
 
         def qfunc():
@@ -75,8 +76,8 @@ class TestCommuteBehindControlsTargets:
         wires_expected = [Wires("a"), Wires(["a", "c"]), Wires("a"), Wires(["c", "a", "b"])]
         compare_operation_lists(ops, names_expected, wires_expected)
 
-    def test_push_behind_y_gates(self):
-        """Test that Y-basis gates after controlled-Y-type gates on targets get pushed behind."""
+    def test_push_y_gates_right(self):
+        """Test that Y-basis gates before controlled-Y-type gates on targets get pushed ahead."""
 
         def qfunc():
             qml.PauliY(wires=2)
@@ -93,9 +94,9 @@ class TestCommuteBehindControlsTargets:
         wires_expected = [Wires(["a", 2]), Wires(2), Wires([1, 2]), Wires(["a", 1]), Wires(1)]
         compare_operation_lists(ops, names_expected, wires_expected)
 
-    def test_dont_push_y_behind_controls(self):
-        """Test that Y-basis gates after controlled-Y-type gates on controls do not get
-        pushed behind.
+    def test_dont_push_y_gates_right(self):
+        """Test that Y-basis gates before controlled-Y-type gates on controls do not get
+        pushed ahead.
         """
 
         def qfunc():
@@ -113,9 +114,9 @@ class TestCommuteBehindControlsTargets:
         wires_expected = [Wires(["a", 2]), Wires("a"), Wires([1, 2]), Wires(["a", 1]), Wires("a")]
         compare_operation_lists(ops, names_expected, wires_expected)
 
-    def test_push_behind_z_gates(self):
-        """Test that Z-basis gates after controlled-Z-type gates on controls *and*
-        targets get pushed behind."""
+    def test_push_z_gates_right(self):
+        """Test that Z-basis gates before controlled-Z-type gates on controls *and*
+        targets get pushed ahead."""
 
         def qfunc():
             qml.PauliZ(wires=2)
@@ -140,9 +141,9 @@ class TestCommuteBehindControlsTargets:
 
         compare_operation_lists(ops, names_expected, wires_expected)
 
-    def test_push_behind_mixed_with_matrix(self):
-        """Test that Z-basis gates after controlled-Z-type gates on controls *and*
-        targets get pushed behind."""
+    def test_push_right_mixed_with_matrix(self):
+        """Test that arbitrary gates after controlled  gates on controls *and*
+        targets get pushed ahead."""
 
         def qfunc():
             qml.PauliX(wires=1)
@@ -202,7 +203,7 @@ expected_wires_list = [
 ]
 
 
-class TestCommuteThroughControlsTargetsInterfaces:
+class TestCommuteControlledInterfaces:
     """Test that single-qubit gates can be pushed through controlled gates in all interfaces."""
 
     def test_commute_controlled_autograd(self):
@@ -251,7 +252,7 @@ class TestCommuteThroughControlsTargetsInterfaces:
         ops = transformed_qnode.qtape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
-    def test_commute_x_behind_targets_tf(self):
+    def test_commute_controlled_tf(self):
         """Test QNode and gradient in tensorflow interface."""
         tf = pytest.importorskip("tensorflow")
 
@@ -282,7 +283,7 @@ class TestCommuteThroughControlsTargetsInterfaces:
         ops = transformed_qnode.qtape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
-    def test_commute_x_behind_targets_jax(self):
+    def test_commute_controlled_jax(self):
         """Test QNode and gradient in JAX interface."""
         jax = pytest.importorskip("jax")
         from jax import numpy as jnp
