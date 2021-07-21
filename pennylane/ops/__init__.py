@@ -23,7 +23,7 @@ import numpy as np
 from pennylane.operation import AnyWires, Observable, CVObservable
 
 from .cv import *
-from .qubit import *
+#from .qubit import *
 from .channel import *
 
 from .cv import __all__ as _cv__all__
