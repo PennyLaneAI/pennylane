@@ -115,10 +115,6 @@ class Hamiltonian(qml.operation.Observable):
         self._ops = list(observables)
         self._wires = qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
 
-        if isinstance(coeffs, list):
-            coeffs = np.array(coeffs)
-        self.data = [coeffs]
-
         self.return_type = None
 
         self._grouped_coeffs = None
@@ -129,7 +125,10 @@ class Hamiltonian(qml.operation.Observable):
         if group:
             self.group()
 
-        super().__init__(coeffs, wires=self._wires, id=id, do_queue=False)
+        coeffs_flat = [coeffs[i] for i in range(qml.math.shape(coeffs)[0])]
+        # overwrite, now that we have the info
+        self.num_params = len(coeffs_flat)
+        super().__init__(*coeffs_flat, wires=self._wires, id=id, do_queue=False)
 
     @property
     def coeffs(self):
