@@ -208,8 +208,8 @@ class TestCommuteThroughControlsTargetsInterfaces:
     def test_commute_controlled_autograd(self):
         """Test QNode and gradient in autograd interface."""
 
-        original_qnode = qml.QNode(qfunc, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        original_qnode = qml.QNode(qfunc, dev, interface="autograd")
+        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="autograd")
 
         input = np.array([0.1, 0.2], requires_grad=True)
 

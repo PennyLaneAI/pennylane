@@ -7,7 +7,7 @@
   single-qubit gates ahead of controlled operations.
   [(#1464)](https://github.com/PennyLaneAI/pennylane/pull/1464)
 
-  The `commute_through_controls_targets` transform works as follows:
+  The `commute_controlled` transform works as follows:
 
   ```python
   def circuit(theta):
@@ -21,7 +21,7 @@
   ```
 
   ```pycon
-  >>> optimized_circuit = qml.transforms.commute_through_controls_targets(circuit)
+  >>> optimized_circuit = qml.transforms.commute_controlled(circuit)
   >>> dev = qml.device('default.qubit', wires=3)
   >>> qnode = qml.QNode(optimized_circuit, dev)
   >>> print(qml.draw(qnode)(0.5))
