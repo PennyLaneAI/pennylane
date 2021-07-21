@@ -40,7 +40,7 @@ class TestCommuteBehindControlsTargets:
             qml.PauliX(wires=1)
             qml.CRX(0.1, wires=[0, 1])
 
-        transformed_qfunc = commute_controlled(qfunc)
+        transformed_qfunc = commute_controlled()(qfunc)
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
@@ -67,7 +67,7 @@ class TestCommuteBehindControlsTargets:
             qml.RX(0.2, wires="a")
             qml.Toffoli(wires=["c", "a", "b"])
 
-        transformed_qfunc = commute_controlled(qfunc)
+        transformed_qfunc = commute_controlled()(qfunc)
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
@@ -85,7 +85,7 @@ class TestCommuteBehindControlsTargets:
             qml.RY(0.3, wires=1)
             qml.CY(wires=["a", 1])
 
-        transformed_qfunc = commute_controlled(qfunc)
+        transformed_qfunc = commute_controlled()(qfunc)
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
@@ -105,7 +105,7 @@ class TestCommuteBehindControlsTargets:
             qml.CY(wires=["a", 1])
             qml.RY(0.3, wires="a")
 
-        transformed_qfunc = commute_controlled(qfunc)
+        transformed_qfunc = commute_controlled()(qfunc)
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
@@ -129,7 +129,7 @@ class TestCommuteBehindControlsTargets:
             qml.PauliZ(wires=0)
             qml.CRZ(0.5, wires=[0, 1])
 
-        transformed_qfunc = commute_controlled(qfunc)
+        transformed_qfunc = commute_controlled()(qfunc)
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
@@ -158,7 +158,7 @@ class TestCommuteBehindControlsTargets:
             qml.PauliX(wires=1)
             qml.CRY(0.2, wires=[1, 0])
 
-        transformed_qfunc = commute_controlled(qfunc)
+        transformed_qfunc = commute_controlled()(qfunc)
 
         original_ops = qml.transforms.make_tape(qfunc)().operations
         transformed_ops = qml.transforms.make_tape(transformed_qfunc)().operations
@@ -187,7 +187,7 @@ def qfunc(theta):
     return qml.expval(qml.PauliZ(0))
 
 
-transformed_qfunc = commute_controlled(qfunc)
+transformed_qfunc = commute_controlled()(qfunc)
 
 expected_op_list = ["PauliX", "CNOT", "CRY", "PauliY", "Toffoli", "S", "PhaseShift", "T"]
 expected_wires_list = [
