@@ -15,15 +15,25 @@
 This module contains the available built-in discrete-variable
 quantum operations supported by PennyLane, as well as their conventions.
 """
+import cmath
 import functools
 import warnings
 
 # pylint:disable=abstract-method,arguments-differ,protected-access
+import math
 import numpy as np
+import scipy
+from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import AnyWires, AllWires, DiagonalOperation, Observable, Operation
+from pennylane.templates.decorator import template
+from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
+from pennylane.utils import expand, pauli_eigs
 from pennylane.wires import Wires
+
+INV_SQRT2 = 1 / math.sqrt(2)
+
 
 
 class QFT(Operation):
