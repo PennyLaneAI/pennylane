@@ -20,6 +20,7 @@ quantum operations supported by PennyLane, as well as their conventions.
 from pennylane.operation import AnyWires, Operation
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 
+
 class AdjointError(Exception):
     """Exception for non-adjointable operations."""
 
