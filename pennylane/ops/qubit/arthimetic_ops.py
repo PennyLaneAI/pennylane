@@ -20,7 +20,7 @@ quantum operations supported by PennyLane, as well as their conventions.
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, AllWires, Operation
+from pennylane.operation import Operation
 from pennylane.wires import Wires
 
 

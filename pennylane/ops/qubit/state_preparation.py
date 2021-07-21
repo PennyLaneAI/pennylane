@@ -17,10 +17,13 @@ quantum operations supported by PennyLane, as well as their conventions.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access
 
-import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
-from pennylane.wires import Wires
+
+class AdjointError(Exception):
+    """Exception for non-adjointable operations."""
+
+    pass
 
 
 class BasisState(Operation):

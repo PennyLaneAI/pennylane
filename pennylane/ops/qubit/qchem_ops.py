@@ -16,8 +16,6 @@ This module contains the available built-in discrete-variable
 quantum operations supported by PennyLane, as well as their conventions.
 """
 import cmath
-import functools
-import warnings
 
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import math
@@ -25,6 +23,9 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operation
+
+from .non_parametric_ops import CNOT
+from .parametric_ops import RX
 
 INV_SQRT2 = 1 / math.sqrt(2)
 

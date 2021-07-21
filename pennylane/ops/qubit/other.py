@@ -16,14 +16,12 @@ This module contains the available built-in discrete-variable
 quantum operations supported by PennyLane, as well as their conventions.
 """
 import functools
-import warnings
 
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import numpy as np
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
-from pennylane.wires import Wires
 
 
 class QFT(Operation):

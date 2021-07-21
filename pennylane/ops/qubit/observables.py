@@ -20,8 +20,10 @@ import numpy as np
 import scipy
 
 import pennylane as qml
-from pennylane.operation import AnyWires, AllWires, Observable, Operation
+from pennylane.operation import AnyWires, AllWires, Observable
 from pennylane.wires import Wires
+
+from .arbitrary_ops import QubitUnitary
 
 
 class Hermitian(Observable):
