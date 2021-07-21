@@ -50,6 +50,9 @@ Z = op_matrix(Z_array)
 
 II = op_matrix(np.eye(4))
 ZZ = op_matrix(np.kron(Z_array, Z_array))
+XX = op_matrix(np.kron(X_array, X_array))
+YY = op_matrix(np.kron(Y_array, Y_array))
+
 
 IX = op_matrix(np.kron(I_array, X_array))
 IY = op_matrix(np.kron(I_array, Y_array))
@@ -291,6 +294,70 @@ def CRot(a, b, c, device):
         :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R(a,b,c)`
     """
     return torch.diag(CRZ(c, device)) @ CRY(b, device) @ torch.diag(CRZ(a, device))
+
+def IsingXX(phi, device):
+    r"""Ising XX coupling gate
+
+    .. math:: XX(\phi) = \begin{bmatrix}
+        \cos(\phi / 2) & 0 & 0 & -i \sin(\phi / 2) \\
+        0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
+        0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
+        -i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
+        \end{bmatrix}.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        device: torch device on which the computation is made 'cpu' or 'cuda'
+
+    Returns:
+        torch.Tensor[complex]:: unitary 4x4 rotation matrix
+    """
+    phi = torch.as_tensor(phi, dtype=C_DTYPE, device=device)
+    return torch.cos(phi / 2) * II - 1j * torch.sin(phi / 2) * XX
+
+
+def IsingYY(phi, device):
+    r"""Ising YY coupling gate
+
+    .. math:: YY(\phi) = \begin{bmatrix}
+        \cos(\phi / 2) & 0 & 0 & i \sin(\phi / 2) \\
+        0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
+        0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
+        i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
+        \end{bmatrix}.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        device: torch device on which the computation is made 'cpu' or 'cuda'
+
+    Returns:
+        tf.Tensor[complex]: unitary 4x4 rotation matrix
+    """
+    phi = torch.as_tensor(phi, dtype=C_DTYPE, device=device)
+    return torch.cos(phi / 2) * II - 1j * torch.sin(phi / 2) * YY
+
+
+def IsingZZ(phi, device):
+    r"""Ising ZZ coupling gate
+
+    .. math:: ZZ(\phi) = \begin{bmatrix}
+        e^{-i \phi / 2} & 0 & 0 & 0 \\
+        0 & e^{i \phi / 2} & 0 & 0 \\
+        0 & 0 & e^{i \phi / 2} & 0 \\
+        0 & 0 & 0 & e^{-i \phi / 2}
+        \end{bmatrix}.
+
+    Args:
+        phi (float): rotation :math:`\phi`
+        device: torch device on which the computation is made 'cpu' or 'cuda'
+
+    Returns:
+        tf.Tensor[complex]: unitary 4x4 rotation matrix
+    """
+    phi = torch.as_tensor(phi, dtype=C_DTYPE, device=device)
+    e_m = torch.exp(-1j * phi / 2)
+    e = torch.exp(1j * phi / 2)
+    return torch.as_tensor([[e_m, 0, 0, 0], [0, e, 0, 0], [0, 0, e, 0], [0, 0, 0, e_m]])
 
 
 def SingleExcitation(phi, device):
