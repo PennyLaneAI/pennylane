@@ -22,7 +22,7 @@ body:
     attributes:
       label: Expected behavior
       description: |
-        What you expect to happen?
+        What do you expect to happen?
     validations:
       required: true
   - type: textarea
@@ -38,7 +38,7 @@ body:
     attributes:
       label: Additional information
       description: |
-        Please provide any additional information here. Configuration or data that might be necessary to reproduce the issue. This included system information (Post the output of `import pennylane as qml; qml.about()`) or reproducibility (What percentage of the time does it reproduce?).
+        Please provide any additional information here that might be necessary to reproduce the issue. This includes system information (Post the output of `import pennylane as qml; qml.about()`) or details about reproducibility (What percentage of the time does it reproduce?).
   - type: textarea
     id: sourcecode
     attributes:
