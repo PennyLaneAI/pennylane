@@ -111,7 +111,9 @@ class TestHamiltonianExpval:
             np.array(0.4),
             np.array(-0.5),
             np.array(0.7),
-            np.array([0.4, -0.5, 0.7]),
+            np.array(0.4),
+            np.array(-0.5),
+            np.array(0.7),
         ]
         output = 0.42294409781940356
         output2 = [
