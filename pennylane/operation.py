@@ -582,12 +582,13 @@ class Operation(Operator):
     transforms that merge adjacent rotations.
     """
 
-    target_gate_basis = None
-    """str or None: The basis of the target operation of a controlled gate.
-    If not ``None``, should take a value of ``"X"``, ``"Y"``, or ``"Z"``.
+    basis = None
+    """str or None: The basis of an operation, or for controlled gates, of the
+    target operation. If not ``None``, should take a value of ``"X"``, ``"Y"``,
+    or ``"Z"``.
 
-    For example, ``CRX`` and ``CNOT`` have ``target_gate_basis = "X"``, whereas
-    ``ControlledPhaseShift`` and ``CZ`` have ``target_gate_basis = "Z"``.
+    For example, ``X`` and ``CNOT`` have ``basis = "X"``, whereas
+    ``ControlledPhaseShift`` and ``RZ`` have ``basis = "Z"``.
     """
 
     @property

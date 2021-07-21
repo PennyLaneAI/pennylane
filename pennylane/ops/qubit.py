@@ -121,6 +121,7 @@ class PauliX(Observable, Operation):
     num_wires = 1
     par_domain = None
     is_self_inverse = True
+    basis = "X"
     eigvals = pauli_eigs(1)
     matrix = np.array([[0, 1], [1, 0]])
 
@@ -184,6 +185,7 @@ class PauliY(Observable, Operation):
     num_wires = 1
     par_domain = None
     is_self_inverse = True
+    basis = "Y"
     eigvals = pauli_eigs(1)
     matrix = np.array([[0, -1j], [1j, 0]])
 
@@ -249,6 +251,7 @@ class PauliZ(Observable, DiagonalOperation):
     num_wires = 1
     par_domain = None
     is_self_inverse = True
+    basis = "Z"
     eigvals = pauli_eigs(1)
     matrix = np.array([[1, 0], [0, -1]])
 
@@ -299,6 +302,7 @@ class S(DiagonalOperation):
     num_params = 0
     num_wires = 1
     par_domain = None
+    basis = "Z"
 
     @classmethod
     def _matrix(cls, *params):
@@ -341,6 +345,7 @@ class T(DiagonalOperation):
     num_params = 0
     num_wires = 1
     par_domain = None
+    basis = "Z"
 
     @classmethod
     def _matrix(cls, *params):
@@ -383,6 +388,7 @@ class SX(Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
+    basis = "X"
 
     @classmethod
     def _matrix(cls, *params):
@@ -435,7 +441,7 @@ class CNOT(Operation):
     num_wires = 2
     par_domain = None
     is_self_inverse = True
-    target_gate_basis = "X"
+    basis = "X"
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
     @classmethod
@@ -479,7 +485,7 @@ class CZ(DiagonalOperation):
     par_domain = None
     is_self_inverse = True
     is_symmetric_over_all_wires = True
-    target_gate_basis = "Z"
+    basis = "Z"
     eigvals = np.array([1, 1, 1, -1])
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 
@@ -524,7 +530,7 @@ class CY(Operation):
     num_wires = 2
     par_domain = None
     is_self_inverse = True
-    target_gate_basis = "Y"
+    basis = "Y"
     matrix = np.array(
         [
             [1, 0, 0, 0],
@@ -733,7 +739,7 @@ class Toffoli(Operation):
     par_domain = None
     is_self_inverse = True
     is_symmetric_over_control_wires = True
-    target_gate_basis = "X"
+    basis = "X"
     matrix = np.array(
         [
             [1, 0, 0, 0, 0, 0, 0, 0],
@@ -804,6 +810,7 @@ class RX(Operation):
     num_wires = 1
     par_domain = "R"
     is_composable_rotation = True
+    basis = "X"
     grad_method = "A"
     generator = [PauliX, -1 / 2]
 
@@ -850,6 +857,7 @@ class RY(Operation):
     num_wires = 1
     par_domain = "R"
     is_composable_rotation = True
+    basis = "Y"
     grad_method = "A"
     generator = [PauliY, -1 / 2]
 
@@ -896,6 +904,7 @@ class RZ(DiagonalOperation):
     num_wires = 1
     par_domain = "R"
     is_composable_rotation = True
+    basis = "Z"
     grad_method = "A"
     generator = [PauliZ, -1 / 2]
 
@@ -948,6 +957,7 @@ class PhaseShift(DiagonalOperation):
     num_wires = 1
     par_domain = "R"
     is_composable_rotation = True
+    basis = "Z"
     grad_method = "A"
     generator = [np.array([[0, 0], [0, 1]]), 1]
 
@@ -1005,7 +1015,7 @@ class ControlledPhaseShift(DiagonalOperation):
     num_wires = 2
     par_domain = "R"
     is_composable_rotation = True
-    target_gate_basis = "Z"
+    basis = "Z"
     grad_method = "A"
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), 1]
 
@@ -1432,7 +1442,7 @@ class CRX(Operation):
     num_wires = 2
     par_domain = "R"
     is_composable_rotation = True
-    target_gate_basis = "X"
+    basis = "X"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
@@ -1507,7 +1517,7 @@ class CRY(Operation):
     num_wires = 2
     par_domain = "R"
     is_composable_rotation = True
-    target_gate_basis = "Y"
+    basis = "Y"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
@@ -1583,7 +1593,7 @@ class CRZ(DiagonalOperation):
     num_wires = 2
     par_domain = "R"
     is_composable_rotation = True
-    target_gate_basis = "Z"
+    basis = "Z"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
