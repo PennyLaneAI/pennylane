@@ -60,11 +60,11 @@ def _commute_controlled_right(op_list):
             if next_gate.basis is None:
                 break
 
-            # If the next gate does not have comp_control_wires defined, it is not
+            # If the next gate does not have control_wires defined, it is not
             # controlled so we can't push through.
             try:
                 shared_controls = Wires.shared_wires(
-                    [Wires(current_gate.wires), next_gate.comp_control_wires]
+                    [Wires(current_gate.wires), next_gate.control_wires]
                 )
             except (NotImplementedError, AttributeError):
                 break
@@ -130,7 +130,7 @@ def _commute_controlled_left(op_list):
 
             try:
                 shared_controls = Wires.shared_wires(
-                    [Wires(current_gate.wires), prev_gate.comp_control_wires]
+                    [Wires(current_gate.wires), prev_gate.control_wires]
                 )
             except (NotImplementedError, AttributeError):
                 break

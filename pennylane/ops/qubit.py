@@ -455,7 +455,7 @@ class CNOT(Operation):
         Toffoli(wires=Wires(wire) + self.wires)
 
     @property
-    def comp_control_wires(self):
+    def control_wires(self):
         return Wires(self.wires[0])
 
 
@@ -501,7 +501,7 @@ class CZ(DiagonalOperation):
         return CZ(wires=self.wires)
 
     @property
-    def comp_control_wires(self):
+    def control_wires(self):
         return Wires(self.wires[0])
 
 
@@ -553,7 +553,7 @@ class CY(Operation):
         return CY(wires=self.wires)
 
     @property
-    def comp_control_wires(self):
+    def control_wires(self):
         return Wires(self.wires[0])
 
 
@@ -782,7 +782,7 @@ class Toffoli(Operation):
         return Toffoli(wires=self.wires)
 
     @property
-    def comp_control_wires(self):
+    def control_wires(self):
         return Wires(self.wires[:2])
 
 
@@ -1044,7 +1044,7 @@ class ControlledPhaseShift(DiagonalOperation):
         return ControlledPhaseShift(-self.data[0], wires=self.wires)
 
     @property
-    def comp_control_wires(self):
+    def control_wires(self):
         return Wires(self.wires[0])
 
 
@@ -1472,7 +1472,7 @@ class CRX(Operation):
         return CRX(-self.data[0], wires=self.wires)
 
     @property
-    def comp_control_wires(self):
+    def control_wires(self):
         return Wires(self.wires[0])
 
 
@@ -1545,7 +1545,7 @@ class CRY(Operation):
         return CRY(-self.data[0], wires=self.wires)
 
     @property
-    def comp_control_wires(self):
+    def control_wires(self):
         return Wires(self.wires[0])
 
 
@@ -1637,7 +1637,7 @@ class CRZ(DiagonalOperation):
         return CRZ(-self.data[0], wires=self.wires)
 
     @property
-    def comp_control_wires(self):
+    def control_wires(self):
         return Wires(self.wires[0])
 
 
@@ -2384,7 +2384,7 @@ class ControlledQubitUnitary(QubitUnitary):
 
         # Saving for the circuit drawer
         self._target_wires = wires
-        self.control_wires = control_wires
+        self._control_wires = control_wires
         self.U = U
 
         wires = control_wires + wires
@@ -2417,6 +2417,10 @@ class ControlledQubitUnitary(QubitUnitary):
         params = list(params)
         params[0] = self._CU
         return super()._matrix(*params)
+
+    @property
+    def control_wires(self):
+        return self._control_wires
 
     @staticmethod
     def _parse_control_values(control_wires, control_values):

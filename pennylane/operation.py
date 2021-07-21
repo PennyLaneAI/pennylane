@@ -592,7 +592,7 @@ class Operation(Operator):
     """
 
     @property
-    def comp_control_wires(self):
+    def control_wires(self):  # pragma: no cover
         r"""For operations that are controlled, returns the set of control wires.
 
         Returns:
