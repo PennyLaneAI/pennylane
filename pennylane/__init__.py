@@ -26,6 +26,7 @@ from pennylane.queuing import apply, QueuingContext
 import pennylane.init
 import pennylane.fourier
 import pennylane.kernels
+import pennylane.gradients
 import pennylane.math
 import pennylane.operation
 import pennylane.qaoa as qaoa

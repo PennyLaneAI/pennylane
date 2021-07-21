@@ -469,8 +469,6 @@ class DefaultQubit(QubitDevice):
             if self.shots is not None:
                 raise DeviceError("SparseHamiltonian must be used with shots=None")
 
-        if observable.name == "SparseHamiltonian" and self.shots is None:
-
             ev = coo_matrix.dot(
                 coo_matrix(self._conj(self.state)),
                 coo_matrix.dot(
@@ -479,6 +477,9 @@ class DefaultQubit(QubitDevice):
             )
 
             return np.real(ev.toarray()[0])
+
+        if observable.name == "Hamiltonian":
+            return np.array(-100.)
 
         return super().expval(observable, shot_range=shot_range, bin_size=bin_size)
 
