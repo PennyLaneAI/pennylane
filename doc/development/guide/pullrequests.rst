@@ -5,13 +5,13 @@ Submitting a pull request
 Creating a Pull Request
 -----------------------
 
-When you are ready, go ahead and click on "New Pull Request" on the `pull request page <https://github.com/PennyLaneAI/pennylane/pulls>`_.  On the next page, you need to select your fork and branch to merge into our master branch.
+When you are ready, go ahead and click on "New Pull Request" on the `pull request page <https://github.com/PennyLaneAI/pennylane/pulls>`_.  On the next page, you need to select your fork and branch to merge into the PennyLane `master` branch.
 
-On the next page, you need to specify the name of the PR and write an
+On the page for creating a new pull request, you need to specify the name of the PR and write an
 introductory description. We have a PR template with a checklist that can help
 you determine what to say. Please be as detailed as possible, and assume the reader does not have extensive background knowledge of the issue at hand.
 
-If the PR is in response to an Issue, please `link the issue <https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue>`_ with the relevant keywords.
+If the PR is in response to an Issue, please `link the issue <https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue>`_ with the relevant keywords. One simple way is adding a related sentence to the PR description e.g., "Closes #ABCD" where ABCD is the number of the PR.
 
 Once you create the PR, you can also view the status of the *Continuous Integration* (CI) checks for things like tests, code quality, and documentation rendering.
 
@@ -39,6 +39,8 @@ merged.
 .. image:: view_doc_build.jpeg
     :width: 400px
     :align: center
+    
+Using the "Search" toolbar on the top left of the generated website can help with navigating to new or updated pages easily. New functions or classes that are available for users should appear as search results.
 
 Ready for review?
 -----------------
