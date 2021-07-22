@@ -10,10 +10,14 @@ Learn more about contributing to open source in general with
 
 ## How can I get involved in the community?
 
-If you want to contribute but don't know how, start with our
+Start by experimenting with PennyLane.  Figure out how to do things and form opinions about what you
+like and dislike about the ecosystem.  What made your life easier? What was a source of
+difficulty and confusion? We can always use more user feedback. You can use our
 [demonstrations](https://pennylane.ai/qml/demonstrations.html) and
-[blog](https://pennylane.ai/blog/). Learn how to do stuff with PennyLane, then begin peeking under
-the hood and seeing how that stuff gets done.
+[blog](https://pennylane.ai/blog/) to learn about features and applications.
+
+As you get a feel for the user experience, you can start peeking under the hood and finding out how
+the package accomplishes its tasks.
 
 To chat directly with the dedicated team behind PennyLane or other members of our community, you
 can join our [PennyLane discussion forum](https://discuss.pennylane.ai).
@@ -55,7 +59,7 @@ Want to help with the repository itself?  There are several different avenues fo
   ends up trickier than we assumed, you can start a conversation on the issue page or open up a
   "Work in Progress" PR to ask for help.
 
-- **Documentation**- If you would like to add to our documentation or suggest 
+- **Documentation**- If you would like to add to our documentation or suggest
   improvements/changes, let us know or submit a pull request directly. Changes that fix rendering
   issues, grammar, or a broken code example help us a lot too. Take a look at the
   [documentation guide](https://pennylane.readthedocs.io/en/stable/development/guide/documentation.html)
@@ -87,11 +91,15 @@ To submit a bug report, please consider the following checklist:
 * **Search the issue tracker to make sure someone did not already report the bug**. If it was
   already reported, you can add a comment providing more context to those solving the problem.
 
-* **Fill out the issue template**. If you cannot find an existing issue addressing the problem,
-  create a new issue by filling out the bug issue form. This template is added automatically to the comment box when you create a new issue. Please try and add as many details as possible!
+* **Fill out the issue form**. If you cannot find an existing issue addressing the problem,
+  create a new issue by filling out the bug issue form. This template is added automatically to
+  the comment box when you create a new issue. Please try and add as many details as possible!
 
-* Try and make your issue as **clear, concise, and descriptive** as possible. Include an informative title and all code snippets/commands required to reproduce the problem. Try and find the simplest code that reproduces the error you see. If you're not sure what caused the issue,
-  describe what you were doing when the issue occurred. Please also include the output of `import pennylane as qml; qml.about()`.
+* Try and make your issue as **clear, concise, and descriptive** as possible. Include an
+  informative title and all code snippets/commands required to reproduce the problem. Try and find
+  the simplest code that reproduces the error you see. If you're not sure what caused the issue,
+  describe what you were doing when the issue occurred. Please also include the output of
+  `import pennylane as qml; qml.about()`.
 
 ### Suggesting features, document additions, and enhancements
 
@@ -107,10 +115,17 @@ To suggest features and enhancements, please use the GitHub tracker. ADD LINK BE
 
 ## Pull requests
 
-If you would like to contribute directly to the PennyLane codebase, make a fork of the master branch and submit a [pull request](https://help.github.com/articles/about-pull-requests). We encourage everyone to fork and modify the PennyLane source code. However, we have a couple of guidelines on pull
-requests to ensure the master branch of PennyLane conforms to existing standards and quality. We can help you meet these standards during our code review process, so don't let those stop you from getting started. Pull Requests do not need to be big and complicated.  We appreciate even minor bug fixes or documentation improvements. 
+If you would like to contribute directly to the PennyLane codebase, make a fork of the master
+branch and submit a [pull request](https://help.github.com/articles/about-pull-requests). We
+encourage everyone to fork and modify the PennyLane source code. However, we have a couple of
+guidelines on pull requests to ensure the master branch of PennyLane conforms to existing standards
+and quality. We can help you meet these standards during our code review process, so don't let
+those stop you from getting started. Pull Requests do not need to be big and complicated.  We
+appreciate even minor bug fixes or documentation improvements. 
 
 See our [Development Guide](https://pennylane.readthedocs.io/en/stable/development/guide.html)
-and the page on [submitting a pull request](https://pennylane.readthedocs.io/en/stable/development/guide/pullrequests.html) in particular for more information.
+and the page on 
+[submitting a pull request](https://pennylane.readthedocs.io/en/stable/development/guide/pullrequests.html)
+in particular for more information.
 
 Thank you for your interest in PennyLane! 🎆
