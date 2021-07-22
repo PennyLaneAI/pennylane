@@ -143,7 +143,7 @@ make -f docker/Makefile build-qchem
 ```console
 make -f docker/Makefile available-interfaces
 ```
-- #### To check all available plugins run the following:
+- #### To check all available plugins, run the following:
 
 ```console
 make -f docker/Makefile available-plugins
