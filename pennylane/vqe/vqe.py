@@ -67,7 +67,7 @@ class Hamiltonian:
     >>> obs = qml.Hermitian(obs_matrix, wires=[0, 1])
     >>> H = qml.Hamiltonian((0.8, ), (obs, ))
     >>> print(H)
-    (0.8) [Hermitian0'1]
+    (0.8) [Hermitian0,1]
 
     Alternatively, the :func:`~.molecular_hamiltonian` function from the
     :doc:`/introduction/chemistry` module can be used to generate a molecular
@@ -198,7 +198,7 @@ class Hamiltonian:
 
     def __str__(self):
         # Lambda function that formats the wires
-        wires_print = lambda ob: "'".join(map(str, ob.wires.tolist()))
+        wires_print = lambda ob: ",".join(map(str, ob.wires.tolist()))
 
         paired_coeff_obs = list(zip(self.coeffs, self.ops))
         paired_coeff_obs.sort(key=lambda pair: (len(pair[1].wires), pair[0]))
