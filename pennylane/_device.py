@@ -151,7 +151,7 @@ class Device(abc.ABC):
         return "{}\nShort name: {}\nPackage: {}\nPlugin version: {}\nAuthor: {}\nWires: {}\nShots: {}".format(
             self.name,
             self.short_name,
-            self.__module__.split(".", maxsplit=1)[0],
+            self.__module__.split(".")[0],
             self.version,
             self.author,
             self.num_wires,

@@ -368,7 +368,7 @@ in a customizable way.
 
 Three aspects of the :class:`~.Tracker` class are relevant to plugin designers:
 
-* ``tracking`` attribute that denotes whether or not to update and record
+* The boolean ``tracking`` attribute that denotes whether or not to update and record
 * ``update`` method which accepts keyword-value pairs and stores the information
 * ``record`` method which users can customize to log, print, or otherwise do something with the stored information
 
@@ -389,18 +389,23 @@ And similar code in the ``batch_execute`` method:
 .. code-block:: python
 
   if self.tracker.tracking:
-    self.tracker.update(batches=1)
+    self.tracker.update(batches=1, batch_len=len(batches))
     self.tracker.record()
+
+These functions are called in base :class:`~.Device` and :class:`~.QubitDevice` devices. Unless you are
+overriding the ``execute`` and ``batch_execute`` methods or want to customize the stored
+information, you do not need to add any new code.
 
 While this is the recommended usage, the ``update`` and ``record`` methods can be called at any location
 within the device. While the above example tracks executions, shots, and batches, the 
-:meth:`~.device_tracker.DefaultTracker.update` method can accept any combination of
-keyword-value pairs.  For example, a device could also track cost via:
+:meth:`~.Tracker.update` method can accept any combination of
+keyword-value pairs.  For example, a device could also track cost and a job ID via:
 
 .. code-block:: python
 
   price_for_execution = 0.10
-  self.tracker.update(price = price_for_execution)
+  job_id = "abcde"
+  self.tracker.update(price=price_for_execution, job_id=job_id)
 
 .. _installing_plugin:
 

@@ -15,25 +15,35 @@ r"""
 This module contains a class for updating and recording information about device executions.
 """
 
+from numbers import Number
 
 class Tracker:
     """This class stores information about device executions and allows users to interact with that
-    data upon each executions, even within parameter-shift gradients and optimization steps.
+    data upon individual executions and batches, even within parameter-shift gradients and
+    optimization steps.
 
-    The information is stored in three class attributes: ``totals``, ``history``, and ``latest``.
-    Standard devices will track the number of executions, number of shots, and number of batch'
-    executions, but plugins may store additional information with no changes to this class.
+    The information is stored in three class attribute dictionaries: ``totals``, ``history``,
+    and ``latest``:
+
+    * ``latest`` tracks the last set of information passed to the tracker.
+    * ``history`` stores a list of values passed for each keyword.
+    * ``totals`` keeps a running sum per keyword when the values are numeric.
+
+    Standard devices will track the number of executions, number of shots, number of batch
+    executions, and batch execution length, but plugins may store additional information with
+    no changes to this class.
 
     Information is only stored when the class attribute ``tracking`` is set to ``True``. This
     attribute can be toggled via a context manager and Python's ``with`` statement. Upon entering a
-    context, the stored information is reset, unless ``persistent=True``.
+    context, the stored information is reset, unless ``persistent=True``. Tracking mode can also be
+    manually triggered by setting ``tracker.tracking = True`` without the use of a context manager.
 
     Args:
-        dev (Device): a PennyLane compatible device
-        callback=None (callable or None): a function of the keywords ``totals``,
+        dev (Device): A PennyLane compatible device
+        callback=None (callable or None): A function of the keywords ``totals``,
             ``history`` and ``latest``.  Run on each ``record`` call with current values of
             the corresponding attributes.
-        persistent=False (bool): whether to reset stored information upon
+        persistent=False (bool): Whether to reset stored information upon
             entering a runtime context.
 
 
@@ -54,37 +64,48 @@ class Tracker:
         x = np.array(0.1)
 
         with qml.Tracker(dev) as tracker:
-            qml.grad(circuit)(0.1)
+            qml.grad(circuit)(x)
 
     You can then access the tabulated information through ``totals``, ``history``, and ``latest``:
 
     >>> tracker.totals
-    {'executions': 3, 'shots': 300}
+    {'executions': 3, 'shots': 300, 'batches': 1, 'batch_len': 2}
     >>> tracker.history
-    {'executions': [1, 1, 1], 'shots': [100, 100, 100]}
+    {'executions': [1, 1, 1],
+     'shots': [100, 100, 100],
+     'batches': [1],
+     'batch_len': [2]}
     >>> tracker.latest
-    {'executions': 1, 'shots': 100}
+    {'batches': 1, 'batch_len': 2}
+
+    We can see that calculating the gradient of ``circuit`` takes three total evaluations: one
+    forward pass and one batch of length two for the derivative of ``qml.RX``.
 
     .. UsageDetails::
 
-    .. note::
-        With backpropagation, this function should take ``qnode.device``
-        instead of the device used to create the QNode.
+        .. note::
+            With backpropagation, this function should take ``qnode.device``
+            instead of the device used to create the QNode.
 
     Users can pass a custom callback function to the ``callback`` keyword. This
-    function is run each time the ``record()`` method is called. The
-    function passed must accept ``totals``, ``history``, and ``latest`` as
-    keyword arguments:
+    function is run each time the ``record()`` method is called, which occurs near
+    the end of a device's ``execute`` and ``batch_execute`` methods. Using ``print``
+    or logging, users can monitor completion during a long set of jobs.
+    
+    The function passed must accept ``totals``, ``history``, and ``latest`` as
+    keyword arguments. The dictionary ``latest`` will contain different keywords based on whether
+    whether ``execute`` or ``batch_execute`` last performed an update.
 
-    >>> def shots_info(totals=dict(), history=dict(), latest=dict()):
-    ...     print("Total shots: ", totals['shots'])
+    >>> def shots_info(totals, history, latest):
+    ...     if 'shots' in latest.keys():
+    ...         print("Total shots: ", totals['shots'])
     >>> with qml.Tracker(circuit.device, callback=shots_info) as tracker:
     ...     qml.grad(circuit)(0.1)
     Total shots:  100
     Total shots:  200
     Total shots:  300
 
-    By specifying ``persistent=False``, you can reuse the same tracker accross
+    By specifying ``persistent=False``, you can reuse the same tracker across
     multiple contexts.
 
     >>> with qml.Tracker(circuit.device, persistent=False) as tracker:
@@ -101,10 +122,7 @@ class Tracker:
 
         self.callback = callback
 
-        # same code as self.reset
-        self.totals = dict()
-        self.history = dict()
-        self.latest = dict()
+        self.reset()
 
         self.tracking = False
 
@@ -126,13 +144,17 @@ class Tracker:
     def update(self, **kwargs):
         """Store passed keyword-value pairs into ``totals``,``history``, and ``latest`` attributes.
 
-        There is no restriction on the key-value pairs passed.
+        There is no restriction on the key-value pairs passed, but in the standard devices, the
+        device ``execute`` method will pass ``executions`` and ``shots``, and the ``batch_execute``
+        method will pass ``batches`` and ``batch_len``.
 
-        >>> tracker.update(a=1, b=2)
+        Only numeric values will be added to ``totals``.
+
+        >>> tracker.update(a=1, b=2, c="c")
         >>> tracker.latest
-        {"a":1, "b":2}
+        {"a":1, "b":2, "c":"c"}
         >>> tracker.history
-        {"a": [1], "b": [2]}
+        {"a": [1], "b": [2], "c": ["c"]}
         >>> tracker.totals
         {"a": 1, "b": 2}
 
@@ -149,10 +171,8 @@ class Tracker:
             # updating totals
             if value is not None:
                 # Only total numeric values
-                try:
+                if isinstance(value, Number):
                     self.totals[key] = value + self.totals.get(key, 0)
-                except TypeError:
-                    pass
 
     def reset(self):
         """Resets stored information."""
@@ -161,6 +181,12 @@ class Tracker:
         self.latest = dict()
 
     def record(self):
-        """If a ``callback`` is passed to the class upon initialization, it is called."""
+        """This method allows users to interact with the stored data.  While it's intended purpose
+        is monitoring large jobs through ``print`` statements or logging, the function is
+        completely flexible and customizable.
+
+        If a user provided a ``callback`` function during initialization, that function is called
+        with the current ``totals``, ``history``, and ``latest`` data variables as keyword arguments.
+        """
         if self.callback is not None:
             self.callback(totals=self.totals, history=self.history, latest=self.latest)

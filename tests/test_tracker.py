@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the DeviceTracker and constructor
+Unit tests for the Tracker and constructor
 """
 import pytest
 
@@ -20,7 +20,9 @@ import pennylane as qml
 from pennylane import Tracker
 
 
-class TestTrackerCoreBehaviour:
+class TestTrackerCoreBehavior:
+    """Unittests for the tracker class"""
+
     def test_default_initialization(self):
         """Tests default initializalition"""
 
@@ -43,7 +45,7 @@ class TestTrackerCoreBehaviour:
 
         assert id(dev.tracker) == id(tracker)
 
-    def test_incompatible_device_assignment(self):
+    def test_incompatible_device_assignment_not_in_capabilities(self):
         """Assert exception raised when `supports_tracker` not True"""
 
         class TempDevice:
@@ -57,8 +59,23 @@ class TestTrackerCoreBehaviour:
         with pytest.raises(Exception, match=r"Device 'temp' does not support device tracking"):
             Tracker(dev=temp)
 
+    def test_incompatible_device_assignment_explicit_false(self):
+        """Assert exception raised when `supports_tracker` is False"""
+
+        class TempDevice:
+            short_name = "temp"
+
+            def capabilities(self):
+                return {"supports_tracker": False}
+
+        temp = TempDevice()
+
+        with pytest.raises(Exception, match=r"Device 'temp' does not support device tracking"):
+            Tracker(dev=temp)
+
+
     def test_reset(self):
-        """Assert reset empties totals and history"""
+        """Assert reset empties totals, history and latest"""
 
         tracker = Tracker()
 
@@ -89,7 +106,7 @@ class TestTrackerCoreBehaviour:
         assert tracker.history == dict()
         assert tracker.latest == dict()
 
-        tracker.__exit__(1, 1, 1)
+        tracker.__exit__(None, None, None)
 
         assert tracker.tracking == False
 
@@ -141,6 +158,8 @@ class TestTrackerCoreBehaviour:
 
 
 class TestDefaultTrackerIntegration:
+    """Tests integration behaviour with 'default.qubit'."""
+
     def test_single_execution_default(self, mocker):
         """Test correct behavior with single circuit execution"""
 
@@ -160,15 +179,16 @@ class TestDefaultTrackerIntegration:
 
         with Tracker(circuit.device, callback=wrapper.callback) as tracker:
             circuit()
+            circuit()
 
-        assert tracker.totals == {"executions": 1}
-        assert tracker.history == {"executions": [1], "shots": [None]}
+        assert tracker.totals == {"executions": 2}
+        assert tracker.history == {"executions": [1, 1], "shots": [None, None]}
         assert tracker.latest == {"executions": 1, "shots": None}
 
         _, kwargs_called = spy.call_args_list[-1]
 
         assert kwargs_called["totals"] == {"executions": 1}
-        assert kwargs_called["history"] == {"executions": [1], "shots": [None]}
+        assert kwargs_called["history"] == {"executions": [1,1], "shots": [None, None]}
         assert kwargs_called["latest"] == {"executions": 1, "shots": None}
 
     def test_shots_execution_default(self, mocker):
