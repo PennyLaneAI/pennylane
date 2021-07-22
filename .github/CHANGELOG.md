@@ -258,8 +258,13 @@
 
 <h3>Improvements</h3>
 
+
 * The `./pennylane/ops/qubit.py` file is broken up into a folder of eight separate files.
   [(#1467)](https:/git/github.com/PennyLaneAI/pennylane/pull/1467)
+
+* Changed to using commas as the separator of wires in the string
+  representation of `qml.Hamiltonian` objects for multi-qubit terms.
+  [(#1465)](https://github.com/PennyLaneAI/pennylane/pull/1465)
 
 * Changed to using `np.object_` instead of `np.object` as per the NumPy
   deprecations starting version 1.20.
