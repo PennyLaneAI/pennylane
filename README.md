@@ -138,7 +138,7 @@ make -f docker/Makefile build-plugin plugin-name=qiskit
 ```console
 make -f docker/Makefile build-qchem
 ```
-- #### To check all available interfaces run the following:
+- #### To check all available interfaces, run the following:
 
 ```console
 make -f docker/Makefile available-interfaces
