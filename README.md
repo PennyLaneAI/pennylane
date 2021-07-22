@@ -120,7 +120,7 @@ make -f docker/Makefile build-base
 ```console
 make -f docker/Makefile build-interface interface-name=tensorflow
 ```
-- To build a PennyLane image using a given interface (Torch, TensorFlow or Jax) with GPU support run the following:
+- To build a PennyLane image using a specific interface (Torch, TensorFlow or Jax) with GPU support, run the following:
 
 ```console
 make -f docker/Makefile build-interface-gpu interface-name=tensorflow
