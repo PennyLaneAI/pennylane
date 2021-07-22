@@ -132,7 +132,7 @@ make -f docker/Makefile build-interface-gpu interface-name=tensorflow
 make -f docker/Makefile build-plugin plugin-name=qiskit
 ```
 
-### Build Qchem-PennyLane image
+### Build a PennyLane-Qchem image
 - You can also build an image with the PennyLane Qchem package and its dependencies. Use the following commands:
 
 ```console
