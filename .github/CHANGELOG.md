@@ -260,7 +260,7 @@
 
 * Adds a warning when one of the positional arguments with which a QNode is
   being called is not a tensor.
-  [(#1XXX)](https://github.com/PennyLaneAI/pennylane/pull/1XXX)
+  [(#1470)](https://github.com/PennyLaneAI/pennylane/pull/1470)
 
 * Changed to using commas as the separator of wires in the string
   representation of `qml.Hamiltonian` objects for multi-qubit terms.
