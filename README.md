@@ -126,7 +126,7 @@ make -f docker/Makefile build-interface interface-name=tensorflow
 make -f docker/Makefile build-interface-gpu interface-name=tensorflow
 ```
 ### Build a PennyLane image with a plugin
-- To build a PennyLane image using a given plugin (qiskit, amazon-braket, cirq, forest, etc) run the following:
+- To build a PennyLane image using a specific plugin (qiskit, amazon-braket, cirq, forest, etc), run the following:
 
 ```console
 make -f docker/Makefile build-plugin plugin-name=qiskit
