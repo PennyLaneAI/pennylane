@@ -262,6 +262,10 @@
   being called is not a tensor.
   [(#1XXX)](https://github.com/PennyLaneAI/pennylane/pull/1XXX)
 
+* Changed to using commas as the separator of wires in the string
+  representation of `qml.Hamiltonian` objects for multi-qubit terms.
+  [(#1465)](https://github.com/PennyLaneAI/pennylane/pull/1465)
+
 * Changed to using `np.object_` instead of `np.object` as per the NumPy
   deprecations starting version 1.20.
   [(#1466)](https://github.com/PennyLaneAI/pennylane/pull/1466)
