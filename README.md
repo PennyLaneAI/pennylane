@@ -115,7 +115,7 @@ guide](https://pennylane.ai/qml/demos_submission.html).
 make -f docker/Makefile build-base
 ```
 ### Build a PennyLane interface image
-- To build a PennyLane image using a given **interface** (Torch, TensorFlow or Jax) run the following:
+- To build a PennyLane image using a specific **interface** (Torch, TensorFlow or Jax), run the following:
 
 ```console
 make -f docker/Makefile build-interface interface-name=tensorflow
