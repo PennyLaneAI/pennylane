@@ -105,7 +105,7 @@ guide](https://pennylane.ai/qml/demos_submission.html).
 
 **Docker**  support exists for building using **CPU** and **GPU** (Nvidia CUDA 11.1+) images.
 
-**Note:** Docker builds using "make" will work on Linux and MacOS only. For MS Windows one can use [WSL](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
+**Note:** Docker builds using "make" will work on Linux and MacOS only. For MS Windows you can use [WSL](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
 
 ### Build a basic PennyLane image
 - To build a basic PennyLane image without any additional interfaces (Torch, TensorFlow, or Jax) and **plugins** (qiskit, amazon-braket, cirq, forest) run the following:
