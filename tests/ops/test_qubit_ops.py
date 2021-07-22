@@ -54,7 +54,6 @@ from gate_data import (
     DoubleExcitationMinus,
 )
 
-
 # Standard observables, their matrix representation, and eigenvalues
 OBSERVABLES = [
     (qml.PauliX, X, [1, -1]),
@@ -500,7 +499,6 @@ class TestOperations:
     @pytest.mark.parametrize(
         "op_builder",
         [
-            lambda: qml.QFT(wires=[1, 2, 3]),
             lambda: qml.QubitCarry(wires=[0, 1, 2, 3]),
         ],
     )
@@ -550,6 +548,42 @@ class TestOperations:
         expected_unitary = qml.QFT(wires=range(n_qubits)).matrix
 
         assert np.allclose(reconstructed_unitary, expected_unitary)
+
+    @pytest.mark.parametrize("n_qubits", range(2, 6))
+    def test_QFT_adjoint_identity(self, n_qubits, tol):
+        """Test if the QFT adjoint operation is the inverse of QFT."""
+
+        dev = qml.device("default.qubit", wires=n_qubits)
+
+        @qml.qnode(dev)
+        def circ(n_qubits):
+            qml.adjoint(qml.QFT)(wires=range(n_qubits))
+            qml.QFT(wires=range(n_qubits))
+            return qml.state()
+
+        assert np.allclose(1, circ(n_qubits)[0], tol)
+
+        for i in range(1, n_qubits):
+            assert np.allclose(0, circ(n_qubits)[i], tol)
+
+    @pytest.mark.parametrize("n_qubits", range(2, 6))
+    def test_QFT_adjoint_decomposition(self, n_qubits, tol):
+        """Test if the QFT adjoint operation has the right decomposition"""
+
+        # QFT adjoint has right decompositions
+        qft = qml.QFT(wires=range(n_qubits))
+        qft_dec = qft.expand().operations
+
+        expected_op = [x.adjoint() for x in qft_dec]
+        expected_op.reverse()
+
+        adj = qml.QFT(wires=range(n_qubits)).adjoint()
+        op = adj.expand().operations
+
+        for j in range(0, len(op)):
+            assert op[j].name == expected_op[j].name
+            assert op[j].wires == expected_op[j].wires
+            assert op[j].parameters == expected_op[j].parameters
 
     def test_x_decomposition(self, tol):
         """Tests that the decomposition of the PauliX is correct"""
@@ -704,6 +738,35 @@ class TestOperations:
         global_phase = (decomposed_matrix[op.matrix != 0] / op.matrix[op.matrix != 0])[0]
 
         assert np.allclose(decomposed_matrix, global_phase * op.matrix, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize(
+        "op",
+        [
+            (qml.Hadamard(wires=0)),
+            (qml.PauliX(wires=0)),
+            (qml.PauliY(wires=0)),
+            (qml.PauliZ(wires=0)),
+            (qml.S(wires=0)),
+            (qml.T(wires=0)),
+            (qml.SX(wires=0)),
+            (qml.RX(0.3, wires=0)),
+            (qml.RY(0.3, wires=0)),
+            (qml.RZ(0.3, wires=0)),
+            (qml.PhaseShift(0.3, wires=0)),
+            (qml.Rot(0.3, 0.4, 0.5, wires=0)),
+        ],
+    )
+    def test_single_qubit_rot_angles(self, op):
+        """Tests that the Rot gates yielded by single_qubit_rot_angles
+        are equivalent to the true operations up to a global phase."""
+        angles = op.single_qubit_rot_angles()
+        obtained_mat = qml.Rot(*angles, wires=0).matrix
+
+        # Check whether the two matrices are each others conjugate transposes
+        mat_product = qml.math.dot(op.matrix, qml.math.conj(obtained_mat.T))
+        mat_product /= mat_product[0, 0]
+
+        assert qml.math.allclose(mat_product, I)
 
     def test_CY_decomposition(self, tol):
         """Tests that the decomposition of the CY gate is correct"""
@@ -3373,8 +3436,10 @@ class TestArithmetic:
             ([2, 0, 1], [0, 0, 0, 1, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0, 0, 0], True),
             ([1, 2, 0], [0, 0, 0, 1, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0, 0, 0], True),
             ([0, 1, 2], [0.5, 0, 0.5, 0, 0.5, 0, 0.5, 0], [0.5, 0, 0, 0.5, 0, 0.5, 0.5, 0], True),
-            ([0, 1, 2], [np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8)],
-            [np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8)], True),
+            ([0, 1, 2], [np.sqrt(1 / 8), np.sqrt(1 / 8), np.sqrt(1 / 8), np.sqrt(1 / 8), np.sqrt(1 / 8), np.sqrt(1 / 8),
+                         np.sqrt(1 / 8), np.sqrt(1 / 8)],
+             [np.sqrt(1 / 8), np.sqrt(1 / 8), np.sqrt(1 / 8), np.sqrt(1 / 8), np.sqrt(1 / 8), np.sqrt(1 / 8),
+              np.sqrt(1 / 8), np.sqrt(1 / 8)], True),
             ([0, 1, 2], [1, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0], False),
             ([0, 1, 2], [0, 1, 0, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0, 0, 0], False),
             ([0, 1, 2], [0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0, 0, 0], False),
@@ -3386,8 +3451,10 @@ class TestArithmetic:
             ([2, 0, 1], [0, 0, 0, 1, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0, 0, 0], False),
             ([1, 2, 0], [0, 0, 0, 1, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0, 0, 0], False),
             ([0, 1, 2], [0.5, 0, 0.5, 0, 0.5, 0, 0.5, 0], [0.5, 0, 0, 0.5, 0, 0.5, 0.5, 0], False),
-            ([0, 1, 2], [np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8)],
-            [np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8), np.sqrt(1/8)], False),
+            ([0, 1, 2], [np.sqrt(1 / 8), np.sqrt(1 / 8), np.sqrt(1 / 8), np.sqrt(1 / 8), np.sqrt(1 / 8), np.sqrt(1 / 8),
+                         np.sqrt(1 / 8), np.sqrt(1 / 8)],
+             [np.sqrt(1 / 8), np.sqrt(1 / 8), np.sqrt(1 / 8), np.sqrt(1 / 8), np.sqrt(1 / 8), np.sqrt(1 / 8),
+              np.sqrt(1 / 8), np.sqrt(1 / 8)], False),
         ],
     )
     # fmt: on
