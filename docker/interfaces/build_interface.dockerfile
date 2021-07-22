@@ -21,4 +21,4 @@ RUN chmod +x install-interface.sh && ./install-interface.sh $INTERFACE_NAME
 WORKDIR /opt/pennylane
 RUN make test
 # Image build completed.
-CMD echo "Successfully built Docker image!"
+CMD echo "Successfully built Docker image"
