@@ -19,7 +19,6 @@ from pennylane import numpy as np
 import pennylane as qml
 from ..utils import frobenius_inner_product
 from .utils import square_kernel_matrix
-from .utils import task_weights
 
 
 def polarity(
