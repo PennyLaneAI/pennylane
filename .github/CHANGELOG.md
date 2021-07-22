@@ -258,6 +258,10 @@
 
 <h3>Improvements</h3>
 
+* Adds a warning when one of the positional arguments with which a QNode is
+  being called is not a tensor.
+  [(#1XXX)](https://github.com/PennyLaneAI/pennylane/pull/1XXX)
+
 * Changed to using `np.object_` instead of `np.object` as per the NumPy
   deprecations starting version 1.20.
   [(#1466)](https://github.com/PennyLaneAI/pennylane/pull/1466)

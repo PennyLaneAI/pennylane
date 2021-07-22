@@ -330,6 +330,27 @@ class TestValidation:
             == "<QNode: wires=1, device='default.qubit.autograd', interface='autograd', diff_method='best'>"
         )
 
+    def test_qnode_positional_non_tensor_warning(self):
+        """Test that a warning is raised if one of the positional arguments is
+        a non-tensor when calling a QNode."""
+        dev = qml.device('default.qubit', wires=5)
+
+        @qml.qnode(dev)
+        def test(wires):
+            qml.Hadamard(wires=wires[0])
+            return qml.state()
+
+        wires=range(5)
+
+        with pytest.warns(
+            UserWarning, match="At least one of the positional arguments"
+        ):
+            # The specific example raises an error too, suppress that with a
+            # try-except
+            try:
+                test(wires)
+            except:
+                pass
 
 class TestTapeConstruction:
     """Tests for the tape construction"""

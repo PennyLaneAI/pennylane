@@ -592,6 +592,15 @@ class QNode:
 
     def __call__(self, *args, **kwargs):
 
+        if any(a for a in args if not isinstance(a, qml.numpy.tensor)):
+            warnings.warn(
+                "At least one of the positional arguments passed to the QNode"
+                "is not a PennyLane NumPy tensor, though it is regarded as a trainable parameter. "
+                "Please revisit the positional arguments when calling the QNode and pass non-tensor "
+                "arguments as keyword arguments when calling the QNode.",
+                UserWarning,
+            )
+
         # If shots specified in call but not in qfunc signature,
         # interpret it as device shots value for this call.
         # TODO: make this more functional by passing shots as qtape.execute(.., shots=shots).
