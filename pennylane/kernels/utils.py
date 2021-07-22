@@ -124,7 +124,7 @@ def kernel_matrix(X1, X2, kernel):
 
 
 def kernel_eigensystem(X, kernel):
-    """Calculates the eigenvalues and eigenfunctions of a kernel using data.
+    r"""Calculates the eigenvalues and eigenfunctions of a kernel using data.
 
     Consider a data distribution :math:`p(x)` and an arbitrary kernel :math:`\kappa(x, x')` that
     maps two data points to a real value. Just like with matrices, we can write down an
@@ -172,7 +172,7 @@ def kernel_eigensystem(X, kernel):
 
 
 def task_weights(X, y, kernel, return_evals=False):
-    """Approximates the coefficients when expanding a target function that produced a supervised dataset
+    r"""Approximates the coefficients when expanding a target function that produced a supervised dataset
     with respect to the eigenfunctions of a kernel.
 
     Let :math:`\{\phi_k(x)\}`, :math:`\{\lambda_k\}` be the eigenfunctions and eigenvalues of a kernel `\kappa(x, x')`,
