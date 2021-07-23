@@ -2,7 +2,6 @@
 
 <h3>New features since last release</h3>
 
-
 * A new quantum function transform has been added to push commuting
   single-qubit gates through controlled operations.
   [(#1464)](https://github.com/PennyLaneAI/pennylane/pull/1464)
@@ -28,6 +27,49 @@
    0: ──╭C──╭C──S──Rϕ(0.25)──T──┤ ⟨Z⟩
    1: ──╰X──├C──────────────────┤
    2: ──────╰X──X───────────────┤
+
+* Grover Diffusion Operator template added.
+  [(#1442)](https://github.com/PennyLaneAI/pennylane/pull/1442)
+
+  For example, if we have an oracle that marks the "all ones" state with a
+  negative sign:
+
+  ```python
+  n_wires = 3
+  wires = list(range(n_wires))
+
+  def oracle():
+      qml.Hadamard(wires[-1])
+      qml.Toffoli(wires=wires)
+      qml.Hadamard(wires[-1])
+  ```
+
+  We can perform [Grover's Search Algorithm](https://en.wikipedia.org/wiki/Grover%27s_algorithm):
+
+  ```python
+  dev = qml.device('default.qubit', wires=wires)
+
+  @qml.qnode(dev)
+  def GroverSearch(num_iterations=1):
+      for wire in wires:
+          qml.Hadamard(wire)
+
+      for _ in range(num_iterations):
+          oracle()
+          qml.templates.GroverOperator(wires=wires)
+
+      return qml.probs(wires)
+  ```
+
+  We can see this circuit yields the marked state with high probability:
+
+  ```pycon
+  >>> GroverSearch(num_iterations=1)
+  tensor([0.03125, 0.03125, 0.03125, 0.03125, 0.03125, 0.03125, 0.03125,
+          0.78125], requires_grad=True)
+  >>> GroverSearch(num_iterations=2)
+  tensor([0.0078125, 0.0078125, 0.0078125, 0.0078125, 0.0078125, 0.0078125,
+      0.0078125, 0.9453125], requires_grad=True
   ```
 
 * A new quantum function transform has been added to perform full fusion of
@@ -242,6 +284,14 @@
 
 <h3>Improvements</h3>
 
+* Changed to using commas as the separator of wires in the string
+  representation of `qml.Hamiltonian` objects for multi-qubit terms.
+  [(#1465)](https://github.com/PennyLaneAI/pennylane/pull/1465)
+
+* Changed to using `np.object_` instead of `np.object` as per the NumPy
+  deprecations starting version 1.20.
+  [(#1466)](https://github.com/PennyLaneAI/pennylane/pull/1466)
+
 * Change the order of the covariance matrix and the vector of means internally
   in `default.gaussian`. [(#1331)](https://github.com/PennyLaneAI/pennylane/pull/1331)
 
@@ -287,8 +337,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Leonhard Kunczik, Romain Moyard, Ashish Panigrahi, Maria Schuld,
-Jay Soni
+Olivia Di Matteo, Josh Izaac, Leonhard Kunczik, Christina Lee, Romain Moyard, Ashish Panigrahi,
+Maria Schuld, Jay Soni, Antal Száva
 
 
 # Release 0.16.0 (current release)
