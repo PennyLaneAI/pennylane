@@ -41,6 +41,42 @@ class TestCommuteControlled:
         with pytest.raises(ValueError, match="must be 'left' or 'right'"):
             ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
+    @pytest.mark.parametrize("direction", [("left"), ("right")])
+    def test_gate_with_no_basis(self, direction):
+        """Test that gates with no basis specified are ignored."""
+
+        def qfunc():
+            qml.PauliX(wires=2)
+            qml.ControlledQubitUnitary(np.array([[0, 1], [1, 0]]), control_wires=0, wires=2)
+            qml.PauliX(wires=2)
+
+        transformed_qfunc = commute_controlled(direction=direction)(qfunc)
+
+        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        print(ops)
+
+        names_expected = ["PauliX", "ControlledQubitUnitary", "PauliX"]
+        wires_expected = [Wires(2), Wires([0, 2]), Wires(2)]
+        compare_operation_lists(ops, names_expected, wires_expected)
+
+    @pytest.mark.parametrize("direction", [("left"), ("right")])
+    def test_gate_blocked_different_basis(self, direction):
+        """Test that gates with no basis specified are ignored."""
+
+        def qfunc():
+            qml.PauliZ(wires="b")
+            qml.CNOT(wires=[2, "b"])
+            qml.PauliY(wires="b")
+
+        transformed_qfunc = commute_controlled(direction=direction)(qfunc)
+
+        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        print(ops)
+
+        names_expected = ["PauliZ", "CNOT", "PauliY"]
+        wires_expected = [Wires("b"), Wires([2, "b"]), Wires("b")]
+        compare_operation_lists(ops, names_expected, wires_expected)
+
     def test_push_x_gates_right(self):
         """Test that X-basis gates before controlled-X-type gates on targets get pushed ahead."""
 
@@ -380,6 +416,11 @@ class TestCommuteControlledInterfaces:
         """Test QNode and gradient in JAX interface."""
         jax = pytest.importorskip("jax")
         from jax import numpy as jnp
+
+        from jax.config import config
+
+        remember = config.read("jax_enable_x64")
+        config.update("jax_enable_x64", True)
 
         original_qnode = qml.QNode(qfunc, dev, interface="jax")
         transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="jax")
