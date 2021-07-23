@@ -121,6 +121,7 @@ class PauliX(Observable, Operation):
     num_wires = 1
     par_domain = None
     is_self_inverse = True
+    basis = "X"
     eigvals = pauli_eigs(1)
     matrix = np.array([[0, 1], [1, 0]])
 
@@ -184,6 +185,7 @@ class PauliY(Observable, Operation):
     num_wires = 1
     par_domain = None
     is_self_inverse = True
+    basis = "Y"
     eigvals = pauli_eigs(1)
     matrix = np.array([[0, -1j], [1j, 0]])
 
@@ -249,6 +251,7 @@ class PauliZ(Observable, DiagonalOperation):
     num_wires = 1
     par_domain = None
     is_self_inverse = True
+    basis = "Z"
     eigvals = pauli_eigs(1)
     matrix = np.array([[1, 0], [0, -1]])
 
@@ -299,6 +302,7 @@ class S(DiagonalOperation):
     num_params = 0
     num_wires = 1
     par_domain = None
+    basis = "Z"
 
     @classmethod
     def _matrix(cls, *params):
@@ -341,6 +345,7 @@ class T(DiagonalOperation):
     num_params = 0
     num_wires = 1
     par_domain = None
+    basis = "Z"
 
     @classmethod
     def _matrix(cls, *params):
@@ -383,6 +388,7 @@ class SX(Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
+    basis = "X"
 
     @classmethod
     def _matrix(cls, *params):
@@ -435,6 +441,7 @@ class CNOT(Operation):
     num_wires = 2
     par_domain = None
     is_self_inverse = True
+    basis = "X"
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
     @classmethod
@@ -446,6 +453,10 @@ class CNOT(Operation):
 
     def _controlled(self, wire):
         Toffoli(wires=Wires(wire) + self.wires)
+
+    @property
+    def control_wires(self):
+        return Wires(self.wires[0])
 
 
 class CZ(DiagonalOperation):
@@ -474,6 +485,7 @@ class CZ(DiagonalOperation):
     par_domain = None
     is_self_inverse = True
     is_symmetric_over_all_wires = True
+    basis = "Z"
     eigvals = np.array([1, 1, 1, -1])
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 
@@ -487,6 +499,10 @@ class CZ(DiagonalOperation):
 
     def adjoint(self):
         return CZ(wires=self.wires)
+
+    @property
+    def control_wires(self):
+        return Wires(self.wires[0])
 
 
 class CY(Operation):
@@ -514,7 +530,15 @@ class CY(Operation):
     num_wires = 2
     par_domain = None
     is_self_inverse = True
-    matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]])
+    basis = "Y"
+    matrix = np.array(
+        [
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, 0, -1j],
+            [0, 0, 1j, 0],
+        ]
+    )
 
     @classmethod
     def _matrix(cls, *params):
@@ -527,6 +551,10 @@ class CY(Operation):
 
     def adjoint(self):
         return CY(wires=self.wires)
+
+    @property
+    def control_wires(self):
+        return Wires(self.wires[0])
 
 
 class SWAP(Operation):
@@ -711,6 +739,7 @@ class Toffoli(Operation):
     par_domain = None
     is_self_inverse = True
     is_symmetric_over_control_wires = True
+    basis = "X"
     matrix = np.array(
         [
             [1, 0, 0, 0, 0, 0, 0, 0],
@@ -752,6 +781,10 @@ class Toffoli(Operation):
     def adjoint(self):
         return Toffoli(wires=self.wires)
 
+    @property
+    def control_wires(self):
+        return Wires(self.wires[:2])
+
 
 class RX(Operation):
     r"""RX(phi, wires)
@@ -777,6 +810,7 @@ class RX(Operation):
     num_wires = 1
     par_domain = "R"
     is_composable_rotation = True
+    basis = "X"
     grad_method = "A"
     generator = [PauliX, -1 / 2]
 
@@ -823,6 +857,7 @@ class RY(Operation):
     num_wires = 1
     par_domain = "R"
     is_composable_rotation = True
+    basis = "Y"
     grad_method = "A"
     generator = [PauliY, -1 / 2]
 
@@ -869,6 +904,7 @@ class RZ(DiagonalOperation):
     num_wires = 1
     par_domain = "R"
     is_composable_rotation = True
+    basis = "Z"
     grad_method = "A"
     generator = [PauliZ, -1 / 2]
 
@@ -921,6 +957,7 @@ class PhaseShift(DiagonalOperation):
     num_wires = 1
     par_domain = "R"
     is_composable_rotation = True
+    basis = "Z"
     grad_method = "A"
     generator = [np.array([[0, 0], [0, 1]]), 1]
 
@@ -978,6 +1015,7 @@ class ControlledPhaseShift(DiagonalOperation):
     num_wires = 2
     par_domain = "R"
     is_composable_rotation = True
+    basis = "Z"
     grad_method = "A"
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), 1]
 
@@ -1004,6 +1042,10 @@ class ControlledPhaseShift(DiagonalOperation):
 
     def adjoint(self):
         return ControlledPhaseShift(-self.data[0], wires=self.wires)
+
+    @property
+    def control_wires(self):
+        return Wires(self.wires[0])
 
 
 CPhase = ControlledPhaseShift
@@ -1398,6 +1440,7 @@ class CRX(Operation):
     num_wires = 2
     par_domain = "R"
     is_composable_rotation = True
+    basis = "X"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
@@ -1425,6 +1468,10 @@ class CRX(Operation):
 
     def adjoint(self):
         return CRX(-self.data[0], wires=self.wires)
+
+    @property
+    def control_wires(self):
+        return Wires(self.wires[0])
 
 
 class CRY(Operation):
@@ -1468,6 +1515,7 @@ class CRY(Operation):
     num_wires = 2
     par_domain = "R"
     is_composable_rotation = True
+    basis = "Y"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
@@ -1493,6 +1541,10 @@ class CRY(Operation):
 
     def adjoint(self):
         return CRY(-self.data[0], wires=self.wires)
+
+    @property
+    def control_wires(self):
+        return Wires(self.wires[0])
 
 
 class CRZ(DiagonalOperation):
@@ -1539,6 +1591,7 @@ class CRZ(DiagonalOperation):
     num_wires = 2
     par_domain = "R"
     is_composable_rotation = True
+    basis = "Z"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
@@ -1573,6 +1626,10 @@ class CRZ(DiagonalOperation):
 
     def adjoint(self):
         return CRZ(-self.data[0], wires=self.wires)
+
+    @property
+    def control_wires(self):
+        return Wires(self.wires[0])
 
 
 class CRot(Operation):
@@ -2306,7 +2363,7 @@ class ControlledQubitUnitary(QubitUnitary):
 
         # Saving for the circuit drawer
         self._target_wires = wires
-        self.control_wires = control_wires
+        self._control_wires = control_wires
         self.U = U
 
         wires = control_wires + wires
@@ -2339,6 +2396,10 @@ class ControlledQubitUnitary(QubitUnitary):
         params = list(params)
         params[0] = self._CU
         return super()._matrix(*params)
+
+    @property
+    def control_wires(self):
+        return self._control_wires
 
     @staticmethod
     def _parse_control_values(control_wires, control_values):
