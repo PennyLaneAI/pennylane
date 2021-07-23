@@ -1,6 +1,6 @@
 name: Feature request
 description: Suggest a new feature
-labels: enhancement
+labels: "enhancement :sparkles:"
 
 body:
   - type: markdown
@@ -33,11 +33,11 @@ body:
   - type: dropdown
     id: urgency
     attributes:
-      label: How urgently would you need this feature?
+      label: How important would you say this feature is?
       options:
-        - "1: Not urgent. Would be nice to have."
-        - "2: Somewhat urgent. Needed this quarter."
-        - "3: Very urgent! Blocking important work."
+        - "1: Not important. Would be nice to have."
+        - "2: Somewhat important. Needed this quarter."
+        - "3: Very important! Blocking work."
     validations:
       required: true
   - type: textarea

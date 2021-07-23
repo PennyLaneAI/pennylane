@@ -1,7 +1,7 @@
 name: Bug report
 description: File a bug report
 title: '[BUG]'
-labels: bug
+labels: "bug :bug:"
 
 body:
   - type: markdown
@@ -16,7 +16,7 @@ body:
           https://pennylane.readthedocs.io
 
           # Issue description
-          Description of the issue - include code snippets and screenshots here if relevant.
+          Description of the issue - include code snippets in the Source code section below and screenshots if relevant.
   - type: textarea
     id: expected
     attributes:
@@ -38,12 +38,12 @@ body:
     attributes:
       label: Additional information
       description: |
-        Please provide any additional information here that might be necessary to reproduce the issue. This includes system information (Post the output of `import pennylane as qml; qml.about()`) or details about reproducibility (What percentage of the time does it reproduce?).
+        Please provide any additional information here that might be necessary to reproduce the issue. This includes details about reproducibility (What percentage of the time does it reproduce?).
   - type: textarea
     id: sourcecode
     attributes:
       label: Source code
-      description: Please include any additional code snippets related to the issue here. This will be automatically formatted into code, so no need for backticks.
+      description: Please include a minimal non-working example, or any other code related to the issue, here. This will be automatically formatted into code, so no need for backticks.
       render: shell
   - type: textarea
     id: tracebacks
@@ -51,6 +51,14 @@ body:
       label:  Tracebacks
       description: Please include the error tracebacks related to the issue here. This will be automatically formatted into code, so no need for backticks.
       render: shell
+  - type: textarea
+    id: system
+    attributes:
+      label:  System information
+      description: Please post the output of `import pennylane as qml; qml.about()` or, if not possible/relevant, a note on why this is not included. This will be automatically formatted into code, so no need for backticks.
+      render: shell
+    validations:
+      required: true
   - type: checkboxes
     id: terms
     attributes:
