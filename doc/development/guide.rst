@@ -63,4 +63,5 @@ of PennyLane, plugins, and devices.
     guide/pullrequests
     guide/adr
     guide/architecture
+    guide/analytic_circuits
 ..    guide/bestpractices

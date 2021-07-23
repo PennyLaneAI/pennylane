@@ -11,7 +11,7 @@ on pen and paper, we provide circuits here.
     from pennylane import math
 
 Basic circuit
----------
+-------------
 
 Operations
 
