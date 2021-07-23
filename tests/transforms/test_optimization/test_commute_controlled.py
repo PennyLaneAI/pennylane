@@ -197,7 +197,7 @@ class TestCommuteControlled:
 
     @pytest.mark.parametrize("direction", [("left"), ("right")])
     def test_dont_push_y_gates(self, direction):
-        """Test that Y-basis gates controlled-Y-type gates on controls don't get pushed."""
+        """Test that Y-basis gates next to controlled-Y-type gates on controls don't get pushed."""
 
         def qfunc():
             qml.CRY(-0.2, wires=["a", 2])
@@ -241,8 +241,8 @@ class TestCommuteControlled:
         compare_operation_lists(ops, names_expected, wires_expected)
 
     def test_push_z_gates_left(self):
-        """Test that Z-basis gates before controlled-Z-type gates on controls *and*
-        targets get pushed ahead."""
+        """Test that Z-basis after before controlled-Z-type gates on controls *and*
+        targets get pushed behind."""
 
         def qfunc():
             qml.CZ(wires=[0, 2])
@@ -270,7 +270,7 @@ class TestCommuteControlled:
     @pytest.mark.parametrize("direction", [("left"), ("right")])
     def test_push_mixed_with_matrix(self, direction):
         """Test that arbitrary gates after controlled gates on controls *and*
-        targets get propertly pushed ahead."""
+        targets get properly pushed."""
 
         def qfunc():
             qml.PauliX(wires=1)
