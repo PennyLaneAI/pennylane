@@ -582,6 +582,24 @@ class Operation(Operator):
     transforms that merge adjacent rotations.
     """
 
+    basis = None
+    """str or None: The basis of an operation, or for controlled gates, of the
+    target operation. If not ``None``, should take a value of ``"X"``, ``"Y"``,
+    or ``"Z"``.
+
+    For example, ``X`` and ``CNOT`` have ``basis = "X"``, whereas
+    ``ControlledPhaseShift`` and ``RZ`` have ``basis = "Z"``.
+    """
+
+    @property
+    def control_wires(self):  # pragma: no cover
+        r"""For operations that are controlled, returns the set of control wires.
+
+        Returns:
+            Wires: The set of control wires of the operation.
+        """
+        raise NotImplementedError
+
     @property
     def single_qubit_rot_angles(self):
         r"""The parameters required to implement a single-qubit gate as an
