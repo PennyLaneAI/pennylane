@@ -70,7 +70,7 @@
           0.78125], requires_grad=True)
   >>> GroverSearch(num_iterations=2)
   tensor([0.0078125, 0.0078125, 0.0078125, 0.0078125, 0.0078125, 0.0078125,
-      0.0078125, 0.9453125], requires_grad=True
+      0.0078125, 0.9453125], requires_grad=True)
   ```
 
 * A new quantum function transform has been added to perform full fusion of
