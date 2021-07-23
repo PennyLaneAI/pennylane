@@ -649,7 +649,7 @@ class JacobianTape(QuantumTape):
                     # assume the dimension is 1
                     self._output_dim = 1
                 # create the Jacobian matrix with appropriate dtype
-                dtype = g.dtype if isinstance(g, (np.ndarray, float)) else np.object
+                dtype = g.dtype if isinstance(g, (np.ndarray, float)) else np.object_
                 jac = np.zeros((self._output_dim, len(params)), dtype=dtype)
 
             jac[:, i] = g
