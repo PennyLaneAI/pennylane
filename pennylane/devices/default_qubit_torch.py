@@ -14,16 +14,15 @@
 """This module contains a PyTorch implementation of the :class:`~.DefaultQubit`
 reference plugin.
 """
-
+import semantic_version
 try:
     import torch
-
-    v = torch.__version__.split(".")
-    if int(v[1]) < 8 or (int(v[1]) == 8 and int(v[2][0]) == 0):
-        raise ImportError("default.qubit.torch device requires Torch>=1.8.0")
+    VERSION_SUPPORT = semantic_version.match(">=1.8.1", torch.__version__)
+    if not VERSION_SUPPORT :
+        raise ImportError("default.qubit.torch device requires Torch>=1.8.1")
 
 except ImportError as e:
-    raise ImportError("default.qubit.torch device requires Torch>=1.8.0") from e
+    raise ImportError("default.qubit.torch device requires Torch>=1.8.1") from e
 
 import warnings
 from string import ascii_letters as ABC
