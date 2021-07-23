@@ -61,7 +61,7 @@ class TestCommuteControlled:
 
     @pytest.mark.parametrize("direction", [("left"), ("right")])
     def test_gate_blocked_different_basis(self, direction):
-        """Test that gates with no basis specified are ignored."""
+        """Test that gates do not get pushed through controlled gates whose target bases don't match."""
 
         def qfunc():
             qml.PauliZ(wires="b")
