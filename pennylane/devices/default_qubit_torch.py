@@ -15,10 +15,12 @@
 reference plugin.
 """
 import semantic_version
+
 try:
     import torch
+
     VERSION_SUPPORT = semantic_version.match(">=1.8.1", torch.__version__)
-    if not VERSION_SUPPORT :
+    if not VERSION_SUPPORT:
         raise ImportError("default.qubit.torch device requires Torch>=1.8.1")
 
 except ImportError as e:

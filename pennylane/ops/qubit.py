@@ -531,14 +531,7 @@ class CY(Operation):
     par_domain = None
     is_self_inverse = True
     basis = "Y"
-    matrix = np.array(
-        [
-            [1, 0, 0, 0],
-            [0, 1, 0, 0],
-            [0, 0, 0, -1j],
-            [0, 0, 1j, 0],
-        ]
-    )
+    matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0],])
 
     @classmethod
     def _matrix(cls, *params):
