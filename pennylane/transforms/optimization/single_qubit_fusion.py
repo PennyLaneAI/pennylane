@@ -39,6 +39,9 @@ def single_qubit_fusion(tape, atol=1e-8, exclude_gates=None):
             from full fusion. If set to ``None``, all single-qubit gates that can
             be fused will be fused.
 
+    Returns:
+        function: the transformed quantum function
+
     **Example**
 
     Consider the following quantum function.
