@@ -27,6 +27,7 @@
    0: ──╭C──╭C──S──Rϕ(0.25)──T──┤ ⟨Z⟩
    1: ──╰X──├C──────────────────┤
    2: ──────╰X──X───────────────┤
+  ```
 
 * Grover Diffusion Operator template added.
   [(#1442)](https://github.com/PennyLaneAI/pennylane/pull/1442)
