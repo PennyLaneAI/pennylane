@@ -42,12 +42,11 @@ def _generate_transformed_tapes(tape, transform, max_arg_val):
     """
     current_tape = get_active_tape()
 
-    # TODO: figure out how to make it use the argument
     if current_tape is not None:
         with current_tape.stop_recording():
-            tapes = [transform.tape_fn(tape) for arg in range(1, max_arg_val+1)]
+            tapes = [transform.tape_fn(tape, arg) for arg in range(1, max_arg_val+1)]
     else:
-        tapes = [transform.tape_fn(tape) for arg in range(1, max_arg_val+1)]
+        tapes = [transform.tape_fn(tape, arg) for arg in range(1, max_arg_val+1)]
 
     return tapes
 
