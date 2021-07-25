@@ -14,4 +14,4 @@
 """This subpackage contains quantum gradient transforms."""
 import pennylane as qml
 
-from . import finite_difference
+from .finite_difference import finite_diff
