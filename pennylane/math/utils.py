@@ -242,6 +242,11 @@ def requires_grad(tensor):
         return should_record_backprop([tf.convert_to_tensor(tensor)])
 
     if interface in ("torch", "autograd"):
+        from autograd.numpy.numpy_boxes import ArrayBox
+
+        if isinstance(tensor, ArrayBox):
+            return True
+
         return tensor.requires_grad
 
     if interface == "numpy":

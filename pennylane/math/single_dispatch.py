@@ -40,6 +40,7 @@ ar.register_function("numpy", "coerce", lambda x: x)
 ar.register_function("numpy", "block_diag", lambda x: _scipy_block_diag(*x))
 ar.register_function("builtins", "block_diag", lambda x: _scipy_block_diag(*x))
 ar.register_function("numpy", "gather", lambda x, indices: x[np.array(indices)])
+ar.register_function("numpy", "unstack", list)
 
 
 def _scatter_element_add_numpy(tensor, index, value):
@@ -69,6 +70,7 @@ ar.register_function("autograd", "flatten", lambda x: x.flatten())
 ar.register_function("autograd", "coerce", lambda x: x)
 ar.register_function("autograd", "block_diag", lambda x: _scipy_block_diag(*x))
 ar.register_function("autograd", "gather", lambda x, indices: x[np.array(indices)])
+ar.register_function("autograd", "unstack", list)
 
 
 def _to_numpy_autograd(x):
@@ -117,14 +119,12 @@ ar.autoray._SUBMODULE_ALIASES["tensorflow", "angle"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "arcsin"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "arccos"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "arctan"] = "tensorflow.math"
-ar.autoray._SUBMODULE_ALIASES["tensorflow", "arctan2"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "diag"] = "tensorflow.linalg"
 
 
 ar.autoray._FUNC_ALIASES["tensorflow", "arcsin"] = "asin"
 ar.autoray._FUNC_ALIASES["tensorflow", "arccos"] = "acos"
 ar.autoray._FUNC_ALIASES["tensorflow", "arctan"] = "atan"
-ar.autoray._FUNC_ALIASES["tensorflow", "arctan2"] = "atan2"
 ar.autoray._FUNC_ALIASES["tensorflow", "diag"] = "diag"
 
 
@@ -230,6 +230,7 @@ ar.register_function("tensorflow", "scatter_element_add", _scatter_element_add_t
 
 # -------------------------------- Torch --------------------------------- #
 
+ar.autoray._FUNC_ALIASES["torch", "unstack"] = "unbind"
 
 ar.register_function("torch", "asarray", lambda x: _i("torch").as_tensor(x))
 ar.register_function("torch", "diag", lambda x, k=0: _i("torch").diag(x, diagonal=k))
@@ -244,9 +245,6 @@ ar.register_function(
         x.to(_i("torch").float64) if x.dtype in (_i("torch").int64, _i("torch").int32) else x
     ),
 )
-
-ar.autoray._SUBMODULE_ALIASES["torch", "arctan2"] = "torch"
-ar.autoray._FUNC_ALIASES["torch", "arctan2"] = "atan2"
 
 
 def _take_torch(tensor, indices, axis=None):
