@@ -133,7 +133,7 @@ def finite_diff(tape, argnum=None, h=1e-7, order=1, n=1, form="forward"):
     if not tape.trainable_params or all(g == "0" for g in diff_methods):
         # Either all parameters have grad method 0, or there are no trainable
         # parameters.
-        return [[]], []
+        return [], lambda x: np.zeros([tape.output_dim, len(tape.trainable_params)])
 
     gradient_tapes = []
     shapes = []
@@ -179,18 +179,6 @@ def finite_diff(tape, argnum=None, h=1e-7, order=1, n=1, form="forward"):
                 g = g + c0 * results[0]
 
             grads.append(qml.math.squeeze(g / (h ** n)))
-
-            # g = [0] * len(res[0])
-
-            # for c, r in zip(coeffs, res):
-            #     for idx, i in enumerate(r):
-            #         g[idx] += c * np.array(i)
-
-            # if c0 is not None:
-            #     g = [i + c0 * r for i, r in zip(g, results[0])]
-
-            # g = [i / (h ** n) for i in g]
-            # grads.append(g)
 
         return qml.math.stack(grads).T
 
