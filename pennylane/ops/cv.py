@@ -781,8 +781,8 @@ class FockStateVector(CVOperation):
                 return qml.expval(qml.NumberOperator(wires=0))
 
         For multiple modes, the input is the tensor product of individual-mode
-        kets. For example, given a set of :math:`M` `N`-dimensional vectors, the
-        input has shape `(N, ) * M`.
+        kets. For example, given a set of :math:`M` :math:`N`:-dimensional vectors, the
+        input has shape ``(N, ) * M``.
 
         .. code-block::
 
