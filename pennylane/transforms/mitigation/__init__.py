@@ -17,3 +17,4 @@ This subpackage contains quantum function transforms for error mitigation.
 
 from .cnot_pair_insertion import cnot_pair_insertion
 from .unitary_folding import unitary_folding
+from .zne import zne
