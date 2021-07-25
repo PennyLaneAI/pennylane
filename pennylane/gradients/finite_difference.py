@@ -149,7 +149,7 @@ def finite_diff(tape, argnum=None, h=1e-7, order=1, n=1, form="forward"):
 
     # TODO: replace the JacobianTape._choose_params_with_methods
     # functionality before deprecation.
-    for idx, (t_idx, dm) in enumerate(tape._choose_params_with_methods(diff_methods, argnum)):
+    for t_idx, dm in tape._choose_params_with_methods(diff_methods, argnum):
         if dm == "0":
             shapes.append(0)
             continue
