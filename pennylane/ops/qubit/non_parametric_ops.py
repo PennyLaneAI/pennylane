@@ -735,6 +735,7 @@ class Toffoli(Operation):
     par_domain = None
     is_self_inverse = True
     is_symmetric_over_control_wires = True
+    basis = "X"
     matrix = np.array(
         [
             [1, 0, 0, 0, 0, 0, 0, 0],
@@ -775,3 +776,7 @@ class Toffoli(Operation):
 
     def adjoint(self):
         return Toffoli(wires=self.wires)
+
+    @property
+    def control_wires(self):
+        return Wires(self.wires[:2])
