@@ -105,22 +105,21 @@ def hamiltonian_expand(tape, group=True):
         hamiltonian.simplify()
         return qml.transforms.measurement_grouping(tape, hamiltonian.ops, hamiltonian.coeffs)
 
-    else:
-        # create tapes that measure the Pauli-words in the Hamiltonian
-        tapes = []
-        for ob in hamiltonian.ops:
-            with tape.__class__() as new_tape:
-                for op in tape.operations:
-                    qml.apply(op)
-                qml.expval(ob)
-            new_tape = new_tape.expand(stop_at=lambda obj: True)
-            tapes.append(new_tape)
+    # create tapes that measure the Pauli-words in the Hamiltonian
+    tapes = []
+    for ob in hamiltonian.ops:
+        with tape.__class__() as new_tape:
+            for op in tape.operations:
+                qml.apply(op)
+            qml.expval(ob)
+        new_tape = new_tape.expand(stop_at=lambda obj: True)
+        tapes.append(new_tape)
 
-        def processing_fn(res):
-            dot_products = [
-                qml.math.dot(qml.math.squeeze(res[i]), hamiltonian.coeffs[i])
-                for i in range(len(res))
-            ]
-            return qml.math.sum(qml.math.stack(dot_products))
+    def processing_fn(res):
+        dot_products = [
+            qml.math.dot(qml.math.squeeze(res[i]), hamiltonian.coeffs[i])
+            for i in range(len(res))
+        ]
+        return qml.math.sum(qml.math.stack(dot_products))
 
-        return tapes, processing_fn
+    return tapes, processing_fn
