@@ -1245,6 +1245,22 @@ class TestNewVQE:
 
         assert np.isclose(res, res_expected, atol=tol)
 
+    def test_error_multiple_expvals(self):
+        """Tests that error is thrown if more than one expval is evaluated."""
+        observables = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
+        coeffs = [1.] * len(observables)
+        dev = qml.device("default.qubit", wires=3)
+        H = qml.Hamiltonian(coeffs, observables)
+        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.templates.StronglyEntanglingLayers(w, wires=range(4))
+            return qml.expval(H), qml.expval(qml.PauliX(3))
+
+        with pytest.raises(ValueError, match="At the moment"):
+            circuit()
+
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "best"])
     def test_optimize_grad_autograd(self, diff_method, tol):
         """Tests the VQE gradient in the autograd interface."""
