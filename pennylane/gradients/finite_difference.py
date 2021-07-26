@@ -17,6 +17,7 @@ of a quantum tape.
 """
 # pylint: disable=protected-access
 import functools
+import itertools
 
 import numpy as np
 from scipy.special import factorial
@@ -24,9 +25,39 @@ from scipy.special import factorial
 import pennylane as qml
 
 
-def get_stencil(n, order, form):
-    if n < 1:
+def finite_diff_stencil(n, order, form):
+    """Generate the finite difference stencil (shift and coefficients)
+    for various derivatives, accuracy, and form.
+
+    Args:
+        n (int): Positive integer specifying the derivative. ``n=1``
+            corresponds to the first derivative.
+        order (int): Positive integer referring to the accuracy of the
+            returned stencil. E.g., ``order=1`` corresponds to a stencil
+            that returns a first-order approximation to the derivative.
+        form (str): one of ``"forward"``, ``"center"``, or ``"backward"``.
+
+    Returns:
+        array[float]: a ``(2, N)`` array. The first row corresponds to the
+        coefficients, and the second row corresponds to the shifts.
+
+    **Example**
+
+    >>> finite_diff_stencil(n=1, order=1, form="forward")
+    array([[-1.,  1.],
+           [ 0.,  1.]])
+    >>> finite_diff_stencil(n=1, order=2, form="center")
+    array([[-0.5,  0.5],
+           [-1. ,  1. ]])
+    >>> finite_diff_stencil(n=2, order=2, form="center")
+    array([[-2.,  1.,  1.],
+           [ 0., -1.,  1.]])
+    """
+    if n < 1 or not isinstance(n, int):
         raise ValueError("Derivative order n must be a positive integer.")
+
+    if order < 1 or not isinstance(order, int):
+        raise ValueError("Accuracy order must be a positive integer.")
 
     num_points = order + 2 * np.floor((n + 1) / 2) - 1
     N = num_points + 1 if n % 2 == 0 else num_points
@@ -59,19 +90,19 @@ def get_stencil(n, order, form):
     return stencil
 
 
-def get_shifted_tapes(tape, idx, shifts, h=1e-7):
-    r"""Generate the first-order forward finite-difference tapes and postprocessing
-    methods required to compute the gradient of a gate parameter.
+def generate_shifted_tapes(tape, idx, shifts):
+    r"""Generate a list of tapes where the corresponding trainable parameter
+    index has been shifted by the values given.
 
     Args:
-        tape (.QuantumTape): quantum tape to differentiate
-        idx (int): trainable parameter index to differentiate with respect to
-        h=1e-7 (float): finite difference method step size
+        tape (.QuantumTape): input quantum tape
+        idx (int): trainable parameter index to shift the parameter of
+        shifts (Sequence[float or int]): sequence of shift values
 
     Returns:
-        tuple[list[QuantumTape], function]: A tuple containing the list of generated tapes,
-        in addition to a post-processing function to be applied to the evaluated
-        tapes.
+        list[QuantumTape]: List of quantum tapes. Each tape has parameter
+        ``idx`` shifted by consecutive values of ``shift``. The length
+        of the returned list of tapes will match the length of ``shifts``.
     """
     params = qml.math.stack(tape.get_parameters())
     tapes = []
@@ -80,7 +111,7 @@ def get_shifted_tapes(tape, idx, shifts, h=1e-7):
         shifted_tape = tape.copy(copy_operations=True)
 
         shift = np.zeros(qml.math.shape(params), dtype=np.float64)
-        shift[idx] = s * h
+        shift[idx] = s
 
         shifted_params = params + qml.math.convert_like(shift, params)
         shifted_tape.set_parameters(qml.math.unstack(shifted_params))
@@ -139,7 +170,7 @@ def finite_diff(tape, argnum=None, h=1e-7, order=1, n=1, form="forward"):
     shapes = []
     c0 = None
 
-    coeffs, shifts = get_stencil(n, order, form)
+    coeffs, shifts = finite_diff_stencil(n, order, form)
 
     if 0 in shifts:
         c0 = coeffs[0]
@@ -154,7 +185,7 @@ def finite_diff(tape, argnum=None, h=1e-7, order=1, n=1, form="forward"):
             shapes.append(0)
             continue
 
-        g_tapes = get_shifted_tapes(tape, t_idx, shifts, h=h)
+        g_tapes = generate_shifted_tapes(tape, t_idx, shifts * h)
         gradient_tapes.extend(g_tapes)
         shapes.append(len(g_tapes))
 
@@ -172,13 +203,33 @@ def finite_diff(tape, argnum=None, h=1e-7, order=1, n=1, form="forward"):
             res = results[start : start + s]
             start = start + s
 
-            res = qml.math.stack(res)
-            g = sum([c * r for c, r in zip(coeffs, res)])
+            # res = qml.math.stack(res)
+            # g = sum([c * r for c, r in zip(coeffs, res)])
+
+            # if c0 is not None:
+            #     g = g + c0 * results[0]
+
+            # grads.append(g / (h ** n))
+
+            g = [0] * len(res[0])
+
+            for c, r in zip(coeffs, res):
+                for idx, i in enumerate(r):
+                    g[idx] += c * np.array(i)
 
             if c0 is not None:
-                g = g + c0 * results[0]
+                g = [i + c0 * r for i, r in zip(g, results[0])]
 
-            grads.append(qml.math.squeeze(g / (h ** n)))
+            g = [i / (h ** n) for i in g]
+            grads.append(g)
+
+        for i, g in enumerate(grads):
+            try:
+                g = qml.math.convert_like(g, results)
+                if hasattr(g, "dtype") and g.dtype is np.dtype("object"):
+                    grads[i] = qml.math.hstack(g)
+            except:
+                pass
 
         return qml.math.stack(grads).T
 
