@@ -203,34 +203,34 @@ def finite_diff(tape, argnum=None, h=1e-7, order=1, n=1, form="forward"):
             res = results[start : start + s]
             start = start + s
 
-            # res = qml.math.stack(res)
-            # g = sum([c * r for c, r in zip(coeffs, res)])
-
-            # if c0 is not None:
-            #     g = g + c0 * results[0]
-
-            # grads.append(g / (h ** n))
-
-            g = [0] * len(res[0])
-
-            for c, r in zip(coeffs, res):
-                for idx, i in enumerate(r):
-                    g[idx] += c * np.array(i)
+            res = qml.math.stack(res)
+            g = sum([c * r for c, r in zip(coeffs, res)])
 
             if c0 is not None:
-                g = [i + c0 * r for i, r in zip(g, results[0])]
+                g = g + c0 * results[0]
 
-            g = [i / (h ** n) for i in g]
-            grads.append(g)
+            grads.append(g / (h ** n))
+
+            # g = [0] * qml.math.shape(res[0])[0]
+
+            # for c, r in zip(coeffs, res):
+            #     for idx, i in enumerate(r):
+            #         g[idx] += c * i
+
+            # if c0 is not None:
+            #     g = [i + c0 * r for i, r in zip(g, results[0])]
+
+            # g = [i / (h ** n) for i in g]
+            # grads.append(g)
 
         for i, g in enumerate(grads):
             try:
-                g = qml.math.convert_like(g, results)
+                g = qml.math.convert_like(g, res[0])
                 if hasattr(g, "dtype") and g.dtype is np.dtype("object"):
                     grads[i] = qml.math.hstack(g)
             except:
                 pass
 
-        return qml.math.stack(grads).T
+        return qml.math.T(qml.math.stack(grads))
 
     return gradient_tapes, processing_fn

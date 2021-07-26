@@ -355,3 +355,4 @@ ar.register_function(
     "scatter_element_add",
     lambda x, index, value: _i("jax").ops.index_add(x, tuple(index), value),
 )
+ar.register_function("jax", "unstack", list)

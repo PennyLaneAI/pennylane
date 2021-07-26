@@ -16,7 +16,7 @@ Tests for the gradients.finite_difference module.
 """
 import pytest
 
-import numpy as np
+from pennylane import numpy as np
 
 import pennylane as qml
 from pennylane.gradients import finite_diff, finite_diff_stencil, generate_shifted_tapes
@@ -403,4 +403,164 @@ class TestFiniteDiffIntegration:
             / 2
         )
 
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
+@pytest.mark.parametrize("order", [2])
+@pytest.mark.parametrize("form", ["center"])
+class TestFiniteDiffGradients:
+    """Test that the transform is differentiable"""
+
+    def test_autograd(self, order, form, tol):
+        """Tests correct output shape and evaluation for a tape
+        with expval and var outputs"""
+        dev = qml.device("default.qubit.autograd", wires=2)
+        params = np.array([0.543, -0.654], requires_grad=True)
+
+        def cost_fn(x):
+            with qml.tape.JacobianTape() as tape:
+                qml.RX(x[0], wires=[0])
+                qml.RY(x[1], wires=[1])
+                qml.CNOT(wires=[0, 1])
+                qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+            tape.trainable_params = {0, 1}
+            tapes, fn = finite_diff(tape, n=1, order=order, form=form)
+            jac = fn(dev.batch_execute(tapes))
+            return jac
+
+        res = qml.jacobian(cost_fn)(params)
+        x, y = params
+        expected = np.array(
+            [
+                [-np.cos(x) * np.sin(y), -np.cos(y) * np.sin(x)],
+                [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)],
+            ]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_ragged_differentiation(self, order, form, tol):
+        """Tests correct output shape and evaluation for a tape
+        with prob and expval outputs"""
+        dev = qml.device("default.qubit.autograd", wires=2)
+        params = np.array([0.543, -0.654], requires_grad=True)
+
+        def cost_fn(x):
+            with qml.tape.JacobianTape() as tape:
+                qml.RX(x[0], wires=[0])
+                qml.RY(x[1], wires=[1])
+                qml.CNOT(wires=[0, 1])
+                qml.expval(qml.PauliZ(0))
+                qml.probs(wires=[1])
+
+            tape.trainable_params = {0, 1}
+            tapes, fn = finite_diff(tape, n=1, order=order, form=form)
+            jac = fn(dev.batch_execute(tapes))
+            return jac[1, 0]
+
+        x, y = params
+        res = qml.grad(cost_fn)(params)
+        expected = np.array([-np.cos(x) * np.cos(y) / 2, np.sin(x) * np.sin(y) / 2])
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_tf(self, order, form, tol):
+        """Tests correct output shape and evaluation for a tape
+        with expval and var outputs"""
+        tf = pytest.importorskip("tensorflow")
+
+        dev = qml.device("default.qubit.tf", wires=2)
+        params = tf.Variable([0.543, -0.654], dtype=tf.float64)
+
+        with tf.GradientTape() as t:
+            with qml.tape.JacobianTape() as tape:
+                qml.RX(params[0], wires=[0])
+                qml.RY(params[1], wires=[1])
+                qml.CNOT(wires=[0, 1])
+                qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+            tape.trainable_params = {0, 1}
+            tapes, fn = finite_diff(tape, n=1, order=order, form=form)
+            jac = fn(dev.batch_execute(tapes))
+
+        x, y = 1.0 * params
+
+        expected = np.array([-np.sin(x) * np.sin(y), np.cos(x) * np.cos(y)])
+        assert np.allclose(jac, expected, atol=tol, rtol=0)
+
+        res = t.jacobian(jac, params)
+        expected = np.array(
+            [
+                [-np.cos(x) * np.sin(y), -np.cos(y) * np.sin(x)],
+                [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)],
+            ]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_torch(self, order, form, tol):
+        """Tests correct output shape and evaluation for a tape
+        with expval and var outputs"""
+        torch = pytest.importorskip("torch")
+        from pennylane.interfaces.torch import TorchInterface
+
+        dev = qml.device("default.qubit", wires=2)
+        params = torch.tensor([0.543, -0.654], dtype=torch.float64, requires_grad=True)
+
+        with TorchInterface.apply(qml.tape.QubitParamShiftTape()) as tape:
+            qml.RX(params[0], wires=[0])
+            qml.RY(params[1], wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        tapes, fn = finite_diff(tape, n=1, order=order, form=form)
+        jac = fn([t.execute(dev) for t in tapes])
+        cost = torch.sum(jac)
+        cost.backward()
+        hess = params.grad
+
+        x, y = params.detach().numpy()
+
+        expected = np.array([-np.sin(x) * np.sin(y), np.cos(x) * np.cos(y)])
+        assert np.allclose(jac.detach().numpy(), expected, atol=tol, rtol=0)
+
+        expected = np.array(
+            [
+                [-np.cos(x) * np.sin(y), -np.cos(y) * np.sin(x)],
+                [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)],
+            ]
+        )
+        assert np.allclose(hess.detach().numpy(), np.sum(expected, axis=0), atol=tol, rtol=0)
+
+    def test_jax(self, order, form, tol):
+        """Tests correct output shape and evaluation for a tape
+        with expval and var outputs"""
+        jax = pytest.importorskip("jax")
+        from jax import numpy as jnp
+        from pennylane.interfaces.jax import JAXInterface
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
+
+        dev = qml.device("default.qubit", wires=2)
+        params = jnp.array([0.543, -0.654])
+
+        def cost_fn(x):
+            with JAXInterface.apply(qml.tape.QubitParamShiftTape()) as tape:
+                qml.RX(x[0], wires=[0])
+                qml.RY(x[1], wires=[1])
+                qml.CNOT(wires=[0, 1])
+                qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+            tape.trainable_params = {0, 1}
+            tapes, fn = finite_diff(tape, n=1, order=order, form=form)
+            jac = fn([t.execute(dev) for t in tapes])
+            return jac
+
+        res = jax.jacobian(cost_fn)(params)
+        x, y = params
+        expected = np.array(
+            [
+                [-np.cos(x) * np.sin(y), -np.cos(y) * np.sin(x)],
+                [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)],
+            ]
+        )
         assert np.allclose(res, expected, atol=tol, rtol=0)
