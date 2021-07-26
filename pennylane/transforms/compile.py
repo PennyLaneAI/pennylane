@@ -35,9 +35,12 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1):
     """Compile a circuit by applying a series of transforms to a quantum function.
 
     The default set of transforms includes (in order):
-     - pushing all commuting single-qubit gates as far right as possible (:func:`~.pennylane.transforms.commute_controlled)
-     - cancellation of adjacent inverse gates (:func:`~.pennylane.transforms.cancel_inverses`)
-     - merging adjacent rotations of the same type (:func:`~.pennylane.transforms.merge_rotations`)
+     - pushing all commuting single-qubit gates as far right as possible
+       (:func:`~.pennylane.transforms.optimization.commute_controlled`)
+     - cancellation of adjacent inverse gates
+       (:func:`~.pennylane.transforms.optimization.cancel_inverses`)
+     - merging adjacent rotations of the same type
+       (:func:`~.pennylane.transforms.optimization.merge_rotations`)
 
     Args:
         qfunc (function): A quantum function.
@@ -58,26 +61,66 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1):
 
     .. code-block:: python
 
-        def bell_state():
+        def qfunc(x, y, z):
             qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
+            qml.Hadamard(wires=1)
+            qml.Hadamard(wires=2)
+            qml.RZ(z, wires=2)
+            qml.CNOT(wires=[2, 1])
+            qml.RX(z, wires=0)
+            qml.CNOT(wires=[1, 0])
+            qml.RX(x, wires=0)
+            qml.CNOT(wires=[1, 0])
+            qml.RZ(-z, wires=2)
+            qml.RX(y, wires=2)
+            qml.PauliY(wires=2)
+            qml.CY(wires=[1, 2])
+            return qml.expval(qml.PauliZ(wires=0))
 
-    Suppose we would like to apply the following set of transforms:
+    Visually, the original function looks like this:
 
-    >>> my_transforms = [cnot_to_cz, cancel_inverses]
+    >>> dev = qml.device('default.qubit', wires=[0, 1, 2])
+    >>> qnode = qml.QNode(qfunc, dev)
+    >>> print(qml.draw(qnode)(0.2, 0.3, 0.4))
+     0: ──H──RX(0.4)──────╭X─────────RX(0.2)──╭X───────┤ ⟨Z⟩
+     1: ──H───────────╭X──╰C──────────────────╰C──╭CY──┤
+     2: ──H──RZ(0.4)──╰C───RZ(-0.4)──RX(0.3)───Y──╰CY──┤
 
-    We can use this as a pipeline for the ``compile`` transform:
+    We can compile it down to a smaller set of gates using the ``qml.compile``
+    transform.
 
-    >>> compiled_bell_state = compile(pipeline=my_transforms)(bell_state)
+    >>> compiled_qfunc = qml.compile()(qfunc)
+    >>> compiled_qnode = qml.QNode(compiled_qfunc, dev)
+    >>> print(qml.draw(compiled_qnode)(0.2, 0.3, 0.4))
+     0: ──H───RX(0.6)───────────────────┤ ⟨Z⟩
+     1: ──H──╭X─────────────────╭CY─────┤
+     2: ──H──╰C────────RX(0.3)──╰CY──Y──┤
 
-    Now we can run this, and the compiled version will be executed:
+    You can change up the set of transforms by passing a custom ``pipeline`` to
+    ``qml.compile``. The pipeline is a list of transform functions. Furthermore,
+    you can specify a number of passes (repetitions of the pipeline), and a list
+    of gates into which the compiler will first attempt to decompose the
+    existing operations prior to applying any optimization transforms.
 
-    >>> dev = qml.device('default.qubit', wires=2)
-    >>> qnode = qml.QNode(compiled_bell_state, dev)
-    >>> print(qml.draw(qnode)())
-    0: ──H──╭Z──┤ ⟨Z⟩
-    1: ──H──╰C──┤
+    .. code-block:: python3
+
+        compiled_qfunc = qml.compile(
+            pipeline=[
+                qml.transforms.commute_controlled(direction="left"),
+                qml.transforms.merge_rotations(atol=1e-6),
+                qml.transforms.cancel_inverses
+            ],
+            basis_set=["CNOT", "RX", "RY", "RZ"],
+            num_passes=2
+        )(qfunc)
+
+        compiled_qnode = qml.QNode(compiled_qfunc, dev)
+
+    >>> print(qml.draw(compiled_qnode)(0.2, 0.3, 0.4))
+     0: ──RZ(1.57)──RX(1.57)──RZ(1.57)───RX(0.6)───────────────────────────────────────────────────────────────────────┤ ⟨Z⟩ 
+     1: ──RZ(1.57)──RX(1.57)──RZ(1.57)──╭X────────RZ(1.57)──────────────────────────────────────────╭C─────────────╭C──┤     
+     2: ──RZ(1.57)──RX(1.57)──RZ(1.57)──╰C────────RX(0.3)───RZ(1.57)──RY(3.14)──RZ(1.57)──RY(1.57)──╰X──RY(-1.57)──╰X──┤     
+
 
     """
     if pipeline is None:
