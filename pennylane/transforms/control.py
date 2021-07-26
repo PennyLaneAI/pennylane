@@ -95,11 +95,15 @@ class ControlledOperation(Operation):
         self.subtape = tape
         """QuantumTape: The tape that defines the underlying operation."""
 
-        self.control_wires = Wires(control_wires)
+        self._control_wires = Wires(control_wires)
         """Wires: The control wires."""
 
         wires = self.control_wires + tape.wires
         super().__init__(*tape.get_parameters(), wires=wires, do_queue=do_queue)
+
+    @property
+    def control_wires(self):
+        return self._control_wires
 
     def expand(self):
         tape = self.subtape
