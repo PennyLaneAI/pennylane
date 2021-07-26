@@ -14,22 +14,24 @@
 """Code for the high-level quantum function transform that executes compilation."""
 
 from inspect import getmembers, isclass
-import pennylane.templates as templates
-
-# Get a list of the names of existing templates in PennyLane
-template_list = [cls[0] for cls in getmembers(templates, isclass)]
 
 from pennylane import apply
 from pennylane.tape import get_active_tape
 
 from pennylane.transforms import qfunc_transform
-from pennylane.transforms.optimization import *
+from pennylane.transforms.optimization import cancel_inverses, commute_controlled, merge_rotations
+
+from pennylane import templates
+
+# Get a list of the names of existing templates in PennyLane
+template_list = [cls[0] for cls in getmembers(templates, isclass)]
+
 
 default_pipeline = [commute_controlled, cancel_inverses, merge_rotations]
 
 
 @qfunc_transform
-def compile(tape, pipeline=default_pipeline, basis_set=None, num_passes=1):
+def compile(tape, pipeline=None, basis_set=None, num_passes=1):
     """Compile a circuit by applying a series of transforms to a quantum function.
 
     The default set of transforms includes (in order):
@@ -78,6 +80,8 @@ def compile(tape, pipeline=default_pipeline, basis_set=None, num_passes=1):
     1: ──H──╰C──┤
 
     """
+    if pipeline is None:
+        pipeline = default_pipeline
 
     # Expand the tape; this is done to unroll any templates that may be present,
     # as well as to decompose over a specified basis set

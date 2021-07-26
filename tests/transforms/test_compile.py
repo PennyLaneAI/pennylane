@@ -18,7 +18,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.wires import Wires
 
-from pennylane.transforms.optimization import *
+from pennylane.transforms.optimization import cancel_inverses, commute_controlled, merge_rotations
 from pennylane import compile
 
 from test_optimization.utils import compare_operation_lists
