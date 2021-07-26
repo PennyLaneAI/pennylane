@@ -2,6 +2,33 @@
 
 <h3>New features since last release</h3>
 
+* A new quantum function transform has been added to push commuting
+  single-qubit gates through controlled operations.
+  [(#1464)](https://github.com/PennyLaneAI/pennylane/pull/1464)
+
+  The `commute_controlled` transform works as follows:
+
+  ```python
+  def circuit(theta):
+      qml.PauliX(wires=2)
+      qml.S(wires=0)
+      qml.CNOT(wires=[0, 1])
+      qml.PhaseShift(theta/2, wires=0)
+      qml.T(wires=0)
+      qml.Toffoli(wires=[0, 1, 2])
+      return qml.expval(qml.PauliZ(0))
+  ```
+
+  ```pycon
+  >>> optimized_circuit = qml.transforms.commute_controlled(direction="right")(circuit)
+  >>> dev = qml.device('default.qubit', wires=3)
+  >>> qnode = qml.QNode(optimized_circuit, dev)
+  >>> print(qml.draw(qnode)(0.5))
+   0: ──╭C──╭C──S──Rϕ(0.25)──T──┤ ⟨Z⟩
+   1: ──╰X──├C──────────────────┤
+   2: ──────╰X──X───────────────┤
+  ```
+
 * Grover Diffusion Operator template added.
   [(#1442)](https://github.com/PennyLaneAI/pennylane/pull/1442)
 
@@ -310,6 +337,10 @@
   [(#1439)](https://github.com/PennyLaneAI/pennylane/pull/1439)
 
 <h3>Documentation</h3>
+
+* Examples have been added to clarify use of the continuous-variable
+  `FockStateVector` operation in the multi-mode case.
+  [(#1472)](https://github.com/PennyLaneAI/pennylane/pull/1472)
 
 <h3>Contributors</h3>
 
