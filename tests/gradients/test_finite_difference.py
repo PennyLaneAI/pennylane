@@ -412,8 +412,8 @@ class TestFiniteDiffGradients:
     """Test that the transform is differentiable"""
 
     def test_autograd(self, order, form, tol):
-        """Tests correct output shape and evaluation for a tape
-        with expval and var outputs"""
+        """Tests that the output of the finite-difference transform
+        can be differentiated using autograd, yielding second derivatives."""
         dev = qml.device("default.qubit.autograd", wires=2)
         params = np.array([0.543, -0.654], requires_grad=True)
 
@@ -439,9 +439,9 @@ class TestFiniteDiffGradients:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_ragged_differentiation(self, order, form, tol):
-        """Tests correct output shape and evaluation for a tape
-        with prob and expval outputs"""
+    def test_autograd_ragged(self, order, form, tol):
+        """Tests that the output of the finite-difference transform
+        of a ragged tape can be differentiated using autograd, yielding second derivatives."""
         dev = qml.device("default.qubit.autograd", wires=2)
         params = np.array([0.543, -0.654], requires_grad=True)
 
@@ -464,8 +464,8 @@ class TestFiniteDiffGradients:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_tf(self, order, form, tol):
-        """Tests correct output shape and evaluation for a tape
-        with expval and var outputs"""
+        """Tests that the output of the finite-difference transform
+        can be differentiated using TF, yielding second derivatives."""
         tf = pytest.importorskip("tensorflow")
 
         dev = qml.device("default.qubit.tf", wires=2)
@@ -497,8 +497,8 @@ class TestFiniteDiffGradients:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_torch(self, order, form, tol):
-        """Tests correct output shape and evaluation for a tape
-        with expval and var outputs"""
+        """Tests that the output of the finite-difference transform
+        can be differentiated using Torch, yielding second derivatives."""
         torch = pytest.importorskip("torch")
         from pennylane.interfaces.torch import TorchInterface
 
@@ -531,8 +531,8 @@ class TestFiniteDiffGradients:
         assert np.allclose(hess.detach().numpy(), np.sum(expected, axis=0), atol=tol, rtol=0)
 
     def test_jax(self, order, form, tol):
-        """Tests correct output shape and evaluation for a tape
-        with expval and var outputs"""
+        """Tests that the output of the finite-difference transform
+        can be differentiated using JAX, yielding second derivatives."""
         jax = pytest.importorskip("jax")
         from jax import numpy as jnp
         from pennylane.interfaces.jax import JAXInterface
