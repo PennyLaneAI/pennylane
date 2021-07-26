@@ -171,7 +171,7 @@ class ControlledQubitUnitary(QubitUnitary):
 
         # Saving for the circuit drawer
         self._target_wires = wires
-        self.control_wires = control_wires
+        self._control_wires = control_wires
         self.U = U
 
         wires = control_wires + wires
@@ -204,6 +204,10 @@ class ControlledQubitUnitary(QubitUnitary):
         params = list(params)
         params[0] = self._CU
         return super()._matrix(*params)
+
+    @property
+    def control_wires(self):
+        return self._control_wires
 
     @staticmethod
     def _parse_control_values(control_wires, control_values):

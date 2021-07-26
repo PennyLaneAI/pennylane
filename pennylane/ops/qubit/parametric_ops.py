@@ -56,6 +56,7 @@ class RX(Operation):
     num_wires = 1
     par_domain = "R"
     is_composable_rotation = True
+    basis = "X"
     grad_method = "A"
     generator = [PauliX, -1 / 2]
 
@@ -102,6 +103,7 @@ class RY(Operation):
     num_wires = 1
     par_domain = "R"
     is_composable_rotation = True
+    basis = "Y"
     grad_method = "A"
     generator = [PauliY, -1 / 2]
 
@@ -148,6 +150,7 @@ class RZ(DiagonalOperation):
     num_wires = 1
     par_domain = "R"
     is_composable_rotation = True
+    basis = "Z"
     grad_method = "A"
     generator = [PauliZ, -1 / 2]
 
@@ -257,6 +260,7 @@ class ControlledPhaseShift(DiagonalOperation):
     num_wires = 2
     par_domain = "R"
     is_composable_rotation = True
+    basis = "Z"
     grad_method = "A"
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), 1]
 
@@ -283,6 +287,10 @@ class ControlledPhaseShift(DiagonalOperation):
 
     def adjoint(self):
         return ControlledPhaseShift(-self.data[0], wires=self.wires)
+
+    @property
+    def control_wires(self):
+        return Wires(self.wires[0])
 
 
 CPhase = ControlledPhaseShift
@@ -689,6 +697,7 @@ class CRX(Operation):
     num_wires = 2
     par_domain = "R"
     is_composable_rotation = True
+    basis = "X"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
@@ -719,6 +728,10 @@ class CRX(Operation):
 
     def adjoint(self):
         return CRX(-self.data[0], wires=self.wires)
+
+    @property
+    def control_wires(self):
+        return Wires(self.wires[0])
 
 
 class CRY(Operation):
@@ -762,6 +775,7 @@ class CRY(Operation):
     num_wires = 2
     par_domain = "R"
     is_composable_rotation = True
+    basis = "Y"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
@@ -790,6 +804,10 @@ class CRY(Operation):
 
     def adjoint(self):
         return CRY(-self.data[0], wires=self.wires)
+
+    @property
+    def control_wires(self):
+        return Wires(self.wires[0])
 
 
 class CRZ(DiagonalOperation):
@@ -836,6 +854,7 @@ class CRZ(DiagonalOperation):
     num_wires = 2
     par_domain = "R"
     is_composable_rotation = True
+    basis = "Z"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
@@ -880,6 +899,10 @@ class CRZ(DiagonalOperation):
 
     def adjoint(self):
         return CRZ(-self.data[0], wires=self.wires)
+
+    @property
+    def control_wires(self):
+        return Wires(self.wires[0])
 
 
 class CRot(Operation):
