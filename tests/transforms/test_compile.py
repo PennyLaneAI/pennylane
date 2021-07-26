@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import pytest
-import numpy as np
+from pennylane import numpy as np
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -63,10 +63,6 @@ class TestCompile:
         names_expected = [op.name for op in qnode.qtape.operations]
         wires_expected = [op.wires for op in qnode.qtape.operations]
 
-        print(names_expected)
-        print(wires_expected)
-        print(transformed_qnode.qtape.operations)
-
         compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
 
     @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
@@ -105,7 +101,11 @@ class TestCompile:
 
         qnode = qml.QNode(qfunc, dev)
 
-        pipeline = [commute_controlled(direction="left"), cancel_inverses, merge_rotations]
+        pipeline = [
+            commute_controlled(direction="left"),
+            cancel_inverses,
+            merge_rotations(atol=1e-6),
+        ]
 
         transformed_qfunc = compile(pipeline=pipeline)(qfunc)
         transformed_qnode = qml.QNode(transformed_qfunc, dev)
@@ -209,3 +209,198 @@ class TestCompile:
         ]
 
         compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
+
+    def test_compile_template(self):
+        """Test that an empty pipeline returns the original function."""
+
+        # Push commuting gates to the right and merging rotations gives a circuit
+        # with alternating RX and CNOT gates
+        def qfunc(x, params):
+            qml.templates.AngleEmbedding(x, wires=range(3))
+            qml.templates.BasicEntanglerLayers(params, wires=range(3))
+            return qml.expval(qml.PauliZ(wires=2))
+
+        dev = qml.device("default.qubit", wires=3)
+        qnode = qml.QNode(qfunc, dev)
+
+        pipeline = [commute_controlled, merge_rotations]
+        transformed_qfunc = compile(pipeline=pipeline)(qfunc)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+
+        x = np.array([0.1, 0.2, 0.3])
+        params = np.ones((2, 3))
+
+        original_result = qnode(x, params)
+        transformed_result = transformed_qnode(x, params)
+        assert np.allclose(original_result, transformed_result)
+
+        names_expected = ["RX", "CNOT"] * 6
+        wires_expected = [
+            Wires(0),
+            Wires([0, 1]),
+            Wires(1),
+            Wires([1, 2]),
+            Wires(2),
+            Wires([2, 0]),
+        ] * 2
+
+        compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
+
+
+def qfunc(x, params):
+    qml.templates.AngleEmbedding(x, wires=range(3))
+    qml.templates.BasicEntanglerLayers(params, wires=range(3))
+    return qml.expval(qml.PauliZ(wires=2))
+
+
+pipeline = [commute_controlled(direction="left"), merge_rotations]
+
+transformed_qfunc = compile(pipeline=pipeline)(qfunc)
+
+dev = qml.device("default.qubit", wires=3)
+
+expected_op_list = ["RX"] * 3 + ["CNOT", "CNOT", "RX", "CNOT", "RX", "RX"] + ["CNOT"] * 3
+
+expected_wires_list = [
+    Wires(0),
+    Wires(1),
+    Wires(2),
+    Wires([0, 1]),
+    Wires([1, 2]),
+    Wires(0),
+    Wires([2, 0]),
+    Wires(1),
+    Wires(2),
+    Wires([0, 1]),
+    Wires([1, 2]),
+    Wires([2, 0]),
+]
+
+
+class TestCompileInterfaces:
+    """Test that the top-level compile function works across all interfaces."""
+
+    @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
+    def test_compile_autograd(self, diff_method):
+        """Test QNode and gradient in autograd interface."""
+
+        original_qnode = qml.QNode(qfunc, dev, interface="autograd", diff_method=diff_method)
+        transformed_qnode = qml.QNode(
+            transformed_qfunc, dev, interface="autograd", diff_method=diff_method
+        )
+
+        x = np.array([0.1, 0.2, 0.3], requires_grad=False)
+        params = np.ones((2, 3))
+
+        # Check that the numerical output is the same
+        assert qml.math.allclose(original_qnode(x, params), transformed_qnode(x, params))
+
+        # Check that the gradient is the same
+        assert qml.math.allclose(
+            qml.grad(original_qnode)(x, params), qml.grad(transformed_qnode)(x, params)
+        )
+
+        # Check operation list
+        ops = transformed_qnode.qtape.operations
+        compare_operation_lists(ops, expected_op_list, expected_wires_list)
+
+    def test_compile_torch(self):
+        """Test QNode and gradient in torch interface."""
+        torch = pytest.importorskip("torch", minversion="1.8")
+
+        original_qnode = qml.QNode(qfunc, dev, interface="torch", diff_method="parameter-shift")
+        transformed_qnode = qml.QNode(
+            transformed_qfunc, dev, interface="torch", diff_method="parameter-shift"
+        )
+
+        original_x = torch.tensor([0.3, -0.2, 0.8], requires_grad=False)
+        original_params = torch.ones((2, 3), requires_grad=True)
+
+        transformed_x = torch.tensor([0.3, -0.2, 0.8], requires_grad=False)
+        transformed_params = torch.ones((2, 3), requires_grad=True)
+
+        original_result = original_qnode(original_x, original_params)
+        transformed_result = transformed_qnode(transformed_x, transformed_params)
+
+        # Check that the numerical output is the same
+        assert qml.math.allclose(original_result, transformed_result)
+
+        # Check that the gradient is the same
+        original_result.backward()
+        transformed_result.backward()
+
+        assert qml.math.allclose(original_params.grad, transformed_params.grad)
+
+        # Check operation list
+        ops = transformed_qnode.qtape.operations
+        compare_operation_lists(ops, expected_op_list, expected_wires_list)
+
+    @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
+    def test_compile_tf(self, diff_method):
+        """Test QNode and gradient in tensorflow interface."""
+        tf = pytest.importorskip("tensorflow")
+
+        original_qnode = qml.QNode(qfunc, dev, interface="tf", diff_method=diff_method)
+        transformed_qnode = qml.QNode(
+            transformed_qfunc, dev, interface="tf", diff_method=diff_method
+        )
+
+        original_x = tf.Variable([0.8, -0.6, 0.4])
+        original_params = tf.Variable(tf.ones((2, 3)))
+
+        transformed_x = tf.Variable([0.8, -0.6, 0.4])
+        transformed_params = tf.Variable(tf.ones((2, 3)))
+
+        original_result = original_qnode(original_x, original_params)
+        transformed_result = transformed_qnode(transformed_x, transformed_params)
+
+        # Check that the numerical output is the same
+        assert qml.math.allclose(original_result, transformed_result)
+
+        # Check that the gradient is the same
+        with tf.GradientTape() as tape:
+            loss = original_qnode(original_x, original_params)
+        original_grad = tape.gradient(loss, original_params)
+
+        with tf.GradientTape() as tape:
+            loss = transformed_qnode(transformed_x, transformed_params)
+        transformed_grad = tape.gradient(loss, transformed_params)
+
+        assert qml.math.allclose(original_grad, transformed_grad)
+
+        # Check operation list
+        ops = transformed_qnode.qtape.operations
+        compare_operation_lists(ops, expected_op_list, expected_wires_list)
+
+    @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
+    def test_compile_jax(self, diff_method):
+        """Test QNode and gradient in JAX interface."""
+        jax = pytest.importorskip("jax")
+        from jax import numpy as jnp
+
+        from jax.config import config
+
+        remember = config.read("jax_enable_x64")
+        config.update("jax_enable_x64", True)
+
+        original_qnode = qml.QNode(qfunc, dev, interface="jax", diff_method=diff_method)
+        transformed_qnode = qml.QNode(
+            transformed_qfunc, dev, interface="jax", diff_method=diff_method
+        )
+
+        x = jnp.array([0.1, 0.2, 0.3], dtype=jnp.float64)
+        params = jnp.ones((2, 3), dtype=jnp.float64)
+
+        # Check that the numerical output is the same
+        assert qml.math.allclose(original_qnode(x, params), transformed_qnode(x, params))
+
+        # Check that the gradient is the same
+        assert qml.math.allclose(
+            jax.grad(original_qnode, argnums=(1))(x, params),
+            jax.grad(transformed_qnode, argnums=(1))(x, params),
+            atol=1e-7,
+        )
+
+        # Check operation list
+        ops = transformed_qnode.qtape.operations
+        compare_operation_lists(ops, expected_op_list, expected_wires_list)
