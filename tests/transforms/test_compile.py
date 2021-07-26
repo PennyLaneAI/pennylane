@@ -68,47 +68,6 @@ class TestCompile:
                 [cancel_inverses, merge_rotations],
                 [qml.RX(0.7, wires=0), qml.CNOT(wires=[1, 2]), qml.CRZ(0.9, wires=[2, 0])],
             ),
-            (
-                [0.1, -0.1, 0.2],
-                [cancel_inverses, cnot_to_cz],
-                [
-                    qml.RX(0.1, wires=0),
-                    qml.RX(-0.1, wires=0),
-                    qml.Hadamard(wires=2),
-                    qml.CZ(wires=[1, 2]),
-                    qml.Hadamard(wires=2),
-                    qml.RY(-0.1, wires=1),
-                    qml.CRZ(0.2, wires=[2, 0]),
-                    qml.RY(0.1, wires=1),
-                    qml.CRZ(-0.1, wires=[2, 0]),
-                ],
-            ),
-            (
-                [0.2, -0.3, 0.4],
-                [cnot_to_cz, cancel_inverses],
-                [
-                    qml.RX(0.2, wires=0),
-                    qml.RX(-0.3, wires=0),
-                    qml.Hadamard(wires=2),
-                    qml.CZ(wires=[1, 2]),
-                    qml.RY(-0.3, wires=1),
-                    qml.Hadamard(wires=2),
-                    qml.CRZ(0.4, wires=[2, 0]),
-                    qml.RY(0.3, wires=1),
-                    qml.CRZ(-0.3, wires=[2, 0]),
-                ],
-            ),
-            (
-                [0.2, -0.3, 0.4],
-                [cnot_to_cz, cancel_inverses, merge_rotations],
-                [
-                    qml.RX(-0.1, wires=0),
-                    qml.Hadamard(wires=2),
-                    qml.CZ(wires=[1, 2]),
-                    qml.Hadamard(wires=2),
-                    qml.CRZ(0.1, wires=[2, 0]),
-                ],
-            ),
         ],
     )
     def test_full_pass(self, inputs, pipeline, expected_ops):
