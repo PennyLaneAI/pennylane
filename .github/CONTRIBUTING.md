@@ -41,11 +41,14 @@ It's up to you!
   [here](https://pennylane.ai/install.html?version=preview). If you run into any bugs, make a bug
   report on our [issue tracker](https://github.com/XanaduAI/pennylane/issues).
 
-* **Report bugs.** - If you come across any bugs or issues, make a bug report. See a later section
-  for more details on the bug reporting procedure.
+* **Report bugs.** - If you come across any bugs or issues, make a bug report. PennyLane has
+  [a form](https://github.com/PennyLaneAI/pennylane/issues/new?assignees=&labels=bug+%3Abug%3A&template=bug_report.yml&title=%5BBUG%5D)
+  to help walk you through submitting a bug report.  Providing a complete, detailed description
+  helps us figure out the source of the problem faster.
 
-* **Suggest new features and enhancements.** Use the GitHub issue tracker and let us know what
-  will make PennyLane even better for you.
+* **Suggest new features and enhancements.** Use our
+  [Feature Request form](https://github.com/PennyLaneAI/pennylane/issues/new?assignees=&labels=enhancement+%3Asparkles%3A&template=feature_request.yml)
+  and let us know what will make PennyLane even better for you.
 
 * **Contribute to the PennyLane repository itself.** See more below.
 
@@ -53,65 +56,30 @@ It's up to you!
 
 Want to help with the repository itself?  There are several different avenues for that:
 
-- **Good first issues** - Don't know where to start? Take a look at our
+* **Good first issues** - Don't know where to start? Take a look at our
   ["good first issue" label](https://github.com/PennyLaneAI/pennylane/contribute).  Issues with
   this label are meant for newcomers and *should* contain fewer challenging bits.  If the issue
   ends up trickier than we assumed, you can start a conversation on the issue page or open up a
   "Work in Progress" PR to ask for help.
 
-- **Documentation**- If you would like to add to our documentation or suggest
+* **Documentation**- If you would like to add to our documentation or suggest
   improvements/changes, let us know or submit a pull request directly. Changes that fix rendering
   issues, grammar, or a broken code example help us a lot too. Take a look at the
   [documentation guide](https://pennylane.readthedocs.io/en/stable/development/guide/documentation.html)
   for more specifics.
 
-- **Add a new Template or Operation.** Circuit structures crop up in literature faster than we can
+* **Add a new Template or Operation.** Circuit structures crop up in literature faster than we can
 add them, so we are always looking for help. Take a look at the
 [Contributing templates](https://pennylane.readthedocs.io/en/stable/development/adding_templates.html)
 page for more information.
 
-- **Develop a PennyLane plugin** - PennyLane is designed to be device and quantum-framework
+* **Develop a PennyLane plugin** - PennyLane is designed to be device and quantum-framework
   agnostic. Users can switch a circuit's device to any other compatible device with barely any code
   changes. We would love to support even more devices and quantum frameworks. If you would like to
   write a PennyLane plugin, see the page on
   ["Building a plugin"](https://pennylane.readthedocs.io/en/stable/development/plugins.html).
 
-Did we catch your interest? Let's get into some helpful specifics.
-
-## Details
-
-### Reporting bugs
-
-We use the [GitHub issue tracker](https://github.com/XanaduAI/pennylane/issues) to track all
-reported bugs and issues. If you find a bug or have a problem with PennyLane, please submit a bug
-report! User reports help us make PennyLane better on all fronts.
-
-To submit a bug report, please consider the following checklist:
-
-* **Search the issue tracker to make sure someone did not already report the bug**. If it was
-  already reported, you can add a comment providing more context to those solving the problem.
-
-* **Fill out the issue form**. If you cannot find an existing issue addressing the problem,
-  create a new issue by filling out the bug issue form. This template is added automatically to
-  the comment box when you create a new issue. Please try and add as many details as possible!
-
-* Try and make your issue as **clear, concise, and descriptive** as possible. Include an
-  informative title and all code snippets/commands required to reproduce the problem. Try and find
-  the simplest code that reproduces the error you see. If you're not sure what caused the issue,
-  describe what you were doing when the issue occurred. Please also include the output of
-  `import pennylane as qml; qml.about()`.
-
-### Suggesting features, document additions, and enhancements
-
-To suggest features and enhancements, please use the GitHub tracker. ADD LINK BEFORE MERGINIG!!!!
-
-* Use a clear and descriptive title.
-
-* Provide a detailed description of the suggested feature.
-
-* List appropriate equations and references.
-
-* Explain how the feature would benefit you and other users.
+Did we catch your interest?
 
 ## Pull requests
 
@@ -121,7 +89,7 @@ encourage everyone to fork and modify the PennyLane source code. However, we hav
 guidelines on pull requests to ensure the master branch of PennyLane conforms to existing standards
 and quality. We can help you meet these standards during our code review process, so don't let
 those stop you from getting started. Pull Requests do not need to be big and complicated.  We
-appreciate even minor bug fixes or documentation improvements. 
+appreciate even minor bug fixes or documentation improvements.
 
 See our [Development Guide](https://pennylane.readthedocs.io/en/stable/development/guide.html)
 and the page on 
