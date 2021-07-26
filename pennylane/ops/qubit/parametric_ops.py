@@ -26,6 +26,7 @@ import pennylane as qml
 from pennylane.operation import AnyWires, DiagonalOperation, Operation
 from pennylane.templates.decorator import template
 from pennylane.utils import expand, pauli_eigs
+from pennylane.wires import Wires
 
 from .non_parametric_ops import PauliX, PauliY, PauliZ, Hadamard, CNOT
 
