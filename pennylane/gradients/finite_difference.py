@@ -208,13 +208,15 @@ def finite_diff(tape, argnum=None, h=1e-7, order=1, n=1, form="forward"):
 
             grads.append(g / (h ** n))
 
+        # The following is for backwards compatibility; currently,
+        # the device stacks multiple measurement arrays, even if not the same
+        # size, resulting in a ragged array.
+        # In the future, we might want to change this so that only tuples
+        # of arrays are returned.
         for i, g in enumerate(grads):
-            try:
-                g = qml.math.convert_like(g, res[0])
-                if hasattr(g, "dtype") and g.dtype is np.dtype("object"):
-                    grads[i] = qml.math.hstack(g)
-            except:
-                pass
+            g = qml.math.convert_like(g, res[0])
+            if hasattr(g, "dtype") and g.dtype is np.dtype("object"):
+                grads[i] = qml.math.hstack(g)
 
         return qml.math.T(qml.math.stack(grads))
 
