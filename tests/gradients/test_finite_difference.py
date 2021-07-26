@@ -496,6 +496,30 @@ class TestFiniteDiffGradients:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    def test_tf_ragged(self, order, form, tol):
+        """Tests that the output of the finite-difference transform
+        of a ragged tape can be differentiated using TF, yielding second derivatives."""
+        tf = pytest.importorskip("tensorflow")
+        dev = qml.device("default.qubit.tf", wires=2)
+        params = tf.Variable([0.543, -0.654], dtype=tf.float64)
+
+        with tf.GradientTape() as t:
+            with qml.tape.JacobianTape() as tape:
+                qml.RX(params[0], wires=[0])
+                qml.RY(params[1], wires=[1])
+                qml.CNOT(wires=[0, 1])
+                qml.expval(qml.PauliZ(0))
+                qml.probs(wires=[1])
+
+            tape.trainable_params = {0, 1}
+            tapes, fn = finite_diff(tape, n=1, order=order, form=form)
+            jac = fn(dev.batch_execute(tapes))[1, 0]
+
+        x, y = 1.0 * params
+        res = t.gradient(jac, params)
+        expected = np.array([-np.cos(x) * np.cos(y) / 2, np.sin(x) * np.sin(y) / 2])
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
     def test_torch(self, order, form, tol):
         """Tests that the output of the finite-difference transform
         can be differentiated using Torch, yielding second derivatives."""

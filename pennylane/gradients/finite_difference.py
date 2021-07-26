@@ -15,10 +15,7 @@
 This module contains functions for computing the finite-difference gradient
 of a quantum tape.
 """
-# pylint: disable=protected-access
-import functools
-import itertools
-
+# pylint: disable=protected-access,too-many-arguments
 import numpy as np
 from scipy.special import factorial
 
@@ -151,7 +148,7 @@ def finite_diff(tape, argnum=None, h=1e-7, order=1, n=1, form="forward"):
     ...     qml.expval(qml.PauliZ(0))
     ...     qml.var(qml.PauliZ(0))
     >>> tape.trainable_params = {0, 1, 2}
-    >>> gradient_tapes, fn = gradients.finite_difference.grad(tape)
+    >>> gradient_tapes, fn = qml.gradients.finite_diff.grad(tape)
     >>> res = dev.batch_execute(gradient_tapes)
     >>> fn(res)
     [[-0.38751721 -0.18884787 -0.38355704]
@@ -210,18 +207,6 @@ def finite_diff(tape, argnum=None, h=1e-7, order=1, n=1, form="forward"):
                 g = g + c0 * results[0]
 
             grads.append(g / (h ** n))
-
-            # g = [0] * qml.math.shape(res[0])[0]
-
-            # for c, r in zip(coeffs, res):
-            #     for idx, i in enumerate(r):
-            #         g[idx] += c * i
-
-            # if c0 is not None:
-            #     g = [i + c0 * r for i, r in zip(g, results[0])]
-
-            # g = [i / (h ** n) for i in g]
-            # grads.append(g)
 
         for i, g in enumerate(grads):
             try:
