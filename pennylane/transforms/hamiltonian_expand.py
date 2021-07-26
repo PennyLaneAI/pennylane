@@ -15,6 +15,7 @@
 Contains the hamiltonian expand tape transform
 """
 import pennylane as qml
+from pennylane.operation import ObservableReturnTypes
 
 
 def hamiltonian_expand(tape, group=True):
@@ -117,7 +118,8 @@ def hamiltonian_expand(tape, group=True):
 
         def processing_fn(res):
             dot_products = [
-                qml.math.dot(qml.math.squeeze(res[i]), hamiltonian.coeffs[i]) for i in range(len(res))
+                qml.math.dot(qml.math.squeeze(res[i]), hamiltonian.coeffs[i])
+                for i in range(len(res))
             ]
             return qml.math.sum(qml.math.stack(dot_products))
 

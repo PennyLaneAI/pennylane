@@ -1219,7 +1219,7 @@ class TestNewVQE:
     @pytest.mark.parametrize("observables", OBSERVABLES)
     def test_circuits_evaluate(self, ansatz, observables, params, tol):
         """Tests that the circuits returned by ``vqe.circuits`` evaluate properly"""
-        coeffs = [1.] * len(observables)
+        coeffs = [1.0] * len(observables)
         dev = qml.device("default.qubit", wires=3)
         H = qml.Hamiltonian(coeffs, observables)
 
@@ -1228,17 +1228,20 @@ class TestNewVQE:
         def circuit():
             ansatz(params, wires=range(3))
             return qml.expval(H)
+
         res = circuit()
 
         res_expected = []
         for obs in observables:
+
             @qml.qnode(dev)
             def circuit():
                 ansatz(params, wires=range(3))
                 return qml.expval(obs)
+
             res_expected.append(circuit())
 
-        res_expected = np.sum(c*r for c, r in zip(coeffs, res_expected))
+        res_expected = np.sum(c * r for c, r in zip(coeffs, res_expected))
 
         assert np.isclose(res, res_expected, atol=tol)
 
@@ -1259,7 +1262,7 @@ class TestNewVQE:
 
     def test_grad_zero_hamiltonian(self, tol):
         """Test that the gradient of ExpvalCost is accessible and correct when using
-         the autograd interface with a zero Hamiltonian."""
+        the autograd interface with a zero Hamiltonian."""
         dev = qml.device("default.qubit", wires=4)
         H = qml.Hamiltonian([0], [qml.PauliX(0)])
         w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)

@@ -102,7 +102,7 @@ class TestHamiltonianExpval:
     def test_number_of_tapes(self):
         """Tests that the the correct number of tapes is produced"""
 
-        H = qml.Hamiltonian([1., 2., 3.], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)])
+        H = qml.Hamiltonian([1.0, 2.0, 3.0], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)])
 
         with qml.tape.QuantumTape() as tape:
             qml.Hadamard(wires=0)
