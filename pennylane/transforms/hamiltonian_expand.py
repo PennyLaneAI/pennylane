@@ -117,8 +117,7 @@ def hamiltonian_expand(tape, group=True):
     # create processing function that performs linear recombination
     def processing_fn(res):
         dot_products = [
-            qml.math.dot(qml.math.squeeze(res[i]), hamiltonian.coeffs[i])
-            for i in range(len(res))
+            qml.math.dot(qml.math.squeeze(res[i]), hamiltonian.coeffs[i]) for i in range(len(res))
         ]
         return qml.math.sum(qml.math.stack(dot_products))
 
