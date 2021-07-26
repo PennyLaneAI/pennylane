@@ -25,20 +25,17 @@ from pennylane.tape import get_active_tape
 from pennylane.transforms import qfunc_transform
 from pennylane.transforms.optimization import *
 
-default_pipeline = [
-    commute_controlled(),
-    cancel_inverses,
-    merge_rotations()
-]
+default_pipeline = [commute_controlled, cancel_inverses, merge_rotations]
+
 
 @qfunc_transform
 def compile(tape, pipeline=default_pipeline, basis_set=None, num_passes=1):
     """Compile a circuit by applying a series of transforms to a quantum function.
 
     The default set of transforms includes (in order):
-     - pushing all commuting single-qubit gates as far right as possible
-     - cancellation of adjacent inverse gates
-     - merging adjacent rotations of the same type
+     - pushing all commuting single-qubit gates as far right as possible (:func:`~.pennylane.transforms.commute_controlled)
+     - cancellation of adjacent inverse gates (:func:`~.pennylane.transforms.cancel_inverses`)
+     - merging adjacent rotations of the same type (:func:`~.pennylane.transforms.merge_rotations`)
 
     Args:
         qfunc (function): A quantum function.
