@@ -72,7 +72,7 @@ def hamiltonian_expand(tape, group=True):
          See :class:`~pennylane.Hamiltonian` for more information.
 
     The ``group`` keyword argument toggles between the creation of one tape per Pauli observable, or
-    one tape per group of non-commuting Pauli observables computed by the ``qml.transforms.measurement_grouping``
+    one tape per group of non-commuting Pauli observables computed by the :func:`.measurement_grouping`
     transform:
 
     .. code-block:: python3
