@@ -98,7 +98,7 @@ class TestCompile:
 
     @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
     def test_pipeline_with_non_default_arguments(self, wires):
-        """Test that the default pipeline returns the correct results."""
+        """Test that using non-default arguments returns the correct results."""
 
         qfunc = build_qfunc(wires)
         dev = qml.device("default.qubit", wires=Wires(wires))
@@ -125,113 +125,87 @@ class TestCompile:
 
         compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
 
-    # @pytest.mark.parametrize(
-    #     ("inputs", "pipeline", "expected_ops"),
-    #     [
-    #         (
-    #             [0.3, 0.4, 0.5],
-    #             [cancel_inverses, merge_rotations],
-    #             [qml.RX(0.7, wires=0), qml.CNOT(wires=[1, 2]), qml.CRZ(0.9, wires=[2, 0])],
-    #         ),
-    #     ],
-    # )
-    # def test_full_pass(self, inputs, pipeline, expected_ops):
-    #     """Test that different combinations of pipelines work as expected."""
+    @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
+    def test_multiple_passes(self, wires):
+        """Test that running multiple passes produces the correct results."""
 
-    #     transformed_qfunc = compile(pipeline=pipeline)(qfunc)
-    #     transformed_qnode = qml.QNode(transformed_qfunc, dev)
-    #     transformed_result = transformed_qnode(*inputs)
+        qfunc = build_qfunc(wires)
+        dev = qml.device("default.qubit", wires=Wires(wires))
 
-    #     original_result = qnode(*inputs)
-    #     assert np.allclose(original_result, transformed_result)
+        qnode = qml.QNode(qfunc, dev)
 
-    #     assert len(transformed_qnode.qtape.operations) == len(expected_ops)
+        # Rotation merging will not occur at all until commuting gates are
+        # pushed through
+        pipeline = [merge_rotations, commute_controlled(direction="left"), cancel_inverses]
 
-    #     for op_obtained, op_expected in zip(transformed_qnode.qtape.operations, expected_ops):
-    #         assert op_obtained.name == op_expected.name
-    #         assert op_obtained.wires == op_expected.wires
-    #         assert np.allclose(op_obtained.parameters, op_expected.parameters)
+        transformed_qfunc = compile(pipeline=pipeline, num_passes=2)(qfunc)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
-    # @pytest.mark.parametrize(
-    #     ("gate_type", "angles"),
-    #     [
-    #         (qml.RX, [0.1, 0.2, 0.3, 0.4, 0.5]),
-    #         (qml.RY, [0.01]),
-    #         (qml.RZ, [0.25, 0.8, 0.98]),
-    #         (qml.PhaseShift, [-0.1, 0.5]),
-    #     ],
-    # )
-    # def test_cumulative_merge_one_qubit_single_parameter_nonzero(self, gate_type, angles):
-    #     """Test that multiple adjacent instances of a single-qubit gate get merged in one pass"""
+        original_result = qnode(0.3, 0.4, 0.5)
+        transformed_result = transformed_qnode(0.3, 0.4, 0.5)
+        assert np.allclose(original_result, transformed_result)
 
-    #     def qfunc_with_many_rots():
-    #         for angle in angles:
-    #             gate_type(angle, wires=0)
+        names_expected = ["Hadamard", "CNOT", "RX", "PauliY", "CY"]
+        wires_expected = [
+            Wires(wires[0]),
+            Wires([wires[2], wires[1]]),
+            Wires(wires[0]),
+            Wires(wires[2]),
+            Wires([wires[1], wires[2]]),
+        ]
 
-    #     compiled_qfunc = compile(pipeline=[merge_rotations], num_passes=1)(qfunc_with_many_rots)
-    #     ops = qml.transforms.make_tape(compiled_qfunc)().operations
+        compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
 
-    #     assert len(ops) == 1
+    @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
+    def test_decompose_into_basis_gates(self, wires):
+        """Test that running multiple passes produces the correct results."""
 
-    #     assert ops[0].name == gate_type(0, wires=0).name
-    #     assert ops[0].parameters[0] == sum(angles)
+        qfunc = build_qfunc(wires)
+        dev = qml.device("default.qubit", wires=Wires(wires))
 
-    # @pytest.mark.parametrize(
-    #     ("gate_type", "angles"),
-    #     [
-    #         (qml.CRX, [0.1, 0.2, 0.3, 0.4, 0.5]),
-    #         (qml.CRY, [0.01]),
-    #         (qml.CRZ, [0.25, 0.8, 0.98]),
-    #     ],
-    # )
-    # def test_cumulative_merge_two_qubit_single_parameter_nonzero(self, gate_type, angles):
-    #     """Test that multiple adjacent instances of a two-qubit gate get merged in one pass."""
+        qnode = qml.QNode(qfunc, dev)
 
-    #     def qfunc_with_many_rots():
-    #         for angle in angles:
-    #             gate_type(angle, wires=[0, 1])
+        pipeline = [commute_controlled(direction="left"), cancel_inverses, merge_rotations]
 
-    #     compiled_qfunc = compile(pipeline=[merge_rotations], num_passes=1)(qfunc_with_many_rots)
-    #     ops = qml.transforms.make_tape(compiled_qfunc)().operations
+        basis_set = ["CNOT", "RX", "RY", "RZ"]
 
-    #     assert len(ops) == 1
+        transformed_qfunc = compile(pipeline=pipeline, basis_set=basis_set)(qfunc)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
-    #     assert ops[0].name == gate_type(0, wires=[0, 1]).name
-    #     assert ops[0].parameters[0] == sum(angles)
+        original_result = qnode(0.3, 0.4, 0.5)
+        transformed_result = transformed_qnode(0.3, 0.4, 0.5)
+        assert np.allclose(original_result, transformed_result)
 
-    # def test_basis_expansion(self):
-    #     """Test that two passes of a pipeline produce the expected result"""
+        names_expected = [
+            "RZ",
+            "RX",
+            "RZ",
+            "RZ",
+            "CNOT",
+            "RX",
+            "RZ",
+            "RY",
+            "RZ",
+            "RY",
+            "CNOT",
+            "RY",
+            "CNOT",
+        ]
 
-    #     def qfunc_with_cry():
-    #         qml.RY(0.2, wires=1)
-    #         qml.CRY(0.1, wires=[0, 1])
-    #         qml.RZ(np.pi / 4, wires=2)
-    #         qml.S(wires=2)
+        wires_expected = [
+            Wires(wires[0]),
+            Wires(wires[0]),
+            Wires(wires[0]),
+            Wires(wires[2]),
+            Wires([wires[2], wires[1]]),
+            Wires(wires[0]),
+            Wires(wires[1]),
+            Wires(wires[2]),
+            Wires(wires[2]),
+            Wires(wires[2]),
+            Wires([wires[1], wires[2]]),
+            Wires(wires[2]),
+            Wires([wires[1], wires[2]]),
+        ]
 
-    #     pipeline = [cancel_inverses, merge_rotations]
-    #     basis = ["CNOT", "RX", "RY", "RZ"]
-
-    #     two_passes = compile(pipeline=[merge_rotations], basis_set=basis, num_passes=1)(
-    #         qfunc_with_cry
-    #     )
-    #     ops_two_passes = qml.transforms.make_tape(two_passes)().operations
-
-    #     assert len(ops_two_passes) == 5
-
-    #     assert ops_two_passes[0].name == "RY"
-    #     assert ops_two_passes[0].wires == Wires(1)
-    #     assert ops_two_passes[0].parameters[0] == 0.25
-
-    #     assert ops_two_passes[1].name == "CNOT"
-    #     assert ops_two_passes[1].wires == Wires([0, 1])
-
-    #     assert ops_two_passes[2].name == "RY"
-    #     assert ops_two_passes[2].wires == Wires(1)
-    #     assert ops_two_passes[2].parameters[0] == -0.05
-
-    #     assert ops_two_passes[3].name == "CNOT"
-    #     assert ops_two_passes[3].wires == Wires([0, 1])
-
-    #     assert ops_two_passes[4].name == "RZ"
-    #     assert ops_two_passes[4].wires == Wires(2)
-    #     assert np.isclose(ops_two_passes[4].parameters[0], np.pi / 2 + np.pi / 4)
+        compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
