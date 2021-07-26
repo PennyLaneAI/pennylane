@@ -763,6 +763,46 @@ class FockStateVector(CVOperation):
     Args:
         state (array): a single ket vector, for single mode state preparation,
             or a multimode ket, with one array dimension per mode
+
+    .. UsageDetails::
+
+        For a single mode with cutoff dimension :math:`N`, the input is a
+        1-dimensional vector of length :math:`N`.
+
+        .. code-block::
+
+            dev_fock = qml.device("strawberryfields.fock", wires=4, cutoff_dim=4)
+
+            state = np.array([0, 0, 1, 0])
+
+            @qml.qnode(dev_fock)
+            def circuit():
+                qml.FockStateVector(state, wires=0)
+                return qml.expval(qml.NumberOperator(wires=0))
+
+        For multiple modes, the input is the tensor product of single mode
+        kets. For example, given a set of :math:`M` single mode vectors of
+        length :math:`N`, the input should have shape ``(N, ) * M``.
+
+        .. code-block::
+
+            used_wires = [0, 3]
+            cutoff_dim = 5
+
+            dev_fock = qml.device("strawberryfields.fock", wires=4, cutoff_dim=cutoff_dim)
+
+            state_1 = np.array([0, 1, 0, 0, 0])
+            state_2 = np.array([0, 0, 0, 1, 0])
+
+            combined_state = np.kron(state_1, state_2).reshape(
+                (cutoff_dim, ) * len(used_wires)
+            )
+
+            @qml.qnode(dev_fock)
+            def circuit():
+                qml.FockStateVector(combined_state, wires=used_wires)
+                return qml.expval(qml.NumberOperator(wires=0))
+
     """
     num_wires = AnyWires
     num_params = 1
