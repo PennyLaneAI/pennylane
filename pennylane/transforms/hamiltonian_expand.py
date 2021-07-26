@@ -19,8 +19,8 @@ import pennylane as qml
 
 def hamiltonian_expand(tape, group=True):
     r"""
-    Splits a tape measuring a Hamiltonian into mutliple tapes with Pauli observables, as well as a classical
-    processing function that combines the results.
+    Splits a tape measuring a Hamiltonian expectation into mutliple tapes of Pauli expectations,
+    and provides a function to recombine the results.
 
     Args:
         tape (.QuantumTape): the tape used when calculating the expectation value

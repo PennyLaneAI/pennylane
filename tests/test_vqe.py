@@ -1218,7 +1218,7 @@ class TestNewVQE:
     @pytest.mark.parametrize("ansatz, params", CIRCUITS)
     @pytest.mark.parametrize("observables", OBSERVABLES)
     def test_circuits_evaluate(self, ansatz, observables, params, tol):
-        """Tests that the circuits returned by ``vqe.circuits`` evaluate properly"""
+        """Tests simple VQE evaluations."""
         coeffs = [1.0] * len(observables)
         dev = qml.device("default.qubit", wires=3)
         H = qml.Hamiltonian(coeffs, observables)
@@ -1247,7 +1247,7 @@ class TestNewVQE:
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "best"])
     def test_optimize_grad_autograd(self, diff_method, tol):
-        """Test that the gradient of a VQE problem is accessible and correct when using the autograd interface."""
+        """Tests the VQE gradient in the autograd interface."""
         dev = qml.device("default.qubit", wires=4)
         H = big_hamiltonian
         w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
@@ -1261,8 +1261,7 @@ class TestNewVQE:
         assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
 
     def test_grad_zero_hamiltonian(self, tol):
-        """Test that the gradient of ExpvalCost is accessible and correct when using
-        the autograd interface with a zero Hamiltonian."""
+        """Tests the VQE gradient for a "zero" Hamiltonian."""
         dev = qml.device("default.qubit", wires=4)
         H = qml.Hamiltonian([0], [qml.PauliX(0)])
         w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
@@ -1276,8 +1275,7 @@ class TestNewVQE:
         assert np.allclose(dc, 0, atol=tol)
 
     def test_grad_torch(self, torch_support, tol):
-        """Test that the gradient of ExpvalCost is accessible and correct when using observable
-        optimization and the Torch interface."""
+        """Tests VQE gradients in the torch interface."""
         if not torch_support:
             pytest.skip("This test requires Torch")
 
@@ -1298,8 +1296,7 @@ class TestNewVQE:
         assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
 
     def test_grad_tf(self, tf_support, tol):
-        """Test that the gradient of ExpvalCost is accessible and correct when using observable
-        optimization and the TensorFlow interface."""
+        """Tests VQE gradients in the tf interface."""
         if not tf_support:
             pytest.skip("This test requires TensorFlow")
 
@@ -1321,7 +1318,7 @@ class TestNewVQE:
         assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
 
     def test_grad_jax(self, tol):
-        """Test that the gradient of a VQE problem is accessible and correct when using the autograd interface."""
+        """Tests VQE gradients in the jax interface."""
         jax = pytest.importorskip("jax")
         from jax import numpy as jnp
 
