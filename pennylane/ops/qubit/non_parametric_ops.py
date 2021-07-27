@@ -16,6 +16,7 @@ This submodule contains the discrete-variable quantum operations that do
 not depend on any parameters.
 """
 import cmath
+import functools
 
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import numpy as np
