@@ -36,6 +36,7 @@ a = np.pi / 2
 b = 3 * np.pi / 2
 four_term_grad_recipe = ([[c1, 1, a], [-c1, 1, -a], [-c2, 1, b], [c2, 1, -b]],)
 
+
 class SingleExcitation(Operation):
     r"""SingleExcitation(phi, wires)
     Single excitation rotation.

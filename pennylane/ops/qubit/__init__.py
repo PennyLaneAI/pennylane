@@ -34,6 +34,7 @@ from .qchem_ops import *
 from .matrix_ops import *
 from .arthimetic_ops import *
 from .state_preparation import *
+from .observables import *
 
 
 ops = {
