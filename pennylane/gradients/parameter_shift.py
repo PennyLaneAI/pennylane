@@ -71,7 +71,7 @@ def _gradient_analysis(tape):
                 info["grad_method"] = tape._grad_method(idx, use_graph=True, default_method="A")
 
 
-def expval_parameter_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None, f0=None):
+def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None, f0=None):
     r"""Generate the parameter-shift tapes and postprocessing methods required
     to compute the gradient of an gate parameter with respect to an
     expectation value.
@@ -180,7 +180,7 @@ def expval_parameter_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=
     return gradient_tapes, processing_fn
 
 
-def var_parameter_shift(tape, argnum, shift=np.pi / 2, gradient_recipes=None, f0=None):
+def var_param_shift(tape, argnum, shift=np.pi / 2, gradient_recipes=None, f0=None):
     r"""Generate the parameter-shift tapes and postprocessing methods required
     to compute the gradient of an gate parameter with respect to a
     variance value.
@@ -226,7 +226,7 @@ def var_parameter_shift(tape, argnum, shift=np.pi / 2, gradient_recipes=None, f0
     gradient_tapes = [expval_tape]
 
     # evaluate the analytic derivative of <A>
-    pdA_tapes, pdA_fn = expval_parameter_shift(expval_tape, argnum, shift, gradient_recipes, f0)
+    pdA_tapes, pdA_fn = expval_param_shift(expval_tape, argnum, shift, gradient_recipes, f0)
     gradient_tapes.extend(pdA_tapes)
     tape_boundary = len(pdA_tapes) + 1
 
@@ -254,7 +254,7 @@ def var_parameter_shift(tape, argnum, shift=np.pi / 2, gradient_recipes=None, f0
         # Non-involutory observables are present; the partial derivative of <A^2>
         # may be non-zero. Here, we calculate the analytic derivatives of the <A^2>
         # observables.
-        pdA2_tapes, pdA2_fn = expval_parameter_shift(
+        pdA2_tapes, pdA2_fn = expval_param_shift(
             expval_sq_tape, argnum, shift, gradient_recipes, f0
         )
         gradient_tapes.extend(pdA2_tapes)
@@ -427,9 +427,9 @@ def param_shift(
         gradient_recipes = [None] * len(argnum)
 
     if any(m.return_type is qml.operation.Variance for m in tape.measurements):
-        g_tapes, fn = var_parameter_shift(tape, argnum, shift, gradient_recipes)
+        g_tapes, fn = var_param_shift(tape, argnum, shift, gradient_recipes)
     else:
-        g_tapes, fn = expval_parameter_shift(tape, argnum, shift, gradient_recipes)
+        g_tapes, fn = expval_param_shift(tape, argnum, shift, gradient_recipes)
 
     gradient_tapes.extend(g_tapes)
 
