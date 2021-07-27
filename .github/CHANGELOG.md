@@ -334,6 +334,9 @@
 
 <h3>Documentation</h3>
 
+* Improved Contribution Guide and Pull Requests Guide.
+  [(#1461)](https://github.com/PennyLaneAI/pennylane/pull/1461)
+
 * Examples have been added to clarify use of the continuous-variable
   `FockStateVector` operation in the multi-mode case.
   [(#1472)](https://github.com/PennyLaneAI/pennylane/pull/1472)
