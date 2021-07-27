@@ -24,6 +24,7 @@ import pennylane as qml
 from pennylane.operation import AnyWires, Observable, Operation
 from pennylane.wires import Wires
 
+
 class Projector(Observable):
     r"""Projector(basis_state, wires)
     Observable corresponding to the computational basis state projector :math:`P=\ket{i}\bra{i}`.
