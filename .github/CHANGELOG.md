@@ -8,8 +8,7 @@
 
 Build process using Docker and Makefile works as follows:
 
-To Build basic Pennylane image
-
+Building a core PennyLane image:
 ```
 make -f docker/Makefile build-base
 ```
