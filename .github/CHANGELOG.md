@@ -286,7 +286,7 @@
 <h3>Improvements</h3>
 
 * The `./pennylane/ops/qubit.py` file is broken up into a folder of eight separate files.
-  [(#1467)](https:/git/github.com/PennyLaneAI/pennylane/pull/1467)
+  [(#1467)](https://github.com/PennyLaneAI/pennylane/pull/1467)
 
 * Changed to using commas as the separator of wires in the string
   representation of `qml.Hamiltonian` objects for multi-qubit terms.
