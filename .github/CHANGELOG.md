@@ -2,7 +2,8 @@
 
 <h3>New features since last release</h3>
 
-* Docker support to build Pennylane for all three interfaces(Tensorflow, Torch and Jax), All 12 External-Pulgins(cirq, qiskit, amazon-braket etc) and Qchem implementaion for GPU+CPU. 
+* Docker support for building PennyLane with support for all interfaces (TensorFlow, 
+  Torch and Jax), plugins and Qchem for GPU+CPU has been added. 
 
  [(#1372)](https://github.com/PennyLaneAI/pennylane/issues/1372)
 
