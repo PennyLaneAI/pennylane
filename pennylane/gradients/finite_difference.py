@@ -87,7 +87,7 @@ def finite_diff_stencil(n, order, form):
     return stencil
 
 
-def generate_shifted_tapes(tape, idx, shifts):
+def generate_shifted_tapes(tape, idx, shifts, multipliers=None):
     r"""Generate a list of tapes where the corresponding trainable parameter
     index has been shifted by the values given.
 
@@ -95,6 +95,9 @@ def generate_shifted_tapes(tape, idx, shifts):
         tape (.QuantumTape): input quantum tape
         idx (int): trainable parameter index to shift the parameter of
         shifts (Sequence[float or int]): sequence of shift values
+        multipliers (Sequence[float or int]): Sequence of multiplier values to
+            scale the paraameter by. If not provided, the parameter will
+            not be scaled.
 
     Returns:
         list[QuantumTape]: List of quantum tapes. Each tape has parameter
@@ -104,13 +107,15 @@ def generate_shifted_tapes(tape, idx, shifts):
     params = qml.math.stack(tape.get_parameters())
     tapes = []
 
-    for s in shifts:
+    for i, s in enumerate(shifts):
         shifted_tape = tape.copy(copy_operations=True)
 
         shift = np.zeros(qml.math.shape(params), dtype=np.float64)
         shift[idx] = s
 
-        shifted_params = params + qml.math.convert_like(shift, params)
+        a = multipliers[i] if multipliers is not None else 1.0
+
+        shifted_params = a * params + qml.math.convert_like(shift, params)
         shifted_tape.set_parameters(qml.math.unstack(shifted_params))
 
         tapes.append(shifted_tape)
@@ -118,7 +123,7 @@ def generate_shifted_tapes(tape, idx, shifts):
     return tapes
 
 
-def finite_diff(tape, argnum=None, h=1e-7, order=1, n=1, form="forward"):
+def finite_diff(tape, argnum=None, h=1e-7, order=1, n=1, form="forward", f0=None):
     r"""Generate the parameter-shift tapes and postprocessing methods required
     to compute the gradient of a gate parameter with respect to an
     expectation value.
@@ -133,6 +138,9 @@ def finite_diff(tape, argnum=None, h=1e-7, order=1, n=1, form="forward"):
         n (int): compute the :math:`n`-th derivative
         form (str): The form of the finite difference method. Must be one of
             ``"forward"``, ``"center"``, or ``"backward"``.
+        f0 (tensor_like[float] or None): Output of the evaluated input tape. If provided,
+            and the gradient recipe contains an unshifted term, this value is used,
+            saving a quantum evaluation.
 
     Returns:
         tuple[list[QuantumTape], function]: A tuple containing a
@@ -170,41 +178,56 @@ def finite_diff(tape, argnum=None, h=1e-7, order=1, n=1, form="forward"):
     coeffs, shifts = finite_diff_stencil(n, order, form)
 
     if 0 in shifts:
+        # Stencil includes a term with zero shift.
+
+        if f0 is None:
+            # Ensure that the unshifted tape is appended
+            # to the gradient tapes, if not already.
+            gradient_tapes.append(tape)
+
+        # Store the unshifted coefficient. We know that
+        # it will always be the first coefficient due to processing.
         c0 = coeffs[0]
-        gradient_tapes.append(tape)
         shifts = shifts[1:]
         coeffs = coeffs[1:]
 
     # TODO: replace the JacobianTape._choose_params_with_methods
     # functionality before deprecation.
-    for t_idx, dm in tape._choose_params_with_methods(diff_methods, argnum):
-        if dm == "0":
+    method_map = dict(tape._choose_params_with_methods(diff_methods, argnum))
+
+    for i, _ in enumerate(tape.trainable_params):
+        if i not in method_map or method_map[i] == "0":
+            # parameter has zero gradient
             shapes.append(0)
             continue
 
-        g_tapes = generate_shifted_tapes(tape, t_idx, shifts * h)
+        g_tapes = generate_shifted_tapes(tape, i, shifts * h)
         gradient_tapes.extend(g_tapes)
         shapes.append(len(g_tapes))
 
     def processing_fn(results):
         grads = []
-        start = 1 if c0 is not None else 0
+        start = 1 if c0 is not None and f0 is None else 0
+        r0 = f0 or results[0]
 
         for s in shapes:
 
             if s == 0:
-                g = qml.math.convert_like(np.zeros([tape.output_dim]), results)
+                # parameter has zero gradient
+                g = qml.math.zeros_like(results[0])
                 grads.append(g)
                 continue
 
             res = results[start : start + s]
             start = start + s
 
+            # compute the linear combination of results and coefficients
             res = qml.math.stack(res)
             g = sum([c * r for c, r in zip(coeffs, res)])
 
             if c0 is not None:
-                g = g + c0 * results[0]
+                # add on the unshifted term
+                g = g + c0 * r0
 
             grads.append(g / (h ** n))
 
