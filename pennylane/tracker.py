@@ -33,10 +33,10 @@ class Tracker:
     executions, and batch execution length, but plugins may store additional information with
     no changes to this class.
 
-    Information is only stored when the class attribute ``tracking`` is set to ``True``. This
+    Information is only stored when the class attribute ``active` is set to ``True``. This
     attribute can be toggled via a context manager and Python's ``with`` statement. Upon entering a
     context, the stored information is reset, unless ``persistent=True``. Tracking mode can also be
-    manually triggered by setting ``tracker.tracking = True`` without the use of a context manager.
+    manually triggered by setting ``tracker.active = True`` without the use of a context manager.
 
     Args:
         dev (Device): A PennyLane compatible device
@@ -49,7 +49,7 @@ class Tracker:
 
     **Example**
 
-    Using a ``with`` statement to toggle the tracking mode, we can see the number of executions
+    Using a ``with`` statement to toggle the active mode, we can see the number of executions
     and shots used to calculate a parameter-shift derivative.
 
     .. code-block:: python
@@ -124,7 +124,7 @@ class Tracker:
 
         self.reset()
 
-        self.tracking = False
+        self.active = False
 
         if dev is not None:
             if not dev.capabilities().get("supports_tracker", False):
@@ -135,11 +135,11 @@ class Tracker:
         if not self.persistent:
             self.reset()
 
-        self.tracking = True
+        self.active = True
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        self.tracking = False
+        self.active = False
 
     def update(self, **kwargs):
         """Store passed keyword-value pairs into ``totals``,``history``, and ``latest`` attributes.

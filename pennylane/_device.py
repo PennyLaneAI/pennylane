@@ -453,7 +453,7 @@ class Device(abc.ABC):
             # increment counter for number of executions of device
             self._num_executions += 1
 
-            if self.tracker.tracking:
+            if self.tracker.active:
                 self.tracker.update(executions=1, shots=self._shots)
                 self.tracker.record()
 
@@ -490,7 +490,7 @@ class Device(abc.ABC):
             res = self.execute(circuit.operations, circuit.observables)
             results.append(res)
 
-        if self.tracker.tracking:
+        if self.tracker.active:
             self.tracker.update(batches=1, batch_len=len(circuits))
             self.tracker.record()
 

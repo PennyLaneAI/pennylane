@@ -368,7 +368,7 @@ in a customizable way.
 
 Three aspects of the :class:`~.Tracker` class are relevant to plugin designers:
 
-* The boolean ``tracking`` attribute that denotes whether or not to update and record
+* The boolean ``active`` attribute that denotes whether or not to update and record
 * ``update`` method which accepts keyword-value pairs and stores the information
 * ``record`` method which users can customize to log, print, or otherwise do something with the stored information
 
@@ -380,7 +380,7 @@ We recommend placing the following code near the end of the ``execute`` method:
 
 .. code-block:: python
 
-  if self.tracker.tracking:
+  if self.tracker.active:
     self.tracker.update(executions=1, shots=self._shots)
     self.tracker.record()
 
@@ -388,7 +388,7 @@ And similar code in the ``batch_execute`` method:
 
 .. code-block:: python
 
-  if self.tracker.tracking:
+  if self.tracker.active:
     self.tracker.update(batches=1, batch_len=len(batches))
     self.tracker.record()
 
