@@ -15,7 +15,7 @@
 """
 This module contains the discrete-variable quantum operations.
 
-The operations are divided into seven different files:
+The operations are divided into six different files:
 
 * ``non_parameteric_ops.py``: All operations with no parameters
 * ``parameteric_ops.py``: Core parameteric operations that don't fall into
@@ -34,7 +34,6 @@ from .qchem_ops import *
 from .matrix_ops import *
 from .arthimetic_ops import *
 from .state_preparation import *
-from .other import *
 
 
 ops = {
