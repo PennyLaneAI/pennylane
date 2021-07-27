@@ -200,7 +200,7 @@ def finite_diff(tape, argnum=None, h=1e-7, order=1, n=1, form="forward"):
         for s in shapes:
 
             if s == 0:
-                g = qml.math.convert_like(np.zeros([tape.output_dim]), results)
+                g = qml.math.zeros_like(results[0])
                 grads.append(g)
                 continue
 
