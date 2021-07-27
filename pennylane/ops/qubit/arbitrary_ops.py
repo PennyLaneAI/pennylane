@@ -20,6 +20,7 @@ import warnings
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import numpy as np
 from scipy.linalg import block_diag
+from scipy.sparse import coo_matrix
 
 import pennylane as qml
 from pennylane.operation import AnyWires, AllWires, DiagonalOperation, Observable, Operation
@@ -601,7 +602,7 @@ class SparseHamiltonian(Observable):
     @classmethod
     def _matrix(cls, *params):
         A = params[0]
-        if not isinstance(A, scipy.sparse.coo_matrix):
+        if not isinstance(A, coo_matrix):
             raise TypeError("Observable must be a scipy sparse coo_matrix.")
         return A
 
