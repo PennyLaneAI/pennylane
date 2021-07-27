@@ -17,8 +17,8 @@ Building a PennyLane image with the TensorFlow interface (change `interface-name
 ```
 make -f docker/Makefile build-interface interface-name=tensorflow
 ```
-Build a PennyLane image with a plugin
 
+Building a PennyLane image with the Qiskit plugin (change `plugin-name` for other plugins):
 ```
 make -f docker/Makefile build-plugin plugin-name=qiskit
 ```
