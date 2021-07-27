@@ -13,8 +13,8 @@ To Build basic Pennylane image
 ```
 make -f docker/Makefile build-base
 ```
-Build a PennyLane image with a specific interface
 
+Building a PennyLane image with the TensorFlow interface (change `interface-name` for other interfaces):
 ```
 make -f docker/Makefile build-interface interface-name=tensorflow
 ```
