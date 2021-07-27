@@ -13,12 +13,13 @@
 # limitations under the License.
 """Code for the high-level quantum function transform that executes compilation."""
 
+from functools import partial
 
 from pennylane import apply
 from pennylane.tape import get_active_tape
 from pennylane.ops import __all__ as all_ops
 
-from pennylane.transforms import qfunc_transform
+from pennylane.transforms import single_tape_transform, qfunc_transform
 from pennylane.transforms.optimization import cancel_inverses, commute_controlled, merge_rotations
 
 
@@ -40,8 +41,8 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1):
 
     Args:
         qfunc (function): A quantum function.
-        pipeline (list[qfunc_transform]): A list of quantum function transforms
-            to apply.
+        pipeline (list[single_tape_transform, qfunc_transform]): A list of
+            tape and/or quantum function transforms to apply.
         basis_set (list[str]): A list of basis gates. When expanding the tape,
             expansion will continue until gates in the specific set are
             reached. If no basis set is specified, no expansion will be done.
@@ -122,8 +123,22 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1):
      2: ──RZ(1.57)──RX(1.57)──RZ(1.57)──╰C────────RX(0.3)───RZ(1.57)──RY(3.14)──RZ(1.57)──RY(1.57)──╰X──RY(-1.57)──╰X──┤
 
     """
+    # Ensure that everything in the pipeline is a valid qfunc or tape transform
     if pipeline is None:
         pipeline = default_pipeline
+    else:
+        for p in pipeline:
+            p_func = p.func if isinstance(p, partial) else p
+            if not isinstance(p_func, single_tape_transform) and not hasattr(p_func, "tape_fn"):
+                raise ValueError("Invalid transform function {p} passed to compile.")
+
+    if basis_set is not None:
+        for gate_name in basis_set:
+            if gate_name not in all_ops or not isinstance(gate_name, str):
+                raise ValueError("Invalid basis gate {gate_name} passed to compile.")
+
+    if num_passes < 1 or not isinstance(num_passes, int):
+        raise ValueError("Number of passes must be an integer with value at least 1.")
 
     # Expand the tape; this is done to unroll any templates that may be present,
     # as well as to decompose over a specified basis set
@@ -141,7 +156,10 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1):
         # Apply the full set of compilation transforms num_passes times
         for _ in range(num_passes):
             for transform in pipeline:
-                expanded_tape = transform.tape_fn(expanded_tape)
+                if isinstance(transform, (single_tape_transform, partial)):
+                    expanded_tape = transform(expanded_tape)
+                else:
+                    expanded_tape = transform.tape_fn(expanded_tape)
 
     # Queue the operations on the optimized tape
     for op in expanded_tape.operations + expanded_tape.measurements:

@@ -42,7 +42,72 @@ def build_qfunc(wires):
 
 
 class TestCompile:
-    """Test that compilation pipelines work as expected."""
+    """Unit tests for compilation."""
+
+    def test_invalid_pipeline(self):
+        """Test that error is raised for an invalid function in the pipeline"""
+        qfunc = build_qfunc([0, 1, 2])
+        dev = qml.device("default.qubit", wires=[0, 1, 2])
+
+        transformed_qfunc = compile(pipeline=[cancel_inverses, isinstance])(qfunc)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+
+        with pytest.raises(ValueError, match="Invalid transform function"):
+            transformed_qnode(0.1, 0.2, 0.3)
+
+    def test_invalid_basis_gates(self):
+        """Test that error is raised for an invalid basis gate."""
+        qfunc = build_qfunc([0, 1, 2])
+        dev = qml.device("default.qubit", wires=[0, 1, 2])
+
+        transformed_qfunc = compile(basis_set=["CNOT", "RX", "RY", "RZ", "Q2"])(qfunc)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+
+        with pytest.raises(ValueError, match="Invalid basis gate"):
+            transformed_qnode(0.1, 0.2, 0.3)
+
+    def test_invalid_num_passes(self):
+        """Test that error is raised for an invalid number of passes."""
+        qfunc = build_qfunc([0, 1, 2])
+        dev = qml.device("default.qubit", wires=[0, 1, 2])
+
+        transformed_qfunc = compile(num_passes=1.3)(qfunc)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+
+        with pytest.raises(ValueError, match="Number of passes must be an integer"):
+            transformed_qnode(0.1, 0.2, 0.3)
+
+    def test_mixed_tape_qfunc_transform(self):
+        """Test that we can interchange tape and qfunc transforms."""
+
+        wires = [0, 1, 2]
+        qfunc = build_qfunc(wires)
+        dev = qml.device("default.qubit", wires=wires)
+
+        pipeline = [
+            commute_controlled(direction="right").tape_fn,
+            cancel_inverses,
+            merge_rotations().tape_fn,
+        ]
+
+        transformed_qfunc = compile(pipeline=pipeline)(qfunc)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        transformed_result = transformed_qnode(0.3, 0.4, 0.5)
+
+        names_expected = ["Hadamard", "CNOT", "RX", "CY", "PauliY"]
+        wires_expected = [
+            Wires(wires[0]),
+            Wires([wires[2], wires[1]]),
+            Wires(wires[0]),
+            Wires([wires[1], wires[2]]),
+            Wires(wires[2]),
+        ]
+
+        compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
+
+
+class TestCompileIntegration:
+    """Integration tests to verify outputs of compilation pipelines."""
 
     @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
     def test_empty_pipeline(self, wires):
