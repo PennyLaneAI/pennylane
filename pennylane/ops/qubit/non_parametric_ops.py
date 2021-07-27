@@ -21,7 +21,7 @@ import cmath
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import DiagonalOperation, Observable, Operation
+from pennylane.operation import AnyWires, DiagonalOperation, Observable, Operation
 from pennylane.utils import pauli_eigs
 from pennylane.wires import Wires
 
@@ -781,7 +781,9 @@ class Toffoli(Operation):
     def control_wires(self):
         return Wires(self.wires[:2])
 
+
 # This should be moved to a template.
+
 
 class QFT(Operation):
     r"""QFT(wires)

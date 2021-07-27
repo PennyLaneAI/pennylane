@@ -25,6 +25,7 @@ from pennylane.operation import AnyWires, Observable
 from pennylane.wires import Wires
 from .matrix_ops import QubitUnitary
 
+
 class Hermitian(Observable):
     r"""Hermitian(A, wires)
     An arbitrary Hermitian observable.

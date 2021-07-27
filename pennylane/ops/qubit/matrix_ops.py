@@ -277,6 +277,7 @@ class DiagonalQubitUnitary(DiagonalOperation):
 # When this gate no longer depends on ``ControlledQubitUnitary
 # please move it to ``non_parametric_ops.py``
 
+
 class MultiControlledX(ControlledQubitUnitary):
     r"""MultiControlledX(control_wires, wires, control_values)
     Apply a Pauli X gate controlled on an arbitrary computational basis state.
