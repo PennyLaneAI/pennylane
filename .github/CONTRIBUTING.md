@@ -8,6 +8,10 @@ We invite you to join our team in whatever capacity works best for you.
 Learn more about contributing to open source in general with
 [this great guide](https://opensource.guide/how-to-contribute/).
 
+Please pay attention to our
+[code of conduct](https://github.com/PennyLaneAI/pennylane/blob/master/.github/CODE_OF_CONDUCT.md)
+and help us make quantum computing a welcoming place for all.
+
 ## How can I get involved in the community?
 
 Start by experimenting with PennyLane.  Figure out how to do things and form opinions about what you
