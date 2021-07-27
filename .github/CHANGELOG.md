@@ -22,8 +22,8 @@ Building a PennyLane image with the Qiskit plugin (change `plugin-name` for othe
 ```
 make -f docker/Makefile build-plugin plugin-name=qiskit
 ```
-Build a PennyLane-Qchem image
 
+Building a PennyLane-Qchem image:
 ```
 make -f docker/Makefile build-qchem
 ```
