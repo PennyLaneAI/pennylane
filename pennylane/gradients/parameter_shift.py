@@ -15,7 +15,7 @@
 This module contains functions for computing the parameter-shift gradient
 of a qubit-based quantum tape.
 """
-# pylint: disable=protected-access
+# pylint: disable=protected-access,too-many-arguments
 import numpy as np
 
 import pennylane as qml
@@ -52,7 +52,7 @@ def _gradient_analysis(tape):
     """Update the parameter information dictionary  of the tape with
     gradient information of each parameter."""
 
-    if getattr(tape, "_gradient_fn", None) == param_shift:
+    if getattr(tape, "_gradient_fn", None) is param_shift:
         # gradient analysis has already been performed on this tape
         return
 
@@ -272,7 +272,7 @@ def var_param_shift(tape, argnum, shift=np.pi / 2, gradient_recipes=None, f0=Non
 
             if involutory:
                 # if involutory observables are present, ensure they have zero gradient
-                m = [True if tape.observables[i].name != "Hermitian" else False for i in var_idx]
+                m = [tape.observables[i].name != "Hermitian" for i in var_idx]
                 pdA2 = qml.math.where(qml.math.reshape(m, [-1, 1]), 0, pdA2)
 
         # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances,
@@ -427,9 +427,9 @@ def param_shift(
         gradient_recipes = [None] * len(argnum)
 
     if any(m.return_type is qml.operation.Variance for m in tape.measurements):
-        g_tapes, fn = var_param_shift(tape, argnum, shift, gradient_recipes)
+        g_tapes, fn = var_param_shift(tape, argnum, shift, gradient_recipes, f0)
     else:
-        g_tapes, fn = expval_param_shift(tape, argnum, shift, gradient_recipes)
+        g_tapes, fn = expval_param_shift(tape, argnum, shift, gradient_recipes, f0)
 
     gradient_tapes.extend(g_tapes)
 
