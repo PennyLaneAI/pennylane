@@ -194,6 +194,24 @@ class TestFiniteDiff:
         # one tape per parameter, plus one global call
         assert len(tapes) == tape.num_params + 1
 
+    def test_y0_provided(self, mocker):
+        """Test that if first order finite differences is used,
+        and the original tape output is provided, then
+        the tape is executed only once using the current parameter
+        values."""
+        dev = qml.device("default.qubit", wires=2)
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[0])
+            qml.expval(qml.PauliZ(0))
+
+        f0 = dev.execute(tape)
+        tapes, fn = finite_diff(tape, order=1, f0=f0)
+
+        # one tape per parameter, plus one global call
+        assert len(tapes) == tape.num_params
+
     def test_independent_parameters(self):
         """Test the case where expectation values are independent of some parameters. For those
         parameters, the gradient should be evaluated to zero without executing the device."""
@@ -310,9 +328,9 @@ class TestFiniteDiffIntegration:
         # we choose only 1 trainable parameter
         tapes, fn = finite_diff(tape, argnum=1, order=order, form=form)
         res = fn(dev.batch_execute(tapes))
-        assert res.shape == (1, 1)
+        assert res.shape == (1, 2)
 
-        expected = np.array([[np.cos(y) * np.cos(x)]])
+        expected = np.array([[0, np.cos(y) * np.cos(x)]])
         res = res.flatten()
         expected = expected.flatten()
 

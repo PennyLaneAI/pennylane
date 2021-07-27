@@ -105,24 +105,24 @@ def expval_parameter_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=
     shapes = []
     c0 = []
 
-    for t_idx in tape.trainable_params:
+    for idx, _ in enumerate(tape.trainable_params):
 
-        if t_idx not in argnum:
+        if idx not in argnum:
             # parameter has zero gradient
             shapes.append(0)
             gradient_coeffs.append([])
             continue
 
         # get the gradient recipe for the trainable parameter
-        gr = gradient_recipes[argnum.index(t_idx)]
-        gr = gr or _get_operation_recipe(tape, t_idx, shift=shift)
+        gr = gradient_recipes[argnum.index(idx)]
+        gr = gr or _get_operation_recipe(tape, idx, shift=shift)
         gr = _process_gradient_recipe(gr)
         coeffs, multipliers, shifts = gr
 
         if shifts[0] == 0 and multipliers[0] == 1:
             # Gradient recipe includes a term with zero shift.
 
-            if not c0 and f0 is not None:
+            if not c0 and f0 is None:
                 # Ensure that the unshifted tape is appended
                 # to the gradient tapes, if not already.
                 gradient_tapes.append(tape)
@@ -134,7 +134,7 @@ def expval_parameter_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=
 
         # generate the gradient tapes
         gradient_coeffs.append(coeffs)
-        g_tapes = generate_shifted_tapes(tape, t_idx, shifts, multipliers)
+        g_tapes = generate_shifted_tapes(tape, idx, shifts, multipliers)
 
         gradient_tapes.extend(g_tapes)
         shapes.append(len(g_tapes))
