@@ -21,7 +21,7 @@ from scipy.sparse import coo_matrix
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Observable
+from pennylane.operation import AllWires, AnyWires, Observable
 from pennylane.wires import Wires
 from .matrix_ops import QubitUnitary
 
