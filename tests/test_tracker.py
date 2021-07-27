@@ -35,7 +35,7 @@ class TestTrackerCoreBehavior:
         assert tracker.totals == dict()
         assert tracker.latest == dict()
 
-        assert tracker.tracking == False
+        assert tracker.active == False
 
     def test_device_assignment(self):
         """Assert gets assigned to device"""
@@ -100,7 +100,7 @@ class TestTrackerCoreBehavior:
         returned = tracker.__enter__()
 
         assert id(tracker) == id(returned)
-        assert tracker.tracking == True
+        assert tracker.active == True
 
         assert tracker.totals == dict()
         assert tracker.history == dict()
@@ -108,16 +108,16 @@ class TestTrackerCoreBehavior:
 
         tracker.__exit__(None, None, None)
 
-        assert tracker.tracking == False
+        assert tracker.active == False
 
     def test_context(self):
         """Assert works with runtime context"""
 
         with Tracker() as tracker:
             assert isinstance(tracker, Tracker)
-            assert tracker.tracking == True
+            assert tracker.active == True
 
-        assert tracker.tracking == False
+        assert tracker.active == False
 
     def test_update(self):
         """Checks update stores to history and totals"""
