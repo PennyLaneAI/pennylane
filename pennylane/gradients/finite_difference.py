@@ -123,9 +123,15 @@ def generate_shifted_tapes(tape, idx, shifts, multipliers=None):
         shift = np.zeros(qml.math.shape(params), dtype=np.float64)
         shift[idx] = s
 
-        a = multipliers[i] if multipliers is not None else 1.0
+        if multipliers is not None:
+            m = multipliers[i] if multipliers is not None else 1.0
+            mask = qml.math.convert_like(np.arange(qml.math.shape(params)[0]) == idx, params)
+            scaled_params = params * qml.math.convert_like(m, params)
+            scaled_params = qml.math.where(mask, scaled_params, params)
+        else:
+            scaled_params = params
 
-        shifted_params = a * params + qml.math.convert_like(shift, params)
+        shifted_params = scaled_params + qml.math.convert_like(shift, params)
         shifted_tape.set_parameters(qml.math.unstack(shifted_params))
 
         tapes.append(shifted_tape)

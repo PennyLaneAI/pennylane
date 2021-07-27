@@ -48,7 +48,7 @@ def _process_gradient_recipe(gr, tol=1e-10):
     return gr[:, np.argsort(np.abs(gr)[-1])]
 
 
-def _gradient_analysis(tape):
+def _gradient_analysis(tape, use_graph=True):
     """Update the parameter information dictionary  of the tape with
     gradient information of each parameter."""
 
@@ -68,7 +68,9 @@ def _gradient_analysis(tape):
             if op.grad_method == "F":
                 info["grad_method"] = "F"
             else:
-                info["grad_method"] = tape._grad_method(idx, use_graph=True, default_method="A")
+                info["grad_method"] = tape._grad_method(
+                    idx, use_graph=use_graph, default_method="A"
+                )
 
 
 def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None, f0=None):
@@ -97,8 +99,7 @@ def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None
         list of generated tapes, in addition to a post-processing
         function to be applied to the evaluated tapes.
     """
-    if argnum is None:
-        argnum = tape.trainable_params
+    argnum = argnum or tape.trainable_params
 
     gradient_tapes = []
     gradient_coeffs = []
@@ -206,8 +207,7 @@ def var_param_shift(tape, argnum, shift=np.pi / 2, gradient_recipes=None, f0=Non
         list of generated tapes, in addition to a post-processing
         function to be applied to the evaluated tapes.
     """
-    if argnum is None:
-        argnum = tape.trainable_params
+    argnum = argnum or tape.trainable_params
 
     # Determine the locations of any variance measurements in the measurement queue.
     var_mask = [m.return_type is qml.operation.Variance for m in tape.measurements]
