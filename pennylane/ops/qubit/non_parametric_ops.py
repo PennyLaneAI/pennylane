@@ -22,7 +22,7 @@ import functools
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, DiagonalOperation, Observable, Operation
+from pennylane.operation import AnyWires, AllWires, DiagonalOperation, Observable, Operation
 from pennylane.utils import pauli_eigs
 from pennylane.wires import Wires
 

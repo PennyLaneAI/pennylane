@@ -24,9 +24,6 @@ import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation
 
-from .non_parametric_ops import CNOT
-from .parametric_ops import RX
-
 INV_SQRT2 = 1 / math.sqrt(2)
 
 # Four term gradient recipe for controlled rotations

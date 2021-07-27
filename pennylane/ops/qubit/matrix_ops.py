@@ -20,10 +20,9 @@ import warnings
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import numpy as np
 from scipy.linalg import block_diag
-from scipy.sparse import coo_matrix
 
 import pennylane as qml
-from pennylane.operation import AnyWires, AllWires, DiagonalOperation, Observable, Operation
+from pennylane.operation import AnyWires, DiagonalOperation, Operation
 from pennylane.wires import Wires
 
 
