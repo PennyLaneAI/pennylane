@@ -13,18 +13,13 @@
 # limitations under the License.
 """Code for the high-level quantum function transform that executes compilation."""
 
-from inspect import getmembers, isclass
 
 from pennylane import apply
 from pennylane.tape import get_active_tape
+from pennylane.ops import __all__ as all_ops
 
 from pennylane.transforms import qfunc_transform
 from pennylane.transforms.optimization import cancel_inverses, commute_controlled, merge_rotations
-
-from pennylane import templates
-
-# Get a list of the names of existing templates in PennyLane
-template_list = [cls[0] for cls in getmembers(templates, isclass)]
 
 
 default_pipeline = [commute_controlled, cancel_inverses, merge_rotations]
@@ -50,8 +45,12 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1):
         basis_set (list[str]): A list of basis gates. When expanding the tape,
             expansion will continue until gates in the specific set are
             reached. If no basis set is specified, no expansion will be done.
-        num_passes (int): The number of times to repeat the set of operations in
-            ``pipeline``.
+
+        num_passes (int): The number of times to apply the set of transforms in
+            ``pipeline``. The default is to perform each transform once;
+            however, doing so may produce a new circuit where applying the set
+            of transforms again may yield further improvement, so the number of
+            such passes can be adjusted.
 
     Returns:
         function: the transformed quantum function
@@ -122,7 +121,6 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1):
      1: ──RZ(1.57)──RX(1.57)──RZ(1.57)──╭X────────RZ(1.57)──────────────────────────────────────────╭C─────────────╭C──┤
      2: ──RZ(1.57)──RX(1.57)──RZ(1.57)──╰C────────RX(0.3)───RZ(1.57)──RY(3.14)──RZ(1.57)──RY(1.57)──╰X──RY(-1.57)──╰X──┤
 
-
     """
     if pipeline is None:
         pipeline = default_pipeline
@@ -137,10 +135,10 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1):
         if basis_set is not None:
             expanded_tape = tape.expand(depth=5, stop_at=lambda obj: obj.name in basis_set)
         else:
-            # Expand only the templates
-            expanded_tape = tape.expand(stop_at=lambda obj: obj.name not in template_list)
+            # Expands out anything that is not a single operation (i.e., the templates)
+            expanded_tape = tape.expand(stop_at=lambda obj: obj.name in all_ops)
 
-        # Apply the compilation transforms
+        # Apply the full set of compilation transforms num_passes times
         for _ in range(num_passes):
             for transform in pipeline:
                 expanded_tape = transform.tape_fn(expanded_tape)
