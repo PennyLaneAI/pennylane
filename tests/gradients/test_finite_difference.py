@@ -56,7 +56,7 @@ class TestStencil:
         assert np.allclose(shifts, [0, 1])
 
     def test_correct_forward_order2(self):
-        """Test that the correct forward order 1 method is returned"""
+        """Test that the correct forward order 2 method is returned"""
         coeffs, shifts = finite_diff_stencil(1, 2, "forward")
         assert np.allclose(coeffs, [-1.5, 2, -0.5])
         assert np.allclose(shifts, [0, 1, 2])
@@ -80,7 +80,7 @@ class TestStencil:
         assert np.allclose(shifts, [0, 1, 2])
 
     def test_correct_second_derivative_center_order4(self):
-        """Test that the correct forward order 1 method is returned"""
+        """Test that the correct forward order 4 method is returned"""
         coeffs, shifts = finite_diff_stencil(2, 4, "center")
         assert np.allclose(coeffs, [-2.5, 4 / 3, 4 / 3, -1 / 12, -1 / 12])
         assert np.allclose(shifts, [0, -1, 1, -2, 2])
@@ -269,7 +269,7 @@ class TestFiniteDiffIntegration:
 
     def test_single_expectation_value_with_argnum_all(self, order, form, tol):
         """Tests correct output shape and evaluation for a tape
-        with a single expval output where all parameters are chose to compute
+        with a single expval output where all parameters are chosen to compute
         the jacobian"""
         dev = qml.device("default.qubit", wires=2)
         x = 0.543
