@@ -87,7 +87,7 @@ def finite_diff_stencil(n, order, form):
     return stencil
 
 
-def generate_shifted_tapes(tape, idx, shifts):
+def generate_shifted_tapes(tape, idx, shifts, multipliers=None):
     r"""Generate a list of tapes where the corresponding trainable parameter
     index has been shifted by the values given.
 
@@ -95,6 +95,9 @@ def generate_shifted_tapes(tape, idx, shifts):
         tape (.QuantumTape): input quantum tape
         idx (int): trainable parameter index to shift the parameter of
         shifts (Sequence[float or int]): sequence of shift values
+        multipliers (Sequence[float or int]): Sequence of multiplier values to
+            scale the paraameter by. If not provided, the parameter will
+            not be scaled.
 
     Returns:
         list[QuantumTape]: List of quantum tapes. Each tape has parameter
@@ -104,13 +107,15 @@ def generate_shifted_tapes(tape, idx, shifts):
     params = qml.math.stack(tape.get_parameters())
     tapes = []
 
-    for s in shifts:
+    for i, s in enumerate(shifts):
         shifted_tape = tape.copy(copy_operations=True)
 
         shift = np.zeros(qml.math.shape(params), dtype=np.float64)
         shift[idx] = s
 
-        shifted_params = params + qml.math.convert_like(shift, params)
+        a = multipliers[i] if multipliers is not None else 1.0
+
+        shifted_params = a * params + qml.math.convert_like(shift, params)
         shifted_tape.set_parameters(qml.math.unstack(shifted_params))
 
         tapes.append(shifted_tape)
@@ -177,8 +182,10 @@ def finite_diff(tape, argnum=None, h=1e-7, order=1, n=1, form="forward"):
 
     # TODO: replace the JacobianTape._choose_params_with_methods
     # functionality before deprecation.
-    for t_idx, dm in tape._choose_params_with_methods(diff_methods, argnum):
-        if dm == "0":
+    method_map = dict(tape._choose_params_with_methods(diff_methods, argnum))
+
+    for t_idx in tape.trainable_params:
+        if t_idx not in method_map or method_map[t_idx] == "0":
             shapes.append(0)
             continue
 
