@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the available built-in discrete-variable
-quantum operations supported by PennyLane, as well as their conventions.
+This submodule contains the discrete-variable quantum operations that perform
+arithmetic operations on their input states.
 """
 
 # pylint:disable=abstract-method,arguments-differ,protected-access

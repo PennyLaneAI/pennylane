@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the available built-in discrete-variable
-quantum operations supported by PennyLane, as well as their conventions.
+This submodule contains the discrete-variable quantum operations that
+accept a hermitian or an unitary matrix as a parameter.
 """
 import warnings
 
@@ -22,7 +22,7 @@ import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.operation import AnyWires, DiagonalOperation, Operation
+from pennylane.operation import AnyWires, AllWires, DiagonalOperation, Observable, Operation
 from pennylane.wires import Wires
 
 
@@ -481,3 +481,129 @@ class MultiControlledX(ControlledQubitUnitary):
         ]
 
         return gates
+
+
+class Hermitian(Observable):
+    r"""Hermitian(A, wires)
+    An arbitrary Hermitian observable.
+
+    For a Hermitian matrix :math:`A`, the expectation command returns the value
+
+    .. math::
+        \braket{A} = \braketT{\psi}{\cdots \otimes I\otimes A\otimes I\cdots}{\psi}
+
+    where :math:`A` acts on the requested wires.
+
+    If acting on :math:`N` wires, then the matrix :math:`A` must be of size
+    :math:`2^N\times 2^N`.
+
+    **Details:**
+
+    * Number of wires: Any
+    * Number of parameters: 1
+    * Gradient recipe: None
+
+    Args:
+        A (array): square hermitian matrix
+        wires (Sequence[int] or int): the wire(s) the operation acts on
+    """
+    num_wires = AnyWires
+    num_params = 1
+    par_domain = "A"
+    grad_method = "F"
+    _eigs = {}
+
+    @classmethod
+    def _matrix(cls, *params):
+        A = np.asarray(params[0])
+
+        if A.shape[0] != A.shape[1]:
+            raise ValueError("Observable must be a square matrix.")
+
+        if not np.allclose(A, A.conj().T):
+            raise ValueError("Observable must be Hermitian.")
+
+        return A
+
+    @property
+    def eigendecomposition(self):
+        """Return the eigendecomposition of the matrix specified by the Hermitian observable.
+
+        This method uses pre-stored eigenvalues for standard observables where
+        possible and stores the corresponding eigenvectors from the eigendecomposition.
+
+        It transforms the input operator according to the wires specified.
+
+        Returns:
+            dict[str, array]: dictionary containing the eigenvalues and the eigenvectors of the Hermitian observable
+        """
+        Hmat = self.matrix
+        Hkey = tuple(Hmat.flatten().tolist())
+        if Hkey not in Hermitian._eigs:
+            w, U = np.linalg.eigh(Hmat)
+            Hermitian._eigs[Hkey] = {"eigvec": U, "eigval": w}
+
+        return Hermitian._eigs[Hkey]
+
+    @property
+    def eigvals(self):
+        """Return the eigenvalues of the specified Hermitian observable.
+
+        This method uses pre-stored eigenvalues for standard observables where
+        possible and stores the corresponding eigenvectors from the eigendecomposition.
+
+        Returns:
+            array: array containing the eigenvalues of the Hermitian observable
+        """
+        return self.eigendecomposition["eigval"]
+
+    def diagonalizing_gates(self):
+        """Return the gate set that diagonalizes a circuit according to the
+        specified Hermitian observable.
+
+        This method uses pre-stored eigenvalues for standard observables where
+        possible and stores the corresponding eigenvectors from the eigendecomposition.
+
+        Returns:
+            list: list containing the gates diagonalizing the Hermitian observable
+        """
+        return [QubitUnitary(self.eigendecomposition["eigvec"].conj().T, wires=list(self.wires))]
+
+
+class SparseHamiltonian(Observable):
+    r"""SparseHamiltonian(H)
+    A Hamiltonian represented directly as a sparse matrix in coordinate list (COO) format.
+
+    .. warning::
+
+        ``SparseHamiltonian`` observables can only be used to return expectation values.
+        Variances and samples are not supported.
+
+    .. note::
+
+        Note that the ``SparseHamiltonian`` observable should not be used with a subset of wires.
+
+    **Details:**
+
+    * Number of wires: All
+    * Number of parameters: 1
+    * Gradient recipe: None
+
+    Args:
+        H (coo_matrix): a sparse matrix in SciPy coordinate list (COO) format with
+            dimension :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
+    """
+    num_wires = AllWires
+    num_params = 1
+    par_domain = None
+    grad_method = None
+
+    @classmethod
+    def _matrix(cls, *params):
+        A = params[0]
+        if not isinstance(A, scipy.sparse.coo_matrix):
+            raise TypeError("Observable must be a scipy sparse coo_matrix.")
+        return A
+
+    def diagonalizing_gates(self):
+        return []
