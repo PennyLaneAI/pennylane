@@ -211,7 +211,7 @@ class TestCompile:
         compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
 
     def test_compile_template(self):
-        """Test that an empty pipeline returns the original function."""
+        """Test that functions with templates are correctly expanded and compiled."""
 
         # Push commuting gates to the right and merging rotations gives a circuit
         # with alternating RX and CNOT gates
