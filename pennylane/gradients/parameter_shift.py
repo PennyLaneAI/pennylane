@@ -260,7 +260,7 @@ def var_param_shift(tape, argnum, shift=np.pi / 2, gradient_recipes=None, f0=Non
         gradient_tapes.extend(pdA2_tapes)
 
     def processing_fn(results):
-        mask = qml.math.reshape(var_mask, [-1, 1])
+        mask = qml.math.convert_like(qml.math.reshape(var_mask, [-1, 1]), results[0])
         f0 = qml.math.reshape(results[0], [-1, 1])
 
         pdA = pdA_fn(results[1:tape_boundary])
@@ -273,6 +273,7 @@ def var_param_shift(tape, argnum, shift=np.pi / 2, gradient_recipes=None, f0=Non
             if involutory:
                 # if involutory observables are present, ensure they have zero gradient
                 m = [tape.observables[i].name != "Hermitian" for i in var_idx]
+                m = qml.math.convert_like(m, pdA2)
                 pdA2 = qml.math.where(qml.math.reshape(m, [-1, 1]), 0, pdA2)
 
         # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances,

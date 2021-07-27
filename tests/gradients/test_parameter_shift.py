@@ -428,32 +428,42 @@ class TestParameterShiftRule:
     def test_fallback(self, mocker, tol):
         """Test that fallback gradient functions are correctly used"""
         spy = mocker.spy(qml.gradients, "finite_diff")
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.autograd", wires=2)
         x = 0.543
         y = -0.654
+
+        params = np.array([x, y], requires_grad=True)
 
         class RY(qml.RY):
             grad_method = "F"
 
-        with qml.tape.JacobianTape() as tape:
-            qml.RX(x, wires=[0])
-            RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
-            qml.var(qml.PauliX(1))
+        def cost_fn(params):
+            with qml.tape.JacobianTape() as tape:
+                qml.RX(params[0], wires=[0])
+                RY(params[1], wires=[1])
+                qml.CNOT(wires=[0, 1])
+                qml.expval(qml.PauliZ(0))
+                qml.var(qml.PauliX(1))
 
-        tapes, fn = param_shift(tape, fallback_fn=qml.gradients.finite_diff)
-        assert len(tapes) == 5
+            tapes, fn = param_shift(tape, fallback_fn=qml.gradients.finite_diff)
+            assert len(tapes) == 5
 
-        # check that the fallback method was called for the specified argnums
-        spy.assert_called()
-        assert spy.call_args[1]["argnum"] == {1}
+            # check that the fallback method was called for the specified argnums
+            spy.assert_called()
+            assert spy.call_args[1]["argnum"] == {1}
 
-        res = fn(dev.batch_execute(tapes))
+            return fn(dev.batch_execute(tapes))
+
+        res = cost_fn(params)
         assert res.shape == (2, 2)
 
         expected = np.array([[-np.sin(x), 0], [0, -2 * np.cos(y) * np.sin(y)]])
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # double check the derivative
+        jac = qml.jacobian(cost_fn)(params)
+        assert np.allclose(jac[0, 0, 0], -np.cos(x), atol=tol, rtol=0)
+        assert np.allclose(jac[1, 1, 1], -2 * np.cos(2 * y), atol=tol, rtol=0)
 
     def test_single_expectation_value(self, tol):
         """Tests correct output shape and evaluation for a tape
@@ -723,7 +733,7 @@ class TestParamShiftGradients:
                 qml.RX(x[0], wires=[0])
                 qml.RY(x[1], wires=[1])
                 qml.CNOT(wires=[0, 1])
-                qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+                qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
             tape.trainable_params = {0, 1}
             tapes, fn = qml.gradients.param_shift(tape)
@@ -734,8 +744,8 @@ class TestParamShiftGradients:
         x, y = params
         expected = np.array(
             [
-                [-np.cos(x) * np.sin(y), -np.cos(y) * np.sin(x)],
-                [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)],
+                [2 * np.cos(2 * x) * np.sin(y) ** 2, np.sin(2 * x) * np.sin(2 * y)],
+                [np.sin(2 * x) * np.sin(2 * y), -2 * np.cos(x) ** 2 * np.cos(2 * y)],
             ]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -753,7 +763,7 @@ class TestParamShiftGradients:
                 qml.RX(params[0], wires=[0])
                 qml.RY(params[1], wires=[1])
                 qml.CNOT(wires=[0, 1])
-                qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+                qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
             tape.trainable_params = {0, 1}
             tapes, fn = qml.gradients.param_shift(tape)
@@ -761,14 +771,14 @@ class TestParamShiftGradients:
 
         x, y = 1.0 * params
 
-        expected = np.array([-np.sin(x) * np.sin(y), np.cos(x) * np.cos(y)])
+        expected = np.array([np.sin(2 * x) * np.sin(y) ** 2, -np.cos(x) ** 2 * np.sin(2 * y)])
         assert np.allclose(jac, expected, atol=tol, rtol=0)
 
         res = t.jacobian(jac, params)
         expected = np.array(
             [
-                [-np.cos(x) * np.sin(y), -np.cos(y) * np.sin(x)],
-                [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)],
+                [2 * np.cos(2 * x) * np.sin(y) ** 2, np.sin(2 * x) * np.sin(2 * y)],
+                [np.sin(2 * x) * np.sin(2 * y), -2 * np.cos(x) ** 2 * np.cos(2 * y)],
             ]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -786,26 +796,21 @@ class TestParamShiftGradients:
             qml.RX(params[0], wires=[0])
             qml.RY(params[1], wires=[1])
             qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
         tapes, fn = qml.gradients.param_shift(tape)
         jac = fn([t.execute(dev) for t in tapes])
-        cost = torch.sum(jac)
+        cost = jac[0, 0]
         cost.backward()
         hess = params.grad
 
         x, y = params.detach().numpy()
 
-        expected = np.array([-np.sin(x) * np.sin(y), np.cos(x) * np.cos(y)])
+        expected = np.array([np.sin(2 * x) * np.sin(y) ** 2, -np.cos(x) ** 2 * np.sin(2 * y)])
         assert np.allclose(jac.detach().numpy(), expected, atol=tol, rtol=0)
 
-        expected = np.array(
-            [
-                [-np.cos(x) * np.sin(y), -np.cos(y) * np.sin(x)],
-                [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)],
-            ]
-        )
-        assert np.allclose(hess.detach().numpy(), np.sum(expected, axis=0), atol=tol, rtol=0)
+        expected = np.array([2 * np.cos(2 * x) * np.sin(y) ** 2, np.sin(2 * x) * np.sin(2 * y)])
+        assert np.allclose(hess.detach().numpy(), expected, atol=0.1, rtol=0)
 
     def test_jax(self, tol):
         """Tests that the output of the finite-difference transform
@@ -825,7 +830,7 @@ class TestParamShiftGradients:
                 qml.RX(x[0], wires=[0])
                 qml.RY(x[1], wires=[1])
                 qml.CNOT(wires=[0, 1])
-                qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+                qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
             tape.trainable_params = {0, 1}
             tapes, fn = qml.gradients.param_shift(tape)
@@ -836,8 +841,8 @@ class TestParamShiftGradients:
         x, y = params
         expected = np.array(
             [
-                [-np.cos(x) * np.sin(y), -np.cos(y) * np.sin(x)],
-                [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)],
+                [2 * np.cos(2 * x) * np.sin(y) ** 2, np.sin(2 * x) * np.sin(2 * y)],
+                [np.sin(2 * x) * np.sin(2 * y), -2 * np.cos(x) ** 2 * np.cos(2 * y)],
             ]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
