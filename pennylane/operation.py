@@ -582,6 +582,36 @@ class Operation(Operator):
     transforms that merge adjacent rotations.
     """
 
+    basis = None
+    """str or None: The basis of an operation, or for controlled gates, of the
+    target operation. If not ``None``, should take a value of ``"X"``, ``"Y"``,
+    or ``"Z"``.
+
+    For example, ``X`` and ``CNOT`` have ``basis = "X"``, whereas
+    ``ControlledPhaseShift`` and ``RZ`` have ``basis = "Z"``.
+    """
+
+    @property
+    def control_wires(self):  # pragma: no cover
+        r"""For operations that are controlled, returns the set of control wires.
+
+        Returns:
+            Wires: The set of control wires of the operation.
+        """
+        raise NotImplementedError
+
+    @property
+    def single_qubit_rot_angles(self):
+        r"""The parameters required to implement a single-qubit gate as an
+        equivalent ``Rot`` gate, up to a global phase.
+
+        Returns:
+            tuple[float, float, float]: A list of values :math:`[\phi, \theta, \omega]`
+            such that :math:`RZ(\omega) RY(\theta) RZ(\phi)` is equivalent to the
+            original operation.
+        """
+        raise NotImplementedError
+
     def get_parameter_shift(self, idx, shift=np.pi / 2):
         """Multiplier and shift for the given parameter, based on its gradient recipe.
 

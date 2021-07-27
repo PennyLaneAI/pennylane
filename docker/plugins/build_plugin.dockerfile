@@ -11,11 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-This subpackage contains quantum function transforms for optimizing quantum circuits.
-"""
 
-from .cancel_inverses import cancel_inverses
-from .commute_controlled import commute_controlled
-from .merge_rotations import merge_rotations
-from .single_qubit_fusion import single_qubit_fusion
+From pennylane/base:latest
+ARG PLUGIN_NAME=tensorflow
+WORKDIR /opt/pennylane/docker/plugins
+RUN chmod +x install-plugin.sh && ./install-plugin.sh $PLUGIN_NAME
+# Run Unit-Tests again
+WORKDIR /opt/pennylane
+RUN make test
+# Image build completed.
+CMD echo "Successfully built Docker image"

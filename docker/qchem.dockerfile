@@ -11,11 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-This subpackage contains quantum function transforms for optimizing quantum circuits.
-"""
 
-from .cancel_inverses import cancel_inverses
-from .commute_controlled import commute_controlled
-from .merge_rotations import merge_rotations
-from .single_qubit_fusion import single_qubit_fusion
+From pennylane/base:latest
+
+# Update and install Qchem
+RUN DEBIAN_FRONTEND="noninteractive" apt-get install tzdata # need to perform this again
+RUN apt-get update \
+    && apt-get -y install --no-install-recommends make git openbabel \
+    && rm -rf /var/lib/apt/lists/*
+
+# Setup and Build Qchem
+WORKDIR /opt/pennylane/qchem
+RUN git submodule update --init --recursive
+RUN pip install wheel && pip install openfermionpyscf && pip install -r requirements.txt \
+    && python3 setup.py install \
+    && make test
+
+# Image build completed.
+CMD echo "Successfully built Docker image"

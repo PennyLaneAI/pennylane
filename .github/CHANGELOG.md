@@ -45,6 +45,107 @@
     Total shots:  100
     Total shots:  200
     Total shots:  300
+
+* A new quantum function transform has been added to push commuting
+  single-qubit gates through controlled operations.
+  [(#1464)](https://github.com/PennyLaneAI/pennylane/pull/1464)
+
+  The `commute_controlled` transform works as follows:
+
+  ```python
+  def circuit(theta):
+      qml.PauliX(wires=2)
+      qml.S(wires=0)
+      qml.CNOT(wires=[0, 1])
+      qml.PhaseShift(theta/2, wires=0)
+      qml.T(wires=0)
+      qml.Toffoli(wires=[0, 1, 2])
+      return qml.expval(qml.PauliZ(0))
+  ```
+
+  ```pycon
+  >>> optimized_circuit = qml.transforms.commute_controlled(direction="right")(circuit)
+  >>> dev = qml.device('default.qubit', wires=3)
+  >>> qnode = qml.QNode(optimized_circuit, dev)
+  >>> print(qml.draw(qnode)(0.5))
+   0: ──╭C──╭C──S──Rϕ(0.25)──T──┤ ⟨Z⟩
+   1: ──╰X──├C──────────────────┤
+   2: ──────╰X──X───────────────┤
+  ```
+
+* Grover Diffusion Operator template added.
+  [(#1442)](https://github.com/PennyLaneAI/pennylane/pull/1442)
+
+  For example, if we have an oracle that marks the "all ones" state with a
+  negative sign:
+
+  ```python
+  n_wires = 3
+  wires = list(range(n_wires))
+
+  def oracle():
+      qml.Hadamard(wires[-1])
+      qml.Toffoli(wires=wires)
+      qml.Hadamard(wires[-1])
+  ```
+
+  We can perform [Grover's Search Algorithm](https://en.wikipedia.org/wiki/Grover%27s_algorithm):
+
+  ```python
+  dev = qml.device('default.qubit', wires=wires)
+
+  @qml.qnode(dev)
+  def GroverSearch(num_iterations=1):
+      for wire in wires:
+          qml.Hadamard(wire)
+
+      for _ in range(num_iterations):
+          oracle()
+          qml.templates.GroverOperator(wires=wires)
+
+      return qml.probs(wires)
+  ```
+
+  We can see this circuit yields the marked state with high probability:
+
+  ```pycon
+  >>> GroverSearch(num_iterations=1)
+  tensor([0.03125, 0.03125, 0.03125, 0.03125, 0.03125, 0.03125, 0.03125,
+          0.78125], requires_grad=True)
+  >>> GroverSearch(num_iterations=2)
+  tensor([0.0078125, 0.0078125, 0.0078125, 0.0078125, 0.0078125, 0.0078125,
+      0.0078125, 0.9453125], requires_grad=True)
+  ```
+
+* A new quantum function transform has been added to perform full fusion of
+  arbitrary-length sequences of single-qubit gates.
+  [(#1458)](https://github.com/PennyLaneAI/pennylane/pull/1458)
+
+  The `single_qubit_fusion` transform acts on all sequences of
+  single-qubit operations in a quantum function, and converts each
+  sequence to a single `Rot` gate. For example given the circuit:
+
+  ```python
+  def circuit(x, y, z):
+      qml.Hadamard(wires=0)
+      qml.PauliZ(wires=1)
+      qml.RX(x, wires=0)
+      qml.RY(y, wires=1)
+      qml.CZ(wires=[1, 0])
+      qml.T(wires=0)
+      qml.SX(wires=0)
+      qml.Rot(x, y, z, wires=1)
+      qml.Rot(z, y, x, wires=1)
+      return qml.expval(qml.PauliX(wires=0))
+  ```
+
+  ```pycon
+  >>> optimized_circuit = qml.transforms.single_qubit_fusion()(circuit)
+  >>> dev = qml.device('default.qubit', wires=2)
+  >>> qnode = qml.QNode(optimized_circuit, dev)
+  >>> print(qml.draw(qnode)(0.1, 0.2, 0.3))
+   0: ──Rot(3.24, 1.57, 0)──╭Z──Rot(2.36, 1.57, -1.57)────┤ ⟨X⟩
+   1: ──Rot(3.14, 0.2, 0)───╰C──Rot(0.406, 0.382, 0.406)──┤
   ```
 
 * Two new quantum function transforms have been added to enable the
@@ -228,6 +329,14 @@
 
 <h3>Improvements</h3>
 
+* Changed to using commas as the separator of wires in the string
+  representation of `qml.Hamiltonian` objects for multi-qubit terms.
+  [(#1465)](https://github.com/PennyLaneAI/pennylane/pull/1465)
+
+* Changed to using `np.object_` instead of `np.object` as per the NumPy
+  deprecations starting version 1.20.
+  [(#1466)](https://github.com/PennyLaneAI/pennylane/pull/1466)
+
 * Change the order of the covariance matrix and the vector of means internally
   in `default.gaussian`. [(#1331)](https://github.com/PennyLaneAI/pennylane/pull/1331)
 
@@ -269,12 +378,19 @@
 
 <h3>Documentation</h3>
 
+* Improved Contribution Guide and Pull Requests Guide.
+  [(#1461)](https://github.com/PennyLaneAI/pennylane/pull/1461)
+
+* Examples have been added to clarify use of the continuous-variable
+  `FockStateVector` operation in the multi-mode case.
+  [(#1472)](https://github.com/PennyLaneAI/pennylane/pull/1472)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Leonhard Kunczik, Romain Moyard, Ashish Panigrahi, Maria Schuld,
-Jay Soni
+Olivia Di Matteo, Josh Izaac, Leonhard Kunczik, Christina Lee, Romain Moyard, Ashish Panigrahi,
+Maria Schuld, Jay Soni, Antal Száva
 
 
 # Release 0.16.0 (current release)
