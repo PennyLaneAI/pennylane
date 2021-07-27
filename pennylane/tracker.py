@@ -17,6 +17,7 @@ This module contains a class for updating and recording information about device
 
 from numbers import Number
 
+
 class Tracker:
     """This class stores information about device executions and allows users to interact with that
     data upon individual executions and batches, even within parameter-shift gradients and
@@ -91,7 +92,7 @@ class Tracker:
     function is run each time the ``record()`` method is called, which occurs near
     the end of a device's ``execute`` and ``batch_execute`` methods. Using ``print``
     or logging, users can monitor completion during a long set of jobs.
-    
+
     The function passed must accept ``totals``, ``history``, and ``latest`` as
     keyword arguments. The dictionary ``latest`` will contain different keywords based on whether
     whether ``execute`` or ``batch_execute`` last performed an update.

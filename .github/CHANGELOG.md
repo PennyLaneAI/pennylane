@@ -45,6 +45,7 @@
     Total shots:  100
     Total shots:  200
     Total shots:  300
+    ```
 
 * A new quantum function transform has been added to push commuting
   single-qubit gates through controlled operations.

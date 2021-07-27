@@ -46,13 +46,13 @@ class TestTracker:
         spy_update = mocker.spy(dev.tracker, "update")
         spy_record = mocker.spy(dev.tracker, "record")
 
-        dev.tracker.tracking = False
+        dev.tracker.active = False
         circ()
 
         assert spy_update.call_count == 0
         assert spy_record.call_count == 0
 
-        dev.tracker.tracking = True
+        dev.tracker.active = True
         circ()
 
         assert spy_update.call_count == 1
@@ -74,7 +74,7 @@ class TestTracker:
         spy_record = mocker.spy(dev.tracker, "record")
 
         circ()
-        dev.tracker.tracking = True
+        dev.tracker.active = True
         dev.batch_execute([circ.qtape])
 
         assert spy_update.call_count == 2

@@ -187,7 +187,7 @@ class TestDefaultTrackerIntegration:
 
         _, kwargs_called = spy.call_args_list[-1]
 
-        assert kwargs_called["totals"] == {"executions": 1}
+        assert kwargs_called["totals"] == {"executions": 2}
         assert kwargs_called["history"] == {"executions": [1,1], "shots": [None, None]}
         assert kwargs_called["latest"] == {"executions": 1, "shots": None}
 
