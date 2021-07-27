@@ -23,13 +23,13 @@ import pennylane as qml
 
 
 def finite_diff_stencil(n, order, form):
-    """Generate the finite difference stencil (shift and coefficients)
+    r"""Generate the finite difference stencil (shift and coefficients)
     for various derivatives, accuracy, and form.
 
     Args:
         n (int): Positive integer specifying the derivative. ``n=1``
             corresponds to the first derivative.
-        order (int): Positive integer referring to the accuracy of the
+        order (int): Positive integer referring to the approximation order of the
             returned stencil. E.g., ``order=1`` corresponds to a stencil
             that returns a first-order approximation to the derivative.
         form (str): one of ``"forward"``, ``"center"``, or ``"backward"``.
@@ -43,6 +43,16 @@ def finite_diff_stencil(n, order, form):
     >>> finite_diff_stencil(n=1, order=1, form="forward")
     array([[-1.,  1.],
            [ 0.,  1.]])
+
+    The first row corresponds to the coefficients, and the second corresponds
+    to the shifts. For example, this results in the linear combination:
+
+    .. math:: \frac{-y(x_0) + y(x_0 + h)}{h}
+
+    where :math:`h` is the finite-difference step-size.
+
+    More examples of finite-difference stencils:
+
     >>> finite_diff_stencil(n=1, order=2, form="center")
     array([[-0.5,  0.5],
            [-1. ,  1. ]])
@@ -54,7 +64,7 @@ def finite_diff_stencil(n, order, form):
         raise ValueError("Derivative order n must be a positive integer.")
 
     if order < 1 or not isinstance(order, int):
-        raise ValueError("Accuracy order must be a positive integer.")
+        raise ValueError("Approximation order must be a positive integer.")
 
     num_points = order + 2 * np.floor((n + 1) / 2) - 1
     N = num_points + 1 if n % 2 == 0 else num_points
@@ -134,7 +144,7 @@ def finite_diff(tape, argnum=None, h=1e-7, order=1, n=1, form="forward", f0=None
             with respect to. If not provided, the derivatives with respect to all
             trainable indices are returned.
         h (float): finite difference method step size
-        order (int): The order of the finite difference method to use.
+        order (int): The approximation order of the finite difference method to use.
         n (int): compute the :math:`n`-th derivative
         form (str): The form of the finite difference method. Must be one of
             ``"forward"``, ``"center"``, or ``"backward"``.
@@ -161,6 +171,8 @@ def finite_diff(tape, argnum=None, h=1e-7, order=1, n=1, form="forward", f0=None
     >>> fn(res)
     [[-0.38751721 -0.18884787 -0.38355704]
      [ 0.69916862  0.34072424  0.69202359]]
+
+    The output Jacobian matrix is of size ``(number_outputs, number_parameters)``.
     """
     # TODO: replace the JacobianTape._grad_method_validation
     # functionality before deprecation.
