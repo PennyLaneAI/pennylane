@@ -20,7 +20,7 @@
   ...     qml.expval(qml.PauliZ(0))
   ...     qml.var(qml.PauliZ(0))
   >>> tape.trainable_params = {0, 1, 2}
-  >>> gradient_tapes, fn = qml.gradients.finite_diff.grad(tape)
+  >>> gradient_tapes, fn = qml.gradients.finite_diff(tape)
   >>> res = dev.batch_execute(gradient_tapes)
   >>> fn(res)
   [[-0.38751721 -0.18884787 -0.38355704]

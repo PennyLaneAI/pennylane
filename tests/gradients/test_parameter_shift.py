@@ -391,8 +391,8 @@ class TestParameterShiftRule:
         tape.trainable_params = {0, 2, 3}
         dev = qml.device("default.qubit", wires=2)
 
-        grad_F1 = grad_fn(tape, dev, fn=qml.gradients.finite_diff, order=1)
-        grad_F2 = grad_fn(tape, dev, fn=qml.gradients.finite_diff, order=2, form="center")
+        grad_F1 = grad_fn(tape, dev, fn=qml.gradients.finite_diff, approx=1)
+        grad_F2 = grad_fn(tape, dev, fn=qml.gradients.finite_diff, approx=2, strategy="center")
         grad_A = grad_fn(tape, dev)
 
         # gradients computed with different methods must agree
@@ -417,8 +417,8 @@ class TestParameterShiftRule:
         tape.trainable_params = {0, 2, 3}
         dev = qml.device("default.qubit", wires=2)
 
-        grad_F1 = grad_fn(tape, dev, fn=qml.gradients.finite_diff, order=1)
-        grad_F2 = grad_fn(tape, dev, fn=qml.gradients.finite_diff, order=2, form="center")
+        grad_F1 = grad_fn(tape, dev, fn=qml.gradients.finite_diff, approx=1)
+        grad_F2 = grad_fn(tape, dev, fn=qml.gradients.finite_diff, approx=2, strategy="center")
         grad_A = grad_fn(tape, dev)
 
         # gradients computed with different methods must agree
