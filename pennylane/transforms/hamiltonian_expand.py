@@ -14,6 +14,7 @@
 """
 Contains the hamiltonian expand tape transform
 """
+# pylint: disable=protected-access
 import pennylane as qml
 
 
