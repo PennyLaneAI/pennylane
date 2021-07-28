@@ -75,7 +75,7 @@ def _gradient_analysis(tape, use_graph=True):
 
 def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None, f0=None):
     r"""Generate the parameter-shift tapes and postprocessing methods required
-    to compute the gradient of an gate parameter with respect to an
+    to compute the gradient of a gate parameter with respect to an
     expectation value.
 
     Args:
@@ -85,7 +85,7 @@ def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None
             trainable indices are returned.
         shift (float): The shift value to use for the two-term parameter-shift formula.
             Only valid if the operation in question supports the two-term parameter-shift
-            rule (that is, it has two distinct eigenvalues) and ``gradient_recipe``
+            rule (that is, it has two distinct eigenvalues) and ``gradient_recipes``
             is ``None``.
         gradient_recipes (tuple(list[list[float]] or None)): List of gradient recipes
             for the parameter-shift method. One gradient recipe must be provided
@@ -193,7 +193,7 @@ def var_param_shift(tape, argnum, shift=np.pi / 2, gradient_recipes=None, f0=Non
             trainable indices are returned.
         shift (float): The shift value to use for the two-term parameter-shift formula.
             Only valid if the operation in question supports the two-term parameter-shift
-            rule (that is, it has two distinct eigenvalues) and ``gradient_recipe``
+            rule (that is, it has two distinct eigenvalues) and ``gradient_recipes``
             is ``None``.
         gradient_recipes (tuple(list[list[float]] or None)): List of gradient recipes
             for the parameter-shift method. One gradient recipe must be provided
@@ -297,7 +297,7 @@ def param_shift(
             trainable indices are returned.
         shift (float): The shift value to use for the two-term parameter-shift formula.
             Only valid if the operation in question supports the two-term parameter-shift
-            rule (that is, it has two distinct eigenvalues) and ``gradient_recipe``
+            rule (that is, it has two distinct eigenvalues) and ``gradient_recipes``
             is ``None``.
         gradient_recipes (tuple(list[list[float]] or None)): List of gradient recipes
             for the parameter-shift method. One gradient recipe must be provided
@@ -400,11 +400,9 @@ def param_shift(
     # functionality before deprecation.
     method = "analytic" if fallback_fn is None else "best"
     diff_methods = tape._grad_method_validation(method)
-
-    if not tape.trainable_params or all(g == "0" for g in diff_methods):
-        # Either all parameters have grad method 0, or there are no trainable
-        # parameters.
-        return gradient_tapes, lambda x: np.zeros([tape.output_dim, len(tape.trainable_params)])
+    all_params_grad_method_zero = all(g == "0" for g in diff_methods)
+    if not tape.trainable_params or all_params_grad_method_zero:
+        return gradient_tapes, lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
 
     # TODO: replace the JacobianTape._choose_params_with_methods
     # functionality before deprecation.

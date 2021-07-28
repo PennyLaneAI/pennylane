@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -86,6 +86,7 @@ class TestGradAnalysis:
 
 
 def grad_fn(tape, dev, fn=qml.gradients.param_shift, **kwargs):
+    """Utility function to automate execution and processing of gradient tapes"""
     tapes, fn = fn(tape, **kwargs)
     return fn(dev.batch_execute(tapes))
 
@@ -207,7 +208,7 @@ class TestParamShift:
 
         fn(dev.batch_execute(tapes))
 
-    def test_independent_parameters(self):
+    def test_independent_parameters_analytic(self):
         """Test the case where expectation values are independent of some parameters. For those
         parameters, the gradient should be evaluated to zero without executing the device."""
         dev = qml.device("default.qubit", wires=2)
@@ -723,7 +724,7 @@ class TestParamShiftGradients:
     """Test that the transform is differentiable"""
 
     def test_autograd(self, tol):
-        """Tests that the output of the finite-difference transform
+        """Tests that the output of the parameter-shift transform
         can be differentiated using autograd, yielding second derivatives."""
         dev = qml.device("default.qubit.autograd", wires=2)
         params = np.array([0.543, -0.654], requires_grad=True)
