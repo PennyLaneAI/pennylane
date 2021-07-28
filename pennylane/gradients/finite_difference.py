@@ -114,26 +114,19 @@ def generate_shifted_tapes(tape, idx, shifts, multipliers=None):
         ``idx`` shifted by consecutive values of ``shift``. The length
         of the returned list of tapes will match the length of ``shifts``.
     """
-    params = qml.math.stack(tape.get_parameters())
+    params = tape.get_parameters()
     tapes = []
 
     for i, s in enumerate(shifts):
+        new_params = params.copy()
         shifted_tape = tape.copy(copy_operations=True)
 
-        shift = np.zeros(qml.math.shape(params), dtype=np.float64)
-        shift[idx] = s
-
         if multipliers is not None:
-            m = multipliers[i] if multipliers is not None else 1.0
-            mask = qml.math.convert_like(np.arange(qml.math.shape(params)[0]) == idx, params)
-            scaled_params = params * qml.math.convert_like(m, params)
-            scaled_params = qml.math.where(mask, scaled_params, params)
-        else:
-            scaled_params = params
+            m = multipliers[i]
+            new_params[idx] = new_params[idx] * qml.math.convert_like(m, new_params[idx])
 
-        shifted_params = scaled_params + qml.math.convert_like(shift, params)
-        shifted_tape.set_parameters(qml.math.unstack(shifted_params))
-
+        new_params[idx] = new_params[idx] + qml.math.convert_like(s, new_params[idx])
+        shifted_tape.set_parameters(new_params)
         tapes.append(shifted_tape)
 
     return tapes
