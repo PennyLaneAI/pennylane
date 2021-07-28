@@ -150,8 +150,7 @@ def generate_shifted_tapes(tape, idx, shifts, multipliers=None):
 
 def finite_diff(tape, argnum=None, h=1e-7, approx=1, n=1, strategy="forward", f0=None):
     r"""Generate the finite-difference tapes and postprocessing methods required
-    to compute the gradient of a gate parameter with respect to an
-    expectation value.
+    to compute the gradient of a gate parameter with respect to its outputs.
 
     Args:
         tape (.QuantumTape): quantum tape to differentiate
