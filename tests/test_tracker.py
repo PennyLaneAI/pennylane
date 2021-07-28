@@ -259,5 +259,11 @@ class TestDefaultTrackerIntegration:
         assert tracker.latest == {"batches": 1, "batch_len": 2}
 
         _, kwargs_called = spy.call_args_list[-1]
-        assert kwargs_called["batches"] == 1
-        assert kwargs_called["batch_len"] == 1
+        assert kwargs_called["totals"] == {"executions": 2, "batches": 1, "batch_len": 2}
+        assert kwargs_called["history"] == {
+            "executions": [1, 1],
+            "shots": [None, None],
+            "batches": [1],
+            "batch_len": [2],
+        }
+        assert kwargs_called["latest"] == {"batches": 1, "batch_len": 2}
