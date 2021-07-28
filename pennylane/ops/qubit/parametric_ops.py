@@ -24,11 +24,11 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import AnyWires, DiagonalOperation, Operation
+from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ, Hadamard
 from pennylane.templates.decorator import template
 from pennylane.utils import expand, pauli_eigs
 from pennylane.wires import Wires
 
-from .non_parametric_ops import PauliX, PauliY, PauliZ, Hadamard, CNOT
 
 INV_SQRT2 = 1 / math.sqrt(2)
 
@@ -280,9 +280,9 @@ class ControlledPhaseShift(DiagonalOperation):
     def decomposition(phi, wires):
         decomp_ops = [
             qml.PhaseShift(phi / 2, wires=wires[0]),
-            CNOT(wires=wires),
+            qml.CNOT(wires=wires),
             qml.PhaseShift(-phi / 2, wires=wires[1]),
-            CNOT(wires=wires),
+            qml.CNOT(wires=wires),
             qml.PhaseShift(phi / 2, wires=wires[1]),
         ]
         return decomp_ops
@@ -453,12 +453,12 @@ class MultiRZ(DiagonalOperation):
     @template
     def decomposition(theta, wires):
         for i in range(len(wires) - 1, 0, -1):
-            CNOT(wires=[wires[i], wires[i - 1]])
+            qml.CNOT(wires=[wires[i], wires[i - 1]])
 
         RZ(theta, wires=wires[0])
 
         for i in range(len(wires) - 1):
-            CNOT(wires=[wires[i + 1], wires[i]])
+            qml.CNOT(wires=[wires[i + 1], wires[i]])
 
     def adjoint(self):
         return MultiRZ(-self.parameters[0], wires=self.wires)
@@ -721,9 +721,9 @@ class CRX(Operation):
         decomp_ops = [
             RZ(np.pi / 2, wires=wires[1]),
             RY(theta / 2, wires=wires[1]),
-            CNOT(wires=wires),
+            qml.CNOT(wires=wires),
             RY(-theta / 2, wires=wires[1]),
-            CNOT(wires=wires),
+            qml.CNOT(wires=wires),
             RZ(-np.pi / 2, wires=wires[1]),
         ]
         return decomp_ops
@@ -798,9 +798,9 @@ class CRY(Operation):
     def decomposition(theta, wires):
         decomp_ops = [
             RY(theta / 2, wires=wires[1]),
-            CNOT(wires=wires),
+            qml.CNOT(wires=wires),
             RY(-theta / 2, wires=wires[1]),
-            CNOT(wires=wires),
+            qml.CNOT(wires=wires),
         ]
         return decomp_ops
 
@@ -893,9 +893,9 @@ class CRZ(DiagonalOperation):
     def decomposition(lam, wires):
         decomp_ops = [
             PhaseShift(lam / 2, wires=wires[1]),
-            CNOT(wires=wires),
+            qml.CNOT(wires=wires),
             PhaseShift(-lam / 2, wires=wires[1]),
-            CNOT(wires=wires),
+            qml.CNOT(wires=wires),
         ]
         return decomp_ops
 
@@ -979,10 +979,10 @@ class CRot(Operation):
     def decomposition(phi, theta, omega, wires):
         decomp_ops = [
             RZ((phi - omega) / 2, wires=wires[1]),
-            CNOT(wires=wires),
+            qml.CNOT(wires=wires),
             RZ(-(phi + omega) / 2, wires=wires[1]),
             RY(-theta / 2, wires=wires[1]),
-            CNOT(wires=wires),
+            qml.CNOT(wires=wires),
             RY(theta / 2, wires=wires[1]),
             RZ(omega, wires=wires[1]),
         ]
@@ -1219,9 +1219,9 @@ class IsingXX(Operation):
     @staticmethod
     def decomposition(phi, wires):
         decomp_ops = [
-            CNOT(wires=wires),
+            qml.CNOT(wires=wires),
             RX(phi, wires=[wires[0]]),
-            CNOT(wires=wires),
+            qml.CNOT(wires=wires),
         ]
         return decomp_ops
 
