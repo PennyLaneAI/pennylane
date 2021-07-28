@@ -31,25 +31,34 @@ def _get_operation_recipe(tape, t_idx, shift=np.pi / 2):
     If the corresponding operation has grad_recipe=None, then
     the default two-term parameter-shift rule is assumed.
     """
-    p_idx = list(tape.trainable_params)[t_idx]
-    op = tape._par_info[p_idx]["op"]
-    op_p_idx = tape._par_info[p_idx]["p_idx"]
+    # get the index of the parameter in the tape
+    parameter_idx = list(tape.trainable_params)[t_idx]
+
+    # get the corresponding operation
+    op = tape._par_info[parameter_idx]["op"]
+
+    # get the corresponding operation parameter index
+    # (that is, index of the parameter within the operation)
+    op_p_idx = tape._par_info[parameter_idx]["p_idx"]
+
+    # return the parameter-shift gradient for that
+    # operation parameter.
     return op.get_parameter_shift(op_p_idx, shift=shift)
 
 
-def _process_gradient_recipe(gr, tol=1e-10):
+def _process_gradient_recipe(gradient_recipe, tol=1e-10):
     """Utility function to process gradient recipes."""
-    gr = np.array(gr).T
+    gradient_recipe = np.array(gradient_recipe).T
     # remove all small coefficients, shifts, and multipliers
-    gr[np.abs(gr) < tol] = 0
+    gradient_recipe[np.abs(gradient_recipe) < tol] = 0
     # remove columns where the coefficients are 0
-    gr = gr[:, ~(gr[0] == 0)]
+    gradient_recipe = gradient_recipe[:, ~(gradient_recipe[0] == 0)]
     # sort columns according to abs(shift)
-    return gr[:, np.argsort(np.abs(gr)[-1])]
+    return gradient_recipe[:, np.argsort(np.abs(gradient_recipe)[-1])]
 
 
 def _gradient_analysis(tape, use_graph=True):
-    """Update the parameter information dictionary  of the tape with
+    """Update the parameter information dictionary of the tape with
     gradient information of each parameter."""
 
     if getattr(tape, "_gradient_fn", None) is param_shift:
@@ -104,7 +113,7 @@ def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None
     gradient_tapes = []
     gradient_coeffs = []
     shapes = []
-    c0 = []
+    unshifted_coeffs = []
 
     for idx, _ in enumerate(tape.trainable_params):
 
@@ -115,23 +124,23 @@ def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None
             continue
 
         # get the gradient recipe for the trainable parameter
-        gr = gradient_recipes[argnum.index(idx)]
-        gr = gr or _get_operation_recipe(tape, idx, shift=shift)
-        gr = _process_gradient_recipe(gr)
-        coeffs, multipliers, shifts = gr
+        recipe = gradient_recipes[argnum.index(idx)]
+        recipe = recipe or _get_operation_recipe(tape, idx, shift=shift)
+        recipe = _process_gradient_recipe(recipe)
+        coeffs, multipliers, shifts = recipe
 
         if shifts[0] == 0 and multipliers[0] == 1:
             # Gradient recipe includes a term with zero shift.
 
-            if not c0 and f0 is None:
+            if not unshifted_coeffs and f0 is None:
                 # Ensure that the unshifted tape is appended
                 # to the gradient tapes, if not already.
                 gradient_tapes.append(tape)
 
             # Store the unshifted coefficient. We know that
             # it will always be the first coefficient due to processing.
-            c0.append(coeffs[0])
-            coeffs, multipliers, shifts = gr[:, 1:]
+            unshifted_coeffs.append(coeffs[0])
+            coeffs, multipliers, shifts = recipe[:, 1:]
 
         # generate the gradient tapes
         gradient_coeffs.append(coeffs)
@@ -142,7 +151,7 @@ def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None
 
     def processing_fn(results):
         grads = []
-        start = 1 if c0 and f0 is None else 0
+        start = 1 if unshifted_coeffs and f0 is None else 0
         r0 = f0 or results[0]
 
         for i, s in enumerate(shapes):
@@ -160,9 +169,9 @@ def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None
             res = qml.math.stack(res)
             g = sum([c * r for c, r in zip(gradient_coeffs[i], res)])
 
-            if c0:
+            if unshifted_coeffs:
                 # add on the unshifted term
-                g = g + c0[i] * r0
+                g = g + unshifted_coeffs[i] * r0
 
             grads.append(g)
 
@@ -228,6 +237,9 @@ def var_param_shift(tape, argnum, shift=np.pi / 2, gradient_recipes=None, f0=Non
     # evaluate the analytic derivative of <A>
     pdA_tapes, pdA_fn = expval_param_shift(expval_tape, argnum, shift, gradient_recipes, f0)
     gradient_tapes.extend(pdA_tapes)
+
+    # Store the number of first derivative tapes, so that we know
+    # the number of results to post-process later.
     tape_boundary = len(pdA_tapes) + 1
 
     # For involutory observables (A^2 = I) we have d<A^2>/dp = 0.
@@ -271,13 +283,22 @@ def var_param_shift(tape, argnum, shift=np.pi / 2, gradient_recipes=None, f0=Non
             pdA2 = pdA2_fn(results[tape_boundary:])
 
             if involutory:
-                # if involutory observables are present, ensure they have zero gradient
+                # if involutory observables are present, ensure they have zero gradient.
+                #
+                # For the pdA2_tapes, we have replaced non-involutory
+                # observables with their square (A -> A^2). However,
+                # involutory observables have been left as-is (A), and have
+                # not been replaced by their square (A^2 = I). As a result,
+                # components of the gradient vector will not be correct. We
+                # need to replace the gradient value with 0 (the known,
+                # correct gradient for involutory variables).
+
                 m = [tape.observables[i].name != "Hermitian" for i in var_idx]
                 m = qml.math.convert_like(m, pdA2)
                 pdA2 = qml.math.where(qml.math.reshape(m, [-1, 1]), 0, pdA2)
 
-        # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances,
-        # d<A>/dp for plain expectations
+        # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances (mask==True)
+        # d<A>/dp for plain expectations (mask==False)
         return qml.math.where(mask, pdA2 - 2 * f0 * pdA, pdA)
 
     return gradient_tapes, processing_fn
