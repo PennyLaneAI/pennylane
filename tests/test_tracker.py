@@ -225,3 +225,39 @@ class TestDefaultTrackerIntegration:
         assert kwargs_called["totals"] == {"executions": 2, "shots": 30}
         assert kwargs_called["history"] == {"executions": [1, 1], "shots": [10, 20]}
         assert kwargs_called["latest"] == {"executions": 1, "shots": 20}
+
+    def test_batch_execution(self, mocker):
+        """Tests that batch execute also updates information stored."""
+
+        class callback_wrapper:
+            @staticmethod
+            def callback(totals=dict(), history=dict(), latest=dict()):
+                pass
+
+        wrapper = callback_wrapper()
+        spy = mocker.spy(wrapper, "callback")
+
+        dev = qml.device("default.gaussian", wires=1)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(qml.X(0))
+
+        # initial execution to get qtape
+        circuit()
+
+        with Tracker(dev, callback=wrapper.callback) as tracker:
+            dev.batch_execute([circuit.qtape, circuit.qtape])
+
+        assert tracker.totals == {"executions": 2, "batches": 1, "batch_len": 2}
+        assert tracker.history == {
+            "executions": [1, 1],
+            "shots": [None, None],
+            "batches": [1],
+            "batch_len": [2],
+        }
+        assert tracker.latest == {"batches": 1, "batch_len": 2}
+
+        _, kwargs_called = spy.call_args_list[-1]
+        assert kwargs_called["batches"] == 1
+        assert kwargs_called["batch_len"] == 1
