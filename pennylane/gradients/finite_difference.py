@@ -163,6 +163,12 @@ def finite_diff(tape, argnum=None, h=1e-7, approx=1, n=1, strategy="forward", f0
         n (int): compute the :math:`n`-th derivative
         strategy (str): The strategy of the finite difference method. Must be one of
             ``"forward"``, ``"center"``, or ``"backward"``.
+            For the ``"forward"`` strategy, the finite-difference shifts occur at the points
+            :math:`x_0, x_0+h, x_0+2h,\dots`, where :math:`h` is some small
+            stepsize. The ``"backwards"`` strategy is similar, but in
+            reverse: :math:`x_0, x_0-h, x_0-2h, \dots`. Finally, the
+            ``"center"`` strategy results in shifts symmetric around the
+            unshifted point: :math:`\dots, x_0-2h, x_0-h, x_0, x_0+h, x_0+2h,\dots`.
         f0 (tensor_like[float] or None): Output of the evaluated input tape. If provided,
             and the gradient recipe contains an unshifted term, this value is used,
             saving a quantum evaluation.
