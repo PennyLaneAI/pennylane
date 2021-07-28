@@ -14,7 +14,7 @@
 """
 This module contains the :class:`Device` abstract base class.
 """
-# pylint: disable=too-many-format-args
+# pylint: disable=too-many-format-args, use-maxsplit-arg
 import abc
 from collections.abc import Iterable, Sequence
 from collections import OrderedDict, namedtuple

@@ -15,6 +15,8 @@ r"""
 This module contains a class for updating and recording information about device executions.
 """
 
+# pylint: disable=attribute-defined-outside-init
+
 from numbers import Number
 
 
