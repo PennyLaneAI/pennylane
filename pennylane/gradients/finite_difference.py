@@ -133,7 +133,7 @@ def generate_shifted_tapes(tape, idx, shifts, multipliers=None):
 
 
 def finite_diff(tape, argnum=None, h=1e-7, order=1, n=1, form="forward", f0=None):
-    r"""Generate the parameter-shift tapes and postprocessing methods required
+    r"""Generate the finite-difference tapes and postprocessing methods required
     to compute the gradient of a gate parameter with respect to an
     expectation value.
 
