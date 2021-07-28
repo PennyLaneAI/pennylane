@@ -110,7 +110,7 @@ class TestShiftedTapes:
 
 
 class TestFiniteDiff:
-    """Tests for the finite difference gradient transstrategy"""
+    """Tests for the finite difference gradient transform"""
 
     def test_non_differentiable_error(self):
         """Test error raised if attempting to differentiate with
@@ -198,7 +198,7 @@ class TestFiniteDiff:
         # one tape per parameter, plus one global call
         assert len(tapes) == tape.num_params + 1
 
-    def test_y0_provided(self, mocker):
+    def test_y0_provided(self):
         """Test that if first order finite differences is used,
         and the original tape output is provided, then
         the tape is executed only once using the current parameter
@@ -249,7 +249,7 @@ class TestFiniteDiff:
 @pytest.mark.parametrize("approx", [2, 4])
 @pytest.mark.parametrize("strategy", ["forward", "backward", "center"])
 class TestFiniteDiffIntegration:
-    """Tests for the finite difference gradient transstrategy"""
+    """Tests for the finite difference gradient transform"""
 
     def test_ragged_output(self, approx, strategy):
         """Test that the Jacobian is correctly returned for a tape
@@ -431,10 +431,10 @@ class TestFiniteDiffIntegration:
 @pytest.mark.parametrize("approx", [2])
 @pytest.mark.parametrize("strategy", ["center"])
 class TestFiniteDiffGradients:
-    """Test that the transstrategy is differentiable"""
+    """Test that the transform is differentiable"""
 
     def test_autograd(self, approx, strategy, tol):
-        """Tests that the output of the finite-difference transstrategy
+        """Tests that the output of the finite-difference transform
         can be differentiated using autograd, yielding second derivatives."""
         dev = qml.device("default.qubit.autograd", wires=2)
         params = np.array([0.543, -0.654], requires_grad=True)
@@ -462,7 +462,7 @@ class TestFiniteDiffGradients:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_autograd_ragged(self, approx, strategy, tol):
-        """Tests that the output of the finite-difference transstrategy
+        """Tests that the output of the finite-difference transform
         of a ragged tape can be differentiated using autograd, yielding second derivatives."""
         dev = qml.device("default.qubit.autograd", wires=2)
         params = np.array([0.543, -0.654], requires_grad=True)
@@ -486,7 +486,7 @@ class TestFiniteDiffGradients:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_tf(self, approx, strategy, tol):
-        """Tests that the output of the finite-difference transstrategy
+        """Tests that the output of the finite-difference transform
         can be differentiated using TF, yielding second derivatives."""
         tf = pytest.importorskip("tensorflow")
 
@@ -519,7 +519,7 @@ class TestFiniteDiffGradients:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_tf_ragged(self, approx, strategy, tol):
-        """Tests that the output of the finite-difference transstrategy
+        """Tests that the output of the finite-difference transform
         of a ragged tape can be differentiated using TF, yielding second derivatives."""
         tf = pytest.importorskip("tensorflow")
         dev = qml.device("default.qubit.tf", wires=2)
@@ -543,7 +543,7 @@ class TestFiniteDiffGradients:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_torch(self, approx, strategy, tol):
-        """Tests that the output of the finite-difference transstrategy
+        """Tests that the output of the finite-difference transform
         can be differentiated using Torch, yielding second derivatives."""
         torch = pytest.importorskip("torch")
         from pennylane.interfaces.torch import TorchInterface
@@ -577,7 +577,7 @@ class TestFiniteDiffGradients:
         assert np.allclose(hess.detach().numpy(), np.sum(expected, axis=0), atol=tol, rtol=0)
 
     def test_jax(self, approx, strategy, tol):
-        """Tests that the output of the finite-difference transstrategy
+        """Tests that the output of the finite-difference transform
         can be differentiated using JAX, yielding second derivatives."""
         jax = pytest.importorskip("jax")
         from jax import numpy as jnp

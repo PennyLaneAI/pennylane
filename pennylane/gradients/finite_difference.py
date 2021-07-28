@@ -24,19 +24,19 @@ import pennylane as qml
 
 def finite_diff_coeffs(n, approx, strategy):
     r"""Generate the finite difference shift values and corresponding
-    term coefficients for various derivative order, approximation accuracy,
+    term coefficients for a given derivative order, approximation accuracy,
     and strategy.
 
     Args:
         n (int): Positive integer specifying the order of the derivative. For example, ``n=1``
             corresponds to the first derivative, ``n=2`` the second derivative, etc.
         approx (int): Positive integer referring to the approximation order of the
-            returned coefficients. E.g., ``approx=1`` corresponds to the
+            returned coefficients, e.g., ``approx=1`` corresponds to the
             first-order approximation to the derivative.
         strategy (str): One of ``"forward"``, ``"center"``, or ``"backward"``.
             For the ``"forward"`` strategy, the finite-difference shifts occur at the points
             :math:`x_0, x_0+h, x_0+2h,\dots`, where :math:`h` is some small
-            stepsize. The ``"backwards"`` strategy is similar, but in
+            step size. The ``"backwards"`` strategy is similar, but in
             reverse: :math:`x_0, x_0-h, x_0-2h, \dots`. Finally, the
             ``"center"`` strategy results in shifts symmetric around the
             unshifted point: :math:`\dots, x_0-2h, x_0-h, x_0, x_0+h, x_0+2h,\dots`.
@@ -56,7 +56,7 @@ def finite_diff_coeffs(n, approx, strategy):
 
     .. math:: \frac{-y(x_0) + y(x_0 + h)}{h}
 
-    where :math:`h` is the finite-difference step-size.
+    where :math:`h` is the finite-difference step size.
 
     More examples:
 
@@ -122,7 +122,7 @@ def generate_shifted_tapes(tape, idx, shifts, multipliers=None):
         idx (int): trainable parameter index to shift the parameter of
         shifts (Sequence[float or int]): sequence of shift values
         multipliers (Sequence[float or int]): Sequence of multiplier values to
-            scale the paraameter by. If not provided, the parameter will
+            scale the parameter by. If not provided, the parameter will
             not be scaled.
 
     Returns:
@@ -158,7 +158,7 @@ def finite_diff(tape, argnum=None, h=1e-7, approx=1, n=1, strategy="forward", f0
             with respect to. If not provided, the derivatives with respect to all
             trainable indices are returned.
         h (float): finite difference method step size
-        approx (int): The approximation order of the finite difference method to use.
+        approx (int): The approximation order of the finite-difference method to use.
         n (int): compute the :math:`n`-th derivative
         strategy (str): The strategy of the finite difference method. Must be one of
             ``"forward"``, ``"center"``, or ``"backward"``.
