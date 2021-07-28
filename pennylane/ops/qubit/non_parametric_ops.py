@@ -783,9 +783,7 @@ class Toffoli(Operation):
         return Wires(self.wires[:2])
 
 
-# This should be moved to a template.
-
-
+# TODO: this should be moved to a template
 class QFT(Operation):
     r"""QFT(wires)
     Apply a quantum Fourier transform (QFT).

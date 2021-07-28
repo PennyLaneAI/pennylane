@@ -17,7 +17,7 @@ This module contains the discrete-variable quantum operations.
 
 The operations are divided into six different files:
 
-* ``arithmetic_ops.py``: Operations that perform arithmetic on the states
+* ``arithmetic_ops.py``: Operations that perform arithmetic on the states.
 * ``matrix_ops.py``: Generalized operations that accept a matrix parameter,
   either unitary or hermitian depending
 * ``non_parameteric_ops.py``: All operations with no parameters
@@ -27,8 +27,6 @@ The operations are divided into six different files:
   any of the other categories
 * ``qchem_ops.py``: Operations for quantum chemistry applications
 * ``state_preparation.py``: Operations that initialize the state
-
-
 """
 
 from .arithmetic_ops import *
