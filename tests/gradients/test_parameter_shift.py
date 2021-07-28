@@ -129,7 +129,7 @@ class TestParamShift:
             qml.RY(-0.654, wires=[1])
             qml.state()
 
-        with pytest.raises(ValueError, match=r"Does not support circuits that return the state"):
+        with pytest.raises(ValueError, match=r"return the state is not supported"):
             qml.gradients.param_shift(tape)
 
     def test_independent_parameter(self, mocker):

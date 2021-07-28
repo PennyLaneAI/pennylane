@@ -412,7 +412,9 @@ def param_shift(
 
     # perform gradient method validation
     if any(m.return_type is qml.operation.State for m in tape.measurements):
-        raise ValueError("Computing the gradient of circuits that return the state is not supported.")
+        raise ValueError(
+            "Computing the gradient of circuits that return the state is not supported."
+        )
 
     _gradient_analysis(tape)
     gradient_tapes = []
