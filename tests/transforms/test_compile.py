@@ -105,6 +105,48 @@ class TestCompile:
 
         compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
 
+    @pytest.mark.parametrize(
+        "transform_name,num_passes",
+        [
+            ("merge_rotations", 1),
+            ("commute_controlled", 1),
+            ("merge_rotations", 3),
+            ("commute_controlled", 2),
+        ],
+    )
+    def test_mock_calls(self, transform_name, num_passes, mocker):
+        """Test that functions in the pipeline are called the correct number of times."""
+
+        class DummyTransforms:
+            def run_pipeline(self):
+                pipeline = [
+                    qml.transforms.single_tape_transform(DummyTransforms.merge_rotations),
+                    qml.transforms.single_tape_transform(DummyTransforms.commute_controlled),
+                ]
+
+                wires = [0, 1, 2]
+                qfunc = build_qfunc(wires)
+                dev = qml.device("default.qubit", wires=Wires(wires))
+
+                transformed_qfunc = qml.compile(pipeline=pipeline, num_passes=num_passes)(qfunc)
+                transformed_qnode = qml.QNode(transformed_qfunc, dev)
+                transformed_result = transformed_qnode(0.3, 0.4, 0.5)
+
+            @staticmethod
+            def merge_rotations(tape):
+                return qml.transforms.merge_rotations.tape_fn(tape)
+
+            @staticmethod
+            def commute_controlled(tape):
+                return qml.transforms.commute_controlled.tape_fn(tape, direction="left")
+
+        spy = mocker.spy(DummyTransforms, transform_name)
+
+        d = DummyTransforms()
+        d.run_pipeline()
+
+        assert len(spy.call_args_list) == num_passes
+
 
 class TestCompileIntegration:
     """Integration tests to verify outputs of compilation pipelines."""
