@@ -22,13 +22,13 @@ from scipy.special import factorial
 import pennylane as qml
 
 
-def finite_diff_stencil(n, order, form):
+def finite_diff_stencil(n, approx, form):
     r"""Generate the finite difference stencil (shift and coefficients)
     for various derivatives, accuracy, and form.
 
     Args:
-        n (int): Positive integer specifying the derivative. ``n=1``
-            corresponds to the first derivative.
+        n (int): Positive integer specifying the order of the derivative. For example, ``n=1``
+            corresponds to the first derivative, ``n=2`` the second derivative, etc.
         order (int): Positive integer referring to the approximation order of the
             returned stencil. E.g., ``order=1`` corresponds to a stencil
             that returns a first-order approximation to the derivative.
