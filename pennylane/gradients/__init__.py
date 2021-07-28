@@ -16,4 +16,4 @@ import pennylane as qml
 
 from . import finite_difference
 
-from .finite_difference import finite_diff, finite_diff_stencil, generate_shifted_tapes
+from .finite_difference import finite_diff, finite_diff_coeffs, generate_shifted_tapes

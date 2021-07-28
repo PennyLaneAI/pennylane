@@ -22,17 +22,24 @@ from scipy.special import factorial
 import pennylane as qml
 
 
-def finite_diff_stencil(n, approx, form):
-    r"""Generate the finite difference stencil (shift and coefficients)
-    for various derivatives, accuracy, and form.
+def finite_diff_coeffs(n, approx, strategy):
+    r"""Generate the finite difference shift values and corresponding
+    term coefficients for various derivative order, approximation accuracy,
+    and strategy.
 
     Args:
         n (int): Positive integer specifying the order of the derivative. For example, ``n=1``
             corresponds to the first derivative, ``n=2`` the second derivative, etc.
-        order (int): Positive integer referring to the approximation order of the
-            returned stencil. E.g., ``order=1`` corresponds to a stencil
-            that returns a first-order approximation to the derivative.
-        form (str): one of ``"forward"``, ``"center"``, or ``"backward"``.
+        approx (int): Positive integer referring to the approximation order of the
+            returned coefficients. E.g., ``approx=1`` corresponds to the
+            first-order approximation to the derivative.
+        strategy (str): One of ``"forward"``, ``"center"``, or ``"backward"``.
+            For the ``"forward"`` strategy, the finite-difference shifts occur at the points
+            :math:`x_0, x_0+h, x_0+2h,\dots`, where :math:`h` is some small
+            stepsize. The ``"backwards"`` strategy is similar, but in
+            reverse: :math:`x_0, x_0-h, x_0-2h, \dots`. Finally, the
+            ``"center"`` strategy results in shifts symmetric around the
+            unshifted point: :math:`\dots, x_0-2h, x_0-h, x_0, x_0+h, x_0+2h,\dots`.
 
     Returns:
         array[float]: A ``(2, N)`` array. The first row corresponds to the
@@ -40,7 +47,7 @@ def finite_diff_stencil(n, approx, form):
 
     **Example**
 
-    >>> finite_diff_stencil(n=1, order=1, form="forward")
+    >>> finite_diff_coeffs(n=1, approx=1, strategy="forward")
     array([[-1.,  1.],
            [ 0.,  1.]])
 
@@ -51,50 +58,59 @@ def finite_diff_stencil(n, approx, form):
 
     where :math:`h` is the finite-difference step-size.
 
-    More examples of finite-difference stencils:
+    More examples:
 
-    >>> finite_diff_stencil(n=1, order=2, form="center")
+    >>> finite_diff_coeffs(n=1, approx=2, strategy="center")
     array([[-0.5,  0.5],
            [-1. ,  1. ]])
-    >>> finite_diff_stencil(n=2, order=2, form="center")
+    >>> finite_diff_coeffs(n=2, approx=2, strategy="center")
     array([[-2.,  1.,  1.],
            [ 0., -1.,  1.]])
     """
     if n < 1 or not isinstance(n, int):
         raise ValueError("Derivative order n must be a positive integer.")
 
-    if order < 1 or not isinstance(order, int):
+    if approx < 1 or not isinstance(approx, int):
         raise ValueError("Approximation order must be a positive integer.")
 
-    num_points = order + 2 * np.floor((n + 1) / 2) - 1
+    num_points = approx + 2 * np.floor((n + 1) / 2) - 1
     N = num_points + 1 if n % 2 == 0 else num_points
 
-    if form == "forward":
+    if strategy == "forward":
         shifts = np.arange(N, dtype=np.float64)
 
-    elif form == "backward":
+    elif strategy == "backward":
         shifts = np.arange(-N + 1, 1, dtype=np.float64)
 
-    elif form == "center":
-        if order % 2 != 0:
-            raise ValueError("Centered finite-difference requires an even order.")
+    elif strategy == "center":
+        if approx % 2 != 0:
+            raise ValueError("Centered finite-difference requires an even order approximation.")
 
         N = num_points // 2
         shifts = np.arange(-N, N + 1, dtype=np.float64)
 
     else:
-        raise ValueError(f"Unknown form {form}. Must be one of 'forward', 'backward', 'center'.")
+        raise ValueError(
+            f"Unknown strategy {strategy}. Must be one of 'forward', 'backward', 'center'."
+        )
 
+    # solve for the coefficients
     A = shifts ** np.arange(len(shifts)).reshape(-1, 1)
     b = np.zeros_like(shifts)
     b[n] = factorial(n)
     coeffs = np.linalg.solve(A, b)
 
-    stencil = np.stack([coeffs, shifts])
-    stencil[0, np.abs(stencil[0, :]) < 1e-10] = 0
-    stencil = stencil[:, ~np.all(stencil == 0, axis=0)]
-    stencil = stencil[:, np.argsort(np.abs(stencil)[1])]
-    return stencil
+    coeffs_and_shifts = np.stack([coeffs, shifts])
+
+    # remove all small coefficients and shifts
+    coeffs_and_shifts[np.abs(coeffs_and_shifts) < 1e-10] = 0
+
+    # remove columns where the coefficients are 0
+    coeffs_and_shifts = coeffs_and_shifts[:, ~np.all(coeffs_and_shifts == 0, axis=0)]
+
+    # sort columns in ascending order according to abs(shift)
+    coeffs_and_shifts = coeffs_and_shifts[:, np.argsort(np.abs(coeffs_and_shifts)[1])]
+    return coeffs_and_shifts
 
 
 def generate_shifted_tapes(tape, idx, shifts, multipliers=None):
@@ -132,7 +148,7 @@ def generate_shifted_tapes(tape, idx, shifts, multipliers=None):
     return tapes
 
 
-def finite_diff(tape, argnum=None, h=1e-7, order=1, n=1, form="forward", f0=None):
+def finite_diff(tape, argnum=None, h=1e-7, approx=1, n=1, strategy="forward", f0=None):
     r"""Generate the finite-difference tapes and postprocessing methods required
     to compute the gradient of a gate parameter with respect to an
     expectation value.
@@ -143,9 +159,9 @@ def finite_diff(tape, argnum=None, h=1e-7, order=1, n=1, form="forward", f0=None
             with respect to. If not provided, the derivatives with respect to all
             trainable indices are returned.
         h (float): finite difference method step size
-        order (int): The approximation order of the finite difference method to use.
+        approx (int): The approximation order of the finite difference method to use.
         n (int): compute the :math:`n`-th derivative
-        form (str): The form of the finite difference method. Must be one of
+        strategy (str): The strategy of the finite difference method. Must be one of
             ``"forward"``, ``"center"``, or ``"backward"``.
         f0 (tensor_like[float] or None): Output of the evaluated input tape. If provided,
             and the gradient recipe contains an unshifted term, this value is used,
@@ -186,7 +202,7 @@ def finite_diff(tape, argnum=None, h=1e-7, order=1, n=1, form="forward", f0=None
     shapes = []
     c0 = None
 
-    coeffs, shifts = finite_diff_stencil(n, order, form)
+    coeffs, shifts = finite_diff_coeffs(n=n, approx=approx, strategy=strategy)
 
     if 0 in shifts:
         # Stencil includes a term with zero shift.
