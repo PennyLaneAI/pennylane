@@ -192,7 +192,7 @@ def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None
 
 def var_param_shift(tape, argnum, shift=np.pi / 2, gradient_recipes=None, f0=None):
     r"""Generate the parameter-shift tapes and postprocessing methods required
-    to compute the gradient of an gate parameter with respect to a
+    to compute the gradient of a gate parameter with respect to a
     variance value.
 
     Args:
