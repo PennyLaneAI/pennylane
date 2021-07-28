@@ -13,7 +13,7 @@
 # limitations under the License.
 """
 This submodule contains the discrete-variable quantum observables,
-excepting the Pauli Gates in ``non_parametriic_ops.py``.
+excepting the Pauli gates and Hadamard gate in ``non_parametric_ops.py``.
 """
 
 from scipy.sparse import coo_matrix
