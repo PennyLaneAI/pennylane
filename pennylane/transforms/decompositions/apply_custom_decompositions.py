@@ -20,6 +20,7 @@ from pennylane.transforms import qfunc_transform
 #  - write a function to validate decompositions? Or put that on the user?
 #  - should this go in a transpilation module instead of decompositions?
 
+
 @qfunc_transform
 def apply_custom_decomposition(tape, custom_decomps=None):
     r"""Quantum function transform capable of applying user-specific decompositions
