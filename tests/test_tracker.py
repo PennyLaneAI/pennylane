@@ -73,7 +73,6 @@ class TestTrackerCoreBehavior:
         with pytest.raises(Exception, match=r"Device 'temp' does not support device tracking"):
             Tracker(dev=temp)
 
-
     def test_reset(self):
         """Assert reset empties totals, history and latest"""
 
@@ -158,7 +157,11 @@ class TestTrackerCoreBehavior:
 
 
 class TestDefaultTrackerIntegration:
-    """Tests integration behaviour with 'default.qubit'."""
+    """Tests integration behavior with 'default.gaussian'.
+
+    Integration with several `QubitDevice`-inherited devices are tested in the
+    device suite.  Using `default.gaussian`, we test one that inherits from `Device`.
+    """
 
     def test_single_execution_default(self, mocker):
         """Test correct behavior with single circuit execution"""
@@ -171,11 +174,11 @@ class TestDefaultTrackerIntegration:
         wrapper = callback_wrapper()
         spy = mocker.spy(wrapper, "callback")
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.gaussian", wires=1)
 
         @qml.qnode(dev)
         def circuit():
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.X(0))
 
         with Tracker(circuit.device, callback=wrapper.callback) as tracker:
             circuit()
@@ -188,7 +191,7 @@ class TestDefaultTrackerIntegration:
         _, kwargs_called = spy.call_args_list[-1]
 
         assert kwargs_called["totals"] == {"executions": 2}
-        assert kwargs_called["history"] == {"executions": [1,1], "shots": [None, None]}
+        assert kwargs_called["history"] == {"executions": [1, 1], "shots": [None, None]}
         assert kwargs_called["latest"] == {"executions": 1, "shots": None}
 
     def test_shots_execution_default(self, mocker):
@@ -202,11 +205,11 @@ class TestDefaultTrackerIntegration:
         wrapper = callback_wrapper()
         spy = mocker.spy(wrapper, "callback")
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.gaussian", wires=2)
 
         @qml.qnode(dev)
         def circuit():
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.X(0))
 
         with Tracker(circuit.device, callback=wrapper.callback) as tracker:
             circuit(shots=10)
