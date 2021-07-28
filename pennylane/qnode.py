@@ -612,7 +612,7 @@ class QNode:
         # to allow for more efficient batch execution.
         supports_hamiltonian = self.device.supports_observable("Hamiltonian")
         hamiltonian_in_obs = "Hamiltonian" in [obs.name for obs in self.qtape.observables]
-        if hamiltonian_in_obs and (self.device.shots is not None or not supports_hamiltonian):
+        if hamiltonian_in_obs and not supports_hamiltonian:
             try:
                 tapes, fn = qml.transforms.hamiltonian_expand(self.qtape, group=False)
             except ValueError as e:

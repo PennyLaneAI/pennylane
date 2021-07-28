@@ -1245,10 +1245,37 @@ class TestNewVQE:
 
         assert np.isclose(res, res_expected, atol=tol)
 
+    def test_acting_on_subcircuit(self, tol):
+        """Tests a VQE circuit where the observable does not act on all wires."""
+        dev = qml.device("default.qubit", wires=3)
+        coeffs = [1.0, 1.0, 1.0]
+        w = qml.init.strong_ent_layers_uniform(1, 2, seed=1967)
+
+        observables1 = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
+        H1 = qml.Hamiltonian(coeffs, observables1)
+
+        @qml.qnode(dev)
+        def circuit1():
+            qml.templates.StronglyEntanglingLayers(w, wires=range(2))
+            return qml.expval(H1)
+
+        observables2 = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1) @ qml.Identity(2)]
+        H2 = qml.Hamiltonian(coeffs, observables2)
+
+        @qml.qnode(dev)
+        def circuit2():
+            qml.templates.StronglyEntanglingLayers(w, wires=range(2))
+            return qml.expval(H2)
+
+        res1 = circuit1()
+        res2 = circuit2()
+
+        assert np.allclose(res1, res2, atol=tol)
+
     def test_error_multiple_expvals(self):
         """Tests that error is thrown if more than one expval is evaluated."""
         observables = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
-        coeffs = [1.] * len(observables)
+        coeffs = [1.0] * len(observables)
         dev = qml.device("default.qubit", wires=3)
         H = qml.Hamiltonian(coeffs, observables)
         w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
@@ -1261,8 +1288,32 @@ class TestNewVQE:
         with pytest.raises(ValueError, match="At the moment"):
             circuit()
 
+    def test_error_non_expval_measurement(self):
+        """Tests that error is thrown if sample() or var() is used."""
+        observables = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
+        coeffs = [1.0] * len(observables)
+        dev = qml.device("default.qubit", wires=3)
+        H = qml.Hamiltonian(coeffs, observables)
+        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.templates.StronglyEntanglingLayers(w, wires=range(4))
+            return qml.sample(H)
+
+        with pytest.raises(qml.QuantumFunctionError, match="Hamiltonian is not an observable"):
+            circuit()
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.templates.StronglyEntanglingLayers(w, wires=range(4))
+            return qml.var(H)
+
+        with pytest.raises(qml.QuantumFunctionError, match="Hamiltonian is not an observable"):
+            circuit()
+
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "best"])
-    def test_optimize_grad_autograd(self, diff_method, tol):
+    def test_grad_autograd(self, diff_method, tol):
         """Tests the VQE gradient in the autograd interface."""
         dev = qml.device("default.qubit", wires=4)
         H = big_hamiltonian
