@@ -261,7 +261,7 @@ def var_param_shift(tape, argnum, shift=np.pi / 2, gradient_recipes=None, f0=Non
 
     def processing_fn(results):
         mask = qml.math.convert_like(qml.math.reshape(var_mask, [-1, 1]), results[0])
-        f0 = qml.math.reshape(results[0], [-1, 1])
+        f0 = qml.math.expand_dims(results[0], -1)
 
         pdA = pdA_fn(results[1:tape_boundary])
         pdA2 = 0
