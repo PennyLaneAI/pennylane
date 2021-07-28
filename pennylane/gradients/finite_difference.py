@@ -35,7 +35,7 @@ def finite_diff_stencil(n, order, form):
         form (str): one of ``"forward"``, ``"center"``, or ``"backward"``.
 
     Returns:
-        array[float]: a ``(2, N)`` array. The first row corresponds to the
+        array[float]: A ``(2, N)`` array. The first row corresponds to the
         coefficients, and the second row corresponds to the shifts.
 
     **Example**
