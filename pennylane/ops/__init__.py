@@ -39,6 +39,7 @@ from .channel import __all__ as _channel__ops__
 
 class AdjointError(Exception):
     """Exception for non-adjointable operations."""
+
     pass
 
 
