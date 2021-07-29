@@ -90,7 +90,7 @@ def finite_diff_coeffs(n, approx, strategy):
 
     .. math::
 
-        s_i^j c_i = \begin{cases} j!, &j=n\\ 0, & j\neq n\end{cases}.
+        \sum_{i=1}^N s_i^j c_i = \begin{cases} j!, &j=n\\ 0, & j\neq n\end{cases}.
 
     Thus, to determine the coefficients :math:`c_i \in \{c_0, \dots, c_N\}` for particular
     shift values :math:`s_i \in \{s_0, \dots, s_N\}` and derivative order :math:`n`,
