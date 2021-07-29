@@ -20,6 +20,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as pnp
 
+# Make test data in different interfaces, if installed
 COEFFS_PARAM_INTERFACE = [
     ([-0.05, 0.17], 1.7, "autograd"),
     (np.array([-0.05, 0.17]), np.array(1.7), "autograd"),
@@ -68,36 +69,32 @@ dev = qml.device("default.qubit", wires=2)
 
 
 class TestHamiltonianCoefficients:
+    """Test the creation of a Hamiltonian"""
+
     @pytest.mark.parametrize("coeffs", [el[0] for el in COEFFS_PARAM_INTERFACE])
     def test_creation_different_coeff_types(self, coeffs):
+        """Check that Hamiltonian can be created with different tensor types as coefficients"""
         H = qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)])
         assert qml.math.allclose(coeffs, H.coeffs)
 
     @pytest.mark.parametrize("coeffs", [el[0] for el in COEFFS_PARAM_INTERFACE])
-    def test_grouping_different_coeff_types(self, coeffs):
-        H = qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(1)])
-        H.group()
-        assert len(H.grouped_ops) == 1
-        assert np.allclose(H.grouped_coeffs[0], coeffs)
-        assert len(H.grouped_ops[0]) == 2
-        assert H.grouped_ops[0][0].name == "PauliX"
-        assert H.grouped_ops[0][1].name == "PauliZ"
-
-    @pytest.mark.parametrize("coeffs", [el[0] for el in COEFFS_PARAM_INTERFACE])
-    def test_simplify_different_coeff_types(self, coeffs):
+    def test_simplify(self, coeffs):
+        """Test that simplify works"""
         H1 = qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(1)])
         H2 = qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.Identity(0) @ qml.PauliZ(1)])
         H2.simplify()
-
         assert H1.compare(H2)
 
 
-class TestVQEEvaluation:
+class TestHamiltonianEvaluation:
+    """Test the usage of a Hamiltonian as an observable"""
+
     @pytest.mark.parametrize("coeffs, param, interface", COEFFS_PARAM_INTERFACE)
     def test_vqe_forward_different_coeff_types(self, coeffs, param, interface):
+        """Check that manually splitting a Hamiltonian expectation has the same
+        result as passing the Hamiltonian as an observable"""
         dev = qml.device("default.qubit", wires=2)
         H = qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)])
-        H.group()
 
         @qml.qnode(dev, interface=interface)
         def circuit():
@@ -122,8 +119,12 @@ class TestVQEEvaluation:
         assert np.isclose(res, res_expected)
 
 
-class TestVQEdifferentiation:
+class TestHamiltonianDifferentiation:
+    """Test that the Hamiltonian coefficients are differentiable"""
+
     def test_vqe_differentiation_paramshift(self):
+        """Test the parameter-shift method by comparing the differentiation of linearly combined subcircuits
+         with the differentiation of a Hamiltonian expectation"""
         coeffs = np.array([-0.05, 0.17])
         param = np.array(1.7)
 
@@ -152,6 +153,9 @@ class TestVQEdifferentiation:
         assert np.allclose(grad[1], grad_expected[1])
 
     def test_vqe_differentiation_autograd(self):
+        """Test the autograd interface by comparing the differentiation of linearly combined subcircuits
+         with the differentiation of a Hamiltonian expectation"""
+
         coeffs = pnp.array([-0.05, 0.17], requires_grad=True)
         param = pnp.array(1.7, requires_grad=True)
 
@@ -180,6 +184,8 @@ class TestVQEdifferentiation:
         assert np.allclose(grad[1], grad_expected[1])
 
     def test_vqe_differentiation_jax(self):
+        """Test the jax interface by comparing the differentiation of linearly combined subcircuits
+         with the differentiation of a Hamiltonian expectation"""
 
         jax = pytest.importorskip("jax")
         jnp = pytest.importorskip("jax.numpy")
@@ -187,7 +193,7 @@ class TestVQEdifferentiation:
         param = jnp.array(1.7)
 
         # differentiating a circuit with measurement expval(H)
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, interface="jax", diff_method="backprop")
         def circuit(coeffs, param):
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
@@ -198,8 +204,8 @@ class TestVQEdifferentiation:
 
         # differentiating a cost that combines circuits with
         # measurements expval(Pauli)
-        half1 = qml.QNode(circuit1, dev, interface="jax")
-        half2 = qml.QNode(circuit2, dev, interface="jax")
+        half1 = qml.QNode(circuit1, dev, interface="jax", diff_method="backprop")
+        half2 = qml.QNode(circuit2, dev, interface="jax", diff_method="backprop")
 
         def combine(coeffs, param):
             return coeffs[0] * half1(param) + coeffs[1] * half2(param)
@@ -211,6 +217,8 @@ class TestVQEdifferentiation:
         assert np.allclose(grad[1], grad_expected[1])
 
     def test_vqe_differentiation_torch(self):
+        """Test the torch interface by comparing the differentiation of linearly combined subcircuits
+         with the differentiation of a Hamiltonian expectation"""
 
         torch = pytest.importorskip("torch")
         coeffs = torch.tensor([-0.05, 0.17], requires_grad=True)
@@ -229,13 +237,11 @@ class TestVQEdifferentiation:
 
         # differentiating a cost that combines circuits with
         # measurements expval(Pauli)
-
-        # we need to create new tensors here
         coeffs2 = torch.tensor([-0.05, 0.17], requires_grad=True)
         param2 = torch.tensor(1.7, requires_grad=True)
 
-        half1 = qml.QNode(circuit1, dev, interface="torch")
-        half2 = qml.QNode(circuit2, dev, interface="torch")
+        half1 = qml.QNode(circuit1, dev, interface="torch", diff_method="backprop")
+        half2 = qml.QNode(circuit2, dev, interface="torch", diff_method="backprop")
 
         def combine(coeffs, param):
             return coeffs[0] * half1(param) + coeffs[1] * half2(param)
@@ -248,12 +254,15 @@ class TestVQEdifferentiation:
         assert np.allclose(grad[1], grad_expected[1])
 
     def test_vqe_differentiation_tf(self):
+        """Test the tf interface by comparing the differentiation of linearly combined subcircuits
+         with the differentiation of a Hamiltonian expectation"""
+
         tf = pytest.importorskip("tf")
         coeffs = tf.Variable([-0.05, 0.17], dtype=tf.double)
         param = tf.Variable(1.7, dtype=tf.double)
 
         # differentiating a circuit with measurement expval(H)
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev, interface="tf", diff_method="backprop")
         def circuit(coeffs, param):
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
@@ -265,12 +274,10 @@ class TestVQEdifferentiation:
 
         # differentiating a cost that combines circuits with
         # measurements expval(Pauli)
-
-        # we need to create new tensors here
         coeffs2 = tf.Variable([-0.05, 0.17], dtype=tf.double)
         param2 = tf.Variable(1.7, dtype=tf.double)
-        half1 = qml.QNode(circuit1, dev, interface="tf")
-        half2 = qml.QNode(circuit2, dev, interface="tf")
+        half1 = qml.QNode(circuit1, dev, interface="tf", diff_method="backprop")
+        half2 = qml.QNode(circuit2, dev, interface="tf", diff_method="backprop")
 
         def combine(coeffs, param):
             return coeffs[0] * half1(param) + coeffs[1] * half2(param)
