@@ -132,11 +132,6 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1):
             if not isinstance(p_func, single_tape_transform) and not hasattr(p_func, "tape_fn"):
                 raise ValueError("Invalid transform function {p} passed to compile.")
 
-    if basis_set is not None:
-        for gate_name in basis_set:
-            if gate_name not in all_ops or not isinstance(gate_name, str):
-                raise ValueError("Invalid basis gate {gate_name} passed to compile.")
-
     if num_passes < 1 or not isinstance(num_passes, int):
         raise ValueError("Number of passes must be an integer with value at least 1.")
 

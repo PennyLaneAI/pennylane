@@ -55,17 +55,6 @@ class TestCompile:
         with pytest.raises(ValueError, match="Invalid transform function"):
             transformed_qnode(0.1, 0.2, 0.3)
 
-    def test_invalid_basis_gates(self):
-        """Test that error is raised for an invalid basis gate."""
-        qfunc = build_qfunc([0, 1, 2])
-        dev = qml.device("default.qubit", wires=[0, 1, 2])
-
-        transformed_qfunc = qml.compile(basis_set=["CNOT", "RX", "RY", "RZ", "Q2"])(qfunc)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev)
-
-        with pytest.raises(ValueError, match="Invalid basis gate"):
-            transformed_qnode(0.1, 0.2, 0.3)
-
     def test_invalid_num_passes(self):
         """Test that error is raised for an invalid number of passes."""
         qfunc = build_qfunc([0, 1, 2])
