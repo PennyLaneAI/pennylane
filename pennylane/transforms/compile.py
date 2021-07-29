@@ -27,7 +27,7 @@ default_pipeline = [commute_controlled, cancel_inverses, merge_rotations]
 
 
 @qfunc_transform
-def compile(tape, pipeline=None, basis_set=None, num_passes=1):
+def compile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
     """Compile a circuit by applying a series of transforms to a quantum function.
 
     The default set of transforms includes (in order):
@@ -46,12 +46,13 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1):
         basis_set (list[str]): A list of basis gates. When expanding the tape,
             expansion will continue until gates in the specific set are
             reached. If no basis set is specified, no expansion will be done.
-
         num_passes (int): The number of times to apply the set of transforms in
             ``pipeline``. The default is to perform each transform once;
             however, doing so may produce a new circuit where applying the set
             of transforms again may yield further improvement, so the number of
             such passes can be adjusted.
+        expand_depth (int): When ``basis_set`` is specified, the depth to use
+            for tape expansion into the basis gates.
 
     Returns:
         function: the transformed quantum function
@@ -143,7 +144,7 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1):
 
     with current_tape.stop_recording():
         if basis_set is not None:
-            expanded_tape = tape.expand(depth=5, stop_at=lambda obj: obj.name in basis_set)
+            expanded_tape = tape.expand(depth=expand_depth, stop_at=lambda obj: obj.name in basis_set)
         else:
             # Expands out anything that is not a single operation (i.e., the templates)
             expanded_tape = tape.expand(stop_at=lambda obj: obj.name in all_ops)
