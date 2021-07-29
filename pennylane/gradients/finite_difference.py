@@ -22,7 +22,7 @@ from scipy.special import factorial
 import pennylane as qml
 
 
-def finite_diff_coeffs(n, approx, strategy):
+def finite_diff_coeffs(n, approx_order, strategy):
     r"""Generate the finite difference shift values and corresponding
     term coefficients for a given derivative order, approximation accuracy,
     and strategy.
@@ -30,8 +30,8 @@ def finite_diff_coeffs(n, approx, strategy):
     Args:
         n (int): Positive integer specifying the order of the derivative. For example, ``n=1``
             corresponds to the first derivative, ``n=2`` the second derivative, etc.
-        approx (int): Positive integer referring to the approximation order of the
-            returned coefficients, e.g., ``approx=1`` corresponds to the
+        approx_order (int): Positive integer referring to the approximation order of the
+            returned coefficients, e.g., ``approx_order=1`` corresponds to the
             first-order approximation to the derivative.
         strategy (str): One of ``"forward"``, ``"center"``, or ``"backward"``.
             For the ``"forward"`` strategy, the finite-difference shifts occur at the points
@@ -47,12 +47,11 @@ def finite_diff_coeffs(n, approx, strategy):
 
     **Example**
 
-    >>> finite_diff_coeffs(n=1, approx=1, strategy="forward")
+    >>> finite_diff_coeffs(n=1, approx_order=1, strategy="forward")
     array([[-1.,  1.],
            [ 0.,  1.]])
 
-    The first row corresponds to the coefficients, and the second corresponds
-    to the shifts. For example, this results in the linear combination:
+    For example, this results in the linear combination:
 
     .. math:: \frac{-y(x_0) + y(x_0 + h)}{h}
 
@@ -60,10 +59,10 @@ def finite_diff_coeffs(n, approx, strategy):
 
     More examples:
 
-    >>> finite_diff_coeffs(n=1, approx=2, strategy="center")
+    >>> finite_diff_coeffs(n=1, approx_order=2, strategy="center")
     array([[-0.5,  0.5],
            [-1. ,  1. ]])
-    >>> finite_diff_coeffs(n=2, approx=2, strategy="center")
+    >>> finite_diff_coeffs(n=2, approx_order=2, strategy="center")
     array([[-2.,  1.,  1.],
            [ 0., -1.,  1.]])
 
@@ -99,10 +98,10 @@ def finite_diff_coeffs(n, approx, strategy):
     if n < 1 or not isinstance(n, int):
         raise ValueError("Derivative order n must be a positive integer.")
 
-    if approx < 1 or not isinstance(approx, int):
+    if approx_order < 1 or not isinstance(approx_order, int):
         raise ValueError("Approximation order must be a positive integer.")
 
-    num_points = approx + 2 * np.floor((n + 1) / 2) - 1
+    num_points = approx_order + 2 * np.floor((n + 1) / 2) - 1
     N = num_points + 1 if n % 2 == 0 else num_points
 
     if strategy == "forward":
@@ -112,7 +111,7 @@ def finite_diff_coeffs(n, approx, strategy):
         shifts = np.arange(-N + 1, 1, dtype=np.float64)
 
     elif strategy == "center":
-        if approx % 2 != 0:
+        if approx_order % 2 != 0:
             raise ValueError("Centered finite-difference requires an even order approximation.")
 
         N = num_points // 2
@@ -177,7 +176,7 @@ def generate_shifted_tapes(tape, idx, shifts, multipliers=None):
     return tapes
 
 
-def finite_diff(tape, argnum=None, h=1e-7, approx=1, n=1, strategy="forward", f0=None):
+def finite_diff(tape, argnum=None, h=1e-7, approx_order=1, n=1, strategy="forward", f0=None):
     r"""Generate the finite-difference tapes and postprocessing methods required
     to compute the gradient of a gate parameter with respect to its outputs.
 
@@ -187,7 +186,7 @@ def finite_diff(tape, argnum=None, h=1e-7, approx=1, n=1, strategy="forward", f0
             with respect to. If not provided, the derivatives with respect to all
             trainable indices are returned.
         h (float): finite difference method step size
-        approx (int): The approximation order of the finite-difference method to use.
+        approx_order (int): The approximation order of the finite-difference method to use.
         n (int): compute the :math:`n`-th derivative
         strategy (str): The strategy of the finite difference method. Must be one of
             ``"forward"``, ``"center"``, or ``"backward"``.
@@ -236,7 +235,7 @@ def finite_diff(tape, argnum=None, h=1e-7, approx=1, n=1, strategy="forward", f0
     shapes = []
     c0 = None
 
-    coeffs, shifts = finite_diff_coeffs(n=n, approx=approx, strategy=strategy)
+    coeffs, shifts = finite_diff_coeffs(n=n, approx_order=approx_order, strategy=strategy)
 
     if 0 in shifts:
         # Stencil includes a term with zero shift.
