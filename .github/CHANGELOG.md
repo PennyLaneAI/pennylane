@@ -45,6 +45,55 @@
   Total shots:  100
   Total shots:  200
   Total shots:  300
+
+* VQE problems can now intuitively been set up by passing the Hamiltonian 
+  as an observable. [(#1474)](https://github.com/PennyLaneAI/pennylane/pull/1474)
+
+  ``` python
+  dev = qml.device("default.qubit", wires=2)
+  H = qml.Hamiltonian([1., 2., 3.],  [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)])
+  w = qml.init.strong_ent_layers_uniform(1, 2, seed=1967)
+  
+  @qml.qnode(dev)
+  def circuit(w):
+      qml.templates.StronglyEntanglingLayers(w, wires=range(2))
+      return qml.expval(H)
+  ```
+  
+  ```pycon
+  >>> print(circuit(w))
+  -1.5133943637878295
+  >>> print(qml.grad(circuit)(w))
+  [[[-8.32667268e-17  1.39122955e+00 -9.12462052e-02]
+  [ 1.02348685e-16 -7.77143238e-01 -1.74708049e-01]]]
+  ```
+  
+  Note that other measurement types like `var(H)` or `sample(H)`, as well 
+  as multiple expectations like `expval(H1), expval(H2)` are not supported. 
+
+* A new gradients module `qml.gradients` has been added, which provides
+  differentiable quantum gradient transforms.
+  [(#1476)](https://github.com/PennyLaneAI/pennylane/pull/1476)
+
+  Available quantum gradient transforms include:
+
+  - `qml.gradients.finite_diff`
+
+  For example,
+
+  ```pycon
+  >>> with qml.tape.QuantumTape() as tape:
+  ...     qml.RX(params[0], wires=0)
+  ...     qml.RY(params[1], wires=0)
+  ...     qml.RX(params[2], wires=0)
+  ...     qml.expval(qml.PauliZ(0))
+  ...     qml.var(qml.PauliZ(0))
+  >>> tape.trainable_params = {0, 1, 2}
+  >>> gradient_tapes, fn = qml.gradients.finite_diff(tape)
+  >>> res = dev.batch_execute(gradient_tapes)
+  >>> fn(res)
+  [[-0.38751721 -0.18884787 -0.38355704]
+   [ 0.69916862  0.34072424  0.69202359]]
   ```
 
 * A new quantum function transform has been added to push commuting
