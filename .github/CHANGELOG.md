@@ -23,6 +23,9 @@
   [[[-8.32667268e-17  1.39122955e+00 -9.12462052e-02]
   [ 1.02348685e-16 -7.77143238e-01 -1.74708049e-01]]]
   ```
+  
+  Note that other measurement types like `var(H)` or `sample(H)`, as well 
+  as multiple expectations like `expval(H1), expval(H2)` are not supported. 
 
 * A new quantum function transform has been added to push commuting
   single-qubit gates through controlled operations.

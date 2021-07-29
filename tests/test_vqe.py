@@ -18,6 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane import numpy as pnp
 from pennylane.wires import Wires
 from pennylane.devices import DefaultQubit, DefaultMixed
 
@@ -1272,6 +1273,43 @@ class TestNewVQE:
 
         assert np.allclose(res1, res2, atol=tol)
 
+    @pytest.mark.parametrize("shots, dim", [([(1000, 2)], 2), ([30, 30], 2), ([2, 3, 4], 3)])
+    def test_shot_distribution(self, shots, dim):
+        """Tests that distributed shots work with the new VQE design."""
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(weights, coeffs):
+            qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
+            H = qml.Hamiltonian(coeffs, obs)
+            return qml.expval(H)
+
+        obs = [qml.PauliZ(0), qml.PauliX(0) @ qml.PauliZ(1)]
+        coeffs = np.array([0.1, 0.2])
+        weights = pnp.random.random([2, 2, 3], requires_grad=True)
+
+        res = circuit(weights, coeffs)
+        grad = qml.jacobian(circuit, argnum=1)(weights, coeffs)
+        assert len(res) == dim
+        assert grad.shape == (dim, 2)
+
+    def test_circuit_drawer(self):
+        """Test that the circuit drawer displays Hamiltonians well."""
+        dev = qml.device("default.qubit", wires=3)
+        coeffs = [1.0, 1.0, 1.0]
+        observables1 = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(2)]
+        H1 = qml.Hamiltonian(coeffs, observables1)
+
+        @qml.qnode(dev)
+        def circuit1():
+            qml.Hadamard(wires=0)
+            return qml.expval(H1)
+
+        res = qml.draw(circuit1)()
+        expected = " 0: ──H──╭Hamiltonian──┤  \n" \
+                   + " 2: ─────╰Hamiltonian──┤  \n"
+        assert res == expected
+
     def test_error_multiple_expvals(self):
         """Tests that error is thrown if more than one expval is evaluated."""
         observables = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
@@ -1317,7 +1355,7 @@ class TestNewVQE:
         """Tests the VQE gradient in the autograd interface."""
         dev = qml.device("default.qubit", wires=4)
         H = big_hamiltonian
-        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
+        w = pnp.array(qml.init.strong_ent_layers_uniform(2, 4, seed=1967), requires_grad=True)
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(w):
