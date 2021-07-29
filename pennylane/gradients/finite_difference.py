@@ -66,6 +66,35 @@ def finite_diff_coeffs(n, approx, strategy):
     >>> finite_diff_coeffs(n=2, approx=2, strategy="center")
     array([[-2.,  1.,  1.],
            [ 0., -1.,  1.]])
+
+    **Details**
+
+    Consider a function :math:`y(x)`. We wish to approximate the :math:`n`-th
+    derivative at point :math:`x_0`, :math:`y^{(n)}(x_0)`, by sampling the function
+    at :math:`N<n` distinct points:
+
+    .. math:: y^{(n)}(x_0) \approx \sum_{i=1}^N c_i y(x_i)
+
+    where :math:`c_i` are coefficients, and :math:`x_i=x_0 + s_i` are the points we sample
+    the function at.
+
+    Consider the Taylor expansion of :math:`y(x_i)` around the point :math:`x_0`:
+
+    .. math::
+
+        y^{(n)}(x_0) \approx \sum_{i=1}^N c_i y(x_i)
+            &= \sum_{i=1}^N c_i \left[ y(x_0) + y'(x_0)(x_i-x_0) + \frac{1}{2} y''(x_0)(x_i-x_0)^2 + \cdots \right]\\
+            & = \sum_{j=0}^m y^{(j)}(x_0) \left[\sum_{i=1}^N \frac{c_i s_i^j}{j!} + \mathcal{O}(s_i^m) \right],
+
+    where :math:`s_i = x_i-x_0`. For this approximation to be satisfied, we must therefore have
+
+    .. math::
+
+        s_i^j c_i = \begin{cases} j!, &j=n\\ 0, & j\neq n\end{cases}.
+
+    Thus, to determine the coefficients :math:`c_i \in \{c_0, \dots, c_N\}` for particular
+    shift values :math:`s_i \in \{s_0, \dots, s_N\}` and derivative order :math:`n`,
+    we must solve this linear system of equations.
     """
     if n < 1 or not isinstance(n, int):
         raise ValueError("Derivative order n must be a positive integer.")
