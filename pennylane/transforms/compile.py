@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Code for the high-level quantum function transform that executes compilation."""
-
+#pylint: disable=too-many-branches
 from functools import partial
 
 from pennylane import apply
@@ -33,11 +33,11 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1):
     The default set of transforms includes (in order):
 
     - pushing all commuting single-qubit gates as far right as possible
-      (:func:`~.commute_controlled`)
+      (:func:`~.pennylane.transforms.commute_controlled`)
     - cancellation of adjacent inverse gates
-      (:func:`~.cancel_inverses`)
+      (:func:`~.pennylane.transforms.cancel_inverses`)
     - merging adjacent rotations of the same type
-      (:func:`~.merge_rotations`)
+      (:func:`~.pennylane.transforms.merge_rotations`)
 
     Args:
         qfunc (function): A quantum function.
