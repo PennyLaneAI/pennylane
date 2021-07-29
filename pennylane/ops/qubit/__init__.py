@@ -19,14 +19,14 @@ The operations are divided into six different files:
 
 * ``arithmetic_ops.py``: Operations that perform arithmetic on the states.
 * ``matrix_ops.py``: Generalized operations that accept a matrix parameter,
-  either unitary or hermitian depending
-* ``non_parameteric_ops.py``: All operations with no parameters
+  either unitary or hermitian depending.
+* ``non_parameteric_ops.py``: All operations with no parameters.
 * ``observables.py``: Qubit observables excluding the Pauli gates, which are
-  located in ``non_parameteric_ops.py`` instead
+  located in ``non_parameteric_ops.py`` instead.
 * ``parametric_ops.py``: Core parametric operations that don't fall into
-  any of the more specific categories
-* ``qchem_ops.py``: Operations for quantum chemistry applications
-* ``state_preparation.py``: Operations that initialize the state
+  any of the more specific categories.
+* ``qchem_ops.py``: Operations for quantum chemistry applications.
+* ``state_preparation.py``: Operations that initialize the state.
 """
 
 from .arithmetic_ops import *
