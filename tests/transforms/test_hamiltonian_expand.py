@@ -88,6 +88,34 @@ class TestHamiltonianExpval:
 
         assert np.isclose(output, expval)
 
+    @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
+    def test_hamiltonians_no_grouping(self, tape, output):
+        """Tests that the hamiltonian_expand transform returns the correct value
+        if we switch grouping off"""
+
+        tapes, fn = qml.transforms.hamiltonian_expand(tape, group=False)
+        results = dev.batch_execute(tapes)
+        expval = fn(results)
+
+        assert np.isclose(output, expval)
+
+    def test_number_of_tapes(self):
+        """Tests that the the correct number of tapes is produced"""
+
+        H = qml.Hamiltonian([1.0, 2.0, 3.0], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)])
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=2)
+            qml.expval(H)
+
+        tapes, fn = qml.transforms.hamiltonian_expand(tape, group=False)
+        assert len(tapes) == 3
+
+        tapes, fn = qml.transforms.hamiltonian_expand(tape, group=True)
+        assert len(tapes) == 2
+
     def test_hamiltonian_error(self):
 
         with pennylane.tape.QuantumTape() as tape:
