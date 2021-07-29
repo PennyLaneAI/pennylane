@@ -176,7 +176,7 @@ class TestHamiltonianExpval:
         grad = qml.grad(cost)(var)
         for g, o in zip(grad, output2):
             assert np.allclose(g, o)
-            
+
     def test_hamiltonian_dif_tensorflow(self):
         """Tests that the hamiltonian_expand tape transform is differentiable with the Tensorflow interface"""
 
