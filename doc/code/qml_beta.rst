@@ -10,3 +10,7 @@ and features.
     :include-all-objects:
     :no-inheritance-diagram:
 
+.. automodapi:: pennylane.beta.drawer
+    :include-all-objects:
+    :no-inheritance-diagram:
+

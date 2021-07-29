@@ -11,8 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
+r"""
 This module contains the prototype for graphical circuit drawing in PennyLane
+
+.. currentmodule:: pennylane.beta.drawer
 """
 
 from .mpldrawer import MPLDrawer
