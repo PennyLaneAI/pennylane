@@ -2,6 +2,31 @@
 
 <h3>New features since last release</h3>
 
+* A new gradients module `qml.gradients` has been added, which provides
+  differentiable quantum gradient transforms.
+  [(#1476)](https://github.com/PennyLaneAI/pennylane/pull/1476)
+
+  Available quantum gradient transforms include:
+
+  - `qml.gradients.finite_diff`
+
+  For example,
+
+  ```pycon
+  >>> with qml.tape.QuantumTape() as tape:
+  ...     qml.RX(params[0], wires=0)
+  ...     qml.RY(params[1], wires=0)
+  ...     qml.RX(params[2], wires=0)
+  ...     qml.expval(qml.PauliZ(0))
+  ...     qml.var(qml.PauliZ(0))
+  >>> tape.trainable_params = {0, 1, 2}
+  >>> gradient_tapes, fn = qml.gradients.finite_diff(tape)
+  >>> res = dev.batch_execute(gradient_tapes)
+  >>> fn(res)
+  [[-0.38751721 -0.18884787 -0.38355704]
+   [ 0.69916862  0.34072424  0.69202359]]
+  ```
+
 * A new quantum function transform has been added to push commuting
   single-qubit gates through controlled operations.
   [(#1464)](https://github.com/PennyLaneAI/pennylane/pull/1464)
