@@ -2,6 +2,31 @@
 
 <h3>New features since last release</h3>
 
+* VQE problems can now intuitively been set up by passing the Hamiltonian 
+  as an observable. [(#1474)](https://github.com/PennyLaneAI/pennylane/pull/1474)
+
+  ``` python
+  dev = qml.device("default.qubit", wires=2)
+  H = qml.Hamiltonian([1., 2., 3.],  [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)])
+  w = qml.init.strong_ent_layers_uniform(1, 2, seed=1967)
+  
+  @qml.qnode(dev)
+  def circuit(w):
+      qml.templates.StronglyEntanglingLayers(w, wires=range(2))
+      return qml.expval(H)
+  ```
+  
+  ```pycon
+  >>> print(circuit(w))
+  -1.5133943637878295
+  >>> print(qml.grad(circuit)(w))
+  [[[-8.32667268e-17  1.39122955e+00 -9.12462052e-02]
+  [ 1.02348685e-16 -7.77143238e-01 -1.74708049e-01]]]
+  ```
+  
+  Note that other measurement types like `var(H)` or `sample(H)`, as well 
+  as multiple expectations like `expval(H1), expval(H2)` are not supported. 
+
 * A new gradients module `qml.gradients` has been added, which provides
   differentiable quantum gradient transforms.
   [(#1476)](https://github.com/PennyLaneAI/pennylane/pull/1476)
