@@ -160,6 +160,25 @@ class TestTrackerCoreBehavior:
         assert kwargs_called["latest"] == tracker.latest
 
 
+# Integration test definitions
+
+dev_qubit = qml.device("default.qubit", wires=1)
+
+
+@qml.qnode(dev_qubit)
+def circuit_qubit():
+    return qml.expval(qml.PauliZ(0))
+
+
+dev_gaussian = qml.device("default.gaussian", wires=1)
+
+
+@qml.qnode(dev_gaussian)
+def circuit_gaussian():
+    return qml.expval(qml.X(0))
+
+
+@pytest.mark.parametrize("circuit", (circuit_qubit, circuit_gaussian))
 class TestDefaultTrackerIntegration:
     """Tests integration behavior with 'default.gaussian'.
 
@@ -167,7 +186,7 @@ class TestDefaultTrackerIntegration:
     device suite. Using `default.gaussian`, we test one that inherits from `Device`.
     """
 
-    def test_single_execution_default(self, mocker):
+    def test_single_execution_default(self, circuit, mocker):
         """Test correct behavior with single circuit execution"""
 
         class callback_wrapper:
@@ -177,12 +196,6 @@ class TestDefaultTrackerIntegration:
 
         wrapper = callback_wrapper()
         spy = mocker.spy(wrapper, "callback")
-
-        dev = qml.device("default.gaussian", wires=1)
-
-        @qml.qnode(dev)
-        def circuit():
-            return qml.expval(qml.X(0))
 
         with Tracker(circuit.device, callback=wrapper.callback) as tracker:
             circuit()
@@ -198,7 +211,7 @@ class TestDefaultTrackerIntegration:
         assert kwargs_called["history"] == {"executions": [1, 1], "shots": [None, None]}
         assert kwargs_called["latest"] == {"executions": 1, "shots": None}
 
-    def test_shots_execution_default(self, mocker):
+    def test_shots_execution_default(self, circuit, mocker):
         """Test correct tracks shots as well."""
 
         class callback_wrapper:
@@ -208,12 +221,6 @@ class TestDefaultTrackerIntegration:
 
         wrapper = callback_wrapper()
         spy = mocker.spy(wrapper, "callback")
-
-        dev = qml.device("default.gaussian", wires=2)
-
-        @qml.qnode(dev)
-        def circuit():
-            return qml.expval(qml.X(0))
 
         with Tracker(circuit.device, callback=wrapper.callback) as tracker:
             circuit(shots=10)
@@ -230,7 +237,7 @@ class TestDefaultTrackerIntegration:
         assert kwargs_called["history"] == {"executions": [1, 1], "shots": [10, 20]}
         assert kwargs_called["latest"] == {"executions": 1, "shots": 20}
 
-    def test_batch_execution(self, mocker):
+    def test_batch_execution(self, circuit, mocker):
         """Tests that batch execute also updates information stored."""
 
         class callback_wrapper:
@@ -241,17 +248,11 @@ class TestDefaultTrackerIntegration:
         wrapper = callback_wrapper()
         spy = mocker.spy(wrapper, "callback")
 
-        dev = qml.device("default.gaussian", wires=1)
-
-        @qml.qnode(dev)
-        def circuit():
-            return qml.expval(qml.X(0))
-
         # initial execution to get qtape
         circuit()
 
-        with Tracker(dev, callback=wrapper.callback) as tracker:
-            dev.batch_execute([circuit.qtape, circuit.qtape])
+        with Tracker(circuit.device, callback=wrapper.callback) as tracker:
+            circuit.device.batch_execute([circuit.qtape, circuit.qtape])
 
         assert tracker.totals == {"executions": 2, "batches": 1, "batch_len": 2}
         assert tracker.history == {

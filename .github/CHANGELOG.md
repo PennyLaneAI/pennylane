@@ -45,6 +45,7 @@
   Total shots:  100
   Total shots:  200
   Total shots:  300
+  ```
 
 * VQE problems can now intuitively been set up by passing the Hamiltonian 
   as an observable. [(#1474)](https://github.com/PennyLaneAI/pennylane/pull/1474)
