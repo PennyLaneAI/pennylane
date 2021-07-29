@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Code for the high-level quantum function transform that executes compilation."""
-#pylint: disable=too-many-branches
+# pylint: disable=too-many-branches
 from functools import partial
 
 from pennylane import apply
@@ -144,7 +144,9 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
 
     with current_tape.stop_recording():
         if basis_set is not None:
-            expanded_tape = tape.expand(depth=expand_depth, stop_at=lambda obj: obj.name in basis_set)
+            expanded_tape = tape.expand(
+                depth=expand_depth, stop_at=lambda obj: obj.name in basis_set
+            )
         else:
             # Expands out anything that is not a single operation (i.e., the templates)
             expanded_tape = tape.expand(stop_at=lambda obj: obj.name in all_ops)
