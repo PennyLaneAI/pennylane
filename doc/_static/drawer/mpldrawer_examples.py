@@ -22,20 +22,20 @@ import matplotlib.pyplot as plt
 from pennylane.beta.circuit_drawer import MPLDrawer
 
 
-def just_wires(savefile="example_pics/just_wires.png"):
+def just_wires(savefile="just_wires.png"):
     drawer = MPLDrawer(n_wires=2, n_layers=1)
     drawer.wires()
     plt.savefig(savefile)
 
 
-def labels(savefile="example_pics/labels.png"):
+def labels(savefile="labels.png"):
     drawer = MPLDrawer(n_wires=2, n_layers=1)
     drawer.wires()
     drawer.label(["a", "b"])
     plt.savefig(savefile)
 
 
-def box_gates(savefile="example_pics/box_gates.png"):
+def box_gates(savefile="box_gates.png"):
     drawer = MPLDrawer(n_wires=2, n_layers=2)
     drawer.wires()
 
@@ -44,7 +44,7 @@ def box_gates(savefile="example_pics/box_gates.png"):
     plt.savefig(savefile)
 
 
-def ctrl(savefile="example_pics/ctrl.png"):
+def ctrl(savefile="ctrl.png"):
     drawer = MPLDrawer(n_wires=2, n_layers=2)
     drawer.wires()
 
@@ -53,7 +53,7 @@ def ctrl(savefile="example_pics/ctrl.png"):
     plt.savefig(savefile)
 
 
-def CNOT(savefile="example_pics/cnot.png"):
+def CNOT(savefile="cnot.png"):
     drawer = MPLDrawer(n_wires=2, n_layers=2)
     drawer.wires()
 
@@ -62,14 +62,14 @@ def CNOT(savefile="example_pics/cnot.png"):
     plt.savefig(savefile)
 
 
-def target_x(savefile="example_pics/target_x.png"):
+def target_x(savefile="target_x.png"):
     drawer = MPLDrawer(n_wires=1, n_layers=1)
     drawer.wires()
     drawer._target_x(0, 0)
     plt.savefig(savefile)
 
 
-def SWAP(savefile="example_pics/SWAP.png"):
+def SWAP(savefile="SWAP.png"):
     drawer = MPLDrawer(n_wires=2, n_layers=1)
     drawer.wires()
 
@@ -77,7 +77,7 @@ def SWAP(savefile="example_pics/SWAP.png"):
     plt.savefig(savefile)
 
 
-def swap_x(savefile="example_pics/swap_x.png"):
+def swap_x(savefile="swap_x.png"):
     drawer = MPLDrawer(n_wires=1, n_layers=1)
     drawer.wires()
 
@@ -85,7 +85,7 @@ def swap_x(savefile="example_pics/swap_x.png"):
     plt.savefig(savefile)
 
 
-def measure(savefile="example_pics/measure.png"):
+def measure(savefile="measure.png"):
     drawer = MPLDrawer(n_wires=1, n_layers=1)
     drawer.wires()
 

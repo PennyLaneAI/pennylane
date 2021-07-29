@@ -96,12 +96,14 @@ class MPLDrawer:
             n_layers=None (Int): The number of layers to draw. If ``None``, uses class
                 variable ``self.n_layers``.
 
+        **Example**
+
         .. code-block:: python
 
             drawer = MPLDrawer(n_wires=2, n_layers=2)
             drawer.wires()
 
-        .. figure:: example_pics/just_wires.png
+        .. figure:: ../../_static/drawer/just_wires.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
@@ -122,13 +124,15 @@ class MPLDrawer:
         Args:
             labels [Iterable[str]]: Iterable of labels for the wires
 
+        **Example**
+
         .. code-block:: python
 
             drawer = MPLDrawer(n_wires=2, n_layers=1)
             drawer.wires()
             drawer.label(["a", "b"])
 
-        .. figure:: example_pics/labels.png
+        .. figure:: ../../_static/drawer/labels.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
@@ -154,6 +158,8 @@ class MPLDrawer:
             zorder_base (Int): shift the object in zorder
             color=None: mpl compatible color designation
 
+        **Example**
+
         .. code-block:: python
 
             drawer = MPLDrawer(n_wires=2, n_layers=2)
@@ -162,7 +168,7 @@ class MPLDrawer:
             drawer.box_gate(layer=0, wires=0, text="Y")
             drawer.box_gate(layer=1, wires=(0,1), text="CRy(0.1)", rotate_text=True)
 
-        .. figure:: example_pics/box_gates.png
+        .. figure:: ../../_static/drawer/box_gates.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
@@ -205,6 +211,8 @@ class MPLDrawer:
             wire_target=tuple() (Union[Int, Iterable[Int]]): target wires. Used to determine min
                 and max wires for the vertical line
 
+        **Example**
+
         .. code-block:: python
 
             drawer = MPLDrawer(n_wires=2, n_layers=2)
@@ -213,7 +221,7 @@ class MPLDrawer:
             drawer.ctrl(layer=0, wire_ctrl=0, wire_target=1)
             drawer.ctrl(layer=1, wire_ctrl=(0,1))
 
-        .. figure:: example_pics/ctrl.png
+        .. figure:: ../../_static/drawer/ctrl.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
@@ -242,6 +250,8 @@ class MPLDrawer:
             layer (Int): layer to draw in
             wires (Int, Int): tuple of (control, target)
 
+        **Example**
+
         .. code-block:: python
 
             drawer = MPLDrawer(n_wires=2, n_layers=2)
@@ -250,7 +260,7 @@ class MPLDrawer:
             drawer.CNOT(0, (0,1))
             drawer.CNOT(1, (1,0))
 
-        .. figure:: example_pics/cnot.png
+        .. figure:: ../../_static/drawer/cnot.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
@@ -269,6 +279,8 @@ class MPLDrawer:
             layer (Int): layer to draw on
             wire (Int): wire to draw on
 
+        **Example**
+
         .. code-block:: python
 
             drawer = MPLDrawer(n_wires=1, n_layers=1)
@@ -276,7 +288,7 @@ class MPLDrawer:
 
             drawer._target_x(0, 0)
 
-        .. figure:: example_pics/target_x.png
+        .. figure:: ../../_static/drawer/target_x.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
@@ -301,6 +313,8 @@ class MPLDrawer:
             layer (Int): layer to draw on
             wires (Int, Int): Two wires the SWAP acts on
 
+        **Example**
+
         .. code-block:: python
 
             drawer = MPLDrawer(n_wires=2, n_layers=1)
@@ -308,7 +322,7 @@ class MPLDrawer:
 
             drawer.SWAP(0, (0,1))
 
-        .. figure:: example_pics/SWAP.png
+        .. figure:: ../../_static/drawer/SWAP.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
@@ -327,6 +341,8 @@ class MPLDrawer:
             layer (Int): the layer
             wire (Int): the wire
 
+        **Example**
+
         .. code-block:: python
 
             drawer = MPLDrawer(n_wires=1, n_layers=1)
@@ -334,7 +350,7 @@ class MPLDrawer:
 
             drawer._swap_x(0,0)
 
-        .. figure:: example_pics/swap_x.png
+        .. figure:: ../../_static/drawer/swap_x.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
@@ -367,7 +383,9 @@ class MPLDrawer:
         Keyword Args:
             zorder_base=0 (Int): amount to shift in zorder from the default
 
-        .. figure:: example_pics/measure.png
+        **Example**
+
+        .. figure:: ../../_static/drawer/measure.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
