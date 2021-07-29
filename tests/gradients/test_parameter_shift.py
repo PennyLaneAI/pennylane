@@ -586,7 +586,7 @@ class TestParameterShiftRule:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_involutory_variance(self, tol):
-        """Tests qubit observable that are involutory"""
+        """Tests qubit observables that are involutory"""
         dev = qml.device("default.qubit", wires=1)
         a = 0.54
 
@@ -643,7 +643,7 @@ class TestParameterShiftRule:
 
     def test_involutory_and_noninvolutory_variance(self, tol):
         """Tests a qubit Hermitian observable that is not involutory alongside
-        a involutory observable."""
+        an involutory observable."""
         dev = qml.device("default.qubit", wires=2)
         A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
         a = 0.54

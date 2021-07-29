@@ -124,7 +124,7 @@ def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None
     Args:
         tape (.QuantumTape): quantum tape to differentiate
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
-            with respect to. If not provided, the derivative with respect to all
+            with respect to. If not provided, the derivatives with respect to all
             trainable indices are returned.
         shift (float): The shift value to use for the two-term parameter-shift formula.
             Only valid if the operation in question supports the two-term parameter-shift
@@ -140,7 +140,7 @@ def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None
     Returns:
         tuple[list[QuantumTape], function]: A tuple containing a
         list of generated tapes, in addition to a post-processing
-        function to be applied to the evaluated tapes.
+        function to be applied to the results of the evaluated tapes.
     """
     argnum = argnum or tape.trainable_params
 
@@ -248,7 +248,7 @@ def var_param_shift(tape, argnum, shift=np.pi / 2, gradient_recipes=None, f0=Non
     Returns:
         tuple[list[QuantumTape], function]: A tuple containing a
         list of generated tapes, in addition to a post-processing
-        function to be applied to the evaluated tapes.
+        function to be applied to the results of the evaluated tapes.
     """
     argnum = argnum or tape.trainable_params
 
@@ -351,7 +351,7 @@ def param_shift(
     tape, argnum=None, shift=np.pi / 2, gradient_recipes=None, fallback_fn=finite_diff, f0=None
 ):
     r"""Generate the parameter-shift tapes and postprocessing methods required
-    to compute the gradient of an gate parameter with respect to an
+    to compute the gradient of a gate parameter with respect to an
     expectation value.
 
     Args:
@@ -377,7 +377,7 @@ def param_shift(
             If ``None``, the default gradient recipe containing the two terms
             :math:`[c_0, a_0, s_0]=[1/2, 1, \pi/2]` and :math:`[c_1, a_1,
             s_1]=[-1/2, 1, -\pi/2]` is assumed for every parameter.
-        fallback_fn (None or Callable): a fallback grdient function to use for
+        fallback_fn (None or Callable): a fallback gradient function to use for
             any parameters that do not support the parameter-shift rule.
         f0 (tensor_like[float] or None): Output of the evaluated input tape. If provided,
             and the gradient recipe contains an unshifted term, this value is used,
@@ -386,7 +386,7 @@ def param_shift(
     Returns:
         tuple[list[QuantumTape], function]: A tuple containing a
         list of generated tapes, in addition to a post-processing
-        function to be applied to the evaluated tapes.
+        function to be applied to the results of the evaluated tapes.
 
     For a variational evolution :math:`U(\mathbf{p}) \vert 0\rangle` with
     :math:`N` parameters :math:`\mathbf{p}`,
@@ -439,7 +439,8 @@ def param_shift(
 
     **Example**
 
-    >>> with qml.tape.QuantumTape() as tape:
+    >>> params = np.array([0.1, 0.2, 0.3])
+    >>> with qml.tape.JacobianTape() as tape:
     ...     qml.RX(params[0], wires=0)
     ...     qml.RY(params[1], wires=0)
     ...     qml.RX(params[2], wires=0)
