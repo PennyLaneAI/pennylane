@@ -34,6 +34,29 @@ of that observable.
 """
 
 
+def _square_obsservable(obs):
+    """Returns the square of an observable."""
+
+    if isinstance(obs, qml.operation.Tensor):
+        # Observable is a tensor, we must consider its
+        # component observables independently. Note that
+        # we assume all component observables are on distinct wires.
+
+        components_squared = []
+
+        for comp in obs.obs:
+
+            try:
+                components_squared.append(NONINVOLUTORY_OBS[comp.name](comp))
+            except KeyError:
+                # component is involutory
+                pass
+
+        return qml.operation.Tensor(*components_squared)
+
+    return NONINVOLUTORY_OBS[obs.name](obs)
+
+
 def _get_operation_recipe(tape, t_idx, shift=np.pi / 2):
     """Utility function to return the parameter-shift rule
     of the operation corresponding to trainable parameter
@@ -253,17 +276,24 @@ def var_param_shift(tape, argnum, shift=np.pi / 2, gradient_recipes=None, f0=Non
     # the number of results to post-process later.
     tape_boundary = len(pdA_tapes) + 1
 
-    # For involutory observables (A^2 = I) we have d<A^2>/dp = 0.
-    # Currently, the only observable we have in PL that may be non-involutory is qml.Hermitian
-    involutory = []
+    # If there are non-involutory observables A present, we must compute d<A^2>/dp.
+    # Get the indices in the measurement queue of all non-involutory
+    # observables.
+    non_involutory = []
 
     for i in var_idx:
         obs_name = tape.observables[i].name
-        if isinstance(obs_name, list) or obs_name not in NONINVOLUTORY_OBS:
-            involutory.append(i)
 
-    # If there are non-involutory observables A present, we must compute d<A^2>/dp.
-    non_involutory = set(var_idx) - set(involutory)
+        if isinstance(obs_name, list):
+            # Observable is a tensor product, we must investigate all constituent observables.
+            if any(name in NONINVOLUTORY_OBS for name in obs_name):
+                non_involutory.append(i)
+
+        elif obs_name in NONINVOLUTORY_OBS:
+            non_involutory.append(i)
+
+    # For involutory observables (A^2 = I) we have d<A^2>/dp = 0.
+    involutory = set(var_idx) - set(non_involutory)
 
     if non_involutory:
         expval_sq_tape = tape.copy(copy_operations=True)
@@ -271,9 +301,7 @@ def var_param_shift(tape, argnum, shift=np.pi / 2, gradient_recipes=None, f0=Non
         for i in non_involutory:
             # We need to calculate d<A^2>/dp; to do so, we replace the
             # involutory observables A in the queue with A^2.
-            obs = expval_sq_tape._measurements[i].obs
-            obs = NONINVOLUTORY_OBS[obs.name](obs)
-
+            obs = _square_obsservable(expval_sq_tape._measurements[i].obs)
             expval_sq_tape._measurements[i] = qml.measure.MeasurementProcess(
                 qml.operation.Expectation, obs=obs
             )

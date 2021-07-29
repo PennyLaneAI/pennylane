@@ -723,6 +723,42 @@ class TestParameterShiftRule:
         assert gradA == pytest.approx(expected, abs=tol)
         assert gradF == pytest.approx(expected, abs=tol)
 
+    def test_projector_variance(self, tol):
+        """Test that the variance of a projector is correctly returned"""
+        dev = qml.device("default.qubit", wires=2)
+        P = np.array([1])
+        x, y = 0.765, -0.654
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.var(qml.Projector(P, wires=0) @ qml.PauliX(1))
+
+        tape.trainable_params = {0, 1}
+
+        res = tape.execute(dev)
+        expected = 0.25 * np.sin(x / 2) ** 2 * (3 + np.cos(2 * y) + 2 * np.cos(x) * np.sin(y) ** 2)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # # circuit jacobians
+        tapes, fn = qml.gradients.param_shift(tape)
+        gradA = fn(dev.batch_execute(tapes))
+
+        tapes, fn = qml.gradients.finite_diff(tape)
+        gradF = fn(dev.batch_execute(tapes))
+
+        expected = np.array(
+            [
+                [
+                    0.5 * np.sin(x) * (np.cos(x / 2) ** 2 + np.cos(2 * y) * np.sin(x / 2) ** 2),
+                    -2 * np.cos(y) * np.sin(x / 2) ** 4 * np.sin(y),
+                ]
+            ]
+        )
+        assert gradA == pytest.approx(expected, abs=tol)
+        assert gradF == pytest.approx(expected, abs=tol)
+
 
 class TestParamShiftGradients:
     """Test that the transform is differentiable"""
