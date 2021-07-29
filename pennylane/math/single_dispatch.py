@@ -40,6 +40,7 @@ ar.register_function("numpy", "coerce", lambda x: x)
 ar.register_function("numpy", "block_diag", lambda x: _scipy_block_diag(*x))
 ar.register_function("builtins", "block_diag", lambda x: _scipy_block_diag(*x))
 ar.register_function("numpy", "gather", lambda x, indices: x[np.array(indices)])
+ar.register_function("numpy", "unstack", list)
 
 
 def _scatter_element_add_numpy(tensor, index, value):
@@ -69,6 +70,7 @@ ar.register_function("autograd", "flatten", lambda x: x.flatten())
 ar.register_function("autograd", "coerce", lambda x: x)
 ar.register_function("autograd", "block_diag", lambda x: _scipy_block_diag(*x))
 ar.register_function("autograd", "gather", lambda x, indices: x[np.array(indices)])
+ar.register_function("autograd", "unstack", list)
 
 
 def _to_numpy_autograd(x):
@@ -230,6 +232,7 @@ ar.register_function("tensorflow", "scatter_element_add", _scatter_element_add_t
 
 # -------------------------------- Torch --------------------------------- #
 
+ar.autoray._FUNC_ALIASES["torch", "unstack"] = "unbind"
 
 ar.register_function("torch", "asarray", lambda x: _i("torch").as_tensor(x))
 ar.register_function("torch", "diag", lambda x, k=0: _i("torch").diag(x, diagonal=k))
@@ -357,3 +360,4 @@ ar.register_function(
     "scatter_element_add",
     lambda x, index, value: _i("jax").ops.index_add(x, tuple(index), value),
 )
+ar.register_function("jax", "unstack", list)
