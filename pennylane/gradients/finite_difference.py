@@ -238,7 +238,7 @@ def finite_diff(tape, argnum=None, h=1e-7, approx_order=1, n=1, strategy="forwar
     coeffs, shifts = finite_diff_coeffs(n=n, approx_order=approx_order, strategy=strategy)
 
     if 0 in shifts:
-        # Stencil includes a term with zero shift.
+        # Finite difference formula includes a term with zero shift.
 
         if f0 is None:
             # Ensure that the unshifted tape is appended
