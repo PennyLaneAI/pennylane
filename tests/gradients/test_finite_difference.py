@@ -33,7 +33,7 @@ class TestCoeffs:
         with pytest.raises(ValueError, match="n must be a positive integer"):
             finite_diff_coeffs(1.3, 1, 1)
 
-    def test_invalid_order_error(self):
+    def test_invalid_approx_order_error(self):
         """Test that an error is raised if order < 1 or not an integer"""
         with pytest.raises(ValueError, match="order must be a positive integer"):
             finite_diff_coeffs(1, 0, 1)
