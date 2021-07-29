@@ -19,6 +19,7 @@ computations using PennyLane.
 from collections.abc import Sequence
 import itertools
 import warnings
+from copy import copy
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -29,22 +30,17 @@ from pennylane.wires import Wires
 OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identity": "I"}
 
 
-class Hamiltonian:
-    r"""Lightweight class for representing Hamiltonians for Variational Quantum
-    Eigensolver problems.
+class Hamiltonian(qml.operation.Observable):
+    r"""Operator representing a Hamiltonian.
 
-    Hamiltonians can be expressed as linear combinations of observables, e.g.,
-    :math:`\sum_{k=0}^{N-1} c_k O_k`.
-
-    This class keeps track of the terms (coefficients and observables) separately.
+    The Hamiltonian is represented as a linear combination of other operators, e.g.,
+    :math:`\sum_{k=0}^{N-1} c_k O_k`, where the :math:`c_k` are trainable parameters.
 
     Args:
-        coeffs (Iterable[float]): coefficients of the Hamiltonian expression
-        observables (Iterable[Observable]): observables in the Hamiltonian expression
+        coeffs (tensor_like): coefficients of the Hamiltonian expression
+        observables (Iterable[Observable]): observables in the Hamiltonian expression, same length as coeffs
         simplify (bool): Specifies whether the Hamiltonian is simplified upon initialization
                          (like-terms are combined). The default value is `False`.
-
-    .. seealso:: :class:`~.ExpvalCost`, :func:`~.molecular_hamiltonian`
 
     **Example:**
 
@@ -52,6 +48,15 @@ class Hamiltonian:
     as well as the list of observables:
 
     >>> coeffs = [0.2, -0.543]
+    >>> obs = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.Hadamard(2)]
+    >>> H = qml.Hamiltonian(coeffs, obs)
+    >>> print(H)
+      (-0.543) [Z0 H2]
+    + (0.2) [X0 Z1]
+
+    The coefficients can be a trainable tensor, for example:
+
+    >>> coeffs = tf.Variable([0.2, -0.543], dtype=tf.double)
     >>> obs = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.Hadamard(2)]
     >>> H = qml.Hamiltonian(coeffs, obs)
     >>> print(H)
@@ -73,36 +78,31 @@ class Hamiltonian:
     :doc:`/introduction/chemistry` module can be used to generate a molecular
     Hamiltonian.
 
+    Hamiltonians can alternatively be constructed using Pythonic arithmetic operations. For example:
+
+    >>> qml.PauliX(0) + 2 * qml.PauliZ(0) @ qml.PauliZ(1)
+
+    is equivalent to the following Hamiltonian:
+
+    >>> qml.Hamiltonian([1, 2], [qml.PauliX(0), qml.PauliZ(0) @ qml.PauliZ(1)])
+
     .. Warning::
+        When Hamiltonians are defined using arithmetic operations **inside of quantum functions**, constituent observables
+        may be queued as operations/an error may be thrown. Thus, Hamiltonians must be defined either outside
+        of quantum functions, or inside of quantum functions using the conventional construction method.
 
-        Hamiltonians can be constructed using Pythonic arithmetic operations. For example:
-
-        >>> qml.PauliX(0) + 2 * qml.PauliZ(0) @ qml.PauliZ(1)
-
-        is equivalent to the following Hamiltonian:
-
-        >>> qml.Hamiltonian([1, 2], [qml.PauliX(0), qml.PauliZ(0) @ qml.PauliZ(1)])
-
-        When Hamiltonians are defined using arithmetic operations **inside of QNodes**, constituent observables
-        may be queued as operations/an error may be thrown. Thus, Hamiltonians must be defined either outside of QNodes,
-        or inside of QNodes using the conventional method.
-
-        Note that this issue also arises when calling the ``simplify()`` method.
     """
-    # Todo: this is a temporary solution to make the circuit drawer work
-    num_params = 0
+    num_wires = qml.operation.AnyWires
+    num_params = 1
+    par_domain = "A"
+    grad_method = "A"  # supports analytic gradients
 
-    def __init__(self, coeffs, observables, simplify=False):
+    def __init__(self, coeffs, observables, simplify=False, id=None, do_queue=True):
 
         if len(coeffs) != len(observables):
             raise ValueError(
                 "Could not create valid Hamiltonian; "
                 "number of coefficients and operators does not match."
-            )
-
-        if any(np.imag(coeffs) != 0):
-            raise ValueError(
-                "Could not create valid Hamiltonian; " "coefficients are not real-valued."
             )
 
         for obs in observables:
@@ -111,16 +111,20 @@ class Hamiltonian:
                     "Could not create circuits. Some or all observables are not valid."
                 )
 
-        self._coeffs = list(coeffs)
+        self._coeffs = coeffs
         self._ops = list(observables)
+        self._wires = qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
 
-        self.data = []
         self.return_type = None
 
         if simplify:
             self.simplify()
 
-        self.queue()
+        coeffs_flat = [coeffs[i] for i in range(qml.math.shape(coeffs)[0])]
+        # overwrite this attribute, now that we have the correct info
+        self.num_params = len(coeffs_flat)
+        # create an operator using each coefficient as a separate parameter
+        super().__init__(*coeffs_flat, wires=self._wires, id=id, do_queue=do_queue)
 
     @property
     def coeffs(self):
@@ -156,7 +160,7 @@ class Hamiltonian:
         Returns:
             (Wires): Combined wires present in all terms, sorted.
         """
-        return qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
+        return self._wires
 
     @property
     def name(self):
@@ -177,7 +181,9 @@ class Hamiltonian:
         coeffs = []
         ops = []
 
-        for c, op in zip(self.coeffs, self.ops):
+        for i in range(len(self.ops)):  # pylint: disable=consider-using-enumerate
+            op = self.ops[i]
+            c = self.coeffs[i]
             op = op if isinstance(op, Tensor) else Tensor(op)
 
             ind = None
@@ -188,21 +194,22 @@ class Hamiltonian:
 
             if ind is not None:
                 coeffs[ind] += c
-                if np.allclose([coeffs[ind]], [0]):
+                if np.isclose(qml.math.toarray(coeffs[ind]), np.array(0.)):
                     del coeffs[ind]
                     del ops[ind]
             else:
                 ops.append(op.prune())
                 coeffs.append(c)
 
-        self._coeffs = coeffs
+        self._coeffs = qml.math.cast_like(coeffs, self.coeffs)
         self._ops = ops
 
     def __str__(self):
         # Lambda function that formats the wires
         wires_print = lambda ob: ",".join(map(str, ob.wires.tolist()))
 
-        paired_coeff_obs = list(zip(self.coeffs, self.ops))
+        self_coeffs = qml.math.toarray(self.coeffs)
+        paired_coeff_obs = list(zip(self_coeffs, self.ops))
         paired_coeff_obs.sort(key=lambda pair: (len(pair[1].wires), pair[0]))
 
         terms_ls = []
@@ -247,12 +254,13 @@ class Hamiltonian:
         """
         data = set()
 
-        for co, op in zip(*self.terms):
+        coeffs_arr = qml.math.toarray(self.coeffs)
+        for co, op in zip(coeffs_arr, self.ops):
             obs = op.non_identity_obs if isinstance(op, Tensor) else [op]
             tensor = []
             for ob in obs:
                 parameters = tuple(
-                    param.tostring() for param in ob.parameters
+                    str(param) for param in ob.parameters
                 )  # Converts params into immutable type
                 tensor.append((ob.name, ob.wires, parameters))
             data.add((co, frozenset(tensor)))
@@ -314,8 +322,8 @@ class Hamiltonian:
 
     def __matmul__(self, H):
         r"""The tensor product operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
-        coeffs1 = self.coeffs.copy()
-        terms1 = self.ops.copy()
+        coeffs1 = copy(self.coeffs)
+        ops1 = self.ops.copy()
 
         if isinstance(H, Hamiltonian):
             shared_wires = Wires.shared_wires([self.wires, H.wires])
@@ -326,34 +334,36 @@ class Hamiltonian:
                 )
 
             coeffs2 = H.coeffs
-            terms2 = H.ops
+            ops2 = H.ops
 
-            coeffs = [c[0] * c[1] for c in itertools.product(coeffs1, coeffs2)]
-            term_list = itertools.product(terms1, terms2)
-            terms = [qml.operation.Tensor(t[0], t[1]) for t in term_list]
+            coeffs = qml.math.kron(coeffs1, coeffs2)
+            ops_list = itertools.product(ops1, ops2)
+            terms = [qml.operation.Tensor(t[0], t[1]) for t in ops_list]
 
             return qml.Hamiltonian(coeffs, terms, simplify=True)
 
         if isinstance(H, (Tensor, Observable)):
             coeffs = coeffs1
-            terms = [term @ H for term in terms1]
+            terms = [op @ H for op in ops1]
 
-            return qml.Hamiltonian(coeffs, terms, simplify=True)
+            return qml.Hamiltonian(coeffs1, terms, simplify=True)
 
         raise ValueError(f"Cannot tensor product Hamiltonian and {type(H)}")
 
     def __add__(self, H):
         r"""The addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
-        coeffs = self.coeffs.copy()
+        self_coeffs = copy(self.coeffs)
         ops = self.ops.copy()
 
         if isinstance(H, Hamiltonian):
-            coeffs.extend(H.coeffs.copy())
+            coeffs = qml.math.concatenate([self_coeffs, H.coeffs.copy()], axis=0)
             ops.extend(H.ops.copy())
             return qml.Hamiltonian(coeffs, ops, simplify=True)
 
         if isinstance(H, (Tensor, Observable)):
-            coeffs.append(1)
+            coeffs = qml.math.concatenate(
+                [self_coeffs, qml.math.cast_like([1.0], self_coeffs)], axis=0
+            )
             ops.append(H)
             return qml.Hamiltonian(coeffs, ops, simplify=True)
 
@@ -362,7 +372,8 @@ class Hamiltonian:
     def __mul__(self, a):
         r"""The scalar multiplication operation between a scalar and a Hamiltonian."""
         if isinstance(a, (int, float)):
-            coeffs = [a * c for c in self.coeffs.copy()]
+            self_coeffs = copy(self.coeffs)
+            coeffs = qml.math.multiply(qml.math.cast_like([a], self_coeffs), self_coeffs)
             return qml.Hamiltonian(coeffs, self.ops.copy())
 
         raise ValueError(f"Cannot multiply Hamiltonian by {type(a)}")
@@ -378,13 +389,15 @@ class Hamiltonian:
     def __iadd__(self, H):
         r"""The inplace addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
         if isinstance(H, Hamiltonian):
-            self._coeffs.extend(H.coeffs.copy())
+            self._coeffs = qml.math.concatenate([self._coeffs, H.coeffs], axis=0)
             self._ops.extend(H.ops.copy())
             self.simplify()
             return self
 
         if isinstance(H, (Tensor, Observable)):
-            self._coeffs.append(1)
+            self._coeffs = qml.math.concatenate(
+                [self._coeffs, qml.math.cast_like([1.0], self._coeffs)], axis=0
+            )
             self._ops.append(H)
             self.simplify()
             return self
@@ -394,7 +407,7 @@ class Hamiltonian:
     def __imul__(self, a):
         r"""The inplace scalar multiplication operation between a scalar and a Hamiltonian."""
         if isinstance(a, (int, float)):
-            self._coeffs = [a * c for c in self.coeffs]
+            self._coeffs = qml.math.multiply(qml.math.cast_like([a], self._coeffs), self._coeffs)
             return self
 
         raise ValueError(f"Cannot multiply Hamiltonian by {type(a)}")
@@ -547,7 +560,7 @@ class ExpvalCost:
         self._multiple_devices = isinstance(device, Sequence)
         """Bool: Records if multiple devices are input"""
 
-        if all(c == 0 for c in coeffs) or not coeffs:
+        if np.isclose(qml.math.toarray(qml.math.count_nonzero(coeffs)), 0):
             self.cost_fn = lambda *args, **kwargs: np.array(0)
             return
 

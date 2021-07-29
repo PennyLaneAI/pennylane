@@ -649,7 +649,8 @@ class TestHamiltonian:
         """Tests that the Hamiltonian object is created with
         the correct attributes"""
         H = qml.vqe.Hamiltonian(coeffs, ops)
-        assert H.terms == (list(coeffs), list(ops))
+        assert np.allclose(H.terms[0], coeffs)
+        assert H.terms[1] == list(ops)
 
     @pytest.mark.parametrize("coeffs, ops", invalid_hamiltonians)
     def test_hamiltonian_invalid_init_exception(self, coeffs, ops):
@@ -657,15 +658,6 @@ class TestHamiltonian:
         combination of coefficients and ops"""
         with pytest.raises(ValueError, match="number of coefficients and operators does not match"):
             H = qml.vqe.Hamiltonian(coeffs, ops)
-
-    @pytest.mark.parametrize("coeffs", [[0.2, -1j], [0.5j, 2 - 1j]])
-    def test_hamiltonian_complex(self, coeffs):
-        """Tests that an exception is raised when
-        a complex Hamiltonian is given"""
-        obs = [qml.PauliX(0), qml.PauliZ(1)]
-
-        with pytest.raises(ValueError, match="coefficients are not real-valued"):
-            H = qml.vqe.Hamiltonian(coeffs, obs)
 
     @pytest.mark.parametrize(
         "obs", [[qml.PauliX(0), qml.CNOT(wires=[0, 1])], [qml.PauliZ, qml.PauliZ(0)]]
@@ -826,13 +818,15 @@ class TestHamiltonian:
         with qml.tape.QuantumTape() as tape:
             qml.Hadamard(wires=1)
             qml.PauliX(wires=0)
-            H.queue()
+            qml.expval(H)
 
         assert np.all([q1.compare(q2) for q1, q2 in zip(tape.queue, queue)])
 
         # Inside of tape
 
         queue = [
+            qml.Hadamard(wires=1),
+            qml.PauliX(wires=0),
             qml.PauliX(1),
             qml.PauliZ(0),
             qml.PauliZ(2),
@@ -841,16 +835,16 @@ class TestHamiltonian:
             qml.Hamiltonian(
                 [1, 3, 1], [qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(1)]
             ),
-            qml.Hadamard(wires=1),
-            qml.PauliX(wires=0),
         ]
 
         with qml.tape.QuantumTape() as tape:
-            H = qml.Hamiltonian(
-                [1, 3, 1], [qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(1)]
-            )
             qml.Hadamard(wires=1)
             qml.PauliX(wires=0)
+            qml.expval(
+                qml.Hamiltonian(
+                    [1, 3, 1], [qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(1)]
+                )
+            )
 
         assert np.all([q1.compare(q2) for q1, q2 in zip(tape.queue, queue)])
 

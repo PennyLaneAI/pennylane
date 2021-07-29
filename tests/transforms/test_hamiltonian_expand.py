@@ -26,7 +26,7 @@ dev = qml.device("default.qubit", wires=4)
 
 with pennylane.tape.QuantumTape() as tape1:
     qml.PauliX(0)
-    H1 = qml.Hamiltonian([1.5], [qml.PauliZ(0) @ qml.PauliZ(1)])
+    H1 = qml.Hamiltonian([1.5], [qml.PauliZ(0) @ qml.PauliZ(1)], do_queue=False)
     qml.expval(H1)
 
 with pennylane.tape.QuantumTape() as tape2:
@@ -44,6 +44,7 @@ with pennylane.tape.QuantumTape() as tape2:
             qml.PauliX(2),
             qml.PauliZ(0) @ qml.PauliX(1),
         ],
+        do_queue=False
     )
     qml.expval(H2)
 
@@ -130,7 +131,17 @@ class TestHamiltonianExpval:
         H = qml.Hamiltonian(
             [-0.2, 0.5, 1], [qml.PauliX(1), qml.PauliZ(1) @ qml.PauliY(2), qml.PauliZ(0)]
         )
-        var = np.array([0.1, 0.67, 0.3, 0.4, -0.5, 0.7])
+        var = [
+            np.array(0.1),
+            np.array(0.67),
+            np.array(0.3),
+            np.array(0.4),
+            np.array(-0.5),
+            np.array(0.7),
+            np.array(0.4),
+            np.array(-0.5),
+            np.array(0.7),
+        ]
         output = 0.42294409781940356
         output2 = [
             9.68883500e-02,
@@ -139,6 +150,7 @@ class TestHamiltonianExpval:
             -1.94289029e-09,
             3.50307411e-01,
             -3.41123470e-01,
+            [0.0, 0.0, 0.0],
         ]
 
         with qml.tape.JacobianTape() as tape:
@@ -161,8 +173,10 @@ class TestHamiltonianExpval:
             return fn(res)
 
         assert np.isclose(cost(var), output)
-        assert np.allclose(qml.grad(cost)(var), output2)
-
+        grad = qml.grad(cost)(var)
+        for g, o in zip(grad, output2):
+            assert np.allclose(g, o)
+            
     def test_hamiltonian_dif_tensorflow(self):
         """Tests that the hamiltonian_expand tape transform is differentiable with the Tensorflow interface"""
 
