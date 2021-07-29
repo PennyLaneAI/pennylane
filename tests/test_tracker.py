@@ -164,7 +164,7 @@ class TestDefaultTrackerIntegration:
     """Tests integration behavior with 'default.gaussian'.
 
     Integration with several `QubitDevice`-inherited devices are tested in the
-    device suite.  Using `default.gaussian`, we test one that inherits from `Device`.
+    device suite. Using `default.gaussian`, we test one that inherits from `Device`.
     """
 
     def test_single_execution_default(self, mocker):
