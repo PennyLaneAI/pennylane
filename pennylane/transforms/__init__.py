@@ -49,11 +49,10 @@ containing quantum operations) that are used to construct QNodes.
     ~apply_controlled_Q
     ~quantum_monte_carlo
 
-Transforms for circuit compilation and optimization
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Transforms for circuit compilation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This set of transforms accept quantum functions, and perform basic circuit
-optimization tasks.
+This set of transforms accept quantum functions, and perform basic circuit compilation tasks.
 
 .. autosummary::
     :toctree: api
