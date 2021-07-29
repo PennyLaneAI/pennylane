@@ -99,7 +99,7 @@ class Hamiltonian(qml.operation.Observable):
 
     def __init__(self, coeffs, observables, simplify=False, id=None, do_queue=True):
 
-        if len(coeffs) != len(observables):
+        if qml.math.shape(coeffs)[0] != len(observables):
             raise ValueError(
                 "Could not create valid Hamiltonian; "
                 "number of coefficients and operators does not match."
