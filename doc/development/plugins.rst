@@ -359,7 +359,7 @@ object.
 As a convention, devices should do the translation and unpacking as late as possible in the function tree, and
 where possible pass the original :class:`~.wires.Wires` objects around.
 
-Device Tracker Support
+Device tracker support
 ----------------------
 
 The device tracker stores and records information when tracking mode is turned on. Devices can store data like

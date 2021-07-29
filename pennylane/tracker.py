@@ -36,7 +36,7 @@ class Tracker:
     executions, and batch execution length, but plugins may store additional information with
     no changes to this class.
 
-    Information is only stored when the class attribute ``active` is set to ``True``. This
+    Information is only stored when the class attribute ``active`` is set to ``True``. This
     attribute can be toggled via a context manager and Python's ``with`` statement. Upon entering a
     context, the stored information is reset, unless ``persistent=True``. Tracking mode can also be
     manually triggered by setting ``tracker.active = True`` without the use of a context manager.
