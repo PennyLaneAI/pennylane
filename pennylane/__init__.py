@@ -29,7 +29,6 @@ import pennylane.gradients
 import pennylane.kernels
 import pennylane.math
 import pennylane.operation
-import pennylane.qaoa as qaoa
 import pennylane.qnn
 import pennylane.templates
 from pennylane._device import Device, DeviceError
@@ -39,10 +38,12 @@ from pennylane._version import __version__
 from pennylane.about import about
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.configuration import Configuration
+from pennylane.tracker import Tracker
 from pennylane.io import *
 from pennylane.measure import density_matrix, expval, probs, sample, state, var
 from pennylane.ops import *
 from pennylane.optimize import *
+from pennylane import qaoa
 from pennylane.qnode import QNode, qnode
 from pennylane.templates import broadcast, layer, template
 from pennylane.transforms import (
