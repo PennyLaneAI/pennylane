@@ -1306,8 +1306,7 @@ class TestNewVQE:
             return qml.expval(H1)
 
         res = qml.draw(circuit1)()
-        expected = " 0: ──H──╭Hamiltonian──┤  \n" \
-                   + " 2: ─────╰Hamiltonian──┤  \n"
+        expected = " 0: ──H──╭Hamiltonian──┤  \n" + " 2: ─────╰Hamiltonian──┤  \n"
         assert res == expected
 
     def test_error_multiple_expvals(self):
