@@ -23,6 +23,17 @@ import pennylane as qml
 from .finite_difference import finite_diff, generate_shifted_tapes
 
 
+NONINVOLUTORY_OBS = {
+    "Hermitian": lambda obs: obs.__class__(obs.matrix @ obs.matrix, wires=obs.wires),
+    "SparseHamiltonian": lambda obs: obs.__class__(obs.matrix @ obs.matrix, wires=obs.wires),
+    "Projector": lambda obs: obs,
+}
+"""Dict[str, callable]: mapping from a non-involutory observable name
+to a callable that accepts an observable object, and returns the square
+of that observable.
+"""
+
+
 def _get_operation_recipe(tape, t_idx, shift=np.pi / 2):
     """Utility function to return the parameter-shift rule
     of the operation corresponding to trainable parameter
@@ -244,7 +255,7 @@ def var_param_shift(tape, argnum, shift=np.pi / 2, gradient_recipes=None, f0=Non
 
     # For involutory observables (A^2 = I) we have d<A^2>/dp = 0.
     # Currently, the only observable we have in PL that may be non-involutory is qml.Hermitian
-    involutory = [i for i in var_idx if tape.observables[i].name != "Hermitian"]
+    involutory = [i for i in var_idx if tape.observables[i].name not in NONINVOLUTORY_OBS]
 
     # If there are non-involutory observables A present, we must compute d<A^2>/dp.
     non_involutory = set(var_idx) - set(involutory)
@@ -256,9 +267,8 @@ def var_param_shift(tape, argnum, shift=np.pi / 2, gradient_recipes=None, f0=Non
             # We need to calculate d<A^2>/dp; to do so, we replace the
             # involutory observables A in the queue with A^2.
             obs = expval_sq_tape._measurements[i].obs
-            A = obs.matrix
+            obs = NONINVOLUTORY_OBS[obs.name](obs)
 
-            obs = qml.Hermitian(A @ A, wires=obs.wires)
             expval_sq_tape._measurements[i] = qml.measure.MeasurementProcess(
                 qml.operation.Expectation, obs=obs
             )
@@ -293,7 +303,7 @@ def var_param_shift(tape, argnum, shift=np.pi / 2, gradient_recipes=None, f0=Non
                 # need to replace the gradient value with 0 (the known,
                 # correct gradient for involutory variables).
 
-                m = [tape.observables[i].name != "Hermitian" for i in var_idx]
+                m = [tape.observables[i].name not in NONINVOLUTORY_OBS for i in var_idx]
                 m = qml.math.convert_like(m, pdA2)
                 pdA2 = qml.math.where(qml.math.reshape(m, [-1, 1]), 0, pdA2)
 
