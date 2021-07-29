@@ -5,7 +5,7 @@
 * PennyLane can now perform quantum circuit optimization using the
   top-level transform `qml.compile`. The `compile` transform allows you
   to chain together sequences of tape and quantum function transforms
-  into custom circuit optimization pipeline.
+  into custom circuit optimization pipelines.
   [(#1475)](https://github.com/PennyLaneAI/pennylane/pull/1475)
 
   For example, take the following quantum function:
@@ -42,7 +42,7 @@
   ```
 
   The ``qml.compile`` transform is flexible and accepts a custom pipeline
-  of quantum function transforms (you can even write your own transform!).
+  of tape and quantum function transforms (you can even write your own!).
   For example, if we wanted to only push single-qubit gates through
   controlled gates and cancel adjacent inverses, we could do:
 
