@@ -501,87 +501,338 @@ class TestExpectationQuantumGradients:
         expected = 0.5 * np.tanh(r) ** 3 * (2 / (np.sinh(r) ** 2) - 1) / np.cosh(r)
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
-    # def test_multiple_squeezing_gradient(self, mocker, tol):
-    #     """Test that the gradient of a circuit with two squeeze
-    #     gates is correct."""
-    #     dev = qml.device("default.gaussian", wires=2, hbar=hbar)
+    def test_multiple_squeezing_gradient(self, mocker, tol):
+        """Test that the gradient of a circuit with two squeeze
+        gates is correct."""
+        dev = qml.device("default.gaussian", wires=2, hbar=hbar)
 
-    #     r0, phi0, r1, phi1 = [0.4, -0.3, -0.7, 0.2]
+        r0, phi0, r1, phi1 = [0.4, -0.3, -0.7, 0.2]
 
-    #     with qml.tape.JacobianTape() as tape:
-    #         qml.Squeezing(r0, phi0, wires=[0])
-    #         qml.Squeezing(r1, phi1, wires=[0])
-    #         qml.expval(qml.NumberOperator(0))  # second order
+        with qml.tape.JacobianTape() as tape:
+            qml.Squeezing(r0, phi0, wires=[0])
+            qml.Squeezing(r1, phi1, wires=[0])
+            qml.expval(qml.NumberOperator(0))  # second order
 
-    #     tape._update_gradient_info()
+        spy2 = mocker.spy(qml.gradients.parameter_shift_cv, "second_order_param_shift")
+        tapes, fn = param_shift_cv(tape, dev, force_order2=True)
+        grad_A2 = fn(dev.batch_execute(tapes))
+        spy2.assert_called()
 
-    #     spy2 = mocker.spy(qml.gradients.parameter_shift_cv, "second_order_param_shift")
-    #     tapes, fn = param_shift_cv(tape, dev, force_order2=True)
-    # grad_A2 = fn(dev.batch_execute(tapes))
-    #     spy2.assert_called()
+        # check against the known analytic formula
+        expected = np.zeros([4])
+        expected[0] = np.cosh(2 * r1) * np.sinh(2 * r0) + np.cos(phi0 - phi1) * np.cosh(
+            2 * r0
+        ) * np.sinh(2 * r1)
+        expected[1] = -0.5 * np.sin(phi0 - phi1) * np.sinh(2 * r0) * np.sinh(2 * r1)
+        expected[2] = np.cos(phi0 - phi1) * np.cosh(2 * r1) * np.sinh(2 * r0) + np.cosh(
+            2 * r0
+        ) * np.sinh(2 * r1)
+        expected[3] = 0.5 * np.sin(phi0 - phi1) * np.sinh(2 * r0) * np.sinh(2 * r1)
 
-    #     # check against the known analytic formula
-    #     expected = np.zeros([4])
-    #     expected[0] = np.cosh(2 * r1) * np.sinh(2 * r0) + np.cos(phi0 - phi1) * np.cosh(
-    #         2 * r0
-    #     ) * np.sinh(2 * r1)
-    #     expected[1] = -0.5 * np.sin(phi0 - phi1) * np.sinh(2 * r0) * np.sinh(2 * r1)
-    #     expected[2] = np.cos(phi0 - phi1) * np.cosh(2 * r1) * np.sinh(2 * r0) + np.cosh(
-    #         2 * r0
-    #     ) * np.sinh(2 * r1)
-    #     expected[3] = 0.5 * np.sin(phi0 - phi1) * np.sinh(2 * r0) * np.sinh(2 * r1)
+        assert np.allclose(grad_A2, expected, atol=tol, rtol=0)
 
-    #     assert np.allclose(grad_A2, expected, atol=tol, rtol=0)
+    def test_multiple_second_order_observables(self, mocker, tol):
+        """Test that the gradient of a circuit with multiple
+        second order observables is correct"""
 
-    # def test_multiple_second_order_observables(self, mocker, tol):
-    #     """Test that the gradient of a circuit with multiple
-    #     second order observables is correct"""
+        dev = qml.device("default.gaussian", wires=2, hbar=hbar)
+        r = [0.4, -0.7, 0.1, 0.2]
+        p = [0.1, 0.2, 0.3, 0.4]
 
-    #     dev = qml.device("default.gaussian", wires=2, hbar=hbar)
-    #     r = [0.4, -0.7, 0.1, 0.2]
-    #     p = [0.1, 0.2, 0.3, 0.4]
+        with qml.tape.JacobianTape() as tape:
+            qml.Squeezing(r[0], p[0], wires=[0])
+            qml.Squeezing(r[1], p[1], wires=[0])
+            qml.Squeezing(r[2], p[2], wires=[1])
+            qml.Squeezing(r[3], p[3], wires=[1])
+            qml.expval(qml.NumberOperator(0))  # second order
+            qml.expval(qml.NumberOperator(1))  # second order
 
-    #     with qml.tape.JacobianTape() as tape:
-    #         qml.Squeezing(r[0], p[0], wires=[0])
-    #         qml.Squeezing(r[1], p[1], wires=[0])
-    #         qml.Squeezing(r[2], p[2], wires=[1])
-    #         qml.Squeezing(r[3], p[3], wires=[1])
-    #         qml.expval(qml.NumberOperator(0))  # second order
-    #         qml.expval(qml.NumberOperator(1))  # second order
+        spy2 = mocker.spy(qml.gradients.parameter_shift_cv, "second_order_param_shift")
+        tapes, fn = param_shift_cv(tape, dev)
+        grad_A2 = fn(dev.batch_execute(tapes))
+        spy2.assert_called()
 
-    #     tape._update_gradient_info()
+        # check against the known analytic formula
 
-    #     spy2 = mocker.spy(qml.gradients.parameter_shift_cv, "second_order_param_shift")
-    #     tapes, fn = param_shift_cv(tape, dev, force_order2=True)
-    # grad_A2 = fn(dev.batch_execute(tapes))
-    #     spy2.assert_called()
+        def expected_grad(r, p):
+            return np.array(
+                [
+                    np.cosh(2 * r[1]) * np.sinh(2 * r[0])
+                    + np.cos(p[0] - p[1]) * np.cosh(2 * r[0]) * np.sinh(2 * r[1]),
+                    -0.5 * np.sin(p[0] - p[1]) * np.sinh(2 * r[0]) * np.sinh(2 * r[1]),
+                    np.cos(p[0] - p[1]) * np.cosh(2 * r[1]) * np.sinh(2 * r[0])
+                    + np.cosh(2 * r[0]) * np.sinh(2 * r[1]),
+                    0.5 * np.sin(p[0] - p[1]) * np.sinh(2 * r[0]) * np.sinh(2 * r[1]),
+                ]
+            )
 
-    #     # check against the known analytic formula
+        expected = np.zeros([2, 8])
+        expected[0, :4] = expected_grad(r[:2], p[:2])
+        expected[1, 4:] = expected_grad(r[2:], p[2:])
 
-    #     def expected_grad(r, p):
-    #         return np.array(
-    #             [
-    #                 np.cosh(2 * r[1]) * np.sinh(2 * r[0])
-    #                 + np.cos(p[0] - p[1]) * np.cosh(2 * r[0]) * np.sinh(2 * r[1]),
-    #                 -0.5 * np.sin(p[0] - p[1]) * np.sinh(2 * r[0]) * np.sinh(2 * r[1]),
-    #                 np.cos(p[0] - p[1]) * np.cosh(2 * r[1]) * np.sinh(2 * r[0])
-    #                 + np.cosh(2 * r[0]) * np.sinh(2 * r[1]),
-    #                 0.5 * np.sin(p[0] - p[1]) * np.sinh(2 * r[0]) * np.sinh(2 * r[1]),
-    #             ]
-    #         )
+        assert np.allclose(grad_A2, expected, atol=tol, rtol=0)
 
-    #     expected = np.zeros([2, 8])
-    #     expected[0, :4] = expected_grad(r[:2], p[:2])
-    #     expected[1, 4:] = expected_grad(r[2:], p[2:])
+    cv_ops = [getattr(qml, name) for name in qml.ops._cv__ops__]
+    analytic_cv_ops = [cls for cls in cv_ops if cls.supports_parameter_shift]
 
-    #     assert np.allclose(grad_A2, expected, atol=tol, rtol=0)
+    @pytest.mark.parametrize("obs", [qml.X, qml.P, qml.NumberOperator, qml.Identity])
+    @pytest.mark.parametrize("op", analytic_cv_ops)
+    def test_gradients_gaussian_circuit(self, op, obs, mocker, tol):
+        """Tests that the gradients of circuits of gaussian gates match between the
+        finite difference and analytic methods."""
+        tol = 1e-2
 
-    # cv_ops = [getattr(qml, name) for name in qml.ops._cv__ops__]
-    # analytic_cv_ops = [cls for cls in cv_ops if cls.supports_parameter_shift]
+        args = np.linspace(0.2, 0.5, op.num_params)
+
+        with qml.tape.JacobianTape() as tape:
+            qml.Displacement(0.5, 0, wires=0)
+            op(*args, wires=range(op.num_wires))
+            qml.Beamsplitter(1.3, -2.3, wires=[0, 1])
+            qml.Displacement(-0.5, 0.1, wires=0)
+            qml.Squeezing(0.5, -1.5, wires=0)
+            qml.Rotation(-1.1, wires=0)
+            qml.expval(obs(wires=0))
+
+        dev = qml.device("default.gaussian", wires=2)
+        res = tape.execute(dev)
+
+        tape.trainable_params = set(range(2, 2 + op.num_params))
+
+        tapes, fn = qml.gradients.finite_diff(tape)
+        grad_F = fn(dev.batch_execute(tapes))
+
+        tapes, fn = param_shift_cv(tape, dev, force_order2=True)
+        grad_A2 = fn(dev.batch_execute(tapes))
+
+        # check that every parameter is analytic
+        for i in range(op.num_params):
+            assert tape._par_info[2 + i]["grad_method"][0] == "A"
+
+        assert np.allclose(grad_A2, grad_F, atol=tol, rtol=0)
+
+        if obs.ev_order == 1:
+            tapes, fn = param_shift_cv(tape, dev)
+            grad_A = fn(dev.batch_execute(tapes))
+            assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("t", [0, 1])
+    def test_interferometer(self, t, tol):
+        """An integration test for CV gates that support analytic differentiation
+        if succeeding the gate to be differentiated, but cannot be differentiated
+        themselves (for example, they may be Gaussian but accept no parameters,
+        or may accept a numerical array parameter.).
+
+        This ensures that, assuming their _heisenberg_rep is defined, the quantum
+        gradient analytic method can still be used, and returns the correct result.
+
+        Currently, the only such operation is qml.Interferometer. In the future,
+        we may consider adding a qml.GaussianTransfom operator.
+        """
+
+        if t == 1:
+            pytest.xfail(
+                "There is a bug in the second order CV parameter-shift rule; "
+                "phase arguments return the incorrect derivative."
+            )
+
+            # Note: this bug currently affects PL core as well:
+            #
+            # dev = qml.device("default.gaussian", wires=2)
+            #
+            # U = np.array([[ 0.51310276+0.81702166j,  0.13649626+0.22487759j],
+            #         [ 0.26300233+0.00556194j, -0.96414101-0.03508489j]])
+            #
+            # @qml.qnode(dev)
+            # def circuit(r, phi):
+            #     qml.Displacement(r, phi, wires=0)
+            #     qml.Interferometer(U, wires=[0, 1])
+            #     return qml.expval(qml.X(0))
+            #
+            # r = 0.543
+            # phi = 0.
+            #
+            # >>> print(circuit.jacobian([r, phi], options={"force_order2":False}))
+            # [[ 1.02620552 0.14823494]]
+            # >>> print(circuit.jacobian([r, phi], options={"force_order2":True}))
+            # [[ 1.02620552 -0.88728552]]
+
+        U = np.array(
+            [
+                [0.51310276 + 0.81702166j, 0.13649626 + 0.22487759j],
+                [0.26300233 + 0.00556194j, -0.96414101 - 0.03508489j],
+            ]
+        )
+
+        with qml.tape.JacobianTape() as tape:
+            qml.Displacement(0.543, 0, wires=0)
+            qml.Interferometer(U, wires=[0, 1])
+            qml.expval(qml.X(0))
+
+        tape.trainable_params = {t}
+
+        dev = qml.device("default.gaussian", wires=2)
+
+        tapes, fn = qml.gradients.finite_diff(tape)
+        grad_F = fn(dev.batch_execute(tapes))
+
+        tapes, fn = param_shift_cv(tape, dev)
+        grad_A = fn(dev.batch_execute(tapes))
+
+        tapes, fn = param_shift_cv(tape, dev, force_order2=True)
+        grad_A2 = fn(dev.batch_execute(tapes))
+
+        assert tape._par_info[0]["grad_method"] == "A"
+        assert tape._par_info[1]["grad_method"] == "A"
+
+        # the different methods agree
+        assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
+        assert np.allclose(grad_A2, grad_F, atol=tol, rtol=0)
+
+
+class TestVarianceQuantumGradients:
+    """Tests for the quantum gradients of various gates
+    with variance measurements"""
+
+    def test_first_order_observable(self, tol):
+        """Test variance of a first order CV observable"""
+        dev = qml.device("default.gaussian", wires=1)
+
+        r = 0.543
+        phi = -0.654
+
+        with qml.tape.JacobianTape() as tape:
+            qml.Squeezing(r, 0, wires=0)
+            qml.Rotation(phi, wires=0)
+            qml.var(qml.X(0))
+
+        tape.trainable_params = {0, 2}
+
+        res = tape.execute(dev)
+        expected = np.exp(2 * r) * np.sin(phi) ** 2 + np.exp(-2 * r) * np.cos(phi) ** 2
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # circuit jacobians
+        tapes, fn = qml.gradients.finite_diff(tape)
+        grad_F = fn(dev.batch_execute(tapes))
+
+        tapes, fn = param_shift_cv(tape, dev)
+        grad_A = fn(dev.batch_execute(tapes))
+
+        expected = np.array(
+            [
+                [
+                    2 * np.exp(2 * r) * np.sin(phi) ** 2 - 2 * np.exp(-2 * r) * np.cos(phi) ** 2,
+                    2 * np.sinh(2 * r) * np.sin(2 * phi),
+                ]
+            ]
+        )
+        assert np.allclose(grad_A, expected, atol=tol, rtol=0)
+        assert np.allclose(grad_F, expected, atol=tol, rtol=0)
+
+    def test_second_order_cv(self, tol):
+        """Test variance of a second order CV expectation value"""
+        dev = qml.device("default.gaussian", wires=1)
+
+        n = 0.12
+        a = 0.765
+
+        with qml.tape.JacobianTape() as tape:
+            qml.ThermalState(n, wires=0)
+            qml.Displacement(a, 0, wires=0)
+            qml.var(qml.NumberOperator(0))
+
+        tape.trainable_params = {0, 1}
+
+        res = tape.execute(dev)
+        expected = n ** 2 + n + np.abs(a) ** 2 * (1 + 2 * n)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # circuit jacobians
+        tapes, fn = qml.gradients.finite_diff(tape)
+        grad_F = fn(dev.batch_execute(tapes))
+
+        expected = np.array([[2 * a ** 2 + 2 * n + 1, 2 * a * (2 * n + 1)]])
+        assert np.allclose(grad_F, expected, atol=tol, rtol=0)
+
+    def test_expval_and_variance(self, tol):
+        """Test that the gradient works for a combination of CV expectation
+        values and variances"""
+        dev = qml.device("default.gaussian", wires=3)
+
+        a, b = [0.54, -0.423]
+
+        with qml.tape.JacobianTape() as tape:
+            qml.Displacement(0.5, 0, wires=0)
+            qml.Squeezing(a, 0, wires=0)
+            qml.Squeezing(b, 0, wires=1)
+            qml.Beamsplitter(0.6, -0.3, wires=[0, 1])
+            qml.Squeezing(-0.3, 0, wires=2)
+            qml.Beamsplitter(1.4, 0.5, wires=[1, 2])
+            qml.var(qml.X(0))
+            qml.expval(qml.X(1))
+            qml.var(qml.X(2))
+
+        tape.trainable_params = {2, 4}
+
+        # jacobians must match
+        tapes, fn = qml.gradients.finite_diff(tape)
+        grad_F = fn(dev.batch_execute(tapes))
+
+        tapes, fn = param_shift_cv(tape, dev)
+        grad_A = fn(dev.batch_execute(tapes))
+
+        assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
+
+    def test_error_analytic_second_order(self):
+        """Test exception raised if attempting to use a second
+        order observable to compute the variance derivative analytically"""
+        dev = qml.device("default.gaussian", wires=1)
+
+        with qml.tape.JacobianTape() as tape:
+            qml.Displacement(1.0, 0, wires=0)
+            qml.var(qml.NumberOperator(0))
+
+        tape.trainable_params = {0}
+
+        with pytest.raises(ValueError, match=r"cannot be used with the argument\(s\) \{0\}"):
+            param_shift_cv(tape, dev, fallback_fn=None)
+
+    def test_error_unsupported_grad_recipe(self, monkeypatch):
+        """Test exception raised if attempting to use the second order rule for
+        computing the gradient analytically of an expectation value that
+        contains an operation with more than two terms in the gradient recipe"""
+
+        class DummyOp(qml.operation.CVOperation):
+            num_wires = 1
+            num_params = 1
+            par_domain = "R"
+            grad_method = "A"
+            grad_recipe = ([[1, 1, 1], [1, 1, 1], [1, 1, 1]],)
+
+        dev = qml.device("default.gaussian", wires=1)
+
+        dev.operations.add(DummyOp)
+
+        with qml.tape.JacobianTape() as tape:
+            DummyOp(1, wires=[0])
+            qml.expval(qml.X(0))
+
+        with monkeypatch.context() as m:
+            m.setattr(tape, "_grad_method_validation", lambda *args: ("A",))
+            tape._par_info[0]["grad_method"] = "A"
+            tape.trainable_params = {0}
+
+            with pytest.raises(
+                NotImplementedError, match=r"analytic gradient for order-2 operators is unsupported"
+            ):
+                param_shift_cv(tape, dev, force_order2=True)
+
+    cv_ops = [getattr(qml, name) for name in qml.ops._cv__ops__]
+    analytic_cv_ops = [cls for cls in cv_ops if cls.supports_parameter_shift]
 
     # @pytest.mark.parametrize("obs", [qml.X, qml.P, qml.NumberOperator, qml.Identity])
     # @pytest.mark.parametrize("op", analytic_cv_ops)
-    # def test_gradients_gaussian_circuit(self, op, obs, mocker, tol):
+    # def test_gradients_gaussian_circuit(self, op, obs, tol):
     #     """Tests that the gradients of circuits of gaussian gates match between the
     #     finite difference and analytic methods."""
     #     tol = 1e-2
@@ -595,98 +846,68 @@ class TestExpectationQuantumGradients:
     #         qml.Displacement(-0.5, 0.1, wires=0)
     #         qml.Squeezing(0.5, -1.5, wires=0)
     #         qml.Rotation(-1.1, wires=0)
-    #         qml.expval(obs(wires=0))
+    #         qml.var(obs(wires=0))
 
     #     dev = qml.device("default.gaussian", wires=2)
     #     res = tape.execute(dev)
 
-    #     tape._update_gradient_info()
     #     tape.trainable_params = set(range(2, 2 + op.num_params))
 
-    #     # check that every parameter is analytic
-    #     for i in range(op.num_params):
-    #         assert tape._par_info[2 + i]["grad_method"][0] == "A"
+    #     # jacobians must match
+    #     tapes, fn = qml.gradients.finite_diff(tape)
+    #     grad_F = fn(dev.batch_execute(tapes))
 
-    #     spy = mocker.spy(qml.tape.JacobianTape, "parameter_shift_first_order")
-    #     grad_F = tape.jacobian(dev, method="numeric")
-    #     tapes, fn = param_shift_cv(tape, dev, force_order2=True)
-    # grad_A2 = fn(dev.batch_execute(tapes))
-
-    #     spy.assert_not_called()
-    #     assert np.allclose(grad_A2, grad_F, atol=tol, rtol=0)
-
-    #     if obs.ev_order == 1:
-    #         tapes, fn = param_shift_cv(tape, dev)
-    # grad_A = fn(dev.batch_execute(tapes))
-    #         spy.assert_called()
-    #         assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
-
-    # @pytest.mark.parametrize("t", [0, 1])
-    # def test_interferometer(self, t, tol):
-    #     """An integration test for CV gates that support analytic differentiation
-    #     if succeeding the gate to be differentiated, but cannot be differentiated
-    #     themselves (for example, they may be Gaussian but accept no parameters,
-    #     or may accept a numerical array parameter.).
-
-    #     This ensures that, assuming their _heisenberg_rep is defined, the quantum
-    #     gradient analytic method can still be used, and returns the correct result.
-
-    #     Currently, the only such operation is qml.Interferometer. In the future,
-    #     we may consider adding a qml.GaussianTransfom operator.
-    #     """
-
-    #     if t == 1:
-    #         pytest.xfail(
-    #             "There is a bug in the second order CV parameter-shift rule; "
-    #             "phase arguments return the incorrect derivative."
-    #         )
-
-    #         # Note: this bug currently affects PL core as well:
-    #         #
-    #         # dev = qml.device("default.gaussian", wires=2)
-    #         #
-    #         # U = np.array([[ 0.51310276+0.81702166j,  0.13649626+0.22487759j],
-    #         #         [ 0.26300233+0.00556194j, -0.96414101-0.03508489j]])
-    #         #
-    #         # @qml.qnode(dev)
-    #         # def circuit(r, phi):
-    #         #     qml.Displacement(r, phi, wires=0)
-    #         #     qml.Interferometer(U, wires=[0, 1])
-    #         #     return qml.expval(qml.X(0))
-
-    #         #
-    #         # r = 0.543
-    #         # phi = 0.
-    #         #
-    #         # >>> print(circuit.jacobian([r, phi], options={"force_order2":False}))
-    #         # [[ 1.02620552 0.14823494]]
-    #         # >>> print(circuit.jacobian([r, phi], options={"force_order2":True}))
-    #         # [[ 1.02620552 -0.88728552]]
-
-    #     U = np.array(
-    #         [
-    #             [0.51310276 + 0.81702166j, 0.13649626 + 0.22487759j],
-    #             [0.26300233 + 0.00556194j, -0.96414101 - 0.03508489j],
-    #         ]
-    #     )
-
-    #     with qml.tape.JacobianTape() as tape:
-    #         qml.Displacement(0.543, 0, wires=0)
-    #         qml.Interferometer(U, wires=[0, 1])
-    #         qml.expval(qml.X(0))
-
-    #     tape._update_gradient_info()
-    #     tape.trainable_params = {t}
-    #     assert tape._par_info[0]["grad_method"] == "A"
-    #     assert tape._par_info[1]["grad_method"] == "A"
-
-    #     dev = qml.device("default.gaussian", wires=2)
-    #     grad_F = tape.jacobian(dev, method="numeric")
     #     tapes, fn = param_shift_cv(tape, dev)
-    # grad_A = fn(dev.batch_execute(tapes))
-    #     tapes, fn = param_shift_cv(tape, dev, force_order2=True)
-    # grad_A2 = fn(dev.batch_execute(tapes))
+    #     grad_A = fn(dev.batch_execute(tapes))
 
-    #     # the different methods agree
-    #     assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
+    #     tapes, fn = param_shift_cv(tape, dev, force_order2=True)
+    #     grad_A2 = fn(dev.batch_execute(tapes))
+
     #     assert np.allclose(grad_A2, grad_F, atol=tol, rtol=0)
+    #     assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
+
+    #     # check that every parameter is analytic
+    #     if obs != qml.NumberOperator:
+    #         for i in range(op.num_params):
+    #             assert tape._par_info[2 + i]["grad_method"][0] == "A"
+
+    def test_squeezed_mean_photon_variance(self, tol):
+        """Test gradient of the photon variance of a displaced thermal state"""
+        dev = qml.device("default.gaussian", wires=1)
+
+        r = 0.12
+        phi = 0.105
+
+        with qml.tape.JacobianTape() as tape:
+            qml.Squeezing(r, 0, wires=0)
+            qml.Rotation(phi, wires=0)
+            qml.var(qml.X(wires=[0]))
+
+        tape.trainable_params = {0, 2}
+        tapes, fn = param_shift_cv(tape, dev)
+        grad = fn(dev.batch_execute(tapes))
+        expected = np.array(
+            [
+                2 * np.exp(2 * r) * np.sin(phi) ** 2 - 2 * np.exp(-2 * r) * np.cos(phi) ** 2,
+                2 * np.sinh(2 * r) * np.sin(2 * phi),
+            ]
+        )
+        assert np.allclose(grad, expected, atol=tol, rtol=0)
+
+    def test_displaced_thermal_mean_photon_variance(self, tol):
+        """Test gradient of the photon variance of a displaced thermal state"""
+        dev = qml.device("default.gaussian", wires=1)
+
+        n = 0.12
+        a = 0.105
+
+        with qml.tape.JacobianTape() as tape:
+            qml.ThermalState(n, wires=0)
+            qml.Displacement(a, 0, wires=0)
+            qml.var(qml.TensorN(wires=[0]))
+
+        tape.trainable_params = {0, 1}
+        tapes, fn = param_shift_cv(tape, dev)
+        grad = fn(dev.batch_execute(tapes))
+        expected = np.array([2 * a ** 2 + 2 * n + 1, 2 * a * (2 * n + 1)])
+        assert np.allclose(grad, expected, atol=tol, rtol=0)

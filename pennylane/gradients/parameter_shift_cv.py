@@ -210,11 +210,11 @@ def var_param_shift(tape, dev_wires, argnum=None, shift=np.pi / 2, gradient_reci
     # Store the number of first derivative tapes, so that we know
     # the number of results to post-process later.
     tape_boundary = len(pdA_tapes) + 1
+    expval_sq_tape = tape.copy(copy_operations=True)
 
     for i in var_idx:
         # We need to calculate d<A^2>/dp; to do so, we replace the
         # observables A in the queue with A^2.
-        expval_sq_tape = tape.copy(copy_operations=True)
         obs = expval_sq_tape._measurements[i].obs
 
         # CV first order observable
@@ -226,18 +226,18 @@ def var_param_shift(tape, dev_wires, argnum=None, shift=np.pi / 2, gradient_reci
         # take the outer product of the heisenberg representation
         # with itself, to get a square symmetric matrix representing
         # the square of the observable
-        obs = qml.PolyXP(np.outer(A, A), wires=obs.wires, do_queue=False)
+        obs = qml.PolyXP(np.outer(A, A), wires=obs.wires)
         expval_sq_tape._measurements[i] = qml.measure.MeasurementProcess(
             qml.operation.Expectation, obs=obs
         )
 
-        # Non-involutory observables are present; the partial derivative of <A^2>
-        # may be non-zero. Here, we calculate the analytic derivatives of the <A^2>
-        # observables.
-        pdA2_tapes, pdA2_fn = second_order_param_shift(
-            expval_sq_tape, dev_wires, argnum, shift, gradient_recipes, f0
-        )
-        gradient_tapes.extend(pdA2_tapes)
+    # Non-involutory observables are present; the partial derivative of <A^2>
+    # may be non-zero. Here, we calculate the analytic derivatives of the <A^2>
+    # observables.
+    pdA2_tapes, pdA2_fn = second_order_param_shift(
+        expval_sq_tape, dev_wires, argnum, shift, gradient_recipes, f0
+    )
+    gradient_tapes.extend(pdA2_tapes)
 
     def processing_fn(results):
         mask = qml.math.convert_like(qml.math.reshape(var_mask, [-1, 1]), results[0])
@@ -285,6 +285,7 @@ def second_order_param_shift(
     argnum = argnum or tape.trainable_params
     gradient_tapes = []
     shapes = []
+    obs_indices = []
 
     for idx, _ in enumerate(tape.trainable_params):
         t_idx = list(tape.trainable_params)[idx]
@@ -361,12 +362,13 @@ def second_order_param_shift(
             )
 
         gradient_tapes.append(g_tape)
+        obs_indices.append(transformed_obs_idx)
 
     def processing_fn(results):
         grads = []
         start = 0
 
-        for i, s in enumerate(shapes):
+        for i, (s, ind) in enumerate(zip(shapes, obs_indices)):
 
             if s == 0:
                 # parameter has zero gradient
@@ -380,7 +382,7 @@ def second_order_param_shift(
             # compute the linear combination of results and coefficients
             res = qml.math.stack(res[0])
             g = qml.math.zeros_like(res)
-            g[transformed_obs_idx] = res[transformed_obs_idx]
+            g[ind] = res[ind]
             grads.append(g)
 
         # The following is for backwards compatibility; currently,

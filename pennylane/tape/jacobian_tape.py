@@ -438,7 +438,8 @@ class JacobianTape(QuantumTape):
             return []
 
         diff_methods_to_use = map(diff_methods.__getitem__, argnum)
-        return zip(argnum, diff_methods_to_use)
+        print(argnum, diff_methods_to_use)
+        return list(zip(argnum, diff_methods_to_use))
 
     def jacobian(self, device, params=None, **options):
         r"""Compute the Jacobian of the parametrized quantum circuit recorded by the quantum tape.
