@@ -15,10 +15,9 @@
 This submodule contains the discrete-variable quantum operations that are the
 core parameterized gates.
 """
+# pylint:disable=abstract-method,arguments-differ,protected-access
 import cmath
 import functools
-
-# pylint:disable=abstract-method,arguments-differ,protected-access
 import math
 import numpy as np
 

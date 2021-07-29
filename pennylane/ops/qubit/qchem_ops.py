@@ -15,9 +15,8 @@
 This submodule contains the discrete-variable quantum operations that come
 from quantum chemistry applications.
 """
-import cmath
-
 # pylint:disable=abstract-method,arguments-differ,protected-access
+import cmath
 import math
 import numpy as np
 

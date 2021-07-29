@@ -15,7 +15,6 @@
 This submodule contains the discrete-variable quantum operations that perform
 arithmetic operations on their input states.
 """
-
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import numpy as np
 

@@ -15,9 +15,8 @@
 This submodule contains the discrete-variable quantum operations that
 accept a hermitian or an unitary matrix as a parameter.
 """
-import warnings
-
 # pylint:disable=abstract-method,arguments-differ,protected-access
+import warnings
 import numpy as np
 from scipy.linalg import block_diag
 
