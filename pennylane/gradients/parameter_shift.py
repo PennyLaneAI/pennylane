@@ -34,7 +34,7 @@ of that observable.
 """
 
 
-def _square_obsservable(obs):
+def _square_observable(obs):
     """Returns the square of an observable."""
 
     if isinstance(obs, qml.operation.Tensor):
@@ -301,7 +301,7 @@ def var_param_shift(tape, argnum, shift=np.pi / 2, gradient_recipes=None, f0=Non
         for i in non_involutory:
             # We need to calculate d<A^2>/dp; to do so, we replace the
             # involutory observables A in the queue with A^2.
-            obs = _square_obsservable(expval_sq_tape._measurements[i].obs)
+            obs = _square_observable(expval_sq_tape._measurements[i].obs)
             expval_sq_tape._measurements[i] = qml.measure.MeasurementProcess(
                 qml.operation.Expectation, obs=obs
             )
