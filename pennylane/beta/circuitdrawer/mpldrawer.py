@@ -100,7 +100,7 @@ class MPLDrawer:
         """
         if n_wires is None:
             n_wires = self.n_wires
-        if n_layers in None:
+        if n_layers is None:
             n_layers = self.n_layers
     
         for wire in range(n_wires): 
