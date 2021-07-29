@@ -110,7 +110,7 @@ class Device(abc.ABC):
     """
 
     # pylint: disable=too-many-public-methods
-    _capabilities = {"model": None, "supports_tracker": True}
+    _capabilities = {"model": None}
     """The capabilities dictionary stores the properties of a device. Devices can add their
     own custom properties and overwrite existing ones by overriding the ``capabilities()`` method."""
 

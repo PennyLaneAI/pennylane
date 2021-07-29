@@ -850,7 +850,6 @@ class TestDefaultTensorIntegration:
             "returns_probs": False,
             "returns_state": False,
             "supports_analytic_computation": True,
-            "supports_tracker": True,
         }
         assert cap == capabilities
 

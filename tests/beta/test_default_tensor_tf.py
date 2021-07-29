@@ -582,7 +582,6 @@ class TestInterfaceDeviceIntegration:
         cap = dev.capabilities()
         capabilities = {
             "model": "qubit",
-            "supports_tracker": True,
             "supports_finite_shots": False,
             "supports_tensor_observables": True,
             "returns_probs": False,

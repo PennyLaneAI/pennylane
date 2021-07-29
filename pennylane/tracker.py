@@ -90,33 +90,33 @@ class Tracker:
             With backpropagation, this function should take ``qnode.device``
             instead of the device used to create the QNode.
 
-    Users can pass a custom callback function to the ``callback`` keyword. This
-    function is run each time the ``record()`` method is called, which occurs near
-    the end of a device's ``execute`` and ``batch_execute`` methods. Using ``print``
-    or logging, users can monitor completion during a long set of jobs.
+        Users can pass a custom callback function to the ``callback`` keyword. This
+        function is run each time the ``record()`` method is called, which occurs near
+        the end of a device's ``execute`` and ``batch_execute`` methods. Using ``print``
+        or logging, users can monitor completion during a long set of jobs.
 
-    The function passed must accept ``totals``, ``history``, and ``latest`` as
-    keyword arguments. The dictionary ``latest`` will contain different keywords based on whether
-    whether ``execute`` or ``batch_execute`` last performed an update.
+        The function passed must accept ``totals``, ``history``, and ``latest`` as
+        keyword arguments. The dictionary ``latest`` will contain different keywords based on whether
+        whether ``execute`` or ``batch_execute`` last performed an update.
 
-    >>> def shots_info(totals, history, latest):
-    ...     if 'shots' in latest.keys():
-    ...         print("Total shots: ", totals['shots'])
-    >>> with qml.Tracker(circuit.device, callback=shots_info) as tracker:
-    ...     qml.grad(circuit)(0.1)
-    Total shots:  100
-    Total shots:  200
-    Total shots:  300
+        >>> def shots_info(totals, history, latest):
+        ...     if 'shots' in latest.keys():
+        ...         print("Total shots: ", totals['shots'])
+        >>> with qml.Tracker(circuit.device, callback=shots_info) as tracker:
+        ...     qml.grad(circuit)(0.1)
+        Total shots:  100
+        Total shots:  200
+        Total shots:  300
 
-    By specifying ``persistent=False``, you can reuse the same tracker across
-    multiple contexts.
+        By specifying ``persistent=False``, you can reuse the same tracker across
+        multiple contexts.
 
-    >>> with qml.Tracker(circuit.device, persistent=False) as tracker:
-    ...     circuit(0.1)
-    >>> with tracker:
-    ...     circuit(0.2)
-    >>> tracker.totals['executions']
-    2
+        >>> with qml.Tracker(circuit.device, persistent=False) as tracker:
+        ...     circuit(0.1)
+        >>> with tracker:
+        ...     circuit(0.2)
+        >>> tracker.totals['executions']
+        2
 
     """
 
@@ -130,7 +130,7 @@ class Tracker:
         self.active = False
 
         if dev is not None:
-            if not dev.capabilities().get("supports_tracker", False):
+            if not hasattr(dev, "tracker"):
                 raise Exception(f"Device '{dev.short_name}' does not support device tracking")
             dev.tracker = self
 

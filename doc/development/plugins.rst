@@ -389,7 +389,7 @@ And similar code in the ``batch_execute`` method:
 .. code-block:: python
 
   if self.tracker.active:
-    self.tracker.update(batches=1, batch_len=len(batches))
+    self.tracker.update(batches=1, batch_len=len(circuits))
     self.tracker.record()
 
 These functions are called in base :class:`~.Device` and :class:`~.QubitDevice` devices. Unless you are

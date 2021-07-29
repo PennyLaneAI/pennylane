@@ -730,7 +730,6 @@ class TestCapabilities:
             "supports_finite_shots": True,
             "supports_tensor_observables": True,
             "returns_probs": True,
-            "supports_tracker": True,
         }
         assert capabilities == QubitDevice.capabilities()
 

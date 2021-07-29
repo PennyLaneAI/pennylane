@@ -38,14 +38,14 @@
   parameter-shift batches.
 
   ```pycon
-    >>> def shots_info(totals, history, latest):
-    ...     print("Total shots: ", totals['shots'])
-    >>> with qml.Tracker(circuit.device, callback=shots_info) as tracker:
-    ...     qml.grad(circuit)(0.1)
-    Total shots:  100
-    Total shots:  200
-    Total shots:  300
-    ```
+  >>> def shots_info(totals, history, latest):
+  ...     print("Total shots: ", totals['shots'])
+  >>> with qml.Tracker(circuit.device, callback=shots_info) as tracker:
+  ...     qml.grad(circuit)(0.1)
+  Total shots:  100
+  Total shots:  200
+  Total shots:  300
+  ```
 
 * A new quantum function transform has been added to push commuting
   single-qubit gates through controlled operations.

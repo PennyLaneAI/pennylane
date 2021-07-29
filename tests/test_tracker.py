@@ -39,13 +39,20 @@ class TestTrackerCoreBehavior:
 
     def test_device_assignment(self):
         """Assert gets assigned to device"""
-        dev = qml.device("default.qubit", wires=2)
 
-        tracker = Tracker(dev=dev)
+        class TempDevice:
+            short_name = "temp"
 
-        assert id(dev.tracker) == id(tracker)
+            def __init__(self):
+                self.tracker = Tracker()
 
-    def test_incompatible_device_assignment_not_in_capabilities(self):
+        temp = TempDevice()
+
+        tracker = Tracker(dev=temp)
+
+        assert id(temp.tracker) == id(tracker)
+
+    def test_incompatible_device_assignment_no_tracker(self):
         """Assert exception raised when `supports_tracker` not True"""
 
         class TempDevice:
@@ -64,9 +71,6 @@ class TestTrackerCoreBehavior:
 
         class TempDevice:
             short_name = "temp"
-
-            def capabilities(self):
-                return {"supports_tracker": False}
 
         temp = TempDevice()
 

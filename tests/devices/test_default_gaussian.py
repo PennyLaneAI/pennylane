@@ -682,7 +682,6 @@ class TestDefaultGaussianIntegration:
         cap = dev.capabilities()
         capabilities = {
             "model": "cv",
-            "supports_tracker": True,
             "supports_finite_shots": True,
             "returns_probs": False,
             "returns_state": False,
