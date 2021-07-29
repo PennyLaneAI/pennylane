@@ -33,11 +33,11 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
     The default set of transforms includes (in order):
 
     - pushing all commuting single-qubit gates as far right as possible
-      (:func:`~.pennylane.transforms.commute_controlled`)
+      (:func:`~pennylane.transforms.commute_controlled`)
     - cancellation of adjacent inverse gates
-      (:func:`~.pennylane.transforms.cancel_inverses`)
+      (:func:`~pennylane.transforms.cancel_inverses`)
     - merging adjacent rotations of the same type
-      (:func:`~.pennylane.transforms.merge_rotations`)
+      (:func:`~pennylane.transforms.merge_rotations`)
 
     Args:
         qfunc (function): A quantum function.
