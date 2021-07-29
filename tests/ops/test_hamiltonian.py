@@ -122,7 +122,8 @@ class TestHamiltonianEvaluation:
 class TestHamiltonianDifferentiation:
     """Test that the Hamiltonian coefficients are differentiable"""
 
-    def test_vqe_differentiation_paramshift(self):
+    @pytest.mark.parametrize("simplify", [True, False])
+    def test_vqe_differentiation_paramshift(self, simplify):
         """Test the parameter-shift method by comparing the differentiation of linearly combined subcircuits
          with the differentiation of a Hamiltonian expectation"""
         coeffs = np.array([-0.05, 0.17])
@@ -133,7 +134,7 @@ class TestHamiltonianDifferentiation:
         def circuit(coeffs, param):
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
-            return qml.expval(qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)]))
+            return qml.expval(qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=simplify))
 
         grad_fn = qml.grad(circuit)
         grad = grad_fn(coeffs, param)
@@ -152,7 +153,8 @@ class TestHamiltonianDifferentiation:
         assert np.allclose(grad[0], grad_expected[0])
         assert np.allclose(grad[1], grad_expected[1])
 
-    def test_vqe_differentiation_autograd(self):
+    @pytest.mark.parametrize("simplify", [True, False])
+    def test_vqe_differentiation_autograd(self, simplify):
         """Test the autograd interface by comparing the differentiation of linearly combined subcircuits
          with the differentiation of a Hamiltonian expectation"""
 
@@ -164,7 +166,7 @@ class TestHamiltonianDifferentiation:
         def circuit(coeffs, param):
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
-            return qml.expval(qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)]))
+            return qml.expval(qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=simplify))
 
         grad_fn = qml.grad(circuit)
         grad = grad_fn(coeffs, param)
@@ -183,7 +185,8 @@ class TestHamiltonianDifferentiation:
         assert np.allclose(grad[0], grad_expected[0])
         assert np.allclose(grad[1], grad_expected[1])
 
-    def test_vqe_differentiation_jax(self):
+    @pytest.mark.parametrize("simplify", [True, False])
+    def test_vqe_differentiation_jax(self, simplify):
         """Test the jax interface by comparing the differentiation of linearly combined subcircuits
          with the differentiation of a Hamiltonian expectation"""
 
@@ -197,7 +200,7 @@ class TestHamiltonianDifferentiation:
         def circuit(coeffs, param):
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
-            return qml.expval(qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)]))
+            return qml.expval(qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=simplify))
 
         grad_fn = jax.grad(circuit)
         grad = grad_fn(coeffs, param)
@@ -216,7 +219,8 @@ class TestHamiltonianDifferentiation:
         assert np.allclose(grad[0], grad_expected[0])
         assert np.allclose(grad[1], grad_expected[1])
 
-    def test_vqe_differentiation_torch(self):
+    @pytest.mark.parametrize("simplify", [True, False])
+    def test_vqe_differentiation_torch(self, simplify):
         """Test the torch interface by comparing the differentiation of linearly combined subcircuits
          with the differentiation of a Hamiltonian expectation"""
 
@@ -229,7 +233,7 @@ class TestHamiltonianDifferentiation:
         def circuit(coeffs, param):
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
-            return qml.expval(qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)]))
+            return qml.expval(qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=simplify))
 
         res = circuit(coeffs, param)
         res.backward()
@@ -253,7 +257,8 @@ class TestHamiltonianDifferentiation:
         assert np.allclose(grad[0], grad_expected[0])
         assert np.allclose(grad[1], grad_expected[1])
 
-    def test_vqe_differentiation_tf(self):
+    @pytest.mark.parametrize("simplify", [True, False])
+    def test_vqe_differentiation_tf(self, simplify):
         """Test the tf interface by comparing the differentiation of linearly combined subcircuits
          with the differentiation of a Hamiltonian expectation"""
 
@@ -266,7 +271,7 @@ class TestHamiltonianDifferentiation:
         def circuit(coeffs, param):
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
-            return qml.expval(qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)]))
+            return qml.expval(qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=simplify))
 
         with tf.GradientTape() as tape:
             res = circuit(coeffs, param)
