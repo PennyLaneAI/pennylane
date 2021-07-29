@@ -55,6 +55,7 @@
    0: ──H───RX(0.4)──RX(0.2)─────────────────────────────┤ ⟨Z⟩
    1: ──H──╭X────────────────────────────────────╭CY─────┤
    2: ──H──╰C────────RZ(0.4)──RZ(-0.4)──RX(0.3)──╰CY──Y──┤
+  ```
 
 * VQE problems can now intuitively been set up by passing the Hamiltonian 
   as an observable. [(#1474)](https://github.com/PennyLaneAI/pennylane/pull/1474)
