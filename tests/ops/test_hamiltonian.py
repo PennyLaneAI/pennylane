@@ -51,12 +51,14 @@ except ImportError:
 
 
 def circuit1(param):
+    """First Pauli subcircuit"""
     qml.RX(param, wires=0)
     qml.RY(param, wires=0)
     return qml.expval(qml.PauliX(0))
 
 
 def circuit2(param):
+    """Second Pauli subcircuit"""
     qml.RX(param, wires=0)
     qml.RY(param, wires=0)
     return qml.expval(qml.PauliZ(0))

@@ -44,7 +44,7 @@ with pennylane.tape.QuantumTape() as tape2:
             qml.PauliX(2),
             qml.PauliZ(0) @ qml.PauliX(1),
         ],
-        do_queue=False
+        do_queue=False,
     )
     qml.expval(H2)
 

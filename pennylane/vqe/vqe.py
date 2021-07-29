@@ -38,7 +38,7 @@ class Hamiltonian(qml.operation.Observable):
 
     Args:
         coeffs (tensor_like): coefficients of the Hamiltonian expression
-        observables (Iterable[Observable]): observables in the Hamiltonian expression, same length as coeffs
+        observables (Iterable[Observable]): observables in the Hamiltonian expression, of same length as coeffs
         simplify (bool): Specifies whether the Hamiltonian is simplified upon initialization
                          (like-terms are combined). The default value is `False`.
 
@@ -194,7 +194,7 @@ class Hamiltonian(qml.operation.Observable):
 
             if ind is not None:
                 coeffs[ind] += c
-                if np.isclose(qml.math.toarray(coeffs[ind]), np.array(0.)):
+                if np.isclose(qml.math.toarray(coeffs[ind]), np.array(0.0)):
                     del coeffs[ind]
                     del ops[ind]
             else:
