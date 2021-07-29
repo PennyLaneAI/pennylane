@@ -188,8 +188,7 @@ class TestParamShift:
         assert len(tapes) == tape.num_params + 1
 
     def test_y0_provided(self, mocker):
-        """Test that if first order finite differences is used,
-        and the original tape output is provided, then
+        """Test that if the original tape output is provided, then
         the tape is executed only once using the current parameter
         values."""
         dev = qml.device("default.qubit", wires=2)
@@ -269,7 +268,8 @@ class TestParameterShiftRule:
         assert spy.call_args[1]["shift"] == shift
 
         # compare to finite differences
-        numeric_val = tape.jacobian(dev, shift=shift, method="numeric")
+        tapes, fn = qml.gradients.finite_diff(tape)
+        numeric_val = fn(dev.batch_execute(tapes))
         assert np.allclose(autograd_val, numeric_val, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))

@@ -255,7 +255,12 @@ def var_param_shift(tape, argnum, shift=np.pi / 2, gradient_recipes=None, f0=Non
 
     # For involutory observables (A^2 = I) we have d<A^2>/dp = 0.
     # Currently, the only observable we have in PL that may be non-involutory is qml.Hermitian
-    involutory = [i for i in var_idx if tape.observables[i].name not in NONINVOLUTORY_OBS]
+    involutory = []
+
+    for i in var_idx:
+        obs_name = tape.observables[i].name
+        if isinstance(obs_name, list) or obs_name not in NONINVOLUTORY_OBS:
+            involutory.append(i)
 
     # If there are non-involutory observables A present, we must compute d<A^2>/dp.
     non_involutory = set(var_idx) - set(involutory)
