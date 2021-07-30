@@ -380,6 +380,11 @@
 
 <h3>Improvements</h3>
 
+* Changed the default precision used by the JAX device. It remains unchanged for
+  `jax.config.config.read('jax_enable_x64')==False` and changed to double precision
+  if `jax.config.config.read('jax_enable_x64')==True`.
+  [(#1485)](https://github.com/PennyLaneAI/pennylane/pull/1485)
+
 * The `./pennylane/ops/qubit.py` file is broken up into a folder of six separate files.
   [(#1467)](https://github.com/PennyLaneAI/pennylane/pull/1467)
 
@@ -444,7 +449,7 @@
 This release contains contributions from (in alphabetical order):
 
 Olivia Di Matteo, Josh Izaac, Leonhard Kunczik, Christina Lee, Romain Moyard, Ashish Panigrahi,
-Maria Schuld, Jay Soni, Antal Száva
+Maria Schuld, Jay Soni, Antal Száva, David Wierichs
 
 
 # Release 0.16.0 (current release)
