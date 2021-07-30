@@ -282,7 +282,9 @@ def second_order_param_shift(
         list of generated tapes, in addition to a post-processing
         function to be applied to the evaluated tapes.
     """
-    argnum = argnum or tape.trainable_params
+    argnum = argnum or list(tape.trainable_params)
+    gradient_recipes = gradient_recipes or [None] * len(argnum)
+
     gradient_tapes = []
     shapes = []
     obs_indices = []
@@ -294,6 +296,7 @@ def second_order_param_shift(
         if idx not in argnum:
             # parameter has zero gradient
             shapes.append(0)
+            obs_indices.append([])
             continue
 
         shapes.append(1)
@@ -391,7 +394,7 @@ def second_order_param_shift(
         # In the future, we might want to change this so that only tuples
         # of arrays are returned.
         for i, g in enumerate(grads):
-            g = qml.math.convert_like(g, res[0])
+            g = qml.math.convert_like(g, results[0])
             if hasattr(g, "dtype") and g.dtype is np.dtype("object"):
                 grads[i] = qml.math.hstack(g)
 

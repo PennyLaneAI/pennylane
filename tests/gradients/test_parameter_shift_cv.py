@@ -342,6 +342,36 @@ class TestParameterShiftLogic:
 
         spy.assert_not_called()
 
+    def test_second_order_argnum(self):
+        """Test that when using the argnum argument, only the gradient
+        of the specified parameters is returned."""
+        dev = qml.device("default.gaussian", wires=2)
+
+        with qml.tape.JacobianTape() as tape:
+            qml.Displacement(1, 0, wires=[1])
+            qml.Displacement(1, 0, wires=[0])
+            qml.expval(qml.X(0))
+
+        tape.trainable_params = {0, 2}
+        tapes, fn = qml.gradients.param_shift_cv(tape, dev)
+
+        # We should only be executing the device to differentiate 1 parameter
+        # (first order, so 2 executions)
+        assert len(tapes) == 2
+
+        res = fn(dev.batch_execute(tapes))
+        assert np.allclose(res, [0, 2])
+
+        tape.trainable_params = {0, 2}
+        tapes, fn = qml.gradients.param_shift_cv(tape, dev, force_order2=True)
+
+        # We should only be executing the device to differentiate 1 parameter
+        # (second order, so 1 execution)
+        assert len(tapes) == 1
+
+        res = fn(dev.batch_execute(tapes))
+        assert np.allclose(res, [0, 2])
+
 
 class TestExpectationQuantumGradients:
     """Tests for the quantum gradients of various gates
@@ -830,46 +860,46 @@ class TestVarianceQuantumGradients:
     cv_ops = [getattr(qml, name) for name in qml.ops._cv__ops__]
     analytic_cv_ops = [cls for cls in cv_ops if cls.supports_parameter_shift]
 
-    # @pytest.mark.parametrize("obs", [qml.X, qml.P, qml.NumberOperator, qml.Identity])
-    # @pytest.mark.parametrize("op", analytic_cv_ops)
-    # def test_gradients_gaussian_circuit(self, op, obs, tol):
-    #     """Tests that the gradients of circuits of gaussian gates match between the
-    #     finite difference and analytic methods."""
-    #     tol = 1e-2
+    @pytest.mark.parametrize("obs", [qml.X, qml.P, qml.NumberOperator, qml.Identity])
+    @pytest.mark.parametrize("op", analytic_cv_ops)
+    def test_gradients_gaussian_circuit(self, op, obs, tol):
+        """Tests that the gradients of circuits of gaussian gates match between the
+        finite difference and analytic methods."""
+        tol = 1e-2
 
-    #     args = np.linspace(0.2, 0.5, op.num_params)
+        args = np.linspace(0.2, 0.5, op.num_params)
 
-    #     with qml.tape.JacobianTape() as tape:
-    #         qml.Displacement(0.5, 0, wires=0)
-    #         op(*args, wires=range(op.num_wires))
-    #         qml.Beamsplitter(1.3, -2.3, wires=[0, 1])
-    #         qml.Displacement(-0.5, 0.1, wires=0)
-    #         qml.Squeezing(0.5, -1.5, wires=0)
-    #         qml.Rotation(-1.1, wires=0)
-    #         qml.var(obs(wires=0))
+        with qml.tape.JacobianTape() as tape:
+            qml.Displacement(0.5, 0, wires=0)
+            op(*args, wires=range(op.num_wires))
+            qml.Beamsplitter(1.3, -2.3, wires=[0, 1])
+            qml.Displacement(-0.5, 0.1, wires=0)
+            qml.Squeezing(0.5, -1.5, wires=0)
+            qml.Rotation(-1.1, wires=0)
+            qml.var(obs(wires=0))
 
-    #     dev = qml.device("default.gaussian", wires=2)
-    #     res = tape.execute(dev)
+        dev = qml.device("default.gaussian", wires=2)
+        res = tape.execute(dev)
 
-    #     tape.trainable_params = set(range(2, 2 + op.num_params))
+        tape.trainable_params = set(range(2, 2 + op.num_params))
 
-    #     # jacobians must match
-    #     tapes, fn = qml.gradients.finite_diff(tape)
-    #     grad_F = fn(dev.batch_execute(tapes))
+        # jacobians must match
+        tapes, fn = qml.gradients.finite_diff(tape)
+        grad_F = fn(dev.batch_execute(tapes))
 
-    #     tapes, fn = param_shift_cv(tape, dev)
-    #     grad_A = fn(dev.batch_execute(tapes))
+        tapes, fn = param_shift_cv(tape, dev)
+        grad_A = fn(dev.batch_execute(tapes))
 
-    #     tapes, fn = param_shift_cv(tape, dev, force_order2=True)
-    #     grad_A2 = fn(dev.batch_execute(tapes))
+        tapes, fn = param_shift_cv(tape, dev, force_order2=True)
+        grad_A2 = fn(dev.batch_execute(tapes))
 
-    #     assert np.allclose(grad_A2, grad_F, atol=tol, rtol=0)
-    #     assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
+        assert np.allclose(grad_A2, grad_F, atol=tol, rtol=0)
+        assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
 
-    #     # check that every parameter is analytic
-    #     if obs != qml.NumberOperator:
-    #         for i in range(op.num_params):
-    #             assert tape._par_info[2 + i]["grad_method"][0] == "A"
+        # check that every parameter is analytic
+        if obs != qml.NumberOperator:
+            for i in range(op.num_params):
+                assert tape._par_info[2 + i]["grad_method"][0] == "A"
 
     def test_squeezed_mean_photon_variance(self, tol):
         """Test gradient of the photon variance of a displaced thermal state"""

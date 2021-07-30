@@ -423,10 +423,10 @@ class JacobianTape(QuantumTape):
         if isinstance(argnum, int):
             argnum = [argnum]
 
-        if not all(ind in self.trainable_params for ind in argnum):
-            raise ValueError(
-                "Incorrect trainable parameters were specified for the argnum argument."
-            )
+        # if not all(ind in self.trainable_params for ind in argnum):
+        #     raise ValueError(
+        #         "Incorrect trainable parameters were specified for the argnum argument."
+        #     )
 
         num_params = len(argnum)
 
@@ -438,8 +438,7 @@ class JacobianTape(QuantumTape):
             return []
 
         diff_methods_to_use = map(diff_methods.__getitem__, argnum)
-        print(argnum, diff_methods_to_use)
-        return list(zip(argnum, diff_methods_to_use))
+        return zip(argnum, diff_methods_to_use)
 
     def jacobian(self, device, params=None, **options):
         r"""Compute the Jacobian of the parametrized quantum circuit recorded by the quantum tape.
