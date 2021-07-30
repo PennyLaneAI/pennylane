@@ -380,6 +380,10 @@
 
 <h3>Improvements</h3>
 
+* The `step` and `step_and_cost` methods of the `QNGOptimizer` now accept a custom `grad_fn`
+  with which the gradient then is computed.
+  [(#1487)](https://github.com/PennyLaneAI/pennylane/pull/1487)
+
 * The `./pennylane/ops/qubit.py` file is broken up into a folder of six separate files.
   [(#1467)](https://github.com/PennyLaneAI/pennylane/pull/1467)
 
