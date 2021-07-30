@@ -44,7 +44,7 @@ def build_qfunc(wires):
 class TestCompile:
     """Unit tests for compilation."""
 
-    def test_invalid_pipeline(self):
+    def test_compile_invalid_pipeline(self):
         """Test that error is raised for an invalid function in the pipeline"""
         qfunc = build_qfunc([0, 1, 2])
         dev = qml.device("default.qubit", wires=[0, 1, 2])
@@ -55,7 +55,7 @@ class TestCompile:
         with pytest.raises(ValueError, match="Invalid transform function"):
             transformed_qnode(0.1, 0.2, 0.3)
 
-    def test_invalid_num_passes(self):
+    def test_compile_invalid_num_passes(self):
         """Test that error is raised for an invalid number of passes."""
         qfunc = build_qfunc([0, 1, 2])
         dev = qml.device("default.qubit", wires=[0, 1, 2])
@@ -66,7 +66,7 @@ class TestCompile:
         with pytest.raises(ValueError, match="Number of passes must be an integer"):
             transformed_qnode(0.1, 0.2, 0.3)
 
-    def test_mixed_tape_qfunc_transform(self):
+    def test_compile_mixed_tape_qfunc_transform(self):
         """Test that we can interchange tape and qfunc transforms."""
 
         wires = [0, 1, 2]
@@ -103,7 +103,7 @@ class TestCompile:
             ("commute_controlled", 2),
         ],
     )
-    def test_mock_calls(self, transform_name, num_passes, mocker):
+    def test_compile_mock_calls(self, transform_name, num_passes, mocker):
         """Test that functions in the pipeline are called the correct number of times."""
 
         class DummyTransforms:
@@ -141,7 +141,7 @@ class TestCompileIntegration:
     """Integration tests to verify outputs of compilation pipelines."""
 
     @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
-    def test_empty_pipeline(self, wires):
+    def test_compile_empty_pipeline(self, wires):
         """Test that an empty pipeline returns the original function."""
 
         qfunc = build_qfunc(wires)
@@ -162,7 +162,7 @@ class TestCompileIntegration:
         compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
 
     @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
-    def test_default_pipeline(self, wires):
+    def test_compile_default_pipeline(self, wires):
         """Test that the default pipeline returns the correct results."""
 
         qfunc = build_qfunc(wires)
@@ -189,7 +189,7 @@ class TestCompileIntegration:
         compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
 
     @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
-    def test_pipeline_with_non_default_arguments(self, wires):
+    def test_compile_pipeline_with_non_default_arguments(self, wires):
         """Test that using non-default arguments returns the correct results."""
 
         qfunc = build_qfunc(wires)
@@ -222,7 +222,7 @@ class TestCompileIntegration:
         compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
 
     @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
-    def test_multiple_passes(self, wires):
+    def test_compile_multiple_passes(self, wires):
         """Test that running multiple passes produces the correct results."""
 
         qfunc = build_qfunc(wires)
@@ -253,7 +253,7 @@ class TestCompileIntegration:
         compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
 
     @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
-    def test_decompose_into_basis_gates(self, wires):
+    def test_compile_decompose_into_basis_gates(self, wires):
         """Test that running multiple passes produces the correct results."""
 
         qfunc = build_qfunc(wires)
