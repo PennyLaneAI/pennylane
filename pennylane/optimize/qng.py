@@ -155,7 +155,7 @@ class QNGOptimizer(GradientDescentOptimizer):
         self.metric_tensor = None
         self.lam = lam
 
-    def step_and_cost(self, qnode, x, recompute_tensor=True, metric_tensor_fn=None):
+    def step_and_cost(self, qnode, x, recompute_tensor=True, metric_tensor_fn=None, grad_fn=None):
         """Update the parameter array :math:`x` with one step of the optimizer and return the
         corresponding objective function value prior to the step.
 
@@ -191,12 +191,12 @@ class QNGOptimizer(GradientDescentOptimizer):
 
         # The QNGOptimizer.step does not permit passing an external gradient function.
         # Autograd will always calculate the gradient and `forward` will never be `None`.
-        g, forward = self.compute_grad(qnode, (x,), dict())
+        g, forward = self.compute_grad(qnode, (x,), dict(), grad_fn=grad_fn)
         x_out = self.apply_grad(g, x)
         return x_out, forward
 
     # pylint: disable=arguments-differ
-    def step(self, qnode, x, recompute_tensor=True, metric_tensor_fn=None):
+    def step(self, qnode, x, recompute_tensor=True, metric_tensor_fn=None, grad_fn=None):
         """Update the parameter array :math:`x` with one step of the optimizer.
 
         Args:
@@ -213,7 +213,11 @@ class QNGOptimizer(GradientDescentOptimizer):
             array: the new variable values :math:`x^{(t+1)}`
         """
         x_out, _ = self.step_and_cost(
-            qnode, x, recompute_tensor=recompute_tensor, metric_tensor_fn=metric_tensor_fn
+            qnode,
+            x,
+            recompute_tensor=recompute_tensor,
+            metric_tensor_fn=metric_tensor_fn,
+            grad_fn=grad_fn,
         )
         return x_out
 
