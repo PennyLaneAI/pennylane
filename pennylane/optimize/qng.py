@@ -156,7 +156,9 @@ class QNGOptimizer(GradientDescentOptimizer):
         self.metric_tensor = None
         self.lam = lam
 
-    def step_and_cost(self, qnode, *args, grad_fn=None, recompute_tensor=True, metric_tensor_fn=None, **kwargs):
+    def step_and_cost(
+        self, qnode, *args, grad_fn=None, recompute_tensor=True, metric_tensor_fn=None, **kwargs
+    ):
         """Update the parameter array :math:`x` with one step of the optimizer and return the
         corresponding objective function value prior to the step.
 
@@ -206,7 +208,9 @@ class QNGOptimizer(GradientDescentOptimizer):
         return new_args, forward
 
     # pylint: disable=arguments-differ
-    def step(self, qnode, *args, recompute_tensor=True, metric_tensor_fn=None, grad_fn=None, **kwargs):
+    def step(
+        self, qnode, *args, recompute_tensor=True, metric_tensor_fn=None, grad_fn=None, **kwargs
+    ):
         """Update the parameter array :math:`x` with one step of the optimizer.
 
         Args:
