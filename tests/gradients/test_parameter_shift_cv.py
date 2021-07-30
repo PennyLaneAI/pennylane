@@ -966,3 +966,36 @@ class TestVarianceQuantumGradients:
         grad = fn(dev.batch_execute(tapes))
         expected = np.array([2 * a ** 2 + 2 * n + 1, 2 * a * (2 * n + 1)])
         assert np.allclose(grad, expected, atol=tol, rtol=0)
+
+
+@pytest.mark.xfail(message="The CV Operation methods have not been updated to support autodiff")
+class TestParamShiftGradients:
+    """Test that the transform is differentiable"""
+
+    def test_autograd(self, tol):
+        """Tests that the output of the parameter-shift CV transform
+        can be differentiated using autograd, yielding second derivatives."""
+        dev = qml.device("default.gaussian", wires=1)
+        from pennylane.interfaces.autograd import AutogradInterface
+
+        r = 0.12
+        phi = 0.105
+
+        def cost_fn(x):
+            with AutogradInterface.apply(qml.tape.CVParamShiftTape()) as tape:
+                qml.Squeezing(x[0], 0, wires=0)
+                qml.Rotation(x[1], wires=0)
+                qml.var(qml.X(wires=[0]))
+
+            tapes, fn = param_shift_cv(tape, dev)
+            return fn([t.execute(dev) for t in tapes])[0]
+
+        params = np.array([r, phi], requires_grad=True)
+        grad = qml.jacobian(cost_fn)(params)
+        expected = np.array(
+            [
+                (4 * np.cos(phi) ** 2 + np.exp(4 * r) * np.sin(phi) ** 2) / np.exp(2 * r),
+                4 * np.cosh(2 * r) * np.sin(2 * phi),
+            ]
+        )
+        assert np.allclose(grad, expected, atol=tol, rtol=0)
