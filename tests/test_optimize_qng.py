@@ -83,11 +83,13 @@ class TestOptimize:
         opt = qml.QNGOptimizer(stepsize=0.01)
 
         grad_fn = qml.grad(circuit)
-        step, cost = opt.step_and_cost(circuit, var, grad_fn=grad_fn)
+        step1, cost = opt.step_and_cost(circuit, var, grad_fn=grad_fn)
+        step2 = opt.step(circuit, var, grad_fn=grad_fn)
 
         expected_step = var - opt._stepsize * 4 * grad_fn(var)
         expected_cost = circuit(var)
-        assert np.allclose(step, expected_step)
+        assert np.allclose(step1, expected_step)
+        assert np.allclose(step2, expected_step)
         assert np.isclose(cost, expected_cost)
 
     def test_qubit_rotation(self, tol):
