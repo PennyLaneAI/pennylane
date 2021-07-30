@@ -68,7 +68,7 @@ class TestOptimize:
         expected = circuit(var)
         assert np.all(res == expected)
 
-    def test_step_and_cost_autograd(self, tol):
+    def test_step_and_cost_with_grad_fn(self, tol):
         """Test that the correct cost and update is returned via the step_and_cost
         method for the QNG optimizer when providing an explicit grad_fn"""
         dev = qml.device("default.qubit", wires=1)
@@ -82,7 +82,13 @@ class TestOptimize:
         var = np.array([0.011, 0.012])
         opt = qml.QNGOptimizer(stepsize=0.01)
 
+        # With autograd gradient function
         grad_fn = qml.grad(circuit)
+        step1, cost = opt.step_and_cost(circuit, var, grad_fn=grad_fn)
+        step2 = opt.step(circuit, var, grad_fn=grad_fn)
+
+        # With more custom gradient function
+        grad_fn = lambda param: np.array(qml.grad(circuit)(param))
         step1, cost = opt.step_and_cost(circuit, var, grad_fn=grad_fn)
         step2 = opt.step(circuit, var, grad_fn=grad_fn)
 
