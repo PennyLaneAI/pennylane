@@ -164,9 +164,16 @@ def _transform_observable(obs, Z, device_wires):
 
 
 def var_param_shift(tape, dev_wires, argnum=None, shift=np.pi / 2, gradient_recipes=None, f0=None):
-    r"""Generate the CV parameter-shift tapes and postprocessing methods required
-    to compute the gradient of a gate parameter with respect to a
-    variance value.
+    r"""Partial derivative using the first-order or second-order parameter-shift rule of a tape
+    consisting of a mixture of expectation values and variances of observables.
+
+    Expectation values may be of first- or second-order observables,
+    but variances can only be taken of first-order variables.
+
+    .. warning::
+
+        This method can only be executed on devices that support the
+        :class:`~.PolyXP` observable.
 
     Args:
         tape (.QuantumTape): quantum tape to differentiate
@@ -262,6 +269,17 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shift=np.pi / 2, grad
     r"""Generate the second-order CV parameter-shift tapes and postprocessing methods required
     to compute the gradient of a gate parameter with respect to an
     expectation value.
+
+    .. note::
+
+        The 2nd order method can handle also first order observables, but
+        1st order method may be more efficient unless it's really easy to
+        experimentally measure arbitrary 2nd order observables.
+
+    .. warning::
+
+        The 2nd order method can only be executed on devices that support the
+        :class:`~.PolyXP` observable.
 
     Args:
         tape (.QuantumTape): quantum tape to differentiate
@@ -376,7 +394,7 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shift=np.pi / 2, grad
             )
 
         if not any(i is None for i in constants):
-            # Check if the transformed observable corresponds to a constant term.
+            # Check if *all* transformed observables corresponds to a constant term.
             # term. If this is the case for all transformed observables on the tape,
             # then <psi|A|psi> = A<psi|psi> = A,
             # and we can avoid the device execution.
@@ -482,20 +500,79 @@ def param_shift_cv(
         list of generated tapes, in addition to a post-processing
         function to be applied to the evaluated tapes.
 
+    This transform supports analytic gradients of Gaussian CV operations using
+    the parameter-shift rule. This gradient method returns *exact* gradients,
+    and can be computed directly on quantum hardware.
+
+    Analytic gradients of photonic circuits that satisfy
+    the following constraints with regards to measurements are supported:
+
+    * Expectation values are restricted to observables that are first- and
+      second-order in :math:`\hat{x}` :math:`\hat{p}` only.
+      This includes :class:`~.X`, :class:`~.P`, :class:`~.QuadOperator`,
+      :class:`~.PolyXP`, and :class:`~.NumberOperator`.
+
+      For second-order observables, the device **must support** :class:`~.PolyXP`.
+
+    * Variances are restricted to observables that are first-order
+      in :math:`\hat{x}` :math:`\hat{p}` only. This includes :class:`~.X`, :class:`~.P`,
+      :class:`~.QuadOperator`, and *some* parameter values of :class:`~.PolyXP`.
+
+      The device **must support** :class:`~.PolyXP`.
+
+    Fock state probabilities (tapes that return :func:`~pennylane.probs` or
+    expectation values of :class:`~.FockStateProjector`) are not supported.
+
+    In addition, the tape operations must fulfill the following requirements:
+
+    * Only Gaussian operations are differentiable.
+
+    * Non-differentiable Fock states and Fock operations may *precede* all differentiable Gaussian,
+      operations. For example, the following is permissible:
+
+      .. code-block:: python
+
+          with qml.tape.JacobianTape() as tape:
+              # Non-differentiable Fock operations
+              qml.FockState(2, wires=0)
+              qml.Kerr(0.654, wires=1)
+
+              # differentiable Gaussian operations
+              qml.Displacement(0.6, 0.5, wires=0)
+              qml.Beamsplitter(0.5, 0.1, wires=[0, 1])
+              qml.expval(qml.NumberOperator(0))
+
+          tape.trainable_params = {2, 3, 4}
+
+    * If a Fock operation succeeds a Gaussian operation, the Fock operation must
+      not contribute to any measurements. For example, the following is allowed:
+
+      .. code-block:: python
+
+          with qml.tape.JacobianTape() as tape:
+              qml.Displacement(0.6, 0.5, wires=0)
+              qml.Beamsplitter(0.5, 0.1, wires=[0, 1])
+              qml.Kerr(0.654, wires=1)  # there is no measurement on wire 1
+              qml.expval(qml.NumberOperator(0))
+
+          tape.trainable_params = {0, 1, 2}
+
+    If any of the above constraints are not followed, the tape cannot be differentiated
+    via the CV parameter-shift rule. Please use numerical differentiation instead.
+
     **Example**
 
-    >>> with qml.tape.QuantumTape() as tape:
-    ...     qml.RX(params[0], wires=0)
-    ...     qml.RY(params[1], wires=0)
-    ...     qml.RX(params[2], wires=0)
-    ...     qml.expval(qml.PauliZ(0))
-    ...     qml.var(qml.PauliZ(0))
-    >>> tape.trainable_params = {0, 1, 2}
-    >>> gradient_tapes, fn = qml.gradients.param_shift(tape)
+    >>> r0, phi0, r1, phi1 = [0.4, -0.3, -0.7, 0.2]
+    >>> dev = qml.device("default.gaussian", wires=1)
+    >>> with qml.tape.JacobianTape() as tape:
+    ...     qml.Squeezing(r0, phi0, wires=[0])
+    ...     qml.Squeezing(r1, phi1, wires=[0])
+    ...     qml.expval(qml.NumberOperator(0))  # second order
+    >>> tape.trainable_params = {0, 2}
+    >>> gradient_tapes, fn = qml.gradients.param_shift_cv(tape, dev)
     >>> res = dev.batch_execute(gradient_tapes)
     >>> fn(res)
-    [[-0.38751721 -0.18884787 -0.38355704]
-     [ 0.69916862  0.34072424  0.69202359]]
+    array([[-0.32487113, -0.87049853]])
     """
 
     # perform gradient method validation
@@ -511,6 +588,8 @@ def param_shift_cv(
     fns = []
 
     def _update(data):
+        """Utility function to update the list of gradient tapes,
+        the corresponding number of gradient tapes, and the processing functions"""
         gradient_tapes.extend(data[0])
         shapes.append(len(data[0]))
         fns.append(data[1])
@@ -533,6 +612,7 @@ def param_shift_cv(
     second_order_params = [idx for idx, g in method_map.items() if g == "A2"]
 
     if force_order2:
+        # all analytic parameters should be computed using the second-order method
         second_order_params += first_order_params
         first_order_params = []
 
@@ -555,11 +635,11 @@ def param_shift_cv(
     if unsupported_params:
         _update(fallback_fn(tape, argnum=unsupported_params))
 
-    # Generate parameter-shift gradient tapes
-
+    # collect all the analytic parameters
     argnum = first_order_params + second_order_params
 
     if not argnum:
+        # No analytic parameters. Return the existing fallback tapes/fn
         return gradient_tapes, fns[-1]
 
     gradient_recipes = gradient_recipes or [None] * len(argnum)
@@ -568,7 +648,6 @@ def param_shift_cv(
         _update(var_param_shift(tape, dev.wires, argnum, shift, gradient_recipes, f0))
 
     else:
-        # If there are second-order parameters, call the second order shift rule
         if first_order_params:
             _update(expval_param_shift(tape, first_order_params, shift, gradient_recipes, f0))
 
