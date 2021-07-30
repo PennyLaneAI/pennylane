@@ -181,11 +181,11 @@ class DefaultQubitJax(DefaultQubit):
 
     def __init__(self, wires, *, shots=None, prng_key=None, analytic=None):
         if jax_config.read("jax_enable_x64"):
-            C_DTYPE = jnp.complex128
-            R_DTYPE = jnp.float64
+            self.C_DTYPE = jnp.complex128
+            self.R_DTYPE = jnp.float64
         else:
-            C_DTYPE = jnp.complex64
-            R_DTYPE = jnp.float32
+            self.C_DTYPE = jnp.complex64
+            self.R_DTYPE = jnp.float32
         super().__init__(wires, shots=shots, cache=0, analytic=analytic)
 
         # prevent using special apply methods for these gates due to slowdown in jax
