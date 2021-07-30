@@ -68,6 +68,28 @@ class TestOptimize:
         expected = circuit(var)
         assert np.all(res == expected)
 
+    def test_step_and_cost_autograd(self, tol):
+        """Test that the correct cost and update is returned via the step_and_cost
+        method for the QNG optimizer when providing an explicit grad_fn"""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.RX(params[0], wires=0)
+            qml.RY(params[1], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        var = np.array([0.011, 0.012])
+        opt = qml.QNGOptimizer(stepsize=0.01)
+
+        grad_fn = qml.grad(circuit)
+        step, cost = opt.step_and_cost(circuit, var, grad_fn=grad_fn)
+
+        expected_step = var - opt._stepsize * 4 * grad_fn(var)
+        expected_cost = circuit(var)
+        assert np.allclose(step, expected_step)
+        assert np.isclose(cost, expected_cost)
+
     def test_qubit_rotation(self, tol):
         """Test qubit rotation has the correct QNG value
         every step, the correct parameter updates,
