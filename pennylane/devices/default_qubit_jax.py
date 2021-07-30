@@ -159,12 +159,6 @@ class DefaultQubitJax(DefaultQubit):
         "DoubleExcitationMinus": jax_ops.DoubleExcitationMinus,
     }
 
-    if jax_config.read("jax_enable_x64"):
-        C_DTYPE = jnp.complex128
-        R_DTYPE = jnp.float64
-    else:
-        C_DTYPE = jnp.complex64
-        R_DTYPE = jnp.float32
     _asarray = staticmethod(jnp.array)
     _dot = staticmethod(jnp.dot)
     _abs = staticmethod(jnp.abs)
@@ -186,6 +180,12 @@ class DefaultQubitJax(DefaultQubit):
     _stack = staticmethod(jnp.stack)
 
     def __init__(self, wires, *, shots=None, prng_key=None, analytic=None):
+        if jax_config.read("jax_enable_x64"):
+            C_DTYPE = jnp.complex128
+            R_DTYPE = jnp.float64
+        else:
+            C_DTYPE = jnp.complex64
+            R_DTYPE = jnp.float32
         super().__init__(wires, shots=shots, cache=0, analytic=analytic)
 
         # prevent using special apply methods for these gates due to slowdown in jax
