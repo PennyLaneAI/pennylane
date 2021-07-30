@@ -27,9 +27,20 @@ from .finite_difference import finite_diff, generate_shifted_tapes
 from .parameter_shift import expval_param_shift, _get_operation_recipe, _process_gradient_recipe
 
 
-def _grad_method(tape, idx, use_graph=True, default_method="A"):
+def _grad_method(tape, idx):
     """Determine the best CV parameter-shift gradient recipe for a given
-    parameter index of a tape."""
+    parameter index of a tape.
+
+    Args:
+        tape (.QuantumTape): input tape
+        idx (int): positive integer corresponding to the parameter location
+            on the tape to inspect
+
+    Returns:
+        str: a string containing either ``"A"`` (for first order analytic method),
+            ``"A2"`` (second order analytic method), ``"F"`` (finite differences),
+            or ``"0"`` (constant parameter).
+    """
 
     op = tape._par_info[idx]["op"]
 
@@ -38,12 +49,6 @@ def _grad_method(tape, idx, use_graph=True, default_method="A"):
 
     if op.grad_method != "A":
         raise ValueError(f"Operation {op} has unknown gradient method {op.grad_method}")
-
-    if not use_graph:
-        raise ValueError(
-            "The CV parameter-shift rule must always use the "
-            "graph to determine operation gradient methods"
-        )
 
     # Operation supports the CV parameter-shift rule.
     # Create an empty list to store the 'best' partial derivative method
@@ -107,7 +112,7 @@ def _grad_method(tape, idx, use_graph=True, default_method="A"):
     return "A"
 
 
-def _gradient_analysis(tape, use_graph=True):
+def _gradient_analysis(tape):
     """Update the parameter information dictionary of the tape with
     gradient information of each parameter."""
 
@@ -118,7 +123,7 @@ def _gradient_analysis(tape, use_graph=True):
     tape._gradient_fn = param_shift_cv
 
     for idx, info in tape._par_info.items():
-        info["grad_method"] = _grad_method(tape, idx, use_graph=use_graph, default_method="A")
+        info["grad_method"] = _grad_method(tape, idx)
 
 
 def _transform_observable(obs, Z, device_wires):
@@ -235,7 +240,7 @@ def var_param_shift(tape, dev_wires, argnum=None, shift=np.pi / 2, gradient_reci
     # may be non-zero. Here, we calculate the analytic derivatives of the <A^2>
     # observables.
     pdA2_tapes, pdA2_fn = second_order_param_shift(
-        expval_sq_tape, dev_wires, argnum, shift, gradient_recipes, f0
+        expval_sq_tape, dev_wires, argnum, shift, gradient_recipes
     )
     gradient_tapes.extend(pdA2_tapes)
 
@@ -253,10 +258,8 @@ def var_param_shift(tape, dev_wires, argnum=None, shift=np.pi / 2, gradient_reci
     return gradient_tapes, processing_fn
 
 
-def second_order_param_shift(
-    tape, dev_wires, argnum=None, shift=np.pi / 2, gradient_recipes=None, f0=None
-):
-    r"""Generate the parameter-shift tapes and postprocessing methods required
+def second_order_param_shift(tape, dev_wires, argnum=None, shift=np.pi / 2, gradient_recipes=None):
+    r"""Generate the second-order CV parameter-shift tapes and postprocessing methods required
     to compute the gradient of a gate parameter with respect to an
     expectation value.
 
@@ -273,9 +276,6 @@ def second_order_param_shift(
         gradient_recipes (tuple(list[list[float]] or None)): List of gradient recipes
             for the parameter-shift method. One gradient recipe must be provided
             per trainable parameter.
-        f0 (tensor_like[float] or None): Output of the evaluated input tape. If provided,
-            and the gradient recipe contains an unshifted term, this value is used,
-            saving a quantum evaluation.
 
     Returns:
         tuple[list[QuantumTape], function]: A tuple containing a
@@ -442,9 +442,9 @@ def param_shift_cv(
     f0=None,
     force_order2=False,
 ):
-    r"""Generate the parameter-shift tapes and postprocessing methods required
-    to compute the gradient of an gate parameter with respect to an
-    expectation value.
+    r"""Generate the CV parameter-shift tapes and postprocessing methods required
+    to compute the gradient of an gate parameter with respect to the CV
+    output.
 
     Args:
         tape (.QuantumTape): quantum tape to differentiate
@@ -575,7 +575,7 @@ def param_shift_cv(
         if second_order_params:
             _update(
                 second_order_param_shift(
-                    tape, dev.wires, second_order_params, shift, gradient_recipes, f0
+                    tape, dev.wires, second_order_params, shift, gradient_recipes
                 )
             )
 

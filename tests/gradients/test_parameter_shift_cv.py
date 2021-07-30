@@ -56,16 +56,6 @@ class TestGradAnalysis:
 
         _gradient_analysis(tape)
 
-    def test_no_graph_exception(self):
-        """Test that an exception is raised for analytically differentiable
-        operations if use_graph=False"""
-        with qml.tape.JacobianTape() as tape:
-            qml.Rotation(0.543, wires=[0])
-            qml.expval(qml.P(0))
-
-        with pytest.raises(ValueError, match="must always use the graph"):
-            _grad_method(tape, 0, use_graph=False)
-
     def test_independent(self):
         """Test that an independent variable is properly marked
         as having a zero gradient"""
