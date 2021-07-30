@@ -380,6 +380,15 @@
 
 <h3>Improvements</h3>
 
+* The precision used by `default.qubit.jax` now matches the float precision
+  indicated by 
+  ```python
+  from jax.config import config
+  config.read('jax_enable_x64')
+  ```
+  where `True` means `float64`/`complex128` and `False` means `float32`/`complex64`.
+  [(#1485)](https://github.com/PennyLaneAI/pennylane/pull/1485)
+
 * The `./pennylane/ops/qubit.py` file is broken up into a folder of six separate files.
   [(#1467)](https://github.com/PennyLaneAI/pennylane/pull/1467)
 
@@ -444,7 +453,7 @@
 This release contains contributions from (in alphabetical order):
 
 Olivia Di Matteo, Josh Izaac, Leonhard Kunczik, Christina Lee, Romain Moyard, Ashish Panigrahi,
-Maria Schuld, Jay Soni, Antal Száva
+Maria Schuld, Jay Soni, Antal Száva, David Wierichs
 
 
 # Release 0.16.0 (current release)
