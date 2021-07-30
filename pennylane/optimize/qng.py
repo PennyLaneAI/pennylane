@@ -156,19 +156,24 @@ class QNGOptimizer(GradientDescentOptimizer):
         self.metric_tensor = None
         self.lam = lam
 
-    def step_and_cost(self, qnode, x, recompute_tensor=True, metric_tensor_fn=None, grad_fn=None):
+    def step_and_cost(self, qnode, *args, grad_fn=None, recompute_tensor=True, metric_tensor_fn=None, **kwargs):
         """Update the parameter array :math:`x` with one step of the optimizer and return the
         corresponding objective function value prior to the step.
 
         Args:
             qnode (QNode): the QNode for optimization
-            x (array): NumPy array containing the current values of the variables to be updated
+            *args : variable length argument list for qnode
+            grad_fn (function): optional gradient function of the
+                qnode with respect to the variables ``*args``.
+                If ``None``, the gradient function is computed automatically.
+                Must return the same shape of tuple [array] as the autograd derivative.
             recompute_tensor (bool): Whether or not the metric tensor should
                 be recomputed. If not, the metric tensor from the previous
                 optimization step is used.
             metric_tensor_fn (function): Optional metric tensor function
                 with respect to the variables ``x``.
                 If ``None``, the metric tensor function is computed automatically.
+            **kwargs : variable length of keyword arguments for the qnode
 
         Returns:
             tuple: the new variable values :math:`x^{(t+1)}` and the objective function output
@@ -184,20 +189,24 @@ class QNGOptimizer(GradientDescentOptimizer):
 
         if recompute_tensor or self.metric_tensor is None:
             if metric_tensor_fn is None:
-                # pseudo-inverse metric tensor
-                self.metric_tensor = qml.metric_tensor(qnode, diag_approx=self.diag_approx)(x)
-            else:
-                self.metric_tensor = metric_tensor_fn(x)
+                metric_tensor_fn = qml.metric_tensor(qnode, diag_approx=self.diag_approx)
+
+            self.metric_tensor = metric_tensor_fn(*args, **kwargs)
             self.metric_tensor += self.lam * np.identity(self.metric_tensor.shape[0])
 
-        # The QNGOptimizer.step does not permit passing an external gradient function.
-        # Autograd will always calculate the gradient and `forward` will never be `None`.
-        g, forward = self.compute_grad(qnode, (x,), dict(), grad_fn=grad_fn)
-        x_out = self.apply_grad(g, x)
-        return x_out, forward
+        g, forward = self.compute_grad(qnode, args, kwargs, grad_fn=grad_fn)
+        new_args = self.apply_grad(g, args)
+
+        if forward is None:
+            forward = qnode(*args, **kwargs)
+
+        # unwrap from list if one argument, cleaner return
+        if len(new_args) == 1:
+            return new_args[0], forward
+        return new_args, forward
 
     # pylint: disable=arguments-differ
-    def step(self, qnode, x, recompute_tensor=True, metric_tensor_fn=None, grad_fn=None):
+    def step(self, qnode, *args, recompute_tensor=True, metric_tensor_fn=None, grad_fn=None, **kwargs):
         """Update the parameter array :math:`x` with one step of the optimizer.
 
         Args:
@@ -213,14 +222,15 @@ class QNGOptimizer(GradientDescentOptimizer):
         Returns:
             array: the new variable values :math:`x^{(t+1)}`
         """
-        x_out, _ = self.step_and_cost(
+        new_args, _ = self.step_and_cost(
             qnode,
-            x,
+            *args,
             recompute_tensor=recompute_tensor,
             metric_tensor_fn=metric_tensor_fn,
             grad_fn=grad_fn,
+            **kwargs,
         )
-        return x_out
+        return new_args
 
     def apply_grad(self, grad, args):
         r"""Update the parameter array :math:`x` for a single optimization step. Flattens and
