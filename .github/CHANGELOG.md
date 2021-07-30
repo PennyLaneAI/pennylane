@@ -382,7 +382,7 @@
 
 * The precision used by `default.qubit.jax` now matches the float precision
   indicated by 
-  ```
+  ```python
   from jax.config import config
   config.read('jax_enable_x64')
   ```
