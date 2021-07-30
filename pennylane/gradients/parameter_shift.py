@@ -315,6 +315,8 @@ def var_param_shift(tape, argnum, shift=np.pi / 2, gradient_recipes=None, f0=Non
         gradient_tapes.extend(pdA2_tapes)
 
     def processing_fn(results):
+        # We need to expand the dimensions of the variance mask,
+        # and convert it to be the same type as the results.
         mask = qml.math.convert_like(qml.math.reshape(var_mask, [-1, 1]), results[0])
         f0 = qml.math.expand_dims(results[0], -1)
 
@@ -509,7 +511,6 @@ def param_shift(
             supported_grads = fn(results[fallback_len:])
             return unsupported_grads + supported_grads
 
-    else:
-        processing_fn = fn
+        return gradient_tapes, processing_fn
 
-    return gradient_tapes, processing_fn
+    return gradient_tapes, fn
