@@ -159,7 +159,7 @@ class DefaultQubitJax(DefaultQubit):
         "DoubleExcitationMinus": jax_ops.DoubleExcitationMinus,
     }
 
-    if jax_config.read('jax_enable_x64'):
+    if jax_config.read("jax_enable_x64"):
         C_DTYPE = jnp.complex128
         R_DTYPE = jnp.float64
     else:
