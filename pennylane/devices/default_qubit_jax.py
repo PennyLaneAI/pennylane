@@ -26,6 +26,7 @@ import numpy as np
 try:
     import jax.numpy as jnp
     import jax
+    from jax.config import config as jax_config
 
 except ImportError as e:  # pragma: no cover
     raise ImportError("default.qubit.jax device requires installing jax>0.2.0") from e
@@ -158,8 +159,12 @@ class DefaultQubitJax(DefaultQubit):
         "DoubleExcitationMinus": jax_ops.DoubleExcitationMinus,
     }
 
-    C_DTYPE = jnp.complex64
-    R_DTYPE = jnp.float32
+    if jax_config.read('jax_enable_x64'):
+        C_DTYPE = jnp.complex128
+        R_DTYPE = jnp.float64
+    else:
+        C_DTYPE = jnp.complex64
+        R_DTYPE = jnp.float32
     _asarray = staticmethod(jnp.array)
     _dot = staticmethod(jnp.dot)
     _abs = staticmethod(jnp.abs)
