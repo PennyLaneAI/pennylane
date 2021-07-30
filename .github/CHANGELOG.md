@@ -380,9 +380,13 @@
 
 <h3>Improvements</h3>
 
-* Changed the default precision used by the JAX device. It remains unchanged for
-  `jax.config.config.read('jax_enable_x64')==False` and changed to double precision
-  if `jax.config.config.read('jax_enable_x64')==True`.
+* The precision used by `default.qubit.jax` now matches the float precision
+  indicated by 
+  ```
+  from jax.config import config
+  config.read('jax_enable_x64')
+  ```
+  where `True` means `float64`/`complex128` and `False` means `float32`/`complex64`.
   [(#1485)](https://github.com/PennyLaneAI/pennylane/pull/1485)
 
 * The `./pennylane/ops/qubit.py` file is broken up into a folder of six separate files.
