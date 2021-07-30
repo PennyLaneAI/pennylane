@@ -222,19 +222,19 @@ class QNGOptimizer(GradientDescentOptimizer):
         )
         return x_out
 
-    def apply_grad(self, grad, x):
+    def apply_grad(self, grad, args):
         r"""Update the parameter array :math:`x` for a single optimization step. Flattens and
         unflattens the inputs to maintain nested iterables as the parameters of the optimization.
 
         Args:
             grad (array): The gradient of the objective
                 function at point :math:`x^{(t)}`: :math:`\nabla f(x^{(t)})`
-            x (array): the current value of the variables :math:`x^{(t)}`
+            args (array): the current value of the variables :math:`x^{(t)}`
 
         Returns:
             array: the new values :math:`x^{(t+1)}`
         """
         grad_flat = np.array(list(_flatten(grad)))
-        x_flat = np.array(list(_flatten(x)))
+        x_flat = np.array(list(_flatten(args)))
         x_new_flat = x_flat - self._stepsize * np.linalg.solve(self.metric_tensor, grad_flat)
-        return unflatten(x_new_flat, x)
+        return unflatten(x_new_flat, args)
