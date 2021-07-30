@@ -13,6 +13,7 @@
 # limitations under the License.
 """Quantum natural gradient optimizer"""
 # pylint: disable=too-many-branches
+# pylint: disable=too-many-arguments
 
 import numpy as np
 

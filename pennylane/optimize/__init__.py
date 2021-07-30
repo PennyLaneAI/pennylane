@@ -14,7 +14,6 @@
 r"""
 This module contains optimizers for the standard :mod:`QNode` class, which uses the NumPy interface.
 """
-# pylint: disable=too-many-arguments
 
 # Python optimizers that are available in PennyLane
 # listed in alphabetical order to avoid circular imports
