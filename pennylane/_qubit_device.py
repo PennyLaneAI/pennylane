@@ -17,7 +17,7 @@ This module contains the :class:`QubitDevice` abstract base class.
 
 # For now, arguments may be different from the signatures provided in Device
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
-# pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches
+# pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches, arguments-renamed
 import abc
 from collections import OrderedDict
 import itertools
@@ -239,6 +239,10 @@ class QubitDevice(Device):
         # increment counter for number of executions of qubit device
         self._num_executions += 1
 
+        if self.tracker.active:
+            self.tracker.update(executions=1, shots=self._shots)
+            self.tracker.record()
+
         return results
 
     @property
@@ -273,6 +277,10 @@ class QubitDevice(Device):
 
             res = self.execute(circuit)
             results.append(res)
+
+        if self.tracker.active:
+            self.tracker.update(batches=1, batch_len=len(circuits))
+            self.tracker.record()
 
         return results
 
