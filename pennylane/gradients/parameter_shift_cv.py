@@ -15,7 +15,7 @@
 This module contains functions for computing the parameter-shift gradient
 of a CV-based quantum tape.
 """
-# pylint: disable=protected-access,too-many-arguments
+# pylint: disable=protected-access,too-many-arguments,too-many-statements
 import itertools
 import warnings
 
@@ -371,7 +371,8 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shift=np.pi / 2, grad
 
         # transform the descendant observables into their derivatives using Z
         transformed_obs_idx = []
-        for i, obs in enumerate(observable_descendents):
+
+        for obs in observable_descendents:
             # get the index of the descendent observable
             idx = tape.observables.index(obs)
             transformed_obs_idx.append(idx)

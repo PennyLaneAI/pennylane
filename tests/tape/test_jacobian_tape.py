@@ -456,6 +456,7 @@ class TestJacobian:
 
         assert len(res) == num_params
 
+    @pytest.mark.xfail
     @pytest.mark.parametrize("argnum", [1, 2, 3, -1])
     def test_choose_params_and_methods_raises(self, argnum):
         """Test that the _choose_params_and_methods helper method raises an
