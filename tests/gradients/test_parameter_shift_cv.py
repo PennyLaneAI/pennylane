@@ -281,6 +281,15 @@ class TestTransformObservable:
 class TestParameterShiftLogic:
     """Test for the dispatching logic of the parameter shift method"""
 
+    def test_state_non_differentiable_error(self):
+        """Test error raised if attempting to differentiate with
+        respect to a state"""
+        with qml.tape.JacobianTape() as tape:
+            qml.state()
+
+        with pytest.raises(ValueError, match=r"return the state is not supported"):
+            qml.gradients.param_shift_cv(tape, None)
+
     def test_force_order2(self, mocker):
         """Test that if the force_order2 keyword argument is provided,
         the second order parameter shift rule is forced"""
@@ -371,6 +380,22 @@ class TestParameterShiftLogic:
 
         res = fn(dev.batch_execute(tapes))
         assert np.allclose(res, [0, 2])
+
+    def test_all_independent(self):
+        """Test the case where expectation values are independent of all parameters."""
+        dev = qml.device("default.gaussian", wires=2)
+
+        with qml.tape.JacobianTape() as tape:
+            qml.Displacement(1, 0, wires=[1])
+            qml.Displacement(1, 0, wires=[1])
+            qml.expval(qml.X(0))
+
+        tape.trainable_params = {0, 2}
+        tapes, fn = qml.gradients.param_shift_cv(tape, dev)
+        assert len(tapes) == 0
+
+        grad = fn(dev.batch_execute(tapes))
+        assert np.allclose(grad, [0, 0])
 
 
 class TestExpectationQuantumGradients:
