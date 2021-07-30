@@ -288,6 +288,7 @@ def second_order_param_shift(
     gradient_tapes = []
     shapes = []
     obs_indices = []
+    gradient_values = []
 
     for idx, _ in enumerate(tape.trainable_params):
         t_idx = list(tape.trainable_params)[idx]
@@ -297,6 +298,7 @@ def second_order_param_shift(
             # parameter has zero gradient
             shapes.append(0)
             obs_indices.append([])
+            gradient_values.append([])
             continue
 
         shapes.append(1)
@@ -347,35 +349,62 @@ def second_order_param_shift(
         Z = B @ Z @ B_inv  # conjugation
 
         g_tape = tape.copy(copy_operations=True, tape_cls=qml.tape.QuantumTape)
-
-        # change the observable
-        # TODO: if the transformation produces only a constant term,
-        # `_transform_observable` has only a single non-zero element in the
-        # 0th position, then there is no need to execute the device---the constant term
-        # represents the gradient.
+        constants = []
 
         # transform the descendant observables into their derivatives using Z
         transformed_obs_idx = []
-        for obs in observable_descendents:
+        for i, obs in enumerate(observable_descendents):
             # get the index of the descendent observable
             idx = tape.observables.index(obs)
             transformed_obs_idx.append(idx)
+
+            transformed_obs = _transform_observable(obs, Z, dev_wires)
+
+            A = transformed_obs.parameters[0]
+            constants.append(None)
+
+            # Check if the transformed observable corresponds to a constant term.
+            if len(A.nonzero()[0]) == 1:
+                if A.ndim == 2 and A[0, 0] != 0:
+                    constants[-1] = A[0, 0]
+
+                elif A.ndim == 1 and A[0] != 0:
+                    constants[-1] = A[0]
+
             g_tape._measurements[idx] = qml.measure.MeasurementProcess(
                 qml.operation.Expectation, _transform_observable(obs, Z, dev_wires)
             )
 
+        if not any(i is None for i in constants):
+            # Check if the transformed observable corresponds to a constant term.
+            # term. If this is the case for all transformed observables on the tape,
+            # then <psi|A|psi> = A<psi|psi> = A,
+            # and we can avoid the device execution.
+            shapes[-1] = 0
+            obs_indices.append(transformed_obs_idx)
+            gradient_values.append(constants)
+            continue
+
         gradient_tapes.append(g_tape)
         obs_indices.append(transformed_obs_idx)
+        gradient_values.append(None)
 
     def processing_fn(results):
         grads = []
         start = 0
 
-        for i, (s, ind) in enumerate(zip(shapes, obs_indices)):
+        if not results:
+            results = [np.zeros([tape.output_dim])]
+
+        for i, (s, k, ind) in enumerate(zip(shapes, gradient_values, obs_indices)):
 
             if s == 0:
                 # parameter has zero gradient
                 g = qml.math.zeros_like(results[0])
+
+                if k:
+                    g[ind] = k
+
                 grads.append(g)
                 continue
 

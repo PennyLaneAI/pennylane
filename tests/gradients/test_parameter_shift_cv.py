@@ -342,9 +342,9 @@ class TestParameterShiftLogic:
 
         spy.assert_not_called()
 
-    def test_second_order_argnum(self):
-        """Test that when using the argnum argument, only the gradient
-        of the specified parameters is returned."""
+    def test_independent_parameters_analytic(self):
+        """Test the case where expectation values are independent of some parameters. For those
+        parameters, the gradient should be evaluated to zero without executing the device."""
         dev = qml.device("default.gaussian", wires=2)
 
         with qml.tape.JacobianTape() as tape:
@@ -366,8 +366,8 @@ class TestParameterShiftLogic:
         tapes, fn = qml.gradients.param_shift_cv(tape, dev, force_order2=True)
 
         # We should only be executing the device to differentiate 1 parameter
-        # (second order, so 1 execution)
-        assert len(tapes) == 1
+        # (second order, so 0 executions)
+        assert len(tapes) == 0
 
         res = fn(dev.batch_execute(tapes))
         assert np.allclose(res, [0, 2])
