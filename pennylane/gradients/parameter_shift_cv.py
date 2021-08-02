@@ -366,7 +366,7 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shift=np.pi / 2, grad
 
         Z = B @ Z @ B_inv  # conjugation
 
-        g_tape = tape.copy(copy_operations=True, tape_cls=qml.tape.QuantumTape)
+        g_tape = tape.copy(copy_operations=True)
         constants = []
 
         # transform the descendant observables into their derivatives using Z
@@ -415,14 +415,16 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shift=np.pi / 2, grad
         if not results:
             results = [np.zeros([tape.output_dim])]
 
+        interface = qml.math.get_interface(results[0])
+
         for i, (s, k, ind) in enumerate(zip(shapes, gradient_values, obs_indices)):
 
             if s == 0:
                 # parameter has zero gradient
-                g = qml.math.zeros_like(results[0])
+                g = qml.math.zeros_like(results[0], like=interface)
 
                 if k:
-                    g[ind] = k
+                    g = qml.math.scatter_element_add(g, ind, k, like=interface)
 
                 grads.append(g)
                 continue
@@ -432,8 +434,12 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shift=np.pi / 2, grad
 
             # compute the linear combination of results and coefficients
             res = qml.math.stack(res[0])
-            g = qml.math.zeros_like(res)
-            g[ind] = res[ind]
+            g = qml.math.zeros_like(res, like=interface)
+
+            if qml.math.get_interface(g) not in ("tensorflow", "autograd"):
+                ind = (ind,)
+
+            g = qml.math.scatter_element_add(g, ind, res[ind], like=interface)
             grads.append(g)
 
         # The following is for backwards compatibility; currently,

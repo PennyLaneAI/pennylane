@@ -958,11 +958,10 @@ class TestVarianceQuantumGradients:
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
 
-@pytest.mark.xfail(message="The CV Operation methods have not been updated to support autodiff")
-class TestParamShiftGradients:
+class TestParamShiftInterfaces:
     """Test that the transform is differentiable"""
 
-    def test_autograd(self, tol):
+    def test_autograd_gradient(self, tol):
         """Tests that the output of the parameter-shift CV transform
         can be differentiated using autograd, yielding second derivatives."""
         dev = qml.device("default.gaussian", wires=1)
@@ -978,14 +977,129 @@ class TestParamShiftGradients:
                 qml.var(qml.X(wires=[0]))
 
             tapes, fn = param_shift_cv(tape, dev)
-            return fn([t.execute(dev) for t in tapes])[0]
+            return fn([t.execute(dev) for t in tapes])[0, 1]
 
         params = np.array([r, phi], requires_grad=True)
         grad = qml.jacobian(cost_fn)(params)
         expected = np.array(
-            [
-                (4 * np.cos(phi) ** 2 + np.exp(4 * r) * np.sin(phi) ** 2) / np.exp(2 * r),
-                4 * np.cosh(2 * r) * np.sin(2 * phi),
-            ]
+                [4 * np.cosh(2 * r) * np.sin(2 * phi), 4 * np.cos(2 * phi) * np.sinh(2 * r)]
         )
         assert np.allclose(grad, expected, atol=tol, rtol=0)
+
+    def test_tf(self, tol):
+        """Tests that the output of the parameter-shift CV transform
+        can be executed using TF"""
+        tf = pytest.importorskip("tensorflow")
+        from pennylane.interfaces.tf import TFInterface
+
+        dev = qml.device("default.gaussian", wires=1)
+        params = tf.Variable([0.543, -0.654], dtype=tf.float64)
+
+        with tf.GradientTape() as t:
+            with TFInterface.apply(qml.tape.CVParamShiftTape()) as tape:
+                qml.Squeezing(params[0], 0, wires=0)
+                qml.Rotation(params[1], wires=0)
+                qml.var(qml.X(wires=[0]))
+
+            tapes, fn = qml.gradients.param_shift_cv(tape, dev)
+            jac = fn([tp.execute(dev) for tp in tapes])
+            res = jac[0, 1]
+
+        r, phi = 1.0 * params
+
+        expected = np.array(
+            [
+                2 * np.exp(2 * r) * np.sin(phi) ** 2 - 2 * np.exp(-2 * r) * np.cos(phi) ** 2,
+                2 * np.sinh(2 * r) * np.sin(2 * phi),
+            ]
+        )
+        assert np.allclose(jac, expected, atol=tol, rtol=0)
+
+        grad = t.jacobian(res, params)
+        expected = np.array(
+            [4 * np.cosh(2 * r) * np.sin(2 * phi), 4 * np.cos(2 * phi) * np.sinh(2 * r)]
+        )
+        assert np.allclose(grad, expected, atol=tol, rtol=0)
+
+    def test_torch(self, tol):
+        """Tests that the output of the parameter-shift CV transform
+        can be executed using Torch."""
+        torch = pytest.importorskip("torch")
+        from pennylane.interfaces.torch import TorchInterface
+
+        dev = qml.device("default.gaussian", wires=1)
+        params = torch.tensor([0.543, -0.654], dtype=torch.float64, requires_grad=True)
+
+        with TorchInterface.apply(qml.tape.CVParamShiftTape()) as tape:
+            qml.Squeezing(params[0], 0, wires=0)
+            qml.Rotation(params[1], wires=0)
+            qml.var(qml.X(wires=[0]))
+
+        tapes, fn = qml.gradients.param_shift_cv(tape, dev)
+        jac = fn([t.execute(dev) for t in tapes])
+
+        r, phi = params.detach().numpy()
+
+        expected = np.array(
+            [
+                2 * np.exp(2 * r) * np.sin(phi) ** 2 - 2 * np.exp(-2 * r) * np.cos(phi) ** 2,
+                2 * np.sinh(2 * r) * np.sin(2 * phi),
+            ]
+        )
+        assert np.allclose(jac.detach().numpy(), expected, atol=tol, rtol=0)
+
+        cost = jac[0, 1]
+        cost.backward()
+        hess = params.grad
+        expected = np.array(
+            [4 * np.cosh(2 * r) * np.sin(2 * phi), 4 * np.cos(2 * phi) * np.sinh(2 * r)]
+        )
+        assert np.allclose(hess.detach().numpy(), expected, atol=0.1, rtol=0)
+
+    def test_jax(self, tol):
+        """Tests that the output of the parameter-shift CV transform
+        can be differentiated using JAX, yielding second derivatives."""
+        jax = pytest.importorskip("jax")
+        from jax import numpy as jnp
+        from pennylane.interfaces.jax import JAXInterface
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
+
+        dev = qml.device("default.gaussian", wires=2)
+        params = jnp.array([0.543, -0.654])
+
+        def cost_fn(x):
+            with JAXInterface.apply(qml.tape.CVParamShiftTape()) as tape:
+                qml.Squeezing(params[0], 0, wires=0)
+                qml.Rotation(params[1], wires=0)
+                qml.var(qml.X(wires=[0]))
+
+            tape.trainable_params = {0, 2}
+            tapes, fn = qml.gradients.param_shift_cv(tape, dev)
+            jac = fn([t.execute(dev) for t in tapes])
+            return jac
+
+        r, phi = params
+        res = cost_fn(params)
+        expected = np.array(
+            [
+                2 * np.exp(2 * r) * np.sin(phi) ** 2 - 2 * np.exp(-2 * r) * np.cos(phi) ** 2,
+                2 * np.sinh(2 * r) * np.sin(2 * phi),
+            ]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        pytest.xfail("The CV Operation methods have not been updated to support autodiff")
+
+        res = jax.jacobian(cost_fn)(params)
+        expected = np.array(
+            [
+                [
+                    4 * np.exp(-2 * r) * (np.cos(phi) ** 2 + np.exp(4 * r) * np.sin(phi) ** 2),
+                    4 * np.cosh(2 * r) * np.sin(2 * phi),
+                ],
+                [4 * np.cosh(2 * r) * np.sin(2 * phi), 4 * np.cos(2 * phi) * np.sinh(2 * r)],
+            ]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)

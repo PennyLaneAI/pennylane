@@ -1692,7 +1692,7 @@ class CVOperation(CV, Operation):
         Returns:
             array[float]: :math:`\tilde{U}`, the Heisenberg picture representation of the linear transformation
         """
-        p = self.parameters
+        p = [qml.math.toarray(a) for a in self.parameters]
         if inverse:
             if self.par_domain == "A":
                 # TODO: expand this for the new par domain class, for non-unitary matrices.

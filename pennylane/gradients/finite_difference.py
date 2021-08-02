@@ -16,6 +16,7 @@ This module contains functions for computing the finite-difference gradient
 of a quantum tape.
 """
 # pylint: disable=protected-access,too-many-arguments
+import copy
 import functools
 
 import numpy as np
@@ -161,7 +162,7 @@ def generate_shifted_tapes(tape, idx, shifts, multipliers=None):
         ``idx`` shifted by consecutive values of ``shift``. The length
         of the returned list of tapes will match the length of ``shifts``.
     """
-    params = tape.get_parameters()
+    params = list(tape.get_parameters())
     tapes = []
 
     for i, s in enumerate(shifts):
