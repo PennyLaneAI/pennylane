@@ -29,7 +29,7 @@ import pennylane.gradients
 import pennylane.kernels
 import pennylane.math
 import pennylane.operation
-import pennylane.qaoa as qaoa
+import pennylane.qaoa as qaoa  # pylint: disable=consider-using-from-import
 import pennylane.qnn
 import pennylane.templates
 from pennylane._device import Device, DeviceError

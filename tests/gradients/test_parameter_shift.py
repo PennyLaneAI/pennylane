@@ -41,7 +41,28 @@ class TestGradAnalysis:
         assert tape._par_info[1]["grad_method"] == "A"
         assert tape._par_info[2]["grad_method"] == "A"
 
+    def test_analysis_caching(self, mocker):
+        """Test that the gradient analysis is only executed once per tape"""
+        psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
+
+        with qml.tape.JacobianTape() as tape:
+            qml.QubitStateVector(psi, wires=[0, 1])
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.probs(wires=[0, 1])
+
+        spy = mocker.spy(tape, "_grad_method")
         _gradient_analysis(tape)
+        spy.assert_called()
+
+        assert tape._par_info[0]["grad_method"] is None
+        assert tape._par_info[1]["grad_method"] == "A"
+        assert tape._par_info[2]["grad_method"] == "A"
+
+        spy = mocker.spy(tape, "_grad_method")
+        _gradient_analysis(tape)
+        spy.assert_not_called()
 
     def test_independent(self):
         """Test that an independent variable is properly marked
@@ -57,12 +78,18 @@ class TestGradAnalysis:
         assert tape._par_info[0]["grad_method"] == "A"
         assert tape._par_info[1]["grad_method"] == "0"
 
-        # in non-graph mode, it is impossible to determine
-        # if a parameter is independent or not
-        tape._gradient_fn = None
-        tape._graph = None
+    def test_independent_no_graph_mode(self):
+        """In non-graph mode, it is impossible to determine
+        # if a parameter is independent or not"""
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[1])
+            qml.expval(qml.PauliY(0))
+
         _gradient_analysis(tape, use_graph=False)
 
+        assert tape._par_info[0]["grad_method"] == "A"
         assert tape._par_info[1]["grad_method"] == "A"
 
     def test_finite_diff(self, monkeypatch):
@@ -415,7 +442,7 @@ class TestParameterShiftRule:
             qml.CNOT(wires=[1, 0])
             qml.RX(params[2], wires=[0])
             qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(1))
+            qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
         tape.trainable_params = {0, 2, 3}
         dev = qml.device("default.qubit", wires=2)
@@ -586,7 +613,7 @@ class TestParameterShiftRule:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_involutory_variance(self, tol):
-        """Tests qubit observable that are involutory"""
+        """Tests qubit observables that are involutory"""
         dev = qml.device("default.qubit", wires=1)
         a = 0.54
 
@@ -643,7 +670,7 @@ class TestParameterShiftRule:
 
     def test_involutory_and_noninvolutory_variance(self, tol):
         """Tests a qubit Hermitian observable that is not involutory alongside
-        a involutory observable."""
+        an involutory observable."""
         dev = qml.device("default.qubit", wires=2)
         A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
         a = 0.54

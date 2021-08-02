@@ -18,6 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane import numpy as pnp
 from pennylane.wires import Wires
 from pennylane.devices import DefaultQubit, DefaultMixed
 
@@ -1210,6 +1211,232 @@ class TestVQE:
 
         with pytest.raises(ValueError, match="sums of expectation values"):
             qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, hamiltonian, dev, measure="var")
+
+
+class TestNewVQE:
+    """Test the new VQE syntax of passing the Hamiltonian as an observable."""
+
+    @pytest.mark.parametrize("ansatz, params", CIRCUITS)
+    @pytest.mark.parametrize("observables", OBSERVABLES)
+    def test_circuits_evaluate(self, ansatz, observables, params, tol):
+        """Tests simple VQE evaluations."""
+        coeffs = [1.0] * len(observables)
+        dev = qml.device("default.qubit", wires=3)
+        H = qml.Hamiltonian(coeffs, observables)
+
+        # pass H directly
+        @qml.qnode(dev)
+        def circuit():
+            ansatz(params, wires=range(3))
+            return qml.expval(H)
+
+        res = circuit()
+
+        res_expected = []
+        for obs in observables:
+
+            @qml.qnode(dev)
+            def circuit():
+                ansatz(params, wires=range(3))
+                return qml.expval(obs)
+
+            res_expected.append(circuit())
+
+        res_expected = np.sum(c * r for c, r in zip(coeffs, res_expected))
+
+        assert np.isclose(res, res_expected, atol=tol)
+
+    def test_acting_on_subcircuit(self, tol):
+        """Tests a VQE circuit where the observable does not act on all wires."""
+        dev = qml.device("default.qubit", wires=3)
+        coeffs = [1.0, 1.0, 1.0]
+        w = qml.init.strong_ent_layers_uniform(1, 2, seed=1967)
+
+        observables1 = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
+        H1 = qml.Hamiltonian(coeffs, observables1)
+
+        @qml.qnode(dev)
+        def circuit1():
+            qml.templates.StronglyEntanglingLayers(w, wires=range(2))
+            return qml.expval(H1)
+
+        observables2 = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1) @ qml.Identity(2)]
+        H2 = qml.Hamiltonian(coeffs, observables2)
+
+        @qml.qnode(dev)
+        def circuit2():
+            qml.templates.StronglyEntanglingLayers(w, wires=range(2))
+            return qml.expval(H2)
+
+        res1 = circuit1()
+        res2 = circuit2()
+
+        assert np.allclose(res1, res2, atol=tol)
+
+    @pytest.mark.parametrize("shots, dim", [([(1000, 2)], 2), ([30, 30], 2), ([2, 3, 4], 3)])
+    def test_shot_distribution(self, shots, dim):
+        """Tests that distributed shots work with the new VQE design."""
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(weights, coeffs):
+            qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
+            H = qml.Hamiltonian(coeffs, obs)
+            return qml.expval(H)
+
+        obs = [qml.PauliZ(0), qml.PauliX(0) @ qml.PauliZ(1)]
+        coeffs = np.array([0.1, 0.2])
+        weights = pnp.random.random([2, 2, 3], requires_grad=True)
+
+        res = circuit(weights, coeffs)
+        grad = qml.jacobian(circuit, argnum=1)(weights, coeffs)
+        assert len(res) == dim
+        assert grad.shape == (dim, 2)
+
+    def test_circuit_drawer(self):
+        """Test that the circuit drawer displays Hamiltonians well."""
+        dev = qml.device("default.qubit", wires=3)
+        coeffs = [1.0, 1.0, 1.0]
+        observables1 = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(2)]
+        H1 = qml.Hamiltonian(coeffs, observables1)
+
+        @qml.qnode(dev)
+        def circuit1():
+            qml.Hadamard(wires=0)
+            return qml.expval(H1)
+
+        res = qml.draw(circuit1)()
+        expected = " 0: ──H──╭Hamiltonian──┤  \n" + " 2: ─────╰Hamiltonian──┤  \n"
+        assert res == expected
+
+    def test_error_multiple_expvals(self):
+        """Tests that error is thrown if more than one expval is evaluated."""
+        observables = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
+        coeffs = [1.0] * len(observables)
+        dev = qml.device("default.qubit", wires=3)
+        H = qml.Hamiltonian(coeffs, observables)
+        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.templates.StronglyEntanglingLayers(w, wires=range(4))
+            return qml.expval(H), qml.expval(qml.PauliX(3))
+
+        with pytest.raises(ValueError, match="At the moment"):
+            circuit()
+
+    def test_error_non_expval_measurement(self):
+        """Tests that error is thrown if sample() or var() is used."""
+        observables = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
+        coeffs = [1.0] * len(observables)
+        dev = qml.device("default.qubit", wires=3)
+        H = qml.Hamiltonian(coeffs, observables)
+        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.templates.StronglyEntanglingLayers(w, wires=range(4))
+            return qml.sample(H)
+
+        with pytest.raises(qml.QuantumFunctionError, match="Hamiltonian is not an observable"):
+            circuit()
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.templates.StronglyEntanglingLayers(w, wires=range(4))
+            return qml.var(H)
+
+        with pytest.raises(qml.QuantumFunctionError, match="Hamiltonian is not an observable"):
+            circuit()
+
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "best"])
+    def test_grad_autograd(self, diff_method, tol):
+        """Tests the VQE gradient in the autograd interface."""
+        dev = qml.device("default.qubit", wires=4)
+        H = big_hamiltonian
+        w = pnp.array(qml.init.strong_ent_layers_uniform(2, 4, seed=1967), requires_grad=True)
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def circuit(w):
+            qml.templates.StronglyEntanglingLayers(w, wires=range(4))
+            return qml.expval(H)
+
+        dc = qml.grad(circuit)(w)
+        assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
+
+    def test_grad_zero_hamiltonian(self, tol):
+        """Tests the VQE gradient for a "zero" Hamiltonian."""
+        dev = qml.device("default.qubit", wires=4)
+        H = qml.Hamiltonian([0], [qml.PauliX(0)])
+        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit(w):
+            qml.templates.StronglyEntanglingLayers(w, wires=range(4))
+            return qml.expval(H)
+
+        dc = qml.grad(circuit)(w)
+        assert np.allclose(dc, 0, atol=tol)
+
+    def test_grad_torch(self, torch_support, tol):
+        """Tests VQE gradients in the torch interface."""
+        if not torch_support:
+            pytest.skip("This test requires Torch")
+
+        dev = qml.device("default.qubit", wires=4)
+        H = big_hamiltonian
+
+        @qml.qnode(dev, interface="torch")
+        def circuit(w):
+            qml.templates.StronglyEntanglingLayers(w, wires=range(4))
+            return qml.expval(H)
+
+        w = torch.tensor(qml.init.strong_ent_layers_uniform(2, 4, seed=1967), requires_grad=True)
+
+        res = circuit(w)
+        res.backward()
+        dc = w.grad.detach().numpy()
+
+        assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
+
+    def test_grad_tf(self, tf_support, tol):
+        """Tests VQE gradients in the tf interface."""
+        if not tf_support:
+            pytest.skip("This test requires TensorFlow")
+
+        dev = qml.device("default.qubit", wires=4)
+        H = big_hamiltonian
+
+        @qml.qnode(dev, interface="tf")
+        def circuit(w):
+            qml.templates.StronglyEntanglingLayers(w, wires=range(4))
+            return qml.expval(H)
+
+        w = tf.Variable(qml.init.strong_ent_layers_uniform(2, 4, seed=1967), dtype=tf.double)
+
+        with tf.GradientTape() as tape:
+            res = circuit(w)
+
+        dc = tape.gradient(res, w).numpy()
+
+        assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
+
+    def test_grad_jax(self, tol):
+        """Tests VQE gradients in the jax interface."""
+        jax = pytest.importorskip("jax")
+        from jax import numpy as jnp
+
+        dev = qml.device("default.qubit", wires=4)
+        H = big_hamiltonian
+        w = jnp.array(qml.init.strong_ent_layers_uniform(2, 4, seed=1967))
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(w):
+            qml.templates.StronglyEntanglingLayers(w, wires=range(4))
+            return qml.expval(H)
+
+        dc = jax.grad(circuit)(w)
+        assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
 
 
 class TestAutogradInterface:
