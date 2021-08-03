@@ -397,8 +397,6 @@ def unwrap(values, max_depth=None):
     >>> print(grad)
     [0.99500417 0.98006658 0.95533649]
     """
-    interface = _multi_dispatch(values)
-
     res = []
 
     for t in values:

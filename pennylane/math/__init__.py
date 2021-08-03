@@ -87,5 +87,5 @@ __all__ = [
     "cov_matrix",
     "marginal_prob",
     "unwrap",
-    "get_trainable",
+    "get_trainable_indices",
 ]
