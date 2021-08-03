@@ -233,7 +233,7 @@ class RotosolveOptimizer:
                     num_frequency_flat = np.fromiter(_flatten(num_frequency), dtype=int)
                     if len(num_frequency_flat) != num_params:
                         raise ValueError(
-                            "The number of the provided numbers of frequencies "
+                            "The number of the numbers of frequencies "
                             f"({len(num_frequency_flat)}) for the {arg_index}th argument does "
                             f"not match the number of parameters in that argument ({num_params})."
                         )
