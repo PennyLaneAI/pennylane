@@ -692,7 +692,7 @@ class TestRequiresGrad:
         assert not fn.requires_grad(t)
 
     def test_autograd_backwards(self):
-        """jax.DeviceArrays will always return True"""
+        """Autograd trainability corresponds to the requires_grad attribute during the backwards pass."""
         res = None
 
         def cost_fn(t, s):
