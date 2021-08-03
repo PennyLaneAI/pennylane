@@ -15,7 +15,6 @@
 This module contains a context manager for unwrapping tapes
 """
 import pennylane as qml
-import numpy as np
 
 
 class UnwrapTape:
