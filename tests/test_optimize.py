@@ -292,7 +292,7 @@ class TestOptimizer:
     @pytest.mark.parametrize("x_start", x_vals)
     def test_gradient_descent_optimizer_univar(self, x_start, bunch, tol):
         """Tests that basic stochastic gradient descent takes gradient-descent steps correctly
-        for uni-variate functions."""
+        for univariate functions."""
 
         # TODO parametrize this for also
         for gradf, f, name in zip(grad_uni_fns, univariate_funcs, fnames):
@@ -302,7 +302,7 @@ class TestOptimizer:
 
     def test_gradient_descent_optimizer_multivar(self, bunch, tol):
         """Tests that basic stochastic gradient descent takes gradient-descent steps correctly
-        for multi-variate functions."""
+        for multivariate functions."""
 
         for gradf, f, name in zip(grad_multi_funcs, multivariate_funcs, fnames):
             for jdx in range(len(x_vals[:-1])):
@@ -313,7 +313,7 @@ class TestOptimizer:
 
     def test_gradient_descent_optimizer_multivar_multidim(self, bunch, tol):
         """Tests that basic stochastic gradient descent takes gradient-descent steps correctly
-        for multi-variate functions and with higher dimensional inputs."""
+        for multivariate functions and with higher dimensional inputs."""
 
         for gradf, f, name in zip(grad_mvar_mdim_funcs, mvar_mdim_funcs, fnames):
             for jdx in range(len(x_vals[:-3])):
@@ -338,7 +338,7 @@ class TestOptimizer:
     @pytest.mark.parametrize("x_start", x_vals)
     def test_momentum_optimizer_univar(self, x_start, bunch, tol):
         """Tests that momentum optimizer takes one and two steps correctly
-        for uni-variate functions."""
+        for univariate functions."""
 
         for gradf, f, name in zip(grad_uni_fns, univariate_funcs, fnames):
             bunch.mom_opt.reset()
@@ -354,7 +354,7 @@ class TestOptimizer:
 
     def test_momentum_optimizer_multivar(self, bunch, tol):
         """Tests that momentum optimizer takes one and two steps correctly
-        for multi-variate functions."""
+        for multivariate functions."""
 
         for gradf, f, name in zip(grad_multi_funcs, multivariate_funcs, fnames):
             for jdx in range(len(x_vals[:-1])):
@@ -373,7 +373,7 @@ class TestOptimizer:
     @pytest.mark.parametrize("x_start", x_vals)
     def test_nesterovmomentum_optimizer_univar(self, x_start, bunch, tol):
         """Tests that nesterov momentum optimizer takes one and two steps correctly
-        for uni-variate functions."""
+        for univariate functions."""
 
         for gradf, f, name in zip(grad_uni_fns, univariate_funcs, fnames):
             bunch.nesmom_opt.reset()
@@ -390,7 +390,7 @@ class TestOptimizer:
 
     def test_nesterovmomentum_optimizer_multivar(self, bunch, tol):
         """Tests that nesterov momentum optimizer takes one and two steps correctly
-        for multi-variate functions."""
+        for multivariate functions."""
 
         for gradf, f, name in zip(grad_multi_funcs, multivariate_funcs, fnames):
             for jdx in range(len(x_vals[:-1])):
@@ -428,7 +428,7 @@ class TestOptimizer:
     @pytest.mark.parametrize("x_start", x_vals)
     def test_adagrad_optimizer_univar(self, x_start, bunch, tol):
         """Tests that adagrad optimizer takes one and two steps correctly
-        for uni-variate functions."""
+        for univariate functions."""
 
         for gradf, f, name in zip(grad_uni_fns, univariate_funcs, fnames):
             bunch.adag_opt.reset()
@@ -449,7 +449,7 @@ class TestOptimizer:
 
     def test_adagrad_optimizer_multivar(self, bunch, tol):
         """Tests that adagrad optimizer takes one and two steps correctly
-        for multi-variate functions."""
+        for multivariate functions."""
 
         for gradf, f, name in zip(grad_multi_funcs, multivariate_funcs, fnames):
             for jdx in range(len(x_vals[:-1])):
@@ -473,7 +473,7 @@ class TestOptimizer:
     @pytest.mark.parametrize("x_start", x_vals)
     def test_rmsprop_optimizer_univar(self, x_start, bunch, tol):
         """Tests that rmsprop optimizer takes one and two steps correctly
-        for uni-variate functions."""
+        for univariate functions."""
 
         for gradf, f, name in zip(grad_uni_fns, univariate_funcs, fnames):
             bunch.rms_opt.reset()
@@ -494,7 +494,7 @@ class TestOptimizer:
 
     def test_rmsprop_optimizer_multivar(self, bunch, tol):
         """Tests that rmsprop optimizer takes one and two steps correctly
-        for multi-variate functions."""
+        for multivariate functions."""
 
         for gradf, f, name in zip(grad_multi_funcs, multivariate_funcs, fnames):
             for jdx in range(len(x_vals[:-1])):
@@ -518,7 +518,7 @@ class TestOptimizer:
     @pytest.mark.parametrize("x_start", x_vals)
     def test_adam_optimizer_univar(self, x_start, bunch, tol):
         """Tests that adam optimizer takes one and two steps correctly
-        for uni-variate functions."""
+        for univariate functions."""
 
         for gradf, f, name in zip(grad_uni_fns, univariate_funcs, fnames):
             bunch.adam_opt.reset()
@@ -546,7 +546,7 @@ class TestOptimizer:
 
     def test_adam_optimizer_multivar(self, bunch, tol):
         """Tests that adam optimizer takes one and two steps correctly
-        for multi-variate functions."""
+        for multivariate functions."""
 
         for gradf, f, name in zip(grad_multi_funcs, multivariate_funcs, fnames):
             for jdx in range(len(x_vals[:-1])):
@@ -601,7 +601,7 @@ class TestOptimizer:
     @pytest.mark.parametrize("x_start", x_vals)
     def test_rotosolve_optimizer_univar(self, x_start, bunch, tol):
         """Tests that rotosolve optimizer takes one and two steps correctly
-        for uni-variate functions."""
+        for univariate functions."""
 
         for f in univariate_funcs:
             x_onestep = bunch.rotosolve_opt.step(f, x_start)
@@ -627,7 +627,7 @@ class TestOptimizer:
     )
     def test_rotosolve_optimizer_multivar(self, x_start, bunch, tol):
         """Tests that rotosolve optimizer takes one and two steps correctly
-        for multi-variate functions."""
+        for multivariate functions."""
 
         for func in multivariate_funcs:
             # alter multivariate_func to accept nested lists of parameters
