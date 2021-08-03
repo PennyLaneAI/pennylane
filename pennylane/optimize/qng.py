@@ -201,7 +201,7 @@ class QNGOptimizer(GradientDescentOptimizer):
 
         if forward is None:
             forward = qnode(*args, **kwargs)
-
+        
         # unwrap from list if one argument, cleaner return
         if len(new_args) == 1:
             return new_args[0], forward
