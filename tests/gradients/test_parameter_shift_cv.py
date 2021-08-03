@@ -982,7 +982,7 @@ class TestParamShiftInterfaces:
         params = np.array([r, phi], requires_grad=True)
         grad = qml.jacobian(cost_fn)(params)
         expected = np.array(
-                [4 * np.cosh(2 * r) * np.sin(2 * phi), 4 * np.cos(2 * phi) * np.sinh(2 * r)]
+            [4 * np.cosh(2 * r) * np.sin(2 * phi), 4 * np.cos(2 * phi) * np.sinh(2 * r)]
         )
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
