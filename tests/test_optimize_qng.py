@@ -72,19 +72,46 @@ class TestOptimize:
         assert np.allclose(step1, expected_step)
         assert np.allclose(step2, expected_step)
 
-    def test_step_and_cost_with_grad_fn(self, tol):
+    def test_step_and_cost_with_grad_fn_grouped_input(self, tol):
         """Test that the correct cost and update is returned via the step_and_cost
-        method for the QNG optimizer when providing an explicit grad_fn"""
+        method for the QNG optimizer when providing an explicit grad_fn.
+        Using a circuit with a single input containing all parameters."""
         dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev)
-        def circuit_grouped_input(params):
+        def circuit(params):
             qml.RX(params[0], wires=0)
             qml.RY(params[1], wires=0)
             return qml.expval(qml.PauliZ(0))
 
+        var = np.array([0.011, 0.012])
+        opt = qml.QNGOptimizer(stepsize=0.01)
+
+        # With autograd gradient function
+        grad_fn = qml.grad(circuit)
+        step1, cost1 = opt.step_and_cost(circuit, var, grad_fn=grad_fn)
+        step2 = opt.step(circuit, var, grad_fn=grad_fn)
+
+        # With more custom gradient function, forward has to be computed explicitly.
+        grad_fn = lambda param: np.array(qml.grad(circuit)(param))
+        step3, cost2 = opt.step_and_cost(circuit, var, grad_fn=grad_fn)
+        step4 = opt.step(circuit, var, grad_fn=grad_fn)
+        expected_step = var - opt._stepsize * 4 * grad_fn(var)
+        expected_cost = circuit(var)
+
+        for step in [step1, step2, step3, step3]:
+            assert np.allclose(step, expected_step)
+        assert np.isclose(cost1, expected_cost)
+        assert np.isclose(cost2, expected_cost)
+
+    def test_step_and_cost_with_grad_fn_split_input(self, tol):
+        """Test that the correct cost and update is returned via the step_and_cost
+        method for the QNG optimizer when providing an explicit grad_fn.
+        Using a circuit with multiple inputs containing the parameters."""
+        dev = qml.device("default.qubit", wires=1)
+
         @qml.qnode(dev)
-        def circuit_separated_input(params_0, params_1):
+        def circuit(params_0, params_1):
             qml.RX(params_0, wires=0)
             qml.RY(params_1, wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -92,36 +119,22 @@ class TestOptimize:
         var = np.array([0.011, 0.012])
         opt = qml.QNGOptimizer(stepsize=0.01)
 
-        for i, circuit in enumerate((circuit_grouped_input, circuit_separated_input)):
-            if i == 0:
-                # With autograd gradient function
-                grad_fn = qml.grad(circuit)
-                step1, cost1 = opt.step_and_cost(circuit, var, grad_fn=grad_fn)
-                step2 = opt.step(circuit, var, grad_fn=grad_fn)
+        # With autograd gradient function
+        grad_fn = qml.grad(circuit)
+        step1, cost1 = opt.step_and_cost(circuit, *var, grad_fn=grad_fn)
+        step2 = opt.step(circuit, *var, grad_fn=grad_fn)
 
-                # With more custom gradient function, forward has to be computed explicitly.
-                grad_fn = lambda param: np.array(qml.grad(circuit)(param))
-                step3, cost2 = opt.step_and_cost(circuit, var, grad_fn=grad_fn)
-                step4 = opt.step(circuit, var, grad_fn=grad_fn)
-                expected_step = var - opt._stepsize * 4 * grad_fn(var)
-                expected_cost = circuit(var)
-            else:
-                # With autograd gradient function
-                grad_fn = qml.grad(circuit)
-                step1, cost1 = opt.step_and_cost(circuit, *var, grad_fn=grad_fn)
-                step2 = opt.step(circuit, *var, grad_fn=grad_fn)
+        # With more custom gradient function, forward has to be computed explicitly.
+        grad_fn = lambda params_0, params_1: np.array(qml.grad(circuit)(params_0, params_1))
+        step3, cost2 = opt.step_and_cost(circuit, *var, grad_fn=grad_fn)
+        step4 = opt.step(circuit, *var, grad_fn=grad_fn)
+        expected_step = var - opt._stepsize * 4 * grad_fn(*var)
+        expected_cost = circuit(*var)
 
-                # With more custom gradient function, forward has to be computed explicitly.
-                grad_fn = lambda params_0, params_1: np.array(qml.grad(circuit)(params_0, params_1))
-                step3, cost2 = opt.step_and_cost(circuit, *var, grad_fn=grad_fn)
-                step4 = opt.step(circuit, *var, grad_fn=grad_fn)
-                expected_step = var - opt._stepsize * 4 * grad_fn(*var)
-                expected_cost = circuit(*var)
-
-            for step in [step1, step2, step3, step3]:
-                assert np.allclose(step, expected_step)
-            assert np.isclose(cost1, expected_cost)
-            assert np.isclose(cost2, expected_cost)
+        for step in [step1, step2, step3, step3]:
+            assert np.allclose(step, expected_step)
+        assert np.isclose(cost1, expected_cost)
+        assert np.isclose(cost2, expected_cost)
 
     def test_qubit_rotation(self, tol):
         """Test qubit rotation has the correct QNG value
