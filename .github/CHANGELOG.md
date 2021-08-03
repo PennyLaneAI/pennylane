@@ -380,6 +380,19 @@
 
 <h3>Improvements</h3>
 
+* The `step` and `step_and_cost` methods of `QNGOptimizer` now accept a custom `grad_fn`
+  keyword argument to use for gradient computations.
+  [(#1487)](https://github.com/PennyLaneAI/pennylane/pull/1487)
+
+* The precision used by `default.qubit.jax` now matches the float precision
+  indicated by 
+  ```python
+  from jax.config import config
+  config.read('jax_enable_x64')
+  ```
+  where `True` means `float64`/`complex128` and `False` means `float32`/`complex64`.
+  [(#1485)](https://github.com/PennyLaneAI/pennylane/pull/1485)
+
 * The `./pennylane/ops/qubit.py` file is broken up into a folder of six separate files.
   [(#1467)](https://github.com/PennyLaneAI/pennylane/pull/1467)
 
@@ -397,6 +410,19 @@
 * Added the `id` attribute to templates, which was missing from 
   PR [(#1377)](https://github.com/PennyLaneAI/pennylane/pull/1377).
   [(#1438)](https://github.com/PennyLaneAI/pennylane/pull/1438)
+
+* The `qml.math` module, for framework-agnostic tensor manipulation,
+  has two new functions available:
+  [(#1490)](https://github.com/PennyLaneAI/pennylane/pull/1490)
+
+  - `qml.math.get_trainable_indices(sequence_of_tensors)`: returns the indices corresponding to
+    trainable tensors in the input sequence.
+
+  - `qml.math.unwrap(sequence_of_tensors)`: unwraps a sequence of tensor-like objects to NumPy
+    arrays.
+
+  In addition, the behaviour of `qml.math.requires_grad` has been improved in order to
+  correctly determine trainability during Autograd and JAX backwards passes.
   
 <h3>Breaking changes</h3>
 
@@ -444,7 +470,7 @@
 This release contains contributions from (in alphabetical order):
 
 Olivia Di Matteo, Josh Izaac, Leonhard Kunczik, Christina Lee, Romain Moyard, Ashish Panigrahi,
-Maria Schuld, Jay Soni, Antal Száva
+Maria Schuld, Jay Soni, Antal Száva, David Wierichs
 
 
 # Release 0.16.0 (current release)
