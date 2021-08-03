@@ -1543,7 +1543,7 @@ class TestUnwrap:
 
 
 class TestGetTrainable:
-    """Test getting trainable indices"""
+    """Tests for getting trainable indices"""
 
     def test_tensorflow(self):
         """Test that the trainability indices of a sequence of TensorFlow values

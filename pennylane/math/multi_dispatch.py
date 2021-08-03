@@ -257,10 +257,10 @@ def get_trainable_indices(values):
     values.
 
     Args:
-        values (Sequence[tensor_like]): Sequence of tensor-like objects to inspect
+        values (Iterable[tensor_like]): Sequence of tensor-like objects to inspect
 
     Returns:
-        set[int]: set containing the indices of the trainable tensor-like objects
+        set[int]: Set containing the indices of the trainable tensor-like objects
         within the input sequence.
 
     **Example**

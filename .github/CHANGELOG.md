@@ -411,7 +411,7 @@
   PR [(#1377)](https://github.com/PennyLaneAI/pennylane/pull/1377).
   [(#1438)](https://github.com/PennyLaneAI/pennylane/pull/1438)
 
-* The `qml.math` module, for autodiff framework-agnostic tensor manipulation,
+* The `qml.math` module, for framework-agnostic tensor manipulation,
   has two new functions available:
   [(#1490)](https://github.com/PennyLaneAI/pennylane/pull/1490)
 

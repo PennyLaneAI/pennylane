@@ -194,8 +194,8 @@ def requires_grad(tensor, interface=None):
 
     Args:
         tensor (tensor_like): input tensor
-        interface (str): The name of the interface. If not provided,
-            will be determined automatically.
+        interface (str): The name of the interface. Will be determined automatically 
+            if not provided.
 
     **Example**
 
