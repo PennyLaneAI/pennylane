@@ -2,6 +2,76 @@
 
 <h3>New features since last release</h3>
 
+* The `RotosolveOptimizer` now can tackle more general parametrized circuits using trigonometric
+  interpolation as discussed in [Vidal and Theis, 2018](https://arxiv.org/abs/1812.06323)
+  and in [Wierichs, Izaac, Wang, Lin 2021](https://arxiv.org/abs/2107.12390).
+  [(#1489)](https://github.com/PennyLaneAI/pennylane/pull/1489)
+
+  Consider a circuit with a mixture of Pauli rotation gates, controlled Pauli rotations and
+  single-parameter layers of Pauli rotations:
+  ```python
+  dev = qml.device('default.qubit', wires=3, shots=None)
+
+  @qml.qnode(dev)
+  def cost_function(rot_param, layer_par, crot_param):
+      for i, par in enumerate(rot_param):
+          qml.RX(par, wires=i)
+      for w in dev.wires:
+          qml.RX(layer_par, wires=w)
+      for i, par in enumerate(crot_param):
+          qml.CRY(par, wires=[i, (i+1)%3])
+
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+  ```
+  Then this cost function supports one frequency for each of the first `RX` rotation angles,
+  three frequencies for the layer of `RX` gates that depend on `layer_par`, and two
+  frequencies for each of the `CRY` gate parameters. Rotsolve can then be used to minimize
+  the `cost_function`:
+
+  ```python
+  # Initial parameters
+  init_param = [
+      np.array([0.3, 0.2, 0.67], requires_grad=True),
+      np.array(1.1, requires_grad=True),
+      np.array([-0.2, 0.1, -2.5], requires_grad=True),
+  ]
+  # Numbers of frequencies per parameter
+  num_frequencies = [[1, 1, 1], 3, [2, 2, 2]]
+
+  opt = qml.RotosolveOptimizer()
+  param = init_param.copy()
+  for step in range(5):
+      param, cost = opt.step_and_cost(
+          cost_function,
+          *param,
+          num_frequencies=num_frequencies,
+      )
+      print(cost)
+  ```
+  Here, the keyword argument `requires_grad` can be used to determine whether the respective
+  parameter should be optimized or not, following the behaviour of gradient computations and
+  gradient-based optimizers.
+  
+  In addition, the optimization technique for the Rotosolve substeps can be chosen via the
+  `optimizer` and `optimizer_kwargs` keyword arguments and the minimized cost of the 
+  intermediate univariate reconstructions can be read out via `full_output`, including the 
+  cost _after_ the full Rotosolve step:
+  
+  ```python
+  param = init_param.copy()
+  for step in range(5):
+      param, cost, sub_cost = opt.step_and_cost(
+          cost_function,
+          *param,
+          num_frequencies=num_frequencies,
+          full_output=True,
+      )
+      print(f"Cost before step: {cost}")
+      print(f"Minimization substeps: {np.round(sub_cost, 6)}")
+  ```
+  
+  The `full_output` feature is available for both, `step` and `step_and_cost`.
+
 * The new Device Tracker capabilities allows for flexible and versatile tracking of executions,
   even inside parameter-shift gradients. This functionality will improve the ease of monitoring
   large batches and remote jobs.

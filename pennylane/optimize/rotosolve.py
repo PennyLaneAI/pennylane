@@ -14,8 +14,25 @@
 """Rotosolve gradient free optimizer"""
 
 import numpy as np
+from scipy.optimize import brute, shgo
 from pennylane.utils import _flatten, unflatten
 
+def _brute_optimizer(fun, num_steps, **kwargs):
+    r"""Brute force optimizer, wrapper of scipy.optimizer.brute that repeats it
+    ``num_steps`` times."""
+    width = 2 * np.pi
+    x_min = 0.0
+    for _ in range(num_steps):
+        _range = (x_min - width / 2, x_min + width / 2)
+        x_min, y_min, *_ = brute(fun, ranges=(_range,), full_output=True, **kwargs)
+        width /= Ns
+
+    return x_min, y_min
+
+def _shgo_optimizer(fun, **kwargs):
+    r"""Wrapper for ``scipy.optimize.shgo`` (Simplicial Homology global optimizer)."""
+    opt_res = shgo(fun, **kwargs)
+    return opt_res.x, opt_res.fun
 
 class RotosolveOptimizer:
     r"""Rotosolve gradient-free optimizer.
@@ -50,41 +67,93 @@ class RotosolveOptimizer:
     the number of steps to optimize over.
 
     >>> opt = qml.optimize.RotosolveOptimizer()
-    >>> x = [0.3, 0.7]
-    >>> n_steps = 10
+    >>> num_steps = 10
 
     Set up the PennyLane circuit using the ``default.qubit`` as simulator device. The first
-    parameter controls a two-eigenvalues Pauli rotation ``RX``, the second parameter controls a
-    three-eigenvalues controled Pauli rotation.
+    argument controls three Pauli rotations with three parameters (one frequency each), the
+    second a layer of rotations with a single parameter (three frequencies), and the third
+    argument feeds three parameters into three controled Pauli rotations (two frequencies
+    each). We also initialize a set of parameters for all these operations and summarize
+    the numbers of frequencies in ``num_frequencies``.
+    The ``cost_function` is defined simply by measuring the expectation value of the tensor
+    product of ``PauliZ`` operators on all qubits.
 
-    >>> dev = qml.device("default.qubit", shots=None, wires=2)
-    ... @qml.qnode(dev)
-    ... def circuit(params):
-    ...     qml.RX(params[0], wires=0)
-    ...     qml.CRY(params[1], wires=[0, 1])
-    ...     return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
+    .. code-block :: python
 
-    Define a cost function (that takes a list of values as input and return a single value) based
-    on the above circuit.
+        dev = qml.device('default.qubit', wires=3, shots=None)
+        @qml.qnode(dev)
+        def cost_function(rot_param, layer_par, crot_param):
+            for i, par in enumerate(rot_param):
+                qml.RX(par, wires=i)
+            for w in dev.wires:
+                qml.RX(layer_par, wires=w)
+            for i, par in enumerate(crot_param):
+                qml.CRY(par, wires=[i, (i+1)%3])
 
-    >>> def cost(x):
-    ...     Z_1, X_2 = circuit(x)
-    ...     return 0.2 * Z_1 + 0.5 * X_2
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+
+        init_param = [
+            np.array([0.3, 0.2, 0.67], requires_grad=True),
+            np.array(1.1, requires_grad=True),
+            np.array([-0.2, 0.1, -2.5], requires_grad=True),
+        ]
+
+        num_frequencies = [[1, 1, 1], 3, [2, 2, 2]]
 
     Run the optimization step-by-step for ``n_steps`` steps.
 
-    >>> cost_rotosolve = []
-    >>> for _ in range(n_steps):
-    ...     cost_rotosolve.append(cost(x))
-    ...     x = opt.step(cost, x)
+    .. code-block :: python
 
-    The optimized values for x are now stored in ``x`` and steps-vs-cost can be seen by
-    plotting ``cost_rotosolve``.
+        cost_rotosolve = []
+
+        opt = qml.RotosolveOptimizer()
+        param = init_param.copy()
+        for _ in range(num_steps):
+            param, cost = opt.step_and_cost(
+                cost_function,
+                *param,
+                num_frequencies=num_frequencies,
+            )
+            cost_rotosolve.append(cost)
+
+    The optimized values for x are now stored in ``param`` and steps-vs-cost can be
+    assessed by plotting ``cost_rotosolve``.
+    The keyword argument `requires_grad` can be used to determine whether the respective
+    parameter should be optimized or not, following the behaviour of gradient computations and
+    gradient-based optimizers.
+  
+    In addition, the optimization technique for the Rotosolve substeps can be chosen via the
+    ``optimizer`` and ``optimizer_kwargs`` keyword arguments and the minimized cost of the 
+    intermediate univariate reconstructions can be read out via ``full_output``, including the 
+    cost _after_ the full Rotosolve step:
+  
+    .. code-block :: python
+
+        param = init_param.copy()
+        for step in range(num_steps):
+            param, cost, sub_cost = opt.step_and_cost(
+                cost_function,
+                *param,
+                num_frequencies=num_frequencies,
+                full_output=True,
+            )
+            print(f"Cost before step: {cost}")
+            print(f"Minimization substeps: {np.round(sub_cost, 6)}")
+  
+    The ``full_output`` feature is available for both, ``step`` and ``step_and_cost``.
     """
     # pylint: disable=too-few-public-methods
 
-    def step_and_cost(self, objective_fn, *args, num_frequencies=None, optimizer=None,
-            optimizer_kwargs=None, full_output=False, **kwargs):
+    def step_and_cost(
+        self,
+        objective_fn,
+        *args,
+        num_frequencies=None,
+        optimizer=None,
+        optimizer_kwargs=None,
+        full_output=False,
+        **kwargs,
+    ):
         r"""Update args with one step of the optimizer and return the corresponding objective
         function value prior to the step.
 
@@ -117,41 +186,27 @@ class RotosolveOptimizer:
             If single arg is provided, list [array] is replaced by array.
         """
         if num_frequencies is None:
-            num_frequencies = [1]*len(args)
+            num_frequencies = [1] * len(args)
         elif np.isscalar(num_frequencies) and np.isclose(int(num_frequencies), num_frequencies):
-            num_frequencies = [num_frequencies]*len(args)
+            num_frequencies = [num_frequencies] * len(args)
         else:
-            if len(num_frequencies)!=len(args):
-                raise ValueError("The number of the provided numbers of frequencies",
-                    f"({len(num_frequencies)}) does not match the number of function arguments",
-                    f"({len(args)}).")
+            if len(num_frequencies) != len(args):
+                raise ValueError(
+                    "The number of the provided numbers of frequencies "
+                    f"({len(num_frequencies)}) does not match the number of function arguments "
+                    f"({len(args)})."
+                )
 
         if optimizer_kwargs is None:
             optimizer_kwargs = {}
-        if optimizer in [None, 'brute']:
-            from scipy.optimizer import brute
-            def optimizer(fun, num_steps, Ns):
-                r"""Brute force optimizer, wrapper of scipy.optimizer.brute that repeats it
-                ``num_steps`` times."""
-                width = 2 * np.pi
-                x_min = 0.0
-                for _ in range(num_steps):
-                    _range = (x_min-width/2, x_min+width/2)
-                    x_min, y_min, *_ = brute(fun, ranges=(_range,), Ns=Ns, full_output=True)
-                    width /= Ns
 
-                return x_min, y_min
-            optimizer_kwargs.setdefault('num_steps', 2)
-            optimizer_kwargs.setdefault('Ns', 100)
-
-        elif optimizer=='shgo':
-            from scipy.optimizer import shgo
-            def optimizer(fun, **kwargs):
-                r"""Wrapper for ``scipy.optimize.shgo`` (Simplicial Homology global optimizer)."""
-                opt_res = shgo(fun, **kwargs)
-                return opt_res.x, opt_res.fun
-
-            optimizer_kwargs.setdefault('bounds', (-np.pi, np.pi))
+        if optimizer in [None, "brute"]:
+            optimizer = _brute_optimizer
+            optimizer_kwargs.setdefault("num_steps", 2)
+            optimizer_kwargs.setdefault("Ns", 100)
+        elif optimizer == "shgo":
+            optimizer = _shgo_optimizer
+            optimizer_kwargs.setdefault("bounds", (-np.pi, np.pi))
 
         # will single out one arg to change at a time
         # these hold the arguments not getting updated
@@ -173,19 +228,27 @@ class RotosolveOptimizer:
                 x_flat = np.fromiter(_flatten(arg), dtype=float)
                 num_params = len(x_flat)
                 if np.isscalar(num_frequency):
-                    num_frequency = [num_frequency] * num_params
+                    num_frequency_flat = [num_frequency] * num_params
                 else:
                     num_frequency_flat = np.fromiter(_flatten(num_frequency), dtype=int)
+                    if len(num_frequency_flat) != num_params:
+                        raise ValueError(
+                            "The number of the provided numbers of frequencies "
+                            f"({len(num_frequency_flat)}) for the {arg_index}th argument does "
+                            f"not match the number of parameters in that argument ({num_params})."
+                        )
                 shift_vecs = np.eye(num_params)
 
                 # Iterate over current arg:
-                for par_index, (shift_vec, _num_frequency) in enumerate(zip(shift_vecs, num_frequency_flat)):
+                for par_index, (shift_vec, _num_frequency) in enumerate(
+                    zip(shift_vecs, num_frequency_flat)
+                ):
                     # univariate objective function
                     univariate_obj_fn = lambda x: objective_fn(
                         *before_args,
-                        unflatten(x_flat+shift_vec*x, arg_kw),
+                        unflatten(x_flat + shift_vec * x, arg),
                         *after_args,
-                        **kwargs
+                        **kwargs,
                     )
                     x_min, y_min = self._rotosolve(
                         univariate_obj_fn,
@@ -193,7 +256,7 @@ class RotosolveOptimizer:
                         optimizer,
                         optimizer_kwargs,
                         full_output,
-                        H_0=(H_0 if arg_index+par_index==0 else None),
+                        H_0=(H_0 if arg_index + par_index == 0 else None),
                     )
                     x_flat += shift_vec * x_min
                     if full_output:
@@ -213,8 +276,16 @@ class RotosolveOptimizer:
         else:
             return args_new, H_0
 
-    def step(self, objective_fn, *args, num_frequencies=None, optimizer=None,
-            optimizer_kwargs=None, full_output=False, **kwargs):
+    def step(
+        self,
+        objective_fn,
+        *args,
+        num_frequencies=None,
+        optimizer=None,
+        optimizer_kwargs=None,
+        full_output=False,
+        **kwargs,
+    ):
         r"""Update args with one step of the optimizer.
 
         Args:
@@ -260,7 +331,7 @@ class RotosolveOptimizer:
             return x_new
 
     @staticmethod
-    def _full_reconstruction_equ(fun, num_frequency):
+    def _full_reconstruction_equ(fun, num_frequency, H_0):
         r"""Reconstruct a univariate trigonometric function using trigonometric interpolation.
         See `Gil Vidal and Theis (2018) <https://arxiv.org/abs/1812.06323>`_ or
         `Wierichs et al. (2021) <https://arxiv.org/abs/2107.12390>`_.
@@ -273,17 +344,29 @@ class RotosolveOptimizer:
             callable: The reconstruction function with ``num_frequency`` frequencies,
             coinciding with ``fun`` on the same number of points.
         """
-        mus = range(-num_frequency, num_frequency+1)
-        shifts = [2*mu*np.pi/(2*num_frequency+1) for mu in mus]
-        evals = [fun(shift) for shift in shifts]
-        a, b = (num_frequency+0.5)/np.pi, 0.5/np.pi
-        reconstruction = lambda x: np.sum(np.array([
-            _eval * np.sinc(a*(x-shift)) / sinc(b*(x-shift)) for _eval, shift in zip(evals, shifts)
-        ]))
+        if H_0 is None:
+            mus = range(-num_frequency, num_frequency + 1)
+            shifts = [2 * mu * np.pi / (2 * num_frequency + 1) for mu in mus]
+            evals = [fun(shift) for shift in shifts]
+        else:
+            mus = range(1, num_frequency + 1)
+            shifts = [2 * mu * np.pi / (2 * num_frequency + 1) for mu in mus]
+            evals = (
+                [fun(-shift) for shift in shifts[::-1]] + [H_0] + [fun(shift) for shift in shifts]
+            )
+        a, b = (num_frequency + 0.5) / np.pi, 0.5 / np.pi
+        reconstruction = lambda x: np.sum(
+            np.array(
+                [
+                    _eval * np.sinc(a * (x - shift)) / np.sinc(b * (x - shift))
+                    for _eval, shift in zip(evals, shifts)
+                ]
+            )
+        )
         return reconstruction
 
     @staticmethod
-    def _rotosolve(objective_fn, num_frequency, optimizer, optimizer_kwargs, full_output):
+    def _rotosolve(objective_fn, num_frequency, optimizer, optimizer_kwargs, full_output, H_0=None):
         r"""The rotosolve step for a univariate (restriction of a) cost function.
 
         Updates the parameter of the ``objective_fn`` based on Equation 1 in
@@ -299,20 +382,22 @@ class RotosolveOptimizer:
             y_min (float): the minimal value of ``objective_fn``.
         """
         # Use closed form expression from Ostaszewski et al., using notation of App. A
-        if num_frequency==1:
-            H_0 = float(objective_fn(0.0)))
-            H_p = float(objective_fn( 0.5 * np.pi))
+        if num_frequency == 1:
+            H_0 = float(objective_fn(0.0)) if H_0 is None else H_0
+            H_p = float(objective_fn(0.5 * np.pi))
             H_m = float(objective_fn(-0.5 * np.pi))
-            C = H_p + H_m
+            C = 0.5 * (H_p + H_m)
             B = np.arctan2(2 * (H_0 - C), H_p - H_m)
             x_min = -np.pi / 2 - B
             if full_output:
-                A = np.sqrt((H_0 - C)**2 + 0.25*(H_p - H_m)**2)
+                A = np.sqrt((H_0 - C) ** 2 + 0.25 * (H_p - H_m) ** 2)
                 y_min = -A + C
             else:
                 y_min = None
         else:
-            reconstruction = self._full_reconstruction_equ(objective_fn, num_frequency)
+            reconstruction = RotosolveOptimizer._full_reconstruction_equ(
+                objective_fn, num_frequency, H_0
+            )
             x_min, y_min = optimizer(reconstruction, **optimizer_kwargs)
             if y_min is None and full_output:
                 y_min = reconstruction(x_min)
