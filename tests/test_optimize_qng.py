@@ -93,7 +93,7 @@ class TestOptimize:
         opt = qml.QNGOptimizer(stepsize=0.01)
 
         for i, circuit in enumerate((circuit_grouped_input, circuit_separated_input)):
-            if i==0:
+            if i == 0:
                 # With autograd gradient function
                 grad_fn = qml.grad(circuit)
                 step1, cost1 = opt.step_and_cost(circuit, var, grad_fn=grad_fn)
