@@ -380,6 +380,10 @@
 
 <h3>Improvements</h3>
 
+* The `step` and `step_and_cost` methods of `QNGOptimizer` now accept a custom `grad_fn`
+  keyword argument to use for gradient computations.
+  [(#1487)](https://github.com/PennyLaneAI/pennylane/pull/1487)
+
 * The precision used by `default.qubit.jax` now matches the float precision
   indicated by 
   ```python
