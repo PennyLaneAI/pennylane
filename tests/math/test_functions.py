@@ -1455,7 +1455,6 @@ class TestUnwrap:
         ]
         res = qml.math.unwrap(values)
         expected = [np.array([0.1, 0.2]), 0.1, np.array([0.5, 0.2])]
-        print(res)
         assert all(np.allclose(a, b) for a, b in zip(res, expected))
 
     def test_torch_unwrapping(self):

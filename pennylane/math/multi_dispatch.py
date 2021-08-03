@@ -264,6 +264,15 @@ def get_trainable_indices(values):
         within the input sequence.
 
     **Example**
+
+    >>> def cost_fn(params):
+    ...     print("Trainable:", qml.math.get_trainable_indices(params))
+    ...     return np.sum(np.sin(params[0] * params[1]))
+    >>> values = [np.array([0.1, 0.2], requires_grad=True),
+    ... np.array([0.5, 0.2], requires_grad=False)]
+    >>> cost_fn(values)
+    Trainable: {0}
+    tensor(0.0899685, requires_grad=True)
     """
     interface = _multi_dispatch(values)
     trainable_params = set()
