@@ -13,6 +13,7 @@
 # limitations under the License.
 """Utility functions"""
 # pylint: disable=import-outside-toplevel
+from autograd.numpy.numpy_boxes import ArrayBox
 import autoray as ar
 from autoray import numpy as np
 import numpy as _np
@@ -179,7 +180,7 @@ def get_interface(tensor):
     return res
 
 
-def requires_grad(tensor):
+def requires_grad(tensor, interface=None):
     """Returns True if the tensor is considered trainable.
 
     .. warning::
@@ -193,6 +194,8 @@ def requires_grad(tensor):
 
     Args:
         tensor (tensor_like): input tensor
+        interface (str): The name of the interface. Will be determined automatically
+            if not provided.
 
     **Example**
 
@@ -229,7 +232,7 @@ def requires_grad(tensor):
     ...     print(requires_grad(x))
     True
     """
-    interface = get_interface(tensor)
+    interface = interface or get_interface(tensor)
 
     if interface == "tensorflow":
         import tensorflow as tf
@@ -241,13 +244,23 @@ def requires_grad(tensor):
 
         return should_record_backprop([tf.convert_to_tensor(tensor)])
 
-    if interface in ("torch", "autograd"):
-        return tensor.requires_grad
+    if interface == "autograd":
+        if isinstance(tensor, ArrayBox):
+            return True
+
+        # Currently, in the Autograd interface, we assume
+        # that all objects are differentiable by default.
+        return getattr(tensor, "requires_grad", True)
+
+    if interface == "torch":
+        return getattr(tensor, "requires_grad", False)
 
     if interface == "numpy":
         return False
 
     if interface == "jax":
-        return True
+        import jax
+
+        return isinstance(tensor, jax.interpreters.ad.JVPTracer)
 
     raise ValueError(f"Argument {tensor} is an unknown object")
