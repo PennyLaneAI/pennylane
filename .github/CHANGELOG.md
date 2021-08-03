@@ -2,6 +2,101 @@
 
 <h3>New features since last release</h3>
 
+* The new Device Tracker capabilities allows for flexible and versatile tracking of executions,
+  even inside parameter-shift gradients. This functionality will improve the ease of monitoring
+  large batches and remote jobs.
+  [(#1355)](https://github.com/PennyLaneAI/pennylane/pull/1355)
+
+  ```python
+  dev = qml.device('default.qubit', wires=1, shots=100)
+
+  @qml.qnode(dev, diff_method="parameter-shift")
+  def circuit(x):
+      qml.RX(x, wires=0)
+      return qml.expval(qml.PauliZ(0))
+
+  x = np.array(0.1)
+
+  with qml.Tracker(circuit.device) as tracker:
+      qml.grad(circuit)(x)
+  ```
+
+  ```pycon
+  >>> tracker.totals
+ {'executions': 3, 'shots': 300, 'batches': 1, 'batch_len': 2}
+  >>> tracker.history
+  {'executions': [1, 1, 1],
+   'shots': [100, 100, 100],
+   'batches': [1],
+   'batch_len': [2]}
+  >>> tracker.latest
+  {'batches': 1, 'batch_len': 2}
+  ```
+
+  Users can also provide a custom function to the `callback` keyword that gets called each time
+  the information is updated.  This functionality allows users to monitor remote jobs or large
+  parameter-shift batches.
+
+  ```pycon
+  >>> def shots_info(totals, history, latest):
+  ...     print("Total shots: ", totals['shots'])
+  >>> with qml.Tracker(circuit.device, callback=shots_info) as tracker:
+  ...     qml.grad(circuit)(0.1)
+  Total shots:  100
+  Total shots:  200
+  Total shots:  300
+  ```
+
+* VQE problems can now intuitively been set up by passing the Hamiltonian 
+  as an observable. [(#1474)](https://github.com/PennyLaneAI/pennylane/pull/1474)
+
+  ``` python
+  dev = qml.device("default.qubit", wires=2)
+  H = qml.Hamiltonian([1., 2., 3.],  [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)])
+  w = qml.init.strong_ent_layers_uniform(1, 2, seed=1967)
+  
+  @qml.qnode(dev)
+  def circuit(w):
+      qml.templates.StronglyEntanglingLayers(w, wires=range(2))
+      return qml.expval(H)
+  ```
+  
+  ```pycon
+  >>> print(circuit(w))
+  -1.5133943637878295
+  >>> print(qml.grad(circuit)(w))
+  [[[-8.32667268e-17  1.39122955e+00 -9.12462052e-02]
+  [ 1.02348685e-16 -7.77143238e-01 -1.74708049e-01]]]
+  ```
+  
+  Note that other measurement types like `var(H)` or `sample(H)`, as well 
+  as multiple expectations like `expval(H1), expval(H2)` are not supported. 
+
+* A new gradients module `qml.gradients` has been added, which provides
+  differentiable quantum gradient transforms.
+  [(#1476)](https://github.com/PennyLaneAI/pennylane/pull/1476)
+
+  Available quantum gradient transforms include:
+
+  - `qml.gradients.finite_diff`
+
+  For example,
+
+  ```pycon
+  >>> with qml.tape.QuantumTape() as tape:
+  ...     qml.RX(params[0], wires=0)
+  ...     qml.RY(params[1], wires=0)
+  ...     qml.RX(params[2], wires=0)
+  ...     qml.expval(qml.PauliZ(0))
+  ...     qml.var(qml.PauliZ(0))
+  >>> tape.trainable_params = {0, 1, 2}
+  >>> gradient_tapes, fn = qml.gradients.finite_diff(tape)
+  >>> res = dev.batch_execute(gradient_tapes)
+  >>> fn(res)
+  [[-0.38751721 -0.18884787 -0.38355704]
+   [ 0.69916862  0.34072424  0.69202359]]
+  ```
+
 * A new quantum function transform has been added to push commuting
   single-qubit gates through controlled operations.
   [(#1464)](https://github.com/PennyLaneAI/pennylane/pull/1464)
@@ -285,6 +380,22 @@
 
 <h3>Improvements</h3>
 
+* The `step` and `step_and_cost` methods of `QNGOptimizer` now accept a custom `grad_fn`
+  keyword argument to use for gradient computations.
+  [(#1487)](https://github.com/PennyLaneAI/pennylane/pull/1487)
+
+* The precision used by `default.qubit.jax` now matches the float precision
+  indicated by 
+  ```python
+  from jax.config import config
+  config.read('jax_enable_x64')
+  ```
+  where `True` means `float64`/`complex128` and `False` means `float32`/`complex64`.
+  [(#1485)](https://github.com/PennyLaneAI/pennylane/pull/1485)
+
+* The `./pennylane/ops/qubit.py` file is broken up into a folder of six separate files.
+  [(#1467)](https://github.com/PennyLaneAI/pennylane/pull/1467)
+
 * Changed to using commas as the separator of wires in the string
   representation of `qml.Hamiltonian` objects for multi-qubit terms.
   [(#1465)](https://github.com/PennyLaneAI/pennylane/pull/1465)
@@ -346,7 +457,7 @@
 This release contains contributions from (in alphabetical order):
 
 Olivia Di Matteo, Josh Izaac, Leonhard Kunczik, Christina Lee, Romain Moyard, Ashish Panigrahi,
-Maria Schuld, Jay Soni, Antal Száva
+Maria Schuld, Jay Soni, Antal Száva, David Wierichs
 
 
 # Release 0.16.0 (current release)
