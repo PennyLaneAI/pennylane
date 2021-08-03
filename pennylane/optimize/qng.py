@@ -168,12 +168,13 @@ class QNGOptimizer(GradientDescentOptimizer):
             grad_fn (function): optional gradient function of the
                 qnode with respect to the variables ``*args``.
                 If ``None``, the gradient function is computed automatically.
-                Must return the same shape of tuple [array] as the autograd derivative.
+                Must return a ``tuple[array]`` with the same number of elements as ``*args``.
+                Each array of the tuple should have the same shape as the corresponding argument.
             recompute_tensor (bool): Whether or not the metric tensor should
                 be recomputed. If not, the metric tensor from the previous
                 optimization step is used.
             metric_tensor_fn (function): Optional metric tensor function
-                with respect to the variables ``x``.
+                with respect to the variables ``args``.
                 If ``None``, the metric tensor function is computed automatically.
             **kwargs : variable length of keyword arguments for the qnode
 
@@ -209,19 +210,25 @@ class QNGOptimizer(GradientDescentOptimizer):
 
     # pylint: disable=arguments-differ
     def step(
-        self, qnode, *args, recompute_tensor=True, metric_tensor_fn=None, grad_fn=None, **kwargs
+        self, qnode, *args, grad_fn=None, recompute_tensor=True, metric_tensor_fn=None, **kwargs
     ):
         """Update the parameter array :math:`x` with one step of the optimizer.
 
         Args:
             qnode (QNode): the QNode for optimization
-            x (array): NumPy array containing the current values of the variables to be updated
+            *args : variable length argument list for qnode
+            grad_fn (function): optional gradient function of the
+                qnode with respect to the variables ``*args``.
+                If ``None``, the gradient function is computed automatically.
+                Must return a ``tuple[array]`` with the same number of elements as ``*args``.
+                Each array of the tuple should have the same shape as the corresponding argument.
             recompute_tensor (bool): Whether or not the metric tensor should
                 be recomputed. If not, the metric tensor from the previous
                 optimization step is used.
             metric_tensor_fn (function): Optional metric tensor function
-                with respect to the variables ``x``.
+                with respect to the variables ``args``.
                 If ``None``, the metric tensor function is computed automatically.
+            **kwargs : variable length of keyword arguments for the qnode
 
         Returns:
             array: the new variable values :math:`x^{(t+1)}`
@@ -229,9 +236,9 @@ class QNGOptimizer(GradientDescentOptimizer):
         new_args, _ = self.step_and_cost(
             qnode,
             *args,
+            grad_fn=grad_fn,
             recompute_tensor=recompute_tensor,
             metric_tensor_fn=metric_tensor_fn,
-            grad_fn=grad_fn,
             **kwargs,
         )
         return new_args
