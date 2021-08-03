@@ -20,6 +20,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import math as fn
+from autograd.numpy.numpy_boxes import ArrayBox
 
 
 tf = pytest.importorskip("tensorflow", minversion="2.1")
@@ -661,10 +662,26 @@ class TestRequiresGrad:
         """Vanilla NumPy arrays, sequences, and lists will always return False"""
         assert not fn.requires_grad(t)
 
-    @pytest.mark.parametrize("t", [jnp.array([1, 2, 3])])
-    def test_jax(self, t):
-        """jax.DeviceArrays will always return True"""
-        assert fn.requires_grad(t)
+    def test_jax(self):
+        """JAX DeviceArrays differentiability depends on the argnums argument"""
+        res = None
+
+        def cost_fn(t, s):
+            nonlocal res
+            res = [fn.requires_grad(t), fn.requires_grad(s)]
+            return jnp.sum(t * s)
+
+        t = jnp.array([1.0, 2.0, 3.0])
+        s = jnp.array([-2.0, -3.0, -4.0])
+
+        jax.grad(cost_fn, argnums=0)(t, s)
+        assert res == [True, False]
+
+        jax.grad(cost_fn, argnums=1)(t, s)
+        assert res == [False, True]
+
+        jax.grad(cost_fn, argnums=[0, 1])(t, s)
+        assert res == [True, True]
 
     def test_autograd(self):
         """Autograd arrays will simply return their requires_grad attribute"""
@@ -673,6 +690,38 @@ class TestRequiresGrad:
 
         t = np.array([1.0, 2.0], requires_grad=False)
         assert not fn.requires_grad(t)
+
+    def test_autograd_backwards(self):
+        """Autograd trainability corresponds to the requires_grad attribute during the backwards pass."""
+        res = None
+
+        def cost_fn(t, s):
+            nonlocal res
+            res = [fn.requires_grad(t), fn.requires_grad(s)]
+            return np.sum(t * s)
+
+        t = np.array([1.0, 2.0, 3.0])
+        s = np.array([-2.0, -3.0, -4.0])
+
+        qml.grad(cost_fn)(t, s)
+        assert res == [True, True]
+
+        t.requires_grad = False
+        qml.grad(cost_fn)(t, s)
+        assert res == [False, True]
+
+        t.requires_grad = True
+        s.requires_grad = False
+        qml.grad(cost_fn)(t, s)
+        assert res == [True, False]
+
+        t.requires_grad = False
+        s.requires_grad = False
+
+        with pytest.warns(UserWarning, match="Output seems independent of input"):
+            qml.grad(cost_fn)(t, s)
+
+        assert res == [False, False]
 
     def test_torch(self):
         """Torch tensors will simply return their requires_grad attribute"""
@@ -1392,3 +1441,178 @@ class TestCoercion:
         res = qml.math.coerce(tensors, like="torch")
         dtypes = [r.dtype for r in res]
         assert all(d is torch.complex64 for d in dtypes)
+
+
+class TestUnwrap:
+    """Test tensor unwrapping"""
+
+    def test_tensorflow_unwrapping(self):
+        """Test that a sequence of TensorFlow values is properly unwrapped"""
+        values = [
+            onp.array([0.1, 0.2]),
+            tf.Variable(0.1, dtype=tf.float64),
+            tf.constant([0.5, 0.2]),
+        ]
+        res = qml.math.unwrap(values)
+        expected = [np.array([0.1, 0.2]), 0.1, np.array([0.5, 0.2])]
+        assert all(np.allclose(a, b) for a, b in zip(res, expected))
+
+    def test_torch_unwrapping(self):
+        """Test that a sequence of Torch values is properly unwrapped"""
+        values = [
+            onp.array([0.1, 0.2]),
+            torch.tensor(0.1, dtype=torch.float64),
+            torch.tensor([0.5, 0.2]),
+        ]
+        res = qml.math.unwrap(values)
+        expected = [np.array([0.1, 0.2]), 0.1, np.array([0.5, 0.2])]
+        assert all(np.allclose(a, b) for a, b in zip(res, expected))
+
+    def test_autograd_unwrapping_forward(self):
+        """Test that a sequence of Autograd values is properly unwrapped
+        during the forward pass"""
+        unwrapped_params = None
+
+        def cost_fn(params):
+            nonlocal unwrapped_params
+            unwrapped_params = qml.math.unwrap(params)
+            return np.sum(np.sin(params[0] * params[2])) + params[1]
+
+        values = [onp.array([0.1, 0.2]), np.tensor(0.1, dtype=np.float64), np.tensor([0.5, 0.2])]
+        cost_fn(values)
+
+        expected = [np.array([0.1, 0.2]), 0.1, np.array([0.5, 0.2])]
+        assert all(np.allclose(a, b) for a, b in zip(unwrapped_params, expected))
+        assert all(not isinstance(a, np.tensor) for a in unwrapped_params)
+
+    def test_autograd_unwrapping_backward(self):
+        """Test that a sequence of Autograd values is properly unwrapped
+        during the backward pass"""
+        unwrapped_params = None
+
+        def cost_fn(*params):
+            nonlocal unwrapped_params
+            unwrapped_params = qml.math.unwrap(params)
+            return np.sum(np.sin(params[0] * params[2])) + params[1]
+
+        values = [onp.array([0.1, 0.2]), np.tensor(0.1, dtype=np.float64), np.tensor([0.5, 0.2])]
+        grad = qml.grad(cost_fn)(*values)
+
+        expected = [np.array([0.1, 0.2]), 0.1, np.array([0.5, 0.2])]
+        assert all(np.allclose(a, b) for a, b in zip(unwrapped_params, expected))
+        assert all(not isinstance(a, ArrayBox) for a in unwrapped_params)
+
+    def test_autograd_unwrapping_backward_nested(self):
+        """Test that a sequence of Autograd values is properly unwrapped
+        during multiple backward passes"""
+        unwrapped_params = None
+
+        def cost_fn(p, max_depth=None):
+            nonlocal unwrapped_params
+            unwrapped_params = qml.math.unwrap(p, max_depth)
+            return np.sum(np.sin(np.prod(p)))
+
+        values = np.tensor([0.1, 0.2, 0.3])
+        hess = qml.jacobian(qml.grad(cost_fn))(values)
+
+        expected = np.array([0.1, 0.2, 0.3])
+        assert np.allclose(unwrapped_params, expected)
+        assert not isinstance(unwrapped_params, ArrayBox)
+
+        # Specifying max_depth=1 will result in the second backward
+        # pass not being unwrapped
+        hess = qml.jacobian(qml.grad(cost_fn))(values, max_depth=1)
+        assert all(isinstance(a, ArrayBox) for a in unwrapped_params)
+
+    def test_jax_unwrapping(self):
+        """Test that a sequence of Autograd values is properly unwrapped
+        during the forward pass"""
+        unwrapped_params = None
+
+        def cost_fn(params):
+            nonlocal unwrapped_params
+            unwrapped_params = qml.math.unwrap(params)
+            return np.sum(np.sin(params[0])) + params[2]
+
+        values = [jnp.array([0.1, 0.2]), onp.array(0.1, dtype=np.float64), jnp.array([0.5, 0.2])]
+        cost_fn(values)
+
+        expected = [np.array([0.1, 0.2]), 0.1, np.array([0.5, 0.2])]
+        assert all(np.allclose(a, b) for a, b in zip(unwrapped_params, expected))
+        assert all(not isinstance(a, np.tensor) for a in unwrapped_params)
+
+
+class TestGetTrainable:
+    """Tests for getting trainable indices"""
+
+    def test_tensorflow(self):
+        """Test that the trainability indices of a sequence of TensorFlow values
+        is correctly extracted"""
+        values = [
+            onp.array([0.1, 0.2]),
+            tf.Variable(0.1, dtype=tf.float64),
+            tf.constant([0.5, 0.2]),
+        ]
+
+        # outside of a gradient tape, no indices are trainable
+        res = qml.math.get_trainable_indices(values)
+        assert not res
+
+        # within a gradient tape, Variables are automatically watched
+        with tf.GradientTape():
+            res = qml.math.get_trainable_indices(values)
+
+        assert res == {1}
+
+        # Watching can be set manually
+        with tf.GradientTape() as tape:
+            tape.watch([values[2]])
+            res = qml.math.get_trainable_indices(values)
+
+        assert res == {1, 2}
+
+    def test_torch(self):
+        """Test that the trainability indices of a sequence of Torch values
+        is correctly extracted"""
+        values = [
+            onp.array([0.1, 0.2]),
+            torch.tensor(0.1, requires_grad=True),
+            torch.tensor([0.5, 0.2]),
+        ]
+        res = qml.math.get_trainable_indices(values)
+        assert res == {1}
+
+    def test_autograd(self):
+        """Test that the trainability indices of a sequence of Autograd arrays
+        is correctly extracted"""
+        res = None
+
+        def cost_fn(params):
+            nonlocal res
+            res = qml.math.get_trainable_indices(params)
+            return np.sum(np.sin(params[0] * params[2])) + params[1]
+
+        values = [[0.1, 0.2], np.tensor(0.1, requires_grad=True), np.tensor([0.5, 0.2])]
+        cost_fn(values)
+
+        # Currently, we assume *all* objects are trainable by default in Autograd
+        assert res == {0, 1, 2}
+
+    def test_autograd_unwrapping_backward(self):
+        """Test that the trainability indices of a sequence of Autograd arrays
+        is correctly extracted on the backward pass"""
+        res = None
+
+        def cost_fn(*params):
+            nonlocal res
+            res = qml.math.get_trainable_indices(params)
+            return np.sum(np.sin(params[0] * params[2])) + params[1]
+
+        values = [
+            np.array([0.1, 0.2]),
+            np.tensor(0.1, requires_grad=True),
+            np.tensor([0.5, 0.2], requires_grad=False),
+        ]
+        grad = qml.grad(cost_fn)(*values)
+
+        assert res == {0, 1}

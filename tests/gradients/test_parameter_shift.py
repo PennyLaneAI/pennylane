@@ -80,7 +80,7 @@ class TestGradAnalysis:
 
     def test_independent_no_graph_mode(self):
         """In non-graph mode, it is impossible to determine
-        # if a parameter is independent or not"""
+        if a parameter is independent or not"""
 
         with qml.tape.JacobianTape() as tape:
             qml.RX(0.543, wires=[0])

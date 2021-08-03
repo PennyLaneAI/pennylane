@@ -14,7 +14,7 @@
 """
 This module contains the :class:`Device` abstract base class.
 """
-# pylint: disable=too-many-format-args
+# pylint: disable=too-many-format-args, use-maxsplit-arg
 import abc
 from collections.abc import Iterable, Sequence
 from collections import OrderedDict, namedtuple
@@ -110,9 +110,7 @@ class Device(abc.ABC):
     """
 
     # pylint: disable=too-many-public-methods
-    _capabilities = {
-        "model": None,
-    }
+    _capabilities = {"model": None}
     """The capabilities dictionary stores the properties of a device. Devices can add their
     own custom properties and overwrite existing ones by overriding the ``capabilities()`` method."""
 
@@ -139,6 +137,8 @@ class Device(abc.ABC):
         self._op_queue = None
         self._obs_queue = None
         self._parameters = None
+
+        self.tracker = qml.Tracker()
 
     def __repr__(self):
         """String representation."""
@@ -375,6 +375,7 @@ class Device(abc.ABC):
         """
         return cls._capabilities
 
+    # pylint: disable=too-many-branches
     def execute(self, queue, observables, parameters={}, **kwargs):
         """Execute a queue of quantum operations on the device and then measure the given observables.
 
@@ -452,6 +453,10 @@ class Device(abc.ABC):
             # increment counter for number of executions of device
             self._num_executions += 1
 
+            if self.tracker.active:
+                self.tracker.update(executions=1, shots=self._shots)
+                self.tracker.record()
+
             # Ensures that a combination with sample does not put
             # expvals and vars in superfluous arrays
             if all(obs.return_type is Sample for obs in observables):
@@ -484,6 +489,10 @@ class Device(abc.ABC):
 
             res = self.execute(circuit.operations, circuit.observables)
             results.append(res)
+
+        if self.tracker.active:
+            self.tracker.update(batches=1, batch_len=len(circuits))
+            self.tracker.record()
 
         return results
 
