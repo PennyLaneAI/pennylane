@@ -416,30 +416,31 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shift=np.pi / 2, grad
             results = [np.zeros([tape.output_dim])]
 
         interface = qml.math.get_interface(results[0])
+        iterator = enumerate(zip(shapes, gradient_values, obs_indices))
 
-        for i, (s, k, ind) in enumerate(zip(shapes, gradient_values, obs_indices)):
+        for i, (shape, grad_value, obs_ind) in iterator:
 
-            if s == 0:
+            if shape == 0:
                 # parameter has zero gradient
                 g = qml.math.zeros_like(results[0], like=interface)
 
-                if k:
-                    g = qml.math.scatter_element_add(g, ind, k, like=interface)
+                if grad_value:
+                    g = qml.math.scatter_element_add(g, obs_ind, grad_value, like=interface)
 
                 grads.append(g)
                 continue
 
-            res = results[start : start + s]
-            start = start + s
+            obs_result = results[start : start + shape]
+            start = start + shape
 
             # compute the linear combination of results and coefficients
-            res = qml.math.stack(res[0])
-            g = qml.math.zeros_like(res, like=interface)
+            obs_result = qml.math.stack(obs_result[0])
+            g = qml.math.zeros_like(obs_result, like=interface)
 
             if qml.math.get_interface(g) not in ("tensorflow", "autograd"):
-                ind = (ind,)
+                obs_ind = (obs_ind,)
 
-            g = qml.math.scatter_element_add(g, ind, res[ind], like=interface)
+            g = qml.math.scatter_element_add(g, obs_ind, obs_result[obs_ind], like=interface)
             grads.append(g)
 
         # The following is for backwards compatibility; currently,
@@ -614,9 +615,19 @@ def param_shift_cv(
     method_map = dict(tape._choose_params_with_methods(diff_methods, argnum))
     var_present = any(m.return_type is qml.operation.Variance for m in tape.measurements)
 
-    unsupported_params = [idx for idx, g in method_map.items() if g == "F"]
-    first_order_params = [idx for idx, g in method_map.items() if g == "A"]
-    second_order_params = [idx for idx, g in method_map.items() if g == "A2"]
+    unsupported_params = []
+    first_order_params = []
+    second_order_params = []
+
+    for idx, g in method_map.items():
+        if g == "F":
+            unsupported_params.append(idx)
+
+        elif g == "A":
+            first_order_params.append(idx)
+
+        elif g == "A2":
+            second_order_params.append(idx)
 
     if force_order2:
         # all analytic parameters should be computed using the second-order method
