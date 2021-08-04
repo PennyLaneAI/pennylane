@@ -18,6 +18,8 @@ import autoray as ar
 from autoray import numpy as np
 import numpy as _np
 
+import pennylane as qml
+
 from . import single_dispatch  # pylint:disable=unused-import
 
 
@@ -55,9 +57,14 @@ def allequal(tensor1, tensor2, **kwargs):
 def allclose(a, b, rtol=1e-05, atol=1e-08, **kwargs):
     """Wrapper around np.allclose, allowing tensors ``a`` and ``b``
     to differ in type"""
-    t1 = ar.to_numpy(a)
-    t2 = ar.to_numpy(b)
-    return np.allclose(t1, t2, rtol=rtol, atol=atol, **kwargs)
+    try:
+        res = np.allclose(a, b, rtol=rtol, atol=atol, **kwargs)
+    except (TypeError, AttributeError):
+        t1 = ar.to_numpy(a)
+        t2 = ar.to_numpy(b)
+        res = np.allclose(t1, t2, rtol=rtol, atol=atol, **kwargs)
+
+    return res
 
 
 allclose.__doc__ = _np.allclose.__doc__

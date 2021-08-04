@@ -13,7 +13,7 @@
 # limitations under the License.
 """
 This module contains functions for computing the vector-Jacobian product
-of a batch of tapes.
+of tapes.
 """
 import numpy as np
 
@@ -24,9 +24,6 @@ def _vector_jacobian_product(dy, jac):
     """Compute the vector-Jacobian product for a given
     vector of gradient outputs dy and a Jacobian Jac"""
     dy_row = math.reshape(dy, [-1])
-    jac = math.transpose(math.stack(jac))
-    num_params = len(jac)
-    jac = math.reshape(jac, [-1, num_params])
     return math.tensordot(jac, dy_row, [[0], [0]])
 
 
