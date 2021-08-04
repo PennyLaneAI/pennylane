@@ -425,7 +425,7 @@
   correctly determine trainability during Autograd and JAX backwards passes.
 
 * A new tape method, `tape.unwrap()` is added. This method is a context manager; inside the
-  context, the tapes parameters are unwrapped to NumPy arrays and floats, the the trainable
+  context, the tapes parameters are unwrapped to NumPy arrays and floats, and the trainable
   parameter indices are set.
   [(#1491)](https://github.com/PennyLaneAI/pennylane/pull/1491)
 
@@ -437,14 +437,20 @@
   ...         qml.RX(tf.Variable(0.1), wires=0)
   ...         qml.RY(tf.constant(0.2), wires=0)
   ...         qml.RZ(tf.Variable(0.3), wires=0)
-  ...     with UnwrapTape(tape) as unwrapped_tape:
-  ...         print("Trainable params:", unwrapped_tape.trainable_params)
-  ...         print("Unwrapped params:", unwrapped_tape.get_parameters())
+  ...     with tape.unwrap():
+  ...         print("Trainable params:", tape.trainable_params)
+  ...         print("Unwrapped params:", tape.get_parameters())
   Trainable params: {0, 2}
   Unwrapped params: [0.1, 0.3]
   >>> print("Original parameters:", tape.get_parameters())
   Original parameters: [<tf.Variable 'Variable:0' shape=() dtype=float32, numpy=0.1>,
     <tf.Variable 'Variable:0' shape=() dtype=float32, numpy=0.3>]
+  ```
+
+  In addition, ``qml.tape.Unwrap`` is a context manager that unwraps multiple tapes:
+
+  ```pycon
+  >>> with qml.tape.Unwrap(tape1, tape2):
   ```
   
 <h3>Breaking changes</h3>
