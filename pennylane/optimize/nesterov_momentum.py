@@ -65,7 +65,7 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
                 trainable_args.append(arg)
 
         if self.accumulation:
-            for index, arg in enumerate(args):
+            for index, arg in enumerate(trainable_args):
                 if self.accumulation[index]:
                     x_flat = _flatten(arg)
                     acc = _flatten(self.accumulation[index])
