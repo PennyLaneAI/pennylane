@@ -78,6 +78,8 @@ class Unwrap:
 
             self.stack = stack.pop_all()
 
+        return self.tapes
+
     def __exit__(self, exception_type, exception_value, traceback):
         self.stack.__exit__(exception_type, exception_value, traceback)
         self.stack = None
