@@ -20,7 +20,8 @@ import pennylane as qml
 
 class Unwrap:
     """A context manager that unwraps multiple tapes with tensor-like parameters
-    to NumPy arrays.
+    to NumPy arrays. In addition, this context manager also correctly infers
+    the trainable parameters of the tapes.
 
     Args:
         *tapes (.QuantumTape): a sequence of quantum tapes to unwrap
@@ -87,7 +88,8 @@ class Unwrap:
 
 class UnwrapTape:
     """A context manager that unwraps a single tape with tensor-like parameters
-    to NumPy arrays.
+    to NumPy arrays. In addition, this context manager also correctly infers
+    the trainable parameters of the tape.
 
     Args:
         tape (.QuantumTape): the quantum tape to unwrap
@@ -120,9 +122,13 @@ class UnwrapTape:
 
     def __enter__(self):
         self._original_params = self.tape.get_parameters(trainable_only=False)
-        self.tape.trainable_params = qml.math.get_trainable_indices(self._original_params)
         self._unwrapped_params = qml.math.unwrap(self._original_params)
         self.tape.set_parameters(self._unwrapped_params, trainable_only=False)
+
+        # In addition to unwrapping the tape parameters, we also infer the
+        # trainable parameter indices, so that information regarding which
+        # parameters are trainable and which are constant is not lost.
+        self.tape.trainable_params = qml.math.get_trainable_indices(self._original_params)
         return self.tape
 
     def __exit__(self, exception_type, exception_value, traceback):
