@@ -610,6 +610,19 @@ def test_numpy(t):
     assert isinstance(res, onp.ndarray)
 
 
+def test_numpy_jax_jit():
+    """Test that the to_numpy() method raises an exception
+    if used inside the JAX JIT"""
+
+    @jax.jit
+    def cost(x):
+        fn.to_numpy(x)
+        return x
+
+    with pytest.raises(ValueError, match="not supported when using the JAX JIT"):
+        cost(jnp.array(0.1))
+
+
 class TestOnesLike:
     """Tests for the ones_like function"""
 
