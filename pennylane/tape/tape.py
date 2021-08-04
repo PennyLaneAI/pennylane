@@ -339,7 +339,7 @@ class QuantumTape(AnnotatedQueue):
     def __repr__(self):
         return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, params={self.num_params}>"
 
-    def __enter__(self):
+    def __enter__(self):  # pylint: disable=consider-using-with
         QuantumTape._lock.acquire()
         try:
             if self.do_queue:
