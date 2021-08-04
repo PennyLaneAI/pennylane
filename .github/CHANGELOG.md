@@ -462,8 +462,9 @@
 
 <h3>Bug fixes</h3>
 
-* Fixes a bug in `GradientDescentOptimizer` where a cost function with one
-  trainable parameter and non-trainable parameters raised an error.
+* Fixes a bug in `GradientDescentOptimizer` and `NesterovMomentumOptimizer`
+  where a cost function with one trainable parameter and non-trainable
+  parameters raised an error.
   [(#1495)](https://github.com/PennyLaneAI/pennylane/pull/1495)
 
 * Fixes a bug where the adjoint of `qml.QFT` when using the `qml.adjoint` function
