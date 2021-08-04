@@ -73,11 +73,23 @@ ar.register_function("autograd", "gather", lambda x, indices: x[np.array(indices
 ar.register_function("autograd", "unstack", list)
 
 
-def _to_numpy_autograd(x):
+def _unwrap_arraybox(arraybox, max_depth=None, _n=0):
+    if max_depth is not None and _n == max_depth:
+        return arraybox
+
+    val = getattr(arraybox, "_value", arraybox)
+
+    if hasattr(val, "_value"):
+        return _unwrap_arraybox(val, max_depth=max_depth, _n=_n + 1)
+
+    return val
+
+
+def _to_numpy_autograd(x, max_depth=None, _n=0):
     if hasattr(x, "_value"):
         # Catches the edge case where the data is an Autograd arraybox,
         # which only occurs during backpropagation.
-        return x._value
+        return _unwrap_arraybox(x, max_depth=max_depth, _n=_n)
 
     return x.numpy()
 
