@@ -15,5 +15,4 @@ r"""This module contains decompositions for (numerically-specified) arbitrary
 unitary operations into sequences of elementary operations.
 """
 
-from .apply_custom_decompositions import apply_custom_decomposition
 from .single_qubit_unitary import zyz_decomposition

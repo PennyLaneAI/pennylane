@@ -48,6 +48,7 @@ containing quantum operations) that are used to construct QNodes.
     ~transforms.commute_controlled
     ~ctrl
     ~transforms.merge_rotations
+    ~replace
     ~transforms.single_qubit_fusion
     ~transforms.unitary_to_rot
     ~transforms.invisible
@@ -93,7 +94,7 @@ from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
 from .adjoint import adjoint
 from .classical_jacobian import classical_jacobian
 from .control import ControlledOperation, ctrl
-from .decompositions import zyz_decomposition, apply_custom_decomposition
+from .decompositions import zyz_decomposition
 from .draw import draw
 from .hamiltonian_expand import hamiltonian_expand
 from .invisible import invisible
@@ -105,6 +106,7 @@ from .optimization import (
     merge_rotations,
     single_qubit_fusion,
 )
+from .replace import replace
 from .specs import specs
 from .qmc import apply_controlled_Q, quantum_monte_carlo
 from .unitary_to_rot import unitary_to_rot
