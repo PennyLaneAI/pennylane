@@ -81,7 +81,6 @@ def replace(tape, custom_ops=None):
      1: ───────────────╰X──RX(0.3)──RY(1.57)──X──┤ ⟨Z⟩
     """
 
-
     if custom_ops is not None:
 
         ops_with_custom_decomps = list(custom_ops.keys())
