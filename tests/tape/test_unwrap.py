@@ -211,3 +211,42 @@ def test_unwrap_jax_backward():
 
     jax.grad(cost, argnums=0)(*p)
     jax.jacobian(jax.grad(cost, argnums=0), argnums=0)(*p)
+
+
+def test_multiple_unwrap():
+    """Test that unwrapping multiple tapes at once works correctly"""
+    torch = pytest.importorskip("torch")
+
+    p = [
+        torch.tensor(0.1, requires_grad=True),
+        torch.tensor(0.2),
+        np.array(0.5),
+        torch.tensor(0.3, requires_grad=True),
+    ]
+
+    with qml.tape.QuantumTape() as tape1:
+        qml.RX(p[0], wires=0)
+        qml.RY(p[1], wires=0)
+        qml.PhaseShift(p[2], wires=0)
+        qml.RZ(p[3], wires=0)
+
+    with qml.tape.QuantumTape() as tape2:
+        qml.RX(p[1], wires=0)
+        qml.RY(p[3], wires=0)
+        qml.PhaseShift(p[0], wires=0)
+        qml.RZ(p[2], wires=0)
+
+    with qml.tape.Unwrap(tape1, tape2):
+        # inside the context manager, all parameters
+        # will be unwrapped to NumPy arrays
+        params = tape1.get_parameters(trainable_only=False)
+        assert all(isinstance(i, float) for i in params)
+        assert tape1.trainable_params == {0, 3}
+
+        params = tape2.get_parameters(trainable_only=False)
+        assert all(isinstance(i, float) for i in params)
+        assert tape2.trainable_params == {1, 2}
+
+    # outside the context, the original parameters have been restored.
+    assert tape1.get_parameters(trainable_only=False) == p
+    assert tape2.get_parameters(trainable_only=False) == [p[1], p[3], p[0], p[2]]

@@ -14,11 +14,77 @@
 """
 This module contains a context manager for unwrapping tapes
 """
+import contextlib
 import pennylane as qml
 
 
+class Unwrap:
+    """A context manager that unwraps multiple tapes with tensor-like parameters
+    to NumPy arrays.
+
+    Args:
+        *tapes (.QuantumTape): a sequence of quantum tapes to unwrap
+
+    Returns:
+        Sequence[.QuantumTape]: a sequence of unwrapped quantum tapes
+
+    **Example**
+
+    Consider the following two tapes:
+
+    .. code-block:: python
+
+        x = torch.tensor([0.1, 0.2, 0.3], requires_grad=True, dtype=torch.float64)
+        y = torch.tensor([0.5, 0.6], dtype=torch.float64)
+
+        with qml.tape.QuantumTape() as tape1:
+            qml.RX(x[0], wires=0)
+            qml.RY(y[1], wires=0)
+            qml.RZ(x[2], wires=0)
+
+        with qml.tape.QuantumTape() as tape2:
+            qml.RX(x[1], wires=0)
+            qml.RY(x[1], wires=0)
+            qml.RZ(y[0], wires=0)
+
+    We can use the ``Unwrap`` context manager to simultaneously unwrap the
+    parameters of both tapes:
+
+    >>> with Unwrap(tape1, tape2):
+    ...     print("Tape 1 trainable:", tape1.trainable_params)
+    ...     print("Tape 1 params:", tape1.get_parameters())
+    ...     print("Tape 2 trainable:", tape2.trainable_params)
+    ...     print("Tape 2 params:", tape2.get_parameters())
+    Tape 1 trainable: {0, 2}
+    Tape 1 params: [0.1, 0.3]
+    Tape 2 trainable: {0, 1}
+    Tape 2 params: [0.2, 0.2]
+
+    Outside of the context, the original parameter types remain:
+
+    >>> print("Original parameters:", tape1.get_parameters())
+    Original parameters: [tensor(0.1000, dtype=torch.float64, grad_fn=<SelectBackward>),
+      tensor(0.3000, dtype=torch.float64, grad_fn=<SelectBackward>)]
+    """
+
+    def __init__(self, *tapes):
+        self.tapes = tapes
+        self.stack = None
+
+    def __enter__(self):
+        with contextlib.ExitStack() as stack:
+            for tape in self.tapes:
+                stack.enter_context(UnwrapTape(tape))
+
+            self.stack = stack.pop_all()
+
+    def __exit__(self, exception_type, exception_value, traceback):
+        self.stack.__exit__(exception_type, exception_value, traceback)
+        self.stack = None
+
+
 class UnwrapTape:
-    """A context manager that unwraps a tape with tensor-like parameters
+    """A context manager that unwraps a single tape with tensor-like parameters
     to NumPy arrays.
 
     Args:
