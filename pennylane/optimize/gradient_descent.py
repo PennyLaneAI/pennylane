@@ -14,6 +14,7 @@
 """Gradient descent optimizer"""
 
 from pennylane._grad import grad as get_gradient
+from pennylane.math import get_trainable_indices
 from pennylane.utils import _flatten, unflatten
 from pennylane.numpy import ndarray, tensor
 
@@ -129,11 +130,7 @@ class GradientDescentOptimizer:
         grad = g(*args, **kwargs)
         forward = getattr(g, "forward", None)
 
-        num_trainable_args = 0
-        for arg in args:
-            if getattr(arg, "requires_grad", True):
-                num_trainable_args += 1
-
+        num_trainable_args = len(get_trainable_indices(args))
         if num_trainable_args == 1:
             grad = (grad,)
 
