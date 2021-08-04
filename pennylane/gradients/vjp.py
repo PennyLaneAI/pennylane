@@ -15,6 +15,8 @@
 This module contains functions for computing the vector-Jacobian product
 of a batch of tapes.
 """
+import numpy as np
+
 from pennylane import math
 
 
@@ -214,20 +216,20 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append"):
         vjps = []
         start = 0
 
-        for t_idx, dy in zip(range(len(tapes)), dys):
+        for t_idx in range(len(tapes)):
             # extract the correct results from the flat list
             res_len = reshape_info[t_idx]
             res_t = results[start : start + res_len]
             start += res_len
 
             # postprocess results to compute the VJP
-            vjp = processing_fns[t_idx](res_t)
+            vjp_ = processing_fns[t_idx](res_t)
 
-            if vjp is None:
+            if vjp_ is None:
                 vjps.append(None)
                 continue
 
-            getattr(vjps, reduction)(vjp)
+            getattr(vjps, reduction)(vjp_)
 
         return vjps
 
