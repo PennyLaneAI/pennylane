@@ -1,0 +1,916 @@
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Tests for the gradients.parameter_shift module."""
+import pytest
+
+import pennylane as qml
+from pennylane import numpy as np
+from pennylane.gradients import param_shift
+from pennylane.gradients.parameter_shift import _gradient_analysis
+
+
+class TestGradAnalysis:
+    """Tests for parameter gradient methods"""
+
+    def test_non_differentiable(self):
+        """Test that a non-differentiable parameter is
+        correctly marked"""
+        psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
+
+        with qml.tape.JacobianTape() as tape:
+            qml.QubitStateVector(psi, wires=[0, 1])
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.probs(wires=[0, 1])
+
+        _gradient_analysis(tape)
+
+        assert tape._par_info[0]["grad_method"] is None
+        assert tape._par_info[1]["grad_method"] == "A"
+        assert tape._par_info[2]["grad_method"] == "A"
+
+    def test_analysis_caching(self, mocker):
+        """Test that the gradient analysis is only executed once per tape"""
+        psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
+
+        with qml.tape.JacobianTape() as tape:
+            qml.QubitStateVector(psi, wires=[0, 1])
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.probs(wires=[0, 1])
+
+        spy = mocker.spy(tape, "_grad_method")
+        _gradient_analysis(tape)
+        spy.assert_called()
+
+        assert tape._par_info[0]["grad_method"] is None
+        assert tape._par_info[1]["grad_method"] == "A"
+        assert tape._par_info[2]["grad_method"] == "A"
+
+        spy = mocker.spy(tape, "_grad_method")
+        _gradient_analysis(tape)
+        spy.assert_not_called()
+
+    def test_independent(self):
+        """Test that an independent variable is properly marked
+        as having a zero gradient"""
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[1])
+            qml.expval(qml.PauliY(0))
+
+        _gradient_analysis(tape)
+
+        assert tape._par_info[0]["grad_method"] == "A"
+        assert tape._par_info[1]["grad_method"] == "0"
+
+    def test_independent_no_graph_mode(self):
+        """In non-graph mode, it is impossible to determine
+        if a parameter is independent or not"""
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[1])
+            qml.expval(qml.PauliY(0))
+
+        _gradient_analysis(tape, use_graph=False)
+
+        assert tape._par_info[0]["grad_method"] == "A"
+        assert tape._par_info[1]["grad_method"] == "A"
+
+    def test_finite_diff(self, monkeypatch):
+        """If an op has grad_method=F, this should be respected"""
+        monkeypatch.setattr(qml.RX, "grad_method", "F")
+
+        psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
+
+        with qml.tape.JacobianTape() as tape:
+            qml.QubitStateVector(psi, wires=[0, 1])
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.probs(wires=[0, 1])
+
+        _gradient_analysis(tape)
+
+        assert tape._par_info[0]["grad_method"] is None
+        assert tape._par_info[1]["grad_method"] == "F"
+        assert tape._par_info[2]["grad_method"] == "A"
+
+
+def grad_fn(tape, dev, fn=qml.gradients.param_shift, **kwargs):
+    """Utility function to automate execution and processing of gradient tapes"""
+    tapes, fn = fn(tape, **kwargs)
+    return fn(dev.batch_execute(tapes))
+
+
+class TestShiftedTapes:
+    """Tests for the generation of shifted tapes"""
+
+    def test_behaviour(self):
+        """Test that the function behaves as expected"""
+
+        with qml.tape.JacobianTape() as tape:
+            qml.PauliZ(0)
+            qml.RX(1.0, wires=0)
+            qml.CNOT(wires=[0, 2])
+            qml.Rot(2.0, 3.0, 4.0, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        tape.trainable_params = {0, 2}
+        gradient_recipes = [[[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]], [[1, 1, 1], [2, 2, 2], [3, 3, 3]]]
+        tapes, _ = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes)
+
+        assert len(tapes) == 5
+        assert tapes[0].get_parameters(trainable_only=False) == [0.2 * 1.0 + 0.3, 2.0, 3.0, 4.0]
+        assert tapes[1].get_parameters(trainable_only=False) == [0.5 * 1.0 + 0.6, 2.0, 3.0, 4.0]
+        assert tapes[2].get_parameters(trainable_only=False) == [1.0, 2.0, 1 * 3.0 + 1, 4.0]
+        assert tapes[3].get_parameters(trainable_only=False) == [1.0, 2.0, 2 * 3.0 + 2, 4.0]
+        assert tapes[4].get_parameters(trainable_only=False) == [1.0, 2.0, 3 * 3.0 + 3, 4.0]
+
+
+class TestParamShift:
+    """Unit tests for the param_shift function"""
+
+    def test_state_non_differentiable_error(self):
+        """Test error raised if attempting to differentiate with
+        respect to a state"""
+        psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[1])
+            qml.state()
+
+        with pytest.raises(ValueError, match=r"return the state is not supported"):
+            qml.gradients.param_shift(tape)
+
+    def test_independent_parameter(self, mocker):
+        """Test that an independent parameter is skipped
+        during the Jacobian computation."""
+        spy = mocker.spy(qml.gradients.parameter_shift, "expval_param_shift")
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[1])
+            qml.expval(qml.PauliZ(0))
+
+        dev = qml.device("default.qubit", wires=2)
+        tapes, fn = qml.gradients.param_shift(tape)
+        assert len(tapes) == 2
+
+        res = fn(dev.batch_execute(tapes))
+        assert res.shape == (1, 2)
+
+        # only called for parameter 0
+        assert spy.call_args[0][0:2] == (tape, [0])
+
+    def test_no_trainable_parameters(self):
+        """Test that if the tape has no trainable parameters, no
+        subroutines are called and the returned Jacobian is empty"""
+        with qml.tape.JacobianTape() as tape:
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[1])
+            qml.expval(qml.PauliZ(0))
+
+        dev = qml.device("default.qubit", wires=2)
+        tape.trainable_params = {}
+
+        tapes, fn = qml.gradients.param_shift(tape)
+        assert len(tapes) == 0
+
+        res = fn(dev.batch_execute(tapes))
+        assert res.size == 0
+        assert np.all(res == np.array([[]]))
+
+    def test_y0(self, mocker):
+        """Test that if the gradient recipe has a zero-shift component, then
+        the tape is executed only once using the current parameter
+        values."""
+        dev = qml.device("default.qubit", wires=2)
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[0])
+            qml.expval(qml.PauliZ(0))
+
+        gradient_recipes = [[[-1e7, 1, 0], [1e7, 1, 1e7]], [[-1e7, 1, 0], [1e7, 1, 1e7]]]
+        tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes)
+
+        # one tape per parameter, plus one global call
+        assert len(tapes) == tape.num_params + 1
+
+    def test_y0_provided(self, mocker):
+        """Test that if the original tape output is provided, then
+        the tape is executed only once using the current parameter
+        values."""
+        dev = qml.device("default.qubit", wires=2)
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[0])
+            qml.expval(qml.PauliZ(0))
+
+        gradient_recipes = [[[-1e7, 1, 0], [1e7, 1, 1e7]], [[-1e7, 1, 0], [1e7, 1, 1e7]]]
+        f0 = dev.execute(tape)
+        tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes, f0=f0)
+
+        # one tape per parameter, plus one global call
+        assert len(tapes) == tape.num_params
+
+        fn(dev.batch_execute(tapes))
+
+    def test_independent_parameters_analytic(self):
+        """Test the case where expectation values are independent of some parameters. For those
+        parameters, the gradient should be evaluated to zero without executing the device."""
+        dev = qml.device("default.qubit", wires=2)
+
+        with qml.tape.JacobianTape() as tape1:
+            qml.RX(1, wires=[0])
+            qml.RX(1, wires=[1])
+            qml.expval(qml.PauliZ(0))
+
+        with qml.tape.JacobianTape() as tape2:
+            qml.RX(1, wires=[0])
+            qml.RX(1, wires=[1])
+            qml.expval(qml.PauliZ(1))
+
+        tapes, fn = qml.gradients.param_shift(tape1)
+        j1 = fn(dev.batch_execute(tapes))
+
+        # We should only be executing the device to differentiate 1 parameter (2 executions)
+        assert dev.num_executions == 2
+
+        tapes, fn = qml.gradients.param_shift(tape2)
+        j2 = fn(dev.batch_execute(tapes))
+
+        exp = -np.sin(1)
+
+        assert np.allclose(j1, [exp, 0])
+        assert np.allclose(j2, [0, exp])
+
+
+class TestParameterShiftRule:
+    """Tests for the parameter shift implementation"""
+
+    @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
+    @pytest.mark.parametrize("shift", [np.pi / 2, 0.3, np.sqrt(2)])
+    @pytest.mark.parametrize("G", [qml.RX, qml.RY, qml.RZ, qml.PhaseShift])
+    def test_pauli_rotation_gradient(self, mocker, G, theta, shift, tol):
+        """Tests that the automatic gradients of Pauli rotations are correct."""
+        spy = mocker.spy(qml.gradients.parameter_shift, "_get_operation_recipe")
+        dev = qml.device("default.qubit", wires=1)
+
+        with qml.tape.JacobianTape() as tape:
+            qml.QubitStateVector(np.array([1.0, -1.0]) / np.sqrt(2), wires=0)
+            G(theta, wires=[0])
+            qml.expval(qml.PauliZ(0))
+
+        tape.trainable_params = {1}
+
+        tapes, fn = qml.gradients.param_shift(tape, shift=shift)
+        assert len(tapes) == 2
+
+        autograd_val = fn(dev.batch_execute(tapes))
+        manualgrad_val = (
+            tape.execute(dev, params=[theta + np.pi / 2])
+            - tape.execute(dev, params=[theta - np.pi / 2])
+        ) / 2
+        assert np.allclose(autograd_val, manualgrad_val, atol=tol, rtol=0)
+
+        assert spy.call_args[1]["shift"] == shift
+
+        # compare to finite differences
+        tapes, fn = qml.gradients.finite_diff(tape)
+        numeric_val = fn(dev.batch_execute(tapes))
+        assert np.allclose(autograd_val, numeric_val, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
+    @pytest.mark.parametrize("shift", [np.pi / 2, 0.3, np.sqrt(2)])
+    def test_Rot_gradient(self, mocker, theta, shift, tol):
+        """Tests that the automatic gradient of an arbitrary Euler-angle-parameterized gate is correct."""
+        spy = mocker.spy(qml.gradients.parameter_shift, "_get_operation_recipe")
+        dev = qml.device("default.qubit", wires=1)
+        params = np.array([theta, theta ** 3, np.sqrt(2) * theta])
+
+        with qml.tape.JacobianTape() as tape:
+            qml.QubitStateVector(np.array([1.0, -1.0]) / np.sqrt(2), wires=0)
+            qml.Rot(*params, wires=[0])
+            qml.expval(qml.PauliZ(0))
+
+        tape.trainable_params = {1, 2, 3}
+
+        tapes, fn = qml.gradients.param_shift(tape, shift=shift)
+        assert len(tapes) == 2 * len(tape.trainable_params)
+
+        autograd_val = fn(dev.batch_execute(tapes))
+        manualgrad_val = np.zeros_like(autograd_val)
+
+        for idx in list(np.ndindex(*params.shape)):
+            s = np.zeros_like(params)
+            s[idx] += np.pi / 2
+
+            forward = tape.execute(dev, params=params + s)
+            backward = tape.execute(dev, params=params - s)
+
+            manualgrad_val[0, idx] = (forward - backward) / 2
+
+        assert np.allclose(autograd_val, manualgrad_val, atol=tol, rtol=0)
+        assert spy.call_args[1]["shift"] == shift
+
+        # compare to finite differences
+        tapes, fn = qml.gradients.finite_diff(tape)
+        numeric_val = fn(dev.batch_execute(tapes))
+        assert np.allclose(autograd_val, numeric_val, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("G", [qml.CRX, qml.CRY, qml.CRZ])
+    def test_controlled_rotation_gradient(self, G, tol):
+        """Test gradient of controlled rotation gates"""
+        dev = qml.device("default.qubit", wires=2)
+        b = 0.123
+
+        with qml.tape.JacobianTape() as tape:
+            qml.QubitStateVector(np.array([1.0, -1.0]) / np.sqrt(2), wires=0)
+            G(b, wires=[0, 1])
+            qml.expval(qml.PauliX(0))
+
+        tape.trainable_params = {1}
+
+        res = tape.execute(dev)
+        assert np.allclose(res, -np.cos(b / 2), atol=tol, rtol=0)
+
+        tapes, fn = qml.gradients.param_shift(tape)
+        grad = fn(dev.batch_execute(tapes))
+        expected = np.sin(b / 2) / 2
+        assert np.allclose(grad, expected, atol=tol, rtol=0)
+
+        # compare to finite differences
+        tapes, fn = qml.gradients.finite_diff(tape)
+        numeric_val = fn(dev.batch_execute(tapes))
+        assert np.allclose(grad, numeric_val, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, np.pi, 7))
+    def test_CRot_gradient(self, theta, tol):
+        """Tests that the automatic gradient of an arbitrary controlled Euler-angle-parameterized
+        gate is correct."""
+        dev = qml.device("default.qubit", wires=2)
+        a, b, c = np.array([theta, theta ** 3, np.sqrt(2) * theta])
+
+        with qml.tape.JacobianTape() as tape:
+            qml.QubitStateVector(np.array([1.0, -1.0]) / np.sqrt(2), wires=0)
+            qml.CRot(a, b, c, wires=[0, 1])
+            qml.expval(qml.PauliX(0))
+
+        tape.trainable_params = {1, 2, 3}
+
+        res = tape.execute(dev)
+        expected = -np.cos(b / 2) * np.cos(0.5 * (a + c))
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        tapes, fn = qml.gradients.param_shift(tape)
+        assert len(tapes) == 4 * len(tape.trainable_params)
+
+        grad = fn(dev.batch_execute(tapes))
+        expected = np.array(
+            [
+                [
+                    0.5 * np.cos(b / 2) * np.sin(0.5 * (a + c)),
+                    0.5 * np.sin(b / 2) * np.cos(0.5 * (a + c)),
+                    0.5 * np.cos(b / 2) * np.sin(0.5 * (a + c)),
+                ]
+            ]
+        )
+        assert np.allclose(grad, expected, atol=tol, rtol=0)
+
+        # compare to finite differences
+        tapes, fn = qml.gradients.finite_diff(tape)
+        numeric_val = fn(dev.batch_execute(tapes))
+        assert np.allclose(grad, numeric_val, atol=tol, rtol=0)
+
+    def test_gradients_agree_finite_differences(self, tol):
+        """Tests that the parameter-shift rule agrees with the first and second
+        order finite differences"""
+        params = np.array([0.1, -1.6, np.pi / 5])
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RX(params[0], wires=[0])
+            qml.CNOT(wires=[0, 1])
+            qml.RY(-1.6, wires=[0])
+            qml.RY(params[1], wires=[1])
+            qml.CNOT(wires=[1, 0])
+            qml.RX(params[2], wires=[0])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0))
+
+        tape.trainable_params = {0, 2, 3}
+        dev = qml.device("default.qubit", wires=2)
+
+        grad_F1 = grad_fn(tape, dev, fn=qml.gradients.finite_diff, approx_order=1)
+        grad_F2 = grad_fn(
+            tape, dev, fn=qml.gradients.finite_diff, approx_order=2, strategy="center"
+        )
+        grad_A = grad_fn(tape, dev)
+
+        # gradients computed with different methods must agree
+        assert np.allclose(grad_A, grad_F1, atol=tol, rtol=0)
+        assert np.allclose(grad_A, grad_F2, atol=tol, rtol=0)
+
+    def test_variance_gradients_agree_finite_differences(self, tol):
+        """Tests that the variance parameter-shift rule agrees with the first and second
+        order finite differences"""
+        params = np.array([0.1, -1.6, np.pi / 5])
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RX(params[0], wires=[0])
+            qml.CNOT(wires=[0, 1])
+            qml.RY(-1.6, wires=[0])
+            qml.RY(params[1], wires=[1])
+            qml.CNOT(wires=[1, 0])
+            qml.RX(params[2], wires=[0])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0) @ qml.PauliX(1))
+
+        tape.trainable_params = {0, 2, 3}
+        dev = qml.device("default.qubit", wires=2)
+
+        grad_F1 = grad_fn(tape, dev, fn=qml.gradients.finite_diff, approx_order=1)
+        grad_F2 = grad_fn(
+            tape, dev, fn=qml.gradients.finite_diff, approx_order=2, strategy="center"
+        )
+        grad_A = grad_fn(tape, dev)
+
+        # gradients computed with different methods must agree
+        assert np.allclose(grad_A, grad_F1, atol=tol, rtol=0)
+        assert np.allclose(grad_A, grad_F2, atol=tol, rtol=0)
+
+    def test_fallback(self, mocker, tol):
+        """Test that fallback gradient functions are correctly used"""
+        spy = mocker.spy(qml.gradients, "finite_diff")
+        dev = qml.device("default.qubit.autograd", wires=2)
+        x = 0.543
+        y = -0.654
+
+        params = np.array([x, y], requires_grad=True)
+
+        class RY(qml.RY):
+            grad_method = "F"
+
+        def cost_fn(params):
+            with qml.tape.JacobianTape() as tape:
+                qml.RX(params[0], wires=[0])
+                RY(params[1], wires=[1])
+                qml.CNOT(wires=[0, 1])
+                qml.expval(qml.PauliZ(0))
+                qml.var(qml.PauliX(1))
+
+            tapes, fn = param_shift(tape, fallback_fn=qml.gradients.finite_diff)
+            assert len(tapes) == 5
+
+            # check that the fallback method was called for the specified argnums
+            spy.assert_called()
+            assert spy.call_args[1]["argnum"] == {1}
+
+            return fn(dev.batch_execute(tapes))
+
+        res = cost_fn(params)
+        assert res.shape == (2, 2)
+
+        expected = np.array([[-np.sin(x), 0], [0, -2 * np.cos(y) * np.sin(y)]])
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # double check the derivative
+        jac = qml.jacobian(cost_fn)(params)
+        assert np.allclose(jac[0, 0, 0], -np.cos(x), atol=tol, rtol=0)
+        assert np.allclose(jac[1, 1, 1], -2 * np.cos(2 * y), atol=tol, rtol=0)
+
+    def test_single_expectation_value(self, tol):
+        """Tests correct output shape and evaluation for a tape
+        with a single expval output"""
+        dev = qml.device("default.qubit", wires=2)
+        x = 0.543
+        y = -0.654
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        tapes, fn = qml.gradients.param_shift(tape)
+        assert len(tapes) == 4
+
+        res = fn(dev.batch_execute(tapes))
+        assert res.shape == (1, 2)
+
+        expected = np.array([[-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]])
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_multiple_expectation_values(self, tol):
+        """Tests correct output shape and evaluation for a tape
+        with multiple expval outputs"""
+        dev = qml.device("default.qubit", wires=2)
+        x = 0.543
+        y = -0.654
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0))
+            qml.expval(qml.PauliX(1))
+
+        tapes, fn = qml.gradients.param_shift(tape)
+        assert len(tapes) == 4
+
+        res = fn(dev.batch_execute(tapes))
+        assert res.shape == (2, 2)
+
+        expected = np.array([[-np.sin(x), 0], [0, np.cos(y)]])
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_var_expectation_values(self, tol):
+        """Tests correct output shape and evaluation for a tape
+        with expval and var outputs"""
+        dev = qml.device("default.qubit", wires=2)
+        x = 0.543
+        y = -0.654
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0))
+            qml.var(qml.PauliX(1))
+
+        tapes, fn = qml.gradients.param_shift(tape)
+        assert len(tapes) == 5
+
+        res = fn(dev.batch_execute(tapes))
+        assert res.shape == (2, 2)
+
+        expected = np.array([[-np.sin(x), 0], [0, -2 * np.cos(y) * np.sin(y)]])
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_prob_expectation_values(self, tol):
+        """Tests correct output shape and evaluation for a tape
+        with prob and expval outputs"""
+        dev = qml.device("default.qubit", wires=2)
+        x = 0.543
+        y = -0.654
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0))
+            qml.probs(wires=[0, 1])
+
+        tapes, fn = qml.gradients.param_shift(tape)
+        assert len(tapes) == 4
+
+        res = fn(dev.batch_execute(tapes))
+        assert res.shape == (5, 2)
+
+        expected = (
+            np.array(
+                [
+                    [-2 * np.sin(x), 0],
+                    [
+                        -(np.cos(y / 2) ** 2 * np.sin(x)),
+                        -(np.cos(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        -(np.sin(x) * np.sin(y / 2) ** 2),
+                        (np.cos(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        (np.sin(x) * np.sin(y / 2) ** 2),
+                        (np.sin(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        (np.cos(y / 2) ** 2 * np.sin(x)),
+                        -(np.sin(x / 2) ** 2 * np.sin(y)),
+                    ],
+                ]
+            )
+            / 2
+        )
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_involutory_variance(self, tol):
+        """Tests qubit observables that are involutory"""
+        dev = qml.device("default.qubit", wires=1)
+        a = 0.54
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RX(a, wires=0)
+            qml.var(qml.PauliZ(0))
+
+        res = tape.execute(dev)
+        expected = 1 - np.cos(a) ** 2
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # circuit jacobians
+        tapes, fn = qml.gradients.param_shift(tape)
+        gradA = fn(dev.batch_execute(tapes))
+        assert len(tapes) == 1 + 2 * 1
+
+        tapes, fn = qml.gradients.finite_diff(tape)
+        gradF = fn(dev.batch_execute(tapes))
+        assert len(tapes) == 2
+
+        expected = 2 * np.sin(a) * np.cos(a)
+
+        assert gradF == pytest.approx(expected, abs=tol)
+        assert gradA == pytest.approx(expected, abs=tol)
+
+    def test_non_involutory_variance(self, tol):
+        """Tests a qubit Hermitian observable that is not involutory"""
+        dev = qml.device("default.qubit", wires=1)
+        A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
+        a = 0.54
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RX(a, wires=0)
+            qml.var(qml.Hermitian(A, 0))
+
+        tape.trainable_params = {0}
+
+        res = tape.execute(dev)
+        expected = (39 / 2) - 6 * np.sin(2 * a) + (35 / 2) * np.cos(2 * a)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # circuit jacobians
+        tapes, fn = qml.gradients.param_shift(tape)
+        gradA = fn(dev.batch_execute(tapes))
+        assert len(tapes) == 1 + 4 * 1
+
+        tapes, fn = qml.gradients.finite_diff(tape)
+        gradF = fn(dev.batch_execute(tapes))
+        assert len(tapes) == 2
+
+        expected = -35 * np.sin(2 * a) - 12 * np.cos(2 * a)
+        assert gradA == pytest.approx(expected, abs=tol)
+        assert gradF == pytest.approx(expected, abs=tol)
+
+    def test_involutory_and_noninvolutory_variance(self, tol):
+        """Tests a qubit Hermitian observable that is not involutory alongside
+        an involutory observable."""
+        dev = qml.device("default.qubit", wires=2)
+        A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
+        a = 0.54
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RX(a, wires=0)
+            qml.RX(a, wires=1)
+            qml.var(qml.PauliZ(0))
+            qml.var(qml.Hermitian(A, 1))
+
+        tape.trainable_params = {0, 1}
+
+        res = tape.execute(dev)
+        expected = [1 - np.cos(a) ** 2, (39 / 2) - 6 * np.sin(2 * a) + (35 / 2) * np.cos(2 * a)]
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # circuit jacobians
+        tapes, fn = qml.gradients.param_shift(tape)
+        gradA = fn(dev.batch_execute(tapes))
+        assert len(tapes) == 1 + 2 * 4
+
+        tapes, fn = qml.gradients.finite_diff(tape)
+        gradF = fn(dev.batch_execute(tapes))
+        assert len(tapes) == 1 + 2
+
+        expected = [2 * np.sin(a) * np.cos(a), -35 * np.sin(2 * a) - 12 * np.cos(2 * a)]
+        assert np.diag(gradA) == pytest.approx(expected, abs=tol)
+        assert np.diag(gradF) == pytest.approx(expected, abs=tol)
+
+    def test_expval_and_variance(self, tol):
+        """Test that the qnode works for a combination of expectation
+        values and variances"""
+        dev = qml.device("default.qubit", wires=3)
+
+        a = 0.54
+        b = -0.423
+        c = 0.123
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RX(a, wires=0)
+            qml.RY(b, wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.RX(c, wires=2)
+            qml.CNOT(wires=[0, 1])
+            qml.var(qml.PauliZ(0))
+            qml.expval(qml.PauliZ(1))
+            qml.var(qml.PauliZ(2))
+
+        res = tape.execute(dev)
+        expected = np.array(
+            [
+                np.sin(a) ** 2,
+                np.cos(a) * np.cos(b),
+                0.25 * (3 - 2 * np.cos(b) ** 2 * np.cos(2 * c) - np.cos(2 * b)),
+            ]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # # circuit jacobians
+        tapes, fn = qml.gradients.param_shift(tape)
+        gradA = fn(dev.batch_execute(tapes))
+
+        tapes, fn = qml.gradients.finite_diff(tape)
+        gradF = fn(dev.batch_execute(tapes))
+
+        expected = np.array(
+            [
+                [2 * np.cos(a) * np.sin(a), -np.cos(b) * np.sin(a), 0],
+                [
+                    0,
+                    -np.cos(a) * np.sin(b),
+                    0.5 * (2 * np.cos(b) * np.cos(2 * c) * np.sin(b) + np.sin(2 * b)),
+                ],
+                [0, 0, np.cos(b) ** 2 * np.sin(2 * c)],
+            ]
+        ).T
+        assert gradA == pytest.approx(expected, abs=tol)
+        assert gradF == pytest.approx(expected, abs=tol)
+
+    def test_projector_variance(self, tol):
+        """Test that the variance of a projector is correctly returned"""
+        dev = qml.device("default.qubit", wires=2)
+        P = np.array([1])
+        x, y = 0.765, -0.654
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.var(qml.Projector(P, wires=0) @ qml.PauliX(1))
+
+        tape.trainable_params = {0, 1}
+
+        res = tape.execute(dev)
+        expected = 0.25 * np.sin(x / 2) ** 2 * (3 + np.cos(2 * y) + 2 * np.cos(x) * np.sin(y) ** 2)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # # circuit jacobians
+        tapes, fn = qml.gradients.param_shift(tape)
+        gradA = fn(dev.batch_execute(tapes))
+
+        tapes, fn = qml.gradients.finite_diff(tape)
+        gradF = fn(dev.batch_execute(tapes))
+
+        expected = np.array(
+            [
+                [
+                    0.5 * np.sin(x) * (np.cos(x / 2) ** 2 + np.cos(2 * y) * np.sin(x / 2) ** 2),
+                    -2 * np.cos(y) * np.sin(x / 2) ** 4 * np.sin(y),
+                ]
+            ]
+        )
+        assert gradA == pytest.approx(expected, abs=tol)
+        assert gradF == pytest.approx(expected, abs=tol)
+
+
+class TestParamShiftGradients:
+    """Test that the transform is differentiable"""
+
+    def test_autograd(self, tol):
+        """Tests that the output of the parameter-shift transform
+        can be differentiated using autograd, yielding second derivatives."""
+        dev = qml.device("default.qubit.autograd", wires=2)
+        params = np.array([0.543, -0.654], requires_grad=True)
+
+        def cost_fn(x):
+            with qml.tape.JacobianTape() as tape:
+                qml.RX(x[0], wires=[0])
+                qml.RY(x[1], wires=[1])
+                qml.CNOT(wires=[0, 1])
+                qml.var(qml.PauliZ(0) @ qml.PauliX(1))
+
+            tape.trainable_params = {0, 1}
+            tapes, fn = qml.gradients.param_shift(tape)
+            jac = fn(dev.batch_execute(tapes))
+            return jac
+
+        res = qml.jacobian(cost_fn)(params)
+        x, y = params
+        expected = np.array(
+            [
+                [2 * np.cos(2 * x) * np.sin(y) ** 2, np.sin(2 * x) * np.sin(2 * y)],
+                [np.sin(2 * x) * np.sin(2 * y), -2 * np.cos(x) ** 2 * np.cos(2 * y)],
+            ]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_tf(self, tol):
+        """Tests that the output of the finite-difference transform
+        can be differentiated using TF, yielding second derivatives."""
+        tf = pytest.importorskip("tensorflow")
+
+        dev = qml.device("default.qubit.tf", wires=2)
+        params = tf.Variable([0.543, -0.654], dtype=tf.float64)
+
+        with tf.GradientTape() as t:
+            with qml.tape.JacobianTape() as tape:
+                qml.RX(params[0], wires=[0])
+                qml.RY(params[1], wires=[1])
+                qml.CNOT(wires=[0, 1])
+                qml.var(qml.PauliZ(0) @ qml.PauliX(1))
+
+            tape.trainable_params = {0, 1}
+            tapes, fn = qml.gradients.param_shift(tape)
+            jac = fn(dev.batch_execute(tapes))
+
+        x, y = 1.0 * params
+
+        expected = np.array([np.sin(2 * x) * np.sin(y) ** 2, -np.cos(x) ** 2 * np.sin(2 * y)])
+        assert np.allclose(jac, expected, atol=tol, rtol=0)
+
+        res = t.jacobian(jac, params)
+        expected = np.array(
+            [
+                [2 * np.cos(2 * x) * np.sin(y) ** 2, np.sin(2 * x) * np.sin(2 * y)],
+                [np.sin(2 * x) * np.sin(2 * y), -2 * np.cos(x) ** 2 * np.cos(2 * y)],
+            ]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_torch(self, tol):
+        """Tests that the output of the finite-difference transform
+        can be differentiated using Torch, yielding second derivatives."""
+        torch = pytest.importorskip("torch")
+        from pennylane.interfaces.torch import TorchInterface
+
+        dev = qml.device("default.qubit", wires=2)
+        params = torch.tensor([0.543, -0.654], dtype=torch.float64, requires_grad=True)
+
+        with TorchInterface.apply(qml.tape.QubitParamShiftTape()) as tape:
+            qml.RX(params[0], wires=[0])
+            qml.RY(params[1], wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.var(qml.PauliZ(0) @ qml.PauliX(1))
+
+        tapes, fn = qml.gradients.param_shift(tape)
+        jac = fn([t.execute(dev) for t in tapes])
+        cost = jac[0, 0]
+        cost.backward()
+        hess = params.grad
+
+        x, y = params.detach().numpy()
+
+        expected = np.array([np.sin(2 * x) * np.sin(y) ** 2, -np.cos(x) ** 2 * np.sin(2 * y)])
+        assert np.allclose(jac.detach().numpy(), expected, atol=tol, rtol=0)
+
+        expected = np.array([2 * np.cos(2 * x) * np.sin(y) ** 2, np.sin(2 * x) * np.sin(2 * y)])
+        assert np.allclose(hess.detach().numpy(), expected, atol=0.1, rtol=0)
+
+    def test_jax(self, tol):
+        """Tests that the output of the finite-difference transform
+        can be differentiated using JAX, yielding second derivatives."""
+        jax = pytest.importorskip("jax")
+        from jax import numpy as jnp
+        from pennylane.interfaces.jax import JAXInterface
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
+
+        dev = qml.device("default.qubit", wires=2)
+        params = jnp.array([0.543, -0.654])
+
+        def cost_fn(x):
+            with JAXInterface.apply(qml.tape.QubitParamShiftTape()) as tape:
+                qml.RX(x[0], wires=[0])
+                qml.RY(x[1], wires=[1])
+                qml.CNOT(wires=[0, 1])
+                qml.var(qml.PauliZ(0) @ qml.PauliX(1))
+
+            tape.trainable_params = {0, 1}
+            tapes, fn = qml.gradients.param_shift(tape)
+            jac = fn([t.execute(dev) for t in tapes])
+            return jac
+
+        res = jax.jacobian(cost_fn)(params)
+        x, y = params
+        expected = np.array(
+            [
+                [2 * np.cos(2 * x) * np.sin(y) ** 2, np.sin(2 * x) * np.sin(2 * y)],
+                [np.sin(2 * x) * np.sin(2 * y), -2 * np.cos(x) ** 2 * np.cos(2 * y)],
+            ]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
