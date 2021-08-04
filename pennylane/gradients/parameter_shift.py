@@ -20,6 +20,7 @@ import numpy as np
 
 import pennylane as qml
 
+from .custom import quantum_gradient
 from .finite_difference import finite_diff, generate_shifted_tapes
 
 
@@ -349,6 +350,7 @@ def var_param_shift(tape, argnum, shift=np.pi / 2, gradient_recipes=None, f0=Non
     return gradient_tapes, processing_fn
 
 
+@quantum_gradient()
 def param_shift(
     tape, argnum=None, shift=np.pi / 2, gradient_recipes=None, fallback_fn=finite_diff, f0=None
 ):

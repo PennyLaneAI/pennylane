@@ -17,5 +17,6 @@ import pennylane as qml
 from . import finite_difference
 from . import parameter_shift
 
+from .custom import quantum_gradient
 from .finite_difference import finite_diff, finite_diff_coeffs, generate_shifted_tapes
 from .parameter_shift import param_shift
