@@ -92,6 +92,7 @@ class Hamiltonian(qml.operation.Observable):
         of quantum functions, or inside of quantum functions using the conventional construction method.
 
     """
+
     num_wires = qml.operation.AnyWires
     num_params = 1
     par_domain = "A"

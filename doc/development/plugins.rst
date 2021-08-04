@@ -118,6 +118,9 @@ as well as potential further capabilities, by providing the following class attr
   *  ``'supports_tensor_observables'`` (*bool*): ``True`` if the device supports observables composed from tensor
      products such as ``PauliZ(wires=0) @ PauliZ(wires=1)``.
 
+  *  ``'supports_tracker'`` (*bool*): ``True`` if it has a device tracker attribute and updates information with
+     it.
+
   Some capabilities are queried by PennyLane core to make decisions on how to best run computations, others are used
   by external apps built on top of the device ecosystem.
 
@@ -139,9 +142,9 @@ following arguments:
 
 * ``wires`` (*int* or *Iterable[Number, str]*): The number of subsystems represented by the device,
   or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
-  and/or strings (``['ancilla', 'q1', 'q2']``).
+  and/or strings (``['auxiliary', 'q1', 'q2']``).
 
-* ``shots=1000`` (*None*, *int* or *List[iint]*): number of circuit
+* ``shots=1000`` (*None*, *int* or *List[int]*): number of circuit
   evaluations/random samples used to estimate probabilities, expectation
   values, variances  of observables in non-analytic mode. If ``None``, the device
   calculates probability, expectation values, and variances analytically.  If an
@@ -275,8 +278,6 @@ this may have unintended side-effects and is not recommended.
 
 :html:`</div></div>`
 
-.. _installing_plugin:
-
 
 Wire handling
 -------------
@@ -292,9 +293,9 @@ For example:
 
     from pennylane.wires import Wires
 
-    wires = Wires(['ancilla', 0, 1])
-    print(wires[0]) # <Wires = ['ancilla']>
-    print(wires.labels) # ('ancilla', 0, 1)
+    wires = Wires(['auxiliary', 0, 1])
+    print(wires[0]) # <Wires = ['auxiliary']>
+    print(wires.labels) # ('auxiliary', 0, 1)
 
 As shown in the section on :doc:`/introduction/circuits`, a device can be created with custom wire labels:
 
@@ -357,6 +358,56 @@ object.
 
 As a convention, devices should do the translation and unpacking as late as possible in the function tree, and
 where possible pass the original :class:`~.wires.Wires` objects around.
+
+Device tracker support
+----------------------
+
+The device tracker stores and records information when tracking mode is turned on. Devices can store data like
+the number of executions, number of shots, number of batches, or remote simulator cost for users to interact with
+in a customizable way.
+
+Three aspects of the :class:`~.Tracker` class are relevant to plugin designers:
+
+* The boolean ``active`` attribute that denotes whether or not to update and record
+* ``update`` method which accepts keyword-value pairs and stores the information
+* ``record`` method which users can customize to log, print, or otherwise do something with the stored information
+
+To gain any of the device tracker functionality, a device should initialize with a placeholder 
+:class:`~.Tracker` instance. Users can overwrite this attribute by initializing a new instance with
+the device as an argument.
+
+We recommend placing the following code near the end of the ``execute`` method:
+
+.. code-block:: python
+
+  if self.tracker.active:
+    self.tracker.update(executions=1, shots=self._shots)
+    self.tracker.record()
+
+And similar code in the ``batch_execute`` method:
+
+.. code-block:: python
+
+  if self.tracker.active:
+    self.tracker.update(batches=1, batch_len=len(circuits))
+    self.tracker.record()
+
+These functions are called in base :class:`~.Device` and :class:`~.QubitDevice` devices. Unless you are
+overriding the ``execute`` and ``batch_execute`` methods or want to customize the stored
+information, you do not need to add any new code.
+
+While this is the recommended usage, the ``update`` and ``record`` methods can be called at any location
+within the device. While the above example tracks executions, shots, and batches, the 
+:meth:`~.Tracker.update` method can accept any combination of
+keyword-value pairs.  For example, a device could also track cost and a job ID via:
+
+.. code-block:: python
+
+  price_for_execution = 0.10
+  job_id = "abcde"
+  self.tracker.update(price=price_for_execution, job_id=job_id)
+
+.. _installing_plugin:
 
 Identifying and installing your device
 --------------------------------------

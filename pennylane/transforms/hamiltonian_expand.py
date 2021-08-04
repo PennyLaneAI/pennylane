@@ -119,6 +119,7 @@ def hamiltonian_expand(tape, group=True):
         # ]
         # tapes.append(new_tape)
 
+
     # create processing function that performs linear recombination
     def processing_fn(res):
         dot_products = [
