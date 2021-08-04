@@ -878,20 +878,24 @@ class TestOverOpts:
         assert y_seperate == pytest.approx(args_new[1], abs=tol)
         assert z_seperate == pytest.approx(args_new[2], abs=tol)
 
-    def test_new(self, opt, opt_name, tol):
+    def test_one_trainable_one_non_trainable(self, opt, opt_name, tol):
+        """Tests that a cost function that takes one trainable and one
+        non-trainable parameter executes well."""
         dev = qml.device('default.qubit', wires=2)
-        ev = np.tensor([0.7781], requires_grad=False)
 
         @qml.qnode(dev)
         def circuit(x):
-            qml.RY(x, wires=0)
+            qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         def cost(x, target):
             return (circuit(x) - target[0])**2
 
-
+        ev = np.tensor([0.7781], requires_grad=False)
         x = np.tensor(0.0, requires_grad=True)
 
+        original_ev = ev
+
         (x, ev), cost = opt.step_and_cost(cost, x, ev)
-        cost
+        assert x == 0
+        assert ev == original_ev
