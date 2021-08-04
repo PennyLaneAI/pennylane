@@ -889,9 +889,9 @@ class TestOverOpts:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         def cost(x, target):
-            return (circuit(x) - target[0]) ** 2
+            return (circuit(x) - target) ** 2
 
-        ev = np.tensor([0.7781], requires_grad=False)
+        ev = np.tensor(0.7781, requires_grad=False)
         x = np.tensor(0.0, requires_grad=True)
 
         original_ev = ev
@@ -912,9 +912,9 @@ class TestOverOpts:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         def cost(target, x):  # Note: the order of the arguments has been swapped
-            return (circuit(x) - target[0]) ** 2
+            return (circuit(x) - target) ** 2
 
-        ev = np.tensor([0.7781], requires_grad=False)
+        ev = np.tensor(0.7781, requires_grad=False)
         x = np.tensor(0.0, requires_grad=True)
 
         original_ev = ev
@@ -936,9 +936,9 @@ class TestOverOpts:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         def cost(x, y, target):
-            return (circuit(x, y) - target[0]) ** 2
+            return (circuit(x, y) - target) ** 2
 
-        ev = np.tensor([0.7781], requires_grad=False)
+        ev = np.tensor(0.7781, requires_grad=False)
         x = np.tensor(0.0, requires_grad=True)
         y = np.tensor(0.0, requires_grad=True)
 
