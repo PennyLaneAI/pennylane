@@ -358,9 +358,14 @@ ar.register_function("torch", "scatter_element_add", _scatter_element_add_torch)
 
 
 def _to_numpy_jax(x):
-    from jaxlib.xla_extension import DeviceArray
+    from jax.errors import TracerArrayConversionError
 
-    return np.array(x) if isinstance(x, DeviceArray) else x
+    try:
+        return np.array(getattr(x, "val", x))
+    except TracerArrayConversionError as e:
+        raise ValueError(
+            "Converting a JAX array to a NumPy array not supported when using the JAX JIT."
+        ) from e
 
 
 ar.register_function("jax", "flatten", lambda x: x.flatten())

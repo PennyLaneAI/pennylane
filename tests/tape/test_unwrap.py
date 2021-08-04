@@ -199,11 +199,8 @@ def test_unwrap_jax_backward():
             # inside the context manager, all parameters
             # will be unwrapped to NumPy arrays
             params = tape.get_parameters(trainable_only=False)
-
-            # Currently, JAX does not support converting trainable
-            # parameters to NumPy arrays.
-            assert isinstance(params[1], float)
-            assert all(isinstance(i, JVPTracer) for i in [params[0], params[2], params[3]])
+            assert all(isinstance(i, float) for i in params)
+            assert np.allclose(params, [0.1, 0.2, 0.5, 0.3])
             assert tape.trainable_params == {0, 2, 3}
 
         # outside the context, the original parameters have been restored.
