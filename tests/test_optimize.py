@@ -901,3 +901,29 @@ class TestOverOpts:
             x == 0
         )  # check that the argument to RX doesn't change, as the X rotation doesn't influence <Z>
         assert ev == original_ev
+
+    def test_two_trainable_args(self, opt, opt_name, tol):
+        """Tests that a cost function that takes at least two trainable
+        arguments executes well."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x, y):
+            qml.RX(x, wires=0)
+            qml.RX(y, wires=0)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        def cost(x, y, target):
+            return (circuit(x, y) - target[0]) ** 2
+
+        ev = np.tensor([0.7781], requires_grad=False)
+        x = np.tensor(0.0, requires_grad=True)
+        y = np.tensor(0.0, requires_grad=True)
+
+        original_ev = ev
+
+        (x, y, ev), cost = opt.step_and_cost(cost, x, y, ev)
+        assert (
+            x == 0
+        )  # check that the argument to RX doesn't change, as the X rotation doesn't influence <Z>
+        assert ev == original_ev
