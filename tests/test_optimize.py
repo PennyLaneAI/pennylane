@@ -749,26 +749,27 @@ def reset(opt):
 
 @pytest.fixture
 def opt(opt_name):
-    if opt_name =="gd":
+    if opt_name == "gd":
         return GradientDescentOptimizer(stepsize)
 
-    if opt_name =="nest":
+    if opt_name == "nest":
         return NesterovMomentumOptimizer(stepsize, momentum=gamma)
 
-    if opt_name =="moment":
+    if opt_name == "moment":
         return MomentumOptimizer(stepsize, momentum=gamma)
 
-    if opt_name =="ada":
+    if opt_name == "ada":
         return AdagradOptimizer(stepsize)
 
-    if opt_name =="rms":
+    if opt_name == "rms":
         return RMSPropOptimizer(stepsize, decay=gamma)
 
-    if opt_name =="adam":
+    if opt_name == "adam":
         return AdamOptimizer(stepsize, beta1=gamma, beta2=delta)
 
-    if opt_name =="roto":
+    if opt_name == "roto":
         return RotosolveOptimizer()
+
 
 @pytest.mark.parametrize(
     "opt_name",
