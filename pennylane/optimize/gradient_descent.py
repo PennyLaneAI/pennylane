@@ -130,7 +130,7 @@ class GradientDescentOptimizer:
         forward = getattr(g, "forward", None)
 
         num_trainable_args = 0
-        for idx, arg in enumerate(args):
+        for arg in args:
             if getattr(arg, "requires_grad", True):
                 num_trainable_args += 1
 
