@@ -15,7 +15,7 @@
 This module contains functions for computing the parameter-shift gradient
 of a CV-based quantum tape.
 """
-# pylint: disable=protected-access,too-many-arguments,too-many-statements
+# pylint: disable=protected-access,too-many-arguments,too-many-statements,too-many-branches
 import itertools
 import warnings
 
