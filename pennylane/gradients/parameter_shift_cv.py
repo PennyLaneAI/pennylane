@@ -500,7 +500,7 @@ def param_shift_cv(
         f0 (tensor_like[float] or None): Output of the evaluated input tape. If provided,
             and the gradient recipe contains an unshifted term, this value is used,
             saving a quantum evaluation.
-        force_order2 (bool): iff True, use the order-2 method even if not necessary
+        force_order2 (bool): if True, use the order-2 method even if not necessary
 
     Returns:
         tuple[list[QuantumTape], function]: A tuple containing a
@@ -515,14 +515,14 @@ def param_shift_cv(
     the following constraints with regards to measurements are supported:
 
     * Expectation values are restricted to observables that are first- and
-      second-order in :math:`\hat{x}` :math:`\hat{p}` only.
+      second-order in :math:`\hat{x}` and :math:`\hat{p}` only.
       This includes :class:`~.X`, :class:`~.P`, :class:`~.QuadOperator`,
       :class:`~.PolyXP`, and :class:`~.NumberOperator`.
 
       For second-order observables, the device **must support** :class:`~.PolyXP`.
 
     * Variances are restricted to observables that are first-order
-      in :math:`\hat{x}` :math:`\hat{p}` only. This includes :class:`~.X`, :class:`~.P`,
+      in :math:`\hat{x}` and :math:`\hat{p}` only. This includes :class:`~.X`, :class:`~.P`,
       :class:`~.QuadOperator`, and *some* parameter values of :class:`~.PolyXP`.
 
       The device **must support** :class:`~.PolyXP`.
@@ -655,6 +655,7 @@ def param_shift_cv(
         _update(var_param_shift(tape, dev.wires, argnum, shift, gradient_recipes, f0))
 
     else:
+        # Only expectation values were specified
         if first_order_params:
             _update(expval_param_shift(tape, first_order_params, shift, gradient_recipes, f0))
 
