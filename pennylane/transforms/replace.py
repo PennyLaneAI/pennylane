@@ -14,7 +14,53 @@
 """Transform for applying custom decompositions of operations."""
 
 from pennylane import apply
+from pennylane.tape import get_active_tape
 from pennylane.transforms import qfunc_transform
+
+
+def _unroll(op, custom_ops):
+    """Decompose an operation as much as possible given a set of decompositions.
+
+    Maybe this can be replaced with tape.expand somehow?
+    """
+
+    print(f"Unrolling op {op}")
+    if op.num_params > 0:
+        op_list = custom_ops[op.name](*op.parameters, op.wires)
+    else:
+        op_list = custom_ops[op.name](op.wires)
+
+    ops_with_decomps = list(custom_ops.keys())
+
+    more_to_decompose = True
+
+    while more_to_decompose:
+
+        updated_op_list = []
+
+        # Get the decomposition of each operation in the list
+        for decomp_op in op_list:
+            if decomp_op.name in ops_with_decomps:
+                print(f"op {decomp_op} also has a decomposition")
+                if decomp_op.num_params > 0:
+                    updated_op_list.extend(
+                        custom_ops[decomp_op.name](*decomp_op.parameters, decomp_op.wires)
+                    )
+                else:
+                    updated_op_list.extend(custom_ops[decomp_op.name](decomp_op.wires))
+
+            else:
+                updated_op_list.append(decomp_op)
+
+        # If any of those operations themselves have decompositions, loop through again
+        if not any(
+            name in ops_with_decomps for name in [decomp_op.name for decomp_op in updated_op_list]
+        ):
+            more_to_decompose = False
+
+        op_list = updated_op_list.copy()
+
+    return op_list
 
 
 @qfunc_transform
@@ -80,15 +126,29 @@ def replace(tape, custom_ops=None):
      1: ───────────────╰X──RX(0.3)──RY(1.57)──X──┤ ⟨Z⟩
     """
 
+    current_tape = get_active_tape()
+
     if custom_ops is not None:
 
         ops_with_custom_decomps = list(custom_ops.keys())
 
         for op in tape.operations:
             if op.name in ops_with_custom_decomps:
-                custom_ops[op.name](op.wires)
+
+                # Apply the custom decomposition recursively
+                with current_tape.stop_recording():
+                    fully_unrolled_ops = _unroll(op, custom_ops)
+                    print("Fully unrolled ops")
+
+                for op in fully_unrolled_ops:
+                    apply(op)
+
             else:
                 apply(op)
 
         for m in tape.measurements:
             apply(m)
+
+    else:
+        for op in tape.operations + tape.measurements:
+            apply(op)
