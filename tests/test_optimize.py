@@ -877,3 +877,21 @@ class TestOverOpts:
         assert x_seperate == pytest.approx(args_new[0], abs=tol)
         assert y_seperate == pytest.approx(args_new[1], abs=tol)
         assert z_seperate == pytest.approx(args_new[2], abs=tol)
+
+    def test_new(self, opt, opt_name, tol):
+        dev = qml.device('default.qubit', wires=2)
+        ev = np.tensor([0.7781], requires_grad=False)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RY(x, wires=0)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        def cost(x, target):
+            return (circuit(x) - target[0])**2
+
+
+        x = np.tensor(0.0, requires_grad=True)
+
+        (x, ev), cost = opt.step_and_cost(cost, x, ev)
+        cost
