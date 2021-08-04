@@ -922,7 +922,6 @@ class TestOverOpts:
         original_ev = ev
 
         (x, y, ev), cost = opt.step_and_cost(cost, x, y, ev)
-        assert (
-            x == 0
-        )  # check that the argument to RX doesn't change, as the X rotation doesn't influence <Z>
+        # check that the argument to RX doesn't change, as the X rotation doesn't influence <Z>
+        assert (x == 0) 
         assert ev == original_ev
