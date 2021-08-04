@@ -357,6 +357,17 @@ ar.register_function("torch", "scatter_element_add", _scatter_element_add_torch)
 # -------------------------------- JAX --------------------------------- #
 
 
+def _to_numpy_jax(x):
+    from jax.errors import TracerArrayConversionError
+
+    try:
+        return np.array(getattr(x, "val", x))
+    except TracerArrayConversionError as e:
+        raise ValueError(
+            "Converting a JAX array to a NumPy array not supported when using the JAX JIT."
+        ) from e
+
+
 ar.register_function("jax", "flatten", lambda x: x.flatten())
 ar.register_function(
     "jax",
@@ -364,7 +375,7 @@ ar.register_function(
     lambda x, indices, axis=None: _i("jax").numpy.take(x, indices, axis=axis, mode="wrap"),
 )
 ar.register_function("jax", "coerce", lambda x: x)
-ar.register_function("jax", "to_numpy", lambda x: x)
+ar.register_function("jax", "to_numpy", _to_numpy_jax)
 ar.register_function("jax", "block_diag", lambda x: _i("jax").scipy.linalg.block_diag(*x))
 ar.register_function("jax", "gather", lambda x, indices: x[np.array(indices)])
 ar.register_function(
