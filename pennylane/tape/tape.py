@@ -340,7 +340,7 @@ class QuantumTape(AnnotatedQueue):
         return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, params={self.num_params}>"
 
     def __enter__(self):
-        QuantumTape._lock.acquire()  # pylint: disable=consider-using-with
+        QuantumTape._lock.acquire()
         try:
             if self.do_queue:
                 QueuingContext.append(self)
@@ -675,13 +675,8 @@ class QuantumTape(AnnotatedQueue):
         # the current implementation of the adjoint
         # transform requires that the returned inverted object
         # is automatically queued.
-        QuantumTape._lock.acquire()
-        try:
+        with QuantumTape._lock:
             QueuingContext.append(new_tape)
-        except Exception as _:
-            QuantumTape._lock.release()
-            raise
-        QuantumTape._lock.release()
 
         return new_tape
 
