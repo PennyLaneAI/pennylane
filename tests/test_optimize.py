@@ -775,7 +775,6 @@ def opt(opt_name):
     "opt_name",
     [
         "gd",
-        "nest",
         "moment",
         "nest",
         "ada",
