@@ -902,8 +902,8 @@ class TestOverOpts:
         assert ev == original_ev
 
     def test_one_non_trainable_one_trainable(self, opt, opt_name, tol):
-        """Tests that a cost function that takes one trainable and one
-        non-trainable parameter executes well."""
+        """Tests that a cost function that takes one non-trainable and one
+        trainable parameter executes well."""
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
