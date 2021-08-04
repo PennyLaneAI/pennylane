@@ -747,16 +747,40 @@ def reset(opt):
         opt.reset()
 
 
+@pytest.fixture
+def opt(opt_name):
+    if opt_name =="gd":
+        return GradientDescentOptimizer(stepsize)
+
+    if opt_name =="nest":
+        return NesterovMomentumOptimizer(stepsize, momentum=gamma)
+
+    if opt_name =="moment":
+        return MomentumOptimizer(stepsize, momentum=gamma)
+
+    if opt_name =="ada":
+        return AdagradOptimizer(stepsize)
+
+    if opt_name =="rms":
+        return RMSPropOptimizer(stepsize, decay=gamma)
+
+    if opt_name =="adam":
+        return AdamOptimizer(stepsize, beta1=gamma, beta2=delta)
+
+    if opt_name =="roto":
+        return RotosolveOptimizer()
+
 @pytest.mark.parametrize(
-    "opt, opt_name",
+    "opt_name",
     [
-        (GradientDescentOptimizer(stepsize), "gd"),
-        (MomentumOptimizer(stepsize, momentum=gamma), "moment"),
-        (NesterovMomentumOptimizer(stepsize, momentum=gamma), "nest"),
-        (AdagradOptimizer(stepsize), "ada"),
-        (RMSPropOptimizer(stepsize, decay=gamma), "rms"),
-        (AdamOptimizer(stepsize, beta1=gamma, beta2=delta), "adam"),
-        (RotosolveOptimizer(), "roto"),
+        "gd",
+        "nest",
+        "moment",
+        "nest",
+        "ada",
+        "rms",
+        "adam",
+        "roto",
     ],
 )
 class TestOverOpts:
@@ -897,6 +921,7 @@ class TestOverOpts:
         original_ev = ev
 
         (x, ev), cost = opt.step_and_cost(cost, x, ev)
+
         # check that the argument to RX doesn't change, as the X rotation doesn't influence <Z>
         assert x == 0
         assert ev == original_ev
@@ -945,6 +970,7 @@ class TestOverOpts:
         original_ev = ev
 
         (x, y, ev), cost = opt.step_and_cost(cost, x, y, ev)
+
         # check that the argument to RX doesn't change, as the X rotation doesn't influence <Z>
         assert x == 0
         assert ev == original_ev
