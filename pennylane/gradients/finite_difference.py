@@ -16,12 +16,15 @@ This module contains functions for computing the finite-difference gradient
 of a quantum tape.
 """
 # pylint: disable=protected-access,too-many-arguments
+import functools
+
 import numpy as np
 from scipy.special import factorial
 
 import pennylane as qml
 
 
+@functools.lru_cache(maxsize=None)
 def finite_diff_coeffs(n, approx_order, strategy):
     r"""Generate the finite difference shift values and corresponding
     term coefficients for a given derivative order, approximation accuracy,
