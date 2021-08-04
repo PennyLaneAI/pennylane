@@ -108,11 +108,16 @@ def hamiltonian_expand(tape, group=True):
     # create tapes that measure the Pauli-words in the Hamiltonian
     tapes = []
     for ob in hamiltonian.ops:
-        new_tape = tape.copy()
-        new_tape._measurements = [
-            qml.measure.MeasurementProcess(return_type=qml.operation.Expectation, obs=ob)
-        ]
+        with tape.__class__() as new_tape:
+            for op in tape.operations:
+                qml.apply(op)
+            qml.expval(ob)
         tapes.append(new_tape)
+        # new_tape = tape.copy()
+        # new_tape._measurements = [
+        #     qml.measure.MeasurementProcess(return_type=qml.operation.Expectation, obs=ob)
+        # ]
+        # tapes.append(new_tape)
 
     # create processing function that performs linear recombination
     def processing_fn(res):

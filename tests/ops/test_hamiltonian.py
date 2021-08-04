@@ -244,8 +244,8 @@ class TestHamiltonianDifferentiation:
         coeffs2 = torch.tensor([-0.05, 0.17], requires_grad=True)
         param2 = torch.tensor(1.7, requires_grad=True)
 
-        half1 = qml.QNode(circuit1, dev, interface="torch", diff_method="backprop")
-        half2 = qml.QNode(circuit2, dev, interface="torch", diff_method="backprop")
+        half1 = qml.QNode(circuit1, dev, interface="torch")
+        half2 = qml.QNode(circuit2, dev, interface="torch")
 
         def combine(coeffs, param):
             return coeffs[0] * half1(param) + coeffs[1] * half2(param)
