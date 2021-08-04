@@ -610,7 +610,7 @@ def test_numpy(t):
     assert isinstance(res, onp.ndarray)
 
 
-def to_numpy_jax_jit():
+def test_numpy_jax_jit():
     """Test that the to_numpy() method raises an exception
     if used inside the JAX JIT"""
 
