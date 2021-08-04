@@ -81,7 +81,6 @@ def replace(tape, custom_ops=None):
      1: ───────────────╰X──RX(0.3)──RY(1.57)──X──┤ ⟨Z⟩
     """
 
-    current_tape = get_active_tape()
 
     if custom_ops is not None:
 
