@@ -154,7 +154,7 @@ and two non-trainable arguments ``data`` and ``wires``:
     dev = qml.device('default.qubit', wires=5)
 
     @qml.qnode(dev)
-    def circuit(weights, data, wires=None):
+    def circuit(weights, data, wires):
         qml.templates.AmplitudeEmbedding(data, wires=wires, normalize=True)
         qml.RX(weights[0], wires=wires[0])
         qml.RY(weights[1], wires=wires[1])
