@@ -174,7 +174,7 @@ must explicitly make ``data`` non-trainable by specifying it as a NumPy array wi
 0.4124409353413991
 
 When we compute the derivative, arguments with ``requires_grad=False``, as well as keyword arguments,
-are explicitly ignored by :func:`~.grad`:
+are ignored by :func:`~.grad`:
 
 >>> grad_fn = qml.grad(circuit)
 >>> grad_fn(weights, data, wires=wires)
