@@ -9,7 +9,7 @@
   Join us on GitHub August 16th-27th, see <a href="https://github.com/PennyLaneAI/pennylane/blob/master/code_together.md">event FAQ here</a></strong>.
 </p>
 
-<br>
+---
 
 
 
