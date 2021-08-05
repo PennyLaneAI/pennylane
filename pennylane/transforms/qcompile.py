@@ -27,7 +27,7 @@ default_pipeline = [commute_controlled, cancel_inverses, merge_rotations]
 
 
 @qfunc_transform
-def compile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
+def qcompile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
     """Compile a circuit by applying a series of transforms to a quantum function.
 
     The default set of transforms includes (in order):

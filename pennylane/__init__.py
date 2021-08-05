@@ -50,7 +50,7 @@ from pennylane.transforms import (
     adjoint,
     draw,
     ControlledOperation,
-    compile,
+    qcompile,
     ctrl,
     measurement_grouping,
     metric_tensor,

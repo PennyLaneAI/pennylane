@@ -57,7 +57,7 @@ This set of transforms accept quantum functions, and perform basic circuit compi
 .. autosummary::
     :toctree: api
 
-    ~compile
+    ~qcompile
     ~transforms.cancel_inverses
     ~transforms.commute_controlled
     ~transforms.merge_rotations
@@ -102,7 +102,7 @@ to help build custom QNode, quantum function, and tape transforms:
 from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
 from .adjoint import adjoint
 from .classical_jacobian import classical_jacobian
-from .compile import compile
+from .qcompile import qcompile
 from .control import ControlledOperation, ctrl
 from .decompositions import zyz_decomposition
 from .draw import draw
