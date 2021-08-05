@@ -172,7 +172,7 @@ For ``data``, which is a PennyLane NumPy array, we can simply specify ``requires
 >>> np.random.seed(42)  # make the results reproducable
 >>> data = np.random.random([2**3], requires_grad=False)
 
-But ``wires`` is a list in this example, and if we turned it into a PennyLane NumPy array we would have to
+But ``wires`` is a list in this example, and if we turn it into a PennyLane NumPy array we would have to
 create a device that understands custom wire labels of this type.
 It is much easier to use the second option laid out above, and pass ``wires`` to the
 QNode using keyword argument syntax:
