@@ -1,0 +1,123 @@
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+This subpackage defines functions for interfacing devices with batch execution
+capabilities with different machine learning libraries.
+"""
+# pylint: disable=import-outside-toplevel)
+from functools import partial
+
+import pennylane as qml
+
+from .autograd import execute as execute_autograd
+
+
+def execute(tapes, device, gradient_fn, interface="autograd", accumulation="forward"):
+    """Execute a batch of tapes with Autograd parameters on a device.
+
+    Args:
+        tapes (Sequence[.QuantumTape]): batch of tapes to execute
+        device (.Device): Device to use to execute the batch of tapes.
+            If the device does not provide a ``batch_execute`` method,
+            by default the tapes will be executed in serial.
+        gradient_fn (None or callable): The gradient transform function to use
+            for backward passes. If "device", the device will be queried directly
+            for the gradient (if supported).
+        interface (str): The interface that will be used for classical backpropagation.
+            This affects the types of parameters that can exist on the input tapes.
+            Available options include ``autograd``, ``torch``, ``tf``, and ``jax``.
+        accumulation (str): Whether the gradients should be computed on the forward
+            pass (``forward``) or the backward pass (``backward``). Only applies
+            if the device is queried for the gradient; gradient transform
+            functions available in ``qml.gradients`` are only supported on the backward
+            pass.
+
+
+    Returns:
+        list[list[float]]: A nested list of tape results. Each element in
+        the returned list corresponds in order to the provided tapes.
+
+    **Example**
+
+    Consider the following cost function:
+
+    .. code-block:: python
+
+        def cost_fn(params, x, dev):
+            with qml.tape.QuantumTape() as tape1:
+                qml.RX(params[0], wires=0)
+                qml.RY(params[1], wires=0)
+                qml.expval(qml.PauliZ(0))
+
+            with qml.tape.QuantumTape() as tape2:
+                qml.RX(params[2], wires=0)
+                qml.RY(x[0], wires=1)
+                qml.CNOT(wires=[0, 1])
+                qml.probs(wires=0)
+
+            tapes = [tape1, tape2]
+
+            # execute both tapes in a batch on the given device
+            res = execute(tapes, dev)
+
+            return res[0][0] + res[1][0, 0] - res[1][0, 1]
+
+    In this cost function, two **independent** quantum tapes are being
+    constructed; one returning an expectation value, the other probabilities.
+    We then batch execute the two tapes, and reduce the results to obtain
+    a scalar.
+
+    Let's execute this cost function while tracking the gradient:
+
+    >>> dev = qml.device("lightning.qubit", wires=2)
+    >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
+    >>> x = np.array([0.5], requires_grad=True)
+    >>> cost_fn(params, x)
+    1.9305068163274222
+
+    Since the ``execute`` function is differentiable, we can
+    also compute the gradient:
+
+    >>> qml.grad(cost_fn)(params, x)
+    (array([-0.0978434 , -0.19767681, -0.29552021]), array([5.37764278e-17]))
+
+    Finally, we can also compute any nth-order derivative. Let's compute the Jacobian
+    of the gradient (that is, the Hessian):
+
+    >>> x.requires_grad = False
+    >>> qml.jacobian(qml.grad(cost_fn))(params, x)
+    array([[-0.97517033,  0.01983384,  0.        ],
+           [ 0.01983384, -0.97517033,  0.        ],
+           [ 0.        ,  0.        , -0.95533649]])
+    """
+    # Default execution function; simply call device.batch execute
+    # and return no Jacobians.
+    execute_fn = lambda tapes: (device.batch_execute(tapes), [])
+
+    if gradient_fn == "device":
+        # gradient function is a device method
+
+        if accumulation == "forward":
+            # replace the forward execution function to return
+            # both results and gradients
+            execute_fn = device.execute_and_gradients
+
+        elif accumulation == "backward":
+            # replace the backward gradient computation
+            gradient_fn = device.gradients
+
+    if interface == "autograd":
+        return execute_autograd(tapes, device, execute_fn, gradient_fn)
+
+    raise ValueError(f"Unknown interface {interface}")

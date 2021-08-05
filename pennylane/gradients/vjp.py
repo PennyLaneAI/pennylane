@@ -24,7 +24,35 @@ def _vector_jacobian_product(dy, jac):
     """Compute the vector-Jacobian product for a given
     vector of gradient outputs dy and a Jacobian Jac"""
     dy_row = math.reshape(dy, [-1])
+    jac = math.reshape(jac, [dy_row.shape[0], -1])
     return math.tensordot(jac, dy_row, [[0], [0]])
+
+
+def _vector_jacobian_products(dys, jacs, reduction="append"):
+    """Compute the vector-Jacobian product for a given
+    vector of gradient outputs dys and Jacobians jacs"""
+    vjps = []
+
+    for dy, jac in zip(dys, jacs):
+
+        if jacs is None:
+            # The tape has no trainable parameters; the VJP
+            # is simply none.
+            vjps.append(None)
+            continue
+
+        if math.allclose(dy, 0):
+            # If the dy vector is zero, then the
+            # corresponding element of the VJP will be zero,
+            # and we can avoid a quantum computation.
+            num_params = math.reshape(jac, [-1, dy_row.shape[0]]).shape[0]
+            vjp = math.convert_like(np.zeros([num_params]), dy)
+        else:
+            vjp = _vector_jacobian_product(dy, jac)
+
+        getattr(vjps, reduction)(vjp)
+
+    return vjps
 
 
 def vjp(tape, dy, gradient_fn):

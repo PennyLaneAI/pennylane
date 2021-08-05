@@ -826,6 +826,21 @@ class QubitDevice(Device):
 
         return samples.reshape((bin_size, -1))
 
+    def execute_and_gradients(self, circuits):
+        res = []
+        jacs = []
+
+        for circuit in circuits:
+            # Evaluations and gradients are paired, so that
+            # we can re-use the device state for the adjoint method
+            res.append(circuit.execute(self))
+            jacs.append(self.adjoint_jacobian(circuit, use_device_state=True))
+
+        return res, jacs
+
+    def gradients(self, circuits):
+        return [self.adjoint_jacobian(circuit) for circuit in circuits]
+
     def adjoint_jacobian(self, tape, starting_state=None, use_device_state=False):
         """Implements the adjoint method outlined in
         `Jones and Gacon <https://arxiv.org/abs/2009.02823>`__ to differentiate an input tape.
