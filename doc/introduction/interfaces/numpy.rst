@@ -164,7 +164,7 @@ and two non-trainable arguments ``data`` and ``wires``:
         return qml.expval(qml.PauliZ(wires[0]))
 
 Since ``wires`` is a keyword argument, it will be automatically non-trainable. However, we
-must make ``data`` non-trainable by specifying it as a NumPy array with ``requires_grad=False``:
+must explicitly make ``data`` non-trainable by specifying it as a NumPy array with ``requires_grad=False``:
 
 >>> np.random.seed(42)  # make the results reproducable
 >>> weights = np.array([0.1, 0.2, 0.3])
