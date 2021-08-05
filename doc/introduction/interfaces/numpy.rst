@@ -146,7 +146,7 @@ tensor([0.1, 0.2], requires_grad=False)
     The ``requires_grad`` argument can be passed to any NumPy function provided by PennyLane,
     including NumPy functions that create arrays like ``np.random.random``, ``np.zeros``, etc.
 
-An alternative way to avoid differentiation logic to be applied to positional arguments is to
+An alternative way to avoid having positional arguments turned into differentiable PennyLane NumPy arrays is to
 use a keyword argument syntax when the QNode is evaluated or when its gradient is computed.
 
 For example, consider the following QNode that accepts one trainable argument ``weights``,
