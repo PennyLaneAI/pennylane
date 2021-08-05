@@ -18,8 +18,6 @@ import autoray as ar
 from autoray import numpy as np
 import numpy as _np
 
-import pennylane as qml
-
 from . import single_dispatch  # pylint:disable=unused-import
 
 
