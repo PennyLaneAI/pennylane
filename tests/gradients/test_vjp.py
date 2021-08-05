@@ -208,7 +208,7 @@ class TestVJPGradients:
         torch = pytest.importorskip("torch")
         from pennylane.interfaces.torch import TorchInterface
 
-        dev = qml.device("default.qubit.tf", wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         params = torch.tensor([0.543, -0.654], requires_grad=True, dtype=torch.float64)
         dy = torch.tensor([-1.0, 0.0, 0.0, 1.0], dtype=torch.float64)

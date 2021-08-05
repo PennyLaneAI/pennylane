@@ -75,15 +75,18 @@
 * A new gradients module `qml.gradients` has been added, which provides
   differentiable quantum gradient transforms.
   [(#1476)](https://github.com/PennyLaneAI/pennylane/pull/1476)
+  [(#1494)](https://github.com/PennyLaneAI/pennylane/pull/1494)
 
   Available quantum gradient transforms include:
 
   - `qml.gradients.finite_diff`
+  - `qml.gradients.vjp`
+  - `qml.gradients.batch_vjp`
 
   For example,
 
   ```pycon
-  >>> with qml.tape.QuantumTape() as tape:
+  >>> with qml.tape.JacobianTape() as tape:
   ...     qml.RX(params[0], wires=0)
   ...     qml.RY(params[1], wires=0)
   ...     qml.RX(params[2], wires=0)
