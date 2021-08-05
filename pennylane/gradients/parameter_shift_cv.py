@@ -127,7 +127,7 @@ def _gradient_analysis(tape):
 
 
 def _transform_observable(obs, Z, device_wires):
-    """Apply a Gaussian linear transformation to each index of an observable.
+    """Apply a Gaussian linear transformation to an observable.
 
     Args:
         obs (.Observable): observable to transform
@@ -528,8 +528,10 @@ def param_shift_cv(
 
       The device **must support** :class:`~.PolyXP`.
 
-    Fock state probabilities (tapes that return :func:`~pennylane.probs` or
-    expectation values of :class:`~.FockStateProjector`) are not supported.
+    .. warning::
+
+        Fock state probabilities (tapes that return :func:`~pennylane.probs` or
+        expectation values of :class:`~.FockStateProjector`) are not supported.
 
     In addition, the tape operations must fulfill the following requirements:
 
@@ -649,7 +651,7 @@ def param_shift_cv(
         unsupported_params += second_order_params
         second_order_params = []
 
-    # If there are unsupported operations, call the callback gradient function
+    # If there are unsupported operations, call the fallback gradient function
     if unsupported_params:
         _update(fallback_fn(tape, argnum=unsupported_params))
 
