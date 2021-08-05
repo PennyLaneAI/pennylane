@@ -122,12 +122,12 @@ Differentiable and non-differentiable arguments
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 How does PennyLane know which arguments of a quantum function to differentiate, and which to ignore?
-For example, you may want to pass arguments as positional arguments to a QNode but *not* have
+For example, you may want to pass arguments to a QNode but *not* have
 PennyLane consider them when computing gradients.
 
 As a basic rule, **all positional arguments provided to the QNode are assumed to be differentiable
-by default**. To accomplish this, all arrays created by the PennyLane NumPy module have a special
-flag ``requires_grad`` specifying whether they are trainable or not:
+by default**. To accomplish this, arguments are internally turned into arrays of the PennyLane NumPy module,
+which have a special flag ``requires_grad`` specifying whether they are trainable or not:
 
 >>> from pennylane import numpy as np
 >>> np.array([0.1, 0.2])
@@ -145,6 +145,9 @@ tensor([0.1, 0.2], requires_grad=False)
 
     The ``requires_grad`` argument can be passed to any NumPy function provided by PennyLane,
     including NumPy functions that create arrays like ``np.random.random``, ``np.zeros``, etc.
+
+An alternative way to avoid differentiation logic to be applied to positional arguments is to
+use a keyword argument syntax when the QNode is evaluated or when its gradient is computed.
 
 For example, consider the following QNode that accepts one trainable argument ``weights``,
 and two non-differentiable arguments ``data`` and ``wires``:
@@ -164,14 +167,15 @@ and two non-differentiable arguments ``data`` and ``wires``:
         return qml.expval(qml.PauliZ(wires[0]))
 
 
-We use different ways to make ``data`` and ``wires`` non-differentiable. For ``data``, which is a NumPy array, we
-specify ``requires_grad=False``:
+For ``data``, which is a PennyLane NumPy array, we can simply specify ``requires_grad=False``:
 
 >>> np.random.seed(42)  # make the results reproducable
 >>> data = np.random.random([2**3], requires_grad=False)
 
-Wires, which is a list in this example, will be ignored by differentiation logic by passing it in a keyword
-argument syntax to the QNode:
+But ``wires`` is a list in this example, and if we turned it into a PennyLane NumPy array we would have to
+create a device that understands custom wire labels of this type.
+It is much easier to use the second option laid out above, and pass ``wires`` to the
+QNode using keyword argument syntax:
 
 >>> wires = [2, 0, 1]
 >>> weights = np.array([0.1, 0.2, 0.3])
@@ -203,14 +207,6 @@ keyword arguments are ignored by :func:`~.grad`:
 
     These arguments will always be treated as non-differentiable by the QNode and :func:`~.grad`
     function.
-
-.. note::
-
-    We can in principle pass the wires argument as a non-trainable NumPy array instead of using the keyword
-    argument syntax. However, this means that the device needs to understand wire labels of the form
-    ``np.array(i, requires_grad=False)`` for ``i=0,...,4``. This can be achieved by creating the device with
-    custom wire labels that are scalar NumPy arrays, i.e.,
-    ``dev = qml.device('default.qubit', wires=[np.array(0, requires_grad=False),np.array(1, requires_grad=False),... ])``.
 
 Optimization
 ------------
