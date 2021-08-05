@@ -75,10 +75,14 @@
 * A new gradients module `qml.gradients` has been added, which provides
   differentiable quantum gradient transforms.
   [(#1476)](https://github.com/PennyLaneAI/pennylane/pull/1476)
+  [(#1479)](https://github.com/PennyLaneAI/pennylane/pull/1479)
+  [(#1486)](https://github.com/PennyLaneAI/pennylane/pull/1486)
 
   Available quantum gradient transforms include:
 
   - `qml.gradients.finite_diff`
+  - `qml.gradients.param_shift`
+  - `qml.gradients.param_shift_cv`
 
   For example,
 
