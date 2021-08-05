@@ -37,8 +37,8 @@ def _grad_method(tape, idx):
             on the tape to inspect
 
     Returns:
-        str: a string containing either ``"A"`` (for first order analytic method),
-            ``"A2"`` (second order analytic method), ``"F"`` (finite differences),
+        str: a string containing either ``"A"`` (for first-order analytic method),
+            ``"A2"`` (second-order analytic method), ``"F"`` (finite differences),
             or ``"0"`` (constant parameter).
     """
 
@@ -83,13 +83,13 @@ def _grad_method(tape, idx):
         elif m.obs.ev_order == 2:
 
             if m.return_type is qml.operation.Expectation:
-                # If the observable is second order, we must use the second order
+                # If the observable is second-order, we must use the second-order
                 # CV parameter shift rule
                 best_method = "A2"
 
             elif m.return_type is qml.operation.Variance:
                 # we only support analytic variance gradients for
-                # first order observables
+                # first-order observables
                 best_method = "F"
 
         best.append(best_method)
@@ -105,8 +105,8 @@ def _grad_method(tape, idx):
         return "F"
 
     if "A2" in best:
-        # one second order observable makes the whole operation gradient
-        # require the second order parameter-shift rule
+        # one second-order observable makes the whole operation gradient
+        # require the second-order parameter-shift rule
         return "A2"
 
     return "A"
@@ -229,10 +229,10 @@ def var_param_shift(tape, dev_wires, argnum=None, shift=np.pi / 2, gradient_reci
         # observables A in the queue with A^2.
         obs = expval_sq_tape._measurements[i].obs
 
-        # CV first order observable
+        # CV first-order observable
         # get the heisenberg representation
         # This will be a real 1D vector representing the
-        # first order observable in the basis [I, x, p]
+        # first-order observable in the basis [I, x, p]
         A = obs._heisenberg_rep(obs.parameters)
 
         # take the outer product of the heisenberg representation
@@ -272,7 +272,7 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shift=np.pi / 2, grad
 
     .. note::
 
-        The 2nd order method can handle also first order observables, but
+        The 2nd order method can handle also first-order observables, but
         1st order method may be more efficient unless it's really easy to
         experimentally measure arbitrary 2nd order observables.
 
@@ -380,15 +380,17 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shift=np.pi / 2, grad
             transformed_obs = _transform_observable(obs, Z, dev_wires)
 
             A = transformed_obs.parameters[0]
-            constants.append(None)
+            constant = None
 
             # Check if the transformed observable corresponds to a constant term.
             if len(A.nonzero()[0]) == 1:
                 if A.ndim == 2 and A[0, 0] != 0:
-                    constants[-1] = A[0, 0]
+                    constant = A[0, 0]
 
                 elif A.ndim == 1 and A[0] != 0:
-                    constants[-1] = A[0]
+                    constant = A[0]
+
+            constants.append(constant)
 
             g_tape._measurements[idx] = qml.measure.MeasurementProcess(
                 qml.operation.Expectation, _transform_observable(obs, Z, dev_wires)
@@ -575,7 +577,7 @@ def param_shift_cv(
     >>> with qml.tape.JacobianTape() as tape:
     ...     qml.Squeezing(r0, phi0, wires=[0])
     ...     qml.Squeezing(r1, phi1, wires=[0])
-    ...     qml.expval(qml.NumberOperator(0))  # second order
+    ...     qml.expval(qml.NumberOperator(0))  # second-order
     >>> tape.trainable_params = {0, 2}
     >>> gradient_tapes, fn = qml.gradients.param_shift_cv(tape, dev)
     >>> res = dev.batch_execute(gradient_tapes)
