@@ -181,7 +181,7 @@ def target_alignment(
 def task_model_alignment(
     N,
     task_weights,
-    kernel_evals,
+    kernel_eigvals,
 ):
     r"""Task-model alignment for a given kernel function as proposed in [].
 
@@ -203,7 +203,10 @@ def task_model_alignment(
     Args:
         N (int): compute the task-model alignment for components up this index; has to be smaller or equal to the
             number of data points
-
+        task_weights (tensor_like): weights of target function in eigenbasis of the kernel; can be computed
+            with :func:`.utils.task_weights`
+        kernel_eigvals (tensor_like): eigenvalues of the (integral operator of the) kernel; can be computed
+            by extracting the first return value from :func:`.utils.kernel_eigensystem`
     Returns:
         float: The task-model alignment of the kernel on the dataset.
 
@@ -224,11 +227,9 @@ def task_model_alignment(
     We can then compute the task-model alignment on a set of 4 (random)
     feature vectors ``X`` via
 
-    >>> X = np.random.random((4, 2))
-    >>> qml.kernels.task_model_alignment(X, kernel)
-    tensor(...)
+    >>> TODO
 
     """
-    numerator = qml.math.dot(task_weights[:N], kernel_evals[:N])
-    denominator = qml.math.dot(task_weights, kernel_evals)
+    numerator = qml.math.dot(task_weights[:N], kernel_eigvals[:N])
+    denominator = qml.math.dot(task_weights, kernel_eigvals)
     return numerator / denominator
