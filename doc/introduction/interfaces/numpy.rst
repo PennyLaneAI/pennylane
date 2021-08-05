@@ -147,14 +147,14 @@ tensor([0.1, 0.2], requires_grad=False)
     including NumPy functions that create arrays like ``np.random.random``, ``np.zeros``, etc.
 
 For example, consider the following QNode that accepts one trainable argument ``weights``,
-and two non-trainable arguments ``data`` and ``wires``:
+and two non-differentiable arguments ``data`` and ``wires``:
 
 .. code-block:: python
 
     dev = qml.device('default.qubit', wires=5)
 
     @qml.qnode(dev)
-    def circuit(weights, data, wires=None):
+    def circuit(weights, data, wires):
         qml.templates.AmplitudeEmbedding(data, wires=wires, normalize=True)
         qml.RX(weights[0], wires=wires[0])
         qml.RY(weights[1], wires=wires[1])
@@ -163,18 +163,23 @@ and two non-trainable arguments ``data`` and ``wires``:
         qml.CNOT(wires=[wires[0], wires[2]])
         return qml.expval(qml.PauliZ(wires[0]))
 
-Since ``wires`` is a keyword argument, it will be automatically non-trainable. However, we
-must explicitly make ``data`` non-trainable by specifying it as a NumPy array with ``requires_grad=False``:
+
+We use different ways to make ``data`` and ``wires`` non-differentiable. For ``data``, which is a NumPy array, we
+specify ``requires_grad=False``:
 
 >>> np.random.seed(42)  # make the results reproducable
->>> weights = np.array([0.1, 0.2, 0.3])
 >>> data = np.random.random([2**3], requires_grad=False)
+
+Wires, which is a list in this example, will be ignored by differentiation logic by passing it in a keyword
+argument syntax to the QNode:
+
 >>> wires = [2, 0, 1]
+>>> weights = np.array([0.1, 0.2, 0.3])
 >>> circuit(weights, data, wires=wires)
 0.4124409353413991
 
-When we compute the derivative, arguments with ``requires_grad=False``, as well as keyword arguments,
-are ignored by :func:`~.grad`:
+When we compute the derivative, arguments with ``requires_grad=False`` as well as arguments passed as
+keyword arguments are ignored by :func:`~.grad`:
 
 >>> grad_fn = qml.grad(circuit)
 >>> grad_fn(weights, data, wires=wires)
@@ -199,6 +204,13 @@ are ignored by :func:`~.grad`:
     These arguments will always be treated as non-differentiable by the QNode and :func:`~.grad`
     function.
 
+.. note::
+
+    We can in principle pass the wires argument as a non-trainable NumPy array instead of using the keyword
+    argument syntax. However, this means that the device needs to understand wire labels of the form
+    ``np.array(i, requires_grad=False)`` for ``i=0,...,4``. This can be achieved by creating the device with
+    custom wire labels that are scalar NumPy arrays, i.e.,
+    ``dev = qml.device('default.qubit', wires=[np.array(0, requires_grad=False),np.array(1, requires_grad=False),... ])``.
 
 Optimization
 ------------
