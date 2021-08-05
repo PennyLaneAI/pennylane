@@ -163,7 +163,7 @@ def kernel_eigensystem(X, kernel):
     """
 
     K = square_kernel_matrix(X, kernel)
-    evals, evecs = qml.math.linalg.eigh(K) # Todo: do we need to invert here to get the evals? should be np.allclose(A @ v - v @ np.diag(w), np.zeros((4, 4)))
+    evals, evecs = qml.math.linalg.eigh(K) # should be np.allclose(A @ v - v @ np.diag(w), np.zeros((4, 4)))
     # reverse sorting to have descending evals
     evecs = qml.math.flip(evecs)
     evals = qml.math.flip(evals)
