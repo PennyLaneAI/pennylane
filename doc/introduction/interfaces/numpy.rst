@@ -154,7 +154,7 @@ and two non-trainable arguments ``data`` and ``wires``:
     dev = qml.device('default.qubit', wires=5)
 
     @qml.qnode(dev)
-    def circuit(weights, data, wires):
+    def circuit(weights, data, wires=None):
         qml.templates.AmplitudeEmbedding(data, wires=wires, normalize=True)
         qml.RX(weights[0], wires=wires[0])
         qml.RY(weights[1], wires=wires[1])
@@ -163,20 +163,22 @@ and two non-trainable arguments ``data`` and ``wires``:
         qml.CNOT(wires=[wires[0], wires[2]])
         return qml.expval(qml.PauliZ(wires[0]))
 
-We must specify that ``data`` and ``wires`` are NumPy arrays with ``requires_grad=False``:
+Since ``wires`` is a keyword argument, it will be automatically non-trainable. However, we
+must make ``data`` non-trainable by specifying it as a NumPy array with ``requires_grad=False``:
 
+>>> np.random.seed(42)  # make the results reproducable
 >>> weights = np.array([0.1, 0.2, 0.3])
 >>> data = np.random.random([2**3], requires_grad=False)
->>> wires = np.array([2, 0, 1], requires_grad=False)
->>> circuit(weights, data, wires)
-0.16935626052294817
+>>> wires = [2, 0, 1]
+>>> circuit(weights, data, wires=wires)
+0.4124409353413991
 
-When we compute the derivative, arguments with ``requires_grad=False`` are explicitly ignored
-by :func:`~.grad`:
+When we compute the derivative, arguments with ``requires_grad=False``, as well as keyword arguments,
+are explicitly ignored by :func:`~.grad`:
 
 >>> grad_fn = qml.grad(circuit)
->>> grad_fn(weights, data, wires)
-(array([-1.69923049e-02,  0.00000000e+00, -8.32667268e-17]),)
+>>> grad_fn(weights, data, wires=wires)
+[-4.1382126e-02  0.0000000e+00 -6.9388939e-18]
 
 .. note::
 
