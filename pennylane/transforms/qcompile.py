@@ -23,9 +23,6 @@ from pennylane.transforms import single_tape_transform, qfunc_transform
 from pennylane.transforms.optimization import cancel_inverses, commute_controlled, merge_rotations
 
 
-default_pipeline = [commute_controlled, cancel_inverses, merge_rotations]
-
-
 @qfunc_transform
 def qcompile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
     """Compile a circuit by applying a series of transforms to a quantum function.
@@ -126,7 +123,7 @@ def qcompile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
     """
     # Ensure that everything in the pipeline is a valid qfunc or tape transform
     if pipeline is None:
-        pipeline = default_pipeline
+        pipeline = [commute_controlled, cancel_inverses, merge_rotations]
     else:
         for p in pipeline:
             p_func = p.func if isinstance(p, partial) else p
