@@ -45,6 +45,7 @@ containing quantum operations) that are used to construct QNodes.
 
     ~adjoint
     ~transforms.cancel_inverses
+    ~transforms.commute_controlled
     ~ctrl
     ~transforms.merge_rotations
     ~transforms.single_qubit_fusion
@@ -98,7 +99,12 @@ from .hamiltonian_expand import hamiltonian_expand
 from .invisible import invisible
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor, metric_tensor_tape
-from .optimization import cancel_inverses, merge_rotations, single_qubit_fusion
+from .optimization import (
+    cancel_inverses,
+    commute_controlled,
+    merge_rotations,
+    single_qubit_fusion,
+)
 from .specs import specs
 from .qmc import apply_controlled_Q, quantum_monte_carlo
 from .unitary_to_rot import unitary_to_rot

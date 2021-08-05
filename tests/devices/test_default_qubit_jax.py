@@ -2,6 +2,7 @@ import pytest
 
 jax = pytest.importorskip("jax", minversion="0.2")
 jnp = jax.numpy
+from jax.config import config
 import numpy as np
 import pennylane as qml
 from pennylane.devices.default_qubit_jax import DefaultQubitJax
@@ -62,6 +63,17 @@ class TestQNodeIntegration:
         assert dev.shots == None
         assert dev.short_name == "default.qubit.jax"
         assert dev.capabilities()["passthru_interface"] == "jax"
+
+    @pytest.mark.parametrize(
+        "jax_enable_x64, c_dtype, r_dtype",
+        ([True, np.complex128, np.float64], [False, np.complex64, np.float32]),
+    )
+    def test_float_precision(self, jax_enable_x64, c_dtype, r_dtype):
+        """Test that the plugin device uses the same float precision as the jax config."""
+        config.update("jax_enable_x64", jax_enable_x64)
+        dev = qml.device("default.qubit.jax", wires=2)
+        assert dev.state.dtype == c_dtype
+        assert dev.state.real.dtype == r_dtype
 
     def test_qubit_circuit(self, tol):
         """Test that the device provides the correct

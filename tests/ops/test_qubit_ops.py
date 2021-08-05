@@ -518,7 +518,7 @@ class TestOperations:
         ],
     )
     def test_adjoint_error_exception(self, op, tol):
-        with pytest.raises(qml.ops.qubit.AdjointError):
+        with pytest.raises(qml.ops.AdjointError):
             op.adjoint()
 
     @pytest.mark.parametrize("inverse", [True, False])
