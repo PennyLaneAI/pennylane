@@ -157,7 +157,7 @@ class TestGradAnalysis:
             qml.Rotation(1.0, wires=[0])
             qml.Rotation(1.0, wires=[1])
             qml.Beamsplitter(0.5, 0.0, wires=[0, 1])
-            qml.var(qml.NumberOperator(0))  # second order
+            qml.var(qml.NumberOperator(0))  # fourth order
             qml.expval(qml.NumberOperator(1))
 
         assert _grad_method(tape, 0) == "F"

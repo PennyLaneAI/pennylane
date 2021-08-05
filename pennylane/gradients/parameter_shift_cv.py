@@ -471,8 +471,7 @@ def param_shift_cv(
     force_order2=False,
 ):
     r"""Generate the CV parameter-shift tapes and postprocessing methods required
-    to compute the gradient of an gate parameter with respect to the CV
-    output.
+    to compute the gradient of a gate parameter with respect to the CV output.
 
     Args:
         tape (.QuantumTape): quantum tape to differentiate
