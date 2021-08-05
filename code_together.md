@@ -6,8 +6,8 @@ the "code together" label and win some awesome swag!
 ### PennyLane: Code Together FAQ
 
 Q: What is PennyLane:Code Together? <br />
-A: PennyLane:Code Together is an online event where solving marked PennyLane
-issues rewards swag.
+A: PennyLane:Code Together is an online event where you can win swag for solving 
+marked PennyLane.
 
 Q: When and where does the Code Together take place? <br />
 A: August 16th-27th, in the [PennyLane GitHub
