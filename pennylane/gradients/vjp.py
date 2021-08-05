@@ -43,8 +43,7 @@ def _vector_jacobian_products(dys, jacs, reduction="append"):
 
         if math.allclose(dy, 0):
             # If the dy vector is zero, then the
-            # corresponding element of the VJP will be zero,
-            # and we can avoid a quantum computation.
+            # corresponding element of the VJP will be zero.
             num_params = math.reshape(jac, [-1, dy_row.shape[0]]).shape[0]
             vjp = math.convert_like(np.zeros([num_params]), dy)
         else:

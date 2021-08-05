@@ -54,13 +54,15 @@ def execute(tapes, device, gradient_fn, interface="autograd", accumulation="forw
 
     .. code-block:: python
 
-        def cost_fn(params, x, dev):
-            with qml.tape.QuantumTape() as tape1:
+        dev = qml.device("lightning.qubit", wires=2)
+
+        def cost_fn(params, x):
+            with qml.tape.JacobianTape() as tape1:
                 qml.RX(params[0], wires=0)
                 qml.RY(params[1], wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            with qml.tape.QuantumTape() as tape2:
+            with qml.tape.JacobianTape() as tape2:
                 qml.RX(params[2], wires=0)
                 qml.RY(x[0], wires=1)
                 qml.CNOT(wires=[0, 1])
@@ -69,7 +71,7 @@ def execute(tapes, device, gradient_fn, interface="autograd", accumulation="forw
             tapes = [tape1, tape2]
 
             # execute both tapes in a batch on the given device
-            res = execute(tapes, dev)
+            res = execute(tapes, dev, qml.gradients.param_shift)
 
             return res[0][0] + res[1][0, 0] - res[1][0, 1]
 
@@ -80,7 +82,6 @@ def execute(tapes, device, gradient_fn, interface="autograd", accumulation="forw
 
     Let's execute this cost function while tracking the gradient:
 
-    >>> dev = qml.device("lightning.qubit", wires=2)
     >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
     >>> x = np.array([0.5], requires_grad=True)
     >>> cost_fn(params, x)
