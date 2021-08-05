@@ -32,7 +32,7 @@ event!
 
 Q: Can a solution be created as a team? <br />
 A: Yes, teams comprising more than one contributor can also submit solutions
-to Code Together issues. It is worth noting, that we will be able to give out
+to Code Together issues. It is worth noting that we will be able to give out
 physical swag for a single team member.
 
 Q: How will I get my physical swag? <br />
