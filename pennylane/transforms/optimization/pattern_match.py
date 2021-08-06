@@ -53,10 +53,10 @@ def _gates_to_string(gate_list, wire_map):
 
 
 def _replace_with_template(gate_string, wire_map):
-    """Convert a string indicating a list of gates to the actual list 
+    """Convert a string indicating a list of gates to the actual list
     of gates to apply, given a particular wire map.
 
-    Returns: None if no valid template is found, otherwise the set of 
+    Returns: None if no valid template is found, otherwise the set of
     operations in the template.
     """
 
@@ -89,7 +89,7 @@ def _replace_with_template(gate_string, wire_map):
 
 
 def _replace_patterns_in_tape(op_list):
-    """Loop through the operations on a tape and replace any templates  
+    """Loop through the operations on a tape and replace any templates
     that are found."""
 
     global_something_was_changed = False
@@ -196,8 +196,8 @@ def pattern_match(tape):
     >>> qfunc = qml.transforms.pattern_match(my_circuit)
     >>> qnode = qml.QNode(qfunc, dev)
     >>> print(qml.draw(qnode)())
-     0: ──Z──T──H──┤ ⟨Z⟩ 
-     1: ──S──H─────┤     
+     0: ──Z──T──H──┤ ⟨Z⟩
+     1: ──S──H─────┤
     """
 
     list_copy = tape.operations.copy()
