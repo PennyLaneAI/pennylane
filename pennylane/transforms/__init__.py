@@ -114,6 +114,7 @@ from .optimization import (
     cancel_inverses,
     commute_controlled,
     merge_rotations,
+    pattern_match,
     single_qubit_fusion,
 )
 from .specs import specs
