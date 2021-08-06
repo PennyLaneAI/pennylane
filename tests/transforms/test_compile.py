@@ -42,100 +42,100 @@ def build_qfunc(wires):
     return qfunc
 
 
-def test_compile_invalid_pipeline():
-    """Test that error is raised for an invalid function in the pipeline"""
-    qfunc = build_qfunc([0, 1, 2])
-    dev = qml.device("default.qubit", wires=[0, 1, 2])
+class TestCompile:
+    """Unit tests for compile function."""
 
-    transformed_qfunc = compile(pipeline=[cancel_inverses, isinstance])(qfunc)
-    transformed_qnode = qml.QNode(transformed_qfunc, dev)
+    def test_compile_invalid_pipeline(self):
+        """Test that error is raised for an invalid function in the pipeline"""
+        qfunc = build_qfunc([0, 1, 2])
+        dev = qml.device("default.qubit", wires=[0, 1, 2])
 
-    with pytest.raises(ValueError, match="Invalid transform function"):
-        transformed_qnode(0.1, 0.2, 0.3)
+        transformed_qfunc = compile(pipeline=[cancel_inverses, isinstance])(qfunc)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
+        with pytest.raises(ValueError, match="Invalid transform function"):
+            transformed_qnode(0.1, 0.2, 0.3)
 
-def test_compile_invalid_num_passes():
-    """Test that error is raised for an invalid number of passes."""
-    qfunc = build_qfunc([0, 1, 2])
-    dev = qml.device("default.qubit", wires=[0, 1, 2])
+    def test_compile_invalid_num_passes(self):
+        """Test that error is raised for an invalid number of passes."""
+        qfunc = build_qfunc([0, 1, 2])
+        dev = qml.device("default.qubit", wires=[0, 1, 2])
 
-    transformed_qfunc = compile(num_passes=1.3)(qfunc)
-    transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        transformed_qfunc = compile(num_passes=1.3)(qfunc)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
-    with pytest.raises(ValueError, match="Number of passes must be an integer"):
-        transformed_qnode(0.1, 0.2, 0.3)
+        with pytest.raises(ValueError, match="Number of passes must be an integer"):
+            transformed_qnode(0.1, 0.2, 0.3)
 
+    def test_compile_mixed_tape_qfunc_transform(self):
+        """Test that we can interchange tape and qfunc transforms."""
 
-def test_compile_mixed_tape_qfunc_transform():
-    """Test that we can interchange tape and qfunc transforms."""
+        wires = [0, 1, 2]
+        qfunc = build_qfunc(wires)
+        dev = qml.device("default.qubit", wires=wires)
 
-    wires = [0, 1, 2]
-    qfunc = build_qfunc(wires)
-    dev = qml.device("default.qubit", wires=wires)
+        pipeline = [
+            commute_controlled(direction="right").tape_fn,
+            cancel_inverses,
+            merge_rotations().tape_fn,
+        ]
 
-    pipeline = [
-        commute_controlled(direction="right").tape_fn,
-        cancel_inverses,
-        merge_rotations().tape_fn,
-    ]
+        transformed_qfunc = compile(pipeline=pipeline)(qfunc)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        transformed_result = transformed_qnode(0.3, 0.4, 0.5)
 
-    transformed_qfunc = compile(pipeline=pipeline)(qfunc)
-    transformed_qnode = qml.QNode(transformed_qfunc, dev)
-    transformed_result = transformed_qnode(0.3, 0.4, 0.5)
+        names_expected = ["Hadamard", "CNOT", "RX", "CY", "PauliY"]
+        wires_expected = [
+            Wires(wires[0]),
+            Wires([wires[2], wires[1]]),
+            Wires(wires[0]),
+            Wires([wires[1], wires[2]]),
+            Wires(wires[2]),
+        ]
 
-    names_expected = ["Hadamard", "CNOT", "RX", "CY", "PauliY"]
-    wires_expected = [
-        Wires(wires[0]),
-        Wires([wires[2], wires[1]]),
-        Wires(wires[0]),
-        Wires([wires[1], wires[2]]),
-        Wires(wires[2]),
-    ]
+        compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
 
-    compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
+    @pytest.mark.parametrize(
+        "transform_name,num_passes",
+        [
+            ("merge_rotations", 1),
+            ("commute_controlled", 1),
+            ("merge_rotations", 3),
+            ("commute_controlled", 2),
+        ],
+    )
+    def test_compile_mock_calls(self, transform_name, num_passes, mocker):
+        """Test that functions in the pipeline are called the correct number of times."""
 
+        class DummyTransforms:
+            def run_pipeline(self):
+                pipeline = [
+                    qml.transforms.single_tape_transform(DummyTransforms.merge_rotations),
+                    qml.transforms.single_tape_transform(DummyTransforms.commute_controlled),
+                ]
 
-@pytest.mark.parametrize(
-    "transform_name,num_passes",
-    [
-        ("merge_rotations", 1),
-        ("commute_controlled", 1),
-        ("merge_rotations", 3),
-        ("commute_controlled", 2),
-    ],
-)
-def test_compile_mock_calls(transform_name, num_passes, mocker):
-    """Test that functions in the pipeline are called the correct number of times."""
+                wires = [0, 1, 2]
+                qfunc = build_qfunc(wires)
+                dev = qml.device("default.qubit", wires=Wires(wires))
 
-    class DummyTransforms:
-        def run_pipeline(self):
-            pipeline = [
-                qml.transforms.single_tape_transform(DummyTransforms.merge_rotations),
-                qml.transforms.single_tape_transform(DummyTransforms.commute_controlled),
-            ]
+                transformed_qfunc = compile(pipeline=pipeline, num_passes=num_passes)(qfunc)
+                transformed_qnode = qml.QNode(transformed_qfunc, dev)
+                transformed_result = transformed_qnode(0.3, 0.4, 0.5)
 
-            wires = [0, 1, 2]
-            qfunc = build_qfunc(wires)
-            dev = qml.device("default.qubit", wires=Wires(wires))
+            @staticmethod
+            def merge_rotations(tape):
+                return qml.transforms.merge_rotations.tape_fn(tape)
 
-            transformed_qfunc = compile(pipeline=pipeline, num_passes=num_passes)(qfunc)
-            transformed_qnode = qml.QNode(transformed_qfunc, dev)
-            transformed_result = transformed_qnode(0.3, 0.4, 0.5)
+            @staticmethod
+            def commute_controlled(tape):
+                return qml.transforms.commute_controlled.tape_fn(tape, direction="left")
 
-        @staticmethod
-        def merge_rotations(tape):
-            return qml.transforms.merge_rotations.tape_fn(tape)
+        spy = mocker.spy(DummyTransforms, transform_name)
 
-        @staticmethod
-        def commute_controlled(tape):
-            return qml.transforms.commute_controlled.tape_fn(tape, direction="left")
+        d = DummyTransforms()
+        d.run_pipeline()
 
-    spy = mocker.spy(DummyTransforms, transform_name)
-
-    d = DummyTransforms()
-    d.run_pipeline()
-
-    assert len(spy.call_args_list) == num_passes
+        assert len(spy.call_args_list) == num_passes
 
 
 class TestCompileIntegration:
