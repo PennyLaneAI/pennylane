@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This subpackage defines functions for interfacing devices with batch execution
+This subpackage defines functions for interfacing devices' batch execution
 capabilities with different machine learning libraries.
 """
 # pylint: disable=import-outside-toplevel)
@@ -24,7 +24,7 @@ from .autograd import execute as execute_autograd
 
 
 def execute(tapes, device, gradient_fn, interface="autograd", accumulation="forward"):
-    """Execute a batch of tapes with Autograd parameters on a device.
+    """Execute a batch of tapes on a device in an autodifferentiable-compatible manner.
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
@@ -34,7 +34,7 @@ def execute(tapes, device, gradient_fn, interface="autograd", accumulation="forw
         gradient_fn (None or callable): The gradient transform function to use
             for backward passes. If "device", the device will be queried directly
             for the gradient (if supported).
-        interface (str): The interface that will be used for classical backpropagation.
+        interface (str): The interface that will be used for classical autodifferentiation.
             This affects the types of parameters that can exist on the input tapes.
             Available options include ``autograd``, ``torch``, ``tf``, and ``jax``.
         accumulation (str): Whether the gradients should be computed on the forward
@@ -102,7 +102,7 @@ def execute(tapes, device, gradient_fn, interface="autograd", accumulation="forw
            [ 0.01983384, -0.97517033,  0.        ],
            [ 0.        ,  0.        , -0.95533649]])
     """
-    # Default execution function; simply call device.batch execute
+    # Default execution function; simply call device.batch_execute
     # and return no Jacobians.
     execute_fn = lambda tapes: (device.batch_execute(tapes), [])
 

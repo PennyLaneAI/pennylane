@@ -22,7 +22,7 @@ from pennylane import math
 
 def _vector_jacobian_product(dy, jac):
     """Compute the vector-Jacobian product for a given
-    vector of gradient outputs dy and a Jacobian Jac"""
+    vector of gradient outputs dy and a Jacobian jac"""
     dy_row = math.reshape(dy, [-1])
     jac = math.reshape(jac, [dy_row.shape[0], -1])
     return math.tensordot(jac, dy_row, [[0], [0]])

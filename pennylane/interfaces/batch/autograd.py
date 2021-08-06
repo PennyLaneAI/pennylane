@@ -65,7 +65,7 @@ def _execute(
 ):  # pylint: disable=dangerous-default-value,unused-argument
     """Autodifferentiable wrapper around ``Device.batch_execute``.
 
-    The signature of this function is designed to workaround Autograd restrictions.
+    The signature of this function is designed to work around Autograd restrictions.
     Note that the ``parameters`` argument is dependent on the ``tapes`` argument;
     this function should always be called as follows:
 
@@ -117,7 +117,7 @@ def vjp(
 
     def grad_fn(dy):
         """Returns the vector-Jacobian product with given
-        parameter values p and output gradient dy"""
+        parameter values and output gradient dy"""
 
         dy = dy[0]
         jacs = ans[1]
@@ -160,7 +160,7 @@ def vjp(
                 vjps = qml.gradients._vector_jacobian_products(dy, jacs, reduction="append")
 
             else:
-                raise ValueError("Unknown gradient function!!!")
+                raise ValueError("Unknown gradient function.")
 
         return [qml.math.to_numpy(v, max_depth=_n) if isinstance(v, ArrayBox) else v for v in vjps]
 
