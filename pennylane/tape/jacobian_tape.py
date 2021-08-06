@@ -636,6 +636,12 @@ class JacobianTape(QuantumTape):
             # postprocess results to compute the gradient
             g = self._flatten_processing_result(processing_fn(res))
 
+            # check if g dtypes are automatically cast to floats when inserted into an NumPy array,
+            # if so, the jacobian dtype will correctly be float instead of `np.object_` below
+            g_arr = np.array(g)
+            if g_arr.dtype == float:
+                g = g_arr
+
             if jac is None:
                 # update the tape's output dimension
                 try:
