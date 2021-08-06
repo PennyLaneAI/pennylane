@@ -130,10 +130,14 @@
 * A new gradients module `qml.gradients` has been added, which provides
   differentiable quantum gradient transforms.
   [(#1476)](https://github.com/PennyLaneAI/pennylane/pull/1476)
+  [(#1479)](https://github.com/PennyLaneAI/pennylane/pull/1479)
+  [(#1486)](https://github.com/PennyLaneAI/pennylane/pull/1486)
 
   Available quantum gradient transforms include:
 
   - `qml.gradients.finite_diff`
+  - `qml.gradients.param_shift`
+  - `qml.gradients.param_shift_cv`
 
   For example,
 
@@ -517,11 +521,21 @@
 
 <h3>Bug fixes</h3>
 
-* Fixes a bug where the adjoint of `qml.QFT` when using the `qml.adjoint` function
+* Fixes a bug in `GradientDescentOptimizer` and `NesterovMomentumOptimizer`
+  where a cost function with one trainable parameter and non-trainable
+  parameters raised an error.
+  [(#1495)](https://github.com/PennyLaneAI/pennylane/pull/1495)
+
+* Fixed an example in the documentation's 
+  [introduction to numpy gradients](https://pennylane.readthedocs.io/en/stable/introduction/interfaces/numpy.html), where 
+  the wires were a non-differentiable argument to the QNode. 
+  [(#1499)](https://github.com/PennyLaneAI/pennylane/pull/1499)
+
+* Fixed a bug where the adjoint of `qml.QFT` when using the `qml.adjoint` function
   was not correctly computed.
   [(#1451)](https://github.com/PennyLaneAI/pennylane/pull/1451)
 
-* Fixes the differentiability of the operation`IsingYY` for Autograd, Jax and Tensorflow.
+* Fixed the differentiability of the operation`IsingYY` for Autograd, Jax and Tensorflow.
   [(#1425)](https://github.com/PennyLaneAI/pennylane/pull/1425)
   
 * Fixed a bug in the `torch` interface that prevented gradients from being
