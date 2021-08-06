@@ -14,7 +14,6 @@
 """Transform for applying custom decompositions of operations."""
 
 from pennylane import apply
-from pennylane.tape import get_active_tape
 from pennylane.transforms import qfunc_transform
 
 
