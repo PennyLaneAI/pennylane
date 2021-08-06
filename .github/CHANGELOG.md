@@ -2,6 +2,61 @@
 
 <h3>New features since last release</h3>
 
+* PennyLane can now perform quantum circuit optimization using the
+  top-level transform `qml.compile`. The `compile` transform allows you
+  to chain together sequences of tape and quantum function transforms
+  into custom circuit optimization pipelines.
+  [(#1475)](https://github.com/PennyLaneAI/pennylane/pull/1475)
+
+  For example, take the following quantum function:
+
+  ```python
+  def qfunc(x, y, z):
+      qml.Hadamard(wires=0)
+      qml.Hadamard(wires=1)
+      qml.Hadamard(wires=2)
+      qml.RZ(z, wires=2)
+      qml.CNOT(wires=[2, 1])
+      qml.RX(z, wires=0)
+      qml.CNOT(wires=[1, 0])
+      qml.RX(x, wires=0)
+      qml.CNOT(wires=[1, 0])
+      qml.RZ(-z, wires=2)
+      qml.RX(y, wires=2)
+      qml.PauliY(wires=2)
+      qml.CY(wires=[1, 2])
+      return qml.expval(qml.PauliZ(wires=0))
+  ```
+
+  The default behaviour of `qml.compile` is to apply a sequence of three
+  transforms: `commute_controlled`, `cancel_inverses`, and then `merge_rotations`.
+
+  ```pycon
+  >>> dev = qml.device('default.qubit', wires=[0, 1, 2])
+  >>> compiled_qfunc = qml.compile()(qfunc)
+  >>> compiled_qnode = qml.QNode(compiled_qfunc, dev)
+  >>> print(qml.draw(compiled_qnode)(0.2, 0.3, 0.4))
+   0: ──H───RX(0.6)───────────────────┤ ⟨Z⟩
+   1: ──H──╭X─────────────────╭CY─────┤
+   2: ──H──╰C────────RX(0.3)──╰CY──Y──┤
+  ```
+
+  The ``qml.compile`` transform is flexible and accepts a custom pipeline
+  of tape and quantum function transforms (you can even write your own!).
+  For example, if we wanted to only push single-qubit gates through
+  controlled gates and cancel adjacent inverses, we could do:
+
+  ```pycon
+  >>> from qml.transforms import commute_controlled, cancel_inverses
+  >>> pipeline = [commute_controlled, cancel_inverses]
+  >>> compiled_qfunc = qml.compile(pipeline=pipeline)(qfunc)
+  >>> compiled_qnode = qml.QNode(compiled_qfunc, dev)
+  >>> print(qml.draw(compiled_qnode)(0.2, 0.3, 0.4))
+   0: ──H───RX(0.4)──RX(0.2)─────────────────────────────┤ ⟨Z⟩
+   1: ──H──╭X────────────────────────────────────╭CY─────┤
+   2: ──H──╰C────────RZ(0.4)──RZ(-0.4)──RX(0.3)──╰CY──Y──┤
+  ```
+
 * The new Device Tracker capabilities allows for flexible and versatile tracking of executions,
   even inside parameter-shift gradients. This functionality will improve the ease of monitoring
   large batches and remote jobs.
