@@ -542,6 +542,7 @@ class JacobianTape(QuantumTape):
         >>> tape.jacobian(dev)
         array([], shape=(4, 0), dtype=float64)
         """
+        # pylint: disable=too-many-statements
         if any(m.return_type is State for m in self.measurements):
             raise ValueError("The jacobian method does not support circuits that return the state")
 
