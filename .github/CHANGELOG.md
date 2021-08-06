@@ -466,6 +466,11 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug in `GradientDescentOptimizer` and `NesterovMomentumOptimizer`
+  where a cost function with one trainable parameter and non-trainable
+  parameters raised an error.
+  [(#1495)](https://github.com/PennyLaneAI/pennylane/pull/1495)
+
 * Fixed an example in the documentation's 
   [introduction to numpy gradients](https://pennylane.readthedocs.io/en/stable/introduction/interfaces/numpy.html), where 
   the wires were a non-differentiable argument to the QNode. 
