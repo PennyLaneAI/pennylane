@@ -1,4 +1,19 @@
 <p align="center">
+  <a href="https://pennylane.ai/blog/2021/07/pennylane-code-together/">
+    <img width=50% src="https://pennylane.ai/blog/images/code_together.jpg">
+  </a>
+</p>
+
+<p align="center">
+  <strong>Announcing <a href="https://pennylane.ai/blog/2021/07/pennylane-code-together/">PennyLane: Code Together</a>!
+  Join us on GitHub August 16th-27th, see <a href="https://github.com/PennyLaneAI/pennylane/blob/master/code_together.md">event FAQ here</a></strong>.
+</p>
+
+---
+
+
+
+<p align="center">
   <a href="https://pennylane.ai">
     <img width=80% src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/pennylane_thin.png">
   </a>
