@@ -24,19 +24,14 @@ from .optimization_utils import find_next_gate
 # Instead of using the circuit DAG, I tried doing this with string matching.
 # It works, but its maybe not the best solution.
 templates = {
-    2 : {
-        "S0 S0" : [(ops.PauliZ, 0)],
-        "T0 T0" : [(ops.S, 0)],
+    2: {"S0 S0": [(ops.PauliZ, 0)], "T0 T0": [(ops.S, 0)],},
+    3: {
+        "Hadamard0 PauliX0 Hadamard0": [(ops.PauliZ, 0)],
+        "Hadamard0 PauliZ0 Hadamard0": [(ops.PauliX, 0)],
+        "CNOT01 PauliX0 CNOT01": [(ops.PauliX, 0), (ops.PauliX, 1)],
+        "CNOT01 Toffoli012 CNOT01": [(ops.Toffoli, [0, 1, 2]), (ops.CNOT, [0, 2])],
     },
-    3 : {
-        "Hadamard0 PauliX0 Hadamard0" : [(ops.PauliZ, 0)],
-        "Hadamard0 PauliZ0 Hadamard0" : [(ops.PauliX, 0)],
-        "CNOT01 PauliX0 CNOT01" : [(ops.PauliX, 0), (ops.PauliX, 1)],
-        "CNOT01 Toffoli012 CNOT01" : [(ops.Toffoli, [0, 1, 2]), (ops.CNOT, [0, 2])]
-    },
-    4: {
-        "CNOT01 Hadamard0 Hadamard1 CNOT10": [(ops.Hadamard, 0), (ops.Hadamard, 1)]
-    }
+    4: {"CNOT01 Hadamard0 Hadamard1 CNOT10": [(ops.Hadamard, 0), (ops.Hadamard, 1)]},
 }
 
 
@@ -45,15 +40,15 @@ def _gates_to_string(gate_list, wire_map):
     gate_string_list = []
 
     # TODO: sort the gates based on wire order
-    
+
     for gate in gate_list:
         this_gate_string = gate.name
 
         for wire_label in gate.wires.labels:
             this_gate_string += str(wire_map[wire_label])
-        
+
         gate_string_list.append(this_gate_string)
-            
+
     return " ".join(gate_string_list)
 
 
@@ -64,25 +59,25 @@ def _replace_with_template(gate_string, wire_map):
     Returns: None if no valid template is found, otherwise the set of 
     operations in the template.
     """
-    
+
     reverse_wire_map = {val: key for key, val in wire_map.items()}
-    
+
     blob = []
-    
+
     # Count the number of spaces to indicate how many gates were in the template
     template_set_idx = gate_string.count(" ") + 1
-    
+
     if template_set_idx in templates.keys():
         # Check if this sequence is a defined template
         if gate_string in templates[template_set_idx].keys():
             op_list = templates[template_set_idx][gate_string]
-            
+
             for op, which_wires in op_list:
                 if not isinstance(which_wires, list):
                     which_wires = [which_wires]
-                    
+
                 wires_with_labels = [reverse_wire_map[w] for w in which_wires]
-                
+
                 blob.append(op(wires=Wires(wires_with_labels)))
         else:
             # If it isn't, return None
@@ -105,7 +100,7 @@ def _replace_patterns_in_tape(op_list):
     while idx < len(op_list):
         current_gate = op_list[idx]
 
-        # Keep track of whether anything actually changed 
+        # Keep track of whether anything actually changed
         something_was_changed = False
 
         # Go through the templates in increasing size
@@ -123,7 +118,7 @@ def _replace_patterns_in_tape(op_list):
             for _ in range(template_size - 1):
                 wires_in_block = Wires.all_wires([g.wires for g in gate_list])
 
-                next_gate_idx = find_next_gate(wires_in_block, op_list[idx + gate_offset:])
+                next_gate_idx = find_next_gate(wires_in_block, op_list[idx + gate_offset :])
 
                 if next_gate_idx is not None:
                     gate_list.append(op_list[idx + gate_offset + next_gate_idx])
@@ -134,7 +129,7 @@ def _replace_patterns_in_tape(op_list):
 
             # If there is a block of gates, test whether it's a template of this size
             used_wires = Wires.all_wires([g.wires for g in gate_list])
-            wire_map = {used_wires[x] : x for x in range(len(used_wires))}
+            wire_map = {used_wires[x]: x for x in range(len(used_wires))}
             gate_string = _gates_to_string(gate_list, wire_map)
 
             # Check for a match
@@ -208,13 +203,13 @@ def pattern_match(tape):
     list_copy = tape.operations.copy()
 
     current_tape = get_active_tape()
-    
+
     something_was_changed = True
 
     # Loop through the tape until we find no more matching patterns
     with current_tape.stop_recording():
         while something_was_changed is True:
             list_copy, something_was_changed = _replace_patterns_in_tape(list_copy)
-         
+
     for op in list_copy + tape.measurements:
         apply(op)
