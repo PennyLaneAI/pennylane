@@ -941,7 +941,7 @@ class TestTensor:
         assert ann_queue[T_pruned]["owns"] == (a, b)
         assert ann_queue[m]["owns"] == T_pruned
 
-    def test_prune_while_queueing_return_tensor(self):
+    def test_prune_while_queueing_return_obs(self):
         """Tests that pruning a tensor to an observable in a tape context registers
         the pruned observable as owned by the measurement,
         and turns the original tensor into an orphan without an owner."""
