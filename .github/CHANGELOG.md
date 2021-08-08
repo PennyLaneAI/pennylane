@@ -102,6 +102,33 @@
   Total shots:  300
   ```
 
+* The `group_hamiltonian` tansform is now differentiable.
+  [(#1483)](https://github.com/PennyLaneAI/pennylane/pull/1483)
+ 
+  For example:
+
+  ``` python
+  import jax
+  from jax import numpy as jnp
+  
+  coeffs = jnp.array([1., 2., 3.])
+  obs = [PauliX(wires=0), PauliX(wires=1), PauliZ(wires=1)]
+
+  def group(coeffs, select=None):
+    _, grouped_coeffs = qml.grouping.group_observables(obs, coeffs)
+    return grouped_coeffs[select]
+
+  jac_fn = jax.jacobian(group)
+  ```
+  ```pycon
+  >>> jac_fn(coeffs, select=0)
+  [[1. 0. 0.]
+  [0. 1. 0.]]
+  
+  >>> jac_fn(coeffs, select=1)
+  [[0., 0., 1.]]
+  ```
+ 
 * Hamiltonians are now trainable with respect to their coefficients.
   [(#1483)](https://github.com/PennyLaneAI/pennylane/pull/1483)
 
