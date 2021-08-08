@@ -435,6 +435,12 @@ class QuantumTape(AnnotatedQueue):
                     self._ops.append(obj)
 
             elif isinstance(obj, qml.measure.MeasurementProcess):
+
+                if isinstance(info.get("owns", None), qml.vqe.Hamiltonian):
+                    if obj.return_type is not qml.operation.Expectation:
+                        raise qml.QuantumFunctionError(f"Only expectation measurements of Hamiltonians "
+                                                       "are currently supported; got {obj.return_type}")
+
                 # measurement process
                 self._measurements.append(obj)
 

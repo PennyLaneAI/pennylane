@@ -227,7 +227,7 @@ class Hamiltonian(qml.operation.Observable):
                 ops.append(op.prune())
                 coeffs.append(c)
 
-        self._coeffs = qml.math.cast_like(coeffs, self.coeffs)
+        self._coeffs = coeffs
         self._ops = ops
 
     def group(self):

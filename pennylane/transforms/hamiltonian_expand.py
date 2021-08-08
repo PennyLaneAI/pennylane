@@ -110,10 +110,14 @@ def hamiltonian_expand(tape, group=True):
     tapes = []
     for ob in hamiltonian.ops:
 
-        new_tape = tape.copy()
-        new_tape._measurements = [
-            qml.measure.MeasurementProcess(return_type=qml.operation.Expectation, obs=ob)
-        ]
+        # we need to create a new tape here, because
+        # updating metadata of a copied tape is error-prone
+        # when the observables where changed
+        with tape.__class__() as new_tape:
+            for op in tape.operations:
+                qml.apply(op)
+            qml.expval(ob)
+
         tapes.append(new_tape)
 
     # create processing function that performs linear recombination
