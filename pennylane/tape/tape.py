@@ -450,9 +450,6 @@ class QuantumTape(AnnotatedQueue):
                 if obj.return_type is qml.operation.Sample:
                     self.is_sampled = True
 
-            elif isinstance(obj, qml.operation.Observable) and "owner" not in info:
-                raise ValueError(f"Observable {obj} does not have a measurement type specified.")
-
         self._update()
 
     def _update_circuit_info(self):
