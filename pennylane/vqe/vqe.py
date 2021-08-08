@@ -79,7 +79,8 @@ class Hamiltonian(qml.operation.Observable):
     :doc:`/introduction/chemistry` module can be used to generate a molecular
     Hamiltonian.
 
-    Hamiltonians can alternatively be constructed using Pythonic arithmetic operations. For example:
+    If the coefficients are not trainable tensors, Hamiltonians can be
+    constructed using Pythonic arithmetic operations. For example:
 
     >>> qml.PauliX(0) + 2 * qml.PauliZ(0) @ qml.PauliZ(1)
 
@@ -213,7 +214,7 @@ class Hamiltonian(qml.operation.Observable):
         # Lambda function that formats the wires
         wires_print = lambda ob: ",".join(map(str, ob.wires.tolist()))
 
-        self_coeffs = qml.math.toarray(self.coeffs)
+        self_coeffs = self.data  # list of scalar tensors
         paired_coeff_obs = list(zip(self_coeffs, self.ops))
         paired_coeff_obs.sort(key=lambda pair: (len(pair[1].wires), pair[0]))
 

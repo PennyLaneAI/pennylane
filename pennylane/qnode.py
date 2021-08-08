@@ -624,6 +624,7 @@ class QNode:
             res = fn(results)
         else:
             res = self.qtape.execute(device=self.device)
+
         # if shots was changed
         if original_shots != -1:
             # reinstate default on device
