@@ -1379,6 +1379,11 @@ Maria Schuld, Jay Soni, Antal Száva, David Wierichs
 
 * Fixed a bug where `qml.sum()` and `qml.dot()` do not support the JAX interface.
   [(#1380)](https://github.com/PennyLaneAI/pennylane/pull/1380)
+  
+* Fixed circuit representation of CY gates to align with CNOT and CZ gates when calling the circuit drawer.
+  [(#1443)](https://github.com/PennyLaneAI/pennylane/issues/1443)
+  
+  
 
 <h3>Documentation</h3>
 
