@@ -1330,14 +1330,18 @@ class TestNewVQE:
         def circuit():
             return qml.sample(H)
 
-        with pytest.raises(qml.QuantumFunctionError, match="Only expectation measurements of Hamiltonians"):
+        with pytest.raises(
+            qml.QuantumFunctionError, match="Only expectation measurements of Hamiltonians"
+        ):
             circuit()
 
         @qml.qnode(dev)
         def circuit():
             return qml.var(H)
 
-        with pytest.raises(qml.QuantumFunctionError, match="Only expectation measurements of Hamiltonians"):
+        with pytest.raises(
+            qml.QuantumFunctionError, match="Only expectation measurements of Hamiltonians"
+        ):
             circuit()
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "best"])

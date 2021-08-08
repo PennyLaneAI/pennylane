@@ -91,7 +91,6 @@ class TestHamiltonianCoefficients:
 
 
 class TestVQEEvaluation:
-
     @pytest.mark.parametrize("coeffs, param, interface", COEFFS_PARAM_INTERFACE)
     def test_vqe_forward_different_coeff_types(self, coeffs, param, interface):
         dev = qml.device("default.qubit", wires=2)
@@ -122,7 +121,6 @@ class TestVQEEvaluation:
 
 
 class TestVQEdifferentiation:
-
     @pytest.mark.parametrize("simplify", [True, False])
     def test_vqe_differentiation_paramshift(self, simplify):
         coeffs = np.array([-0.05, 0.17])
@@ -133,7 +131,9 @@ class TestVQEdifferentiation:
         def circuit(coeffs, param):
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
-            return qml.expval(qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=simplify))
+            return qml.expval(
+                qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=simplify)
+            )
 
         grad_fn = qml.grad(circuit)
         grad = grad_fn(coeffs, param)
