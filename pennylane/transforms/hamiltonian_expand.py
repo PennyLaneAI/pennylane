@@ -97,7 +97,11 @@ def hamiltonian_expand(tape, group=True):
 
     hamiltonian = tape.measurements[0].obs
 
-    if not isinstance(hamiltonian, qml.Hamiltonian) or len(tape.measurements) > 1:
+    if (
+        not isinstance(hamiltonian, qml.Hamiltonian)
+        or len(tape.measurements) > 1
+        or tape.measurements[0].return_type != qml.measure.Expectation
+    ):
         raise ValueError(
             "Passed tape must end in `qml.expval(H)`, where H is of type `qml.Hamiltonian`"
         )
