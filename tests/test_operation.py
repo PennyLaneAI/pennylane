@@ -908,6 +908,14 @@ class TestTensor:
         assert type(O_pruned) == type(expected)
         assert O_pruned.wires == expected.wires
 
+    def test_prune_while_queueing(self):
+        """Tests that pruning in a tape context registers the pruned observable as owned by the measurement,
+        and turns the original tensor into an orphan without an owner."""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.expval(qml.operation.Tensor(qml.PauliX(wires=1), qml.Identity(wires=0)).prune())
+
+        assert tape._queue[qml.PauliX(wires=1)]["owner"] == qml.expval(qml.PauliX(wires=1))
 
 equal_obs = [
     (qml.PauliZ(0), qml.PauliZ(0), True),
