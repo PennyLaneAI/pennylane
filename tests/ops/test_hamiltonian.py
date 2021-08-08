@@ -85,22 +85,13 @@ class TestHamiltonianCoefficients:
         H2.simplify()
         assert H1.compare(H2)
 
-    def test_grouping_different_coeff_types(self, coeffs):
-        H = qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(1)])
-        H.group()
-        assert len(H.grouped_ops) == 1
-        assert np.allclose(H.grouped_coeffs[0], coeffs)
-        assert len(H.grouped_ops[0]) == 2
-        assert H.grouped_ops[0][0].name == "PauliX"
-        assert H.grouped_ops[0][1].name == "PauliZ"
-
     @pytest.mark.parametrize("coeffs", [el[0] for el in COEFFS_PARAM_INTERFACE])
     def test_simplify_different_coeff_types(self, coeffs):
         H1 = qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(1)])
         H2 = qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.Identity(0) @ qml.PauliZ(1)])
         H2.simplify()
-
         assert H1.compare(H2)
+
 
 class TestHamiltonianEvaluation:
     """Test the usage of a Hamiltonian as an observable"""
@@ -141,7 +132,7 @@ class TestHamiltonianDifferentiation:
     @pytest.mark.parametrize("simplify", [True, False])
     def test_vqe_differentiation_paramshift(self, simplify):
         """Test the parameter-shift method by comparing the differentiation of linearly combined subcircuits
-         with the differentiation of a Hamiltonian expectation"""
+        with the differentiation of a Hamiltonian expectation"""
         coeffs = np.array([-0.05, 0.17])
         param = np.array(1.7)
 
@@ -174,7 +165,7 @@ class TestHamiltonianDifferentiation:
     @pytest.mark.parametrize("simplify", [True, False])
     def test_vqe_differentiation_autograd(self, simplify):
         """Test the autograd interface by comparing the differentiation of linearly combined subcircuits
-         with the differentiation of a Hamiltonian expectation"""
+        with the differentiation of a Hamiltonian expectation"""
         coeffs = pnp.array([-0.05, 0.17], requires_grad=True)
         param = pnp.array(1.7, requires_grad=True)
 
@@ -183,8 +174,9 @@ class TestHamiltonianDifferentiation:
         def circuit(coeffs, param):
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
-            return qml.expval(qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=simplify))
-
+            return qml.expval(
+                qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=simplify)
+            )
 
         grad_fn = qml.grad(circuit)
         grad = grad_fn(coeffs, param)
@@ -206,7 +198,7 @@ class TestHamiltonianDifferentiation:
     @pytest.mark.parametrize("simplify", [True, False])
     def test_vqe_differentiation_jax(self, simplify):
         """Test the jax interface by comparing the differentiation of linearly combined subcircuits
-         with the differentiation of a Hamiltonian expectation"""
+        with the differentiation of a Hamiltonian expectation"""
 
         jax = pytest.importorskip("jax")
         jnp = pytest.importorskip("jax.numpy")
@@ -218,7 +210,9 @@ class TestHamiltonianDifferentiation:
         def circuit(coeffs, param):
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
-            return qml.expval(qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=simplify))
+            return qml.expval(
+                qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=simplify)
+            )
 
         grad_fn = jax.grad(circuit)
         grad = grad_fn(coeffs, param)
@@ -240,7 +234,7 @@ class TestHamiltonianDifferentiation:
     @pytest.mark.parametrize("simplify", [True, False])
     def test_vqe_differentiation_torch(self, simplify):
         """Test the torch interface by comparing the differentiation of linearly combined subcircuits
-         with the differentiation of a Hamiltonian expectation"""
+        with the differentiation of a Hamiltonian expectation"""
 
         torch = pytest.importorskip("torch")
         coeffs = torch.tensor([-0.05, 0.17], requires_grad=True)
@@ -251,7 +245,9 @@ class TestHamiltonianDifferentiation:
         def circuit(coeffs, param):
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
-            return qml.expval(qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=simplify))
+            return qml.expval(
+                qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=simplify)
+            )
 
         res = circuit(coeffs, param)
         res.backward()
@@ -280,7 +276,7 @@ class TestHamiltonianDifferentiation:
     @pytest.mark.parametrize("simplify", [True, False])
     def test_vqe_differentiation_tf(self, simplify):
         """Test the tf interface by comparing the differentiation of linearly combined subcircuits
-         with the differentiation of a Hamiltonian expectation"""
+        with the differentiation of a Hamiltonian expectation"""
 
         tf = pytest.importorskip("tf")
         coeffs = tf.Variable([-0.05, 0.17], dtype=tf.double)
@@ -291,7 +287,9 @@ class TestHamiltonianDifferentiation:
         def circuit(coeffs, param):
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
-            return qml.expval(qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=simplify))
+            return qml.expval(
+                qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=simplify)
+            )
 
         with tf.GradientTape() as tape:
             res = circuit(coeffs, param)
@@ -305,7 +303,6 @@ class TestHamiltonianDifferentiation:
         param2 = tf.Variable(1.7, dtype=tf.double)
         half1 = qml.QNode(circuit1, dev, interface="tf", diff_method="backprop")
         half2 = qml.QNode(circuit2, dev, interface="tf", diff_method="backprop")
-
 
         def combine(coeffs, param):
             return coeffs[0] * half1(param) + coeffs[1] * half2(param)

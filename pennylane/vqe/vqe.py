@@ -131,7 +131,6 @@ class Hamiltonian(qml.operation.Observable):
         # create an operator using each coefficient as a separate parameter
         super().__init__(*coeffs_flat, wires=self._wires, id=id, do_queue=do_queue)
 
-
     @property
     def coeffs(self):
         """Return the coefficients defining the Hamiltonian.
@@ -207,7 +206,7 @@ class Hamiltonian(qml.operation.Observable):
                 ops.append(op.prune())
                 coeffs.append(c)
 
-        self._coeffs = qml.math.cast_like(coeffs, self.coeffs)
+        self._coeffs = coeffs
         self._ops = ops
 
     def __str__(self):

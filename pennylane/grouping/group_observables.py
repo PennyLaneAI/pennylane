@@ -192,7 +192,7 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
     Args:
         observables (list[Observable]): a list of Pauli word ``Observable`` instances (Pauli
             operation instances and :class:`~.Tensor` instances thereof)
-        coefficients (list[float]): A list of float coefficients. If not specified,
+        coefficients (tensor_like): A tensor of coefficients. If not specified,
             output ``partitioned_coeffs`` is not returned.
         grouping_type (str): The type of binary relation between Pauli words.
             Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
@@ -243,15 +243,18 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
     ]
 
     observables = copy(observables)
-    coefficients = [coefficients[i] for i in range(qml.math.shape(coefficients)[0])]
     for i, partition in enumerate(partitioned_paulis):
-        for j, pauli_word in enumerate(partition):
+        indices = []
+        for pauli_word in partition:
+            # find index of this pauli word in original observables
             for observable in observables:
                 if are_identical_pauli_words(pauli_word, observable):
                     ind = observables.index(observable)
-                    partitioned_coeffs[i][j] = coefficients[ind]
-                    observables.pop(ind)
-                    coefficients.pop(ind)
+                    if ind not in indices:
+                        indices.append(ind)
                     break
+
+        # add a tensor of coefficients to the grouped coefficients
+        partitioned_coeffs[i] = qml.math.take(coefficients, indices, axis=0)
 
     return partitioned_paulis, partitioned_coeffs
