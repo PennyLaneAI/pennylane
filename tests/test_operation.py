@@ -908,14 +908,71 @@ class TestTensor:
         assert type(O_pruned) == type(expected)
         assert O_pruned.wires == expected.wires
 
-    def test_prune_while_queueing(self):
-        """Tests that pruning in a tape context registers the pruned observable as owned by the measurement,
+    def test_prune_while_queueing_return_tensor(self):
+        """Tests that pruning a tensor to a tensor in a tape context registers
+        the pruned tensor as owned by the measurement,
         and turns the original tensor into an orphan without an owner."""
 
         with qml.tape.QuantumTape() as tape:
-            qml.expval(qml.operation.Tensor(qml.PauliX(wires=1), qml.Identity(wires=0)).prune())
+            # we assign operations to variables here so we can compare them below
+            a = qml.PauliX(wires=0)
+            b = qml.PauliY(wires=1)
+            c = qml.Identity(wires=2)
+            T = qml.operation.Tensor(a, b, c)
+            T_pruned = T.prune()
+            m = qml.expval(T_pruned)
 
-        assert tape._queue[qml.PauliX(wires=1)]["owner"] == qml.expval(qml.PauliX(wires=1))
+        ann_queue = tape._queue
+
+        # the pruned tensor became the owner of Paulis
+        assert ann_queue[a]["owner"] == T_pruned
+        assert ann_queue[b]["owner"] == T_pruned
+
+        # the Identity is still owned by the original Tensor
+        assert ann_queue[c]["owner"] == T
+        # the original tensor still owns all three observables
+        # but is not owned by a measurement
+        assert ann_queue[T]["owns"] == (a, b, c)
+        assert not hasattr(ann_queue[T], "owner")
+
+        # the pruned tensor is owned by the measurement
+        # and owns the two Paulis
+        assert ann_queue[T_pruned]["owner"] == m
+        assert ann_queue[T_pruned]["owns"] == (a, b)
+        assert ann_queue[m]["owns"] == T_pruned
+
+    def test_prune_while_queueing_return_tensor(self):
+        """Tests that pruning a tensor to an observable in a tape context registers
+        the pruned observable as owned by the measurement,
+        and turns the original tensor into an orphan without an owner."""
+
+        with qml.tape.QuantumTape() as tape:
+            a = qml.PauliX(wires=0)
+            c = qml.Identity(wires=2)
+            T = qml.operation.Tensor(a, c)
+            T_pruned = T.prune()
+            m = qml.expval(T_pruned)
+
+        ann_queue = tape._queue
+
+        # the pruned tensor is the Pauli observable
+        assert T_pruned == a
+        # at the same time, the pruned tensor owns the Pauli
+        assert ann_queue[a]["owner"] == T_pruned
+        # the Identity is still owned by the original Tensor
+        assert ann_queue[c]["owner"] == T
+
+        # the original tensor still owns both observables
+        # but is not owned by a measurement
+        assert ann_queue[T]["owns"] == (a, c)
+        assert not hasattr(ann_queue[T], "owner")
+
+        # the pruned tensor is owned by the measurement
+        # and owns the Paulis
+        assert ann_queue[T_pruned]["owner"] == m
+        assert ann_queue[T_pruned]["owns"] == (a)
+        assert ann_queue[m]["owns"] == T_pruned
+
 
 equal_obs = [
     (qml.PauliZ(0), qml.PauliZ(0), True),
