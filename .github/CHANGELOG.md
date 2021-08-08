@@ -570,8 +570,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Sahaj Dhamija, Olivia Di Matteo, Josh Izaac, Leonhard Kunczik, Christina Lee, Romain Moyard, Ashish Panigrahi,
-Maria Schuld, Jay Soni, Antal Száva, David Wierichs
+Sahaj Dhamija, Olivia Di Matteo, Josh Izaac, Leonhard Kunczik, Christina Lee, Romain Moyard,
+Ashish Panigrahi, Maria Schuld, Jay Soni, Antal Száva, David Wierichs
 
 
 # Release 0.16.0 (current release)
