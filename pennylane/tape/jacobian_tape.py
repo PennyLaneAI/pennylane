@@ -225,7 +225,7 @@ class JacobianTape(QuantumTape):
             diff_methods (Sequence[str]): The corresponding differentiation method for each parameter.
                 A differentiation method of ``"0"`` corresponds to a constant parameter.
         """
-        return params.size and not all(g == "0" for g in diff_methods)
+        return len(params) != 0 and not all(g == "0" for g in diff_methods)
 
     @staticmethod
     def _flatten_processing_result(g):

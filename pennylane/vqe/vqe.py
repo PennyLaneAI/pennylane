@@ -17,8 +17,8 @@ computations using PennyLane.
 """
 # pylint: disable=too-many-arguments, too-few-public-methods
 from collections.abc import Sequence
-import itertools
 import warnings
+import itertools
 from copy import copy
 
 import pennylane as qml
@@ -26,6 +26,7 @@ from pennylane import numpy as np
 from pennylane.operation import Observable, Tensor
 from pennylane.queuing import QueuingError
 from pennylane.wires import Wires
+
 
 OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identity": "I"}
 
@@ -118,6 +119,9 @@ class Hamiltonian(qml.operation.Observable):
 
         self.return_type = None
 
+        self._grouped_coeffs = None
+        self._grouped_obs = None
+
         if simplify:
             self.simplify()
 
@@ -126,6 +130,7 @@ class Hamiltonian(qml.operation.Observable):
         self.num_params = len(coeffs_flat)
         # create an operator using each coefficient as a separate parameter
         super().__init__(*coeffs_flat, wires=self._wires, id=id, do_queue=do_queue)
+
 
     @property
     def coeffs(self):
@@ -188,9 +193,9 @@ class Hamiltonian(qml.operation.Observable):
             op = op if isinstance(op, Tensor) else Tensor(op)
 
             ind = None
-            for i, other in enumerate(ops):
+            for j, other in enumerate(ops):
                 if op.compare(other):
-                    ind = i
+                    ind = j
                     break
 
             if ind is not None:
@@ -344,7 +349,6 @@ class Hamiltonian(qml.operation.Observable):
             return qml.Hamiltonian(coeffs, terms, simplify=True)
 
         if isinstance(H, (Tensor, Observable)):
-            coeffs = coeffs1
             terms = [op @ H for op in ops1]
 
             return qml.Hamiltonian(coeffs1, terms, simplify=True)
@@ -355,6 +359,7 @@ class Hamiltonian(qml.operation.Observable):
         r"""The addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
         self_coeffs = copy(self.coeffs)
         ops = self.ops.copy()
+        self_coeffs = copy(self.coeffs)
 
         if isinstance(H, Hamiltonian):
             coeffs = qml.math.concatenate([self_coeffs, H.coeffs.copy()], axis=0)

@@ -1120,6 +1120,10 @@ class Observable(Operator):
             return other.compare(self)
         if isinstance(other, (Tensor, Observable)):
             return other._obs_data() == self._obs_data()
+<<<<<<< HEAD
+=======
+
+>>>>>>> make_hamiltonian_differentiable
         raise ValueError(
             "Can only compare an Observable/Tensor, and a Hamiltonian/Observable/Tensor."
         )
@@ -1130,6 +1134,10 @@ class Observable(Operator):
             return other + self
         if isinstance(other, (Observable, Tensor)):
             return qml.Hamiltonian([1, 1], [self, other], simplify=True)
+<<<<<<< HEAD
+=======
+
+>>>>>>> make_hamiltonian_differentiable
         raise ValueError(f"Cannot add Observable and {type(other)}")
 
     def __mul__(self, a):

@@ -1300,14 +1300,14 @@ class TestNewVQE:
             return qml.expval(H1)
 
         res = qml.draw(circuit1)()
-        expected = " 0: ──H──╭Hamiltonian──┤  \n" + " 2: ─────╰Hamiltonian──┤  \n"
+        expected = " 0: ──H──╭┤ ⟨Hamiltonian(1, 1, 1)⟩ \n" + " 2: ─────╰┤ ⟨Hamiltonian(1, 1, 1)⟩ \n"
         assert res == expected
 
     def test_error_multiple_expvals(self):
         """Tests that error is thrown if more than one expval is evaluated."""
         observables = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
         coeffs = [1.0] * len(observables)
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit", wires=4)
         H = qml.Hamiltonian(coeffs, observables)
         w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
 
@@ -1323,24 +1323,25 @@ class TestNewVQE:
         """Tests that error is thrown if sample() or var() is used."""
         observables = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
         coeffs = [1.0] * len(observables)
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit", wires=4)
         H = qml.Hamiltonian(coeffs, observables)
-        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.StronglyEntanglingLayers(w, wires=range(4))
             return qml.sample(H)
 
-        with pytest.raises(qml.QuantumFunctionError, match="Hamiltonian is not an observable"):
+        with pytest.raises(
+            qml.QuantumFunctionError, match="Only expectation measurements of Hamiltonians"
+        ):
             circuit()
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.StronglyEntanglingLayers(w, wires=range(4))
             return qml.var(H)
 
-        with pytest.raises(qml.QuantumFunctionError, match="Hamiltonian is not an observable"):
+        with pytest.raises(
+            qml.QuantumFunctionError, match="Only expectation measurements of Hamiltonians"
+        ):
             circuit()
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "best"])
