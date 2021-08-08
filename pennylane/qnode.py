@@ -613,14 +613,13 @@ class QNode:
         supports_hamiltonian = self.device.supports_observable("Hamiltonian")
         hamiltonian_in_obs = "Hamiltonian" in [obs.name for obs in self.qtape.observables]
         if hamiltonian_in_obs and not supports_hamiltonian:
-            try:
-                tapes, fn = qml.transforms.hamiltonian_expand(self.qtape, group=False)
-            except ValueError as e:
+            if len(self.qtape.measurements) > 1 or self.qtape.measurements[0].return_type != qml.measure.Expectation:
                 raise ValueError(
-                    "At the moment, only single expectations of Hamiltonian observables can be returned"
-                    "on the {} device.".format(self.device.name)
-                ) from e
+                    "Only a single expectation of a Hamiltonian observable can be returned"
+                    "when using the {} device.".format(self.device.name)
+                )
 
+            tapes, fn = qml.transforms.hamiltonian_expand(self.qtape, group=False)
             results = [tape.execute(device=self.device) for tape in tapes]
             res = fn(results)
         else:
