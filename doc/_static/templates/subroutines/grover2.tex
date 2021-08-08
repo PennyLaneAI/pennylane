@@ -1,0 +1,13 @@
+\documentclass[border=6pt]{standalone}
+
+\usepackage{qcircuit}
+
+\begin{document}
+
+\Qcircuit @C=1em @R=.7em {
+& \gate{H} & \gate{X} & \qw & \ctrl{1} & \qw & \gate{X} & \gate{H} & \qw \\
+& \gate{H}  & \gate{X} & \qw & \ctrl{1} & \qw & \gate{X} & \gate{H} & \qw \\
+& \gate{H} & \gate{X} & \gate{H}  & \targ & \gate{H} & \gate{X} & \gate{H} \\
+}
+
+\end{document}

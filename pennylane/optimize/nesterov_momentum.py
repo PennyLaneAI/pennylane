@@ -59,8 +59,13 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
         """
         shifted_args = list(args)
 
+        trainable_args = []
+        for arg in args:
+            if getattr(arg, "requires_grad", True):
+                trainable_args.append(arg)
+
         if self.accumulation:
-            for index, arg in enumerate(args):
+            for index, arg in enumerate(trainable_args):
                 if self.accumulation[index]:
                     x_flat = _flatten(arg)
                     acc = _flatten(self.accumulation[index])
@@ -82,7 +87,7 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
         grad = g(*shifted_args, **kwargs)
         forward = getattr(g, "forward", None)
 
-        if len(args) == 1:
+        if len(trainable_args) == 1:
             grad = (grad,)
 
         return grad, forward

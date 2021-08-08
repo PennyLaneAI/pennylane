@@ -69,7 +69,7 @@ class Hamiltonian(qml.operation.Observable):
     >>> obs = qml.Hermitian(obs_matrix, wires=[0, 1])
     >>> H = qml.Hamiltonian((0.8, ), (obs, ))
     >>> print(H)
-    (0.8) [Hermitian0'1]
+    (0.8) [Hermitian0,1]
 
     Alternatively, the :func:`~.molecular_hamiltonian` function from the
     :doc:`/introduction/chemistry` module can be used to generate a molecular
@@ -91,6 +91,8 @@ class Hamiltonian(qml.operation.Observable):
 
         Note that this issue also arises when calling the ``simplify()`` method.
     """
+    # Todo: this is a temporary solution to make the circuit drawer work
+    num_params = 0
 
     num_wires = qml.operation.AnyWires
     num_params = 1
@@ -235,7 +237,7 @@ class Hamiltonian(qml.operation.Observable):
 
     def __str__(self):
         # Lambda function that formats the wires
-        wires_print = lambda ob: "'".join(map(str, ob.wires.tolist()))
+        wires_print = lambda ob: ",".join(map(str, ob.wires.tolist()))
 
         self_coeffs = qml.math.toarray(self.coeffs)
         paired_coeff_obs = list(zip(self_coeffs, self.ops))

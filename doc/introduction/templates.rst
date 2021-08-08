@@ -159,6 +159,11 @@ Subroutines are sequences of (possibly trainable) gates that do not fulfill the 
 of other templates.
 
 .. customgalleryitem::
+    :link: ../code/api/pennylane.templates.subroutines.GroverOperator.html
+    :description: Grover Diffusion Operator
+    :figure: ../_static/templates/subroutines/grover.svg
+
+.. customgalleryitem::
     :link: ../code/api/pennylane.templates.subroutines.Interferometer.html
     :description: Interferometer
     :figure: ../_static/templates/subroutines/interferometer.png
