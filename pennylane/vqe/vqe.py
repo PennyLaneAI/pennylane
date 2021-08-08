@@ -79,14 +79,24 @@ class Hamiltonian(qml.operation.Observable):
     :doc:`/introduction/chemistry` module can be used to generate a molecular
     Hamiltonian.
 
-    If the coefficients are not trainable tensors, Hamiltonians can be
-    constructed using Pythonic arithmetic operations. For example:
+    In many cases, Hamiltonians can be constructed using Pythonic arithmetic operations.
+    For example:
 
-    >>> qml.PauliX(0) + 2 * qml.PauliZ(0) @ qml.PauliZ(1)
+    >>> qml.Hamiltonian([1.], [qml.PauliX(0)]) + 2 * qml.PauliZ(0) @ qml.PauliZ(1)
 
     is equivalent to the following Hamiltonian:
 
     >>> qml.Hamiltonian([1, 2], [qml.PauliX(0), qml.PauliZ(0) @ qml.PauliZ(1)])
+
+    While scalar multiplication requires native python floats or integer types,
+    addition, subtraction, and tensor multiplication of Hamiltonians with Hamiltonians or
+    other observables is possible with tensor-valued coefficients, i.e.:
+
+    >>> H1 = qml.Hamiltonian(torch.tensor([1.]), [qml.PauliX(0)])
+    >>> H2 = qml.Hamiltonian(torch.tensor([2., 3.]), [qml.PauliY(0), qml.PauliX(1)])
+    >>> H3 = qml.Hamiltonian(torch.tensor([1., 2., 3.]), [qml.PauliX(0), qml.PauliY(0), qml.PauliX(1)])
+    >>> H3.compare(H1 + H2)
+    True
 
     .. Warning::
         When Hamiltonians are defined using arithmetic operations **inside of quantum functions**, constituent observables
@@ -119,9 +129,6 @@ class Hamiltonian(qml.operation.Observable):
         self._wires = qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
 
         self.return_type = None
-
-        self._grouped_coeffs = None
-        self._grouped_obs = None
 
         if simplify:
             self.simplify()
@@ -184,7 +191,7 @@ class Hamiltonian(qml.operation.Observable):
           (-1) [X0]
         + (1) [Y2]
         """
-        coeffs = []
+        data = []
         ops = []
 
         for i in range(len(self.ops)):  # pylint: disable=consider-using-enumerate
@@ -199,15 +206,16 @@ class Hamiltonian(qml.operation.Observable):
                     break
 
             if ind is not None:
-                coeffs[ind] += c
-                if np.isclose(qml.math.toarray(coeffs[ind]), np.array(0.0)):
-                    del coeffs[ind]
+                data[ind] += c
+                if np.isclose(qml.math.toarray(data[ind]), np.array(0.0)):
+                    del data[ind]
                     del ops[ind]
             else:
                 ops.append(op.prune())
-                coeffs.append(c)
+                data.append(c)
 
-        self._coeffs = coeffs
+        self._coeffs = qml.math.stack(data)
+        self.data = data
         self._ops = ops
 
     def __str__(self):
@@ -342,6 +350,7 @@ class Hamiltonian(qml.operation.Observable):
             coeffs2 = H.coeffs
             ops2 = H.ops
 
+            #todo: tf does not have kron
             coeffs = qml.math.kron(coeffs1, coeffs2)
             ops_list = itertools.product(ops1, ops2)
             terms = [qml.operation.Tensor(t[0], t[1]) for t in ops_list]
@@ -357,12 +366,11 @@ class Hamiltonian(qml.operation.Observable):
 
     def __add__(self, H):
         r"""The addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
-        self_coeffs = copy(self.coeffs)
         ops = self.ops.copy()
         self_coeffs = copy(self.coeffs)
 
         if isinstance(H, Hamiltonian):
-            coeffs = qml.math.concatenate([self_coeffs, H.coeffs.copy()], axis=0)
+            coeffs = qml.math.concatenate([self_coeffs, copy(H.coeffs)], axis=0)
             ops.extend(H.ops.copy())
             return qml.Hamiltonian(coeffs, ops, simplify=True)
 
