@@ -1271,7 +1271,9 @@ class TestDecomposition:
 
         # We have to patch BasisStatePreparation where it is loaded
         monkeypatch.setattr(
-            qml.ops.qubit, "BasisStatePreparation", lambda *args: call_args.append(args)
+            qml.ops.qubit.state_preparation,
+            "BasisStatePreparation",
+            lambda *args: call_args.append(args),
         )
         qml.BasisState.decomposition(n, wires=wires)
 
@@ -1288,7 +1290,9 @@ class TestDecomposition:
 
         # We have to patch MottonenStatePreparation where it is loaded
         monkeypatch.setattr(
-            qml.ops.qubit, "MottonenStatePreparation", lambda *args: call_args.append(args)
+            qml.ops.qubit.state_preparation,
+            "MottonenStatePreparation",
+            lambda *args: call_args.append(args),
         )
         qml.QubitStateVector.decomposition(state, wires=wires)
 

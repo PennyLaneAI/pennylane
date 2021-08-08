@@ -89,6 +89,8 @@ class Hamiltonian:
 
         Note that this issue also arises when calling the ``simplify()`` method.
     """
+    # Todo: this is a temporary solution to make the circuit drawer work
+    num_params = 0
 
     def __init__(self, coeffs, observables, simplify=False):
 

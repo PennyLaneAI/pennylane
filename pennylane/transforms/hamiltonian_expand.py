@@ -14,17 +14,19 @@
 """
 Contains the hamiltonian expand tape transform
 """
+# pylint: disable=protected-access
 import pennylane as qml
 
 
-def hamiltonian_expand(tape):
+def hamiltonian_expand(tape, group=True):
     r"""
-    Returns a list of tapes, and a classical processing function, for computing the expectation
-    value of a Hamiltonian.
+    Splits a tape measuring a Hamiltonian expectation into mutliple tapes of Pauli expectations,
+    and provides a function to recombine the results.
 
     Args:
-        tape (.QuantumTape) the tape used when calculating the expectation value
-            of the Hamiltonian.
+        tape (.QuantumTape): the tape used when calculating the expectation value
+            of the Hamiltonian
+        group (bool): whether to compute groups of non-commuting Pauli observables, leading to fewer tapes
 
     Returns:
         tuple[list[.QuantumTape], function]: Returns a tuple containing a list of
@@ -69,6 +71,28 @@ def hamiltonian_expand(tape):
 
          Note that defining Hamiltonians inside of QNodes using arithmetic can lead to errors.
          See :class:`~pennylane.Hamiltonian` for more information.
+
+    The ``group`` keyword argument toggles between the creation of one tape per Pauli observable, or
+    one tape per group of non-commuting Pauli observables computed by the :func:`.measurement_grouping`
+    transform:
+
+    .. code-block:: python3
+
+        H = qml.Hamiltonian([1., 2., 3.], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)])
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=2)
+            qml.expval(H)
+
+        # split H into observable groups [qml.PauliZ(0)] and [qml.PauliX(1), qml.PauliX(0)]
+        tapes, fn = qml.transforms.hamiltonian_expand(tape)
+        print(len(tapes)) # 2
+
+        # split H into observables [qml.PauliZ(0)], [qml.PauliX(1)] and [qml.PauliX(0)]
+        tapes, fn = qml.transforms.hamiltonian_expand(tape, group=False)
+        print(len(tapes)) # 3
     """
 
     hamiltonian = tape.measurements[0].obs
@@ -77,6 +101,24 @@ def hamiltonian_expand(tape):
         raise ValueError(
             "Passed tape must end in `qml.expval(H)`, where H is of type `qml.Hamiltonian`"
         )
+    if group:
+        hamiltonian.simplify()
+        return qml.transforms.measurement_grouping(tape, hamiltonian.ops, hamiltonian.coeffs)
 
-    hamiltonian.simplify()
-    return qml.transforms.measurement_grouping(tape, hamiltonian.ops, hamiltonian.coeffs)
+    # create tapes that measure the Pauli-words in the Hamiltonian
+    tapes = []
+    for ob in hamiltonian.ops:
+        new_tape = tape.copy()
+        new_tape._measurements = [
+            qml.measure.MeasurementProcess(return_type=qml.operation.Expectation, obs=ob)
+        ]
+        tapes.append(new_tape)
+
+    # create processing function that performs linear recombination
+    def processing_fn(res):
+        dot_products = [
+            qml.math.dot(qml.math.squeeze(res[i]), hamiltonian.coeffs[i]) for i in range(len(res))
+        ]
+        return qml.math.sum(qml.math.stack(dot_products), axis=0)
+
+    return tapes, processing_fn
