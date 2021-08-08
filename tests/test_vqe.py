@@ -1316,7 +1316,9 @@ class TestNewVQE:
             qml.templates.StronglyEntanglingLayers(w, wires=range(4))
             return qml.expval(H), qml.expval(qml.PauliX(3))
 
-        with pytest.raises(ValueError, match="Only a single expectation of a Hamiltonian observable "):
+        with pytest.raises(
+            ValueError, match="Only a single expectation of a Hamiltonian observable"
+        ):
             circuit()
 
     def test_error_non_expval_measurement(self):

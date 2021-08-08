@@ -310,7 +310,7 @@ class TestDifferentiable:
 
     def test_differentiation_autograd(self, tol):
         """Test that grouping is differentiable with autograd tensors as coefficient"""
-        coeffs = pnp.array([1., 2., 3.], requires_grad=True)
+        coeffs = pnp.array([1.0, 2.0, 3.0], requires_grad=True)
         obs = [PauliX(wires=0), PauliX(wires=1), PauliZ(wires=1)]
 
         def group(coeffs, select=None):
@@ -318,14 +318,16 @@ class TestDifferentiable:
             return grouped_coeffs[select]
 
         jac_fn = qml.jacobian(group)
-        assert pnp.allclose(jac_fn(coeffs, select=0), pnp.array([[1., 0., 0.], [0., 1., 0.]]), atol=tol)
-        assert pnp.allclose(jac_fn(coeffs, select=1), pnp.array([[0., 0., 1.]]), atol=tol)
+        assert pnp.allclose(
+            jac_fn(coeffs, select=0), pnp.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]), atol=tol
+        )
+        assert pnp.allclose(jac_fn(coeffs, select=1), pnp.array([[0.0, 0.0, 1.0]]), atol=tol)
 
     def test_differentiation_jax(self, tol):
         """Test that grouping is differentiable with jax tensors as coefficient"""
         jax = pytest.importorskip("jax")
         jnp = pytest.importorskip("jax.numpy")
-        coeffs = jnp.array([1., 2., 3.])
+        coeffs = jnp.array([1.0, 2.0, 3.0])
         obs = [PauliX(wires=0), PauliX(wires=1), PauliZ(wires=1)]
 
         def group(coeffs, select=None):
@@ -333,8 +335,10 @@ class TestDifferentiable:
             return grouped_coeffs[select]
 
         jac_fn = jax.jacobian(group)
-        assert np.allclose(jac_fn(coeffs, select=0), pnp.array([[1., 0., 0.], [0., 1., 0.]]), atol=tol)
-        assert np.allclose(jac_fn(coeffs, select=1), pnp.array([[0., 0., 1.]]), atol=tol)
+        assert np.allclose(
+            jac_fn(coeffs, select=0), pnp.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]), atol=tol
+        )
+        assert np.allclose(jac_fn(coeffs, select=1), pnp.array([[0.0, 0.0, 1.0]]), atol=tol)
 
     def test_differentiation_torch(self, tol):
         """Test that grouping is differentiable with torch tensors as coefficient"""
@@ -346,20 +350,20 @@ class TestDifferentiable:
             _, grouped_coeffs = qml.grouping.group_observables(obs, coeffs)
             return grouped_coeffs[select_group][select_index]
 
-        coeffs = torch.tensor([1., 2., 3.], requires_grad=True)
+        coeffs = torch.tensor([1.0, 2.0, 3.0], requires_grad=True)
         res = group(coeffs, select_group=0, select_index=0)
         res.backward()
-        assert np.allclose(coeffs.grad, [1., 0., 0.], atol=tol)
+        assert np.allclose(coeffs.grad, [1.0, 0.0, 0.0], atol=tol)
 
-        coeffs = torch.tensor([1., 2., 3.], requires_grad=True)
+        coeffs = torch.tensor([1.0, 2.0, 3.0], requires_grad=True)
         res = group(coeffs, select_group=0, select_index=1)
         res.backward()
-        assert np.allclose(coeffs.grad, [0., 1., 0.], atol=tol)
+        assert np.allclose(coeffs.grad, [0.0, 1.0, 0.0], atol=tol)
 
-        coeffs = torch.tensor([1., 2., 3.], requires_grad=True)
+        coeffs = torch.tensor([1.0, 2.0, 3.0], requires_grad=True)
         res = group(coeffs, select_group=1, select_index=0)
         res.backward()
-        assert np.allclose(coeffs.grad, [0., 0., 1.], atol=tol)
+        assert np.allclose(coeffs.grad, [0.0, 0.0, 1.0], atol=tol)
 
     def test_differentiation_tf(self, tol):
         """Test that grouping is differentiable with tf tensors as coefficient"""
@@ -370,14 +374,14 @@ class TestDifferentiable:
             _, grouped_coeffs = qml.grouping.group_observables(obs, coeffs)
             return grouped_coeffs[select]
 
-        coeffs = tf.Variable([1., 2., 3.], dtype=tf.double)
+        coeffs = tf.Variable([1.0, 2.0, 3.0], dtype=tf.double)
 
         with tf.GradientTape() as tape:
             res = group(coeffs, select=0)
         grad = tape.jacobian(res, [coeffs])
-        assert np.allclose(grad, pnp.array([[1., 0., 0.], [0., 1., 0.]]), atol=tol)
+        assert np.allclose(grad, pnp.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]), atol=tol)
 
         with tf.GradientTape() as tape:
             res = group(coeffs, select=1)
         grad = tape.jacobian(res, [coeffs])
-        assert np.allclose(grad, pnp.array([[0., 0., 1.]]), atol=tol)
+        assert np.allclose(grad, pnp.array([[0.0, 0.0, 1.0]]), atol=tol)
