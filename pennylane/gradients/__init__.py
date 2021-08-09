@@ -19,4 +19,4 @@ from . import parameter_shift
 
 from .finite_difference import finite_diff, finite_diff_coeffs, generate_shifted_tapes
 from .parameter_shift import param_shift
-from .vjp import batch_vjp, vjp, _vector_jacobian_product, _vector_jacobian_products
+from .vjp import compute_vjp, batch_vjp, vjp
