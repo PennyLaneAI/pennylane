@@ -156,6 +156,26 @@ class TestAutogradExecuteUnitTests:
         qml.jacobian(cost)(a)
         spy_gradients.assert_called()
 
+    def test_caching(self, tol):
+        dev = qml.device("default.qubit", wires=1)
+
+        def cost(a):
+            with qml.tape.JacobianTape() as tape:
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.expval(qml.PauliZ(0))
+
+            return execute([tape], dev, gradient_fn=param_shift)[0]
+
+        params = np.array([0.1, 0.2])
+        grad1 = qml.jacobian(cost)(params)
+        assert dev.num_executions == 5
+
+        grad2 = qml.jacobian(cost)(2 * params)
+        assert dev.num_executions == 10
+
+        assert not np.allclose(grad1, grad2, atol=tol, rtol=0)
+
 
 execute_kwargs = [
     {"gradient_fn": param_shift},

@@ -16,6 +16,7 @@ This module contains functions for computing the parameter-shift gradient
 of a qubit-based quantum tape.
 """
 # pylint: disable=protected-access,too-many-arguments
+import functools
 import numpy as np
 
 import pennylane as qml
@@ -34,6 +35,7 @@ of that observable.
 """
 
 
+@functools.lru_cache
 def _square_observable(obs):
     """Returns the square of an observable."""
 
@@ -57,6 +59,7 @@ def _square_observable(obs):
     return NONINVOLUTORY_OBS[obs.name](obs)
 
 
+@functools.lru_cache
 def _get_operation_recipe(tape, t_idx, shift=np.pi / 2):
     """Utility function to return the parameter-shift rule
     of the operation corresponding to trainable parameter
@@ -91,6 +94,7 @@ def _process_gradient_recipe(gradient_recipe, tol=1e-10):
     return gradient_recipe[:, np.argsort(np.abs(gradient_recipe)[-1])]
 
 
+@functools.lru_cache
 def _gradient_analysis(tape, use_graph=True):
     """Update the parameter information dictionary of the tape with
     gradient information of each parameter."""
@@ -349,6 +353,29 @@ def var_param_shift(tape, argnum, shift=np.pi / 2, gradient_recipes=None, f0=Non
     return gradient_tapes, processing_fn
 
 
+def freezeargs(func):
+    @functools.wraps(func)
+    def wrapped(*args, **kwargs):
+        args = tuple([tuple(arg) if isinstance(arg, list) else arg for arg in args])
+
+        new_kwargs = {}
+        for k, v in kwargs.items():
+            if k == "gradient_recipes":
+                new_kwargs[k] = tuple([tuple([tuple(z) for z in y]) for y in v])
+            elif isinstance(v, list):
+                new_kwargs[k] = tuple(v)
+            elif isinstance(v, np.ndarray):
+                new_kwargs[k] = tuple(qml.math.array(v).tolist())
+            else:
+                new_kwargs[k] = v
+
+        return func(*args, **new_kwargs)
+
+    return wrapped
+
+
+@freezeargs
+@functools.lru_cache
 def param_shift(
     tape, argnum=None, shift=np.pi / 2, gradient_recipes=None, fallback_fn=finite_diff, f0=None
 ):
@@ -455,6 +482,7 @@ def param_shift(
     [[-0.38751721 -0.18884787 -0.38355704]
      [ 0.69916862  0.34072424  0.69202359]]
     """
+    f0 = np.array(f0) if f0 is not None else None
 
     # perform gradient method validation
     if any(m.return_type is qml.operation.State for m in tape.measurements):

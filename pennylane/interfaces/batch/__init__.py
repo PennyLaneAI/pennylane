@@ -16,7 +16,7 @@ This subpackage defines functions for interfacing devices' batch execution
 capabilities with different machine learning libraries.
 """
 # pylint: disable=import-outside-toplevel)
-from functools import partial
+from functools import partial, lru_cache
 
 import pennylane as qml
 
@@ -105,7 +105,7 @@ def execute(tapes, device, gradient_fn, interface="autograd", mode="best", gradi
     """
     # Default execution function; simply call device.batch_execute
     # and return no Jacobians.
-    execute_fn = lambda tapes, **kwargs: (device.batch_execute(tapes), [])
+    execute_fn = lru_cache(lambda tapes, **kwargs: (device.batch_execute(tapes), []))
     gradient_kwargs = gradient_kwargs or {}
 
     if gradient_fn == "device":
@@ -125,6 +125,6 @@ def execute(tapes, device, gradient_fn, interface="autograd", mode="best", gradi
         raise ValueError("Gradient transforms cannot be used with mode='forward'")
 
     if interface == "autograd":
-        return execute_autograd(tapes, device, execute_fn, gradient_fn, gradient_kwargs)
+        return execute_autograd(tuple(tapes), device, execute_fn, gradient_fn, gradient_kwargs)
 
     raise ValueError(f"Unknown interface {interface}")

@@ -985,6 +985,25 @@ class QuantumTape(AnnotatedQueue):
 
         return rotation_gates
 
+    def __hash__(self):
+        fingerprint = []
+
+        for p in self.get_parameters(trainable_only=False):
+            if isinstance(p, (int, float)):
+                fingerprint.append(p)
+            else:
+                q = qml.math.toarray(p).tolist()
+
+                if isinstance(q, (int, float)):
+                    fingerprint.append(q)
+                else:
+                    fingerprint.append(tuple(qml.math.flatten(qml.math.toarray(p)).tolist()))
+
+        fingerprint = tuple(fingerprint)
+        fingerprint += tuple(self.operations)
+        fingerprint += tuple(self.measurements)
+        return hash(fingerprint)
+
     @property
     def graph(self):
         """Returns a directed acyclic graph representation of the recorded

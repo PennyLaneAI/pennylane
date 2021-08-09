@@ -164,7 +164,6 @@ def vjp(
             # Longer term, we should have a way of checking this directly
             # (e.g., isinstance(gradient_fn, GradientTransform))
             module_name = getattr(inspect.getmodule(gradient_fn), "__name__", "")
-            print(gradient_fn, gradient_fn.__module__, inspect.ismethod(gradient_fn))
 
             if "pennylane.gradients" in module_name:
 
@@ -177,7 +176,14 @@ def vjp(
                 # This recursion, coupled with the fact that the gradient transforms
                 # are differentiable, allows for arbitrary order differentiation.
                 vjps = processing_fn(
-                    execute(vjp_tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=_n + 1)
+                    execute(
+                        tuple(vjp_tapes),
+                        device,
+                        execute_fn,
+                        gradient_fn,
+                        gradient_kwargs,
+                        _n=_n + 1,
+                    )
                 )
 
             elif inspect.ismethod(gradient_fn) and gradient_fn.__self__ is device:
