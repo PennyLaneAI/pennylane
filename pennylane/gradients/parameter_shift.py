@@ -358,6 +358,19 @@ def freezeargs(func):
     def wrapped(*args, **kwargs):
         args = tuple([tuple(arg) if isinstance(arg, list) else arg for arg in args])
 
+        fingerprint = []
+
+        for p in args[0].get_parameters(trainable_only=False):
+            if isinstance(p, (int, float)):
+                fingerprint.append(p)
+            else:
+                q = qml.math.toarray(p).tolist()
+
+                if isinstance(q, (int, float)):
+                    fingerprint.append(q)
+                else:
+                    fingerprint.append(tuple(qml.math.flatten(qml.math.toarray(p)).tolist()))
+
         new_kwargs = {}
         for k, v in kwargs.items():
             if k == "gradient_recipes":
@@ -369,7 +382,7 @@ def freezeargs(func):
             else:
                 new_kwargs[k] = v
 
-        return func(*args, **new_kwargs)
+        return func(*args, hash=tuple(fingerprint), **new_kwargs)
 
     return wrapped
 
@@ -377,7 +390,13 @@ def freezeargs(func):
 @freezeargs
 @functools.lru_cache()
 def param_shift(
-    tape, argnum=None, shift=np.pi / 2, gradient_recipes=None, fallback_fn=finite_diff, f0=None
+    tape,
+    hash=None,
+    argnum=None,
+    shift=np.pi / 2,
+    gradient_recipes=None,
+    fallback_fn=finite_diff,
+    f0=None,
 ):
     r"""Generate the parameter-shift tapes and postprocessing methods required
     to compute the gradient of a gate parameter with respect to an
@@ -482,6 +501,7 @@ def param_shift(
     [[-0.38751721 -0.18884787 -0.38355704]
      [ 0.69916862  0.34072424  0.69202359]]
     """
+    print("hello")
     f0 = np.array(f0) if f0 is not None else None
 
     # perform gradient method validation
