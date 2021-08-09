@@ -24,7 +24,7 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
-def execute(tapes, device, execute_fn, gradient_fn, _n=1):
+def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1):
     """Execute a batch of tapes with Autograd parameters on a device.
 
     Args:
@@ -36,6 +36,8 @@ def execute(tapes, device, execute_fn, gradient_fn, _n=1):
             during the forward pass. This function must return a tuple ``(results, jacobians)``.
             If ``jacobians`` is an empty list, then ``gradient_fn`` is used to
             compute the gradients during the backwards pass.
+        gradient_kwargs (dict): dictionary of keyword arguments to pass when
+            determining the gradients of tapes
         gradient_fn (callable): the gradient function to use to compute quantum gradients
         _n (int): a positive integer used to track nesting of derivatives, for example
             if the nth-order derivative is requested.
@@ -44,6 +46,10 @@ def execute(tapes, device, execute_fn, gradient_fn, _n=1):
         list[list[float]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
+    for tape in tapes:
+        # set the trainable parameters
+        params = tape.get_parameters(trainable_only=False)
+        tape.trainable_params = qml.math.get_trainable_indices(params)
 
     parameters = autograd.builtins.tuple(
         [autograd.builtins.list(t.get_parameters()) for t in tapes]
@@ -55,13 +61,20 @@ def execute(tapes, device, execute_fn, gradient_fn, _n=1):
         device=device,
         execute_fn=execute_fn,
         gradient_fn=gradient_fn,
+        gradient_kwargs=gradient_kwargs,
         _n=_n,
     )[0]
 
 
 @autograd.extend.primitive
 def _execute(
-    parameters, tapes=None, device=None, execute_fn=None, gradient_fn=None, _n=1
+    parameters,
+    tapes=None,
+    device=None,
+    execute_fn=None,
+    gradient_fn=None,
+    gradient_kwargs=None,
+    _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
     """Autodifferentiable wrapper around ``Device.batch_execute``.
 
@@ -84,13 +97,27 @@ def _execute(
     understand the consequences!
     """
     with qml.tape.Unwrap(*tapes):
-        res, jacs = execute_fn(tapes)
+        res, jacs = execute_fn(tapes, **gradient_kwargs)
 
-    return [np.tensor(r) for r in res], jacs
+    for i, r in enumerate(res):
+        res[i] = np.tensor(r)
+
+        if r.dtype == np.dtype("object"):
+            # For backwards compatibility, we flatten ragged tape outputs
+            res[i] = np.hstack(r)
+
+    return res, jacs
 
 
 def vjp(
-    ans, parameters, tapes=None, device=None, execute_fn=None, gradient_fn=None, _n=1
+    ans,
+    parameters,
+    tapes=None,
+    device=None,
+    execute_fn=None,
+    gradient_fn=None,
+    gradient_kwargs=None,
+    _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
     """Returns the vector-Jacobian product operator for a batch of quantum tapes.
 
@@ -107,6 +134,8 @@ def vjp(
             If ``jacobians`` is an empty list, then ``gradient_fn`` is used to
             compute the gradients during the backwards pass.
         gradient_fn (callable): the gradient function to use to compute quantum gradients
+        gradient_kwargs (dict): dictionary of keyword arguments to pass when
+            determining the gradients of tapes
         _n (int): a positive integer used to track nesting of derivatives, for example
             if the nth-order derivative is requested.
 
@@ -124,8 +153,8 @@ def vjp(
 
         if jacs:
             # Jacobians were computed on the forward pass (accumulation="forward")
-            # Simply compute the vjps classically here.
-            vjps = qml.gradients._vector_jacobian_products(dy, jacs, reduction="append")
+            # No additional quantum evaluations needed; simply compute the VJPs directly.
+            vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(dy, jacs)]
 
         else:
             # Need to compute the Jacobians on the backward pass (accumulation="backward")
@@ -138,12 +167,16 @@ def vjp(
             if "pennylane.gradients" in inspect.getmodule(gradient_fn).__name__:
 
                 # Generate and execute the required gradient tapes
-                vjp_tapes, fn = qml.gradients.batch_vjp(tapes, dy, gradient_fn, reduction="append")
+                vjp_tapes, processing_fn = qml.gradients.batch_vjp(
+                    tapes, dy, gradient_fn, reduction="append", gradient_kwargs=gradient_kwargs
+                )
 
                 # This is where the magic happens. Note that we call ``execute``.
                 # This recursion, coupled with the fact that the gradient transforms
                 # are differentiable, allows for arbitrary order differentiation.
-                vjps = fn(execute(vjp_tapes, device, execute_fn, gradient_fn, _n=_n + 1))
+                vjps = processing_fn(
+                    execute(vjp_tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=_n + 1)
+                )
 
             elif inspect.ismethod(gradient_fn) and gradient_fn.__self__ is device:
                 # Gradient function is a device method.
@@ -155,9 +188,9 @@ def vjp(
                 # so we cannot support higher-order derivatives.
 
                 with qml.tape.Unwrap(*tapes):
-                    jacs = gradient_fn(tapes)
+                    jacs = gradient_fn(tapes, **gradient_kwargs)
 
-                vjps = qml.gradients._vector_jacobian_products(dy, jacs, reduction="append")
+                vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(dy, jacs)]
 
             else:
                 raise ValueError("Unknown gradient function.")

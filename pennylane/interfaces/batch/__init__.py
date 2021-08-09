@@ -23,7 +23,7 @@ import pennylane as qml
 from .autograd import execute as execute_autograd
 
 
-def execute(tapes, device, gradient_fn, interface="autograd", accumulation="forward"):
+def execute(tapes, device, gradient_fn, interface="autograd", mode="best", gradient_kwargs=None):
     """Execute a batch of tapes on a device in an autodifferentiable-compatible manner.
 
     Args:
@@ -37,12 +37,13 @@ def execute(tapes, device, gradient_fn, interface="autograd", accumulation="forw
         interface (str): The interface that will be used for classical autodifferentiation.
             This affects the types of parameters that can exist on the input tapes.
             Available options include ``autograd``, ``torch``, ``tf``, and ``jax``.
-        accumulation (str): Whether the gradients should be computed on the forward
+        mode (str): Whether the gradients should be computed on the forward
             pass (``forward``) or the backward pass (``backward``). Only applies
             if the device is queried for the gradient; gradient transform
             functions available in ``qml.gradients`` are only supported on the backward
             pass.
-
+        gradient_kwargs (dict): dictionary of keyword arguments to pass when
+            determining the gradients of tapes
 
     Returns:
         list[list[float]]: A nested list of tape results. Each element in
@@ -104,21 +105,26 @@ def execute(tapes, device, gradient_fn, interface="autograd", accumulation="forw
     """
     # Default execution function; simply call device.batch_execute
     # and return no Jacobians.
-    execute_fn = lambda tapes: (device.batch_execute(tapes), [])
+    execute_fn = lambda tapes, **kwargs: (device.batch_execute(tapes), [])
+    gradient_kwargs = gradient_kwargs or {}
 
     if gradient_fn == "device":
         # gradient function is a device method
 
-        if accumulation == "forward":
+        if mode in ("forward", "best"):
             # replace the forward execution function to return
             # both results and gradients
             execute_fn = device.execute_and_gradients
+            gradient_fn = None
 
-        elif accumulation == "backward":
+        elif mode == "backward":
             # replace the backward gradient computation
             gradient_fn = device.gradients
 
+    elif mode == "forward":
+        raise ValueError("Gradient transforms cannot be used with mode='forward'")
+
     if interface == "autograd":
-        return execute_autograd(tapes, device, execute_fn, gradient_fn)
+        return execute_autograd(tapes, device, execute_fn, gradient_fn, gradient_kwargs)
 
     raise ValueError(f"Unknown interface {interface}")
