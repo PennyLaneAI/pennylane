@@ -151,7 +151,7 @@ class TestHamiltonianExpval:
             -3.41123470e-01,
             0.0,  # these three are the Hamiltonian parameters
             0.0,
-            0.0
+            0.0,
         ]
 
         with qml.tape.JacobianTape() as tape:

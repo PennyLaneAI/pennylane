@@ -122,7 +122,7 @@ class TestHamiltonianArithmeticTF:
         coeffs2 = tf.Variable([0.5, -0.4])
         H2 = qml.Hamiltonian(coeffs2, obs)
 
-        coeffs_expected = tf.Variable([1., -2.])
+        coeffs_expected = tf.Variable([1.0, -2.0])
         H = qml.Hamiltonian(coeffs_expected, obs)
 
         assert H.compare(H1 + H2)
@@ -134,7 +134,7 @@ class TestHamiltonianArithmeticTF:
         """Tests that Hamiltonians are subtracted correctly"""
         tf = pytest.importorskip("tensorflow")
 
-        coeffs = tf.Variable([1., -2.])
+        coeffs = tf.Variable([1.0, -2.0])
         obs = [qml.PauliX(0), qml.PauliY(1)]
         H1 = qml.Hamiltonian(coeffs, obs)
 
@@ -153,17 +153,21 @@ class TestHamiltonianArithmeticTF:
         """Tests that Hamiltonians are tensored correctly"""
         tf = pytest.importorskip("tensorflow")
 
-        coeffs = tf.Variable([1., 2.])
+        coeffs = tf.Variable([1.0, 2.0])
         obs = [qml.PauliX(0), qml.PauliY(1)]
         H1 = qml.Hamiltonian(coeffs, obs)
 
-        coeffs2 = tf.Variable([-1., -2.])
+        coeffs2 = tf.Variable([-1.0, -2.0])
         obs2 = [qml.PauliX(2), qml.PauliY(3)]
         H2 = qml.Hamiltonian(coeffs2, obs2)
 
-        coeffs_expected = tf.Variable([-4., -2., -2., -1.])
-        obs_expected = [qml.PauliY(1) @ qml.PauliY(3), qml.PauliX(0) @ qml.PauliY(3),
-                        qml.PauliX(2) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliX(2)]
+        coeffs_expected = tf.Variable([-4.0, -2.0, -2.0, -1.0])
+        obs_expected = [
+            qml.PauliY(1) @ qml.PauliY(3),
+            qml.PauliX(0) @ qml.PauliY(3),
+            qml.PauliX(2) @ qml.PauliY(1),
+            qml.PauliX(0) @ qml.PauliX(2),
+        ]
         H = qml.Hamiltonian(coeffs_expected, obs_expected)
 
         assert H.compare(H1 @ H2)
@@ -198,7 +202,7 @@ class TestHamiltonianArithmeticTorch:
         coeffs2 = torch.tensor([0.5, -0.4])
         H2 = qml.Hamiltonian(coeffs2, obs)
 
-        coeffs_expected = torch.tensor([1., -2.])
+        coeffs_expected = torch.tensor([1.0, -2.0])
         H = qml.Hamiltonian(coeffs_expected, obs)
 
         assert H.compare(H1 + H2)
@@ -210,7 +214,7 @@ class TestHamiltonianArithmeticTorch:
         """Tests that Hamiltonians are subtracted correctly"""
         torch = pytest.importorskip("torch")
 
-        coeffs = torch.tensor([1., -2.])
+        coeffs = torch.tensor([1.0, -2.0])
         obs = [qml.PauliX(0), qml.PauliY(1)]
         H1 = qml.Hamiltonian(coeffs, obs)
 
@@ -229,17 +233,21 @@ class TestHamiltonianArithmeticTorch:
         """Tests that Hamiltonians are tensored correctly"""
         torch = pytest.importorskip("torch")
 
-        coeffs = torch.tensor([1., 2.])
+        coeffs = torch.tensor([1.0, 2.0])
         obs = [qml.PauliX(0), qml.PauliY(1)]
         H1 = qml.Hamiltonian(coeffs, obs)
 
-        coeffs2 = torch.tensor([-1., -2.])
+        coeffs2 = torch.tensor([-1.0, -2.0])
         obs2 = [qml.PauliX(2), qml.PauliY(3)]
         H2 = qml.Hamiltonian(coeffs2, obs2)
 
-        coeffs_expected = torch.tensor([-4., -2., -2., -1.])
-        obs_expected = [qml.PauliY(1) @ qml.PauliY(3), qml.PauliX(0) @ qml.PauliY(3),
-                        qml.PauliX(2) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliX(2)]
+        coeffs_expected = torch.tensor([-4.0, -2.0, -2.0, -1.0])
+        obs_expected = [
+            qml.PauliY(1) @ qml.PauliY(3),
+            qml.PauliX(0) @ qml.PauliY(3),
+            qml.PauliX(2) @ qml.PauliY(1),
+            qml.PauliX(0) @ qml.PauliX(2),
+        ]
         H = qml.Hamiltonian(coeffs_expected, obs_expected)
 
         assert H.compare(H1 @ H2)
@@ -270,7 +278,7 @@ class TestHamiltonianArithmeticAutograd:
         coeffs2 = pnp.array([0.5, -0.4])
         H2 = qml.Hamiltonian(coeffs2, obs)
 
-        coeffs_expected = pnp.array([1., -2.])
+        coeffs_expected = pnp.array([1.0, -2.0])
         H = qml.Hamiltonian(coeffs_expected, obs)
 
         assert H.compare(H1 + H2)
@@ -280,7 +288,7 @@ class TestHamiltonianArithmeticAutograd:
 
     def test_hamiltonian_sub(self):
         """Tests that Hamiltonians are subtracted correctly"""
-        coeffs = pnp.array([1., -2.])
+        coeffs = pnp.array([1.0, -2.0])
         obs = [qml.PauliX(0), qml.PauliY(1)]
         H1 = qml.Hamiltonian(coeffs, obs)
 
@@ -297,17 +305,21 @@ class TestHamiltonianArithmeticAutograd:
 
     def test_hamiltonian_matmul(self):
         """Tests that Hamiltonians are tensored correctly"""
-        coeffs = pnp.array([1., 2.])
+        coeffs = pnp.array([1.0, 2.0])
         obs = [qml.PauliX(0), qml.PauliY(1)]
         H1 = qml.Hamiltonian(coeffs, obs)
 
-        coeffs2 = pnp.array([-1., -2.])
+        coeffs2 = pnp.array([-1.0, -2.0])
         obs2 = [qml.PauliX(2), qml.PauliY(3)]
         H2 = qml.Hamiltonian(coeffs2, obs2)
 
-        coeffs_expected = pnp.array([-4., -2., -2., -1.])
-        obs_expected = [qml.PauliY(1) @ qml.PauliY(3), qml.PauliX(0) @ qml.PauliY(3),
-                        qml.PauliX(2) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliX(2)]
+        coeffs_expected = pnp.array([-4.0, -2.0, -2.0, -1.0])
+        obs_expected = [
+            qml.PauliY(1) @ qml.PauliY(3),
+            qml.PauliX(0) @ qml.PauliY(3),
+            qml.PauliX(2) @ qml.PauliY(1),
+            qml.PauliX(0) @ qml.PauliX(2),
+        ]
         H = qml.Hamiltonian(coeffs_expected, obs_expected)
 
         assert H.compare(H1 @ H2)
@@ -344,7 +356,7 @@ class TestHamiltonianArithmeticJax:
         coeffs2 = jnp.array([0.5, -0.4])
         H2 = qml.Hamiltonian(coeffs2, obs)
 
-        coeffs_expected = jnp.array([1., -2.])
+        coeffs_expected = jnp.array([1.0, -2.0])
         H = qml.Hamiltonian(coeffs_expected, obs)
 
         assert H.compare(H1 + H2)
@@ -357,7 +369,7 @@ class TestHamiltonianArithmeticJax:
         jax = pytest.importorskip("jax")
         from jax import numpy as jnp
 
-        coeffs = jnp.array([1., -2.])
+        coeffs = jnp.array([1.0, -2.0])
         obs = [qml.PauliX(0), qml.PauliY(1)]
         H1 = qml.Hamiltonian(coeffs, obs)
 
@@ -377,17 +389,21 @@ class TestHamiltonianArithmeticJax:
         jax = pytest.importorskip("jax")
         from jax import numpy as jnp
 
-        coeffs = jnp.array([1., 2.])
+        coeffs = jnp.array([1.0, 2.0])
         obs = [qml.PauliX(0), qml.PauliY(1)]
         H1 = qml.Hamiltonian(coeffs, obs)
 
-        coeffs2 = jnp.array([-1., -2.])
+        coeffs2 = jnp.array([-1.0, -2.0])
         obs2 = [qml.PauliX(2), qml.PauliY(3)]
         H2 = qml.Hamiltonian(coeffs2, obs2)
 
-        coeffs_expected = jnp.array([-4., -2., -2., -1.])
-        obs_expected = [qml.PauliY(1) @ qml.PauliY(3), qml.PauliX(0) @ qml.PauliY(3),
-                        qml.PauliX(2) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliX(2)]
+        coeffs_expected = jnp.array([-4.0, -2.0, -2.0, -1.0])
+        obs_expected = [
+            qml.PauliY(1) @ qml.PauliY(3),
+            qml.PauliX(0) @ qml.PauliY(3),
+            qml.PauliX(2) @ qml.PauliY(1),
+            qml.PauliX(0) @ qml.PauliX(2),
+        ]
         H = qml.Hamiltonian(coeffs_expected, obs_expected)
 
         assert H.compare(H1 @ H2)

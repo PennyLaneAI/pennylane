@@ -349,7 +349,6 @@ class Hamiltonian(qml.operation.Observable):
             coeffs2 = H.coeffs
             ops2 = H.ops
 
-            #todo: tf does not have kron
             coeffs = qml.math.kron(coeffs1, coeffs2)
             ops_list = itertools.product(ops1, ops2)
             terms = [qml.operation.Tensor(t[0], t[1]) for t in ops_list]
