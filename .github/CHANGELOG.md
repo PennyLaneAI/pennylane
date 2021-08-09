@@ -2,6 +2,87 @@
 
 <h3>New features since last release</h3>
 
+* Docker support for building PennyLane with support for all interfaces (TensorFlow, 
+  Torch, and Jax), as well as device plugins and QChem, for GPUs and CPUs, has been added. 
+  [(#1372)](https://github.com/PennyLaneAI/pennylane/issues/1372)
+
+  The build process using Docker and Makefile works as follows:
+
+  Building a core PennyLane image:
+  ```
+  make -f docker/Makefile build-base
+  ```
+
+  Building a PennyLane image with the TensorFlow interface (change `interface-name` for other interfaces):
+  ```
+  make -f docker/Makefile build-interface interface-name=tensorflow
+  ```
+
+  Building a PennyLane image with the Qiskit plugin (change `plugin-name` for other plugins):
+  ```
+  make -f docker/Makefile build-plugin plugin-name=qiskit
+  ```
+
+  Building the PennyLane-QChem image:
+  ```
+  make -f docker/Makefile build-qchem
+  ```
+
+* PennyLane can now perform quantum circuit optimization using the
+  top-level transform `qml.compile`. The `compile` transform allows you
+  to chain together sequences of tape and quantum function transforms
+  into custom circuit optimization pipelines.
+  [(#1475)](https://github.com/PennyLaneAI/pennylane/pull/1475)
+
+  For example, take the following quantum function:
+
+  ```python
+  def qfunc(x, y, z):
+      qml.Hadamard(wires=0)
+      qml.Hadamard(wires=1)
+      qml.Hadamard(wires=2)
+      qml.RZ(z, wires=2)
+      qml.CNOT(wires=[2, 1])
+      qml.RX(z, wires=0)
+      qml.CNOT(wires=[1, 0])
+      qml.RX(x, wires=0)
+      qml.CNOT(wires=[1, 0])
+      qml.RZ(-z, wires=2)
+      qml.RX(y, wires=2)
+      qml.PauliY(wires=2)
+      qml.CY(wires=[1, 2])
+      return qml.expval(qml.PauliZ(wires=0))
+  ```
+
+  The default behaviour of `qml.compile` is to apply a sequence of three
+  transforms: `commute_controlled`, `cancel_inverses`, and then `merge_rotations`.
+
+  ```pycon
+  >>> dev = qml.device('default.qubit', wires=[0, 1, 2])
+  >>> compiled_qfunc = qml.compile()(qfunc)
+  >>> compiled_qnode = qml.QNode(compiled_qfunc, dev)
+  >>> print(qml.draw(compiled_qnode)(0.2, 0.3, 0.4))
+   0: ──H───RX(0.6)───────────────────┤ ⟨Z⟩
+   1: ──H──╭X─────────────────╭CY─────┤
+   2: ──H──╰C────────RX(0.3)──╰CY──Y──┤
+  ```
+
+  The ``qml.compile`` transform is flexible and accepts a custom pipeline
+  of tape and quantum function transforms (you can even write your own!).
+  For example, if we wanted to only push single-qubit gates through
+  controlled gates and cancel adjacent inverses, we could do:
+
+  ```pycon
+  >>> from qml.transforms import commute_controlled, cancel_inverses
+  >>> pipeline = [commute_controlled, cancel_inverses]
+  >>> compiled_qfunc = qml.compile(pipeline=pipeline)(qfunc)
+  >>> compiled_qnode = qml.QNode(compiled_qfunc, dev)
+  >>> print(qml.draw(compiled_qnode)(0.2, 0.3, 0.4))
+   0: ──H───RX(0.4)──RX(0.2)─────────────────────────────┤ ⟨Z⟩
+   1: ──H──╭X────────────────────────────────────╭CY─────┤
+   2: ──H──╰C────────RZ(0.4)──RZ(-0.4)──RX(0.3)──╰CY──Y──┤
+  ```
+
 * The new Device Tracker capabilities allows for flexible and versatile tracking of executions,
   even inside parameter-shift gradients. This functionality will improve the ease of monitoring
   large batches and remote jobs.
@@ -75,6 +156,8 @@
 * A new gradients module `qml.gradients` has been added, which provides
   differentiable quantum gradient transforms.
   [(#1476)](https://github.com/PennyLaneAI/pennylane/pull/1476)
+  [(#1479)](https://github.com/PennyLaneAI/pennylane/pull/1479)
+  [(#1486)](https://github.com/PennyLaneAI/pennylane/pull/1486)
   [(#1494)](https://github.com/PennyLaneAI/pennylane/pull/1494)
 
   Available quantum gradient transforms include:
@@ -82,6 +165,8 @@
   - `qml.gradients.finite_diff`
   - `qml.gradients.vjp`
   - `qml.gradients.batch_vjp`
+  - `qml.gradients.param_shift`
+  - `qml.gradients.param_shift_cv`
 
   For example,
 
@@ -465,11 +550,21 @@
 
 <h3>Bug fixes</h3>
 
-* Fixes a bug where the adjoint of `qml.QFT` when using the `qml.adjoint` function
+* Fixes a bug in `GradientDescentOptimizer` and `NesterovMomentumOptimizer`
+  where a cost function with one trainable parameter and non-trainable
+  parameters raised an error.
+  [(#1495)](https://github.com/PennyLaneAI/pennylane/pull/1495)
+
+* Fixed an example in the documentation's 
+  [introduction to numpy gradients](https://pennylane.readthedocs.io/en/stable/introduction/interfaces/numpy.html), where 
+  the wires were a non-differentiable argument to the QNode. 
+  [(#1499)](https://github.com/PennyLaneAI/pennylane/pull/1499)
+
+* Fixed a bug where the adjoint of `qml.QFT` when using the `qml.adjoint` function
   was not correctly computed.
   [(#1451)](https://github.com/PennyLaneAI/pennylane/pull/1451)
 
-* Fixes the differentiability of the operation`IsingYY` for Autograd, Jax and Tensorflow.
+* Fixed the differentiability of the operation`IsingYY` for Autograd, Jax and Tensorflow.
   [(#1425)](https://github.com/PennyLaneAI/pennylane/pull/1425)
   
 * Fixed a bug in the `torch` interface that prevented gradients from being
@@ -501,8 +596,9 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Leonhard Kunczik, Christina Lee, Romain Moyard, Ashish Panigrahi,
-Maria Schuld, Jay Soni, Antal Száva, David Wierichs
+Olivia Di Matteo, Josh Izaac, Leonhard Kunczik, Christina Lee, Romain Moyard,
+Arshpreet Singh Khangura, Ashish Panigrahi,
+Maria Schuld, Jay Soni, Antal Száva, David Wierichs.
 
 
 # Release 0.16.0 (current release)
