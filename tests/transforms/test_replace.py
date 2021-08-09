@@ -49,11 +49,12 @@ class TestReplace:
 
         transformed_qfunc = replace(custom_ops={"RX": invalid_custom_rx})(qfunc)
         transformed_ops = qml.transforms.make_tape(transformed_qfunc)().operations
-        print(transformed_ops)
+
+        dev = qml.device('default.qubit', wires=1)
         
         qnode = qml.QNode(transformed_qfunc, dev)
 
-        with pytest.raises(ValueError, match="decomposition depends on the operator itself"):
+        with pytest.raises(IndexError, match="Decomposition depends on the operator itself."):
             qnode()
 
     def test_replace_custom_decomp_infinite_loop(self):
@@ -76,9 +77,11 @@ class TestReplace:
 
         transformed_qfunc = replace(custom_ops=custom_ops)(qfunc)
 
+        dev = qml.device('default.qubit', wires=2)
+
         qnode = qml.QNode(transformed_qfunc, dev)
 
-        with pytest.raises(ValueError, match="decomposition of an operator in its decomposition"):
+        with pytest.raises(ValueError, match="Decomposition of an operator in its decomposition"):
             qnode()
 
     def test_replace_no_custom_ops(self):
