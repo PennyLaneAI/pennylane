@@ -716,7 +716,7 @@ class TestHamiltonian:
             b = qml.PauliY(wires=1)
             c = qml.Identity(wires=2)
             d = b @ c
-            H = qml.Hamiltonian([1., 2.], [a, d])
+            H = qml.Hamiltonian([1.0, 2.0], [a, d])
             H.simplify()
 
         # check that H is simplified
