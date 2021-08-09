@@ -35,7 +35,7 @@ of that observable.
 """
 
 
-@functools.lru_cache
+@functools.lru_cache()
 def _square_observable(obs):
     """Returns the square of an observable."""
 
@@ -59,7 +59,7 @@ def _square_observable(obs):
     return NONINVOLUTORY_OBS[obs.name](obs)
 
 
-@functools.lru_cache
+@functools.lru_cache()
 def _get_operation_recipe(tape, t_idx, shift=np.pi / 2):
     """Utility function to return the parameter-shift rule
     of the operation corresponding to trainable parameter
@@ -94,7 +94,7 @@ def _process_gradient_recipe(gradient_recipe, tol=1e-10):
     return gradient_recipe[:, np.argsort(np.abs(gradient_recipe)[-1])]
 
 
-@functools.lru_cache
+@functools.lru_cache()
 def _gradient_analysis(tape, use_graph=True):
     """Update the parameter information dictionary of the tape with
     gradient information of each parameter."""
@@ -375,7 +375,7 @@ def freezeargs(func):
 
 
 @freezeargs
-@functools.lru_cache
+@functools.lru_cache()
 def param_shift(
     tape, argnum=None, shift=np.pi / 2, gradient_recipes=None, fallback_fn=finite_diff, f0=None
 ):

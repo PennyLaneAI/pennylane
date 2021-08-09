@@ -105,7 +105,7 @@ def execute(tapes, device, gradient_fn, interface="autograd", mode="best", gradi
     """
     # Default execution function; simply call device.batch_execute
     # and return no Jacobians.
-    execute_fn = lru_cache(lambda tapes, **kwargs: (device.batch_execute(tapes), []))
+    execute_fn = lru_cache()(lambda tapes, **kwargs: (device.batch_execute(tapes), []))
     gradient_kwargs = gradient_kwargs or {}
 
     if gradient_fn == "device":
