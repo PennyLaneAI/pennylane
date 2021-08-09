@@ -27,6 +27,8 @@ import pennylane as qml
 from pennylane.queuing import AnnotatedQueue, QueuingContext, QueuingError
 from pennylane.operation import Sample
 
+from .unwrap import UnwrapTape
+
 # CV ops still need to support state preparation operations prior to any
 # other operation for PennyLane-SF tests to pass.
 STATE_PREP_OPS = (
@@ -673,13 +675,8 @@ class QuantumTape(AnnotatedQueue):
         # the current implementation of the adjoint
         # transform requires that the returned inverted object
         # is automatically queued.
-        QuantumTape._lock.acquire()
-        try:
+        with QuantumTape._lock:
             QueuingContext.append(new_tape)
-        except Exception as _:
-            QuantumTape._lock.release()
-            raise
-        QuantumTape._lock.release()
 
         return new_tape
 
@@ -848,6 +845,35 @@ class QuantumTape(AnnotatedQueue):
         for idx, p in iterator:
             op = self._par_info[idx]["op"]
             op.data[self._par_info[idx]["p_idx"]] = p
+
+    def unwrap(self):
+        """A context manager that unwraps a tape with tensor-like parameters
+        to NumPy arrays.
+
+        Args:
+            tape (.QuantumTape): the quantum tape to unwrap
+
+        Returns:
+
+            .QuantumTape: the unwrapped quantum tape
+
+        **Example**
+
+        >>> with tf.GradientTape():
+        ...     with qml.tape.QuantumTape() as tape:
+        ...         qml.RX(tf.Variable(0.1), wires=0)
+        ...         qml.RY(tf.constant(0.2), wires=0)
+        ...         qml.RZ(tf.Variable(0.3), wires=0)
+        ...     with tape.unwrap():
+        ...         print("Trainable params:", tape.trainable_params)
+        ...         print("Unwrapped params:", tape.get_parameters())
+        Trainable params: {0, 2}
+        Unwrapped params: [0.1, 0.3]
+        >>> print("Original parameters:", tape.get_parameters())
+        Original parameters: [<tf.Variable 'Variable:0' shape=() dtype=float32, numpy=0.1>,
+          <tf.Variable 'Variable:0' shape=() dtype=float32, numpy=0.3>]
+        """
+        return UnwrapTape(self)
 
     # ========================================================
     # Tape properties

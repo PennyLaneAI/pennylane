@@ -378,6 +378,8 @@ def qfunc_transform(tape_transform):
             def wrapper(fn):
                 return _create_qfunc_internal_wrapper(fn, tape_transform, targs, tkwargs)
 
+            wrapper.tape_fn = functools.partial(tape_transform, *targs, **tkwargs)
+
             return wrapper
 
     elif len(params) == 1:

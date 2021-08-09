@@ -58,7 +58,8 @@ class GradientDescentOptimizer:
             grad_fn (function): optional gradient function of the
                 objective function with respect to the variables ``*args``.
                 If ``None``, the gradient function is computed automatically.
-                Must return the same shape of tuple [array] as the autograd derivative.
+                Must return a ``tuple[array]`` with the same number of elements as ``*args``.
+                Each array of the tuple should have the same shape as the corresponding argument.
             **kwargs : variable length of keyword arguments for the objective function
 
         Returns:
@@ -87,7 +88,8 @@ class GradientDescentOptimizer:
             grad_fn (function): optional gradient function of the
                 objective function with respect to the variables ``x``.
                 If ``None``, the gradient function is computed automatically.
-                Must return the same shape of tuple [array] as the autograd derivative.
+                Must return a ``tuple[array]`` with the same number of elements as ``*args``.
+                Each array of the tuple should have the same shape as the corresponding argument.
             **kwargs : variable length of keyword arguments for the objective function
 
         Returns:
@@ -127,7 +129,12 @@ class GradientDescentOptimizer:
         grad = g(*args, **kwargs)
         forward = getattr(g, "forward", None)
 
-        if len(args) == 1:
+        num_trainable_args = 0
+        for arg in args:
+            if getattr(arg, "requires_grad", True):
+                num_trainable_args += 1
+
+        if num_trainable_args == 1:
             grad = (grad,)
 
         return grad, forward

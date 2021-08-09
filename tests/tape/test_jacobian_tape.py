@@ -456,19 +456,6 @@ class TestJacobian:
 
         assert len(res) == num_params
 
-    @pytest.mark.parametrize("argnum", [1, 2, 3, -1])
-    def test_choose_params_and_methods_raises(self, argnum):
-        """Test that the _choose_params_and_methods helper method raises an
-        error if incorrect trainable parameters are specified."""
-        tape = JacobianTape()
-        tape.trainable_params = [0]
-        diff_methods = ["F"]
-        with pytest.raises(
-            ValueError,
-            match="Incorrect trainable parameters",
-        ):
-            res = tape._choose_params_with_methods(diff_methods, argnum)
-
     def test_choose_params_and_methods_warns_no_params(self):
         """Test that the _choose_params_and_methods helper method warns if an
         empty list was passed as argnum."""
