@@ -175,7 +175,6 @@ class Hamiltonian:
         + (1) [Y2]
         """
         ops_coeffs = dict()
-        ops = []
 
         for c, op in zip(self.coeffs, self.ops):
             op = (op if isinstance(op, Tensor) else Tensor(op)).prune()
