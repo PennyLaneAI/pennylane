@@ -34,12 +34,52 @@ def custom_cnot(wires):
     ]
 
 
-def custom_rx(theta, wires):
-    return [qml.PauliY(wires=wires), qml.RX(-theta, wires=wires), qml.PauliY(wires=wires)]
-
-
 class TestReplace:
     """Test that custom definitions of operations are properly replaced."""
+
+    def test_replace_custom_decomp_op_depends_on_self(self):
+        """Test that we catch when decompositions of operators depend on themselves."""
+
+        def invalid_custom_rx(theta, wires):
+            return [qml.PauliY(wires=wires), qml.RX(-theta, wires=wires), qml.PauliY(wires=wires)]
+
+        def qfunc():
+            qml.RX(0.3, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        transformed_qfunc = replace(custom_ops={"RX": invalid_custom_rx})(qfunc)
+        transformed_ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        print(transformed_ops)
+        
+        qnode = qml.QNode(transformed_qfunc, dev)
+
+        with pytest.raises(ValueError, match="decomposition depends on the operator itself"):
+            qnode()
+
+    def test_replace_custom_decomp_infinite_loop(self):
+        """Test that we correctly catch when two custom decompositions depend on each other."""
+
+        def custom_cz(wires):
+            return [
+                qml.Hadamard(wires=wires[1]),
+                qml.CNOT(wires=[wires[0], wires[1]]),
+                qml.Hadamard(wires=wires[1]),
+            ]
+
+        # These decompositions are interdependent and would cause an infinite
+        # loop if we tried to recursively unroll.
+        custom_ops = {"CNOT": custom_cnot, "CZ": custom_cz}
+
+        def qfunc():
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        transformed_qfunc = replace(custom_ops=custom_ops)(qfunc)
+
+        qnode = qml.QNode(transformed_qfunc, dev)
+
+        with pytest.raises(ValueError, match="decomposition of an operator in its decomposition"):
+            qnode()
 
     def test_replace_no_custom_ops(self):
         """Test that replacement with no custom ops does nothing to a quantum function."""
@@ -85,7 +125,7 @@ class TestReplace:
             [Wires("a"), Wires("a"), Wires(["a", "b"]), Wires("b"), Wires("b")],
         )
 
-    def test_replace_two_custom_op(self):
+    def test_replace_two_custom_ops(self):
         """Test that multiple instances of an operator in a circuit are correctly replaced."""
 
         custom_ops = {"Hadamard": custom_hadamard, "CNOT": custom_cnot}
@@ -100,8 +140,8 @@ class TestReplace:
 
         compare_operation_lists(
             transformed_ops,
-            ["RY", "PauliX", "Hadamard", "CZ", "Hadamard", "RY", "PauliX"],
-            [Wires("a"), Wires("a"), Wires("b"), Wires(["a", "b"])] + [Wires("b")] * 3,
+            ["RY", "PauliX", "RY", "PauliX", "CZ", "RY", "PauliX", "RY", "PauliX"],
+            [Wires("a")] * 2 + [Wires("b")] * 2 + [Wires(["a", "b"])] + [Wires("b")] * 4,
         )
 
     def test_replace_integration(self):
@@ -134,12 +174,12 @@ def qfunc(theta):
     return qml.expval(qml.PauliY("a") @ qml.PauliZ("b"))
 
 
-custom_ops = {"CNOT": custom_cnot, "RX": custom_rx, "Hadamard": custom_hadamard}
+custom_ops = {"CNOT": custom_cnot, "Hadamard": custom_hadamard}
 
 transformed_qfunc = replace(custom_ops=custom_ops)(qfunc)
 
-expected_op_list = ["PauliY", "RX", "PauliY", "Hadamard", "CZ", "Hadamard", "RY", "PauliX", "RY"]
-expected_wires_list = [Wires("a")] * 3 + [Wires("b")] + [Wires(["a", "b"])] + [Wires("b")] * 4
+expected_op_list = ["RX", "RY", "PauliX", "CZ", "RY", "PauliX", "RY", "PauliX", "RY"]
+expected_wires_list = [Wires("a")] + [Wires("b")] * 2 + [Wires(["a", "b"])] + [Wires("b")] * 5
 
 
 class TestReplaceInterfaces:
