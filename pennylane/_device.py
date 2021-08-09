@@ -512,8 +512,7 @@ class Device(abc.ABC):
         Args:
             circuits (list[.tape.QuantumTape]): circuits to execute on the device
             method (str): the device method to call to compute the Jacobian of a single circuit
-            gradient_kwargs (dict): dictionary of keyword argument to pass
-                when calling ``method``.
+            **kwargs: keyword argument to pass when calling ``method``.
 
         Returns:
             tuple[list[array[float]], list[array[float]]]: Tuple containing list of measured value(s)
@@ -545,8 +544,7 @@ class Device(abc.ABC):
         Args:
             circuits (list[.tape.QuantumTape]): circuits to execute on the device
             method (str): the device method to call to compute the Jacobian of a single circuit
-            gradient_kwargs (dict): dictionary of keyword argument to pass
-                when calling ``method``.
+            **kwargs: keyword argument to pass when calling ``method``.
 
         Returns:
             list[array[float]]: List of Jacobians. Returned Jacobians should be of
