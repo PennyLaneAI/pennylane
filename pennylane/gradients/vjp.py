@@ -20,10 +20,31 @@ import numpy as np
 from pennylane import math
 
 
-def _vector_jacobian_product(dy, jac):
-    """Compute the vector-Jacobian product for a given
-    vector of gradient outputs dy and a Jacobian Jac"""
+def compute_vjp(dy, jac):
+    """Convenience function to compute the vector-Jacobian product for a given
+    vector of gradient outputs and a Jacobian.
+
+    Args:
+        dy (tensor_like): vector of gradient outputs
+        jac (tensor_like): Jacobian matrix. For an n-dimensional ``dy``
+            vector, the first n-dimensions of ``jac`` should match
+            the shape of ``dy``.
+
+    Returns:
+        tensor_like: the vector-Jacobian product
+    """
+    if jac is None:
+        return None
+
     dy_row = math.reshape(dy, [-1])
+    jac = math.reshape(jac, [dy_row.shape[0], -1])
+
+    if math.allclose(dy, 0):
+        # If the dy vector is zero, then the
+        # corresponding element of the VJP will be zero.
+        num_params = jac.shape[1]
+        return math.convert_like(np.zeros([num_params]), dy)
+
     return math.tensordot(jac, dy_row, [[0], [0]])
 
 
@@ -110,7 +131,7 @@ def vjp(tape, dy, gradient_fn):
     def processing_fn(results):
         # postprocess results to compute the Jacobian
         jac = fn(results)
-        return _vector_jacobian_product(dy, jac)
+        return compute_vjp(dy, jac)
 
     return gradient_tapes, processing_fn
 

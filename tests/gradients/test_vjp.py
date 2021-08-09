@@ -21,6 +21,37 @@ from pennylane import numpy as np
 from pennylane.gradients import param_shift
 
 
+class TestComputeVJP:
+    """Tests for the numeric computation of VJPs"""
+
+    def test_computation(self):
+        """Test that the correct VJP is returned"""
+        dy = np.array([[1.0, 2.0], [3.0, 4.0]])
+        jac = np.array([[[1.0, 0.1, 0.2], [0.2, 0.6, 0.1]], [[0.4, -0.7, 1.2], [-0.5, -0.6, 0.7]]])
+
+        vjp = qml.gradients.compute_vjp(dy, jac)
+
+        assert vjp.shape == (3,)
+        assert np.all(vjp == np.tensordot(dy, jac, axes=[[0, 1], [0, 1]]))
+
+    def test_jacobian_is_none(self):
+        """A None Jacobian returns a None VJP"""
+
+        dy = np.array([[1.0, 2.0], [3.0, 4.0]])
+        jac = None
+
+        vjp = qml.gradients.compute_vjp(dy, jac)
+        assert vjp is None
+
+    def test_zero_dy(self):
+        """A zero dy vector will return a zero matrix"""
+        dy = np.zeros([2, 2])
+        jac = np.array([[[1.0, 0.1, 0.2], [0.2, 0.6, 0.1]], [[0.4, -0.7, 1.2], [-0.5, -0.6, 0.7]]])
+
+        vjp = qml.gradients.compute_vjp(dy, jac)
+        assert np.all(vjp == np.zeros([3]))
+
+
 class TestVJP:
     """Tests for the vjp function"""
 
@@ -222,7 +253,7 @@ class TestVJPGradients:
 
         assert np.allclose(vjp.detach(), expected(params.detach()), atol=tol, rtol=0)
 
-        cost = vjp[0, 0]
+        cost = vjp[0]
         cost.backward()
 
         exp = qml.jacobian(lambda x: expected(x)[0])(params.detach().numpy())
