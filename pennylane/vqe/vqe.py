@@ -174,26 +174,22 @@ class Hamiltonian:
           (-1) [X0]
         + (1) [Y2]
         """
+        ops_coeffs = dict()
+
         coeffs = []
         ops = []
 
         for c, op in zip(self.coeffs, self.ops):
             op = op if isinstance(op, Tensor) else Tensor(op)
+            op_id = frozenset(op._obs_data())
+            ind = ops_coeffs.get(op_id)
 
-            ind = None
-            for i, other in enumerate(ops):
-                if op.compare(other):
-                    ind = i
-                    break
-
-            if ind is not None:
-                coeffs[ind] += c
-                if np.allclose([coeffs[ind]], [0]):
-                    del coeffs[ind]
-                    del ops[ind]
-            else:
+            if ind is None:
+                ops_coeffs[op_id] = len(ops)
                 ops.append(op.prune())
                 coeffs.append(c)
+            else:
+                coeffs[ind] += c
 
         self._coeffs = coeffs
         self._ops = ops
