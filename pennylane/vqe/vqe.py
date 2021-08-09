@@ -175,24 +175,28 @@ class Hamiltonian:
         + (1) [Y2]
         """
         ops_coeffs = dict()
-
-        coeffs = []
         ops = []
 
         for c, op in zip(self.coeffs, self.ops):
-            op = op if isinstance(op, Tensor) else Tensor(op)
+            op = (op if isinstance(op, Tensor) else Tensor(op)).prune()
             op_id = frozenset(op._obs_data())
             ind = ops_coeffs.get(op_id)
 
             if ind is None:
-                ops_coeffs[op_id] = len(ops)
-                ops.append(op.prune())
-                coeffs.append(c)
+                ops_coeffs[op_id] = (op, c)
             else:
-                coeffs[ind] += c
+                ops_coeffs[op_id] = (op, ops_coeffs[op_id][1] + c)
+                if np.isclose(ops_coeffs[op_id][1], 0.0):
+                    del ops_coeffs[op_id]
 
-        self._coeffs = coeffs
-        self._ops = ops
+        new_ops = []
+        new_coeffs = []
+
+        for k in ops_coeffs.values():
+            new_ops.append(k[0])
+            new_coeffs.append(k[1])
+        self._coeffs = new_coeffs
+        self._ops = new_ops
 
     def __str__(self):
         # Lambda function that formats the wires

@@ -406,6 +406,9 @@
 * Added the `id` attribute to templates, which was missing from 
   PR [(#1377)](https://github.com/PennyLaneAI/pennylane/pull/1377).
   [(#1438)](https://github.com/PennyLaneAI/pennylane/pull/1438)
+
+* Speed-up for Hamiltonian simplification.
+  [(#1056)](https://github.com/PennyLaneAI/pennylane/pull/1506)
   
 <h3>Breaking changes</h3>
 
@@ -452,7 +455,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Leonhard Kunczik, Christina Lee, Romain Moyard, Ashish Panigrahi,
+Jack Ceroni, Olivia Di Matteo, Josh Izaac, Leonhard Kunczik, Christina Lee, Romain Moyard, Ashish Panigrahi,
 Maria Schuld, Jay Soni, Antal Száva, David Wierichs
 
 
