@@ -707,6 +707,23 @@ class TestHamiltonian:
         old_H.simplify()
         assert old_H.compare(new_H)
 
+    def test_simplify_while_queueing(self):
+        """Tests that simplifying a Hamiltonian in a tape context
+        queues the simplified Hamiltonian."""
+
+        with qml.tape.QuantumTape() as tape:
+            a = qml.PauliX(wires=0)
+            b = qml.PauliY(wires=1)
+            c = qml.Identity(wires=2)
+            d = b @ c
+            H = qml.Hamiltonian([1.0, 2.0], [a, d])
+            H.simplify()
+
+        # check that H is simplified
+        assert H.ops == [a, b]
+        # check that the simplified Hamiltonian is in the queue
+        assert H in tape._queue
+
     def test_data(self):
         """Tests the obs_data method"""
 

@@ -465,6 +465,13 @@
 
 <h3>Improvements</h3>
 
+* The tape does not verify any more that all Observables have owners in the annotated queue.
+  [(#1505)](https://github.com/PennyLaneAI/pennylane/pull/1505)
+  This allows manipulation of Observables inside a tape context. An example is 
+  `expval(Tensor(qml.PauliX(0), qml.Identity(1)).prune())` which makes the expval an owner 
+  of the pruned tensor and its constituent observables, but leaves the original tensor in 
+  the queue without an owner.
+
 * The `step` and `step_and_cost` methods of `QNGOptimizer` now accept a custom `grad_fn`
   keyword argument to use for gradient computations.
   [(#1487)](https://github.com/PennyLaneAI/pennylane/pull/1487)
