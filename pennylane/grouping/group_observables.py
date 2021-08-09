@@ -261,4 +261,11 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
         # add a tensor of coefficients to the grouped coefficients
         partitioned_coeffs[i] = qml.math.take(coefficients, indices, axis=0)
 
+    # make sure the output is of the same format than the input
+    # for these two frequent cases
+    if isinstance(coefficients, list):
+        partitioned_coeffs = [list(p) for p in partitioned_coeffs]
+    if isinstance(coefficients, tuple):
+        partitioned_coeffs = [tuple(p) for p in partitioned_coeffs]
+
     return partitioned_paulis, partitioned_coeffs

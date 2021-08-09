@@ -304,6 +304,22 @@ class TestGroupObservables:
 
         assert grouping_instance._wire_map == wire_map
 
+    def test_return_list_coefficients(self):
+        """Tests that if the coefficients are given as a list, the groups
+        are likewise lists."""
+        obs = [qml.PauliX(0), qml.PauliX(1)]
+        coeffs = [1., 2.]
+        _, grouped_coeffs = group_observables(obs, coeffs)
+        assert isinstance(grouped_coeffs[0], list)
+
+    def test_return_tuple_coefficients(self):
+        """Tests that if the coefficients are given as a tuple, the groups
+        are likewise tuples."""
+        obs = [qml.PauliX(0), qml.PauliX(1)]
+        coeffs = (1., 2.)
+        _, grouped_coeffs = group_observables(obs, coeffs)
+        assert isinstance(grouped_coeffs[0], tuple)
+
 
 class TestDifferentiable:
     """Tests that grouping observables is differentiable with respect to the coefficients."""
