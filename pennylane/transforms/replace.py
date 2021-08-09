@@ -44,7 +44,7 @@ def _validate_decomposition_function(op, custom_ops):
     # Check that no decompositions of gates depend on themselves
     if op.name in decomp_op_names:
         raise ValueError(
-            "Custom decomposition for operation {op.name} invalid. "
+            f"Custom decomposition for operation {op.name} invalid. "
             "Decomposition depends on the operator itself."
         )
 
@@ -59,7 +59,7 @@ def _validate_decomposition_function(op, custom_ops):
             print(sub_decomp_op_names)
             if op.name in sub_decomp_op_names:
                 raise ValueError(
-                    "Decomposition for operation {op.name} invalid. "
+                    f"Decomposition for operation {op.name} invalid. "
                     "Decomposition of an operator in its decomposition depends on it."
                 )
 
