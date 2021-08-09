@@ -2,6 +2,32 @@
 
 <h3>New features since last release</h3>
 
+* Docker support for building PennyLane with support for all interfaces (TensorFlow, 
+  Torch, and Jax), as well as device plugins and QChem, for GPUs and CPUs, has been added. 
+  [(#1372)](https://github.com/PennyLaneAI/pennylane/issues/1372)
+
+  The build process using Docker and Makefile works as follows:
+
+  Building a core PennyLane image:
+  ```
+  make -f docker/Makefile build-base
+  ```
+
+  Building a PennyLane image with the TensorFlow interface (change `interface-name` for other interfaces):
+  ```
+  make -f docker/Makefile build-interface interface-name=tensorflow
+  ```
+
+  Building a PennyLane image with the Qiskit plugin (change `plugin-name` for other plugins):
+  ```
+  make -f docker/Makefile build-plugin plugin-name=qiskit
+  ```
+
+  Building the PennyLane-QChem image:
+  ```
+  make -f docker/Makefile build-qchem
+  ```
+
 * PennyLane can now perform quantum circuit optimization using the
   top-level transform `qml.compile`. The `compile` transform allows you
   to chain together sequences of tape and quantum function transforms
@@ -567,8 +593,9 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Leonhard Kunczik, Christina Lee, Romain Moyard, Ashish Panigrahi,
-Maria Schuld, Jay Soni, Antal Száva, David Wierichs
+Olivia Di Matteo, Josh Izaac, Leonhard Kunczik, Christina Lee, Romain Moyard,
+Arshpreet Singh Khangura, Ashish Panigrahi,
+Maria Schuld, Jay Soni, Antal Száva, David Wierichs.
 
 
 # Release 0.16.0 (current release)
