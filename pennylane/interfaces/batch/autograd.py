@@ -163,8 +163,10 @@ def vjp(
             # For the moment, simply check if it is part of the `qml.gradients` package.
             # Longer term, we should have a way of checking this directly
             # (e.g., isinstance(gradient_fn, GradientTransform))
+            module_name = getattr(inspect.getmodule(gradient_fn), "__name__", "")
+            print(gradient_fn, gradient_fn.__module__, inspect.ismethod(gradient_fn))
 
-            if "pennylane.gradients" in inspect.getmodule(gradient_fn).__name__:
+            if "pennylane.gradients" in module_name:
 
                 # Generate and execute the required gradient tapes
                 vjp_tapes, processing_fn = qml.gradients.batch_vjp(

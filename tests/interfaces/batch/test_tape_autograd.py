@@ -101,6 +101,61 @@ class TestAutogradExecuteUnitTests:
         with pytest.raises(ValueError, match="Unknown interface"):
             cost(a, device=dev)
 
+    def test_forward_mode(self, mocker):
+        """Test that forward mode uses the `device.execute_and_gradients` pathway"""
+        dev = qml.device("default.qubit", wires=1)
+        spy = mocker.spy(dev, "execute_and_gradients")
+
+        def cost(a):
+            with qml.tape.JacobianTape() as tape:
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.expval(qml.PauliZ(0))
+
+            return execute(
+                [tape],
+                dev,
+                gradient_fn="device",
+                gradient_kwargs={"method": "adjoint_jacobian", "use_device_state": True},
+            )[0]
+
+        a = np.array([0.1, 0.2], requires_grad=True)
+        cost(a)
+
+        # adjoint method only performs a single device execution, but gets both result and gradient
+        assert dev.num_executions == 1
+        spy.assert_called()
+
+    def test_backward_mode(self, mocker):
+        """Test that backward mode uses the `device.batch_execute` and `device.gradients` pathway"""
+        dev = qml.device("default.qubit", wires=1)
+        spy_execute = mocker.spy(qml.devices.DefaultQubit, "batch_execute")
+        spy_gradients = mocker.spy(qml.devices.DefaultQubit, "gradients")
+
+        def cost(a):
+            with qml.tape.JacobianTape() as tape:
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.expval(qml.PauliZ(0))
+
+            return execute(
+                [tape],
+                dev,
+                gradient_fn="device",
+                mode="backward",
+                gradient_kwargs={"method": "adjoint_jacobian"},
+            )[0]
+
+        a = np.array([0.1, 0.2], requires_grad=True)
+        cost(a)
+
+        assert dev.num_executions == 1
+        spy_execute.assert_called()
+        spy_gradients.assert_not_called()
+
+        qml.jacobian(cost)(a)
+        spy_gradients.assert_called()
+
 
 execute_kwargs = [
     {"gradient_fn": param_shift},
