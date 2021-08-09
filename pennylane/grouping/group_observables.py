@@ -243,15 +243,19 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
     ]
 
     observables = copy(observables)
+    # we cannot delete elements from the coefficients tensor, so we
+    # use a proxy list memorising the indices for this logic
+    coeff_indices = list(range(qml.math.shape(coefficients)[0]))
     for i, partition in enumerate(partitioned_paulis):
         indices = []
-        for pauli_word in partition:
-            # find index of this pauli word in original observables
+        for j, pauli_word in enumerate(partition):
+            # find index of this pauli word in remaining original observables,
             for observable in observables:
                 if are_identical_pauli_words(pauli_word, observable):
                     ind = observables.index(observable)
-                    if ind not in indices:
-                        indices.append(ind)
+                    indices.append(coeff_indices[ind])
+                    observables.pop(ind)
+                    coeff_indices.pop(ind)
                     break
 
         # add a tensor of coefficients to the grouped coefficients

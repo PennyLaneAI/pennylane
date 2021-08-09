@@ -1333,7 +1333,7 @@ class TestNewVQE:
             return qml.sample(H)
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="Only a single expectation of a Hamiltonian observable "
+            ValueError, match="Only a single expectation of a Hamiltonian observable "
         ):
             circuit()
 
@@ -1342,7 +1342,7 @@ class TestNewVQE:
             return qml.var(H)
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="Only expectation measurements of Hamiltonians"
+            ValueError, match="Only a single expectation of a Hamiltonian observable"
         ):
             circuit()
 

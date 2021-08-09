@@ -214,7 +214,7 @@ class Hamiltonian(qml.operation.Observable):
                 ops.append(op.prune())
                 data.append(c)
 
-        self._coeffs = qml.math.stack(data)
+        self._coeffs = qml.math.stack(data) if data else []
         self.data = data
         self._ops = ops
 
