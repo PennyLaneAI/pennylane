@@ -128,7 +128,7 @@
   Total shots:  300
   ```
 
-* The `group_hamiltonian` tansform is now differentiable.
+* The `group_observables` transform is now differentiable.
   [(#1483)](https://github.com/PennyLaneAI/pennylane/pull/1483)
  
   For example:
@@ -166,11 +166,11 @@
   dev = qml.device("default.qubit", wires=2)
   @qml.qnode(dev)
   def circuit(coeffs, param):
-    qml.RX(param, wires=0)
-    qml.RY(param, wires=0)
-    return qml.expval(
-      qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=True)
-    )
+      qml.RX(param, wires=0)
+      qml.RY(param, wires=0)
+      return qml.expval(
+          qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=True)
+      )
     
   coeffs = np.array([-0.05, 0.17])
   param = np.array(1.7)
