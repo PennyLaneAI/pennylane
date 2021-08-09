@@ -205,7 +205,7 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
            * list[list[Observable]]: A list of the obtained groupings. Each grouping
              is itself a list of Pauli word ``Observable`` instances.
            * list[tensor_like]: A list of coefficient groupings. Each coefficient
-             grouping is itself a tensor of the grouping's corresponding coefficients. This is only
+             grouping is itself a tensor or list of the grouping's corresponding coefficients. This is only
              returned if coefficients are specified.
 
     Raises:
@@ -265,7 +265,5 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
     # for these two frequent cases
     if isinstance(coefficients, list):
         partitioned_coeffs = [list(p) for p in partitioned_coeffs]
-    if isinstance(coefficients, tuple):
-        partitioned_coeffs = [tuple(p) for p in partitioned_coeffs]
 
     return partitioned_paulis, partitioned_coeffs
