@@ -102,7 +102,7 @@
   Total shots:  300
   ```
 
-* The `group_hamiltonian` tansform is now differentiable.
+* The `group_observables` transform is now differentiable.
   [(#1483)](https://github.com/PennyLaneAI/pennylane/pull/1483)
  
   For example:
