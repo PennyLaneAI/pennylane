@@ -27,7 +27,6 @@ from pennylane.operation import Observable, Tensor
 from pennylane.queuing import QueuingError
 from pennylane.wires import Wires
 
-
 OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identity": "I"}
 
 
@@ -222,8 +221,8 @@ class Hamiltonian(qml.operation.Observable):
         # Lambda function that formats the wires
         wires_print = lambda ob: ",".join(map(str, ob.wires.tolist()))
 
-        self_coeffs = self.data  # list of scalar tensors
-        paired_coeff_obs = list(zip(self_coeffs, self.ops))
+        list_of_coeffs = self.data  # list of scalar tensors
+        paired_coeff_obs = list(zip(list_of_coeffs, self.ops))
         paired_coeff_obs.sort(key=lambda pair: (len(pair[1].wires), pair[0]))
 
         terms_ls = []
@@ -244,7 +243,7 @@ class Hamiltonian(qml.operation.Observable):
 
     def __repr__(self):
         # Constructor-call-like representation
-        return f"<Hamiltonian: terms={len(self.coeffs)}, wires={self.wires.tolist()}>"
+        return f"<Hamiltonian: terms={qml.math.shape(self.coeffs)[0]}, wires={self.wires.tolist()}>"
 
     def _obs_data(self):
         r"""Extracts the data from a Hamiltonian and serializes it in an order-independent fashion.
