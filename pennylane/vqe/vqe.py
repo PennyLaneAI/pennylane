@@ -196,8 +196,8 @@ class Hamiltonian(qml.operation.Observable):
             op = op if isinstance(op, Tensor) else Tensor(op)
 
             ind = None
-            for j, other in enumerate(ops):
-                if op.compare(other):
+            for j, o in enumerate(ops):
+                if op.compare(o):
                     ind = j
                     break
 
