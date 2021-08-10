@@ -547,6 +547,11 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug in in the internals of `@qml.qfunc_transform` where the tapes
+  with a single `qml.state` output had squeezed output dimensions to due
+  an indexing logic.
+  [(#1509)](https://github.com/PennyLaneAI/pennylane/pull/1509)
+
 * Fixes a bug in `GradientDescentOptimizer` and `NesterovMomentumOptimizer`
   where a cost function with one trainable parameter and non-trainable
   parameters raised an error.

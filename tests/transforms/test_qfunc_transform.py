@@ -312,7 +312,7 @@ class TestQFuncTransforms:
             for op in tape.operations:
                 op.queue()
 
-            qml.CNOT(wires=[0,1])
+            qml.CNOT(wires=[0, 1])
 
             # Apply the original measurements
             for op in tape.measurements:
@@ -326,7 +326,7 @@ class TestQFuncTransforms:
         dev = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(qfunc, dev)
         res = qnode()
-        assert res.shape == (1,4)
+        assert res.shape == (1, 4)
 
 
 ############################################
