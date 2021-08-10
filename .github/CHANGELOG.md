@@ -1,4 +1,4 @@
-# Release 0.17.0-dev (development release)
+# Release 0.17.0 (current release)
 
 <h4>Circuit optimization</h4>
 
@@ -639,7 +639,7 @@ Romain Moyard, Arshpreet Singh Khangura, Ashish Panigrahi, Maria Schuld, Jay
 Soni, Antal Száva, David Wierichs.
 
 
-# Release 0.16.0 (current release)
+# Release 0.16.0
 
 <h4>First class support for quantum kernels</h4>
 
