@@ -465,6 +465,9 @@
 
 <h3>Improvements</h3>
 
+* The device test suite has been expanded to cover more qubit operations and observables.
+  [(#1510)](https://github.com/PennyLaneAI/pennylane/pull/1510)
+
 * The tape does not verify any more that all Observables have owners in the annotated queue.
   [(#1505)](https://github.com/PennyLaneAI/pennylane/pull/1505)
   This allows manipulation of Observables inside a tape context. An example is 
