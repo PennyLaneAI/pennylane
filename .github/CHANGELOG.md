@@ -228,7 +228,7 @@
 * Added functionality to compute the sparse matrix representation of a `qml.Hamiltonian` object.
   [(#1394)](https://github.com/PennyLaneAI/pennylane/pull/1394)
 
-<h4> More convenient QNode usage </h4>
+<h4> QNodes are more convenient</h4>
 
 * Added functionality to `qml.sample()` to extract samples from the basis states of
   the device (currently only for qubit devices). Additionally, `wires` can be
@@ -294,7 +294,7 @@
 
   Previously instantiated measurements can also be applied to QNodes.
 
-<h4>Tracking device resources</h4>
+<h4>Resource Devicer Tracker</h4>
 
 * The new Device Tracker capabilities allows for flexible and versatile tracking of executions,
   even inside parameter-shift gradients. This functionality will improve the ease of monitoring
