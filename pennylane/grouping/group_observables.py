@@ -248,7 +248,7 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
     coeff_indices = list(range(qml.math.shape(coefficients)[0]))
     for i, partition in enumerate(partitioned_paulis):
         indices = []
-        for j, pauli_word in enumerate(partition):
+        for pauli_word in partition:
             # find index of this pauli word in remaining original observables,
             for observable in observables:
                 if are_identical_pauli_words(pauli_word, observable):

@@ -96,12 +96,6 @@ class Hamiltonian(qml.operation.Observable):
     >>> H3 = qml.Hamiltonian(torch.tensor([1., 2., 3.]), [qml.PauliX(0), qml.PauliY(0), qml.PauliX(1)])
     >>> H3.compare(H1 + H2)
     True
-
-    .. Warning::
-        When Hamiltonians are defined using arithmetic operations **inside of quantum functions**, constituent observables
-        may be queued as operations/an error may be thrown. Thus, Hamiltonians must be defined either outside
-        of quantum functions, or inside of quantum functions using the conventional construction method.
-
     """
 
     num_wires = qml.operation.AnyWires
@@ -135,7 +129,10 @@ class Hamiltonian(qml.operation.Observable):
         coeffs_flat = [self._coeffs[i] for i in range(qml.math.shape(self._coeffs)[0])]
         # overwrite this attribute, now that we have the correct info
         self.num_params = qml.math.shape(self._coeffs)[0]
-        # create an operator using each coefficient as a separate parameter
+
+        # create the operator using each coefficient as a separate parameter;
+        # this causes H.data to be a list of tensor scalars,
+        # while H.coeffs is the original tensor
         super().__init__(*coeffs_flat, wires=self._wires, id=id, do_queue=do_queue)
 
     @property
