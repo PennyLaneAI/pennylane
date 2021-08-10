@@ -89,7 +89,7 @@ ops = {
 all_ops = ops.keys()
 
 # All qubit operations should be available to test in the device test suite
-all_available_ops = qml.ops._qubit__ops__.copy()
+all_available_ops = qml.ops._qubit__ops__.copy()  # pylint: disable=protected-access
 all_available_ops.remove("CPhase")  # CPhase is an alias of ControlledPhaseShift
 assert set(all_ops) == all_available_ops
 

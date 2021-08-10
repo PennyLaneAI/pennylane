@@ -41,7 +41,7 @@ obs = {
 all_obs = obs.keys()
 
 # All qubit observables should be available to test in the device test suite
-all_available_obs = qml.ops._qubit__obs__.copy()
+all_available_obs = qml.ops._qubit__obs__.copy()  # pylint: disable=protected-access
 # Note that the identity is not technically a qubit observable
 all_available_obs |= {"Identity"}
 assert set(all_obs) == all_available_obs
