@@ -16,6 +16,7 @@ This subpackage defines functions for interfacing devices' batch execution
 capabilities with different machine learning libraries.
 """
 # pylint: disable=import-outside-toplevel)
+from cachetools import LRUCache
 from functools import partial
 
 import pennylane as qml
@@ -98,7 +99,14 @@ def execute_fn_wrapper(tapes, device, **kwargs):
 
 
 def execute(
-    tapes, device, gradient_fn, interface="autograd", mode="best", gradient_kwargs=None, cache=True
+    tapes,
+    device,
+    gradient_fn,
+    interface="autograd",
+    mode="best",
+    gradient_kwargs=None,
+    cache=None,
+    cachesize=10000,
 ):
     """Execute a batch of tapes on a device in an autodifferentiable-compatible manner.
 
@@ -200,17 +208,12 @@ def execute(
 
     else:
         # gradient function is a transform
-        if cache:
-            gradient_kwargs["cache"] = {}
+        gradient_kwargs["cache"] = cache or LRUCache(maxsize=cachesize, getsizeof=lambda x: len(x))
         execute_fn = lambda tapes, **kwargs: execute_fn_wrapper(tapes, device, **kwargs)
 
     if interface == "autograd":
         res = execute_autograd(tuple(tapes), device, execute_fn, gradient_fn, gradient_kwargs)
     else:
         raise ValueError(f"Unknown interface {interface}")
-
-    if "cache" in gradient_kwargs:
-        # clear the cache
-        gradient_kwargs["cache"] = {}
 
     return res
