@@ -1212,7 +1212,7 @@ class TestPassthruIntegration:
         assert np.allclose(res_grad.detach(), expected_grad, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("operation", [qml.U3, qml.U3.decomposition])
-    @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "finite-diff"])
+    @pytest.mark.parametrize("diff_method", ["backprop", "finite-diff"])
     def test_torch_interface_gradient(self, operation, diff_method, tol):
         """Tests that the gradient of an arbitrary U3 gate is correct
         using the PyTorch interface, using a variety of differentiation methods."""
