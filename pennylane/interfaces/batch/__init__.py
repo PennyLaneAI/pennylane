@@ -19,6 +19,7 @@ capabilities with different machine learning libraries.
 from functools import partial
 
 import pennylane as qml
+import numpy as np
 
 from .autograd import execute as execute_autograd
 
@@ -32,7 +33,7 @@ def tape_hash(tape):
         (
             str(op.name),
             tuple(op.wires.tolist()),
-            str(op.data),
+            str([np.mod(d, 2*np.pi) for d in op.data]),
         )
         for op in tape.operations
     )
@@ -53,9 +54,17 @@ def execute_fn_wrapper(tapes, device, **kwargs):
     execution_tapes = OrderedDict()
     cached_results = {}
     hashes = {}
+    repeated = {}
 
     for i, tape in enumerate(tapes):
-        hashes[i] = tape_hash(tape)
+        h = tape_hash(tape)
+
+        if h in hashes.values():
+            idx = list(hashes.keys())[list(hashes.values()).index(h)]
+            repeated[i] = idx
+            continue
+
+        hashes[i] = h
 
         if hashes[i] in cache:
             cached_results[i] = cache[hashes[i]]
@@ -68,6 +77,8 @@ def execute_fn_wrapper(tapes, device, **kwargs):
     for i, tape in enumerate(tapes):
         if i in cached_results:
             final_res.append(cached_results[i])
+        elif i in repeated:
+            final_res.append(final_res[repeated[i]])
         else:
             r = res.pop(0)
             final_res.append(r)
