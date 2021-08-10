@@ -200,9 +200,6 @@
   that are faster by orders of magnitude. Note that "parameter-shift" is the only differentiation
   method that is currently supported when the observable is a sparse Hamiltonian.
 
-* Added functionality to compute the sparse matrix representation of a `qml.Hamiltonian` object.
-  [(#1394)](https://github.com/PennyLaneAI/pennylane/pull/1394)
-
 * VQE problems can now be intuitively set up by passing the Hamiltonian
   as an observable. [(#1474)](https://github.com/PennyLaneAI/pennylane/pull/1474)
 
@@ -227,6 +224,9 @@
 
   Note that other measurement types like `var(H)` or `sample(H)`, as well
   as multiple expectations like `expval(H1), expval(H2)` are not supported.
+
+* Added functionality to compute the sparse matrix representation of a `qml.Hamiltonian` object.
+  [(#1394)](https://github.com/PennyLaneAI/pennylane/pull/1394)
 
 <h4> More convenient QNode usage </h4>
 
@@ -294,7 +294,7 @@
 
   Previously instantiated measurements can also be applied to QNodes.
 
-<h4>Resource estimation</h4>
+<h4>Tracking device resources</h4>
 
 * The new Device Tracker capabilities allows for flexible and versatile tracking of executions,
   even inside parameter-shift gradients. This functionality will improve the ease of monitoring
@@ -341,6 +341,36 @@
   Total shots:  300
   ```
 
+<h4>Containerization support</h4>
+
+* Docker support for building PennyLane with support for all interfaces (TensorFlow,
+  Torch, and Jax), as well as device plugins and QChem, for GPUs and CPUs, has been added.
+  [(#1372)](https://github.com/PennyLaneAI/pennylane/issues/1372)
+
+  The build process using Docker and Makefile works as follows:
+
+  Building a core PennyLane image:
+  ```
+  make -f docker/Makefile build-base
+  ```
+
+  Building a PennyLane image with the TensorFlow interface (change `interface-name` for other interfaces):
+  ```
+  make -f docker/Makefile build-interface interface-name=tensorflow
+  ```
+
+  Building a PennyLane image with the Qiskit plugin (change `plugin-name` for other plugins):
+  ```
+  make -f docker/Makefile build-plugin plugin-name=qiskit
+  ```
+
+  Building the PennyLane-QChem image:
+  ```
+  make -f docker/Makefile build-qchem
+  ```
+
+<h4>New gradients module</h4>
+
 * A new gradients module `qml.gradients` has been added, which provides
   differentiable quantum gradient transforms.
   [(#1476)](https://github.com/PennyLaneAI/pennylane/pull/1476)
@@ -370,35 +400,7 @@
    [ 0.69916862  0.34072424  0.69202359]]
   ```
 
-<h4>Containerization support</h4>
-
-* Docker support for building PennyLane with support for all interfaces (TensorFlow,
-  Torch, and Jax), as well as device plugins and QChem, for GPUs and CPUs, has been added.
-  [(#1372)](https://github.com/PennyLaneAI/pennylane/issues/1372)
-
-  The build process using Docker and Makefile works as follows:
-
-  Building a core PennyLane image:
-  ```
-  make -f docker/Makefile build-base
-  ```
-
-  Building a PennyLane image with the TensorFlow interface (change `interface-name` for other interfaces):
-  ```
-  make -f docker/Makefile build-interface interface-name=tensorflow
-  ```
-
-  Building a PennyLane image with the Qiskit plugin (change `plugin-name` for other plugins):
-  ```
-  make -f docker/Makefile build-plugin plugin-name=qiskit
-  ```
-
-  Building the PennyLane-QChem image:
-  ```
-  make -f docker/Makefile build-qchem
-  ```
-
-<h4>New operations & templates</h4>
+<h4>Extended operations and templates</h4>
 
 * Grover Diffusion Operator template added.
   [(#1442)](https://github.com/PennyLaneAI/pennylane/pull/1442)
