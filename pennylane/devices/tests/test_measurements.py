@@ -59,6 +59,9 @@ class TestSupportedObservables:
         device_kwargs["wires"] = 3
         dev = qml.device(**device_kwargs)
 
+        if device_kwargs["shots"] is not None and observable == "SparseHamiltonian":
+            pytest.skip("SparseHamiltonian only supported in analytic mode")
+
         assert hasattr(dev, "observables")
         if observable in dev.observables:
 
@@ -441,6 +444,8 @@ class TestTensorExpval:
 
         if "SparseHamiltonian" not in dev.observables:
             pytest.skip("Skipped because device does not support the SparseHamiltonian observable.")
+        if dev.shots is not None:
+            pytest.skip("SparseHamiltonian only supported in analytic mode")
 
         h_row = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15])
         h_col = np.array([15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0])
