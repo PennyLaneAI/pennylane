@@ -357,13 +357,23 @@ from cachetools import cached
 from cachetools.keys import hashkey
 
 
+def _process_data(op):
+    if op.name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
+        return str([np.mod(d, 2 * np.pi) for d in op.data])
+
+    if op.name in ("CRX", "CRY", "CRZ", "CRot"):
+        return str([np.mod(d, 4 * np.pi) for d in op.data])
+
+    return str(op.data)
+
+
 def tape_hash(tape):
     fingerprint = []
     fingerprint.extend(
         (
             str(op.name),
             tuple(op.wires.tolist()),
-            str(op.data),
+            _process_data(op),
         )
         for op in tape.operations
     )

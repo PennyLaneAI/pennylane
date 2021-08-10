@@ -2,6 +2,7 @@ numpy
 scipy
 cvxpy
 cvxopt
+cachetools
 networkx
 tensornetwork==0.3
 autograd
