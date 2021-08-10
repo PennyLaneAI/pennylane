@@ -16,11 +16,64 @@ This subpackage defines functions for interfacing devices' batch execution
 capabilities with different machine learning libraries.
 """
 # pylint: disable=import-outside-toplevel)
-from functools import partial, lru_cache
+from functools import partial
 
 import pennylane as qml
 
 from .autograd import execute as execute_autograd
+
+
+from collections import OrderedDict
+
+
+def tape_hash(tape):
+    fingerprint = []
+    fingerprint.extend(
+        (
+            str(op.name),
+            tuple(op.wires.tolist()),
+            str(op.data),
+        )
+        for op in tape.operations
+    )
+    fingerprint.extend(
+        (str(op.name), tuple(op.wires.tolist()), str(op.data), op.return_type)
+        for op in tape.measurements
+    )
+    fingerprint = tuple(item for sublist in fingerprint for item in sublist)
+    return hash(fingerprint)
+
+
+def execute_fn_wrapper(tapes, device, **kwargs):
+    cache = kwargs.pop("cache", None)
+
+    if cache is None:
+        return device.batch_execute(tapes), []
+
+    execution_tapes = OrderedDict()
+    cached_results = {}
+    hashes = {}
+
+    for i, tape in enumerate(tapes):
+        hashes[i] = tape_hash(tape)
+
+        if hashes[i] in cache:
+            cached_results[i] = cache[hashes[i]]
+        else:
+            execution_tapes[i] = tape
+
+    res = device.batch_execute(execution_tapes.values())
+    final_res = []
+
+    for i, tape in enumerate(tapes):
+        if i in cached_results:
+            final_res.append(cached_results[i])
+        else:
+            r = res.pop(0)
+            final_res.append(r)
+            cache[hashes[i]] = r
+
+    return final_res, []
 
 
 def execute(tapes, device, gradient_fn, interface="autograd", mode="best", gradient_kwargs=None):
@@ -103,9 +156,6 @@ def execute(tapes, device, gradient_fn, interface="autograd", mode="best", gradi
            [ 0.01983384, -0.97517033,  0.        ],
            [ 0.        ,  0.        , -0.95533649]])
     """
-    # Default execution function; simply call device.batch_execute
-    # and return no Jacobians.
-    execute_fn = lru_cache()(lambda tapes, **kwargs: (device.batch_execute(tapes), []))
     gradient_kwargs = gradient_kwargs or {}
 
     if gradient_fn == "device":
@@ -119,12 +169,24 @@ def execute(tapes, device, gradient_fn, interface="autograd", mode="best", gradi
 
         elif mode == "backward":
             # replace the backward gradient computation
+            execute_fn = lambda tapes, **kwargs: (device.batch_execute(tapes), [])
             gradient_fn = device.gradients
 
     elif mode == "forward":
         raise ValueError("Gradient transforms cannot be used with mode='forward'")
 
-    if interface == "autograd":
-        return execute_autograd(tuple(tapes), device, execute_fn, gradient_fn, gradient_kwargs)
+    else:
+        # gradient function is a transform
+        gradient_kwargs["cache"] = {}
+        execute_fn = lambda tapes, **kwargs: execute_fn_wrapper(tapes, device, **kwargs)
 
-    raise ValueError(f"Unknown interface {interface}")
+    if interface == "autograd":
+        res = execute_autograd(tuple(tapes), device, execute_fn, gradient_fn, gradient_kwargs)
+    else:
+        raise ValueError(f"Unknown interface {interface}")
+
+    if "cache" in gradient_kwargs:
+        # clear the cache
+        gradient_kwargs["cache"] = {}
+
+    return res

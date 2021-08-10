@@ -353,45 +353,43 @@ def var_param_shift(tape, argnum, shift=np.pi / 2, gradient_recipes=None, f0=Non
     return gradient_tapes, processing_fn
 
 
-def freezeargs(func):
-    @functools.wraps(func)
-    def wrapped(*args, **kwargs):
-        args = tuple([tuple(arg) if isinstance(arg, list) else arg for arg in args])
-
-        fingerprint = []
-
-        for p in args[0].get_parameters(trainable_only=False):
-            if isinstance(p, (int, float)):
-                fingerprint.append(p)
-            else:
-                q = qml.math.toarray(p).tolist()
-
-                if isinstance(q, (int, float)):
-                    fingerprint.append(q)
-                else:
-                    fingerprint.append(tuple(qml.math.flatten(qml.math.toarray(p)).tolist()))
-
-        new_kwargs = {}
-        for k, v in kwargs.items():
-            if k == "gradient_recipes":
-                new_kwargs[k] = tuple([tuple([tuple(z) for z in y]) for y in v])
-            elif isinstance(v, list):
-                new_kwargs[k] = tuple(v)
-            elif isinstance(v, np.ndarray):
-                new_kwargs[k] = tuple(qml.math.array(v).tolist())
-            else:
-                new_kwargs[k] = v
-
-        return func(*args, hash=tuple(fingerprint), **new_kwargs)
-
-    return wrapped
+from cachetools import cached
+from cachetools.keys import hashkey
 
 
-@freezeargs
-@functools.lru_cache()
+def tape_hash(tape):
+    fingerprint = []
+    fingerprint.extend(
+        (
+            str(op.name),
+            tuple(op.wires.tolist()),
+            str(op.data),
+        )
+        for op in tape.operations
+    )
+    fingerprint.extend(
+        (str(op.name), tuple(op.wires.tolist()), str(op.data), op.return_type)
+        for op in tape.measurements
+    )
+    fingerprint = tuple(item for sublist in fingerprint for item in sublist)
+    return hash(fingerprint)
+
+
+def key(
+    tape, argnum=None, shift=np.pi / 2, gradient_recipes=None, fallback_fn=finite_diff, f0=None
+):
+    f0 = qml.math.toarray(f0).tolist() if f0 is not None else None
+    argnum = tuple(argnum) if argnum is not None else None
+
+    if gradient_recipes is not None:
+        gradient_recipes = tuple(tuple(y) for y in gradient_recipes)
+
+    return hashkey((tape_hash(tape), argnum, shift, gradient_recipes, fallback_fn, f0))
+
+
+@cached(cache={}, key=key)
 def param_shift(
     tape,
-    hash=None,
     argnum=None,
     shift=np.pi / 2,
     gradient_recipes=None,
@@ -501,7 +499,6 @@ def param_shift(
     [[-0.38751721 -0.18884787 -0.38355704]
      [ 0.69916862  0.34072424  0.69202359]]
     """
-    print("hello")
     f0 = np.array(f0) if f0 is not None else None
 
     # perform gradient method validation
