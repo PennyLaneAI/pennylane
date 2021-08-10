@@ -73,24 +73,19 @@ class TestHamiltonianCoefficients:
 
     @pytest.mark.parametrize("coeffs", [el[0] for el in COEFFS_PARAM_INTERFACE])
     def test_creation_different_coeff_types(self, coeffs):
-        """Check that Hamiltonian can be created with different tensor types as coefficients"""
+        """Check that Hamiltonian's coefficients and data attributes are set correctly."""
         H = qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)])
-        assert qml.math.allclose(coeffs, H.coeffs)
+        assert np.allclose(coeffs, H.coeffs)
+        assert np.allclose([coeffs[i] for i in range(qml.math.shape(coeffs)[0])], H.data)
 
     @pytest.mark.parametrize("coeffs", [el[0] for el in COEFFS_PARAM_INTERFACE])
     def test_simplify(self, coeffs):
-        """Test that simplify works"""
+        """Test that simplify works with different coefficient types."""
         H1 = qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(1)])
         H2 = qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.Identity(0) @ qml.PauliZ(1)])
         H2.simplify()
         assert H1.compare(H2)
-
-    @pytest.mark.parametrize("coeffs", [el[0] for el in COEFFS_PARAM_INTERFACE])
-    def test_simplify_different_coeff_types(self, coeffs):
-        H1 = qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(1)])
-        H2 = qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.Identity(0) @ qml.PauliZ(1)])
-        H2.simplify()
-        assert H1.compare(H2)
+        assert H1.data == H2.data
 
 
 class TestHamiltonianArithmeticTF:
@@ -440,6 +435,22 @@ class TestHamiltonianEvaluation:
         res = circuit()
         res_expected = coeffs[0] * circuit1() + coeffs[1] * circuit2()
         assert np.isclose(res, res_expected)
+
+    def test_simplify_reduces_tape_parameters(self):
+        """Test that simplifying a Hamiltonian reduces the number of parameters on a tape"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.RY(0.1, wires=0)
+            return qml.expval(
+                qml.Hamiltonian([1.0, 2.0], [qml.PauliX(1), qml.PauliX(1)], simplify=True)
+            )
+
+        circuit()
+        pars = circuit.qtape.get_parameters(trainable_only=False)
+        # simplify worked and added 1. and 2.
+        assert pars == [0.1, 3.0]
 
 
 class TestHamiltonianDifferentiation:

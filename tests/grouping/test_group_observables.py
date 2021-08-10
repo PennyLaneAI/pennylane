@@ -308,7 +308,7 @@ class TestGroupObservables:
         """Tests that if the coefficients are given as a list, the groups
         are likewise lists."""
         obs = [qml.PauliX(0), qml.PauliX(1)]
-        coeffs = [1., 2.]
+        coeffs = [1.0, 2.0]
         _, grouped_coeffs = group_observables(obs, coeffs)
         assert isinstance(grouped_coeffs[0], list)
 
