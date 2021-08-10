@@ -28,40 +28,6 @@ from .autograd import execute as execute_autograd
 from collections import OrderedDict
 
 
-def _process_data(op):
-    if op.name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
-        return str([d % (2 * np.pi) for d in op.data])
-
-    if op.name in ("CRX", "CRY", "CRZ", "CRot"):
-        return str([d % (4 * np.pi) for d in op.data])
-
-    return str(op.data)
-
-
-def tape_hash(tape):
-    fingerprint = []
-    fingerprint.extend(
-        (
-            str(op.name),
-            tuple(op.wires.tolist()),
-            _process_data(op),
-        )
-        for op in tape.operations
-    )
-    fingerprint.extend(
-        (
-            str(getattr(getattr(op, "obs", op), "name", op.name)),
-            tuple(op.wires.tolist()),
-            str(getattr(getattr(op, "obs", op), "data", op.data)),
-            op.return_type,
-        )
-        for op in tape.measurements
-    )
-    fingerprint.append(tape.trainable_params)
-    fingerprint = tuple(item for sublist in fingerprint for item in sublist)
-    return hash(fingerprint)
-
-
 def execute_fn_wrapper(tapes, device, **kwargs):
     cache = kwargs.pop("cache", None)
 
@@ -74,7 +40,7 @@ def execute_fn_wrapper(tapes, device, **kwargs):
     repeated = {}
 
     for i, tape in enumerate(tapes):
-        h = tape_hash(tape)
+        h = tape.hash
 
         if h in hashes.values():
             idx = list(hashes.keys())[list(hashes.values()).index(h)]

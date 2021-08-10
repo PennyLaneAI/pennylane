@@ -84,6 +84,16 @@ https://github.com/Qiskit/openqasm/blob/master/examples/stdgates.inc
 """
 
 
+def _process_data(op):
+    if op.name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
+        return str([d % (2 * np.pi) for d in op.data])
+
+    if op.name in ("CRX", "CRY", "CRZ", "CRot"):
+        return str([d % (4 * np.pi) for d in op.data])
+
+    return str(op.data)
+
+
 def get_active_tape():
     """Returns the currently recording tape.
     If no tape is currently recording, ``None`` is returned.
@@ -1301,6 +1311,30 @@ class QuantumTape(AnnotatedQueue):
 
     def __copy__(self):
         return self.copy(copy_operations=True)
+
+    @property
+    def hash(self):
+        fingerprint = []
+        fingerprint.extend(
+            (
+                str(op.name),
+                tuple(op.wires.tolist()),
+                _process_data(op),
+            )
+            for op in self.operations
+        )
+        fingerprint.extend(
+            (
+                str(getattr(getattr(op, "obs", op), "name", op.name)),
+                tuple(op.wires.tolist()),
+                str(getattr(getattr(op, "obs", op), "data", op.data)),
+                op.return_type,
+            )
+            for op in self.measurements
+        )
+        fingerprint.append(self.trainable_params)
+        fingerprint = tuple(item for sublist in fingerprint for item in sublist)
+        return hash(fingerprint)
 
     # ========================================================
     # execution methods

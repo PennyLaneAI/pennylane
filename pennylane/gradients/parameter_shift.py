@@ -17,6 +17,9 @@ of a qubit-based quantum tape.
 """
 # pylint: disable=protected-access,too-many-arguments
 import functools
+
+from cachetools import cached
+from cachetools.keys import hashkey
 import numpy as np
 
 import pennylane as qml
@@ -353,44 +356,6 @@ def var_param_shift(tape, argnum, shift=np.pi / 2, gradient_recipes=None, f0=Non
     return gradient_tapes, processing_fn
 
 
-from cachetools import cached
-from cachetools.keys import hashkey
-
-
-def _process_data(op):
-    if op.name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
-        return str([d % (2.0 * np.pi) for d in op.data])
-
-    if op.name in ("CRX", "CRY", "CRZ", "CRot"):
-        return str([d % (4.0 * np.pi) for d in op.data])
-
-    return str(op.data)
-
-
-def tape_hash(tape):
-    fingerprint = []
-    fingerprint.extend(
-        (
-            str(op.name),
-            tuple(op.wires.tolist()),
-            _process_data(op),
-        )
-        for op in tape.operations
-    )
-    fingerprint.extend(
-        (
-            str(getattr(getattr(op, "obs", op), "name", op.name)),
-            tuple(op.wires.tolist()),
-            str(getattr(getattr(op, "obs", op), "data", op.data)),
-            op.return_type,
-        )
-        for op in tape.measurements
-    )
-    fingerprint.append(tape.trainable_params)
-    fingerprint = tuple(item for sublist in fingerprint for item in sublist)
-    return hash(fingerprint)
-
-
 def key(
     tape, argnum=None, shift=np.pi / 2, gradient_recipes=None, fallback_fn=finite_diff, f0=None
 ):
@@ -400,7 +365,7 @@ def key(
     if gradient_recipes is not None:
         gradient_recipes = tuple(tuple(tuple(w) for w in y) for y in gradient_recipes)
 
-    return hashkey((tape_hash(tape), argnum, shift, gradient_recipes, fallback_fn, f0))
+    return hashkey((tape.hash, argnum, shift, gradient_recipes, fallback_fn, f0))
 
 
 @cached(cache={}, key=key)
