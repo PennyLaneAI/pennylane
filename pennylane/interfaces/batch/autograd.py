@@ -144,9 +144,8 @@ def vjp(
         gradient output vector, and computes the vector-Jacobian product
     """
     g_kwargs = {x: gradient_kwargs[x] for x in gradient_kwargs if "cache" not in x}
-    cache = gradient_kwargs.get("cache", {})
 
-    def grad_fn(dy, cache=cache):
+    def grad_fn(dy):
         """Returns the vector-Jacobian product with given
         parameter values and output gradient dy"""
 
@@ -173,8 +172,6 @@ def vjp(
                 vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                     tapes, dy, gradient_fn, reduction="append", gradient_kwargs=g_kwargs
                 )
-
-                gradient_kwargs["cache"] = cache
 
                 # This is where the magic happens. Note that we call ``execute``.
                 # This recursion, coupled with the fact that the gradient transforms

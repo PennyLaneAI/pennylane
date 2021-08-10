@@ -27,13 +27,23 @@ from .autograd import execute as execute_autograd
 from collections import OrderedDict
 
 
+def _process_data(op):
+    if op.name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
+        return str([np.mod(d, 2 * np.pi) for d in op.data])
+
+    if op.name in ("CRX", "CRY", "CRZ", "CRot"):
+        return str([np.mod(d, 4 * np.pi) for d in op.data])
+
+    return str(op.data)
+
+
 def tape_hash(tape):
     fingerprint = []
     fingerprint.extend(
         (
             str(op.name),
             tuple(op.wires.tolist()),
-            str([np.mod(d, 2*np.pi) for d in op.data]),
+            _process_data(op),
         )
         for op in tape.operations
     )
@@ -87,7 +97,9 @@ def execute_fn_wrapper(tapes, device, **kwargs):
     return final_res, []
 
 
-def execute(tapes, device, gradient_fn, interface="autograd", mode="best", gradient_kwargs=None):
+def execute(
+    tapes, device, gradient_fn, interface="autograd", mode="best", gradient_kwargs=None, cache=True
+):
     """Execute a batch of tapes on a device in an autodifferentiable-compatible manner.
 
     Args:
@@ -188,7 +200,8 @@ def execute(tapes, device, gradient_fn, interface="autograd", mode="best", gradi
 
     else:
         # gradient function is a transform
-        gradient_kwargs["cache"] = {}
+        if cache:
+            gradient_kwargs["cache"] = {}
         execute_fn = lambda tapes, **kwargs: execute_fn_wrapper(tapes, device, **kwargs)
 
     if interface == "autograd":
