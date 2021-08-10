@@ -30,10 +30,10 @@ from collections import OrderedDict
 
 def _process_data(op):
     if op.name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
-        return str([np.mod(d, 2 * np.pi) for d in op.data])
+        return str([d % (2 * np.pi) for d in op.data])
 
     if op.name in ("CRX", "CRY", "CRZ", "CRot"):
-        return str([np.mod(d, 4 * np.pi) for d in op.data])
+        return str([d % (4 * np.pi) for d in op.data])
 
     return str(op.data)
 
@@ -49,9 +49,15 @@ def tape_hash(tape):
         for op in tape.operations
     )
     fingerprint.extend(
-        (str(op.name), tuple(op.wires.tolist()), str(op.data), op.return_type)
+        (
+            str(getattr(getattr(op, "obs", op), "name", op.name)),
+            tuple(op.wires.tolist()),
+            str(getattr(getattr(op, "obs", op), "data", op.data)),
+            op.return_type,
+        )
         for op in tape.measurements
     )
+    fingerprint.append(tape.trainable_params)
     fingerprint = tuple(item for sublist in fingerprint for item in sublist)
     return hash(fingerprint)
 
@@ -105,7 +111,7 @@ def execute(
     interface="autograd",
     mode="best",
     gradient_kwargs=None,
-    cache=None,
+    cache=True,
     cachesize=10000,
 ):
     """Execute a batch of tapes on a device in an autodifferentiable-compatible manner.
@@ -208,7 +214,11 @@ def execute(
 
     else:
         # gradient function is a transform
-        gradient_kwargs["cache"] = cache or LRUCache(maxsize=cachesize, getsizeof=lambda x: len(x))
+        if isinstance(cache, bool) and cache:
+            gradient_kwargs["cache"] = LRUCache(maxsize=cachesize, getsizeof=lambda x: len(x))
+        elif not isinstance(cache, bool) and cache is not None:
+            gradient_kwargs["cache"] = cache
+
         execute_fn = lambda tapes, **kwargs: execute_fn_wrapper(tapes, device, **kwargs)
 
     if interface == "autograd":

@@ -359,10 +359,10 @@ from cachetools.keys import hashkey
 
 def _process_data(op):
     if op.name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
-        return str([np.mod(d, 2 * np.pi) for d in op.data])
+        return str([d % (2.0 * np.pi) for d in op.data])
 
     if op.name in ("CRX", "CRY", "CRZ", "CRot"):
-        return str([np.mod(d, 4 * np.pi) for d in op.data])
+        return str([d % (4.0 * np.pi) for d in op.data])
 
     return str(op.data)
 
@@ -378,9 +378,15 @@ def tape_hash(tape):
         for op in tape.operations
     )
     fingerprint.extend(
-        (str(op.name), tuple(op.wires.tolist()), str(op.data), op.return_type)
+        (
+            str(getattr(getattr(op, "obs", op), "name", op.name)),
+            tuple(op.wires.tolist()),
+            str(getattr(getattr(op, "obs", op), "data", op.data)),
+            op.return_type,
+        )
         for op in tape.measurements
     )
+    fingerprint.append(tape.trainable_params)
     fingerprint = tuple(item for sublist in fingerprint for item in sublist)
     return hash(fingerprint)
 
@@ -388,11 +394,11 @@ def tape_hash(tape):
 def key(
     tape, argnum=None, shift=np.pi / 2, gradient_recipes=None, fallback_fn=finite_diff, f0=None
 ):
-    f0 = qml.math.toarray(f0).tolist() if f0 is not None else None
+    f0 = tuple(qml.math.toarray(f0).tolist()) if f0 is not None else None
     argnum = tuple(argnum) if argnum is not None else None
 
     if gradient_recipes is not None:
-        gradient_recipes = tuple(tuple(y) for y in gradient_recipes)
+        gradient_recipes = tuple(tuple(tuple(w) for w in y) for y in gradient_recipes)
 
     return hashkey((tape_hash(tape), argnum, shift, gradient_recipes, fallback_fn, f0))
 
