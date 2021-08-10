@@ -79,10 +79,19 @@ ops = {
     "DoubleExcitationPlus": qml.DoubleExcitationPlus(0, wires=[0, 1, 2, 3]),
     "DoubleExcitationMinus": qml.DoubleExcitationMinus(0, wires=[0, 1, 2, 3]),
     "QubitCarry": qml.QubitCarry(wires=[0, 1, 2, 3]),
-    "QubitSum:": qml.QubitSum(wires=[0, 1, 2]),
+    "QubitSum": qml.QubitSum(wires=[0, 1, 2]),
+    "PauliRot": qml.PauliRot(0, "XXYY", wires=[0, 1, 2, 3]),
+    "U1": qml.U1(0, wires=0),
+    "U2": qml.U2(0, 0, wires=0),
+    "U3": qml.U3(0, 0, 0, wires=0),
 }
 
 all_ops = ops.keys()
+
+# All qubit operations should be available to test in the device test suite
+all_available_ops = qml.ops._qubit__ops__.copy()
+all_available_ops.remove("CPhase")  # CPhase is an alias of ControlledPhaseShift
+assert set(all_ops) == all_available_ops
 
 # non-parametrized qubit gates
 I = np.identity(2)
