@@ -302,6 +302,32 @@ class TestQFuncTransforms:
         assert np.allclose(normal_result, transformed_result)
         assert normal_result.shape == transformed_result.shape
 
+    def test_dimension_qml_state(self):
+        """Test that the indexing done within the qfunc_transform function does
+        not affect the output dimension when using qml.state"""
+
+        @qml.qfunc_transform
+        def my_transform(tape):
+
+            for op in tape.operations:
+                op.queue()
+
+            qml.CNOT(wires=[0,1])
+
+            # Apply the original measurements
+            for op in tape.measurements:
+                op.queue()
+
+        @my_transform
+        def qfunc():
+            qml.Hadamard(wires=0)
+            return qml.state()
+
+        dev = qml.device("default.qubit", wires=2)
+        qnode = qml.QNode(qfunc, dev)
+        res = qnode()
+        assert res.shape == (1,4)
+
 
 ############################################
 # Test transform, ansatz, and qfunc function

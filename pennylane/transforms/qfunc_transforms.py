@@ -183,7 +183,7 @@ def _create_qfunc_internal_wrapper(fn, tape_transform, transform_args, transform
         tape = make_tape(fn)(*args, **kwargs)
         tape = tape_transform(tape, *transform_args, **transform_kwargs)
 
-        if len(tape.measurements) == 1:
+        if len(tape.measurements) == 1 and tape.measurements[0].return_type is not qml.operation.ObservableReturnTypes.State:
             return tape.measurements[0]
 
         return tape.measurements
