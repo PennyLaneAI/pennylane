@@ -17,6 +17,7 @@
 import numpy as np
 import pytest
 from flaky import flaky
+from scipy.sparse import coo_matrix
 
 import pennylane as qml
 
@@ -423,6 +424,32 @@ class TestTensorExpval:
             np.cos(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)
         ) ** 2
         assert np.allclose(res, expected, atol=tol(dev.shots))
+
+    def test_sparse_hamiltonian_expval(self, device, tol):
+        """Test that expectation values of sparse Hamiltonians are properly calculated."""
+        n_wires = 4
+        dev = device(n_wires)
+
+        if "SparseHamiltonian" not in dev.observables:
+            pytest.skip("Skipped because device does not support the SparseHamiltonian observable.")
+
+        h_row = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15])
+        h_col = np.array([15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0])
+        h_data = np.array([-1,  1,  1, -1, -1,  1, 1, -1, -1, 1, 1, -1, -1, 1, 1, -1])
+        h = coo_matrix((h_data, (h_row, h_col)), shape=(16, 16))  # XXYY
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def result():
+            qml.PauliX(0)
+            qml.PauliX(2)
+            qml.SingleExcitation(0.1, wires=[0, 1])
+            qml.SingleExcitation(0.2, wires=[2, 3])
+            qml.SingleExcitation(0.3, wires=[1, 2])
+            return qml.expval(qml.SparseHamiltonian(h, wires=[0, 1, 2, 3]))
+
+        res = result()
+        exp_res = 0.019833838076209875
+        assert np.allclose(res, exp_res, atol=tol(False))
 
 
 @flaky(max_runs=10)
