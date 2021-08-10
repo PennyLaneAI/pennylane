@@ -89,7 +89,7 @@ class Hamiltonian(qml.operation.Observable):
 
     While scalar multiplication requires native python floats or integer types,
     addition, subtraction, and tensor multiplication of Hamiltonians with Hamiltonians or
-    other observables is possible with tensor-valued coefficients, i.e.:
+    other observables is possible with tensor-valued coefficients, i.e.,
 
     >>> H1 = qml.Hamiltonian(torch.tensor([1.]), [qml.PauliX(0)])
     >>> H2 = qml.Hamiltonian(torch.tensor([2., 3.]), [qml.PauliY(0), qml.PauliX(1)])
