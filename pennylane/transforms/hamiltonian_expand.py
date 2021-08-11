@@ -26,7 +26,8 @@ def hamiltonian_expand(tape, group=True):
     Args:
         tape (.QuantumTape): the tape used when calculating the expectation value
             of the Hamiltonian
-        group (bool): whether to compute groups of non-commuting Pauli observables, leading to fewer tapes
+        group (bool): Whether to compute groups of non-commuting Pauli observables, leading to fewer tapes.
+            If grouping information can be found in the Hamiltonian, it will be used even if group=False.
 
     Returns:
         tuple[list[.QuantumTape], function]: Returns a tuple containing a list of
@@ -67,14 +68,8 @@ def hamiltonian_expand(tape, group=True):
     >>> fn(res)
     -0.5
 
-    .. Warning::
-
-         Note that defining Hamiltonians inside of QNodes using arithmetic can lead to errors.
-         See :class:`~pennylane.Hamiltonian` for more information.
-
-    The ``group`` keyword argument toggles between the creation of one tape per Pauli observable, or
-    one tape per group of non-commuting Pauli observables computed by the :func:`.measurement_grouping`
-    transform:
+    Fewer tapes can be constructed by grouping commuting observables. This can be achieved
+    by the ``group`` keyword argument:
 
     .. code-block:: python3
 
@@ -93,6 +88,24 @@ def hamiltonian_expand(tape, group=True):
         # split H into observables [qml.PauliZ(0)], [qml.PauliX(1)] and [qml.PauliX(0)]
         tapes, fn = qml.transforms.hamiltonian_expand(tape, group=False)
         print(len(tapes)) # 3
+
+    Alternatively, if the Hamiltonian has already computed groups, they are used even if ``group=False``:
+
+    .. code-block:: python3
+        H = qml.Hamiltonian([1., 2., 3.], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)], compute_groupings=True)
+
+        # the initialisation already computes grouping information and stores it in the Hamiltonian
+        assert H.grouping_indices is not None
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=2)
+            qml.expval(H)
+
+        # split H into observable groups [qml.PauliZ(0)] and [qml.PauliX(1), qml.PauliX(0)]
+        tapes, fn = qml.transforms.hamiltonian_expand(tape, group=False)
+        print(len(tapes)) # 2
     """
 
     hamiltonian = tape.measurements[0].obs
