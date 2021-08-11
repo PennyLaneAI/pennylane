@@ -132,7 +132,7 @@ class TestReplace:
         )
 
     def test_replace_two_custom_ops(self):
-        """Test that multiple instances of an operator in a circuit are correctly replaced."""
+        """Test that multiple operators with replacements in a circuit are correctly replaced."""
 
         custom_ops = {"Hadamard": custom_hadamard, "CNOT": custom_cnot}
 
