@@ -115,7 +115,7 @@ def hamiltonian_expand(tape, group=True):
     for ob in hamiltonian.ops:
         # we need to create a new tape here, because
         # updating metadata of a copied tape is error-prone
-        # when the observables where changed
+        # when the observables were changed
         with tape.__class__() as new_tape:
             for op in tape.operations:
                 qml.apply(op)
