@@ -2,6 +2,14 @@
 
 <h3>New features since last release</h3>
 
+* Vector-Jacobian product transforms have been added to the `qml.gradients` package.
+  [(#1494)](https://github.com/PennyLaneAI/pennylane/pull/1494)
+
+  The new transforms include:
+
+  - `qml.gradients.vjp`
+  - `qml.gradients.batch_vjp`
+  
 <h3>Improvements</h3>
 
 * The tape does not verify any more that all Observables have owners in the annotated queue.
@@ -22,7 +30,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Maria Schuld.
+Josh Izaac, Maria Schuld.
 
 # Release 0.17.0 (current release)
 
@@ -184,13 +192,10 @@ Maria Schuld.
   [(#1476)](https://github.com/PennyLaneAI/pennylane/pull/1476)
   [(#1479)](https://github.com/PennyLaneAI/pennylane/pull/1479)
   [(#1486)](https://github.com/PennyLaneAI/pennylane/pull/1486)
-  [(#1494)](https://github.com/PennyLaneAI/pennylane/pull/1494)
 
   Available quantum gradient transforms include:
 
   - `qml.gradients.finite_diff`
-  - `qml.gradients.vjp`
-  - `qml.gradients.batch_vjp`
   - `qml.gradients.param_shift`
   - `qml.gradients.param_shift_cv`
 
