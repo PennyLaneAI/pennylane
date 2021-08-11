@@ -41,7 +41,8 @@
   >>> print(qml.draw(qnode)(0.3))
    0: ──RY(1.57)──X──╭C────────────────────────┤
    1: ───────────────╰X──RX(0.3)──RY(1.57)──X──┤ ⟨Z⟩
-
+  ```
+	
 * Hamiltonians are now trainable with respect to their coefficients.
   [(#1483)](https://github.com/PennyLaneAI/pennylane/pull/1483)
 
