@@ -1,4 +1,38 @@
-# Release 0.17.0-dev (development release)
+# Release 0.18.0-dev (development release)
+
+<h3>New features since last release</h3>
+
+* Vector-Jacobian product transforms have been added to the `qml.gradients` package.
+  [(#1494)](https://github.com/PennyLaneAI/pennylane/pull/1494)
+
+  The new transforms include:
+
+  - `qml.gradients.vjp`
+  - `qml.gradients.batch_vjp`
+  
+<h3>Improvements</h3>
+
+* The tape does not verify any more that all Observables have owners in the annotated queue.
+  [(#1505)](https://github.com/PennyLaneAI/pennylane/pull/1505)
+
+  This allows manipulation of Observables inside a tape context. An example is
+  `expval(Tensor(qml.PauliX(0), qml.Identity(1)).prune())` which makes the expval
+  an owner of the pruned tensor and its constituent observables, but leaves the
+  original tensor in the queue without an owner.
+
+<h3>Breaking changes</h3>
+
+<h3>Bug fixes</h3>
+
+<h3>Documentation</h3>
+
+<h3>Contributors</h3>
+
+This release contains contributions from (in alphabetical order):
+
+Josh Izaac, Maria Schuld.
+
+# Release 0.17.0 (current release)
 
 <h3>New features since last release</h3>
 
@@ -156,7 +190,6 @@
 * A new gradients module `qml.gradients` has been added, which provides
   differentiable quantum gradient transforms.
   [(#1476)](https://github.com/PennyLaneAI/pennylane/pull/1476)
-  [(#1494)](https://github.com/PennyLaneAI/pennylane/pull/1494)
   [(#1479)](https://github.com/PennyLaneAI/pennylane/pull/1479)
   [(#1486)](https://github.com/PennyLaneAI/pennylane/pull/1486)
 
@@ -165,8 +198,6 @@
   - `qml.gradients.finite_diff`
   - `qml.gradients.param_shift`
   - `qml.gradients.param_shift_cv`
-  - `qml.gradients.vjp`
-  - `qml.gradients.batch_vjp`
 
   For example,
 
@@ -601,7 +632,7 @@ Arshpreet Singh Khangura, Ashish Panigrahi,
 Maria Schuld, Jay Soni, Antal Száva, David Wierichs.
 
 
-# Release 0.16.0 (current release)
+# Release 0.16.0
 
 <h3>New features since last release</h3>
 
