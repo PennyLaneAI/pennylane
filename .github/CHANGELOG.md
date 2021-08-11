@@ -49,7 +49,7 @@
   >>> grad_fn(coeffs, param)
   (array([-0.12777055,  0.0166009 ]), array(0.0917819))
   ```
-  
+
 <h3>Improvements</h3>
 
 * The `group_observables` transform is now differentiable.
@@ -80,15 +80,6 @@
   >>> jac_fn(coeffs, select=1)
   [[0., 0., 1.]]
   ```
-
-* The tape does not verify any more that all Observables have owners in the annotated queue.
-  [(#1505)](https://github.com/PennyLaneAI/pennylane/pull/1505)
-
-  This allows manipulation of Observables inside a tape context. An example is 
-  `expval(Tensor(qml.PauliX(0), qml.Identity(1)).prune())` which makes the expval an owner 
-  of the pruned tensor and its constituent observables, but leaves the original tensor in 
-  the queue without an owner.
-
 
 * The tape does not verify any more that all Observables have owners in the annotated queue.
   [(#1505)](https://github.com/PennyLaneAI/pennylane/pull/1505)
@@ -239,7 +230,7 @@ Maria Schuld.
   Total shots:  200
   Total shots:  300
   ```
-
+  
 * VQE problems can now intuitively been set up by passing the Hamiltonian 
   as an observable. [(#1474)](https://github.com/PennyLaneAI/pennylane/pull/1474)
 
@@ -576,6 +567,14 @@ Maria Schuld.
   ```
 
 <h3>Improvements</h3>
+
+* The tape does not verify any more that all Observables have owners in the annotated queue.
+  [(#1505)](https://github.com/PennyLaneAI/pennylane/pull/1505)
+
+  This allows manipulation of Observables inside a tape context. An example is 
+  `expval(Tensor(qml.PauliX(0), qml.Identity(1)).prune())` which makes the expval an owner 
+  of the pruned tensor and its constituent observables, but leaves the original tensor in 
+  the queue without an owner.
 
 * The `step` and `step_and_cost` methods of `QNGOptimizer` now accept a custom `grad_fn`
   keyword argument to use for gradient computations.

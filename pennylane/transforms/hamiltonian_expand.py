@@ -137,21 +137,4 @@ def hamiltonian_expand(tape, group=True):
         ]
         return qml.math.sum(qml.math.stack(dot_products), axis=0)
 
-    # for obs in obs_groupings:
-    #     # we need to create a new tape here, because
-    #     # updating metadata of a copied tape is error-prone
-    #     with tape.__class__() as new_tape:
-    #         for op in tape.operations:
-    #             qml.apply(op)
-    #         for ob in obs:
-    #             qml.expval(ob)
-    #     tapes.append(new_tape)
-    #
-    # # create processing function that performs linear recombination
-    # def processing_fn(res):
-    #     dot_products = [
-    #         qml.math.dot(r, c) for r, c in zip(res, coeff_groupings)
-    #     ]
-    #     return qml.math.sum(qml.math.stack(dot_products), axis=0)
-
     return tapes, processing_fn
