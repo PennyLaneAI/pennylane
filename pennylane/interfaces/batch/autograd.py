@@ -143,7 +143,6 @@ def vjp(
         function: this function accepts the backpropagation
         gradient output vector, and computes the vector-Jacobian product
     """
-    g_kwargs = {x: gradient_kwargs[x] for x in gradient_kwargs if "cache" not in x}
 
     def grad_fn(dy):
         """Returns the vector-Jacobian product with given
@@ -170,7 +169,7 @@ def vjp(
 
                 # Generate and execute the required gradient tapes
                 vjp_tapes, processing_fn = qml.gradients.batch_vjp(
-                    tapes, dy, gradient_fn, reduction="append", gradient_kwargs=g_kwargs
+                    tapes, dy, gradient_fn, reduction="append", gradient_kwargs=gradient_kwargs
                 )
 
                 # This is where the magic happens. Note that we call ``execute``.
@@ -187,7 +186,11 @@ def vjp(
                     )
                 )
 
-            elif inspect.ismethod(gradient_fn) and gradient_fn.__self__ is device:
+            elif (
+                hasattr(gradient_fn, "fn")
+                and inspect.ismethod(gradient_fn.fn)
+                and gradient_fn.fn.__self__ is device
+            ):
                 # Gradient function is a device method.
                 # Note that unlike the previous branch:
                 #

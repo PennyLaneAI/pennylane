@@ -16,8 +16,8 @@ This subpackage defines functions for interfacing devices' batch execution
 capabilities with different machine learning libraries.
 """
 # pylint: disable=import-outside-toplevel)
+from functools import wraps
 from cachetools import LRUCache
-from functools import partial
 
 import pennylane as qml
 import numpy as np
@@ -28,46 +28,59 @@ from .autograd import execute as execute_autograd
 from collections import OrderedDict
 
 
-def execute_fn_wrapper(tapes, device, **kwargs):
-    cache = kwargs.pop("cache", None)
+def cache_execute(fn, cache, pass_kwargs=False, return_jacs=True):
+    @wraps(fn)
+    def wrapper(tapes, **kwargs):
 
-    if cache is None:
-        return device.batch_execute(tapes), []
+        if not pass_kwargs:
+            kwargs = {}
 
-    execution_tapes = OrderedDict()
-    cached_results = {}
-    hashes = {}
-    repeated = {}
+        if cache is None or (isinstance(cache, bool) and not cache):
+            if not return_jacs:
+                return fn(tapes, **kwargs)
 
-    for i, tape in enumerate(tapes):
-        h = tape.hash
+            return fn(tapes, **kwargs), []
 
-        if h in hashes.values():
-            idx = list(hashes.keys())[list(hashes.values()).index(h)]
-            repeated[i] = idx
-            continue
+        execution_tapes = OrderedDict()
+        cached_results = {}
+        hashes = {}
+        repeated = {}
 
-        hashes[i] = h
+        for i, tape in enumerate(tapes):
+            h = tape.hash
 
-        if hashes[i] in cache:
-            cached_results[i] = cache[hashes[i]]
-        else:
-            execution_tapes[i] = tape
+            if h in hashes.values():
+                idx = list(hashes.keys())[list(hashes.values()).index(h)]
+                repeated[i] = idx
+                continue
 
-    res = device.batch_execute(execution_tapes.values())
-    final_res = []
+            hashes[i] = h
 
-    for i, tape in enumerate(tapes):
-        if i in cached_results:
-            final_res.append(cached_results[i])
-        elif i in repeated:
-            final_res.append(final_res[repeated[i]])
-        else:
-            r = res.pop(0)
-            final_res.append(r)
-            cache[hashes[i]] = r
+            if hashes[i] in cache:
+                cached_results[i] = cache[hashes[i]]
+            else:
+                execution_tapes[i] = tape
 
-    return final_res, []
+        res = fn(execution_tapes.values(), **kwargs)
+        final_res = []
+
+        for i, tape in enumerate(tapes):
+            if i in cached_results:
+                final_res.append(cached_results[i])
+            elif i in repeated:
+                final_res.append(final_res[repeated[i]])
+            else:
+                r = res.pop(0)
+                final_res.append(r)
+                cache[hashes[i]] = r
+
+        if not return_jacs:
+            return final_res
+
+        return final_res, []
+
+    wrapper.fn = fn
+    return wrapper
 
 
 def execute(
@@ -161,6 +174,13 @@ def execute(
     """
     gradient_kwargs = gradient_kwargs or {}
 
+    if isinstance(cache, bool) and cache:
+        # cache=True: create a LRUCache object
+        cache = LRUCache(maxsize=cachesize, getsizeof=lambda x: len(x))
+
+    # the default execution function is device.batch_execute
+    execute_fn = cache_execute(device.batch_execute, cache)
+
     if gradient_fn == "device":
         # gradient function is a device method
 
@@ -171,21 +191,16 @@ def execute(
             gradient_fn = None
 
         elif mode == "backward":
+            # disable caching on the forward pass
+            execute_fn = cache_execute(device.batch_execute, cache=None)
+
             # replace the backward gradient computation
-            execute_fn = lambda tapes, **kwargs: (device.batch_execute(tapes), [])
-            gradient_fn = device.gradients
+            gradient_fn = cache_execute(
+                device.gradients, cache, pass_kwargs=True, return_jacs=False
+            )
 
     elif mode == "forward":
         raise ValueError("Gradient transforms cannot be used with mode='forward'")
-
-    else:
-        # gradient function is a transform
-        if isinstance(cache, bool) and cache:
-            gradient_kwargs["cache"] = LRUCache(maxsize=cachesize, getsizeof=lambda x: len(x))
-        elif not isinstance(cache, bool) and cache is not None:
-            gradient_kwargs["cache"] = cache
-
-        execute_fn = lambda tapes, **kwargs: execute_fn_wrapper(tapes, device, **kwargs)
 
     if interface == "autograd":
         res = execute_autograd(tuple(tapes), device, execute_fn, gradient_fn, gradient_kwargs)
