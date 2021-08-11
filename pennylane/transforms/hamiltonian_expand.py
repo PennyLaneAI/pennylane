@@ -113,7 +113,7 @@ def hamiltonian_expand(tape, group=True):
     else:
         # else make each observable its own group
         obs_groupings = [[obs] for obs in hamiltonian.ops]
-        coeffs_groupings = [hamiltonian.coeffs[i:i+1] for i in range(len(hamiltonian.ops))]
+        coeffs_groupings = [hamiltonian.coeffs[i] for i in range(len(hamiltonian.ops))]
 
     # create tapes that measure the Pauli-words in the Hamiltonian
     tapes = []
@@ -133,7 +133,7 @@ def hamiltonian_expand(tape, group=True):
         dot_products = [
             # the order is important here, because r
             # may have an extra dimension if tape was evaluated with a distribution of shots
-            qml.math.dot(r, qml.math.convert_like(c, r)) for c, r in zip(coeffs_groupings, res)
+            qml.math.dot(qml.math.squeeze(r), c) for c, r in zip(coeffs_groupings, res)
         ]
         return qml.math.sum(qml.math.stack(dot_products), axis=0)
 

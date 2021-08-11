@@ -419,7 +419,8 @@ class TestGrouping:
         assert H.grouping_indices is None
 
         grouped_coeffs, grouped_obs = H.get_groupings()
-        assert grouped_coeffs == [[1., 2.], [3.]]
+        assert np.allclose(grouped_coeffs[0], np.array([1., 2.]))
+        assert np.allclose(grouped_coeffs[1], np.array(3.))
         assert grouped_obs == [[a, b], [c]]
         assert H.grouping_indices == [[0, 1], [2]]
 

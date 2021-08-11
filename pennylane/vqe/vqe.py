@@ -231,11 +231,7 @@ class Hamiltonian(qml.operation.Observable):
             # if it has not been done before, compute which indices of coefficients/observables belong to each group
             self._grouping_indices = qml.transforms.invisible(_compute_grouping_indices)(self.ops)
 
-        if isinstance(self.coeffs, list):
-            grouped_coefficients = [[self.coeffs[i] for i in indices] for indices in self._grouping_indices]
-        else:
-            # use tensor indexing
-            grouped_coefficients = [qml.math.take(self.coeffs, indices, axis=0) for indices in self._grouping_indices]
+        grouped_coefficients = [qml.math.squeeze(qml.math.take(self.coeffs, indices, axis=0)) for indices in self._grouping_indices]
         grouped_observables = [[self.ops[i] for i in indices] for indices in self._grouping_indices]
 
         return grouped_coefficients, grouped_observables
