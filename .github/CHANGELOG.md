@@ -1,6 +1,58 @@
-# Release 0.17.0-dev (development release)
+# Release 0.18.0-dev (development release)
 
 <h3>New features since last release</h3>
+
+<h3>Improvements</h3>
+
+* The tape does not verify any more that all Observables have owners in the annotated queue.
+  [(#1505)](https://github.com/PennyLaneAI/pennylane/pull/1505)
+
+  This allows manipulation of Observables inside a tape context. An example is
+  `expval(Tensor(qml.PauliX(0), qml.Identity(1)).prune())` which makes the expval
+  an owner of the pruned tensor and its constituent observables, but leaves the
+  original tensor in the queue without an owner.
+
+<h3>Breaking changes</h3>
+
+<h3>Bug fixes</h3>
+
+<h3>Documentation</h3>
+
+<h3>Contributors</h3>
+
+This release contains contributions from (in alphabetical order):
+
+Maria Schuld.
+
+# Release 0.17.0 (current release)
+
+<h3>New features since last release</h3>
+
+* Docker support for building PennyLane with support for all interfaces (TensorFlow, 
+  Torch, and Jax), as well as device plugins and QChem, for GPUs and CPUs, has been added. 
+  [(#1372)](https://github.com/PennyLaneAI/pennylane/issues/1372)
+
+  The build process using Docker and Makefile works as follows:
+
+  Building a core PennyLane image:
+  ```
+  make -f docker/Makefile build-base
+  ```
+
+  Building a PennyLane image with the TensorFlow interface (change `interface-name` for other interfaces):
+  ```
+  make -f docker/Makefile build-interface interface-name=tensorflow
+  ```
+
+  Building a PennyLane image with the Qiskit plugin (change `plugin-name` for other plugins):
+  ```
+  make -f docker/Makefile build-plugin plugin-name=qiskit
+  ```
+
+  Building the PennyLane-QChem image:
+  ```
+  make -f docker/Makefile build-qchem
+  ```
 
 * PennyLane can now perform quantum circuit optimization using the
   top-level transform `qml.compile`. The `compile` transform allows you
@@ -567,11 +619,12 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Leonhard Kunczik, Christina Lee, Romain Moyard, Ashish Panigrahi,
-Maria Schuld, Jay Soni, Antal Száva, David Wierichs
+Olivia Di Matteo, Josh Izaac, Leonhard Kunczik, Christina Lee, Romain Moyard,
+Arshpreet Singh Khangura, Ashish Panigrahi,
+Maria Schuld, Jay Soni, Antal Száva, David Wierichs.
 
 
-# Release 0.16.0 (current release)
+# Release 0.16.0
 
 <h3>New features since last release</h3>
 
