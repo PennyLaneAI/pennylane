@@ -418,7 +418,7 @@ class TestGrouping:
         H = qml.Hamiltonian(coeffs, obs)
         assert H.grouping_indices is None
 
-        grouped_coeffs, grouped_obs = H.get_grouping()
+        grouped_coeffs, grouped_obs = H.get_groupings()
         assert grouped_coeffs == [[1., 2.], [3.]]
         assert grouped_obs == [[a, b], [c]]
         assert H.grouping_indices == [[0, 1], [2]]
@@ -436,7 +436,7 @@ class TestGrouping:
         coeffs = [1., 2., 3.]
 
         H = qml.Hamiltonian(coeffs, obs)
-        grouped_coeffs, grouped_obs = H.get_grouping()
+        grouped_coeffs, grouped_obs = H.get_groupings()
         assert grouped_coeffs == [[1.], [2.], [3.]]
         assert grouped_obs == [[a], [b], [c]]
         assert H.grouping_indices == [[0], [1], [2]]

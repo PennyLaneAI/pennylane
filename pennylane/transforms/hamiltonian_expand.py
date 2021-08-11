@@ -109,29 +109,48 @@ def hamiltonian_expand(tape, group=True):
     if group or hamiltonian.grouping_indices is not None:
         # if explicitly requested or already available,
         # compute the grouping information
-        coeff_groupings, obs_groupings = hamiltonian.get_grouping()
+        coeffs_groupings, obs_groupings = hamiltonian.get_groupings()
     else:
         # else make each observable its own group
         obs_groupings = [[obs] for obs in hamiltonian.ops]
-        coeff_groupings = [hamiltonian.coeffs[i:i+1] for i in range(len(hamiltonian.ops))]
+        coeffs_groupings = [hamiltonian.coeffs[i:i+1] for i in range(len(hamiltonian.ops))]
 
     # create tapes that measure the Pauli-words in the Hamiltonian
     tapes = []
     for obs in obs_groupings:
-        # we need to create a new tape here, because
-        # updating metadata of a copied tape is error-prone
+
         with tape.__class__() as new_tape:
             for op in tape.operations:
-                qml.apply(op)
-            for ob in obs:
-                qml.expval(ob)
+                op.queue()
+
+            for o in obs:
+                qml.expval(o)
+
+        # if I delete this, some tests fail!!!
+        #new_tape = new_tape.expand(stop_at=lambda obj: True)
         tapes.append(new_tape)
 
-    # create processing function that performs linear recombination
     def processing_fn(res):
         dot_products = [
-            qml.math.dot(r, c) for r, c in zip(res, coeff_groupings)
+            qml.math.dot(c, r) for c, r in zip(coeffs_groupings, res)
         ]
         return qml.math.sum(qml.math.stack(dot_products), axis=0)
+
+    # for obs in obs_groupings:
+    #     # we need to create a new tape here, because
+    #     # updating metadata of a copied tape is error-prone
+    #     with tape.__class__() as new_tape:
+    #         for op in tape.operations:
+    #             qml.apply(op)
+    #         for ob in obs:
+    #             qml.expval(ob)
+    #     tapes.append(new_tape)
+    #
+    # # create processing function that performs linear recombination
+    # def processing_fn(res):
+    #     dot_products = [
+    #         qml.math.dot(r, c) for r, c in zip(res, coeff_groupings)
+    #     ]
+    #     return qml.math.sum(qml.math.stack(dot_products), axis=0)
 
     return tapes, processing_fn

@@ -161,7 +161,7 @@ class Hamiltonian(qml.operation.Observable):
         if simplify:
             self.simplify()
         if compute_grouping:
-            self._grouping_indices = _compute_grouping_indices(self.ops)
+            self._grouping_indices = qml.transforms.invisible(_compute_grouping_indices)(self.ops)
 
         coeffs_flat = [self._coeffs[i] for i in range(qml.math.shape(self._coeffs)[0])]
         # overwrite this attribute, now that we have the correct info
@@ -221,7 +221,7 @@ class Hamiltonian(qml.operation.Observable):
         """
         return self._grouping_indices
 
-    def get_grouping(self):
+    def get_groupings(self):
         """Return groupings of commuting observables and their corresponding coefficients.
 
         Returns:
