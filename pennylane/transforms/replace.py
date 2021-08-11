@@ -15,7 +15,7 @@
 
 from pennylane import apply
 from pennylane.tape import get_active_tape
-from pennylane.transforms import qfunc_transform
+from pennylane.transforms import qfunc_transform, invisible
 
 
 def _validate_decomposition_function(op, custom_ops):
@@ -33,13 +33,14 @@ def _validate_decomposition_function(op, custom_ops):
     we would end up in an infinite loop as well.
     """
 
+    # Need to use invisible, otherwise these ops will get queued; we can't simply
+    # stop recording the tape while doing this, it seems to need an active queueing context.
     if op.num_params > 0:
-        decomp_ops = custom_ops[op.name](*op.parameters, op.wires)
+        decomp_ops = invisible(custom_ops[op.name])(*op.parameters, op.wires)
     else:
-        decomp_ops = custom_ops[op.name](op.wires)
+        decomp_ops = invisible(custom_ops[op.name])(op.wires)
 
     decomp_op_names = [op.name for op in decomp_ops]
-    print(decomp_op_names)
 
     # Check that no decompositions of gates depend on themselves
     if op.name in decomp_op_names:
@@ -53,10 +54,9 @@ def _validate_decomposition_function(op, custom_ops):
         # in the decomposition depend on this operator. The decomposition may be custom,
         if decomp_op.name in custom_ops.keys():
             sub_decomp_op_names = [
-                sub_op.name for sub_op in custom_ops[decomp_op.name](decomp_op.wires)
+                sub_op.name for sub_op in invisible(custom_ops[decomp_op.name])(decomp_op.wires)
             ]
 
-            print(sub_decomp_op_names)
             if op.name in sub_decomp_op_names:
                 raise ValueError(
                     f"Decomposition for operation {op.name} invalid. "
@@ -191,14 +191,14 @@ def replace(tape, custom_ops=None, validate=True):
             # then queue it on the tape
             if op.name in ops_with_custom_decomps:
 
+                # If desired, validate each operation the first time its encountered
+                if validate and op.name not in validated_ops:
+                    _validate_decomposition_function(op, custom_ops)
+                    validated_ops.append(op.name)
+
                 with current_tape.stop_recording():
-                    # If desired, validate each operation the first time its encountered
-                    if validate and op.name not in validated_ops:
-                        _validate_decomposition_function(op, custom_ops)
-                        validated_ops.append(op.name)
-
                     fully_unrolled_ops = _unroll(op, custom_ops)
-
+                    
                 # Apply the decomposed operation
                 for unrolled_op in fully_unrolled_ops:
                     apply(unrolled_op)

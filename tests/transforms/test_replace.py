@@ -48,14 +48,9 @@ class TestReplace:
             return qml.expval(qml.PauliZ(0))
 
         transformed_qfunc = replace(custom_ops={"RX": invalid_custom_rx})(qfunc)
-        transformed_ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
-        dev = qml.device('default.qubit', wires=1)
-        
-        qnode = qml.QNode(transformed_qfunc, dev)
-
-        with pytest.raises(IndexError, match="Decomposition depends on the operator itself."):
-            qnode()
+        with pytest.raises(ValueError, match="Decomposition depends on the operator itself."):
+            transformed_ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
     def test_replace_custom_decomp_infinite_loop(self):
         """Test that we correctly catch when two custom decompositions depend on each other."""
@@ -77,12 +72,8 @@ class TestReplace:
 
         transformed_qfunc = replace(custom_ops=custom_ops)(qfunc)
 
-        dev = qml.device('default.qubit', wires=2)
-
-        qnode = qml.QNode(transformed_qfunc, dev)
-
         with pytest.raises(ValueError, match="Decomposition of an operator in its decomposition"):
-            qnode()
+            transformed_ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
     def test_replace_no_custom_ops(self):
         """Test that replacement with no custom ops does nothing to a quantum function."""
@@ -209,7 +200,7 @@ class TestReplaceInterfaces:
         print(ops)
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
-    def test_cancel_inverses_torch(self):
+    def test_replace_torch(self):
         """Test QNode and gradient in torch interface."""
         torch = pytest.importorskip("torch", minversion="1.8")
 
@@ -235,7 +226,7 @@ class TestReplaceInterfaces:
         ops = transformed_qnode.qtape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
-    def test_cancel_inverses_tf(self):
+    def test_replace_tf(self):
         """Test QNode and gradient in tensorflow interface."""
         tf = pytest.importorskip("tensorflow")
 
@@ -266,7 +257,7 @@ class TestReplaceInterfaces:
         ops = transformed_qnode.qtape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
-    def test_cancel_inverses_jax(self):
+    def test_replace_jax(self):
         """Test QNode and gradient in JAX interface."""
         jax = pytest.importorskip("jax")
         from jax import numpy as jnp
