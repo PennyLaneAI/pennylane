@@ -176,14 +176,7 @@ def vjp(
                 # This recursion, coupled with the fact that the gradient transforms
                 # are differentiable, allows for arbitrary order differentiation.
                 vjps = processing_fn(
-                    execute(
-                        vjp_tapes,
-                        device,
-                        execute_fn,
-                        gradient_fn,
-                        gradient_kwargs,
-                        _n=_n + 1,
-                    )
+                    execute(vjp_tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=_n + 1)
                 )
 
             elif (
