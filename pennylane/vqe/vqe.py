@@ -32,7 +32,7 @@ OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identi
 
 def _compute_grouping_indices(observables, grouping_type="qwc", method="rlf"):
 
-    # todo: use functionality that directly computes the
+    # todo: directly compute the
     # indices, instead of extracting groups of observables first
     observable_groups = qml.grouping.group_observables(observables, coefficients=None, grouping_type=grouping_type, method=method)
 
@@ -68,7 +68,7 @@ class Hamiltonian(qml.operation.Observable):
         observables (Iterable[Observable]): observables in the Hamiltonian expression, of same length as coeffs
         simplify (bool): Specifies whether the Hamiltonian is simplified upon initialization
                          (like-terms are combined). The default value is `False`.
-        compute_grouping (bool): If True, compute and store information on how to group commuting
+        compute_groupings (bool): If True, compute and store information on how to group commuting
             observables upon initialization. This information can be accessed when measuring the expectation of
             a Hamiltonian is split into measuring the expectations of its constituent observables.
 
@@ -134,7 +134,7 @@ class Hamiltonian(qml.operation.Observable):
     par_domain = "A"
     grad_method = "A"  # supports analytic gradients
 
-    def __init__(self, coeffs, observables, simplify=False, compute_grouping=False, id=None, do_queue=True):
+    def __init__(self, coeffs, observables, simplify=False, compute_groupings=False, id=None, do_queue=True):
 
         if qml.math.shape(coeffs)[0] != len(observables):
             raise ValueError(
@@ -160,7 +160,7 @@ class Hamiltonian(qml.operation.Observable):
 
         if simplify:
             self.simplify()
-        if compute_grouping:
+        if compute_groupings:
             self._grouping_indices = qml.transforms.invisible(_compute_grouping_indices)(self.ops)
 
         coeffs_flat = [self._coeffs[i] for i in range(qml.math.shape(self._coeffs)[0])]

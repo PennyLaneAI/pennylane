@@ -2,6 +2,30 @@
 
 <h3>New features since last release</h3>
 
+* The Hamiltonian can now store grouping information, which can be accessed by a devise to 
+  speed up computations of the expectation of a Hamiltonian. 
+  [(#1515)](https://github.com/PennyLaneAI/pennylane/pull/1515)
+
+  ``` python
+  obs = [qml.PauliX(0), qml.PauliX(1), qml.PauliZ(0)]
+  coeffs = np.array([1., 2., 3.])
+  H = qml.Hamiltonian(coeffs, obs, compute_groupings=True)
+  ```
+  This initialization stores the indices needed to make groups of 
+  commuting observables and their coefficients. These are used 
+  (or, if not found, computed) by the ``get_groupings()`` method, which returns the 
+  actual groupings.
+  
+  ``` pycon
+  >>> H.grouping_indices
+  [[0, 1], [2]]
+  grouped_coeffs, grouped_obs = H.get_groupings()
+  >>> grouped_coeffs
+  [np.array([1., 2.]), np.array(3.)]
+  >>> grouped_obs
+  [[qml.PauliX(0), qml.PauliX(1)], [qml.PauliZ(0)]]
+  ```
+
 <h3>Improvements</h3>
 
 * The `group_observables` transform is now differentiable.
