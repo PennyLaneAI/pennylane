@@ -15,17 +15,16 @@
 This subpackage defines functions for interfacing devices' batch execution
 capabilities with different machine learning libraries.
 """
-# pylint: disable=import-outside-toplevel)
+# pylint: disable=import-outside-toplevel,too-many-arguments
+from collections import OrderedDict
 from functools import wraps
-from cachetools import LRUCache
 
-import pennylane as qml
+from cachetools import LRUCache
 import numpy as np
 
+import pennylane as qml
+
 from .autograd import execute as execute_autograd
-
-
-from collections import OrderedDict
 
 
 def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True):
@@ -236,7 +235,7 @@ def execute(
 
     if isinstance(cache, bool) and cache:
         # cache=True: create a LRUCache object
-        cache = LRUCache(maxsize=cachesize, getsizeof=lambda x: len(x))
+        cache = LRUCache(maxsize=cachesize, getsizeof=len)
 
     # the default execution function is device.batch_execute
     execute_fn = cache_execute(device.batch_execute, cache)
