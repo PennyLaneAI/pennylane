@@ -68,7 +68,7 @@ def circuit2(param):
 dev = qml.device("default.qubit", wires=2)
 
 
-class TestCoefficients:
+class TestHamiltonianCoefficients:
     """Test the creation of a Hamiltonian"""
 
     @pytest.mark.parametrize("coeffs", [el[0] for el in COEFFS_PARAM_INTERFACE])
@@ -88,7 +88,7 @@ class TestCoefficients:
         assert H1.data == H2.data
 
 
-class TestArithmeticTF:
+class TestHamiltonianArithmeticTF:
     """Tests creation of Hamiltonians using arithmetic
     operations with TensorFlow tensor coefficients."""
 
@@ -168,7 +168,7 @@ class TestArithmeticTF:
         assert H.compare(H1 @ H2)
 
 
-class TestArithmeticTorch:
+class TestHamiltonianArithmeticTorch:
     """Tests creation of Hamiltonians using arithmetic
     operations with torch tensor coefficients."""
 
@@ -248,7 +248,7 @@ class TestArithmeticTorch:
         assert H.compare(H1 @ H2)
 
 
-class TestArithmeticAutograd:
+class TestHamiltonianArithmeticAutograd:
     """Tests creation of Hamiltonians using arithmetic
     operations with autograd tensor coefficients."""
 
@@ -320,7 +320,7 @@ class TestArithmeticAutograd:
         assert H.compare(H1 @ H2)
 
 
-class TestArithmeticJax:
+class TestHamiltonianArithmeticJax:
     """Tests creation of Hamiltonians using arithmetic
     operations with jax tensor coefficients."""
 
@@ -447,7 +447,7 @@ class TestGrouping:
         assert H2.grouping_indices == [[0], [1], [2]]
 
 
-class TestEvaluation:
+class TestHamiltonianEvaluation
     """Test the usage of a Hamiltonian as an observable"""
 
     @pytest.mark.parametrize("coeffs, param, interface", COEFFS_PARAM_INTERFACE)
@@ -498,10 +498,10 @@ class TestEvaluation:
 
 @pytest.mark.parametrize("simplify", [True, False])
 @pytest.mark.parametrize("group", [True, False])
-class TestDifferentiation:
+class TestHamiltonianDifferentiation:
     """Test that the Hamiltonian coefficients are differentiable"""
 
-    def test_vqe_differentiation_paramshift(self, simplify, group):
+    def test_vqe_differentiation_paramshift(self, simplify):
         """Test the parameter-shift method by comparing the differentiation of linearly combined subcircuits
         with the differentiation of a Hamiltonian expectation"""
         coeffs = np.array([-0.05, 0.17])
