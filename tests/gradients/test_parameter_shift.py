@@ -267,7 +267,7 @@ class TestParamShift:
 class TestParameterShiftRule:
     """Tests for the parameter shift implementation"""
 
-    @pytest.mark.parametrize("theta", np.linspace(0, 2 * np.pi - 0.01, 7))
+    @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
     @pytest.mark.parametrize("shift", [np.pi / 2, 0.3, np.sqrt(2)])
     @pytest.mark.parametrize("G", [qml.RX, qml.RY, qml.RZ, qml.PhaseShift])
     def test_pauli_rotation_gradient(self, mocker, G, theta, shift, tol):

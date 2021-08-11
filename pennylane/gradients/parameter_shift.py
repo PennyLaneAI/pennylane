@@ -16,10 +16,6 @@ This module contains functions for computing the parameter-shift gradient
 of a qubit-based quantum tape.
 """
 # pylint: disable=protected-access,too-many-arguments
-import functools
-
-from cachetools import cached
-from cachetools.keys import hashkey
 import numpy as np
 
 import pennylane as qml
@@ -38,7 +34,6 @@ of that observable.
 """
 
 
-@functools.lru_cache()
 def _square_observable(obs):
     """Returns the square of an observable."""
 
@@ -62,7 +57,6 @@ def _square_observable(obs):
     return NONINVOLUTORY_OBS[obs.name](obs)
 
 
-@functools.lru_cache()
 def _get_operation_recipe(tape, t_idx, shift=np.pi / 2):
     """Utility function to return the parameter-shift rule
     of the operation corresponding to trainable parameter
@@ -97,7 +91,6 @@ def _process_gradient_recipe(gradient_recipe, tol=1e-10):
     return gradient_recipe[:, np.argsort(np.abs(gradient_recipe)[-1])]
 
 
-@functools.lru_cache()
 def _gradient_analysis(tape, use_graph=True):
     """Update the parameter information dictionary of the tape with
     gradient information of each parameter."""
@@ -356,26 +349,8 @@ def var_param_shift(tape, argnum, shift=np.pi / 2, gradient_recipes=None, f0=Non
     return gradient_tapes, processing_fn
 
 
-def key(
-    tape, argnum=None, shift=np.pi / 2, gradient_recipes=None, fallback_fn=finite_diff, f0=None
-):
-    f0 = tuple(qml.math.toarray(f0).tolist()) if f0 is not None else None
-    argnum = tuple(argnum) if argnum is not None else None
-
-    if gradient_recipes is not None:
-        gradient_recipes = tuple(tuple(tuple(w) for w in y) for y in gradient_recipes)
-
-    return hashkey((tape.hash, argnum, shift, gradient_recipes, fallback_fn, f0))
-
-
-@cached(cache={}, key=key)
 def param_shift(
-    tape,
-    argnum=None,
-    shift=np.pi / 2,
-    gradient_recipes=None,
-    fallback_fn=finite_diff,
-    f0=None,
+    tape, argnum=None, shift=np.pi / 2, gradient_recipes=None, fallback_fn=finite_diff, f0=None
 ):
     r"""Generate the parameter-shift tapes and postprocessing methods required
     to compute the gradient of a gate parameter with respect to an
@@ -480,7 +455,6 @@ def param_shift(
     [[-0.38751721 -0.18884787 -0.38355704]
      [ 0.69916862  0.34072424  0.69202359]]
     """
-    f0 = np.array(f0) if f0 is not None else None
 
     # perform gradient method validation
     if any(m.return_type is qml.operation.State for m in tape.measurements):
