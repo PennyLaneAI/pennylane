@@ -198,7 +198,7 @@ def replace(tape, custom_ops=None, validate=True):
 
                 with current_tape.stop_recording():
                     fully_unrolled_ops = _unroll(op, custom_ops)
-                    
+
                 # Apply the decomposed operation
                 for unrolled_op in fully_unrolled_ops:
                     apply(unrolled_op)
