@@ -34,6 +34,18 @@ def custom_cnot(wires):
     ]
 
 
+def custom_single_excitation(theta, wires):
+    # Essentially the same as the true implementation but unrolls the CRY
+    return [
+        qml.CNOT(wires=[wires[0], wires[1]]),
+        qml.RY(theta / 2, wires=wires[0]),
+        qml.CNOT(wires=[wires[1], wires[0]]),
+        qml.RY(-theta / 2, wires=wires[0]),
+        qml.CNOT(wires=[wires[1], wires[0]]),
+        qml.CNOT(wires=[wires[0], wires[1]]),
+    ]
+
+
 class TestReplace:
     """Test that custom definitions of operations are properly replaced."""
 
@@ -136,6 +148,36 @@ class TestReplace:
             transformed_ops,
             ["RY", "PauliX", "RY", "PauliX", "CZ", "RY", "PauliX", "RY", "PauliX"],
             [Wires("a")] * 2 + [Wires("b")] * 2 + [Wires(["a", "b"])] + [Wires("b")] * 4,
+        )
+
+    def test_replace_parametrized_op(self):
+        """Test that a parametrized operation is correctly replaced."""
+
+        custom_ops = {"Hadamard": custom_hadamard, "SingleExcitation": custom_single_excitation}
+
+        def qfunc(theta):
+            qml.Hadamard(wires="a")
+            qml.SingleExcitation(theta, wires=["a", "b"])
+            qml.Hadamard(wires="b")
+
+        transformed_qfunc = replace(custom_ops=custom_ops)(qfunc)
+        transformed_ops = qml.transforms.make_tape(transformed_qfunc)(0.1).operations
+
+        compare_operation_lists(
+            transformed_ops,
+            ["RY", "PauliX", "CNOT", "RY", "CNOT", "RY", "CNOT", "CNOT", "RY", "PauliX"],
+            [
+                Wires("a"),
+                Wires("a"),
+                Wires(["a", "b"]),
+                Wires("a"),
+                Wires(["b", "a"]),
+                Wires("a"),
+                Wires(["b", "a"]),
+                Wires(["a", "b"]),
+                Wires("b"),
+                Wires("b"),
+            ],
         )
 
     def test_replace_integration(self):
