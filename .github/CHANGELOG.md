@@ -8,9 +8,9 @@
   [(#1505)](https://github.com/PennyLaneAI/pennylane/pull/1505)
 
   This allows manipulation of Observables inside a tape context. An example is
-  `expval(Tensor(qml.PauliX(0), qml.Identity(1)).prune())` which makes the expval an owner
-  of the pruned tensor and its constituent observables, but leaves the original tensor in
-  the queue without an owner.
+  `expval(Tensor(qml.PauliX(0), qml.Identity(1)).prune())` which makes the expval
+  an owner of the pruned tensor and its constituent observables, but leaves the
+  original tensor in the queue without an owner.
 
 <h3>Breaking changes</h3>
 
