@@ -501,7 +501,7 @@ class TestHamiltonianEvaluation:
 class TestHamiltonianDifferentiation:
     """Test that the Hamiltonian coefficients are differentiable"""
 
-    def test_vqe_differentiation_paramshift(self, simplify):
+    def test_vqe_differentiation_paramshift(self, simplify, group):
         """Test the parameter-shift method by comparing the differentiation of linearly combined subcircuits
         with the differentiation of a Hamiltonian expectation"""
         coeffs = np.array([-0.05, 0.17])
