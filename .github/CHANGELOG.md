@@ -10,8 +10,8 @@
   For example, suppose you wanted to decompose all your Hadamard gates
   as `[RY(np.pi/2), X]` rather than the built-in `[RZ(np.pi/2), RX(np.pi/2), RZ(np.pi/2)]`.
   We can write a new decomposition function that accept a `wires` argument
-  (and an optional `parameters` argument for parametrized gates), and
-  returns a custom list operations in the same manner as the `decomposition` method
+  (and an optional parameter arguments for parametrized gates), and
+  returns a custom list of operations in the same manner as the `decomposition` method
   of a PennyLane `Operation`.
 
   ```python
