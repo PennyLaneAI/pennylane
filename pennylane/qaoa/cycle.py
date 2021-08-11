@@ -439,9 +439,7 @@ def _inner_out_flow_constraint_hamiltonian(graph: nx.DiGraph, node) -> Hamiltoni
     coeffs.append(d * (d - 2))
     ops.append(qml.Identity(0))
 
-    H = Hamiltonian(coeffs, ops)
-    H.simplify()
-
+    H = Hamiltonian(coeffs, ops, simplify=True)
     return H
 
 
@@ -485,7 +483,5 @@ def _inner_net_flow_constraint_hamiltonian(graph: nx.DiGraph, node) -> Hamiltoni
         ops.append(qml.PauliZ(wires))
 
     coeffs, ops = _square_hamiltonian_terms(coeffs, ops)
-    H = Hamiltonian(coeffs, ops)
-    H.simplify()
-
+    H = Hamiltonian(coeffs, ops, simplify=True)
     return H

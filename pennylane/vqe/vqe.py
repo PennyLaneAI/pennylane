@@ -30,6 +30,54 @@ from pennylane.wires import Wires
 OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identity": "I"}
 
 
+def _simplify(coeffs, ops):
+    r"""Simplifies the coefficients and operations by pruning and combining like-terms.
+
+    Args:
+        coeffs (tensor_like): coefficients of a Hamiltonian
+        ops (Iterable[Observable]): observables in the Hamiltonian expression, of same length as coeffs
+
+    Returns:
+        (tensor_like, list[Observable]): tuple of simplified coefficients and observables
+    **Example**
+
+    >>> ops = [qml.PauliY(2), qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0)]
+    >>> coeffs = [1, 1, -2]
+    >>> new_coeffs, new_ops = _simplify(coeffs, ops)
+    >>> print(new_coeffs)
+    [-1, 1]
+    >>> print(new_ops)
+    [qml.PauliY(2), qml.PauliX(0)]
+    """
+    new_coeffs = []
+    new_ops = []
+
+    for i in range(len(ops)):  # pylint: disable=consider-using-enumerate
+        op = ops[i]
+        c = coeffs[i]
+        op = op if isinstance(op, Tensor) else Tensor(op)
+
+        ind = None
+        for j, o in enumerate(new_ops):
+            if op.compare(o):
+                ind = j
+                break
+
+        if ind is not None:
+            new_coeffs[ind] += c
+            if np.isclose(qml.math.toarray(new_coeffs[ind]), np.array(0.0)):
+                del new_coeffs[ind]
+                del new_ops[ind]
+        else:
+            new_ops.append(op.prune())
+            new_coeffs.append(c)
+
+    # merge back to tensor if applicable
+    if new_coeffs and not isinstance(coeffs, list):
+        new_coeffs = qml.math.stack(new_coeffs)
+    return new_coeffs, new_ops
+
+
 class Hamiltonian(qml.operation.Observable):
     r"""Operator representing a Hamiltonian.
 
@@ -124,7 +172,7 @@ class Hamiltonian(qml.operation.Observable):
         self.return_type = None
 
         if simplify:
-            self.simplify()
+            self.simplify() # TODO: fix
 
         coeffs_flat = [self._coeffs[i] for i in range(qml.math.shape(self._coeffs)[0])]
         # overwrite this attribute, now that we have the correct info
@@ -177,42 +225,22 @@ class Hamiltonian(qml.operation.Observable):
 
     def simplify(self):
         r"""Simplifies the Hamiltonian by combining like-terms.
-
+        Returns:
+            (.Hamiltonian): simplified Hamiltonian
         **Example**
 
         >>> ops = [qml.PauliY(2), qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0)]
         >>> H = qml.Hamiltonian([1, 1, -2], ops)
-        >>> H.simplify()
-        >>> print(H)
+        >>> H_new = H.simplify()
+        >>> print(H_new)
           (-1) [X0]
         + (1) [Y2]
         """
-        data = []
-        ops = []
+        # get simplified parts, but do not record any calculation
+        new_coeffs, new_ops = qml.transforms.invisible(_simplify)(self.coeffs, self.ops)
 
-        for i in range(len(self.ops)):  # pylint: disable=consider-using-enumerate
-            op = self.ops[i]
-            c = self.coeffs[i]
-            op = op if isinstance(op, Tensor) else Tensor(op)
-
-            ind = None
-            for j, o in enumerate(ops):
-                if op.compare(o):
-                    ind = j
-                    break
-
-            if ind is not None:
-                data[ind] += c
-                if np.isclose(qml.math.toarray(data[ind]), np.array(0.0)):
-                    del data[ind]
-                    del ops[ind]
-            else:
-                ops.append(op.prune())
-                data.append(c)
-
-        self._coeffs = qml.math.stack(data) if data else []
-        self.data = data
-        self._ops = ops
+        # todo(maria): update grouping info here
+        return qml.Hamiltonian(new_coeffs, new_ops)
 
     def __str__(self):
         # Lambda function that formats the wires
@@ -318,9 +346,9 @@ class Hamiltonian(qml.operation.Observable):
         False
         """
         if isinstance(H, Hamiltonian):
-            self.simplify()
-            H.simplify()
-            return self._obs_data() == H._obs_data()  # pylint: disable=protected-access
+            repr1 = self.simplify()._obs_data()  # pylint: disable=protected-access
+            repr2 = H.simplify()._obs_data()  # pylint: disable=protected-access
+            return repr1 == repr2
 
         if isinstance(H, (Tensor, Observable)):
             self.simplify()
