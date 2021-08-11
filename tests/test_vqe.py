@@ -649,7 +649,8 @@ class TestHamiltonian:
         """Tests that the Hamiltonian object is created with
         the correct attributes"""
         H = qml.vqe.Hamiltonian(coeffs, ops)
-        assert H.terms == (list(coeffs), list(ops))
+        assert np.allclose(H.terms[0], coeffs)
+        assert H.terms[1] == list(ops)
 
     @pytest.mark.parametrize("coeffs, ops", invalid_hamiltonians)
     def test_hamiltonian_invalid_init_exception(self, coeffs, ops):
@@ -657,15 +658,6 @@ class TestHamiltonian:
         combination of coefficients and ops"""
         with pytest.raises(ValueError, match="number of coefficients and operators does not match"):
             H = qml.vqe.Hamiltonian(coeffs, ops)
-
-    @pytest.mark.parametrize("coeffs", [[0.2, -1j], [0.5j, 2 - 1j]])
-    def test_hamiltonian_complex(self, coeffs):
-        """Tests that an exception is raised when
-        a complex Hamiltonian is given"""
-        obs = [qml.PauliX(0), qml.PauliZ(1)]
-
-        with pytest.raises(ValueError, match="coefficients are not real-valued"):
-            H = qml.vqe.Hamiltonian(coeffs, obs)
 
     @pytest.mark.parametrize(
         "obs", [[qml.PauliX(0), qml.CNOT(wires=[0, 1])], [qml.PauliZ, qml.PauliZ(0)]]
@@ -843,13 +835,15 @@ class TestHamiltonian:
         with qml.tape.QuantumTape() as tape:
             qml.Hadamard(wires=1)
             qml.PauliX(wires=0)
-            H.queue()
+            qml.expval(H)
 
         assert np.all([q1.compare(q2) for q1, q2 in zip(tape.queue, queue)])
 
         # Inside of tape
 
         queue = [
+            qml.Hadamard(wires=1),
+            qml.PauliX(wires=0),
             qml.PauliX(1),
             qml.PauliZ(0),
             qml.PauliZ(2),
@@ -858,16 +852,16 @@ class TestHamiltonian:
             qml.Hamiltonian(
                 [1, 3, 1], [qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(1)]
             ),
-            qml.Hadamard(wires=1),
-            qml.PauliX(wires=0),
         ]
 
         with qml.tape.QuantumTape() as tape:
-            H = qml.Hamiltonian(
-                [1, 3, 1], [qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(1)]
-            )
             qml.Hadamard(wires=1)
             qml.PauliX(wires=0)
+            qml.expval(
+                qml.Hamiltonian(
+                    [1, 3, 1], [qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(1)]
+                )
+            )
 
         assert np.all([q1.compare(q2) for q1, q2 in zip(tape.queue, queue)])
 
@@ -1323,14 +1317,14 @@ class TestNewVQE:
             return qml.expval(H1)
 
         res = qml.draw(circuit1)()
-        expected = " 0: ──H──╭Hamiltonian──┤  \n" + " 2: ─────╰Hamiltonian──┤  \n"
+        expected = " 0: ──H──╭┤ ⟨Hamiltonian(1, 1, 1)⟩ \n" + " 2: ─────╰┤ ⟨Hamiltonian(1, 1, 1)⟩ \n"
         assert res == expected
 
     def test_error_multiple_expvals(self):
         """Tests that error is thrown if more than one expval is evaluated."""
         observables = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
         coeffs = [1.0] * len(observables)
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit", wires=4)
         H = qml.Hamiltonian(coeffs, observables)
         w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
 
@@ -1339,31 +1333,34 @@ class TestNewVQE:
             qml.templates.StronglyEntanglingLayers(w, wires=range(4))
             return qml.expval(H), qml.expval(qml.PauliX(3))
 
-        with pytest.raises(ValueError, match="At the moment"):
+        with pytest.raises(
+            ValueError, match="Only a single expectation of a Hamiltonian observable"
+        ):
             circuit()
 
     def test_error_non_expval_measurement(self):
         """Tests that error is thrown if sample() or var() is used."""
         observables = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
         coeffs = [1.0] * len(observables)
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit", wires=4)
         H = qml.Hamiltonian(coeffs, observables)
-        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.StronglyEntanglingLayers(w, wires=range(4))
             return qml.sample(H)
 
-        with pytest.raises(qml.QuantumFunctionError, match="Hamiltonian is not an observable"):
+        with pytest.raises(
+            ValueError, match="Only a single expectation of a Hamiltonian observable "
+        ):
             circuit()
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.StronglyEntanglingLayers(w, wires=range(4))
             return qml.var(H)
 
-        with pytest.raises(qml.QuantumFunctionError, match="Hamiltonian is not an observable"):
+        with pytest.raises(
+            ValueError, match="Only a single expectation of a Hamiltonian observable"
+        ):
             circuit()
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "best"])
