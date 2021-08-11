@@ -26,6 +26,30 @@
   [[qml.PauliX(0), qml.PauliX(1)], [qml.PauliZ(0)]]
   ```
 
+* Hamiltonians are now trainable with respect to their coefficients.
+  [(#1483)](https://github.com/PennyLaneAI/pennylane/pull/1483)
+
+  ``` python
+  from pennylane import numpy as np
+  
+  dev = qml.device("default.qubit", wires=2)
+  @qml.qnode(dev)
+  def circuit(coeffs, param):
+      qml.RX(param, wires=0)
+      qml.RY(param, wires=0)
+      return qml.expval(
+          qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=True)
+      )
+    
+  coeffs = np.array([-0.05, 0.17])
+  param = np.array(1.7)
+  grad_fn = qml.grad(circuit)
+  ```
+  ``` pycon
+  >>> grad_fn(coeffs, param)
+  (array([-0.12777055,  0.0166009 ]), array(0.0917819))
+  ```
+  
 <h3>Improvements</h3>
 
 * The `group_observables` transform is now differentiable.
@@ -214,30 +238,6 @@ Maria Schuld.
   Total shots:  100
   Total shots:  200
   Total shots:  300
-  ```
-
-* Hamiltonians are now trainable with respect to their coefficients.
-  [(#1483)](https://github.com/PennyLaneAI/pennylane/pull/1483)
-
-  ``` python
-  from pennylane import numpy as np
-  
-  dev = qml.device("default.qubit", wires=2)
-  @qml.qnode(dev)
-  def circuit(coeffs, param):
-      qml.RX(param, wires=0)
-      qml.RY(param, wires=0)
-      return qml.expval(
-          qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=True)
-      )
-    
-  coeffs = np.array([-0.05, 0.17])
-  param = np.array(1.7)
-  grad_fn = qml.grad(circuit)
-  ```
-  ``` pycon
-  >>> grad_fn(coeffs, param)
-  (array([-0.12777055,  0.0166009 ]), array(0.0917819))
   ```
 
 * VQE problems can now intuitively been set up by passing the Hamiltonian 
