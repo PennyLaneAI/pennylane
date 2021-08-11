@@ -83,9 +83,9 @@ class TestHamiltonianCoefficients:
         """Test that simplify works with different coefficient types."""
         H1 = qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(1)])
         H2 = qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.Identity(0) @ qml.PauliZ(1)])
-        H2.simplify()
-        assert H1.compare(H2)
-        assert H1.data == H2.data
+        H2_simplified = H2.simplify()
+        assert H1.compare(H2_simplified)
+        assert H1.data == H2_simplified.data
 
 
 class TestHamiltonianArithmeticTF:

@@ -107,8 +107,8 @@ def hamiltonian_expand(tape, group=True):
         )
 
     if group:
-        hamiltonian = hamiltonian.simplify()
-        return qml.transforms.measurement_grouping(tape, hamiltonian.ops, hamiltonian.coeffs)
+        h_simplified = hamiltonian.simplify()
+        return qml.transforms.measurement_grouping(tape, h_simplified.ops, h_simplified.coeffs)
 
     # create tapes that measure the Pauli-words in the Hamiltonian
     tapes = []

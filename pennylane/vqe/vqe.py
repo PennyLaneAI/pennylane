@@ -165,14 +165,14 @@ class Hamiltonian(qml.operation.Observable):
                     "Could not create circuits. Some or all observables are not valid."
                 )
 
+        if simplify:
+            coeffs, observables = _simplify(coeffs, observables)
+
         self._coeffs = coeffs
         self._ops = list(observables)
         self._wires = qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
 
         self.return_type = None
-
-        if simplify:
-            self.simplify() # TODO: fix
 
         coeffs_flat = [self._coeffs[i] for i in range(qml.math.shape(self._coeffs)[0])]
         # overwrite this attribute, now that we have the correct info
@@ -345,14 +345,14 @@ class Hamiltonian(qml.operation.Observable):
         >>> ob1.compare(ob2)
         False
         """
+        repr_self = self.simplify()._obs_data()  # pylint: disable=protected-access
+
         if isinstance(H, Hamiltonian):
-            repr1 = self.simplify()._obs_data()  # pylint: disable=protected-access
-            repr2 = H.simplify()._obs_data()  # pylint: disable=protected-access
-            return repr1 == repr2
+            repr_other = H.simplify()._obs_data()  # pylint: disable=protected-access
+            return repr_self == repr_other
 
         if isinstance(H, (Tensor, Observable)):
-            self.simplify()
-            return self._obs_data() == {
+            return repr_self == {
                 (1, frozenset(H._obs_data()))  # pylint: disable=protected-access
             }
 
@@ -421,39 +421,6 @@ class Hamiltonian(qml.operation.Observable):
         r"""The subtraction operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
         if isinstance(H, (Hamiltonian, Tensor, Observable)):
             return self.__add__(H.__mul__(-1))
-        raise ValueError(f"Cannot subtract {type(H)} from Hamiltonian")
-
-    def __iadd__(self, H):
-        r"""The inplace addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
-        if isinstance(H, Hamiltonian):
-            self._coeffs = qml.math.concatenate([self._coeffs, H.coeffs], axis=0)
-            self._ops.extend(H.ops.copy())
-            self.simplify()
-            return self
-
-        if isinstance(H, (Tensor, Observable)):
-            self._coeffs = qml.math.concatenate(
-                [self._coeffs, qml.math.cast_like([1.0], self._coeffs)], axis=0
-            )
-            self._ops.append(H)
-            self.simplify()
-            return self
-
-        raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
-
-    def __imul__(self, a):
-        r"""The inplace scalar multiplication operation between a scalar and a Hamiltonian."""
-        if isinstance(a, (int, float)):
-            self._coeffs = qml.math.multiply(qml.math.cast_like([a], self._coeffs), self._coeffs)
-            return self
-
-        raise ValueError(f"Cannot multiply Hamiltonian by {type(a)}")
-
-    def __isub__(self, H):
-        r"""The inplace subtraction operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
-        if isinstance(H, (Hamiltonian, Tensor, Observable)):
-            self.__iadd__(H.__mul__(-1))
-            return self
         raise ValueError(f"Cannot subtract {type(H)} from Hamiltonian")
 
     def queue(self, context=qml.QueuingContext):

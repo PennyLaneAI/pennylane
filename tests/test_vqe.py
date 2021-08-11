@@ -696,8 +696,8 @@ class TestHamiltonian:
     @pytest.mark.parametrize(("old_H", "new_H"), simplify_hamiltonians)
     def test_simplify(self, old_H, new_H):
         """Tests the simplify method"""
-        old_H.simplify()
-        assert old_H.compare(new_H)
+        old_H_simplified = old_H.simplify()
+        assert old_H_simplified.compare(new_H)
 
     def test_simplify_while_queueing(self):
         """Tests that simplifying a Hamiltonian in a tape context
@@ -709,12 +709,12 @@ class TestHamiltonian:
             c = qml.Identity(wires=2)
             d = b @ c
             H = qml.Hamiltonian([1.0, 2.0], [a, d])
-            H.simplify()
+            H_simplified = H.simplify()
 
         # check that H is simplified
-        assert H.ops == [a, b]
+        assert H_simplified.ops == [a, b]
         # check that the simplified Hamiltonian is in the queue
-        assert H in tape._queue
+        assert H_simplified in tape._queue
 
     def test_data(self):
         """Tests the obs_data method"""
