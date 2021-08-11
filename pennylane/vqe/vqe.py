@@ -42,7 +42,7 @@ def _compute_grouping_indices(observables, grouping_type="qwc", method="rlf"):
 
     indices = []
     available_indices = list(range(len(observables)))
-    for i, partition in enumerate(observable_groups):
+    for partition in observable_groups:
         indices_this_group = []
         for pauli_word in partition:
             # find index of this pauli word in remaining original observables,
