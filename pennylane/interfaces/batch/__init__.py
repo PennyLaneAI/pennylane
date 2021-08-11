@@ -28,7 +28,44 @@ from .autograd import execute as execute_autograd
 from collections import OrderedDict
 
 
-def cache_execute(fn, cache, pass_kwargs=False, return_jacs=True):
+def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True):
+    """Decorator that adds caching to a function that executes
+    multiple tapes on a device.
+
+    This decorator makes use of :attr:`.QuantumTape.hash` to identify
+    unique tapes.
+
+    - If a tape does not match a hash in the cache, then the tape
+      has not been previously executed. It is executed, and the result
+      added to the cache.
+
+    - If a tape matches a hash in the cache, then the tape has been previously
+      executed. The corresponding cached result is
+      extracted, and the tape is not passed to the execution function.
+
+    - Finally, there might be the case where one or more tapes in the current
+      set of tapes to be executed share a hash. If this is the case, duplicated
+      are removed, to avoid redundant evaluations.
+
+    Args:
+        fn (callable): The execution function to add caching to.
+            This function should have the signature ``fn(tapes, **kwargs)``,
+            and it should return ``list[tensor_like]``, with the
+            same length as the input ``tapes``.
+        cache (None or dict or Cache): The cache to use. If ``None``,
+            caching will not occur.
+        pass_kwargs (bool): If ``False``, keyword arguments passed to the
+            wrapped function will be passed directly to ``fn``. If ``True``,
+            they will be ignored.
+        return_tuple (bool): If ``True``, the output of ``fn`` is returned
+            as a tuple ``(fn_ouput, [])``, to match the output of execution functions
+            that also return gradients.
+
+    Returns:
+        function: a wrapped version of the execution function ``fn`` with caching
+        support
+    """
+
     @wraps(fn)
     def wrapper(tapes, **kwargs):
 
@@ -36,7 +73,10 @@ def cache_execute(fn, cache, pass_kwargs=False, return_jacs=True):
             kwargs = {}
 
         if cache is None or (isinstance(cache, bool) and not cache):
-            if not return_jacs:
+            # No caching. Simply execution the execution function
+            # and return the results.
+
+            if not return_tuple:
                 return fn(tapes, **kwargs)
 
             return fn(tapes, **kwargs), []
@@ -50,6 +90,9 @@ def cache_execute(fn, cache, pass_kwargs=False, return_jacs=True):
             h = tape.hash
 
             if h in hashes.values():
+                # Tape already exists within ``tapes``. Determine the
+                # index of the first occurance of the tape, store this,
+                # and continue to the next iteration.
                 idx = list(hashes.keys())[list(hashes.values()).index(h)]
                 repeated[i] = idx
                 continue
@@ -57,24 +100,33 @@ def cache_execute(fn, cache, pass_kwargs=False, return_jacs=True):
             hashes[i] = h
 
             if hashes[i] in cache:
+                # Tape exists within the cache, store the cached result
                 cached_results[i] = cache[hashes[i]]
             else:
+                # Tape does not exist within the cache, store the tape
+                # for execution via the execution function.
                 execution_tapes[i] = tape
 
+        # execute all unique tapes that do not exist in the cache
         res = fn(execution_tapes.values(), **kwargs)
         final_res = []
 
         for i, tape in enumerate(tapes):
             if i in cached_results:
+                # insert cached results into the results vector
                 final_res.append(cached_results[i])
+
             elif i in repeated:
+                # insert repeated results into the results vector
                 final_res.append(final_res[repeated[i]])
+
             else:
+                # insert evaluated results into the results vector
                 r = res.pop(0)
                 final_res.append(r)
                 cache[hashes[i]] = r
 
-        if not return_jacs:
+        if not return_tuple:
             return final_res
 
         return final_res, []
@@ -92,6 +144,7 @@ def execute(
     gradient_kwargs=None,
     cache=True,
     cachesize=10000,
+    max_diff=2,
 ):
     """Execute a batch of tapes on a device in an autodifferentiable-compatible manner.
 
@@ -113,6 +166,13 @@ def execute(
             pass.
         gradient_kwargs (dict): dictionary of keyword arguments to pass when
             determining the gradients of tapes
+        cache (bool): Whether to cache evaluations. This can result in
+            a significant reduction in quantum evaluations during gradient computations.
+        cachesize (int): the size of the cache
+        max_diff (int): If ``gradient_fn`` is a gradient transform, this option specifies
+            the maximum number of derivatives to support. Increasing this value allows
+            for higher order derivatives to be extracted, at the cost of additional
+            (classical) computational overhead during the backwards pass.
 
     Returns:
         list[list[float]]: A nested list of tape results. Each element in
@@ -196,14 +256,16 @@ def execute(
 
             # replace the backward gradient computation
             gradient_fn = cache_execute(
-                device.gradients, cache, pass_kwargs=True, return_jacs=False
+                device.gradients, cache, pass_kwargs=True, return_tuple=False
             )
 
     elif mode == "forward":
         raise ValueError("Gradient transforms cannot be used with mode='forward'")
 
     if interface == "autograd":
-        res = execute_autograd(tuple(tapes), device, execute_fn, gradient_fn, gradient_kwargs)
+        res = execute_autograd(
+            tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
+        )
     else:
         raise ValueError(f"Unknown interface {interface}")
 
