@@ -2,7 +2,60 @@
 
 <h3>New features since last release</h3>
 
+* Hamiltonians are now trainable with respect to their coefficients.
+  [(#1483)](https://github.com/PennyLaneAI/pennylane/pull/1483)
+
+  ``` python
+  from pennylane import numpy as np
+  
+  dev = qml.device("default.qubit", wires=2)
+  @qml.qnode(dev)
+  def circuit(coeffs, param):
+      qml.RX(param, wires=0)
+      qml.RY(param, wires=0)
+      return qml.expval(
+          qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=True)
+      )
+    
+  coeffs = np.array([-0.05, 0.17])
+  param = np.array(1.7)
+  grad_fn = qml.grad(circuit)
+  ```
+  ``` pycon
+  >>> grad_fn(coeffs, param)
+  (array([-0.12777055,  0.0166009 ]), array(0.0917819))
+  ```
+
 <h3>Improvements</h3>
+
+* The `group_observables` transform is now differentiable.
+  [(#1483)](https://github.com/PennyLaneAI/pennylane/pull/1483)
+ 
+  For example:
+
+  ``` python
+  import jax
+  from jax import numpy as jnp
+  
+  coeffs = jnp.array([1., 2., 3.])
+  obs = [PauliX(wires=0), PauliX(wires=1), PauliZ(wires=1)]
+
+  def group(coeffs, select=None):
+    _, grouped_coeffs = qml.grouping.group_observables(obs, coeffs)
+    # in this example, grouped_coeffs is a list of two jax tensors
+    # [DeviceArray([1., 2.], dtype=float32), DeviceArray([3.], dtype=float32)]
+    return grouped_coeffs[select]
+
+  jac_fn = jax.jacobian(group)
+  ```
+  ```pycon
+  >>> jac_fn(coeffs, select=0)
+  [[1. 0. 0.]
+  [0. 1. 0.]]
+  
+  >>> jac_fn(coeffs, select=1)
+  [[0., 0., 1.]]
+  ```
 
 * The tape does not verify any more that all Observables have owners in the annotated queue.
   [(#1505)](https://github.com/PennyLaneAI/pennylane/pull/1505)
@@ -153,7 +206,7 @@ Maria Schuld.
   Total shots:  200
   Total shots:  300
   ```
-
+  
 * VQE problems can now intuitively been set up by passing the Hamiltonian 
   as an observable. [(#1474)](https://github.com/PennyLaneAI/pennylane/pull/1474)
 
@@ -490,6 +543,14 @@ Maria Schuld.
   ```
 
 <h3>Improvements</h3>
+
+* The tape does not verify any more that all Observables have owners in the annotated queue.
+  [(#1505)](https://github.com/PennyLaneAI/pennylane/pull/1505)
+
+  This allows manipulation of Observables inside a tape context. An example is 
+  `expval(Tensor(qml.PauliX(0), qml.Identity(1)).prune())` which makes the expval an owner 
+  of the pruned tensor and its constituent observables, but leaves the original tensor in 
+  the queue without an owner.
 
 * The `step` and `step_and_cost` methods of `QNGOptimizer` now accept a custom `grad_fn`
   keyword argument to use for gradient computations.

@@ -18,6 +18,7 @@ This module contains the high-level Pauli-word-partitioning functionality used i
 from copy import copy
 
 import numpy as np
+import pennylane as qml
 
 from pennylane.grouping.graph_colouring import largest_first, recursive_largest_first
 from pennylane.grouping.utils import (
@@ -191,7 +192,7 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
     Args:
         observables (list[Observable]): a list of Pauli word ``Observable`` instances (Pauli
             operation instances and :class:`~.Tensor` instances thereof)
-        coefficients (list[float]): A list of float coefficients. If not specified,
+        coefficients (tensor_like): A tensor or list of coefficients. If not specified,
             output ``partitioned_coeffs`` is not returned.
         grouping_type (str): The type of binary relation between Pauli words.
             Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
@@ -203,9 +204,9 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
 
            * list[list[Observable]]: A list of the obtained groupings. Each grouping
              is itself a list of Pauli word ``Observable`` instances.
-           * list[list[float]]: A list of coefficient groupings. Each coefficient
-             grouping is itself a list of the grouping's corresponding coefficients. This is only
-             output if coefficients are specified.
+           * list[tensor_like]: A list of coefficient groupings. Each coefficient
+             grouping is itself a tensor or list of the grouping's corresponding coefficients. This is only
+             returned if coefficients are specified.
 
     Raises:
         IndexError: if the input list of coefficients is not of the same length as the input list
@@ -224,7 +225,7 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
     """
 
     if coefficients is not None:
-        if len(coefficients) != len(observables):
+        if qml.math.shape(coefficients)[0] != len(observables):
             raise IndexError(
                 "The coefficients list must be the same length as the observables list."
             )
@@ -237,18 +238,32 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
     if coefficients is None:
         return partitioned_paulis
 
-    partitioned_coeffs = [[0] * len(g) for g in partitioned_paulis]
+    partitioned_coeffs = [
+        qml.math.cast_like([0] * len(g), coefficients) for g in partitioned_paulis
+    ]
 
     observables = copy(observables)
-    coefficients = copy(coefficients)
+    # we cannot delete elements from the coefficients tensor, so we
+    # use a proxy list memorising the indices for this logic
+    coeff_indices = list(range(qml.math.shape(coefficients)[0]))
     for i, partition in enumerate(partitioned_paulis):
-        for j, pauli_word in enumerate(partition):
+        indices = []
+        for pauli_word in partition:
+            # find index of this pauli word in remaining original observables,
             for observable in observables:
                 if are_identical_pauli_words(pauli_word, observable):
                     ind = observables.index(observable)
-                    partitioned_coeffs[i][j] = coefficients[ind]
+                    indices.append(coeff_indices[ind])
                     observables.pop(ind)
-                    coefficients.pop(ind)
+                    coeff_indices.pop(ind)
                     break
+
+        # add a tensor of coefficients to the grouped coefficients
+        partitioned_coeffs[i] = qml.math.take(coefficients, indices, axis=0)
+
+    # make sure the output is of the same format as the input
+    # for these two frequent cases
+    if isinstance(coefficients, list):
+        partitioned_coeffs = [list(p) for p in partitioned_coeffs]
 
     return partitioned_paulis, partitioned_coeffs

@@ -54,7 +54,7 @@ for k, v in complete_edge_weight_data.items():
 
 def decompose_hamiltonian(hamiltonian):
 
-    coeffs = hamiltonian.coeffs
+    coeffs = list(qml.math.toarray(hamiltonian.coeffs))
     ops = [i.name for i in hamiltonian.ops]
     wires = [i.wires for i in hamiltonian.ops]
 
@@ -623,7 +623,7 @@ MWC = list(zip(DIGRAPHS, MWC_CONSTRAINED, COST_HAMILTONIANS, MIXER_HAMILTONIANS,
 
 def decompose_hamiltonian(hamiltonian):
 
-    coeffs = hamiltonian.coeffs
+    coeffs = list(qml.math.toarray(hamiltonian.coeffs))
     ops = [i.name for i in hamiltonian.ops]
     wires = [i.wires for i in hamiltonian.ops]
 
@@ -1114,7 +1114,7 @@ class TestCycles:
         ]
         expected_coeffs = [np.log(0.5), np.log(1), np.log(1.5), np.log(2), np.log(2.5), np.log(3)]
 
-        assert expected_coeffs == h.coeffs
+        assert np.allclose(expected_coeffs, h.coeffs)
         assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
         assert all([type(op) is type(exp) for op, exp in zip(h.ops, expected_ops)])
 
@@ -1160,7 +1160,7 @@ class TestCycles:
             np.log(7),
         ]
 
-        assert expected_coeffs == h.coeffs
+        assert np.allclose(expected_coeffs, h.coeffs)
         assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
         assert all([type(op) is type(exp) for op, exp in zip(h.ops, expected_ops)])
 
@@ -1252,7 +1252,7 @@ class TestCycles:
 
         expected_coeffs = [2, 2, -2, -2]
 
-        assert expected_coeffs == h.coeffs
+        assert np.allclose(expected_coeffs, h.coeffs)
         for i, expected_op in enumerate(expected_ops):
             assert str(h.ops[i]) == str(expected_op)
         assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
@@ -1274,7 +1274,7 @@ class TestCycles:
         ]
         expected_coeffs = [4, 2, -2, -2, -2, -2, 2]
 
-        assert expected_coeffs == h.coeffs
+        assert np.allclose(expected_coeffs, h.coeffs)
         for i, expected_op in enumerate(expected_ops):
             assert str(h.ops[i]) == str(expected_op)
         assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
@@ -1290,7 +1290,7 @@ class TestCycles:
         expected_ops = [qml.PauliZ(wires=[0])]
         expected_coeffs = [0]
 
-        assert expected_coeffs == h.coeffs
+        assert np.allclose(expected_coeffs, h.coeffs)
         for i, expected_op in enumerate(expected_ops):
             assert str(h.ops[i]) == str(expected_op)
         assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
@@ -1313,7 +1313,7 @@ class TestCycles:
         ]
         expected_coeffs = [4, -2, -2, 2, 2, -2, -2]
 
-        assert expected_coeffs == h.coeffs
+        assert np.allclose(expected_coeffs, h.coeffs)
         for i, expected_op in enumerate(expected_ops):
             assert str(h.ops[i]) == str(expected_op)
         assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
