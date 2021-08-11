@@ -22,22 +22,14 @@ import matplotlib.pyplot as plt
 from pennylane.beta.circuit_drawer import MPLDrawer
 
 
-def just_wires(savefile="just_wires.png"):
-    drawer = MPLDrawer(n_wires=2, n_layers=1)
-    drawer.wires()
-    plt.savefig(savefile)
-
-
 def labels(savefile="labels.png"):
     drawer = MPLDrawer(n_wires=2, n_layers=1)
-    drawer.wires()
     drawer.label(["a", "b"])
     plt.savefig(savefile)
 
 
 def box_gates(savefile="box_gates.png"):
     drawer = MPLDrawer(n_wires=2, n_layers=2)
-    drawer.wires()
 
     drawer.box_gate(layer=0, wires=0, text="Y")
     drawer.box_gate(layer=1, wires=(0, 1), text="CRy(0.1)", rotate_text=True)
@@ -46,7 +38,6 @@ def box_gates(savefile="box_gates.png"):
 
 def ctrl(savefile="ctrl.png"):
     drawer = MPLDrawer(n_wires=2, n_layers=2)
-    drawer.wires()
 
     drawer.ctrl(layer=0, wire_ctrl=0, wire_target=1)
     drawer.ctrl(layer=1, wire_ctrl=(0, 1))
@@ -55,50 +46,29 @@ def ctrl(savefile="ctrl.png"):
 
 def CNOT(savefile="cnot.png"):
     drawer = MPLDrawer(n_wires=2, n_layers=2)
-    drawer.wires()
 
     drawer.CNOT(0, (0, 1))
     drawer.CNOT(1, (1, 0))
     plt.savefig(savefile)
 
 
-def target_x(savefile="target_x.png"):
-    drawer = MPLDrawer(n_wires=1, n_layers=1)
-    drawer.wires()
-    drawer._target_x(0, 0)
-    plt.savefig(savefile)
-
-
 def SWAP(savefile="SWAP.png"):
     drawer = MPLDrawer(n_wires=2, n_layers=1)
-    drawer.wires()
 
     drawer.SWAP(0, (0, 1))
     plt.savefig(savefile)
 
 
-def swap_x(savefile="swap_x.png"):
-    drawer = MPLDrawer(n_wires=1, n_layers=1)
-    drawer.wires()
-
-    drawer._swap_x(0, 0)
-    plt.savefig(savefile)
-
-
 def measure(savefile="measure.png"):
     drawer = MPLDrawer(n_wires=1, n_layers=1)
-    drawer.wires()
 
     drawer.measure(0, 0)
     plt.savefig(savefile)
 
 
-just_wires()
 labels()
 box_gates()
 ctrl()
 CNOT()
-target_x()
 SWAP()
-swap_x()
 measure()

@@ -40,82 +40,32 @@ class MPLDrawer:
     """
 
     def __init__(self, n_layers, n_wires, figsize=None):
-        ### Configuration variables
-
-        self.set_configuration_parameters()
 
         self.n_layers = n_layers
         self.n_wires = n_wires
-
-        ## Creating figure and ax
-
-        if figsize is None:
-            figsize = (self.n_layers + 3, self.n_wires + 1)
-
-        self.fig = plt.figure(figsize=figsize, **self.fig_kwargs)
-        self.ax = self.fig.add_axes(
-            [0, 0, 1, 1], xlim=(-2, self.n_layers + 1), ylim=(-1, self.n_wires), **self.axes_kwargs
-        )
-
-    def set_configuration_parameters(self):
-        """Resets all configuration variables.
-
-        While most of these are empty at the moment, they do make configuration of the drawing
-        easier.
-        """
-
-        self.fig_kwargs = {}
-        self.axes_kwargs = {"xticks": [], "yticks": []}
-        self.wire_kwargs = {}
-        self.label_kwargs = {}
-        self.ctrl_line_kwargs = {}
-        self.ctrl_kwargs = {}
-        self.targetx_kwargs = {
-            "fill": False,
-            "edgecolor": plt.rcParams["lines.color"],
-            "linewidth": plt.rcParams["lines.linewidth"],
-        }
-        self.targetxl_kwargs = {}
-        self.box_kwargs = {}
-        self.text_kwargs = {"ha": "center", "va": "center", "fontsize": "x-large"}
-        self.swapx_kwargs = {}
 
         self.box_dx = 0.4
         self.circ_rad = 0.3
         self.ctrl_rad = 0.1
         self.swap_dx = 0.2
 
-    def wires(self, n_wires=None, n_layers=None):
-        """Draw the wires.
+        ## Creating figure and ax
 
-        Separated from initialization so user's can alter configuration dictionaries before drawing wires.
+        if figsize is None:
+            figsize = (self.n_layers + 3, self.n_wires + 1)
 
-        Args:
-            n_wires=None (Int): The number of wires to draw.  If ``None``, uses class
-                variable ``self.n_wires``.
-            n_layers=None (Int): The number of layers to draw. If ``None``, uses class
-                variable ``self.n_layers``.
+        self.fig = plt.figure(figsize=figsize)
+        self.ax = self.fig.add_axes(
+            [0, 0, 1, 1],
+            xlim=(-2, self.n_layers + 1),
+            ylim=(-1, self.n_wires),
+            xticks=[],
+            yticks=[],
+        )
 
-        **Example**
-
-        .. code-block:: python
-
-            drawer = MPLDrawer(n_wires=2, n_layers=2)
-            drawer.wires()
-
-        .. figure:: ../../_static/drawer/just_wires.png
-            :align: center
-            :width: 60%
-            :target: javascript:void(0);
-
-        """
-        if n_wires is None:
-            n_wires = self.n_wires
-        if n_layers is None:
-            n_layers = self.n_layers
-
-        for wire in range(n_wires):
-            line = plt.Line2D((-1, n_layers), (wire, wire), zorder=1, **self.wire_kwargs)
+        # adding wire lines
+        for wire in range(self.n_wires):
+            line = plt.Line2D((-1, self.n_layers), (wire, wire), zorder=1)
             self.ax.add_line(line)
 
     def label(self, labels):
@@ -129,7 +79,6 @@ class MPLDrawer:
         .. code-block:: python
 
             drawer = MPLDrawer(n_wires=2, n_layers=1)
-            drawer.wires()
             drawer.label(["a", "b"])
 
         .. figure:: ../../_static/drawer/labels.png
@@ -139,7 +88,7 @@ class MPLDrawer:
 
         """
         for wire, ii_label in enumerate(labels):
-            self.ax.text(-1.5, wire, ii_label, **self.label_kwargs)
+            self.ax.text(-1.5, wire, ii_label)
 
     def box_gate(
         self, layer, wires, text="", extra_width=0, rotate_text=False, zorder_base=0, color=None
@@ -163,7 +112,6 @@ class MPLDrawer:
         .. code-block:: python
 
             drawer = MPLDrawer(n_wires=2, n_layers=2)
-            drawer.wires()
 
             drawer.box_gate(layer=0, wires=0, text="Y")
             drawer.box_gate(layer=1, wires=(0,1), text="CRy(0.1)", rotate_text=True)
@@ -186,20 +134,24 @@ class MPLDrawer:
         else:
             rotation = "horizontal"
 
-        temp_kwargs = self.box_kwargs.copy()
-        if color:
-            temp_kwargs["facecolor"] = color
-
         box = plt.Rectangle(
             (layer - self.box_dx - extra_width / 2, box_min - self.box_dx),
             2 * self.box_dx + extra_width,
             (box_len + 2 * self.box_dx),
             zorder=2 + zorder_base,
-            **temp_kwargs
+            facecolor=color,
         )
         self.ax.add_patch(box)
+
         self.ax.text(
-            layer, box_center, text, zorder=3 + zorder_base, rotation=rotation, **self.text_kwargs
+            layer,
+            box_center,
+            text,
+            zorder=3 + zorder_base,
+            rotation=rotation,
+            ha="center",
+            va="center",
+            fontsize="x-large",
         )
 
     def ctrl(self, layer, wire_ctrl, wire_target=tuple()):
@@ -216,7 +168,6 @@ class MPLDrawer:
         .. code-block:: python
 
             drawer = MPLDrawer(n_wires=2, n_layers=2)
-            drawer.wires()
 
             drawer.ctrl(layer=0, wire_ctrl=0, wire_target=1)
             drawer.ctrl(layer=1, wire_ctrl=(0,1))
@@ -234,13 +185,11 @@ class MPLDrawer:
         min_wire = min(wires_all)
         max_wire = max(wires_all)
 
-        line = plt.Line2D((layer, layer), (min_wire, max_wire), zorder=2, **self.ctrl_line_kwargs)
+        line = plt.Line2D((layer, layer), (min_wire, max_wire), zorder=2)
         self.ax.add_line(line)
 
         for wire in wire_ctrl:
-            circ_ctrl = plt.Circle(
-                (layer, wire), radius=self.ctrl_rad, zorder=2, **self.ctrl_kwargs
-            )
+            circ_ctrl = plt.Circle((layer, wire), radius=self.ctrl_rad, zorder=2)
             self.ax.add_patch(circ_ctrl)
 
     def CNOT(self, layer, wires):
@@ -255,7 +204,6 @@ class MPLDrawer:
         .. code-block:: python
 
             drawer = MPLDrawer(n_wires=2, n_layers=2)
-            drawer.wires()
 
             drawer.CNOT(0, (0,1))
             drawer.CNOT(1, (1,0))
@@ -281,27 +229,17 @@ class MPLDrawer:
 
         **Example**
 
-        .. code-block:: python
-
-            drawer = MPLDrawer(n_wires=1, n_layers=1)
-            drawer.wires()
-
-            drawer._target_x(0, 0)
-
-        .. figure:: ../../_static/drawer/target_x.png
-            :align: center
-            :width: 60%
-            :target: javascript:void(0);
-
         """
         target_circ = plt.Circle(
-            (layer, wire), radius=self.circ_rad, zorder=3, **self.targetx_kwargs
+            (layer, wire),
+            radius=self.circ_rad,
+            zorder=3,
+            fill=False,
+            edgecolor=plt.rcParams["lines.color"],
+            linewidth=plt.rcParams["lines.linewidth"],
         )
         target_v = plt.Line2D(
-            (layer, layer),
-            (wire - self.circ_rad, wire + self.circ_rad),
-            zorder=4,
-            **self.targetxl_kwargs
+            (layer, layer), (wire - self.circ_rad, wire + self.circ_rad), zorder=4
         )
         self.ax.add_patch(target_circ)
         self.ax.add_line(target_v)
@@ -318,7 +256,6 @@ class MPLDrawer:
         .. code-block:: python
 
             drawer = MPLDrawer(n_wires=2, n_layers=1)
-            drawer.wires()
 
             drawer.SWAP(0, (0,1))
 
@@ -340,21 +277,6 @@ class MPLDrawer:
         Args:
             layer (Int): the layer
             wire (Int): the wire
-
-        **Example**
-
-        .. code-block:: python
-
-            drawer = MPLDrawer(n_wires=1, n_layers=1)
-            drawer.wires()
-
-            drawer._swap_x(0,0)
-
-        .. figure:: ../../_static/drawer/swap_x.png
-            :align: center
-            :width: 60%
-            :target: javascript:void(0);
-
 
         """
         l1 = plt.Line2D(
@@ -384,6 +306,11 @@ class MPLDrawer:
             zorder_base=0 (Int): amount to shift in zorder from the default
 
         **Example**
+
+        .. code-block:: python
+
+            drawer = MPLDrawer(n_wires=1, n_layers=1)
+            drawer.measure(0, 0)
 
         .. figure:: ../../_static/drawer/measure.png
             :align: center
