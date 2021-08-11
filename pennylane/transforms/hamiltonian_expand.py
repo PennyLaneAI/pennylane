@@ -106,26 +106,31 @@ def hamiltonian_expand(tape, group=True):
             "Passed tape must end in `qml.expval(H)`, where H is of type `qml.Hamiltonian`"
         )
 
-    if group:
-        hamiltonian.simplify()
-        return qml.transforms.measurement_grouping(tape, hamiltonian.ops, hamiltonian.coeffs)
+    if group or hamiltonian.grouping_indices is not None:
+        # if explicitly requested or already available,
+        # compute the grouping information
+        coeff_groupings, obs_groupings = hamiltonian.get_grouping()
+    else:
+        # else make each observable its own group
+        obs_groupings = [[obs] for obs in hamiltonian.ops]
+        coeff_groupings = [hamiltonian.coeffs[i:i+1] for i in range(len(hamiltonian.ops))]
 
     # create tapes that measure the Pauli-words in the Hamiltonian
     tapes = []
-    for ob in hamiltonian.ops:
+    for obs in obs_groupings:
         # we need to create a new tape here, because
         # updating metadata of a copied tape is error-prone
-        # when the observables where changed
         with tape.__class__() as new_tape:
             for op in tape.operations:
                 qml.apply(op)
-            qml.expval(ob)
+            for ob in obs:
+                qml.expval(ob)
         tapes.append(new_tape)
 
     # create processing function that performs linear recombination
     def processing_fn(res):
         dot_products = [
-            qml.math.dot(qml.math.squeeze(res[i]), hamiltonian.coeffs[i]) for i in range(len(res))
+            qml.math.dot(r, c) for r, c in zip(res, coeff_groupings)
         ]
         return qml.math.sum(qml.math.stack(dot_products), axis=0)
 
