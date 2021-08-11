@@ -2,6 +2,47 @@
 
 <h3>New features since last release</h3>
 
+* A transform `replace` has been added that allows you to define your own
+  custom decompositions or implementations of gates "on the fly"
+  without modifying the underlying code base.
+  [(#1482)](https://github.com/PennyLaneAI/pennylane/pull/1482)
+
+  For example, suppose you wanted to decompose all your Hadamard gates
+  as `[RY(np.pi/2), X]` rather than the built-in `[RZ(np.pi/2), RX(np.pi/2), RZ(np.pi/2)]`.
+  We can write a new decomposition function that accept a `wires` argument
+  (and an optional `parameters` argument for parametrized gates), and
+  returns a custom list operations in the same manner as the `decomposition` method
+  of a PennyLane `Operation`.
+
+  ```python
+  def custom_hadamard(wires):
+      return [qml.RY(np.pi/2, wires=wires), qml.PauliX(wires=wires)]
+  ```
+
+  Given a quantum function
+
+  ```python
+  def qfunc(x):
+      qml.Hadamard(wires=0)
+      qml.CNOT(wires=[0, 1])
+      qml.RX(x, wires=1)
+      qml.Hadamard(wires=1)
+      return qml.expval(qml.PauliZ(wires=1))
+  ```
+
+  we can feed this and other custom decomposition to the `replace` transform
+  using a dictionary mapping gate names to custom implementation functions:
+
+  ```pycon
+  >>> custom_ops = {"Hadamard" : custom_hadamard}
+  >>> dev = qml.device('default.qubit', wires=2)
+  >>> transformed_qfunc = qml.replace(custom_ops=custom_ops)(qfunc)
+  >>> qnode = qml.QNode(transformed_qfunc, dev)
+  >>> print(qml.draw(qnode)(0.3))
+   0: ──RY(1.57)──X──╭C────────────────────────┤
+   1: ───────────────╰X──RX(0.3)──RY(1.57)──X──┤ ⟨Z⟩
+  ```
+
 <h3>Improvements</h3>
 
 * The tape does not verify any more that all Observables have owners in the annotated queue.
@@ -22,7 +63,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Maria Schuld.
+Olivia Di Matteo, Maria Schuld.
 
 # Release 0.17.0 (current release)
 
