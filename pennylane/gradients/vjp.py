@@ -54,7 +54,7 @@ def vjp(tape, dy, gradient_fn):
 
     Args:
         tape (.QuantumTape): quantum tape to differentiate
-        dy (tensor_like): Gradient-output vector`. Must have shape
+        dy (tensor_like): Gradient-output vector. Must have shape
             matching the output shape of the corresponding tape.
         gradient_fn (callable): the gradient transform to use to differentiate
             the tape

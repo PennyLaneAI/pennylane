@@ -344,7 +344,7 @@ class TestBatchVJP:
         assert res[1] is not None
 
     def test_all_tapes_no_trainable_parameters(self):
-        """A tape with no trainable parameters will simply return None"""
+        """If all tapes have no trainable parameters all outputs will be None"""
         dev = qml.device("default.qubit", wires=2)
 
         with qml.tape.QuantumTape() as tape1:
@@ -370,7 +370,7 @@ class TestBatchVJP:
         assert fn([]) == [None, None]
 
     def test_zero_dy(self):
-        """ "A zero dy vector will return no tapes and a zero matrix"""
+        """A zero dy vector will return no tapes and a zero matrix"""
         dev = qml.device("default.qubit", wires=2)
 
         with qml.tape.QuantumTape() as tape1:
@@ -399,7 +399,8 @@ class TestBatchVJP:
         assert np.allclose(res[0], 0)
 
     def test_reduction_append(self):
-        """ "Test the 'append' reduction strategy"""
+        """Test the 'append' reduction strategy"""
+
         dev = qml.device("default.qubit", wires=2)
 
         with qml.tape.JacobianTape() as tape1:
@@ -428,7 +429,7 @@ class TestBatchVJP:
         assert all(len(r) == len(t.trainable_params) for t, r in zip(tapes, res))
 
     def test_reduction_extend(self):
-        """ "Test the 'extend' reduction strategy"""
+        """Test the 'extend' reduction strategy"""
         dev = qml.device("default.qubit", wires=2)
 
         with qml.tape.JacobianTape() as tape1:
