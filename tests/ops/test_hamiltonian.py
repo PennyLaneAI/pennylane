@@ -413,14 +413,14 @@ class TestGrouping:
         b = qml.PauliX(1)
         c = qml.PauliZ(0)
         obs = [a, b, c]
-        coeffs = [1., 2., 3.]
+        coeffs = [1.0, 2.0, 3.0]
 
         H = qml.Hamiltonian(coeffs, obs)
         assert H.grouping_indices is None
 
         grouped_coeffs, grouped_obs = H.get_groupings()
-        assert np.allclose(grouped_coeffs[0], np.array([1., 2.]))
-        assert np.allclose(grouped_coeffs[1], np.array(3.))
+        assert np.allclose(grouped_coeffs[0], np.array([1.0, 2.0]))
+        assert np.allclose(grouped_coeffs[1], np.array(3.0))
         assert grouped_obs == [[a, b], [c]]
         assert H.grouping_indices == [[0, 1], [2]]
 
@@ -434,11 +434,11 @@ class TestGrouping:
         b = qml.PauliY(0)
         c = qml.PauliZ(0)
         obs = [a, b, c]
-        coeffs = [1., 2., 3.]
+        coeffs = [1.0, 2.0, 3.0]
 
         H = qml.Hamiltonian(coeffs, obs)
         grouped_coeffs, grouped_obs = H.get_groupings()
-        assert grouped_coeffs == [[1.], [2.], [3.]]
+        assert grouped_coeffs == [[1.0], [2.0], [3.0]]
         assert grouped_obs == [[a], [b], [c]]
         assert H.grouping_indices == [[0], [1], [2]]
 
@@ -447,7 +447,7 @@ class TestGrouping:
         assert H2.grouping_indices == [[0], [1], [2]]
 
 
-class TestHamiltonianEvaluation
+class TestHamiltonianEvaluation:
     """Test the usage of a Hamiltonian as an observable"""
 
     @pytest.mark.parametrize("coeffs, param, interface", COEFFS_PARAM_INTERFACE)
@@ -513,7 +513,12 @@ class TestHamiltonianDifferentiation:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=simplify, compute_grouping=group)
+                qml.Hamiltonian(
+                    coeffs,
+                    [qml.PauliX(0), qml.PauliZ(0)],
+                    simplify=simplify,
+                    compute_grouping=group,
+                )
             )
 
         grad_fn = qml.grad(circuit)
@@ -545,7 +550,12 @@ class TestHamiltonianDifferentiation:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=simplify, compute_grouping=group)
+                qml.Hamiltonian(
+                    coeffs,
+                    [qml.PauliX(0), qml.PauliZ(0)],
+                    simplify=simplify,
+                    compute_grouping=group,
+                )
             )
 
         grad_fn = qml.grad(circuit)
@@ -580,7 +590,12 @@ class TestHamiltonianDifferentiation:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=simplify, compute_grouping=group)
+                qml.Hamiltonian(
+                    coeffs,
+                    [qml.PauliX(0), qml.PauliZ(0)],
+                    simplify=simplify,
+                    compute_grouping=group,
+                )
             )
 
         grad_fn = jax.grad(circuit)
@@ -614,7 +629,12 @@ class TestHamiltonianDifferentiation:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=simplify, compute_grouping=group)
+                qml.Hamiltonian(
+                    coeffs,
+                    [qml.PauliX(0), qml.PauliZ(0)],
+                    simplify=simplify,
+                    compute_grouping=group,
+                )
             )
 
         res = circuit(coeffs, param)
@@ -655,7 +675,12 @@ class TestHamiltonianDifferentiation:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=simplify, compute_grouping=group)
+                qml.Hamiltonian(
+                    coeffs,
+                    [qml.PauliX(0), qml.PauliZ(0)],
+                    simplify=simplify,
+                    compute_grouping=group,
+                )
             )
 
         with tf.GradientTape() as tape:

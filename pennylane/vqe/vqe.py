@@ -34,7 +34,9 @@ def _compute_grouping_indices(observables, grouping_type="qwc", method="rlf"):
 
     # todo: directly compute the
     # indices, instead of extracting groups of observables first
-    observable_groups = qml.grouping.group_observables(observables, coefficients=None, grouping_type=grouping_type, method=method)
+    observable_groups = qml.grouping.group_observables(
+        observables, coefficients=None, grouping_type=grouping_type, method=method
+    )
 
     observables = copy(observables)
 
@@ -134,7 +136,9 @@ class Hamiltonian(qml.operation.Observable):
     par_domain = "A"
     grad_method = "A"  # supports analytic gradients
 
-    def __init__(self, coeffs, observables, simplify=False, compute_groupings=False, id=None, do_queue=True):
+    def __init__(
+        self, coeffs, observables, simplify=False, compute_groupings=False, id=None, do_queue=True
+    ):
 
         if qml.math.shape(coeffs)[0] != len(observables):
             raise ValueError(
@@ -231,7 +235,10 @@ class Hamiltonian(qml.operation.Observable):
             # if it has not been done before, compute which indices of coefficients/observables belong to each group
             self._grouping_indices = qml.transforms.invisible(_compute_grouping_indices)(self.ops)
 
-        grouped_coefficients = [qml.math.squeeze(qml.math.take(self.coeffs, indices, axis=0)) for indices in self._grouping_indices]
+        grouped_coefficients = [
+            qml.math.squeeze(qml.math.take(self.coeffs, indices, axis=0))
+            for indices in self._grouping_indices
+        ]
         grouped_observables = [[self.ops[i] for i in indices] for indices in self._grouping_indices]
 
         return grouped_coefficients, grouped_observables
