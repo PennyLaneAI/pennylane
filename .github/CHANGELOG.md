@@ -540,6 +540,14 @@
   
 <h3>Breaking changes</h3>
 
+* Deprecated the tape methods `get_resources` and `get_depth` as they are
+  superseded by the `specs` tape attribute.
+  [(#1522)](https://github.com/PennyLaneAI/pennylane/pull/1522)
+
+* Fully deprecated specifying `shots=None` with `qml.sample` by raising an
+  error in `QubitDevice`.
+  [(#1522)](https://github.com/PennyLaneAI/pennylane/pull/1522)
+
 * The existing `pennylane.collections.apply` function is no longer accessible
   via `qml.apply`, and needs to be imported directly from the ``collections``
   package.
