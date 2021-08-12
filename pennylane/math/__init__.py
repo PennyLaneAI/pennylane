@@ -39,8 +39,10 @@ from .multi_dispatch import (
     concatenate,
     diag,
     dot,
+    get_trainable_indices,
     ones_like,
     stack,
+    unwrap,
     where,
 )
 
@@ -76,4 +78,6 @@ __all__ = [
     "requires_grad",
     "cov_matrix",
     "marginal_prob",
+    "unwrap",
+    "get_trainable_indices",
 ]

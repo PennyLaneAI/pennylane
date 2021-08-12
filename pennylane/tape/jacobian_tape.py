@@ -399,7 +399,8 @@ class JacobianTape(QuantumTape):
         """
         raise NotImplementedError
 
-    def _choose_params_with_methods(self, diff_methods, argnum):
+    @staticmethod
+    def _choose_params_with_methods(diff_methods, argnum):
         """Chooses the trainable parameters to use for computing the Jacobian
         by returning a map of their indices and differentiation methods.
 
@@ -422,11 +423,6 @@ class JacobianTape(QuantumTape):
 
         if isinstance(argnum, int):
             argnum = [argnum]
-
-        if not all(ind in self.trainable_params for ind in argnum):
-            raise ValueError(
-                "Incorrect trainable parameters were specified for the argnum argument."
-            )
 
         num_params = len(argnum)
 
