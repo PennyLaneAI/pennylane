@@ -73,7 +73,11 @@ class Hamiltonian(qml.operation.Observable):
         compute_grouping (bool): If True, compute and store information on how to group commuting
             observables upon initialization. This information can be accessed when the expectation of
             a Hamiltonian is split into expectations of its constituent observables.
-
+        grouping_type (str): The type of binary relation between Pauli words.
+            Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``. . Ignored if compute_grouping is False.
+        method (str): The graph coloring heuristic to use in solving minimum clique cover for grouping, which
+            can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First). Ignored if compute_grouping is False.
+        id (str): name to be assigned to this Hamiltonian instance
 
     **Example:**
 
@@ -140,13 +144,13 @@ class Hamiltonian(qml.operation.Observable):
     [[0, 1], [2]]
 
     This attribute is used when computing groups of coefficients and observables:
-    >>> grouped_coeffs, grouped_obs = H.get_groupings()
+    >>> grouped_coeffs, grouped_obs = H.get_grouping()
     >>> grouped_coeffs
     [np.array([1., 2.]), np.array(3.)]
     >>> grouped_obs
     [[qml.PauliX(0), qml.PauliX(1)], [qml.PauliZ(0)]]
 
-    If initializing a Hamiltonian with ``compute_grouping=False``, ``get_groupings()`` will
+    If initializing a Hamiltonian with ``compute_grouping=False``, ``get_grouping()`` will
     compute the ``grouping_indices`` attribute from scratch and store it.
 
     Devices that evaluate a Hamiltonian expectation by splitting it into its local observables can
@@ -159,7 +163,7 @@ class Hamiltonian(qml.operation.Observable):
     grad_method = "A"  # supports analytic gradients
 
     def __init__(
-        self, coeffs, observables, simplify=False, compute_grouping=False, id=None, do_queue=True
+        self, coeffs, observables, simplify=False, compute_grouping=False, grouping_type="qwc", method="rlf", id=None, do_queue=True
     ):
 
         if qml.math.shape(coeffs)[0] != len(observables):
@@ -187,7 +191,7 @@ class Hamiltonian(qml.operation.Observable):
         if simplify:
             self.simplify()
         if compute_grouping:
-            self._grouping_indices = qml.transforms.invisible(_compute_grouping_indices)(self.ops)
+            self._grouping_indices = qml.transforms.invisible(_compute_grouping_indices)(self.ops, grouping_type=grouping_type, method=method)
 
         coeffs_flat = [self._coeffs[i] for i in range(qml.math.shape(self._coeffs)[0])]
         # overwrite this attribute, now that we have the correct info
@@ -247,7 +251,22 @@ class Hamiltonian(qml.operation.Observable):
         """
         return self._grouping_indices
 
-    def get_groupings(self):
+    def compute_grouping(self, grouping_type="qwc", method="lf"):
+        """
+        Compute groups of indices corresponding to commuting observables of this Hamiltonian, and store it in the `grouping_indices` attribute.
+
+        Args:
+            grouping_type (str): The type of binary relation between Pauli words used to compute the grouping.
+                Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``. . Ignored if compute_grouping is False.
+            method (str): The graph coloring heuristic to use in solving minimum clique cover for grouping, which
+                can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First). Ignored if compute_grouping is False.
+        """
+
+        self._grouping_indices = qml.transforms.invisible(_compute_grouping_indices)(self.ops,
+                                                                                          grouping_type=grouping_type,
+                                                                                          method=method)
+
+    def get_grouping(self):
         """Return groupings of commuting observables and their corresponding coefficients.
 
         Returns:

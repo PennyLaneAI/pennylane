@@ -418,15 +418,21 @@ class TestGrouping:
         H = qml.Hamiltonian(coeffs, obs)
         assert H.grouping_indices is None
 
-        grouped_coeffs, grouped_obs = H.get_groupings()
+        # compute grouping during `get_grouping`
+        grouped_coeffs, grouped_obs = H.get_grouping()
         assert np.allclose(grouped_coeffs[0], np.array([1.0, 2.0]))
         assert np.allclose(grouped_coeffs[1], np.array(3.0))
         assert grouped_obs == [[a, b], [c]]
         assert H.grouping_indices == [[0, 1], [2]]
 
-        # use grouping during construction
+        # compute grouping during construction
         H2 = qml.Hamiltonian(coeffs, obs, compute_grouping=True)
         assert H2.grouping_indices == [[0, 1], [2]]
+
+        # compte grouping separately
+        H3 = qml.Hamiltonian(coeffs, obs, compute_grouping=False)
+        H3.compute_grouping()
+        assert H3.grouping_indices == [[0, 1], [2]]
 
     def test_grouping_for_non_groupable_hamiltonians(self):
         """Test that grouping is computed correctly, even if no observables commute"""
@@ -437,7 +443,7 @@ class TestGrouping:
         coeffs = [1.0, 2.0, 3.0]
 
         H = qml.Hamiltonian(coeffs, obs)
-        grouped_coeffs, grouped_obs = H.get_groupings()
+        grouped_coeffs, grouped_obs = H.get_grouping()
         assert grouped_coeffs == [[1.0], [2.0], [3.0]]
         assert grouped_obs == [[a], [b], [c]]
         assert H.grouping_indices == [[0], [1], [2]]
@@ -472,7 +478,7 @@ class TestGrouping:
 
         with qml.tape.QuantumTape() as tape2:
             H = qml.Hamiltonian(coeffs, obs, compute_grouping=False)
-            H.get_groupings()
+            H.get_grouping()
 
         assert tape2.queue == [a, b, c, H]
 
