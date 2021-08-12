@@ -76,7 +76,7 @@ class Hamiltonian(qml.operation.Observable):
         grouping_type (str): The type of binary relation between Pauli words.
             Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``. . Ignored if compute_grouping is False.
         method (str): The graph coloring heuristic to use in solving minimum clique cover for grouping, which
-            can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First). Ignored if compute_grouping is False.
+            can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First). Ignored if ``compute_grouping`` is False.
         id (str): name to be assigned to this Hamiltonian instance
 
     **Example:**
