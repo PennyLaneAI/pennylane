@@ -3,7 +3,7 @@
 <h3>New features since last release</h3>
 
 * The Hamiltonian can now store grouping information, which can be accessed by a device to 
-  speed up computations of the expectation of a Hamiltonian. 
+  speed up computations of the expectation value of a Hamiltonian. 
   [(#1515)](https://github.com/PennyLaneAI/pennylane/pull/1515)
 
   ```python
