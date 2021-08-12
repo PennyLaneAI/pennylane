@@ -6,7 +6,7 @@
   speed up computations of the expectation of a Hamiltonian. 
   [(#1515)](https://github.com/PennyLaneAI/pennylane/pull/1515)
 
-  ``` python
+  ```python
   obs = [qml.PauliX(0), qml.PauliX(1), qml.PauliZ(0)]
   coeffs = np.array([1., 2., 3.])
   H = qml.Hamiltonian(coeffs, obs, compute_groupings=True)
