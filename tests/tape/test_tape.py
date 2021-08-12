@@ -416,18 +416,18 @@ class TestResourceEstimation:
         """Test that empty tapes return empty resource counts."""
         tape = make_empty_tape
 
-        assert len(tape.specs['gate_types']) == 0
-        assert tape.specs['depth'] == 0
+        assert len(tape.specs["gate_types"]) == 0
+        assert tape.specs["depth"] == 0
 
     def test_resources_tape(self, make_tape):
         """Test that regular tapes return correct number of resources."""
         tape = make_tape
 
-        depth = tape.specs['depth']
+        depth = tape.specs["depth"]
         assert depth == 3
 
         # Verify resource counts
-        resources = tape.specs['gate_types']
+        resources = tape.specs["gate_types"]
         assert len(resources) == 3
         assert resources["RX"] == 2
         assert resources["Rot"] == 1
@@ -437,10 +437,10 @@ class TestResourceEstimation:
         """Test that tapes return correct number of resources after adding to them."""
         tape = make_extendible_tape
 
-        depth = tape.specs['depth']
+        depth = tape.specs["depth"]
         assert depth == 3
 
-        resources = tape.specs['gate_types']
+        resources = tape.specs["gate_types"]
         assert len(resources) == 3
         assert resources["RX"] == 2
         assert resources["Rot"] == 1
@@ -452,9 +452,9 @@ class TestResourceEstimation:
             qml.expval(qml.PauliX(wires="a"))
             qml.probs(wires=[0, "a"])
 
-        assert tape.specs['depth'] == 4
+        assert tape.specs["depth"] == 4
 
-        resources = tape.specs['gate_types']
+        resources = tape.specs["gate_types"]
         assert len(resources) == 4
         assert resources["RX"] == 2
         assert resources["Rot"] == 1
