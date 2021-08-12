@@ -407,8 +407,8 @@ class TestHamiltonianArithmeticJax:
 class TestGrouping:
     """Tests for the grouping functionality"""
 
-    def test_grouping_is_correct(self):
-        """Basic test checking that grouping works as expected"""
+    def test_grouping_is_correct_get_grouping(self):
+        """Basic test checking that grouping with get_grouping works as expected"""
         a = qml.PauliX(0)
         b = qml.PauliX(1)
         c = qml.PauliZ(0)
@@ -418,21 +418,34 @@ class TestGrouping:
         H = qml.Hamiltonian(coeffs, obs)
         assert H.grouping_indices is None
 
-        # compute grouping during `get_grouping`
         grouped_coeffs, grouped_obs = H.get_grouping()
         assert np.allclose(grouped_coeffs[0], np.array([1.0, 2.0]))
         assert np.allclose(grouped_coeffs[1], np.array(3.0))
         assert grouped_obs == [[a, b], [c]]
         assert H.grouping_indices == [[0, 1], [2]]
 
-        # compute grouping during construction
-        H2 = qml.Hamiltonian(coeffs, obs, compute_grouping=True)
-        assert H2.grouping_indices == [[0, 1], [2]]
+    def test_grouping_is_correct_kwarg(self):
+        """Basic test checking that grouping with a kwarg works as expected"""
+        a = qml.PauliX(0)
+        b = qml.PauliX(1)
+        c = qml.PauliZ(0)
+        obs = [a, b, c]
+        coeffs = [1.0, 2.0, 3.0]
 
-        # compute grouping separately
-        H3 = qml.Hamiltonian(coeffs, obs, compute_grouping=False)
-        H3.compute_grouping()
-        assert H3.grouping_indices == [[0, 1], [2]]
+        H = qml.Hamiltonian(coeffs, obs, compute_grouping=True)
+        assert H.grouping_indices == [[0, 1], [2]]
+
+    def test_grouping_is_correct_compute_grouping(self):
+        """Basic test checking that grouping with compute_grouping works as expected"""
+        a = qml.PauliX(0)
+        b = qml.PauliX(1)
+        c = qml.PauliZ(0)
+        obs = [a, b, c]
+        coeffs = [1.0, 2.0, 3.0]
+
+        H = qml.Hamiltonian(coeffs, obs, compute_grouping=False)
+        H.compute_grouping()
+        assert H.grouping_indices == [[0, 1], [2]]
 
     def test_grouping_for_non_groupable_hamiltonians(self):
         """Test that grouping is computed correctly, even if no observables commute"""

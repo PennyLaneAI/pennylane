@@ -81,13 +81,16 @@ def hamiltonian_expand(tape, group=True):
             qml.PauliX(wires=2)
             qml.expval(H)
 
-        # split H into observable groups [qml.PauliZ(0)] and [qml.PauliX(1), qml.PauliX(0)]
-        tapes, fn = qml.transforms.hamiltonian_expand(tape)
-        print(len(tapes)) # 2
+    With grouping, the Hamiltonian gets split into two observable groups (here ``[qml.PauliZ(0)]`` and
+    ``[qml.PauliX(1), qml.PauliX(0)]``):
+    >>> tapes, fn = qml.transforms.hamiltonian_expand(tape)
+    >>> len(tapes)
+    2
 
-        # split H into observables [qml.PauliZ(0)], [qml.PauliX(1)] and [qml.PauliX(0)]
-        tapes, fn = qml.transforms.hamiltonian_expand(tape, group=False)
-        print(len(tapes)) # 3
+    Without grouping it gets split into three groups (``[qml.PauliZ(0)]``, ``[qml.PauliX(1)]`` and ``[qml.PauliX(0)]``):
+    >>> tapes, fn = qml.transforms.hamiltonian_expand(tape, group=False)
+    >>> len(tapes)
+    3
 
     Alternatively, if the Hamiltonian has already computed groups, they are used even if ``group=False``:
 
@@ -104,9 +107,8 @@ def hamiltonian_expand(tape, group=True):
             qml.PauliX(wires=2)
             qml.expval(H)
 
-        tapes, fn = qml.transforms.hamiltonian_expand(tape, group=False)
-
     Grouping information has been used to reduce the number of tapes from 3 to 2:
+    >>> tapes, fn = qml.transforms.hamiltonian_expand(tape, group=False)
     >>> len(tapes)
     2
     """
