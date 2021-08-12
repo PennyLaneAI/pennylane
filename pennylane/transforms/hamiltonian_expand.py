@@ -143,8 +143,6 @@ def hamiltonian_expand(tape, group=True):
 
     def processing_fn(res):
         dot_products = [
-            # the order is important here, because r
-            # may have an extra dimension if tape was evaluated with a distribution of shots
             qml.math.dot(qml.math.squeeze(r), c)
             for c, r in zip(coeffs_groupings, res)
         ]
