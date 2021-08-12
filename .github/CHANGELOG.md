@@ -539,9 +539,10 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Soran Jahangiri, Leonhard Kunczik, Christina Lee,
-Romain Moyard, Arshpreet Singh Khangura, Ashish Panigrahi, Maria Schuld, Jay
-Soni, Antal Száva, David Wierichs.
+Juan Miguel Arrazola, Olivia Di Matteo, Anthony Hayes, Theodor Isacsson, Josh
+Izaac, Soran Jahangiri, Nathan Killoran, Arshpreet Singh Khangura, Leonhard
+Kunczik, Christina Lee, Romain Moyard, Lee James O'Riordan, Ashish Panigrahi,
+Nahum Sá, Maria Schuld, Jay Soni, Antal Száva, David Wierichs.
 
 
 # Release 0.16.0
