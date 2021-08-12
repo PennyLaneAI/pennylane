@@ -168,7 +168,7 @@
 
   ```pycon
   >>> tracker.totals
- {'executions': 3, 'shots': 300, 'batches': 1, 'batch_len': 2}
+  {'executions': 3, 'shots': 300, 'batches': 1, 'batch_len': 2}
   >>> tracker.history
   {'executions': [1, 1, 1],
    'shots': [100, 100, 100],
