@@ -19,7 +19,6 @@ from collections import Counter, deque, defaultdict
 import contextlib
 import copy
 from threading import RLock
-import warnings
 
 import numpy as np
 
