@@ -97,10 +97,15 @@ def hamiltonian_expand(tape, group=True):
 
     hamiltonian = tape.measurements[0].obs
 
-    if not isinstance(hamiltonian, qml.Hamiltonian) or len(tape.measurements) > 1:
+    if (
+        not isinstance(hamiltonian, qml.Hamiltonian)
+        or len(tape.measurements) > 1
+        or tape.measurements[0].return_type != qml.measure.Expectation
+    ):
         raise ValueError(
             "Passed tape must end in `qml.expval(H)`, where H is of type `qml.Hamiltonian`"
         )
+
     if group:
         hamiltonian.simplify()
         return qml.transforms.measurement_grouping(tape, hamiltonian.ops, hamiltonian.coeffs)
@@ -108,10 +113,13 @@ def hamiltonian_expand(tape, group=True):
     # create tapes that measure the Pauli-words in the Hamiltonian
     tapes = []
     for ob in hamiltonian.ops:
-        new_tape = tape.copy()
-        new_tape._measurements = [
-            qml.measure.MeasurementProcess(return_type=qml.operation.Expectation, obs=ob)
-        ]
+        # we need to create a new tape here, because
+        # updating metadata of a copied tape is error-prone
+        # when the observables were changed
+        with tape.__class__() as new_tape:
+            for op in tape.operations:
+                qml.apply(op)
+            qml.expval(ob)
         tapes.append(new_tape)
 
     # create processing function that performs linear recombination
