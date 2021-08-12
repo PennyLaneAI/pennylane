@@ -11,9 +11,9 @@
   coeffs = np.array([1., 2., 3.])
   H = qml.Hamiltonian(coeffs, obs, compute_groupings=True)
   ```
-  Initialization with ``compute_groupings=True`` stores the indices required to make groups of 
+  Initialization with `compute_groupings=True` stores the indices required to make groups of 
   commuting observables and their coefficients. These are used 
-  (or, if not found, computed) by the ``get_groupings()`` method, which returns the 
+  (or, if not found, computed) by the `get_groupings()` method, which returns the 
   actual groupings.
   
   ``` pycon
