@@ -200,22 +200,22 @@
 
   The build process using Docker and Makefile works as follows:
 
-  Building a core PennyLane image:
+  * Building a core PennyLane image:
   ```
   make -f docker/Makefile build-base
   ```
 
-  Building a PennyLane image with the TensorFlow interface (change `interface-name` for other interfaces):
+  * Building a PennyLane image with the TensorFlow interface (change `interface-name` for other interfaces):
   ```
   make -f docker/Makefile build-interface interface-name=tensorflow
   ```
 
-  Building a PennyLane image with the Qiskit plugin (change `plugin-name` for other plugins):
+  * Building a PennyLane image with the Qiskit plugin (change `plugin-name` for other plugins):
   ```
   make -f docker/Makefile build-plugin plugin-name=qiskit
   ```
 
-  Building the PennyLane-QChem image:
+  * Building the PennyLane-QChem image:
   ```
   make -f docker/Makefile build-qchem
   ```
