@@ -196,7 +196,7 @@
 
 * Docker support for building PennyLane with support for all interfaces (TensorFlow,
   Torch, and Jax), as well as device plugins and QChem, for GPUs and CPUs, has been added.
-  [(#1372)](https://github.com/PennyLaneAI/pennylane/issues/1372)
+  [(#1391)](https://github.com/PennyLaneAI/pennylane/pull/1391)
 
   The build process using Docker and Makefile works as follows:
 
