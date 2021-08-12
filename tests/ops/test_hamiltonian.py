@@ -429,7 +429,7 @@ class TestGrouping:
         H2 = qml.Hamiltonian(coeffs, obs, compute_grouping=True)
         assert H2.grouping_indices == [[0, 1], [2]]
 
-        # compte grouping separately
+        # compute grouping separately
         H3 = qml.Hamiltonian(coeffs, obs, compute_grouping=False)
         H3.compute_grouping()
         assert H3.grouping_indices == [[0, 1], [2]]
@@ -481,6 +481,24 @@ class TestGrouping:
             H.get_grouping()
 
         assert tape2.queue == [a, b, c, H]
+
+    def test_grouping_method_can_be_set(self):
+        r"""Tests that the grouping method can be controlled by kwargs.
+        This is done by changing from default to 'rlf' and checking the result."""
+        a = qml.PauliX(0)
+        b = qml.PauliX(1)
+        c = qml.PauliZ(0)
+        obs = [a, b, c]
+        coeffs = [1.0, 2.0, 3.0]
+
+        # compute grouping during construction
+        H2 = qml.Hamiltonian(coeffs, obs, compute_grouping=True, method="lf")
+        assert H2.grouping_indices == [[2, 1], [0]]
+
+        # compute grouping separately
+        H3 = qml.Hamiltonian(coeffs, obs, compute_grouping=False)
+        H3.compute_grouping(method="lf")
+        assert H3.grouping_indices == [[2, 1], [0]]
 
 
 class TestHamiltonianEvaluation:

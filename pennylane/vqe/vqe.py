@@ -163,7 +163,15 @@ class Hamiltonian(qml.operation.Observable):
     grad_method = "A"  # supports analytic gradients
 
     def __init__(
-        self, coeffs, observables, simplify=False, compute_grouping=False, grouping_type="qwc", method="rlf", id=None, do_queue=True
+        self,
+        coeffs,
+        observables,
+        simplify=False,
+        compute_grouping=False,
+        grouping_type="qwc",
+        method="rlf",
+        id=None,
+        do_queue=True,
     ):
 
         if qml.math.shape(coeffs)[0] != len(observables):
@@ -191,7 +199,9 @@ class Hamiltonian(qml.operation.Observable):
         if simplify:
             self.simplify()
         if compute_grouping:
-            self._grouping_indices = qml.transforms.invisible(_compute_grouping_indices)(self.ops, grouping_type=grouping_type, method=method)
+            self._grouping_indices = qml.transforms.invisible(_compute_grouping_indices)(
+                self.ops, grouping_type=grouping_type, method=method
+            )
 
         coeffs_flat = [self._coeffs[i] for i in range(qml.math.shape(self._coeffs)[0])]
         # overwrite this attribute, now that we have the correct info
@@ -251,7 +261,7 @@ class Hamiltonian(qml.operation.Observable):
         """
         return self._grouping_indices
 
-    def compute_grouping(self, grouping_type="qwc", method="lf"):
+    def compute_grouping(self, grouping_type="qwc", method="rlf"):
         """
         Compute groups of indices corresponding to commuting observables of this Hamiltonian, and store it in the `grouping_indices` attribute.
 
@@ -262,9 +272,9 @@ class Hamiltonian(qml.operation.Observable):
                 can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First). Ignored if compute_grouping is False.
         """
 
-        self._grouping_indices = qml.transforms.invisible(_compute_grouping_indices)(self.ops,
-                                                                                          grouping_type=grouping_type,
-                                                                                          method=method)
+        self._grouping_indices = qml.transforms.invisible(_compute_grouping_indices)(
+            self.ops, grouping_type=grouping_type, method=method
+        )
 
     def get_grouping(self):
         """Return groupings of commuting observables and their corresponding coefficients.
