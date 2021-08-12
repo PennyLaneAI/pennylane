@@ -70,7 +70,7 @@ class Hamiltonian(qml.operation.Observable):
         observables (Iterable[Observable]): observables in the Hamiltonian expression, of same length as coeffs
         simplify (bool): Specifies whether the Hamiltonian is simplified upon initialization
                          (like-terms are combined). The default value is `False`.
-        compute_groupings (bool): If True, compute and store information on how to group commuting
+        compute_grouping (bool): If True, compute and store information on how to group commuting
             observables upon initialization. This information can be accessed when measuring the expectation of
             a Hamiltonian is split into measuring the expectations of its constituent observables.
 
@@ -129,6 +129,28 @@ class Hamiltonian(qml.operation.Observable):
     >>> H3 = qml.Hamiltonian(torch.tensor([1., 2., 3.]), [qml.PauliX(0), qml.PauliY(0), qml.PauliX(1)])
     >>> H3.compare(H1 + H2)
     True
+
+    A Hamiltonian can store information on which commuting observables should be measured together in
+    a circuit:
+
+    >>> obs = [qml.PauliX(0), qml.PauliX(1), qml.PauliZ(0)]
+    >>> coeffs = np.array([1., 2., 3.])
+    >>> H = qml.Hamiltonian(coeffs, obs, compute_grouping=True)
+    >>> H.grouping_indices
+    [[0, 1], [2]]
+
+    This attribute is used when computing groups of coefficients and observables:
+    >>> grouped_coeffs, grouped_obs = H.get_groupings()
+    >>> grouped_coeffs
+    [np.array([1., 2.]), np.array(3.)]
+    >>> grouped_obs
+    [[qml.PauliX(0), qml.PauliX(1)], [qml.PauliZ(0)]]
+
+    If initializing a Hamiltonian with ``compute_grouping=False``, ``get_groupings()`` will
+    compute the ``grouping_indices`` attribute from scratch and store it.
+
+    Devices that evaluate a Hamiltonian expectation by splitting it into its local observables can
+    use this information to reduce the number of circuits produced.
     """
 
     num_wires = qml.operation.AnyWires
@@ -137,7 +159,7 @@ class Hamiltonian(qml.operation.Observable):
     grad_method = "A"  # supports analytic gradients
 
     def __init__(
-        self, coeffs, observables, simplify=False, compute_groupings=False, id=None, do_queue=True
+        self, coeffs, observables, simplify=False, compute_grouping=False, id=None, do_queue=True
     ):
 
         if qml.math.shape(coeffs)[0] != len(observables):
@@ -164,7 +186,7 @@ class Hamiltonian(qml.operation.Observable):
 
         if simplify:
             self.simplify()
-        if compute_groupings:
+        if compute_grouping:
             self._grouping_indices = qml.transforms.invisible(_compute_grouping_indices)(self.ops)
 
         coeffs_flat = [self._coeffs[i] for i in range(qml.math.shape(self._coeffs)[0])]

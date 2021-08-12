@@ -93,7 +93,7 @@ def hamiltonian_expand(tape, group=True):
 
     .. code-block:: python3
 
-        H = qml.Hamiltonian([1., 2., 3.], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)], compute_groupings=True)
+        H = qml.Hamiltonian([1., 2., 3.], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)], compute_grouping=True)
 
         # the initialisation already computes grouping information and stores it in the Hamiltonian
         assert H.grouping_indices is not None
@@ -104,9 +104,11 @@ def hamiltonian_expand(tape, group=True):
             qml.PauliX(wires=2)
             qml.expval(H)
 
-        # split H into observable groups [qml.PauliZ(0)] and [qml.PauliX(1), qml.PauliX(0)]
         tapes, fn = qml.transforms.hamiltonian_expand(tape, group=False)
-        print(len(tapes)) # 2
+
+    Grouping information has been used to reduce the number of tapes from 3 to 2:
+    >>> len(tapes)
+    2
     """
 
     hamiltonian = tape.measurements[0].obs
@@ -143,6 +145,8 @@ def hamiltonian_expand(tape, group=True):
         tapes.append(new_tape)
 
     def processing_fn(res):
+        # note: res could have an extra dimension here if a shots_distribution
+        # is used for evaluation
         dot_products = [
             qml.math.dot(qml.math.squeeze(r), c)
             for c, r in zip(coeffs_groupings, res)
