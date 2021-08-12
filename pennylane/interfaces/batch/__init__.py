@@ -71,7 +71,7 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True):
             kwargs = {}
 
         if cache is None or (isinstance(cache, bool) and not cache):
-            # No caching. Simply execution the execution function
+            # No caching. Simply execute the execution function
             # and return the results.
             res = fn(tapes, **kwargs)
             return res, [] if return_tuple else res

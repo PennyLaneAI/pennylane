@@ -283,7 +283,7 @@ class TestCaching:
         expected_runs += 4 * N ** 2  # Hessian off-diagonal
         assert dev.num_executions == expected_runs
 
-        # No caching: number of executions is ideal
+        # Use caching: number of executions is ideal
         dev._num_executions = 0
         hess2 = qml.jacobian(qml.grad(cost))(params, cache=True)
         assert np.allclose(hess1, hess2, atol=tol, rtol=0)
