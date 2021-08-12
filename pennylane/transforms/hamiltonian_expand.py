@@ -119,8 +119,7 @@ def hamiltonian_expand(tape, group=True):
             "Passed tape must end in `qml.expval(H)`, where H is of type `qml.Hamiltonian`"
         )
 
-    # use a simplified version of the Hamiltonian for efficiency
-    hamiltonian = tape.measurements[0].obs.simplify()
+    hamiltonian = tape.measurements[0].obs
 
     if group or hamiltonian.grouping_indices is not None:
         # use groups of observables if available or explicitly requested
