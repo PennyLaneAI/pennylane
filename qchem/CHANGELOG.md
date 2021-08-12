@@ -9,7 +9,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Romain Moyard.
+Josh Izaac, Romain Moyard.
 
 # Release 0.16.0
 
