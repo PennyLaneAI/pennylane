@@ -309,7 +309,7 @@ class Hamiltonian(qml.operation.Observable):
         self.data = data
         self._ops = ops
         # reset grouping, since the indices refer to the old observables and coefficients
-        self.grouping_indices = None
+        self._grouping_indices = None
 
     def __str__(self):
         # Lambda function that formats the wires

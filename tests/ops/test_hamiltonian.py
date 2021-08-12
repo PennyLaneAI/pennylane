@@ -446,6 +446,17 @@ class TestGrouping:
         H2 = qml.Hamiltonian(coeffs, obs, compute_grouping=True)
         assert H2.grouping_indices == [[0], [1], [2]]
 
+    def test_grouping_is_reset_when_simplifying(self):
+        """Tests that calling simplify() resets the grouping"""
+        obs = [qml.PauliX(0), qml.PauliX(1), qml.PauliZ(0)]
+        coeffs = [1.0, 2.0, 3.0]
+
+        H = qml.Hamiltonian(coeffs, obs, compute_grouping=True)
+        assert H.grouping_indices is not None
+
+        H.simplify()
+        assert H.grouping_indices is None
+
 
 class TestHamiltonianEvaluation:
     """Test the usage of a Hamiltonian as an observable"""
