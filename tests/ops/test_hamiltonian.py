@@ -454,8 +454,8 @@ class TestGrouping:
         H = qml.Hamiltonian(coeffs, obs, compute_grouping=True)
         assert H.grouping_indices is not None
 
-        H.simplify()
-        assert H.grouping_indices is None
+        H2 = H.simplify()
+        assert H2.grouping_indices is None
 
     def test_grouping_does_not_alter_queue(self):
         """Tests that grouping is invisible to the queue."""
@@ -475,6 +475,48 @@ class TestGrouping:
             H.get_groupings()
 
         assert tape2.queue == [a, b, c, H]
+
+
+class TestSimplify:
+    """Tests the simplify method"""
+
+    def test_simplify_does_not_alter_old_hamiltinian(self):
+        """Tests that simplify does not change the original hamiltonian."""
+        a = qml.PauliX(0)
+        b = qml.PauliX(0)
+        c = qml.PauliZ(1)
+        obs = [a, b, c]
+        coeffs = np.array([1.0, 2.0, 3.0])
+
+        H = qml.Hamiltonian(coeffs, obs, simplify=False)
+        H2 = H.simplify()
+
+        assert H.ops == [a, b, c]
+        assert np.allclose(H.coeffs, coeffs)
+        assert np.allclose(H.data, [coeffs[i] for i in range(3)])
+
+        assert H2.ops == [a, c]
+        assert np.allclose(H2.coeffs, np.array([3.0, 3.0]))
+        assert np.allclose(H2.data, [np.array(3.0), np.array(3.0)])
+
+    def test_simplify_does_not_alter_queue(self):
+        """Tests that simplify is invisible to the queue."""
+        a = qml.PauliX(0)
+        b = qml.PauliX(0)
+        c = qml.PauliZ(1)
+        obs = [a, b, c]
+        coeffs = [1.0, 2.0, 3.0]
+
+        with qml.tape.QuantumTape() as tape:
+            H = qml.Hamiltonian(coeffs, obs, simplify=True)
+
+        assert tape.queue == [a, c, H]
+
+        with qml.tape.QuantumTape() as tape2:
+            H = qml.Hamiltonian(coeffs, obs, simplify=False)
+            H2 = H.simplify()
+
+        assert tape2.queue == [a, b, c, H, H2]
 
 
 class TestHamiltonianEvaluation:

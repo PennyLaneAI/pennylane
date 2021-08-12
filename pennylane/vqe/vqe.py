@@ -316,9 +316,15 @@ class Hamiltonian(qml.operation.Observable):
         return grouped_coefficients, grouped_observables
 
     def simplify(self):
-        r"""Simplifies the Hamiltonian by combining like-terms.
+        r"""Compute a new Hamiltonian in which like-terms are combined and
+        Identities pruned.
+
+        If called in a tape context or quantum function, this method will queue the new
+        Hamiltonian.
+
         Returns:
             (.Hamiltonian): simplified Hamiltonian
+
         **Example**
 
         >>> ops = [qml.PauliY(2), qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0)]
@@ -328,10 +334,18 @@ class Hamiltonian(qml.operation.Observable):
           (-1) [X0]
         + (1) [Y2]
 
+        The original Hamiltonian remains unchanged:
+
+        >>> print(H)
+          (-2) [X0]
+        + (1) [Y2]
+        + (1) [X0 I1]
+
         .. warning::
 
             Calling this method will reset `grouping_indices` to None, since
-            the observables it refers to are updated.
+            the observables it refers to are updated. It is therefore advised to simplify
+            before grouping.
         """
         # get simplified parts, but do not record any calculation
         new_coeffs, new_ops = qml.transforms.invisible(_simplify)(self.coeffs, self.ops)
