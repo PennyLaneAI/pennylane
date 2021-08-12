@@ -457,6 +457,25 @@ class TestGrouping:
         H.simplify()
         assert H.grouping_indices is None
 
+    def test_grouping_does_not_alter_queue(self):
+        """Tests that grouping is invisible to the queue."""
+        a = qml.PauliX(0)
+        b = qml.PauliX(1)
+        c = qml.PauliZ(0)
+        obs = [a, b, c]
+        coeffs = [1.0, 2.0, 3.0]
+
+        with qml.tape.QuantumTape() as tape:
+            H = qml.Hamiltonian(coeffs, obs, compute_grouping=True)
+
+        assert tape.queue == [a, b, c, H]
+
+        with qml.tape.QuantumTape() as tape2:
+            H = qml.Hamiltonian(coeffs, obs, compute_grouping=False)
+            H.get_groupings()
+
+        assert tape2.queue == [a, b, c, H]
+
 
 class TestHamiltonianEvaluation:
     """Test the usage of a Hamiltonian as an observable"""
