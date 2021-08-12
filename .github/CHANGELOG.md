@@ -6,14 +6,15 @@
   speed up computations of the expectation of a Hamiltonian. 
   [(#1515)](https://github.com/PennyLaneAI/pennylane/pull/1515)
 
-  ``` python
+  ```python
   obs = [qml.PauliX(0), qml.PauliX(1), qml.PauliZ(0)]
   coeffs = np.array([1., 2., 3.])
   H = qml.Hamiltonian(coeffs, obs, compute_groupings=True)
   ```
-  Initialization with ``compute_grouping=True`` stores the indices required to make groups of 
+  
+  Initialization with ``compute_grouping=True`` stores the indices required to make groups of
   commuting observables and their coefficients. These are used 
-  (or, if not found, computed) by the ``get_groupings()`` method, which returns the 
+  (or, if not found, computed) by the `get_groupings()` method, which returns the 
   actual groupings.
   
   ``` pycon

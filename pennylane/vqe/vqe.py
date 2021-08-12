@@ -71,8 +71,8 @@ class Hamiltonian(qml.operation.Observable):
         simplify (bool): Specifies whether the Hamiltonian is simplified upon initialization
                          (like-terms are combined). The default value is `False`.
         compute_grouping (bool): If True, compute and store information on how to group commuting
-            observables upon initialization. This information can be accessed when the expectation of
-            a Hamiltonian is split into expectations of its constituent observables.
+            observables upon initialization. This information may be accessed when QNodes containing this
+            Hamiltonian are executed on devices.
         grouping_type (str): The type of binary relation between Pauli words.
             Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``. . Ignored if compute_grouping is False.
         method (str): The graph coloring heuristic to use in solving minimum clique cover for grouping, which
@@ -154,7 +154,7 @@ class Hamiltonian(qml.operation.Observable):
     compute the ``grouping_indices`` attribute from scratch and store it.
 
     Devices that evaluate a Hamiltonian expectation by splitting it into its local observables can
-    use this information to reduce the number of circuits produced.
+    use this information to reduce the number of circuits evaluated.
     """
 
     num_wires = qml.operation.AnyWires
