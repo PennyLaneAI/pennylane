@@ -6,11 +6,17 @@
 
 <h3>Bug fixes</h3>
 
+* The types of the Hamiltonian terms built from an OpenFermion ``QubitOperator`` using the
+  ``convert_observable`` function, are the same with respect to the analogous observable
+  built directly using PennyLane operations.
+
 <h3>Breaking changes</h3>
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
+
+Alain Delgado, Zeyue Niu.
 
 # Release 0.17.0
 
