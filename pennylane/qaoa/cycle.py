@@ -14,6 +14,7 @@
 r"""
 Functionality for finding the maximum weighted cycle of directed graphs.
 """
+# pylint:disable=unnecessary-comprehension,unidiomatic-typecheck
 import itertools
 from typing import Dict, Tuple, Iterable, List
 import networkx as nx

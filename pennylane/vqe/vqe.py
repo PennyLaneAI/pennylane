@@ -415,7 +415,7 @@ class Hamiltonian(qml.operation.Observable):
 
         return data
 
-    def compare(self, H):
+    def compare(self, other):
         r"""Compares with another :class:`~Hamiltonian`, :class:`~.Observable`, or :class:`~.Tensor`,
         to determine if they are equivalent.
 
@@ -457,12 +457,12 @@ class Hamiltonian(qml.operation.Observable):
         """
         repr_self = self.simplify()._obs_data()  # pylint: disable=protected-access
 
-        if isinstance(H, Hamiltonian):
-            repr_other = H.simplify()._obs_data()  # pylint: disable=protected-access
+        if isinstance(other, Hamiltonian):
+            repr_other = other.simplify()._obs_data()  # pylint: disable=protected-access
             return repr_self == repr_other
 
-        if isinstance(H, (Tensor, Observable)):
-            return repr_self == {(1, frozenset(H._obs_data()))}  # pylint: disable=protected-access
+        if isinstance(other, (Tensor, Observable)):
+            return repr_self == {(1, frozenset(other._obs_data()))}  # pylint: disable=protected-access
 
         raise ValueError("Can only compare a Hamiltonian, and a Hamiltonian/Observable/Tensor.")
 
