@@ -123,7 +123,7 @@ def hamiltonian_expand(tape, group=True):
 
     if group or hamiltonian.grouping_indices is not None:
         # use groups of observables if available or explicitly requested
-        coeffs, obs_groupings = hamiltonian.get_groupings()
+        coeffs, obs_groupings = hamiltonian.get_grouping()
 
         # create tapes that measure the Pauli-words in the Hamiltonian
         tapes = []
