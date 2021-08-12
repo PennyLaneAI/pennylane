@@ -13,18 +13,11 @@
   ```
   
   Initialization with ``compute_grouping=True`` stores the indices required to make groups of
-  commuting observables and their coefficients. These are used 
-  (or, if not found, computed) by the `get_groupings()` method, which returns the 
-  actual groupings.
+  commuting observables and their coefficients. 
   
   ``` pycon
   >>> H.grouping_indices
   [[0, 1], [2]]
-  grouped_coeffs, grouped_obs = H.get_groupings()
-  >>> grouped_coeffs
-  [np.array([1., 2.]), np.array(3.)]
-  >>> grouped_obs
-  [[qml.PauliX(0), qml.PauliX(1)], [qml.PauliZ(0)]]
   ```
 
 * Hamiltonians are now trainable with respect to their coefficients.
