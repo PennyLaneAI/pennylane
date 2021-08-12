@@ -82,9 +82,8 @@
 
 <h4> QNodes are more convenient</h4>
 
-* Added functionality to `qml.sample()` to extract samples from the basis states of
-  the device (currently only for qubit devices). Additionally, `wires` can be
-  specified to only return samples from those wires.
+* Computational basis samples directly from the underlying device can
+  now be returned directly from QNodes via `qml.sample()`.
   [(#1441)](https://github.com/PennyLaneAI/pennylane/pull/1441)
 
   ```python
