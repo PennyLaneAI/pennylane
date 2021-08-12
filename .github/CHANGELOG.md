@@ -49,7 +49,7 @@
   controlled gates and cancel adjacent inverses, we could do:
 
   ```pycon
-  >>> from qml.transforms import commute_controlled, cancel_inverses
+  >>> from pennylane.transforms import commute_controlled, cancel_inverses
   >>> pipeline = [commute_controlled, cancel_inverses]
   >>> compiled_qfunc = qml.compile(pipeline=pipeline)(qfunc)
   >>> compiled_qnode = qml.QNode(compiled_qfunc, dev)
@@ -117,10 +117,10 @@
    [0, 0],
    [0, 0]]
 
-  >>> print(qml.draw(circuit_2))
+  >>> print(qml.draw(circuit_2)())
    0: ──H──╭┤ Sample[basis]
    1: ──H──│┤
-   2: ──H──╰┤ Sample[basis]
+   2: ─────╰┤ Sample[basis]
   ```
 
 * The new `qml.apply` function can be used to add operations that might have
@@ -189,6 +189,7 @@
   ...     qml.grad(circuit)(0.1)
   Total shots:  100
   Total shots:  200
+  Total shots:  300
   Total shots:  300
   ```
 
@@ -293,7 +294,8 @@
   For example,
 
   ```pycon
-  >>> with qml.tape.QuantumTape() as tape:
+  >>> params = np.array([0.3,0.4,0.5], requires_grad=True)
+  >>> with qml.tape.JacobianTape() as tape:
   ...     qml.RX(params[0], wires=0)
   ...     qml.RY(params[1], wires=0)
   ...     qml.RX(params[2], wires=0)
@@ -303,8 +305,8 @@
   >>> gradient_tapes, fn = qml.gradients.finite_diff(tape)
   >>> res = dev.batch_execute(gradient_tapes)
   >>> fn(res)
-  [[-0.38751721 -0.18884787 -0.38355704]
-   [ 0.69916862  0.34072424  0.69202359]]
+  array([[-0.69688381, -0.32648317, -0.68120105],
+         [ 0.8788057 ,  0.41171179,  0.85902895]])
   ```
 
 <h4>Even more new operations and templates</h4>
