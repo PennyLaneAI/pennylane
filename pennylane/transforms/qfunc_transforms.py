@@ -182,6 +182,10 @@ def _create_qfunc_internal_wrapper(fn, tape_transform, transform_args, transform
     def internal_wrapper(*args, **kwargs):
         tape = make_tape(fn)(*args, **kwargs)
         tape = tape_transform(tape, *transform_args, **transform_kwargs)
+
+        if len(tape.measurements) == 1:
+            return tape.measurements[0]
+
         return tape.measurements
 
     return internal_wrapper
@@ -373,6 +377,8 @@ def qfunc_transform(tape_transform):
         def make_qfunc_transform(*targs, **tkwargs):
             def wrapper(fn):
                 return _create_qfunc_internal_wrapper(fn, tape_transform, targs, tkwargs)
+
+            wrapper.tape_fn = functools.partial(tape_transform, *targs, **tkwargs)
 
             return wrapper
 

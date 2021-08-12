@@ -99,6 +99,7 @@ class CVNeuralNetLayers(Operation):
         k,
         wires,
         do_queue=True,
+        id=None,
     ):
 
         n_wires = len(wires)
@@ -135,6 +136,7 @@ class CVNeuralNetLayers(Operation):
             k,
             wires=wires,
             do_queue=do_queue,
+            id=id,
         )
 
     def expand(self):

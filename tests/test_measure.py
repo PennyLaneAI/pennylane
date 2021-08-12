@@ -255,6 +255,53 @@ class TestSample:
 
         circuit()
 
+    def test_providing_observable_and_wires(self):
+        """Test that a ValueError is raised if both an observable is provided and wires are specified"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            return qml.sample(qml.PauliZ(0), wires=[0, 1])
+
+        with pytest.raises(
+            ValueError,
+            match="Cannot specify the wires to sample if an observable is provided."
+            " The wires to sample will be determined directly from the observable.",
+        ):
+            res = circuit()
+
+    def test_providing_no_observable_and_no_wires(self):
+        """Test that we can provide no observable and no wires to sample function"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            res = qml.sample()
+            assert res.obs is None
+            assert res.wires == qml.wires.Wires([])
+            return res
+
+        circuit()
+
+    def test_providing_no_observable_and_wires(self):
+        """Test that we can provide no observable but specify wires to the sample function"""
+        wires = [0, 2]
+        wires_obj = qml.wires.Wires(wires)
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            res = qml.sample(wires=wires)
+
+            assert res.obs is None
+            assert res.wires == wires_obj
+            return res
+
+        circuit()
+
 
 @pytest.mark.parametrize(
     "stat_func,return_type", [(expval, Expectation), (var, Variance), (sample, Sample)]

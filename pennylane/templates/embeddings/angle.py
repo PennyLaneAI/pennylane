@@ -50,7 +50,7 @@ class AngleEmbedding(Operation):
     num_wires = AnyWires
     par_domain = "A"
 
-    def __init__(self, features, wires, rotation="X", do_queue=True):
+    def __init__(self, features, wires, rotation="X", do_queue=True, id=None):
 
         if rotation not in ROT:
             raise ValueError(f"Rotation option {rotation} not recognized.")
@@ -66,7 +66,7 @@ class AngleEmbedding(Operation):
             )
 
         wires = wires[:n_features]
-        super().__init__(features, wires=wires, do_queue=do_queue)
+        super().__init__(features, wires=wires, do_queue=do_queue, id=id)
 
     def expand(self):
 

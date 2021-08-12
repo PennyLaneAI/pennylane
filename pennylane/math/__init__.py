@@ -40,8 +40,10 @@ from .multi_dispatch import (
     diag,
     dot,
     frobenius_inner_product,
+    get_trainable_indices,
     ones_like,
     stack,
+    unwrap,
     where,
 )
 
@@ -85,4 +87,6 @@ __all__ = [
     "requires_grad",
     "cov_matrix",
     "marginal_prob",
+    "unwrap",
+    "get_trainable_indices",
 ]

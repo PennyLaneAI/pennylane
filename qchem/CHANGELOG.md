@@ -1,4 +1,4 @@
-# Release 0.17.0-dev
+# Release 0.18.0-dev
 
 <h3>New features</h3>
 
@@ -12,6 +12,24 @@
 
 This release contains contributions from (in alphabetical order):
 
+# Release 0.17.0
+
+<h3>New features</h3>
+
+<h3>Improvements</h3>
+
+<h3>Bug fixes</h3>
+
+* Requires the H5Py dependency to be `H5Py<=3.2.1` due to incompatibilities between `pyscf>=1.7.2` and `H5Py==3.3.0`.
+  [(#1430)](https://github.com/PennyLaneAI/pennylane/pull/1430)
+
+<h3>Breaking changes</h3>
+
+<h3>Contributors</h3>
+
+This release contains contributions from (in alphabetical order):
+
+Romain Moyard.
 
 # Release 0.16.0
 

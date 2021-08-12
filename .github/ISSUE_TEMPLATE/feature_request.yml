@@ -1,0 +1,48 @@
+name: Feature request
+description: Suggest a new feature
+labels: "enhancement :sparkles:"
+
+body:
+  - type: markdown
+    id: description
+    attributes:
+      value: |
+          ## Before posting a feature request
+          Search existing GitHub issues to make sure the issue does not already exist:
+          https://github.com/xanaduai/pennylane/issues
+
+          For general technical details check out our documentation:
+          https://pennylane.readthedocs.io
+
+          # Feature description
+          Description of the feature request - include code snippets and screenshots here if relevant.
+  - type: textarea
+    id: details
+    attributes:
+      label: Feature details
+      description: |
+        What feature would you like to have?
+    validations:
+      required: true
+  - type: textarea
+    id: implementation
+    attributes:
+      label: Implementation
+      description: |
+        Do you have an idea for how this could be implemented? Please include those details here.
+  - type: dropdown
+    id: urgency
+    attributes:
+      label: How important would you say this feature is?
+      options:
+        - "1: Not important. Would be nice to have."
+        - "2: Somewhat important. Needed this quarter."
+        - "3: Very important! Blocking work."
+    validations:
+      required: true
+  - type: textarea
+    id: info
+    attributes:
+      label: Additional information
+      description: |
+        Please provide any additional information here. Include potential alternative solutions, or workarounds, as well as references, if any.

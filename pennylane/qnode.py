@@ -15,6 +15,7 @@
 This module contains the QNode class and qnode decorator.
 """
 # pylint: disable=import-outside-toplevel
+# pylint:disable=too-many-branches
 from collections.abc import Sequence
 from functools import lru_cache, update_wrapper
 import warnings
@@ -552,12 +553,22 @@ class QNode:
             )
 
         for obj in self.qtape.operations + self.qtape.observables:
+
             if getattr(obj, "num_wires", None) is qml.operation.WiresEnum.AllWires:
                 # check here only if enough wires
                 if len(obj.wires) != self.device.num_wires:
                     raise qml.QuantumFunctionError(
                         "Operator {} must act on all wires".format(obj.name)
                     )
+
+            if (
+                isinstance(obj, qml.ops.qubit.SparseHamiltonian)
+                and self.diff_method != "parameter-shift"
+            ):
+                raise qml.QuantumFunctionError(
+                    "SparseHamiltonian observable must be used with the parameter-shift"
+                    " differentiation method"
+                )
 
         # pylint: disable=protected-access
         obs_on_same_wire = len(self.qtape._obs_sharing_wires) > 0
@@ -594,8 +605,25 @@ class QNode:
             # construct the tape
             self.construct(args, kwargs)
 
-        # execute the tape
-        res = self.qtape.execute(device=self.device)
+        # Execute the tape.
+        # If the observable contains a Hamiltonian and the device does not
+        # support Hamiltonians, split tape into multiple tapes and execute
+        # sequentially. In future, this logic should be moved to the device
+        # to allow for more efficient batch execution.
+        supports_hamiltonian = self.device.supports_observable("Hamiltonian")
+        hamiltonian_in_obs = "Hamiltonian" in [obs.name for obs in self.qtape.observables]
+        if hamiltonian_in_obs and not supports_hamiltonian:
+            try:
+                tapes, fn = qml.transforms.hamiltonian_expand(self.qtape, group=False)
+            except ValueError as e:
+                raise ValueError(
+                    "Only a single expectation of a Hamiltonian observable can be returned"
+                    "when using the {} device.".format(self.device.name)
+                ) from e
+            results = [tape.execute(device=self.device) for tape in tapes]
+            res = fn(results)
+        else:
+            res = self.qtape.execute(device=self.device)
 
         # if shots was changed
         if original_shots != -1:

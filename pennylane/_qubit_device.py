@@ -17,7 +17,7 @@ This module contains the :class:`QubitDevice` abstract base class.
 
 # For now, arguments may be different from the signatures provided in Device
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
-# pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches
+# pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches, arguments-renamed
 import abc
 from collections import OrderedDict
 import itertools
@@ -37,6 +37,8 @@ from pennylane.operation import (
 from pennylane import Device
 from pennylane.math import sum as qmlsum
 from pennylane.wires import Wires
+
+from pennylane.measure import MeasurementProcess
 
 
 class QubitDevice(Device):
@@ -237,6 +239,10 @@ class QubitDevice(Device):
         # increment counter for number of executions of qubit device
         self._num_executions += 1
 
+        if self.tracker.active:
+            self.tracker.update(executions=1, shots=self._shots)
+            self.tracker.record()
+
         return results
 
     @property
@@ -271,6 +277,10 @@ class QubitDevice(Device):
 
             res = self.execute(circuit)
             results.append(res)
+
+        if self.tracker.active:
+            self.tracker.update(batches=1, batch_len=len(circuits))
+            self.tracker.record()
 
         return results
 
@@ -790,6 +800,16 @@ class QubitDevice(Device):
         if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             # Process samples for observables with eigenvalues {1, -1}
             samples = 1 - 2 * self._samples[sample_slice, device_wires[0]]
+
+        elif isinstance(
+            observable, MeasurementProcess
+        ):  # if no observable was provided then return the raw samples
+            if (
+                len(observable.wires) != 0
+            ):  # if wires are provided, then we only return samples from those wires
+                samples = self._samples[sample_slice, np.array(device_wires)]
+            else:
+                samples = self._samples[sample_slice]
 
         else:
             # Replace the basis state in the computational basis with the correct eigenvalue.
