@@ -121,8 +121,7 @@ def hamiltonian_expand(tape, group=True):
         )
 
     if group or hamiltonian.grouping_indices is not None:
-        # if explicitly requested or already available,
-        # compute the grouping information
+        # use groups of observables if available or explicitly requested
         coeffs_groupings, obs_groupings = hamiltonian.get_groupings()
     else:
         # else make each observable its own group
@@ -145,8 +144,6 @@ def hamiltonian_expand(tape, group=True):
 
     def processing_fn(res):
         dot_products = [
-            # the order is important here, because r
-            # may have an extra dimension if tape was evaluated with a distribution of shots
             qml.math.dot(qml.math.squeeze(r), c)
             for c, r in zip(coeffs_groupings, res)
         ]
