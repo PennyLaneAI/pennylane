@@ -71,8 +71,8 @@ class Hamiltonian(qml.operation.Observable):
         simplify (bool): Specifies whether the Hamiltonian is simplified upon initialization
                          (like-terms are combined). The default value is `False`.
         compute_grouping (bool): If True, compute and store information on how to group commuting
-            observables upon initialization. This information can be accessed when measuring the expectation of
-            a Hamiltonian is split into measuring the expectations of its constituent observables.
+            observables upon initialization. This information can be accessed when the expectation of
+            a Hamiltonian is split into expectations of its constituent observables.
 
 
     **Example:**
@@ -276,6 +276,11 @@ class Hamiltonian(qml.operation.Observable):
         >>> print(H)
           (-1) [X0]
         + (1) [Y2]
+
+        .. warning::
+
+            Calling this method will reset `grouping_indices` to None, since
+            the observables it refers to are updated.
         """
         data = []
         ops = []
@@ -303,6 +308,8 @@ class Hamiltonian(qml.operation.Observable):
         self._coeffs = qml.math.stack(data) if data else []
         self.data = data
         self._ops = ops
+        # reset grouping, since the indices refer to the old observables and coefficients
+        self.grouping_indices = None
 
     def __str__(self):
         # Lambda function that formats the wires
