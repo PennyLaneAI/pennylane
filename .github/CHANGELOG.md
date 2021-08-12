@@ -80,62 +80,6 @@
   For more details on `qml.compile` and the available compilation transforms, see
   [the compilation documentation](https://pennylane.readthedocs.io/en/stable/code/qml_transforms.html#transforms-for-circuit-compilation).
 
-<h4>Improved Hamiltonian simulations</h4>
-
-* Added a sparse Hamiltonian observable and the functionality to support computing its expectation
-  value. [(#1398)](https://github.com/PennyLaneAI/pennylane/pull/1398)
-
-  For example, the following QNode returns the expectation value of a sparse Hamiltonian:
-
-  ```python
-  dev = qml.device("default.qubit", wires=2)
-
-  @qml.qnode(dev, diff_method="parameter-shift")
-  def circuit(param, H):
-      qml.PauliX(0)
-      qml.SingleExcitation(param, wires=[0, 1])
-      return qml.expval(qml.SparseHamiltonian(H, [0, 1]))
-  ```
-
-  We can execute this QNode, passing in a sparse identity matrix:
-
-  ```pycon
-  >>> print(circuit([0.5], scipy.sparse.eye(4).tocoo()))
-  0.9999999999999999
-  ```
-
-  The expectation value of the sparse Hamiltonian is computed directly, which leads to executions
-  that are faster by orders of magnitude. Note that "parameter-shift" is the only differentiation
-  method that is currently supported when the observable is a sparse Hamiltonian.
-
-* VQE problems can now be intuitively set up by passing the Hamiltonian
-  as an observable. [(#1474)](https://github.com/PennyLaneAI/pennylane/pull/1474)
-
-  ``` python
-  dev = qml.device("default.qubit", wires=2)
-  H = qml.Hamiltonian([1., 2., 3.],  [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)])
-  w = qml.init.strong_ent_layers_uniform(1, 2, seed=1967)
-
-  @qml.qnode(dev)
-  def circuit(w):
-      qml.templates.StronglyEntanglingLayers(w, wires=range(2))
-      return qml.expval(H)
-  ```
-
-  ```pycon
-  >>> print(circuit(w))
-  -1.5133943637878295
-  >>> print(qml.grad(circuit)(w))
-  [[[-8.32667268e-17  1.39122955e+00 -9.12462052e-02]
-  [ 1.02348685e-16 -7.77143238e-01 -1.74708049e-01]]]
-  ```
-
-  Note that other measurement types like `var(H)` or `sample(H)`, as well
-  as multiple expectations like `expval(H1), expval(H2)` are not supported.
-
-* Added functionality to compute the sparse matrix representation of a `qml.Hamiltonian` object.
-  [(#1394)](https://github.com/PennyLaneAI/pennylane/pull/1394)
-
 <h4> QNodes are more convenient</h4>
 
 * Added functionality to `qml.sample()` to extract samples from the basis states of
@@ -276,6 +220,62 @@
   ```
   make -f docker/Makefile build-qchem
   ```
+
+<h4>Improved Hamiltonian simulations</h4>
+
+* Added a sparse Hamiltonian observable and the functionality to support computing its expectation
+  value with `default.qubit`. [(#1398)](https://github.com/PennyLaneAI/pennylane/pull/1398)
+
+  For example, the following QNode returns the expectation value of a sparse Hamiltonian:
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev, diff_method="parameter-shift")
+  def circuit(param, H):
+      qml.PauliX(0)
+      qml.SingleExcitation(param, wires=[0, 1])
+      return qml.expval(qml.SparseHamiltonian(H, [0, 1]))
+  ```
+
+  We can execute this QNode, passing in a sparse identity matrix:
+
+  ```pycon
+  >>> print(circuit([0.5], scipy.sparse.eye(4).tocoo()))
+  0.9999999999999999
+  ```
+
+  The expectation value of the sparse Hamiltonian is computed directly, which leads to executions
+  that are faster by orders of magnitude. Note that "parameter-shift" is the only differentiation
+  method that is currently supported when the observable is a sparse Hamiltonian.
+
+* VQE problems can now be intuitively set up by passing the Hamiltonian
+  as an observable. [(#1474)](https://github.com/PennyLaneAI/pennylane/pull/1474)
+
+  ``` python
+  dev = qml.device("default.qubit", wires=2)
+  H = qml.Hamiltonian([1., 2., 3.],  [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)])
+  w = qml.init.strong_ent_layers_uniform(1, 2, seed=1967)
+
+  @qml.qnode(dev)
+  def circuit(w):
+      qml.templates.StronglyEntanglingLayers(w, wires=range(2))
+      return qml.expval(H)
+  ```
+
+  ```pycon
+  >>> print(circuit(w))
+  -1.5133943637878295
+  >>> print(qml.grad(circuit)(w))
+  [[[-8.32667268e-17  1.39122955e+00 -9.12462052e-02]
+  [ 1.02348685e-16 -7.77143238e-01 -1.74708049e-01]]]
+  ```
+
+  Note that other measurement types like `var(H)` or `sample(H)`, as well
+  as multiple expectations like `expval(H1), expval(H2)` are not supported.
+
+* Added functionality to compute the sparse matrix representation of a `qml.Hamiltonian` object.
+  [(#1394)](https://github.com/PennyLaneAI/pennylane/pull/1394)
 
 <h4>New gradients module</h4>
 
