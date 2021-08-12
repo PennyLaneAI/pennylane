@@ -123,30 +123,42 @@ def hamiltonian_expand(tape, group=True):
 
     if group or hamiltonian.grouping_indices is not None:
         # use groups of observables if available or explicitly requested
-        coeffs_groupings, obs_groupings = hamiltonian.get_groupings()
+        coeffs, obs_groupings = hamiltonian.get_groupings()
+
+        # create tapes that measure the Pauli-words in the Hamiltonian
+        tapes = []
+        for obs in obs_groupings:
+            with tape.__class__() as new_tape:
+                for op in tape.operations:
+                    op.queue()
+                for o in obs:
+                    qml.expval(o)
+
+            # this expansion checks for operations acting on the same wire and
+            # adds diagonalising gates to the circuit
+            new_tape = new_tape.expand(stop_at=lambda obj: True)
+            tapes.append(new_tape)
+
     else:
-        # else make each observable its own group
-        obs_groupings = [[obs] for obs in hamiltonian.ops]
-        coeffs_groupings = [hamiltonian.coeffs[i] for i in range(len(hamiltonian.ops))]
+        coeffs = hamiltonian.coeffs
 
-    # create tapes that measure the Pauli-words in the Hamiltonian
-    tapes = []
-    for obs in obs_groupings:
+        # create tapes that measure the Pauli-words in the Hamiltonian
+        tapes = []
+        for o in hamiltonian.ops:
 
-        with tape.__class__() as new_tape:
-            for op in tape.operations:
-                op.queue()
-
-            for o in obs:
+            with tape.__class__() as new_tape:
+                for op in tape.operations:
+                    op.queue()
                 qml.expval(o)
 
-        new_tape = new_tape.expand(stop_at=lambda obj: True)
-        tapes.append(new_tape)
+            tapes.append(new_tape)
 
     def processing_fn(res):
         # note: res could have an extra dimension here if a shots_distribution
         # is used for evaluation
-        dot_products = [qml.math.dot(qml.math.squeeze(r), c) for c, r in zip(coeffs_groupings, res)]
+        dot_products = [qml.math.dot(qml.math.squeeze(r), c) for c, r in zip(coeffs, res)]
         return qml.math.sum(qml.math.stack(dot_products), axis=0)
 
     return tapes, processing_fn
+
+
