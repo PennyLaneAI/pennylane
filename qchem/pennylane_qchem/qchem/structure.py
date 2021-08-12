@@ -563,8 +563,11 @@ def _qubit_operator_to_terms(qubit_operator, wires=None):
     )
     wires = _process_wires(wires, n_wires=n_wires)
 
+    # if not qubit_operator.terms:  # added since can't unpack empty zip to (coeffs, ops) below
+    #     return np.array([0.0]), [qml.operation.Tensor(qml.Identity(wires[0]))]
+
     if not qubit_operator.terms:  # added since can't unpack empty zip to (coeffs, ops) below
-        return np.array([0.0]), [qml.operation.Tensor(qml.Identity(wires[0]))]
+        return np.array([0.0]), qml.Identity(wires[0])
 
     xyz2pauli = {"X": qml.PauliX, "Y": qml.PauliY, "Z": qml.PauliZ}
 
@@ -573,8 +576,12 @@ def _qubit_operator_to_terms(qubit_operator, wires=None):
             (
                 coef,
                 qml.operation.Tensor(*[xyz2pauli[q[1]](wires=wires[q[0]]) for q in term])
-                if term
-                else qml.operation.Tensor(qml.Identity(wires[0]))
+                if len(term) > 0
+                else (
+                    xyz2pauli[term[0][1]](wires=wires[term[0][0]])
+                    if len(term) == 1
+                    else qml.Identity(wires[0])
+                )
                 # example term: ((0,'X'), (2,'Z'), (3,'Y'))
             )
             for term, coef in qubit_operator.terms.items()
