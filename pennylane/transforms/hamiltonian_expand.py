@@ -128,13 +128,15 @@ def hamiltonian_expand(tape, group=True):
 
         if hamiltonian.grouping_indices is None:
             hamiltonian.compute_grouping()
-            
+
         # use groups of observables if available or explicitly requested
         coeffs = [
             qml.math.squeeze(qml.math.take(hamiltonian.coeffs, indices, axis=0))
             for indices in hamiltonian.grouping_indices
         ]
-        obs_groupings = [[hamiltonian.ops[i] for i in indices] for indices in hamiltonian.grouping_indices]
+        obs_groupings = [
+            [hamiltonian.ops[i] for i in indices] for indices in hamiltonian.grouping_indices
+        ]
 
         tapes = []
         for obs in obs_groupings:
