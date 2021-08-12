@@ -71,8 +71,8 @@ class Hamiltonian(qml.operation.Observable):
         simplify (bool): Specifies whether the Hamiltonian is simplified upon initialization
                          (like-terms are combined). The default value is `False`.
         compute_grouping (bool): If True, compute and store information on how to group commuting
-            observables upon initialization. This information can be accessed when the expectation of
-            a Hamiltonian is split into expectations of its constituent observables.
+            observables upon initialization. This information may be accessed when QNodes containing this
+            Hamiltonian are executed on devices.
 
 
     **Example:**
