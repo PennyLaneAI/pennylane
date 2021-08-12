@@ -544,8 +544,9 @@
   superseded by the `specs` tape attribute.
   [(#1522)](https://github.com/PennyLaneAI/pennylane/pull/1522)
 
-* Fully deprecated specifying `shots=None` with `qml.sample` by raising an
-  error in `QubitDevice`.
+* Specifying `shots=None` with `qml.sample` was previously deprecated.
+  From this release onwards, setting `shots=None` when sampling will
+  raise an error.
   [(#1522)](https://github.com/PennyLaneAI/pennylane/pull/1522)
 
 * The existing `pennylane.collections.apply` function is no longer accessible
