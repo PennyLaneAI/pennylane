@@ -16,7 +16,6 @@ This subpackage defines functions for interfacing devices' batch execution
 capabilities with different machine learning libraries.
 """
 # pylint: disable=import-outside-toplevel,too-many-arguments
-from collections import OrderedDict
 from functools import wraps
 
 from cachetools import LRUCache
@@ -74,13 +73,10 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True):
         if cache is None or (isinstance(cache, bool) and not cache):
             # No caching. Simply execution the execution function
             # and return the results.
+            res = fn(tapes, **kwargs)
+            return res, [] if return_tuple else res
 
-            if not return_tuple:
-                return fn(tapes, **kwargs)
-
-            return fn(tapes, **kwargs), []
-
-        execution_tapes = OrderedDict()
+        execution_tapes = {}
         cached_results = {}
         hashes = {}
         repeated = {}
@@ -106,8 +102,16 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True):
                 # for execution via the execution function.
                 execution_tapes[i] = tape
 
-        # execute all unique tapes that do not exist in the cache
-        res = fn(execution_tapes.values(), **kwargs)
+        # if there are no execution tapes, simply return!
+        if not execution_tapes:
+            if not repeated:
+                res = list(cached_results.values())
+                return res, [] if return_tuple else res
+
+        else:
+            # execute all unique tapes that do not exist in the cache
+            res = fn(execution_tapes.values(), **kwargs)
+
         final_res = []
 
         for i, tape in enumerate(tapes):
@@ -125,10 +129,7 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True):
                 final_res.append(r)
                 cache[hashes[i]] = r
 
-        if not return_tuple:
-            return final_res
-
-        return final_res, []
+        return final_res, [] if return_tuple else final_res
 
     wrapper.fn = fn
     return wrapper
