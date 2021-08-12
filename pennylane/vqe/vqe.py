@@ -268,9 +268,9 @@ class Hamiltonian(qml.operation.Observable):
 
         Args:
             grouping_type (str): The type of binary relation between Pauli words used to compute the grouping.
-                Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``. . Ignored if compute_grouping is False.
+                Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``. Ignored if ``compute_grouping`` is False.
             method (str): The graph coloring heuristic to use in solving minimum clique cover for grouping, which
-                can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First). Ignored if compute_grouping is False.
+                can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First). Ignored if ``compute_grouping`` is False.
         """
 
         self._grouping_indices = qml.transforms.invisible(_compute_grouping_indices)(
