@@ -456,16 +456,6 @@ class TestJacobian:
 
         assert len(res) == num_params
 
-    @pytest.mark.parametrize("argnum", [1, 2, 3, -1])
-    def test_choose_params_and_methods_raises(self, argnum):
-        """Test that the _choose_params_and_methods helper method raises an
-        error if incorrect trainable parameters are specified."""
-        tape = JacobianTape()
-        tape.trainable_params = [0]
-        diff_methods = ["F"]
-        with pytest.raises(ValueError, match="Incorrect trainable parameters"):
-            res = tape._choose_params_with_methods(diff_methods, argnum)
-
     def test_choose_params_and_methods_warns_no_params(self):
         """Test that the _choose_params_and_methods helper method warns if an
         empty list was passed as argnum."""
@@ -473,7 +463,10 @@ class TestJacobian:
         tape.trainable_params = [0]
         diff_methods = ["F"]
         argnum = []
-        with pytest.warns(UserWarning, match="No trainable parameters"):
+        with pytest.warns(
+            UserWarning,
+            match="No trainable parameters",
+        ):
             res = tape._choose_params_with_methods(diff_methods, argnum)
 
 
@@ -624,10 +617,22 @@ class TestJacobianIntegration:
             np.array(
                 [
                     [-2 * np.sin(x), 0],
-                    [-(np.cos(y / 2) ** 2 * np.sin(x)), -(np.cos(x / 2) ** 2 * np.sin(y))],
-                    [-(np.sin(x) * np.sin(y / 2) ** 2), (np.cos(x / 2) ** 2 * np.sin(y))],
-                    [(np.sin(x) * np.sin(y / 2) ** 2), (np.sin(x / 2) ** 2 * np.sin(y))],
-                    [(np.cos(y / 2) ** 2 * np.sin(x)), -(np.sin(x / 2) ** 2 * np.sin(y))],
+                    [
+                        -(np.cos(y / 2) ** 2 * np.sin(x)),
+                        -(np.cos(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        -(np.sin(x) * np.sin(y / 2) ** 2),
+                        (np.cos(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        (np.sin(x) * np.sin(y / 2) ** 2),
+                        (np.sin(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        (np.cos(y / 2) ** 2 * np.sin(x)),
+                        -(np.sin(x / 2) ** 2 * np.sin(y)),
+                    ],
                 ]
             )
             / 2
@@ -733,7 +738,8 @@ class TestHessian:
             qml.state()
 
         with pytest.raises(
-            ValueError, match=r"The Hessian method does not support circuits that return the state"
+            ValueError,
+            match=r"The Hessian method does not support circuits that return the state",
         ):
             tape.hessian(None)
 
@@ -747,7 +753,7 @@ class TestObservableWithObjectReturnType:
 
         class SpecialObject:
             """SpecialObject
-
+            
             A special object that conveniently encapsulates the return value of
             a special observable supported by a special device and which supports
             multiplication with scalars and addition.

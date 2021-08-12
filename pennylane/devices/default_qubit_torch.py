@@ -14,6 +14,8 @@
 """This module contains a PyTorch implementation of the :class:`~.DefaultQubit`
 reference plugin.
 """
+import warnings
+from string import ascii_letters as ABC
 import semantic_version
 
 try:
@@ -26,8 +28,6 @@ try:
 except ImportError as e:
     raise ImportError("default.qubit.torch device requires Torch>=1.8.1") from e
 
-import warnings
-from string import ascii_letters as ABC
 import numpy as np
 from pennylane.operation import DiagonalOperation
 from pennylane.devices import torch_ops
