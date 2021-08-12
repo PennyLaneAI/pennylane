@@ -20,6 +20,8 @@ from collections.abc import Iterable, Sequence
 from collections import OrderedDict, namedtuple
 from functools import lru_cache
 
+import unittest.mock as mock
+
 import numpy as np
 
 import pennylane as qml
@@ -117,7 +119,7 @@ class Device(abc.ABC):
     _circuits = {}  #: dict[str->Circuit]: circuit templates associated with this API class
     _asarray = staticmethod(np.asarray)
 
-    def __init__(self, wires=1, shots=1000, *, analytic=None):
+    def __init__(self, wires=1, shots=1000, custom_ops=None, *, analytic=None):
 
         self.shots = shots
 
@@ -137,6 +139,15 @@ class Device(abc.ABC):
         self._op_queue = None
         self._obs_queue = None
         self._parameters = None
+
+        self._custom_ops = None
+        self._replacement_decompositions = None
+
+        if custom_ops is not None:
+            self._custom_ops = custom_ops
+            self._replacement_decompositions = [
+                mock.patch(name, new=custom_op) for name, custom_op in custom_ops.items()
+            ]
 
         self.tracker = qml.Tracker()
 
@@ -296,6 +307,10 @@ class Device(abc.ABC):
         integer is repeated.
         """
         return self._shot_vector
+
+    @property
+    def custom_ops(self):
+        return self._custom_ops
 
     def _has_partitioned_shots(self):
         """Checks if the device was instructed to perform executions with partitioned shots.

@@ -148,8 +148,8 @@ class DefaultQubit(QubitDevice):
         "SparseHamiltonian",
     }
 
-    def __init__(self, wires, *, shots=None, cache=0, analytic=None):
-        super().__init__(wires, shots, cache=cache, analytic=analytic)
+    def __init__(self, wires, *, shots=None, custom_ops=None, cache=0, analytic=None):
+        super().__init__(wires, shots, cache=cache, custom_ops=custom_ops, analytic=analytic)
 
         # Create the initial state. Internally, we store the
         # state as an array of dimension [2]*wires.
