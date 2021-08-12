@@ -407,23 +407,6 @@ class TestHamiltonianArithmeticJax:
 class TestGrouping:
     """Tests for the grouping functionality"""
 
-    def test_grouping_is_correct_get_grouping(self):
-        """Basic test checking that grouping with get_grouping works as expected"""
-        a = qml.PauliX(0)
-        b = qml.PauliX(1)
-        c = qml.PauliZ(0)
-        obs = [a, b, c]
-        coeffs = [1.0, 2.0, 3.0]
-
-        H = qml.Hamiltonian(coeffs, obs)
-        assert H.grouping_indices is None
-
-        grouped_coeffs, grouped_obs = H.get_grouping()
-        assert np.allclose(grouped_coeffs[0], np.array([1.0, 2.0]))
-        assert np.allclose(grouped_coeffs[1], np.array(3.0))
-        assert grouped_obs == [[a, b], [c]]
-        assert H.grouping_indices == [[0, 1], [2]]
-
     def test_grouping_is_correct_kwarg(self):
         """Basic test checking that grouping with a kwarg works as expected"""
         a = qml.PauliX(0)
@@ -455,15 +438,8 @@ class TestGrouping:
         obs = [a, b, c]
         coeffs = [1.0, 2.0, 3.0]
 
-        H = qml.Hamiltonian(coeffs, obs)
-        grouped_coeffs, grouped_obs = H.get_grouping()
-        assert grouped_coeffs == [[1.0], [2.0], [3.0]]
-        assert grouped_obs == [[a], [b], [c]]
+        H = qml.Hamiltonian(coeffs, obs, compute_grouping=True)
         assert H.grouping_indices == [[0], [1], [2]]
-
-        # use grouping during construction
-        H2 = qml.Hamiltonian(coeffs, obs, compute_grouping=True)
-        assert H2.grouping_indices == [[0], [1], [2]]
 
     def test_grouping_is_reset_when_simplifying(self):
         """Tests that calling simplify() resets the grouping"""
@@ -488,12 +464,6 @@ class TestGrouping:
             H = qml.Hamiltonian(coeffs, obs, compute_grouping=True)
 
         assert tape.queue == [a, b, c, H]
-
-        with qml.tape.QuantumTape() as tape2:
-            H = qml.Hamiltonian(coeffs, obs, compute_grouping=False)
-            H.get_grouping()
-
-        assert tape2.queue == [a, b, c, H]
 
     def test_grouping_method_can_be_set(self):
         r"""Tests that the grouping method can be controlled by kwargs.

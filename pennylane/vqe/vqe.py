@@ -143,18 +143,19 @@ class Hamiltonian(qml.operation.Observable):
     >>> H.grouping_indices
     [[0, 1], [2]]
 
-    This attribute is used when computing groups of coefficients and observables:
-    >>> grouped_coeffs, grouped_obs = H.get_grouping()
+    This attribute can be used to computing groups of coefficients and observables:
+    >>> grouped_coeffs = [coeffs[indices] for indices in H.grouping_indices]
+    >>> grouped_obs = [[H.ops[i] for i in indices] for indices in H.grouping_indices]
     >>> grouped_coeffs
-    [np.array([1., 2.]), np.array(3.)]
+    [tensor([1., 2.], requires_grad=True), tensor([3.], requires_grad=True)]
     >>> grouped_obs
     [[qml.PauliX(0), qml.PauliX(1)], [qml.PauliZ(0)]]
 
-    If initializing a Hamiltonian with ``compute_grouping=False``, ``get_grouping()`` will
-    compute the ``grouping_indices`` attribute from scratch and store it.
-
     Devices that evaluate a Hamiltonian expectation by splitting it into its local observables can
     use this information to reduce the number of circuits evaluated.
+
+    Note that one can compute the ``grouping_indices`` for an already initialized Hamiltonian by
+    using the ``compute_grouping`` method.
     """
 
     num_wires = qml.operation.AnyWires
@@ -275,24 +276,6 @@ class Hamiltonian(qml.operation.Observable):
         self._grouping_indices = qml.transforms.invisible(_compute_grouping_indices)(
             self.ops, grouping_type=grouping_type, method=method
         )
-
-    def get_grouping(self):
-        """Return groupings of commuting observables and their corresponding coefficients.
-
-        Returns:
-            list[tensor_like], list[list[Observable]]: groups of coefficients and observables
-        """
-        if self._grouping_indices is None:
-            # if it has not been done before, compute which indices of coefficients/observables belong to each group
-            self._grouping_indices = qml.transforms.invisible(_compute_grouping_indices)(self.ops)
-
-        grouped_coefficients = [
-            qml.math.squeeze(qml.math.take(self.coeffs, indices, axis=0))
-            for indices in self._grouping_indices
-        ]
-        grouped_observables = [[self.ops[i] for i in indices] for indices in self._grouping_indices]
-
-        return grouped_coefficients, grouped_observables
 
     def simplify(self):
         r"""Simplifies the Hamiltonian by combining like-terms.
