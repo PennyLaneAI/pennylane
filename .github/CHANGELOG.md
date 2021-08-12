@@ -520,7 +520,7 @@
 * Fixed a bug in the parameter-shift Hessian implementation, which resulted
   in the incorrect Hessian being returned for a cost function
   that performed post-processing on a vector-valued QNode.
-  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+  [(#1436)](https://github.com/PennyLaneAI/pennylane/pull/1436)
 
 * Fixed a bug in the initialization of `QubitUnitary` where the size of
   the matrix was not checked against the number of wires.
