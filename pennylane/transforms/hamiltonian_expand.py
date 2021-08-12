@@ -120,8 +120,7 @@ def hamiltonian_expand(tape, group=True):
         )
 
     if group or hamiltonian.grouping_indices is not None:
-        # if explicitly requested or already available,
-        # compute the grouping information
+        # use groups of observables if available or explicitly requested
         coeffs_groupings, obs_groupings = hamiltonian.get_groupings()
     else:
         # else make each observable its own group
