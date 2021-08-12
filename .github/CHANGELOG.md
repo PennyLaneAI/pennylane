@@ -307,7 +307,7 @@
    [ 0.69916862  0.34072424  0.69202359]]
   ```
 
-<h4>Extended operations and templates</h4>
+<h4>Even more new operations and templates</h4>
 
 * Grover Diffusion Operator template added.
   [(#1442)](https://github.com/PennyLaneAI/pennylane/pull/1442)
