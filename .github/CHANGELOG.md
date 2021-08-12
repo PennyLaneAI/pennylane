@@ -41,7 +41,7 @@
    2: ──H──╰C────────RX(0.3)──╰CY──Y──┤
   ```
 
-  The ``qml.compile`` transform is flexible and accepts a custom pipeline
+  The `qml.compile` transform is flexible and accepts a custom pipeline
   of tape and quantum function transforms (you can even write your own!).
   For example, if we wanted to only push single-qubit gates through
   controlled gates and cancel adjacent inverses, we could do:
@@ -178,7 +178,7 @@
    2: ──H──╰┤ Sample[basis]
   ```
 
-* The new ``qml.apply`` function can be used to add operations that might have
+* The new `qml.apply` function can be used to add operations that might have
   already been instantiated elsewhere to the QNode and other queuing contexts:
   [(#1433)](https://github.com/PennyLaneAI/pennylane/pull/1433)
 
@@ -355,14 +355,14 @@
 * Ising YY gate functionality added.
   [(#1358)](https://github.com/PennyLaneAI/pennylane/pull/1358)
 
-* A decomposition has been added to ``QubitUnitary`` that makes the
+* A decomposition has been added to `QubitUnitary` that makes the
   single-qubit case fully differentiable in all interfaces. Furthermore,
-  a quantum function transform, ``unitary_to_rot()``, has been added to decompose all
-  single-qubit instances of ``QubitUnitary`` in a quantum circuit.
+  a quantum function transform, `unitary_to_rot()`, has been added to decompose all
+  single-qubit instances of `QubitUnitary` in a quantum circuit.
   [(#1427)](https://github.com/PennyLaneAI/pennylane/pull/1427)
 
-  Instances of ``QubitUnitary`` may now be decomposed directly to ``Rot``
-  operations, or ``RZ`` operations if the input matrix is diagonal. For
+  Instances of `QubitUnitary` may now be decomposed directly to `Rot`
+  operations, or `RZ` operations if the input matrix is diagonal. For
   example, let
 
   ```python
@@ -479,7 +479,7 @@
     <tf.Variable 'Variable:0' shape=() dtype=float32, numpy=0.3>]
   ```
 
-  In addition, ``qml.tape.Unwrap`` is a context manager that unwraps multiple tapes:
+  In addition, `qml.tape.Unwrap` is a context manager that unwraps multiple tapes:
 
   ```pycon
   >>> with qml.tape.Unwrap(tape1, tape2):
@@ -488,7 +488,7 @@
 <h3>Breaking changes</h3>
 
 * The existing `pennylane.collections.apply` function is no longer accessible
-  via `qml.apply`, and needs to be imported directly from the ``collections``
+  via `qml.apply`, and needs to be imported directly from the `collections`
   package.
   [(#1358)](https://github.com/PennyLaneAI/pennylane/pull/1358)
 
