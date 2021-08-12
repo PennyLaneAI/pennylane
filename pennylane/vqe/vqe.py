@@ -263,7 +263,8 @@ class Hamiltonian(qml.operation.Observable):
 
     def compute_grouping(self, grouping_type="qwc", method="rlf"):
         """
-        Compute groups of indices corresponding to commuting observables of this Hamiltonian, and store it in the `grouping_indices` attribute.
+        Compute groups of indices corresponding to commuting observables of this
+        Hamiltonian, and store it in the ``grouping_indices`` attribute.
 
         Args:
             grouping_type (str): The type of binary relation between Pauli words used to compute the grouping.
