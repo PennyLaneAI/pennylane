@@ -462,9 +462,7 @@ class Hamiltonian(qml.operation.Observable):
             return repr_self == repr_other
 
         if isinstance(H, (Tensor, Observable)):
-            return repr_self == {
-                (1, frozenset(H._obs_data()))  # pylint: disable=protected-access
-            }
+            return repr_self == {(1, frozenset(H._obs_data()))}  # pylint: disable=protected-access
 
         raise ValueError("Can only compare a Hamiltonian, and a Hamiltonian/Observable/Tensor.")
 
