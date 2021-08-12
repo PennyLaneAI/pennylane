@@ -92,6 +92,7 @@ def hamiltonian_expand(tape, group=True):
     Alternatively, if the Hamiltonian has already computed groups, they are used even if ``group=False``:
 
     .. code-block:: python3
+
         H = qml.Hamiltonian([1., 2., 3.], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)], compute_groupings=True)
 
         # the initialisation already computes grouping information and stores it in the Hamiltonian
