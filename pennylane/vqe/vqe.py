@@ -150,7 +150,7 @@ class Hamiltonian(qml.operation.Observable):
     compute the ``grouping_indices`` attribute from scratch and store it.
 
     Devices that evaluate a Hamiltonian expectation by splitting it into its local observables can
-    use this information to reduce the number of circuits produced.
+    use this information to reduce the number of circuits evaluated.
     """
 
     num_wires = qml.operation.AnyWires
