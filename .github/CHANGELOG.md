@@ -456,7 +456,7 @@
   correctly determine trainability during Autograd and JAX backwards passes.
 
 * A new tape method, `tape.unwrap()` is added. This method is a context manager; inside the
-  context, the tapes parameters are unwrapped to NumPy arrays and floats, and the trainable
+  context, the tape's parameters are unwrapped to NumPy arrays and floats, and the trainable
   parameter indices are set.
   [(#1491)](https://github.com/PennyLaneAI/pennylane/pull/1491)
 
