@@ -440,9 +440,7 @@
 * Change the order of the covariance matrix and the vector of means internally
   in `default.gaussian`. [(#1331)](https://github.com/PennyLaneAI/pennylane/pull/1331)
 
-* Added the `id` attribute to templates, which was missing from
-  PR [(#1377)](https://github.com/PennyLaneAI/pennylane/pull/1377).
-  [(#1438)](https://github.com/PennyLaneAI/pennylane/pull/1438)
+* Added the `id` attribute to templates. [(#1438)](https://github.com/PennyLaneAI/pennylane/pull/1438)
 
 * The `qml.math` module, for framework-agnostic tensor manipulation,
   has two new functions available:
