@@ -540,7 +540,7 @@
   
 <h3>Breaking changes</h3>
 
-* Deprecated the tape methods `get_resources` and `get_depth` as they are
+* Removed the deprecated tape methods `get_resources` and `get_depth` as they are
   superseded by the `specs` tape attribute.
   [(#1522)](https://github.com/PennyLaneAI/pennylane/pull/1522)
 
