@@ -1,4 +1,107 @@
-# Release 0.17.0-dev (development release)
+# Release 0.18.0-dev (development release)
+
+<h3>New features since last release</h3>
+
+* The Hamiltonian can now store grouping information, which can be accessed by a device to 
+  speed up computations of the expectation of a Hamiltonian. 
+  [(#1515)](https://github.com/PennyLaneAI/pennylane/pull/1515)
+
+  ``` python
+  obs = [qml.PauliX(0), qml.PauliX(1), qml.PauliZ(0)]
+  coeffs = np.array([1., 2., 3.])
+  H = qml.Hamiltonian(coeffs, obs, compute_groupings=True)
+  ```
+  Initialization with ``compute_groupings=True`` stores the indices required to make groups of 
+  commuting observables and their coefficients. These are used 
+  (or, if not found, computed) by the ``get_groupings()`` method, which returns the 
+  actual groupings.
+  
+  ``` pycon
+  >>> H.grouping_indices
+  [[0, 1], [2]]
+  grouped_coeffs, grouped_obs = H.get_groupings()
+  >>> grouped_coeffs
+  [np.array([1., 2.]), np.array(3.)]
+  >>> grouped_obs
+  [[qml.PauliX(0), qml.PauliX(1)], [qml.PauliZ(0)]]
+  ```
+
+* Hamiltonians are now trainable with respect to their coefficients.
+  [(#1483)](https://github.com/PennyLaneAI/pennylane/pull/1483)
+
+  ``` python
+  from pennylane import numpy as np
+  
+  dev = qml.device("default.qubit", wires=2)
+  @qml.qnode(dev)
+  def circuit(coeffs, param):
+      qml.RX(param, wires=0)
+      qml.RY(param, wires=0)
+      return qml.expval(
+          qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=True)
+      )
+    
+  coeffs = np.array([-0.05, 0.17])
+  param = np.array(1.7)
+  grad_fn = qml.grad(circuit)
+  ```
+  ``` pycon
+  >>> grad_fn(coeffs, param)
+  (array([-0.12777055,  0.0166009 ]), array(0.0917819))
+  ```
+
+<h3>Improvements</h3>
+
+* The `group_observables` transform is now differentiable.
+  [(#1483)](https://github.com/PennyLaneAI/pennylane/pull/1483)
+ 
+  For example:
+
+  ``` python
+  import jax
+  from jax import numpy as jnp
+  
+  coeffs = jnp.array([1., 2., 3.])
+  obs = [PauliX(wires=0), PauliX(wires=1), PauliZ(wires=1)]
+
+  def group(coeffs, select=None):
+    _, grouped_coeffs = qml.grouping.group_observables(obs, coeffs)
+    # in this example, grouped_coeffs is a list of two jax tensors
+    # [DeviceArray([1., 2.], dtype=float32), DeviceArray([3.], dtype=float32)]
+    return grouped_coeffs[select]
+
+  jac_fn = jax.jacobian(group)
+  ```
+  ```pycon
+  >>> jac_fn(coeffs, select=0)
+  [[1. 0. 0.]
+  [0. 1. 0.]]
+  
+  >>> jac_fn(coeffs, select=1)
+  [[0., 0., 1.]]
+  ```
+
+* The tape does not verify any more that all Observables have owners in the annotated queue.
+  [(#1505)](https://github.com/PennyLaneAI/pennylane/pull/1505)
+
+  This allows manipulation of Observables inside a tape context. An example is
+  `expval(Tensor(qml.PauliX(0), qml.Identity(1)).prune())` which makes the expval
+  an owner of the pruned tensor and its constituent observables, but leaves the
+  original tensor in the queue without an owner.
+
+<h3>Breaking changes</h3>
+
+<h3>Bug fixes</h3>
+
+<h3>Documentation</h3>
+
+<h3>Contributors</h3>
+
+This release contains contributions from (in alphabetical order):
+
+Maria Schuld.
+
+# Release 0.17.0 (current release)
 
 <h3>New features since last release</h3>
 
@@ -127,31 +230,7 @@
   Total shots:  200
   Total shots:  300
   ```
-
-* Hamiltonians are now trainable with respect to their coefficients.
-  [(#1483)](https://github.com/PennyLaneAI/pennylane/pull/1483)
-
-  ``` python
-  from pennylane import numpy as np
   
-  dev = qml.device("default.qubit", wires=2)
-  @qml.qnode(dev)
-  def circuit(coeffs, param):
-      qml.RX(param, wires=0)
-      qml.RY(param, wires=0)
-      return qml.expval(
-          qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=True)
-      )
-    
-  coeffs = np.array([-0.05, 0.17])
-  param = np.array(1.7)
-  grad_fn = qml.grad(circuit)
-  ```
-  ``` pycon
-  >>> grad_fn(coeffs, param)
-  (array([-0.12777055,  0.0166009 ]), array(0.0917819))
-  ```
-
 * VQE problems can now intuitively been set up by passing the Hamiltonian 
   as an observable. [(#1474)](https://github.com/PennyLaneAI/pennylane/pull/1474)
 
@@ -489,36 +568,6 @@
 
 <h3>Improvements</h3>
 
-* The `group_observables` transform is now differentiable.
-  [(#1483)](https://github.com/PennyLaneAI/pennylane/pull/1483)
- 
-  For example:
-
-  ``` python
-  import jax
-  from jax import numpy as jnp
-  
-  coeffs = jnp.array([1., 2., 3.])
-  obs = [PauliX(wires=0), PauliX(wires=1), PauliZ(wires=1)]
-
-  def group(coeffs, select=None):
-    _, grouped_coeffs = qml.grouping.group_observables(obs, coeffs)
-    # in this example, grouped_coeffs is a list of two jax tensors
-    # [DeviceArray([1., 2.], dtype=float32), DeviceArray([3.], dtype=float32)]
-    return grouped_coeffs[select]
-
-  jac_fn = jax.jacobian(group)
-  ```
-  ```pycon
-  >>> jac_fn(coeffs, select=0)
-  [[1. 0. 0.]
-  [0. 1. 0.]]
-  
-  >>> jac_fn(coeffs, select=1)
-  [[0., 0., 1.]]
-  ```
- 
-
 * The tape does not verify any more that all Observables have owners in the annotated queue.
   [(#1505)](https://github.com/PennyLaneAI/pennylane/pull/1505)
 
@@ -660,7 +709,7 @@ Arshpreet Singh Khangura, Ashish Panigrahi,
 Maria Schuld, Jay Soni, Antal Száva, David Wierichs.
 
 
-# Release 0.16.0 (current release)
+# Release 0.16.0
 
 <h3>New features since last release</h3>
 
