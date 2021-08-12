@@ -1,5 +1,7 @@
 # Release 0.17.0 (current release)
 
+<h3>New features since the last release</h3>
+
 <h4>Circuit optimization</h4>
 
 * PennyLane can now perform quantum circuit optimization using the
