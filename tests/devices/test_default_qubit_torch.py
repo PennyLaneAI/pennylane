@@ -1060,7 +1060,7 @@ class TestPassthruIntegration:
         z_grad = -0.5 * (
             torch.sin(3 * x) * torch.cos(z / 2) + torch.cos(3 * x) * torch.cos(y) * torch.sin(z / 2)
         )
-                       
+
         assert torch.allclose(x.grad, x_grad)
         assert torch.allclose(y.grad, y_grad)
         assert torch.allclose(z.grad, z_grad)
