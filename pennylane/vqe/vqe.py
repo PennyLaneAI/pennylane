@@ -144,6 +144,7 @@ class Hamiltonian(qml.operation.Observable):
     [[0, 1], [2]]
 
     This attribute can be used to computing groups of coefficients and observables:
+
     >>> grouped_coeffs = [coeffs[indices] for indices in H.grouping_indices]
     >>> grouped_obs = [[H.ops[i] for i in indices] for indices in H.grouping_indices]
     >>> grouped_coeffs
