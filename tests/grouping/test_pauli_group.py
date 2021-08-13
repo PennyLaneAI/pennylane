@@ -58,7 +58,12 @@ class TestPauliGroup:
         labeled by a string."""
 
         wire_map = {"qubit": 0}
-        expected_pg_1_wires = [Identity("qubit"), PauliZ("qubit"), PauliX("qubit"), PauliY("qubit")]
+        expected_pg_1_wires = [
+            Identity("qubit"),
+            PauliZ("qubit"),
+            PauliX("qubit"),
+            PauliY("qubit"),
+        ]
         pg_1_wires = list(pauli_group(1, wire_map=wire_map))
         assert all(
             [
@@ -102,8 +107,18 @@ class TestPauliGroup:
             (PauliZ(0), PauliZ(0), {0: 0}, Identity(0)),
             (Identity("a"), Identity("b"), None, Identity("a")),
             (PauliZ("b") @ PauliY("a"), PauliZ("b") @ PauliY("a"), None, Identity("b")),
-            (PauliZ("b") @ PauliY("a"), PauliZ("b") @ PauliY("a"), {"b": 0, "a": 1}, Identity("b")),
-            (PauliZ(0) @ PauliY(1), PauliX(0) @ PauliZ(1), {0: 0, 1: 1}, PauliY(0) @ PauliX(1)),
+            (
+                PauliZ("b") @ PauliY("a"),
+                PauliZ("b") @ PauliY("a"),
+                {"b": 0, "a": 1},
+                Identity("b"),
+            ),
+            (
+                PauliZ(0) @ PauliY(1),
+                PauliX(0) @ PauliZ(1),
+                {0: 0, 1: 1},
+                PauliY(0) @ PauliX(1),
+            ),
             (PauliZ(0) @ PauliY(1), PauliX(1) @ PauliY(0), {0: 0, 1: 1}, PauliX(0) @ PauliZ(1)),
             (
                 PauliZ(0) @ PauliY(3) @ PauliZ(1),
@@ -111,7 +126,12 @@ class TestPauliGroup:
                 None,
                 PauliX(0) @ PauliY(1) @ PauliX(2) @ PauliY(3),
             ),
-            (PauliX(0) @ PauliX(2), PauliX(0) @ PauliZ(2), None, PauliY(2)),
+            (
+                PauliX(0) @ PauliX(2),
+                PauliX(0) @ PauliZ(2),
+                None,
+                PauliY(2),
+            ),
             (PauliZ("a"), PauliX("b"), {"a": 0, "b": 1}, PauliZ("a") @ PauliX("b")),
             (
                 PauliZ("a"),
@@ -154,9 +174,19 @@ class TestPauliGroup:
             (Identity("a"), Identity("b"), None, 1),
             (PauliZ("b") @ PauliY("a"), PauliZ("b") @ PauliY("a"), None, 1),
             (PauliZ(0), PauliY("b"), None, 1),
-            (PauliZ("a") @ PauliY("b"), PauliX("a") @ PauliZ("b"), {"a": 0, "b": 1}, -1),
+            (
+                PauliZ("a") @ PauliY("b"),
+                PauliX("a") @ PauliZ("b"),
+                {"a": 0, "b": 1},
+                -1,
+            ),
             (PauliX(0) @ PauliX(2), PauliX(0) @ PauliZ(2), None, -1j),
-            (PauliX(0) @ PauliY(1) @ PauliZ(2), PauliY(0) @ PauliY(1), {0: 0, 1: 1, 2: 2}, 1j),
+            (
+                PauliX(0) @ PauliY(1) @ PauliZ(2),
+                PauliY(0) @ PauliY(1),
+                {0: 0, 1: 1, 2: 2},
+                1j,
+            ),
             (PauliZ(0) @ PauliY(1), PauliX(1) @ PauliY(0), {0: 0, 1: 1}, -1),
             (PauliZ(0) @ PauliY(1), PauliX(1) @ PauliY(0), {1: 0, 0: 1}, -1),
             (PauliZ(0) @ PauliY(3) @ PauliZ(1), PauliX(1) @ PauliX(2) @ PauliY(0), None, 1),

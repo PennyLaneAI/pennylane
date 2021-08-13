@@ -197,6 +197,7 @@ class DefaultQubit(QubitDevice):
 
         # apply the circuit operations
         for i, operation in enumerate(operations):
+
             if i > 0 and isinstance(operation, (QubitStateVector, BasisState)):
                 raise DeviceError(
                     "Operation {} cannot be used after other Operations have already been applied "

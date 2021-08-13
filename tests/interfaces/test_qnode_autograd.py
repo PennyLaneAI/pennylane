@@ -518,7 +518,10 @@ class TestQNode:
         expected = np.array(
             [
                 [[-np.sin(x) / 2, 0], [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2]],
-                [[np.sin(x) / 2, 0], [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2]],
+                [
+                    [np.sin(x) / 2, 0],
+                    [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
+                ],
             ]
         )
 
@@ -858,7 +861,10 @@ class TestQNode:
         elif diff_method == "parameter-shift":
             spy.assert_called_once()
 
-        expected_hess = [[-np.cos(a), 0], [0, 0]]
+        expected_hess = [
+            [-np.cos(a), 0],
+            [0, 0],
+        ]
         assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
 
     def test_hessian_vector_valued(self, dev_name, diff_method, mocker, tol):

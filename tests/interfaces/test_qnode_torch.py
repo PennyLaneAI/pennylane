@@ -197,7 +197,10 @@ class TestQNode:
         loss = torch.sum(res)
 
         loss.backward()
-        expected = [-np.sin(a_val) + np.sin(a_val) * np.sin(b_val), -np.cos(a_val) * np.cos(b_val)]
+        expected = [
+            -np.sin(a_val) + np.sin(a_val) * np.sin(b_val),
+            -np.cos(a_val) * np.cos(b_val),
+        ]
         assert np.allclose(a.grad, expected[0], atol=tol, rtol=0)
         assert np.allclose(b.grad, expected[1], atol=tol, rtol=0)
 
@@ -292,7 +295,10 @@ class TestQNode:
         loss = torch.sum(res)
         loss.backward()
 
-        expected = [-np.sin(a_val) + np.sin(a_val) * np.sin(b_val), -np.cos(a_val) * np.cos(b_val)]
+        expected = [
+            -np.sin(a_val) + np.sin(a_val) * np.sin(b_val),
+            -np.cos(a_val) * np.cos(b_val),
+        ]
         assert np.allclose([a.grad, b.grad], expected, atol=tol, rtol=0)
 
         # JacobianTape.numeric_pd has been called for each argument
@@ -376,7 +382,11 @@ class TestQNode:
             res.backward()
 
     @pytest.mark.parametrize(
-        "U", [torch.tensor([[0, 1], [1, 0]], requires_grad=False), np.array([[0, 1], [1, 0]])]
+        "U",
+        [
+            torch.tensor([[0, 1], [1, 0]], requires_grad=False),
+            np.array([[0, 1], [1, 0]]),
+        ],
     )
     def test_matrix_parameter(self, dev_name, diff_method, U, tol):
         """Test that the Torch interface works correctly
@@ -430,7 +440,10 @@ class TestQNode:
 
         tape_params = [i.detach().numpy() for i in circuit.qtape.get_parameters()]
         assert np.allclose(
-            tape_params, [p_val[2], p_val[0], -p_val[2], p_val[1] + p_val[2]], atol=tol, rtol=0
+            tape_params,
+            [p_val[2], p_val[0], -p_val[2], p_val[1] + p_val[2]],
+            atol=tol,
+            rtol=0,
         )
 
         expected = np.cos(a) * np.cos(p_val[1]) * np.sin(p_val[0]) + np.sin(a) * (
@@ -481,7 +494,10 @@ class TestQNode:
         expected = np.array(
             [
                 [np.cos(x_val / 2) ** 2, np.sin(x_val / 2) ** 2],
-                [(1 + np.cos(x_val) * np.cos(y_val)) / 2, (1 - np.cos(x_val) * np.cos(y_val)) / 2],
+                [
+                    (1 + np.cos(x_val) * np.cos(y_val)) / 2,
+                    (1 - np.cos(x_val) * np.cos(y_val)) / 2,
+                ],
             ]
         )
         assert np.allclose(res.detach().numpy(), expected, atol=tol, rtol=0)
@@ -638,7 +654,10 @@ class TestQNode:
 
         a, b = x.detach().numpy()
 
-        expected_res = [0.5 + 0.5 * np.cos(a) * np.cos(b), 0.5 - 0.5 * np.cos(a) * np.cos(b)]
+        expected_res = [
+            0.5 + 0.5 * np.cos(a) * np.cos(b),
+            0.5 - 0.5 * np.cos(a) * np.cos(b),
+        ]
         assert np.allclose(res.detach(), expected_res, atol=tol, rtol=0)
 
         expected_g = [

@@ -735,5 +735,8 @@ class TestInit:
         msg = "The analytic argument has been replaced by shots=None. "
         msg += "Please use shots=None instead of analytic=True."
 
-        with pytest.raises(DeviceError, match=msg):
+        with pytest.raises(
+            DeviceError,
+            match=msg,
+        ):
             qml.device("default.mixed", wires=1, shots=1, analytic=True)

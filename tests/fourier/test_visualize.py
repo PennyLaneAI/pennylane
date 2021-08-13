@@ -24,7 +24,13 @@ from pennylane import numpy as np
 
 from pennylane.fourier.visualize import _validate_coefficients
 
-from pennylane.fourier.visualize import violin, bar, box, panel, radial_box
+from pennylane.fourier.visualize import (
+    violin,
+    bar,
+    box,
+    panel,
+    radial_box,
+)
 
 
 coeffs_1D_valid_1 = np.array([0.5, 0, 0.25j, 0.25j, 0])
@@ -360,13 +366,37 @@ class TestReturnType:
     @pytest.mark.parametrize(
         "func,coeffs,n_inputs,ax,show_freqs",
         [
-            (violin, coeffs_1D_valid_1, 1, ax_valid, True),
-            (violin, coeffs_1D_valid_1, 1, ax_valid, False),
-            (box, coeffs_1D_valid_1, 1, ax_valid, True),
+            (
+                violin,
+                coeffs_1D_valid_1,
+                1,
+                ax_valid,
+                True,
+            ),
+            (
+                violin,
+                coeffs_1D_valid_1,
+                1,
+                ax_valid,
+                False,
+            ),
+            (
+                box,
+                coeffs_1D_valid_1,
+                1,
+                ax_valid,
+                True,
+            ),
             (box, coeffs_1D_valid_1, 1, ax_valid, False),
             (bar, coeffs_1D_valid_1, 1, ax_valid, True),
             (bar, coeffs_1D_valid_1, 1, ax_valid, False),
-            (radial_box, coeffs_2D_valid_list, 2, ax_radial_valid, True),
+            (
+                radial_box,
+                coeffs_2D_valid_list,
+                2,
+                ax_radial_valid,
+                True,
+            ),
             (radial_box, coeffs_2D_valid_list, 2, ax_radial_valid, False),
             (panel, coeffs_2D_valid_list, 2, ax_panel_valid, None),
             (panel, coeffs_1D_valid_list, 1, ax_panel_1d_valid, None),
