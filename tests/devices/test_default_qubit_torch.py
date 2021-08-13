@@ -221,7 +221,9 @@ class TestApply:
         with pytest.raises(ValueError, match=r"State vector must be of length 2\*\*wires"):
             dev.apply([qml.QubitStateVector(state, wires=[0, 1])])
 
-    @pytest.mark.parametrize("state", [np.array([0, 12]), torch.tensor([1., -1.], requires_grad=True)])
+    @pytest.mark.parametrize(
+        "state", [np.array([0, 12]), torch.tensor([1.0, -1.0], requires_grad=True)]
+    )
     def test_invalid_qubit_state_vector_norm(self, state):
         """Test that an exception is raised if the state
         vector is not normalized"""
