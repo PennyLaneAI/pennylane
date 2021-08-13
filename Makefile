@@ -12,6 +12,7 @@ help:
 	@echo "  wheel              to build the PennyLane wheel"
 	@echo "  dist               to package the source distribution"
 	@echo "  clean              to delete all temporary, cache, and build files"
+	@echo "  docs               to build the PennyLane documentation"
 	@echo "  clean-docs         to delete all built documentation"
 	@echo "  test               to run the test suite"
 	@echo "  coverage           to generate a coverage report"
