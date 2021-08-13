@@ -156,7 +156,7 @@ class Hamiltonian(qml.operation.Observable):
     use this information to reduce the number of circuits evaluated.
 
     Note that one can compute the ``grouping_indices`` for an already initialized Hamiltonian by
-    using the ``compute_grouping`` method.
+    using the :func:`pennylane.vqe.vqe.compute_grouping` method.
     """
 
     num_wires = qml.operation.AnyWires
@@ -270,9 +270,9 @@ class Hamiltonian(qml.operation.Observable):
 
         Args:
             grouping_type (str): The type of binary relation between Pauli words used to compute the grouping.
-                Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``. Ignored if ``compute_grouping`` is False.
+                Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
             method (str): The graph coloring heuristic to use in solving minimum clique cover for grouping, which
-                can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First). Ignored if ``compute_grouping`` is False.
+                can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First).
         """
 
         self._grouping_indices = qml.transforms.invisible(_compute_grouping_indices)(
