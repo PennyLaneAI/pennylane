@@ -83,6 +83,7 @@ def hamiltonian_expand(tape, group=True):
 
     With grouping, the Hamiltonian gets split into two observable groups (here ``[qml.PauliZ(0)]`` and
     ``[qml.PauliX(1), qml.PauliX(0)]``):
+
     >>> tapes, fn = qml.transforms.hamiltonian_expand(tape)
     >>> len(tapes)
     2
