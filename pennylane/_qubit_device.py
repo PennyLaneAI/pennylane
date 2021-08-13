@@ -489,14 +489,13 @@ class QubitDevice(Device):
             array[int]: the sampled basis states
         """
         if self.shots is None:
-            warnings.warn(
+
+            raise qml.QuantumFunctionError(
                 "The number of shots has to be explicitly set on the device "
-                "when using sample-based measurements. Since no shots are specified, "
-                "a default of 1000 shots is used.",
-                UserWarning,
+                "when using sample-based measurements."
             )
 
-        shots = self.shots or 1000
+        shots = self.shots
 
         basis_states = np.arange(number_of_states)
         return np.random.choice(basis_states, shots, p=state_probability)
