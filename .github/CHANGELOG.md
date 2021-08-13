@@ -16,7 +16,7 @@
   dev = qml.device('default.qubit', wires=[0, 1, 2])
 
   @qml.qnode(dev)
-  @qml.transforms.compile()
+  @qml.compile()
   def qfunc(x, y, z):
       qml.Hadamard(wires=0)
       qml.Hadamard(wires=1)
