@@ -19,7 +19,7 @@ undergoing cosmetic changes.
 
 import matplotlib.pyplot as plt
 
-from pennylane.beta.circuit_drawer import MPLDrawer
+from pennylane.beta.drawer import MPLDrawer
 
 
 def labels(savefile="labels.png"):
@@ -65,6 +65,29 @@ def measure(savefile="measure.png"):
     drawer.measure(0, 0)
     plt.savefig(savefile)
 
+def integration(style='default', savefile="example_basic.png"):
+    plt.style.use(style)
+    drawer = MPLDrawer(n_wires=5,n_layers=5)
+
+    drawer.label(["0","a",r"$|\Psi\rangle$",r"$|\theta\rangle$", "aux"])
+
+    drawer.box_gate(0, [0,1,2,3,4], "Entangling Layers", rotate_text=True)
+    drawer.box_gate(1, [0, 1], "U(θ)")
+    drawer.box_gate(1, 4, "X", color='lightcoral')
+
+    drawer.SWAP(1, (2, 3))
+    drawer.CNOT(2, (0,2), color='forestgreen')
+
+    drawer.ctrl(3, [1,3])
+    drawer.box_gate(3, 2, "H", zorder_base=2)
+
+    drawer.ctrl(4, [1,2])
+
+    drawer.measure(5, 0)
+
+    drawer.fig.suptitle('My Circuit', fontsize='xx-large')
+    plt.savefig(savefile)
+
 
 labels()
 box_gates()
@@ -72,3 +95,6 @@ ctrl()
 CNOT()
 SWAP()
 measure()
+integration()
+integration(style='Solarize_Light2', savefile="example_Solarize_Light2.png")
+

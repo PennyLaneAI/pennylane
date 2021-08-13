@@ -37,6 +37,40 @@ class MPLDrawer:
         figsize=None (Iterable): Allows user's to manually specify the size of the figure.  Defaults
            to scale with the size of the circuit via ``n_layers`` and ``n_wires``.
 
+    **Example**
+
+    .. code-block:: python
+
+        drawer = MPLDrawer(n_wires=5,n_layers=5)
+
+        drawer.label(["0","a",r"$|\Psi\rangle$",r"$|\theta\rangle$", "aux"])
+
+        drawer.box_gate(0, [0,1,2,3,4], "Entangling Layers", rotate_text=True)
+        drawer.box_gate(1, [0, 1], "U(θ)")
+        drawer.box_gate(1, 4, "X", color='lightcoral')
+
+        drawer.SWAP(1, (2, 3))
+        drawer.CNOT(2, (0,2), color='forestgreen')
+
+        drawer.ctrl(3, [1,3])
+        drawer.box_gate(3, 2, "H", zorder_base=2)
+
+        drawer.ctrl(4, [1,2])
+
+        drawer.measure(5, 0)
+
+        drawer.fig.suptitle('My Circuit', fontsize='xx-large')
+
+    .. figure:: ../../_static/drawer/example_basic.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
+    .. UsageDetails::
+
+    Each gate takes arguments in order of `layer` followed by `wires`.  
+
+
     """
 
     def __init__(self, n_layers, n_wires, figsize=None):
@@ -154,7 +188,7 @@ class MPLDrawer:
             fontsize="x-large",
         )
 
-    def ctrl(self, layer, wire_ctrl, wire_target=tuple()):
+    def ctrl(self, layer, wire_ctrl, wire_target=tuple(), color=None):
         """Add an arbitrary number of control wires
 
         Args:
@@ -162,6 +196,9 @@ class MPLDrawer:
             wire_ctrl (Union[Int, Iterable[Int]]): set of wires to control on
             wire_target=tuple() (Union[Int, Iterable[Int]]): target wires. Used to determine min
                 and max wires for the vertical line
+
+        Keyword Args:
+            color=None: mpl compatible color designation
 
         **Example**
 
@@ -185,19 +222,22 @@ class MPLDrawer:
         min_wire = min(wires_all)
         max_wire = max(wires_all)
 
-        line = plt.Line2D((layer, layer), (min_wire, max_wire), zorder=2)
+        line = plt.Line2D((layer, layer), (min_wire, max_wire), zorder=2, color=color)
         self.ax.add_line(line)
 
         for wire in wire_ctrl:
-            circ_ctrl = plt.Circle((layer, wire), radius=self.ctrl_rad, zorder=2)
+            circ_ctrl = plt.Circle((layer, wire), radius=self.ctrl_rad, zorder=2, color=color)
             self.ax.add_patch(circ_ctrl)
 
-    def CNOT(self, layer, wires):
+    def CNOT(self, layer, wires, color=None):
         """Draws a CNOT gate.
 
         Args:
             layer (Int): layer to draw in
             wires (Int, Int): tuple of (control, target)
+
+        Keyword Args:
+            color=None: mpl compatible color designation
 
         **Example**
 
@@ -217,39 +257,48 @@ class MPLDrawer:
         control = wires[0]
         target = wires[1]
 
-        self.ctrl(layer, *wires)
-        self._target_x(layer, target)
+        self.ctrl(layer, *wires, color=color)
+        self._target_x(layer, target, color=color)
 
-    def _target_x(self, layer, wire):
+    def _target_x(self, layer, wire, color=None):
         """Draws the circle used to represent a CNOT's target
 
         Args:
             layer (Int): layer to draw on
             wire (Int): wire to draw on
 
-        **Example**
-
+        Keyword Args:
+            color=None: mpl compatible color designation
         """
+        if color is not None:
+            edgecolor=color
+        else:
+            edgecolor = plt.rcParams["lines.color"]
+
         target_circ = plt.Circle(
             (layer, wire),
             radius=self.circ_rad,
             zorder=3,
             fill=False,
-            edgecolor=plt.rcParams["lines.color"],
+            edgecolor=edgecolor,
             linewidth=plt.rcParams["lines.linewidth"],
         )
         target_v = plt.Line2D(
-            (layer, layer), (wire - self.circ_rad, wire + self.circ_rad), zorder=4
+            (layer, layer), (wire - self.circ_rad, wire + self.circ_rad), zorder=4,
+            color=color
         )
         self.ax.add_patch(target_circ)
         self.ax.add_line(target_v)
 
-    def SWAP(self, layer, wires):
+    def SWAP(self, layer, wires, color=None):
         """Draws a SWAP gate
 
         Args:
             layer (Int): layer to draw on
             wires (Int, Int): Two wires the SWAP acts on
+
+        Keyword Args:
+            color=None: mpl compatible color designation
 
         **Example**
 
@@ -265,37 +314,38 @@ class MPLDrawer:
             :target: javascript:void(0);
 
         """
-        line = plt.Line2D((layer, layer), wires, zorder=2, **self.swapx_kwargs)
+        line = plt.Line2D((layer, layer), wires, zorder=2, color=color)
         self.ax.add_line(line)
 
         for wire in wires:
-            self._swap_x(layer, wire)
+            self._swap_x(layer, wire, color=color)
 
-    def _swap_x(self, layer, wire):
+    def _swap_x(self, layer, wire, color=None):
         """Draw an x such as used in drawing a swap gate
 
         Args:
             layer (Int): the layer
             wire (Int): the wire
 
+        Keyword Args:
+            color=None: mpl compatible color designation
+
         """
         l1 = plt.Line2D(
             (layer - self.swap_dx, layer + self.swap_dx),
             (wire - self.swap_dx, wire + self.swap_dx),
-            zorder=2,
-            **self.swapx_kwargs
+            zorder=2, color=color
         )
         l2 = plt.Line2D(
             (layer - self.swap_dx, layer + self.swap_dx),
             (wire + self.swap_dx, wire - self.swap_dx),
-            zorder=2,
-            **self.swapx_kwargs
+            zorder=2, color=color
         )
 
         self.ax.add_line(l1)
         self.ax.add_line(l2)
 
-    def measure(self, layer, wire, zorder_base=0):
+    def measure(self, layer, wire, zorder_base=0, color=None):
         """Draw a Measurement graphic at designated layer, wire combination.
 
         Args:
@@ -304,6 +354,7 @@ class MPLDrawer:
 
         Keyword Args:
             zorder_base=0 (Int): amount to shift in zorder from the default
+            color=None: mpl compatible color designation
 
         **Example**
 
@@ -323,7 +374,7 @@ class MPLDrawer:
             (layer - self.box_dx, wire - self.box_dx),
             2 * self.box_dx,
             2 * self.box_dx,
-            zorder=2 + zorder_base,
+            zorder=2 + zorder_base, color=color
         )
         self.ax.add_patch(box)
 
@@ -352,5 +403,6 @@ class MPLDrawer:
             arrow_height,
             head_width=self.box_dx / 4,
             zorder=4 + zorder_base,
+            facecolor=color
         )
         self.ax.add_line(arrow)
