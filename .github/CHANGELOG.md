@@ -355,9 +355,6 @@
       0.0078125, 0.9453125], requires_grad=True)
   ```
 
-* Ising YY gate functionality added.
-  [(#1358)](https://github.com/PennyLaneAI/pennylane/pull/1358)
-
 * A decomposition has been added to `QubitUnitary` that makes the
   single-qubit case fully differentiable in all interfaces. Furthermore,
   a quantum function transform, `unitary_to_rot()`, has been added to decompose all
@@ -412,6 +409,10 @@
   >>> qml.grad(transformed_qnode)(input)
   array([-0.29552021,  0.        ])
   ```
+
+* Ising YY gate functionality added.
+  [(#1358)](https://github.com/PennyLaneAI/pennylane/pull/1358)
+
 
 <h3>Improvements</h3>
 
