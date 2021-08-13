@@ -109,6 +109,7 @@ def hamiltonian_expand(tape, group=True):
             qml.expval(H)
 
     Grouping information has been used to reduce the number of tapes from 3 to 2:
+    
     >>> tapes, fn = qml.transforms.hamiltonian_expand(tape, group=False)
     >>> len(tapes)
     2
