@@ -81,7 +81,7 @@ def hamiltonian_expand(tape, group=True):
             qml.PauliX(wires=2)
             qml.expval(H)
 
-    With grouping, the Hamiltonian gets split into two observable groups (here ``[qml.PauliZ(0)]`` and
+    With grouping, the Hamiltonian gets split into two groups of observables (here ``[qml.PauliZ(0)]`` and
     ``[qml.PauliX(1), qml.PauliX(0)]``):
 
     >>> tapes, fn = qml.transforms.hamiltonian_expand(tape)
