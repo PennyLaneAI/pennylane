@@ -1051,17 +1051,17 @@ class TestPassthruIntegration:
         ) * torch.sin(z / 2)
         assert np.allclose(res.detach(), expected.detach(), atol=tol, rtol=0)
 
-      x_grad =  -3 * (
-                      torch.sin(3 * x) * torch.cos(y) * torch.cos(z / 2)
-                      + torch.cos(3 * x) * torch.sin(z / 2)
-                  )
-       y_grad = -torch.cos(3 * x) * torch.sin(y) * torch.cos(z / 2)
-       z_grad = -0.5 * (torch.sin(3 * x) * torch.cos(z / 2)
-                      + torch.cos(3 * x) * torch.cos(y) * torch.sin(z / 2))
-                      
-       assert torch.allclose(x.grad, x_grad)
-       assert torch.allclose(y.grad, y_grad)
-       assert torch.allclose(z.grad, z_grad)
+        x_grad =  -3 * (
+                        torch.sin(3 * x) * torch.cos(y) * torch.cos(z / 2)
+                        + torch.cos(3 * x) * torch.sin(z / 2)
+                    )
+        y_grad = -torch.cos(3 * x) * torch.sin(y) * torch.cos(z / 2)
+        z_grad = -0.5 * (torch.sin(3 * x) * torch.cos(z / 2)
+                       + torch.cos(3 * x) * torch.cos(y) * torch.sin(z / 2))
+                       
+        assert torch.allclose(x.grad, x_grad)
+        assert torch.allclose(y.grad, y_grad)
+        assert torch.allclose(z.grad, z_grad)
 
     def test_jacobian_repeated(self, tol):
         """Test that jacobian of a QNode with an attached default.qubit.torch device
