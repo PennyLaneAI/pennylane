@@ -80,7 +80,7 @@
   For more details on `qml.compile` and the available compilation transforms, see
   [the compilation documentation](https://pennylane.readthedocs.io/en/stable/code/qml_transforms.html#transforms-for-circuit-compilation).
 
-<h4>More convenient QNode usage</h4>
+<h4>QNodes are even more powerful</h4>
 
 * Computational basis samples directly from the underlying device can
   now be returned directly from QNodes via `qml.sample()`.
