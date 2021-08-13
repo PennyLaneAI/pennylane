@@ -20,8 +20,6 @@ from collections.abc import Iterable, Sequence
 from collections import OrderedDict, namedtuple
 from functools import lru_cache
 
-import unittest.mock as mock
-
 import numpy as np
 
 import pennylane as qml
@@ -303,6 +301,8 @@ class Device(abc.ABC):
 
     @property
     def custom_ops(self):
+        """A dictionary containing a map from gate names to alternative decomposition
+        functions."""
         return self._custom_ops
 
     def _has_partitioned_shots(self):
