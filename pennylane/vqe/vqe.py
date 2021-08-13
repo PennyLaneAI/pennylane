@@ -130,7 +130,8 @@ class Hamiltonian(qml.operation.Observable):
 
     >>> H1 = qml.Hamiltonian(torch.tensor([1.]), [qml.PauliX(0)])
     >>> H2 = qml.Hamiltonian(torch.tensor([2., 3.]), [qml.PauliY(0), qml.PauliX(1)])
-    >>> H3 = qml.Hamiltonian(torch.tensor([1., 2., 3.]), [qml.PauliX(0), qml.PauliY(0), qml.PauliX(1)])
+    >>> obs3 = [qml.PauliX(0), qml.PauliY(0), qml.PauliX(1)]
+    >>> H3 = qml.Hamiltonian(torch.tensor([1., 2., 3.]), obs3)
     >>> H3.compare(H1 + H2)
     True
 
@@ -143,7 +144,7 @@ class Hamiltonian(qml.operation.Observable):
     >>> H.grouping_indices
     [[0, 1], [2]]
 
-    This attribute can be used to computing groups of coefficients and observables:
+    This attribute can be used to compute groups of coefficients and observables:
 
     >>> grouped_coeffs = [coeffs[indices] for indices in H.grouping_indices]
     >>> grouped_obs = [[H.ops[i] for i in indices] for indices in H.grouping_indices]
@@ -156,7 +157,7 @@ class Hamiltonian(qml.operation.Observable):
     use this information to reduce the number of circuits evaluated.
 
     Note that one can compute the ``grouping_indices`` for an already initialized Hamiltonian by
-    using the :func:`pennylane.vqe.vqe.compute_grouping` method.
+    using the :func:`compute_grouping <pennylane.Hamiltonian.compute_grouping>` method.
     """
 
     num_wires = qml.operation.AnyWires
@@ -388,7 +389,7 @@ class Hamiltonian(qml.operation.Observable):
 
         return data
 
-    def compare(self, H):
+    def compare(self, other):
         r"""Compares with another :class:`~Hamiltonian`, :class:`~.Observable`, or :class:`~.Tensor`,
         to determine if they are equivalent.
 
@@ -428,15 +429,15 @@ class Hamiltonian(qml.operation.Observable):
         >>> ob1.compare(ob2)
         False
         """
-        if isinstance(H, Hamiltonian):
+        if isinstance(other, Hamiltonian):
             self.simplify()
-            H.simplify()
-            return self._obs_data() == H._obs_data()  # pylint: disable=protected-access
+            other.simplify()
+            return self._obs_data() == other._obs_data()  # pylint: disable=protected-access
 
-        if isinstance(H, (Tensor, Observable)):
+        if isinstance(other, (Tensor, Observable)):
             self.simplify()
             return self._obs_data() == {
-                (1, frozenset(H._obs_data()))  # pylint: disable=protected-access
+                (1, frozenset(other._obs_data()))  # pylint: disable=protected-access
             }
 
         raise ValueError("Can only compare a Hamiltonian, and a Hamiltonian/Observable/Tensor.")
