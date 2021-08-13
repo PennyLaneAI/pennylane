@@ -256,7 +256,7 @@ class Hamiltonian(qml.operation.Observable):
 
     @property
     def grouping_indices(self):
-        """Return the grouping indices attribtue.
+        """Return the grouping indices attribute.
 
         Returns:
             list[list[int]]: indices needed to form groups of commuting observables
