@@ -242,7 +242,7 @@ class TestTemplateIntegration:
         [
             qml.templates.ParticleConservingU1,
             qml.templates.ParticleConservingU2,
-        ],```
+        ],
     )
     def test_particle_conserving(self, fn, template):
         """Test that the adjoint correctly inverts particle conserving layers"""
