@@ -197,6 +197,7 @@ class DefaultQubit(QubitDevice):
 
         # apply the circuit operations
         for i, operation in enumerate(operations):
+ 
             if i > 0 and isinstance(operation, (QubitStateVector, BasisState)):
                 raise DeviceError(
                     "Operation {} cannot be used after other Operations have already been applied "
@@ -212,6 +213,7 @@ class DefaultQubit(QubitDevice):
 
         # store the pre-rotated state
         self._pre_rotated_state = self._state
+
         # apply the circuit rotations
         for operation in rotations:
             self._state = self._apply_operation(self._state, operation)
@@ -226,7 +228,6 @@ class DefaultQubit(QubitDevice):
         Returns:
             array[complex]: output state
         """
-
         wires = operation.wires
 
         if operation.base_name in self._apply_ops:
@@ -298,7 +299,6 @@ class DefaultQubit(QubitDevice):
         """
         state_x = self._apply_x(state, axes)
         state_z = self._apply_z(state, axes)
-
         return SQRT2INV * (state_x + state_z)
 
     def _apply_s(self, state, axes, inverse=False):
@@ -698,11 +698,13 @@ class DefaultQubit(QubitDevice):
         )
 
         # We now put together the indices in the notation numpy's einsum requires
-        einsum_indices = "{new_indices}{affected_indices},{state_indices}->{new_state_indices}".format(
-            affected_indices=affected_indices,
-            state_indices=state_indices,
-            new_indices=new_indices,
-            new_state_indices=new_state_indices,
+        einsum_indices = (
+            "{new_indices}{affected_indices},{state_indices}->{new_state_indices}".format(
+                affected_indices=affected_indices,
+                state_indices=state_indices,
+                new_indices=new_indices,
+                new_state_indices=new_state_indices,
+            )
         )
 
         return self._einsum(einsum_indices, mat, state)
@@ -749,5 +751,4 @@ class DefaultQubit(QubitDevice):
             return None
 
         prob = self.marginal_prob(self._abs(self._flatten(self._state)) ** 2, wires)
-
         return prob

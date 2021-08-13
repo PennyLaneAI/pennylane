@@ -1173,56 +1173,40 @@ class TestTensorVar:
 
         res = circuit([0, 0])
         expected = (
-            (
-                (np.cos(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2
-                + (np.cos(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)) ** 2
-            )
-            - (
-                (np.cos(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2
-                - (np.cos(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)) ** 2
-            )
-            ** 2
-        )
+            (np.cos(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2
+            + (np.cos(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)) ** 2
+        ) - (
+            (np.cos(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2
+            - (np.cos(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)) ** 2
+        ) ** 2
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
         res = circuit([0, 1])
         expected = (
-            (
-                (np.sin(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2
-                + (np.sin(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)) ** 2
-            )
-            - (
-                (np.sin(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2
-                - (np.sin(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)) ** 2
-            )
-            ** 2
-        )
+            (np.sin(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2
+            + (np.sin(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)) ** 2
+        ) - (
+            (np.sin(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2
+            - (np.sin(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)) ** 2
+        ) ** 2
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
         res = circuit([1, 0])
         expected = (
-            (
-                (np.sin(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2
-                + (np.sin(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
-            )
-            - (
-                (np.sin(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2
-                - (np.sin(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
-            )
-            ** 2
-        )
+            (np.sin(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2
+            + (np.sin(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
+        ) - (
+            (np.sin(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2
+            - (np.sin(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
+        ) ** 2
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
         res = circuit([1, 1])
         expected = (
-            (
-                (np.cos(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2
-                + (np.cos(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
-            )
-            - (
-                (np.cos(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2
-                - (np.cos(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
-            )
-            ** 2
-        )
+            (np.cos(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2
+            + (np.cos(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
+        ) - (
+            (np.cos(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2
+            - (np.cos(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
+        ) ** 2
         assert np.allclose(res, expected, atol=tol(dev.shots))

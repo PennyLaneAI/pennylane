@@ -192,7 +192,12 @@ single_qubit = [
 
 # list of all parametrized single-qubit gates
 # taking a single parameter
-single_qubit_param = [(qml.PhaseShift, phase_shift), (qml.RX, rx), (qml.RY, ry), (qml.RZ, rz)]
+single_qubit_param = [
+    (qml.PhaseShift, phase_shift),
+    (qml.RX, rx),
+    (qml.RY, ry),
+    (qml.RZ, rz),
+]
 # list of all non-parametrized two-qubit gates
 two_qubit = [(qml.CNOT, CNOT), (qml.SWAP, SWAP), (qml.ISWAP, ISWAP), (qml.CZ, CZ), (qml.CY, CY)]
 # list of all parametrized two-qubit gates
