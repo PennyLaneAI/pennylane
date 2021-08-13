@@ -1171,7 +1171,15 @@ ops = {
 }
 
 
-obs = {"QuadOperator", "NumberOperator", "TensorN", "P", "X", "PolyXP", "FockStateProjector"}
+obs = {
+    "QuadOperator",
+    "NumberOperator",
+    "TensorN",
+    "P",
+    "X",
+    "PolyXP",
+    "FockStateProjector",
+}
 
 
 __all__ = list(ops | obs)

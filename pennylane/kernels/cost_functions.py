@@ -21,7 +21,12 @@ from .utils import square_kernel_matrix
 
 
 def polarity(
-    X, Y, kernel, assume_normalized_kernel=False, rescale_class_labels=True, normalize=False
+    X,
+    Y,
+    kernel,
+    assume_normalized_kernel=False,
+    rescale_class_labels=True,
+    normalize=False,
 ):
     r"""Polarity of a given kernel function.
 
@@ -93,7 +98,13 @@ def polarity(
     return frobenius_inner_product(K, T, normalize=normalize)
 
 
-def target_alignment(X, Y, kernel, assume_normalized_kernel=False, rescale_class_labels=True):
+def target_alignment(
+    X,
+    Y,
+    kernel,
+    assume_normalized_kernel=False,
+    rescale_class_labels=True,
+):
     r"""Target alignment of a given kernel function.
 
     This function is an alias for :func:`~.kernels.polarity` with ``normalize=True``.

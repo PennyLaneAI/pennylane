@@ -65,7 +65,10 @@ kernel-target alignment are dominated by the properties of the kernel for just a
 Given a callable kernel function, all these quantities can readily be computed
 using the methods in this module.
 """
-from .cost_functions import polarity, target_alignment
+from .cost_functions import (
+    polarity,
+    target_alignment,
+)
 from .postprocessing import (
     threshold_matrix,
     displace_matrix,
@@ -73,4 +76,7 @@ from .postprocessing import (
     closest_psd_matrix,
     mitigate_depolarizing_noise,
 )
-from .utils import kernel_matrix, square_kernel_matrix
+from .utils import (
+    kernel_matrix,
+    square_kernel_matrix,
+)

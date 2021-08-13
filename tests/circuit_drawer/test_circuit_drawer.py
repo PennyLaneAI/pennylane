@@ -173,7 +173,15 @@ class TestCircuitDrawer:
         [[qml.CNOT(wires=[0, 1]), qml.PauliX(2), qml.CNOT(wires=[3, 4])]], 5
     )
 
-    multiwire_gate_representation_grid = Grid([["╭"], ["╰"], [""], ["╭"], ["╰"]])
+    multiwire_gate_representation_grid = Grid(
+        [
+            ["╭"],
+            ["╰"],
+            [""],
+            ["╭"],
+            ["╰"],
+        ]
+    )
 
     multi_and_single_wire_gate_grid = to_grid(
         [
@@ -189,7 +197,15 @@ class TestCircuitDrawer:
     )
 
     multi_and_single_wire_gate_representation_grid = Grid(
-        [["╭"], ["╰"], [""], ["╭"], ["│"], ["╰"], [""]]
+        [
+            ["╭"],
+            ["╰"],
+            [""],
+            ["╭"],
+            ["│"],
+            ["╰"],
+            [""],
+        ]
     )
 
     @pytest.mark.parametrize(
@@ -552,7 +568,11 @@ def qubit_circuit_with_unused_wires():
         qml.PauliX(5)
         qml.Toffoli(wires=[5, 1, 0])
 
-        return [qml.expval(qml.PauliY(0)), qml.expval(qml.PauliY(1)), qml.expval(qml.PauliY(5))]
+        return [
+            qml.expval(qml.PauliY(0)),
+            qml.expval(qml.PauliY(1)),
+            qml.expval(qml.PauliY(5)),
+        ]
 
     dev = qml.device("default.qubit", wires=6)
 
@@ -926,6 +946,10 @@ class TestWireOrdering:
 
         qnode()
         res = qnode.draw()
-        expected = [" 0: ──╭┤ ⟨X ⊗ X ⊗ X⟩ \n", " 1: ──├┤ ⟨X ⊗ X ⊗ X⟩ \n", " 2: ──╰┤ ⟨X ⊗ X ⊗ X⟩ \n"]
+        expected = [
+            " 0: ──╭┤ ⟨X ⊗ X ⊗ X⟩ \n",
+            " 1: ──├┤ ⟨X ⊗ X ⊗ X⟩ \n",
+            " 2: ──╰┤ ⟨X ⊗ X ⊗ X⟩ \n",
+        ]
 
         assert res == "".join(expected)

@@ -48,7 +48,15 @@ from .multi_dispatch import (
 
 from .quantum import cov_matrix, marginal_prob
 
-from .utils import allclose, allequal, cast, cast_like, convert_like, get_interface, requires_grad
+from .utils import (
+    allclose,
+    allequal,
+    cast,
+    cast_like,
+    convert_like,
+    get_interface,
+    requires_grad,
+)
 
 
 sum = ar.numpy.sum
