@@ -252,7 +252,7 @@ class TestDecomposition:
         # when the RZ cascade is skipped, CNOT gates should only be those required for RY cascade
         circuit(state_vector)
 
-        assert circuit.qtape.get_resources()["CNOT"] == n_CNOT
+        assert circuit.qtape.specs["gate_types"]["CNOT"] == n_CNOT
 
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
