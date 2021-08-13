@@ -309,7 +309,6 @@ def IsingXX(phi, device):
     Args:
         phi (float): rotation angle :math:`\phi`
         device: torch device on which the computation is made 'cpu' or 'cuda'
-    
     Returns:
         torch.Tensor[complex]:: unitary 4x4 rotation matrix
     """
