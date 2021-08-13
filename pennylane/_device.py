@@ -140,14 +140,7 @@ class Device(abc.ABC):
         self._obs_queue = None
         self._parameters = None
 
-        self._custom_ops = None
-        self._replacement_decompositions = None
-
-        if custom_ops is not None:
-            self._custom_ops = custom_ops
-            self._replacement_decompositions = [
-                mock.patch(name, new=custom_op) for name, custom_op in custom_ops.items()
-            ]
+        self._custom_ops = custom_ops
 
         self.tracker = qml.Tracker()
 
@@ -414,6 +407,7 @@ class Device(abc.ABC):
         Returns:
             array[float]: measured value(s)
         """
+
         self.check_validity(queue, observables)
         self._op_queue = queue
         self._obs_queue = observables

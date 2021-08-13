@@ -182,6 +182,7 @@ class QubitDevice(Device):
         Returns:
             array[float]: measured value(s)
         """
+        circuit = qml.transforms.replace.tape_fn(circuit, self.custom_ops)
 
         if self._cache:
             circuit_hash = circuit.graph.hash

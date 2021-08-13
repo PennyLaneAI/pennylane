@@ -349,7 +349,7 @@ class QNode:
                     backprop_devices[interface],
                     wires=device.wires,
                     shots=device.shots,
-                    custom_ops=device.custom_ops
+                    custom_ops=device.custom_ops,
                 )
                 return JacobianTape, interface, device, {"method": "backprop"}
 
@@ -526,6 +526,12 @@ class QNode:
         with self.qtape:
             self.qfunc_output = self.func(*args, **kwargs)
 
+        # If there are any custom operations defined for the device, now is the time.
+        if self.device.custom_ops is not None:
+            self.qtape = qml.transforms.replace.tape_fn(
+                self.qtape, custom_ops=self.device.custom_ops
+            )
+
         if not isinstance(self.qfunc_output, Sequence):
             measurement_processes = (self.qfunc_output,)
         else:
@@ -607,33 +613,25 @@ class QNode:
             # construct the tape
             self.construct(args, kwargs)
 
-        # Put everything below in a context which allows for custom device decompositions.    
-        with contextlib.ExitStack() as stack:
-
-            # Set all the custom decompositions as mocks here         
-            if self.device._replacement_decompositions is not None:
-                for mock in self.device._replacement_decompositions:
-                    stack.enter_context(mock)
-                    
-            # Execute the tape.
-            # If the observable contains a Hamiltonian and the device does not
-            # support Hamiltonians, split tape into multiple tapes and execute
-            # sequentially. In future, this logic should be moved to the device
-            # to allow for more efficient batch execution.
-            supports_hamiltonian = self.device.supports_observable("Hamiltonian")
-            hamiltonian_in_obs = "Hamiltonian" in [obs.name for obs in self.qtape.observables]
-            if hamiltonian_in_obs and not supports_hamiltonian:
-                try:
-                    tapes, fn = qml.transforms.hamiltonian_expand(self.qtape, group=False)
-                except ValueError as e:
-                    raise ValueError(
-                        "Only a single expectation of a Hamiltonian observable can be returned"
-                        "when using the {} device.".format(self.device.name)
-                    ) from e
-                results = [tape.execute(device=self.device) for tape in tapes]
-                res = fn(results)
-            else:
-                res = self.qtape.execute(device=self.device)
+        # Execute the tape.
+        # If the observable contains a Hamiltonian and the device does not
+        # support Hamiltonians, split tape into multiple tapes and execute
+        # sequentially. In future, this logic should be moved to the device
+        # to allow for more efficient batch execution.
+        supports_hamiltonian = self.device.supports_observable("Hamiltonian")
+        hamiltonian_in_obs = "Hamiltonian" in [obs.name for obs in self.qtape.observables]
+        if hamiltonian_in_obs and not supports_hamiltonian:
+            try:
+                tapes, fn = qml.transforms.hamiltonian_expand(self.qtape, group=False)
+            except ValueError as e:
+                raise ValueError(
+                    "Only a single expectation of a Hamiltonian observable can be returned"
+                    "when using the {} device.".format(self.device.name)
+                ) from e
+            results = [tape.execute(device=self.device) for tape in tapes]
+            res = fn(results)
+        else:
+            res = self.qtape.execute(device=self.device)
 
         # if shots was changed
         if original_shots != -1:
