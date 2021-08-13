@@ -84,7 +84,7 @@ class DefaultQubitTorch(DefaultQubit):
     >>> res = circuit(weights)
     >>> res.backward()
     >>> print(weights.grad)
-    tensor([-3.5472e-01, -1.5883e+00,  2.0817e-17])
+    tensor([-4.5053e-01, -2.0173e+00,  5.9837e-17])
 
     Executing the pipeline in PyTorch will allow the whole computation to be run on the GPU,
     and therefore providing an acceleration. Your parameters need to be instantiated on the same
