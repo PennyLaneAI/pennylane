@@ -221,11 +221,11 @@ class TestApply:
         with pytest.raises(ValueError, match=r"State vector must be of length 2\*\*wires"):
             dev.apply([qml.QubitStateVector(state, wires=[0, 1])])
 
-    def test_invalid_qubit_state_vector_norm(self):
+    @pytest.mark.parametrize("state", [np.array([0, 12]), torch.tensor([1., -1.], requires_grad=True)])
+    def test_invalid_qubit_state_vector_norm(self, state):
         """Test that an exception is raised if the state
         vector is not normalized"""
         dev = DefaultQubitTorch(wires=2)
-        state = np.array([0, 12])
 
         with pytest.raises(ValueError, match=r"Sum of amplitudes-squared does not equal one"):
             dev.apply([qml.QubitStateVector(state, wires=[0])])
@@ -1051,13 +1051,13 @@ class TestPassthruIntegration:
         ) * torch.sin(z / 2)
         assert np.allclose(res.detach(), expected.detach(), atol=tol, rtol=0)
 
-        x_grad =  -3 * (
-                        torch.sin(3 * x) * torch.cos(y) * torch.cos(z / 2)
-                        + torch.cos(3 * x) * torch.sin(z / 2)
+x_grad = -3 * (
+            torch.sin(3 * x) * torch.cos(y) * torch.cos(z / 2) + torch.cos(3 * x) * torch.sin(z / 2)
                     )
         y_grad = -torch.cos(3 * x) * torch.sin(y) * torch.cos(z / 2)
-        z_grad = -0.5 * (torch.sin(3 * x) * torch.cos(z / 2)
-                       + torch.cos(3 * x) * torch.cos(y) * torch.sin(z / 2))
+        z_grad = -0.5 * (
+            torch.sin(3 * x) * torch.cos(z / 2) + torch.cos(3 * x) * torch.cos(y) * torch.sin(z / 2)
+        )
                        
         assert torch.allclose(x.grad, x_grad)
         assert torch.allclose(y.grad, y_grad)
