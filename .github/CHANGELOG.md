@@ -10,9 +10,13 @@
   into custom circuit optimization pipelines.
   [(#1475)](https://github.com/PennyLaneAI/pennylane/pull/1475)
 
-  For example, take the following quantum function:
+  For example, take the following decorated quantum function:
 
   ```python
+  dev = qml.device('default.qubit', wires=[0, 1, 2])
+
+  @qml.qnode(dev)
+  @qml.transforms.compile()
   def qfunc(x, y, z):
       qml.Hadamard(wires=0)
       qml.Hadamard(wires=1)
@@ -26,7 +30,7 @@
       qml.RZ(-z, wires=2)
       qml.RX(y, wires=2)
       qml.PauliY(wires=2)
-      qml.CY(wires=[1, 2])
+      qml.CZ(wires=[1, 2])
       return qml.expval(qml.PauliZ(wires=0))
   ```
 
@@ -34,13 +38,10 @@
   transforms: `commute_controlled`, `cancel_inverses`, and then `merge_rotations`.
 
   ```pycon
-  >>> dev = qml.device('default.qubit', wires=[0, 1, 2])
-  >>> compiled_qfunc = qml.compile()(qfunc)
-  >>> compiled_qnode = qml.QNode(compiled_qfunc, dev)
-  >>> print(qml.draw(compiled_qnode)(0.2, 0.3, 0.4))
-   0: ──H───RX(0.6)───────────────────┤ ⟨Z⟩
-   1: ──H──╭X─────────────────╭CY─────┤
-   2: ──H──╰C────────RX(0.3)──╰CY──Y──┤
+  >>> print(qml.draw(qfunc)(0.2, 0.3, 0.4))
+   0: ──H───RX(0.6)──────────────────┤ ⟨Z⟩
+   1: ──H──╭X────────────────────╭C──┤
+   2: ──H──╰C────────RX(0.3)──Y──╰Z──┤
   ```
 
   The `qml.compile` transform is flexible and accepts a custom pipeline
