@@ -239,7 +239,8 @@ class TestInputs:
             return qml.expval(qml.PauliZ(0))
 
         with pytest.warns(
-            UserWarning, match="will be replaced by the pad_with option in future versions"
+            UserWarning,
+            match="will be replaced by the pad_with option in future versions",
         ):
             circuit(x=inputs)
 

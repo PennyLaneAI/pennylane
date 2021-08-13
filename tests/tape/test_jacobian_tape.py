@@ -753,7 +753,6 @@ class TestObservableWithObjectReturnType:
 
         class SpecialObject:
             """SpecialObject
-            
             A special object that conveniently encapsulates the return value of
             a special observable supported by a special device and which supports
             multiplication with scalars and addition.

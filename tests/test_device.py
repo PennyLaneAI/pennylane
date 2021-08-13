@@ -269,7 +269,11 @@ class TestInternalFunctions:
         """Tests the function Device.check_validity with valid queue and observables"""
         dev = mock_device_supporting_paulis()
 
-        queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires=2)]
+        queue = [
+            qml.PauliX(wires=0),
+            qml.PauliY(wires=1),
+            qml.PauliZ(wires=2),
+        ]
 
         observables = [qml.expval(qml.PauliZ(0))]
 
@@ -304,12 +308,15 @@ class TestInternalFunctions:
         and the inverse of not supported operations"""
         dev = mock_device_supporting_paulis_and_inverse()
 
-        queue = [qml.CNOT(wires=[0, 1]).inv()]
+        queue = [
+            qml.CNOT(wires=[0, 1]).inv(),
+        ]
 
         observables = [qml.expval(qml.PauliZ(0))]
 
         with pytest.raises(
-            DeviceError, match="Gate {} not supported on device {}".format("CNOT", "MockDevice")
+            DeviceError,
+            match="Gate {} not supported on device {}".format("CNOT", "MockDevice"),
         ):
             dev.check_validity(queue, observables)
 
@@ -317,7 +324,11 @@ class TestInternalFunctions:
         """Tests the function Device.check_validity with tensor support capability"""
         dev = mock_device_supporting_paulis()
 
-        queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires=2)]
+        queue = [
+            qml.PauliX(wires=0),
+            qml.PauliY(wires=1),
+            qml.PauliZ(wires=2),
+        ]
 
         observables = [qml.expval(qml.PauliZ(0) @ qml.PauliX(1))]
 
@@ -328,7 +339,11 @@ class TestInternalFunctions:
     def test_check_validity_on_invalid_observable_with_tensor_support(self, monkeypatch):
         """Tests the function Device.check_validity with tensor support capability
         but with an invalid observable"""
-        queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires=2)]
+        queue = [
+            qml.PauliX(wires=0),
+            qml.PauliY(wires=1),
+            qml.PauliZ(wires=2),
+        ]
 
         observables = [qml.expval(qml.PauliZ(0) @ qml.Hadamard(1))]
 
@@ -350,7 +365,11 @@ class TestInternalFunctions:
         """Tests the function Device.check_validity with invalid queue and valid observables"""
         dev = mock_device_supporting_paulis()
 
-        queue = [qml.RX(1.0, wires=0), qml.PauliY(wires=1), qml.PauliZ(wires=2)]
+        queue = [
+            qml.RX(1.0, wires=0),
+            qml.PauliY(wires=1),
+            qml.PauliZ(wires=2),
+        ]
 
         observables = [qml.expval(qml.PauliZ(0))]
 
@@ -361,7 +380,11 @@ class TestInternalFunctions:
         """Tests the function Device.check_validity with valid queue and invalid observables"""
         dev = mock_device_supporting_paulis()
 
-        queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires=2)]
+        queue = [
+            qml.PauliX(wires=0),
+            qml.PauliY(wires=1),
+            qml.PauliZ(wires=2),
+        ]
 
         observables = [qml.expval(qml.Hadamard(0))]
 
@@ -374,7 +397,11 @@ class TestInternalFunctions:
         """Tests the function Device.check_validity with invalid queue and valid inverses of operations"""
         dev = mock_device_supporting_paulis_and_inverse()
 
-        queue = [qml.PauliY(wires=1).inv(), qml.PauliZ(wires=2).inv(), qml.RX(1.0, wires=0).inv()]
+        queue = [
+            qml.PauliY(wires=1).inv(),
+            qml.PauliZ(wires=2).inv(),
+            qml.RX(1.0, wires=0).inv(),
+        ]
 
         observables = [qml.expval(qml.PauliZ(0))]
 
@@ -528,9 +555,17 @@ class TestOperations:
         op_queue raises no error"""
         dev = mock_device_with_paulis_and_methods(wires=3)
 
-        queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires=2)]
+        queue = [
+            qml.PauliX(wires=0),
+            qml.PauliY(wires=1),
+            qml.PauliZ(wires=2),
+        ]
 
-        observables = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))]
+        observables = [
+            qml.expval(qml.PauliZ(0)),
+            qml.var(qml.PauliZ(1)),
+            qml.sample(qml.PauliZ(2)),
+        ]
         observables = [o.obs for o in observables]
 
         queue_at_pre_measure = []
@@ -549,9 +584,17 @@ class TestOperations:
         """Tests that the operations are properly applied and queued"""
         dev = mock_device_with_paulis_and_methods(wires=3)
 
-        queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires=2)]
+        queue = [
+            qml.PauliX(wires=0),
+            qml.PauliY(wires=1),
+            qml.PauliZ(wires=2),
+        ]
 
-        observables = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))]
+        observables = [
+            qml.expval(qml.PauliZ(0)),
+            qml.var(qml.PauliZ(1)),
+            qml.sample(qml.PauliZ(2)),
+        ]
 
         observables = [o.obs for o in observables]
 
@@ -572,9 +615,17 @@ class TestOperations:
         """Tests that the operations are properly applied and queued"""
         dev = mock_device_with_paulis_and_methods()
 
-        queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.Hadamard(wires=2)]
+        queue = [
+            qml.PauliX(wires=0),
+            qml.PauliY(wires=1),
+            qml.Hadamard(wires=2),
+        ]
 
-        observables = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))]
+        observables = [
+            qml.expval(qml.PauliZ(0)),
+            qml.var(qml.PauliZ(1)),
+            qml.sample(qml.PauliZ(2)),
+        ]
 
         observables = [o.obs for o in observables]
 
@@ -606,7 +657,11 @@ class TestObservables:
 
         queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires=2)]
 
-        observables = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))]
+        observables = [
+            qml.expval(qml.PauliZ(0)),
+            qml.var(qml.PauliZ(1)),
+            qml.sample(qml.PauliZ(2)),
+        ]
         observables = [o.obs for o in observables]
 
         queue_at_pre_measure = []
@@ -648,7 +703,11 @@ class TestObservables:
         """Tests that the operations are properly applied and queued"""
         dev = mock_device_with_paulis_and_methods()
 
-        queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires=2)]
+        queue = [
+            qml.PauliX(wires=0),
+            qml.PauliY(wires=1),
+            qml.PauliZ(wires=2),
+        ]
 
         observables = [
             qml.expval(qml.Hadamard(0)),
@@ -700,11 +759,19 @@ class TestParameters:
         p0 = 0.54
         p1 = -0.32
 
-        queue = [qml.RX(p0, wires=0), qml.PauliY(wires=1), qml.Rot(0.432, 0.123, p1, wires=2)]
+        queue = [
+            qml.RX(p0, wires=0),
+            qml.PauliY(wires=1),
+            qml.Rot(0.432, 0.123, p1, wires=2),
+        ]
 
         parameters = {0: (0, 0), 1: (2, 3)}
 
-        observables = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))]
+        observables = [
+            qml.expval(qml.PauliZ(0)),
+            qml.var(qml.PauliZ(1)),
+            qml.sample(qml.PauliZ(2)),
+        ]
         observables = [o.obs for o in observables]
 
         p_mapping = {}

@@ -769,7 +769,13 @@ class TestRequiresGrad:
             fn.requires_grad(type("hello", tuple(), {})())
 
 
-shape_test_data = [tuple(), (3,), (2, 2), (3, 2, 2), (2, 1, 1, 2)]
+shape_test_data = [
+    tuple(),
+    (3,),
+    (2, 2),
+    (3, 2, 2),
+    (2, 1, 1, 2),
+]
 
 
 @pytest.mark.parametrize(

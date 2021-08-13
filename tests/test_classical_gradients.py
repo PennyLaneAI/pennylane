@@ -76,7 +76,10 @@ class TestGradientMultiVar:
         """Tests gradients with a multivariate exp and tanh."""
         multi_var = lambda x: np.exp(x[0] / 3) * np.tanh(x[1])
         grad_multi_var = lambda x: np.array(
-            [np.exp(x[0] / 3) / 3 * np.tanh(x[1]), np.exp(x[0] / 3) * (1 - np.tanh(x[1]) ** 2)]
+            [
+                np.exp(x[0] / 3) / 3 * np.tanh(x[1]),
+                np.exp(x[0] / 3) * (1 - np.tanh(x[1]) ** 2),
+            ]
         )
         x_vec = np.random.uniform(-5, 5, size=(2))
         g = qml.grad(multi_var, 0)
@@ -130,7 +133,10 @@ class TestGradientMultiargs:
         """Tests multiarg gradients with exp and tanh functions."""
         x = -2.5
         y = 1.5
-        gradf = lambda x, y: (np.exp(x / 3) / 3 * np.tanh(y), np.exp(x / 3) * (1 - np.tanh(y) ** 2))
+        gradf = lambda x, y: (
+            np.exp(x / 3) / 3 * np.tanh(y),
+            np.exp(x / 3) * (1 - np.tanh(y) ** 2),
+        )
         f = lambda x, y: np.exp(x / 3) * np.tanh(y)
 
         # gradient wrt first argument

@@ -89,7 +89,10 @@ EIGVALS_TEST_DATA = [
 EIGVALS_TEST_DATA_MULTI_WIRES = [functools.reduce(np.kron, [Y, I, Z])]
 
 # Testing Projector observable with the basis states.
-PROJECTOR_EIGVALS_TEST_DATA = [(np.array([0, 0])), (np.array([1, 0, 1]))]
+PROJECTOR_EIGVALS_TEST_DATA = [
+    (np.array([0, 0])),
+    (np.array([1, 0, 1])),
+]
 
 
 @pytest.mark.usefixtures("tear_down_hermitian")
@@ -493,7 +496,12 @@ class TestOperations:
         np.testing.assert_allclose(res2, np.eye(2 ** len(op.wires)), atol=tol)
         assert op.wires == op_d.wires
 
-    @pytest.mark.parametrize("op_builder", [lambda: qml.QubitCarry(wires=[0, 1, 2, 3])])
+    @pytest.mark.parametrize(
+        "op_builder",
+        [
+            lambda: qml.QubitCarry(wires=[0, 1, 2, 3]),
+        ],
+    )
     def test_adjoint_with_decomposition(self, op_builder):
         op = op_builder()
         decomposed_ops = op.decomposition(wires=op.wires)
@@ -1945,7 +1953,7 @@ PAULI_ROT_PARAMETRIC_MATRIX_TEST_DATA = [
                 np.exp(1j * theta / 2),
                 np.exp(1j * theta / 2),
                 np.exp(-1j * theta / 2),
-            ]
+            ],
         ),
     ),
     (
@@ -1956,7 +1964,7 @@ PAULI_ROT_PARAMETRIC_MATRIX_TEST_DATA = [
                 [0, np.cos(theta / 2), 0, -1j * np.sin(theta / 2)],
                 [-1j * np.sin(theta / 2), 0, np.cos(theta / 2), 0],
                 [0, -1j * np.sin(theta / 2), 0, np.cos(theta / 2)],
-            ]
+            ],
         ),
     ),
     ("X", qml.RX._matrix),
@@ -2279,7 +2287,10 @@ class TestPauliRot:
     """Test the PauliRot operation."""
 
     @pytest.mark.parametrize("theta", np.linspace(0, 2 * np.pi, 7))
-    @pytest.mark.parametrize("pauli_word,expected_matrix", PAULI_ROT_PARAMETRIC_MATRIX_TEST_DATA)
+    @pytest.mark.parametrize(
+        "pauli_word,expected_matrix",
+        PAULI_ROT_PARAMETRIC_MATRIX_TEST_DATA,
+    )
     def test_PauliRot_matrix_parametric(self, theta, pauli_word, expected_matrix, tol):
         """Test parametrically that the PauliRot matrix is correct."""
 
@@ -2288,7 +2299,10 @@ class TestPauliRot:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("theta,pauli_word,expected_matrix", PAULI_ROT_MATRIX_TEST_DATA)
+    @pytest.mark.parametrize(
+        "theta,pauli_word,expected_matrix",
+        PAULI_ROT_MATRIX_TEST_DATA,
+    )
     def test_PauliRot_matrix(self, theta, pauli_word, expected_matrix, tol):
         """Test non-parametrically that the PauliRot matrix is correct."""
 
@@ -2493,7 +2507,13 @@ class TestPauliRot:
         ):
             qml.PauliRot(0.3, "IXYZV", wires=[0, 1, 2, 3, 4])
 
-    @pytest.mark.parametrize("pauli_word,wires", [("XYZ", [0, 1]), ("XYZ", [0, 1, 2, 3])])
+    @pytest.mark.parametrize(
+        "pauli_word,wires",
+        [
+            ("XYZ", [0, 1]),
+            ("XYZ", [0, 1, 2, 3]),
+        ],
+    )
     def test_init_incorrect_pauli_word_length_error(self, pauli_word, wires):
         """Test that __init__ throws an error if a Pauli word of wrong length is supplied."""
 
@@ -2504,7 +2524,16 @@ class TestPauliRot:
             qml.PauliRot(0.3, pauli_word, wires=wires)
 
     @pytest.mark.parametrize(
-        "pauli_word", [("XIZ"), ("IIII"), ("XIYIZI"), ("IXI"), ("IIIIIZI"), ("XYZIII"), ("IIIXYZ")]
+        "pauli_word",
+        [
+            ("XIZ"),
+            ("IIII"),
+            ("XIYIZI"),
+            ("IXI"),
+            ("IIIIIZI"),
+            ("XYZIII"),
+            ("IIIXYZ"),
+        ],
     )
     def test_multirz_generator(self, pauli_word):
         """Test that the generator of the MultiRZ gate is correct."""
@@ -2538,11 +2567,16 @@ class TestMultiRZ:
         "wires,expected_matrix",
         [
             ([0], qml.RZ._matrix),
-            ([0, 1], lambda theta: np.diag(np.exp(1j * np.array([-1, 1, 1, -1]) * theta / 2))),
+            (
+                [0, 1],
+                lambda theta: np.diag(
+                    np.exp(1j * np.array([-1, 1, 1, -1]) * theta / 2),
+                ),
+            ),
             (
                 [0, 1, 2],
                 lambda theta: np.diag(
-                    np.exp(1j * np.array([-1, 1, 1, -1, 1, -1, -1, 1]) * theta / 2)
+                    np.exp(1j * np.array([-1, 1, 1, -1, 1, -1, -1, 1]) * theta / 2),
                 ),
             ),
         ],
@@ -3041,7 +3075,12 @@ class TestMultiControlledX:
             ([0, 1], 2, "ab", "String of control values can contain only '0' or '1'."),
             ([0, 1], 2, "011", "Length of control bit string must equal number of control wires."),
             ([0, 1], 2, [0, 1], "Alternative control values must be passed as a binary string."),
-            ([0, 1], [2, 3], "10", "MultiControlledX accepts a single target wire."),
+            (
+                [0, 1],
+                [2, 3],
+                "10",
+                "MultiControlledX accepts a single target wire.",
+            ),
         ],
     )
     def test_invalid_mixed_polarity_controls(

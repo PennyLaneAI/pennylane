@@ -565,7 +565,10 @@ class TestParameters:
             m.setattr(tape, "_trainable_params", {3, 1})
             tape.set_parameters(new_params)
 
-            assert tape.get_parameters(trainable_only=True) == [new_params[0], new_params[1]]
+            assert tape.get_parameters(trainable_only=True) == [
+                new_params[0],
+                new_params[1],
+            ]
 
             assert tape.get_parameters(trainable_only=False) == [
                 params[0],
