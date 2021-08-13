@@ -119,7 +119,7 @@ class AutogradInterface(AnnotatedQueue):
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
                 qml.RX(0.133, wires='a')
-                qml.expval(qml.PauliZ(wires=[0]))
+                expval(qml.PauliZ(wires=[0]))
 
         By default, all parameters are trainable and will be returned:
 
@@ -259,7 +259,7 @@ class AutogradInterface(AnnotatedQueue):
                     hessian = _evaluate_grad_matrix(p, "hessian")
 
                     if dy.size > 1:
-                        vhp = dy @ ddy @ hessian @ dy.T / np.linalg.norm(dy) ** 2
+                        vhp = dy @ ddy @ hessian @ dy.T
                     else:
                         vhp = ddy @ hessian
                         vhp = vhp.flatten()
