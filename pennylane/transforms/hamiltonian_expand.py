@@ -89,6 +89,7 @@ def hamiltonian_expand(tape, group=True):
     2
 
     Without grouping it gets split into three groups (``[qml.PauliZ(0)]``, ``[qml.PauliX(1)]`` and ``[qml.PauliX(0)]``):
+    
     >>> tapes, fn = qml.transforms.hamiltonian_expand(tape, group=False)
     >>> len(tapes)
     3
