@@ -73,8 +73,16 @@ INIT_KWARGS_SHAPES = [
         {"n_layers": 2, "n_wires": 1, "mean": 0, "std": 1},
         (2, 1),
     ),
-    (qml.init.cvqnn_layers_r_normal, {"n_layers": 2, "n_wires": 3, "mean": 0, "std": 1}, (2, 3)),
-    (qml.init.cvqnn_layers_r_normal, {"n_layers": 2, "n_wires": 1, "mean": 0, "std": 1}, (2, 1)),
+    (
+        qml.init.cvqnn_layers_r_normal,
+        {"n_layers": 2, "n_wires": 3, "mean": 0, "std": 1},
+        (2, 3),
+    ),
+    (
+        qml.init.cvqnn_layers_r_normal,
+        {"n_layers": 2, "n_wires": 1, "mean": 0, "std": 1},
+        (2, 1),
+    ),
     (
         qml.init.cvqnn_layers_phi_r_normal,
         {"n_layers": 2, "n_wires": 3, "mean": 0, "std": 1},
@@ -85,8 +93,16 @@ INIT_KWARGS_SHAPES = [
         {"n_layers": 2, "n_wires": 1, "mean": 0, "std": 1},
         (2, 1),
     ),
-    (qml.init.cvqnn_layers_a_normal, {"n_layers": 2, "n_wires": 3, "mean": 0, "std": 1}, (2, 3)),
-    (qml.init.cvqnn_layers_a_normal, {"n_layers": 2, "n_wires": 1, "mean": 0, "std": 1}, (2, 1)),
+    (
+        qml.init.cvqnn_layers_a_normal,
+        {"n_layers": 2, "n_wires": 3, "mean": 0, "std": 1},
+        (2, 3),
+    ),
+    (
+        qml.init.cvqnn_layers_a_normal,
+        {"n_layers": 2, "n_wires": 1, "mean": 0, "std": 1},
+        (2, 1),
+    ),
     (
         qml.init.cvqnn_layers_phi_a_normal,
         {"n_layers": 2, "n_wires": 3, "mean": 0, "std": 1},

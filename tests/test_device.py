@@ -655,7 +655,11 @@ class TestObservables:
         op_queue raises no error"""
         dev = mock_device_with_paulis_and_methods(wires=3)
 
-        queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires=2)]
+        queue = [
+            qml.PauliX(wires=0),
+            qml.PauliY(wires=1),
+            qml.PauliZ(wires=2),
+        ]
 
         observables = [
             qml.expval(qml.PauliZ(0)),

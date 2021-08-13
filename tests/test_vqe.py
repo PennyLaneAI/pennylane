@@ -179,7 +179,10 @@ simplify_hamiltonians = [
         ),
         qml.Hamiltonian([], []),
     ),
-    (qml.Hamiltonian([0], [qml.Identity(0)]), qml.Hamiltonian([0], [qml.Identity(0)])),
+    (
+        qml.Hamiltonian([0], [qml.Identity(0)]),
+        qml.Hamiltonian([0], [qml.Identity(0)]),
+    ),
 ]
 
 equal_hamiltonians = [
@@ -371,7 +374,11 @@ mul_hamiltonians = [
         ),
     ),
     # The result is the zero Hamiltonian
-    (0, qml.Hamiltonian([1], [qml.PauliX(0)]), qml.Hamiltonian([0], [qml.PauliX(0)])),
+    (
+        0,
+        qml.Hamiltonian([1], [qml.PauliX(0)]),
+        qml.Hamiltonian([0], [qml.PauliX(0)]),
+    ),
     (
         0,
         qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),

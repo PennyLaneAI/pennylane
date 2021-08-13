@@ -67,7 +67,11 @@ def test_nested_invisible_on_function():
     @invisible
     @invisible
     def my_op():
-        return [qml.RX(0.123, wires=0), qml.RY(2.32, wires=0), qml.RZ(1.95, wires=0)]
+        return [
+            qml.RX(0.123, wires=0),
+            qml.RY(2.32, wires=0),
+            qml.RZ(1.95, wires=0),
+        ]
 
     # the invisible function will still work outside of any queuing contexts
     res = my_op()
