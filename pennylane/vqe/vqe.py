@@ -292,7 +292,7 @@ class Hamiltonian(qml.operation.Observable):
 
         .. warning::
 
-            Calling this method will reset `grouping_indices` to None, since
+            Calling this method will reset ``grouping_indices`` to None, since
             the observables it refers to are updated.
         """
         data = []
