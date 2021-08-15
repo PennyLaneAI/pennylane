@@ -63,7 +63,9 @@ class RotosolveOptimizer:
 
     The algorithm is described in further detail in
     `Gil Vidal and Theis (2018) <https://arxiv.org/abs/1812.06323>`_ and
-    `Ostaszewski et al. (2019) <https://arxiv.org/abs/1905.09692>`_.
+    `Ostaszewski et al. (2019) <https://arxiv.org/abs/1905.09692>`_ and the reconstruction
+    method used in particular for more than one frequency is described in
+    `Wierichs et al. (2021) <https://arxiv.org/abs/2107.12390>`_.
 
     **Example:**
 
@@ -77,10 +79,12 @@ class RotosolveOptimizer:
     argument controls three Pauli rotations with three parameters (one frequency each), the
     second a layer of rotations with a single parameter (three frequencies), and the third
     argument feeds three parameters into three controled Pauli rotations (two frequencies
-    each). We also initialize a set of parameters for all these operations and summarize
-    the numbers of frequencies in ``num_frequencies``.
+    each).
     The ``cost_function` is defined simply by measuring the expectation value of the tensor
     product of ``PauliZ`` operators on all qubits.
+    We also initialize a set of parameters for all these operations and summarize
+    the numbers of frequencies in ``num_frequencies``.
+
 
     .. code-block :: python
 
@@ -104,7 +108,7 @@ class RotosolveOptimizer:
 
         num_frequencies = [[1, 1, 1], 3, [2, 2, 2]]
 
-    Run the optimization step-by-step for ``n_steps`` steps.
+    Run the optimization step-by-step for ``num_steps`` steps.
 
     .. code-block :: python
 
@@ -120,16 +124,16 @@ class RotosolveOptimizer:
             )
             cost_rotosolve.append(cost)
 
-    The optimized values for x are now stored in ``param`` and steps-vs-cost can be
+    The optimized values for ``x`` are now stored in ``param`` and steps-vs-cost can be
     assessed by plotting ``cost_rotosolve``.
     The keyword argument `requires_grad` can be used to determine whether the respective
     parameter should be optimized or not, following the behaviour of gradient computations and
-    gradient-based optimizers.
+    gradient-based optimizers when using Autograd or JAX.
 
     In addition, the optimization technique for the Rotosolve substeps can be chosen via the
-    ``optimizer`` and ``optimizer_kwargs`` keyword arguments and the minimized cost of the
-    intermediate univariate reconstructions can be read out via ``full_output``, including the
-    cost _after_ the full Rotosolve step:
+    ``optimizer`` and ``optimizer_kwargs`` keyword arguments.
+    As an extra feature, the minimized cost of the intermediate univariate reconstructions can
+    be read out via ``full_output``, including the cost _after_ the full Rotosolve step:
 
     .. code-block :: python
 
@@ -145,6 +149,12 @@ class RotosolveOptimizer:
             print(f"Minimization substeps: {np.round(sub_cost, 6)}")
 
     The ``full_output`` feature is available for both, ``step`` and ``step_and_cost``.
+
+    The most general form `RotosolveOptimizer` is designed to tackle currently is any
+    trigonometric cost function with integer frequencies up to the given value
+    of `num_frequencies` per parameter. Not all of the integers up to `num_frequencies` have to
+    be present in the frequency spectrum. In order to tackle equidistant but non-integer
+    frequencies, we recommend rescaling the argument of the function of interest.
     """
     # pylint: disable=too-few-public-methods
 
@@ -225,7 +235,8 @@ class RotosolveOptimizer:
         # Compute the very first evaluation in order to be able to cache it
         H_0 = objective_fn(*args, **kwargs)
 
-        for arg_index, (arg, num_frequency) in enumerate(zip(args, num_frequencies)):
+        for arg_index, arg in enumerate(args):
+            num_frequency = num_frequencies[arg_index]
             del after_args[0]
 
             if getattr(arg, "requires_grad", True):
@@ -244,9 +255,8 @@ class RotosolveOptimizer:
                 shift_vecs = np.eye(num_params)
 
                 # Iterate over current arg:
-                for par_index, (shift_vec, _num_frequency) in enumerate(
-                    zip(shift_vecs, num_frequency_flat)
-                ):
+                for par_index, _num_frequency in enumerate(num_frequency_flat):
+                    shift_vec = shift_vecs[par_index]
                     # univariate objective function
                     univariate_obj_fn = lambda x: objective_fn(
                         *before_args,
@@ -277,8 +287,7 @@ class RotosolveOptimizer:
 
         if full_output:
             return args_new, H_0, y_output
-        else:
-            return args_new, H_0
+        return args_new, H_0
 
     def step(
         self,
@@ -320,7 +329,7 @@ class RotosolveOptimizer:
             function output prior to the step.
             If single arg is provided, list [array] is replaced by array.
         """
-        x_new, H_0, *y_output = self.step_and_cost(
+        x_new, _, *y_output = self.step_and_cost(
             objective_fn,
             *args,
             num_frequencies=num_frequencies,
@@ -385,6 +394,7 @@ class RotosolveOptimizer:
             x_min (float): the minimizing input of ``objective_fn`` within :math:`(-\pi, \pi]`.
             y_min (float): the minimal value of ``objective_fn``.
         """
+        # pylint: disable=too-many-arguments
         # Use closed form expression from Ostaszewski et al., using notation of App. A
         if num_frequency == 1:
             H_0 = float(objective_fn(0.0)) if H_0 is None else H_0
