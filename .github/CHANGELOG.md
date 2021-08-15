@@ -72,6 +72,12 @@
   
   The `full_output` feature is available for both, `step` and `step_and_cost`.
 
+  The most general form `RotosolveOptimizer` is designed to tackle currently is any 
+  trigonometric cost function with integer frequencies up to the given value
+  of `num_frequencies` per parameter. Not all of the integers up to `num_frequencies` have to
+  be present in the frequency spectrum. In order to tackle equidistant but non-integer
+  frequencies, we recommend rescaling the argument of the function of interest.
+
 * The new Device Tracker capabilities allows for flexible and versatile tracking of executions,
   even inside parameter-shift gradients. This functionality will improve the ease of monitoring
   large batches and remote jobs.
