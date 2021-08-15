@@ -22,9 +22,10 @@ def _brute_optimizer(fun, num_steps, **kwargs):
     ``num_steps`` times."""
     width = 2 * np.pi
     x_min = 0.0
+    Ns = kwargs.pop("Ns")
     for _ in range(num_steps):
         _range = (x_min - width / 2, x_min + width / 2)
-        x_min, y_min, *_ = brute(fun, ranges=(_range,), full_output=True, **kwargs)
+        x_min, y_min, *_ = brute(fun, ranges=(_range,), full_output=True, Ns=Ns, **kwargs)
         width /= Ns
 
     return x_min, y_min
@@ -202,11 +203,11 @@ class RotosolveOptimizer:
 
         if optimizer in [None, "brute"]:
             optimizer = _brute_optimizer
-            optimizer_kwargs.setdefault("num_steps", 2)
+            optimizer_kwargs.setdefault("num_steps", 4)
             optimizer_kwargs.setdefault("Ns", 100)
         elif optimizer == "shgo":
             optimizer = _shgo_optimizer
-            optimizer_kwargs.setdefault("bounds", (-np.pi, np.pi))
+            optimizer_kwargs.setdefault("bounds", ((-np.pi, np.pi),))
 
         # will single out one arg to change at a time
         # these hold the arguments not getting updated
@@ -350,10 +351,12 @@ class RotosolveOptimizer:
             evals = [fun(shift) for shift in shifts]
         else:
             mus = range(1, num_frequency + 1)
-            shifts = [2 * mu * np.pi / (2 * num_frequency + 1) for mu in mus]
+            shifts_pos = [2 * mu * np.pi / (2 * num_frequency + 1) for mu in mus]
+            shifts_neg = [-shift for shift in shifts_pos[::-1]]
             evals = (
-                [fun(-shift) for shift in shifts[::-1]] + [H_0] + [fun(shift) for shift in shifts]
+                list(map(fun, shifts_neg)) + [H_0] + list(map(fun, shifts_pos))
             )
+            shifts = shifts_neg + [0] + shifts_pos
         a, b = (num_frequency + 0.5) / np.pi, 0.5 / np.pi
         reconstruction = lambda x: np.sum(
             np.array(
