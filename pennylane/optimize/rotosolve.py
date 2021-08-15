@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Rotosolve gradient free optimizer"""
-# pylint: disable=too-many-branches
+# pylint: disable=too-many-branches,cell-var-from-loop
 
 import numpy as np
 from scipy.optimize import brute, shgo
