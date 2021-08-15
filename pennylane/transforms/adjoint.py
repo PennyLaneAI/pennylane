@@ -149,7 +149,7 @@ def adjoint(fn):
                     new_op = op.adjoint()
                     adjoint_ops.append(new_op)
                 except NotImplementedError:
-                    new_ops = adjoint(op.expand)()
+                    new_ops = adjoint(op.expand)().operations
                     adjoint_ops.extend(new_ops)
 
             if len(adjoint_ops) == 1:
