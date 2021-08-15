@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Rotosolve gradient free optimizer"""
+# pylint: disable=too-many-branches
 
 import numpy as np
 from scipy.optimize import brute, shgo
@@ -340,8 +341,7 @@ class RotosolveOptimizer:
         )
         if full_output:
             return x_new, y_output
-        else:
-            return x_new
+        return x_new
 
     @staticmethod
     def _full_reconstruction_equ(fun, num_frequency, H_0):
