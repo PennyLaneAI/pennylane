@@ -119,43 +119,30 @@ def adjoint(fn):
             with active_tape.stop_recording(), QuantumTape() as tape:
                 fn(*args, **kwargs)
 
-            if not tape.operations:
-                # we called op.expand(): get the outputted tape
-                tape = fn(*args, **kwargs)
-
-            for op in reversed(tape.operations):
-                try:
-                    op.adjoint()
-                except NotImplementedError:
-                    # Expand the operation and adjoint the result.
-                    # We do not do anything with the output since
-                    # calling adjoint on the expansion will automatically
-                    # queue the new operations.
-                    adjoint(op.expand)()
         else:
             # Not within a queuing context: return the results
 
             with QuantumTape() as tape:
                 fn(*args, **kwargs)
 
-            if not tape.operations:
-                # since there are no operations, we called op.expand(): get the
-                # outputted tape
-                tape = fn(*args, **kwargs)
+        if not tape.operations:
+            # since there are no operations, we called op.expand(): get the
+            # outputted tape
+            tape = fn(*args, **kwargs)
 
-            adjoint_ops = []
-            for op in reversed(tape.operations):
-                try:
-                    new_op = op.adjoint()
-                    adjoint_ops.append(new_op)
-                except NotImplementedError:
-                    new_ops = adjoint(op.expand)().operations
-                    adjoint_ops.extend(new_ops)
+        adjoint_ops = []
+        for op in reversed(tape.operations):
+            try:
+                new_op = op.adjoint()
+                adjoint_ops.append(new_op)
+            except NotImplementedError:
+                new_ops = adjoint(op.expand)().operations
+                adjoint_ops.extend(new_ops)
 
-            if len(adjoint_ops) == 1:
-                adjoint_ops = adjoint_ops[0]
+        if len(adjoint_ops) == 1:
+            adjoint_ops = adjoint_ops[0]
 
-            return adjoint_ops
+        return adjoint_ops
 
 
     return wrapper
