@@ -136,13 +136,14 @@ def adjoint(fn):
                 new_op = op.adjoint()
                 adjoint_ops.append(new_op)
             except NotImplementedError:
-                new_ops = adjoint(op.expand)().operations
+                new_ops = adjoint(op.expand)()
+                if isinstance(new_ops, QuantumTape):
+                    new_ops = new_ops.operations
                 adjoint_ops.extend(new_ops)
 
         if len(adjoint_ops) == 1:
             adjoint_ops = adjoint_ops[0]
 
         return adjoint_ops
-
 
     return wrapper
