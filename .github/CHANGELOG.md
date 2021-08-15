@@ -757,6 +757,7 @@ Maria Schuld, Jay Soni, Antal Száva, David Wierichs.
   K_test = qml.kernels.kernel_matrix(X_train, X_test, kernel)
   K1 = qml.kernels.mitigate_depolarizing_noise(K, num_wires, method='single')
   ```
+  [(#1388)](https://github.com/PennyLaneAI/pennylane/pull/1388)
 
 <h4>Extract the fourier representation of quantum circuits</h4>
 
@@ -966,6 +967,9 @@ Maria Schuld, Jay Soni, Antal Száva, David Wierichs.
   >>> fn(res)
   3.999999999999999
   ```
+
+* QNodes now display readable information when in interactive environments or when printed.
+  [(#1359)](https://github.com/PennyLaneAI/pennylane/pull/1359).
 
 * The `quantum_monte_carlo` transform has been added, allowing an input circuit to be transformed
   into the full quantum Monte Carlo algorithm.
