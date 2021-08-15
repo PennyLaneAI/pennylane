@@ -137,7 +137,11 @@ def adjoint(fn):
                 # We do not do anything with the output since
                 # calling adjoint on the expansion will automatically
                 # queue the new operations.
-                new_ops = adjoint(op.expand)().operations
+                new_ops = adjoint(op.expand)()
+
+                if isinstance(new_ops, QuantumTape):
+                    new_ops = new_ops.operations
+
                 adjoint_ops.extend(new_ops)
 
         if len(adjoint_ops) == 1:
