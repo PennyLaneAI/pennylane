@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ from pennylane.interfaces.batch import execute
 
 
 class TestAutogradExecuteUnitTests:
-    """Unit tests for the autograd execution"""
+    """Unit tests for autograd execution"""
 
     def test_jacobian_options(self, mocker, tol):
         """Test setting jacobian options"""
@@ -280,6 +280,8 @@ class TestAutogradExecuteIntegration:
         a = np.array(0.54, requires_grad=True)
         b = np.array(0.8, requires_grad=True)
 
+        # check that the cost function continues to depend on the
+        # values of the parameters for subsequent calls
         res2 = cost(2 * a, b)
         expected = [np.cos(2 * a), -np.cos(2 * a) * np.sin(b)]
         assert np.allclose(res2, expected, atol=tol, rtol=0)
@@ -330,7 +332,7 @@ class TestAutogradExecuteIntegration:
         assert res.shape == (2,)
 
         res = qml.jacobian(cost)(a, b, device=dev)
-        assert not res
+        assert len(res) == 0
 
         def loss(a, b):
             return np.sum(cost(a, b, device=dev))
@@ -338,7 +340,7 @@ class TestAutogradExecuteIntegration:
         with pytest.warns(UserWarning, match="Output seems independent"):
             res = qml.grad(loss)(a, b)
 
-        assert not res
+        assert np.allclose(res, 0)
 
     def test_matrix_parameter(self, execute_kwargs, tol):
         """Test that the autograd interface works correctly

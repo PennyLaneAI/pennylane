@@ -152,7 +152,7 @@ def vjp(
         jacs = ans[1]
 
         if jacs:
-            # Jacobians were computed on the forward pass (accumulation="forward")
+            # Jacobians were computed on the forward pass (mode="forward")
             # No additional quantum evaluations needed; simply compute the VJPs directly.
             vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(dy, jacs)]
 
@@ -164,7 +164,6 @@ def vjp(
             # Longer term, we should have a way of checking this directly
             # (e.g., isinstance(gradient_fn, GradientTransform))
             module_name = getattr(inspect.getmodule(gradient_fn), "__name__", "")
-            print(gradient_fn, gradient_fn.__module__, inspect.ismethod(gradient_fn))
 
             if "pennylane.gradients" in module_name:
 

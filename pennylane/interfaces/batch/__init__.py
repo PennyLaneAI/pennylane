@@ -122,6 +122,9 @@ def execute(tapes, device, gradient_fn, interface="autograd", mode="best", gradi
             gradient_fn = device.gradients
 
     elif mode == "forward":
+        # In "forward" mode, gradients are automatically handled
+        # within execute_and_gradients, so providing a gradient_fn
+        # in this case would have ambiguous behaviour.
         raise ValueError("Gradient transforms cannot be used with mode='forward'")
 
     if interface == "autograd":
