@@ -120,6 +120,7 @@ def adjoint(fn):
                 fn(*args, **kwargs)
 
             if not tape.operations:
+                # we called op.expand(): get the outputted tape
                 tape = fn(*args, **kwargs)
 
             for op in reversed(tape.operations):
@@ -132,10 +133,14 @@ def adjoint(fn):
                     # queue the new operations.
                     adjoint(op.expand)()
         else:
+            # Not within a queuing context: return the results
+
             with QuantumTape() as tape:
-                ops = fn(*args, **kwargs)
+                fn(*args, **kwargs)
 
             if not tape.operations:
+                # since there are no operations, we called op.expand(): get the
+                # outputted tape
                 tape = fn(*args, **kwargs)
 
             adjoint_ops = []
