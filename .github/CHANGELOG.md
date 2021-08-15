@@ -146,7 +146,7 @@
 
   Previously instantiated measurements can also be applied to QNodes.
 
-<h4>Resource Devicer Tracker</h4>
+<h4>Device Resource Tracker</h4>
 
 * The new Device Tracker capabilities allows for flexible and versatile tracking of executions,
   even inside parameter-shift gradients. This functionality will improve the ease of monitoring
