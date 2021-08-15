@@ -17,6 +17,7 @@ import numpy as np
 from scipy.optimize import brute, shgo
 from pennylane.utils import _flatten, unflatten
 
+
 def _brute_optimizer(fun, num_steps, **kwargs):
     r"""Brute force optimizer, wrapper of scipy.optimizer.brute that repeats it
     ``num_steps`` times."""
@@ -30,10 +31,12 @@ def _brute_optimizer(fun, num_steps, **kwargs):
 
     return x_min, y_min
 
+
 def _shgo_optimizer(fun, **kwargs):
     r"""Wrapper for ``scipy.optimize.shgo`` (Simplicial Homology global optimizer)."""
     opt_res = shgo(fun, **kwargs)
     return opt_res.x, opt_res.fun
+
 
 class RotosolveOptimizer:
     r"""Rotosolve gradient-free optimizer.
@@ -122,12 +125,12 @@ class RotosolveOptimizer:
     The keyword argument `requires_grad` can be used to determine whether the respective
     parameter should be optimized or not, following the behaviour of gradient computations and
     gradient-based optimizers.
-  
+
     In addition, the optimization technique for the Rotosolve substeps can be chosen via the
-    ``optimizer`` and ``optimizer_kwargs`` keyword arguments and the minimized cost of the 
-    intermediate univariate reconstructions can be read out via ``full_output``, including the 
+    ``optimizer`` and ``optimizer_kwargs`` keyword arguments and the minimized cost of the
+    intermediate univariate reconstructions can be read out via ``full_output``, including the
     cost _after_ the full Rotosolve step:
-  
+
     .. code-block :: python
 
         param = init_param.copy()
@@ -140,7 +143,7 @@ class RotosolveOptimizer:
             )
             print(f"Cost before step: {cost}")
             print(f"Minimization substeps: {np.round(sub_cost, 6)}")
-  
+
     The ``full_output`` feature is available for both, ``step`` and ``step_and_cost``.
     """
     # pylint: disable=too-few-public-methods
@@ -353,9 +356,7 @@ class RotosolveOptimizer:
             mus = range(1, num_frequency + 1)
             shifts_pos = [2 * mu * np.pi / (2 * num_frequency + 1) for mu in mus]
             shifts_neg = [-shift for shift in shifts_pos[::-1]]
-            evals = (
-                list(map(fun, shifts_neg)) + [H_0] + list(map(fun, shifts_pos))
-            )
+            evals = list(map(fun, shifts_neg)) + [H_0] + list(map(fun, shifts_pos))
             shifts = shifts_neg + [0] + shifts_pos
         a, b = (num_frequency + 0.5) / np.pi, 0.5 / np.pi
         reconstruction = lambda x: np.sum(

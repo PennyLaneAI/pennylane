@@ -23,20 +23,22 @@ from pennylane.utils import _flatten, unflatten
 
 from pennylane.optimize import RotosolveOptimizer
 
+
 def expand_num_freq(num_freq, param):
     expanded = []
     for _num_freq, par in zip(num_freq, param):
         if np.isscalar(_num_freq) and np.isscalar(par):
             expanded.append(_num_freq)
         elif np.isscalar(_num_freq):
-            expanded.append(np.ones_like(par)*_num_freq)
+            expanded.append(np.ones_like(par) * _num_freq)
         elif np.isscalar(par):
             raise ValueError(f"{num_freq}\n{param}\n{_num_freq}\n{par}")
-        elif len(_num_freq)==len(par):
+        elif len(_num_freq) == len(par):
             expanded.append(_num_freq)
         else:
             raise ValueError()
     return expanded
+
 
 def successive_params(par1, par2):
     """Return a list of parameter configurations, successively walking from
@@ -44,7 +46,7 @@ def successive_params(par1, par2):
     par1_flat = np.fromiter(_flatten(par1), dtype=float)
     par2_flat = np.fromiter(_flatten(par2), dtype=float)
     walking_param = []
-    for i in range(len(par1_flat)+1):
+    for i in range(len(par1_flat) + 1):
         walking_param.append(unflatten(np.append(par2_flat[:i], par1_flat[i:]), par1))
     return walking_param
 
@@ -55,12 +57,12 @@ def successive_params(par1, par2):
         [
             lambda x: np.sin(x),
             lambda x: np.sin(x),
-            lambda x, y: np.sin(x)*np.sin(y),
-            lambda x, y: np.sin(x)*np.sin(y[0])*np.sin(y[1]),
+            lambda x, y: np.sin(x) * np.sin(y),
+            lambda x, y: np.sin(x) * np.sin(y[0]) * np.sin(y[1]),
         ],
         [[0.5], [0.5], [0.5, 0.2], [0.5, [0.2, 0.4]]],
         [[], [1, 1], [1], [1, 1, [1, 2]]],
-    )
+    ),
 )
 def test_wrong_len_num_frequencies(fun, param, num_freq):
     """Test that an error is raised for a different number of
@@ -71,18 +73,19 @@ def test_wrong_len_num_frequencies(fun, param, num_freq):
     with pytest.raises(ValueError, match="The number of the provided numbers of frequencies"):
         opt.step(fun, *param, num_frequencies=num_freq)
 
+
 @pytest.mark.parametrize(
     "fun, param, num_freq",
     zip(
         [
             lambda x: np.sin(x),
             lambda x: np.sin(x),
-            lambda x, y: np.sin(x)*np.sin(y),
-            lambda x, y: np.sin(x)*np.sin(y[0])*np.sin(y[1]),
+            lambda x, y: np.sin(x) * np.sin(y),
+            lambda x, y: np.sin(x) * np.sin(y[0]) * np.sin(y[1]),
         ],
         [[0.5], [0.5], [0.5, 0.2], [0.5, [0.2, 0.4]]],
         [[[1, 1]], [[]], [[1], [1, 1]], [[1], [1]]],
-    )
+    ),
 )
 def test_wrong_num_of_num_frequencies_per_parameter(fun, param, num_freq):
     """Test that an error is raised for a different number of
@@ -93,39 +96,57 @@ def test_wrong_num_of_num_frequencies_per_parameter(fun, param, num_freq):
     with pytest.raises(ValueError, match="The number of the numbers of frequencies"):
         opt.step(fun, *param, num_frequencies=num_freq)
 
+
 classical_functions = [
-    lambda x: np.sin(x+0.124)*2.5123,
-    lambda x: -np.cos(x[0]+0.12)*0.872+np.sin(x[1]-2.01)-np.cos(x[2]-1.35)*0.111,
-    lambda x, y: -np.cos(x+0.12)*0.872+np.sin(y[0]-2.01)-np.cos(y[1]-1.35)*0.111,
+    lambda x: np.sin(x + 0.124) * 2.5123,
+    lambda x: -np.cos(x[0] + 0.12) * 0.872 + np.sin(x[1] - 2.01) - np.cos(x[2] - 1.35) * 0.111,
+    lambda x, y: -np.cos(x + 0.12) * 0.872 + np.sin(y[0] - 2.01) - np.cos(y[1] - 1.35) * 0.111,
     lambda x, y: (
-        -np.cos(x+0.12)*0.872\
-        +np.sin(2*y[0]-2.01)\
-        +np.sin(y[0]-2.01/2-np.pi/4)*0.1\
-        -np.cos(y[1]-1.35/2)*0.2\
-        -np.cos(2*y[1]-1.35)*0.111
+        -np.cos(x + 0.12) * 0.872
+        + np.sin(2 * y[0] - 2.01)
+        + np.sin(y[0] - 2.01 / 2 - np.pi / 4) * 0.1
+        - np.cos(y[1] - 1.35 / 2) * 0.2
+        - np.cos(2 * y[1] - 1.35) * 0.111
     ),
-    lambda x, y, z: -np.cos(x+0.12)*0.872+np.sin(y-2.01)-np.cos(z-1.35)*0.111,
-    lambda x, y, z: -np.cos(x+0.06)-np.cos(2*x+0.12)*0.872+np.sin(y-2.01/3-np.pi/3)+np.sin(3*y-2.01)-np.cos(z-1.35)*0.111,
+    lambda x, y, z: -np.cos(x + 0.12) * 0.872 + np.sin(y - 2.01) - np.cos(z - 1.35) * 0.111,
+    lambda x, y, z: -np.cos(x + 0.06)
+    - np.cos(2 * x + 0.12) * 0.872
+    + np.sin(y - 2.01 / 3 - np.pi / 3)
+    + np.sin(3 * y - 2.01)
+    - np.cos(z - 1.35) * 0.111,
 ]
 classical_minima = [
-    -np.pi/2-0.124, 
-    [-0.12, -np.pi/2+2.01, 1.35],
-    [-0.12, [-np.pi/2+2.01, 1.35]],
-    [-0.12, [(-np.pi/2+2.01)/2, 1.35/2]],
-    [-0.12, -np.pi/2+2.01, 1.35],
-    [-0.12/2, (-np.pi/2+2.01)/3, 1.35],
+    -np.pi / 2 - 0.124,
+    [-0.12, -np.pi / 2 + 2.01, 1.35],
+    [-0.12, [-np.pi / 2 + 2.01, 1.35]],
+    [-0.12, [(-np.pi / 2 + 2.01) / 2, 1.35 / 2]],
+    [-0.12, -np.pi / 2 + 2.01, 1.35],
+    [-0.12 / 2, (-np.pi / 2 + 2.01) / 3, 1.35],
 ]
-classical_params = [[0.24], [[0.2, -0.3, 0.1]], [0.3, [0.8, 0.1]], [0.2, [0.3, 0.5]], [0.1, 0.2, 0.5], [0.9, 0.7, 0.2]]
+classical_params = [
+    [0.24],
+    [[0.2, -0.3, 0.1]],
+    [0.3, [0.8, 0.1]],
+    [0.2, [0.3, 0.5]],
+    [0.1, 0.2, 0.5],
+    [0.9, 0.7, 0.2],
+]
 classical_num_frequencies = [[1], [[1, 1, 1]], [1, [1, 1]], [1, 2], [1, 1, 1], [2, 3, 1]]
 
+
 def custom_optimizer(fun, mock_kwarg):
-    return mock_kwarg, mock_kwarg*2
-custom_optimizer_kwargs = {'mock_kwarg': 1.0}
+    return mock_kwarg, mock_kwarg * 2
+
+
+custom_optimizer_kwargs = {"mock_kwarg": 1.0}
 
 optimizers = [None, "brute", "shgo"]
 optimizer_kwargs = [
-        {"Ns": 93, "num_steps": 3}, None, {"bounds": ((-1.0, 1.0),), "n": 512},
+    {"Ns": 93, "num_steps": 3},
+    None,
+    {"bounds": ((-1.0, 1.0),), "n": 512},
 ]
+
 
 @pytest.mark.parametrize(
     "fun, x_min, param, num_freq",
@@ -136,10 +157,12 @@ optimizer_kwargs = [
     list(zip(optimizers, optimizer_kwargs)),
 )
 class TestWithClassicalFunctions:
-
-    def test_number_of_function_calls(self, fun, x_min, param, num_freq, optimizer, optimizer_kwargs):
+    def test_number_of_function_calls(
+        self, fun, x_min, param, num_freq, optimizer, optimizer_kwargs
+    ):
         global num_calls
         num_calls = 0
+
         def _fun(*args, **kwargs):
             global num_calls
             num_calls += 1
@@ -154,10 +177,14 @@ class TestWithClassicalFunctions:
             optimizer_kwargs=optimizer_kwargs,
         )
 
-        expected_num_calls = np.sum(np.fromiter(_flatten(expand_num_freq(num_freq, param)), dtype=int)*2+1)
-        assert num_calls==expected_num_calls
+        expected_num_calls = np.sum(
+            np.fromiter(_flatten(expand_num_freq(num_freq, param)), dtype=int) * 2 + 1
+        )
+        assert num_calls == expected_num_calls
 
-    def test_single_step_convergence(self, fun, x_min, param, num_freq, optimizer, optimizer_kwargs):
+    def test_single_step_convergence(
+        self, fun, x_min, param, num_freq, optimizer, optimizer_kwargs
+    ):
         """Tests convergence for easy classical functions in a single Rotosolve step.
         Includes testing of the parameter output shape and the old cost when using step_and_cost."""
         opt = qml.RotosolveOptimizer()
@@ -170,7 +197,9 @@ class TestWithClassicalFunctions:
             optimizer_kwargs=optimizer_kwargs,
         )
 
-        assert (np.isscalar(x_min) and np.isscalar(new_param_step)) or len(x_min)==len(new_param_step)
+        assert (np.isscalar(x_min) and np.isscalar(new_param_step)) or len(x_min) == len(
+            new_param_step
+        )
         assert np.allclose(
             np.fromiter(_flatten(x_min), dtype=float),
             np.fromiter(_flatten(new_param_step), dtype=float),
@@ -218,7 +247,3 @@ class TestWithClassicalFunctions:
         assert np.allclose(y_output_step, expected_y_output)
         assert np.allclose(y_output_step_and_cost, expected_y_output)
         assert np.isclose(old_cost, fun(*expected_intermediate_x[0]))
-
-
-
-
