@@ -15,11 +15,13 @@
 This submodule contains the discrete-variable quantum operations that perform
 arithmetic operations on their input states.
 """
+# pylint: disable=too-many-arguments
+import itertools
+from copy import copy
+
 import pennylane as qml
 from pennylane import numpy as np
 
-import itertools
-from copy import copy
 from pennylane.operation import Observable, Tensor
 from pennylane.queuing import QueuingError
 from pennylane.wires import Wires
