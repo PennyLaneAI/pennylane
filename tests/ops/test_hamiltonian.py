@@ -415,7 +415,7 @@ class TestGrouping:
         obs = [a, b, c]
         coeffs = [1.0, 2.0, 3.0]
 
-        H = qml.Hamiltonian(coeffs, obs, compute_grouping=True)
+        H = qml.Hamiltonian(coeffs, obs, grouping_type='qwc')
         assert H.grouping_indices == [[0, 1], [2]]
 
     def test_grouping_is_correct_compute_grouping(self):
@@ -426,7 +426,7 @@ class TestGrouping:
         obs = [a, b, c]
         coeffs = [1.0, 2.0, 3.0]
 
-        H = qml.Hamiltonian(coeffs, obs, compute_grouping=False)
+        H = qml.Hamiltonian(coeffs, obs, grouping_type='qwc')
         H.compute_grouping()
         assert H.grouping_indices == [[0, 1], [2]]
 
@@ -438,7 +438,7 @@ class TestGrouping:
         obs = [a, b, c]
         coeffs = [1.0, 2.0, 3.0]
 
-        H = qml.Hamiltonian(coeffs, obs, compute_grouping=True)
+        H = qml.Hamiltonian(coeffs, obs, grouping_type='qwc')
         assert H.grouping_indices == [[0], [1], [2]]
 
     def test_grouping_is_reset_when_simplifying(self):
@@ -446,7 +446,7 @@ class TestGrouping:
         obs = [qml.PauliX(0), qml.PauliX(1), qml.PauliZ(0)]
         coeffs = [1.0, 2.0, 3.0]
 
-        H = qml.Hamiltonian(coeffs, obs, compute_grouping=True)
+        H = qml.Hamiltonian(coeffs, obs, grouping_type='qwc')
         assert H.grouping_indices is not None
 
         H.simplify()
@@ -461,7 +461,7 @@ class TestGrouping:
         coeffs = [1.0, 2.0, 3.0]
 
         with qml.tape.QuantumTape() as tape:
-            H = qml.Hamiltonian(coeffs, obs, compute_grouping=True)
+            H = qml.Hamiltonian(coeffs, obs, grouping_type='qwc')
 
         assert tape.queue == [a, b, c, H]
 
@@ -475,11 +475,11 @@ class TestGrouping:
         coeffs = [1.0, 2.0, 3.0]
 
         # compute grouping during construction
-        H2 = qml.Hamiltonian(coeffs, obs, compute_grouping=True, method="lf")
+        H2 = qml.Hamiltonian(coeffs, obs, grouping_type='qwc', method="lf")
         assert H2.grouping_indices == [[2, 1], [0]]
 
         # compute grouping separately
-        H3 = qml.Hamiltonian(coeffs, obs, compute_grouping=False)
+        H3 = qml.Hamiltonian(coeffs, obs, grouping_type=None)
         H3.compute_grouping(method="lf")
         assert H3.grouping_indices == [[2, 1], [0]]
 
@@ -534,7 +534,7 @@ class TestHamiltonianEvaluation:
 
 
 @pytest.mark.parametrize("simplify", [True, False])
-@pytest.mark.parametrize("group", [True, False])
+@pytest.mark.parametrize("group", [None, 'qwc'])
 class TestHamiltonianDifferentiation:
     """Test that the Hamiltonian coefficients are differentiable"""
 
@@ -554,7 +554,7 @@ class TestHamiltonianDifferentiation:
                     coeffs,
                     [qml.PauliX(0), qml.PauliZ(0)],
                     simplify=simplify,
-                    compute_grouping=group,
+                    grouping_type=group,
                 )
             )
 
@@ -591,7 +591,7 @@ class TestHamiltonianDifferentiation:
                     coeffs,
                     [qml.PauliX(0), qml.PauliZ(0)],
                     simplify=simplify,
-                    compute_grouping=group,
+                    grouping_type=group,
                 )
             )
 
@@ -631,7 +631,7 @@ class TestHamiltonianDifferentiation:
                     coeffs,
                     [qml.PauliX(0), qml.PauliZ(0)],
                     simplify=simplify,
-                    compute_grouping=group,
+                    grouping_type=group,
                 )
             )
 
@@ -670,7 +670,7 @@ class TestHamiltonianDifferentiation:
                     coeffs,
                     [qml.PauliX(0), qml.PauliZ(0)],
                     simplify=simplify,
-                    compute_grouping=group,
+                    grouping_type=group,
                 )
             )
 
@@ -716,7 +716,7 @@ class TestHamiltonianDifferentiation:
                     coeffs,
                     [qml.PauliX(0), qml.PauliZ(0)],
                     simplify=simplify,
-                    compute_grouping=group,
+                    grouping_type=group,
                 )
             )
 

@@ -100,7 +100,7 @@ def hamiltonian_expand(tape, group=True):
 
         obs = [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)]
         coeffs = [1., 2., 3.]
-        H = qml.Hamiltonian(coeffs, obs, compute_grouping=True)
+        H = qml.Hamiltonian(coeffs, obs, grouping_type='qwc')
 
         # the initialisation already computes grouping information and stores it in the Hamiltonian
         assert H.grouping_indices is not None

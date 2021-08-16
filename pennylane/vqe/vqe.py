@@ -70,13 +70,12 @@ class Hamiltonian(qml.operation.Observable):
         observables (Iterable[Observable]): observables in the Hamiltonian expression, of same length as coeffs
         simplify (bool): Specifies whether the Hamiltonian is simplified upon initialization
                          (like-terms are combined). The default value is `False`.
-        compute_grouping (bool): If True, compute and store information on how to group commuting
+        grouping_type (str): If not None, compute and store information on how to group commuting
             observables upon initialization. This information may be accessed when QNodes containing this
-            Hamiltonian are executed on devices.
-        grouping_type (str): The type of binary relation between Pauli words.
-            Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``. Ignored if ``compute_grouping`` is False.
+            Hamiltonian are executed on devices. The string refers to the type of binary relation between Pauli words.
+            Can be ``'qwc'`` (qubit-wise commuting), ``'commuting'``, or ``'anticommuting'``.
         method (str): The graph coloring heuristic to use in solving minimum clique cover for grouping, which
-            can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First). Ignored if ``compute_grouping`` is False.
+            can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First).
         id (str): name to be assigned to this Hamiltonian instance
 
     **Example:**
@@ -140,7 +139,7 @@ class Hamiltonian(qml.operation.Observable):
 
     >>> obs = [qml.PauliX(0), qml.PauliX(1), qml.PauliZ(0)]
     >>> coeffs = np.array([1., 2., 3.])
-    >>> H = qml.Hamiltonian(coeffs, obs, compute_grouping=True)
+    >>> H = qml.Hamiltonian(coeffs, obs, grouping_type='qwc')
     >>> H.grouping_indices
     [[0, 1], [2]]
 
@@ -170,8 +169,7 @@ class Hamiltonian(qml.operation.Observable):
         coeffs,
         observables,
         simplify=False,
-        compute_grouping=False,
-        grouping_type="qwc",
+        grouping_type=None,
         method="rlf",
         id=None,
         do_queue=True,
@@ -201,7 +199,7 @@ class Hamiltonian(qml.operation.Observable):
 
         if simplify:
             self.simplify()
-        if compute_grouping:
+        if grouping_type is not None:
             self._grouping_indices = qml.transforms.invisible(_compute_grouping_indices)(
                 self.ops, grouping_type=grouping_type, method=method
             )
