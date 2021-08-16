@@ -97,7 +97,7 @@ obs = {
     "Hermitian",
     "Projector",
     "SparseHamiltonian",
-    "Hamiltonian"
+    "Hamiltonian",
 }
 
 
