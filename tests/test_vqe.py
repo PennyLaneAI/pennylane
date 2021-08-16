@@ -1465,9 +1465,9 @@ class TestNewVQE:
 
         res = qml.specs(circuit)()
 
-        assert res['num_observables'] == 1
-        assert res['num_diagonalizing_gates'] == 0
-        assert res['num_used_wires'] == 2
+        assert res["num_observables"] == 1
+        assert res["num_diagonalizing_gates"] == 0
+        assert res["num_used_wires"] == 2
 
 
 class TestAutogradInterface:

@@ -977,7 +977,7 @@ class QuantumTape(AnnotatedQueue):
         rotation_gates = []
 
         for observable in self.observables:
-                rotation_gates.extend(observable.diagonalizing_gates())
+            rotation_gates.extend(observable.diagonalizing_gates())
 
         return rotation_gates
 
