@@ -15,6 +15,7 @@
 This module contains functions for adding the Autograd interface
 to a PennyLane Device class.
 """
+# pylint: disable=too-many-arguments
 import inspect
 
 import autograd

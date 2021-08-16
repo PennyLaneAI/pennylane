@@ -15,7 +15,7 @@
 This subpackage defines functions for interfacing devices' batch execution
 capabilities with different machine learning libraries.
 """
-# pylint: disable=import-outside-toplevel)
+# pylint: disable=import-outside-toplevel,too-many-arguments
 from functools import partial
 
 import pennylane as qml
