@@ -86,6 +86,7 @@ def test_nested_adjoint_on_function():
         my_circuit(), np.array([-0.995707, 0.068644 + 6.209710e-02j]), atol=1e-6, rtol=1e-6
     )
 
+
 class TestOutsideOfQueuing:
     """Test that operations and templates work with the adjoint transform when
     created outside of a queuing context"""
@@ -115,17 +116,17 @@ class TestOutsideOfQueuing:
         assert rx_adjoint.wires == expected.wires
 
     template_ops = [
-            (qml.templates.AngleEmbedding, [np.ones((1))], [2,3]),
-            (qml.templates.StronglyEntanglingLayers, [np.ones((1,2,3))], [2,3]),
-            (qml.templates.Interferometer, [[1], [0.3], [0.2, 0.3]], [2,3])
-            ]
+        (qml.templates.AngleEmbedding, [np.ones((1))], [2, 3]),
+        (qml.templates.StronglyEntanglingLayers, [np.ones((1, 2, 3))], [2, 3]),
+        (qml.templates.Interferometer, [[1], [0.3], [0.2, 0.3]], [2, 3]),
+    ]
 
     @pytest.mark.parametrize("template, par, wires", template_ops)
     def test_templates_adjoint(self, template, par, wires):
         """Test that the adjoint correctly inverts angle embedding"""
         res = qml.adjoint(template)(*par, wires=wires)
-        result = res if hasattr(res, "__iter__") else [res] # handle single operation case
-        expected_ops= template(*par, wires=wires)
+        result = res if hasattr(res, "__iter__") else [res]  # handle single operation case
+        expected_ops = template(*par, wires=wires)
 
         if hasattr(expected_ops, "expand"):
             expected_ops = expected_ops.expand().operations
@@ -135,6 +136,7 @@ class TestOutsideOfQueuing:
             assert type(o1) == type(o2)
             assert o1.parameters == o2.parameters
             assert o1.wires == o2.wires
+
 
 test_functions = [
     lambda fn, *args, **kwargs: adjoint(fn)(*args, **kwargs),

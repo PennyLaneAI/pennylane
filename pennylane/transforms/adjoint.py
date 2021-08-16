@@ -149,5 +149,4 @@ def adjoint(fn):
 
         return adjoint_ops
 
-
     return wrapper
