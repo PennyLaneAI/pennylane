@@ -27,7 +27,7 @@ from pennylane.optimize import RotosolveOptimizer
 
 def expand_num_freq(num_freq, param):
     if np.isscalar(num_freq):
-        num_freq = [num_freq]*len(param)
+        num_freq = [num_freq] * len(param)
     expanded = []
     for _num_freq, par in zip(num_freq, param):
         if np.isscalar(_num_freq) and np.isscalar(par):
@@ -141,6 +141,7 @@ def custom_optimizer(fun, **kwargs):
     r"""Wrapper for ``scipy.optimize.shgo`` that does not return y_min."""
     opt_res = shgo(fun, **kwargs)
     return opt_res.x, None
+
 
 optimizers = [None, "brute", "shgo", custom_optimizer]
 optimizer_kwargs = [
