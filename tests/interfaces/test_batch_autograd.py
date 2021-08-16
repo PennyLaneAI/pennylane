@@ -81,7 +81,9 @@ class TestAutogradExecuteUnitTests:
 
             return execute([tape], device, gradient_fn=param_shift, mode="forward")[0]
 
-        with pytest.raises(ValueError, match="Gradient transforms cannot be used with mode"):
+        with pytest.raises(
+            ValueError, match="Gradient transforms cannot be used with mode='forward'"
+        ):
             res = qml.jacobian(cost)(a, device=dev)
 
     def test_unknown_interface(self):
@@ -693,7 +695,15 @@ class TestAutogradExecuteIntegration:
 class TestHigherOrderDerivatives:
     """Test that the autograd execute function can be differentiated"""
 
-    def test_parameter_shift_hessian(self, tol):
+    @pytest.mark.parametrize(
+        "params",
+        [
+            np.array([0.543, -0.654], requires_grad=True),
+            np.array([0, -0.654], requires_grad=True),
+            np.array([-2.0, 0], requires_grad=True),
+        ],
+    )
+    def test_parameter_shift_hessian(self, params, tol):
         """Tests that the output of the parameter-shift transform
         can be differentiated using autograd, yielding second derivatives."""
         dev = qml.device("default.qubit.autograd", wires=2)
