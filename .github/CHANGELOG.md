@@ -2,6 +2,32 @@
 
 <h3>New features since last release</h3>
 
+* Vector-Jacobian product transforms have been added to the `qml.gradients` package.
+  [(#1494)](https://github.com/PennyLaneAI/pennylane/pull/1494)
+
+  The new transforms include:
+
+  - `qml.gradients.vjp`
+  - `qml.gradients.batch_vjp`
+  
+* The Hamiltonian can now store grouping information, which can be accessed by a device to 
+  speed up computations of the expectation value of a Hamiltonian. 
+  [(#1515)](https://github.com/PennyLaneAI/pennylane/pull/1515)
+
+  ```python
+  obs = [qml.PauliX(0), qml.PauliX(1), qml.PauliZ(0)]
+  coeffs = np.array([1., 2., 3.])
+  H = qml.Hamiltonian(coeffs, obs, grouping_type='qwc')
+  ```
+  
+  Initialization with a ``grouping_type`` other than ``None`` stores the indices 
+  required to make groups of commuting observables and their coefficients. 
+  
+  ``` pycon
+  >>> H.grouping_indices
+  [[0, 1], [2]]
+  ```
+
 * Hamiltonians are now trainable with respect to their coefficients.
   [(#1483)](https://github.com/PennyLaneAI/pennylane/pull/1483)
 
@@ -24,6 +50,32 @@
   ``` pycon
   >>> grad_fn(coeffs, param)
   (array([-0.12777055,  0.0166009 ]), array(0.0917819))
+  ```
+
+* Support for differentiable execution of batches of circuits has been
+  added, via the beta `pennylane.batch` module.
+  [(#1501)](https://github.com/PennyLaneAI/pennylane/pull/1501)
+
+  For example:
+
+  ```python
+  def cost_fn(x):
+      with qml.tape.JacobianTape() as tape1:
+          qml.RX(x[0], wires=[0])
+          qml.RY(x[1], wires=[1])
+          qml.CNOT(wires=[0, 1])
+          qml.var(qml.PauliZ(0) @ qml.PauliX(1))
+
+      with qml.tape.JacobianTape() as tape2:
+          qml.RX(x[0], wires=0)
+          qml.RY(x[0], wires=1)
+          qml.CNOT(wires=[0, 1])
+          qml.probs(wires=1)
+
+      result = execute([tape1, tape2], dev, gradient_fn=param_shift)
+      return result[0] + result[1][0, 0]
+
+  res = qml.grad(cost_fn)(params)
   ```
 
 <h3>Improvements</h3>
@@ -75,7 +127,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Maria Schuld.
+Josh Izaac, Maria Schuld.
 
 # Release 0.17.0 (current release)
 
@@ -247,7 +299,7 @@ Maria Schuld.
   For example,
 
   ```pycon
-  >>> with qml.tape.QuantumTape() as tape:
+  >>> with qml.tape.JacobianTape() as tape:
   ...     qml.RX(params[0], wires=0)
   ...     qml.RY(params[1], wires=0)
   ...     qml.RX(params[2], wires=0)
