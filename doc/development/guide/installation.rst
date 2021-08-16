@@ -180,13 +180,13 @@ Build a PennyLane-Qchem image
 
     make -f docker/Makefile build-qchem
 
-- #### To check all available interfaces, run the following:
+- To check all available interfaces, run the following:
 
   .. code-block:: bash
 
     make -f docker/Makefile available-interfaces
 
-- #### To check all available plugins, run the following:
+- To check all available plugins, run the following:
 
   .. code-block:: bash
 
