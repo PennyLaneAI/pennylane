@@ -128,6 +128,8 @@ from pennylane.wires import Wires
 
 from .utils import pauli_eigs
 
+import unittest
+
 # =============================================================================
 # Wire types
 # =============================================================================
@@ -1039,11 +1041,11 @@ class Observable(Operator):
     def __init__(self, *params, wires=None, do_queue=True, id=None):
         # extract the arguments
         if wires is None:
-          try:
-            wires = params[-1]
-          except IndexError: 
-            raise Exception("Can only access when arguments are passed.")
-          params = params[:-1]
+            try:
+               wires = params[-1]
+            except IndexError: 
+               raise Exception("Can only access when arguments are passed.")
+            params = params[:-1]
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
     def __repr__(self):
