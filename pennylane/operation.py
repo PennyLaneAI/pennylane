@@ -1039,9 +1039,11 @@ class Observable(Operator):
     def __init__(self, *params, wires=None, do_queue=True, id=None):
         # extract the arguments
         if wires is None:
+          try:
             wires = params[-1]
-            params = params[:-1]
-
+          except IndexError: 
+            raise Exception("Can only access when arguments are passed.")
+          params = params[:-1]
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
     def __repr__(self):
@@ -1792,3 +1794,26 @@ def operation_derivative(operation) -> np.ndarray:
         generator = generator.conj().T
 
     return 1j * prefactor * generator @ operation.matrix
+  
+# =============================================================================
+# Testing
+# =============================================================================
+#Quick Test:
+try:
+    qml.PauliZ()
+except Exception:
+    pass
+else:
+    raise Exception('Validation check not working.')
+
+#Checks for error message:
+class Test(unittest.TestCase): 
+    def unit_test(self): 
+        with self.assertRaises(Exception) as context:
+            test_input()
+        self.assertTrue('Can only access when arguments are passed.' in str(context.exception), "Validation check not working.")
+
+def test_input():
+    qml.PauliZ()
+    
+Test().unit_test()
