@@ -52,6 +52,32 @@
   (array([-0.12777055,  0.0166009 ]), array(0.0917819))
   ```
 
+* Support for differentiable execution of batches of circuits has been
+  added, via the beta `pennylane.batch` module.
+  [(#1501)](https://github.com/PennyLaneAI/pennylane/pull/1501)
+
+  For example:
+
+  ```python
+  def cost_fn(x):
+      with qml.tape.JacobianTape() as tape1:
+          qml.RX(x[0], wires=[0])
+          qml.RY(x[1], wires=[1])
+          qml.CNOT(wires=[0, 1])
+          qml.var(qml.PauliZ(0) @ qml.PauliX(1))
+
+      with qml.tape.JacobianTape() as tape2:
+          qml.RX(x[0], wires=0)
+          qml.RY(x[0], wires=1)
+          qml.CNOT(wires=[0, 1])
+          qml.probs(wires=1)
+
+      result = execute([tape1, tape2], dev, gradient_fn=param_shift)
+      return result[0] + result[1][0, 0]
+
+  res = qml.grad(cost_fn)(params)
+  ```
+
 <h3>Improvements</h3>
 
 * The `group_observables` transform is now differentiable.
