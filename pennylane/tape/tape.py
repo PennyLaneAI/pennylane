@@ -19,13 +19,14 @@ from collections import Counter, deque, defaultdict
 import contextlib
 import copy
 from threading import RLock
-import warnings
 
 import numpy as np
 
 import pennylane as qml
 from pennylane.queuing import AnnotatedQueue, QueuingContext, QueuingError
 from pennylane.operation import Sample
+
+from .unwrap import UnwrapTape
 
 # CV ops still need to support state preparation operations prior to any
 # other operation for PennyLane-SF tests to pass.
@@ -448,9 +449,6 @@ class QuantumTape(AnnotatedQueue):
                 if obj.return_type is qml.operation.Sample:
                     self.is_sampled = True
 
-            elif isinstance(obj, qml.operation.Observable) and "owner" not in info:
-                raise ValueError(f"Observable {obj} does not have a measurement type specified.")
-
         self._update()
 
     def _update_circuit_info(self):
@@ -673,13 +671,8 @@ class QuantumTape(AnnotatedQueue):
         # the current implementation of the adjoint
         # transform requires that the returned inverted object
         # is automatically queued.
-        QuantumTape._lock.acquire()
-        try:
+        with QuantumTape._lock:
             QueuingContext.append(new_tape)
-        except Exception as _:
-            QuantumTape._lock.release()
-            raise
-        QuantumTape._lock.release()
 
         return new_tape
 
@@ -849,6 +842,35 @@ class QuantumTape(AnnotatedQueue):
             op = self._par_info[idx]["op"]
             op.data[self._par_info[idx]["p_idx"]] = p
 
+    def unwrap(self):
+        """A context manager that unwraps a tape with tensor-like parameters
+        to NumPy arrays.
+
+        Args:
+            tape (.QuantumTape): the quantum tape to unwrap
+
+        Returns:
+
+            .QuantumTape: the unwrapped quantum tape
+
+        **Example**
+
+        >>> with tf.GradientTape():
+        ...     with qml.tape.QuantumTape() as tape:
+        ...         qml.RX(tf.Variable(0.1), wires=0)
+        ...         qml.RY(tf.constant(0.2), wires=0)
+        ...         qml.RZ(tf.Variable(0.3), wires=0)
+        ...     with tape.unwrap():
+        ...         print("Trainable params:", tape.trainable_params)
+        ...         print("Unwrapped params:", tape.get_parameters())
+        Trainable params: {0, 2}
+        Unwrapped params: [0.1, 0.3]
+        >>> print("Original parameters:", tape.get_parameters())
+        Original parameters: [<tf.Variable 'Variable:0' shape=() dtype=float32, numpy=0.1>,
+          <tf.Variable 'Variable:0' shape=() dtype=float32, numpy=0.3>]
+        """
+        return UnwrapTape(self)
+
     # ========================================================
     # Tape properties
     # ========================================================
@@ -979,77 +1001,6 @@ class QuantumTape(AnnotatedQueue):
             )
 
         return self._graph
-
-    def get_resources(self):
-        """Resource requirements of a quantum circuit.
-
-        Returns:
-            dict[str, int]: how many times constituent operations are applied
-
-        **Example**
-
-        .. code-block:: python3
-
-            with qml.tape.QuantumTape() as tape:
-                qml.Hadamard(wires=0)
-                qml.RZ(0.26, wires=1)
-                qml.CNOT(wires=[1, 0])
-                qml.Rot(1.8, -2.7, 0.2, wires=0)
-                qml.Hadamard(wires=1)
-                qml.CNOT(wires=[0, 1])
-                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-        Asking for the resources produces a dictionary as shown below:
-
-        >>> tape.get_resources()
-        {'Hadamard': 2, 'RZ': 1, 'CNOT': 2, 'Rot': 1}
-
-        """
-
-        warnings.warn(
-            "``tape.get_resources``is now deprecated and will be removed in v0.17. "
-            "Please use the more general ``tape.specs`` instead.",
-            UserWarning,
-        )
-
-        return self.specs["gate_types"]
-
-    def get_depth(self):
-        """Depth of the quantum circuit.
-
-        Returns:
-            int: Circuit depth, computed as the longest path in the
-            circuit's directed acyclic graph representation.
-
-        **Example**
-
-        .. code-block:: python3
-
-            with QuantumTape() as tape:
-                qml.Hadamard(wires=0)
-                qml.PauliX(wires=1)
-                qml.CRX(2.3, wires=[0, 1])
-                qml.Rot(1.2, 3.2, 0.7, wires=[1])
-                qml.CRX(-2.3, wires=[0, 1])
-                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-        The depth can be obtained like so:
-
-        >>> tape.get_depth()
-        4
-
-        """
-
-        warnings.warn(
-            "``tape.get_depth`` is now deprecated and will be removed in v0.17. "
-            "Please use the more general ``tape.specs`` instead.",
-            UserWarning,
-        )
-
-        if self._depth is None:
-            self._depth = self.graph.get_depth()
-
-        return self._depth
 
     @property
     def specs(self):

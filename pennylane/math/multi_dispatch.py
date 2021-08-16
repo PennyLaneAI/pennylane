@@ -15,10 +15,12 @@
 # pylint: disable=import-outside-toplevel,too-many-return-statements
 import warnings
 
+from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
+from numpy import ndarray
 
 from . import single_dispatch  # pylint:disable=unused-import
-from .utils import cast, get_interface
+from .utils import cast, get_interface, requires_grad
 
 
 def _multi_dispatch(values):
@@ -250,6 +252,38 @@ def dot(tensor1, tensor2):
     return np.dot(x, y, like=interface)
 
 
+def get_trainable_indices(values):
+    """Returns a set containing the trainable indices of a sequence of
+    values.
+
+    Args:
+        values (Iterable[tensor_like]): Sequence of tensor-like objects to inspect
+
+    Returns:
+        set[int]: Set containing the indices of the trainable tensor-like objects
+        within the input sequence.
+
+    **Example**
+
+    >>> def cost_fn(params):
+    ...     print("Trainable:", qml.math.get_trainable_indices(params))
+    ...     return np.sum(np.sin(params[0] * params[1]))
+    >>> values = [np.array([0.1, 0.2], requires_grad=True),
+    ... np.array([0.5, 0.2], requires_grad=False)]
+    >>> cost_fn(values)
+    Trainable: {0}
+    tensor(0.0899685, requires_grad=True)
+    """
+    interface = _multi_dispatch(values)
+    trainable_params = set()
+
+    for idx, p in enumerate(values):
+        if requires_grad(p, interface=interface):
+            trainable_params.add(idx)
+
+    return trainable_params
+
+
 def ones_like(tensor, dtype=None):
     """Returns a tensor of all ones with the same shape and dtype
     as the input tensor.
@@ -340,3 +374,87 @@ def where(condition, x, y):
     tensor([ 0.6000,  0.2300,  0.7000, -4.0000, -5.0000], grad_fn=<SWhereBackward>)
     """
     return np.where(condition, x, y, like=_multi_dispatch([condition, x, y]))
+
+
+def frobenius_inner_product(A, B, normalize=False):
+    r"""Frobenius inner product between two matrices.
+
+    .. math::
+
+        \langle A, B \rangle_F = \sum_{i,j=1}^n A_{ij} B_{ij} = \operatorname{tr} (A^T B)
+
+    The Frobenius inner product is equivalent to the Hilbert-Schmidt inner product for
+    matrices with real-valued entries.
+
+    Args:
+        A (tensor_like[float]): First matrix, assumed to be a square array.
+        B (tensor_like[float]): Second matrix, assumed to be a square array.
+        normalize (bool): If True, divide the inner product by the Frobenius norms of A and B.
+
+    Returns:
+        float: Frobenius inner product of A and B
+
+    **Example**
+
+    >>> A = np.random.random((3,3))
+    >>> B = np.random.random((3,3))
+    >>> qml.math.frobenius_inner_product(A, B)
+    3.091948202943376
+    """
+    interface = _multi_dispatch([A, B])
+    A, B = np.coerce([A, B], like=interface)
+
+    inner_product = np.sum(A * B)
+
+    if normalize:
+        norm = np.sqrt(np.sum(A * A) * np.sum(B * B))
+        inner_product = inner_product / norm
+
+    return inner_product
+
+
+def unwrap(values, max_depth=None):
+    """Unwrap a sequence of objects to NumPy arrays.
+
+    Note that tensors on GPUs will automatically be copied
+    to the CPU.
+
+    Args:
+        values (Sequence[tensor_like]): sequence of tensor-like objects to unwrap
+        max_depth (int): Positive integer indicating the depth of unwrapping to perform
+            for nested tensor-objects. This argument only applies when unwrapping
+            Autograd ``ArrayBox`` objects.
+
+    **Example**
+
+    >>> values = [np.array([0.1, 0.2]), torch.tensor(0.1, dtype=torch.float64), torch.tensor([0.5, 0.2])]
+    >>> math.unwrap(values)
+    [array([0.1, 0.2]), 0.1, array([0.5, 0.2], dtype=float32)]
+
+    This function will continue to work during backpropagation:
+
+    >>> def cost_fn(params):
+    ...     unwrapped_params = math.unwrap(params)
+    ...     print("Unwrapped:", [(i, type(i)) for i in unwrapped_params])
+    ...     return np.sum(np.sin(params))
+    >>> params = np.array([0.1, 0.2, 0.3])
+    >>> grad = autograd.grad(cost_fn)(params)
+    Unwrapped: [(0.1, <class 'float'>), (0.2, <class 'float'>), (0.3, <class 'float'>)]
+    >>> print(grad)
+    [0.99500417 0.98006658 0.95533649]
+    """
+    res = []
+
+    for t in values:
+        if isinstance(t, ArrayBox):
+            a = np.to_numpy(t, max_depth=max_depth)
+        else:
+            a = np.to_numpy(t)
+
+        if isinstance(a, ndarray) and not a.shape:
+            # if NumPy array is scalar, convert to a Python float
+            res.append(a.tolist())
+        else:
+            res.append(a)
+
+    return res
