@@ -98,6 +98,22 @@ class TestHamiltonianExpval:
 
         assert np.isclose(output, expval)
 
+    def test_grouping_is_used(self):
+        """Test that the grouping in a Hamiltonian is used"""
+        H = qml.Hamiltonian(
+            [1.0, 2.0, 3.0], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)], grouping_type="qwc"
+        )
+        assert H.grouping_indices is not None
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=2)
+            qml.expval(H)
+
+        tapes, fn = qml.transforms.hamiltonian_expand(tape, group=False)
+        assert len(tapes) == 2
+
     def test_number_of_tapes(self):
         """Tests that the the correct number of tapes is produced"""
 
