@@ -50,7 +50,7 @@ def compute_vjp(dy, jac):
 
 def vjp(tape, dy, gradient_fn):
     r"""Generate the gradient tapes and processing function required to compute
-    the vector-Jacobian products of a tape.
+    the vector-Jacobian product of a tape.
 
     Consider a function :math:`\mathbf{f}(\mathbf{x})`. The Jacobian is given by
 
@@ -60,7 +60,7 @@ def vjp(tape, dy, gradient_fn):
             \frac{\partial f_1}{\partial x_1} &\cdots &\frac{\partial f_1}{\partial x_n}\\
             \vdots &\ddots &\vdots\\
             \frac{\partial f_m}{\partial x_1} &\cdots &\frac{\partial f_m}{\partial x_n}\\
-        \end{pmatrix}
+        \end{pmatrix}.
 
     During backpropagation, the chain rule is applied. For example, consider the
     cost function :math:`h = y\circ f: \mathbb{R}^n \rightarrow \mathbb{R}`,
@@ -73,7 +73,7 @@ def vjp(tape, dy, gradient_fn):
         = \frac{\partial y}{\partial \mathbf{f}} \mathbf{J}_{\mathbf{f}}(\mathbf{x}).
 
     Denote :math:`d\mathbf{y} = \frac{\partial y}{\partial \mathbf{f}}`; we can write this in the form
-    as a matrix multiplication:
+    of a matrix multiplication:
 
     .. math:: \left[\nabla h(\mathbf{x})\right]_{j} = \sum_{i=0}^m d\mathbf{y}_i ~ \mathbf{J}_{ij}.
 
@@ -178,7 +178,7 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append"):
             \frac{\partial f_1}{\partial x_1} &\cdots &\frac{\partial f_1}{\partial x_n}\\
             \vdots &\ddots &\vdots\\
             \frac{\partial f_m}{\partial x_1} &\cdots &\frac{\partial f_m}{\partial x_n}\\
-        \end{pmatrix}
+        \end{pmatrix}.
 
     During backpropagation, the chain rule is applied. For example, consider the
     cost function :math:`h = y\circ f: \mathbb{R}^n \rightarrow \mathbb{R}`,
@@ -191,7 +191,7 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append"):
         = \frac{\partial y}{\partial \mathbf{f}} \mathbf{J}_{\mathbf{f}}(\mathbf{x}).
 
     Denote :math:`d\mathbf{y} = \frac{\partial y}{\partial \mathbf{f}}`; we can write this in the form
-    as a matrix multiplication:
+    of a matrix multiplication:
 
     .. math:: \left[\nabla h(\mathbf{x})\right]_{j} = \sum_{i=0}^m d\mathbf{y}_i ~ \mathbf{J}_{ij}.
 
