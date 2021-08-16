@@ -404,6 +404,86 @@ class TestHamiltonianArithmeticJax:
         assert H.compare(H1 @ H2)
 
 
+class TestGrouping:
+    """Tests for the grouping functionality"""
+
+    def test_grouping_is_correct_kwarg(self):
+        """Basic test checking that grouping with a kwarg works as expected"""
+        a = qml.PauliX(0)
+        b = qml.PauliX(1)
+        c = qml.PauliZ(0)
+        obs = [a, b, c]
+        coeffs = [1.0, 2.0, 3.0]
+
+        H = qml.Hamiltonian(coeffs, obs, grouping_type="qwc")
+        assert H.grouping_indices == [[0, 1], [2]]
+
+    def test_grouping_is_correct_compute_grouping(self):
+        """Basic test checking that grouping with compute_grouping works as expected"""
+        a = qml.PauliX(0)
+        b = qml.PauliX(1)
+        c = qml.PauliZ(0)
+        obs = [a, b, c]
+        coeffs = [1.0, 2.0, 3.0]
+
+        H = qml.Hamiltonian(coeffs, obs, grouping_type="qwc")
+        H.compute_grouping()
+        assert H.grouping_indices == [[0, 1], [2]]
+
+    def test_grouping_for_non_groupable_hamiltonians(self):
+        """Test that grouping is computed correctly, even if no observables commute"""
+        a = qml.PauliX(0)
+        b = qml.PauliY(0)
+        c = qml.PauliZ(0)
+        obs = [a, b, c]
+        coeffs = [1.0, 2.0, 3.0]
+
+        H = qml.Hamiltonian(coeffs, obs, grouping_type="qwc")
+        assert H.grouping_indices == [[0], [1], [2]]
+
+    def test_grouping_is_reset_when_simplifying(self):
+        """Tests that calling simplify() resets the grouping"""
+        obs = [qml.PauliX(0), qml.PauliX(1), qml.PauliZ(0)]
+        coeffs = [1.0, 2.0, 3.0]
+
+        H = qml.Hamiltonian(coeffs, obs, grouping_type="qwc")
+        assert H.grouping_indices is not None
+
+        H.simplify()
+        assert H.grouping_indices is None
+
+    def test_grouping_does_not_alter_queue(self):
+        """Tests that grouping is invisible to the queue."""
+        a = qml.PauliX(0)
+        b = qml.PauliX(1)
+        c = qml.PauliZ(0)
+        obs = [a, b, c]
+        coeffs = [1.0, 2.0, 3.0]
+
+        with qml.tape.QuantumTape() as tape:
+            H = qml.Hamiltonian(coeffs, obs, grouping_type="qwc")
+
+        assert tape.queue == [a, b, c, H]
+
+    def test_grouping_method_can_be_set(self):
+        r"""Tests that the grouping method can be controlled by kwargs.
+        This is done by changing from default to 'rlf' and checking the result."""
+        a = qml.PauliX(0)
+        b = qml.PauliX(1)
+        c = qml.PauliZ(0)
+        obs = [a, b, c]
+        coeffs = [1.0, 2.0, 3.0]
+
+        # compute grouping during construction
+        H2 = qml.Hamiltonian(coeffs, obs, grouping_type="qwc", method="lf")
+        assert H2.grouping_indices == [[2, 1], [0]]
+
+        # compute grouping separately
+        H3 = qml.Hamiltonian(coeffs, obs, grouping_type=None)
+        H3.compute_grouping(method="lf")
+        assert H3.grouping_indices == [[2, 1], [0]]
+
+
 class TestHamiltonianEvaluation:
     """Test the usage of a Hamiltonian as an observable"""
 
@@ -453,11 +533,12 @@ class TestHamiltonianEvaluation:
         assert pars == [0.1, 3.0]
 
 
+@pytest.mark.parametrize("simplify", [True, False])
+@pytest.mark.parametrize("group", [None, "qwc"])
 class TestHamiltonianDifferentiation:
     """Test that the Hamiltonian coefficients are differentiable"""
 
-    @pytest.mark.parametrize("simplify", [True, False])
-    def test_vqe_differentiation_paramshift(self, simplify):
+    def test_vqe_differentiation_paramshift(self, simplify, group):
         """Test the parameter-shift method by comparing the differentiation of linearly combined subcircuits
         with the differentiation of a Hamiltonian expectation"""
         coeffs = np.array([-0.05, 0.17])
@@ -469,7 +550,12 @@ class TestHamiltonianDifferentiation:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=simplify)
+                qml.Hamiltonian(
+                    coeffs,
+                    [qml.PauliX(0), qml.PauliZ(0)],
+                    simplify=simplify,
+                    grouping_type=group,
+                )
             )
 
         grad_fn = qml.grad(circuit)
@@ -489,8 +575,7 @@ class TestHamiltonianDifferentiation:
         assert np.allclose(grad[0], grad_expected[0])
         assert np.allclose(grad[1], grad_expected[1])
 
-    @pytest.mark.parametrize("simplify", [True, False])
-    def test_vqe_differentiation_autograd(self, simplify):
+    def test_vqe_differentiation_autograd(self, simplify, group):
         """Test the autograd interface by comparing the differentiation of linearly combined subcircuits
         with the differentiation of a Hamiltonian expectation"""
         coeffs = pnp.array([-0.05, 0.17], requires_grad=True)
@@ -502,7 +587,12 @@ class TestHamiltonianDifferentiation:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=simplify)
+                qml.Hamiltonian(
+                    coeffs,
+                    [qml.PauliX(0), qml.PauliZ(0)],
+                    simplify=simplify,
+                    grouping_type=group,
+                )
             )
 
         grad_fn = qml.grad(circuit)
@@ -522,8 +612,7 @@ class TestHamiltonianDifferentiation:
         assert np.allclose(grad[0], grad_expected[0])
         assert np.allclose(grad[1], grad_expected[1])
 
-    @pytest.mark.parametrize("simplify", [True, False])
-    def test_vqe_differentiation_jax(self, simplify):
+    def test_vqe_differentiation_jax(self, simplify, group):
         """Test the jax interface by comparing the differentiation of linearly combined subcircuits
         with the differentiation of a Hamiltonian expectation"""
 
@@ -538,7 +627,12 @@ class TestHamiltonianDifferentiation:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=simplify)
+                qml.Hamiltonian(
+                    coeffs,
+                    [qml.PauliX(0), qml.PauliZ(0)],
+                    simplify=simplify,
+                    grouping_type=group,
+                )
             )
 
         grad_fn = jax.grad(circuit)
@@ -558,8 +652,7 @@ class TestHamiltonianDifferentiation:
         assert np.allclose(grad[0], grad_expected[0])
         assert np.allclose(grad[1], grad_expected[1])
 
-    @pytest.mark.parametrize("simplify", [True, False])
-    def test_vqe_differentiation_torch(self, simplify):
+    def test_vqe_differentiation_torch(self, simplify, group):
         """Test the torch interface by comparing the differentiation of linearly combined subcircuits
         with the differentiation of a Hamiltonian expectation"""
 
@@ -573,7 +666,12 @@ class TestHamiltonianDifferentiation:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=simplify)
+                qml.Hamiltonian(
+                    coeffs,
+                    [qml.PauliX(0), qml.PauliZ(0)],
+                    simplify=simplify,
+                    grouping_type=group,
+                )
             )
 
         res = circuit(coeffs, param)
@@ -600,8 +698,7 @@ class TestHamiltonianDifferentiation:
         assert np.allclose(grad[0], grad_expected[0])
         assert np.allclose(grad[1], grad_expected[1])
 
-    @pytest.mark.parametrize("simplify", [True, False])
-    def test_vqe_differentiation_tf(self, simplify):
+    def test_vqe_differentiation_tf(self, simplify, group):
         """Test the tf interface by comparing the differentiation of linearly combined subcircuits
         with the differentiation of a Hamiltonian expectation"""
 
@@ -615,7 +712,12 @@ class TestHamiltonianDifferentiation:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=simplify)
+                qml.Hamiltonian(
+                    coeffs,
+                    [qml.PauliX(0), qml.PauliZ(0)],
+                    simplify=simplify,
+                    grouping_type=group,
+                )
             )
 
         with tf.GradientTape() as tape:

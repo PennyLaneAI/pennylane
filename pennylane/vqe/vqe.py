@@ -30,6 +30,35 @@ from pennylane.wires import Wires
 OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identity": "I"}
 
 
+def _compute_grouping_indices(observables, grouping_type="qwc", method="rlf"):
+
+    # todo: directly compute the
+    # indices, instead of extracting groups of observables first
+    observable_groups = qml.grouping.group_observables(
+        observables, coefficients=None, grouping_type=grouping_type, method=method
+    )
+
+    observables = copy(observables)
+
+    indices = []
+    available_indices = list(range(len(observables)))
+    for partition in observable_groups:
+        indices_this_group = []
+        for pauli_word in partition:
+            # find index of this pauli word in remaining original observables,
+            for observable in observables:
+                if qml.grouping.utils.are_identical_pauli_words(pauli_word, observable):
+                    ind = observables.index(observable)
+                    indices_this_group.append(available_indices[ind])
+                    # delete this observable and its index, so it cannot be found again
+                    observables.pop(ind)
+                    available_indices.pop(ind)
+                    break
+        indices.append(indices_this_group)
+
+    return indices
+
+
 class Hamiltonian(qml.operation.Observable):
     r"""Operator representing a Hamiltonian.
 
@@ -41,6 +70,13 @@ class Hamiltonian(qml.operation.Observable):
         observables (Iterable[Observable]): observables in the Hamiltonian expression, of same length as coeffs
         simplify (bool): Specifies whether the Hamiltonian is simplified upon initialization
                          (like-terms are combined). The default value is `False`.
+        grouping_type (str): If not None, compute and store information on how to group commuting
+            observables upon initialization. This information may be accessed when QNodes containing this
+            Hamiltonian are executed on devices. The string refers to the type of binary relation between Pauli words.
+            Can be ``'qwc'`` (qubit-wise commuting), ``'commuting'``, or ``'anticommuting'``.
+        method (str): The graph coloring heuristic to use in solving minimum clique cover for grouping, which
+            can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First).
+        id (str): name to be assigned to this Hamiltonian instance
 
     **Example:**
 
@@ -93,9 +129,34 @@ class Hamiltonian(qml.operation.Observable):
 
     >>> H1 = qml.Hamiltonian(torch.tensor([1.]), [qml.PauliX(0)])
     >>> H2 = qml.Hamiltonian(torch.tensor([2., 3.]), [qml.PauliY(0), qml.PauliX(1)])
-    >>> H3 = qml.Hamiltonian(torch.tensor([1., 2., 3.]), [qml.PauliX(0), qml.PauliY(0), qml.PauliX(1)])
+    >>> obs3 = [qml.PauliX(0), qml.PauliY(0), qml.PauliX(1)]
+    >>> H3 = qml.Hamiltonian(torch.tensor([1., 2., 3.]), obs3)
     >>> H3.compare(H1 + H2)
     True
+
+    A Hamiltonian can store information on which commuting observables should be measured together in
+    a circuit:
+
+    >>> obs = [qml.PauliX(0), qml.PauliX(1), qml.PauliZ(0)]
+    >>> coeffs = np.array([1., 2., 3.])
+    >>> H = qml.Hamiltonian(coeffs, obs, grouping_type='qwc')
+    >>> H.grouping_indices
+    [[0, 1], [2]]
+
+    This attribute can be used to compute groups of coefficients and observables:
+
+    >>> grouped_coeffs = [coeffs[indices] for indices in H.grouping_indices]
+    >>> grouped_obs = [[H.ops[i] for i in indices] for indices in H.grouping_indices]
+    >>> grouped_coeffs
+    [tensor([1., 2.], requires_grad=True), tensor([3.], requires_grad=True)]
+    >>> grouped_obs
+    [[qml.PauliX(0), qml.PauliX(1)], [qml.PauliZ(0)]]
+
+    Devices that evaluate a Hamiltonian expectation by splitting it into its local observables can
+    use this information to reduce the number of circuits evaluated.
+
+    Note that one can compute the ``grouping_indices`` for an already initialized Hamiltonian by
+    using the :func:`compute_grouping <pennylane.Hamiltonian.compute_grouping>` method.
     """
 
     num_wires = qml.operation.AnyWires
@@ -103,7 +164,16 @@ class Hamiltonian(qml.operation.Observable):
     par_domain = "A"
     grad_method = "A"  # supports analytic gradients
 
-    def __init__(self, coeffs, observables, simplify=False, id=None, do_queue=True):
+    def __init__(
+        self,
+        coeffs,
+        observables,
+        simplify=False,
+        grouping_type=None,
+        method="rlf",
+        id=None,
+        do_queue=True,
+    ):
 
         if qml.math.shape(coeffs)[0] != len(observables):
             raise ValueError(
@@ -123,8 +193,16 @@ class Hamiltonian(qml.operation.Observable):
 
         self.return_type = None
 
+        # attribute to store indices used to form groups of
+        # commuting observables, since recomputation is costly
+        self._grouping_indices = None
+
         if simplify:
             self.simplify()
+        if grouping_type is not None:
+            self._grouping_indices = qml.transforms.invisible(_compute_grouping_indices)(
+                self.ops, grouping_type=grouping_type, method=method
+            )
 
         coeffs_flat = [self._coeffs[i] for i in range(qml.math.shape(self._coeffs)[0])]
         # overwrite this attribute, now that we have the correct info
@@ -175,6 +253,31 @@ class Hamiltonian(qml.operation.Observable):
     def name(self):
         return "Hamiltonian"
 
+    @property
+    def grouping_indices(self):
+        """Return the grouping indices attribute.
+
+        Returns:
+            list[list[int]]: indices needed to form groups of commuting observables
+        """
+        return self._grouping_indices
+
+    def compute_grouping(self, grouping_type="qwc", method="rlf"):
+        """
+        Compute groups of indices corresponding to commuting observables of this
+        Hamiltonian, and store it in the ``grouping_indices`` attribute.
+
+        Args:
+            grouping_type (str): The type of binary relation between Pauli words used to compute the grouping.
+                Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
+            method (str): The graph coloring heuristic to use in solving minimum clique cover for grouping, which
+                can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First).
+        """
+
+        self._grouping_indices = qml.transforms.invisible(_compute_grouping_indices)(
+            self.ops, grouping_type=grouping_type, method=method
+        )
+
     def simplify(self):
         r"""Simplifies the Hamiltonian by combining like-terms.
 
@@ -186,6 +289,11 @@ class Hamiltonian(qml.operation.Observable):
         >>> print(H)
           (-1) [X0]
         + (1) [Y2]
+
+        .. warning::
+
+            Calling this method will reset ``grouping_indices`` to None, since
+            the observables it refers to are updated.
         """
         data = []
         ops = []
@@ -213,6 +321,8 @@ class Hamiltonian(qml.operation.Observable):
         self._coeffs = qml.math.stack(data) if data else []
         self.data = data
         self._ops = ops
+        # reset grouping, since the indices refer to the old observables and coefficients
+        self._grouping_indices = None
 
     def __str__(self):
         # Lambda function that formats the wires
@@ -277,7 +387,7 @@ class Hamiltonian(qml.operation.Observable):
 
         return data
 
-    def compare(self, H):
+    def compare(self, other):
         r"""Compares with another :class:`~Hamiltonian`, :class:`~.Observable`, or :class:`~.Tensor`,
         to determine if they are equivalent.
 
@@ -317,15 +427,15 @@ class Hamiltonian(qml.operation.Observable):
         >>> ob1.compare(ob2)
         False
         """
-        if isinstance(H, Hamiltonian):
+        if isinstance(other, Hamiltonian):
             self.simplify()
-            H.simplify()
-            return self._obs_data() == H._obs_data()  # pylint: disable=protected-access
+            other.simplify()
+            return self._obs_data() == other._obs_data()  # pylint: disable=protected-access
 
-        if isinstance(H, (Tensor, Observable)):
+        if isinstance(other, (Tensor, Observable)):
             self.simplify()
             return self._obs_data() == {
-                (1, frozenset(H._obs_data()))  # pylint: disable=protected-access
+                (1, frozenset(other._obs_data()))  # pylint: disable=protected-access
             }
 
         raise ValueError("Can only compare a Hamiltonian, and a Hamiltonian/Observable/Tensor.")

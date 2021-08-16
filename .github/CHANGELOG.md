@@ -2,7 +2,6 @@
 
 <h3>New features since last release</h3>
 
-
 * Vector-Jacobian product transforms have been added to the `qml.gradients` package.
   [(#1494)](https://github.com/PennyLaneAI/pennylane/pull/1494)
 
@@ -11,6 +10,24 @@
   - `qml.gradients.vjp`
   - `qml.gradients.batch_vjp`
   
+* The Hamiltonian can now store grouping information, which can be accessed by a device to 
+  speed up computations of the expectation value of a Hamiltonian. 
+  [(#1515)](https://github.com/PennyLaneAI/pennylane/pull/1515)
+
+  ```python
+  obs = [qml.PauliX(0), qml.PauliX(1), qml.PauliZ(0)]
+  coeffs = np.array([1., 2., 3.])
+  H = qml.Hamiltonian(coeffs, obs, grouping_type='qwc')
+  ```
+  
+  Initialization with a ``grouping_type`` other than ``None`` stores the indices 
+  required to make groups of commuting observables and their coefficients. 
+  
+  ``` pycon
+  >>> H.grouping_indices
+  [[0, 1], [2]]
+  ```
+
 * Hamiltonians are now trainable with respect to their coefficients.
   [(#1483)](https://github.com/PennyLaneAI/pennylane/pull/1483)
 
