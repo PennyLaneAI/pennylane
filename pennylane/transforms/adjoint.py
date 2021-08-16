@@ -134,9 +134,6 @@ def adjoint(fn):
                 adjoint_ops.append(new_op)
             except NotImplementedError:
                 # Expand the operation and adjoint the result.
-                # We do not do anything with the output since
-                # calling adjoint on the expansion will automatically
-                # queue the new operations.
                 new_ops = adjoint(op.expand)()
 
                 if isinstance(new_ops, QuantumTape):
