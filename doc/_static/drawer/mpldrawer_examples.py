@@ -87,6 +87,16 @@ def integration(style='default', savefile="example_basic.png"):
 
     drawer.fig.suptitle('My Circuit', fontsize='xx-large')
     plt.savefig(savefile)
+    plt.style.use('default')
+
+def float_layer(savefile="float_layer.png"):
+    drawer = MPLDrawer(2,2)
+
+    drawer.box_gate(layer=0.5, wires=0, text="Big Gate", extra_width=0.5)
+    drawer.box_gate(layer=0, wires=1, text="X")
+    drawer.box_gate(layer=1, wires=1, text="Y")
+
+    plt.savefig(savefile)
 
 
 labels()
@@ -96,5 +106,6 @@ CNOT()
 SWAP()
 measure()
 integration()
+float_layer()
 integration(style='Solarize_Light2', savefile="example_Solarize_Light2.png")
 

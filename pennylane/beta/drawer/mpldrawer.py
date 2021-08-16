@@ -68,7 +68,61 @@ class MPLDrawer:
 
     .. UsageDetails::
 
-    Each gate takes arguments in order of `layer` followed by `wires`.  
+    This class uses matplotlib and pyplot.  The figure and axes objects can be accessed via ``drawer.fig``
+    and ``drawer.ax`` respectively for further configuration. For example, the above example circuit manipulates the
+    pyplot figure to set a title using ``drawer.fig.suptitle``. You can also save the images using ``plt.savefig``.
+
+    Each gate takes arguments in order of ``layer`` followed by ``wires``.  These translate to ``x`` and
+    ``y`` coordinates in the graph. Layer number (``x``) increases as you go right, and wire number
+    (``y``) increases as you go up.  This also means you can pass non-integer values to either keyword.
+    For example, if you have a long label, the gate can span multiple layers and have extra width:
+
+    .. code-block:: python
+
+        drawer = MPLDrawer(2,2)
+        drawer.box_gate(layer=0, wires=1, text="X")
+        drawer.box_gate(layer=1, wires=1, text="Y")
+
+        # Gate between two layers
+        drawer.box_gate(layer=0.5, wires=0, text="Big Gate", extra_width=0.5)
+
+    .. figure:: ../../_static/drawer/float_layer.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
+    Each gate type accepts a ``color`` argument to customize an individual gate, but you can also set a
+    pyplot style or edit ``plt.rcParams`` yourself to get a different look. See available styles with
+    ``plt.style.available``. For example, we can set the
+    ``'Solarize_Light2'`` style with the same graph as drawn above:
+
+    .. code-block:: python
+
+        plt.style.use('Solarize_Light2')
+        drawer = MPLDrawer(n_wires=5,n_layers=5)
+
+        drawer.label(["0","a",r"$|\Psi\rangle$",r"$|\theta\rangle$", "aux"])
+
+        drawer.box_gate(0, [0,1,2,3,4], "Entangling Layers", rotate_text=True)
+        drawer.box_gate(1, [0, 1], "U(θ)")
+        drawer.box_gate(1, 4, "X", color='lightcoral')
+
+        drawer.SWAP(1, (2, 3))
+        drawer.CNOT(2, (0,2), color='forestgreen')
+
+        drawer.ctrl(3, [1,3])
+        drawer.box_gate(3, 2, "H", zorder_base=2)
+
+        drawer.ctrl(4, [1,2])
+
+        drawer.measure(5, 0)
+
+        drawer.fig.suptitle('My Circuit', fontsize='xx-large')
+
+    .. figure:: ../../_static/drawer/example_Solarize_Light2.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
 
 
     """
