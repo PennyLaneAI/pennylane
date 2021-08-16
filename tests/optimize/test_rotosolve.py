@@ -119,20 +119,20 @@ classical_functions = [
     - np.cos(z - 1.35) * 0.111,
 ]
 classical_minima = [
-    -np.pi / 2 - 0.124,
-    [-0.12, -np.pi / 2 + 2.01, 1.35],
-    [-0.12, [-np.pi / 2 + 2.01, 1.35]],
-    [-0.12, [(-np.pi / 2 + 2.01) / 2, 1.35 / 2]],
-    [-0.12, -np.pi / 2 + 2.01, 1.35],
-    [-0.12 / 2, (-np.pi / 2 + 2.01) / 3, 1.35],
+    (-np.pi / 2 - 0.124,),
+    ([-0.12, -np.pi / 2 + 2.01, 1.35],),
+    (-0.12, [-np.pi / 2 + 2.01, 1.35]),
+    (-0.12, [(-np.pi / 2 + 2.01) / 2, 1.35 / 2]),
+    (-0.12, -np.pi / 2 + 2.01, 1.35),
+    (-0.12 / 2, (-np.pi / 2 + 2.01) / 3, 1.35),
 ]
 classical_params = [
-    [0.24],
-    [[0.2, -0.3, 0.1]],
-    [0.3, [0.8, 0.1]],
-    [0.2, [0.3, 0.5]],
-    [0.1, 0.2, 0.5],
-    [0.9, 0.7, 0.2],
+    (0.24,),
+    ([0.2, -0.3, 0.1],),
+    (0.3, [0.8, 0.1]),
+    (0.2, [0.3, 0.5]),
+    (0.1, 0.2, 0.5),
+    (0.9, 0.7, 0.2),
 ]
 classical_num_frequencies = [[1], [[1, 1, 1]], [1, [1, 1]], [1, 2], 1, [2, 3, 1]]
 
@@ -201,10 +201,11 @@ class TestWithClassicalFunctions:
             optimizer=optimizer,
             optimizer_kwargs=optimizer_kwargs,
         )
+        # The following accounts for the unpacking functionality for length-1 param
+        if len(param) == 1:
+            new_param_step = (new_param_step,)
 
-        assert (np.isscalar(x_min) and np.isscalar(new_param_step)) or len(x_min) == len(
-            new_param_step
-        )
+        assert len(x_min) == len(new_param_step)
         assert np.allclose(
             np.fromiter(_flatten(x_min), dtype=float),
             np.fromiter(_flatten(new_param_step), dtype=float),
@@ -218,6 +219,11 @@ class TestWithClassicalFunctions:
             optimizer=optimizer,
             optimizer_kwargs=optimizer_kwargs,
         )
+        # The following accounts for the unpacking functionality for length-1 param
+        if len(param) == 1:
+            new_param_step_and_cost = (new_param_step_and_cost,)
+
+        assert len(x_min) == len(new_param_step_and_cost)
         assert np.allclose(
             np.fromiter(_flatten(new_param_step_and_cost), dtype=float),
             np.fromiter(_flatten(new_param_step), dtype=float),
@@ -246,9 +252,42 @@ class TestWithClassicalFunctions:
             optimizer_kwargs=optimizer_kwargs,
             full_output=True,
         )
+        # The following accounts for the unpacking functionality for length-1 param
+        if len(param) == 1:
+            new_param_step = (new_param,)
         expected_intermediate_x = successive_params(param, new_param)
         expected_y_output = [fun(*par) for par in expected_intermediate_x[1:]]
 
         assert np.allclose(y_output_step, expected_y_output)
         assert np.allclose(y_output_step_and_cost, expected_y_output)
         assert np.isclose(old_cost, fun(*expected_intermediate_x[0]))
+
+
+@pytest.mark.parametrize(
+    "fun, x_min, param, num_freq",
+    list(zip(classical_functions, classical_minima, classical_params, classical_num_frequencies)),
+)
+def test_multiple_steps(fun, x_min, param, num_freq):
+    """Tests that repeated steps execute as expected."""
+    opt = qml.RotosolveOptimizer()
+
+    optimizer = "brute"
+    optimizer_kwargs = None
+    for _ in range(3):
+        param = opt.step(
+            fun,
+            *param,
+            num_frequencies=num_freq,
+            optimizer=optimizer,
+            optimizer_kwargs=optimizer_kwargs,
+        )
+        # The following accounts for the unpacking functionality for length-1 param
+        if len(x_min) == 1:
+            param = (param,)
+
+    assert (np.isscalar(x_min) and np.isscalar(param)) or len(x_min) == len(param)
+    assert np.allclose(
+        np.fromiter(_flatten(x_min), dtype=float),
+        np.fromiter(_flatten(param), dtype=float),
+        atol=1e-5,
+    )
