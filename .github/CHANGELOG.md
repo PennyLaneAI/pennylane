@@ -1,6 +1,6 @@
 <h3>Improvements</h3>
 * Create a separate requirements file for the CI issue , to have a separate requirements.txt (pinned) and requirements-ci.txt (unpinned). This latter would be used by the CI..
-  [(#1505)](https://github.com/PennyLaneAI/pennylane/pull/1505)
+  [(#1535)](https://github.com/PennyLaneAI/pennylane/pull/1535)
 
 # Release 0.17.0-dev (development release)
 
