@@ -16,6 +16,7 @@ Unit tests for the ``RotosolveOptimizer``.
 """
 import numpy as onp
 import pytest
+from scipy.optimize import shgo
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -25,6 +26,8 @@ from pennylane.optimize import RotosolveOptimizer
 
 
 def expand_num_freq(num_freq, param):
+    if np.isscalar(num_freq):
+        num_freq = [num_freq]*len(param)
     expanded = []
     for _num_freq, par in zip(num_freq, param):
         if np.isscalar(_num_freq) and np.isscalar(par):
@@ -131,20 +134,20 @@ classical_params = [
     [0.1, 0.2, 0.5],
     [0.9, 0.7, 0.2],
 ]
-classical_num_frequencies = [[1], [[1, 1, 1]], [1, [1, 1]], [1, 2], [1, 1, 1], [2, 3, 1]]
+classical_num_frequencies = [[1], [[1, 1, 1]], [1, [1, 1]], [1, 2], 1, [2, 3, 1]]
 
 
-def custom_optimizer(fun, mock_kwarg):
-    return mock_kwarg, mock_kwarg * 2
+def custom_optimizer(fun, **kwargs):
+    r"""Wrapper for ``scipy.optimize.shgo`` that does not return y_min."""
+    opt_res = shgo(fun, **kwargs)
+    return opt_res.x, None
 
-
-custom_optimizer_kwargs = {"mock_kwarg": 1.0}
-
-optimizers = [None, "brute", "shgo"]
+optimizers = [None, "brute", "shgo", custom_optimizer]
 optimizer_kwargs = [
     {"Ns": 93, "num_steps": 3},
     None,
     {"bounds": ((-1.0, 1.0),), "n": 512},
+    {"bounds": ((-1.1, 1.4),)},
 ]
 
 
@@ -160,6 +163,7 @@ class TestWithClassicalFunctions:
     def test_number_of_function_calls(
         self, fun, x_min, param, num_freq, optimizer, optimizer_kwargs
     ):
+        """Tests that per parameter 2R+1 function calls are used for an update step."""
         global num_calls
         num_calls = 0
 
