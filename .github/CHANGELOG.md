@@ -2,6 +2,14 @@
 
 <h3>New features since last release</h3>
 
+* Vector-Jacobian product transforms have been added to the `qml.gradients` package.
+  [(#1494)](https://github.com/PennyLaneAI/pennylane/pull/1494)
+
+  The new transforms include:
+
+  - `qml.gradients.vjp`
+  - `qml.gradients.batch_vjp`
+  
 * The Hamiltonian can now store grouping information, which can be accessed by a device to 
   speed up computations of the expectation value of a Hamiltonian. 
   [(#1515)](https://github.com/PennyLaneAI/pennylane/pull/1515)
@@ -93,7 +101,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Maria Schuld.
+Josh Izaac, Maria Schuld.
 
 # Release 0.17.0 (current release)
 
@@ -265,7 +273,7 @@ Maria Schuld.
   For example,
 
   ```pycon
-  >>> with qml.tape.QuantumTape() as tape:
+  >>> with qml.tape.JacobianTape() as tape:
   ...     qml.RX(params[0], wires=0)
   ...     qml.RY(params[1], wires=0)
   ...     qml.RX(params[2], wires=0)
