@@ -600,7 +600,10 @@ class TestHamiltonian:
 
         assert data == {
             (1, frozenset([("PauliZ", qml.wires.Wires(0), ())])),
-            (1, frozenset([("PauliZ", qml.wires.Wires(0), ()), ("PauliX", qml.wires.Wires(1), ())])),
+            (
+                1,
+                frozenset([("PauliZ", qml.wires.Wires(0), ()), ("PauliX", qml.wires.Wires(1), ())]),
+            ),
             (0.5, frozenset([("PauliX", qml.wires.Wires(2), ())])),
         }
 

@@ -266,7 +266,6 @@ add_queue = zip(QUEUE_HAMILTONIANS_1, QUEUE_HAMILTONIANS_2, QUEUES)
 # Tests
 
 
-
 class TestVQE:
     """Test the core functionality of the VQE module"""
 
