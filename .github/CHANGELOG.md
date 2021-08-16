@@ -1023,9 +1023,6 @@ Maria Schuld, Jay Soni, Antal Száva, David Wierichs.
   3.999999999999999
   ```
 
-* QNodes now display readable information when in interactive environments or when printed.
-  [(#1359)](https://github.com/PennyLaneAI/pennylane/pull/1359).
-
 * The `quantum_monte_carlo` transform has been added, allowing an input circuit to be transformed
   into the full quantum Monte Carlo algorithm.
   [(#1316)](https://github.com/PennyLaneAI/pennylane/pull/1316)
