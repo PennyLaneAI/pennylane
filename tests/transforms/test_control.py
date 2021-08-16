@@ -79,6 +79,7 @@ def test_adjoint_of_control():
         expanded = ctrl_op.expand()
         assert_equal_operations(expanded.operations, expected)
 
+
 class TestAdjointOutsideQueuing:
     """Test calling the adjoint method of ControlledOperation outside of a
     queuing context"""
@@ -128,6 +129,7 @@ class TestAdjointOutsideQueuing:
             assert type(op1) == type(op2)
             assert op1.parameters == op2.parameters
             assert op1.wires == op2.wires
+
 
 def test_nested_control():
     """Test nested use of control"""
