@@ -9,11 +9,11 @@
   ```python
   obs = [qml.PauliX(0), qml.PauliX(1), qml.PauliZ(0)]
   coeffs = np.array([1., 2., 3.])
-  H = qml.Hamiltonian(coeffs, obs, compute_groupings=True)
+  H = qml.Hamiltonian(coeffs, obs, grouping_type='qwc')
   ```
   
-  Initialization with ``compute_grouping=True`` stores the indices required to make groups of
-  commuting observables and their coefficients. 
+  Initialization with a ``grouping_type`` other than ``None`` stores the indices 
+  required to make groups of commuting observables and their coefficients. 
   
   ``` pycon
   >>> H.grouping_indices
