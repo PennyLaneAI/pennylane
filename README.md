@@ -86,7 +86,7 @@ python -m pip install pennylane
 
 **Docker** support exists for building using **CPU** and **GPU** (Nvidia CUDA
 11.1+) images. [See a more detailed description
-here.](https://pennylane.readthedocs.io/en/stable/development/guide/installation.html#installation).
+here](https://pennylane.readthedocs.io/en/stable/development/guide/installation.html#installation).
 
 ## Getting started
 

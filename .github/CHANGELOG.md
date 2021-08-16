@@ -200,28 +200,10 @@
   Torch, and Jax), as well as device plugins and QChem, for GPUs and CPUs, has been added.
   [(#1391)](https://github.com/PennyLaneAI/pennylane/pull/1391)
 
-  The build process using Docker and `make` requires that the repository source code
-  is cloned or downloaded from GitHub, and provides the following options:
-
-  * Building a core PennyLane image:
-  ```
-  make -f docker/Makefile build-base
-  ```
-
-  * Building a PennyLane image with the TensorFlow interface (change `interface-name` for other interfaces):
-  ```
-  make -f docker/Makefile build-interface interface-name=tensorflow
-  ```
-
-  * Building a PennyLane image with the Qiskit plugin (change `plugin-name` for other plugins):
-  ```
-  make -f docker/Makefile build-plugin plugin-name=qiskit
-  ```
-
-  * Building the PennyLane-QChem image:
-  ```
-  make -f docker/Makefile build-qchem
-  ```
+  The build process using Docker and `make` requires that the repository source
+  code is cloned or downloaded from GitHub. Visit the the detailed description
+  for an [extended list of
+  options](https://pennylane.readthedocs.io/en/stable/development/guide/installation.html#installation).
 
 <h4>Improved Hamiltonian simulations</h4>
 
