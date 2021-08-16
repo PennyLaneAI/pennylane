@@ -1453,7 +1453,7 @@ class TestNewVQE:
         assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
 
     def test_specs(self):
-        # test that the specs of a VQE circuit can be computed
+        """Test that the specs of a VQE circuit can be computed"""
         dev = qml.device("default.qubit", wires=2)
         H = qml.Hamiltonian([0.1, 0.2], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1)])
 
