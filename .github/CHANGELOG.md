@@ -547,6 +547,11 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug in `qml.adjoint` and `qml.ctrl`
+  where the adjoint of operations outside of a `QNode` or a `QuantumTape` could
+  not be obtained.
+  [(#1532)](https://github.com/PennyLaneAI/pennylane/pull/1532)
+
 * Fixes a bug in `GradientDescentOptimizer` and `NesterovMomentumOptimizer`
   where a cost function with one trainable parameter and non-trainable
   parameters raised an error.
