@@ -200,7 +200,8 @@
   Torch, and Jax), as well as device plugins and QChem, for GPUs and CPUs, has been added.
   [(#1391)](https://github.com/PennyLaneAI/pennylane/pull/1391)
 
-  The build process using Docker and Makefile works as follows:
+  The build process using Docker and `make` requires that the repository source code
+  is cloned or downloaded from GitHub, and provides the following options:
 
   * Building a core PennyLane image:
   ```
