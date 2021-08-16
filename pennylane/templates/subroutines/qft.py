@@ -15,6 +15,7 @@
 Contains the QFT template.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access
+
 import cmath
 import functools
 import numpy as np
