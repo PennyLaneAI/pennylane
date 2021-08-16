@@ -125,7 +125,12 @@ class ControlledOperation(Operation):
             # Not within a queuing context
             with QuantumTape() as new_tape:
                 # Execute all ops adjointed.
-                adjoint(requeue_ops_in_tape)(self.subtape)
+                ops = adjoint(requeue_ops_in_tape)(self.subtape)
+
+            if not new_tape.operations:
+                with qml.tape.QuantumTape() as new_tape:
+                    for op in ops:
+                        op.queue()
 
         return ControlledOperation(new_tape, self.control_wires)
 
