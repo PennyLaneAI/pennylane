@@ -126,52 +126,68 @@ Build a PennyLane Docker image
 
 **Docker** support exists for building using **CPU** and **GPU** (Nvidia CUDA 11.1+) images.
 
+.. note::
 
-**Note:** Docker builds using "make" will work on Linux and MacOS only. For MS Windows you can use [WSL](https://docs.microsoft.com/en-us/windows/wsl/install-win10). They are currently not supported on the Apple M1 chip (ARM64).
+    Docker builds using "make" will work on Linux and MacOS only. For MS Windows
+    you can use [WSL](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
+    They are currently not supported on the Apple M1 chip (ARM64).
 
 
-### Build a basic PennyLane image
-- To build a basic PennyLane image without any additional interfaces (Torch, TensorFlow, or Jax) or **plugins** (qiskit, amazon-braket, cirq, forest), run the following:
+Build a basic PennyLane image
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-```console
-make -f docker/Makefile build-base
-```
+- To build a basic PennyLane image without any additional interfaces (Torch,
+  TensorFlow, or Jax) or **plugins** (qiskit, amazon-braket, cirq, forest), run
+  the following:
+
+  .. code-block:: bash
+
+    make -f docker/Makefile build-base
+
 Build a PennyLane image with a specific interface
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - To build a PennyLane image using a specific **interface** (Torch, TensorFlow or Jax), run the following:
 
-```console
-make -f docker/Makefile build-interface interface-name=tensorflow
-```
-- To build a PennyLane image using a specific interface (Torch, TensorFlow or Jax) with GPU support, run the following:
+  .. code-block:: bash
 
-```console
-make -f docker/Makefile build-interface-gpu interface-name=tensorflow
-```
+    make -f docker/Makefile build-interface interface-name=tensorflow
+
+- To build a PennyLane image using a specific interface (Torch, TensorFlow or
+  Jax) with GPU support, run the following:
+
+  .. code-block:: bash
+
+    make -f docker/Makefile build-interface-gpu interface-name=tensorflow
 
 Build a PennyLane image with a plugin
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- To build a PennyLane image using a specific plugin (qiskit, amazon-braket, cirq, forest, etc), run the following:
+- To build a PennyLane image using a specific plugin (qiskit, amazon-braket,
+  cirq, forest, etc), run the following:
 
-```console
-make -f docker/Makefile build-plugin plugin-name=qiskit
-```
+  .. code-block:: bash
 
-### Build a PennyLane-Qchem image
-- You can also build an image with the PennyLane Qchem package and its dependencies. Use the following commands:
+    make -f docker/Makefile build-plugin plugin-name=qiskit
 
-```console
-make -f docker/Makefile build-qchem
-```
+Build a PennyLane-Qchem image
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- You can also build an image with the PennyLane Qchem package and its
+  dependencies. Use the following commands:
+
+  .. code-block:: bash
+
+    make -f docker/Makefile build-qchem
+
 - #### To check all available interfaces, run the following:
 
-```console
-make -f docker/Makefile available-interfaces
-```
+  .. code-block:: bash
+
+    make -f docker/Makefile available-interfaces
+
 - #### To check all available plugins, run the following:
 
-```console
-make -f docker/Makefile available-plugins
-```
+  .. code-block:: bash
+
+    make -f docker/Makefile available-plugins
