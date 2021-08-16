@@ -400,7 +400,6 @@ class TestBatchVJP:
 
     def test_reduction_append(self):
         """Test the 'append' reduction strategy"""
-
         dev = qml.device("default.qubit", wires=2)
 
         with qml.tape.JacobianTape() as tape1:
