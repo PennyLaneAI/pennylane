@@ -147,6 +147,7 @@ class TestOutsideOfQueuing:
             assert o1.parameters == o2.parameters
             assert o1.wires == o2.wires
 
+
 test_functions = [
     lambda fn, *args, **kwargs: adjoint(fn)(*args, **kwargs),
     lambda fn, *args, **kwargs: qml.inv(fn(*args, **kwargs)),
