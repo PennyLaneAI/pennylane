@@ -101,7 +101,7 @@ class TestHamiltonianExpval:
     def test_grouping_is_used(self):
         """Test that the grouping in a Hamiltonian is used"""
         H = qml.Hamiltonian(
-            [1.0, 2.0, 3.0], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)], grouping_type='qwc'
+            [1.0, 2.0, 3.0], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)], grouping_type="qwc"
         )
         assert H.grouping_indices is not None
 
