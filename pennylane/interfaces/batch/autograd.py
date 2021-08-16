@@ -164,7 +164,7 @@ def vjp(
         jacs = ans[1]
 
         if jacs:
-            # Jacobians were computed on the forward pass (accumulation="forward")
+            # Jacobians were computed on the forward pass (mode="forward")
             # No additional quantum evaluations needed; simply compute the VJPs directly.
             vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(dy, jacs)]
 

@@ -401,25 +401,18 @@ class TestResourceEstimation:
         """Test that empty tapes return empty resource counts."""
         tape = make_empty_tape
 
-        with pytest.warns(UserWarning, match=r"``tape.get_resources``is now deprecated"):
-            info = tape.get_resources()
-        assert len(info) == 0
-
-        with pytest.warns(UserWarning, match=r"``tape.get_depth`` is now deprecated"):
-            depth = tape.get_depth()
-        assert depth == 0
+        assert len(tape.specs["gate_types"]) == 0
+        assert tape.specs["depth"] == 0
 
     def test_resources_tape(self, make_tape):
         """Test that regular tapes return correct number of resources."""
         tape = make_tape
 
-        with pytest.warns(UserWarning, match=r"``tape.get_depth`` is now deprecated"):
-            depth = tape.get_depth()
+        depth = tape.specs["depth"]
         assert depth == 3
 
         # Verify resource counts
-        with pytest.warns(UserWarning, match=r"``tape.get_resources``is now deprecated"):
-            resources = tape.get_resources()
+        resources = tape.specs["gate_types"]
         assert len(resources) == 3
         assert resources["RX"] == 2
         assert resources["Rot"] == 1
@@ -429,12 +422,10 @@ class TestResourceEstimation:
         """Test that tapes return correct number of resources after adding to them."""
         tape = make_extendible_tape
 
-        with pytest.warns(UserWarning, match=r"``tape.get_depth`` is now deprecated"):
-            depth = tape.get_depth()
+        depth = tape.specs["depth"]
         assert depth == 3
 
-        with pytest.warns(UserWarning, match=r"``tape.get_resources``is now deprecated"):
-            resources = tape.get_resources()
+        resources = tape.specs["gate_types"]
         assert len(resources) == 3
         assert resources["RX"] == 2
         assert resources["Rot"] == 1
@@ -446,11 +437,9 @@ class TestResourceEstimation:
             qml.expval(qml.PauliX(wires="a"))
             qml.probs(wires=[0, "a"])
 
-        with pytest.warns(UserWarning, match=r"``tape.get_depth`` is now deprecated"):
-            assert tape.get_depth() == 4
+        assert tape.specs["depth"] == 4
 
-        with pytest.warns(UserWarning, match=r"``tape.get_resources``is now deprecated"):
-            resources = tape.get_resources()
+        resources = tape.specs["gate_types"]
         assert len(resources) == 4
         assert resources["RX"] == 2
         assert resources["Rot"] == 1

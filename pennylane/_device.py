@@ -512,7 +512,7 @@ class Device(abc.ABC):
         Args:
             circuits (list[.tape.QuantumTape]): circuits to execute on the device
             method (str): the device method to call to compute the Jacobian of a single circuit
-            **kwargs: keyword argument to pass when calling ``method``.
+            **kwargs: keyword argument to pass when calling ``method``
 
         Returns:
             tuple[list[array[float]], list[array[float]]]: Tuple containing list of measured value(s)
@@ -525,7 +525,8 @@ class Device(abc.ABC):
 
         for circuit in circuits:
             # Evaluations and gradients are paired, so that
-            # we can re-use the device state for the adjoint method
+            # devices can re-use the device state for the
+            # gradient computation (if applicable).
             res.append(circuit.execute(self))
             jacs.append(gradient_method(circuit, **kwargs))
 
@@ -544,7 +545,7 @@ class Device(abc.ABC):
         Args:
             circuits (list[.tape.QuantumTape]): circuits to execute on the device
             method (str): the device method to call to compute the Jacobian of a single circuit
-            **kwargs: keyword argument to pass when calling ``method``.
+            **kwargs: keyword argument to pass when calling ``method``
 
         Returns:
             list[array[float]]: List of Jacobians. Returned Jacobians should be of

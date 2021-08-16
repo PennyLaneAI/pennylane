@@ -49,12 +49,42 @@ def compute_vjp(dy, jac):
 
 
 def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
-    """Generate the gradient tapes and processing function required to compute
+    r"""Generate the gradient tapes and processing function required to compute
     the vector-Jacobian products of a tape.
+
+    Consider a function :math:`\mathbf{f}(\mathbf{x})`. The Jacobian is given by
+
+    .. math::
+
+        \mathbf{J}_{\mathbf{f}}(\mathbf{x}) = \begin{pmatrix}
+            \frac{\partial f_1}{\partial x_1} &\cdots &\frac{\partial f_1}{\partial x_n}\\
+            \vdots &\ddots &\vdots\\
+            \frac{\partial f_m}{\partial x_1} &\cdots &\frac{\partial f_m}{\partial x_n}\\
+        \end{pmatrix}.
+
+    During backpropagation, the chain rule is applied. For example, consider the
+    cost function :math:`h = y\circ f: \mathbb{R}^n \rightarrow \mathbb{R}`,
+    where :math:`y: \mathbb{R}^m \rightarrow \mathbb{R}`.
+    The gradient is:
+
+    .. math::
+
+        \nabla h(\mathbf{x}) = \frac{\partial y}{\partial \mathbf{f}} \frac{\partial \mathbf{f}}{\partial \mathbf{x}}
+        = \frac{\partial y}{\partial \mathbf{f}} \mathbf{J}_{\mathbf{f}}(\mathbf{x}).
+
+    Denote :math:`d\mathbf{y} = \frac{\partial y}{\partial \mathbf{f}}`; we can write this in the form
+    of a matrix multiplication:
+
+    .. math:: \left[\nabla h(\mathbf{x})\right]_{j} = \sum_{i=0}^m d\mathbf{y}_i ~ \mathbf{J}_{ij}.
+
+    Thus, we can see that the gradient of the cost function is given by the so-called
+    **vector-Jacobian product**; the product of the row-vector :math:`d\mathbf{y}`, representing
+    the gradient of subsequent components of the cost function, and :math:`\mathbf{J}`,
+    the Jacobian of the current node of interest.
 
     Args:
         tape (.QuantumTape): quantum tape to differentiate
-        dy (tensor_like): Gradient-output vector`. Must have shape
+        dy (tensor_like): Gradient-output vector. Must have shape
             matching the output shape of the corresponding tape.
         gradient_fn (callable): the gradient transform to use to differentiate
             the tape
@@ -140,8 +170,38 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
 
 
 def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None):
-    """Generate the gradient tapes and processing function required to compute
+    r"""Generate the gradient tapes and processing function required to compute
     the vector-Jacobian products of a batch of tapes.
+
+    Consider a function :math:`\mathbf{f}(\mathbf{x})`. The Jacobian is given by
+
+    .. math::
+
+        \mathbf{J}_{\mathbf{f}}(\mathbf{x}) = \begin{pmatrix}
+            \frac{\partial f_1}{\partial x_1} &\cdots &\frac{\partial f_1}{\partial x_n}\\
+            \vdots &\ddots &\vdots\\
+            \frac{\partial f_m}{\partial x_1} &\cdots &\frac{\partial f_m}{\partial x_n}\\
+        \end{pmatrix}.
+
+    During backpropagation, the chain rule is applied. For example, consider the
+    cost function :math:`h = y\circ f: \mathbb{R}^n \rightarrow \mathbb{R}`,
+    where :math:`y: \mathbb{R}^m \rightarrow \mathbb{R}`.
+    The gradient is:
+
+    .. math::
+
+        \nabla h(\mathbf{x}) = \frac{\partial y}{\partial \mathbf{f}} \frac{\partial \mathbf{f}}{\partial \mathbf{x}}
+        = \frac{\partial y}{\partial \mathbf{f}} \mathbf{J}_{\mathbf{f}}(\mathbf{x}).
+
+    Denote :math:`d\mathbf{y} = \frac{\partial y}{\partial \mathbf{f}}`; we can write this in the form
+    of a matrix multiplication:
+
+    .. math:: \left[\nabla h(\mathbf{x})\right]_{j} = \sum_{i=0}^m d\mathbf{y}_i ~ \mathbf{J}_{ij}.
+
+    Thus, we can see that the gradient of the cost function is given by the so-called
+    **vector-Jacobian product**; the product of the row-vector :math:`d\mathbf{y}`, representing
+    the gradient of subsequent components of the cost function, and :math:`\mathbf{J}`,
+    the Jacobian of the current node of interest.
 
     Args:
         tapes (Sequence[.QuantumTape]): sequence of quantum tapes to differentiate
@@ -224,7 +284,6 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None)
             [-9.2973e-02, -1.0772e+00,  4.7184e-09]], dtype=torch.float64)
     """
     gradient_kwargs = gradient_kwargs or {}
-
     reshape_info = []
     gradient_tapes = []
     processing_fns = []
