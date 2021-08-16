@@ -493,7 +493,7 @@ big_hamiltonian_ops = [
     qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[3]),
 ]
 
-big_hamiltonian = qml.vqe.Hamiltonian(big_hamiltonian_coeffs, big_hamiltonian_ops)
+big_hamiltonian = qml.Hamiltonian(big_hamiltonian_coeffs, big_hamiltonian_ops)
 
 big_hamiltonian_grad = (
     np.array(
@@ -648,7 +648,7 @@ class TestHamiltonian:
     def test_hamiltonian_valid_init(self, coeffs, ops):
         """Tests that the Hamiltonian object is created with
         the correct attributes"""
-        H = qml.vqe.Hamiltonian(coeffs, ops)
+        H = qml.Hamiltonian(coeffs, ops)
         assert np.allclose(H.terms[0], coeffs)
         assert H.terms[1] == list(ops)
 
@@ -657,7 +657,7 @@ class TestHamiltonian:
         """Tests that an exception is raised when giving an invalid
         combination of coefficients and ops"""
         with pytest.raises(ValueError, match="number of coefficients and operators does not match"):
-            H = qml.vqe.Hamiltonian(coeffs, ops)
+            H = qml.Hamiltonian(coeffs, ops)
 
     @pytest.mark.parametrize(
         "obs", [[qml.PauliX(0), qml.CNOT(wires=[0, 1])], [qml.PauliZ, qml.PauliZ(0)]]
@@ -668,29 +668,29 @@ class TestHamiltonian:
         coeffs = [0.1, 0.2]
 
         with pytest.raises(ValueError, match="observables are not valid"):
-            H = qml.vqe.Hamiltonian(coeffs, obs)
+            H = qml.Hamiltonian(coeffs, obs)
 
     @pytest.mark.parametrize("coeffs, ops", valid_hamiltonians)
     def test_hamiltonian_wires(self, coeffs, ops):
         """Tests that the Hamiltonian object has correct wires."""
-        H = qml.vqe.Hamiltonian(coeffs, ops)
+        H = qml.Hamiltonian(coeffs, ops)
         assert set(H.wires) == set([w for op in H.ops for w in op.wires])
 
     @pytest.mark.parametrize("terms, string", zip(valid_hamiltonians, valid_hamiltonians_str))
     def test_hamiltonian_str(self, terms, string):
         """Tests that the __str__ function for printing is correct"""
-        H = qml.vqe.Hamiltonian(*terms)
+        H = qml.Hamiltonian(*terms)
         assert H.__str__() == string
 
     @pytest.mark.parametrize("terms, string", zip(valid_hamiltonians, valid_hamiltonians_repr))
     def test_hamiltonian_repr(self, terms, string):
         """Tests that the __repr__ function for printing is correct"""
-        H = qml.vqe.Hamiltonian(*terms)
+        H = qml.Hamiltonian(*terms)
         assert H.__repr__() == string
 
     def test_hamiltonian_name(self):
         """Tests the name property of the Hamiltonian class"""
-        H = qml.vqe.Hamiltonian([], [])
+        H = qml.Hamiltonian([], [])
         assert H.name == "Hamiltonian"
 
     @pytest.mark.parametrize(("old_H", "new_H"), simplify_hamiltonians)
@@ -924,7 +924,7 @@ class TestVQE:
     @pytest.mark.parametrize("coeffs, observables", [z for z in zip(COEFFS, OBSERVABLES)])
     def test_cost_evaluate(self, params, ansatz, coeffs, observables):
         """Tests that the cost function evaluates properly"""
-        hamiltonian = qml.vqe.Hamiltonian(coeffs, observables)
+        hamiltonian = qml.Hamiltonian(coeffs, observables)
         dev = qml.device("default.qubit", wires=3)
         expval = qml.ExpvalCost(ansatz, hamiltonian, dev)
         assert type(expval(params)) == np.float64
@@ -936,14 +936,14 @@ class TestVQE:
     def test_cost_expvals(self, coeffs, observables, expected):
         """Tests that the cost function returns correct expectation values"""
         dev = qml.device("default.qubit", wires=2)
-        hamiltonian = qml.vqe.Hamiltonian(coeffs, observables)
+        hamiltonian = qml.Hamiltonian(coeffs, observables)
         cost = qml.ExpvalCost(lambda params, **kwargs: None, hamiltonian, dev)
         assert cost([]) == sum(expected)
 
     @pytest.mark.parametrize("ansatz", JUNK_INPUTS)
     def test_cost_invalid_ansatz(self, ansatz, mock_device):
         """Tests that the cost function raises an exception if the ansatz is not valid"""
-        hamiltonian = qml.vqe.Hamiltonian((1.0,), [qml.PauliZ(0)])
+        hamiltonian = qml.Hamiltonian((1.0,), [qml.PauliZ(0)])
         with pytest.raises(ValueError, match="not a callable function."):
             cost = qml.ExpvalCost(4, hamiltonian, mock_device())
 
@@ -953,7 +953,7 @@ class TestVQE:
         differentiation method were passed to the QNode instances using the
         keyword arguments."""
         dev = qml.device("default.qubit", wires=2)
-        hamiltonian = qml.vqe.Hamiltonian(coeffs, observables)
+        hamiltonian = qml.Hamiltonian(coeffs, observables)
         cost = qml.ExpvalCost(lambda params, **kwargs: None, hamiltonian, dev, h=123, order=2)
 
         # Checking that the qnodes contain the step size and order
@@ -1481,7 +1481,7 @@ class TestAutogradInterface:
         coeffs = [0.2, 0.5]
         observables = [qml.PauliX(0), qml.PauliY(0)]
 
-        H = qml.vqe.Hamiltonian(coeffs, observables)
+        H = qml.Hamiltonian(coeffs, observables)
         a, b = 0.54, 0.123
         params = np.array([a, b])
 
@@ -1523,7 +1523,7 @@ class TestTorchInterface:
         coeffs = [0.2, 0.5]
         observables = [qml.PauliX(0), qml.PauliY(0)]
 
-        H = qml.vqe.Hamiltonian(coeffs, observables)
+        H = qml.Hamiltonian(coeffs, observables)
         a, b = 0.54, 0.123
         params = torch.autograd.Variable(torch.tensor([a, b]), requires_grad=True)
 
@@ -1570,7 +1570,7 @@ class TestTFInterface:
         coeffs = [0.2, 0.5]
         observables = [qml.PauliX(0), qml.PauliY(0)]
 
-        H = qml.vqe.Hamiltonian(coeffs, observables)
+        H = qml.Hamiltonian(coeffs, observables)
         a, b = 0.54, 0.123
         params = Variable([a, b], dtype=tf.float64)
         cost = qml.ExpvalCost(ansatz, H, dev, interface="tf")
@@ -1599,7 +1599,7 @@ class TestMultipleInterfaceIntegration:
         coeffs = [0.2, 0.5]
         observables = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliY(0)]
 
-        H = qml.vqe.Hamiltonian(coeffs, observables)
+        H = qml.Hamiltonian(coeffs, observables)
 
         # TensorFlow interface
         params = Variable(qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1))

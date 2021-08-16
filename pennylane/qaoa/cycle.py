@@ -19,7 +19,7 @@ from typing import Dict, Tuple, Iterable, List
 import networkx as nx
 import numpy as np
 import pennylane as qml
-from pennylane.vqe import Hamiltonian
+from pennylane.ops import Hamiltonian
 
 
 def edges_to_wires(graph: nx.Graph) -> Dict[Tuple, int]:
