@@ -44,15 +44,25 @@ containing quantum operations) that are used to construct QNodes.
     :toctree: api
 
     ~adjoint
-    ~transforms.cancel_inverses
-    ~transforms.commute_controlled
     ~ctrl
-    ~transforms.merge_rotations
-    ~transforms.single_qubit_fusion
-    ~transforms.unitary_to_rot
     ~transforms.invisible
     ~apply_controlled_Q
     ~quantum_monte_carlo
+
+Transforms for circuit compilation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This set of transforms accept quantum functions, and perform basic circuit compilation tasks.
+
+.. autosummary::
+    :toctree: api
+
+    ~compile
+    ~transforms.cancel_inverses
+    ~transforms.commute_controlled
+    ~transforms.merge_rotations
+    ~transforms.single_qubit_fusion
+    ~transforms.unitary_to_rot
 
 There are also utility functions and decompositions available that assist with
 both transforms, and decompositions within the larger PennyLane codebase.
@@ -92,6 +102,7 @@ to help build custom QNode, quantum function, and tape transforms:
 from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
 from .adjoint import adjoint
 from .classical_jacobian import classical_jacobian
+from .compile import compile
 from .control import ControlledOperation, ctrl
 from .decompositions import zyz_decomposition
 from .draw import draw
