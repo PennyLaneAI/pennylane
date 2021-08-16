@@ -10,7 +10,104 @@
   - `qml.gradients.vjp`
   - `qml.gradients.batch_vjp`
   
+* The Hamiltonian can now store grouping information, which can be accessed by a device to 
+  speed up computations of the expectation value of a Hamiltonian. 
+  [(#1515)](https://github.com/PennyLaneAI/pennylane/pull/1515)
+
+  ```python
+  obs = [qml.PauliX(0), qml.PauliX(1), qml.PauliZ(0)]
+  coeffs = np.array([1., 2., 3.])
+  H = qml.Hamiltonian(coeffs, obs, grouping_type='qwc')
+  ```
+  
+  Initialization with a ``grouping_type`` other than ``None`` stores the indices 
+  required to make groups of commuting observables and their coefficients. 
+  
+  ``` pycon
+  >>> H.grouping_indices
+  [[0, 1], [2]]
+  ```
+
+* Hamiltonians are now trainable with respect to their coefficients.
+  [(#1483)](https://github.com/PennyLaneAI/pennylane/pull/1483)
+
+  ``` python
+  from pennylane import numpy as np
+  
+  dev = qml.device("default.qubit", wires=2)
+  @qml.qnode(dev)
+  def circuit(coeffs, param):
+      qml.RX(param, wires=0)
+      qml.RY(param, wires=0)
+      return qml.expval(
+          qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=True)
+      )
+    
+  coeffs = np.array([-0.05, 0.17])
+  param = np.array(1.7)
+  grad_fn = qml.grad(circuit)
+  ```
+  ``` pycon
+  >>> grad_fn(coeffs, param)
+  (array([-0.12777055,  0.0166009 ]), array(0.0917819))
+  ```
+
+* Support for differentiable execution of batches of circuits has been
+  added, via the beta `pennylane.batch` module.
+  [(#1501)](https://github.com/PennyLaneAI/pennylane/pull/1501)
+
+  For example:
+
+  ```python
+  def cost_fn(x):
+      with qml.tape.JacobianTape() as tape1:
+          qml.RX(x[0], wires=[0])
+          qml.RY(x[1], wires=[1])
+          qml.CNOT(wires=[0, 1])
+          qml.var(qml.PauliZ(0) @ qml.PauliX(1))
+
+      with qml.tape.JacobianTape() as tape2:
+          qml.RX(x[0], wires=0)
+          qml.RY(x[0], wires=1)
+          qml.CNOT(wires=[0, 1])
+          qml.probs(wires=1)
+
+      result = execute([tape1, tape2], dev, gradient_fn=param_shift)
+      return result[0] + result[1][0, 0]
+
+  res = qml.grad(cost_fn)(params)
+  ```
+
 <h3>Improvements</h3>
+
+* The `group_observables` transform is now differentiable.
+  [(#1483)](https://github.com/PennyLaneAI/pennylane/pull/1483)
+ 
+  For example:
+
+  ``` python
+  import jax
+  from jax import numpy as jnp
+  
+  coeffs = jnp.array([1., 2., 3.])
+  obs = [PauliX(wires=0), PauliX(wires=1), PauliZ(wires=1)]
+
+  def group(coeffs, select=None):
+    _, grouped_coeffs = qml.grouping.group_observables(obs, coeffs)
+    # in this example, grouped_coeffs is a list of two jax tensors
+    # [DeviceArray([1., 2.], dtype=float32), DeviceArray([3.], dtype=float32)]
+    return grouped_coeffs[select]
+
+  jac_fn = jax.jacobian(group)
+  ```
+  ```pycon
+  >>> jac_fn(coeffs, select=0)
+  [[1. 0. 0.]
+  [0. 1. 0.]]
+  
+  >>> jac_fn(coeffs, select=1)
+  [[0., 0., 1.]]
+  ```
 
 * The tape does not verify any more that all Observables have owners in the annotated queue.
   [(#1505)](https://github.com/PennyLaneAI/pennylane/pull/1505)
@@ -161,7 +258,7 @@ Josh Izaac, Maria Schuld.
   Total shots:  200
   Total shots:  300
   ```
-
+  
 * VQE problems can now intuitively been set up by passing the Hamiltonian 
   as an observable. [(#1474)](https://github.com/PennyLaneAI/pennylane/pull/1474)
 
@@ -499,6 +596,14 @@ Josh Izaac, Maria Schuld.
 
 <h3>Improvements</h3>
 
+* The tape does not verify any more that all Observables have owners in the annotated queue.
+  [(#1505)](https://github.com/PennyLaneAI/pennylane/pull/1505)
+
+  This allows manipulation of Observables inside a tape context. An example is 
+  `expval(Tensor(qml.PauliX(0), qml.Identity(1)).prune())` which makes the expval an owner 
+  of the pruned tensor and its constituent observables, but leaves the original tensor in 
+  the queue without an owner.
+
 * The `step` and `step_and_cost` methods of `QNGOptimizer` now accept a custom `grad_fn`
   keyword argument to use for gradient computations.
   [(#1487)](https://github.com/PennyLaneAI/pennylane/pull/1487)
@@ -573,6 +678,15 @@ Josh Izaac, Maria Schuld.
   ```
   
 <h3>Breaking changes</h3>
+
+* Removed the deprecated tape methods `get_resources` and `get_depth` as they are
+  superseded by the `specs` tape attribute.
+  [(#1522)](https://github.com/PennyLaneAI/pennylane/pull/1522)
+
+* Specifying `shots=None` with `qml.sample` was previously deprecated.
+  From this release onwards, setting `shots=None` when sampling will
+  raise an error.
+  [(#1522)](https://github.com/PennyLaneAI/pennylane/pull/1522)
 
 * The existing `pennylane.collections.apply` function is no longer accessible
   via `qml.apply`, and needs to be imported directly from the ``collections``
@@ -695,6 +809,7 @@ Maria Schuld, Jay Soni, Antal Száva, David Wierichs.
   K_test = qml.kernels.kernel_matrix(X_train, X_test, kernel)
   K1 = qml.kernels.mitigate_depolarizing_noise(K, num_wires, method='single')
   ```
+  [(#1388)](https://github.com/PennyLaneAI/pennylane/pull/1388)
 
 <h4>Extract the fourier representation of quantum circuits</h4>
 
@@ -904,6 +1019,9 @@ Maria Schuld, Jay Soni, Antal Száva, David Wierichs.
   >>> fn(res)
   3.999999999999999
   ```
+
+* QNodes now display readable information when in interactive environments or when printed.
+  [(#1359)](https://github.com/PennyLaneAI/pennylane/pull/1359).
 
 * The `quantum_monte_carlo` transform has been added, allowing an input circuit to be transformed
   into the full quantum Monte Carlo algorithm.
