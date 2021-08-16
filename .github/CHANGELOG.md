@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* The `frobenius_inner_product` function has been moved to the `qml.math`
+  module, and is now differentiable using all autodiff frameworks.
+  [(#1388)](https://github.com/PennyLaneAI/pennylane/pull/1388)
+
 * Vector-Jacobian product transforms have been added to the `qml.gradients` package.
   [(#1494)](https://github.com/PennyLaneAI/pennylane/pull/1494)
 
@@ -127,7 +131,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Josh Izaac, Maria Schuld.
+Josh Izaac, Johannes Jakob Meyer, Maria Schuld.
 
 # Release 0.17.0 (current release)
 
@@ -809,7 +813,6 @@ Maria Schuld, Jay Soni, Antal Száva, David Wierichs.
   K_test = qml.kernels.kernel_matrix(X_train, X_test, kernel)
   K1 = qml.kernels.mitigate_depolarizing_noise(K, num_wires, method='single')
   ```
-  [(#1388)](https://github.com/PennyLaneAI/pennylane/pull/1388)
 
 <h4>Extract the fourier representation of quantum circuits</h4>
 
