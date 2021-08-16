@@ -552,6 +552,10 @@ class Hamiltonian(qml.operation.Observable):
         context.append(self, owns=tuple(self.ops))
         return self
 
+    def diagonalizing_gates(self):
+        # todo: find better solution for observables whose diagonalisation we cannot compute
+        return []
+
 
 class ExpvalCost:
     """Create a cost function that gives the expectation value of an input Hamiltonian.
