@@ -300,7 +300,7 @@ def _square_hamiltonian_terms(
             squared_ops.append(op2)
         elif isinstance(op2, qml.Identity):
             squared_ops.append(op1)
-        elif op1.wires == op2.wires and type(op1) == type(op2):
+        elif op1.wires == op2.wires and type(op1) == type(op2):  # pylint: disable=unidiomatic-typecheck
             squared_ops.append(qml.Identity(0))
         elif op2.wires[0] < op1.wires[0]:
             squared_ops.append(op2 @ op1)
