@@ -1,10 +1,12 @@
 from functools import partial
-import pytest
+
 import numpy as np
+import pytest
+
 import pennylane as qml
 from pennylane.tape import QuantumTape
-from pennylane.transforms.control import ctrl, ControlledOperation
 from pennylane.tape.tape import expand_tape
+from pennylane.transforms.control import ControlledOperation, ctrl
 
 
 def assert_equal_operations(ops1, ops2):
