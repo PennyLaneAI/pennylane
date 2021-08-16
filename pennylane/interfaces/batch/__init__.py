@@ -15,7 +15,7 @@
 This subpackage defines functions for interfacing devices' batch execution
 capabilities with different machine learning libraries.
 """
-# pylint: disable=import-outside-toplevel,too-many-arguments
+# pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches
 from functools import wraps
 
 from cachetools import LRUCache
