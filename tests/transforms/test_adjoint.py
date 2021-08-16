@@ -96,24 +96,23 @@ class TestOutsideOfQueuing:
     @pytest.mark.parametrize("op,wires", non_param_ops)
     def test_single_op_non_param_adjoint(self, op, wires):
         """Test that the adjoint correctly inverts angle embedding"""
-        """Test that the adjoint correctly inverts angle embedding"""
-        rx_adjoint = qml.adjoint(op)(wires=wires)
+        op_adjoint = qml.adjoint(op)(wires=wires)
         expected = op(wires=wires).adjoint()
 
-        assert type(rx_adjoint) == type(expected)
-        assert rx_adjoint.wires == expected.wires
+        assert type(op_adjoint) == type(expected)
+        assert op_adjoint.wires == expected.wires
 
     param_ops = [(qml.RX, [0.123], 0), (qml.Rot, [0.1, 0.2, 0.3], [1]), (qml.CRY, [0.1], [1, 4])]
 
     @pytest.mark.parametrize("op,par,wires", param_ops)
     def test_single_op_param_adjoint(self, op, par, wires):
         """Test that the adjoint correctly inverts angle embedding"""
-        rx_adjoint = qml.adjoint(op)(*par, wires=wires)
+        param_op_adjoint = qml.adjoint(op)(*par, wires=wires)
         expected = op(*par, wires=wires).adjoint()
 
-        assert type(rx_adjoint) == type(expected)
-        assert rx_adjoint.parameters == expected.parameters
-        assert rx_adjoint.wires == expected.wires
+        assert type(param_op_adjoint) == type(expected)
+        assert param_op_adjoint.parameters == expected.parameters
+        assert param_op_adjoint.wires == expected.wires
 
     template_ops = [
         (qml.templates.AngleEmbedding, [np.ones((1))], [2, 3]),
