@@ -95,7 +95,8 @@ class TestOutsideOfQueuing:
 
     @pytest.mark.parametrize("op,wires", non_param_ops)
     def test_single_op_non_param_adjoint(self, op, wires):
-        """Test that the adjoint correctly inverts angle embedding"""
+        """Test that the adjoint correctly inverts non-parametrized
+        operations"""
         op_adjoint = qml.adjoint(op)(wires=wires)
         expected = op(wires=wires).adjoint()
 
@@ -106,7 +107,8 @@ class TestOutsideOfQueuing:
 
     @pytest.mark.parametrize("op,par,wires", param_ops)
     def test_single_op_param_adjoint(self, op, par, wires):
-        """Test that the adjoint correctly inverts angle embedding"""
+        """Test that the adjoint correctly inverts operations with a single
+        parameter"""
         param_op_adjoint = qml.adjoint(op)(*par, wires=wires)
         expected = op(*par, wires=wires).adjoint()
 
@@ -117,25 +119,33 @@ class TestOutsideOfQueuing:
     template_ops = [
         (qml.templates.AngleEmbedding, [np.ones((1))], [2, 3]),
         (qml.templates.StronglyEntanglingLayers, [np.ones((1, 2, 3))], [2, 3]),
-        (qml.templates.Interferometer, [[1], [0.3], [0.2, 0.3]], [2, 3]),
     ]
 
     @pytest.mark.parametrize("template, par, wires", template_ops)
     def test_templates_adjoint(self, template, par, wires):
-        """Test that the adjoint correctly inverts angle embedding"""
+        """Test that the adjoint correctly inverts templates"""
         res = qml.adjoint(template)(*par, wires=wires)
         result = res if hasattr(res, "__iter__") else [res]  # handle single operation case
         expected_ops = template(*par, wires=wires)
 
-        if hasattr(expected_ops, "expand"):
-            expected_ops = expected_ops.expand().operations
-
+        expected_ops = expected_ops.expand().operations
         for o1, o2 in zip(result, reversed(expected_ops)):
             o2 = o2.adjoint()
             assert type(o1) == type(o2)
             assert o1.parameters == o2.parameters
             assert o1.wires == o2.wires
 
+    def test_cv_template_adjoint(self):
+        """Test that the adjoint correctly inverts CV templates"""
+        template, par, wires = qml.templates.Interferometer, [[1], [0.3], [0.2, 0.3]], [2, 3]
+        result = qml.adjoint(template)(*par, wires=wires)
+        expected_ops = template(*par, wires=wires)
+
+        for o1, o2 in zip(result, reversed(expected_ops)):
+            o2 = o2.adjoint()
+            assert type(o1) == type(o2)
+            assert o1.parameters == o2.parameters
+            assert o1.wires == o2.wires
 
 test_functions = [
     lambda fn, *args, **kwargs: adjoint(fn)(*args, **kwargs),
