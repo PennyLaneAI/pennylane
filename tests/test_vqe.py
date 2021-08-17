@@ -1253,7 +1253,7 @@ class TestNewVQE:
 
             res_expected.append(circuit())
 
-        res_expected = np.sum(c * r for c, r in zip(coeffs, res_expected))
+        res_expected = np.sum([c * r for c, r in zip(coeffs, res_expected)])
 
         assert np.isclose(res, res_expected, atol=tol)
 
