@@ -20,12 +20,14 @@ undergoing cosmetic changes.
 import matplotlib.pyplot as plt
 
 from pennylane.circuit_drawer import MPLDrawer
+from os import path
 
+folder = path.dirname(path.realpath(__file__))
 
 def labels(savefile="labels.png"):
     drawer = MPLDrawer(n_wires=2, n_layers=1)
     drawer.label(["a", "b"])
-    plt.savefig(savefile)
+    plt.savefig(path.join(folder, savefile))
 
 
 def box_gates(savefile="box_gates.png"):
@@ -33,7 +35,7 @@ def box_gates(savefile="box_gates.png"):
 
     drawer.box_gate(layer=0, wires=0, text="Y")
     drawer.box_gate(layer=1, wires=(0, 1), text="CRy(0.1)", rotate_text=True)
-    plt.savefig(savefile)
+    plt.savefig(path.join(folder, savefile))
 
 
 def ctrl(savefile="ctrl.png"):
@@ -41,7 +43,7 @@ def ctrl(savefile="ctrl.png"):
 
     drawer.ctrl(layer=0, wire_ctrl=0, wire_target=1)
     drawer.ctrl(layer=1, wire_ctrl=(0, 1))
-    plt.savefig(savefile)
+    plt.savefig(path.join(folder, savefile))
 
 
 def CNOT(savefile="cnot.png"):
@@ -49,21 +51,21 @@ def CNOT(savefile="cnot.png"):
 
     drawer.CNOT(0, (0, 1))
     drawer.CNOT(1, (1, 0))
-    plt.savefig(savefile)
+    plt.savefig(path.join(folder, savefile))
 
 
 def SWAP(savefile="SWAP.png"):
     drawer = MPLDrawer(n_wires=2, n_layers=1)
 
     drawer.SWAP(0, (0, 1))
-    plt.savefig(savefile)
+    plt.savefig(path.join(folder, savefile))
 
 
 def measure(savefile="measure.png"):
     drawer = MPLDrawer(n_wires=1, n_layers=1)
 
     drawer.measure(0, 0)
-    plt.savefig(savefile)
+    plt.savefig(path.join(folder, savefile))
 
 def integration(style='default', savefile="example_basic.png"):
     plt.style.use(style)
@@ -86,7 +88,7 @@ def integration(style='default', savefile="example_basic.png"):
     drawer.measure(5, 0)
 
     drawer.fig.suptitle('My Circuit', fontsize='xx-large')
-    plt.savefig(savefile)
+    plt.savefig(path.join(folder, savefile))
     plt.style.use('default')
 
 def float_layer(savefile="float_layer.png"):
@@ -96,7 +98,7 @@ def float_layer(savefile="float_layer.png"):
     drawer.box_gate(layer=0, wires=1, text="X")
     drawer.box_gate(layer=1, wires=1, text="Y")
 
-    plt.savefig(savefile)
+    plt.savefig(path.join(folder, savefile))
 
 
 labels()
