@@ -294,7 +294,8 @@ def test_multiple_steps(fun, x_min, param, num_freq):
 
 
 num_wires = 3
-dev = qml.device('default.qubit', wires=num_wires)
+dev = qml.device("default.qubit", wires=num_wires)
+
 
 @qml.qnode(dev)
 def scalar_qnode(x):
@@ -302,19 +303,21 @@ def scalar_qnode(x):
         qml.RX(x, wires=w)
     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
 
+
 @qml.qnode(dev)
 def array_qnode(x, y, z):
     for _x, w in zip(x, dev.wires):
         qml.RX(_x, wires=w)
 
     for i in range(num_wires):
-        qml.CRY(y, wires=[i, (i+1)%num_wires])
+        qml.CRY(y, wires=[i, (i + 1) % num_wires])
 
     qml.RZ(z[0], wires=0)
     qml.RZ(z[1], wires=1)
-    qml.RZ(z[1], wires=2) # z[1] is used twice on purpose
+    qml.RZ(z[1], wires=2)  # z[1] is used twice on purpose
 
     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+
 
 @qml.qnode(dev)
 def _postprocessing_qnode(x, y, z):
@@ -326,8 +329,10 @@ def _postprocessing_qnode(x, y, z):
         qml.RZ(z, wires=w)
     return [qml.expval(qml.PauliZ(w)) for w in dev.wires]
 
+
 def postprocessing_qnode(x, y, z):
     return np.sum(_postprocessing_qnode(x, y, z))
+
 
 qnodes = [scalar_qnode, array_qnode, postprocessing_qnode]
 qnode_params = [
@@ -337,9 +342,10 @@ qnode_params = [
 ]
 qnode_num_frequencies = [
     [num_wires],
-    [1, 2*num_wires, [1, 2]],
+    [1, 2 * num_wires, [1, 2]],
     num_wires,
 ]
+
 
 @pytest.mark.parametrize(
     "qnode, param, num_freq",
@@ -353,7 +359,7 @@ class TestWithQNodes:
     def test_single_step(self, qnode, param, num_freq, optimizer, optimizer_kwargs):
         opt = qml.RotosolveOptimizer()
 
-        repack_param = len(param)==1
+        repack_param = len(param) == 1
         new_param_step = opt.step(
             qnode,
             *param,
@@ -364,9 +370,8 @@ class TestWithQNodes:
         if repack_param:
             new_param_step = (new_param_step,)
 
-        assert (
-            (np.isscalar(new_param_step) and np.isscalar(param))
-            or len(new_param_step) == len(param)
+        assert (np.isscalar(new_param_step) and np.isscalar(param)) or len(new_param_step) == len(
+            param
         )
         new_param_step_and_cost, old_cost = opt.step_and_cost(
             qnode,
@@ -387,7 +392,7 @@ class TestWithQNodes:
     def test_multiple_steps(self, qnode, param, num_freq, optimizer, optimizer_kwargs):
         opt = qml.RotosolveOptimizer()
 
-        repack_param = len(param)==1
+        repack_param = len(param) == 1
         initial_cost = qnode(*param)
 
         for _ in range(3):
