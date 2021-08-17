@@ -146,6 +146,7 @@ class DefaultQubit(QubitDevice):
         "Identity",
         "Projector",
         "SparseHamiltonian",
+        "Hamiltonian"
     }
 
     def __init__(self, wires, *, shots=None, cache=0, analytic=None):
@@ -468,8 +469,6 @@ class DefaultQubit(QubitDevice):
             if self.shots is not None:
                 raise DeviceError("SparseHamiltonian must be used with shots=None")
 
-        if observable.name == "SparseHamiltonian" and self.shots is None:
-
             ev = coo_matrix.dot(
                 coo_matrix(self._conj(self.state)),
                 coo_matrix.dot(
@@ -478,6 +477,12 @@ class DefaultQubit(QubitDevice):
             )
 
             return np.real(ev.toarray()[0])
+
+        if observable.name == "Hamiltonian":
+            if self.shots is not None:
+                # This case should always be intercepted by the QNode, but we want to make sure here.
+                raise DeviceError("Hamiltonian must be used with shots=None")
+
 
         return super().expval(observable, shot_range=shot_range, bin_size=bin_size)
 

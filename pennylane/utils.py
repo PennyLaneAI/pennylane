@@ -394,7 +394,7 @@ def inv(operation_list):
         except KeyError:
             # operation to be inverted does not
             # exist on the queuing context
-            pass
+            continue
 
     def qfunc():
         for o in operation_list:
