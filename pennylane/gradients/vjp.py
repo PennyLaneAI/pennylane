@@ -52,8 +52,7 @@ def compute_vjp(dy, jac):
     except AttributeError:
         pass
 
-    vjp = math.tensordot(jac, dy_row, [[0], [0]])
-    return vjp
+    return math.tensordot(jac, dy_row, [[0], [0]])
 
 
 def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
@@ -322,12 +321,10 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None)
                 vjps.append(None)
                 continue
 
-            from tensorflow.python.eager import context
-
-            if not context.executing_eagerly():
-                vjp_ = math.unstack(vjp_)
-
-            getattr(vjps, reduction)(vjp_)
+            if isinstance(reduction, str):
+                getattr(vjps, reduction)(vjp_)
+            elif callable(reduction):
+                reduction(vjps, vjp_)
 
         return vjps
 

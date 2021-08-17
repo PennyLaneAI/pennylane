@@ -140,7 +140,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
                             tapes,
                             dy,
                             gradient_fn,
-                            reduction="extend",
+                            reduction=lambda vjps, x: vjps.extend(qml.math.unstack(x)),
                             gradient_kwargs=gradient_kwargs,
                         )
 
