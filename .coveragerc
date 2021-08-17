@@ -11,13 +11,10 @@ exclude_lines =
     pragma: no cover
 
     # Don't complain about debug-only or logging code:
-    def __repr__
-    def __eq__
     if self\.debug
     if "LOGGING" in os.environ
 
     # print statements
-    def __str__
     def __format__
     def _print_list
 
@@ -27,7 +24,6 @@ exclude_lines =
     if __name__ == .__main__.:
 
     # Ignore things that would have trivial tests
-    raise NotImplementedError
     def version
 
 
