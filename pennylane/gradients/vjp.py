@@ -323,6 +323,7 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None)
                 continue
 
             from tensorflow.python.eager import context
+
             if not context.executing_eagerly():
                 vjp_ = math.unstack(vjp_)
 

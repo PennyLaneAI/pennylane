@@ -234,7 +234,7 @@ def execute(
 
     if isinstance(cache, bool) and cache:
         # cache=True: create a LRUCache object
-        cache = LRUCache(maxsize=cachesize, getsizeof=len)
+        cache = LRUCache(maxsize=cachesize, getsizeof=lambda x: qml.math.shape(x)[0])
 
     # the default execution function is device.batch_execute
     execute_fn = cache_execute(device.batch_execute, cache)

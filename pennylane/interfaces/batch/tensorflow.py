@@ -59,7 +59,9 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         params = tape.get_parameters(trainable_only=False)
         tape.trainable_params = qml.math.get_trainable_indices(params)
 
-        all_params_unwrapped.append([i.numpy() if isinstance(i, (tf.Variable, tf.Tensor)) else i for i in params])
+        all_params_unwrapped.append(
+            [i.numpy() if isinstance(i, (tf.Variable, tf.Tensor)) else i for i in params]
+        )
         all_params.append(params)
 
     parameters = []
@@ -97,10 +99,18 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
         res, jacs = execute_fn(tapes, **gradient_kwargs)
 
-        for p, tape, in zip(all_params, tapes):
+        for (
+            p,
+            tape,
+        ) in zip(all_params, tapes):
             tape.set_parameters(p, trainable_only=False)
 
-        res = [tf.convert_to_tensor(r) for r in res]
+        for i, r in enumerate(res):
+            if r.dtype == np.dtype("object"):
+                res[i] = np.hstack(r)
+
+            res[i] = tf.convert_to_tensor(res[i])
+
         jacs = [tf.convert_to_tensor(j) for j in jacs]
 
         def grad_fn(*dy, **tfkwargs):
@@ -151,7 +161,11 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
                     else:
                         vjp_tapes, processing_fn = qml.gradients.batch_vjp(
-                            tapes, dy, gradient_fn, reduction="extend", gradient_kwargs=gradient_kwargs
+                            tapes,
+                            dy,
+                            gradient_fn,
+                            reduction="extend",
+                            gradient_kwargs=gradient_kwargs,
                         )
 
                         # This is where the magic happens. Note that we call ``execute``.
