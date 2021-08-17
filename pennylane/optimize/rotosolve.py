@@ -356,7 +356,7 @@ class RotosolveOptimizer:
             callable: The reconstruction function with ``num_frequency`` frequencies,
             coinciding with ``fun`` on the same number of points.
         """
-        fun_at_zero = float(objective_fn(0.0)) if fun_at_zero is None else fun_at_zero
+        fun_at_zero = float(fun(0.0)) if fun_at_zero is None else fun_at_zero
         mus = np.arange(1, num_frequency + 1)
         shifts_pos = 2 * mus * np.pi / (2 * num_frequency + 1)
         shifts_neg = -shifts_pos[::-1]
