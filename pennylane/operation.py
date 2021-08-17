@@ -128,8 +128,6 @@ from pennylane.wires import Wires
 
 from .utils import pauli_eigs
 
-import unittest
-
 # =============================================================================
 # Wire types
 # =============================================================================
@@ -1797,25 +1795,3 @@ def operation_derivative(operation) -> np.ndarray:
 
     return 1j * prefactor * generator @ operation.matrix
   
-# =============================================================================
-# Testing
-# =============================================================================
-#Quick Test:
-try:
-    qml.PauliZ()
-except Exception:
-    pass
-else:
-    raise Exception('Validation check not working.')
-
-#Checks for error message:
-class Test(unittest.TestCase): 
-    def unit_test(self): 
-        with self.assertRaises(Exception) as context:
-            test_input()
-        self.assertTrue('Can only access when arguments are passed.' in str(context.exception), "Validation check not working.")
-
-def test_input():
-    qml.PauliZ()
-    
-Test().unit_test()
