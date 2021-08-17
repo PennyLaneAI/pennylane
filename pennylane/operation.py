@@ -1043,7 +1043,7 @@ class Observable(Operator):
             params = params[:-1]
         # error if no arguments are given
         except IndexError as err:
-            print("TTTTT")
+            print(err.args)
 
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 

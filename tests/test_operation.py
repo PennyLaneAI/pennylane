@@ -491,6 +491,7 @@ class TestObservableConstruction:
 
 
 class TestObservableInstatiation:
+    """Test that wires are specified when a qml.operation.Observable is instantiated"""
 
     class DummyObservable(qml.operation.Observable):
           num_wires = 1
