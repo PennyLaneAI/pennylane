@@ -364,7 +364,7 @@ class RotosolveOptimizer:
         shifts_pos = 2 * mus * np.pi / (2 * num_frequency + 1)
         shifts_neg = -shifts_pos[::-1]
         evals = list(map(fun, shifts_neg)) + [fun_at_zero] + list(map(fun, shifts_pos))
-        shifts = shifts_neg + [0.0] + shifts_pos
+        shifts = list(shifts_neg) + [0.0] + list(shifts_pos)
         a, b = (num_frequency + 0.5) / np.pi, 0.5 / np.pi
         reconstruction = lambda x: np.sum(
             np.array(
@@ -405,8 +405,8 @@ class RotosolveOptimizer:
             y_min (float): the minimal value of ``objective_fn``.
         """
         # pylint: disable=too-many-arguments
-        # Use closed form expression from Ostaszewski et al., using notation of App. A
         fun_at_zero = float(objective_fn(0.0)) if fun_at_zero is None else fun_at_zero
+        # Use closed form expression from Ostaszewski et al., using notation of App. A
         if num_frequency == 1:
             H_p = float(objective_fn(0.5 * np.pi))
             H_m = float(objective_fn(-0.5 * np.pi))
