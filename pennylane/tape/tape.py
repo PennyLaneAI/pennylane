@@ -977,7 +977,12 @@ class QuantumTape(AnnotatedQueue):
         rotation_gates = []
 
         for observable in self.observables:
-            rotation_gates.extend(observable.diagonalizing_gates())
+            try:
+                # some observables do not have diagonalizing gates,
+                # in which case we just don't append any
+                rotation_gates.extend(observable.diagonalizing_gates())
+            except NotImplementedError:
+                pass
 
         return rotation_gates
 
