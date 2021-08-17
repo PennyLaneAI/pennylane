@@ -27,7 +27,7 @@ def _to_tuple(a):
 
 
 class MPLDrawer:
-    """Allows easy creation of graphics representing circuits with Matplotlib.
+    r"""Allows easy creation of graphics representing circuits with Matplotlib
 
     Args:
         n_layers (Int): the number of layers
