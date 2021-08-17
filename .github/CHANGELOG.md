@@ -121,6 +121,11 @@
   an owner of the pruned tensor and its constituent observables, but leaves the
   original tensor in the queue without an owner.
 
+* Create a separate requirements file for the CI issue , to have a separate requirements.txt (pinned)
+and requirements-ci.txt (unpinned). This latter would be used by the CI.
+  [(#1535)](https://github.com/PennyLaneAI/pennylane/pull/1535)
+
+
 <h3>Breaking changes</h3>
 
 <h3>Bug fixes</h3>
@@ -134,7 +139,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Josh Izaac, Johannes Jakob Meyer, Maria Schuld.
+Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Maria Schuld.
 
 # Release 0.17.0 (current release)
 
