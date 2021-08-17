@@ -39,6 +39,7 @@ from .multi_dispatch import (
     concatenate,
     diag,
     dot,
+    frobenius_inner_product,
     get_trainable_indices,
     ones_like,
     stack,

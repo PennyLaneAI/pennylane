@@ -26,7 +26,8 @@ def hamiltonian_expand(tape, group=True):
     Args:
         tape (.QuantumTape): the tape used when calculating the expectation value
             of the Hamiltonian
-        group (bool): whether to compute groups of non-commuting Pauli observables, leading to fewer tapes
+        group (bool): Whether to compute disjoint groups of commuting Pauli observables, leading to fewer tapes.
+            If grouping information can be found in the Hamiltonian, it will be used even if group=False.
 
     Returns:
         tuple[list[.QuantumTape], function]: Returns a tuple containing a list of
@@ -67,14 +68,8 @@ def hamiltonian_expand(tape, group=True):
     >>> fn(res)
     -0.5
 
-    .. Warning::
-
-         Note that defining Hamiltonians inside of QNodes using arithmetic can lead to errors.
-         See :class:`~pennylane.Hamiltonian` for more information.
-
-    The ``group`` keyword argument toggles between the creation of one tape per Pauli observable, or
-    one tape per group of non-commuting Pauli observables computed by the :func:`.measurement_grouping`
-    transform:
+    Fewer tapes can be constructed by grouping commuting observables. This can be achieved
+    by the ``group`` keyword argument:
 
     .. code-block:: python3
 
@@ -86,39 +81,96 @@ def hamiltonian_expand(tape, group=True):
             qml.PauliX(wires=2)
             qml.expval(H)
 
-        # split H into observable groups [qml.PauliZ(0)] and [qml.PauliX(1), qml.PauliX(0)]
-        tapes, fn = qml.transforms.hamiltonian_expand(tape)
-        print(len(tapes)) # 2
+    With grouping, the Hamiltonian gets split into two groups of observables (here ``[qml.PauliZ(0)]`` and
+    ``[qml.PauliX(1), qml.PauliX(0)]``):
 
-        # split H into observables [qml.PauliZ(0)], [qml.PauliX(1)] and [qml.PauliX(0)]
-        tapes, fn = qml.transforms.hamiltonian_expand(tape, group=False)
-        print(len(tapes)) # 3
+    >>> tapes, fn = qml.transforms.hamiltonian_expand(tape)
+    >>> len(tapes)
+    2
+
+    Without grouping it gets split into three groups (``[qml.PauliZ(0)]``, ``[qml.PauliX(1)]`` and ``[qml.PauliX(0)]``):
+
+    >>> tapes, fn = qml.transforms.hamiltonian_expand(tape, group=False)
+    >>> len(tapes)
+    3
+
+    Alternatively, if the Hamiltonian has already computed groups, they are used even if ``group=False``:
+
+    .. code-block:: python3
+
+        obs = [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)]
+        coeffs = [1., 2., 3.]
+        H = qml.Hamiltonian(coeffs, obs, grouping_type='qwc')
+
+        # the initialisation already computes grouping information and stores it in the Hamiltonian
+        assert H.grouping_indices is not None
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=2)
+            qml.expval(H)
+
+    Grouping information has been used to reduce the number of tapes from 3 to 2:
+
+    >>> tapes, fn = qml.transforms.hamiltonian_expand(tape, group=False)
+    >>> len(tapes)
+    2
     """
 
     hamiltonian = tape.measurements[0].obs
 
-    if not isinstance(hamiltonian, qml.Hamiltonian) or len(tape.measurements) > 1:
+    if (
+        not isinstance(hamiltonian, qml.Hamiltonian)
+        or len(tape.measurements) > 1
+        or tape.measurements[0].return_type != qml.measure.Expectation
+    ):
         raise ValueError(
             "Passed tape must end in `qml.expval(H)`, where H is of type `qml.Hamiltonian`"
         )
-    if group:
-        hamiltonian.simplify()
-        return qml.transforms.measurement_grouping(tape, hamiltonian.ops, hamiltonian.coeffs)
 
-    # create tapes that measure the Pauli-words in the Hamiltonian
-    tapes = []
-    for ob in hamiltonian.ops:
-        new_tape = tape.copy()
-        new_tape._measurements = [
-            qml.measure.MeasurementProcess(return_type=qml.operation.Expectation, obs=ob)
+    if group or hamiltonian.grouping_indices is not None:
+
+        if hamiltonian.grouping_indices is None:
+            hamiltonian.compute_grouping()
+
+        # use groups of observables if available or explicitly requested
+        coeffs = [
+            qml.math.squeeze(qml.math.take(hamiltonian.coeffs, indices, axis=0))
+            for indices in hamiltonian.grouping_indices
         ]
-        tapes.append(new_tape)
+        obs_groupings = [
+            [hamiltonian.ops[i] for i in indices] for indices in hamiltonian.grouping_indices
+        ]
 
-    # create processing function that performs linear recombination
+        tapes = []
+        for obs in obs_groupings:
+
+            with tape.__class__() as new_tape:
+                for op in tape.operations:
+                    op.queue()
+
+                for o in obs:
+                    qml.expval(o)
+
+            new_tape = new_tape.expand(stop_at=lambda obj: True)
+            tapes.append(new_tape)
+    else:
+        coeffs = hamiltonian.coeffs
+
+        tapes = []
+        for o in hamiltonian.ops:
+            with tape.__class__() as new_tape:
+                for op in tape.operations:
+                    op.queue()
+                qml.expval(o)
+
+            tapes.append(new_tape)
+
     def processing_fn(res):
-        dot_products = [
-            qml.math.dot(qml.math.squeeze(res[i]), hamiltonian.coeffs[i]) for i in range(len(res))
-        ]
+        # note: res could have an extra dimension here if a shots_distribution
+        # is used for evaluation
+        dot_products = [qml.math.dot(qml.math.squeeze(r), c) for c, r in zip(coeffs, res)]
         return qml.math.sum(qml.math.stack(dot_products), axis=0)
 
     return tapes, processing_fn
