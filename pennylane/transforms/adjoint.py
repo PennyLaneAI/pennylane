@@ -113,20 +113,37 @@ def adjoint(fn):
 
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        with get_active_tape().stop_recording(), QuantumTape() as tape:
-            fn(*args, **kwargs)
+        active_tape = get_active_tape()
+
+        if active_tape is not None:
+            with active_tape.stop_recording(), QuantumTape() as tape:
+                fn(*args, **kwargs)
+        else:
+            # Not within a queuing context
+            with QuantumTape() as tape:
+                fn(*args, **kwargs)
 
         if not tape.operations:
+            # we called op.expand(): get the outputted tape
             tape = fn(*args, **kwargs)
 
+        adjoint_ops = []
         for op in reversed(tape.operations):
             try:
-                op.adjoint()
+                new_op = op.adjoint()
+                adjoint_ops.append(new_op)
             except NotImplementedError:
                 # Expand the operation and adjoint the result.
-                # We do not do anything with the output since
-                # calling adjoint on the expansion will automatically
-                # queue the new operations.
-                adjoint(op.expand)()
+                new_ops = adjoint(op.expand)()
+
+                if isinstance(new_ops, QuantumTape):
+                    new_ops = new_ops.operations
+
+                adjoint_ops.extend(new_ops)
+
+        if len(adjoint_ops) == 1:
+            adjoint_ops = adjoint_ops[0]
+
+        return adjoint_ops
 
     return wrapper
