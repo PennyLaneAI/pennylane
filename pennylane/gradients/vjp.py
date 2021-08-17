@@ -143,8 +143,6 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
     tensor([[-1.1025e+00, -2.0554e-01, -1.4917e-01],
             [-1.9429e-09, -9.1580e-01,  1.3878e-09]], dtype=torch.float64)
     """
-    # t._par_info = {}
-    # t._update()
     gradient_kwargs = gradient_kwargs or {}
     num_params = len(tape.trainable_params)
 

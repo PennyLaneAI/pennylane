@@ -23,8 +23,6 @@ import numpy as np
 
 import pennylane as qml
 
-from .autograd import execute as execute_autograd
-
 
 def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True):
     """Decorator that adds caching to a function that executes
@@ -266,10 +264,12 @@ def execute(
         raise ValueError("Gradient transforms cannot be used with mode='forward'")
 
     if interface == "autograd":
-        res = execute_autograd(
-            tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
-        )
+        from .autograd import execute as execute_autograd
+    elif interface in ("tf", "tensorflow"):
+        from .tensorflow import execute
     else:
         raise ValueError(f"Unknown interface {interface}")
+
+    res = execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff)
 
     return res
