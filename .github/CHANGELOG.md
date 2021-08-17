@@ -23,9 +23,9 @@
 
       return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
   ```
-  Then this cost function supports one frequency for each of the first `RX` rotation angles,
+  This cost function supports one frequency for each of the first `RX` rotation angles,
   three frequencies for the layer of `RX` gates that depend on `layer_par`, and two
-  frequencies for each of the `CRY` gate parameters. Rotsolve can then be used to minimize
+  frequencies for each of the `CRY` gate parameters. Rotosolve can then be used to minimize
   the `cost_function`:
 
   ```python
