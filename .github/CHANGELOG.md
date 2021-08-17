@@ -4,8 +4,9 @@
 
 * The `RotosolveOptimizer` now can tackle general parametrized circuits with 
   operations like layers of gates controlled by the same parameter, controlled variants
-  of parametrized gates and Hamiltonian time evolution. Only the eigenvalue spectrum
-  of the gate generator needs to be known to use `RotosolveOptimizer` for a gate.
+  of parametrized gates and Hamiltonian time evolution. The eigenvalue spectrum
+  of the gate generator needs to be known to use `RotosolveOptimizer` for a gate, and it
+  is required to produce equidistant frequencies (see below).
   For details see [Vidal and Theis, 2018](https://arxiv.org/abs/1812.06323)
   and [Wierichs, Izaac, Wang, Lin 2021](https://arxiv.org/abs/2107.12390).
   [(#1489)](https://github.com/PennyLaneAI/pennylane/pull/1489)
@@ -81,7 +82,7 @@
   trigonometric cost function with integer frequencies up to the given value
   of `num_frequencies` per parameter. Not all of the integers up to `num_frequencies` have to
   be present in the frequency spectrum. In order to tackle equidistant but non-integer
-  frequencies, we recommend rescaling the argument of the function of interest.
+  frequencies, rescaling the respective argument of the function is recommended.
 
 * Hamiltonians are now trainable with respect to their coefficients.
   [(#1483)](https://github.com/PennyLaneAI/pennylane/pull/1483)
