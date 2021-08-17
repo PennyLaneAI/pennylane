@@ -1,8 +1,6 @@
 qml.circuit_drawer
 ==================
 
-.. currentmodule:: pennylane.circuit_drawer
+.. rubric:: Modules
 
-.. automodapi:: pennylane.circuit_drawer.MPLDrawer
-    :include-all-objects:
-    :no-inheritance-diagram:
+..automodule:: pennylane.circuit_drawer

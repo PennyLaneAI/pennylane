@@ -21,6 +21,7 @@ as circuit diagrams.
 
     circuit_drawer
     charsets
+    MPLDrawer
 """
 from .circuit_drawer import *
 from .charsets import *
