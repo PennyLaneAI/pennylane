@@ -125,6 +125,9 @@
 
 <h3>Bug fixes</h3>
 
+* Fix bug when computing the specs of a circuit with a Hamiltonian observable.
+  [(#1533)](https://github.com/PennyLaneAI/pennylane/pull/1533)
+
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
