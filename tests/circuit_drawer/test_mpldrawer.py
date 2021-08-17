@@ -265,3 +265,8 @@ class TestSWAP:
 
         drawer = MPLDrawer(1, 3)
         drawer.SWAP(0, (0, 2))
+
+        connecting_line = drawer.ax.lines[3]
+        assert conneting_line.get_data() == ((0,0), (0,2))
+
+        
