@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +14,6 @@
 """
 Unit tests for the ``RotosolveOptimizer``.
 """
-import numpy as onp
 import pytest
 from scipy.optimize import shgo
 
@@ -71,7 +70,7 @@ def test_wrong_len_num_frequencies(fun, param, num_freq):
     """Test that an error is raised for a different number of
     numbers of frequencies than number of function arguments."""
 
-    opt = qml.RotosolveOptimizer()
+    opt = RotosolveOptimizer()
 
     with pytest.raises(ValueError, match="The length of the provided numbers of frequencies"):
         opt.step(fun, *param, num_frequencies=num_freq)
@@ -94,7 +93,7 @@ def test_wrong_num_of_num_frequencies_per_parameter(fun, param, num_freq):
     """Test that an error is raised for a different number of
     numbers of frequencies than number of function arguments."""
 
-    opt = qml.RotosolveOptimizer()
+    opt = RotosolveOptimizer()
 
     with pytest.raises(ValueError, match="The number of the frequency counts"):
         opt.step(fun, *param, num_frequencies=num_freq)
@@ -173,7 +172,7 @@ class TestWithClassicalFunctions:
             num_calls += 1
             return fun(*args, **kwargs)
 
-        opt = qml.RotosolveOptimizer()
+        opt = RotosolveOptimizer()
         new_param = opt.step(
             _fun,
             *param,
@@ -192,7 +191,7 @@ class TestWithClassicalFunctions:
     ):
         """Tests convergence for easy classical functions in a single Rotosolve step.
         Includes testing of the parameter output shape and the old cost when using step_and_cost."""
-        opt = qml.RotosolveOptimizer()
+        opt = RotosolveOptimizer()
 
         new_param_step = opt.step(
             fun,
@@ -234,7 +233,7 @@ class TestWithClassicalFunctions:
     def test_full_output(self, fun, x_min, param, num_freq, optimizer, optimizer_kwargs):
         """Tests the ``full_output`` feature of Rotosolve, delivering intermediate cost
         function values at the univariate optimization substeps."""
-        opt = qml.RotosolveOptimizer()
+        opt = RotosolveOptimizer()
 
         _, y_output_step = opt.step(
             fun,
@@ -269,7 +268,7 @@ class TestWithClassicalFunctions:
 )
 def test_multiple_steps(fun, x_min, param, num_freq):
     """Tests that repeated steps execute as expected."""
-    opt = qml.RotosolveOptimizer()
+    opt = RotosolveOptimizer()
 
     optimizer = "brute"
     optimizer_kwargs = None
@@ -357,7 +356,7 @@ qnode_num_frequencies = [
 )
 class TestWithQNodes:
     def test_single_step(self, qnode, param, num_freq, optimizer, optimizer_kwargs):
-        opt = qml.RotosolveOptimizer()
+        opt = RotosolveOptimizer()
 
         repack_param = len(param) == 1
         new_param_step = opt.step(
@@ -390,7 +389,7 @@ class TestWithQNodes:
         assert np.isclose(qnode(*param), old_cost)
 
     def test_multiple_steps(self, qnode, param, num_freq, optimizer, optimizer_kwargs):
-        opt = qml.RotosolveOptimizer()
+        opt = RotosolveOptimizer()
 
         repack_param = len(param) == 1
         initial_cost = qnode(*param)
