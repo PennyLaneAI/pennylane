@@ -3,7 +3,7 @@ scipy=1.7
 cvxpy=1.1
 cvxopt=1.2
 networkx=2.6
-tensornetwork=0.4
+tensornetwork==0.3
 autograd=1.0
 toml=1.0
 appdirs=1.4
