@@ -241,7 +241,7 @@ class RotosolveOptimizer:
         # Compute the very first evaluation in order to be able to cache it
         fun_at_zero = objective_fn(*args, **kwargs)
 
-        for arg_index, arg in enumerate(list(args)):
+        for arg_index, arg in enumerate(args):
             num_frequency = num_frequencies[arg_index]
             del after_args[0]
 
