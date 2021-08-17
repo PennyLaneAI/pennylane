@@ -1457,3 +1457,11 @@ class TestOperationDerivative:
             ]
         )
         assert np.allclose(derivative, expected_derivative)
+
+        
+class TestValidationCheck:
+    """Tests for Validation Check for arguments passed to qml.operation.Observable"""
+
+    def test_validation():
+    with pytest.raises(Exception, match="Can only access when arguments are passed."):
+      qml.PauliZ()
