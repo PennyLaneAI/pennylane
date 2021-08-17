@@ -438,7 +438,6 @@ class TestResourceEstimation:
             qml.probs(wires=[0, "a"])
 
         assert tape.specs["depth"] == 4
-
         resources = tape.specs["gate_types"]
         assert len(resources) == 4
         assert resources["RX"] == 2
