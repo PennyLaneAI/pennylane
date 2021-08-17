@@ -2,9 +2,12 @@
 
 <h3>New features since last release</h3>
 
-* The `RotosolveOptimizer` now can tackle more general parametrized circuits using trigonometric
-  interpolation as discussed in [Vidal and Theis, 2018](https://arxiv.org/abs/1812.06323)
-  and in [Wierichs, Izaac, Wang, Lin 2021](https://arxiv.org/abs/2107.12390).
+* The `RotosolveOptimizer` now can tackle general parametrized circuits with 
+  operations like layers of gates controlled by the same parameter, controlled variants
+  of parametrized gates and Hamiltonian time evolution. Only the eigenvalue spectrum
+  of the gate generator needs to be known to use `RotosolveOptimizer` for a gate.
+  For details see [Vidal and Theis, 2018](https://arxiv.org/abs/1812.06323)
+  and [Wierichs, Izaac, Wang, Lin 2021](https://arxiv.org/abs/2107.12390).
   [(#1489)](https://github.com/PennyLaneAI/pennylane/pull/1489)
 
   Consider a circuit with a mixture of Pauli rotation gates, controlled Pauli rotations and
@@ -40,39 +43,41 @@
 
   opt = qml.RotosolveOptimizer()
   param = init_param.copy()
-  for step in range(5):
-      param, cost = opt.step_and_cost(
-          cost_function,
-          *param,
-          num_frequencies=num_frequencies,
-      )
-      print(cost)
   ```
+
   Here, the keyword argument `requires_grad` can be used to determine whether the respective
   parameter should be optimized or not, following the behaviour of gradient computations and
   gradient-based optimizers.
-  
+
   In addition, the optimization technique for the Rotosolve substeps can be chosen via the
-  `optimizer` and `optimizer_kwargs` keyword arguments and the minimized cost of the 
-  intermediate univariate reconstructions can be read out via `full_output`, including the 
+  `optimizer` and `optimizer_kwargs` keyword arguments and the minimized cost of the
+  intermediate univariate reconstructions can be read out via `full_output`, including the
   cost _after_ the full Rotosolve step:
-  
+
   ```python
-  param = init_param.copy()
-  for step in range(5):
+  for step in range(3):
       param, cost, sub_cost = opt.step_and_cost(
           cost_function,
           *param,
           num_frequencies=num_frequencies,
           full_output=True,
+          optimizer="brute",
       )
       print(f"Cost before step: {cost}")
       print(f"Minimization substeps: {np.round(sub_cost, 6)}")
   ```
-  
+  ``` pycon
+  Cost before step: 0.042008210392535605
+  Minimization substeps: [-0.230905 -0.863336 -0.980072 -0.980072 -1.       -1.       -1.      ]
+  Cost before step: -0.999999999068121
+  Minimization substeps: [-1. -1. -1. -1. -1. -1. -1.]
+  Cost before step: -1.0
+  Minimization substeps: [-1. -1. -1. -1. -1. -1. -1.]
+  ```
+
   The `full_output` feature is available for both, `step` and `step_and_cost`.
 
-  The most general form `RotosolveOptimizer` is designed to tackle currently is any 
+  The most general form `RotosolveOptimizer` is designed to tackle currently is any
   trigonometric cost function with integer frequencies up to the given value
   of `num_frequencies` per parameter. Not all of the integers up to `num_frequencies` have to
   be present in the frequency spectrum. In order to tackle equidistant but non-integer
@@ -83,7 +88,7 @@
 
   ``` python
   from pennylane import numpy as np
-  
+
   dev = qml.device("default.qubit", wires=2)
   @qml.qnode(dev)
   def circuit(coeffs, param):
@@ -92,7 +97,7 @@
       return qml.expval(
           qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=True)
       )
-    
+
   coeffs = np.array([-0.05, 0.17])
   param = np.array(1.7)
   grad_fn = qml.grad(circuit)
@@ -106,13 +111,13 @@
 
 * The `group_observables` transform is now differentiable.
   [(#1483)](https://github.com/PennyLaneAI/pennylane/pull/1483)
- 
+
   For example:
 
   ``` python
   import jax
   from jax import numpy as jnp
-  
+
   coeffs = jnp.array([1., 2., 3.])
   obs = [PauliX(wires=0), PauliX(wires=1), PauliZ(wires=1)]
 
@@ -128,7 +133,7 @@
   >>> jac_fn(coeffs, select=0)
   [[1. 0. 0.]
   [0. 1. 0.]]
-  
+
   >>> jac_fn(coeffs, select=1)
   [[0., 0., 1.]]
   ```
@@ -157,8 +162,8 @@ Maria Schuld, David Wierichs.
 
 <h3>New features since last release</h3>
 
-* Docker support for building PennyLane with support for all interfaces (TensorFlow, 
-  Torch, and Jax), as well as device plugins and QChem, for GPUs and CPUs, has been added. 
+* Docker support for building PennyLane with support for all interfaces (TensorFlow,
+  Torch, and Jax), as well as device plugins and QChem, for GPUs and CPUs, has been added.
   [(#1372)](https://github.com/PennyLaneAI/pennylane/issues/1372)
 
   The build process using Docker and Makefile works as follows:
@@ -282,21 +287,21 @@ Maria Schuld, David Wierichs.
   Total shots:  200
   Total shots:  300
   ```
-  
-* VQE problems can now intuitively been set up by passing the Hamiltonian 
+
+* VQE problems can now intuitively been set up by passing the Hamiltonian
   as an observable. [(#1474)](https://github.com/PennyLaneAI/pennylane/pull/1474)
 
   ``` python
   dev = qml.device("default.qubit", wires=2)
   H = qml.Hamiltonian([1., 2., 3.],  [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)])
   w = qml.init.strong_ent_layers_uniform(1, 2, seed=1967)
-  
+
   @qml.qnode(dev)
   def circuit(w):
       qml.templates.StronglyEntanglingLayers(w, wires=range(2))
       return qml.expval(H)
   ```
-  
+
   ```pycon
   >>> print(circuit(w))
   -1.5133943637878295
@@ -304,9 +309,9 @@ Maria Schuld, David Wierichs.
   [[[-8.32667268e-17  1.39122955e+00 -9.12462052e-02]
   [ 1.02348685e-16 -7.77143238e-01 -1.74708049e-01]]]
   ```
-  
-  Note that other measurement types like `var(H)` or `sample(H)`, as well 
-  as multiple expectations like `expval(H1), expval(H2)` are not supported. 
+
+  Note that other measurement types like `var(H)` or `sample(H)`, as well
+  as multiple expectations like `expval(H1), expval(H2)` are not supported.
 
 * A new gradients module `qml.gradients` has been added, which provides
   differentiable quantum gradient transforms.
@@ -575,10 +580,10 @@ Maria Schuld, David Wierichs.
 
 * Ising YY gate functionality added.
   [(#1358)](https://github.com/PennyLaneAI/pennylane/pull/1358)
-  
+
 * Added functionality to `qml.sample()` to extract samples from the basis states of
   the device (currently only for qubit devices). Additionally, `wires` can be
-  specified to only return samples from those wires. 
+  specified to only return samples from those wires.
   [(#1441)](https://github.com/PennyLaneAI/pennylane/pull/1441)
 
   ```python
@@ -594,8 +599,8 @@ Maria Schuld, David Wierichs.
   def circuit_2():
       qml.Hadamard(wires=0)
       qml.Hadamard(wires=1)
-      return qml.sample(wires=[0,2])    # no observable provided and wires specified 
-  ``` 
+      return qml.sample(wires=[0,2])    # no observable provided and wires specified
+  ```
 
   ```pycon
   >>> print(circuit_1())
@@ -623,9 +628,9 @@ Maria Schuld, David Wierichs.
 * The tape does not verify any more that all Observables have owners in the annotated queue.
   [(#1505)](https://github.com/PennyLaneAI/pennylane/pull/1505)
 
-  This allows manipulation of Observables inside a tape context. An example is 
-  `expval(Tensor(qml.PauliX(0), qml.Identity(1)).prune())` which makes the expval an owner 
-  of the pruned tensor and its constituent observables, but leaves the original tensor in 
+  This allows manipulation of Observables inside a tape context. An example is
+  `expval(Tensor(qml.PauliX(0), qml.Identity(1)).prune())` which makes the expval an owner
+  of the pruned tensor and its constituent observables, but leaves the original tensor in
   the queue without an owner.
 
 * The `step` and `step_and_cost` methods of `QNGOptimizer` now accept a custom `grad_fn`
@@ -633,7 +638,7 @@ Maria Schuld, David Wierichs.
   [(#1487)](https://github.com/PennyLaneAI/pennylane/pull/1487)
 
 * The precision used by `default.qubit.jax` now matches the float precision
-  indicated by 
+  indicated by
   ```python
   from jax.config import config
   config.read('jax_enable_x64')
@@ -655,7 +660,7 @@ Maria Schuld, David Wierichs.
 * Change the order of the covariance matrix and the vector of means internally
   in `default.gaussian`. [(#1331)](https://github.com/PennyLaneAI/pennylane/pull/1331)
 
-* Added the `id` attribute to templates, which was missing from 
+* Added the `id` attribute to templates, which was missing from
   PR [(#1377)](https://github.com/PennyLaneAI/pennylane/pull/1377).
   [(#1438)](https://github.com/PennyLaneAI/pennylane/pull/1438)
 
@@ -700,7 +705,7 @@ Maria Schuld, David Wierichs.
   ```pycon
   >>> with qml.tape.Unwrap(tape1, tape2):
   ```
-  
+
 <h3>Breaking changes</h3>
 
 * Removed the deprecated tape methods `get_resources` and `get_depth` as they are
@@ -724,9 +729,9 @@ Maria Schuld, David Wierichs.
   parameters raised an error.
   [(#1495)](https://github.com/PennyLaneAI/pennylane/pull/1495)
 
-* Fixed an example in the documentation's 
-  [introduction to numpy gradients](https://pennylane.readthedocs.io/en/stable/introduction/interfaces/numpy.html), where 
-  the wires were a non-differentiable argument to the QNode. 
+* Fixed an example in the documentation's
+  [introduction to numpy gradients](https://pennylane.readthedocs.io/en/stable/introduction/interfaces/numpy.html), where
+  the wires were a non-differentiable argument to the QNode.
   [(#1499)](https://github.com/PennyLaneAI/pennylane/pull/1499)
 
 * Fixed a bug where the adjoint of `qml.QFT` when using the `qml.adjoint` function
@@ -735,7 +740,7 @@ Maria Schuld, David Wierichs.
 
 * Fixed the differentiability of the operation`IsingYY` for Autograd, Jax and Tensorflow.
   [(#1425)](https://github.com/PennyLaneAI/pennylane/pull/1425)
-  
+
 * Fixed a bug in the `torch` interface that prevented gradients from being
   computed on a GPU. [(#1426)](https://github.com/PennyLaneAI/pennylane/pull/1426)
 
@@ -788,7 +793,7 @@ Maria Schuld, Jay Soni, Antal Száva, David Wierichs.
       qml.SingleExcitation(param, wires=[0, 1])
       return qml.expval(qml.SparseHamiltonian(H, [0, 1]))
   ```
-  
+
   We can execute this QNode, passing in a sparse identity matrix:
 
   ```pycon
