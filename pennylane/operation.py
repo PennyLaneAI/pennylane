@@ -1040,9 +1040,9 @@ class Observable(Operator):
         # extract the arguments
         if wires is None:
             try:
-               wires = params[-1]
-            except IndexError: 
-               raise Exception("Can only access when arguments are passed.")
+                wires = params[-1]
+            except IndexError:
+                raise Exception("Can only access when arguments are passed.")
             params = params[:-1]
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
