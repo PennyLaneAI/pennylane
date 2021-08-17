@@ -982,7 +982,7 @@ class QuantumTape(AnnotatedQueue):
                 # in which case we just don't append any
                 rotation_gates.extend(observable.diagonalizing_gates())
             except NotImplementedError:
-                pass
+                continue
 
         return rotation_gates
 
