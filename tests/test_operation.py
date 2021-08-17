@@ -108,7 +108,9 @@ class TestOperation:
         # make sure that `heisenberg_expand` method receives enough wires to actually expand
         # so only check multimode ops
         if len(op.wires) > 1:
-            with pytest.raises(ValueError, match="do not exist on this device with wires"):
+            with pytest.raises(
+                ValueError, match="do not exist on this device with wires"
+            ):
                 op.heisenberg_expand(U, Wires([0]))
 
         # validate size of input for `heisenberg_expand` method
@@ -117,7 +119,9 @@ class TestOperation:
             op.heisenberg_expand(U_wrong_size, Wires(ww))
 
         # ensure that `heisenberg_expand` raises exception if it receives an array with order > 2
-        with pytest.raises(ValueError, match="Only order-1 and order-2 arrays supported"):
+        with pytest.raises(
+            ValueError, match="Only order-1 and order-2 arrays supported"
+        ):
             U_high_order = np.array([U] * 3)
             op.heisenberg_expand(U_high_order, Wires(ww))
 
@@ -129,7 +133,9 @@ class TestOperation:
             pytest.skip("QubitUnitary can act on any number of wires.")
 
         if test_class in (qml.ControlledQubitUnitary, qml.MultiControlledX):
-            pytest.skip("ControlledQubitUnitary alters the input params and wires in its __init__")
+            pytest.skip(
+                "ControlledQubitUnitary alters the input params and wires in its __init__"
+            )
 
         n = test_class.num_params
         w = test_class.num_wires
@@ -180,8 +186,12 @@ class TestOperation:
         target_wires = [1, 0]
         U = qml.CRX._matrix(0.4)
 
-        op = qml.ControlledQubitUnitary(U, control_wires=control_wires, wires=target_wires)
-        target_matrix = np.block([[np.eye(12), np.zeros((12, 4))], [np.zeros((4, 12)), U]])
+        op = qml.ControlledQubitUnitary(
+            U, control_wires=control_wires, wires=target_wires
+        )
+        target_matrix = np.block(
+            [[np.eye(12), np.zeros((12, 4))], [np.zeros((4, 12)), U]]
+        )
 
         assert op.name == qml.ControlledQubitUnitary.__name__
         assert np.allclose([U], op.data)
@@ -207,10 +217,14 @@ class TestOperation:
         of the original class"""
         assert qnode_for_inverse.qtape.operations[0].name == "RZ.inv"
         assert qnode_for_inverse.qtape.operations[0].inverse
-        assert issubclass(qnode_for_inverse.qtape.operations[0].__class__, qml.operation.Operation)
+        assert issubclass(
+            qnode_for_inverse.qtape.operations[0].__class__, qml.operation.Operation
+        )
         assert qnode_for_inverse.qtape.operations[1].name == "RZ"
         assert not qnode_for_inverse.qtape.operations[1].inverse
-        assert issubclass(qnode_for_inverse.qtape.operations[1].__class__, qml.operation.Operation)
+        assert issubclass(
+            qnode_for_inverse.qtape.operations[1].__class__, qml.operation.Operation
+        )
 
     def test_operation_inverse_using_dummy_operation(self):
 
@@ -305,7 +319,8 @@ class TestOperationConstruction:
             grad_recipe = [(0.5, 0.1), (0.43, 0.1)]
 
         with pytest.raises(
-            AssertionError, match="Gradient recipe must have one entry for each parameter"
+            AssertionError,
+            match="Gradient recipe must have one entry for each parameter",
         ):
             DummyOp(0.5, wires=[0, 1])
 
@@ -352,7 +367,9 @@ class TestOperationConstruction:
             grad_method = "F"
             grad_recipe = [(0.5, 0.1)]
 
-        with pytest.raises(AssertionError, match="Gradient recipe is only used by the A method"):
+        with pytest.raises(
+            AssertionError, match="Gradient recipe is only used by the A method"
+        ):
             DummyOp(0.5, wires=[0, 1])
 
     def test_no_wires_passed(self):
@@ -494,9 +511,9 @@ class TestObservableInstatiation:
     """Test that wires are specified when a qml.operation.Observable is instantiated"""
 
     class DummyObservable(qml.operation.Observable):
-          num_wires = 1
-          num_params = 0
-          par_domain = None
+        num_wires = 1
+        num_params = 0
+        par_domain = None
 
     def test_argument():
         with pytest.raises(Exception, match="Must specify the wires *"):
@@ -757,7 +774,9 @@ class TestTensor:
         H = np.diag([1, 2, 3, 4])
         O = qml.PauliX(0) @ qml.Identity(2) @ qml.Hermitian(H, wires=[4, 5])
         res = O.eigvals
-        expected = np.kron(np.array([1.0, -1.0]), np.kron(np.array([1.0, 1.0]), np.arange(1, 5)))
+        expected = np.kron(
+            np.array([1.0, -1.0]), np.kron(np.array([1.0, 1.0]), np.arange(1, 5))
+        )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_diagonalizing_gates(self, tol):
@@ -860,7 +879,10 @@ class TestTensor:
     herm_matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
 
     tensor_obs = [
-        (qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2), [qml.PauliZ(0), qml.PauliZ(2)]),
+        (
+            qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2),
+            [qml.PauliZ(0), qml.PauliZ(2)],
+        ),
         (
             qml.Identity(0)
             @ qml.PauliX(1)
@@ -875,7 +897,9 @@ class TestTensor:
         (qml.Identity(0) @ qml.PauliX(1) @ qml.Identity(2), [qml.PauliX(1)]),
         (qml.Identity(0) @ qml.Identity(1), [qml.Identity(0)]),
         (
-            qml.Identity(0) @ qml.Identity(1) @ qml.Hermitian(herm_matrix, wires=[2, 3]),
+            qml.Identity(0)
+            @ qml.Identity(1)
+            @ qml.Hermitian(herm_matrix, wires=[2, 3]),
             [qml.Hermitian(herm_matrix, wires=[2, 3])],
         ),
     ]
@@ -890,7 +914,10 @@ class TestTensor:
             assert obs.wires == expected[idx].wires
 
     tensor_obs_pruning = [
-        (qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2), qml.PauliZ(0) @ qml.PauliZ(2)),
+        (
+            qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2),
+            qml.PauliZ(0) @ qml.PauliZ(2),
+        ),
         (
             qml.Identity(0)
             @ qml.PauliX(1)
@@ -906,7 +933,9 @@ class TestTensor:
         (qml.Identity(0) @ qml.Identity(1), qml.Identity(0)),
         (qml.Identity(0) @ qml.Identity(1), qml.Identity(0)),
         (
-            qml.Identity(0) @ qml.Identity(1) @ qml.Hermitian(herm_matrix, wires=[2, 3]),
+            qml.Identity(0)
+            @ qml.Identity(1)
+            @ qml.Hermitian(herm_matrix, wires=[2, 3]),
             qml.Hermitian(herm_matrix, wires=[2, 3]),
         ),
     ]
@@ -988,7 +1017,11 @@ class TestTensor:
 
 equal_obs = [
     (qml.PauliZ(0), qml.PauliZ(0), True),
-    (qml.PauliZ(0) @ qml.PauliX(1), qml.PauliZ(0) @ qml.PauliX(1) @ qml.Identity(2), True),
+    (
+        qml.PauliZ(0) @ qml.PauliX(1),
+        qml.PauliZ(0) @ qml.PauliX(1) @ qml.Identity(2),
+        True,
+    ),
     (qml.PauliZ("b"), qml.PauliZ("b") @ qml.Identity(1.3), True),
     (qml.PauliZ(0) @ qml.Identity(1), qml.PauliZ(0), True),
     (qml.PauliZ(0), qml.PauliZ(1) @ qml.Identity(0), False),
@@ -1002,7 +1035,11 @@ equal_obs = [
 ]
 
 add_obs = [
-    (qml.PauliZ(0) @ qml.Identity(1), qml.PauliZ(0), qml.Hamiltonian([2], [qml.PauliZ(0)])),
+    (
+        qml.PauliZ(0) @ qml.Identity(1),
+        qml.PauliZ(0),
+        qml.Hamiltonian([2], [qml.PauliZ(0)]),
+    ),
     (
         qml.PauliZ(0),
         qml.PauliZ(0) @ qml.PauliX(1),
@@ -1028,7 +1065,11 @@ add_obs = [
 mul_obs = [
     (qml.PauliZ(0), 3, qml.Hamiltonian([3], [qml.PauliZ(0)])),
     (qml.PauliZ(0) @ qml.Identity(1), 3, qml.Hamiltonian([3], [qml.PauliZ(0)])),
-    (qml.PauliZ(0) @ qml.PauliX(1), 4.5, qml.Hamiltonian([4.5], [qml.PauliZ(0) @ qml.PauliX(1)])),
+    (
+        qml.PauliZ(0) @ qml.PauliX(1),
+        4.5,
+        qml.Hamiltonian([4.5], [qml.PauliZ(0) @ qml.PauliX(1)]),
+    ),
     (
         qml.Hermitian(np.array([[1, 0], [0, -1]]), "c"),
         3,
@@ -1051,7 +1092,9 @@ sub_obs = [
     (
         qml.PauliX(0) @ qml.PauliZ(1),
         qml.PauliZ(3) @ qml.Identity(2) @ qml.PauliX(0),
-        qml.Hamiltonian([1, -1], [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(3) @ qml.PauliX(0)]),
+        qml.Hamiltonian(
+            [1, -1], [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(3) @ qml.PauliX(0)]
+        ),
     ),
     (
         qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2),
@@ -1259,7 +1302,9 @@ class TestDecomposition:
 
         expected = CRoty(phi)
 
-        obtained = CNOT @ np.kron(I, U3(-phi / 2, 0, 0)) @ CNOT @ np.kron(I, U3(phi / 2, 0, 0))
+        obtained = (
+            CNOT @ np.kron(I, U3(-phi / 2, 0, 0)) @ CNOT @ np.kron(I, U3(phi / 2, 0, 0))
+        )
         assert np.allclose(expected, obtained, atol=tol, rtol=0)
 
     def test_crz_decomposition(self):
@@ -1421,7 +1466,9 @@ class TestOperationDerivative:
 
         op = RotWithGen(0.1, 0.2, 0.3, wires=0)
 
-        with pytest.raises(ValueError, match="Operation RotWithGen is not written in terms of"):
+        with pytest.raises(
+            ValueError, match="Operation RotWithGen is not written in terms of"
+        ):
             operation_derivative(op)
 
     def test_rx(self):
@@ -1432,7 +1479,10 @@ class TestOperationDerivative:
         derivative = operation_derivative(op)
 
         expected_derivative = 0.5 * np.array(
-            [[-np.sin(p / 2), -1j * np.cos(p / 2)], [-1j * np.cos(p / 2), -np.sin(p / 2)]]
+            [
+                [-np.sin(p / 2), -1j * np.cos(p / 2)],
+                [-1j * np.cos(p / 2), -np.sin(p / 2)],
+            ]
         )
 
         assert np.allclose(derivative, expected_derivative)
