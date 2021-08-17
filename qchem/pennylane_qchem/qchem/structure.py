@@ -554,7 +554,7 @@ def _qubit_operator_to_terms(qubit_operator, wires=None):
     0.1 [X0] +
     0.2 [Y0 Z2]
     >>> _qubit_operator_to_terms(q_op, wires=['w0','w1','w2','extra_wire'])
-    (array([0.1, 0.2]), [Tensor(PauliX(wires=['w0'])), Tensor(PauliY(wires=['w0']), PauliZ(wires=['w2']))])
+    (array([0.1, 0.2]), [PauliX(wires=['w0']), PauliY(wires=['w0']) @ PauliZ(wires=['w2'])])
     """
     n_wires = (
         1 + max([max([i for i, _ in t]) if t else 1 for t in qubit_operator.terms])
@@ -564,7 +564,7 @@ def _qubit_operator_to_terms(qubit_operator, wires=None):
     wires = _process_wires(wires, n_wires=n_wires)
 
     if not qubit_operator.terms:  # added since can't unpack empty zip to (coeffs, ops) below
-        return np.array([0.0]), [qml.operation.Tensor(qml.Identity(wires[0]))]
+        return np.array([0.0]), [qml.Identity(wires[0])]
 
     xyz2pauli = {"X": qml.PauliX, "Y": qml.PauliY, "Z": qml.PauliZ}
 
@@ -573,8 +573,12 @@ def _qubit_operator_to_terms(qubit_operator, wires=None):
             (
                 coef,
                 qml.operation.Tensor(*[xyz2pauli[q[1]](wires=wires[q[0]]) for q in term])
-                if term
-                else qml.operation.Tensor(qml.Identity(wires[0]))
+                if len(term) > 1
+                else (
+                    xyz2pauli[term[0][1]](wires=wires[term[0][0]])
+                    if len(term) == 1
+                    else qml.Identity(wires[0])
+                )
                 # example term: ((0,'X'), (2,'Z'), (3,'Y'))
             )
             for term, coef in qubit_operator.terms.items()
@@ -629,6 +633,9 @@ def _terms_to_qubit_operator(coeffs, ops, wires=None):
 
     q_op = openfermion.QubitOperator()
     for coeff, op in zip(coeffs, ops):
+
+        if not isinstance(op, qml.operation.Tensor):
+            op = qml.operation.Tensor(op)
 
         extra_obsvbs = set(op.name) - {"PauliX", "PauliY", "PauliZ", "Identity"}
         if extra_obsvbs != set():
