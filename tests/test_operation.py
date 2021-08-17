@@ -490,6 +490,18 @@ class TestObservableConstruction:
         assert op.id == "test"
 
 
+class TestObservableInstatiation:
+
+    class DummyObservable(qml.operation.Observable):
+          num_wires = 1
+          num_params = 0
+          par_domain = None
+
+    def test_argument():
+        with pytest.raises(Exception, match="Must specify the wires *"):
+            DummyObservable()
+
+
 class TestOperatorIntegration:
     """Integration tests for the Operator class"""
 

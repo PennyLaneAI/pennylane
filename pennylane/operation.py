@@ -1038,9 +1038,12 @@ class Observable(Operator):
 
     def __init__(self, *params, wires=None, do_queue=True, id=None):
         # extract the arguments
-        if wires is None:
+        try:
             wires = params[-1]
             params = params[:-1]
+        # error if no arguments are given
+        except IndexError as err:
+            print("TTTTT")
 
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
