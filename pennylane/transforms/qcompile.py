@@ -101,6 +101,8 @@ def qcompile(tape, pipeline=None, basis_set=None, num_runs=1, expand_depth=5):
     of gates into which the compiler will first attempt to decompose the
     existing operations prior to applying any optimization transforms.
 
+    Try putting the word pass and passes in the docstring.
+
     .. code-block:: python3
 
         compiled_qfunc = qml.compile(
