@@ -133,6 +133,7 @@ def qcompile(tape, pipeline=None, basis_set=None, num_runs=1, expand_depth=5):
                 raise ValueError("Invalid transform function {p} given to compile.")
 
     if num_runs < 1 or not isinstance(num_runs, int):
+        # Try putting the word pass in a comment here
         raise ValueError("Number of runs must be an integer with value at least 1.")
 
     # Expand the tape; this is done to unroll any templates that may be present,
