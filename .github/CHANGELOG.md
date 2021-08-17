@@ -125,6 +125,8 @@
 and requirements-ci.txt (unpinned). This latter would be used by the CI.
   [(#1535)](https://github.com/PennyLaneAI/pennylane/pull/1535)
 
+* Validation check for arguments passed to qml.operation.Observable gives user a clear error message to include arguments.
+[(#1539)](https://github.com/PennyLaneAI/pennylane/pull/1539)
 
 <h3>Breaking changes</h3>
 
