@@ -139,7 +139,7 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 This release contains contributions from (in alphabetical order):
 
-Josh Izaac, Johannes Jakob Meyer, Maria Schuld, Prateek Jain,
+Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Maria Schuld.
 
 # Release 0.17.0 (current release)
 
