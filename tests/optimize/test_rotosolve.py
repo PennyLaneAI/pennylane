@@ -73,7 +73,7 @@ def test_wrong_len_num_frequencies(fun, param, num_freq):
 
     opt = qml.RotosolveOptimizer()
 
-    with pytest.raises(ValueError, match="The number of the provided numbers of frequencies"):
+    with pytest.raises(ValueError, match="The length of the provided numbers of frequencies"):
         opt.step(fun, *param, num_frequencies=num_freq)
 
 
@@ -96,7 +96,7 @@ def test_wrong_num_of_num_frequencies_per_parameter(fun, param, num_freq):
 
     opt = qml.RotosolveOptimizer()
 
-    with pytest.raises(ValueError, match="The number of the numbers of frequencies"):
+    with pytest.raises(ValueError, match="The number of the frequency counts"):
         opt.step(fun, *param, num_frequencies=num_freq)
 
 
