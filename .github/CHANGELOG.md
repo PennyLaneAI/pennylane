@@ -122,7 +122,7 @@
   original tensor in the queue without an owner.
 
 * The QFT operation is moved to template
-  [(#1535)](https://github.com/PennyLaneAI/pennylane/pull/1535)
+  [(#1545)](https://github.com/PennyLaneAI/pennylane/pull/1545)
 
 <h3>Breaking changes</h3>
 
