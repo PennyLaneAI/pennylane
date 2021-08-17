@@ -132,10 +132,13 @@ class MPLDrawer:
         self.n_layers = n_layers
         self.n_wires = n_wires
 
-        self.box_dx = 0.4
-        self.circ_rad = 0.3
-        self.ctrl_rad = 0.1
-        self.swap_dx = 0.2
+        # half the width of a box 
+        # is difference between center and edge
+        self._box_dx = 0.4
+
+        self._circ_rad = 0.3
+        self._ctrl_rad = 0.1
+        self._swap_dx = 0.2
 
         ## Creating figure and ax
 
@@ -223,9 +226,9 @@ class MPLDrawer:
             rotation = "horizontal"
 
         box = plt.Rectangle(
-            (layer - self.box_dx - extra_width / 2, box_min - self.box_dx),
-            2 * self.box_dx + extra_width,
-            (box_len + 2 * self.box_dx),
+            (layer - self._box_dx - extra_width / 2, box_min - self._box_dx),
+            2 * self._box_dx + extra_width,
+            (box_len + 2 * self._box_dx),
             zorder=2 + zorder_base,
             facecolor=color,
         )
@@ -280,7 +283,7 @@ class MPLDrawer:
         self.ax.add_line(line)
 
         for wire in wire_ctrl:
-            circ_ctrl = plt.Circle((layer, wire), radius=self.ctrl_rad, zorder=2, color=color)
+            circ_ctrl = plt.Circle((layer, wire), radius=self._ctrl_rad, zorder=2, color=color)
             self.ax.add_patch(circ_ctrl)
 
     def CNOT(self, layer, wires, color=None):
@@ -308,7 +311,6 @@ class MPLDrawer:
             :target: javascript:void(0);
 
         """
-        control = wires[0]
         target = wires[1]
 
         self.ctrl(layer, *wires, color=color)
@@ -331,14 +333,14 @@ class MPLDrawer:
 
         target_circ = plt.Circle(
             (layer, wire),
-            radius=self.circ_rad,
+            radius=self._circ_rad,
             zorder=3,
             fill=False,
             edgecolor=edgecolor,
             linewidth=plt.rcParams["lines.linewidth"],
         )
         target_v = plt.Line2D(
-            (layer, layer), (wire - self.circ_rad, wire + self.circ_rad), zorder=4,
+            (layer, layer), (wire - self._circ_rad, wire + self._circ_rad), zorder=4,
             color=color
         )
         self.ax.add_patch(target_circ)
@@ -386,13 +388,13 @@ class MPLDrawer:
 
         """
         l1 = plt.Line2D(
-            (layer - self.swap_dx, layer + self.swap_dx),
-            (wire - self.swap_dx, wire + self.swap_dx),
+            (layer - self._swap_dx, layer + self._swap_dx),
+            (wire - self._swap_dx, wire + self._swap_dx),
             zorder=2, color=color
         )
         l2 = plt.Line2D(
-            (layer - self.swap_dx, layer + self.swap_dx),
-            (wire + self.swap_dx, wire - self.swap_dx),
+            (layer - self._swap_dx, layer + self._swap_dx),
+            (wire + self._swap_dx, wire - self._swap_dx),
             zorder=2, color=color
         )
 
@@ -425,17 +427,17 @@ class MPLDrawer:
         """
 
         box = plt.Rectangle(
-            (layer - self.box_dx, wire - self.box_dx),
-            2 * self.box_dx,
-            2 * self.box_dx,
+            (layer - self._box_dx, wire - self._box_dx),
+            2 * self._box_dx,
+            2 * self._box_dx,
             zorder=2 + zorder_base, color=color
         )
         self.ax.add_patch(box)
 
         arc = patches.Arc(
-            (layer, wire - self.box_dx / 8),
-            1.2 * self.box_dx,
-            1.1 * self.box_dx,
+            (layer, wire - self._box_dx / 8),
+            1.2 * self._box_dx,
+            1.1 * self._box_dx,
             theta1=0,
             theta2=180,
             zorder=3 + zorder_base,
@@ -443,19 +445,19 @@ class MPLDrawer:
         self.ax.add_patch(arc)
 
         arrow_scaling = (-0.33, -0.5, 0.6, 1.0)
-        arrow_coords = [self.box_dx * val for val in arrow_scaling]
+        arrow_coords = [self._box_dx * val for val in arrow_scaling]
 
-        arrow_start_x = layer - 0.33 * self.box_dx
-        arrow_start_y = wire - 0.5 * self.box_dx
-        arrow_width = 0.6 * self.box_dx
-        arrow_height = 1.0 * self.box_dx
+        arrow_start_x = layer - 0.33 * self._box_dx
+        arrow_start_y = wire - 0.5 * self._box_dx
+        arrow_width = 0.6 * self._box_dx
+        arrow_height = 1.0 * self._box_dx
 
         arrow = plt.arrow(
             arrow_start_x,
             arrow_start_y,
             arrow_width,
             arrow_height,
-            head_width=self.box_dx / 4,
+            head_width=self._box_dx / 4,
             zorder=4 + zorder_base,
             facecolor=color
         )
