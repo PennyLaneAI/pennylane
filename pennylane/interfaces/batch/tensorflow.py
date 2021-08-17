@@ -15,7 +15,7 @@
 This module contains functions for adding the TensorFlow interface
 to a PennyLane Device class.
 """
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,too-many-branches
 import inspect
 
 import numpy as np
@@ -67,7 +67,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         parameters.extend(t.get_parameters())
 
     @tf.custom_gradient
-    def _execute(*parameters):
+    def _execute(*parameters):  # pylint:disable=unused-argument
         with qml.tape.Unwrap(*tapes):
             res, jacs = execute_fn(tapes, **gradient_kwargs)
 
