@@ -91,7 +91,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         def grad_fn(*dy, **tfkwargs):
             """Returns the vector-Jacobian product with given
             parameter values and output gradient dy"""
-            nonlocal jacs
 
             if jacs:
                 # Jacobians were computed on the forward pass (mode="forward")
@@ -159,11 +158,8 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
                     # - gradient_fn is not differentiable
                     #
                     # so we cannot support higher-order derivatives.
-
                     with qml.tape.Unwrap(*tapes, params=params_unwrapped, set_trainable=False):
-                        jacs = gradient_fn(tapes, **gradient_kwargs)
-
-                    vjps = _compute_vjp(dy, jacs)
+                        vjps = _compute_vjp(dy, gradient_fn(tapes, **gradient_kwargs))
 
                 else:
                     raise ValueError("Unknown gradient function.")
