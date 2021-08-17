@@ -7,7 +7,7 @@ tensornetwork==0.3
 autograd=1.0
 toml=1.0
 appdirs=1.4
-semantic_version=2.8
+semantic_version==2.6
 dask[delayed]=2021.08
 autoray=0.2
 matplotlib=3.4
