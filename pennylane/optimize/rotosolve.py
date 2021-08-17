@@ -74,30 +74,38 @@ class RotosolveOptimizer:
     >>> opt = qml.optimize.RotosolveOptimizer()
     >>> num_steps = 10
 
-    Set up the PennyLane circuit using the ``default.qubit`` as simulator device. The first
-    argument controls three Pauli rotations with three parameters (one frequency each), the
-    second a layer of rotations with a single parameter (three frequencies), and the third
-    argument feeds three parameters into three controled Pauli rotations (two frequencies
-    each).
-    The ``cost_function` is defined simply by measuring the expectation value of the tensor
-    product of ``PauliZ`` operators on all qubits.
-    We also initialize a set of parameters for all these operations and summarize
-    the numbers of frequencies in ``num_frequencies``.
-
+    Next, we create a QNode we wish to optimize:
 
     .. code-block :: python
 
         dev = qml.device('default.qubit', wires=3, shots=None)
+
         @qml.qnode(dev)
         def cost_function(rot_param, layer_par, crot_param):
             for i, par in enumerate(rot_param):
                 qml.RX(par, wires=i)
+
             for w in dev.wires:
                 qml.RX(layer_par, wires=w)
+
             for i, par in enumerate(crot_param):
                 qml.CRY(par, wires=[i, (i+1)%3])
 
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+
+    This QNode is defined simply by measuring the expectation value of the tensor
+    product of ``PauliZ`` operators on all qubits.
+    It takes three parameters:
+
+    - ``rot_param`` controls three Pauli rotations with three parameters (one frequency each),
+    - ``layer_par`` feeds into a layer of rotations with a single parameter (three frequencies), and
+    - ``crot_param`` feeds three parameters into three controlled Pauli rotations (two frequencies
+      each).
+  
+    We also initialize a set of parameters for all these operations, and summarize
+    the numbers of frequencies in ``num_frequencies``.
+
+    .. code-block :: python
 
         init_param = [
             np.array([0.3, 0.2, 0.67], requires_grad=True),
