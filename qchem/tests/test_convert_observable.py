@@ -322,6 +322,28 @@ def test_not_xyz_terms_to_qubit_operator():
         )
 
 
+def test_types_consistency():
+    r"""Test the type consistency of the qubit Hamiltonian constructed by 'convert_observable' from
+    an OpenFermion QubitOperator with respect to the same observable built directly using PennyLane
+    operations"""
+
+    # Reference PL operator
+    pl_ref = 1 * qml.Identity(0) + 2 * qml.PauliZ(0) @ qml.PauliX(1)
+
+    # Corresponding OpenFermion QubitOperator
+    of = QubitOperator("", 1) + QubitOperator("Z0 X1", 2)
+
+    # Build PL operator using 'convert_observable'
+    pl = qchem.convert_observable(of)
+
+    ops = pl.terms[1]
+    ops_ref = pl_ref.terms[1]
+
+    for i, op in enumerate(ops):
+        assert op.name == ops_ref[i].name
+        assert type(op) == type(ops_ref[i])
+
+
 op_1 = QubitOperator("Y0 Y1", 1 + 0j) + QubitOperator("Y0 X1", 2) + QubitOperator("Z0 Y1", 2.3e-08j)
 op_2 = QubitOperator("Z0 Y1", 2.23e-10j)
 
