@@ -49,15 +49,34 @@
   For example, if we wanted to only push single-qubit gates through
   controlled gates and cancel adjacent inverses, we could do:
 
+  ```python
+  from pennylane.transforms import commute_controlled, cancel_inverses
+  pipeline = [commute_controlled, cancel_inverses]
+
+  @qml.qnode(dev)
+  @qml.compile(pipeline=pipeline)
+  def qfunc(x, y, z):
+      qml.Hadamard(wires=0)
+      qml.Hadamard(wires=1)
+      qml.Hadamard(wires=2)
+      qml.RZ(z, wires=2)
+      qml.CNOT(wires=[2, 1])
+      qml.RX(z, wires=0)
+      qml.CNOT(wires=[1, 0])
+      qml.RX(x, wires=0)
+      qml.CNOT(wires=[1, 0])
+      qml.RZ(-z, wires=2)
+      qml.RX(y, wires=2)
+      qml.PauliY(wires=2)
+      qml.CZ(wires=[1, 2])
+      return qml.expval(qml.PauliZ(wires=0))
+  ```
+
   ```pycon
-  >>> from pennylane.transforms import commute_controlled, cancel_inverses
-  >>> pipeline = [commute_controlled, cancel_inverses]
-  >>> compiled_qfunc = qml.compile(pipeline=pipeline)(qfunc)
-  >>> compiled_qnode = qml.QNode(compiled_qfunc, dev)
-  >>> print(qml.draw(compiled_qnode)(0.2, 0.3, 0.4))
-   0: ──H───RX(0.4)──RX(0.2)─────────────────────────────┤ ⟨Z⟩
-   1: ──H──╭X────────────────────────────────────╭CY─────┤
-   2: ──H──╰C────────RZ(0.4)──RZ(-0.4)──RX(0.3)──╰CY──Y──┤
+  >>> print(qml.draw(qfunc)(0.2, 0.3, 0.4))
+   0: ──H───RX(0.4)──RX(0.2)────────────────────────────┤ ⟨Z⟩
+   1: ──H──╭X───────────────────────────────────────╭C──┤
+   2: ──H──╰C────────RZ(0.4)──RZ(-0.4)──RX(0.3)──Y──╰Z──┤
   ```
 
   The following compilation transforms have been added and are also available
@@ -200,28 +219,10 @@
   Torch, and Jax), as well as device plugins and QChem, for GPUs and CPUs, has been added.
   [(#1391)](https://github.com/PennyLaneAI/pennylane/pull/1391)
 
-  The build process using Docker and `make` requires that the repository source code
-  is cloned or downloaded from GitHub, and provides the following options:
-
-  * Building a core PennyLane image:
-  ```
-  make -f docker/Makefile build-base
-  ```
-
-  * Building a PennyLane image with the TensorFlow interface (change `interface-name` for other interfaces):
-  ```
-  make -f docker/Makefile build-interface interface-name=tensorflow
-  ```
-
-  * Building a PennyLane image with the Qiskit plugin (change `plugin-name` for other plugins):
-  ```
-  make -f docker/Makefile build-plugin plugin-name=qiskit
-  ```
-
-  * Building the PennyLane-QChem image:
-  ```
-  make -f docker/Makefile build-qchem
-  ```
+  The build process using Docker and `make` requires that the repository source
+  code is cloned or downloaded from GitHub. Visit the the detailed description
+  for an [extended list of
+  options](https://pennylane.readthedocs.io/en/stable/development/guide/installation.html#installation).
 
 <h4>Improved Hamiltonian simulations</h4>
 
