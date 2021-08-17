@@ -16,11 +16,13 @@ import functools
 
 import numpy as np
 import pytest
-import tensorflow as tf
 
 import pennylane as qml
 from pennylane.gradients import param_shift
 from pennylane.interfaces.batch import execute
+
+
+tf = pytest.importorskip("tensorflow", minversion="2.1")
 
 
 class TestTensorFlowExecuteUnitTests:
