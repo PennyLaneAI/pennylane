@@ -496,6 +496,64 @@ class Device(abc.ABC):
 
         return results
 
+    def execute_and_gradients(self, circuits, method="jacobian", **kwargs):
+        """Execute a batch of quantum circuits on the device, and return both the
+        results and the gradients.
+
+        The circuits are represented by tapes, and they are executed
+        one-by-one using the device's ``execute`` method. The results and the
+        corresponding Jacobians are collected in a list.
+
+        For plugin developers: This method should be overwritten if the device
+        can efficiently run multiple circuits on a backend, for example using
+        parallel and/or asynchronous executions, and return both the results and the
+        Jacobians.
+
+        Args:
+            circuits (list[.tape.QuantumTape]): circuits to execute on the device
+            method (str): the device method to call to compute the Jacobian of a single circuit
+            **kwargs: keyword argument to pass when calling ``method``
+
+        Returns:
+            tuple[list[array[float]], list[array[float]]]: Tuple containing list of measured value(s)
+            and list of Jacobians. Returned Jacobians should be of shape ``(output_shape, num_params)``.
+        """
+        gradient_method = getattr(self, method)
+
+        res = []
+        jacs = []
+
+        for circuit in circuits:
+            # Evaluations and gradients are paired, so that
+            # devices can re-use the device state for the
+            # gradient computation (if applicable).
+            res.append(circuit.execute(self))
+            jacs.append(gradient_method(circuit, **kwargs))
+
+        return res, jacs
+
+    def gradients(self, circuits, method="jacobian", **kwargs):
+        """Return the gradients of a batch of quantum circuits on the device.
+
+        The gradient method ``method`` is called sequentially for each
+        circuit, and the corresponding Jacobians are collected in a list.
+
+        For plugin developers: This method should be overwritten if the device
+        can efficiently compute the gradient of multiple circuits on a
+        backend, for example using parallel and/or asynchronous executions.
+
+        Args:
+            circuits (list[.tape.QuantumTape]): circuits to execute on the device
+            method (str): the device method to call to compute the Jacobian of a single circuit
+            **kwargs: keyword argument to pass when calling ``method``
+
+        Returns:
+            list[array[float]]: List of Jacobians. Returned Jacobians should be of
+            shape ``(output_shape, num_params)``.
+        """
+        gradient_method = getattr(self, method)
+        return [gradient_method(circuit, **kwargs) for circuit in circuits]
+
     @property
     def op_queue(self):
         """The operation queue to be applied.

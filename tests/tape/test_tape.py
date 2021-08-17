@@ -251,21 +251,6 @@ class TestConstruction:
                 qml.RX(0.5, wires=0)
                 qml.expval(qml.PauliZ(wires=1))
 
-    def test_observable_with_no_measurement(self):
-        """Test that an exception is raised if an observable is used without a measurement"""
-
-        with pytest.raises(ValueError, match="does not have a measurement type specified"):
-            with QuantumTape() as tape:
-                qml.RX(0.5, wires=0)
-                qml.Hermitian(np.array([[0, 1], [1, 0]]), wires=1)
-                qml.expval(qml.PauliZ(wires=1))
-
-        with pytest.raises(ValueError, match="does not have a measurement type specified"):
-            with QuantumTape() as tape:
-                qml.RX(0.5, wires=0)
-                qml.PauliX(wires=0) @ qml.PauliY(wires=1)
-                qml.expval(qml.PauliZ(wires=1))
-
     def test_sampling(self):
         """Test that the tape correctly marks itself as returning samples"""
         with QuantumTape() as tape:
