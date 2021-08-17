@@ -213,11 +213,6 @@ of other templates.
     :description: AllSinglesDoubles
     :figure: ../_static/templates/subroutines/all_singles_doubles.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.templates.subroutines.QuantumFourierTransform.html
-    :description: QuantumFourierTransform
-    :figure: ../_static/templates/subroutines/qft.svg
-
 .. raw:: html
 
         <div style='clear:both'></div>
