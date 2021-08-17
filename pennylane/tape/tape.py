@@ -162,6 +162,8 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     # expansion acts on the original tape in place.
     if tape._obs_sharing_wires:
         try:
+            # todo: here we assume that the observables are always Pauli words,
+            #  but they could be Hamiltonians!
             rotations, diag_obs = qml.grouping.diagonalize_qwc_pauli_words(tape._obs_sharing_wires)
         except ValueError as e:
             raise qml.QuantumFunctionError(

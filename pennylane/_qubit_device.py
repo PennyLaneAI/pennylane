@@ -759,9 +759,13 @@ class QubitDevice(Device):
             )
             return probs[idx]
 
+        # exact expectation value
         if self.shots is None:
-            # exact expectation value
-            eigvals = self._asarray(observable.eigvals, dtype=self.R_DTYPE)
+            try:
+                eigvals = self._asarray(observable.eigvals, dtype=self.R_DTYPE)
+            except NotImplementedError:
+                raise ValueError(f"Cannot compute expectations of {observable.name} observables.")
+
             prob = self.probability(wires=observable.wires)
             return self._dot(eigvals, prob)
 
@@ -779,8 +783,8 @@ class QubitDevice(Device):
             )
             return probs[idx] - probs[idx] ** 2
 
+        # exact variance value
         if self.shots is None:
-            # exact variance value
             try:
                 eigvals = self._asarray(observable.eigvals, dtype=self.R_DTYPE)
             except NotImplementedError:
