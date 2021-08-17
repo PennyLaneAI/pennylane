@@ -201,7 +201,7 @@ def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None
 
             # compute the linear combination of results and coefficients
             res = qml.math.stack(res)
-            g = sum([c * r for c, r in zip(gradient_coeffs[i], res)])
+            g = qml.math.tensordot(res, qml.math.convert_like(gradient_coeffs[i], res), [[0], [0]])
 
             if unshifted_coeffs:
                 # add on the unshifted term

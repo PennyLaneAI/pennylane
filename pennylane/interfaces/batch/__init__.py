@@ -256,7 +256,6 @@ def execute(
             gradient_fn = cache_execute(
                 device.gradients, cache, pass_kwargs=True, return_tuple=False
             )
-            print(gradient_fn)
 
     elif mode == "forward":
         # In "forward" mode, gradients are automatically handled
@@ -265,7 +264,7 @@ def execute(
         raise ValueError("Gradient transforms cannot be used with mode='forward'")
 
     if interface == "autograd":
-        from .autograd import execute as execute_autograd
+        from .autograd import execute
     elif interface in ("tf", "tensorflow"):
         from .tensorflow import execute
     else:
