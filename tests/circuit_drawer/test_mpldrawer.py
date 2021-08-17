@@ -20,6 +20,7 @@ import pytest
 
 import matplotlib.pyplot as plt
 from matplotlib.colors import to_rgba
+from matplotlib.patches import FancyArrow
 
 from pennylane.circuit_drawer import MPLDrawer
 from pennylane.math import allclose
@@ -45,6 +46,7 @@ class TestInitialization:
         for wire, line in enumerate(lines):
             assert line.get_xdata() == (-1, n_layers)
             assert line.get_ydata() == (wire, wire)
+        plt.close()
 
     def test_customfigsize(self):
         """Tests a custom figsize alters the size"""
@@ -53,6 +55,7 @@ class TestInitialization:
 
         assert drawer.fig.get_figwidth() == 5
         assert drawer.fig.get_figheight() == 5
+        plt.close()
 
     def test_config_params_set(self):
         """Tests sizing hidden variables are set."""
@@ -63,6 +66,7 @@ class TestInitialization:
         assert drawer._circ_rad == 0.3
         assert drawer._ctrl_rad == 0.1
         assert drawer._swap_dx == 0.2
+        plt.close()
 
 
 def test_labels():
@@ -80,9 +84,12 @@ def test_labels():
         assert actual_label.get_text() == expected_label
 
         assert actual_label.get_position() == (-1.5, wire)
+    
+    plt.close()
 
 
 class TestBoxGate:
+
     def test_simple_box(self):
         """tests basic functionality of box_gate."""
 
@@ -100,6 +107,7 @@ class TestBoxGate:
 
         assert text.get_text() == "X"
         assert text.get_position() == (0, 0)
+        plt.close()
 
     def test_multiwire_box(self):
         """tests a gate spanning multiple wires."""
@@ -117,6 +125,17 @@ class TestBoxGate:
 
         assert text.get_text() == "Tall Gate"
         assert text.get_position() == (0, 1.0)
+        plt.close()
+
+    def test_box_color(self):
+        """Tests that color keyword changes rectangles color."""
+        drawer = MPLDrawer(1,1)
+        rgba_red = (1,0,0,1)
+        drawer.box_gate(0, 0, text="X", color=rgba_red)
+
+        rect = drawer.ax.patches[0]
+        assert rect.get_facecolor() == rgba_red
+        plt.close()
 
     def test_extra_width(self):
         """tests a box with added width."""
@@ -134,6 +153,7 @@ class TestBoxGate:
 
         assert text.get_text() == "Wide Gate"
         assert text.get_position() == (0, 0)
+        plt.close()
 
     def test_rotate_text(self):
         """Tests rotated text"""
@@ -143,9 +163,12 @@ class TestBoxGate:
 
         text = drawer.ax.texts[0]
         assert text.get_rotation() == 90.0
+        plt.close()
 
 
 class TestCTRL:
+    """Tests ctrl, _target_x, and CNOT"""
+
     def test_ctrl_no_target(self):
         """Tests a single control with no target"""
 
@@ -163,6 +186,7 @@ class TestCTRL:
 
         assert circle.width == 0.2
         assert circle.center == (0, 0)
+        plt.close()
 
     def test_ctrl_multi_wires(self):
         """Tests two control wires with no target."""
@@ -183,6 +207,24 @@ class TestCTRL:
         for wire, circle in zip(ctrl_wires, circles):
             assert circle.width == 0.2
             assert circle.center == (0, wire)
+        plt.close()
+
+    def test_ctrl_color(self):
+        """Tests two control wires with no target."""
+
+        drawer = MPLDrawer(1, 3)
+
+        ctrl_wires = (0, 1)
+        rgba_red = (1,0,0,1)
+        drawer.ctrl(0, ctrl_wires, color=rgba_red)
+
+        ctrl_line = drawer.ax.lines[3]
+        assert ctrl_line.get_color() == rgba_red
+
+        for circle in drawer.ax.patches:
+            assert circle.get_facecolor() == rgba_red
+
+        plt.close()
 
     def test_ctrl_target(self):
         """Tests target impacts line extent"""
@@ -202,6 +244,7 @@ class TestCTRL:
 
         assert circle.width == 0.2
         assert circle.center == (0, 0)
+        plt.close()
 
     def test_target_x(self):
         """Tests hidden target_x drawing method"""
@@ -219,10 +262,25 @@ class TestCTRL:
         assert circle.width == 0.6
         assert circle.fill == False
         assert to_rgba(plt.rcParams["lines.color"]) == to_rgba(circle.get_edgecolor())
+        plt.close()
 
-    def test_CNOT(
-        self,
-    ):
+    def test_target_x_color(self):
+
+        drawer = MPLDrawer(1, 3)
+
+        rgba_red = (1,0,0,1)
+        drawer._target_x(0, 0, color=rgba_red)
+
+        center_line = drawer.ax.lines[3]
+        assert center_line.get_color() == rgba_red
+
+        circle = drawer.ax.patches[0]
+        assert circle.fill == False
+        assert circle.get_edgecolor() == rgba_red
+
+        plt.close()
+
+    def test_CNOT(self):
         """Tests the CNOT method"""
 
         drawer = MPLDrawer(1, 3)
@@ -245,9 +303,31 @@ class TestCTRL:
         assert target_circle.width == 0.6
         assert target_circle.fill == False
         assert to_rgba(plt.rcParams["lines.color"]) == to_rgba(target_circle.get_edgecolor())
+        plt.close()
+
+    def test_CNOT_color(self):
+        drawer = MPLDrawer(1, 3)
+        rgba_red = (1,0,0,1)
+        drawer.CNOT(0, (0, 1), color=rgba_red)
+
+        ctrl_line = drawer.ax.lines[3]
+        assert ctrl_line.get_color() == rgba_red
+
+        center_line = drawer.ax.lines[4]
+        assert center_line.get_color() == rgba_red
+
+        ctrl_circle = drawer.ax.patches[0]
+        assert ctrl_circle.get_facecolor() == rgba_red
+
+        target_circle = drawer.ax.patches[1]
+        assert target_circle.get_edgecolor() == rgba_red
+
+        plt.close()
 
 
 class TestSWAP:
+    """Test the SWAP gate."""
+
     def test_swap_x(self):
         """Tests the ``_swap_x`` private method."""
 
@@ -259,6 +339,7 @@ class TestSWAP:
 
         assert l1.get_data() == ((-0.2, 0.2), (-0.2, 0.2))
         assert l2.get_data() == ((-0.2, 0.2), (0.2, -0.2))
+        plt.close()
 
     def test_SWAP(self):
         """Tests the SWAP method."""
@@ -267,6 +348,35 @@ class TestSWAP:
         drawer.SWAP(0, (0, 2))
 
         connecting_line = drawer.ax.lines[3]
-        assert conneting_line.get_data() == ((0,0), (0,2))
+        assert connecting_line.get_data() == ((0,0), (0,2))
 
-        
+        x_lines = drawer.ax.lines[4:]
+        assert x_lines[0].get_data() == ((-0.2, 0.2), (-0.2, 0.2))
+        assert x_lines[1].get_data() == ((-0.2, 0.2), (0.2, -0.2))
+        assert x_lines[2].get_data() == ((-0.2, 0.2), (1.8, 2.2))
+        assert x_lines[3].get_data() == ((-0.2, 0.2), (2.2, 1.8))
+        plt.close()
+
+
+def test_measure():
+    """Tests the measure method."""
+
+    drawer = MPLDrawer(1,1)
+    drawer.measure(0,0)
+
+    box = drawer.ax.patches[0]
+    assert box.get_xy() == (-0.4, -0.4)
+    assert box.get_width() == 0.8
+    assert box.get_height() == 0.8
+
+    arc = drawer.ax.patches[1]
+    assert arc.center == (0, -0.05)
+    assert arc.theta1 == 0
+    assert arc.theta2 == 180
+    assert allclose(arc.height, 0.44)
+    assert arc.width == 0.48
+
+    arrow = drawer.ax.patches[2]
+    assert isinstance(arrow, FancyArrow)
+
+    plt.close()

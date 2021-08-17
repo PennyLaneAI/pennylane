@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""
+This module contains the MPLDrawer class for creating circuit diagrams with matplotlib
+"""
 from collections.abc import Iterable
 
 import matplotlib.pyplot as plt
@@ -22,8 +24,7 @@ def _to_tuple(a):
     """converts int or iterable to always tuple"""
     if isinstance(a, Iterable):
         return tuple(a)
-    else:
-        return (a,)
+    return (a,)
 
 
 class MPLDrawer:
@@ -446,9 +447,7 @@ class MPLDrawer:
         )
         self.ax.add_patch(arc)
 
-        arrow_scaling = (-0.33, -0.5, 0.6, 1.0)
-        arrow_coords = [self._box_dx * val for val in arrow_scaling]
-
+        # can experiment with the specific numbers to make it look decent
         arrow_start_x = layer - 0.33 * self._box_dx
         arrow_start_y = wire - 0.5 * self._box_dx
         arrow_width = 0.6 * self._box_dx
