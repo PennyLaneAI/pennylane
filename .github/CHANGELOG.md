@@ -60,6 +60,7 @@
   added, via the beta `pennylane.interfaces.batch` module.
   [(#1501)](https://github.com/PennyLaneAI/pennylane/pull/1501)
   [(#1508)](https://github.com/PennyLaneAI/pennylane/pull/1508)
+  [(#1542)](https://github.com/PennyLaneAI/pennylane/pull/1542)
 
   For example:
 
