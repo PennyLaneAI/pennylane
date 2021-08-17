@@ -133,7 +133,8 @@ class RotosolveOptimizer:
 
     The optimized values for ``x`` are now stored in ``param`` and steps-vs-cost can be
     assessed by plotting ``cost_rotosolve``.
-    The keyword argument `requires_grad` can be used to determine whether the respective
+
+    The keyword argument ``requires_grad`` can be used to determine whether the respective
     parameter should be optimized or not, following the behaviour of gradient computations and
     gradient-based optimizers when using Autograd or JAX.
 
