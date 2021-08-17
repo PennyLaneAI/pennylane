@@ -121,6 +121,9 @@
   an owner of the pruned tensor and its constituent observables, but leaves the
   original tensor in the queue without an owner.
 
+* The `qml.ResetError` is now supported for `default.mixed` device. 
+  [(#1541)](https://github.com/PennyLaneAI/pennylane/pull/1541)
+
 <h3>Breaking changes</h3>
 
 <h3>Bug fixes</h3>
