@@ -128,10 +128,10 @@ def qcompile(tape, pipeline=None, basis_set=None, num_runs=1, expand_depth=5):
         for p in pipeline:
             p_func = p.func if isinstance(p, partial) else p
             if not isinstance(p_func, single_tape_transform) and not hasattr(p_func, "tape_fn"):
-                raise ValueError("Invalid transform function {p} passed to compile.")
+                raise ValueError("Invalid transform function {p} given to compile.")
 
     if num_runs < 1 or not isinstance(num_runs, int):
-        raise ValueError("Number of passes must be an integer with value at least 1.")
+        raise ValueError("Number of runs must be an integer with value at least 1.")
 
     # Expand the tape; this is done to unroll any templates that may be present,
     # as well as to decompose over a specified basis set
