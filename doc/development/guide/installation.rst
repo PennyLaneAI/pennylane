@@ -129,7 +129,7 @@ Build a PennyLane Docker image
 .. note::
 
     Docker builds using "make" will work on Linux and MacOS only. For MS Windows
-    you can use [WSL](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
+    you can use `WSL <https://docs.microsoft.com/en-us/windows/wsl/install-win10>`__.
     They are currently not supported on the Apple M1 chip (ARM64).
 
 
