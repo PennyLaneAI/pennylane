@@ -47,6 +47,7 @@ class RotosolveOptimizer:
     updates the parameters :math:`\boldsymbol{\theta} = \theta_1, \dots, \theta_D` by
     reconstructing the cost function with respect to one of the parameters at a time
     while keeping all other parameters fixed.
+
     This requires a purely classical one-dimensional global optimization over the range
     :math:`(-\pi,\pi]` in general, which can be replaced by a closed-form expression for the
     optimal value if the :math:`d^{th}` parametrized gate has only two eigenvalues. In this case
