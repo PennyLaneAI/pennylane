@@ -19,7 +19,7 @@ undergoing cosmetic changes.
 
 import matplotlib.pyplot as plt
 
-from pennylane.beta.drawer import MPLDrawer
+from pennylane.circuit_drawer import MPLDrawer
 
 
 def labels(savefile="labels.png"):

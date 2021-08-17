@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests the mpldrawer in the beta module.  
+Tests the MPLDrawer.
 """
 
 from numpy import recfromtxt
@@ -21,14 +21,13 @@ import pytest
 import matplotlib.pyplot as plt
 from matplotlib.colors import to_rgba
 
-from pennylane.beta.drawer import MPLDrawer
+from pennylane.circuit_drawer import MPLDrawer
 from pennylane.math import allclose
 
 
 class TestInitialization:
-
-    @pytest.mark.parametrize('n_wires', [2, 3])
-    @pytest.mark.parametrize('n_layers', [2,3])
+    @pytest.mark.parametrize("n_wires", [2, 3])
+    @pytest.mark.parametrize("n_layers", [2, 3])
     def test_figsize_wires(self, n_wires, n_layers):
         """Tests the figure is sized correctly."""
 
@@ -50,7 +49,7 @@ class TestInitialization:
     def test_customfigsize(self):
         """Tests a custom figsize alters the size"""
 
-        drawer = MPLDrawer(1,1, figsize=(5,5))
+        drawer = MPLDrawer(1, 1, figsize=(5, 5))
 
         assert drawer.fig.get_figwidth() == 5
         assert drawer.fig.get_figheight() == 5
@@ -58,7 +57,7 @@ class TestInitialization:
     def test_config_params_set(self):
         """Tests sizing hidden variables are set."""
 
-        drawer = MPLDrawer(1,1)
+        drawer = MPLDrawer(1, 1)
 
         assert drawer._box_dx == 0.4
         assert drawer._circ_rad == 0.3
@@ -82,12 +81,12 @@ def test_labels():
 
         assert actual_label.get_position() == (-1.5, wire)
 
-class TestBoxGate():
 
+class TestBoxGate:
     def test_simple_box(self):
         """tests basic functionality of box_gate."""
 
-        drawer = MPLDrawer(1,1)
+        drawer = MPLDrawer(1, 1)
 
         drawer.box_gate(0, 0, "X")
 
@@ -100,13 +99,13 @@ class TestBoxGate():
         text = drawer.ax.texts[0]
 
         assert text.get_text() == "X"
-        assert text.get_position() == (0,0)
+        assert text.get_position() == (0, 0)
 
     def test_multiwire_box(self):
         """tests a gate spanning multiple wires."""
 
         drawer = MPLDrawer(1, 3)
-        drawer.box_gate(0, (0,2), text="Tall Gate")
+        drawer.box_gate(0, (0, 2), text="Tall Gate")
 
         rect = drawer.ax.patches[0]
 
@@ -117,13 +116,13 @@ class TestBoxGate():
         text = drawer.ax.texts[0]
 
         assert text.get_text() == "Tall Gate"
-        assert text.get_position() == (0,1.0)
+        assert text.get_position() == (0, 1.0)
 
     def test_extra_width(self):
         """tests a box with added width."""
 
-        drawer = MPLDrawer(1,1)
-        drawer.box_gate(0,0, text="Wide Gate", extra_width=0.4)
+        drawer = MPLDrawer(1, 1)
+        drawer.box_gate(0, 0, text="Wide Gate", extra_width=0.4)
 
         rect = drawer.ax.patches[0]
 
@@ -139,11 +138,12 @@ class TestBoxGate():
     def test_rotate_text(self):
         """Tests rotated text"""
 
-        drawer = MPLDrawer(1,1)
-        drawer.box_gate(0,0, text="rotated text", rotate_text=True)
+        drawer = MPLDrawer(1, 1)
+        drawer.box_gate(0, 0, text="rotated text", rotate_text=True)
 
         text = drawer.ax.texts[0]
         assert text.get_rotation() == 90.0
+
 
 class TestCTRL:
     def test_ctrl_no_target(self):
@@ -155,26 +155,26 @@ class TestCTRL:
 
         ctrl_line = drawer.ax.lines[1]
 
-        assert ctrl_line.get_data() == ((0,0), (0,0))
+        assert ctrl_line.get_data() == ((0, 0), (0, 0))
 
         assert len(drawer.ax.patches) == 1
 
         circle = drawer.ax.patches[0]
 
         assert circle.width == 0.2
-        assert circle.center == (0,0)
+        assert circle.center == (0, 0)
 
     def test_ctrl_multi_wires(self):
         """Tests two control wires with no target."""
 
         drawer = MPLDrawer(1, 3)
 
-        ctrl_wires= (0,1)
+        ctrl_wires = (0, 1)
         drawer.ctrl(0, ctrl_wires)
 
         ctrl_line = drawer.ax.lines[3]
 
-        assert ctrl_line.get_data() == ((0,0), ctrl_wires)
+        assert ctrl_line.get_data() == ((0, 0), ctrl_wires)
 
         circles = drawer.ax.patches
 
@@ -187,13 +187,13 @@ class TestCTRL:
     def test_ctrl_target(self):
         """Tests target impacts line extent"""
 
-        drawer = MPLDrawer(1,3)
+        drawer = MPLDrawer(1, 3)
 
         drawer.ctrl(0, 0, 2)
 
         ctrl_line = drawer.ax.lines[3]
 
-        assert ctrl_line.get_data() == ((0,0), (0, 2))
+        assert ctrl_line.get_data() == ((0, 0), (0, 2))
 
         circles = drawer.ax.patches
         assert len(circles) == 1
@@ -201,49 +201,67 @@ class TestCTRL:
         circle = drawer.ax.patches[0]
 
         assert circle.width == 0.2
-        assert circle.center == (0,0)
+        assert circle.center == (0, 0)
 
     def test_target_x(self):
         """Tests hidden target_x drawing method"""
 
-        drawer = MPLDrawer(1,3)
-        
+        drawer = MPLDrawer(1, 3)
+
         drawer._target_x(0, 0)
 
         center_line = drawer.ax.lines[3]
-        assert center_line.get_data() == ((0,0), (-0.3, 0.3))
+        assert center_line.get_data() == ((0, 0), (-0.3, 0.3))
 
         circle = drawer.ax.patches[0]
 
-        assert circle.center == (0,0)
+        assert circle.center == (0, 0)
         assert circle.width == 0.6
         assert circle.fill == False
         assert to_rgba(plt.rcParams["lines.color"]) == to_rgba(circle.get_edgecolor())
 
-    def test_CNOT(self,):
+    def test_CNOT(
+        self,
+    ):
         """Tests the CNOT method"""
 
         drawer = MPLDrawer(1, 3)
 
-        drawer.CNOT(0, (0,1))
+        drawer.CNOT(0, (0, 1))
 
         ctrl_line = drawer.ax.lines[3]
-        assert ctrl_line.get_data() == ((0,0), (0,1))
+        assert ctrl_line.get_data() == ((0, 0), (0, 1))
 
         center_line = drawer.ax.lines[4]
-        assert center_line.get_data() == ((0,0), (0.7, 1.3))
+        assert center_line.get_data() == ((0, 0), (0.7, 1.3))
 
         ctrl_circle = drawer.ax.patches[0]
         target_circle = drawer.ax.patches[1]
 
-        assert ctrl_circle.center == (0,0)
+        assert ctrl_circle.center == (0, 0)
         assert ctrl_circle.width == 0.2
 
-        assert target_circle.center == (0,1)
+        assert target_circle.center == (0, 1)
         assert target_circle.width == 0.6
         assert target_circle.fill == False
         assert to_rgba(plt.rcParams["lines.color"]) == to_rgba(target_circle.get_edgecolor())
 
 
+class TestSWAP:
+    def test_swap_x(self):
+        """Tests the ``_swap_x`` private method."""
 
+        drawer = MPLDrawer(1, 1)
+        drawer._swap_x(0, 0)
 
+        l1 = drawer.ax.lines[1]
+        l2 = drawer.ax.lines[2]
+
+        assert l1.get_data() == ((-0.2, 0.2), (-0.2, 0.2))
+        assert l2.get_data() == ((-0.2, 0.2), (0.2, -0.2))
+
+    def test_SWAP(self):
+        """Tests the SWAP method."""
+
+        drawer = MPLDrawer(1, 3)
+        drawer.SWAP(0, (0, 2))

@@ -132,7 +132,7 @@ class MPLDrawer:
         self.n_layers = n_layers
         self.n_wires = n_wires
 
-        # half the width of a box 
+        # half the width of a box
         # is difference between center and edge
         self._box_dx = 0.4
 
@@ -327,7 +327,7 @@ class MPLDrawer:
             color=None: mpl compatible color designation
         """
         if color is not None:
-            edgecolor=color
+            edgecolor = color
         else:
             edgecolor = plt.rcParams["lines.color"]
 
@@ -340,8 +340,7 @@ class MPLDrawer:
             linewidth=plt.rcParams["lines.linewidth"],
         )
         target_v = plt.Line2D(
-            (layer, layer), (wire - self._circ_rad, wire + self._circ_rad), zorder=4,
-            color=color
+            (layer, layer), (wire - self._circ_rad, wire + self._circ_rad), zorder=4, color=color
         )
         self.ax.add_patch(target_circ)
         self.ax.add_line(target_v)
@@ -390,12 +389,14 @@ class MPLDrawer:
         l1 = plt.Line2D(
             (layer - self._swap_dx, layer + self._swap_dx),
             (wire - self._swap_dx, wire + self._swap_dx),
-            zorder=2, color=color
+            zorder=2,
+            color=color,
         )
         l2 = plt.Line2D(
             (layer - self._swap_dx, layer + self._swap_dx),
             (wire + self._swap_dx, wire - self._swap_dx),
-            zorder=2, color=color
+            zorder=2,
+            color=color,
         )
 
         self.ax.add_line(l1)
@@ -430,7 +431,8 @@ class MPLDrawer:
             (layer - self._box_dx, wire - self._box_dx),
             2 * self._box_dx,
             2 * self._box_dx,
-            zorder=2 + zorder_base, color=color
+            zorder=2 + zorder_base,
+            color=color,
         )
         self.ax.add_patch(box)
 
@@ -459,6 +461,6 @@ class MPLDrawer:
             arrow_height,
             head_width=self._box_dx / 4,
             zorder=4 + zorder_base,
-            facecolor=color
+            facecolor=color,
         )
         self.ax.add_line(arrow)
