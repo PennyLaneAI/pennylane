@@ -25,6 +25,7 @@ from string import ascii_letters as ABC
 import numpy as np
 from scipy.sparse import coo_matrix
 
+from pennylane import math as qmlmath
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
 from pennylane.operation import DiagonalOperation
 from pennylane.wires import WireError
@@ -581,12 +582,8 @@ class DefaultQubit(QubitDevice):
 
         if state.ndim != 1 or n_state_vector != 2 ** len(device_wires):
             raise ValueError("State vector must be of length 2**wires.")
-
-        try:
-            if not np.allclose(np.linalg.norm(state, ord=2), 1.0, atol=tolerance):
-                raise ValueError("Sum of amplitudes-squared does not equal one.")
-        except RuntimeError:
-            if not np.allclose(np.linalg.norm(state.detach().numpy(), ord=2), 1.0, atol=tolerance):
+        
+        if not qmlmath.allclose(qmlmath.linalg.norm(state, ord=2), 1.0, atol=tolerance):
                 raise ValueError("Sum of amplitudes-squared does not equal one.")
 
         if len(device_wires) == self.num_wires and sorted(device_wires) == device_wires:
