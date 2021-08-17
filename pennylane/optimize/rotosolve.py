@@ -59,20 +59,17 @@ class RotosolveOptimizer:
               \left<H\right>_{\theta_d=\pi/2} - \left<H\right>_{\theta_d=-\pi/2}\right),
 
     where :math:`\left<H\right>_{\theta_d}` is the expectation value of the objective function
-    restricted to only depend on the parameter :math:`\theta_d`. :math:`\text{arctan2}(x, y)`
-    computes the element-wise arc tangent of :math:`x/y` choosing the quadrant correctly and
-    avoiding, in particular, division by zero when :math:`y = 0`.
+    restricted to only depend on the parameter :math:`\theta_d`.
 
     The algorithm is described in further detail in
-    `Gil Vidal and Theis (2018) <https://arxiv.org/abs/1812.06323>`_ and
-    `Ostaszewski et al. (2019) <https://arxiv.org/abs/1905.09692>`_ and the reconstruction
-    method used in particular for more than one frequency is described in
+    `Vidal and Theis (2018) <https://arxiv.org/abs/1812.06323>`_ and
+    `Ostaszewski et al. (2019) <https://arxiv.org/abs/1905.09692>`_, and the reconstruction
+    method used for more general operations is described in
     `Wierichs et al. (2021) <https://arxiv.org/abs/2107.12390>`_.
 
     **Example:**
 
-    Initialize the optimizer, set the initial values ``x`` of the parameters :math:`\theta` and set
-    the number of steps to optimize over.
+    Initialize the optimizer and set the number of steps to optimize over.
 
     >>> opt = qml.optimize.RotosolveOptimizer()
     >>> num_steps = 10
@@ -347,7 +344,7 @@ class RotosolveOptimizer:
     @staticmethod
     def _full_reconstruction_equ(fun, num_frequency, H_0):
         r"""Reconstruct a univariate trigonometric function using trigonometric interpolation.
-        See `Gil Vidal and Theis (2018) <https://arxiv.org/abs/1812.06323>`_ or
+        See `Vidal and Theis (2018) <https://arxiv.org/abs/1812.06323>`_ or
         `Wierichs et al. (2021) <https://arxiv.org/abs/2107.12390>`_.
 
         Args:
