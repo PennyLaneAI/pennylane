@@ -1794,4 +1794,3 @@ def operation_derivative(operation) -> np.ndarray:
         generator = generator.conj().T
 
     return 1j * prefactor * generator @ operation.matrix
-  
