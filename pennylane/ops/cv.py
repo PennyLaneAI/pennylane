@@ -38,6 +38,7 @@ quantum operations supported by PennyLane, as well as their conventions.
 import math
 import numpy as np
 from scipy.linalg import block_diag
+import warnings
 
 from pennylane.operation import AnyWires, CVOperation, CVObservable
 from pennylane import math as qml_math
@@ -585,6 +586,16 @@ class Interferometer(CVOperation):
         U (array): A shape ``(len(wires), len(wires))`` complex unitary matrix
         wires (Sequence[int] or int): the wires the operation acts on
     """
+
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            "``Interferometer`` is now deprecated and will be renamed to ``InterferometerUnitary``",
+            UserWarning,
+            stacklevel=2,
+        )
+
+        super().__init__(*args, **kwargs)
+
     num_params = 1
     num_wires = AnyWires
     par_domain = "A"
