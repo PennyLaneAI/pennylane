@@ -57,14 +57,14 @@ class TestQcompile:
             transformed_qnode(0.1, 0.2, 0.3)
 
     def test_compile_invalid_num_runs(self):
-        """Test that error is raised for an invalid number of passes."""
+        """Test that error is raised for an invalid number of runs."""
         qfunc = build_qfunc([0, 1, 2])
         dev = qml.device("default.qubit", wires=[0, 1, 2])
 
         transformed_qfunc = qcompile(num_runs=1.3)(qfunc)
         transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
-        with pytest.raises(ValueError, match="Number of passes must be an integer"):
+        with pytest.raises(ValueError, match="Number of runs must be an integer"):
             transformed_qnode(0.1, 0.2, 0.3)
 
     def test_compile_mixed_tape_qfunc_transform(self):
@@ -223,8 +223,8 @@ class TestCompileIntegration:
         compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
 
     @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
-    def test_compile_multiple_passes(self, wires):
-        """Test that running multiple passes produces the correct results."""
+    def test_compile_multiple_runs(self, wires):
+        """Test that running multiple runs produces the correct results."""
 
         qfunc = build_qfunc(wires)
         dev = qml.device("default.qubit", wires=Wires(wires))
@@ -255,7 +255,7 @@ class TestCompileIntegration:
 
     @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
     def test_compile_decompose_into_basis_gates(self, wires):
-        """Test that running multiple passes produces the correct results."""
+        """Test that running multiple runs produces the correct results."""
 
         qfunc = build_qfunc(wires)
         dev = qml.device("default.qubit", wires=Wires(wires))
