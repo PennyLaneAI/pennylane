@@ -251,21 +251,6 @@ class TestConstruction:
                 qml.RX(0.5, wires=0)
                 qml.expval(qml.PauliZ(wires=1))
 
-    def test_observable_with_no_measurement(self):
-        """Test that an exception is raised if an observable is used without a measurement"""
-
-        with pytest.raises(ValueError, match="does not have a measurement type specified"):
-            with QuantumTape() as tape:
-                qml.RX(0.5, wires=0)
-                qml.Hermitian(np.array([[0, 1], [1, 0]]), wires=1)
-                qml.expval(qml.PauliZ(wires=1))
-
-        with pytest.raises(ValueError, match="does not have a measurement type specified"):
-            with QuantumTape() as tape:
-                qml.RX(0.5, wires=0)
-                qml.PauliX(wires=0) @ qml.PauliY(wires=1)
-                qml.expval(qml.PauliZ(wires=1))
-
     def test_sampling(self):
         """Test that the tape correctly marks itself as returning samples"""
         with QuantumTape() as tape:
@@ -416,25 +401,18 @@ class TestResourceEstimation:
         """Test that empty tapes return empty resource counts."""
         tape = make_empty_tape
 
-        with pytest.warns(UserWarning, match=r"``tape.get_resources``is now deprecated"):
-            info = tape.get_resources()
-        assert len(info) == 0
-
-        with pytest.warns(UserWarning, match=r"``tape.get_depth`` is now deprecated"):
-            depth = tape.get_depth()
-        assert depth == 0
+        assert len(tape.specs["gate_types"]) == 0
+        assert tape.specs["depth"] == 0
 
     def test_resources_tape(self, make_tape):
         """Test that regular tapes return correct number of resources."""
         tape = make_tape
 
-        with pytest.warns(UserWarning, match=r"``tape.get_depth`` is now deprecated"):
-            depth = tape.get_depth()
+        depth = tape.specs["depth"]
         assert depth == 3
 
         # Verify resource counts
-        with pytest.warns(UserWarning, match=r"``tape.get_resources``is now deprecated"):
-            resources = tape.get_resources()
+        resources = tape.specs["gate_types"]
         assert len(resources) == 3
         assert resources["RX"] == 2
         assert resources["Rot"] == 1
@@ -444,12 +422,10 @@ class TestResourceEstimation:
         """Test that tapes return correct number of resources after adding to them."""
         tape = make_extendible_tape
 
-        with pytest.warns(UserWarning, match=r"``tape.get_depth`` is now deprecated"):
-            depth = tape.get_depth()
+        depth = tape.specs["depth"]
         assert depth == 3
 
-        with pytest.warns(UserWarning, match=r"``tape.get_resources``is now deprecated"):
-            resources = tape.get_resources()
+        resources = tape.specs["gate_types"]
         assert len(resources) == 3
         assert resources["RX"] == 2
         assert resources["Rot"] == 1
@@ -461,11 +437,8 @@ class TestResourceEstimation:
             qml.expval(qml.PauliX(wires="a"))
             qml.probs(wires=[0, "a"])
 
-        with pytest.warns(UserWarning, match=r"``tape.get_depth`` is now deprecated"):
-            assert tape.get_depth() == 4
-
-        with pytest.warns(UserWarning, match=r"``tape.get_resources``is now deprecated"):
-            resources = tape.get_resources()
+        assert tape.specs["depth"] == 4
+        resources = tape.specs["gate_types"]
         assert len(resources) == 4
         assert resources["RX"] == 2
         assert resources["Rot"] == 1
