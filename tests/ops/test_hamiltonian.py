@@ -541,7 +541,7 @@ class TestHamiltonian:
         coeffs = [0.1, 0.2]
 
         with pytest.raises(ValueError, match="observables are not valid"):
-            H = qml.Hamiltonian(coeffs, obs)
+            qml.Hamiltonian(coeffs, obs)
 
     @pytest.mark.parametrize("coeffs, ops", valid_hamiltonians)
     def test_hamiltonian_wires(self, coeffs, ops):
