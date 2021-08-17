@@ -1,9 +1,12 @@
 from functools import partial
+
 import numpy as np
+import pytest
+
 import pennylane as qml
 from pennylane.tape import QuantumTape
-from pennylane.transforms.control import ctrl, ControlledOperation
 from pennylane.tape.tape import expand_tape
+from pennylane.transforms.control import ControlledOperation, ctrl
 
 
 def assert_equal_operations(ops1, ops2):
@@ -77,6 +80,57 @@ def test_adjoint_of_control():
         assert isinstance(ctrl_op, ControlledOperation)
         expanded = ctrl_op.expand()
         assert_equal_operations(expanded.operations, expected)
+
+
+class TestAdjointOutsideQueuing:
+    """Test calling the adjoint method of ControlledOperation outside of a
+    queuing context"""
+
+    def test_single_par_op(self):
+        """Test a single parametrized operation for the adjoint method of
+        ControlledOperation"""
+        op, par, control_wires, wires = qml.RY, np.array(0.3), qml.wires.Wires(1), [2]
+        adjoint_of_controlled_op = qml.ctrl(op, control=control_wires)(par, wires=wires).adjoint()
+
+        assert adjoint_of_controlled_op.control_wires == control_wires
+        res_ops = adjoint_of_controlled_op.subtape.operations
+        op1 = res_ops[0]
+        op2 = qml.adjoint(op)(par, wires=wires)
+
+        assert type(op1) == type(op2)
+        assert op1.parameters == op2.parameters
+        assert op1.wires == op2.wires
+
+    def test_template(self):
+        """Test a template for the adjoint method of ControlledOperation"""
+        op, par = qml.templates.StronglyEntanglingLayers, np.ones((1, 2, 3))
+        control_wires, wires = qml.wires.Wires(1), [2, 3]
+        adjoint_of_controlled_op = qml.ctrl(op, control=control_wires)(par, wires=wires).adjoint()
+
+        assert adjoint_of_controlled_op.control_wires == control_wires
+        res_ops = adjoint_of_controlled_op.subtape.operations[0].operations
+        expected = qml.adjoint(op)(par, wires=wires)
+
+        for op1, op2 in zip(res_ops, expected):
+            assert type(op1) == type(op2)
+            assert op1.parameters == op2.parameters
+            assert op1.wires == op2.wires
+
+    def test_cv_template(self):
+        """Test a CV template that returns a list of operations for the adjoint
+        method of ControlledOperation"""
+        op, par = qml.templates.Interferometer, [[1], [0.3], [0.2, 0.3]]
+        control_wires, wires = qml.wires.Wires(1), [2, 3]
+        adjoint_of_controlled_op = qml.ctrl(op, control=control_wires)(*par, wires=wires).adjoint()
+
+        assert adjoint_of_controlled_op.control_wires == control_wires
+        res_ops = adjoint_of_controlled_op.subtape.operations
+        expected = qml.adjoint(op)(*par, wires=wires)
+
+        for op1, op2 in zip(res_ops, expected):
+            assert type(op1) == type(op2)
+            assert op1.parameters == op2.parameters
+            assert op1.wires == op2.wires
 
 
 def test_nested_control():
