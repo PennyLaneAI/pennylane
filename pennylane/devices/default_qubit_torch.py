@@ -33,8 +33,6 @@ from pennylane.operation import DiagonalOperation
 from pennylane.devices import torch_ops
 from . import DefaultQubit
 
-ABC_ARRAY = np.array(list(ABC))
-
 
 class DefaultQubitTorch(DefaultQubit):
     """Simulator plugin based on ``"default.qubit"``, written using PyTorch.
