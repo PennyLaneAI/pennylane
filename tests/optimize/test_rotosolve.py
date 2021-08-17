@@ -99,6 +99,28 @@ def test_wrong_num_of_num_frequencies_per_parameter(fun, param, num_freq):
         opt.step(fun, *param, num_frequencies=num_freq)
 
 
+@pytest.mark.parametrize(
+    "fun, param, num_freq",
+    zip(
+        [
+            lambda x: np.sin(x),
+            lambda x: np.sin(x),
+            lambda x, y: np.sin(x) * np.sin(y),
+            lambda x, y: np.sin(x) * np.sin(y[0]) * np.sin(y[1]),
+        ],
+        [[0.5], [0.5], [0.5, 0.2], [0.5, [0.2, 0.4]]],
+        [[0.1], [1.0], [1, 1.0], [1, [1, 2 + 1j]]],
+    ),
+)
+def test_wrong_typed_num_frequencies(fun, param, num_freq):
+    """Test that an error is raised for a non-integer entry in the numbers of frequencies."""
+
+    opt = RotosolveOptimizer()
+
+    with pytest.raises(ValueError, match="The numbers of frequencies are expected to be integers."):
+        opt.step(fun, *param, num_frequencies=num_freq)
+
+
 classical_functions = [
     lambda x: np.sin(x + 0.124) * 2.5123,
     lambda x: -np.cos(x[0] + 0.12) * 0.872 + np.sin(x[1] - 2.01) - np.cos(x[2] - 1.35) * 0.111,

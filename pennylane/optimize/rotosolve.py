@@ -203,7 +203,13 @@ class RotosolveOptimizer:
         elif np.isscalar(num_frequencies) and np.isclose(int(num_frequencies), num_frequencies):
             num_frequencies = [num_frequencies] * len(args)
         else:
-            # To do: check integral values in num_frequencies
+            for par in _flatten(num_frequencies):
+                if not np.issubdtype(type(par), np.integer):
+                    print(type(par))
+                    raise ValueError(
+                        "The numbers of frequencies are expected to be integers. "
+                        f"Received {type(par)}."
+                    )
             if len(num_frequencies) != len(args):
                 raise ValueError(
                     "The length of the provided numbers of frequencies "
