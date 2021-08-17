@@ -48,9 +48,9 @@ def compute_vjp(dy, jac):
     return math.tensordot(jac, dy_row, [[0], [0]])
 
 
-def vjp(tape, dy, gradient_fn):
+def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
     r"""Generate the gradient tapes and processing function required to compute
-    the vector-Jacobian product of a tape.
+    the vector-Jacobian products of a tape.
 
     Consider a function :math:`\mathbf{f}(\mathbf{x})`. The Jacobian is given by
 
@@ -88,6 +88,8 @@ def vjp(tape, dy, gradient_fn):
             matching the output shape of the corresponding tape.
         gradient_fn (callable): the gradient transform to use to differentiate
             the tape
+        gradient_kwargs (dict): dictionary of keyword arguments to pass when
+            determining the gradients of tapes
 
     Returns:
         tensor_like or None: Vector-Jacobian product. Returns None if the tape
@@ -143,6 +145,7 @@ def vjp(tape, dy, gradient_fn):
     """
     # t._par_info = {}
     # t._update()
+    gradient_kwargs = gradient_kwargs or {}
     num_params = len(tape.trainable_params)
 
     if num_params == 0:
@@ -156,7 +159,7 @@ def vjp(tape, dy, gradient_fn):
         # and we can avoid a quantum computation.
         return [], lambda _: math.convert_like(np.zeros([num_params]), dy)
 
-    gradient_tapes, fn = gradient_fn(tape)
+    gradient_tapes, fn = gradient_fn(tape, **gradient_kwargs)
 
     def processing_fn(results):
         # postprocess results to compute the Jacobian
@@ -166,7 +169,7 @@ def vjp(tape, dy, gradient_fn):
     return gradient_tapes, processing_fn
 
 
-def batch_vjp(tapes, dys, gradient_fn, reduction="append"):
+def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None):
     r"""Generate the gradient tapes and processing function required to compute
     the vector-Jacobian products of a batch of tapes.
 
@@ -211,6 +214,8 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append"):
             If ``append``, then the output of the function will be of the form
             ``List[tensor_like]``, with each element corresponding to the VJP of each
             input tape. If ``extend``, then the output VJPs will be concatenated.
+        gradient_kwargs (dict): dictionary of keyword arguments to pass when
+            determining the gradients of tapes
 
     Returns:
         List[tensor_like or None]: list of vector-Jacobian products. ``None`` elements corresponds
@@ -278,13 +283,14 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append"):
     tensor([[-4.7924e-01, -9.0857e-01, -2.4198e-01],
             [-9.2973e-02, -1.0772e+00,  4.7184e-09]], dtype=torch.float64)
     """
+    gradient_kwargs = gradient_kwargs or {}
     reshape_info = []
     gradient_tapes = []
     processing_fns = []
 
     # Loop through the tapes and dys vector
     for tape, dy in zip(tapes, dys):
-        g_tapes, fn = vjp(tape, dy, gradient_fn)
+        g_tapes, fn = vjp(tape, dy, gradient_fn, gradient_kwargs)
 
         reshape_info.append(len(g_tapes))
         processing_fns.append(fn)
