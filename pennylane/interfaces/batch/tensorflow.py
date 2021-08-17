@@ -51,7 +51,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         list[list[tf.Tensor]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
-    all_params = []
     all_params_unwrapped = []
 
     for tape in tapes:
@@ -62,7 +61,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         all_params_unwrapped.append(
             [i.numpy() if isinstance(i, (tf.Variable, tf.Tensor)) else i for i in params]
         )
-        all_params.append(params)
 
     parameters = []
     for t in tapes:
@@ -93,17 +91,8 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         if the nth-order derivative is requested. Do not set this argument unless you
         understand the consequences!
         """
-        # with qml.tape.Unwrap(*tapes):
-        for p, tape in zip(all_params_unwrapped, tapes):
-            tape.set_parameters(p, trainable_only=False)
-
-        res, jacs = execute_fn(tapes, **gradient_kwargs)
-
-        for (
-            p,
-            tape,
-        ) in zip(all_params, tapes):
-            tape.set_parameters(p, trainable_only=False)
+        with qml.tape.Unwrap(*tapes):
+            res, jacs = execute_fn(tapes, **gradient_kwargs)
 
         for i, r in enumerate(res):
             if r.dtype == np.dtype("object"):
@@ -146,7 +135,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
                         for p, tape in zip(all_params_unwrapped, tapes):
                             tape.set_parameters(p, trainable_only=False)
-                            # tape._update()
 
                         vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                             tapes,
