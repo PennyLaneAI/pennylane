@@ -56,12 +56,12 @@ class TestQcompile:
         with pytest.raises(ValueError, match="Invalid transform function"):
             transformed_qnode(0.1, 0.2, 0.3)
 
-    def test_compile_invalid_num_passes(self):
+    def test_compile_invalid_num_runs(self):
         """Test that error is raised for an invalid number of passes."""
         qfunc = build_qfunc([0, 1, 2])
         dev = qml.device("default.qubit", wires=[0, 1, 2])
 
-        transformed_qfunc = qcompile(num_passes=1.3)(qfunc)
+        transformed_qfunc = qcompile(num_runs=1.3)(qfunc)
         transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
         with pytest.raises(ValueError, match="Number of passes must be an integer"):
@@ -96,7 +96,7 @@ class TestQcompile:
         compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
 
     @pytest.mark.parametrize(
-        "transform_name,num_passes",
+        "transform_name,num_runs",
         [
             ("merge_rotations", 1),
             ("commute_controlled", 1),
@@ -104,7 +104,7 @@ class TestQcompile:
             ("commute_controlled", 2),
         ],
     )
-    def test_compile_mock_calls(self, transform_name, num_passes, mocker):
+    def test_compile_mock_calls(self, transform_name, num_runs, mocker):
         """Test that functions in the pipeline are called the correct number of times."""
 
         class DummyTransforms:
@@ -118,7 +118,7 @@ class TestQcompile:
                 qfunc = build_qfunc(wires)
                 dev = qml.device("default.qubit", wires=Wires(wires))
 
-                transformed_qfunc = qcompile(pipeline=pipeline, num_passes=num_passes)(qfunc)
+                transformed_qfunc = qcompile(pipeline=pipeline, num_runs=num_runs)(qfunc)
                 transformed_qnode = qml.QNode(transformed_qfunc, dev)
                 transformed_result = transformed_qnode(0.3, 0.4, 0.5)
 
@@ -135,7 +135,7 @@ class TestQcompile:
         d = DummyTransforms()
         d.run_pipeline()
 
-        assert len(spy.call_args_list) == num_passes
+        assert len(spy.call_args_list) == num_runs
 
 
 class TestCompileIntegration:
@@ -235,7 +235,7 @@ class TestCompileIntegration:
         # pushed through
         pipeline = [merge_rotations, commute_controlled(direction="left"), cancel_inverses]
 
-        transformed_qfunc = qcompile(pipeline=pipeline, num_passes=2)(qfunc)
+        transformed_qfunc = qcompile(pipeline=pipeline, num_runs=2)(qfunc)
         transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
         original_result = qnode(0.3, 0.4, 0.5)

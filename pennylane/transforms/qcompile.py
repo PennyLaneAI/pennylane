@@ -24,7 +24,7 @@ from pennylane.transforms.optimization import cancel_inverses, commute_controlle
 
 
 @qfunc_transform
-def qcompile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
+def qcompile(tape, pipeline=None, basis_set=None, num_runs=1, expand_depth=5):
     """Compile a circuit by applying a series of transforms to a quantum function.
 
     The default set of transforms includes (in order):
@@ -43,7 +43,7 @@ def qcompile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
         basis_set (list[str]): A list of basis gates. When expanding the tape,
             expansion will continue until gates in the specific set are
             reached. If no basis set is specified, no expansion will be done.
-        num_passes (int): The number of times to apply the set of transforms in
+        num_runs (int): The number of times to apply the set of transforms in
             ``pipeline``. The default is to perform each transform once;
             however, doing so may produce a new circuit where applying the set
             of transforms again may yield further improvement, so the number of
@@ -110,7 +110,7 @@ def qcompile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
                 qml.transforms.cancel_inverses
             ],
             basis_set=["CNOT", "RX", "RY", "RZ"],
-            num_passes=2
+            num_runs=2
         )(qfunc)
 
         compiled_qnode = qml.QNode(compiled_qfunc, dev)
@@ -130,7 +130,7 @@ def qcompile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
             if not isinstance(p_func, single_tape_transform) and not hasattr(p_func, "tape_fn"):
                 raise ValueError("Invalid transform function {p} passed to compile.")
 
-    if num_passes < 1 or not isinstance(num_passes, int):
+    if num_runs < 1 or not isinstance(num_runs, int):
         raise ValueError("Number of passes must be an integer with value at least 1.")
 
     # Expand the tape; this is done to unroll any templates that may be present,
@@ -148,8 +148,8 @@ def qcompile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
             # Expands out anything that is not a single operation (i.e., the templates)
             expanded_tape = tape.expand(stop_at=lambda obj: obj.name in all_ops)
 
-        # Apply the full set of compilation transforms num_passes times
-        for _ in range(num_passes):
+        # Apply the full set of compilation transforms num_runs times
+        for _ in range(num_runs):
             for transform in pipeline:
                 if isinstance(transform, (single_tape_transform, partial)):
                     expanded_tape = transform(expanded_tape)
