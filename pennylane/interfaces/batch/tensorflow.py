@@ -51,33 +51,37 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         list[list[tf.Tensor]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
+    parameters = []
+    all_params = []
     all_params_unwrapped = []
 
     for tape in tapes:
         # set the trainable parameters
         params = tape.get_parameters(trainable_only=False)
+        all_params.append(params)
         tape.trainable_params = qml.math.get_trainable_indices(params)
 
+        # store the trainable parameters
+        parameters += [p for i, p in enumerate(params) if i in tape.trainable_params]
+
+        # store all unwrapped parameters
         all_params_unwrapped.append(
             [i.numpy() if isinstance(i, (tf.Variable, tf.Tensor)) else i for i in params]
         )
 
-    parameters = []
-    for t in tapes:
-        parameters.extend(t.get_parameters())
-
     @tf.custom_gradient
     def _execute(*parameters):  # pylint:disable=unused-argument
+
         with qml.tape.Unwrap(*tapes):
+            # Forward pass: execute the tapes
             res, jacs = execute_fn(tapes, **gradient_kwargs)
 
         for i, r in enumerate(res):
-            if r.dtype == np.dtype("object"):
-                res[i] = np.hstack(r)
+            # convert output to TensorFlow tensors
+            res[i] = tf.convert_to_tensor(np.hstack(r) if r.dtype == np.dtype("object") else r)
 
-            res[i] = tf.convert_to_tensor(res[i])
-
-        jacs = [tf.convert_to_tensor(j) for j in jacs]
+            if jacs:
+                jacs[i] = tf.convert_to_tensor(jacs[i])
 
         def grad_fn(*dy, **tfkwargs):
             """Returns the vector-Jacobian product with given
@@ -120,6 +124,9 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
                             reduction=lambda vjps, x: vjps.extend(qml.math.unstack(x)),
                             gradient_kwargs=gradient_kwargs,
                         )
+
+                        for p, tape in zip(all_params, tapes):
+                            tape.set_parameters(p, trainable_only=False)
 
                         vjps = processing_fn(execute_fn(vjp_tapes)[0])
                         vjps = [tf.convert_to_tensor(v) for v in vjps]
@@ -164,6 +171,9 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
                         tape.set_parameters(p, trainable_only=False)
 
                     jacs = gradient_fn(tapes, **gradient_kwargs)
+
+                    for p, tape in zip(all_params, tapes):
+                        tape.set_parameters(p, trainable_only=False)
 
                     for d, jac in zip(dy, jacs):
                         vjp = qml.gradients.compute_vjp(d, jac)
