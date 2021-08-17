@@ -21,7 +21,8 @@ from pennylane.utils import _flatten, unflatten
 
 def _brute_optimizer(fun, num_steps, **kwargs):
     r"""Brute force optimizer, wrapper of scipy.optimizer.brute that repeats it
-    ``num_steps`` times."""
+    ``num_steps`` times. Signature is as expected by ``RotosolveOptimizer._rotosolve``
+    below, providing a scalar minimal position and the function value at that position."""
     width = 2 * np.pi
     x_min = 0.0
     Ns = kwargs.pop("Ns")
@@ -34,7 +35,9 @@ def _brute_optimizer(fun, num_steps, **kwargs):
 
 
 def _shgo_optimizer(fun, **kwargs):
-    r"""Wrapper for ``scipy.optimize.shgo`` (Simplicial Homology global optimizer)."""
+    r"""Wrapper for ``scipy.optimize.shgo`` (Simplicial Homology global optimizer).
+    Signature is as expected by ``RotosolveOptimizer._rotosolve`` below, providing
+    a scalar minimal position and the function value at that position."""
     opt_res = shgo(fun, **kwargs)
     return opt_res.x, opt_res.fun
 
