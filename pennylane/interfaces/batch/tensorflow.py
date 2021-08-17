@@ -47,7 +47,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
             (classical) computational overhead during the backwards pass.
 
     Returns:
-        list[list[float]]: A nested list of tape results. Each element in
+        list[list[tf.Tensor]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
     for tape in tapes:
@@ -91,22 +91,15 @@ def _execute(
 
     - Positional arguments **must** be TensorFlow tensors, so
       we extract the parameters from all tapes. To pass the other
-      data, we pass keyword arguments. These keyword arguments
-      are **required**, and must contain the following:
-
-      * ``"tapes"``: the quantum tapes to batch evaluate
-      * ``"device"``: the device to use to evaluate the tapes
-      * ``"gradient_fn"``: The gradient transform function to use
-        for backward passes.
-      * ``"cache"``: the cache list
+      data, we pass keyword arguments.
 
     Further, note that the ``parameters`` argument is dependent on the
-    ``tapes``; this Function should always be called
+    ``tapes``; this function should always be called
     with the parameters extracted directly from the tapes as follows:
 
     >>> parameters = []
     >>> [parameters.extend(t.get_parameters()) for t in tapes])
-    >>> _batch_execute(*parameters, tapes=tapes, device=device, ...)
+    >>> _execute(*parameters, tapes=tapes, device=device, ...)
 
     The private argument ``_n`` is used to track nesting of derivatives, for example
     if the nth-order derivative is requested. Do not set this argument unless you
@@ -122,11 +115,13 @@ def _execute(
         """Returns the vector-Jacobian product with given
         parameter values and output gradient dy"""
         nonlocal jacs
+        vjps = []
 
         if jacs:
             # Jacobians were computed on the forward pass (mode="forward")
             # No additional quantum evaluations needed; simply compute the VJPs directly.
-            vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(dy, jacs)]
+            for d, jac in zip(dy, jacs):
+                vjps.extend(qml.gradients.compute_vjp(d, jac))
 
         else:
             # Need to compute the Jacobians on the backward pass (accumulation="backward")
@@ -144,7 +139,6 @@ def _execute(
                     with qml.tape.Unwrap(*tapes):
 
                         for tape in tapes:
-                            tape._par_info = {}
                             tape._update()
 
                         vjp_tapes, processing_fn = qml.gradients.batch_vjp(
@@ -190,11 +184,11 @@ def _execute(
                 # - gradient_fn is not differentiable
                 #
                 # so we cannot support higher-order derivatives.
-
                 with qml.tape.Unwrap(*tapes):
                     jacs = gradient_fn(tapes, **gradient_kwargs)
 
-                vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(dy, jacs)]
+                for d, jac in zip(dy, jacs):
+                    vjps.extend(qml.gradients.compute_vjp(d, jac))
 
             else:
                 raise ValueError("Unknown gradient function.")
