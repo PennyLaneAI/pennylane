@@ -68,29 +68,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
     @tf.custom_gradient
     def _execute(*parameters):
-        """Autodifferentiable wrapper around ``Device.batch_execute``.
-
-        The signature of this function` is designed to
-        workaround ``@tf.custom_gradient`` restrictions.
-
-        In particular:
-
-        - Positional arguments **must** be TensorFlow tensors, so
-          we extract the parameters from all tapes. To pass the other
-          data, we pass keyword arguments.
-
-        Further, note that the ``parameters`` argument is dependent on the
-        ``tapes``; this function should always be called
-        with the parameters extracted directly from the tapes as follows:
-
-        >>> parameters = []
-        >>> [parameters.extend(t.get_parameters()) for t in tapes])
-        >>> _execute(*parameters, tapes=tapes, device=device, ...)
-
-        The private argument ``_n`` is used to track nesting of derivatives, for example
-        if the nth-order derivative is requested. Do not set this argument unless you
-        understand the consequences!
-        """
         with qml.tape.Unwrap(*tapes):
             res, jacs = execute_fn(tapes, **gradient_kwargs)
 
