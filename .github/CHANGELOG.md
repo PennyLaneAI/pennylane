@@ -87,9 +87,6 @@
 * Adding the matrix attribute to the GroverOperator template
   [(#1553)](https://github.com/PennyLaneAI/pennylane/pull/1553)
 
-* The error message if no wire number is given to the instantiation of an obserable of class `qml.operation.Observable` was changed to be more informative.
-  [(#1547)](https://github.com/PennyLaneAI/pennylane/pull/1547)
-
 * The Hamiltonian class was moved to the `ops/qubit` folder from the `vqe` module, since it is now an observable.
   [(#1534)](https://github.com/PennyLaneAI/pennylane/pull/1534)
 
@@ -148,7 +145,7 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 This release contains contributions from (in alphabetical order):
 
-Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Maria Schuld.
+Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Maria Schuld, Ingrid Strandberg.
 
 # Release 0.17.0 (current release)
 
