@@ -523,7 +523,14 @@ class CY(Operation):
     par_domain = None
     is_self_inverse = True
     basis = "Y"
-    matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0],])
+    matrix = np.array(
+        [
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, 0, -1j],
+            [0, 0, 1j, 0],
+        ]
+    )
 
     @classmethod
     def _matrix(cls, *params):
@@ -998,16 +1005,24 @@ class MultiControlledX(Operation):
 
         gates = [
             MultiControlledX(
-                control_wires=first_part, wires=work_wire, work_wires=second_part + target_wire,
+                control_wires=first_part,
+                wires=work_wire,
+                work_wires=second_part + target_wire,
             ),
             MultiControlledX(
-                control_wires=second_part + work_wire, wires=target_wire, work_wires=first_part,
+                control_wires=second_part + work_wire,
+                wires=target_wire,
+                work_wires=first_part,
             ),
             MultiControlledX(
-                control_wires=first_part, wires=work_wire, work_wires=second_part + target_wire,
+                control_wires=first_part,
+                wires=work_wire,
+                work_wires=second_part + target_wire,
             ),
             MultiControlledX(
-                control_wires=second_part + work_wire, wires=target_wire, work_wires=first_part,
+                control_wires=second_part + work_wire,
+                wires=target_wire,
+                work_wires=first_part,
             ),
         ]
 
