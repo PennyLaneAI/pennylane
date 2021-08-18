@@ -15,16 +15,12 @@
 This submodule contains the template for QFT.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access
-# import cmath
+
 import functools
 import numpy as np
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
-
-# from pennylane.utils import pauli_eigs
-# from pennylane.wires import Wires
-# from pennylane.ops.qubit.matrix_ops import ControlledQubitUnitary
 
 
 class QFT(Operation):
