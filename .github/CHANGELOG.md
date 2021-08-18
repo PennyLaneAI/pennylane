@@ -87,7 +87,7 @@
 * The `tape.to_openqasm()` method now has a `measure_all` argument that specifies whether the
   serialized OpenQASM script includes computational basis measurements on all of the qubits or
   just those specified by the tape.
-  [(#1483)](https://github.com/PennyLaneAI/pennylane/pull/1483)
+  [(#1559)](https://github.com/PennyLaneAI/pennylane/pull/1559)
 
 * An error is raised when no arguments are passed to a `qml.operation.Observable` to inform the user about specifying wires.
   [(#1547)](https://github.com/PennyLaneAI/pennylane/pull/1547)

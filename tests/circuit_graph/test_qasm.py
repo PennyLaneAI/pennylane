@@ -274,9 +274,9 @@ class TestToQasmUnitTests:
 
         assert res == qasm2
 
-    def test_no_measurements(self):
-        """Test that no computational basis measurements are added when
-        ``include_measurements=False``."""
+    def test_only_tape_measurements(self):
+        """Test that no computational basis measurements are added other
+        than those already in the tape when ``include_measurements=False``."""
         with qml.tape.QuantumTape() as circuit:
             qml.RX(0.43, wires="a")
             qml.RY(0.35, wires="b")

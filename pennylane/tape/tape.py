@@ -1181,13 +1181,13 @@ class QuantumTape(AnnotatedQueue):
         # measure all wires by default to be safe.
         if measure_all:
             for wire in range(len(wires)):
-                qasm_str += "measure q[{wire}] -> c[{wire}];\n".format(wire=wire)
+                qasm_str += f"measure q[{wire}] -> c[{wire}];\n"
         else:
             measured_wires = qml.wires.Wires.all_wires([m.wires for m in self.measurements])
 
             for w in measured_wires:
                 wire_indx = self.wires.index(w)
-                qasm_str += "measure q[{wire}] -> c[{wire}];\n".format(wire=wire_indx)
+                qasm_str += f"measure q[{wire_indx}] -> c[{wire_indx}];\n"
 
         return qasm_str
 
