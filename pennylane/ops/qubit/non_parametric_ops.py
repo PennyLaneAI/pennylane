@@ -438,7 +438,7 @@ class CNOT(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        return CNOT.matrix
+        return cls.matrix
 
     def adjoint(self):
         return CNOT(wires=self.wires)
@@ -523,14 +523,7 @@ class CY(Operation):
     par_domain = None
     is_self_inverse = True
     basis = "Y"
-    matrix = np.array(
-        [
-            [1, 0, 0, 0],
-            [0, 1, 0, 0],
-            [0, 0, 0, -1j],
-            [0, 0, 1j, 0],
-        ]
-    )
+    matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0],])
 
     @classmethod
     def _matrix(cls, *params):
@@ -783,7 +776,7 @@ class Toffoli(Operation):
         return Wires(self.wires[:2])
 
 
-class MultiControlledX(ControlledQubitUnitary):
+class MultiControlledX(Operation):
     r"""MultiControlledX(control_wires, wires, control_values)
     Apply a Pauli X gate controlled on an arbitrary computational basis state.
 
@@ -843,12 +836,7 @@ class MultiControlledX(ControlledQubitUnitary):
 
     # pylint: disable=too-many-arguments
     def __init__(
-        self,
-        control_wires=None,
-        wires=None,
-        control_values=None,
-        work_wires=None,
-        do_queue=True,
+        self, control_wires=None, wires=None, control_values=None, work_wires=None, do_queue=True,
     ):
         wires = Wires(wires)
         control_wires = Wires(control_wires)
@@ -864,14 +852,53 @@ class MultiControlledX(ControlledQubitUnitary):
 
         self._target_wire = wires[0]
         self._work_wires = work_wires
+        self._control_wires = control_wires
 
-        super().__init__(
-            np.array([[0, 1], [1, 0]]),
-            control_wires=control_wires,
-            wires=wires,
-            control_values=control_values,
-            do_queue=do_queue,
-        )
+        U = PauliX.matrix
+        self.U = U
+
+        wires = control_wires + wires
+
+        if not control_values:
+            control_values = "1" * len(control_wires)
+
+        control_int = self._parse_control_values(control_wires, control_values)
+        self.control_values = control_values
+
+        self._padding_left = control_int * len(U)
+        self._padding_right = 2 ** len(wires) - len(U) - self._padding_left
+        self._CX = None
+
+        super().__init__(*params, wires=wires, do_queue=do_queue)
+
+    def _matrix(self, *params):
+        if self._CX is None:
+            self._CX = block_diag(np.eye(self._padding_left), self.U, np.eye(self._padding_right))
+
+        params = list(params)
+        params[0] = self._CX
+        return params[0]
+
+    @property
+    def control_wires(self):
+        return self._control_wires
+
+    @staticmethod
+    def _parse_control_values(control_wires, control_values):
+        """Ensure any user-specified control strings have the right format."""
+        if isinstance(control_values, str):
+            if len(control_values) != len(control_wires):
+                raise ValueError("Length of control bit string must equal number of control wires.")
+
+            # Make sure all values are either 0 or 1
+            if any(x not in ["0", "1"] for x in control_values):
+                raise ValueError("String of control values can contain only '0' or '1'.")
+
+            control_int = int(control_values, 2)
+        else:
+            raise ValueError("Alternative control values must be passed as a binary string.")
+
+        return control_int
 
     # pylint: disable=unused-argument
     def decomposition(self, *args, **kwargs):
@@ -965,24 +992,16 @@ class MultiControlledX(ControlledQubitUnitary):
 
         gates = [
             MultiControlledX(
-                control_wires=first_part,
-                wires=work_wire,
-                work_wires=second_part + target_wire,
+                control_wires=first_part, wires=work_wire, work_wires=second_part + target_wire,
             ),
             MultiControlledX(
-                control_wires=second_part + work_wire,
-                wires=target_wire,
-                work_wires=first_part,
+                control_wires=second_part + work_wire, wires=target_wire, work_wires=first_part,
             ),
             MultiControlledX(
-                control_wires=first_part,
-                wires=work_wire,
-                work_wires=second_part + target_wire,
+                control_wires=first_part, wires=work_wire, work_wires=second_part + target_wire,
             ),
             MultiControlledX(
-                control_wires=second_part + work_wire,
-                wires=target_wire,
-                work_wires=first_part,
+                control_wires=second_part + work_wire, wires=target_wire, work_wires=first_part,
             ),
         ]
 
