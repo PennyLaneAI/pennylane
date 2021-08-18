@@ -1044,7 +1044,7 @@ class Observable(Operator):
                 params = params[:-1]
                 # error if no arguments are given
             except IndexError as err:
-                print(err.args)
+                raise ValueError("Must specify the wires that {} acts on".format(type(self).__name__)) from None
 
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
