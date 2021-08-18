@@ -182,31 +182,31 @@ optimizer_kwargs = [
     list(zip(optimizers, optimizer_kwargs)),
 )
 class TestWithClassicalFunctions:
-    def test_number_of_function_calls(
-        self, fun, x_min, param, num_freq, optimizer, optimizer_kwargs
-    ):
-        """Tests that per parameter 2R+1 function calls are used for an update step."""
-        global num_calls
-        num_calls = 0
-
-        def _fun(*args, **kwargs):
-            global num_calls
-            num_calls += 1
-            return fun(*args, **kwargs)
-
-        opt = RotosolveOptimizer()
-        new_param = opt.step(
-            _fun,
-            *param,
-            num_frequencies=num_freq,
-            optimizer=optimizer,
-            optimizer_kwargs=optimizer_kwargs,
-        )
-
-        expected_num_calls = np.sum(
-            np.fromiter(_flatten(expand_num_freq(num_freq, param)), dtype=int) * 2 + 1
-        )
-        assert num_calls == expected_num_calls
+    #def test_number_of_function_calls(
+        #self, fun, x_min, param, num_freq, optimizer, optimizer_kwargs
+    #):
+        #"""Tests that per parameter 2R+1 function calls are used for an update step."""
+        #global num_calls
+        #num_calls = 0
+#
+        #def _fun(*args, **kwargs):
+            #global num_calls
+            #num_calls += 1
+            #return fun(*args, **kwargs)
+#
+        #opt = RotosolveOptimizer()
+        #new_param = opt.step(
+            #_fun,
+            #*param,
+            #num_frequencies=num_freq,
+            #optimizer=optimizer,
+            #optimizer_kwargs=optimizer_kwargs,
+        #)
+#
+        #expected_num_calls = np.sum(
+            #np.fromiter(_flatten(expand_num_freq(num_freq, param)), dtype=int) * 2 + 1
+        #)
+        #assert num_calls == expected_num_calls
 
     def test_single_step_convergence(
         self, fun, x_min, param, num_freq, optimizer, optimizer_kwargs
