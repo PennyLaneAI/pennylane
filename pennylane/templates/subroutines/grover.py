@@ -130,15 +130,15 @@ class GroverOperator(Operation):
 
         return tape
 
-    @classmathod
-    def _matrix(self):
-        num = len(self.wires)
+    @classmethod
+    def _matrix(clf, *params):
+        num = clf.num_wires
         ctrl_str = "0" * (num - 1)
         wires = list(range(num))
 
         H = Hadamard.matrix
         H1 = H
-        for _ in range(n - 2):
+        for _ in range(num - 2):
             H = np.kron(H, H1)
 
         H = np.kron(H, PauliZ.matrix)
