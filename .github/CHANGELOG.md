@@ -129,7 +129,7 @@
 
 * Create a separate requirements file for the CI issue , to have a separate requirements.txt (pinned)
 and requirements-ci.txt (unpinned). This latter would be used by the CI.
-  [(#1535)](https://github.com/PennyLaneAI/pennylane/pull/1535
+  [(#1535)](https://github.com/PennyLaneAI/pennylane/pull/1535)
 
 * The `qml.ResetError` is now supported for `default.mixed` device. 
   [(#1541)](https://github.com/PennyLaneAI/pennylane/pull/1541)
