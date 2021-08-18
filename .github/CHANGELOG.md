@@ -128,7 +128,6 @@
 and requirements-ci.txt (unpinned). This latter would be used by the CI.
   [(#1535)](https://github.com/PennyLaneAI/pennylane/pull/1535)
 
-
 <h3>Breaking changes</h3>
 
 <h3>Bug fixes</h3>
