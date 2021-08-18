@@ -132,15 +132,20 @@ class GroverOperator(Operation):
 
         return tape
 
-    def _matrix(self, *params):
-        n_wires = len(self.wires)
+    @property
+    def matrix(self):
+        # Redefine the property here to allow for a custom _matrix signature
+        mat = self._matrix(len(self.wires))
+        return mat
+
+    def _matrix(cls, num_wires):
 
         # s1 = H|0>, Hadamard on a single qubit in the ground state
         s1 = np.array([1, 1]) / np.sqrt(2)
 
         # uniform superposition state |s>
-        s = functools.reduce(np.kron, list(itertools.repeat(s1, n_wires)))
+        s = functools.reduce(np.kron, list(itertools.repeat(s1, num_wires)))
 
         # Grover diffusion operator
-        G = 2 * np.outer(s, s) - np.identity(2 ** n_wires)
+        G = 2 * np.outer(s, s) - np.identity(2 ** num_wires)
         return G
