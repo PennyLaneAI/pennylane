@@ -1066,4 +1066,4 @@ def test_hamiltonian_import_deprecation():
     """Test that a deprecation warning is raised if the Hamiltonian class
     is imported from the vqe module."""
     with pytest.warns(UserWarning):
-        qml.vqe.Hamiltonian([],[])
+        qml.vqe.Hamiltonian([], [])
