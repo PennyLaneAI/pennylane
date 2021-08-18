@@ -136,7 +136,7 @@ class GroverOperator(Operation):
         n_wires = len(self.wires)
 
         # s1 = H|0>, Hadamard on a single qubit in the ground state
-        s1 = np.array([1, 1])/np.sqrt(2)
+        s1 = np.array([1, 1]) / np.sqrt(2)
 
         # uniform superposition state |s>
         s = functools.reduce(np.kron, list(itertools.repeat(s1, n_wires)))

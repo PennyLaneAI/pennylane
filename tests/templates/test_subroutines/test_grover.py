@@ -85,6 +85,31 @@ def decomposition_wires(wires):
     return wire_order
 
 
+def test_grover_diffusion_matrix():
+    """Test that the Grover diffusion matrix is the same as when constructed in a different way"""
+    n_wires = 4  # test with 4 wires
+    wires = list(range(n_wires))
+    G_matrix = qml.templates.GroverOperator(wires=wires).matrix
+
+    # Create Grover diffusion matrix G in alternative way
+    oplist = list(itertools.repeat(Hadamard.matrix, n_wires - 1))
+    oplist.append(PauliZ.matrix)
+
+    ctrl_str = "0" * (n_wires - 1)
+    CX = MultiControlledX(
+        control_values=ctrl_str,
+        control_wires=wires[:-1],
+        wires=wires[-1],
+        work_wires=None,
+    ).matrix
+
+    M = functools.reduce(np.kron, oplist)
+    G = M @ CX @ M
+
+    # There is just a difference in sign
+    assert np.allclose(np.abs(G_matrix), np.abs(G))
+
+
 def test_grover_diffusion_matrix_results():
     """Test that the matrix gives the same result as when running the example in the documentation `here <https://pennylane.readthedocs.io/en/stable/code/api/pennylane.templates.subroutines.GroverOperator.html>`_"""
     n_wires = 3
@@ -127,30 +152,6 @@ def test_grover_diffusion_matrix_results():
     probs_matrix = amplitudes ** 2
 
     assert np.allclose(probs_example, probs_matrix)
-
-@pytest.mark.parametrize("n_wires", [2, 4, 7])
-def test_grover_diffusion_matrix(n_wires):
-    """Test that the Grover diffusion matrix is the same as when constructed in a different way"""
-    wires = list(range(n_wires))
-    G_matrix = qml.templates.GroverOperator(wires=wires).matrix
-
-    # Create Grover diffusion matrix G in alternative way
-    oplist = list(itertools.repeat(Hadamard.matrix, n_wires - 1))
-    oplist.append(PauliZ.matrix)
-
-    ctrl_str = "0" * (n_wires - 1)
-    CX = MultiControlledX(
-        control_values=ctrl_str,
-        control_wires=wires[:-1],
-        wires=wires[-1],
-        work_wires=None,
-    ).matrix
-
-    M = functools.reduce(np.kron, oplist)
-    G = M @ CX @ M
-
-    # There is just a difference in sign
-    assert np.allclose(np.abs(G_matrix), np.abs(G))
 
 
 @pytest.mark.parametrize("wires", ((0, 1, 2), ("a", "c", "b")))
