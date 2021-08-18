@@ -1463,5 +1463,5 @@ class TestValidationCheck:
     """Tests for validating the number of arguments passed to qml.operation.Observable"""
 
     def test_validation(self):
-        with pytest.raises(Exception, match="Can only access when arguments are passed."):
+        with pytest.raises(Exception, match="Cannot extract wires as no arguments were passed to the observable."):
             qml.PauliZ()
