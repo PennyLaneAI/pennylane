@@ -127,10 +127,10 @@ def test_findstate():
         op = qml.templates.GroverOperator(wires=wires)
         res = op.matrix
 
-        mat = 0.5* [
-            [1 -1 -1 -1],
-            [-1 1 -1 -1],
-            [-1 -1 1 -1],
-            [-1 -1 -1 1],
-        ]
+        mat = 0.5 * np.array([
+            [1, -1, -1, -1],
+            [-1, 1, -1, -1],
+            [-1, -1, 1, -1],
+            [-1, -1, -1, 1],
+        ])
         assert np.allclose(res, mat, atol=tol, rtol=0)
