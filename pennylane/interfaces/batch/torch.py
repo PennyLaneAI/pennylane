@@ -15,9 +15,8 @@
 This module contains functions for adding the Autograd interface
 to a PennyLane Device class.
 """
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,protected-access
 import inspect
-import itertools
 
 import numpy as np
 import torch
@@ -72,7 +71,7 @@ class ExecuteTapes(torch.autograd.Function):
     """
 
     @staticmethod
-    def forward(ctx, kwargs, *parameters):  # pylint: disable=unused-argument
+    def forward(ctx, kwargs, *parameters):  # pylint: disable=arguments-differ
         """Implements the forward pass batch tape evaluation."""
         ctx.tapes = kwargs["tapes"]
         ctx.device = kwargs["device"]
@@ -219,8 +218,11 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         the returned list corresponds in order to the provided tapes.
     """
     parameters = []
-    for t in tapes:
-        parameters.extend(t.get_parameters())
+    for tape in tapes:
+        # set the trainable parameters
+        params = tape.get_parameters(trainable_only=False)
+        tape.trainable_params = qml.math.get_trainable_indices(params)
+        parameters.extend(tape.get_parameters())
 
     kwargs = dict(
         tapes=tapes,
