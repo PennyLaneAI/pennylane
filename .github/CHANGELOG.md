@@ -128,6 +128,11 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 <h3>Breaking changes</h3>
 
+* The class `qml.Interferometer` is now deprecated and will be renamed to `qml.InterferometerUnitary`
+  after one release cycle.
+  [(#1546)](https://github.com/PennyLaneAI/pennylane/pull/1546)
+
+
 <h3>Bug fixes</h3>
 
 * Fix bug when computing the specs of a circuit with a Hamiltonian observable.
@@ -139,7 +144,7 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 This release contains contributions from (in alphabetical order):
 
-Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Maria Schuld.
+AkashNarayanan B, Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Maria Schuld.
 
 # Release 0.17.0 (current release)
 
