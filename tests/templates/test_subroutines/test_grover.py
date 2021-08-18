@@ -85,9 +85,9 @@ def decomposition_wires(wires):
     return wire_order
 
 
-def test_grover_diffusion_matrix():
+@pytest.mark.parametrize("n_wires", [2, 4, 7])
+def test_grover_diffusion_matrix(n_wires):
     """Test that the Grover diffusion matrix is the same as when constructed in a different way"""
-    n_wires = 4  # test with 4 wires
     wires = list(range(n_wires))
     G_matrix = qml.templates.GroverOperator(wires=wires).matrix
 
