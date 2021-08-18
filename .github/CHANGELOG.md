@@ -2,6 +2,9 @@
 
 <h3>New features since last release</h3>
 
+* The `GroverOperator` templaate has a `matrix` attribute which returns the matrix
+  of the GRover Diffusion Operator.
+
 * The `frobenius_inner_product` function has been moved to the `qml.math`
   module, and is now differentiable using all autodiff frameworks.
   [(#1388)](https://github.com/PennyLaneAI/pennylane/pull/1388)
@@ -139,7 +142,7 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 This release contains contributions from (in alphabetical order):
 
-Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Maria Schuld.
+Tanya Garg, Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Maria Schuld.
 
 # Release 0.17.0 (current release)
 

@@ -118,3 +118,19 @@ def test_findstate():
     probs = circ()
 
     assert np.argmax(probs) == len(probs) - 1
+
+
+@pytest.mark.parametrize("num", 2)
+    def test_matrix(self, num, tol):
+        """Assert matrix of Grover Diffusion Operator is correct"""
+        wires = list(range(num))
+        op = qml.templates.GroverOperator(wires=wires)
+        res = op.matrix
+
+        mat = 0.5* [
+            [1 -1 -1 -1],
+            [-1 1 -1 -1],
+            [-1 -1 1 -1],
+            [-1 -1 -1 1],
+        ]
+        assert np.allclose(res, mat, atol=tol, rtol=0)

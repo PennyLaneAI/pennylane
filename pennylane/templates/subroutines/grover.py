@@ -14,6 +14,8 @@
 """
 Contains the Grover Operation template.
 """
+import numpy as np
+
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.ops import Hadamard, PauliZ, MultiControlledX
@@ -127,3 +129,21 @@ class GroverOperator(Operation):
                 Hadamard(wire)
 
         return tape
+
+    @classmathod
+    def _matrix(self):
+        num = len(self.wires)
+        ctrl_str = "0" * (num - 1)
+        wires = list(range(num))
+
+        H = Hadamard.matrix
+        H1 = H
+        for _ in range(n - 2):
+            H = np.kron(H, H1)
+
+        H = np.kron(H, PauliZ.matrix)
+        X = MultiControlledX(control_values=ctrl_str, control_wires=wires[:-1], wires=wires[-1])
+        CX = X.matrix
+        GD = np.matmul(H, CX)
+
+        return np.matmul(GD, H)
