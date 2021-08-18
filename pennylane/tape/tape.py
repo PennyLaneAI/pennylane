@@ -1178,7 +1178,7 @@ class QuantumTape(AnnotatedQueue):
         # NOTE: This is not strictly necessary, we could inspect self.observables,
         # and then only measure wires which are requested by the user. However,
         # some devices which consume QASM require all registers be measured, so
-        # measure all wires to be safe.
+        # measure all wires by default to be safe.
         if include_measurements:
             for wire in range(len(wires)):
                 qasm_str += "measure q[{wire}] -> c[{wire}];\n".format(wire=wire)
