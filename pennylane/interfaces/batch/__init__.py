@@ -265,8 +265,6 @@ def execute(
 
     if interface == "autograd":
         from .autograd import execute
-    elif interface in ("tf", "tensorflow"):
-        from .tensorflow import execute
     elif interface in ("torch", "pytorch"):
         from .torch import execute
     else:

@@ -43,14 +43,11 @@ def compute_vjp(dy, jac):
 
     jac = math.reshape(jac, [dy_row.shape[0], -1])
 
-    try:
-        if math.allclose(dy, 0):
-            # If the dy vector is zero, then the
-            # corresponding element of the VJP will be zero.
-            num_params = jac.shape[1]
-            return math.convert_like(np.zeros([num_params]), dy)
-    except AttributeError:
-        pass
+    if math.allclose(dy, 0):
+        # If the dy vector is zero, then the
+        # corresponding element of the VJP will be zero.
+        num_params = jac.shape[1]
+        return math.convert_like(np.zeros([num_params]), dy)
 
     return math.tensordot(jac, dy_row, [[0], [0]])
 
@@ -158,14 +155,11 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
         # is simply none.
         return [], lambda _: None
 
-    try:
-        if math.allclose(dy, 0):
-            # If the dy vector is zero, then the
-            # corresponding element of the VJP will be zero,
-            # and we can avoid a quantum computation.
-            return [], lambda _: math.convert_like(np.zeros([num_params]), dy)
-    except AttributeError:
-        pass
+    if math.allclose(dy, 0):
+        # If the dy vector is zero, then the
+        # corresponding element of the VJP will be zero,
+        # and we can avoid a quantum computation.
+        return [], lambda _: math.convert_like(np.zeros([num_params]), dy)
 
     gradient_tapes, fn = gradient_fn(tape, **gradient_kwargs)
 
@@ -321,10 +315,7 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None)
                 vjps.append(None)
                 continue
 
-            if isinstance(reduction, str):
-                getattr(vjps, reduction)(vjp_)
-            elif callable(reduction):
-                reduction(vjps, vjp_)
+            getattr(vjps, reduction)(vjp_)
 
         return vjps
 
