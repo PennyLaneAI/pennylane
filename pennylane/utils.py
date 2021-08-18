@@ -106,13 +106,14 @@ def decompose_hamiltonian(H, hide_identity=False):
     return coeffs, obs
 
 
-def sparse_hamiltonian(H):
+def sparse_hamiltonian(H, wires=None):
     r"""Computes the sparse matrix representation a Hamiltonian in the computational basis.
 
     Args:
         H (~.Hamiltonian): Hamiltonian operator for which the matrix representation should be
          computed
-
+        wires (Iterable): Wire labels that define the ordering of wires, which determines how the matrix is
+            constructed. If not provided, ``H.wires`` is used.
     Returns:
         coo_matrix: a sparse matrix in scipy coordinate list (COO) format with dimension
         :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
@@ -145,11 +146,14 @@ def sparse_hamiltonian(H):
 
     for coeffs, ops in zip(H.coeffs, H.ops):
 
+        # todo: deal with operations created from multi-qubit operations such as Hermitian
         obs = [scipy.sparse.coo_matrix(o.matrix) for o in qml.operation.Tensor(ops).obs]
         mat = [scipy.sparse.eye(2, format="coo")] * n
 
-        for i, j in enumerate(ops.wires):
-            mat[j] = obs[i]
+        for i, wire in enumerate(ops.wires):
+            # find index of this wire in the ordering
+            idx = wires.index(wire)
+            mat[idx] = obs[i]
 
         matrix += functools.reduce(lambda i, j: scipy.sparse.kron(i, j, format="coo"), mat) * coeffs
 

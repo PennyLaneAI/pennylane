@@ -28,6 +28,7 @@ from scipy.sparse import coo_matrix
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
 from pennylane.operation import DiagonalOperation
 from pennylane.wires import WireError
+from pennylane.utils import sparse_hamiltonian
 from .._version import __version__
 
 ABC_ARRAY = np.array(list(ABC))
@@ -485,10 +486,17 @@ class DefaultQubit(QubitDevice):
                 # This case should always be intercepted by the QNode, but we want to make sure here.
                 raise DeviceError("Hamiltonian must be used with shots=None")
 
-            
-
-            return  # do vector-matrix-vector here
-
+            # temporary hack: convert to sparse hamiltonian
+            # todo: only works with constituent observables built from single-qubit ops,
+            # and with integer-valued wire labels
+            ham = sparse_hamiltonian(observable)
+            ev = coo_matrix.dot(
+                coo_matrix(self._conj(self.state)),
+                coo_matrix.dot(
+                    ham, coo_matrix(self.state.reshape(len(self.state), 1))
+                ),
+            )
+            return np.real(ev.toarray()[0])
 
         return super().expval(observable, shot_range=shot_range, bin_size=bin_size)
 
