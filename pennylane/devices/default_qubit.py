@@ -485,6 +485,8 @@ class DefaultQubit(QubitDevice):
                 # This case should always be intercepted by the QNode, but we want to make sure here.
                 raise DeviceError("Hamiltonian must be used with shots=None")
 
+            
+
             return  # do vector-matrix-vector here
 
 
