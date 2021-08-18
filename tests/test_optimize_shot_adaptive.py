@@ -26,6 +26,7 @@ class TestExceptions:
         """Test that an exception is raised if an analytic device is used"""
         H = qml.Hamiltonian([0.3, 0.1], [qml.PauliX(0), qml.PauliZ(0)])
         dev = qml.device("default.qubit", wires=1, shots=None)
+
         def ansatz(x, **kwargs):
             qml.RX(x, wires=0)
 
@@ -47,8 +48,10 @@ class TestExceptions:
         coeffs = [0.3, 0.1]
         H = qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)])
         dev = qml.device("default.qubit", wires=1, shots=100)
+
         def ansatz(x, **kwargs):
             qml.RX(x, wires=0)
+
         expval_cost = qml.ExpvalCost(ansatz, H, dev)
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10, stepsize=100.0)
