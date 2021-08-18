@@ -98,6 +98,7 @@ Qubit gates
     ~pennylane.DoubleExcitationMinus
     ~pennylane.QubitCarry
     ~pennylane.QubitSum
+    ~pennylane.Hamiltonian
 
 
 :html:`</div>`
@@ -156,6 +157,7 @@ Qubit observables
     ~pennylane.PauliY
     ~pennylane.PauliZ
     ~pennylane.Projector
+    ~pennylane.Hamiltonian
 
 :html:`</div>`
 
