@@ -27,10 +27,11 @@ import numpy as np
 # from scipy.linalg import expm
 # from pennylane import numpy as npp
 
-import pennylane as qml
-from pennylane.wires import Wires
-
 from gate_data import QFT
+import pennylane as qml
+#from pennylane.wires import Wires
+
+
 
 
 class TestOperations:
@@ -82,7 +83,7 @@ class TestOperations:
             assert np.allclose(0, circ(n_qubits)[i], tol)
 
     @pytest.mark.parametrize("n_qubits", range(2, 6))
-    def test_QFT_adjoint_decomposition(self, n_qubits, tol):
+    def test_QFT_adjoint_decomposition(self, n_qubits): #tol
         """Test if the QFT adjoint operation has the right decomposition"""
 
         # QFT adjoint has right decompositions
