@@ -22,7 +22,6 @@ from pennylane.operation import AnyWires, Operation
 from pennylane.ops import Hadamard, PauliZ, MultiControlledX
 
 
-
 class GroverOperator(Operation):
     r"""Performs the Grover Diffusion Operator.
 
@@ -133,7 +132,7 @@ class GroverOperator(Operation):
 
         return tape
 
-    def _matrix(self):
+    def _matrix(cls, *params):
         """Matrix representation of the Grover diffusion operator"""
         n_wires = len(self.wires)
 
