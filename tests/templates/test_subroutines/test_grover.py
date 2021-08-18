@@ -148,7 +148,7 @@ def test_grover_diffusion_matrix_results():
     s = functools.reduce(np.kron, list(itertools.repeat(s1, n_wires)))
 
     amplitudes = G_matrix @ oracle_matrix @ s
-    # Chek that the probabilities are the same
+    # Check that the probabilities are the same
     probs_matrix = amplitudes ** 2
 
     assert np.allclose(probs_example, probs_matrix)
