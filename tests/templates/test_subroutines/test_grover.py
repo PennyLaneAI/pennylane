@@ -128,10 +128,9 @@ def test_grover_diffusion_matrix_results():
 
     assert np.allclose(probs_example, probs_matrix)
 
-
-def test_grover_diffusion_matrix():
+@pytest.mark.parametrize("n_wires", [2, 4, 7])
+def test_grover_diffusion_matrix(n_wires):
     """Test that the Grover diffusion matrix is the same as when constructed in a different way"""
-    n_wires = 4  # test with 4 wires
     wires = list(range(n_wires))
     G_matrix = qml.templates.GroverOperator(wires=wires).matrix
 
@@ -149,7 +148,6 @@ def test_grover_diffusion_matrix():
 
     M = functools.reduce(np.kron, oplist)
     G = M @ CX @ M
-    print(G, G_matrix)
 
     # There is just a difference in sign
     assert np.allclose(np.abs(G_matrix), np.abs(G))
