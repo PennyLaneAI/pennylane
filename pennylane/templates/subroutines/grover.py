@@ -139,7 +139,8 @@ class GroverOperator(Operation):
         return mat
 
     @classmethod
-    def _matrix(cls, num_wires):
+    def _matrix(cls, *params):
+        num_wires = params[0]
 
         # s1 = H|0>, Hadamard on a single qubit in the ground state
         s1 = np.array([1, 1]) / np.sqrt(2)
