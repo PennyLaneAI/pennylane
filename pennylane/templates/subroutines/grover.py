@@ -21,6 +21,7 @@ import numpy as np
 import itertools
 import functools
 
+
 class GroverOperator(Operation):
     r"""Performs the Grover Diffusion Operator.
 
@@ -109,17 +110,6 @@ class GroverOperator(Operation):
         self.work_wires = work_wires
         super().__init__(wires=wires, do_queue=do_queue, id=id)
 
-
-    def __getMultiControlledX(self):
-        ctrl_str = "0" * (len(self.wires) - 1)
-        return  MultiControlledX(
-            control_values=ctrl_str,
-            control_wires=self.wires[:-1],
-            wires=self.wires[-1],
-            work_wires=self.work_wires,
-            )
-
-
     def expand(self):
         ctrl_str = "0" * (len(self.wires) - 1)
 
@@ -128,7 +118,13 @@ class GroverOperator(Operation):
                 Hadamard(wire)
 
             PauliZ(self.wires[-1])
-            self.__getMultiControlledX()
+            MultiControlledX(
+                control_values=ctrl_str,
+                control_wires=self.wires[:-1],
+                wires=self.wires[-1],
+                work_wires=self.work_wires,
+            )
+
             PauliZ(self.wires[-1])
 
             for wire in self.wires[:-1]:
@@ -136,10 +132,9 @@ class GroverOperator(Operation):
 
         return tape
 
-
-    def _matrix1(self):
-        """ Matrix representation of the Grover diffusion operator """
-        nbr_wires = len(self.wires)
+    def _matrix(self):
+        """Matrix representation of the Grover diffusion operator"""
+        n_wires = len(self.wires)
 
         # state |0>
         state_0 = [1, 0]
@@ -147,28 +142,8 @@ class GroverOperator(Operation):
         s1 = Hadamard.matrix @ state_0
 
         # uniform superposition state
-        s = functools.reduce(np.kron, list(itertools.repeat(s1, nbr_wires)))
+        s = functools.reduce(np.kron, list(itertools.repeat(s1, n_wires)))
 
         # Grover diffusion operator
-        G = 2*np.outer(s,s) - np.identity(2**nbr_wires)
-        return G
-
-
-    def _matrix(self):
-        """ Matrix representation of the Grover diffusion operator """
-
-        nbr_wires = len(self.wires)
-
-        oplist = list(itertools.repeat(Hadamard.matrix, nbr_wires-1))
-        oplist.append(PauliZ.matrix)
-
-        CX = self.__getMultiControlledX()
-
-        CX = CX.matrix
-
-
-        M =  functools.reduce(np.kron, oplist)
-        G = M @ CX @ M
-
-
+        G = 2 * np.outer(s, s) - np.identity(2 ** n_wires)
         return G
