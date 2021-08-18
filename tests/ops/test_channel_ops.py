@@ -280,7 +280,7 @@ class TestResetError:
             channel.ResetError(1.0, 1.0, wires=0).kraus_matrices
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
-    def test_grad_reseterror(self, angle, tol):
+    def test_grad_reset_error(self, angle, tol):
         """Test that gradient is computed correctly for different states. Channel
         grad recipes are independent of channel parameter"""
 
