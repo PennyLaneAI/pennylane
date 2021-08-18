@@ -128,6 +128,9 @@ class TestOperation:
         if test_class == qml.QubitUnitary:
             pytest.skip("QubitUnitary can act on any number of wires.")
 
+        if test_class == qml.Hamiltonian:
+            pytest.skip("Hamiltonian has a different initialization signature.")
+
         if test_class in (qml.ControlledQubitUnitary, qml.MultiControlledX):
             pytest.skip("ControlledQubitUnitary alters the input params and wires in its __init__")
 
@@ -488,6 +491,19 @@ class TestObservableConstruction:
 
         op = DummyObserv(1.0, wires=0, id="test")
         assert op.id == "test"
+
+
+class TestObservableInstatiation:
+    """Test that wires are specified when a qml.operation.Observable is instantiated"""
+
+    def test_wire_is_given_in_argument(self):
+        class DummyObservable(qml.operation.Observable):
+            num_wires = 1
+            num_params = 0
+            par_domain = None
+
+        with pytest.raises(Exception, match="Must specify the wires *"):
+            DummyObservable()
 
 
 class TestOperatorIntegration:
