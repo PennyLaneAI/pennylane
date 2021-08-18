@@ -19,12 +19,12 @@ not depend on any parameters.
 import cmath
 import functools
 import numpy as np
+from scipy.linalg import block_diag
 
 import pennylane as qml
 from pennylane.operation import AnyWires, DiagonalOperation, Observable, Operation
 from pennylane.utils import pauli_eigs
 from pennylane.wires import Wires
-from pennylane.ops.qubit.matrix_ops import ControlledQubitUnitary
 
 INV_SQRT2 = 1 / qml.math.sqrt(2)
 
@@ -836,7 +836,7 @@ class MultiControlledX(Operation):
 
     # pylint: disable=too-many-arguments
     def __init__(
-        self, control_wires=None, wires=None, control_values=None, work_wires=None, do_queue=True,
+        self, *params, control_wires=None, wires=None, control_values=None, work_wires=None, do_queue=True,
     ):
         wires = Wires(wires)
         control_wires = Wires(control_wires)
