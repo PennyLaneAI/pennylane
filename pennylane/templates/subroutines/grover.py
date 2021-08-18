@@ -136,12 +136,10 @@ class GroverOperator(Operation):
         """Matrix representation of the Grover diffusion operator"""
         n_wires = len(self.wires)
 
-        # state |0>
-        state_0 = [1, 0]
+        # s1 = H|0>, Hadamard on a single qubit in the ground state
+        s1 = np.array([1, 1])/np.sqrt(2)
 
-        s1 = Hadamard.matrix @ state_0
-
-        # uniform superposition state
+        # uniform superposition state |s>
         s = functools.reduce(np.kron, list(itertools.repeat(s1, n_wires)))
 
         # Grover diffusion operator
