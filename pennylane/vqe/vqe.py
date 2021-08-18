@@ -23,6 +23,24 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
+class Hamiltonian(qml.Hamiltonian):
+    """Dummy class to deprecate importing the Hamiltonian from this module.
+
+    .. warning::
+        Use of :class:`pennylane.vqe.Hamiltonian` is deprecated and should be replaced with
+        :class:`qml.Hamiltonian`.
+    """
+
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            "The Hamiltonian class has moved location to `qml.ops.qubit.hamiltonian`, please import it "
+            "via the shortcut `qml.Hamiltonian`.",
+            UserWarning,
+            2,
+        )
+        super().__init__(*args, **kwargs)
+
+
 class ExpvalCost:
     """Create a cost function that gives the expectation value of an input Hamiltonian.
 

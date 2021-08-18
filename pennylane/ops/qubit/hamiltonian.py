@@ -74,7 +74,7 @@ class Hamiltonian(Observable):
             Hamiltonian are executed on devices. The string refers to the type of binary relation between Pauli words.
             Can be ``'qwc'`` (qubit-wise commuting), ``'commuting'``, or ``'anticommuting'``.
         method (str): The graph coloring heuristic to use in solving minimum clique cover for grouping, which
-            can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First).
+            can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First). Ignored if ``grouping_type=None``.
         id (str): name to be assigned to this Hamiltonian instance
 
     **Example:**
