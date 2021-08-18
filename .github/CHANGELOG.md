@@ -84,7 +84,7 @@
 
 <h3>Improvements</h3>
 
-* The Hamiltonian class was moved to the `ops/qubit` folder, since it is now an observable.
+* The Hamiltonian class was moved to the `ops/qubit` folder from the `vqe` module, since it is now an observable.
   [(#1534)](https://github.com/PennyLaneAI/pennylane/pull/1534)
 
 * The `group_observables` transform is now differentiable.
@@ -124,9 +124,17 @@
   an owner of the pruned tensor and its constituent observables, but leaves the
   original tensor in the queue without an owner.
 
+* Create a separate requirements file for the CI issue , to have a separate requirements.txt (pinned)
+and requirements-ci.txt (unpinned). This latter would be used by the CI.
+  [(#1535)](https://github.com/PennyLaneAI/pennylane/pull/1535)
+
+
 <h3>Breaking changes</h3>
 
 <h3>Bug fixes</h3>
+
+* Fix bug when computing the specs of a circuit with a Hamiltonian observable.
+  [(#1533)](https://github.com/PennyLaneAI/pennylane/pull/1533)
 
 <h3>Documentation</h3>
 
@@ -134,7 +142,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Josh Izaac, Johannes Jakob Meyer, Maria Schuld.
+Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Maria Schuld.
 
 # Release 0.17.0 (current release)
 
