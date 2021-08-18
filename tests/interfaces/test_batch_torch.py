@@ -16,7 +16,8 @@ import functools
 
 import numpy as np
 import pytest
-import torch
+
+torch = pytest.importorskip("torch")
 
 import pennylane as qml
 from pennylane.gradients import param_shift
