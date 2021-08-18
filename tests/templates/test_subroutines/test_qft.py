@@ -14,16 +14,18 @@
 """
 Unit tests for the qft template.
 """
-#import itertools
-#import re
+# import itertools
+# import re
 import pytest
-#import functools
-#import copy
+
+# import functools
+# import copy
 import numpy as np
-#from numpy.linalg import multi_dot
-#from scipy.stats import unitary_group
-#from scipy.linalg import expm
-#from pennylane import numpy as npp
+
+# from numpy.linalg import multi_dot
+# from scipy.stats import unitary_group
+# from scipy.linalg import expm
+# from pennylane import numpy as npp
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -97,4 +99,3 @@ class TestOperations:
             assert op[j].name == expected_op[j].name
             assert op[j].wires == expected_op[j].wires
             assert op[j].parameters == expected_op[j].parameters
-
