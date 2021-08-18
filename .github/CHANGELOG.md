@@ -84,7 +84,7 @@
 
 <h3>Improvements</h3>
 
-* The error message if no wire number is given to the instantiation of an obserable of class `qml.operation.Observable` was changed to be more informative.
+* An error is raised when no arguments are passed to a `qml.operation.Observable` to inform the user about specifying wires.
   [(#1547)](https://github.com/PennyLaneAI/pennylane/pull/1547)
 
 * The Hamiltonian class was moved to the `ops/qubit` folder from the `vqe` module, since it is now an observable.
