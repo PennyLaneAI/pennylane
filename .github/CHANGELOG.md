@@ -132,7 +132,7 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
   [(#1535)](https://github.com/PennyLaneAI/pennylane/pull/1535)
 
 * The QFT operation is moved to template
-  [(#1556)](https://github.com/PennyLaneAI/pennylane/pull/1556)
+  [(#1558)](https://github.com/PennyLaneAI/pennylane/pull/1558)
 
 <h3>Breaking changes</h3>
 
