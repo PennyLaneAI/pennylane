@@ -132,9 +132,9 @@ class GroverOperator(Operation):
 
         return tape
 
-    def _matrix(cls, *params):
+    def _matrix(self, *params):
         """Matrix representation of the Grover diffusion operator"""
-        n_wires = len(cls.wires)
+        n_wires = len(self.wires)
 
         # state |0>
         state_0 = [1, 0]
