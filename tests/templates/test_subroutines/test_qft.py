@@ -28,7 +28,11 @@ class TestOperations:
     @pytest.mark.parametrize("inverse", [True, False])
     def test_QFT(self, inverse):
         """Test if the QFT matrix is equal to a manually-calculated version for 3 qubits"""
-        op = qml.templates.QFT(wires=range(3)).inv() if inverse else qml.templates.QFT(wires=range(3))
+        op = (
+            qml.templates.QFT(wires=range(3)).inv()
+            if inverse
+            else qml.templates.QFT(wires=range(3))
+        )
         res = op.matrix
         exp = QFT.conj().T if inverse else QFT
         assert np.allclose(res, exp)
