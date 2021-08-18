@@ -131,7 +131,7 @@ class GroverOperator(Operation):
         return tape
 
     @classmethod
-    def _matrix(clf, *params):
+    def _matrix(cls, *params):
         num = clf.num_wires
         ctrl_str = "0" * (num - 1)
         wires = list(range(num))
