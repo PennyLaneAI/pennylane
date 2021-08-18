@@ -292,6 +292,15 @@ class TestSparse:
         with pytest.raises(TypeError, match="Passed Hamiltonian must be of type"):
             qml.utils.sparse_hamiltonian(np.eye(2))
 
+    def test_observable_error(self):
+        """Tests that an error is thrown if the observables are themselves constructed from multi-qubit
+        operations."""
+        with pytest.raises(ValueError, match="Can only sparsify Hamiltonians"):
+            H = qml.Hamiltonian(
+                [0.1], [qml.PauliZ("c") @ qml.Hermitian(np.eye(4), wires=["a", "b"])]
+            )
+            qml.utils.sparse_hamiltonian(H, wires=["a", "c", "b"])
+
 
 class TestFlatten:
     """Tests the flatten and unflatten functions"""
