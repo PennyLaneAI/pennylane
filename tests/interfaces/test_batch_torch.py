@@ -140,179 +140,173 @@ class TestTorchExecuteUnitTests:
         spy_gradients.assert_called()
 
 
-# class TestCaching:
-#     """Test for caching behaviour"""
+class TestCaching:
+    """Test for caching behaviour"""
 
-#     def test_cache_maxsize(self, mocker):
-#         """Test the cachesize property of the cache"""
-#         dev = qml.device("default.qubit", wires=1)
-#         spy = mocker.spy(qml.interfaces.batch, "cache_execute")
+    def test_cache_maxsize(self, mocker):
+        """Test the cachesize property of the cache"""
+        dev = qml.device("default.qubit", wires=1)
+        spy = mocker.spy(qml.interfaces.batch, "cache_execute")
 
-#         def cost(a, cachesize):
-#             with qml.tape.JacobianTape() as tape:
-#                 qml.RY(a[0], wires=0)
-#                 qml.RX(a[1], wires=0)
-#                 qml.probs(wires=0)
+        def cost(a, cachesize):
+            with qml.tape.JacobianTape() as tape:
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.probs(wires=0)
 
-#             return execute([tape], dev, gradient_fn=param_shift, cachesize=cachesize)[0]
+            return execute(
+                [tape], dev, gradient_fn=param_shift, cachesize=cachesize, interface="torch"
+            )[0][0, 0]
 
-#         params = torch.tensor([0.1, 0.2])
-#         qml.jacobian(cost)(params, cachesize=2)
-#         cache = spy.call_args[0][1]
+        params = torch.tensor([0.1, 0.2], requires_grad=True)
+        res = cost(params, cachesize=2)
+        res.backward()
+        cache = spy.call_args[0][1]
 
-#         assert cache.maxsize == 2
-#         assert cache.currsize == 2
-#         assert len(cache) == 2
+        assert cache.maxsize == 2
+        assert cache.currsize == 2
+        assert len(cache) == 2
 
-#     def test_custom_cache(self, mocker):
-#         """Test the use of a custom cache object"""
-#         dev = qml.device("default.qubit", wires=1)
-#         spy = mocker.spy(qml.interfaces.batch, "cache_execute")
+    def test_custom_cache(self, mocker):
+        """Test the use of a custom cache object"""
+        dev = qml.device("default.qubit", wires=1)
+        spy = mocker.spy(qml.interfaces.batch, "cache_execute")
 
-#         def cost(a, cache):
-#             with qml.tape.JacobianTape() as tape:
-#                 qml.RY(a[0], wires=0)
-#                 qml.RX(a[1], wires=0)
-#                 qml.probs(wires=0)
+        def cost(a, cache):
+            with qml.tape.JacobianTape() as tape:
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.probs(wires=0)
 
-#             return execute([tape], dev, gradient_fn=param_shift, cache=cache)[0]
+            return execute([tape], dev, gradient_fn=param_shift, cache=cache, interface="torch")[0][
+                0, 0
+            ]
 
-#         custom_cache = {}
-#         params = torch.tensor([0.1, 0.2])
-#         qml.jacobian(cost)(params, cache=custom_cache)
+        custom_cache = {}
+        params = torch.tensor([0.1, 0.2], requires_grad=True)
+        res = cost(params, cache=custom_cache)
+        res.backward()
 
-#         cache = spy.call_args[0][1]
-#         assert cache is custom_cache
+        cache = spy.call_args[0][1]
+        assert cache is custom_cache
 
-#     def test_caching_param_shift(self, tol):
-#         """Test that, when using parameter-shift transform,
-#         caching reduces the number of evaluations to their optimum."""
-#         dev = qml.device("default.qubit", wires=1)
+    def test_caching_param_shift(self, tol):
+        """Test that, when using parameter-shift transform,
+        caching reduces the number of evaluations to their optimum."""
+        dev = qml.device("default.qubit", wires=1)
 
-#         def cost(a, cache):
-#             with qml.tape.JacobianTape() as tape:
-#                 qml.RY(a[0], wires=0)
-#                 qml.RX(a[1], wires=0)
-#                 qml.probs(wires=0)
+        def cost(a, cache):
+            with qml.tape.JacobianTape() as tape:
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.probs(wires=0)
 
-#             return execute([tape], dev, gradient_fn=param_shift, cache=cache)[0]
+            return execute([tape], dev, gradient_fn=param_shift, cache=cache, interface="torch")[0][
+                0, 0
+            ]
 
-#         # Without caching, 9 evaluations are required to compute
-#         # the Jacobian: 1 (forward pass) + 2 (backward pass) * (2 shifts * 2 params)
-#         params = torch.tensor([0.1, 0.2])
-#         qml.jacobian(cost)(params, cache=None)
-#         assert dev.num_executions == 9
+        # Without caching, 5 evaluations are required to compute
+        # the Jacobian: 1 (forward pass) + (2 shifts * 2 params)
+        params = torch.tensor([0.1, 0.2], requires_grad=True)
+        torch.autograd.functional.jacobian(lambda p: cost(p, cache=None), params)
+        assert dev.num_executions == 5
 
-#         # With caching, 5 evaluations are required to compute
-#         # the Jacobian: 1 (forward pass) + (2 shifts * 2 params)
-#         dev._num_executions = 0
-#         jac_fn = qml.jacobian(cost)
-#         grad1 = jac_fn(params, cache=True)
-#         assert dev.num_executions == 5
+        # With caching, 5 evaluations are required to compute
+        # the Jacobian: 1 (forward pass) + (2 shifts * 2 params)
+        dev._num_executions = 0
+        torch.autograd.functional.jacobian(lambda p: cost(p, cache=True), params)
+        assert dev.num_executions == 5
 
-#         # Check that calling the cost function again
-#         # continues to evaluate the device (that is, the cache
-#         # is emptied between calls)
-#         grad2 = jac_fn(params, cache=True)
-#         assert dev.num_executions == 10
-#         assert np.allclose(grad1, grad2, atol=tol, rtol=0)
+    @pytest.mark.parametrize("num_params", [2, 3])
+    def test_caching_param_shift_hessian(self, num_params, tol):
+        """Test that, when using parameter-shift transform,
+        caching reduces the number of evaluations to their optimum
+        when computing Hessians."""
+        dev = qml.device("default.qubit", wires=2)
+        params = torch.tensor(np.arange(1, num_params + 1) / 10, requires_grad=True)
 
-#         # Check that calling the cost function again
-#         # with different parameters produces a different Jacobian
-#         grad2 = jac_fn(2 * params, cache=True)
-#         assert dev.num_executions == 15
-#         assert not np.allclose(grad1, grad2, atol=tol, rtol=0)
+        N = len(params)
 
-#     @pytest.mark.parametrize("num_params", [2, 3])
-#     def test_caching_param_shift_hessian(self, num_params, tol):
-#         """Test that, when using parameter-shift transform,
-#         caching reduces the number of evaluations to their optimum
-#         when computing Hessians."""
-#         dev = qml.device("default.qubit", wires=2)
-#         params = np.arange(1, num_params + 1) / 10
+        def cost(x, cache):
+            with qml.tape.JacobianTape() as tape:
+                qml.RX(x[0], wires=[0])
+                qml.RY(x[1], wires=[1])
 
-#         N = len(params)
+                for i in range(2, num_params):
+                    qml.RZ(x[i], wires=[i % 2])
 
-#         def cost(x, cache):
-#             with qml.tape.JacobianTape() as tape:
-#                 qml.RX(x[0], wires=[0])
-#                 qml.RY(x[1], wires=[1])
+                qml.CNOT(wires=[0, 1])
+                qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
-#                 for i in range(2, num_params):
-#                     qml.RZ(x[i], wires=[i % 2])
+            return execute([tape], dev, gradient_fn=param_shift, cache=cache, interface="torch")[0]
 
-#                 qml.CNOT(wires=[0, 1])
-#                 qml.var(qml.PauliZ(0) @ qml.PauliX(1))
+        # No caching: number of executions is not ideal
+        hess1 = torch.autograd.functional.hessian(lambda x: cost(x, cache=None), params)
 
-#             return execute([tape], dev, gradient_fn=param_shift, cache=cache)[0]
+        if num_params == 2:
+            # compare to theoretical result
+            x, y, *_ = params.detach()
+            expected = torch.tensor(
+                [
+                    [2 * np.cos(2 * x) * np.sin(y) ** 2, np.sin(2 * x) * np.sin(2 * y)],
+                    [np.sin(2 * x) * np.sin(2 * y), -2 * np.cos(x) ** 2 * np.cos(2 * y)],
+                ]
+            )
+            assert np.allclose(expected, hess1, atol=tol, rtol=0)
 
-#         # No caching: number of executions is not ideal
-#         hess1 = qml.jacobian(qml.grad(cost))(params, cache=False)
+        expected_runs = 1  # forward pass
+        expected_runs += 2 * N  # Jacobian
+        expected_runs += 4 * N + 1  # Hessian diagonal
+        expected_runs += 4 * N ** 2  # Hessian off-diagonal
+        assert dev.num_executions == expected_runs
 
-#         if num_params == 2:
-#             # compare to theoretical result
-#             x, y, *_ = params
-#             expected = torch.tensor(
-#                 [
-#                     [2 * np.cos(2 * x) * np.sin(y) ** 2, np.sin(2 * x) * np.sin(2 * y)],
-#                     [np.sin(2 * x) * np.sin(2 * y), -2 * np.cos(x) ** 2 * np.cos(2 * y)],
-#                 ]
-#             )
-#             assert np.allclose(expected, hess1, atol=tol, rtol=0)
+        # Use caching: number of executions is ideal
+        dev._num_executions = 0
+        hess2 = torch.autograd.functional.hessian(lambda x: cost(x, cache=True), params)
+        assert np.allclose(hess1, hess2, atol=tol, rtol=0)
 
-#         expected_runs = 1  # forward pass
-#         expected_runs += 2 * N  # Jacobian
-#         expected_runs += 4 * N + 1  # Hessian diagonal
-#         expected_runs += 4 * N ** 2  # Hessian off-diagonal
-#         assert dev.num_executions == expected_runs
+        expected_runs_ideal = 1  # forward pass
+        expected_runs_ideal += 2 * N  # Jacobian
+        expected_runs_ideal += 2 * N + 1  # Hessian diagonal
+        expected_runs_ideal += 4 * N * (N - 1) // 2  # Hessian off-diagonal
+        assert dev.num_executions == expected_runs_ideal
+        assert expected_runs_ideal < expected_runs
 
-#         # Use caching: number of executions is ideal
-#         dev._num_executions = 0
-#         hess2 = qml.jacobian(qml.grad(cost))(params, cache=True)
-#         assert np.allclose(hess1, hess2, atol=tol, rtol=0)
+    def test_caching_adjoint_backward(self):
+        """Test that caching reduces the number of adjoint evaluations
+        when mode=backward"""
+        dev = qml.device("default.qubit", wires=2)
+        params = torch.tensor([0.1, 0.2, 0.3])
 
-#         expected_runs_ideal = 1  # forward pass
-#         expected_runs_ideal += 2 * N  # Jacobian
-#         expected_runs_ideal += 2 * N + 1  # Hessian diagonal
-#         expected_runs_ideal += 4 * N * (N - 1) // 2  # Hessian off-diagonal
-#         assert dev.num_executions == expected_runs_ideal
-#         assert expected_runs_ideal < expected_runs
+        def cost(a, cache):
+            with qml.tape.JacobianTape() as tape:
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.RY(a[2], wires=0)
+                qml.expval(qml.PauliZ(0))
+                qml.expval(qml.PauliZ(1))
 
-#     def test_caching_adjoint_backward(self):
-#         """Test that caching reduces the number of adjoint evaluations
-#         when mode=backward"""
-#         dev = qml.device("default.qubit", wires=2)
-#         params = torch.tensor([0.1, 0.2, 0.3])
+            return execute(
+                [tape],
+                dev,
+                gradient_fn="device",
+                cache=cache,
+                mode="backward",
+                gradient_kwargs={"method": "adjoint_jacobian"},
+                interface="torch",
+            )[0]
 
-#         def cost(a, cache):
-#             with qml.tape.JacobianTape() as tape:
-#                 qml.RY(a[0], wires=0)
-#                 qml.RX(a[1], wires=0)
-#                 qml.RY(a[2], wires=0)
-#                 qml.expval(qml.PauliZ(0))
-#                 qml.expval(qml.PauliZ(1))
+        # Without caching, 3 evaluations are required.
+        # 1 for the forward pass, and one per output dimension
+        # on the backward pass.
+        torch.autograd.functional.jacobian(lambda x: cost(x, cache=None), params)
+        assert dev.num_executions == 3
 
-#             return execute(
-#                 [tape],
-#                 dev,
-#                 gradient_fn="device",
-#                 cache=cache,
-#                 mode="backward",
-#                 gradient_kwargs={"method": "adjoint_jacobian"},
-#             )[0]
-
-#         # Without caching, 3 evaluations are required.
-#         # 1 for the forward pass, and one per output dimension
-#         # on the backward pass.
-#         qml.jacobian(cost)(params, cache=None)
-#         assert dev.num_executions == 3
-
-#         # With caching, only 2 evaluations are required. One
-#         # for the forward pass, and one for the backward pass.
-#         dev._num_executions = 0
-#         jac_fn = qml.jacobian(cost)
-#         grad1 = jac_fn(params, cache=True)
-#         assert dev.num_executions == 2
+        # With caching, only 2 evaluations are required. One
+        # for the forward pass, and one for the backward pass.
+        dev._num_executions = 0
+        torch.autograd.functional.jacobian(lambda x: cost(x, cache=True), params)
+        assert dev.num_executions == 2
 
 
 execute_kwargs = [
@@ -768,6 +762,53 @@ class TestHigherOrderDerivatives:
             ]
         )
         assert torch.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_hessian_vector_valued(self, tol):
+        """Test hessian calculation of a vector valued QNode"""
+        dev = qml.device("default.qubit", wires=1)
+
+        def circuit(x):
+            with qml.tape.JacobianTape() as tape:
+                qml.RY(x[0], wires=0)
+                qml.RX(x[1], wires=0)
+                qml.probs(wires=0)
+
+            return torch.stack(execute([tape], dev, gradient_fn=param_shift, interface="torch"))
+
+        x = torch.tensor([1.0, 2.0], requires_grad=True)
+        res = circuit(x)
+
+        a, b = x.detach().numpy()
+
+        expected_res = [
+            0.5 + 0.5 * np.cos(a) * np.cos(b),
+            0.5 - 0.5 * np.cos(a) * np.cos(b),
+        ]
+        assert np.allclose(res.detach(), expected_res, atol=tol, rtol=0)
+
+        jac_fn = lambda x: torch.autograd.functional.jacobian(circuit, x, create_graph=True)
+
+        g = jac_fn(x)
+
+        hess = torch.autograd.functional.jacobian(jac_fn, x)
+
+        expected_g = [
+            [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
+            [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
+        ]
+        assert np.allclose(g.detach(), expected_g, atol=tol, rtol=0)
+
+        expected_hess = [
+            [
+                [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.sin(a) * np.sin(b)],
+                [0.5 * np.sin(a) * np.sin(b), -0.5 * np.cos(a) * np.cos(b)],
+            ],
+            [
+                [0.5 * np.cos(a) * np.cos(b), -0.5 * np.sin(a) * np.sin(b)],
+                [-0.5 * np.sin(a) * np.sin(b), 0.5 * np.cos(a) * np.cos(b)],
+            ],
+        ]
+        assert np.allclose(hess.detach(), expected_hess, atol=tol, rtol=0)
 
     def test_adjoint_hessian(self, tol):
         """Since the adjoint hessian is not a differentiable transform,
