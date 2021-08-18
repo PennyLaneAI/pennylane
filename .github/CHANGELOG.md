@@ -123,6 +123,11 @@
 
 * The QFT operation is moved to template
   [(#1545)](https://github.com/PennyLaneAI/pennylane/pull/1545)
+  
+* Create a separate requirements file for the CI issue , to have a separate requirements.txt (pinned)
+and requirements-ci.txt (unpinned). This latter would be used by the CI..
+  [(#1535)](https://github.com/PennyLaneAI/pennylane/pull/1535)
+
 
 <h3>Breaking changes</h3>
 
