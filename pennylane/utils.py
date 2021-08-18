@@ -112,14 +112,9 @@ def sparse_hamiltonian(H, wires=None):
     Args:
         H (~.Hamiltonian): Hamiltonian operator for which the matrix representation should be
          computed
-<<<<<<< HEAD
-        wires (Iterable): Wire labels that define the ordering of wires, which determines how the matrix is
-            constructed. If not provided, ``H.wires`` is used.
-=======
         wires (Iterable): Wire labels that indicate the order of wires according to which the matrix
          is constructed. If not profided, ``H.wires`` is used.
 
->>>>>>> generalise_sparse_ham
     Returns:
         coo_matrix: a sparse matrix in scipy coordinate list (COO) format with dimension
         :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
@@ -415,7 +410,7 @@ def inv(operation_list):
         except KeyError:
             # operation to be inverted does not
             # exist on the queuing context
-            continue
+            pass
 
     def qfunc():
         for o in operation_list:

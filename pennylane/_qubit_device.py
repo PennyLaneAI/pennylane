@@ -763,8 +763,8 @@ class QubitDevice(Device):
         if self.shots is None:
             try:
                 eigvals = self._asarray(observable.eigvals, dtype=self.R_DTYPE)
-            except NotImplementedError:
-                raise ValueError(f"Cannot compute expectations of {observable.name} observables.")
+            except NotImplementedError as e:
+                raise ValueError(f"Cannot compute expectations of {observable.name} observables.") from e
 
             prob = self.probability(wires=observable.wires)
             return self._dot(eigvals, prob)
@@ -787,9 +787,9 @@ class QubitDevice(Device):
         if self.shots is None:
             try:
                 eigvals = self._asarray(observable.eigvals, dtype=self.R_DTYPE)
-            except NotImplementedError:
+            except NotImplementedError as e:
                 # if observable has no info on eigenvalues, we cannot return this measurement
-                raise ValueError(f"Cannot compute samples of {observable.name}.")
+                raise ValueError(f"Cannot compute samples of {observable.name}.") from e
             prob = self.probability(wires=observable.wires)
             return self._dot((eigvals ** 2), prob) - self._dot(eigvals, prob) ** 2
 
@@ -829,9 +829,9 @@ class QubitDevice(Device):
             indices = samples @ powers_of_two
             try:
                 samples = observable.eigvals[indices]
-            except NotImplementedError:
+            except NotImplementedError as e:
                 # if observable has no info on eigenvalues, we cannot return this measurement
-                raise ValueError(f"Cannot compute samples of {observable.name}.")
+                raise ValueError(f"Cannot compute samples of {observable.name}.") from e
 
         if bin_size is None:
             return samples
