@@ -133,7 +133,6 @@ class GroverOperator(Operation):
         return tape
 
     def _matrix(self, *params):
-        """Matrix representation of the Grover diffusion operator"""
         n_wires = len(self.wires)
 
         # s1 = H|0>, Hadamard on a single qubit in the ground state
