@@ -127,7 +127,7 @@ def test_findstate():
         op = qml.templates.GroverOperator(wires=wires)
         res = op.matrix
 
-        mat = 0.5 * np.array([
+        mat = -0.5 * np.array([
             [1, -1, -1, -1],
             [-1, 1, -1, -1],
             [-1, -1, 1, -1],
