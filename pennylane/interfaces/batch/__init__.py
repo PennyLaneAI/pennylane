@@ -52,8 +52,8 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True):
             same length as the input ``tapes``.
         cache (None or dict or Cache): The cache to use. If ``None``,
             caching will not occur.
-        pass_kwargs (bool): If ``False``, keyword arguments passed to the
-            wrapped function will be passed directly to ``fn``. If ``True``,
+        pass_kwargs (bool): If ``True``, keyword arguments passed to the
+            wrapped function will be passed directly to ``fn``. If ``False``,
             they will be ignored.
         return_tuple (bool): If ``True``, the output of ``fn`` is returned
             as a tuple ``(fn_ouput, [])``, to match the output of execution functions
