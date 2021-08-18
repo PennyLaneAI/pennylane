@@ -1098,11 +1098,13 @@ class QuantumTape(AnnotatedQueue):
             show_all_wires=show_all_wires,
         )
 
-    def to_openqasm(self, wires=None, rotations=True):
+    def to_openqasm(self, wires=None, rotations=True, include_measurements=True):
         """Serialize the circuit as an OpenQASM 2.0 program.
 
-        Only operations are serialized; all measurements
-        are assumed to take place in the computational basis.
+        Measurements are assumed to be performed in the computational basis. An optional
+        ``rotations`` argument can be provided so that output of the OpenQASM circuit is diagonal
+        in the eigenbasis of the tape's observables. The computational basis measurements can be
+        turned off by setting ``include_measurements=False``.
 
         .. note::
 
@@ -1114,6 +1116,8 @@ class QuantumTape(AnnotatedQueue):
             rotations (bool): in addition to serializing user-specified
                 operations, also include the gates that diagonalize the
                 measured wires such that they are in the eigenbasis of the circuit observables.
+            include_measurements (bool): whether to include computational basis measurements on all
+                of the qubits
 
         Returns:
             str: OpenQASM serialization of the circuit
@@ -1175,8 +1179,9 @@ class QuantumTape(AnnotatedQueue):
         # and then only measure wires which are requested by the user. However,
         # some devices which consume QASM require all registers be measured, so
         # measure all wires to be safe.
-        for wire in range(len(wires)):
-            qasm_str += "measure q[{wire}] -> c[{wire}];\n".format(wire=wire)
+        if include_measurements:
+            for wire in range(len(wires)):
+                qasm_str += "measure q[{wire}] -> c[{wire}];\n".format(wire=wire)
 
         return qasm_str
 
