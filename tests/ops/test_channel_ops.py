@@ -281,7 +281,7 @@ class TestResetError:
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
     def test_grad_reseterror(self, angle, tol):
-        """Test that analytical gradient is computed correctly for different states. Channel
+        """Test that gradient is computed correctly for different states. Channel
         grad recipes are independent of channel parameter"""
 
         dev = qml.device("default.mixed", wires=1)

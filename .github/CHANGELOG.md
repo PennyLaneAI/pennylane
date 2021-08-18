@@ -134,7 +134,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Josh Izaac, Johannes Jakob Meyer, Maria Schuld.
+Josh Izaac, Johannes Jakob Meyer, Maria Schuld, Vincent Wong.
 
 # Release 0.17.0 (current release)
 
