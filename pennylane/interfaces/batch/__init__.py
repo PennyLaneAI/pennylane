@@ -40,8 +40,8 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True):
       extracted, and the tape is not passed to the execution function.
 
     - Finally, there might be the case where one or more tapes in the current
-      set of tapes to be executed share a hash. If this is the case, duplicated
-      are removed, to avoid redundant evaluations.
+      set of tapes to be executed are identical and thus share a hash. If this is the case,
+      duplicates are removed, to avoid redundant evaluations.
 
     Args:
         fn (callable): The execution function to add caching to.
@@ -50,8 +50,8 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True):
             same length as the input ``tapes``.
         cache (None or dict or Cache): The cache to use. If ``None``,
             caching will not occur.
-        pass_kwargs (bool): If ``False``, keyword arguments passed to the
-            wrapped function will be passed directly to ``fn``. If ``True``,
+        pass_kwargs (bool): If ``True``, keyword arguments passed to the
+            wrapped function will be passed directly to ``fn``. If ``False``,
             they will be ignored.
         return_tuple (bool): If ``True``, the output of ``fn`` is returned
             as a tuple ``(fn_ouput, [])``, to match the output of execution functions
