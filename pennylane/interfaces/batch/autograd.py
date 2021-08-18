@@ -43,7 +43,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         _n (int): a positive integer used to track nesting of derivatives, for example
             if the nth-order derivative is requested.
         max_diff (int): If ``gradient_fn`` is a gradient transform, this option specifies
-            the maximum number of derivatives to support. Increasing this value allows
+            the maximum order of derivatives to support. Increasing this value allows
             for higher order derivatives to be extracted, at the cost of additional
             (classical) computational overhead during the backwards pass.
 

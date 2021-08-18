@@ -42,8 +42,8 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True):
       extracted, and the tape is not passed to the execution function.
 
     - Finally, there might be the case where one or more tapes in the current
-      set of tapes to be executed share a hash. If this is the case, duplicated
-      are removed, to avoid redundant evaluations.
+      set of tapes to be executed are identical and thus share a hash. If this is the case,
+      duplicates are removed, to avoid redundant evaluations.
 
     Args:
         fn (callable): The execution function to add caching to.
