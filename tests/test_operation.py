@@ -493,6 +493,19 @@ class TestObservableConstruction:
         assert op.id == "test"
 
 
+class TestObservableInstatiation:
+    """Test that wires are specified when a qml.operation.Observable is instantiated"""
+
+    def test_wire_is_given_in_argument(self):
+        class DummyObservable(qml.operation.Observable):
+            num_wires = 1
+            num_params = 0
+            par_domain = None
+
+        with pytest.raises(Exception, match="Must specify the wires *"):
+            DummyObservable()
+
+
 class TestOperatorIntegration:
     """Integration tests for the Operator class"""
 
