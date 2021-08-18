@@ -1044,7 +1044,7 @@ class Observable(Operator):
             except IndexError:
                 raise Exception(
                   "Cannot extract wires as no arguments were passed to the observable."
-                )
+                )from IndexError
             params = params[:-1]
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
