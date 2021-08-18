@@ -486,10 +486,8 @@ class DefaultQubit(QubitDevice):
                 # This case should always be intercepted by the QNode, but we want to make sure here.
                 raise DeviceError("Hamiltonian must be used with shots=None")
 
-            # temporary hack: convert to sparse hamiltonian
-            # todo: only works with constituent observables built from single-qubit ops,
-            # and with integer-valued wire labels
-            ham = sparse_hamiltonian(observable)
+            # temporary hack: convert to sparse hamiltonian (which fails for some Hamiltonians)
+            ham = sparse_hamiltonian(observable, wires=self.wires)
             ev = coo_matrix.dot(
                 coo_matrix(self._conj(self.state)),
                 coo_matrix.dot(
