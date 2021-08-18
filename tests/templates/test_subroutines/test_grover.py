@@ -149,7 +149,6 @@ def test_grover_diffusion_matrix():
 
     M = functools.reduce(np.kron, oplist)
     G = M @ CX @ M
-    print(G, G_matrix)
 
     # There is just a difference in sign
     assert np.allclose(np.abs(G_matrix), np.abs(G))
