@@ -58,7 +58,7 @@ def _compute_grouping_indices(observables, grouping_type="qwc", method="rlf"):
     return indices
 
 
-class Hamiltonian(qml.operation.Observable):
+class Hamiltonian(Observable):
     r"""Operator representing a Hamiltonian.
 
     The Hamiltonian is represented as a linear combination of other operators, e.g.,
