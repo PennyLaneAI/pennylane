@@ -84,6 +84,9 @@
 
 <h3>Improvements</h3>
 
+* The Hamiltonian class was moved to the `ops/qubit` folder from the `vqe` module, since it is now an observable.
+  [(#1534)](https://github.com/PennyLaneAI/pennylane/pull/1534)
+
 * The `group_observables` transform is now differentiable.
   [(#1483)](https://github.com/PennyLaneAI/pennylane/pull/1483)
  
