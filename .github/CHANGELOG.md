@@ -84,6 +84,11 @@
 
 <h3>Improvements</h3>
 
+* The `utils.sparse_hamiltonian` function can now deal with non-integer 
+  wire labels, and it throws an error for the edge case of observables that are 
+  created from multi-qubit operations.
+  [(#1550)](https://github.com/PennyLaneAI/pennylane/pull/1550)
+
 * The `group_observables` transform is now differentiable.
   [(#1483)](https://github.com/PennyLaneAI/pennylane/pull/1483)
  
