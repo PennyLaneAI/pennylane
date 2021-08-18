@@ -2,6 +2,37 @@
 
 <h3>New features since last release</h3>
 
+* The `qml.circuit_drawer.MPLDrawer` class provides manual circuit drawing
+  functionality using Matplotlib.  While not yet integrated with automatic circuit
+  drawing, this class provides customization and control.
+  [(#1484)](https://github.com/PennyLaneAI/pennylane/pull/1484)
+
+  ```python
+  from pennylane.circuit_drawer import MPLDrawer
+
+  drawer = MPLDrawer(n_wires=5,n_layers=5)
+
+  drawer.label(["0","a",r"$|\Psi\rangle$",r"$|\theta\rangle$", "aux"])
+
+  drawer.box_gate(0, [0,1,2,3,4], "Entangling Layers", rotate_text=True)
+  drawer.box_gate(1, [0, 1], "U(θ)")
+  drawer.box_gate(1, 4, "X", color='lightcoral')
+
+  drawer.SWAP(1, (2, 3))
+  drawer.CNOT(2, (0,2), color='forestgreen')
+
+  drawer.ctrl(3, [1,3])
+  drawer.box_gate(3, 2, "H", zorder_base=2)
+
+  drawer.ctrl(4, [1,2])
+
+  drawer.measure(5, 0)
+
+  drawer.fig.suptitle('My Circuit', fontsize='xx-large')
+  ```
+
+  <img src="https://pennylane.readthedocs.io/en/latest/_static/drawer/example_basic.png" width=70%/>
+
 * The `frobenius_inner_product` function has been moved to the `qml.math`
   module, and is now differentiable using all autodiff frameworks.
   [(#1388)](https://github.com/PennyLaneAI/pennylane/pull/1388)

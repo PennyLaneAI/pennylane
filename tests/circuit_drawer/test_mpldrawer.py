@@ -84,12 +84,11 @@ def test_labels():
         assert actual_label.get_text() == expected_label
 
         assert actual_label.get_position() == (-1.5, wire)
-    
+
     plt.close()
 
 
 class TestBoxGate:
-
     def test_simple_box(self):
         """tests basic functionality of box_gate."""
 
@@ -129,8 +128,8 @@ class TestBoxGate:
 
     def test_box_color(self):
         """Tests that color keyword changes rectangles color."""
-        drawer = MPLDrawer(1,1)
-        rgba_red = (1,0,0,1)
+        drawer = MPLDrawer(1, 1)
+        rgba_red = (1, 0, 0, 1)
         drawer.box_gate(0, 0, text="X", color=rgba_red)
 
         rect = drawer.ax.patches[0]
@@ -215,7 +214,7 @@ class TestCTRL:
         drawer = MPLDrawer(1, 3)
 
         ctrl_wires = (0, 1)
-        rgba_red = (1,0,0,1)
+        rgba_red = (1, 0, 0, 1)
         drawer.ctrl(0, ctrl_wires, color=rgba_red)
 
         ctrl_line = drawer.ax.lines[3]
@@ -268,7 +267,7 @@ class TestCTRL:
 
         drawer = MPLDrawer(1, 3)
 
-        rgba_red = (1,0,0,1)
+        rgba_red = (1, 0, 0, 1)
         drawer._target_x(0, 0, color=rgba_red)
 
         center_line = drawer.ax.lines[3]
@@ -307,7 +306,7 @@ class TestCTRL:
 
     def test_CNOT_color(self):
         drawer = MPLDrawer(1, 3)
-        rgba_red = (1,0,0,1)
+        rgba_red = (1, 0, 0, 1)
         drawer.CNOT(0, (0, 1), color=rgba_red)
 
         ctrl_line = drawer.ax.lines[3]
@@ -348,7 +347,7 @@ class TestSWAP:
         drawer.SWAP(0, (0, 2))
 
         connecting_line = drawer.ax.lines[3]
-        assert connecting_line.get_data() == ((0,0), (0,2))
+        assert connecting_line.get_data() == ((0, 0), (0, 2))
 
         x_lines = drawer.ax.lines[4:]
         assert x_lines[0].get_data() == ((-0.2, 0.2), (-0.2, 0.2))
@@ -361,8 +360,8 @@ class TestSWAP:
 def test_measure():
     """Tests the measure method."""
 
-    drawer = MPLDrawer(1,1)
-    drawer.measure(0,0)
+    drawer = MPLDrawer(1, 1)
+    drawer.measure(0, 0)
 
     box = drawer.ax.patches[0]
     assert box.get_xy() == (-0.4, -0.4)
