@@ -141,9 +141,9 @@ def test_grover_diffusion_matrix_results():
     oracle_matrix = np.identity(2 ** n_wires)
     oracle_matrix[-1, -1] = -1
 
-    # state |0>
-    state_0 = [1, 0]
-    s1 = Hadamard.matrix @ state_0
+    # s1 = H|0>, Hadamard on a single qubit in the ground state
+    s1 = np.array([1, 1]) / np.sqrt(2)
+
     # uniform superposition state
     s = functools.reduce(np.kron, list(itertools.repeat(s1, n_wires)))
 
