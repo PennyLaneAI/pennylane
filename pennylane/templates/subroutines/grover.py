@@ -14,12 +14,13 @@
 """
 Contains the Grover Operation template.
 """
+import itertools
+import functools
+import numpy as np
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.ops import Hadamard, PauliZ, MultiControlledX
-import numpy as np
-import itertools
-import functools
+
 
 
 class GroverOperator(Operation):
