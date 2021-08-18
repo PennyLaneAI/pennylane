@@ -120,7 +120,7 @@ def test_findstate():
     assert np.argmax(probs) == len(probs) - 1
 
 
-@pytest.mark.parametrize("num", 2)
+    @pytest.mark.parametrize("num", 2)
     def test_matrix(self, num, tol):
         """Assert matrix of Grover Diffusion Operator is correct"""
         wires = list(range(num))
