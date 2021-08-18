@@ -148,18 +148,26 @@ def sparse_hamiltonian(H, wires=None):
     n = len(wires)
     matrix = scipy.sparse.coo_matrix((2 ** n, 2 ** n), dtype="complex128")
 
-    for coeffs, ops in zip(H.coeffs, H.ops):
+    for coeff, op in zip(H.coeffs, H.ops):
 
-        # todo: deal with operations created from multi-qubit operations such as Hermitian
-        obs = [scipy.sparse.coo_matrix(o.matrix) for o in qml.operation.Tensor(ops).obs]
+        obs = []
+        for o in qml.operation.Tensor(op).obs:
+            if len(o.wires) > 1:
+                # todo: deal with operations created from multi-qubit operations such as Hermitian
+                raise ValueError(
+                    "Can only sparsify Hamiltonians whose constituent observables consist of "
+                    "(tensor products of) single-qubit operators; got {}.".format(op)
+                )
+            obs.append(scipy.sparse.coo_matrix(o.matrix))
+
         mat = [scipy.sparse.eye(2, format="coo")] * n
 
-        for i, wire in enumerate(ops.wires):
+        for i, wire in enumerate(op.wires):
             # find index of this wire in the ordering
             idx = wires.index(wire)
             mat[idx] = obs[i]
 
-        matrix += functools.reduce(lambda i, j: scipy.sparse.kron(i, j, format="coo"), mat) * coeffs
+        matrix += functools.reduce(lambda i, j: scipy.sparse.kron(i, j, format="coo"), mat) * coeff
 
     return matrix.tocoo()
 
