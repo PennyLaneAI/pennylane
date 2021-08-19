@@ -106,7 +106,7 @@ class UnwrapTape:
     Args:
         tape (.QuantumTape): the quantum tape to unwrap
         params (List[tensor_like or float] or None): List of parameters.
-            If provided, these parameter will be applied to the tape within the context.
+            If provided, these parameters will be applied to the tape within the context.
         set_trainable (bool): whether to infer the trainable parameters of the tape
 
     Returns:
