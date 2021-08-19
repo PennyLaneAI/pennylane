@@ -644,12 +644,12 @@ class ISWAP(Operation):
 
     def adjoint(self):
         return ISWAP(wires=self.wires).inv()
-        
+
 class SISWAP(Operation):
     r"""SISWAP(wires)
     The square root of i-swap operator
 
-    .. math:: ISWAP = \begin{bmatrix}
+    .. math:: SISWAP = \begin{bmatrix}
             1 & 0 & 0 & 0 \\
             0 & 1/ \sqrt{2} & i/\sqrt{2} & 0\\
             0 & i/ \sqrt{2} & 1/ \sqrt{2} & 0\\
