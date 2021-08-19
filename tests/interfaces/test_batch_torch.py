@@ -71,7 +71,7 @@ class TestTorchExecuteUnitTests:
             res.backward()
 
     def test_incorrect_mode(self):
-        """Test that an error is raised if an gradient transform
+        """Test that an error is raised if a gradient transform
         is used with mode=forward"""
         a = torch.tensor([0.1, 0.2], requires_grad=True)
 
@@ -193,7 +193,7 @@ class TestCaching:
 
     def test_caching_param_shift(self, tol):
         """Test that, when using parameter-shift transform,
-        caching reduces the number of evaluations to their optimum."""
+        Torch always uses the optimum number of evals when computing the Jacobian."""
         dev = qml.device("default.qubit", wires=1)
 
         def cost(a, cache):
@@ -530,7 +530,7 @@ class TestTorchExecuteIntegration:
         assert np.allclose(a.grad, np.sin(a_val), atol=tol, rtol=0)
 
     def test_differentiable_expand(self, execute_kwargs, tol):
-        """Test that operation and nested tapes expansion
+        """Test that operation and nested tape expansion
         is differentiable"""
 
         class U3(qml.U3):

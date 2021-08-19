@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains functions for adding the Autograd interface
+This module contains functions for adding the PyTorch interface
 to a PennyLane Device class.
 """
 # pylint: disable=too-many-arguments,protected-access
@@ -48,7 +48,7 @@ class ExecuteTapes(torch.autograd.Function):
       as the first argument ``kwargs``. This dictionary **must** contain:
 
       * ``"tapes"``: the quantum tapes to batch evaluate
-      * ``"device"``: the device to use to evaluate the tapes
+      * ``"device"``: the quantum device to use to evaluate the tapes
       * ``execute_fn``: the execution function to use on forward passes
       * ``"gradient_fn"``: the gradient transform function to use
         for backward passes
@@ -61,7 +61,7 @@ class ExecuteTapes(torch.autograd.Function):
     with the parameters extracted directly from the tapes as follows:
 
     >>> parameters = []
-    >>> [parameters.extend(t.get_parameters()) for t in tapes])
+    >>> [parameters.extend(t.get_parameters()) for t in tapes]
     >>> kwargs = {"tapes": tapes, "device": device, "gradient_fn": gradient_fn, ...}
     >>> ExecuteTapes.apply(kwargs, *parameters)
 
@@ -92,7 +92,7 @@ class ExecuteTapes(torch.autograd.Function):
         for p in parameters:
             if isinstance(p, torch.Tensor):
                 if p.is_cuda:  # pragma: no cover
-                    cuda_device = p.get_device()
+                    ctx.torch_device = p.get_device()
                     break
 
         for i, r in enumerate(res):
