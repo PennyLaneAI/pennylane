@@ -30,7 +30,7 @@
       for w in dev.wires:
           qml.RX(layer_par, wires=w)
       for i, par in enumerate(crot_param):
-          qml.CRY(par, wires=[i, (i+1)%3])
+          qml.CRY(par, wires=[i, (i+1) % 3])
 
       return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
   ```
