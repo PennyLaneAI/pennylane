@@ -66,14 +66,14 @@ def successive_params(par1, par2):
         [[], [1, 1], [1], [1, 1, [1, 2]]],
     ),
 )
-def test_wrong_len_num_frequencies(fun, param, num_freq):
+def test_wrong_len_num_freqs(fun, param, num_freq):
     """Test that an error is raised for a different number of
     numbers of frequencies than number of function arguments."""
 
     opt = RotosolveOptimizer()
 
     with pytest.raises(ValueError, match="The length of the provided numbers of frequencies"):
-        opt.step(fun, *param, num_frequencies=num_freq)
+        opt.step(fun, *param, num_freqs=num_freq)
 
 
 @pytest.mark.parametrize(
@@ -89,14 +89,14 @@ def test_wrong_len_num_frequencies(fun, param, num_freq):
         [[[1, 1]], [[]], [[1], [1, 1]], [[1], [1]]],
     ),
 )
-def test_wrong_num_of_num_frequencies_per_parameter(fun, param, num_freq):
+def test_wrong_num_of_num_freqs_per_parameter(fun, param, num_freq):
     """Test that an error is raised for a different number of
     numbers of frequencies than number of function arguments."""
 
     opt = RotosolveOptimizer()
 
     with pytest.raises(ValueError, match="The number of the frequency counts"):
-        opt.step(fun, *param, num_frequencies=num_freq)
+        opt.step(fun, *param, num_freqs=num_freq)
 
 
 @pytest.mark.parametrize(
@@ -112,13 +112,13 @@ def test_wrong_num_of_num_frequencies_per_parameter(fun, param, num_freq):
         [[0.1], [1.0], [1, 1.0], [1, [1, 2 + 1j]]],
     ),
 )
-def test_wrong_typed_num_frequencies(fun, param, num_freq):
+def test_wrong_typed_num_freqs(fun, param, num_freq):
     """Test that an error is raised for a non-integer entry in the numbers of frequencies."""
 
     opt = RotosolveOptimizer()
 
     with pytest.raises(ValueError, match="The numbers of frequencies are expected to be integers."):
-        opt.step(fun, *param, num_frequencies=num_freq)
+        opt.step(fun, *param, num_freqs=num_freq)
 
 
 classical_functions = [
@@ -155,7 +155,7 @@ classical_params = [
     (0.1, 0.2, 0.5),
     (0.9, 0.7, 0.2),
 ]
-classical_num_frequencies = [[1], [[1, 1, 1]], [1, [1, 1]], [1, 2], 1, [2, 3, 1]]
+classical_num_freqs = [[1], [[1, 1, 1]], [1, [1, 1]], [1, 2], 1, [2, 3, 1]]
 
 
 def custom_optimizer(fun, **kwargs):
@@ -175,7 +175,7 @@ optimizer_kwargs = [
 
 @pytest.mark.parametrize(
     "fun, x_min, param, num_freq",
-    list(zip(classical_functions, classical_minima, classical_params, classical_num_frequencies)),
+    list(zip(classical_functions, classical_minima, classical_params, classical_num_freqs)),
 )
 @pytest.mark.parametrize(
     "optimizer, optimizer_kwargs",
@@ -198,7 +198,7 @@ class TestWithClassicalFunctions:
         new_param = opt.step(
             _fun,
             *param,
-            num_frequencies=num_freq,
+            num_freqs=num_freq,
             optimizer=optimizer,
             optimizer_kwargs=optimizer_kwargs,
         )
@@ -218,7 +218,7 @@ class TestWithClassicalFunctions:
         new_param_step = opt.step(
             fun,
             *param,
-            num_frequencies=num_freq,
+            num_freqs=num_freq,
             optimizer=optimizer,
             optimizer_kwargs=optimizer_kwargs,
         )
@@ -236,7 +236,7 @@ class TestWithClassicalFunctions:
         new_param_step_and_cost, old_cost = opt.step_and_cost(
             fun,
             *param,
-            num_frequencies=num_freq,
+            num_freqs=num_freq,
             optimizer=optimizer,
             optimizer_kwargs=optimizer_kwargs,
         )
@@ -260,7 +260,7 @@ class TestWithClassicalFunctions:
         _, y_output_step = opt.step(
             fun,
             *param,
-            num_frequencies=num_freq,
+            num_freqs=num_freq,
             optimizer=optimizer,
             optimizer_kwargs=optimizer_kwargs,
             full_output=True,
@@ -268,7 +268,7 @@ class TestWithClassicalFunctions:
         new_param, old_cost, y_output_step_and_cost = opt.step_and_cost(
             fun,
             *param,
-            num_frequencies=num_freq,
+            num_freqs=num_freq,
             optimizer=optimizer,
             optimizer_kwargs=optimizer_kwargs,
             full_output=True,
@@ -286,7 +286,7 @@ class TestWithClassicalFunctions:
 
 @pytest.mark.parametrize(
     "fun, x_min, param, num_freq",
-    list(zip(classical_functions, classical_minima, classical_params, classical_num_frequencies)),
+    list(zip(classical_functions, classical_minima, classical_params, classical_num_freqs)),
 )
 def test_multiple_steps(fun, x_min, param, num_freq):
     """Tests that repeated steps execute as expected."""
@@ -298,7 +298,7 @@ def test_multiple_steps(fun, x_min, param, num_freq):
         param = opt.step(
             fun,
             *param,
-            num_frequencies=num_freq,
+            num_freqs=num_freq,
             optimizer=optimizer,
             optimizer_kwargs=optimizer_kwargs,
         )
@@ -329,7 +329,7 @@ classical_params_deact = [
     (0.3, np.array([0.8, 0.1], requires_grad=False)),
     (0.1, np.array(0.2, requires_grad=False), 0.5),
 ]
-classical_num_frequencies_deact = [[], [1], 1]
+classical_num_freqs_deact = [[], [1], 1]
 
 
 @pytest.mark.parametrize(
@@ -339,7 +339,7 @@ classical_num_frequencies_deact = [[], [1], 1]
             classical_functions_deact,
             classical_minima_deact,
             classical_params_deact,
-            classical_num_frequencies_deact,
+            classical_num_freqs_deact,
         )
     ),
 )
@@ -353,7 +353,7 @@ class TestDeactivatedTrainingWithClassicalFunctions:
         new_param_step = opt.step(
             fun,
             *param,
-            num_frequencies=num_freq,
+            num_freqs=num_freq,
             optimizer="brute",
         )
         # The following accounts for the unpacking functionality for length-1 param
@@ -370,7 +370,7 @@ class TestDeactivatedTrainingWithClassicalFunctions:
         new_param_step_and_cost, old_cost = opt.step_and_cost(
             fun,
             *param,
-            num_frequencies=num_freq,
+            num_freqs=num_freq,
             optimizer="brute",
         )
         # The following accounts for the unpacking functionality for length-1 param
@@ -433,7 +433,7 @@ qnode_params = [
     (np.array([0.1, -0.3, 2.9]), 1.3, [0.2, 0.1]),
     (1.2, -2.3, -0.2),
 ]
-qnode_num_frequencies = [
+qnode_num_freqs = [
     [num_wires],
     [1, 2 * num_wires, [1, 2]],
     num_wires,
@@ -442,7 +442,7 @@ qnode_num_frequencies = [
 
 @pytest.mark.parametrize(
     "qnode, param, num_freq",
-    list(zip(qnodes, qnode_params, qnode_num_frequencies)),
+    list(zip(qnodes, qnode_params, qnode_num_freqs)),
 )
 @pytest.mark.parametrize(
     "optimizer, optimizer_kwargs",
@@ -456,7 +456,7 @@ class TestWithQNodes:
         new_param_step = opt.step(
             qnode,
             *param,
-            num_frequencies=num_freq,
+            num_freqs=num_freq,
             optimizer=optimizer,
             optimizer_kwargs=optimizer_kwargs,
         )
@@ -469,7 +469,7 @@ class TestWithQNodes:
         new_param_step_and_cost, old_cost = opt.step_and_cost(
             qnode,
             *param,
-            num_frequencies=num_freq,
+            num_freqs=num_freq,
             optimizer=optimizer,
             optimizer_kwargs=optimizer_kwargs,
         )
@@ -492,7 +492,7 @@ class TestWithQNodes:
             param = opt.step(
                 qnode,
                 *param,
-                num_frequencies=num_freq,
+                num_freqs=num_freq,
                 optimizer=optimizer,
                 optimizer_kwargs=optimizer_kwargs,
             )

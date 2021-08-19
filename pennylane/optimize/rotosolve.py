@@ -27,6 +27,34 @@ def _assert_integer(x):
         )
 
 
+def _validate_num_freqs(num_freqs, requires_grad):
+    if num_freqs is None:
+        num_freqs = [1] * sum(requires_grad)
+        num_freqs_flat = num_freqs
+    elif np.isscalar(num_freqs):
+        _assert_integer(num_freqs)
+        num_freqs = [num_freqs] * sum(requires_grad)
+        num_freqs_flat = num_freqs
+    else:
+        num_freqs_flat = []
+        for num_frequency in num_freqs:
+            if np.isscalar(num_frequency):
+                _assert_integer(num_frequency)
+                num_frequency_flat = num_frequency
+            else:
+                num_frequency_flat = list(_flatten(num_frequency))
+                _ = [_assert_integer(_num_freq) for _num_freq in num_frequency_flat]
+                num_frequency_flat = np.array(num_frequency_flat, dtype=int)
+            num_freqs_flat.append(num_frequency_flat)
+        if len(num_freqs) != sum(requires_grad):
+            raise ValueError(
+                "The length of the provided numbers of frequencies "
+                f"({len(num_freqs)}) does not match the number of function arguments "
+                f"({sum(requires_grad)})."
+            )
+    return num_freqs, num_freqs_flat
+
+
 def _brute_optimizer(fun, num_steps, **kwargs):
     r"""Brute force optimizer, wrapper of scipy.optimizer.brute that repeats it
     ``num_steps`` times. Signature is as expected by ``RotosolveOptimizer._rotosolve``
@@ -65,7 +93,7 @@ class RotosolveOptimizer:
     case, the optimal value :math:`\theta^*_d` is given by
 
     .. math::
-    
+
         \theta^*_d &= \underset{\theta_d}{\text{argmin}}\left<H\right>_{\theta_d}\\
               &= -\frac{\pi}{2} - \text{arctan2}\left(2\left<H\right>_{\theta_d=0}
               - \left<H\right>_{\theta_d=\pi/2} - \left<H\right>_{\theta_d=-\pi/2},
@@ -116,7 +144,7 @@ class RotosolveOptimizer:
       each).
 
     We also initialize a set of parameters for all these operations, and summarize
-    the numbers of frequencies in ``num_frequencies``.
+    the numbers of frequencies in ``num_freqs``.
 
     .. code-block :: python
 
@@ -126,7 +154,7 @@ class RotosolveOptimizer:
             np.array([-0.2, 0.1, -2.5], requires_grad=True),
         ]
 
-        num_frequencies = [[1, 1, 1], 3, [2, 2, 2]]
+        num_freqs = [[1, 1, 1], 3, [2, 2, 2]]
 
     The keyword argument ``requires_grad`` can be used to determine whether the respective
     parameter should be optimized or not, following the behaviour of gradient computations and
@@ -145,7 +173,7 @@ class RotosolveOptimizer:
             param, cost, sub_cost = opt.step_and_cost(
                 cost_function,
                 *param,
-                num_frequencies=num_frequencies,
+                num_freqs=num_freqs,
                 full_output=True,
             )
             print(f"Cost before step: {cost}")
@@ -158,7 +186,7 @@ class RotosolveOptimizer:
 
     The most general form ``RotosolveOptimizer`` is designed to tackle currently is any
     trigonometric cost function with integer frequencies up to the given value
-    of ``num_frequencies`` per parameter. Not all of the integers up to ``num_frequencies`` have to
+    of ``num_freqs`` per parameter. Not all of the integers up to ``num_freqs`` have to
     be present in the frequency spectrum. In order to tackle equidistant but non-integer
     frequencies, we recommend rescaling the argument of the function of interest.
     """
@@ -168,7 +196,7 @@ class RotosolveOptimizer:
         self,
         objective_fn,
         *args,
-        num_frequencies=None,
+        num_freqs=None,
         optimizer=None,
         optimizer_kwargs=None,
         full_output=False,
@@ -184,10 +212,10 @@ class RotosolveOptimizer:
             *args : variable length sequence containing the initial
                 values of the variables to be optimized over or a single float with the initial
                 value.
-            num_frequencies (int or array[int]): The number of frequencies in the ``objective_fn`` per
+            num_freqs (int or array[int]): The number of frequencies in the ``objective_fn`` per
                 parameter. If an ``int``, the same number is used for all parameters; if
-                ``array[int]``, the shape of ``args`` and ``num_frequencies`` has to coincide.
-                Defaults to ``num_frequencies=1``, corresponding to Pauli rotation gates.
+                ``array[int]``, the shape of ``args`` and ``num_freqs`` has to coincide.
+                Defaults to ``num_freqs=1``, corresponding to Pauli rotation gates.
             optimizer (callable or str): the optimization method used for the univariate
                 minimization if there is more than one frequency with respect to the respective
                 parameter. If a callable, should have the signature
@@ -209,30 +237,7 @@ class RotosolveOptimizer:
             list [float]: the intermediate energy values, only returned if ``full_output=True``.
         """
         _requires_grad = [getattr(arg, "requires_grad", True) for arg in args]
-        if num_frequencies is None:
-            num_frequencies = [1] * sum(_requires_grad)
-            num_frequencies_flat = num_frequencies
-        elif np.isscalar(num_frequencies):
-            _assert_integer(num_frequencies)
-            num_frequencies = [num_frequencies] * sum(_requires_grad)
-            num_frequencies_flat = num_frequencies
-        else:
-            num_frequencies_flat = []
-            for num_frequency in num_frequencies:
-                if np.isscalar(num_frequency):
-                    _assert_integer(num_frequency)
-                    num_frequency_flat = num_frequency
-                else:
-                    num_frequency_flat = list(_flatten(num_frequency))
-                    [_assert_integer(_num_freq) for _num_freq in num_frequency_flat]
-                    num_frequency_flat = np.array(num_frequency_flat, dtype=int)
-                num_frequencies_flat.append(num_frequency_flat)
-            if len(num_frequencies) != sum(_requires_grad):
-                raise ValueError(
-                    "The length of the provided numbers of frequencies "
-                    f"({len(num_frequencies)}) does not match the number of function arguments "
-                    f"({sum(_requires_grad)})."
-                )
+        num_freqs, num_freqs_flat = _validate_num_freqs(num_freqs, _requires_grad)
 
         optimizer_kwargs = optimizer_kwargs or {}
         optimizer = optimizer or "brute"
@@ -262,8 +267,8 @@ class RotosolveOptimizer:
         for arg_index, arg in enumerate(args):
             del after_args[0]
 
-            if getattr(arg, "requires_grad", True):
-                num_frequency_flat = num_frequencies_flat[train_arg_index]
+            if _requires_grad[arg_index]:
+                num_frequency_flat = num_freqs_flat[train_arg_index]
                 x_flat = np.fromiter(_flatten(arg), dtype=float)
                 num_params = len(x_flat)
                 print(num_frequency_flat)
@@ -319,7 +324,7 @@ class RotosolveOptimizer:
         self,
         objective_fn,
         *args,
-        num_frequencies=None,
+        num_freqs=None,
         optimizer=None,
         optimizer_kwargs=None,
         full_output=False,
@@ -334,10 +339,10 @@ class RotosolveOptimizer:
             *args : variable length sequence containing the initial
                 values of the variables to be optimized over or a single float with the initial
                 value.
-            num_frequencies (int or array[int]): The number of frequencies in the ``objective_fn`` per
+            num_freqs (int or array[int]): The number of frequencies in the ``objective_fn`` per
                 parameter. If an ``int``, the same number is used for all parameters; if
-                ``array[int]``, the shape of ``args`` and ``num_frequencies`` has to coincide.
-                Defaults to ``num_frequencies=1``, corresponding to Pauli rotation gates.
+                ``array[int]``, the shape of ``args`` and ``num_freqs`` has to coincide.
+                Defaults to ``num_freqs=1``, corresponding to Pauli rotation gates.
             optimizer (callable or str): the optimization method used for the univariate
                 minimization if there is more than one frequency with respect to the respective
                 parameter. If a callable, should have the signature
@@ -360,7 +365,7 @@ class RotosolveOptimizer:
         x_new, _, *y_output = self.step_and_cost(
             objective_fn,
             *args,
-            num_frequencies=num_frequencies,
+            num_freqs=num_freqs,
             optimizer=optimizer,
             optimizer_kwargs=optimizer_kwargs,
             full_output=full_output,

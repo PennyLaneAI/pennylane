@@ -47,7 +47,7 @@
       np.array([-0.2, 0.1, -2.5], requires_grad=True),
   ]
   # Numbers of frequencies per parameter
-  num_frequencies = [[1, 1, 1], 3, [2, 2, 2]]
+  num_freqs = [[1, 1, 1], 3, [2, 2, 2]]
 
   opt = qml.RotosolveOptimizer()
   param = init_param.copy()
@@ -63,7 +63,7 @@
       param, cost, sub_cost = opt.step_and_cost(
           cost_function,
           *param,
-          num_frequencies=num_frequencies,
+          num_freqs=num_freqs,
           full_output=True,
           optimizer="brute",
       )
