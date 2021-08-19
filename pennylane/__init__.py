@@ -45,7 +45,7 @@ from pennylane.ops import *
 from pennylane.optimize import *
 from pennylane import qaoa
 from pennylane.qnode import QNode, qnode
-from pennylane.templates import broadcast, layer, template, QFT
+from pennylane.templates import broadcast, layer, template
 from pennylane.transforms import (
     adjoint,
     draw,
