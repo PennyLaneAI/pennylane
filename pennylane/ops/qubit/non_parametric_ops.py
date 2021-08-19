@@ -872,7 +872,7 @@ class MultiControlledX(Operation):
         if not control_values:
             control_values = "1" * len(control_wires)
 
-        control_int = self._parse_control_values(self._control_wires, self.control_values)
+        control_int = self._parse_control_values(control_wires, control_values)
         self.control_values = control_values
 
         self._CX = None
