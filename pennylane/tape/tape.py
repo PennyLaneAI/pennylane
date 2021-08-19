@@ -1098,11 +1098,13 @@ class QuantumTape(AnnotatedQueue):
             show_all_wires=show_all_wires,
         )
 
-    def to_openqasm(self, wires=None, rotations=True):
+    def to_openqasm(self, wires=None, rotations=True, measure_all=True):
         """Serialize the circuit as an OpenQASM 2.0 program.
 
-        Only operations are serialized; all measurements
-        are assumed to take place in the computational basis.
+        Measurements are assumed to be performed on all qubits in the computational basis. An
+        optional ``rotations`` argument can be provided so that output of the OpenQASM circuit is
+        diagonal in the eigenbasis of the tape's observables. The measurement outputs can be
+        restricted to only those specified in the tape by setting ``measure_all=False``.
 
         .. note::
 
@@ -1114,6 +1116,8 @@ class QuantumTape(AnnotatedQueue):
             rotations (bool): in addition to serializing user-specified
                 operations, also include the gates that diagonalize the
                 measured wires such that they are in the eigenbasis of the circuit observables.
+            measure_all (bool): whether to perform a computational basis measurement on all qubits
+                or just those specified in the tape
 
         Returns:
             str: OpenQASM serialization of the circuit
@@ -1174,9 +1178,16 @@ class QuantumTape(AnnotatedQueue):
         # NOTE: This is not strictly necessary, we could inspect self.observables,
         # and then only measure wires which are requested by the user. However,
         # some devices which consume QASM require all registers be measured, so
-        # measure all wires to be safe.
-        for wire in range(len(wires)):
-            qasm_str += "measure q[{wire}] -> c[{wire}];\n".format(wire=wire)
+        # measure all wires by default to be safe.
+        if measure_all:
+            for wire in range(len(wires)):
+                qasm_str += f"measure q[{wire}] -> c[{wire}];\n"
+        else:
+            measured_wires = qml.wires.Wires.all_wires([m.wires for m in self.measurements])
+
+            for w in measured_wires:
+                wire_indx = self.wires.index(w)
+                qasm_str += f"measure q[{wire_indx}] -> c[{wire_indx}];\n"
 
         return qasm_str
 
