@@ -48,7 +48,7 @@ class RotosolveOptimizer:
     The Rotosolve optimizer minimizes an objective function with respect to the parameters of a
     quantum circuit without the need for calculating the gradient of the function. The algorithm
     updates the parameters :math:`\boldsymbol{\theta} = \theta_1, \dots, \theta_D` by
-    reconstructing the cost function with respect to one of the parameters at a time
+    separately reconstructing the cost function with respect to each circuit parameter,
     while keeping all other parameters fixed.
 
     For this we need to perform a purely classical one-dimensional global optimization over the
