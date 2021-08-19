@@ -645,6 +645,7 @@ class ISWAP(Operation):
     def adjoint(self):
         return ISWAP(wires=self.wires).inv()
 
+
 class SISWAP(Operation):
     r"""SISWAP(wires)
     The square root of i-swap operator
