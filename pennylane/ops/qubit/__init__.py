@@ -52,6 +52,7 @@ ops = {
     "CY",
     "SWAP",
     "ISWAP",
+    "SISWAP",
     "CSWAP",
     "Toffoli",
     "RX",
