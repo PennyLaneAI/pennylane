@@ -77,7 +77,6 @@ ops = {
     "ControlledQubitUnitary",
     "MultiControlledX",
     "DiagonalQubitUnitary",
-    "QFT",
     "SingleExcitation",
     "SingleExcitationPlus",
     "SingleExcitationMinus",
