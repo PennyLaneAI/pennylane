@@ -61,7 +61,7 @@ from pennylane.transforms import (
     apply_controlled_Q,
 )
 from pennylane.utils import inv
-from pennylane.vqe import ExpvalCost, Hamiltonian, VQECost
+from pennylane.vqe import ExpvalCost, VQECost
 
 # QueuingContext and collections needs to be imported after all other pennylane imports
 from .collections import QNodeCollection, dot, map, sum
