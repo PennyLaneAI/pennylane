@@ -986,3 +986,4 @@ class MultiControlledX(ControlledQubitUnitary):
         ]
 
         return gates
+
