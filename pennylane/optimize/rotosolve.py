@@ -200,16 +200,21 @@ class RotosolveOptimizer:
         """
         if num_frequencies is None:
             num_frequencies = [1] * len(args)
+            num_frequencies_flat = num_frequencies
         elif np.isscalar(num_frequencies) and np.isclose(int(num_frequencies), num_frequencies):
             num_frequencies = [num_frequencies] * len(args)
+            num_frequencies_flat = num_frequencies
         else:
-            for par in _flatten(num_frequencies):
-                if not np.issubdtype(type(par), np.integer):
-                    print(type(par))
-                    raise ValueError(
-                        "The numbers of frequencies are expected to be integers. "
-                        f"Received {type(par)}."
-                    )
+            num_frequencies_flat = [
+                np.fromiter(_flatten(num_freq), dtype=int) for num_freq in num_frequencies
+            ]
+            for num_frequency_flat in num_frequencies_flat:
+                for _num_freq in num_frequency_flat:
+                    if not np.issubdtype(type(_num_freq), np.integer):
+                        raise ValueError(
+                            "The numbers of frequencies are expected to be integers. "
+                            f"Received {type(_num_freq)}."
+                        )
             if len(num_frequencies) != len(args):
                 raise ValueError(
                     "The length of the provided numbers of frequencies "
@@ -241,17 +246,17 @@ class RotosolveOptimizer:
         # Compute the very first evaluation in order to be able to cache it
         fun_at_zero = objective_fn(*args, **kwargs)
 
+        train_arg_index = 0
         for arg_index, arg in enumerate(args):
-            num_frequency = num_frequencies[arg_index]
             del after_args[0]
 
             if getattr(arg, "requires_grad", True):
+                num_frequency_flat = num_frequencies_flat[train_arg_index]
                 x_flat = np.fromiter(_flatten(arg), dtype=float)
                 num_params = len(x_flat)
-                if np.isscalar(num_frequency):
-                    num_frequency_flat = [num_frequency] * num_params
+                if np.isscalar(num_frequency_flat):
+                    num_frequency_flat = [num_frequency_flat] * num_params
                 else:
-                    num_frequency_flat = np.fromiter(_flatten(num_frequency), dtype=int)
                     if len(num_frequency_flat) != num_params:
                         raise ValueError(
                             "The number of the frequency counts "
@@ -283,6 +288,7 @@ class RotosolveOptimizer:
                         y_output.append(y_min)
 
                 args_new[arg_index] = unflatten(x_flat, arg)
+                train_arg_index += 1
 
             # updating before_args for next loop
             before_args.append(args_new[arg_index])
@@ -351,7 +357,7 @@ class RotosolveOptimizer:
         return x_new
 
     @staticmethod
-    def _full_reconstruction_equ(fun, num_frequency, fun_at_zero=None):
+    def full_reconstruction_equ(fun, num_frequency, fun_at_zero=None):
         r"""Reconstruct a univariate trigonometric function using trigonometric interpolation.
         See `Vidal and Theis (2018) <https://arxiv.org/abs/1812.06323>`_ or
         `Wierichs et al. (2021) <https://arxiv.org/abs/2107.12390>`_.
@@ -370,7 +376,7 @@ class RotosolveOptimizer:
         shifts_pos = 2 * mus * np.pi / (2 * num_frequency + 1)
         shifts_neg = -shifts_pos[::-1]
         evals = list(map(fun, shifts_neg)) + [fun_at_zero] + list(map(fun, shifts_pos))
-        shifts = list(shifts_neg) + [0.0] + list(shifts_pos)
+        shifts = np.concatenate([shifts_neg, [0.], shifts_pos])
         a, b = (num_frequency + 0.5) / np.pi, 0.5 / np.pi
         reconstruction = lambda x: np.sum(
             np.array(
