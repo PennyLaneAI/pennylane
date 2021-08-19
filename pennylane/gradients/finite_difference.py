@@ -23,7 +23,7 @@ from scipy.special import factorial
 
 import pennylane as qml
 
-from .custom import quantum_gradient
+from .gradient_transform import gradient_transform
 
 
 @functools.lru_cache(maxsize=None)
@@ -181,7 +181,7 @@ def generate_shifted_tapes(tape, idx, shifts, multipliers=None):
     return tapes
 
 
-@quantum_gradient()
+@gradient_transform()
 def finite_diff(tape, argnum=None, h=1e-7, approx_order=1, n=1, strategy="forward", f0=None):
     r"""Generate the finite-difference tapes and postprocessing methods required
     to compute the gradient of a gate parameter with respect to its outputs.
