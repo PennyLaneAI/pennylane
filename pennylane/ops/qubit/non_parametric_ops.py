@@ -988,9 +988,8 @@ class MultiControlledX(ControlledQubitUnitary):
 
         return gates
 
-
-# TODO: this should be moved to a template
-class QFT(Operation):
+    # TODO: this should be moved to a template
+    # class QFT(Operation):
     r"""QFT(wires)
     Apply a quantum Fourier transform (QFT).
 
@@ -1030,54 +1029,54 @@ class QFT(Operation):
 
         circuit_qft([1.0, 0.0, 0.0])
     """
-    num_params = 0
-    num_wires = AnyWires
-    par_domain = None
-    grad_method = None
+    # num_params = 0
+    # num_wires = AnyWires
+    # par_domain = None
+    # grad_method = None
 
-    @property
-    def matrix(self):
-        # Redefine the property here to allow for a custom _matrix signature
-        mat = self._matrix(len(self.wires))
-        if self.inverse:
-            mat = mat.conj()
-        return mat
+    # @property
+    # def matrix(self):
+    # # Redefine the property here to allow for a custom _matrix signature
+    # mat = self._matrix(len(self.wires))
+    # if self.inverse:
+    # mat = mat.conj()
+    # return mat
 
-    @classmethod
-    @functools.lru_cache()
-    def _matrix(cls, num_wires):
-        dimension = 2 ** num_wires
+    # @classmethod
+    # @functools.lru_cache()
+    # def _matrix(cls, num_wires):
+    # dimension = 2 ** num_wires
 
-        mat = np.zeros((dimension, dimension), dtype=np.complex128)
-        omega = np.exp(2 * np.pi * 1j / dimension)
+    # mat = np.zeros((dimension, dimension), dtype=np.complex128)
+    # omega = np.exp(2 * np.pi * 1j / dimension)
 
-        for m in range(dimension):
-            for n in range(dimension):
-                mat[m, n] = omega ** (m * n)
+    # for m in range(dimension):
+    # for n in range(dimension):
+    # mat[m, n] = omega ** (m * n)
 
-        return mat / np.sqrt(dimension)
+    # return mat / np.sqrt(dimension)
 
-    @staticmethod
-    def decomposition(wires):
-        num_wires = len(wires)
-        shifts = [2 * np.pi * 2 ** -i for i in range(2, num_wires + 1)]
+    # @staticmethod
+    # def decomposition(wires):
+    # num_wires = len(wires)
+    # shifts = [2 * np.pi * 2 ** -i for i in range(2, num_wires + 1)]
 
-        decomp_ops = []
-        for i, wire in enumerate(wires):
-            decomp_ops.append(qml.Hadamard(wire))
+    # decomp_ops = []
+    # for i, wire in enumerate(wires):
+    # decomp_ops.append(qml.Hadamard(wire))
 
-            for shift, control_wire in zip(shifts[: len(shifts) - i], wires[i + 1 :]):
-                op = qml.ControlledPhaseShift(shift, wires=[control_wire, wire])
-                decomp_ops.append(op)
+    # for shift, control_wire in zip(shifts[: len(shifts) - i], wires[i + 1 :]):
+    # op = qml.ControlledPhaseShift(shift, wires=[control_wire, wire])
+    # decomp_ops.append(op)
 
-        first_half_wires = wires[: num_wires // 2]
-        last_half_wires = wires[-(num_wires // 2) :]
+    # first_half_wires = wires[: num_wires // 2]
+    # last_half_wires = wires[-(num_wires // 2) :]
 
-        for wire1, wire2 in zip(first_half_wires, reversed(last_half_wires)):
-            swap = qml.SWAP(wires=[wire1, wire2])
-            decomp_ops.append(swap)
+    # for wire1, wire2 in zip(first_half_wires, reversed(last_half_wires)):
+    # swap = qml.SWAP(wires=[wire1, wire2])
+    # decomp_ops.append(swap)
 
-        return decomp_ops
+    # return decomp_ops
 
-    def adjoint(self):
-        return QFT(wires=self.wires).inv()
+    # def adjoint(self):
+    # return QFT(wires=self.wires).inv()
