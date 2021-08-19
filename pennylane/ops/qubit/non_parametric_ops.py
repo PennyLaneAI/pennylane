@@ -987,5 +987,3 @@ class MultiControlledX(ControlledQubitUnitary):
 
         return gates
 
-    # TODO: this should be moved to a template
-    # Class QFT Removed
