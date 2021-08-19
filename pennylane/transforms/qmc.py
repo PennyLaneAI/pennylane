@@ -353,6 +353,6 @@ def quantum_monte_carlo(fn, wires, target_wire, estimation_wires):
             for _ in range(n_reps):
                 q(*args, **kwargs)
 
-        QFT(wires=estimation_wires).inv()
+        qml.QFT(wires=estimation_wires).inv()
 
     return wrapper
