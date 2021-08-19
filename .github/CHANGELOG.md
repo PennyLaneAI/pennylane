@@ -2,14 +2,21 @@
 
 <h3>New features since last release</h3>
 
-* The `RotosolveOptimizer` now can tackle general parametrized circuits with 
-  operations like layers of gates controlled by the same parameter, controlled variants
-  of parametrized gates and Hamiltonian time evolution. The eigenvalue spectrum
-  of the gate generator needs to be known to use `RotosolveOptimizer` for a gate, and it
-  is required to produce equidistant frequencies (see below).
+* The `RotosolveOptimizer` now can tackle general parametrized circuits, and is no longer
+  restricted to single-qubit Pauli rotations.
+  [(#1489)](https://github.com/PennyLaneAI/pennylane/pull/1489)
+  
+  This includes:
+  
+  - layers of gates controlled by the same parameter,
+  - controlled variants of parametrized gates, and
+  - Hamiltonian time evolution.
+  
+  Note that the eigenvalue spectrum of the gate generator needs to be known to
+  use `RotosolveOptimizer` for a general gate, and it
+  is required to produce equidistant frequencies.
   For details see [Vidal and Theis, 2018](https://arxiv.org/abs/1812.06323)
   and [Wierichs, Izaac, Wang, Lin 2021](https://arxiv.org/abs/2107.12390).
-  [(#1489)](https://github.com/PennyLaneAI/pennylane/pull/1489)
 
   Consider a circuit with a mixture of Pauli rotation gates, controlled Pauli rotations and
   single-parameter layers of Pauli rotations:
