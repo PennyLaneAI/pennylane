@@ -875,16 +875,17 @@ class MultiControlledX(Operation):
         control_int = self._parse_control_values(control_wires, control_values)
         self.control_values = control_values
 
+        self._padding_left = control_int * 2
+        self._padding_right = 2 ** len(wires) - 2 - self._padding_left
         self._CX = None
 
         super().__init__(*params, wires=wires, do_queue=do_queue)
 
     def _matrix(self, *params):
         if self._CX is None:
-            control_int = self._parse_control_values(self._control_wires, self.control_values)
-            padding_left = control_int * 2
-            padding_right = 2 ** len(self.wires) - 2 - padding_left
-            self._CX = block_diag(np.eye(padding_left), PauliX.matrix, np.eye(padding_right))
+            self._CX = block_diag(
+                np.eye(self._padding_left), PauliX.matrix, np.eye(self._padding_right)
+            )
 
         return self._CX
 
