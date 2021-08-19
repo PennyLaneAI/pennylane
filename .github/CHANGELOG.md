@@ -139,8 +139,12 @@
 and requirements-ci.txt (unpinned). This latter would be used by the CI.
   [(#1535)](https://github.com/PennyLaneAI/pennylane/pull/1535)
 
+* The QFT operation is moved to template
+  [(#1548)](https://github.com/PennyLaneAI/pennylane/pull/1548)
+  
 * The `qml.ResetError` is now supported for `default.mixed` device. 
   [(#1541)](https://github.com/PennyLaneAI/pennylane/pull/1541)
+
 
 <h3>Breaking changes</h3>
 
@@ -1928,7 +1932,7 @@ fully differentiable.
   @qml.qnode(dev)
   def circuit_qft(basis_state):
       qml.BasisState(basis_state, wires=range(3))
-      qml.QFT(wires=range(3))
+      qml.templates.QFT(wires=range(3))
       return qml.state()
   ```
 
