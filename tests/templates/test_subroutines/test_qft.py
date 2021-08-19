@@ -22,7 +22,7 @@ from gate_data import QFT
 import pennylane as qml
 
 
-class TestOperations:
+class TestQFT:
     """Tests for the qft operations"""
 
     @pytest.mark.parametrize("inverse", [True, False])
