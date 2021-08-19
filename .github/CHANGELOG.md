@@ -85,7 +85,10 @@
 <h3>Improvements</h3>
 
 * The `MultiControlledX` class now inherits from `Operation` instead of `ControlledQubitUnitary` which makes the `MultiControlledX` gate a non-parameterized gate.
-[(#1557)](https://github.com/PennyLaneAI/pennylane/pull/1557)
+  [(#1557)](https://github.com/PennyLaneAI/pennylane/pull/1557)
+
+* Added the matrix attribute to `qml.templates.subroutines.GroverOperator`
+  [(#1553)](https://github.com/PennyLaneAI/pennylane/pull/1553)
 
 * The `tape.to_openqasm()` method now has a `measure_all` argument that specifies whether the
   serialized OpenQASM script includes computational basis measurements on all of the qubits or
@@ -139,6 +142,12 @@
 and requirements-ci.txt (unpinned). This latter would be used by the CI.
   [(#1535)](https://github.com/PennyLaneAI/pennylane/pull/1535)
 
+* The QFT operation is moved to template
+  [(#1548)](https://github.com/PennyLaneAI/pennylane/pull/1548)
+  
+* The `qml.ResetError` is now supported for `default.mixed` device. 
+  [(#1541)](https://github.com/PennyLaneAI/pennylane/pull/1541)
+
 
 <h3>Breaking changes</h3>
 
@@ -158,7 +167,8 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Tanya Garg, Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Akash Narayanan, Maria Schuld, Ingrid Strandberg.
+Thomas Bromley, Tanya Garg, Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Akash Narayanan, Maria Schuld,
+Ingrid Strandberg, Vincent Wong.
 
 # Release 0.17.0 (current release)
 
@@ -1925,7 +1935,7 @@ fully differentiable.
   @qml.qnode(dev)
   def circuit_qft(basis_state):
       qml.BasisState(basis_state, wires=range(3))
-      qml.QFT(wires=range(3))
+      qml.templates.QFT(wires=range(3))
       return qml.state()
   ```
 
