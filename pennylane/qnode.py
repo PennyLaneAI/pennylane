@@ -188,6 +188,12 @@ class QNode:
         self._tape, self.interface, self.device, tape_diff_options = self.get_tape(
             device, interface, diff_method
         )
+        if tape_diff_options["method"] == "analytic":
+            self.diff_method = "parameter-shift"
+        elif tape_diff_options["method"] == "numeric":
+            self.diff_method = "finite-diff"
+        elif self.diff_method == "best":
+            self.diff_method = tape_diff_options["method"]
 
         # The arguments to be passed to JacobianTape.jacobian
         self.diff_options = diff_options or {}
@@ -292,7 +298,7 @@ class QNode:
                         QNode._get_parameter_shift_tape(device),
                         interface,
                         device,
-                        {"method": "best"},
+                        {"method": "analytic"},
                     )
                 except qml.QuantumFunctionError:
                     return JacobianTape, interface, device, {"method": "numeric"}
