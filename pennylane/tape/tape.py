@@ -1103,7 +1103,7 @@ class QuantumTape(AnnotatedQueue):
 
         Measurements are assumed to be performed on all qubits in the computational basis. An
         optional ``rotations`` argument can be provided so that output of the OpenQASM circuit is
-        diagonal in the eigenbasis of the tape's observables. The measurements outputs can be
+        diagonal in the eigenbasis of the tape's observables. The measurement outputs can be
         restricted to only those specified in the tape by setting ``measure_all=False``.
 
         .. note::

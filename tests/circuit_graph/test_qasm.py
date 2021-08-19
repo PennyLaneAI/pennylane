@@ -276,7 +276,7 @@ class TestToQasmUnitTests:
 
     def test_only_tape_measurements(self):
         """Test that no computational basis measurements are added other
-        than those already in the tape when ``include_measurements=False``."""
+        than those already in the tape when ``measure_all=False``."""
         with qml.tape.QuantumTape() as circuit:
             qml.RX(0.43, wires="a")
             qml.RY(0.35, wires="b")
