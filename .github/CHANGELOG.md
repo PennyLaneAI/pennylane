@@ -84,6 +84,9 @@
 
 <h3>Improvements</h3>
 
+* The `MultiControlledX` class now inherits from `Operation` instead of `ControlledQubitUnitary` which makes the `MultiControlledX` gate a non-parameterized gate.
+  [(#1561)](https://github.com/PennyLaneAI/pennylane/pull/1561)
+
 * The `tape.to_openqasm()` method now has a `measure_all` argument that specifies whether the
   serialized OpenQASM script includes computational basis measurements on all of the qubits or
   just those specified by the tape.
