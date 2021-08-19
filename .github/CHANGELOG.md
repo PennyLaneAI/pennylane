@@ -34,7 +34,7 @@
 
       return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
   ```
-  This cost function supports one frequency for each of the first `RX` rotation angles,
+  This cost function has one frequency for each of the first `RX` rotation angles,
   three frequencies for the layer of `RX` gates that depend on `layer_par`, and two
   frequencies for each of the `CRY` gate parameters. Rotosolve can then be used to minimize
   the `cost_function`:
@@ -52,10 +52,6 @@
   opt = qml.RotosolveOptimizer()
   param = init_param.copy()
   ```
-
-  Here, the keyword argument `requires_grad` can be used to determine whether the respective
-  parameter should be optimized or not, following the behaviour of gradient computations and
-  gradient-based optimizers.
 
   In addition, the optimization technique for the Rotosolve substeps can be chosen via the
   `optimizer` and `optimizer_kwargs` keyword arguments and the minimized cost of the
@@ -83,13 +79,7 @@
   Minimization substeps: [-1. -1. -1. -1. -1. -1. -1.]
   ```
 
-  The `full_output` feature is available for both, `step` and `step_and_cost`.
-
-  The most general form `RotosolveOptimizer` is designed to tackle currently is any
-  trigonometric cost function with integer frequencies up to the given value
-  of `num_frequencies` per parameter. Not all of the integers up to `num_frequencies` have to
-  be present in the frequency spectrum. In order to tackle equidistant but non-integer
-  frequencies, rescaling the respective argument of the function is recommended.
+  For usage details please consider the docstring.
 
 * The `frobenius_inner_product` function has been moved to the `qml.math`
   module, and is now differentiable using all autodiff frameworks.
