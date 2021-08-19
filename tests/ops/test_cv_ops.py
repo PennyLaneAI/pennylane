@@ -70,6 +70,14 @@ class TestCV:
         np_testing.assert_allclose(res2, np.eye(size), atol=tol)
         assert op.wires == op_d.wires
 
+    def test_Interferometer_deprecation_warning(self):
+        """Tests whether a ``UserWarning`` is raised when ``Interferometer`` gate is used."""
+        with pytest.warns(
+            UserWarning,
+            match="'Interferometer' is deprecated and will be renamed 'InterferometerUnitary'",
+        ):
+            cv.Interferometer(np.array([[1, 1], [1, -1]]) * -1.0j / np.sqrt(2.0), wires=1)
+
     @pytest.mark.parametrize(
         "op",
         [
