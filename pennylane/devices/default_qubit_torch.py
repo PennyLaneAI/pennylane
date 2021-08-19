@@ -15,7 +15,6 @@
 reference plugin.
 """
 import warnings
-from string import ascii_letters as ABC
 import semantic_version
 
 try:
@@ -188,9 +187,10 @@ class DefaultQubitTorch(DefaultQubit):
     def _asarray(a, dtype=None):
         if isinstance(a, list):
             if not isinstance(a[0], torch.Tensor):
-                res = np.asarray(a)
+               res = np.asarray(a)
             else:
                 res = torch.cat([torch.reshape(i, (-1,)) for i in a], dim=0)
+            res = torch.cat([torch.reshape(i, (-1,)) for i in a], dim=0)
         else:
             res = torch.as_tensor(a, dtype=dtype)
         return res
@@ -220,18 +220,20 @@ class DefaultQubitTorch(DefaultQubit):
             return torch.conj(array)
         return np.conj(array)
 
-    @staticmethod
-    def _ravel_multi_index(multi_index, dims):
-        # Idea: ravelling a multi-index can be expressed as a matrix-vector product
-        flip = lambda x: torch.flip(x, dims=[0])
-        dims = torch.as_tensor(dims, device=multi_index.device)
-        coeffs = torch.ones_like(dims, device=multi_index.device)
-        coeffs[:-1] = dims[1:]
-        coeffs = flip(torch.cumprod(flip(coeffs), dim=0))
-        ravelled_indices = (multi_index.T.type(torch.float) @ coeffs.type(torch.float)).type(
-            torch.long
-        )
-        return ravelled_indices
+    # I'm not sure where this gets used, so I'm commenting it out until
+    # That becomes obvious, or I figure out if I can delete it
+    #@staticmethod
+    #def _ravel_multi_index(multi_index, dims):
+    #    # Idea: ravelling a multi-index can be expressed as a matrix-vector product
+    #    flip = lambda x: torch.flip(x, dims=[0])
+    #    dims = torch.as_tensor(dims, device=multi_index.device)
+    #    coeffs = torch.ones_like(dims, device=multi_index.device)
+    #    coeffs[:-1] = dims[1:]
+    #    coeffs = flip(torch.cumprod(flip(coeffs), dim=0))
+    #    ravelled_indices = (multi_index.T.type(torch.float) @ coeffs.type(torch.float)).type(
+    #        torch.long
+    #    )
+    #    return ravelled_indices
 
     @staticmethod
     def _scatter(indices, array, new_dimensions):
@@ -242,9 +244,10 @@ class DefaultQubitTorch(DefaultQubit):
         new_tensor[indices] = tensor
         return new_tensor
 
-    @staticmethod
-    def _allclose(a, b, atol=1e-08):
-        return torch.allclose(a, torch.as_tensor(b, dtype=a.dtype), atol=atol)
+    # Same as above: don't think this gets used, so I'm commenting it out
+    #@staticmethod
+    #def _allclose(a, b, atol=1e-08):
+    #    return torch.allclose(a, torch.as_tensor(b, dtype=a.dtype), atol=atol)
 
     @classmethod
     def capabilities(cls):
@@ -265,7 +268,7 @@ class DefaultQubitTorch(DefaultQubit):
             the return type will be a ``np.ndarray``. For parametric unitaries, a ``torch.Tensor``
             object will be returned.
         """
-        op_name = unitary.name.split(".inv")[0]
+        op_name = unitary.base_name
         if op_name in self.parametric_ops:
             if op_name == "MultiRZ":
                 mat = self.parametric_ops[op_name](

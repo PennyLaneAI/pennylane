@@ -60,15 +60,14 @@ np.random.seed(42)
 # Test matrices
 #####################################################
 
-U = np.array(
+U = torch.tensor(
     [
         [0.83645892 - 0.40533293j, -0.20215326 + 0.30850569j],
         [-0.23889780 - 0.28101519j, -0.88031770 - 0.29832709j],
-    ]
+    ], dtype=torch.complex128
 )
 
-U2 = np.array([[0, 1, 1, 1], [1, 0, 1, -1], [1, -1, 0, 1], [1, 1, -1, 0]]) / np.sqrt(3)
-A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
+U2 = torch.tensor([[0, 1, 1, 1], [1, 0, 1, -1], [1, -1, 0, 1], [1, 1, -1, 0]], dtype=torch.complex128) / np.sqrt(3)
 
 
 #####################################################
@@ -76,12 +75,12 @@ A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1
 #####################################################
 
 single_qubit = [
-    (qml.S, S),
-    (qml.T, T),
-    (qml.PauliX, X),
-    (qml.PauliY, Y),
-    (qml.PauliZ, Z),
-    (qml.Hadamard, H),
+    (qml.S, torch.tensor(S)),
+    (qml.T, torch.tensor(T)),
+    (qml.PauliX, torch.tensor(X, dtype=torch.complex128)),
+    (qml.PauliY, torch.tensor(Y)),
+    (qml.PauliZ, torch.tensor(Z, dtype=torch.complex128)),
+    (qml.Hadamard, torch.tensor(H, dtype=torch.complex128)),
 ]
 single_qubit_param = [
     (qml.PhaseShift, Rphi),
@@ -112,8 +111,9 @@ def init_state(scope="session"):
 
     def _init_state(n):
         """random initial state"""
-        state = np.random.random([2 ** n]) + np.random.random([2 ** n]) * 1j
-        state /= np.linalg.norm(state)
+        torch.manual_seed(42)
+        state = torch.rand([2 ** n], dtype=torch.complex128) + torch.rand([2 ** n]) * 1j
+        state /= torch.linalg.norm(state)
         return state
 
     return _init_state
@@ -144,21 +144,21 @@ class TestApply:
     def test_basis_state(self, tol):
         """Test basis state initialization"""
         dev = DefaultQubitTorch(wires=4)
-        state = np.array([0, 0, 1, 0])
+        state = torch.tensor([0, 0, 1, 0])
 
         dev.apply([qml.BasisState(state, wires=[0, 1, 2, 3])])
 
         res = dev.state
-        expected = np.zeros([2 ** 4])
-        expected[np.ravel_multi_index(state, [2] * 4)] = 1
+        expected = torch.zeros([2 ** 4], dtype=torch.complex128)
+        expected[2] = 1
 
         assert isinstance(res, torch.Tensor)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
 
     def test_invalid_basis_state_length(self, tol):
         """Test that an exception is raised if the basis state is the wrong size"""
         dev = DefaultQubitTorch(wires=4)
-        state = np.array([0, 0, 1, 0])
+        state = torch.tensor([0, 0, 1, 0])
 
         with pytest.raises(
             ValueError, match=r"BasisState parameter and wires must be of equal length"
@@ -168,7 +168,7 @@ class TestApply:
     def test_invalid_basis_state(self, tol):
         """Test that an exception is raised if the basis state is invalid"""
         dev = DefaultQubitTorch(wires=4)
-        state = np.array([0, 0, 1, 2])
+        state = torch.tensor([0, 0, 1, 2])
 
         with pytest.raises(
             ValueError, match=r"BasisState parameter must consist of 0 or 1 integers"
@@ -185,7 +185,7 @@ class TestApply:
         res = dev.state
         expected = state
         assert isinstance(res, torch.Tensor)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
 
     def test_full_subsystem_statevector(self, mocker):
         """Test applying a state vector to the full subsystem"""
@@ -196,7 +196,7 @@ class TestApply:
         spy = mocker.spy(dev, "_scatter")
         dev._apply_state_vector(state=state, device_wires=state_wires)
 
-        assert np.all(np.reshape(dev._state.detach().numpy(), [-1]) == state.numpy())
+        assert torch.allclose(torch.reshape(dev._state, (-1, )), state)
         spy.assert_not_called()
 
     def test_partial_subsystem_statevector(self, mocker):
@@ -209,20 +209,20 @@ class TestApply:
         dev._apply_state_vector(state=state, device_wires=state_wires)
         res = torch.reshape(torch.sum(dev._state, axis=(1,)), [-1])
 
-        assert np.all(res.detach().numpy() == state.detach().numpy())
+        assert torch.allclose(res, state)
         spy.assert_called()
 
     def test_invalid_qubit_state_vector_size(self):
         """Test that an exception is raised if the state
         vector is the wrong size"""
         dev = DefaultQubitTorch(wires=2)
-        state = np.array([0, 1])
+        state = torch.tensor([0, 1])
 
         with pytest.raises(ValueError, match=r"State vector must be of length 2\*\*wires"):
             dev.apply([qml.QubitStateVector(state, wires=[0, 1])])
 
     @pytest.mark.parametrize(
-        "state", [np.array([0, 12]), torch.tensor([1.0, -1.0], requires_grad=True)]
+        "state", [torch.tensor([0, 12]), torch.tensor([1.0, -1.0], requires_grad=True)]
     )
     def test_invalid_qubit_state_vector_norm(self, state):
         """Test that an exception is raised if the state
@@ -236,7 +236,7 @@ class TestApply:
         """Test that an exception is raised if a state preparation is not the
         first operation in the circuit."""
         dev = DefaultQubitTorch(wires=2)
-        state = np.array([0, 12])
+        state = torch.tensor([0, 12])
 
         with pytest.raises(
             qml.DeviceError,
@@ -255,9 +255,10 @@ class TestApply:
         dev.apply(queue)
 
         res = dev.state
-        expected = mat @ state
+        #assert mat.dtype == state.dtype
+        expected = torch.matmul(mat, state)
         assert isinstance(res, torch.Tensor)
-        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("theta", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", single_qubit_param)
@@ -271,8 +272,9 @@ class TestApply:
         dev.apply(queue)
 
         res = dev.state
-        expected = func(theta) @ state
-        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+        op_mat = torch.tensor(func(theta), dtype=torch.complex128)
+        expected = torch.matmul(op_mat, state)
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
 
     def test_rotation(self, init_state, tol):
         """Test three axis rotation gate"""
@@ -288,8 +290,9 @@ class TestApply:
         dev.apply(queue)
 
         res = dev.state
-        expected = Rot3(a, b, c) @ state
-        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+        op_mat = torch.tensor(Rot3(a,b,c), dtype=torch.complex128)
+        expected = op_mat @ state
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
 
     def test_controlled_rotation(self, init_state, tol):
         """Test three axis controlled-rotation gate"""
@@ -305,8 +308,9 @@ class TestApply:
         dev.apply(queue)
 
         res = dev.state
-        expected = CRot3(a, b, c) @ state
-        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+        op_mat = torch.tensor(CRot3(a, b, c), dtype=torch.complex128)
+        expected = op_mat @ state
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
 
     def test_inverse_operation(self, init_state, tol):
         """Test that the inverse of an operation is correctly applied"""
@@ -323,8 +327,9 @@ class TestApply:
         dev.apply(queue)
 
         res = dev.state
-        expected = np.linalg.inv(Rot3(a, b, c)) @ state
-        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+        op_mat = torch.tensor(Rot3(a,b,c), dtype=torch.complex128)
+        expected = torch.linalg.inv(op_mat) @ state
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("op,mat", two_qubit)
     def test_two_qubit_no_parameters(self, init_state, op, mat, tol):
@@ -337,8 +342,8 @@ class TestApply:
         dev.apply(queue)
 
         res = dev.state
-        expected = mat @ state
-        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+        expected = torch.tensor(mat, dtype=torch.complex128) @ state
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("mat", [U, U2])
     def test_qubit_unitary(self, init_state, mat, tol):
@@ -353,7 +358,23 @@ class TestApply:
 
         res = dev.state
         expected = mat @ state
-        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_diagonal_qubit_unitary(self, init_state, tol):
+        """Tests application of a diagonal qubit unitary"""
+        dev = DefaultQubitTorch(wires=1)
+        state = init_state(1)
+
+        diag = torch.tensor([-1.0, 1.0], requires_grad=True, dtype=torch.complex128)
+
+        queue = [qml.QubitStateVector(state, wires=0),
+                 qml.DiagonalQubitUnitary(diag, wires=0)]
+        dev.apply(queue)
+
+        res = dev.state
+        expected = torch.diag(diag) @ state
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
+
 
     @pytest.mark.parametrize("op, mat", three_qubit)
     def test_three_qubit_no_parameters(self, init_state, op, mat, tol):
@@ -366,8 +387,8 @@ class TestApply:
         dev.apply(queue)
 
         res = dev.state
-        expected = mat @ state
-        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+        expected = torch.tensor(mat, dtype=torch.complex128) @ state
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("theta", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", two_qubit_param)
@@ -381,8 +402,9 @@ class TestApply:
         dev.apply(queue)
 
         res = dev.state
-        expected = func(theta) @ state
-        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+        op_mat = torch.tensor(func(theta), dtype=torch.complex128)
+        expected = op_mat @ state
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
 
     # def test_apply_ops_not_supported(self, mocker, monkeypatch):
     #     """Test that when a version of PyTorch before 1.8.1 is used, the _apply_ops dictionary is
@@ -427,9 +449,9 @@ class TestApply:
         dev.apply(queue)
 
 
-THETA = np.linspace(0.11, 1, 3)
-PHI = np.linspace(0.32, 1, 3)
-VARPHI = np.linspace(0.02, 1, 3)
+THETA = torch.linspace(0.11, 1, 3, dtype=torch.float64)
+PHI = torch.linspace(0.32, 1, 3, dtype=torch.float64)
+VARPHI = torch.linspace(0.02, 1, 3, dtype=torch.float64)
 
 
 @pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
@@ -438,15 +460,15 @@ class TestExpval:
 
     # test data; each tuple is of the form (GATE, OBSERVABLE, EXPECTED)
     single_wire_expval_test_data = [
-        (qml.RX, qml.Identity, lambda t, p: np.array([1, 1])),
-        (qml.RX, qml.PauliZ, lambda t, p: np.array([np.cos(t), np.cos(t) * np.cos(p)])),
-        (qml.RY, qml.PauliX, lambda t, p: np.array([np.sin(t) * np.sin(p), np.sin(p)])),
-        (qml.RX, qml.PauliY, lambda t, p: np.array([0, -np.cos(t) * np.sin(p)])),
+        (qml.RX, qml.Identity, lambda t, p: torch.tensor([1.0, 1.0], dtype=torch.float64)),
+        (qml.RX, qml.PauliZ, lambda t, p: torch.tensor([torch.cos(t), torch.cos(t) * torch.cos(p)], dtype=torch.float64)),
+        (qml.RY, qml.PauliX, lambda t, p: torch.tensor([torch.sin(t) * torch.sin(p), torch.sin(p)], dtype=torch.float64)),
+        (qml.RX, qml.PauliY, lambda t, p: torch.tensor([0, -torch.cos(t) * torch.sin(p)], dtype=torch.float64)),
         (
             qml.RY,
             qml.Hadamard,
-            lambda t, p: np.array(
-                [np.sin(t) * np.sin(p) + np.cos(t), np.cos(t) * np.cos(p) + np.sin(p)]
+            lambda t, p: torch.tensor(
+                [torch.sin(t) * torch.sin(p) + torch.cos(t), torch.cos(t) * torch.cos(p) + torch.sin(p)], dtype=torch.float64
             )
             / np.sqrt(2),
         ),
@@ -454,7 +476,7 @@ class TestExpval:
 
     @pytest.mark.parametrize("gate,obs,expected", single_wire_expval_test_data)
     def test_single_wire_expectation(self, gate, obs, expected, theta, phi, varphi, tol):
-        """Test that identity expectation value (i.e. the trace) is 1"""
+        """Test that single qubit gates with single qubit expectation values"""
         dev = DefaultQubitTorch(wires=2)
 
         with qml.tape.QuantumTape() as tape:
@@ -462,57 +484,62 @@ class TestExpval:
             observables = [qml.expval(obs(wires=[i])) for i in range(2)]
 
         res = dev.execute(tape)
-        assert np.allclose(res.detach(), expected(theta, phi), atol=tol, rtol=0)
+
+        expected_res = expected(theta, phi)
+        assert torch.allclose(res, expected_res, atol=tol, rtol=0)
 
     def test_hermitian_expectation(self, theta, phi, varphi, tol):
         """Test that arbitrary Hermitian expectation values are correct"""
         dev = DefaultQubitTorch(wires=2)
 
+        Hermitian_mat = torch.tensor([[1.02789352, 1.61296440 - 0.3498192j],
+                                      [1.61296440 + 0.3498192j, 1.23920938 + 0j]], dtype=torch.complex128)
+
         with qml.tape.QuantumTape() as tape:
             queue = [qml.RY(theta, wires=0), qml.RY(phi, wires=1), qml.CNOT(wires=[0, 1])]
-            observables = [qml.expval(qml.Hermitian(A, wires=[i])) for i in range(2)]
+            observables = [qml.expval(qml.Hermitian(Hermitian_mat, wires=[i])) for i in range(2)]
 
         res = dev.execute(tape)
 
-        a = A[0, 0]
-        re_b = A[0, 1].real
-        d = A[1, 1]
-        ev1 = ((a - d) * np.cos(theta) + 2 * re_b * np.sin(theta) * np.sin(phi) + a + d) / 2
-        ev2 = ((a - d) * np.cos(theta) * np.cos(phi) + 2 * re_b * np.sin(phi) + a + d) / 2
-        expected = np.array([ev1, ev2])
+        a = Hermitian_mat[0, 0]
+        re_b = Hermitian_mat[0, 1].real
+        d = Hermitian_mat[1, 1]
+        ev1 = ((a - d) * torch.cos(theta) + 2 * re_b * torch.sin(theta) * torch.sin(phi) + a + d) / 2
+        ev2 = ((a - d) * torch.cos(theta) * torch.cos(phi) + 2 * re_b * torch.sin(phi) + a + d) / 2
+        expected = torch.tensor([ev1, ev2], dtype=torch.float64)
 
-        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
 
     def test_multi_mode_hermitian_expectation(self, theta, phi, varphi, tol):
         """Test that arbitrary multi-mode Hermitian expectation values are correct"""
-        A = np.array(
+        Hermit_mat2 = torch.tensor(
             [
                 [-6, 2 + 1j, -3, -5 + 2j],
                 [2 - 1j, 0, 2 - 1j, -5 + 4j],
                 [-3, 2 + 1j, 0, -4 + 3j],
                 [-5 - 2j, -5 - 4j, -4 - 3j, -6],
-            ]
+            ], dtype=torch.complex128
         )
 
         dev = DefaultQubitTorch(wires=2)
 
         with qml.tape.QuantumTape() as tape:
             queue = [qml.RY(theta, wires=0), qml.RY(phi, wires=1), qml.CNOT(wires=[0, 1])]
-            observables = [qml.expval(qml.Hermitian(A, wires=[0, 1]))]
+            observables = [qml.expval(qml.Hermitian(Hermit_mat2, wires=[0, 1]))]
 
         res = dev.execute(tape)
 
         # below is the analytic expectation value for this circuit with arbitrary
-        # Hermitian observable A
+        # Hermitian observable Hermit_mat2
         expected = 0.5 * (
-            6 * np.cos(theta) * np.sin(phi)
-            - np.sin(theta) * (8 * np.sin(phi) + 7 * np.cos(phi) + 3)
-            - 2 * np.sin(phi)
-            - 6 * np.cos(phi)
+            6 * torch.cos(theta) * torch.sin(phi)
+            - torch.sin(theta) * (8 * torch.sin(phi) + 7 * torch.cos(phi) + 3)
+            - 2 * torch.sin(phi)
+            - 6 * torch.cos(phi)
             - 6
         )
 
-        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
 
     def test_paulix_pauliy(self, theta, phi, varphi, tol):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
@@ -534,9 +561,9 @@ class TestExpval:
 
         res = dev.expval(obs)
 
-        expected = np.sin(theta) * np.sin(phi) * np.sin(varphi)
+        expected = torch.sin(theta) * torch.sin(phi) * torch.sin(varphi)
 
-        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
 
     def test_pauliz_identity(self, theta, phi, varphi, tol):
         """Test that a tensor product involving PauliZ and Identity works correctly"""
@@ -558,9 +585,9 @@ class TestExpval:
 
         res = dev.expval(obs)
 
-        expected = np.cos(varphi) * np.cos(phi)
+        expected = torch.cos(varphi) * torch.cos(phi)
 
-        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
 
     def test_pauliz_hadamard(self, theta, phi, varphi, tol):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
@@ -581,25 +608,25 @@ class TestExpval:
 
         res = dev.expval(obs)
 
-        expected = -(np.cos(varphi) * np.sin(phi) + np.sin(varphi) * np.cos(theta)) / np.sqrt(2)
+        expected = -(torch.cos(varphi) * torch.sin(phi) + torch.sin(varphi) * torch.cos(theta)) / np.sqrt(2)
 
-        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
 
     def test_hermitian(self, theta, phi, varphi, tol):
         """Test that a tensor product involving qml.Hermitian works correctly"""
         dev = qml.device("default.qubit.torch", wires=3)
         dev.reset()
 
-        A = np.array(
+        Hermit_mat3 = torch.tensor(
             [
                 [-6, 2 + 1j, -3, -5 + 2j],
                 [2 - 1j, 0, 2 - 1j, -5 + 4j],
                 [-3, 2 + 1j, 0, -4 + 3j],
                 [-5 - 2j, -5 - 4j, -4 - 3j, -6],
-            ]
+            ], dtype=torch.complex128
         )
 
-        obs = qml.PauliZ(0) @ qml.Hermitian(A, wires=[1, 2])
+        obs = qml.PauliZ(0) @ qml.Hermitian(Hermit_mat3, wires=[1, 2])
 
         dev.apply(
             [
@@ -615,27 +642,27 @@ class TestExpval:
         res = dev.expval(obs)
 
         expected = 0.5 * (
-            -6 * np.cos(theta) * (np.cos(varphi) + 1)
-            - 2 * np.sin(varphi) * (np.cos(theta) + np.sin(phi) - 2 * np.cos(phi))
-            + 3 * np.cos(varphi) * np.sin(phi)
-            + np.sin(phi)
+            -6 * torch.cos(theta) * (torch.cos(varphi) + 1)
+            - 2 * torch.sin(varphi) * (torch.cos(theta) + torch.sin(phi) - 2 * torch.cos(phi))
+            + 3 * torch.cos(varphi) * torch.sin(phi)
+            + torch.sin(phi)
         )
 
-        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
 
     def test_hermitian_hermitian(self, theta, phi, varphi, tol):
         """Test that a tensor product involving two Hermitian matrices works correctly"""
         dev = qml.device("default.qubit.torch", wires=3)
 
-        A1 = np.array([[1, 2], [2, 4]])
+        A1 = torch.tensor([[1, 2], [2, 4]], dtype=torch.complex128)
 
-        A2 = np.array(
+        A2 = torch.tensor(
             [
                 [-6, 2 + 1j, -3, -5 + 2j],
                 [2 - 1j, 0, 2 - 1j, -5 + 4j],
                 [-3, 2 + 1j, 0, -4 + 3j],
                 [-5 - 2j, -5 - 4j, -4 - 3j, -6],
-            ]
+            ], dtype=torch.complex128
         )
 
         obs = qml.Hermitian(A1, wires=[0]) @ qml.Hermitian(A2, wires=[1, 2])
@@ -655,29 +682,29 @@ class TestExpval:
 
         expected = 0.25 * (
             -30
-            + 4 * np.cos(phi) * np.sin(theta)
-            + 3 * np.cos(varphi) * (-10 + 4 * np.cos(phi) * np.sin(theta) - 3 * np.sin(phi))
-            - 3 * np.sin(phi)
+            + 4 * torch.cos(phi) * torch.sin(theta)
+            + 3 * torch.cos(varphi) * (-10 + 4 * torch.cos(phi) * torch.sin(theta) - 3 * torch.sin(phi))
+            - 3 * torch.sin(phi)
             - 2
-            * (5 + np.cos(phi) * (6 + 4 * np.sin(theta)) + (-3 + 8 * np.sin(theta)) * np.sin(phi))
-            * np.sin(varphi)
-            + np.cos(theta)
+            * (5 + torch.cos(phi) * (6 + 4 * torch.sin(theta)) + (-3 + 8 * torch.sin(theta)) * torch.sin(phi))
+            * torch.sin(varphi)
+            + torch.cos(theta)
             * (
                 18
-                + 5 * np.sin(phi)
-                + 3 * np.cos(varphi) * (6 + 5 * np.sin(phi))
-                + 2 * (3 + 10 * np.cos(phi) - 5 * np.sin(phi)) * np.sin(varphi)
+                + 5 * torch.sin(phi)
+                + 3 * torch.cos(varphi) * (6 + 5 * torch.sin(phi))
+                + 2 * (3 + 10 * torch.cos(phi) - 5 * torch.sin(phi)) * torch.sin(varphi)
             )
         )
 
-        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
 
     def test_hermitian_identity_expectation(self, theta, phi, varphi, tol):
         """Test that a tensor product involving an Hermitian matrix and the identity works correctly"""
         dev = qml.device("default.qubit.torch", wires=2)
 
-        A = np.array(
-            [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
+        A = torch.tensor(
+            [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]], dtype=torch.complex128
         )
 
         obs = qml.Hermitian(A, wires=[0]) @ qml.Identity(wires=[1])
@@ -692,19 +719,19 @@ class TestExpval:
         a = A[0, 0]
         re_b = A[0, 1].real
         d = A[1, 1]
-        expected = ((a - d) * np.cos(theta) + 2 * re_b * np.sin(theta) * np.sin(phi) + a + d) / 2
+        expected = ((a - d) * torch.cos(theta) + 2 * re_b * torch.sin(theta) * torch.sin(phi) + a + d) / 2
 
-        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+        assert torch.allclose(res, torch.real(expected), atol=tol, rtol=0)
 
     def test_hermitian_two_wires_identity_expectation(self, theta, phi, varphi, tol):
         """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
         dev = qml.device("default.qubit.torch", wires=3, shots=None)
 
-        A = np.array(
-            [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
+        A = torch.tensor(
+            [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]], dtype=torch.complex128
         )
-        Identity = np.array([[1, 0], [0, 1]])
-        H = np.kron(np.kron(Identity, Identity), A)
+        Identity = torch.tensor([[1, 0], [0, 1]])
+        H = torch.kron(torch.kron(Identity, Identity), A)
         obs = qml.Hermitian(H, wires=[2, 1, 0])
 
         dev.apply(
@@ -717,8 +744,8 @@ class TestExpval:
         re_b = A[0, 1].real
         d = A[1, 1]
 
-        expected = ((a - d) * np.cos(theta) + 2 * re_b * np.sin(theta) * np.sin(phi) + a + d) / 2
-        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+        expected = ((a - d) * torch.cos(theta) + 2 * re_b * torch.sin(theta) * torch.sin(phi) + a + d) / 2
+        assert torch.allclose(res, torch.real(expected), atol=tol, rtol=0)
 
 
 @pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
@@ -735,15 +762,15 @@ class TestVar:
             observables = [qml.var(qml.PauliZ(wires=[0]))]
 
         res = dev.execute(tape)
-        expected = 0.25 * (3 - np.cos(2 * theta) - 2 * np.cos(theta) ** 2 * np.cos(2 * phi))
-        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+        expected = 0.25 * (3 - torch.cos(2 * theta) - 2 * torch.cos(theta) ** 2 * torch.cos(2 * phi))
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
 
     def test_var_hermitian(self, theta, phi, varphi, tol):
         """Tests for variance calculation using an arbitrary Hermitian observable"""
         dev = DefaultQubitTorch(wires=2)
 
         # test correct variance for <H> of a rotated state
-        H = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
+        H = torch.tensor([[4, -1 + 6j], [-1 - 6j, 2]], dtype=torch.complex128)
 
         with qml.tape.QuantumTape() as tape:
             queue = [qml.RX(phi, wires=0), qml.RY(theta, wires=0)]
@@ -751,13 +778,13 @@ class TestVar:
 
         res = dev.execute(tape)
         expected = 0.5 * (
-            2 * np.sin(2 * theta) * np.cos(phi) ** 2
-            + 24 * np.sin(phi) * np.cos(phi) * (np.sin(theta) - np.cos(theta))
-            + 35 * np.cos(2 * phi)
+            2 * torch.sin(2 * theta) * torch.cos(phi) ** 2
+            + 24 * torch.sin(phi) * torch.cos(phi) * (torch.sin(theta) - torch.cos(theta))
+            + 35 * torch.cos(2 * phi)
             + 39
         )
 
-        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
 
     def test_paulix_pauliy(self, theta, phi, varphi, tol):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
@@ -779,15 +806,15 @@ class TestVar:
         res = dev.var(obs)
 
         expected = (
-            8 * np.sin(theta) ** 2 * np.cos(2 * varphi) * np.sin(phi) ** 2
-            - np.cos(2 * (theta - phi))
-            - np.cos(2 * (theta + phi))
-            + 2 * np.cos(2 * theta)
-            + 2 * np.cos(2 * phi)
+            8 * torch.sin(theta) ** 2 * torch.cos(2 * varphi) * torch.sin(phi) ** 2
+            - torch.cos(2 * (theta - phi))
+            - torch.cos(2 * (theta + phi))
+            + 2 * torch.cos(2 * theta)
+            + 2 * torch.cos(2 * phi)
             + 14
         ) / 16
 
-        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
 
     def test_pauliz_hadamard(self, theta, phi, varphi, tol):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
@@ -810,24 +837,24 @@ class TestVar:
 
         expected = (
             3
-            + np.cos(2 * phi) * np.cos(varphi) ** 2
-            - np.cos(2 * theta) * np.sin(varphi) ** 2
-            - 2 * np.cos(theta) * np.sin(phi) * np.sin(2 * varphi)
+            + torch.cos(2 * phi) * torch.cos(varphi) ** 2
+            - torch.cos(2 * theta) * torch.sin(varphi) ** 2
+            - 2 * torch.cos(theta) * torch.sin(phi) * torch.sin(2 * varphi)
         ) / 4
 
-        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
 
     def test_hermitian(self, theta, phi, varphi, tol):
         """Test that a tensor product involving qml.Hermitian works correctly"""
         dev = qml.device("default.qubit.torch", wires=3)
 
-        A = np.array(
+        A = torch.tensor(
             [
                 [-6, 2 + 1j, -3, -5 + 2j],
                 [2 - 1j, 0, 2 - 1j, -5 + 4j],
                 [-3, 2 + 1j, 0, -4 + 3j],
                 [-5 - 2j, -5 - 4j, -4 - 3j, -6],
-            ]
+            ], dtype=torch.complex128
         )
 
         obs = qml.PauliZ(0) @ qml.Hermitian(A, wires=[1, 2])
@@ -847,36 +874,36 @@ class TestVar:
 
         expected = (
             1057
-            - np.cos(2 * phi)
-            + 12 * (27 + np.cos(2 * phi)) * np.cos(varphi)
-            - 2 * np.cos(2 * varphi) * np.sin(phi) * (16 * np.cos(phi) + 21 * np.sin(phi))
-            + 16 * np.sin(2 * phi)
-            - 8 * (-17 + np.cos(2 * phi) + 2 * np.sin(2 * phi)) * np.sin(varphi)
-            - 8 * np.cos(2 * theta) * (3 + 3 * np.cos(varphi) + np.sin(varphi)) ** 2
-            - 24 * np.cos(phi) * (np.cos(phi) + 2 * np.sin(phi)) * np.sin(2 * varphi)
+            - torch.cos(2 * phi)
+            + 12 * (27 + torch.cos(2 * phi)) * torch.cos(varphi)
+            - 2 * torch.cos(2 * varphi) * torch.sin(phi) * (16 * torch.cos(phi) + 21 * torch.sin(phi))
+            + 16 * torch.sin(2 * phi)
+            - 8 * (-17 + torch.cos(2 * phi) + 2 * torch.sin(2 * phi)) * torch.sin(varphi)
+            - 8 * torch.cos(2 * theta) * (3 + 3 * torch.cos(varphi) + torch.sin(varphi)) ** 2
+            - 24 * torch.cos(phi) * (torch.cos(phi) + 2 * torch.sin(phi)) * torch.sin(2 * varphi)
             - 8
-            * np.cos(theta)
+            * torch.cos(theta)
             * (
                 4
-                * np.cos(phi)
+                * torch.cos(phi)
                 * (
                     4
-                    + 8 * np.cos(varphi)
-                    + np.cos(2 * varphi)
-                    - (1 + 6 * np.cos(varphi)) * np.sin(varphi)
+                    + 8 * torch.cos(varphi)
+                    + torch.cos(2 * varphi)
+                    - (1 + 6 * torch.cos(varphi)) * torch.sin(varphi)
                 )
-                + np.sin(phi)
+                + torch.sin(phi)
                 * (
                     15
-                    + 8 * np.cos(varphi)
-                    - 11 * np.cos(2 * varphi)
-                    + 42 * np.sin(varphi)
-                    + 3 * np.sin(2 * varphi)
+                    + 8 * torch.cos(varphi)
+                    - 11 * torch.cos(2 * varphi)
+                    + 42 * torch.sin(varphi)
+                    + 3 * torch.sin(2 * varphi)
                 )
             )
         ) / 16
 
-        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
 
 
 #####################################################
@@ -923,7 +950,7 @@ class TestQNodeIntegration:
     def test_qubit_circuit(self, tol, torch_device="cpu"):
         """Test that the tensor network plugin provides correct
         result for a simple circuit using the old QNode."""
-        p = torch.tensor([0.543], device=torch_device)
+        p = torch.tensor([0.543], device=torch_device, dtype=torch.float64)
 
         dev = qml.device("default.qubit.torch", wires=1, torch_device=torch_device)
 
@@ -932,10 +959,10 @@ class TestQNodeIntegration:
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliY(0))
 
-        expected = -np.sin(p)
+        expected = -torch.sin(p)
 
         assert circuit.diff_options["method"] == "backprop"
-        assert np.isclose(circuit(p).detach(), expected, atol=tol, rtol=0)
+        assert torch.allclose(circuit(p), expected, atol=tol, rtol=0)
 
     def test_correct_state(self, tol, torch_device="cpu"):
         """Test that the device state is correct after applying a
@@ -944,8 +971,8 @@ class TestQNodeIntegration:
         dev = qml.device("default.qubit.torch", wires=2, torch_device=torch_device)
 
         state = dev.state
-        expected = np.array([1, 0, 0, 0])
-        assert np.allclose(state.detach().cpu(), expected, atol=tol, rtol=0)
+        expected = torch.tensor([1, 0, 0, 0], dtype=torch.complex128)
+        assert torch.allclose(state, expected, atol=tol, rtol=0)
 
         @qml.qnode(dev, interface="torch", diff_method="backprop")
         def circuit():
@@ -958,8 +985,8 @@ class TestQNodeIntegration:
 
         amplitude = np.exp(-1j * np.pi / 8) / np.sqrt(2)
 
-        expected = np.array([amplitude, 0, np.conj(amplitude), 0])
-        assert np.allclose(state.detach().cpu(), expected, atol=tol, rtol=0)
+        expected = torch.tensor([amplitude, 0, np.conj(amplitude), 0])
+        assert torch.allclose(state, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("theta", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", single_qubit_param)
@@ -975,12 +1002,11 @@ class TestQNodeIntegration:
             op(params[0], wires=[0])
             return qml.expval(qml.PauliZ(0))
 
-        # Pass a Torch Variable to the qfunc
-        params = torch.tensor(np.array([theta]))
+        params = torch.tensor([theta])
         circuit(params)
         res = dev.state
-        expected = func(theta) @ state
-        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+        expected = torch.tensor(func(theta), dtype=torch.complex128) @ state
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("theta", [0.5432, 4.213])
     @pytest.mark.parametrize("op,func", two_qubit_param)
@@ -997,11 +1023,11 @@ class TestQNodeIntegration:
             return qml.expval(qml.PauliZ(0))
 
         # Pass a Torch Variable to the qfunc
-        params = torch.tensor(np.array([theta]))
+        params = torch.tensor([theta])
         circuit(params)
         res = dev.state
-        expected = func(theta) @ state
-        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+        expected = torch.tensor(func(theta), dtype=torch.complex128) @ state
+        assert torch.allclose(res, expected, atol=tol, rtol=0)        
 
     def test_controlled_rotation_integration(self, init_state, tol):
         """Test the integration of the two-qubit controlled rotation by passing
@@ -1019,11 +1045,11 @@ class TestQNodeIntegration:
             return qml.expval(qml.PauliZ(0))
 
         # Pass a Torch Variable to the qfunc
-        params = torch.tensor(np.array([a, b, c]))
+        params = torch.tensor([a, b, c])
         circuit(params)
         res = dev.state
-        expected = CRot3(a, b, c) @ state
-        assert np.allclose(res.detach().numpy(), expected, atol=tol, rtol=0)
+        expected = torch.tensor(CRot3(a, b, c), dtype=torch.complex128) @ state
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
 
 
 class TestPassthruIntegration:
@@ -1083,16 +1109,16 @@ class TestPassthruIntegration:
         res = circuit(p)
         res.backward()
 
-        expected = np.cos(y) ** 2 - np.sin(x) * np.sin(y) ** 2
+        expected = torch.tensor(np.cos(y) ** 2 - np.sin(x) * np.sin(y) ** 2, dtype=torch.float64)
 
-        assert np.allclose(res.detach().numpy(), expected, atol=tol, rtol=0)
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
 
-        res = p.grad
+        p_grad = p.grad
 
-        expected = np.array(
-            [-np.cos(x) * np.sin(y) ** 2, -2 * (np.sin(x) + 1) * np.sin(y) * np.cos(y), 0]
+        expected_grad = torch.tensor(
+            [-np.cos(x) * np.sin(y) ** 2, -2 * (np.sin(x) + 1) * np.sin(y) * np.cos(y), 0], dtype=torch.float32
         )
-        assert np.allclose(res.detach().numpy(), expected, atol=tol, rtol=0)
+        assert torch.allclose(p_grad, expected_grad, atol=tol, rtol=0)
 
     def test_jacobian_agrees_backprop_parameter_shift(self, tol):
         """Test that jacobian of a QNode with an attached default.qubit.torch device
@@ -1119,8 +1145,8 @@ class TestPassthruIntegration:
 
         assert np.allclose(res.detach().numpy(), circuit2(p).numpy(), atol=tol, rtol=0)
 
-        res = p_torch.grad
-        assert np.allclose(res.detach().numpy(), qml.jacobian(circuit2)(p), atol=tol, rtol=0)
+        p_grad = p_torch.grad
+        assert np.allclose(p_grad.detach().numpy(), qml.jacobian(circuit2)(p), atol=tol, rtol=0)
 
     def test_state_differentiability(self, tol):
         """Test that the device state can be differentiated"""
@@ -1139,8 +1165,8 @@ class TestPassthruIntegration:
         res.backward()
 
         grad = a.grad
-        expected = torch.sin(a).detach()
-        assert np.allclose(grad.detach(), expected, atol=tol, rtol=0)
+        expected = torch.sin(a)
+        assert torch.allclose(grad, expected, atol=tol, rtol=0)
 
     def test_prob_differentiability(self, tol):
         """Test that the device probability can be differentiated"""
@@ -1153,8 +1179,8 @@ class TestPassthruIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.probs(wires=[1])
 
-        a = torch.tensor([0.54], requires_grad=True)
-        b = torch.tensor([0.12], requires_grad=True)
+        a = torch.tensor([0.54], requires_grad=True, dtype=torch.float64)
+        b = torch.tensor([0.12], requires_grad=True, dtype=torch.float64)
 
         # get the probability of wire 1
         prob_wire_1 = circuit(a, b)
@@ -1163,11 +1189,10 @@ class TestPassthruIntegration:
         res.backward()
 
         expected = -torch.cos(a) * torch.cos(b)
-        assert np.allclose(res.detach(), expected.detach(), atol=tol, rtol=0)
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
 
-        grad = torch.cat([a.grad, b.grad], dim=0)
-        expected = torch.tensor([torch.sin(a) * torch.cos(b), torch.cos(a) * torch.sin(b)]).detach()
-        assert np.allclose(grad.detach(), expected, atol=tol, rtol=0)
+        assert torch.allclose(a.grad, torch.sin(a) * torch.cos(b), atol=tol, rtol=0)
+        assert torch.allclose(b.grad, torch.cos(a) * torch.sin(b), atol=tol, rtol=0)
 
     def test_backprop_gradient(self, tol):
         """Tests that the gradient of the qnode is correct"""
@@ -1179,27 +1204,19 @@ class TestPassthruIntegration:
             qml.CRX(b, wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        a = -0.234
-        b = 0.654
+        a = torch.tensor([-0.234], dtype=torch.float64, requires_grad=True)
+        b = torch.tensor([0.654], dtype=torch.float64, requires_grad=True)
 
-        a_torch = torch.tensor([a], dtype=torch.float64, requires_grad=True)
-        b_torch = torch.tensor([b], dtype=torch.float64, requires_grad=True)
-
-        res = circuit(a_torch, b_torch)
+        res = circuit(a, b)
         res.backward()
 
         # the analytic result of evaluating circuit(a, b)
-        expected_cost = 0.5 * (np.cos(a) * np.cos(b) + np.cos(a) - np.cos(b) + 1)
+        expected_cost = 0.5 * (torch.cos(a) * torch.cos(b) + torch.cos(a) - torch.cos(b) + 1)
 
-        # the analytic result of evaluating grad(circuit(a, b))
-        expected_grad = np.array(
-            [-0.5 * np.sin(a) * (np.cos(b) + 1), 0.5 * np.sin(b) * (1 - np.cos(a))]
-        )
+        assert torch.allclose(res, expected_cost, atol=tol, rtol=0)
 
-        res_grad = torch.cat([a_torch.grad, b_torch.grad], dim=0)
-
-        assert np.allclose(res.detach(), expected_cost, atol=tol, rtol=0)
-        assert np.allclose(res_grad.detach(), expected_grad, atol=tol, rtol=0)
+        assert torch.allclose(a.grad, -0.5 * torch.sin(a) * (torch.cos(b) + 1), atol=tol, rtol=0)
+        assert torch.allclose(b.grad, 0.5 * torch.sin(b) * (1 - torch.cos(a)))
 
     @pytest.mark.parametrize("operation", [qml.U3, qml.U3.decomposition])
     @pytest.mark.parametrize("diff_method", ["backprop", "finite-diff"])
@@ -1267,15 +1284,15 @@ class TestPassthruIntegration:
             qml.RY(param, wires=0).inv()
             return qml.expval(qml.PauliX(0))
 
-        x = torch.tensor(0.3, requires_grad=True)
+        x = torch.tensor(0.3, requires_grad=True, dtype=torch.float64)
 
         res = circuit(x)
         res.backward()
 
-        assert np.allclose(res.detach(), -torch.sin(x).detach(), atol=tol, rtol=0)
+        assert torch.allclose(res, -torch.sin(x), atol=tol, rtol=0)
 
         grad = x.grad
-        assert np.allclose(grad.detach(), -torch.cos(x).detach(), atol=tol, rtol=0)
+        assert torch.allclose(grad, -torch.cos(x), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("interface", ["autograd", "torch"])
     def test_error_backprop_wrong_interface(self, interface, tol):
@@ -1311,7 +1328,7 @@ class TestSamples:
         a = torch.tensor(0.54)
         res = circuit(a)
 
-        assert isinstance(res, np.ndarray)
+        assert isinstance(res, torch.tensor)
         assert res.shape == (shots,)
         assert set(res) == {-1, 1}
 
