@@ -16,7 +16,10 @@ import pennylane as qml
 
 from . import finite_difference
 from . import parameter_shift
+from . import parameter_shift_cv
 
 from .custom import gradient_expand, quantum_gradient
 from .finite_difference import finite_diff, finite_diff_coeffs, generate_shifted_tapes
 from .parameter_shift import param_shift
+from .parameter_shift_cv import param_shift_cv
+from .vjp import compute_vjp, batch_vjp, vjp

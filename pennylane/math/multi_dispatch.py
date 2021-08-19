@@ -376,6 +376,43 @@ def where(condition, x, y):
     return np.where(condition, x, y, like=_multi_dispatch([condition, x, y]))
 
 
+def frobenius_inner_product(A, B, normalize=False):
+    r"""Frobenius inner product between two matrices.
+
+    .. math::
+
+        \langle A, B \rangle_F = \sum_{i,j=1}^n A_{ij} B_{ij} = \operatorname{tr} (A^T B)
+
+    The Frobenius inner product is equivalent to the Hilbert-Schmidt inner product for
+    matrices with real-valued entries.
+
+    Args:
+        A (tensor_like[float]): First matrix, assumed to be a square array.
+        B (tensor_like[float]): Second matrix, assumed to be a square array.
+        normalize (bool): If True, divide the inner product by the Frobenius norms of A and B.
+
+    Returns:
+        float: Frobenius inner product of A and B
+
+    **Example**
+
+    >>> A = np.random.random((3,3))
+    >>> B = np.random.random((3,3))
+    >>> qml.math.frobenius_inner_product(A, B)
+    3.091948202943376
+    """
+    interface = _multi_dispatch([A, B])
+    A, B = np.coerce([A, B], like=interface)
+
+    inner_product = np.sum(A * B)
+
+    if normalize:
+        norm = np.sqrt(np.sum(A * A) * np.sum(B * B))
+        inner_product = inner_product / norm
+
+    return inner_product
+
+
 def unwrap(values, max_depth=None):
     """Unwrap a sequence of objects to NumPy arrays.
 

@@ -1,4 +1,19 @@
 <p align="center">
+  <a href="https://pennylane.ai/blog/2021/07/pennylane-code-together/">
+    <img width=50% src="https://pennylane.ai/blog/images/code_together.jpg">
+  </a>
+</p>
+
+<p align="center">
+  <strong>Announcing <a href="https://pennylane.ai/blog/2021/07/pennylane-code-together/">PennyLane: Code Together</a>!
+  Join us on GitHub August 16th-27th, see <a href="https://github.com/PennyLaneAI/pennylane/blob/master/code_together.md">event FAQ here</a></strong>.
+</p>
+
+---
+
+
+
+<p align="center">
   <a href="https://pennylane.ai">
     <img width=80% src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/pennylane_thin.png">
   </a>
@@ -67,6 +82,12 @@ dependencies, can be done using pip:
 python -m pip install pennylane
 ```
 
+## Docker support
+
+**Docker** support exists for building using **CPU** and **GPU** (Nvidia CUDA
+11.1+) images. [See a more detailed description
+here](https://pennylane.readthedocs.io/en/stable/development/guide/installation.html#installation).
+
 ## Getting started
 
 For an introduction to quantum machine learning, guides and resources are available on
@@ -101,54 +122,6 @@ scripts.
 If you would like to contribute your own demo, see our [demo submission
 guide](https://pennylane.ai/qml/demos_submission.html).
 
-## Build a PennyLane Docker image
-
-**Docker** support exists for building using **CPU** and **GPU** (Nvidia CUDA 11.1+) images.
-
-
-**Note:** Docker builds using "make" will work on Linux and MacOS only. For MS Windows you can use [WSL](https://docs.microsoft.com/en-us/windows/wsl/install-win10). They are currently not supported on the Apple M1 chip (ARM64).
-
-
-### Build a basic PennyLane image
-- To build a basic PennyLane image without any additional interfaces (Torch, TensorFlow, or Jax) or **plugins** (qiskit, amazon-braket, cirq, forest), run the following:
-
-```console
-make -f docker/Makefile build-base
-```
-### Build a PennyLane image with a specific interface
-- To build a PennyLane image using a specific **interface** (Torch, TensorFlow or Jax), run the following:
-
-```console
-make -f docker/Makefile build-interface interface-name=tensorflow
-```
-- To build a PennyLane image using a specific interface (Torch, TensorFlow or Jax) with GPU support, run the following:
-
-```console
-make -f docker/Makefile build-interface-gpu interface-name=tensorflow
-```
-### Build a PennyLane image with a plugin
-- To build a PennyLane image using a specific plugin (qiskit, amazon-braket, cirq, forest, etc), run the following:
-
-```console
-make -f docker/Makefile build-plugin plugin-name=qiskit
-```
-
-### Build a PennyLane-Qchem image
-- You can also build an image with the PennyLane Qchem package and its dependencies. Use the following commands:
-
-```console
-make -f docker/Makefile build-qchem
-```
-- #### To check all available interfaces, run the following:
-
-```console
-make -f docker/Makefile available-interfaces
-```
-- #### To check all available plugins, run the following:
-
-```console
-make -f docker/Makefile available-plugins
-```
 ## Contributing to PennyLane
 
 We welcome contributions—simply fork the PennyLane repository, and then make a [pull

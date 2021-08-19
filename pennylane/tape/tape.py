@@ -19,7 +19,6 @@ from collections import Counter, deque, defaultdict
 import contextlib
 import copy
 from threading import RLock
-import warnings
 
 import numpy as np
 
@@ -449,9 +448,6 @@ class QuantumTape(AnnotatedQueue):
                 # check if any sampling is occuring
                 if obj.return_type is qml.operation.Sample:
                     self.is_sampled = True
-
-            elif isinstance(obj, qml.operation.Observable) and "owner" not in info:
-                raise ValueError(f"Observable {obj} does not have a measurement type specified.")
 
         self._update()
 
@@ -981,7 +977,12 @@ class QuantumTape(AnnotatedQueue):
         rotation_gates = []
 
         for observable in self.observables:
-            rotation_gates.extend(observable.diagonalizing_gates())
+            try:
+                # some observables do not have diagonalizing gates,
+                # in which case we just don't append any
+                rotation_gates.extend(observable.diagonalizing_gates())
+            except NotImplementedError:
+                pass
 
         return rotation_gates
 
@@ -1005,77 +1006,6 @@ class QuantumTape(AnnotatedQueue):
             )
 
         return self._graph
-
-    def get_resources(self):
-        """Resource requirements of a quantum circuit.
-
-        Returns:
-            dict[str, int]: how many times constituent operations are applied
-
-        **Example**
-
-        .. code-block:: python3
-
-            with qml.tape.QuantumTape() as tape:
-                qml.Hadamard(wires=0)
-                qml.RZ(0.26, wires=1)
-                qml.CNOT(wires=[1, 0])
-                qml.Rot(1.8, -2.7, 0.2, wires=0)
-                qml.Hadamard(wires=1)
-                qml.CNOT(wires=[0, 1])
-                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-        Asking for the resources produces a dictionary as shown below:
-
-        >>> tape.get_resources()
-        {'Hadamard': 2, 'RZ': 1, 'CNOT': 2, 'Rot': 1}
-
-        """
-
-        warnings.warn(
-            "``tape.get_resources``is now deprecated and will be removed in v0.17. "
-            "Please use the more general ``tape.specs`` instead.",
-            UserWarning,
-        )
-
-        return self.specs["gate_types"]
-
-    def get_depth(self):
-        """Depth of the quantum circuit.
-
-        Returns:
-            int: Circuit depth, computed as the longest path in the
-            circuit's directed acyclic graph representation.
-
-        **Example**
-
-        .. code-block:: python3
-
-            with QuantumTape() as tape:
-                qml.Hadamard(wires=0)
-                qml.PauliX(wires=1)
-                qml.CRX(2.3, wires=[0, 1])
-                qml.Rot(1.2, 3.2, 0.7, wires=[1])
-                qml.CRX(-2.3, wires=[0, 1])
-                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-        The depth can be obtained like so:
-
-        >>> tape.get_depth()
-        4
-
-        """
-
-        warnings.warn(
-            "``tape.get_depth`` is now deprecated and will be removed in v0.17. "
-            "Please use the more general ``tape.specs`` instead.",
-            UserWarning,
-        )
-
-        if self._depth is None:
-            self._depth = self.graph.get_depth()
-
-        return self._depth
 
     @property
     def specs(self):
@@ -1168,11 +1098,13 @@ class QuantumTape(AnnotatedQueue):
             show_all_wires=show_all_wires,
         )
 
-    def to_openqasm(self, wires=None, rotations=True):
+    def to_openqasm(self, wires=None, rotations=True, measure_all=True):
         """Serialize the circuit as an OpenQASM 2.0 program.
 
-        Only operations are serialized; all measurements
-        are assumed to take place in the computational basis.
+        Measurements are assumed to be performed on all qubits in the computational basis. An
+        optional ``rotations`` argument can be provided so that output of the OpenQASM circuit is
+        diagonal in the eigenbasis of the tape's observables. The measurement outputs can be
+        restricted to only those specified in the tape by setting ``measure_all=False``.
 
         .. note::
 
@@ -1184,6 +1116,8 @@ class QuantumTape(AnnotatedQueue):
             rotations (bool): in addition to serializing user-specified
                 operations, also include the gates that diagonalize the
                 measured wires such that they are in the eigenbasis of the circuit observables.
+            measure_all (bool): whether to perform a computational basis measurement on all qubits
+                or just those specified in the tape
 
         Returns:
             str: OpenQASM serialization of the circuit
@@ -1244,9 +1178,16 @@ class QuantumTape(AnnotatedQueue):
         # NOTE: This is not strictly necessary, we could inspect self.observables,
         # and then only measure wires which are requested by the user. However,
         # some devices which consume QASM require all registers be measured, so
-        # measure all wires to be safe.
-        for wire in range(len(wires)):
-            qasm_str += "measure q[{wire}] -> c[{wire}];\n".format(wire=wire)
+        # measure all wires by default to be safe.
+        if measure_all:
+            for wire in range(len(wires)):
+                qasm_str += f"measure q[{wire}] -> c[{wire}];\n"
+        else:
+            measured_wires = qml.wires.Wires.all_wires([m.wires for m in self.measurements])
+
+            for w in measured_wires:
+                wire_indx = self.wires.index(w)
+                qasm_str += f"measure q[{wire_indx}] -> c[{wire_indx}];\n"
 
         return qasm_str
 
