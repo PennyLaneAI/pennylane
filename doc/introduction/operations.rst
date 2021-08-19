@@ -89,7 +89,6 @@ Qubit gates
     ~pennylane.ControlledQubitUnitary
     ~pennylane.MultiControlledX
     ~pennylane.DiagonalQubitUnitary
-    ~pennylane.QFT
     ~pennylane.SingleExcitation
     ~pennylane.SingleExcitationPlus
     ~pennylane.SingleExcitationMinus
