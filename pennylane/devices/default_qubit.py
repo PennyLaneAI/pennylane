@@ -108,6 +108,7 @@ class DefaultQubit(QubitDevice):
         "CNOT",
         "SWAP",
         "ISWAP",
+        "SISWAP"
         "CSWAP",
         "Toffoli",
         "CY",
