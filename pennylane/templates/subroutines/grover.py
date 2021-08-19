@@ -130,9 +130,9 @@ class GroverOperator(Operation):
 
         return tape
 
-    @classmethod
-    def _matrix(cls, *params):
-        num = cls.num_wires
+    @property
+    def matrix(self):
+        num = self.wires
         ctrl_str = "0" * (num - 1)
         wires = list(range(num))
 
