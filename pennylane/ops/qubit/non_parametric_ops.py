@@ -438,7 +438,7 @@ class CNOT(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        return CNOT.matrix
+        return cls.matrix
 
     def adjoint(self):
         return CNOT(wires=self.wires)
@@ -888,9 +888,7 @@ class MultiControlledX(Operation):
         if self._CX is None:
             self._CX = block_diag(np.eye(self._padding_left), self.U, np.eye(self._padding_right))
 
-        params = list(params)
-        params[0] = self._CX
-        return params[0]
+        return self._CX
 
     @property
     def control_wires(self):
