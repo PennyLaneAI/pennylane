@@ -39,6 +39,12 @@ from .channel import __all__ as _channel__ops__
 from .projection import __all__ as _projection__ops__
 
 
+class AdjointError(Exception):
+    """Exception for non-adjointable operations."""
+
+    pass
+
+
 class Identity(CVObservable):
     r"""pennylane.Identity(wires)
     The identity observable :math:`\I`.

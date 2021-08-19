@@ -1,4 +1,19 @@
 <p align="center">
+  <a href="https://pennylane.ai/blog/2021/07/pennylane-code-together/">
+    <img width=50% src="https://pennylane.ai/blog/images/code_together.jpg">
+  </a>
+</p>
+
+<p align="center">
+  <strong>Announcing <a href="https://pennylane.ai/blog/2021/07/pennylane-code-together/">PennyLane: Code Together</a>!
+  Join us on GitHub August 16th-27th, see <a href="https://github.com/PennyLaneAI/pennylane/blob/master/code_together.md">event FAQ here</a></strong>.
+</p>
+
+---
+
+
+
+<p align="center">
   <a href="https://pennylane.ai">
     <img width=80% src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/pennylane_thin.png">
   </a>
@@ -42,7 +57,6 @@
   <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/header.png" width="700px">
 </p>
 
-
 ## Key Features
 
 <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/code.png" width="400px" align="right">
@@ -61,12 +75,18 @@
 
 ## Installation
 
-PennyLane requires Python version 3.6 and above. Installation of PennyLane, as well as all
+PennyLane requires Python version 3.7 and above. Installation of PennyLane, as well as all
 dependencies, can be done using pip:
 
 ```console
 python -m pip install pennylane
 ```
+
+## Docker support
+
+**Docker** support exists for building using **CPU** and **GPU** (Nvidia CUDA
+11.1+) images. [See a more detailed description
+here](https://pennylane.readthedocs.io/en/stable/development/guide/installation.html#installation).
 
 ## Getting started
 

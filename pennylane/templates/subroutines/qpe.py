@@ -14,9 +14,10 @@
 """
 Contains the QuantumPhaseEstimation template.
 """
+# pylint: disable=too-many-arguments
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
-from pennylane.wires import Wires
+from pennylane.ops import Hadamard, ControlledQubitUnitary
 
 
 class QuantumPhaseEstimation(Operation):
@@ -107,18 +108,18 @@ class QuantumPhaseEstimation(Operation):
     num_wires = AnyWires
     par_domain = "A"
 
-    def __init__(self, unitary, target_wires, estimation_wires, do_queue=True):
-        self.target_wires = Wires(target_wires)
-        self.estimation_wires = Wires(estimation_wires)
+    def __init__(self, unitary, target_wires, estimation_wires, do_queue=True, id=None):
+        self.target_wires = list(target_wires)
+        self.estimation_wires = list(estimation_wires)
 
         wires = self.target_wires + self.estimation_wires
 
-        if len(Wires.shared_wires([self.target_wires, self.estimation_wires])) != 0:
+        if any(wire in self.target_wires for wire in self.estimation_wires):
             raise qml.QuantumFunctionError(
                 "The target wires and estimation wires must be different"
             )
 
-        super().__init__(unitary, wires=wires, do_queue=do_queue)
+        super().__init__(unitary, wires=wires, do_queue=do_queue, id=id)
 
     def expand(self):
         unitary = self.parameters[0]
@@ -130,11 +131,11 @@ class QuantumPhaseEstimation(Operation):
 
         with qml.tape.QuantumTape() as tape:
             for wire in self.estimation_wires:
-                qml.Hadamard(wire)
-                qml.ControlledQubitUnitary(
+                Hadamard(wire)
+                ControlledQubitUnitary(
                     unitary_powers.pop(), control_wires=wire, wires=self.target_wires
                 )
 
-            qml.QFT(wires=self.estimation_wires).inv()
+            qml.templates.QFT(wires=self.estimation_wires).inv()
 
         return tape

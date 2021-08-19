@@ -64,16 +64,22 @@ ops = {
     "Rot": qml.Rot(0, 0, 0, wires=[0]),
     "S": qml.S(wires=[0]),
     "SWAP": qml.SWAP(wires=[0, 1]),
+    "ISWAP": qml.ISWAP(wires=[0, 1]),
     "T": qml.T(wires=[0]),
     "SX": qml.SX(wires=[0]),
     "Toffoli": qml.Toffoli(wires=[0, 1, 2]),
-    "QFT": qml.QFT(wires=[0, 1, 2]),
+    "QFT": qml.templates.QFT(wires=[0, 1, 2]),
+    "IsingXX": qml.IsingXX(0, wires=[0, 1]),
+    "IsingYY": qml.IsingYY(0, wires=[0, 1]),
+    "IsingZZ": qml.IsingZZ(0, wires=[0, 1]),
     "SingleExcitation": qml.SingleExcitation(0, wires=[0, 1]),
     "SingleExcitationPlus": qml.SingleExcitationPlus(0, wires=[0, 1]),
     "SingleExcitationMinus": qml.SingleExcitationMinus(0, wires=[0, 1]),
     "DoubleExcitation": qml.DoubleExcitation(0, wires=[0, 1, 2, 3]),
     "DoubleExcitationPlus": qml.DoubleExcitationPlus(0, wires=[0, 1, 2, 3]),
     "DoubleExcitationMinus": qml.DoubleExcitationMinus(0, wires=[0, 1, 2, 3]),
+    "QubitCarry": qml.QubitCarry(wires=[0, 1, 2, 3]),
+    "QubitSum:": qml.QubitSum(wires=[0, 1, 2]),
 }
 
 all_ops = ops.keys()
@@ -88,6 +94,7 @@ S = np.diag([1, 1j])
 T = np.diag([1, np.exp(1j * np.pi / 4)])
 SX = 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
 SWAP = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
+ISWAP = np.array([[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]])
 CNOT = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 CZ = np.diag([1, 1, 1, -1])
 CY = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]])
@@ -144,6 +151,33 @@ crot = lambda phi, theta, omega: np.array(
     ]
 )
 
+IsingXX = lambda phi: np.array(
+    [
+        [cos(phi / 2), 0, 0, -1j * sin(phi / 2)],
+        [0, cos(phi / 2), -1j * sin(phi / 2), 0],
+        [0, -1j * sin(phi / 2), cos(phi / 2), 0],
+        [-1j * sin(phi / 2), 0, 0, cos(phi / 2)],
+    ]
+)
+
+IsingYY = lambda phi: np.array(
+    [
+        [cos(phi / 2), 0, 0, 1j * sin(phi / 2)],
+        [0, cos(phi / 2), -1j * sin(phi / 2), 0],
+        [0, -1j * sin(phi / 2), cos(phi / 2), 0],
+        [1j * sin(phi / 2), 0, 0, cos(phi / 2)],
+    ]
+)
+
+IsingZZ = lambda phi: np.array(
+    [
+        [exp(-1.0j * phi / 2), 0, 0, 0],
+        [0, exp(1.0j * phi / 2), 0, 0],
+        [0, 0, exp(1.0j * phi / 2), 0],
+        [0, 0, 0, exp(-1.0j * phi / 2)],
+    ]
+)
+
 # list of all non-parametrized single-qubit gates,
 # along with the PennyLane operation name
 single_qubit = [
@@ -165,9 +199,16 @@ single_qubit_param = [
     (qml.RZ, rz),
 ]
 # list of all non-parametrized two-qubit gates
-two_qubit = [(qml.CNOT, CNOT), (qml.SWAP, SWAP), (qml.CZ, CZ), (qml.CY, CY)]
+two_qubit = [(qml.CNOT, CNOT), (qml.SWAP, SWAP), (qml.ISWAP, ISWAP), (qml.CZ, CZ), (qml.CY, CY)]
 # list of all parametrized two-qubit gates
-two_qubit_param = [(qml.CRX, crx), (qml.CRY, cry), (qml.CRZ, crz)]
+two_qubit_param = [
+    (qml.CRX, crx),
+    (qml.CRY, cry),
+    (qml.CRZ, crz),
+    (qml.IsingXX, IsingXX),
+    (qml.IsingYY, IsingYY),
+    (qml.IsingZZ, IsingZZ),
+]
 two_qubit_multi_param = [(qml.CRot, crot)]
 # list of all three-qubit gates
 three_qubit = [(qml.Toffoli, toffoli), (qml.CSWAP, CSWAP)]
@@ -178,12 +219,12 @@ phi = -0.1234
 U = np.array(
     [
         [
-            np.cos(theta / 2) * np.exp(np.complex(0, -phi / 2)),
-            -np.sin(theta / 2) * np.exp(np.complex(0, phi / 2)),
+            np.cos(theta / 2) * np.exp(np.complex128(-phi / 2j)),
+            -np.sin(theta / 2) * np.exp(np.complex128(phi / 2j)),
         ],
         [
-            np.sin(theta / 2) * np.exp(np.complex(0, -phi / 2)),
-            np.cos(theta / 2) * np.exp(np.complex(0, phi / 2)),
+            np.sin(theta / 2) * np.exp(np.complex128(-phi / 2j)),
+            np.cos(theta / 2) * np.exp(np.complex128(phi / 2j)),
         ],
     ]
 )
@@ -372,9 +413,9 @@ class TestGatesQubit:
         expected = np.abs(mat @ rnd_state) ** 2
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
-    @pytest.mark.parametrize("theta", [0.5432, -0.232])
+    @pytest.mark.parametrize("param", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", two_qubit_param)
-    def test_two_qubit_parameters(self, device, init_state, op, func, theta, tol, skip_if):
+    def test_two_qubit_parameters(self, device, init_state, op, func, param, tol, skip_if):
         """Test parametrized two qubit gates taking a single scalar argument."""
         n_wires = 2
         dev = device(n_wires)
@@ -385,12 +426,12 @@ class TestGatesQubit:
         @qml.qnode(dev)
         def circuit():
             qml.QubitStateVector(rnd_state, wires=range(n_wires))
-            op(theta, wires=range(n_wires))
+            op(param, wires=range(n_wires))
             return qml.probs(wires=range(n_wires))
 
         res = circuit()
 
-        expected = np.abs(func(theta) @ rnd_state) ** 2
+        expected = np.abs(func(param) @ rnd_state) ** 2
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
     @pytest.mark.parametrize("mat", [U, U2])

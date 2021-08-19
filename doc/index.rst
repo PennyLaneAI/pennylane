@@ -81,9 +81,9 @@ PennyLane Documentation
 Features
 --------
 
-.. image:: _static/intro.png
-    :align: right
-    :width: 400px
+.. image:: _static/header.png
+    :align: left
+    :width: 450px
     :target: javascript:void(0);
 
 
@@ -206,13 +206,16 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qml_interfaces
    code/qml_operation
    code/qml_devices
+   code/qml_fourier
    code/qml_grouping
+   code/qml_kernels
    code/qml_math
    code/qml_qaoa
    code/qml_qchem
    code/qml_qnn
    code/qml_tape
    code/qml_templates
+   code/qml_transforms
    code/qml_utils
    code/qml_wires
    code/qml_beta

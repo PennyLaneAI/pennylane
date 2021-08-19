@@ -17,6 +17,9 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.tape import JacobianTape, QuantumTape
+from pennylane.devices import DefaultQubit
+from pennylane.operation import Observable
+from pennylane.operation import AnyWires
 
 
 class TestConstruction:
@@ -49,6 +52,23 @@ class TestConstruction:
             2: {"op": ops[1], "p_idx": 1, "grad_method": "F"},
             3: {"op": ops[1], "p_idx": 2, "grad_method": "F"},
             4: {"op": ops[3], "p_idx": 0, "grad_method": "0"},
+        }
+
+
+class TestTapeCopying:
+    """Test for tape copying behaviour"""
+
+    def test_jacobian_options_copied(self):
+        """Tests that the jacobian_options attribute is copied"""
+
+        tape = JacobianTape()
+        tape.jacobian_options = {"method": "device", "jacobian_method": "adjoint_jacobian"}
+
+        tape_copy = tape.copy()
+
+        assert tape_copy.jacobian_options == {
+            "method": "device",
+            "jacobian_method": "adjoint_jacobian",
         }
 
 
@@ -159,7 +179,7 @@ class TestJacobian:
 
         dev = qml.device("default.qubit", wires=1)
         tape.analytic_pd = mocker.Mock()
-        tape.analytic_pd.return_value = [[QuantumTape()], lambda res: np.array([1.])]
+        tape.analytic_pd.return_value = [[QuantumTape()], lambda res: np.array([1.0])]
 
         tape.jacobian(dev, method="analytic")
         assert len(tape.analytic_pd.call_args_list) == 2
@@ -406,10 +426,48 @@ class TestJacobian:
 
         j2 = tape2.jacobian(dev)
 
-        exp = - np.sin(1)
+        exp = -np.sin(1)
 
         assert np.allclose(j1, [exp, 0])
         assert np.allclose(j2, [0, exp])
+
+    @pytest.mark.parametrize(
+        "diff_methods", [["A", "0", "F"], ["A", "A", "A"], ["F", "A", "A", "0", "0"]]
+    )
+    @pytest.mark.parametrize("argnum", [None, 0, [0, 1], [0, 1, 2], [2, 0], [1, 0], [0, 0, 0]])
+    def test_choose_params_and_methods(self, diff_methods, argnum):
+        """Test that the _choose_params_and_methods helper method returns
+        expected results"""
+        tape = JacobianTape()
+        tape._trainable_params = list(range(len(diff_methods)))
+        res = list(tape._choose_params_with_methods(diff_methods, argnum))
+
+        num_all_params = len(diff_methods)
+
+        assert all(k in range(num_all_params) for k, _ in res)
+        assert all(v in diff_methods for _, v in res)
+
+        if argnum is None:
+            num_params = num_all_params
+        elif isinstance(argnum, int):
+            num_params = 1
+        else:
+            num_params = len(argnum)
+
+        assert len(res) == num_params
+
+    def test_choose_params_and_methods_warns_no_params(self):
+        """Test that the _choose_params_and_methods helper method warns if an
+        empty list was passed as argnum."""
+        tape = JacobianTape()
+        tape.trainable_params = [0]
+        diff_methods = ["F"]
+        argnum = []
+        with pytest.warns(
+            UserWarning,
+            match="No trainable parameters",
+        ):
+            res = tape._choose_params_with_methods(diff_methods, argnum)
 
 
 class TestJacobianIntegration:
@@ -449,6 +507,53 @@ class TestJacobianIntegration:
         assert res.shape == (1, 2)
 
         expected = np.array([[-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]])
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_single_expectation_value_with_argnum_all(self, tol):
+        """Tests correct output shape and evaluation for a tape
+        with a single expval output where all parameters are chose to compute
+        the jacobian"""
+        dev = qml.device("default.qubit", wires=2)
+        x = 0.543
+        y = -0.654
+
+        with JacobianTape() as tape:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        res = tape.jacobian(dev, argnum=[0, 1])  # <--- we choose both trainable parameters
+        assert res.shape == (1, 2)
+
+        expected = np.array([[-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]])
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_single_expectation_value_with_argnum_one(self, tol):
+        """Tests correct output shape and evaluation for a tape
+        with a single expval output where only one parameter is chosen to
+        estimate the jacobian.
+
+        This test relies on the fact that exactly one term of the estimated
+        jacobian will match the expected analytical value.
+        """
+        dev = qml.device("default.qubit", wires=2)
+        x = 0.543
+        y = -0.654
+
+        with JacobianTape() as tape:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        res = tape.jacobian(dev, argnum=1)  # <--- we only choose one trainable parameter
+        assert res.shape == (1, 2)
+
+        expected = np.array([[0, np.cos(y) * np.cos(x)]])
+        res = res.flatten()
+        expected = expected.flatten()
+
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_multiple_expectation_values(self, tol):
@@ -593,6 +698,7 @@ class TestJacobianCVIntegration:
         expected = np.array([[-2 * a * np.sin(phi)]])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+
 class TestHessian:
     """Unit tests for the hessian method"""
 
@@ -632,6 +738,90 @@ class TestHessian:
             qml.state()
 
         with pytest.raises(
-            ValueError, match=r"The Hessian method does not support circuits that return the state"
+            ValueError,
+            match=r"The Hessian method does not support circuits that return the state",
         ):
             tape.hessian(None)
+
+
+class TestObservableWithObjectReturnType:
+    """Unit tests for differentiation of observables returning an object"""
+
+    def test_special_observable_qnode_differentiation(self):
+        """Test differentiation of a QNode on a device supporting a
+        special observable that returns an object rathern than a nummber."""
+
+        class SpecialObject:
+            """SpecialObject
+
+            A special object that conveniently encapsulates the return value of
+            a special observable supported by a special device and which supports
+            multiplication with scalars and addition.
+            """
+
+            def __init__(self, val):
+                self.val = val
+
+            def __mul__(self, other):
+                new = SpecialObject(self.val)
+                new *= other
+                return new
+
+            def __imul__(self, other):
+                self.val *= other
+                return self
+
+            def __rmul__(self, other):
+                return self * other
+
+            def __iadd__(self, other):
+                self.val += other.val if isinstance(other, self.__class__) else other
+                return self
+
+            def __add__(self, other):
+                new = SpecialObject(self.val)
+                new += other.val if isinstance(other, self.__class__) else other
+                return new
+
+            def __radd__(self, other):
+                return self + other
+
+        class SpecialObservable(Observable):
+            """SpecialObservable"""
+
+            num_wires = AnyWires
+            num_params = 0
+            par_domain = None
+
+            def diagonalizing_gates(self):
+                """Diagonalizing gates"""
+                return []
+
+        class DeviceSupporingSpecialObservable(DefaultQubit):
+            name = "Device supporing SpecialObservable"
+            short_name = "default.qibit.specialobservable"
+            observables = DefaultQubit.observables.union({"SpecialObservable"})
+
+            def expval(self, observable, **kwargs):
+                if self.analytic and isinstance(observable, SpecialObservable):
+                    val = super().expval(qml.PauliZ(wires=0), **kwargs)
+                    return SpecialObject(val)
+
+                return super().expval(observable, **kwargs)
+
+        dev = DeviceSupporingSpecialObservable(wires=1, shots=None)
+
+        # force diff_method='parameter-shift' because otherwise
+        # PennyLane swaps out dev for default.qubit.autograd
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def qnode(x):
+            qml.RY(x, wires=0)
+            return qml.expval(SpecialObservable(wires=0))
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def reference_qnode(x):
+            qml.RY(x, wires=0)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        assert np.isclose(qnode(0.2).item().val, reference_qnode(0.2))
+        assert np.isclose(qml.jacobian(qnode)(0.2).item().val, qml.jacobian(reference_qnode)(0.2))

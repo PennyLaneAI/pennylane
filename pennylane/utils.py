@@ -22,8 +22,10 @@ import inspect
 import itertools
 import numbers
 from operator import matmul
+import warnings
 
 import numpy as np
+import scipy
 
 import pennylane as qml
 
@@ -102,6 +104,56 @@ def decompose_hamiltonian(H, hide_identity=False):
                 obs.append(functools.reduce(matmul, [t(i) for i, t in enumerate(term)]))
 
     return coeffs, obs
+
+
+def sparse_hamiltonian(H):
+    r"""Computes the sparse matrix representation a Hamiltonian in the computational basis.
+
+    Args:
+        H (~.Hamiltonian): Hamiltonian operator for which the matrix representation should be
+         computed
+
+    Returns:
+        coo_matrix: a sparse matrix in scipy coordinate list (COO) format with dimension
+        :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
+
+    **Example:**
+
+    This function can be used by passing a `qml.Hamiltonian` object as:
+
+    >>> coeffs = [1, -0.45]
+    >>> obs = [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1)]
+    >>> H = qml.Hamiltonian(coeffs, obs)
+    >>> H_sparse = sparse_hamiltonian(H)
+    >>> H_sparse
+    <4x4 sparse matrix of type '<class 'numpy.complex128'>'
+        with 2 stored elements in COOrdinate format>
+
+    The resulting sparse matrix can be either used directly or transformed into a numpy array:
+
+    >>> H_sparse.toarray()
+    array([[ 1.+0.j  ,  0.+0.j  ,  0.+0.45j,  0.+0.j  ],
+           [ 0.+0.j  , -1.+0.j  ,  0.+0.j  ,  0.-0.45j],
+           [ 0.-0.45j,  0.+0.j  , -1.+0.j  ,  0.+0.j  ],
+           [ 0.+0.j  ,  0.+0.45j,  0.+0.j  ,  1.+0.j  ]])
+    """
+    if not isinstance(H, qml.Hamiltonian):
+        raise TypeError("Passed Hamiltonian must be of type `qml.Hamiltonian`")
+
+    n = len(H.wires)
+    matrix = scipy.sparse.coo_matrix((2 ** n, 2 ** n), dtype="complex128")
+
+    for coeffs, ops in zip(H.coeffs, H.ops):
+
+        obs = [scipy.sparse.coo_matrix(o.matrix) for o in qml.operation.Tensor(ops).obs]
+        mat = [scipy.sparse.eye(2, format="coo")] * n
+
+        for i, j in enumerate(ops.wires):
+            mat[j] = obs[i]
+
+        matrix += functools.reduce(lambda i, j: scipy.sparse.kron(i, j, format="coo"), mat) * coeffs
+
+    return matrix.tocoo()
 
 
 def _flatten(x):
@@ -239,6 +291,10 @@ def inv(operation_list):
     If the inversion happens inside a QNode, the operations are removed and requeued
     in the reversed order for proper inversion.
 
+    .. warning::
+        Use of :func:`~.inv()` is deprecated and should be replaced with
+        :func:`~.adjoint()`.
+
     **Example:**
 
     The following example illuminates the inversion of a template:
@@ -291,6 +347,11 @@ def inv(operation_list):
     Returns:
         List[~.Operation]: The inverted list of operations
     """
+
+    warnings.warn(
+        "Use of qml.inv() is deprecated and should be replaced with qml.adjoint().",
+        UserWarning,
+    )
     if isinstance(operation_list, qml.operation.Operation):
         operation_list = [operation_list]
     elif operation_list is None:
@@ -305,8 +366,9 @@ def inv(operation_list):
             "Please use inv on the function including its arguments, as in inv(template(args))."
         )
     elif isinstance(operation_list, qml.tape.QuantumTape):
-        operation_list.inv()
-        return operation_list
+        new_tape = operation_list.adjoint()
+        return new_tape
+
     elif not isinstance(operation_list, Iterable):
         raise ValueError("The provided operation_list is not iterable.")
 
@@ -334,13 +396,13 @@ def inv(operation_list):
             # exist on the queuing context
             pass
 
-    with qml.tape.QuantumTape() as tape:
+    def qfunc():
         for o in operation_list:
             o.queue()
-            if o.inverse:
-                o.inv()
 
-    tape.inv()
+    with qml.tape.QuantumTape() as tape:
+        qml.adjoint(qfunc)()
+
     return tape
 
 

@@ -329,8 +329,11 @@ class RepresentationResolver:
         Returns:
             str: String representation of the Operator
         """
-        if isinstance(op, qml.measure.MeasurementProcess) and op.obs is not None:
-            op = op.obs
+        if isinstance(op, qml.measure.MeasurementProcess):
+            if op.obs is not None:
+                op = op.obs
+            else:
+                return "basis"  # when no observable is provided we perform a raw measurement
 
         if isinstance(op, qml.operation.Tensor):
             constituent_representations = [
@@ -375,6 +378,11 @@ class RepresentationResolver:
             representation = RepresentationResolver._format_controlled_qubit_unitary(
                 op, "U", self.unitary_matrix_cache
             )
+
+        elif base_name == "MultiControlledX":
+            if wire in op.control_wires:
+                return self.charset.CONTROL
+            representation = "X"
 
         elif base_name == "Hermitian":
             representation = RepresentationResolver._format_matrix_operation(

@@ -15,15 +15,18 @@
 This module contains the base quantum tape.
 """
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods
+from collections import Counter, deque, defaultdict
+import contextlib
 import copy
-from collections import Counter
 from threading import RLock
 
 import numpy as np
 
 import pennylane as qml
-from pennylane.queuing import AnnotatedQueue, QueuingContext
+from pennylane.queuing import AnnotatedQueue, QueuingContext, QueuingError
 from pennylane.operation import Sample
+
+from .unwrap import UnwrapTape
 
 # CV ops still need to support state preparation operations prior to any
 # other operation for PennyLane-SF tests to pass.
@@ -80,6 +83,24 @@ https://github.com/Qiskit/openqasm/blob/master/examples/stdgates.inc
 """
 
 
+def get_active_tape():
+    """Returns the currently recording tape.
+    If no tape is currently recording, ``None`` is returned.
+
+    **Example**
+
+    >>> with qml.tape.QuantumTape():
+    ...     qml.RX(0.2, wires="a")
+    ...     tape = qml.tape.get_active_tape()
+    ...     qml.RY(0.1, wires="b")
+    >>> print(tape)
+    <QuantumTape: wires=['a', 'b'], params=2>
+    >>> print(qml.tape.get_active_tape())
+    None
+    """
+    return QueuingContext.active_context()
+
+
 def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     """Expand all objects in a tape to a specific depth.
 
@@ -118,13 +139,12 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     Calling ``expand_tape`` will return a tape with all nested tapes
     expanded, resulting in a single tape of quantum operations:
 
-    >>> new_tape = expand_tape(tape)
+    >>> new_tape = qml.tape.tape.expand_tape(tape)
     >>> new_tape.operations
-    [PauliX(wires=[0]),
-     PauliX(wires=['a']),
-     Rot(0.543, 0.1, 0.4, wires=[0]),
-     CNOT(wires=[0, 'a']),
-     RY(0.2, wires=['a'])]
+    [BasisStatePreparation([1, 1], wires=[0, 'a']),
+    Rot(0.543, 0.1, 0.4, wires=[0]),
+    CNOT(wires=[0, 'a']),
+    RY(0.2, wires=['a'])]
     """
     if depth == 0:
         return tape
@@ -134,6 +154,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
         stop_at = lambda obj: False
 
     new_tape = tape.__class__()
+    new_tape.__bare__ = getattr(tape, "__bare__", tape.__class__)
 
     # Check for observables acting on the same wire. If present, observables must be
     # qubit-wise commuting Pauli words. In this case, the tape is expanded with joint
@@ -250,7 +271,7 @@ class QuantumTape(AnnotatedQueue):
     the parameters modified in-place:
 
     >>> tape.trainable_params = {0} # set only the first parameter as free
-    >>> tape.set_parameters(0.56)
+    >>> tape.set_parameters([0.56])
     >>> tape.get_parameters()
     [0.56]
     >>> tape.get_parameters(trainable_only=False)
@@ -298,7 +319,7 @@ class QuantumTape(AnnotatedQueue):
 
         self._trainable_params = set()
         self._graph = None
-        self._resources = None
+        self._specs = None
         self._depth = None
         self._output_dim = 0
 
@@ -338,6 +359,31 @@ class QuantumTape(AnnotatedQueue):
     def interface(self):
         """str, None: automatic differentiation interface used by the quantum tape (if any)"""
         return None
+
+    @contextlib.contextmanager
+    def stop_recording(self):
+        """Context manager to temporarily stop recording operations
+        onto the tape. This is useful is scratch space is needed.
+
+        **Example**
+
+        >>> with qml.tape.QuantumTape() as tape:
+        ...     qml.RX(0, wires=0)
+        ...     with tape.stop_recording():
+        ...         qml.RY(1.0, wires=1)
+        ...     qml.RZ(2, wires=1)
+        >>> tape.operations
+        [RX(0, wires=[0]), RZ(2, wires=[1])]
+        """
+        if QueuingContext.active_context() is not self:
+            raise QueuingError(
+                "Cannot stop recording requested tape " "as it is not currently recording."
+            )
+
+        active_contexts = QueuingContext._active_contexts
+        QueuingContext._active_contexts = deque()
+        yield
+        QueuingContext._active_contexts = active_contexts
 
     # ========================================================
     # construction methods
@@ -403,9 +449,6 @@ class QuantumTape(AnnotatedQueue):
                 if obj.return_type is qml.operation.Sample:
                     self.is_sampled = True
 
-            elif isinstance(obj, qml.operation.Observable) and "owner" not in info:
-                raise ValueError(f"Observable {obj} does not have a measurement type specified.")
-
         self._update()
 
     def _update_circuit_info(self):
@@ -456,7 +499,7 @@ class QuantumTape(AnnotatedQueue):
     def _update(self):
         """Update all internal tape metadata regarding processed operations and observables"""
         self._graph = None
-        self._resources = None
+        self._specs = None
         self._depth = None
         self._update_circuit_info()
         self._update_par_info()
@@ -501,13 +544,15 @@ class QuantumTape(AnnotatedQueue):
         Calling ``.expand`` will return a tape with all nested tapes
         expanded, resulting in a single tape of quantum operations:
 
-        >>> new_tape = tape.expand()
+        >>> new_tape = tape.expand(depth=2)
         >>> new_tape.operations
         [PauliX(wires=[0]),
-         PauliX(wires=['a']),
-         Rot(0.543, 0.1, 0.4, wires=[0]),
-         CNOT(wires=[0, 'a']),
-         RY(0.2, wires=['a'])]
+        PauliX(wires=['a']),
+        RZ(0.543, wires=[0]),
+        RY(0.1, wires=[0]),
+        RZ(0.4, wires=[0]),
+        CNOT(wires=[0, 'a']),
+        RY(0.2, wires=['a'])]
         """
         new_tape = expand_tape(
             self, depth=depth, stop_at=stop_at, expand_measurements=expand_measurements
@@ -602,10 +647,34 @@ class QuantumTape(AnnotatedQueue):
         self.trainable_params = {parameter_mapping[i] for i in self.trainable_params}
         self._par_info = {parameter_mapping[k]: v for k, v in self._par_info.items()}
 
-        for op in self._ops:
-            op.inverse = not op.inverse
+        for idx, op in enumerate(self._ops):
+            try:
+                self._ops[idx] = op.adjoint()
+            except NotImplementedError:
+                op.inverse = not op.inverse
 
         self._ops = list(reversed(self._ops))
+
+    def adjoint(self):
+        """Create a tape that is the adjoint of this one.
+
+        Adjointed tapes are the conjugated and transposed version of the
+        original tapes. Adjointed ops are equivalent to the inverted operation for unitary
+        gates.
+
+        Returns:
+            ~.QuantumTape: the adjointed tape
+        """
+        new_tape = self.copy(copy_operations=True)
+        qml.transforms.invisible(new_tape.inv)()
+
+        # the current implementation of the adjoint
+        # transform requires that the returned inverted object
+        # is automatically queued.
+        with QuantumTape._lock:
+            QueuingContext.append(new_tape)
+
+        return new_tape
 
     # ========================================================
     # Parameter handling
@@ -773,6 +842,35 @@ class QuantumTape(AnnotatedQueue):
             op = self._par_info[idx]["op"]
             op.data[self._par_info[idx]["p_idx"]] = p
 
+    def unwrap(self):
+        """A context manager that unwraps a tape with tensor-like parameters
+        to NumPy arrays.
+
+        Args:
+            tape (.QuantumTape): the quantum tape to unwrap
+
+        Returns:
+
+            .QuantumTape: the unwrapped quantum tape
+
+        **Example**
+
+        >>> with tf.GradientTape():
+        ...     with qml.tape.QuantumTape() as tape:
+        ...         qml.RX(tf.Variable(0.1), wires=0)
+        ...         qml.RY(tf.constant(0.2), wires=0)
+        ...         qml.RZ(tf.Variable(0.3), wires=0)
+        ...     with tape.unwrap():
+        ...         print("Trainable params:", tape.trainable_params)
+        ...         print("Unwrapped params:", tape.get_parameters())
+        Trainable params: {0, 2}
+        Unwrapped params: [0.1, 0.3]
+        >>> print("Original parameters:", tape.get_parameters())
+        Original parameters: [<tf.Variable 'Variable:0' shape=() dtype=float32, numpy=0.1>,
+          <tf.Variable 'Variable:0' shape=() dtype=float32, numpy=0.3>]
+        """
+        return UnwrapTape(self)
+
     # ========================================================
     # Tape properties
     # ========================================================
@@ -854,7 +952,7 @@ class QuantumTape(AnnotatedQueue):
                 qml.expval(qml.PauliZ(wires=[0]))
 
         >>> tape.measurements
-        [<pennylane.tape.measure.MeasurementProcess object at 0x7f10b2150c10>]
+        [expval(PauliZ(wires=[0]))]
         """
         return self._measurements
 
@@ -879,7 +977,12 @@ class QuantumTape(AnnotatedQueue):
         rotation_gates = []
 
         for observable in self.observables:
-            rotation_gates.extend(observable.diagonalizing_gates())
+            try:
+                # some observables do not have diagonalizing gates,
+                # in which case we just don't append any
+                rotation_gates.extend(observable.diagonalizing_gates())
+            except NotImplementedError:
+                pass
 
         return rotation_gates
 
@@ -904,11 +1007,12 @@ class QuantumTape(AnnotatedQueue):
 
         return self._graph
 
-    def get_resources(self):
-        """Resource requirements of a quantum circuit.
+    @property
+    def specs(self):
+        """Resource information about a quantum circuit.
 
         Returns:
-            dict[str, int]: how many times constituent operations are applied
+            dict[str, Union[defaultdict,int]]: dictionaries that contain tape specifications
 
         **Example**
 
@@ -923,49 +1027,35 @@ class QuantumTape(AnnotatedQueue):
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        Asking for the resources produces a dictionary as shown below:
+        Asking for the specs produces a dictionary as shown below:
 
-        >>> tape.get_resources()
-        {'Hadamard': 2, 'RZ': 1, 'CNOT': 2, 'Rot': 1}
+        >>> tape.specs['gate_sizes']
+        defaultdict(int, {1: 4, 2: 2})
+        >>> tape.specs['gate_types']
+        defaultdict(int, {'Hadamard': 2, 'RZ': 1, 'CNOT': 2, 'Rot': 1})
+
+        As ``defaultdict`` objects, any key not present in the dictionary returns 0.
+
+        >>> tape.specs['gate_types']['RX']
+        0
+
         """
-        if self._resources is None:
-            self._resources = {}
+        if self._specs is None:
+            self._specs = {"gate_sizes": defaultdict(int), "gate_types": defaultdict(int)}
 
             for op in self.operations:
-                if op.name not in self._resources.keys():
-                    self._resources[op.name] = 1
-                else:
-                    self._resources[op.name] += 1
+                # don't use op.num_wires to allow for flexible gate classes like QubitUnitary
+                self._specs["gate_sizes"][len(op.wires)] += 1
+                self._specs["gate_types"][op.name] += 1
 
-        return self._resources
+            self._specs["num_operations"] = len(self.operations)
+            self._specs["num_observables"] = len(self.observables)
+            self._specs["num_diagonalizing_gates"] = len(self.diagonalizing_gates)
+            self._specs["num_used_wires"] = self.num_wires
+            self._specs["depth"] = self.graph.get_depth()
+            self._specs["num_trainable_params"] = self.num_params
 
-    def get_depth(self):
-        """Depth of the quantum circuit.
-
-        Returns:
-            int: Circuit depth, computed as the longest path in the circuit's directed acyclic graph representation.
-
-        **Example**
-
-        .. code-block:: python3
-
-            with QuantumTape() as tape:
-                qml.Hadamard(wires=0)
-                qml.PauliX(wires=1)
-                qml.CRX(2.3, wires=[0, 1])
-                qml.Rot(1.2, 3.2, 0.7, wires=[1])
-                qml.CRX(-2.3, wires=[0, 1])
-                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-        The depth can be obtained like so:
-
-        >>> tape.get_depth()
-        4
-        """
-        if self._depth is None:
-            self._depth = self.graph.get_depth()
-
-        return self._depth
+        return self._specs
 
     def draw(self, charset="unicode", wire_order=None, show_all_wires=False):
         """Draw the quantum tape as a circuit diagram.
@@ -1008,11 +1098,13 @@ class QuantumTape(AnnotatedQueue):
             show_all_wires=show_all_wires,
         )
 
-    def to_openqasm(self, wires=None, rotations=True):
+    def to_openqasm(self, wires=None, rotations=True, measure_all=True):
         """Serialize the circuit as an OpenQASM 2.0 program.
 
-        Only operations are serialized; all measurements
-        are assumed to take place in the computational basis.
+        Measurements are assumed to be performed on all qubits in the computational basis. An
+        optional ``rotations`` argument can be provided so that output of the OpenQASM circuit is
+        diagonal in the eigenbasis of the tape's observables. The measurement outputs can be
+        restricted to only those specified in the tape by setting ``measure_all=False``.
 
         .. note::
 
@@ -1024,6 +1116,8 @@ class QuantumTape(AnnotatedQueue):
             rotations (bool): in addition to serializing user-specified
                 operations, also include the gates that diagonalize the
                 measured wires such that they are in the eigenbasis of the circuit observables.
+            measure_all (bool): whether to perform a computational basis measurement on all qubits
+                or just those specified in the tape
 
         Returns:
             str: OpenQASM serialization of the circuit
@@ -1059,7 +1153,7 @@ class QuantumTape(AnnotatedQueue):
                     op.inv()
 
         # decompose the queue
-        operations = tape.expand(stop_at=lambda obj: obj.name in OPENQASM_GATES).operations
+        operations = tape.expand(depth=2, stop_at=lambda obj: obj.name in OPENQASM_GATES).operations
 
         # create the QASM code representing the operations
         for op in operations:
@@ -1084,9 +1178,16 @@ class QuantumTape(AnnotatedQueue):
         # NOTE: This is not strictly necessary, we could inspect self.observables,
         # and then only measure wires which are requested by the user. However,
         # some devices which consume QASM require all registers be measured, so
-        # measure all wires to be safe.
-        for wire in range(len(wires)):
-            qasm_str += "measure q[{wire}] -> c[{wire}];\n".format(wire=wire)
+        # measure all wires by default to be safe.
+        if measure_all:
+            for wire in range(len(wires)):
+                qasm_str += f"measure q[{wire}] -> c[{wire}];\n"
+        else:
+            measured_wires = qml.wires.Wires.all_wires([m.wires for m in self.measurements])
+
+            for w in measured_wires:
+                wire_indx = self.wires.index(w)
+                qasm_str += f"measure q[{wire_indx}] -> c[{wire_indx}];\n"
 
         return qasm_str
 

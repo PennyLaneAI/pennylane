@@ -12,12 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the ``BasicEntanglerLayers`` template.
+Contains the BasicEntanglerLayers template.
 """
-# pylint: disable=consider-using-enumerate
+# pylint: disable=consider-using-enumerate,too-many-arguments
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
-from pennylane.wires import Wires
 
 
 class BasicEntanglerLayers(Operation):
@@ -50,8 +49,7 @@ class BasicEntanglerLayers(Operation):
     Args:
         weights (tensor_like): Weight tensor of shape ``(L, len(wires))``. Each weight is used as a parameter
                                 for the rotation.
-        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
-            a Wires object.
+        wires (Iterable): wires that the template acts on
         rotation (pennylane.ops.Operation): one-parameter single-qubit gate to use,
                                             if ``None``, :class:`~pennylane.ops.RX` is used as default
     Raises:
@@ -127,7 +125,7 @@ class BasicEntanglerLayers(Operation):
     num_wires = AnyWires
     par_domain = "A"
 
-    def __init__(self, weights, wires=None, rotation=None, do_queue=True):
+    def __init__(self, weights, wires=None, rotation=None, do_queue=True, id=None):
 
         self.rotation = rotation or qml.RX
 
@@ -139,7 +137,7 @@ class BasicEntanglerLayers(Operation):
                 f"Weights tensor must have second dimension of length {len(wires)}; got {shape[1]}"
             )
 
-        super().__init__(weights, wires=wires, do_queue=do_queue)
+        super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 
     def expand(self):
 

@@ -15,6 +15,7 @@
 This module contains the QNode class and qnode decorator.
 """
 # pylint: disable=import-outside-toplevel
+# pylint:disable=too-many-branches
 from collections.abc import Sequence
 from functools import lru_cache, update_wrapper
 import warnings
@@ -28,7 +29,12 @@ from pennylane import Device
 from pennylane.operation import State
 
 from pennylane.interfaces.autograd import AutogradInterface, np as anp
-from pennylane.tape import JacobianTape, QubitParamShiftTape, CVParamShiftTape, ReversibleTape
+from pennylane.tape import (
+    JacobianTape,
+    QubitParamShiftTape,
+    CVParamShiftTape,
+    ReversibleTape,
+)
 
 
 class QNode:
@@ -47,15 +53,15 @@ class QNode:
         interface (str): The interface that will be used for classical backpropagation.
             This affects the types of objects that can be passed to/returned from the QNode:
 
-            * ``interface='autograd'``: Allows autograd to backpropagate
+            * ``"autograd"``: Allows autograd to backpropagate
               through the QNode. The QNode accepts default Python types
               (floats, ints, lists) as well as NumPy array arguments,
               and returns NumPy arrays.
 
-            * ``interface='torch'``: Allows PyTorch to backpropogate
+            * ``"torch"``: Allows PyTorch to backpropogate
               through the QNode. The QNode accepts and returns Torch tensors.
 
-            * ``interface='tf'``: Allows TensorFlow in eager mode to backpropogate
+            * ``"tf"``: Allows TensorFlow in eager mode to backpropogate
               through the QNode. The QNode accepts and returns
               TensorFlow ``tf.Variable`` and ``tf.tensor`` objects.
 
@@ -64,7 +70,7 @@ class QNode:
               and returns NumPy arrays. It does not connect to any
               machine learning library automatically for backpropagation.
 
-        diff_method (str, None): the method of differentiation to use in the created QNode
+        diff_method (str): the method of differentiation to use in the created QNode
 
             * ``"best"``: Best available method. Uses classical backpropagation or the
               device directly to compute the gradient if supported, otherwise will use
@@ -118,6 +124,14 @@ class QNode:
         order=1 (int): The order of the finite difference method to use. ``1`` corresponds
             to forward finite differences, ``2`` to centered finite differences.
         shift=pi/2 (float): the size of the shift for two-term parameter-shift gradient computations
+        adjoint_cache=True (bool): for TensorFlow and PyTorch interfaces and adjoint differentiation,
+            this indicates whether to save the device state after the forward pass.  Doing so saves a
+            forward execution. Device state automatically reused with autograd and JAX interfaces.
+        argnum=None (int, list(int), None): Which argument(s) to compute the Jacobian
+            with respect to. When there are fewer parameters specified than the
+            total number of trainable parameters, the jacobian is being estimated. Note
+            that this option is only applicable for the following differentiation methods:
+            ``"parameter-shift"``, ``"finite-diff"`` and ``"reversible"``.
 
     **Example**
 
@@ -157,7 +171,7 @@ class QNode:
                 "Detected 'shots' as an argument to the given quantum function. "
                 "The 'shots' argument name is reserved for overriding the number of shots "
                 "taken by the device. Its use outside of this context should be avoided.",
-                DeprecationWarning,
+                UserWarning,
             )
             self._qfunc_uses_shots_arg = True
         else:
@@ -181,6 +195,16 @@ class QNode:
 
         self.dtype = np.float64
         self.max_expansion = max_expansion
+
+    def __repr__(self):
+        """String representation."""
+        detail = "<QNode: wires={}, device='{}', interface='{}', diff_method='{}'>"
+        return detail.format(
+            self.device.num_wires,
+            self.device.short_name,
+            self.interface,
+            self.diff_method,
+        )
 
     # pylint: disable=too-many-return-statements
     @staticmethod
@@ -240,8 +264,8 @@ class QNode:
         This method attempts to determine support for differentiation
         methods using the following order:
 
-        * ``"backprop"``
         * ``"device"``
+        * ``"backprop"``
         * ``"parameter-shift"``
         * ``"finite-diff"``
 
@@ -363,6 +387,13 @@ class QNode:
                 f"The {device.short_name} device does not support reversible differentiation."
             )
 
+        if device.shots is not None:
+            warnings.warn(
+                "Requested reversible differentiation to be computed with finite shots."
+                " Reversible differentiation always calculated exactly.",
+                UserWarning,
+            )
+
         return ReversibleTape, interface, device, {"method": "analytic"}
 
     @staticmethod
@@ -396,11 +427,24 @@ class QNode:
                 f"The {device.short_name} device does not support adjoint differentiation."
             )
 
+        if device.shots is not None:
+            warnings.warn(
+                "Requested adjoint differentiation to be computed with finite shots."
+                " Adjoint differentiation always calculated exactly.",
+                UserWarning,
+            )
+
+        jac_options = {"method": "device", "jacobian_method": "adjoint_jacobian"}
+        # reuse the forward pass
+        # torch and tensorflow can cache the state
+        if interface in {"autograd", "jax"}:
+            jac_options["device_pd_options"] = {"use_device_state": True}
+
         return (
             JacobianTape,
             interface,
             device,
-            {"method": "device", "jacobian_method": "adjoint_jacobian"},
+            jac_options,
         )
 
     @staticmethod
@@ -509,12 +553,22 @@ class QNode:
             )
 
         for obj in self.qtape.operations + self.qtape.observables:
+
             if getattr(obj, "num_wires", None) is qml.operation.WiresEnum.AllWires:
                 # check here only if enough wires
                 if len(obj.wires) != self.device.num_wires:
                     raise qml.QuantumFunctionError(
                         "Operator {} must act on all wires".format(obj.name)
                     )
+
+            if (
+                isinstance(obj, qml.ops.qubit.SparseHamiltonian)
+                and self.diff_method != "parameter-shift"
+            ):
+                raise qml.QuantumFunctionError(
+                    "SparseHamiltonian observable must be used with the parameter-shift"
+                    " differentiation method"
+                )
 
         # pylint: disable=protected-access
         obs_on_same_wire = len(self.qtape._obs_sharing_wires) > 0
@@ -541,7 +595,7 @@ class QNode:
         # If shots specified in call but not in qfunc signature,
         # interpret it as device shots value for this call.
         # TODO: make this more functional by passing shots as qtape.execute(.., shots=shots).
-        original_shots = None
+        original_shots = -1
         if "shots" in kwargs and not self._qfunc_uses_shots_arg:
             original_shots = self.device.shots  # remember device shots
             # remove shots from kwargs and temporarily change on device
@@ -551,10 +605,28 @@ class QNode:
             # construct the tape
             self.construct(args, kwargs)
 
-        # execute the tape
-        res = self.qtape.execute(device=self.device)
+        # Execute the tape.
+        # If the observable contains a Hamiltonian and the device does not
+        # support Hamiltonians, split tape into multiple tapes and execute
+        # sequentially. In future, this logic should be moved to the device
+        # to allow for more efficient batch execution.
+        supports_hamiltonian = self.device.supports_observable("Hamiltonian")
+        hamiltonian_in_obs = "Hamiltonian" in [obs.name for obs in self.qtape.observables]
+        if hamiltonian_in_obs and not supports_hamiltonian:
+            try:
+                tapes, fn = qml.transforms.hamiltonian_expand(self.qtape, group=False)
+            except ValueError as e:
+                raise ValueError(
+                    "Only a single expectation of a Hamiltonian observable can be returned"
+                    "when using the {} device.".format(self.device.name)
+                ) from e
+            results = [tape.execute(device=self.device) for tape in tapes]
+            res = fn(results)
+        else:
+            res = self.qtape.execute(device=self.device)
 
-        if original_shots is not None:
+        # if shots was changed
+        if original_shots != -1:
             # reinstate default on device
             self.device.shots = original_shots
 
@@ -573,7 +645,9 @@ class QNode:
             if hasattr(self._original_device, "_state"):
                 self._original_device._state = self.device._state
 
-        if isinstance(self.qfunc_output, Sequence):
+        if isinstance(self.qfunc_output, Sequence) or (
+            self.qtape.is_sampled and self.device._has_partitioned_shots()
+        ):
             return res
 
         return qml.math.squeeze(res)
@@ -687,6 +761,65 @@ class QNode:
         return self.qtape.draw(
             charset=charset, wire_order=wire_order, show_all_wires=show_all_wires
         )
+
+    @property
+    def specs(self):
+        """Resource information about a quantum circuit.
+
+        Returns:
+        dict[str, Union[defaultdict,int]]: dictionaries that contain QNode specifications
+
+        **Example**
+
+        .. code-block:: python3
+
+            dev = qml.device('default.qubit', wires=2)
+            @qml.qnode(dev)
+            def circuit(x):
+                qml.RX(x[0], wires=0)
+                qml.RY(x[1], wires=1)
+                qml.CNOT(wires=(0,1))
+                return qml.probs(wires=(0,1))
+
+            x = np.array([0.1, 0.2])
+            res = circuit(x)
+
+        >>> circuit.specs
+        {'gate_sizes': defaultdict(int, {1: 2, 2: 1}),
+        'gate_types': defaultdict(int, {'RX': 1, 'RY': 1, 'CNOT': 1}),
+        'num_operations': 3,
+        'num_observables': 1,
+        'num_diagonalizing_gates': 0,
+        'num_used_wires': 2,
+        'depth': 2,
+        'num_device_wires': 2,
+        'device_name': 'default.qubit.autograd',
+        'diff_method': 'backprop'}
+
+        """
+        if self.qtape is None:
+            raise qml.QuantumFunctionError(
+                "The QNode specifications can only be calculated after its quantum tape has been constructed."
+            )
+
+        info = self.qtape.specs.copy()
+
+        info["num_device_wires"] = self.device.num_wires
+        info["device_name"] = self.device.short_name
+
+        # TODO: use self.diff_method when that value gets updated
+        if self.diff_method != "best":
+            info["diff_method"] = self.diff_method
+        else:
+            info["diff_method"] = self.qtape.jacobian_options["method"]
+
+        # tapes do not accurately track parameters for backprop
+        # TODO: calculate number of trainable parameters in backprop
+        # find better syntax for determining if backprop
+        if info["diff_method"] == "backprop":
+            del info["num_trainable_params"]
+
+        return info
 
     def to_tf(self, dtype=None):
         """Apply the TensorFlow interface to the internal quantum tape.
@@ -823,11 +956,21 @@ class QNode:
                 "version of JAX to enable the 'jax' interface."
             ) from e
 
-    INTERFACE_MAP = {"autograd": to_autograd, "torch": to_torch, "tf": to_tf, "jax": to_jax}
+    INTERFACE_MAP = {
+        "autograd": to_autograd,
+        "torch": to_torch,
+        "tf": to_tf,
+        "jax": to_jax,
+    }
 
 
 def qnode(
-    device, interface="autograd", diff_method="best", mutable=True, max_expansion=10, **diff_options
+    device,
+    interface="autograd",
+    diff_method="best",
+    mutable=True,
+    max_expansion=10,
+    **diff_options,
 ):
     """Decorator for creating QNodes.
 
@@ -844,15 +987,15 @@ def qnode(
         interface (str): The interface that will be used for classical backpropagation.
             This affects the types of objects that can be passed to/returned from the QNode:
 
-            * ``interface='autograd'``: Allows autograd to backpropogate
+            * ``"autograd"``: Allows autograd to backpropogate
               through the QNode. The QNode accepts default Python types
               (floats, ints, lists) as well as NumPy array arguments,
               and returns NumPy arrays.
 
-            * ``interface='torch'``: Allows PyTorch to backpropogate
+            * ``"torch"``: Allows PyTorch to backpropogate
               through the QNode. The QNode accepts and returns Torch tensors.
 
-            * ``interface='tf'``: Allows TensorFlow in eager mode to backpropogate
+            * ``"tf"``: Allows TensorFlow in eager mode to backpropogate
               through the QNode. The QNode accepts and returns
               TensorFlow ``tf.Variable`` and ``tf.tensor`` objects.
 
@@ -861,7 +1004,7 @@ def qnode(
               and returns NumPy arrays. It does not connect to any
               machine learning library automatically for backpropagation.
 
-        diff_method (str, None): the method of differentiation to use in the created QNode.
+        diff_method (str): the method of differentiation to use in the created QNode.
 
             * ``"best"``: Best available method. Uses classical backpropagation or the
               device directly to compute the gradient if supported, otherwise will use
@@ -914,6 +1057,14 @@ def qnode(
         h=1e-7 (float): Step size for the finite difference method.
         order=1 (int): The order of the finite difference method to use. ``1`` corresponds
             to forward finite differences, ``2`` to centered finite differences.
+        adjoint_cache=True (bool): for TensorFlow and PyTorch interfaces and adjoint differentiation,
+            this indicates whether to save the device state after the forward pass.  Doing so saves a
+            forward execution. Device state automatically reused with autograd and JAX interfaces.
+        argnum=None (int, list(int), None): Which argument(s) to compute the Jacobian
+            with respect to. When there are fewer parameters specified than the
+            total number of trainable parameters, the jacobian is being estimated. Note
+            that this option is only applicable for the following differentiation methods:
+            ``"parameter-shift"``, ``"finite-diff"`` and ``"reversible"``.
 
     **Example**
 

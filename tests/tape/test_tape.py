@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for the QuantumTape"""
 import copy
+import warnings
+from collections import defaultdict
 
 import numpy as np
 import pytest
@@ -249,21 +251,6 @@ class TestConstruction:
                 qml.RX(0.5, wires=0)
                 qml.expval(qml.PauliZ(wires=1))
 
-    def test_observable_with_no_measurement(self):
-        """Test that an exception is raised if an observable is used without a measurement"""
-
-        with pytest.raises(ValueError, match="does not have a measurement type specified"):
-            with QuantumTape() as tape:
-                qml.RX(0.5, wires=0)
-                qml.Hermitian(np.array([[0, 1], [1, 0]]), wires=1)
-                qml.expval(qml.PauliZ(wires=1))
-
-        with pytest.raises(ValueError, match="does not have a measurement type specified"):
-            with QuantumTape() as tape:
-                qml.RX(0.5, wires=0)
-                qml.PauliX(wires=0) @ qml.PauliY(wires=1)
-                qml.expval(qml.PauliZ(wires=1))
-
     def test_sampling(self):
         """Test that the tape correctly marks itself as returning samples"""
         with QuantumTape() as tape:
@@ -343,21 +330,89 @@ class TestResourceEstimation:
 
         return tape
 
+    def test_specs_empty_tape(self, make_empty_tape):
+        """Test specs attribute on an empty tape"""
+        tape = make_empty_tape
+
+        assert tape.specs["gate_sizes"] == defaultdict(int)
+        assert tape.specs["gate_types"] == defaultdict(int)
+
+        assert tape.specs["num_operations"] == 0
+        assert tape.specs["num_observables"] == 1
+        assert tape.specs["num_diagonalizing_gates"] == 0
+        assert tape.specs["num_used_wires"] == 2
+        assert tape.specs["num_trainable_params"] == 0
+        assert tape.specs["depth"] == 0
+
+        assert len(tape.specs) == 8
+
+    def test_specs_tape(self, make_tape):
+        """Tests that regular tapes return correct specifications"""
+        tape = make_tape
+
+        specs = tape.specs
+
+        assert len(specs) == 8
+
+        assert specs["gate_sizes"] == defaultdict(int, {1: 3, 2: 1})
+        assert specs["gate_types"] == defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
+        assert specs["num_operations"] == 4
+        assert specs["num_observables"] == 2
+        assert specs["num_diagonalizing_gates"] == 1
+        assert specs["num_used_wires"] == 3
+        assert specs["num_trainable_params"] == 5
+        assert specs["depth"] == 3
+
+    def test_specs_add_to_tape(self, make_extendible_tape):
+        """Test that tapes return correct specs after adding to them."""
+
+        tape = make_extendible_tape
+        specs1 = tape.specs
+
+        assert len(specs1) == 8
+        assert specs1["gate_sizes"] == defaultdict(int, {1: 3, 2: 1})
+        assert specs1["gate_types"] == defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
+        assert specs1["num_operations"] == 4
+        assert specs1["num_observables"] == 0
+        assert specs1["num_diagonalizing_gates"] == 0
+        assert specs1["num_used_wires"] == 3
+        assert specs1["num_trainable_params"] == 5
+        assert specs1["depth"] == 3
+
+        with tape as tape:
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(0.1, wires=3)
+            qml.expval(qml.PauliX(wires="a"))
+            qml.probs(wires=[0, "a"])
+
+        specs2 = tape.specs
+
+        assert len(specs2) == 8
+        assert specs2["gate_sizes"] == defaultdict(int, {1: 4, 2: 2})
+        assert specs2["gate_types"] == defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 2, "RZ": 1})
+        assert specs2["num_operations"] == 6
+        assert specs2["num_observables"] == 2
+        assert specs2["num_diagonalizing_gates"] == 1
+        assert specs2["num_used_wires"] == 5
+        assert specs2["num_trainable_params"] == 6
+        assert specs2["depth"] == 4
+
     def test_resources_empty_tape(self, make_empty_tape):
         """Test that empty tapes return empty resource counts."""
         tape = make_empty_tape
 
-        assert tape.get_depth() == 0
-        assert len(tape.get_resources()) == 0
+        assert len(tape.specs["gate_types"]) == 0
+        assert tape.specs["depth"] == 0
 
     def test_resources_tape(self, make_tape):
         """Test that regular tapes return correct number of resources."""
         tape = make_tape
 
-        assert tape.get_depth() == 3
+        depth = tape.specs["depth"]
+        assert depth == 3
 
         # Verify resource counts
-        resources = tape.get_resources()
+        resources = tape.specs["gate_types"]
         assert len(resources) == 3
         assert resources["RX"] == 2
         assert resources["Rot"] == 1
@@ -367,9 +422,10 @@ class TestResourceEstimation:
         """Test that tapes return correct number of resources after adding to them."""
         tape = make_extendible_tape
 
-        assert tape.get_depth() == 3
+        depth = tape.specs["depth"]
+        assert depth == 3
 
-        resources = tape.get_resources()
+        resources = tape.specs["gate_types"]
         assert len(resources) == 3
         assert resources["RX"] == 2
         assert resources["Rot"] == 1
@@ -381,9 +437,8 @@ class TestResourceEstimation:
             qml.expval(qml.PauliX(wires="a"))
             qml.probs(wires=[0, "a"])
 
-        assert tape.get_depth() == 4
-
-        resources = tape.get_resources()
+        assert tape.specs["depth"] == 4
+        resources = tape.specs["gate_types"]
         assert len(resources) == 4
         assert resources["RX"] == 2
         assert resources["Rot"] == 1
@@ -604,12 +659,10 @@ class TestInverse:
         tape.inv()
 
         # check that operation order is reversed
-        assert tape.operations == [prep] + ops[::-1]
+        assert [o.name for o in tape.operations] == ["BasisState", "CNOT", "Rot", "RX"]
 
         # check that operations are inverted
-        assert ops[0].inverse
-        assert not ops[1].inverse
-        assert ops[2].inverse
+        assert np.allclose(tape.operations[2].parameters, -np.array(p[-1:0:-1]))
 
         # check that parameter order has reversed
         assert tape.get_parameters() == [init_state, p[1], p[2], p[3], p[0]]
@@ -636,7 +689,7 @@ class TestInverse:
         tape.inv()
         assert tape.trainable_params == {1, 2}
         assert tape.get_parameters() == [p[0], p[1]]
-        assert tape._ops == ops
+        assert [o.name for o in tape._ops] == ["RX", "Rot", "CNOT"]
 
 
 class TestExpand:
@@ -671,7 +724,8 @@ class TestExpand:
         with QuantumTape() as tape:
             qml.BasisState(np.array([1]), wires=0)
 
-        new_tape = tape.expand()
+        # since expansion calls `BasisStatePreparation` we have to expand twice
+        new_tape = tape.expand(depth=2)
 
         assert len(new_tape.operations) == 1
         assert new_tape.operations[0].name == "PauliX"
@@ -728,7 +782,7 @@ class TestExpand:
             qml.probs(wires=0), qml.probs(wires="a")
 
         new_tape = tape.expand()
-        assert len(new_tape.operations) == 5
+        assert len(new_tape.operations) == 4
 
     def test_stopping_criterion(self):
         """Test that gates specified in the stop_at
@@ -758,7 +812,7 @@ class TestExpand:
             qml.RY(0.2, wires="a")
             qml.probs(wires=0), qml.probs(wires="a")
 
-        new_tape = tape.expand(depth=2)
+        new_tape = tape.expand(depth=3)
         assert len(new_tape.operations) == 11
 
     def test_stopping_criterion_with_depth(self):
@@ -794,7 +848,7 @@ class TestExpand:
 
         new_tape = tape.expand(expand_measurements=True)
 
-        assert len(new_tape.operations) == 6
+        assert len(new_tape.operations) == 5
 
         expected = [qml.operation.Probability, qml.operation.Expectation, qml.operation.Variance]
         assert [m.return_type is r for m, r in zip(new_tape.measurements, expected)]
@@ -844,7 +898,7 @@ class TestExpand:
     def test_is_sampled_reserved_after_expansion(self, monkeypatch, mocker):
         """Test that the is_sampled property is correctly set when tape
         expansion happens."""
-        dev = qml.device('default.qubit', wires=1, shots=10)
+        dev = qml.device("default.qubit", wires=1, shots=10)
 
         # Remove support for an op to enforce decomposition & tape expansion
         mock_ops = copy.copy(dev.operations)
@@ -866,6 +920,7 @@ class TestExpand:
             assert "T" not in qnode._original_device.operations
 
             assert qnode.qtape.is_sampled
+
 
 class TestExecution:
     """Tests for tape execution"""
@@ -1299,3 +1354,115 @@ class TestTapeCopying:
         # check that the casting worked
         assert isinstance(copied_tape, qml.tape.JacobianTape)
         assert not isinstance(tape, qml.tape.JacobianTape)
+
+
+class TestStopRecording:
+    """Test that the stop_recording function works as expected"""
+
+    def test_tape_not_recording(self):
+        """Test that an error is raised if the tape is no
+        longer recording"""
+        with QuantumTape() as tape:
+            qml.RX(0.1, wires=0)
+
+        with pytest.raises(qml.queuing.QueuingError, match="Cannot stop recording"):
+            with tape.stop_recording():
+                pass
+
+    def test_nested_tape_not_recording(self):
+        """Test that an error is raised if the tape is no
+        longer recording"""
+        with QuantumTape() as tape1:
+            qml.RX(0.1, wires=0)
+
+            with QuantumTape() as tape2:
+                qml.RX(0.1, wires=0)
+
+                with pytest.raises(qml.queuing.QueuingError, match="Cannot stop recording"):
+                    with tape1.stop_recording():
+                        pass
+
+    def test_recording_stopped(self):
+        """Test that recording is stopped within a tape context"""
+
+        with QuantumTape() as tape:
+            op0 = qml.RX(0, wires=0)
+            assert tape.active_context() is tape
+
+            with tape.stop_recording():
+                op1 = qml.RY(1.0, wires=1)
+                assert tape.active_context() is None
+
+            op2 = qml.RZ(2, wires=1)
+            assert tape.active_context() is tape
+
+        assert len(tape.operations) == 2
+        assert tape.operations[0] == op0
+        assert tape.operations[1] == op2
+
+    def test_nested_recording_stopped(self):
+        """Test that recording is stopped within a nested tape context"""
+
+        with QuantumTape() as tape1:
+            op0 = qml.RX(0, wires=0)
+            assert tape1.active_context() is tape1
+
+            with QuantumTape() as tape2:
+                assert tape1.active_context() is tape2
+                op1 = qml.RY(1.0, wires=1)
+
+                with tape2.stop_recording():
+                    assert tape1.active_context() is None
+                    op2 = qml.RZ(0.6, wires=2)
+                    op3 = qml.CNOT(wires=[0, 2])
+
+                op4 = qml.Hadamard(wires=0)
+
+            op5 = qml.RZ(2, wires=1)
+            assert tape1.active_context() is tape1
+
+        assert len(tape1.operations) == 3
+        assert tape1.operations[0] == op0
+        assert tape1.operations[1] == tape2
+        assert tape1.operations[2] == op5
+
+        assert len(tape2.operations) == 2
+        assert tape2.operations[0] == op1
+        assert tape2.operations[1] == op4
+
+    def test_creating_scratch_tape(self):
+        """Test that a tape created inside the 'scratch'
+        space is properly created and accessible"""
+        with QuantumTape() as tape:
+            op0 = qml.RX(0, wires=0)
+            assert tape.active_context() is tape
+
+            with tape.stop_recording(), QuantumTape() as temp_tape:
+                assert tape.active_context() is temp_tape
+                op1 = qml.RY(1.0, wires=1)
+
+            op2 = qml.RZ(2, wires=1)
+            assert tape.active_context() is tape
+
+        assert len(tape.operations) == 2
+        assert tape.operations[0] == op0
+        assert tape.operations[1] == op2
+
+        assert len(temp_tape.operations) == 1
+        assert temp_tape.operations[0] == op1
+
+
+def test_gate_tape():
+    """Test that the get_active_tape() function returns the currently
+    recording tape, or None if no tape is recording"""
+    assert qml.tape.get_active_tape() is None
+
+    with QuantumTape() as tape1:
+        assert qml.tape.get_active_tape() is tape1
+
+        with QuantumTape() as tape2:
+            assert qml.tape.get_active_tape() is tape2
+
+        assert qml.tape.get_active_tape() is tape1
+
+    assert qml.tape.get_active_tape() is None

@@ -256,11 +256,9 @@ class Operator(abc.ABC):
         cls = self.__class__
         copied_op = cls.__new__(cls)
         copied_op.data = self.data.copy()
-        copied_op._wires = self.wires
-        copied_op._name = self._name
-
-        if hasattr(self, "_inverse"):
-            copied_op._inverse = self._inverse
+        for attr, value in vars(self).items():
+            if attr != "data":
+                setattr(copied_op, attr, value)
 
         return copied_op
 
@@ -400,13 +398,19 @@ class Operator(abc.ABC):
         """String for the name of the operator."""
         return self._name
 
+    @property
+    def id(self):
+        """String for the ID of the operator."""
+        return self._id
+
     @name.setter
     def name(self, value):
         self._name = value
 
-    def __init__(self, *params, wires=None, do_queue=True):
+    def __init__(self, *params, wires=None, do_queue=True, id=None):
         # pylint: disable=too-many-branches
         self._name = self.__class__.__name__  #: str: name of the operator
+        self._id = id
         self.queue_idx = None  #: int, None: index of the Operator in the circuit queue, or None if not in a queue
 
         if wires is None:
@@ -460,10 +464,9 @@ class Operator(abc.ABC):
         """Current parameter values."""
         return self.data.copy()
 
-    def queue(self):
+    def queue(self, context=qml.QueuingContext):
         """Append the operator to the Operator queue."""
-        qml.QueuingContext.append(self)
-
+        context.append(self)
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
 
@@ -536,6 +539,79 @@ class Operation(Operator):
         s_1]=[-1/2, 1, -\pi/2]` is assumed for every parameter.
     """
 
+    # Attributes for compilation transforms
+    is_self_inverse = None
+    """bool or None: ``True`` if the operation is its own inverse.
+
+    If ``None``, all instances of the given operation will be ignored during
+    compilation transforms involving inverse cancellation.
+    """
+
+    is_symmetric_over_all_wires = None
+    """bool or None: ``True`` if the operation is the same if you exchange the order
+    of wires.
+
+    For example, ``qml.CZ(wires=[0, 1])`` has the same effect as ``qml.CZ(wires=[1,
+    0])`` due to symmetry of the operation.
+
+    If ``None``, all instances of the operation will be ignored during
+    compilation transforms that check for wire symmetry.
+    """
+
+    is_symmetric_over_control_wires = None
+    """bool or None: ``True`` if the operation is the same if you exchange the order
+    of all but the last wire.
+
+    For example, ``qml.Toffoli(wires=[0, 1, 2])`` has the same effect as
+    ``qml.Toffoli(wires=[1, 0, 2])``, but neither are the same as
+    ``qml.Toffoli(wires=[0, 2, 1])``.
+
+    If ``None``, all instances of the operation will be ignored during
+    compilation transforms that check for control-wire symmetry.
+    """
+
+    is_composable_rotation = None
+    """bool or None: ``True`` if composing multiple copies of the operation
+    results in an addition (or alternative accumulation) of parameters.
+
+    For example, ``qml.RZ`` is a composable rotation. Applying ``qml.RZ(0.1,
+    wires=0)`` followed by ``qml.RZ(0.2, wires=0)`` is equivalent to performing
+    a single rotation ``qml.RZ(0.3, wires=0)``.
+
+    If set to ``None``, the operation will be ignored during compilation
+    transforms that merge adjacent rotations.
+    """
+
+    basis = None
+    """str or None: The basis of an operation, or for controlled gates, of the
+    target operation. If not ``None``, should take a value of ``"X"``, ``"Y"``,
+    or ``"Z"``.
+
+    For example, ``X`` and ``CNOT`` have ``basis = "X"``, whereas
+    ``ControlledPhaseShift`` and ``RZ`` have ``basis = "Z"``.
+    """
+
+    @property
+    def control_wires(self):  # pragma: no cover
+        r"""For operations that are controlled, returns the set of control wires.
+
+        Returns:
+            Wires: The set of control wires of the operation.
+        """
+        raise NotImplementedError
+
+    @property
+    def single_qubit_rot_angles(self):
+        r"""The parameters required to implement a single-qubit gate as an
+        equivalent ``Rot`` gate, up to a global phase.
+
+        Returns:
+            tuple[float, float, float]: A list of values :math:`[\phi, \theta, \omega]`
+            such that :math:`RZ(\omega) RY(\theta) RZ(\phi)` is equivalent to the
+            original operation.
+        """
+        raise NotImplementedError
+
     def get_parameter_shift(self, idx, shift=np.pi / 2):
         """Multiplier and shift for the given parameter, based on its gradient recipe.
 
@@ -543,7 +619,7 @@ class Operation(Operator):
             idx (int): parameter index
 
         Returns:
-            float, float: multiplier, shift
+            list[[float, float, float]]: list of multiplier, coefficient, shift for each term in the gradient recipe
         """
         # get the gradient recipe for this parameter
         recipe = self.grad_recipe[idx]
@@ -553,7 +629,7 @@ class Operation(Operator):
         a = 1
 
         # We set the default recipe following:
-        # ∂f(x) = c*f(x+s) - c*f(x-s)
+        # ∂f(x) = c*f(a*x+s) - c*f(a*x-s)
         # where we express a positive and a negative shift by default
         default_param_shift = [[multiplier, a, shift], [-multiplier, a, -shift]]
         param_shift = default_param_shift if recipe is None else recipe
@@ -685,7 +761,7 @@ class Operation(Operator):
         """Get and set the name of the operator."""
         return self._name + Operation.string_for_inverse if self.inverse else self._name
 
-    def __init__(self, *params, wires=None, do_queue=True):
+    def __init__(self, *params, wires=None, do_queue=True, id=None):
 
         self._inverse = False
 
@@ -712,7 +788,7 @@ class Operation(Operator):
         else:
             assert self.grad_recipe is None, "Gradient recipe is only used by the A method!"
 
-        super().__init__(*params, wires=wires, do_queue=do_queue)
+        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
 
 class DiagonalOperation(Operation):
@@ -1004,13 +1080,19 @@ class Observable(Operator):
         """
         return super().eigvals
 
-    def __init__(self, *params, wires=None, do_queue=True):
+    def __init__(self, *params, wires=None, do_queue=True, id=None):
         # extract the arguments
         if wires is None:
-            wires = params[-1]
-            params = params[:-1]
+            try:
+                wires = params[-1]
+                params = params[:-1]
+                # error if no arguments are given
+            except IndexError as err:
+                raise ValueError(
+                    f"Must specify the wires that {type(self).__name__} acts on"
+                ) from err
 
-        super().__init__(*params, wires=wires, do_queue=do_queue)
+        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
     def __repr__(self):
         """Constructor-call-like representation."""
@@ -1084,10 +1166,10 @@ class Observable(Operator):
         >>> ob1.compare(ob2)
         False
         """
-        if isinstance(other, (Tensor, Observable)):
-            return other._obs_data() == self._obs_data()
         if isinstance(other, qml.Hamiltonian):
             return other.compare(self)
+        if isinstance(other, (Tensor, Observable)):
+            return other._obs_data() == self._obs_data()
 
         raise ValueError(
             "Can only compare an Observable/Tensor, and a Hamiltonian/Observable/Tensor."
@@ -1095,17 +1177,16 @@ class Observable(Operator):
 
     def __add__(self, other):
         r"""The addition operation between Observables/Tensors/qml.Hamiltonian objects."""
-        if isinstance(other, (Observable, Tensor)):
-            return qml.Hamiltonian([1, 1], [self, other], simplify=True)
-
         if isinstance(other, qml.Hamiltonian):
             return other + self
-
+        if isinstance(other, (Observable, Tensor)):
+            return qml.Hamiltonian([1, 1], [self, other], simplify=True)
         raise ValueError(f"Cannot add Observable and {type(other)}")
 
     def __mul__(self, a):
         r"""The scalar multiplication operation between a scalar and an Observable/Tensor."""
         if isinstance(a, (int, float)):
+
             return qml.Hamiltonian([a], [self], simplify=True)
 
         raise ValueError(f"Cannot multiply Observable by {type(a)}")
@@ -1151,27 +1232,37 @@ class Tensor(Observable):
     par_domain = None
 
     def __init__(self, *args):  # pylint: disable=super-init-not-called
-
         self._eigvals_cache = None
         self.obs = []
+        self._args = args
+        self.queue(init=True)
 
-        for o in args:
-            if isinstance(o, Tensor):
-                self.obs.extend(o.obs)
-            elif isinstance(o, Observable):
-                self.obs.append(o)
-            else:
-                raise ValueError("Can only perform tensor products between observables.")
+    def queue(self, context=qml.QueuingContext, init=False):  # pylint: disable=arguments-differ
+        constituents = self.obs
+
+        if init:
+            constituents = self._args
+
+        for o in constituents:
+
+            if init:
+                if isinstance(o, Tensor):
+                    self.obs.extend(o.obs)
+                elif isinstance(o, Observable):
+                    self.obs.append(o)
+                else:
+                    raise ValueError("Can only perform tensor products between observables.")
 
             try:
-                qml.QueuingContext.update_info(o, owner=self)
-            except ValueError:
-                o.queue()
-                qml.QueuingContext.update_info(o, owner=self)
+                context.update_info(o, owner=self)
+            except qml.queuing.QueuingError:
+                o.queue(context=context)
+                context.update_info(o, owner=self)
             except NotImplementedError:
                 pass
 
-        qml.QueuingContext.append(self, owns=tuple(args))
+        context.append(self, owns=tuple(constituents))
+        return self
 
     def __copy__(self):
         cls = self.__class__
@@ -1649,7 +1740,7 @@ class CVOperation(CV, Operation):
         Returns:
             array[float]: :math:`\tilde{U}`, the Heisenberg picture representation of the linear transformation
         """
-        p = self.parameters
+        p = [qml.math.toarray(a) for a in self.parameters]
         if inverse:
             if self.par_domain == "A":
                 # TODO: expand this for the new par domain class, for non-unitary matrices.

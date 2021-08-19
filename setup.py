@@ -25,6 +25,7 @@ requirements = [
     "toml",
     "appdirs",
     "semantic_version==2.6",
+    "autoray"
 ]
 
 info = {
@@ -57,6 +58,7 @@ info = {
     'long_description_content_type': "text/markdown",
     'provides': ["pennylane"],
     'install_requires': requirements,
+    'extras_require': {'kernels': ['cvxpy', 'cvxopt']},
     'package_data': {'pennylane': ['devices/tests/pytest.ini']},
     'include_package_data': True
 }
@@ -73,9 +75,9 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
     "Programming Language :: Python",
     'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.6',
     'Programming Language :: Python :: 3.7',
     'Programming Language :: Python :: 3.8',
+    'Programming Language :: Python :: 3.9',
     'Programming Language :: Python :: 3 :: Only',
     "Topic :: Scientific/Engineering :: Physics"
 ]

@@ -25,3 +25,6 @@ from .approx_time_evolution import ApproxTimeEvolution
 from .permute import Permute
 from .qpe import QuantumPhaseEstimation
 from .qmc import QuantumMonteCarlo
+from .all_singles_doubles import AllSinglesDoubles
+from .grover import GroverOperator
+from .qft import QFT

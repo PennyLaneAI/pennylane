@@ -14,30 +14,55 @@
 """Code for the adjoint transform."""
 
 from functools import wraps
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, get_active_tape
 
 
 def adjoint(fn):
-    """Create a function that applies the adjoint of the provided operation or template.
+    """Create a function that applies the adjoint (inverse) of the provided operation or template.
 
     This transform can be used to apply the adjoint of an arbitrary sequence of operations.
 
     Args:
-        fn (function): Any python function that applies pennylane operations.
+        fn (function): A quantum function that applies quantum operations.
 
     Returns:
         function: A new function that will apply the same operations but adjointed and in reverse order.
 
     **Example**
 
+    The adjoint transforms can be used within a QNode to apply the adjoint of
+    any quantum function. Consider the following quantum function, that applies two
+    operations:
+
     .. code-block:: python3
 
-        def my_ops():
-            qml.RX(0.123, wires=0)
-            qml.RY(0.456, wires=0)
+        def my_ops(a, b, wire):
+            qml.RX(a, wires=wire)
+            qml.RY(b, wires=wire)
 
-        adj_my_ops = qml.adjoint(my_ops)
-        adj_my_ops() # This will queue ops [qml.RY(-0.456), qml.RX(-0.123)]
+    We can create a QNode that applies this quantum function,
+    followed by the adjoint of this function:
+
+    .. code-block:: python3
+
+        dev = qml.device('default.qubit', wires=1)
+
+        @qml.qnode(dev)
+        def circuit(a, b):
+            my_ops(a, b, wire=0)
+            qml.adjoint(my_ops)(a, b, wire=0)
+            return qml.expval(qml.PauliZ(0))
+
+    Printing this out, we can see that the inverse quantum
+    function has indeed been applied:
+
+    >>> print(qml.draw(circuit)(0.2, 0.5))
+     0: ──RX(0.2)──RY(0.5)──RY(-0.5)──RX(-0.2)──┤ ⟨Z⟩
+
+    The adjoint function can also be applied directly to templates and operations:
+
+    >>> qml.adjoint(qml.RX)(0.123, wires=0)
+    >>> qml.adjoint(qml.templates.StronglyEntanglingLayers)(weights, wires=[0, 1])
 
     .. UsageDetails::
 
@@ -62,7 +87,8 @@ def adjoint(fn):
 
         This creates the following circuit:
 
-        >>> print(qml.draw(circuit)())
+        >>> circuit()
+        >>> print(circuit.draw())
         0: --RX(0.123)--RY(0.456)--RY(-0.456)--RX(-0.123)--| <Z>
 
         **Single operation**
@@ -80,15 +106,44 @@ def adjoint(fn):
 
         This creates the following circuit:
 
-        >>> print(qml.draw(circuit)())
+        >>> circuit()
+        >>> print(circuit.draw())
         0: --RX(0.123)--RX(-0.123)--| <Z>
     """
 
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        with QuantumTape(do_queue=False) as tape:
-            fn(*args, **kwargs)
-        for op in reversed(tape.queue):
-            op.adjoint(do_queue=True)
+        active_tape = get_active_tape()
+
+        if active_tape is not None:
+            with active_tape.stop_recording(), QuantumTape() as tape:
+                fn(*args, **kwargs)
+        else:
+            # Not within a queuing context
+            with QuantumTape() as tape:
+                fn(*args, **kwargs)
+
+        if not tape.operations:
+            # we called op.expand(): get the outputted tape
+            tape = fn(*args, **kwargs)
+
+        adjoint_ops = []
+        for op in reversed(tape.operations):
+            try:
+                new_op = op.adjoint()
+                adjoint_ops.append(new_op)
+            except NotImplementedError:
+                # Expand the operation and adjoint the result.
+                new_ops = adjoint(op.expand)()
+
+                if isinstance(new_ops, QuantumTape):
+                    new_ops = new_ops.operations
+
+                adjoint_ops.extend(new_ops)
+
+        if len(adjoint_ops) == 1:
+            adjoint_ops = adjoint_ops[0]
+
+        return adjoint_ops
 
     return wrapper

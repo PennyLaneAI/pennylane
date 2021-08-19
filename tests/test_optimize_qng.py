@@ -40,7 +40,8 @@ class TestExceptions:
         params = 0.5
 
         with pytest.raises(
-            ValueError, match="The objective function must either be encoded as a single QNode or an ExpvalCost object"
+            ValueError,
+            match="The objective function must either be encoded as a single QNode or an ExpvalCost object",
         ):
             opt.step(cost, params)
 
@@ -49,8 +50,8 @@ class TestOptimize:
     """Test basic optimization integration"""
 
     def test_step_and_cost_autograd(self, tol):
-        """Test that the correct cost is returned via the step_and_cost method for the QNG
-        optimizer"""
+        """Test that the correct cost and step is returned via the
+        step_and_cost method for the QNG optimizer"""
         dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev)
@@ -62,10 +63,78 @@ class TestOptimize:
         var = np.array([0.011, 0.012])
         opt = qml.QNGOptimizer(stepsize=0.01)
 
-        _, res = opt.step_and_cost(circuit, var)
+        step1, res = opt.step_and_cost(circuit, var)
+        step2 = opt.step(circuit, var)
 
         expected = circuit(var)
+        expected_step = var - opt._stepsize * 4 * qml.grad(circuit)(var)
         assert np.all(res == expected)
+        assert np.allclose(step1, expected_step)
+        assert np.allclose(step2, expected_step)
+
+    def test_step_and_cost_with_grad_fn_grouped_input(self, tol):
+        """Test that the correct cost and update is returned via the step_and_cost
+        method for the QNG optimizer when providing an explicit grad_fn.
+        Using a circuit with a single input containing all parameters."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.RX(params[0], wires=0)
+            qml.RY(params[1], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        var = np.array([0.011, 0.012])
+        opt = qml.QNGOptimizer(stepsize=0.01)
+
+        # With autograd gradient function
+        grad_fn = qml.grad(circuit)
+        step1, cost1 = opt.step_and_cost(circuit, var, grad_fn=grad_fn)
+        step2 = opt.step(circuit, var, grad_fn=grad_fn)
+
+        # With more custom gradient function, forward has to be computed explicitly.
+        grad_fn = lambda param: np.array(qml.grad(circuit)(param))
+        step3, cost2 = opt.step_and_cost(circuit, var, grad_fn=grad_fn)
+        step4 = opt.step(circuit, var, grad_fn=grad_fn)
+        expected_step = var - opt._stepsize * 4 * grad_fn(var)
+        expected_cost = circuit(var)
+
+        for step in [step1, step2, step3, step3]:
+            assert np.allclose(step, expected_step)
+        assert np.isclose(cost1, expected_cost)
+        assert np.isclose(cost2, expected_cost)
+
+    def test_step_and_cost_with_grad_fn_split_input(self, tol):
+        """Test that the correct cost and update is returned via the step_and_cost
+        method for the QNG optimizer when providing an explicit grad_fn.
+        Using a circuit with multiple inputs containing the parameters."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(params_0, params_1):
+            qml.RX(params_0, wires=0)
+            qml.RY(params_1, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        var = np.array([0.011, 0.012])
+        opt = qml.QNGOptimizer(stepsize=0.01)
+
+        # With autograd gradient function
+        grad_fn = qml.grad(circuit)
+        step1, cost1 = opt.step_and_cost(circuit, *var, grad_fn=grad_fn)
+        step2 = opt.step(circuit, *var, grad_fn=grad_fn)
+
+        # With more custom gradient function, forward has to be computed explicitly.
+        grad_fn = lambda params_0, params_1: np.array(qml.grad(circuit)(params_0, params_1))
+        step3, cost2 = opt.step_and_cost(circuit, *var, grad_fn=grad_fn)
+        step4 = opt.step(circuit, *var, grad_fn=grad_fn)
+        expected_step = var - opt._stepsize * 4 * grad_fn(*var)
+        expected_cost = circuit(*var)
+
+        for step in [step1, step2, step3, step3]:
+            assert np.allclose(step, expected_step)
+        assert np.isclose(cost1, expected_cost)
+        assert np.isclose(cost2, expected_cost)
 
     def test_qubit_rotation(self, tol):
         """Test qubit rotation has the correct QNG value
@@ -98,7 +167,7 @@ class TestOptimize:
 
             # check metric tensor
             res = opt.metric_tensor
-            exp = np.diag([0.25, (np.cos(theta[0]) ** 2)/4])
+            exp = np.diag([0.25, (np.cos(theta[0]) ** 2) / 4])
             assert np.allclose(res, exp, atol=tol, rtol=0)
 
             # check parameter update
@@ -121,12 +190,9 @@ class TestOptimize:
             qml.RY(params[1], wires=wires)
 
         coeffs = [1, 1]
-        obs_list = [
-            qml.PauliX(0),
-            qml.PauliZ(0)
-        ]
+        obs_list = [qml.PauliX(0), qml.PauliZ(0)]
 
-        qnodes = qml.map(circuit, obs_list, dev, measure='expval')
+        qnodes = qml.map(circuit, obs_list, dev, measure="expval")
         cost_fn = qml.dot(coeffs, qnodes)
 
         def gradient(params):
@@ -144,11 +210,13 @@ class TestOptimize:
 
         # optimization for 200 steps total
         for t in range(num_steps):
-            theta_new = opt.step(cost_fn, theta, metric_tensor_fn=qml.metric_tensor(qnodes.qnodes[0]))
+            theta_new = opt.step(
+                cost_fn, theta, metric_tensor_fn=qml.metric_tensor(qnodes.qnodes[0])
+            )
 
             # check metric tensor
             res = opt.metric_tensor
-            exp = np.diag([0.25, (np.cos(theta[0]) ** 2)/4])
+            exp = np.diag([0.25, (np.cos(theta[0]) ** 2) / 4])
             assert np.allclose(res, exp, atol=tol, rtol=0)
 
             # check parameter update
@@ -171,10 +239,7 @@ class TestOptimize:
             qml.RY(params[1], wires=wires)
 
         coeffs = [1, 1]
-        obs_list = [
-            qml.PauliX(0),
-            qml.PauliZ(0)
-        ]
+        obs_list = [qml.PauliX(0), qml.PauliZ(0)]
 
         h = qml.Hamiltonian(coeffs=coeffs, observables=obs_list)
 
@@ -199,7 +264,7 @@ class TestOptimize:
 
             # check metric tensor
             res = opt.metric_tensor
-            exp = np.diag([0.25, (np.cos(theta[0]) ** 2)/4])
+            exp = np.diag([0.25, (np.cos(theta[0]) ** 2) / 4])
             assert np.allclose(res, exp, atol=tol, rtol=0)
 
             # check parameter update

@@ -131,6 +131,7 @@ class DefaultQubitTF(DefaultQubit):
     parametric_ops = {
         "PhaseShift": tf_ops.PhaseShift,
         "ControlledPhaseShift": tf_ops.ControlledPhaseShift,
+        "CPhase": tf_ops.ControlledPhaseShift,
         "RX": tf_ops.RX,
         "RY": tf_ops.RY,
         "RZ": tf_ops.RZ,
@@ -140,6 +141,9 @@ class DefaultQubitTF(DefaultQubit):
         "CRY": tf_ops.CRY,
         "CRZ": tf_ops.CRZ,
         "CRot": tf_ops.CRot,
+        "IsingXX": tf_ops.IsingXX,
+        "IsingYY": tf_ops.IsingYY,
+        "IsingZZ": tf_ops.IsingZZ,
         "SingleExcitation": tf_ops.SingleExcitation,
         "SingleExcitationPlus": tf_ops.SingleExcitationPlus,
         "SingleExcitationMinus": tf_ops.SingleExcitationMinus,
@@ -178,8 +182,8 @@ class DefaultQubitTF(DefaultQubit):
 
         return res
 
-    def __init__(self, wires, *, shots=None):
-        super().__init__(wires, shots=shots, cache=0)
+    def __init__(self, wires, *, shots=None, analytic=None):
+        super().__init__(wires, shots=shots, cache=0, analytic=analytic)
 
         # prevent using special apply method for this gate due to slowdown in TF implementation
         del self._apply_ops["CZ"]

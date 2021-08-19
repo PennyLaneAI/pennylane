@@ -92,3 +92,16 @@ QAOA Layers
     :no-heading:
     :no-inheritance-diagram:
     :no-inherited-members:
+
+Cycle Optimization
+------------------
+
+The :mod:`~.cycle` module is available for additional functionality related to the maximum-weighted
+cycle problem.
+
+.. currentmodule:: pennylane.qaoa
+
+.. autosummary::
+    :toctree: api
+
+	cycle

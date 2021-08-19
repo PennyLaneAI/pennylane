@@ -27,6 +27,7 @@ import numpy as np
 from pennylane import QubitDevice, QubitStateVector, BasisState, DeviceError
 from pennylane.operation import DiagonalOperation, Channel
 from pennylane.wires import Wires
+from .._version import __version__
 
 ABC_ARRAY = np.array(list(ABC))
 tolerance = 1e-10
@@ -50,8 +51,8 @@ class DefaultMixed(QubitDevice):
 
     name = "Default mixed-state qubit PennyLane plugin"
     short_name = "default.mixed"
-    pennylane_requires = "0.15"
-    version = "0.15.0"
+    pennylane_requires = __version__
+    version = __version__
     author = "Xanadu Inc."
 
     operations = {
@@ -90,6 +91,7 @@ class DefaultMixed(QubitDevice):
         "DepolarizingChannel",
         "BitFlip",
         "PhaseFlip",
+        "ResetError",
         "QubitChannel",
         "QFT",
         "SingleExcitation",
@@ -98,15 +100,18 @@ class DefaultMixed(QubitDevice):
         "DoubleExcitation",
         "DoubleExcitationPlus",
         "DoubleExcitationMinus",
+        "QubitCarry",
+        "QubitSum",
     }
 
-    def __init__(self, wires, *, shots=None, cache=0):
+    def __init__(self, wires, *, shots=None, cache=0, analytic=None):
         if isinstance(wires, int) and wires > 23:
             raise ValueError(
                 "This device does not currently support computations on more than 23 wires"
             )
+
         # call QubitDevice init
-        super().__init__(wires, shots, cache=cache)
+        super().__init__(wires, shots, cache=cache, analytic=analytic)
 
         # Create the initial state.
         self._state = self._create_basis_state(0)

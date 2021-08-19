@@ -138,6 +138,15 @@ class TFInterface(AnnotatedQueue):
         res = self.execute_device(args, input_kwargs["device"])
         self.set_parameters(all_params, trainable_only=False)
 
+        use_adjoint_cached_state = False
+        # tape might not be a jacobian tape
+        jac_options = getattr(self, "jacobian_options", dict())
+        # cache state for adjoint jacobian computation
+        if jac_options.get("jacobian_method", None) == "adjoint_jacobian":
+            if jac_options.get("adjoint_cache", True):
+                use_adjoint_cached_state = True
+                state = input_kwargs["device"]._pre_rotated_state
+
         # The following dictionary caches the Jacobian and Hessian matrices,
         # so that they can be re-used for different vjp/vhp computations
         # within the same backpropagation call.
@@ -174,6 +183,9 @@ class TFInterface(AnnotatedQueue):
             if grad_matrix_fn in saved_grad_matrices:
                 return saved_grad_matrices[grad_matrix_fn]
 
+            if use_adjoint_cached_state:
+                self.jacobian_options["device_pd_options"] = {"starting_state": state}
+
             self.set_parameters(all_params_unwrapped, trainable_only=False)
             grad_matrix = getattr(self, grad_matrix_fn)(
                 input_kwargs["device"], params=args, **self.jacobian_options
@@ -200,7 +212,11 @@ class TFInterface(AnnotatedQueue):
 
                     vhp = tf.cond(
                         tf.rank(hessian) > 2,
-                        lambda: dy_row @ ddy @ hessian @ tf.transpose(dy_row),
+                        lambda: dy_row
+                        @ ddy
+                        @ hessian
+                        @ tf.transpose(dy_row)
+                        / tf.linalg.norm(dy_row) ** 2,
                         lambda: ddy @ hessian,
                     )
 

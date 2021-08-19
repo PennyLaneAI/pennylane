@@ -84,6 +84,7 @@ class DefaultQubitAutograd(DefaultQubit):
     parametric_ops = {
         "PhaseShift": autograd_ops.PhaseShift,
         "ControlledPhaseShift": autograd_ops.ControlledPhaseShift,
+        "CPhase": autograd_ops.ControlledPhaseShift,
         "RX": autograd_ops.RX,
         "RY": autograd_ops.RY,
         "RZ": autograd_ops.RZ,
@@ -93,6 +94,9 @@ class DefaultQubitAutograd(DefaultQubit):
         "CRZ": autograd_ops.CRZ,
         "CRot": autograd_ops.CRot,
         "MultiRZ": autograd_ops.MultiRZ,
+        "IsingXX": autograd_ops.IsingXX,
+        "IsingYY": autograd_ops.IsingYY,
+        "IsingZZ": autograd_ops.IsingZZ,
         "SingleExcitation": autograd_ops.SingleExcitation,
         "SingleExcitationPlus": autograd_ops.SingleExcitationPlus,
         "SingleExcitationMinus": autograd_ops.SingleExcitationMinus,
@@ -127,8 +131,8 @@ class DefaultQubitAutograd(DefaultQubit):
 
         return res
 
-    def __init__(self, wires, *, shots=None):
-        super().__init__(wires, shots=shots, cache=0)
+    def __init__(self, wires, *, shots=None, analytic=None):
+        super().__init__(wires, shots=shots, cache=0, analytic=analytic)
 
         # prevent using special apply methods for these gates due to slowdown in Autograd
         # implementation

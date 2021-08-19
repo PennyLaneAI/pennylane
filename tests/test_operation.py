@@ -35,9 +35,11 @@ from pennylane.wires import Wires
 op_classes = [getattr(qml.ops, cls) for cls in qml.ops.__all__]
 op_classes_cv = [getattr(qml.ops, cls) for cls in qml.ops._cv__all__]
 op_classes_gaussian = [cls for cls in op_classes_cv if cls.supports_heisenberg]
+op_classes_exception = {"PauliRot", "Projector"}
 
 op_classes_param_testable = op_classes.copy()
-op_classes_param_testable.remove(qml.ops.PauliRot)
+for i in [getattr(qml.ops, cls) for cls in list(op_classes_exception)]:
+    op_classes_param_testable.remove(i)
 
 
 def U3(theta, phi, lam):
@@ -123,6 +125,12 @@ class TestOperation:
     def test_operation_init(self, test_class, monkeypatch):
         "Operation subclass initialization."
 
+        if test_class == qml.QubitUnitary:
+            pytest.skip("QubitUnitary can act on any number of wires.")
+
+        if test_class == qml.Hamiltonian:
+            pytest.skip("Hamiltonian has a different initialization signature.")
+
         if test_class in (qml.ControlledQubitUnitary, qml.MultiControlledX):
             pytest.skip("ControlledQubitUnitary alters the input params and wires in its __init__")
 
@@ -176,10 +184,11 @@ class TestOperation:
         U = qml.CRX._matrix(0.4)
 
         op = qml.ControlledQubitUnitary(U, control_wires=control_wires, wires=target_wires)
-        target_data = [np.block([[np.eye(12), np.zeros((12, 4))], [np.zeros((4, 12)), U]])]
+        target_matrix = np.block([[np.eye(12), np.zeros((12, 4))], [np.zeros((4, 12)), U]])
 
         assert op.name == qml.ControlledQubitUnitary.__name__
-        assert np.allclose(target_data, op.data)
+        assert np.allclose([U], op.data)
+        assert np.allclose(op.matrix, target_matrix)
         assert op._wires == Wires(control_wires) + Wires(target_wires)
 
     @pytest.fixture(scope="function")
@@ -375,6 +384,19 @@ class TestOperationConstruction:
         with pytest.raises(ValueError, match="Must specify the wires"):
             DummyOp(0.54, 0)
 
+    def test_id(self):
+        """Test that the id attribute of an operator can be set."""
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+            num_params = 1
+            par_domain = "N"
+            grad_method = None
+
+        op = DummyOp(1.0, wires=0, id="test")
+        assert op.id == "test"
+
 
 class TestObservableConstruction:
     """Test custom observables construction."""
@@ -457,9 +479,35 @@ class TestObservableConstruction:
         expected = "PauliZ(wires=['a'])"
         assert str(m) == expected
 
+    def test_id(self):
+        """Test that the id attribute of an observable can be set."""
+
+        class DummyObserv(qml.operation.Observable):
+            r"""Dummy custom observable"""
+            num_wires = 1
+            num_params = 1
+            par_domain = "N"
+            grad_method = None
+
+        op = DummyObserv(1.0, wires=0, id="test")
+        assert op.id == "test"
+
+
+class TestObservableInstatiation:
+    """Test that wires are specified when a qml.operation.Observable is instantiated"""
+
+    def test_wire_is_given_in_argument(self):
+        class DummyObservable(qml.operation.Observable):
+            num_wires = 1
+            num_params = 0
+            par_domain = None
+
+        with pytest.raises(Exception, match="Must specify the wires *"):
+            DummyObservable()
+
 
 class TestOperatorIntegration:
-    """ Integration tests for the Operator class"""
+    """Integration tests for the Operator class"""
 
     def test_all_wires_defined_but_init_with_one(self):
         """Test that an exception is raised if the class is defined with ALL wires,
@@ -486,7 +534,7 @@ class TestOperatorIntegration:
 
 
 class TestOperationIntegration:
-    """ Integration tests for the Operation class"""
+    """Integration tests for the Operation class"""
 
     def test_inverse_of_operation(self):
         """Test the inverse of an operation"""
@@ -876,6 +924,70 @@ class TestTensor:
         assert type(O_pruned) == type(expected)
         assert O_pruned.wires == expected.wires
 
+    def test_prune_while_queueing_return_tensor(self):
+        """Tests that pruning a tensor to a tensor in a tape context registers
+        the pruned tensor as owned by the measurement,
+        and turns the original tensor into an orphan without an owner."""
+
+        with qml.tape.QuantumTape() as tape:
+            # we assign operations to variables here so we can compare them below
+            a = qml.PauliX(wires=0)
+            b = qml.PauliY(wires=1)
+            c = qml.Identity(wires=2)
+            T = qml.operation.Tensor(a, b, c)
+            T_pruned = T.prune()
+            m = qml.expval(T_pruned)
+
+        ann_queue = tape._queue
+
+        # the pruned tensor became the owner of Paulis
+        assert ann_queue[a]["owner"] == T_pruned
+        assert ann_queue[b]["owner"] == T_pruned
+
+        # the Identity is still owned by the original Tensor
+        assert ann_queue[c]["owner"] == T
+        # the original tensor still owns all three observables
+        # but is not owned by a measurement
+        assert ann_queue[T]["owns"] == (a, b, c)
+        assert not hasattr(ann_queue[T], "owner")
+
+        # the pruned tensor is owned by the measurement
+        # and owns the two Paulis
+        assert ann_queue[T_pruned]["owner"] == m
+        assert ann_queue[T_pruned]["owns"] == (a, b)
+        assert ann_queue[m]["owns"] == T_pruned
+
+    def test_prune_while_queueing_return_obs(self):
+        """Tests that pruning a tensor to an observable in a tape context registers
+        the pruned observable as owned by the measurement,
+        and turns the original tensor into an orphan without an owner."""
+
+        with qml.tape.QuantumTape() as tape:
+            a = qml.PauliX(wires=0)
+            c = qml.Identity(wires=2)
+            T = qml.operation.Tensor(a, c)
+            T_pruned = T.prune()
+            m = qml.expval(T_pruned)
+
+        ann_queue = tape._queue
+
+        # the pruned tensor is the Pauli observable
+        assert T_pruned == a
+        # pruned tensor/Pauli is owned by the measurement
+        # since the entry in the dictionary got updated
+        # when the pruned tensor's owner was memorized
+        assert ann_queue[a]["owner"] == m
+        # the Identity is still owned by the original Tensor
+        assert ann_queue[c]["owner"] == T
+
+        # the original tensor still owns both observables
+        # but is not owned by a measurement
+        assert ann_queue[T]["owns"] == (a, c)
+        assert not hasattr(ann_queue[T], "owner")
+
+        # the measurement owns the Pauli/pruned tensor
+        assert ann_queue[m]["owns"] == T_pruned
+
 
 equal_obs = [
     (qml.PauliZ(0), qml.PauliZ(0), True),
@@ -1239,7 +1351,9 @@ class TestDecomposition:
 
         # We have to patch BasisStatePreparation where it is loaded
         monkeypatch.setattr(
-            qml.ops.qubit, "BasisStatePreparation", lambda *args: call_args.append(args)
+            qml.ops.qubit.state_preparation,
+            "BasisStatePreparation",
+            lambda *args: call_args.append(args),
         )
         qml.BasisState.decomposition(n, wires=wires)
 
@@ -1256,7 +1370,9 @@ class TestDecomposition:
 
         # We have to patch MottonenStatePreparation where it is loaded
         monkeypatch.setattr(
-            qml.ops.qubit, "MottonenStatePreparation", lambda *args: call_args.append(args)
+            qml.ops.qubit.state_preparation,
+            "MottonenStatePreparation",
+            lambda *args: call_args.append(args),
         )
         qml.QubitStateVector.decomposition(state, wires=wires)
 

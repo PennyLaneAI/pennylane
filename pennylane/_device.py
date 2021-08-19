@@ -14,10 +14,11 @@
 """
 This module contains the :class:`Device` abstract base class.
 """
-# pylint: disable=too-many-format-args
+# pylint: disable=too-many-format-args, use-maxsplit-arg
 import abc
 from collections.abc import Iterable, Sequence
 from collections import OrderedDict, namedtuple
+from functools import lru_cache
 
 import numpy as np
 
@@ -109,18 +110,21 @@ class Device(abc.ABC):
     """
 
     # pylint: disable=too-many-public-methods
-    _capabilities = {
-        "model": None,
-    }
+    _capabilities = {"model": None}
     """The capabilities dictionary stores the properties of a device. Devices can add their
     own custom properties and overwrite existing ones by overriding the ``capabilities()`` method."""
 
     _circuits = {}  #: dict[str->Circuit]: circuit templates associated with this API class
     _asarray = staticmethod(np.asarray)
 
-    def __init__(self, wires=1, shots=1000):
+    def __init__(self, wires=1, shots=1000, *, analytic=None):
 
         self.shots = shots
+
+        if analytic is not None:
+            msg = "The analytic argument has been replaced by shots=None. "
+            msg += "Please use shots=None instead of analytic=True."
+            raise DeviceError(msg)
 
         if not isinstance(wires, Iterable):
             # interpret wires as the number of consecutive wires
@@ -133,6 +137,8 @@ class Device(abc.ABC):
         self._op_queue = None
         self._obs_queue = None
         self._parameters = None
+
+        self.tracker = qml.Tracker()
 
     def __repr__(self):
         """String representation."""
@@ -291,6 +297,16 @@ class Device(abc.ABC):
         """
         return self._shot_vector
 
+    def _has_partitioned_shots(self):
+        """Checks if the device was instructed to perform executions with partitioned shots.
+
+        Returns:
+            bool: whether or not shots are partitioned
+        """
+        return self._shot_vector is not None and (
+            len(self._shot_vector) > 1 or self._shot_vector[0].copies > 1
+        )
+
     def define_wire_map(self, wires):
         """Create the map from user-provided wire labels to the wire labels used by the device.
 
@@ -316,6 +332,7 @@ class Device(abc.ABC):
         wire_map = zip(wires, consecutive_wires)
         return OrderedDict(wire_map)
 
+    @lru_cache()
     def map_wires(self, wires):
         """Map the wire labels of wires using this device's wire map.
 
@@ -358,6 +375,7 @@ class Device(abc.ABC):
         """
         return cls._capabilities
 
+    # pylint: disable=too-many-branches
     def execute(self, queue, observables, parameters={}, **kwargs):
         """Execute a queue of quantum operations on the device and then measure the given observables.
 
@@ -435,6 +453,10 @@ class Device(abc.ABC):
             # increment counter for number of executions of device
             self._num_executions += 1
 
+            if self.tracker.active:
+                self.tracker.update(executions=1, shots=self._shots)
+                self.tracker.record()
+
             # Ensures that a combination with sample does not put
             # expvals and vars in superfluous arrays
             if all(obs.return_type is Sample for obs in observables):
@@ -468,7 +490,69 @@ class Device(abc.ABC):
             res = self.execute(circuit.operations, circuit.observables)
             results.append(res)
 
+        if self.tracker.active:
+            self.tracker.update(batches=1, batch_len=len(circuits))
+            self.tracker.record()
+
         return results
+
+    def execute_and_gradients(self, circuits, method="jacobian", **kwargs):
+        """Execute a batch of quantum circuits on the device, and return both the
+        results and the gradients.
+
+        The circuits are represented by tapes, and they are executed
+        one-by-one using the device's ``execute`` method. The results and the
+        corresponding Jacobians are collected in a list.
+
+        For plugin developers: This method should be overwritten if the device
+        can efficiently run multiple circuits on a backend, for example using
+        parallel and/or asynchronous executions, and return both the results and the
+        Jacobians.
+
+        Args:
+            circuits (list[.tape.QuantumTape]): circuits to execute on the device
+            method (str): the device method to call to compute the Jacobian of a single circuit
+            **kwargs: keyword argument to pass when calling ``method``
+
+        Returns:
+            tuple[list[array[float]], list[array[float]]]: Tuple containing list of measured value(s)
+            and list of Jacobians. Returned Jacobians should be of shape ``(output_shape, num_params)``.
+        """
+        gradient_method = getattr(self, method)
+
+        res = []
+        jacs = []
+
+        for circuit in circuits:
+            # Evaluations and gradients are paired, so that
+            # devices can re-use the device state for the
+            # gradient computation (if applicable).
+            res.append(circuit.execute(self))
+            jacs.append(gradient_method(circuit, **kwargs))
+
+        return res, jacs
+
+    def gradients(self, circuits, method="jacobian", **kwargs):
+        """Return the gradients of a batch of quantum circuits on the device.
+
+        The gradient method ``method`` is called sequentially for each
+        circuit, and the corresponding Jacobians are collected in a list.
+
+        For plugin developers: This method should be overwritten if the device
+        can efficiently compute the gradient of multiple circuits on a
+        backend, for example using parallel and/or asynchronous executions.
+
+        Args:
+            circuits (list[.tape.QuantumTape]): circuits to execute on the device
+            method (str): the device method to call to compute the Jacobian of a single circuit
+            **kwargs: keyword argument to pass when calling ``method``
+
+        Returns:
+            list[array[float]]: List of Jacobians. Returned Jacobians should be of
+            shape ``(output_shape, num_params)``.
+        """
+        gradient_method = getattr(self, method)
+        return [gradient_method(circuit, **kwargs) for circuit in circuits]
 
     @property
     def op_queue(self):

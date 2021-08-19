@@ -52,7 +52,13 @@ class TestRepresentationResolver:
         assert RepresentationResolver.index_of_array_or_append(element, list) == index
         assert list == list_after
 
-    @pytest.mark.parametrize("par,expected", [(3, "3"), (5.236422, "5.24"),])
+    @pytest.mark.parametrize(
+        "par,expected",
+        [
+            (3, "3"),
+            (5.236422, "5.24"),
+        ],
+    )
     def test_single_parameter_representation(self, unicode_representation_resolver, par, expected):
         """Test that single parameters are properly resolved."""
         assert unicode_representation_resolver.single_parameter_representation(par) == expected
@@ -107,7 +113,7 @@ class TestRepresentationResolver:
             (qml.ControlledPhase(3.14, wires=[0, 1]), 0, "C"),
             (qml.ThermalState(3, wires=[1]), 1, "Thermal(3)"),
             (
-                qml.GaussianState(np.array([1, 2]), np.array([[2, 0], [0, 2]]), wires=[1]),
+                qml.GaussianState(np.array([[2, 0], [0, 2]]), np.array([1, 2]), wires=[1]),
                 1,
                 "Gaussian(M0,M1)",
             ),
@@ -162,7 +168,11 @@ class TestRepresentationResolver:
             (qml.X(wires=[1]), 1, "x"),
             (qml.P(wires=[1]), 1, "p"),
             (qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]), 1, "|4,5,7╳4,5,7|"),
-            (qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1]), 2, "1+2x₀-1.3x₁+6p₁",),
+            (
+                qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1]),
+                2,
+                "1+2x₀-1.3x₁+6p₁",
+            ),
             (
                 qml.PolyXP(
                     np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1]
@@ -193,6 +203,8 @@ class TestRepresentationResolver:
             (qml.Toffoli(wires=[0, 2, 1]).inv(), 1, "X⁻¹"),
             (qml.Toffoli(wires=[0, 2, 1]).inv(), 0, "C"),
             (qml.Toffoli(wires=[0, 2, 1]).inv(), 2, "C"),
+            (qml.measure.sample(wires=[0, 1]), 0, "basis"),  # not providing an observable in
+            (qml.measure.sample(wires=[0, 1]), 1, "basis"),  # sample gets displayed as raw
         ],
     )
     def test_operator_representation_unicode(
@@ -242,7 +254,7 @@ class TestRepresentationResolver:
             (qml.ControlledPhase(3.14, wires=[0, 1]), 0, "C"),
             (qml.ThermalState(3, wires=[1]), 1, "Thermal(3)"),
             (
-                qml.GaussianState(np.array([1, 2]), np.array([[2, 0], [0, 2]]), wires=[1]),
+                qml.GaussianState(np.array([[2, 0], [0, 2]]), np.array([1, 2]), wires=[1]),
                 1,
                 "Gaussian(M0,M1)",
             ),
@@ -297,7 +309,11 @@ class TestRepresentationResolver:
             (qml.X(wires=[1]), 1, "x"),
             (qml.P(wires=[1]), 1, "p"),
             (qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]), 1, "|4,5,7X4,5,7|"),
-            (qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1]), 2, "1+2x_0-1.3x_1+6p_1",),
+            (
+                qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1]),
+                2,
+                "1+2x_0-1.3x_1+6p_1",
+            ),
             (
                 qml.PolyXP(
                     np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1]
@@ -329,6 +345,8 @@ class TestRepresentationResolver:
             (qml.Toffoli(wires=[0, 2, 1]).inv(), 1, "X^-1"),
             (qml.Toffoli(wires=[0, 2, 1]).inv(), 0, "C"),
             (qml.Toffoli(wires=[0, 2, 1]).inv(), 2, "C"),
+            (qml.measure.sample(wires=[0, 1]), 0, "basis"),  # not providing an observable in
+            (qml.measure.sample(wires=[0, 1]), 1, "basis"),  # sample gets displayed as raw
         ],
     )
     def test_operator_representation_ascii(self, ascii_representation_resolver, op, wire, target):

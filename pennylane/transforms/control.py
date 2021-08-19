@@ -15,7 +15,9 @@
 Contains the control transform.
 """
 from functools import wraps
-from pennylane.tape import QuantumTape
+
+import pennylane as qml
+from pennylane.tape import QuantumTape, get_active_tape
 from pennylane.operation import Operation, AnyWires
 from pennylane.wires import Wires
 from pennylane.transforms.adjoint import adjoint
@@ -45,9 +47,24 @@ def expand_with_control(tape, control_wire):
                 # pylint: disable=protected-access
                 op._controlled(control_wire)
             else:
-                tmp_tape = op.expand()
+                # Attempt to decompose the operation and apply
+                # controls to each gate in the decomposition.
+                with new_tape.stop_recording():
+                    try:
+                        tmp_tape = op.expand()
+
+                    except NotImplementedError:
+                        # No decomposition is defined. Create a
+                        # ControlledQubitUnitary gate using the operation
+                        # matrix representation.
+                        with QuantumTape() as tmp_tape:
+                            qml.ControlledQubitUnitary(
+                                op.matrix, control_wires=control_wire, wires=op.wires
+                            )
+
                 tmp_tape = expand_with_control(tmp_tape, control_wire)
                 requeue_ops_in_tape(tmp_tape)
+
     return new_tape
 
 
@@ -78,11 +95,15 @@ class ControlledOperation(Operation):
         self.subtape = tape
         """QuantumTape: The tape that defines the underlying operation."""
 
-        self.control_wires = Wires(control_wires)
+        self._control_wires = Wires(control_wires)
         """Wires: The control wires."""
 
         wires = self.control_wires + tape.wires
         super().__init__(*tape.get_parameters(), wires=wires, do_queue=do_queue)
+
+    @property
+    def control_wires(self):
+        return self._control_wires
 
     def expand(self):
         tape = self.subtape
@@ -90,11 +111,28 @@ class ControlledOperation(Operation):
             tape = expand_with_control(tape, wire)
         return tape
 
-    def adjoint(self, do_queue=False):
-        with QuantumTape(do_queue=False) as new_tape:
-            # Execute all ops adjointed.
-            adjoint(requeue_ops_in_tape)(self.subtape)
-        return ControlledOperation(new_tape, self.control_wires, do_queue=do_queue)
+    def adjoint(self):
+        """Returns a new ControlledOperation that is equal to the adjoint of `self`"""
+
+        active_tape = get_active_tape()
+
+        if active_tape is not None:
+            with get_active_tape().stop_recording(), QuantumTape() as new_tape:
+                # Execute all ops adjointed.
+                adjoint(requeue_ops_in_tape)(self.subtape)
+
+        else:
+            # Not within a queuing context
+            with QuantumTape() as new_tape:
+                # Execute all ops adjointed.
+                ops = adjoint(requeue_ops_in_tape)(self.subtape)
+
+            if not new_tape.operations:
+                with qml.tape.QuantumTape() as new_tape:
+                    for op in ops:
+                        op.queue()
+
+        return ControlledOperation(new_tape, self.control_wires)
 
     def _controlled(self, wires):
         ControlledOperation(tape=self.subtape, control_wires=Wires(wires) + self.control_wires)
@@ -115,9 +153,11 @@ def ctrl(fn, control):
 
     .. code-block:: python3
 
+        dev = qml.device('default.qubit', wires=4)
+
         def ops(params):
             qml.RX(params[0], wires=0)
-            qml.RZ(params[1] wires=3)
+            qml.RZ(params[1], wires=3)
 
         ops1 = qml.ctrl(ops, control=1)
         ops2 = qml.ctrl(ops, control=2)
@@ -135,14 +175,14 @@ def ctrl(fn, control):
     .. code-block:: python3
 
         @qml.qnode(dev)
-        def my_circuit(params):
+        def my_circuit2():
             # ops1(params=[0.123, 0.456])
             qml.CRX(0.123, wires=[1, 0])
             qml.CRZ(0.456, wires=[1, 3])
 
             # ops1(params=[0.789, 1.234])
             qml.CRX(0.789, wires=[1, 0])
-            qml.CRZ(1.234, (wires=[1, 3])
+            qml.CRZ(1.234, wires=[1, 3])
 
             # ops2(params=[2.987, 3.654])
             qml.CRX(2.987, wires=[2, 0])

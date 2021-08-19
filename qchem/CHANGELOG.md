@@ -1,20 +1,87 @@
-# Release 0.14.0-dev
+# Release 0.18.0-dev
 
-<h3>New features since last release</h3>
+<h3>New features</h3>
 
 <h3>Improvements</h3>
+
+<h3>Bug fixes</h3>
+
+<h3>Breaking changes</h3>
+
+<h3>Contributors</h3>
+
+This release contains contributions from (in alphabetical order):
+
+# Release 0.17.0
+
+<h3>Bug fixes</h3>
+
+* The types of the Hamiltonian terms built from an OpenFermion ``QubitOperator`` using the
+  ``convert_observable`` function, are the same with respect to the analogous observable
+  built directly using PennyLane operations.
+  [(#1525)](https://github.com/PennyLaneAI/pennylane/pull/1525)
+
+* Requires the H5Py dependency to be `H5Py<=3.2.1` due to incompatibilities between `pyscf>=1.7.2` and `H5Py==3.3.0`.
+  [(#1430)](https://github.com/PennyLaneAI/pennylane/pull/1430)
+
+<h3>Contributors</h3>
+
+This release contains contributions from (in alphabetical order):
+
+Josh Izaac, Romain Moyard.
+
+# Release 0.16.0
+
+<h3>Improvements</h3>
+
+* Eases the PySCF dependency to ``pyscf>=1.7.2``.
+  [(#1254)](https://github.com/PennyLaneAI/pennylane/pull/1254)
+
+<h3>Bug fixes</h3>
+
+* Include tolerance in the``convert_observable`` function to check if the input QubitOperator
+  contains complex coefficients. This avoid raising an error if the coefficient's imaginary part is less than `2.22e-08`.
+  [(#1309)](https://github.com/PennyLaneAI/pennylane/pull/1309)
+
+* An error message is raised if a QubitOperator with complex coefficients is passed
+  to the ``convert_observable`` function. At present, the ``vqe.Hamiltonian`` class does not
+  support complex coefficients.
+  [(#1277)](https://github.com/PennyLaneAI/pennylane/pull/1277)
+
+<h3>Contributors</h3>
+
+This release contains contributions from (in alphabetical order):
+
+Alain Delgado Gran, Zeyue Niu.
+
+# Release 0.15.1
+
+<h3>Bug fixes</h3>
+
+* The version requirement for PySCF has been modified to allow for `pyscf>=1.7.2`.
+  [(#1254)](https://github.com/PennyLaneAI/pennylane/pull/1254)
+
+<h3>Contributors</h3>
+
+This release contains contributions from (in alphabetical order):
+
+Antal Száva.
+
+# Release 0.15.0
+
+<h3>Breaking changes</h3>
 
 * The molecular geometry is now stored by a list containing the atomic symbols and
   a 1D array with the position of the atoms in atomic units.
 
-  - The ``read_structure`` function returns a list with the symbols of the atoms and
+  - The `read_structure` function returns a list with the symbols of the atoms and
     the array with the atomic positions. 
 
-  - The ``meanfield`` and ``molecular_hamiltonian`` functions takes separately the
+  - The `meanfield` and `molecular_hamiltonian` functions take separately the
     list of atomic symbols and the array with the atomic coordinates.
 
-  - Labelling the molecule is now optional as we have made ``name`` a keyword argument
-    in the ``meanfield`` and ``molecular_hamiltonian`` functions.
+  - Labelling the molecule is now optional as we have made `name` a keyword argument
+    in the `meanfield` and `molecular_hamiltonian` functions.
 
     For example:
 
@@ -26,17 +93,11 @@
   This allows users to more easily build parametrized electronic Hamiltonians
   [(#1078)](https://github.com/PennyLaneAI/pennylane/pull/1078)
 
-<h3>Breaking changes</h3>
-
-<h3>Documentation</h3>
-
-<h3>Bug fixes</h3>
-
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Alain Delgado
+Juan Miguel Arrazola, Alain Delgado Gran, Soran Jahangiri.
 
 
 # Release 0.13.1

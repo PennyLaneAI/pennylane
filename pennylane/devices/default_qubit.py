@@ -23,10 +23,12 @@ import functools
 from string import ascii_letters as ABC
 
 import numpy as np
+from scipy.sparse import coo_matrix
 
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
 from pennylane.operation import DiagonalOperation
 from pennylane.wires import WireError
+from .._version import __version__
 
 ABC_ARRAY = np.array(list(ABC))
 
@@ -84,8 +86,8 @@ class DefaultQubit(QubitDevice):
 
     name = "Default qubit PennyLane plugin"
     short_name = "default.qubit"
-    pennylane_requires = "0.15"
-    version = "0.15.0"
+    pennylane_requires = __version__
+    version = __version__
     author = "Xanadu Inc."
 
     operations = {
@@ -105,12 +107,14 @@ class DefaultQubit(QubitDevice):
         "SX",
         "CNOT",
         "SWAP",
+        "ISWAP",
         "CSWAP",
         "Toffoli",
         "CY",
         "CZ",
         "PhaseShift",
         "ControlledPhaseShift",
+        "CPhase",
         "RX",
         "RY",
         "RZ",
@@ -120,19 +124,32 @@ class DefaultQubit(QubitDevice):
         "CRZ",
         "CRot",
         "QFT",
+        "IsingXX",
+        "IsingYY",
+        "IsingZZ",
         "SingleExcitation",
         "SingleExcitationPlus",
         "SingleExcitationMinus",
         "DoubleExcitation",
         "DoubleExcitationPlus",
         "DoubleExcitationMinus",
+        "QubitCarry",
+        "QubitSum",
     }
 
-    observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}
+    observables = {
+        "PauliX",
+        "PauliY",
+        "PauliZ",
+        "Hadamard",
+        "Hermitian",
+        "Identity",
+        "Projector",
+        "SparseHamiltonian",
+    }
 
-    def __init__(self, wires, *, shots=None, cache=0):
-        # call QubitDevice init
-        super().__init__(wires, shots, cache=cache)
+    def __init__(self, wires, *, shots=None, cache=0, analytic=None):
+        super().__init__(wires, shots, cache=cache, analytic=analytic)
 
         # Create the initial state. Internally, we store the
         # state as an array of dimension [2]*wires.
@@ -150,8 +167,10 @@ class DefaultQubit(QubitDevice):
             "CNOT": self._apply_cnot,
             "SWAP": self._apply_swap,
             "CZ": self._apply_cz,
+            "Toffoli": self._apply_toffoli,
         }
 
+    @functools.lru_cache()
     def map_wires(self, wires):
         # temporarily overwrite this method to bypass
         # wire map that produces Wires objects
@@ -335,6 +354,44 @@ class DefaultQubit(QubitDevice):
         state_x = self._apply_x(state[sl_1], axes=target_axes)
         return self._stack([state[sl_0], state_x], axis=axes[0])
 
+    def _apply_toffoli(self, state, axes, **kwargs):
+        """Applies a Toffoli gate by slicing along the axis of the greater control qubit, slicing
+        each of the resulting sub-arrays along the axis of the smaller control qubit, and then applying
+        an X transformation along the axis of the target qubit of the fourth sub-sub-array.
+
+        By performing two consecutive slices in this way, we are able to select all of the amplitudes with
+        a corresponding :math:`|11\rangle` for the two control qubits. This means we then just need to apply
+        a :class:`~.PauliX` (NOT) gate to the result.
+
+        Args:
+            state (array[complex]): input state
+            axes (List[int]): target axes to apply transformation
+
+        Returns:
+            array[complex]: output state
+        """
+        cntrl_max = np.argmax(axes[:2])
+        cntrl_min = cntrl_max ^ 1
+        sl_a0 = _get_slice(0, axes[cntrl_max], self.num_wires)
+        sl_a1 = _get_slice(1, axes[cntrl_max], self.num_wires)
+        sl_b0 = _get_slice(0, axes[cntrl_min], self.num_wires - 1)
+        sl_b1 = _get_slice(1, axes[cntrl_min], self.num_wires - 1)
+
+        # If both controls are smaller than the target, shift the target axis down by two. If one
+        # control is greater and one control is smaller than the target, shift the target axis
+        # down by one. If both controls are greater than the target, leave the target axis as-is.
+        if axes[cntrl_min] > axes[2]:
+            target_axes = [axes[2]]
+        elif axes[cntrl_max] > axes[2]:
+            target_axes = [axes[2] - 1]
+        else:
+            target_axes = [axes[2] - 2]
+
+        # state[sl_a1][sl_b1] gives us all of the amplitudes with a |11> for the two control qubits.
+        state_x = self._apply_x(state[sl_a1][sl_b1], axes=target_axes)
+        state_stacked_a1 = self._stack([state[sl_a1][sl_b0], state_x], axis=axes[cntrl_min])
+        return self._stack([state[sl_a0], state_stacked_a1], axis=axes[cntrl_max])
+
     def _apply_swap(self, state, axes, **kwargs):
         """Applies a SWAP gate by performing a partial transposition along the specified axes.
 
@@ -390,6 +447,39 @@ class DefaultQubit(QubitDevice):
 
         phase = self._conj(parameters) if inverse else parameters
         return self._stack([state[sl_0], phase * state[sl_1]], axis=axes[0])
+
+    def expval(self, observable, shot_range=None, bin_size=None):
+        """Returns the expectation value of a Hamiltonian observable. When the observable is a
+         ``SparseHamiltonian`` object, the expectation value is computed directly for the full
+         Hamiltonian, which leads to faster execution.
+
+        Args:
+            observable (~.Observable): a PennyLane observable
+            shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
+                to use. If not specified, all samples are used.
+            bin_size (int): Divides the shot range into bins of size ``bin_size``, and
+                returns the measurement statistic separately over each bin. If not
+                provided, the entire shot range is treated as a single bin.
+
+        Returns:
+            float: returns the expectation value of the observable
+        """
+        if observable.name == "SparseHamiltonian":
+            if self.shots is not None:
+                raise DeviceError("SparseHamiltonian must be used with shots=None")
+
+        if observable.name == "SparseHamiltonian" and self.shots is None:
+
+            ev = coo_matrix.dot(
+                coo_matrix(self._conj(self.state)),
+                coo_matrix.dot(
+                    observable.matrix, coo_matrix(self.state.reshape(len(self.state), 1))
+                ),
+            )
+
+            return np.real(ev.toarray()[0])
+
+        return super().expval(observable, shot_range=shot_range, bin_size=bin_size)
 
     def _get_unitary_matrix(self, unitary):  # pylint: disable=no-self-use
         """Return the matrix representing a unitary operation.

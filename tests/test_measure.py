@@ -107,7 +107,7 @@ class TestVar:
 
         x = 0.54
         res = circuit(x)
-        expected = np.sin(x)**2
+        expected = np.sin(x) ** 2
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -153,7 +153,7 @@ class TestSample:
 
         sample = circuit()
 
-        assert np.array_equal(sample.shape, (2,n_sample))
+        assert np.array_equal(sample.shape, (2, n_sample))
 
     def test_sample_combination(self, tol):
         """Test the output of combining expval, var and sample"""
@@ -193,7 +193,7 @@ class TestSample:
 
     def test_multi_wire_sample_regular_shape(self, tol):
         """Test the return type and shape of sampling multiple wires
-           where a rectangular array is expected"""
+        where a rectangular array is expected"""
         n_sample = 10
 
         dev = qml.device("default.qubit", wires=3, shots=n_sample)
@@ -211,7 +211,7 @@ class TestSample:
 
     def test_sample_output_type_in_combination(self, tol):
         """Test the return type and shape of sampling multiple works
-           in combination with expvals and vars"""
+        in combination with expvals and vars"""
         n_sample = 10
 
         dev = qml.device("default.qubit", wires=3, shots=n_sample)
@@ -251,6 +251,53 @@ class TestSample:
         def circuit():
             res = qml.sample(qml.PauliZ(0))
             assert res.return_type is Sample
+            return res
+
+        circuit()
+
+    def test_providing_observable_and_wires(self):
+        """Test that a ValueError is raised if both an observable is provided and wires are specified"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            return qml.sample(qml.PauliZ(0), wires=[0, 1])
+
+        with pytest.raises(
+            ValueError,
+            match="Cannot specify the wires to sample if an observable is provided."
+            " The wires to sample will be determined directly from the observable.",
+        ):
+            res = circuit()
+
+    def test_providing_no_observable_and_no_wires(self):
+        """Test that we can provide no observable and no wires to sample function"""
+        dev = qml.device("default.qubit", wires=2, shots=1000)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            res = qml.sample()
+            assert res.obs is None
+            assert res.wires == qml.wires.Wires([])
+            return res
+
+        circuit()
+
+    def test_providing_no_observable_and_wires(self):
+        """Test that we can provide no observable but specify wires to the sample function"""
+        wires = [0, 2]
+        wires_obj = qml.wires.Wires(wires)
+        dev = qml.device("default.qubit", wires=3, shots=1000)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            res = qml.sample(wires=wires)
+
+            assert res.obs is None
+            assert res.wires == wires_obj
             return res
 
         circuit()
@@ -679,9 +726,7 @@ class TestState:
     @pytest.mark.parametrize(
         "device", ["default.qubit", "default.qubit.tf", "default.qubit.autograd"]
     )
-    @pytest.mark.parametrize(
-        "diff_method", ["best", "finite-diff", "parameter-shift"]
-    )
+    @pytest.mark.parametrize("diff_method", ["best", "finite-diff", "parameter-shift"])
     def test_devices(self, device, diff_method, skip_if_no_tf_support):
         """Test that the returned state is equal to the expected returned state for all of
         PennyLane's built in statevector devices"""

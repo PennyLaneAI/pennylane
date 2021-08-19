@@ -18,10 +18,11 @@ to the ``QuantumTape`` class.
 # pylint: disable=too-many-branches
 
 import itertools
+import warnings
+
 import numpy as np
 
 import pennylane as qml
-
 from pennylane.operation import State
 from pennylane.tape import QuantumTape
 
@@ -73,6 +74,7 @@ class JacobianTape(QuantumTape):
 
     The Jacobian is computed using finite difference:
 
+    >>> dev = qml.device('default.qubit', wires=[0, 'a'])
     >>> tape.jacobian(dev)
     [[-0.35846484 -0.46923704  0.        ]]
     >>> tape.jacobian(dev, params=[0.1, 0.1, 0.1])
@@ -82,7 +84,7 @@ class JacobianTape(QuantumTape):
     avoiding unnecessary calculations:
 
     >>> tape.trainable_params = {0} # set only the first parameter as free
-    >>> tape.set_parameters(0.56)
+    >>> tape.set_parameters([0.56])
     >>> tape.jacobian(dev)
     [[-0.45478169]]
     """
@@ -91,6 +93,11 @@ class JacobianTape(QuantumTape):
         super().__init__(name=name, do_queue=do_queue)
         self.jacobian_options = {}
         self.hessian_options = {}
+
+    def copy(self, copy_operations=False, tape_cls=None):
+        copied_tape = super().copy(copy_operations=copy_operations, tape_cls=tape_cls)
+        copied_tape.jacobian_options = self.jacobian_options
+        return copied_tape
 
     def _grad_method(self, idx, use_graph=True, default_method="F"):
         """Determine the correct partial derivative computation method for each gate parameter.
@@ -223,11 +230,17 @@ class JacobianTape(QuantumTape):
     @staticmethod
     def _flatten_processing_result(g):
         """Flattens the output from processing_fn in parameter shift methods."""
-        if g.dtype is np.dtype("object"):
-            # object arrays cannot be flattened; must hstack them
+        if hasattr(g, "dtype") and g.dtype is np.dtype("object"):
+            # - Object arrays cannot be flattened; must hstack them.
+            # - We also check that g has attribute dtype first to allow for
+            #   Observables that return arbitrary objects.
             g = np.hstack(g)
 
-        return g.flatten()
+        if hasattr(g, "flatten"):
+            # flatten only if g supports flattening to allow for
+            # objects other than numpy ndarrays
+            return g.flatten()
+        return g
 
     def numeric_pd(self, idx, params=None, **options):
         """Generate the tapes and postprocessing methods required to compute the gradient of a parameter using the
@@ -347,7 +360,7 @@ class JacobianTape(QuantumTape):
 
         # TODO: modify devices that have device Jacobian methods to
         # accept the quantum tape as an argument
-        jac = jacobian_method(self)
+        jac = jacobian_method(self, **options.get("device_pd_options", dict()))
 
         # restore original parameters
         self.set_parameters(saved_parameters)
@@ -385,6 +398,43 @@ class JacobianTape(QuantumTape):
             tapes.
         """
         raise NotImplementedError
+
+    @staticmethod
+    def _choose_params_with_methods(diff_methods, argnum):
+        """Chooses the trainable parameters to use for computing the Jacobian
+        by returning a map of their indices and differentiation methods.
+
+        When there are fewer parameters specified than the total number of
+        trainable parameters, the Jacobian is estimated by using the parameters
+        specified using the ``argnum`` keyword argument.
+
+        Args:
+            diff_methods (list): the ordered list of differentiation methods
+                for each parameter
+            argnum (int, list(int), None): Indices for which argument(s) to
+                compute the Jacobian with respect to.
+
+        Returns:
+            enumerate or list: map of the trainable parameter indices and
+            differentiation methods
+        """
+        if argnum is None:
+            return enumerate(diff_methods)
+
+        if isinstance(argnum, int):
+            argnum = [argnum]
+
+        num_params = len(argnum)
+
+        if num_params == 0:
+            warnings.warn(
+                "No trainable parameters were specified for computing the Jacobian.",
+                UserWarning,
+            )
+            return []
+
+        diff_methods_to_use = map(diff_methods.__getitem__, argnum)
+        return zip(argnum, diff_methods_to_use)
 
     def jacobian(self, device, params=None, **options):
         r"""Compute the Jacobian of the parametrized quantum circuit recorded by the quantum tape.
@@ -434,6 +484,9 @@ class JacobianTape(QuantumTape):
             order=1 (int): The order of the finite difference method to use. ``1`` corresponds
                 to forward finite differences, ``2`` to centered finite differences.
             shift=pi/2 (float): the size of the shift for two-term parameter-shift gradient computations
+            argnum=None (int, list(int), None): Which argument(s) to compute the Jacobian
+                with respect to. When there are fewer parameters specified than the
+                total number of trainable parameters, the jacobian is being estimated.
 
         Returns:
             array[float]: 2-dimensional array of shape ``(tape.output_dim, tape.num_params)``
@@ -526,7 +579,9 @@ class JacobianTape(QuantumTape):
                 # First order (forward) finite-difference will be performed.
                 # Compute the value of the tape at the current parameters here. This ensures
                 # this computation is only performed once, for all parameters.
-                options["y0"] = np.asarray(self.execute_device(params, device))
+                # convert to float64 to eliminate floating point errors when params float32
+                params_f64 = np.array(params, dtype=np.float64)
+                options["y0"] = np.asarray(self.execute_device(params_f64, device))
 
         # some gradient methods need the device or the device wires
         options["device"] = device
@@ -540,7 +595,11 @@ class JacobianTape(QuantumTape):
         processing_fns = []
         nonzero_grad_idx = []
 
-        for trainable_idx, param_method in enumerate(diff_methods):
+        argnum = options.get("argnum", None)
+
+        params_with_methods = self._choose_params_with_methods(diff_methods, argnum)
+
+        for trainable_idx, param_method in params_with_methods:
             if param_method == "0":
                 continue
 
@@ -579,9 +638,15 @@ class JacobianTape(QuantumTape):
 
             if jac is None:
                 # update the tape's output dimension
-                self._output_dim = len(g)
-                # create the Jacobian matrix
-                jac = np.zeros((len(g), len(params)), dtype=float)
+                try:
+                    self._output_dim = len(g)
+                except TypeError:
+                    # if g has no len (e.g., because it is not a numpy.ndarray)
+                    # assume the dimension is 1
+                    self._output_dim = 1
+                # create the Jacobian matrix with appropriate dtype
+                dtype = g.dtype if isinstance(g, (np.ndarray, float)) else np.object_
+                jac = np.zeros((self._output_dim, len(params)), dtype=dtype)
 
             jac[:, i] = g
 
@@ -683,6 +748,36 @@ class JacobianTape(QuantumTape):
             # Either all parameters have grad method 0, or there are no trainable
             # parameters. Simply return an empty Hessian.
             return np.zeros((len(params), len(params)), dtype=float)
+
+        # The parameter-shift Hessian implementation currently only supports
+        # the two-term parameter-shift rule. Raise an error for unsupported operations.
+        supported_ops = (
+            "RX",
+            "RY",
+            "RZ",
+            "Rot",
+            "PhaseShift",
+            "ControlledPhaseShift",
+            "MultiRZ",
+            "PauliRot",
+            "U1",
+            "U2",
+            "U3",
+            "SingleExcitationMinus",
+            "SingleExcitationPlus",
+            "DoubleExcitationMinus",
+            "DoubleExcitationPlus",
+        )
+
+        for idx, info in self._par_info.items():
+            op = info["op"]
+
+            if idx in self.trainable_params and op.name not in supported_ops:
+                raise ValueError(
+                    f"The operation {op.name} is currently not supported for the "
+                    f"parameter-shift Hessian.\nPlease decompose the operation in your "
+                    f"QNode by replacing it with '{op.__str__().replace('(', '.decomposition(')}'"
+                )
 
         # some gradient methods need the device or the device wires
         options["device"] = device
