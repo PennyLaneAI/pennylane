@@ -790,7 +790,7 @@ class MultiControlledX(Operation):
     **Details:**
 
     * Number of wires: Any (the operation can act on any number of wires)
-    * Number of parameters: 1
+    * Number of parameters: 0
     * Gradient recipe: None
 
     Args:
@@ -836,7 +836,7 @@ class MultiControlledX(Operation):
     >>> qml.MultiControlledX(control_wires=[0, 1, 2, 3], wires=4, control_values='1110')
 
     """
-    num_params = 1
+    num_params = 0
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
@@ -867,26 +867,23 @@ class MultiControlledX(Operation):
         self._work_wires = work_wires
         self._control_wires = control_wires
 
-        U = PauliX.matrix
-        self.U = U
-
         wires = control_wires + wires
 
         if not control_values:
             control_values = "1" * len(control_wires)
 
-        control_int = self._parse_control_values(control_wires, control_values)
         self.control_values = control_values
 
-        self._padding_left = control_int * len(U)
-        self._padding_right = 2 ** len(wires) - len(U) - self._padding_left
         self._CX = None
 
         super().__init__(*params, wires=wires, do_queue=do_queue)
 
     def _matrix(self, *params):
         if self._CX is None:
-            self._CX = block_diag(np.eye(self._padding_left), self.U, np.eye(self._padding_right))
+            control_int = self._parse_control_values(self._control_wires, self.control_values)
+            padding_left = control_int * 2
+            padding_right = 2 ** len(self.wires) - 2 - padding_left
+            self._CX = block_diag(np.eye(padding_left), PauliX.matrix, np.eye(padding_right))
 
         return self._CX
 
