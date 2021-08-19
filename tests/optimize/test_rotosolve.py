@@ -283,7 +283,6 @@ class TestWithClassicalFunctions:
         assert np.allclose(y_output_step_and_cost, expected_y_output)
         assert np.isclose(old_cost, fun(*expected_intermediate_x[0]))
 
-
 @pytest.mark.parametrize(
     "fun, x_min, param, num_freq",
     list(zip(classical_functions, classical_minima, classical_params, classical_num_frequencies)),
@@ -313,10 +312,72 @@ def test_multiple_steps(fun, x_min, param, num_freq):
         atol=1e-5,
     )
 
+classical_functions_deact = [
+    lambda x: np.sin(x + 0.124) * 2.5123,
+    lambda x, y: -np.cos(x + 0.12) * 0.872 + np.sin(y[0] - 2.01) - np.cos(y[1] - 1.35) * 0.111,
+    lambda x, y, z: -np.cos(x + 0.12) * 0.872 + np.sin(y - 2.01) - np.cos(z - 1.35) * 0.111,
+]
+classical_minima_deact = [
+    (0.24,),
+    (-0.12, [0.8, 0.1]),
+    (-0.12, 0.2, 1.35),
+]
+classical_params_deact = [
+    (np.array(0.24, requires_grad=False),),
+    (0.3, np.array([0.8, 0.1], requires_grad=False)),
+    (0.1, np.array(0.2, requires_grad=False), 0.5),
+]
+classical_num_frequencies_deact = [[], [1], 1]
+
+@pytest.mark.parametrize(
+    "fun, x_min, param, num_freq",
+    list(zip(classical_functions_deact, classical_minima_deact, classical_params_deact, classical_num_frequencies_deact)),
+)
+class TestDeactivatedTrainingWithClassicalFunctions:
+    def test_single_step(self, fun, x_min, param, num_freq):
+        """Tests convergence for easy classical functions in a single Rotosolve step
+        with some arguments deactivated for training.
+        Includes testing of the parameter output shape and the old cost when using step_and_cost."""
+        opt = RotosolveOptimizer()
+
+        new_param_step = opt.step(
+            fun,
+            *param,
+            num_frequencies=num_freq,
+            optimizer="brute",
+        )
+        # The following accounts for the unpacking functionality for length-1 param
+        if len(param) == 1:
+            new_param_step = (new_param_step,)
+
+        assert len(x_min) == len(new_param_step)
+        assert np.allclose(
+            np.fromiter(_flatten(x_min), dtype=float),
+            np.fromiter(_flatten(new_param_step), dtype=float),
+            atol=1e-5,
+        )
+
+        new_param_step_and_cost, old_cost = opt.step_and_cost(
+            fun,
+            *param,
+            num_frequencies=num_freq,
+            optimizer="brute",
+        )
+        # The following accounts for the unpacking functionality for length-1 param
+        if len(param) == 1:
+            new_param_step_and_cost = (new_param_step_and_cost,)
+
+        assert len(x_min) == len(new_param_step_and_cost)
+        assert np.allclose(
+            np.fromiter(_flatten(new_param_step_and_cost), dtype=float),
+            np.fromiter(_flatten(new_param_step), dtype=float),
+            atol=1e-5,
+        )
+        assert np.isclose(old_cost, fun(*param))
+
 
 num_wires = 3
 dev = qml.device("default.qubit", wires=num_wires)
-
 
 @qml.qnode(dev)
 def scalar_qnode(x):
@@ -429,3 +490,4 @@ class TestWithQNodes:
                 param = (param,)
 
         assert qnode(*param) < initial_cost
+

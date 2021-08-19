@@ -18,6 +18,13 @@ import numpy as np
 from scipy.optimize import brute, shgo
 from pennylane.utils import _flatten, unflatten
 
+def _assert_integer(x):
+    x_type = type(x)
+    if not np.issubdtype(x_type, np.integer):
+        raise ValueError(
+            "The numbers of frequencies are expected to be integers. "
+            f"Received {x_type}."
+        )
 
 def _brute_optimizer(fun, num_steps, **kwargs):
     r"""Brute force optimizer, wrapper of scipy.optimizer.brute that repeats it
@@ -200,28 +207,30 @@ class RotosolveOptimizer:
             If a single arg is provided, list [array] is replaced by array.
             list [float]: the intermediate energy values, only returned if ``full_output=True``.
         """
+        _requires_grad = [getattr(arg, "requires_grad", True) for arg in args]
         if num_frequencies is None:
-            num_frequencies = [1] * len(args)
+            num_frequencies = [1] * sum(_requires_grad)
             num_frequencies_flat = num_frequencies
-        elif np.isscalar(num_frequencies) and np.isclose(int(num_frequencies), num_frequencies):
-            num_frequencies = [num_frequencies] * len(args)
+        elif np.isscalar(num_frequencies):
+            _assert_integer(num_frequencies)
+            num_frequencies = [num_frequencies] * sum(_requires_grad)
             num_frequencies_flat = num_frequencies
         else:
-            num_frequencies_flat = [
-                np.fromiter(_flatten(num_freq), dtype=int) for num_freq in num_frequencies
-            ]
-            for num_frequency_flat in num_frequencies_flat:
-                for _num_freq in num_frequency_flat:
-                    if not np.issubdtype(type(_num_freq), np.integer):
-                        raise ValueError(
-                            "The numbers of frequencies are expected to be integers. "
-                            f"Received {type(_num_freq)}."
-                        )
-            if len(num_frequencies) != len(args):
+            num_frequencies_flat = []
+            for num_frequency in num_frequencies:
+                if np.isscalar(num_frequency):
+                    _assert_integer(num_frequency)
+                    num_frequency_flat = num_frequency
+                else:
+                    num_frequency_flat = list(_flatten(num_frequency))
+                    [_assert_integer(_num_freq) for _num_freq in num_frequency_flat]
+                    num_frequency_flat = np.array(num_frequency_flat, dtype=int)
+                num_frequencies_flat.append(num_frequency_flat)
+            if len(num_frequencies) != sum(_requires_grad):
                 raise ValueError(
                     "The length of the provided numbers of frequencies "
                     f"({len(num_frequencies)}) does not match the number of function arguments "
-                    f"({len(args)})."
+                    f"({sum(_requires_grad)})."
                 )
 
         optimizer_kwargs = optimizer_kwargs or {}
@@ -256,6 +265,8 @@ class RotosolveOptimizer:
                 num_frequency_flat = num_frequencies_flat[train_arg_index]
                 x_flat = np.fromiter(_flatten(arg), dtype=float)
                 num_params = len(x_flat)
+                print(num_frequency_flat)
+                print(np.isscalar(num_frequency_flat))
                 if np.isscalar(num_frequency_flat):
                     num_frequency_flat = [num_frequency_flat] * num_params
                 else:
@@ -283,7 +294,7 @@ class RotosolveOptimizer:
                         optimizer,
                         optimizer_kwargs,
                         full_output,
-                        fun_at_zero=(fun_at_zero if arg_index + par_index == 0 else None),
+                        fun_at_zero=(fun_at_zero if train_arg_index + par_index == 0 else None),
                     )
                     x_flat += shift_vec * x_min
                     if full_output:
@@ -433,7 +444,7 @@ class RotosolveOptimizer:
             else:
                 y_min = None
         else:
-            reconstruction = RotosolveOptimizer._full_reconstruction_equ(
+            reconstruction = RotosolveOptimizer.full_reconstruction_equ(
                 objective_fn, num_frequency, fun_at_zero
             )
             x_min, y_min = optimizer(reconstruction, **optimizer_kwargs)
