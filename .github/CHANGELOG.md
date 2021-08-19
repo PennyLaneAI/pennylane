@@ -18,7 +18,7 @@
   For details see [Vidal and Theis, 2018](https://arxiv.org/abs/1812.06323)
   and [Wierichs, Izaac, Wang, Lin 2021](https://arxiv.org/abs/2107.12390).
 
-  Consider a circuit with a mixture of Pauli rotation gates, controlled Pauli rotations and
+  Consider a circuit with a mixture of Pauli rotation gates, controlled Pauli rotations, and
   single-parameter layers of Pauli rotations:
   ```python
   dev = qml.device('default.qubit', wires=3, shots=None)
