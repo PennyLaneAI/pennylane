@@ -590,7 +590,7 @@ class Interferometer(CVOperation):
 
     def __init__(self, *args, **kwargs):
         warnings.warn(
-            "``Interferometer`` is now deprecated and will be renamed to ``InterferometerUnitary``",
+            "'Interferometer' is deprecated and will be renamed 'InterferometerUnitary'",
             UserWarning,
             stacklevel=2,
         )
