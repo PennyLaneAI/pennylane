@@ -31,7 +31,7 @@ def _convert_to_su4(U):
         equivalent to U up to a global phase.
     """
     # Check unitarity
-    if not math.allclose(math.dot(U, math.T(math.conj(U))), math.eye(2), atol=1e-7):
+    if not math.allclose(math.dot(U, math.T(math.conj(U))), math.eye(4), atol=1e-7):
         raise ValueError("Operator must be unitary.")
 
     # Compute the determinant
@@ -46,14 +46,14 @@ def _convert_to_su4(U):
 
 
 def _select_rotation_angles(U):
-    r"""Choose the rotation angles of RZ, RY in the two-qubit decomposition.
+    """Choose the rotation angles of RZ, RY in the two-qubit decomposition.
     They are chosen as per Proposition V.1 in quant-ph/0308033 and are based
     on the phases of the eigenvalues of U.
     """
 
     # Choose any three eigenvalues of U, e^ix, e^iy, e^iz.
     evs = qml.math.linalg.eigvals(U)
-    x, y, z = qml.math.angle(evs[0]), qml.math.angle(evs[1]), qml.math.angles(evs[2])
+    x, y, z = qml.math.angle(evs[0]), qml.math.angle(evs[1]), qml.math.angle(evs[2])
 
     # Then the rotation angles can be computed as follows
     alpha = (x + y) / 2
@@ -62,6 +62,18 @@ def _select_rotation_angles(U):
 
     return alpha, beta, delta
 
+
+def _determine_tensor_factors(U, V):
+    """ U, V are SU(4) matrices for which there exists A, B, C, D such that
+    (C \otimes D) V (A \otimes B) = U. The problem is to find A, B, C, D
+    in an analytic and fully differentiable manner.
+
+    Thankfully this process has been described in detail in the Appendix of
+    Coffey & Deiotte's 2009 paper:
+    https://link.springer.com/article/10.1007/s11128-009-0156-3
+    """
+
+    return A, B, C, D
 
 def two_qubit_decomposition(U, wires):
     r"""Recover the decomposition of a two-qubit matrix :math:`U` in terms of
@@ -107,14 +119,15 @@ def two_qubit_decomposition(U, wires):
     ]
 
     # Now we need to find the four SU(2) operations A, B, C, D
-    # TODO
+    interior_mat = _compute_matrix_representation(interior_decomp)
+    A, B, C, D = _determine_tensor_factors(U, interior_mat)
 
     # Since we have only their qubit unitary form, we need to
     # decompose them as well.
     A_ops = zyz_decomposition(A, wires[0])
     B_ops = zyz_decomposition(B, wires[1])
     C_ops = zyz_decomposition(C, wires[0])
-    D_ops = zyz_decomposition(A, wires[1])
+    D_ops = zyz_decomposition(D, wires[1])
 
     # Return the full decomposition
     return C_ops + D_ops + interior_decomp + A_ops + B_ops
