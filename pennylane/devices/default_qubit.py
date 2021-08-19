@@ -25,10 +25,11 @@ from string import ascii_letters as ABC
 import numpy as np
 from scipy.sparse import coo_matrix
 
+import pennylane as qml
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
 from pennylane.operation import DiagonalOperation
 from pennylane.wires import WireError
-from pennylane.utils import sparse_hamiltonian
+from pennylane.utils import sparse
 from .._version import __version__
 
 ABC_ARRAY = np.array(list(ABC))
@@ -486,15 +487,14 @@ class DefaultQubit(QubitDevice):
                 # This case should always be intercepted by the QNode, but we want to make sure here.
                 raise DeviceError("Hamiltonian must be used with shots=None")
 
-            # temporary hack: convert to sparse hamiltonian (which fails for some Hamiltonians)
-            ham = sparse_hamiltonian(observable, wires=self.wires)
-            ev = coo_matrix.dot(
-                coo_matrix(self._conj(self.state)),
-                coo_matrix.dot(
-                    ham, coo_matrix(self.state.reshape(len(self.state), 1))
-                ),
-            )
-            return np.real(ev.toarray()[0])
+            # get sparse representation (which fails for some Hamiltonians)
+            sparse_ham = sparse(observable, wires=self.wires)
+
+            # Execute sparse conj(state)*H*state product
+            res = 0.
+            for idx, entry in sparse_ham.data.items():
+                res += self._conj(self.state)[idx[0]] * entry * self.state[idx[1]]
+            return qml.math.real(res)
 
         return super().expval(observable, shot_range=shot_range, bin_size=bin_size)
 

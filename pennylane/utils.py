@@ -28,7 +28,7 @@ import numpy as np
 import scipy
 
 import pennylane as qml
-
+from copy import copy
 
 def decompose_hamiltonian(H, hide_identity=False):
     r"""Decomposes a Hermitian matrix into a linear combination of Pauli operators.
@@ -172,6 +172,142 @@ def sparse_hamiltonian(H, wires=None):
         matrix += functools.reduce(lambda i, j: scipy.sparse.kron(i, j, format="coo"), mat) * coeff
 
     return matrix.tocoo()
+
+
+class SparseTensor:
+    """Framework-agnostic class for sparse representation."""
+
+    def __init__(self, arg):
+
+        if isinstance(arg, tuple):
+            self.data = {}
+            self.shape = arg
+
+        else:
+            self.shape = qml.math.shape(arg)
+            self.data = {}
+            for i in range(self.shape[0]):
+                for j in range(self.shape[1]):
+                    entry = arg[i, j]
+                    # easiest way to check that entry is not zero
+                    if qml.math.count_nonzero(entry) > 0:
+                        self.data[(i, j)] = entry
+
+        if len(self.shape) != 2:
+            raise ValueError("Expected a 2-dimensional tensor.")
+
+    def row(self):
+        """Return a list of the first indices of nonzero entries."""
+        return [idx[0] for idx in self.data]
+
+    def col(self):
+        """Return a list of the second indices of nonzero entries."""
+        return [idx[1] for idx in self.data]
+
+    def nnz(self):
+        """Number of nonzero entries."""
+        return len(self.data)
+
+    def __add__(self, other):
+        """Addition of another SparseTensor object.
+        Args:
+            other (SparseTensor): sparse tensor to add
+        """
+        if not isinstance(other, type(self)):
+            raise ValueError(f"Cannot add SparseTensor and {type(other)}.")
+
+        new = copy(self)
+        for idx, entry in other.data.items():
+            if idx in new.data:
+                new.data[idx] += entry
+            else:
+                new.data[idx] = entry
+        return new
+
+    def __mul__(self, other):
+
+        new = copy(self)
+        for idx, entry in new.data.items():
+            new.data[idx] *= other
+
+        return new
+
+    __rmul__ = __mul__
+
+    def kron(self, other):
+        """An implementation of a sparse kronecker product inspired by ``scipy.sparse.sparse_kron``."""
+
+        output_shape = (self.shape[0] * other.shape[0], self.shape[1] * other.shape[1])
+
+        row = np.repeat(self.row(), other.nnz())
+        col = np.repeat(self.col(), other.nnz())
+        entries = np.repeat(list(self.data.values()), other.nnz())
+
+        row *= other.shape[0]
+        col *= other.shape[1]
+
+        # increment block indices
+        row, col = row.reshape(-1, other.nnz()), col.reshape(-1, other.nnz())
+        row += other.row()
+        col += other.col()
+        row, col = row.reshape(-1), col.reshape(-1)
+
+        # compute block entries
+        entries = qml.math.multiply(qml.math.reshape(entries, (-1, other.nnz())), list(other.data.values()))
+        entries = qml.math.reshape(entries, -1)
+
+        res = SparseTensor(output_shape)
+        data = {(i, j): e for i, j, e in zip(row, col, entries)}
+        res.data = data
+
+        return res
+
+
+def sparse(H, wires=None):
+    """This function is the same as sparse_hamiltonian, but is differentiable and
+    does not rely on scipy, instead it uses our own sparse representation.
+
+    .. note::
+        Soon this functionality should be added to the Hamiltonian class, i.e.
+        ``H.sparse()``.
+    Args:
+        H (~.Hamiltonian): Hamiltonian operator for which the matrix representation should be
+         computed
+        wires (Iterable): Wire labels that indicate the order of wires according to which the matrix
+         is constructed. If not profided, ``H.wires`` is used.
+
+    """
+    if not isinstance(H, qml.Hamiltonian):
+        raise TypeError("Passed Hamiltonian must be of type `qml.Hamiltonian`")
+
+    if wires is None:
+        wires = H.wires
+
+    sparse_ham = SparseTensor((2 ** len(wires), 2 ** len(wires)))
+    for i in range(len(H.ops)):
+        op = H.ops[i]
+        coeff = H.coeffs[i]
+
+        # initialise with identities
+        list_of_sparse_ops = [SparseTensor(qml.math.convert_like(np.eye(2), coeff))] * len(wires)
+        for o in qml.operation.Tensor(op).obs:
+            if len(o.wires) > 1:
+                # todo: deal with operations created from multi-qubit operations such as Hermitian
+                raise ValueError(
+                    "Can only sparsify Hamiltonians whose constituent observables consist of "
+                    "(tensor products of) single-qubit operators; got {}.".format(op)
+                )
+            # store the single-qubit ops according to the order of their wires
+            idx = wires.index(o.wires)
+            # todo: make o.sparse a property of the operators
+            list_of_sparse_ops[idx] = SparseTensor(o.matrix)
+
+        tensor_prod = list_of_sparse_ops[0]
+        for o in list_of_sparse_ops[1:]:
+            tensor_prod = tensor_prod.kron(o)
+
+        sparse_ham += tensor_prod * coeff
+    return sparse_ham
 
 
 def _flatten(x):
