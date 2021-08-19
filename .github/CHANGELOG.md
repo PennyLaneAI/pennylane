@@ -136,6 +136,8 @@
 and requirements-ci.txt (unpinned). This latter would be used by the CI.
   [(#1535)](https://github.com/PennyLaneAI/pennylane/pull/1535)
 
+* The `qml.ResetError` is now supported for `default.mixed` device. 
+  [(#1541)](https://github.com/PennyLaneAI/pennylane/pull/1541)
 
 <h3>Breaking changes</h3>
 
@@ -155,7 +157,8 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Akash Narayanan, Maria Schuld, Ingrid Strandberg.
+Thomas Bromley, Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Akash Narayanan, Maria Schuld,
+Ingrid Strandberg, Vincent Wong.
 
 # Release 0.17.0 (current release)
 
