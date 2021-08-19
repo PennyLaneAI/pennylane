@@ -173,7 +173,8 @@ class TestValidation:
 
     def test_best_method(self, monkeypatch):
         """Test that the method for determining the best diff method
-        for a given device and interface works correctly"""
+        for a given device and interface works correctly and the diff_method
+        attribute has been set correctly."""
         dev = qml.device("default.qubit", wires=1)
         monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", True)
@@ -181,15 +182,18 @@ class TestValidation:
         # device is top priority
         res = QNode.get_best_method(dev, "another_interface")
         assert res == (JacobianTape, "another_interface", dev, {"method": "device"})
+        assert QNode.diff_method == "device"
 
         # backprop is next priority
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
         res = QNode.get_best_method(dev, "some_interface")
         assert res == (JacobianTape, "some_interface", dev, {"method": "backprop"})
+        assert QNode.diff_method == "backprop"
 
         # The next fallback is parameter-shift.
         res = QNode.get_best_method(dev, "another_interface")
-        assert res == (QubitParamShiftTape, "another_interface", dev, {"method": "best"})
+        assert res == (QubitParamShiftTape, "another_interface", dev, {"method": "analytic"})
+        assert QNode.diff_method == "parameter-shift"
 
         # finally, if both fail, finite differences is the fallback
         def capabilities(cls):
@@ -200,6 +204,7 @@ class TestValidation:
         monkeypatch.setattr(qml.devices.DefaultQubit, "capabilities", capabilities)
         res = QNode.get_best_method(dev, "another_interface")
         assert res == (JacobianTape, "another_interface", dev, {"method": "numeric"})
+        assert QNode.diff_method == "finite-diff"
 
     def test_diff_method(self, mocker):
         """Test that a user-supplied diff-method correctly returns the right
