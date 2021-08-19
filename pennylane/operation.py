@@ -1039,8 +1039,14 @@ class Observable(Operator):
     def __init__(self, *params, wires=None, do_queue=True, id=None):
         # extract the arguments
         if wires is None:
-            wires = params[-1]
-            params = params[:-1]
+            try:
+                wires = params[-1]
+                params = params[:-1]
+                # error if no arguments are given
+            except IndexError as err:
+                raise ValueError(
+                    f"Must specify the wires that {type(self).__name__} acts on"
+                ) from err
 
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
