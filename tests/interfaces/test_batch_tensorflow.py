@@ -74,7 +74,7 @@ class TestTensorFlowExecuteUnitTests:
             print(t.jacobian(res, a))
 
     def test_incorrect_mode(self):
-        """Test that an error is raised if an gradient transform
+        """Test that an error is raised if a gradient transform
         is used with mode=forward"""
         a = tf.Variable([0.1, 0.2])
 
