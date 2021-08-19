@@ -132,7 +132,13 @@ class GroverOperator(Operation):
 
     @property
     def matrix(self):
-        num = len(self.wires)
+        mat = self._matrix(len(self.wires))
+        return mat
+
+    @classmethod
+    def _matrix(cls, *params):
+        num = params[0]
+
         ctrl_str = "0" * (num - 1)
         wires = list(range(num))
 
