@@ -90,7 +90,6 @@ Qubit gates
     ~pennylane.ControlledQubitUnitary
     ~pennylane.MultiControlledX
     ~pennylane.DiagonalQubitUnitary
-    ~pennylane.QFT
     ~pennylane.SingleExcitation
     ~pennylane.SingleExcitationPlus
     ~pennylane.SingleExcitationMinus
@@ -99,6 +98,7 @@ Qubit gates
     ~pennylane.DoubleExcitationMinus
     ~pennylane.QubitCarry
     ~pennylane.QubitSum
+    ~pennylane.Hamiltonian
 
 
 :html:`</div>`
@@ -136,6 +136,7 @@ Noisy channels
     ~pennylane.DepolarizingChannel
     ~pennylane.BitFlip
     ~pennylane.PhaseFlip
+    ~pennylane.ResetError
     ~pennylane.QubitChannel
 
 :html:`</div>`
@@ -157,6 +158,7 @@ Qubit observables
     ~pennylane.PauliY
     ~pennylane.PauliZ
     ~pennylane.Projector
+    ~pennylane.Hamiltonian
 
 :html:`</div>`
 
