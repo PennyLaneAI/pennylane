@@ -158,7 +158,7 @@ class RotosolveOptimizer:
 
     The keyword argument ``requires_grad`` can be used to determine whether the respective
     parameter should be optimized or not, following the behaviour of gradient computations and
-    gradient-based optimizers when using Autograd or JAX.
+    gradient-based optimizers when using Autograd.
 
     In addition, the optimization technique for the Rotosolve substeps can be chosen via the
     ``optimizer`` and ``optimizer_kwargs`` keyword arguments.
