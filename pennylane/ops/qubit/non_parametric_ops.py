@@ -17,8 +17,6 @@ not depend on any parameters.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import cmath
-
-# import functools
 import numpy as np
 
 import pennylane as qml
