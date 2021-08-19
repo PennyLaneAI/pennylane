@@ -51,10 +51,10 @@ class RotosolveOptimizer:
     separately reconstructing the cost function with respect to each circuit parameter,
     while keeping all other parameters fixed.
 
-    For this we need to perform a purely classical one-dimensional global optimization over the
-    interval :math:`(-\pi,\pi]` in general, which can be replaced by a closed-form expression for
+    For each parameter, a purely classical one-dimensional global optimization over the
+    interval :math:`(-\pi,\pi]` is performed, which can be replaced by a closed-form expression for
     the optimal value if the :math:`d^{th}` parametrized gate has only two eigenvalues. In this
-    case the optimal value :math:`\theta^*_d` is given by
+    case, the optimal value :math:`\theta^*_d` is given by
 
     .. math:: \theta^*_d = \underset{\theta_d}{\text{argmin}}\left<H\right>_{\theta_d}
               = -\frac{\pi}{2} - \text{arctan2}\left(2\left<H\right>_{\theta_d=0}
