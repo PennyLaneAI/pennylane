@@ -679,18 +679,18 @@ class SISWAP(Operation):
     @staticmethod
     def decomposition(wires):
         decomp_ops = [
-                      qml.SX(wires=0),
-                      qml.RZ(np.pi/2,wires=0),
-                      qml.CNOT(wires=[0,1]),
-                      qml.SX(wires=0),
-                      qml.RZ(7 *np.pi/4,wires=0),
-                      qml.SX(wires=0),
-                      qml.RZ(np.pi/2, wires=0),
-                      qml.SX(wires=1),
-                      qml.RZ(7 *np.pi/4,wires=1),
-                      qml.CNOT(wires=[0,1]),
-                      qml.SX(wires=0),
-                      qml.SX(wires=1)
+                      SX(wires=wires[0]),
+                      qml.RZ(np.pi/2,wires=wires[0]),
+                      CNOT(wires=[wires[1], wires[2]]),
+                      SX(wires=0),
+                      qml.RZ(7 *np.pi/4,wires=wires[0]),
+                      SX(wires=0),
+                      qml.RZ(np.pi/2, wires=wires[0]),
+                      SX(wires=1),
+                      qml.RZ(7 *np.pi/4,wires=wires[1]),
+                      CNOT(wires=[wires[1], wires[2]]),
+                      SX(wires=wires[0]),
+                      SX(wires=wires[1])
         ]
         return decomp_ops
 
