@@ -136,6 +136,6 @@ class QuantumPhaseEstimation(Operation):
                     unitary_powers.pop(), control_wires=wire, wires=self.target_wires
                 )
 
-            qml.QFT(wires=self.estimation_wires).inv()
+            qml.templates.QFT(wires=self.estimation_wires).inv()
 
         return tape

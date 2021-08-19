@@ -1919,7 +1919,7 @@ fully differentiable.
   @qml.qnode(dev)
   def circuit_qft(basis_state):
       qml.BasisState(basis_state, wires=range(3))
-      qml.QFT(wires=range(3))
+      qml.templates.QFT(wires=range(3))
       return qml.state()
   ```
 
