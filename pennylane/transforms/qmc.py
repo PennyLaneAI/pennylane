@@ -18,6 +18,7 @@ from functools import wraps
 from pennylane import PauliX, Hadamard, MultiControlledX, CZ
 from pennylane.wires import Wires
 from pennylane.transforms import adjoint
+import pennylane as qml
 
 
 def _apply_controlled_z(wires, control_wire, work_wires):
@@ -352,6 +353,6 @@ def quantum_monte_carlo(fn, wires, target_wire, estimation_wires):
             for _ in range(n_reps):
                 q(*args, **kwargs)
 
-        QFT(wires=estimation_wires).inv()
+        qml.templates.QFT(wires=estimation_wires).inv()
 
     return wrapper
