@@ -84,6 +84,9 @@
 
 <h3>Improvements</h3>
 
+* Added the matrix attribute to `qml.templates.subroutines.GroverOperator`
+  [(#1553)](https://github.com/PennyLaneAI/pennylane/pull/1553)
+
 * The `tape.to_openqasm()` method now has a `measure_all` argument that specifies whether the
   serialized OpenQASM script includes computational basis measurements on all of the qubits or
   just those specified by the tape.
