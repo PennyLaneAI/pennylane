@@ -18,13 +18,14 @@ import numpy as np
 from scipy.optimize import brute, shgo
 from pennylane.utils import _flatten, unflatten
 
+
 def _assert_integer(x):
     x_type = type(x)
     if not np.issubdtype(x_type, np.integer):
         raise ValueError(
-            "The numbers of frequencies are expected to be integers. "
-            f"Received {x_type}."
+            "The numbers of frequencies are expected to be integers. " f"Received {x_type}."
         )
+
 
 def _brute_optimizer(fun, num_steps, **kwargs):
     r"""Brute force optimizer, wrapper of scipy.optimizer.brute that repeats it
@@ -389,7 +390,7 @@ class RotosolveOptimizer:
         shifts_pos = 2 * mus * np.pi / (2 * num_frequency + 1)
         shifts_neg = -shifts_pos[::-1]
         evals = list(map(fun, shifts_neg)) + [fun_at_zero] + list(map(fun, shifts_pos))
-        shifts = np.concatenate([shifts_neg, [0.], shifts_pos])
+        shifts = np.concatenate([shifts_neg, [0.0], shifts_pos])
         a, b = (num_frequency + 0.5) / np.pi, 0.5 / np.pi
         reconstruction = lambda x: np.sum(
             np.array(

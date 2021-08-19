@@ -283,6 +283,7 @@ class TestWithClassicalFunctions:
         assert np.allclose(y_output_step_and_cost, expected_y_output)
         assert np.isclose(old_cost, fun(*expected_intermediate_x[0]))
 
+
 @pytest.mark.parametrize(
     "fun, x_min, param, num_freq",
     list(zip(classical_functions, classical_minima, classical_params, classical_num_frequencies)),
@@ -312,6 +313,7 @@ def test_multiple_steps(fun, x_min, param, num_freq):
         atol=1e-5,
     )
 
+
 classical_functions_deact = [
     lambda x: np.sin(x + 0.124) * 2.5123,
     lambda x, y: -np.cos(x + 0.12) * 0.872 + np.sin(y[0] - 2.01) - np.cos(y[1] - 1.35) * 0.111,
@@ -329,9 +331,17 @@ classical_params_deact = [
 ]
 classical_num_frequencies_deact = [[], [1], 1]
 
+
 @pytest.mark.parametrize(
     "fun, x_min, param, num_freq",
-    list(zip(classical_functions_deact, classical_minima_deact, classical_params_deact, classical_num_frequencies_deact)),
+    list(
+        zip(
+            classical_functions_deact,
+            classical_minima_deact,
+            classical_params_deact,
+            classical_num_frequencies_deact,
+        )
+    ),
 )
 class TestDeactivatedTrainingWithClassicalFunctions:
     def test_single_step(self, fun, x_min, param, num_freq):
@@ -378,6 +388,7 @@ class TestDeactivatedTrainingWithClassicalFunctions:
 
 num_wires = 3
 dev = qml.device("default.qubit", wires=num_wires)
+
 
 @qml.qnode(dev)
 def scalar_qnode(x):
@@ -490,4 +501,3 @@ class TestWithQNodes:
                 param = (param,)
 
         assert qnode(*param) < initial_cost
-
