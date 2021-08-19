@@ -19,7 +19,7 @@ from pennylane import PauliX, Hadamard, MultiControlledX, CZ
 from pennylane.wires import Wires
 from pennylane.transforms import adjoint
 import pennylane as qml
-
+#from pennylane.templates.subroutines import QFT
 
 def _apply_controlled_z(wires, control_wire, work_wires):
     r"""Provides the circuit to apply a controlled version of the :math:`Z` gate defined in
@@ -353,6 +353,6 @@ def quantum_monte_carlo(fn, wires, target_wire, estimation_wires):
             for _ in range(n_reps):
                 q(*args, **kwargs)
 
-        qml.templates.QFT(wires=estimation_wires).inv()
+        QFT(wires=estimation_wires).inv()
 
     return wrapper
