@@ -3,7 +3,7 @@ qml.circuit_drawer
 
 .. currentmodule:: pennylane.circuit_drawer
 
-.. automodapi:: pennylane.circuit_drawer.MPLDrawer
+.. automodapi:: pennylane.circuit_drawer
     :no-heading:
     :no-inheritance-diagram:
     :no-inherited-members:
