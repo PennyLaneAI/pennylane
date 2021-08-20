@@ -214,14 +214,9 @@ class MPLDrawer:
             extra_width (float): Extra box width
             rotate_text (Bool): whether to rotate text 90 degrees. Helpful to long labels and
                 multi-wire boxes.
-<<<<<<< HEAD
             zorder_base=0 (Int): increase number to draw on top of other objects, like control wires
             box_kwargs=None (dict): Any matplotlib keywords for the Rectangle patch
             text_kwargs=None (dict): Any matplotlib keywords for the text
-=======
-            zorder_base (Int): shift the object in zorder
-            color (None or str): mpl compatible color designation
->>>>>>> 51f8842209e451a995ead93d71d635d50d89fdf3
 
         **Example**
 
