@@ -323,11 +323,11 @@ class TestValidation:
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        qn = qml.QNode(func, dev)
+        qn = qml.QNode(func, dev, diff_method="finite-diff")
 
         assert (
             qn.__repr__()
-            == "<QNode: wires=1, device='default.qubit.autograd', interface='autograd', diff_method='best'>"
+            == "<QNode: wires=1, device='default.qubit', interface='autograd', diff_method='finite-diff'>"
         )
 
 
