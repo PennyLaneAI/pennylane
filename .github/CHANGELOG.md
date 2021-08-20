@@ -91,6 +91,11 @@
 
 <h3>Improvements</h3>
 
+* The `utils.sparse_hamiltonian` function can now deal with non-integer 
+  wire labels, and it throws an error for the edge case of observables that are 
+  created from multi-qubit operations.
+  [(#1550)](https://github.com/PennyLaneAI/pennylane/pull/1550)
+
 * Added the matrix attribute to `qml.templates.subroutines.GroverOperator`
   [(#1553)](https://github.com/PennyLaneAI/pennylane/pull/1553)
 
