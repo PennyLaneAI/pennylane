@@ -910,7 +910,13 @@ class MultiControlledX(Operation):
         return control_int
 
     def adjoint(self):
-        return MultiControlledX(qml.math.T(qml.math.conj(self.matrix)), wires=self.wires[-1])
+        return MultiControlledX(
+            qml.math.T(qml.math.conj(self.matrix)),
+            control_wires=self.wires[:-1],
+            wires=self.wires[-1],
+            control_values=self.control_values,
+            work_wires=self._work_wires,
+        )
 
     # pylint: disable=unused-argument
     def decomposition(self, *args, **kwargs):
