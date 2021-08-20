@@ -331,7 +331,7 @@ class TestValidation:
         )
         assert qn.diff_method_change == False
 
-     def test_qnode_best_diff_method(self):
+    def test_qnode_best_diff_method(self):
         """Test that selected "best" diff_method is available after QNode initialization."""
         dev = qml.device("default.qubit", wires=1)
 
