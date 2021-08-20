@@ -308,7 +308,7 @@ execute_kwargs = [
 
 @pytest.mark.parametrize("execute_kwargs", execute_kwargs)
 class TestTensorFlowExecuteIntegration:
-    """Test the autograd interface execute function
+    """Test the TensorFlow interface execute function
     integrates well for both forward and backward execution"""
 
     def test_execution(self, execute_kwargs):
@@ -533,7 +533,7 @@ class TestTensorFlowExecuteIntegration:
         assert np.allclose(res, tf.sin(a), atol=tol, rtol=0)
 
     def test_differentiable_expand(self, execute_kwargs, tol):
-        """Test that operation and nested tapes expansion
+        """Test that operation and nested tape expansion
         is differentiable"""
 
         class U3(qml.U3):
@@ -696,7 +696,7 @@ class TestHigherOrderDerivatives:
     )
     def test_parameter_shift_hessian(self, params, tol):
         """Tests that the output of the parameter-shift transform
-        can be differentiated using autograd, yielding second derivatives."""
+        can be differentiated using tensorflow, yielding second derivatives."""
         dev = qml.device("default.qubit.tf", wires=2)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
         x, y = params * 1.0
