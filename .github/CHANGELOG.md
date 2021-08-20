@@ -5472,7 +5472,7 @@ Josh Izaac and Nathan Killoran.
 
 This release contains contributions from:
 
-Christian Gogolin, Josh Izaac, Nathan Killoran, and Maria Schuld.
+Vishnu Ajith, Christian Gogolin, Josh Izaac, Nathan Killoran, and Maria Schuld.
 
 
 # Release 0.1.0
