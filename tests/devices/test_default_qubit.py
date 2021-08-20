@@ -249,7 +249,7 @@ class TestApply:
     ]
 
     all_two_wires_no_parameters = (
-        test_data_two_wires_no_parameters + test_data_iswap + test_data_iswap
+        test_data_two_wires_no_parameters + test_data_iswap + test_data_siswap
     )
 
     @pytest.mark.parametrize("operation,input,expected_output", all_two_wires_no_parameters)
@@ -267,7 +267,7 @@ class TestApply:
         )
 
     all_two_wires_no_parameters_inv = (
-        test_data_two_wires_no_parameters + test_data_iswap_inv + test_data_siswap
+        test_data_two_wires_no_parameters + test_data_iswap_inv + test_data_siswap_inv
     )
 
     @pytest.mark.parametrize("operation,input,expected_output", all_two_wires_no_parameters_inv)
