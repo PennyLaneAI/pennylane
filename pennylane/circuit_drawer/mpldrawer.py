@@ -37,8 +37,12 @@ class MPLDrawer:
         n_wires (Int): the number of wires
 
     Keyword Args:
+<<<<<<< HEAD
         wire_color=None: MPL compatible color for the wires
         figsize=None (Iterable): Allows user's to manually specify the size of the figure.  Defaults
+=======
+        figsize=None (Iterable): Allows users to manually specify the size of the figure.  Defaults
+>>>>>>> 51f8842209e451a995ead93d71d635d50d89fdf3
            to scale with the size of the circuit via ``n_layers`` and ``n_wires``.
 
     **Example**
@@ -199,7 +203,7 @@ class MPLDrawer:
         self, layer, wires, text="", extra_width=0, rotate_text=False, zorder_base=0,
         box_kwargs=None, text_kwargs=None
     ):
-        """Draws a box and adds label text to it's center.
+        """Draws a box and adds label text to its center.
 
         Args:
             layer (Int)
@@ -207,12 +211,17 @@ class MPLDrawer:
             text (str)
 
         Kwargs:
-            extra_width=0 (float): Extra box width
-            rotate_text=False (Bool): whether to rotate text 90 degrees. Helpful to long labels and
+            extra_width (float): Extra box width
+            rotate_text (Bool): whether to rotate text 90 degrees. Helpful to long labels and
                 multi-wire boxes.
+<<<<<<< HEAD
             zorder_base=0 (Int): increase number to draw on top of other objects, like control wires
             box_kwargs=None (dict): Any matplotlib keywords for the Rectangle patch
             text_kwargs=None (dict): Any matplotlib keywords for the text
+=======
+            zorder_base (Int): shift the object in zorder
+            color (None or str): mpl compatible color designation
+>>>>>>> 51f8842209e451a995ead93d71d635d50d89fdf3
 
         **Example**
 
@@ -316,7 +325,7 @@ class MPLDrawer:
             wires (Int, Int): tuple of (control, target)
 
         Keyword Args:
-            color=None: mpl compatible color designation
+            color (None or str): mpl compatible color designation
 
         **Example**
 
