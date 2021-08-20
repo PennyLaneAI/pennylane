@@ -57,12 +57,15 @@
   ```
 
 * Support for differentiable execution of batches of circuits has been
-  added, via the beta `pennylane.batch` module.
+  added, via the beta `pennylane.interfaces.batch` module.
   [(#1501)](https://github.com/PennyLaneAI/pennylane/pull/1501)
+  [(#1508)](https://github.com/PennyLaneAI/pennylane/pull/1508)
 
   For example:
 
   ```python
+  from pennylane.interfaces.batch import execute
+
   def cost_fn(x):
       with qml.tape.JacobianTape() as tape1:
           qml.RX(x[0], wires=[0])
@@ -76,13 +79,22 @@
           qml.CNOT(wires=[0, 1])
           qml.probs(wires=1)
 
-      result = execute([tape1, tape2], dev, gradient_fn=param_shift)
+      result = execute(
+          [tape1, tape2], dev,
+          gradient_fn=qml.gradients.param_shift,
+          interface="autograd"
+      )
       return result[0] + result[1][0, 0]
 
   res = qml.grad(cost_fn)(params)
   ```
 
 <h3>Improvements</h3>
+
+* The `utils.sparse_hamiltonian` function can now deal with non-integer 
+  wire labels, and it throws an error for the edge case of observables that are 
+  created from multi-qubit operations.
+  [(#1550)](https://github.com/PennyLaneAI/pennylane/pull/1550)
 
 * Added the matrix attribute to `qml.templates.subroutines.GroverOperator`
   [(#1553)](https://github.com/PennyLaneAI/pennylane/pull/1553)
