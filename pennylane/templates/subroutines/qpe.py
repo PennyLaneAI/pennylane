@@ -17,7 +17,7 @@ Contains the QuantumPhaseEstimation template.
 # pylint: disable=too-many-arguments
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
-from pennylane.ops import Hadamard, ControlledQubitUnitary, QFT
+from pennylane.ops import Hadamard, ControlledQubitUnitary
 
 
 class QuantumPhaseEstimation(Operation):
@@ -136,6 +136,6 @@ class QuantumPhaseEstimation(Operation):
                     unitary_powers.pop(), control_wires=wire, wires=self.target_wires
                 )
 
-            QFT(wires=self.estimation_wires).inv()
+            qml.templates.QFT(wires=self.estimation_wires).inv()
 
         return tape
