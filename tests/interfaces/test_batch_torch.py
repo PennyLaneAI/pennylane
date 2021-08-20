@@ -310,6 +310,12 @@ class TestCaching:
         assert dev.num_executions == 2
 
 
+torch_devices = [None]
+
+if torch.cuda.is_available():
+    torch_devices.append(torch.device("cuda"))
+
+
 execute_kwargs = [
     {"gradient_fn": param_shift, "interface": "torch"},
     {
@@ -327,16 +333,17 @@ execute_kwargs = [
 ]
 
 
+@pytest.mark.parametrize("torch_device", torch_devices)
 @pytest.mark.parametrize("execute_kwargs", execute_kwargs)
 class TestTorchExecuteIntegration:
     """Test the torch interface execute function
     integrates well for both forward and backward execution"""
 
-    def test_execution(self, execute_kwargs):
+    def test_execution(self, torch_device, execute_kwargs):
         """Test execution"""
         dev = qml.device("default.qubit", wires=1)
-        a = torch.tensor(0.1, requires_grad=True)
-        b = torch.tensor(0.2, requires_grad=False)
+        a = torch.tensor(0.1, requires_grad=True, device=torch_device)
+        b = torch.tensor(0.2, requires_grad=False, device=torch_device)
 
         with qml.tape.JacobianTape() as tape1:
             qml.RY(a, wires=0)
@@ -354,9 +361,9 @@ class TestTorchExecuteIntegration:
         assert res[0].shape == (1,)
         assert res[1].shape == (1,)
 
-    def test_scalar_jacobian(self, execute_kwargs, tol):
+    def test_scalar_jacobian(self, torch_device, execute_kwargs, tol):
         """Test scalar jacobian calculation"""
-        a = torch.tensor(0.1, requires_grad=True, dtype=torch.float64)
+        a = torch.tensor(0.1, requires_grad=True, dtype=torch.float64, device=torch_device)
         dev = qml.device("default.qubit", wires=2)
 
         with qml.tape.JacobianTape() as tape:
@@ -378,18 +385,18 @@ class TestTorchExecuteIntegration:
         assert expected.shape == (1, 1)
         assert torch.allclose(a.grad, torch.from_numpy(expected), atol=tol, rtol=0)
 
-    def test_jacobian(self, execute_kwargs, tol):
+    def test_jacobian(self, torch_device, execute_kwargs, tol):
         """Test jacobian calculation"""
         a_val = 0.1
         b_val = 0.2
 
-        a = torch.tensor(a_val, requires_grad=True)
-        b = torch.tensor(b_val, requires_grad=True)
+        a = torch.tensor(a_val, requires_grad=True, device=torch_device)
+        b = torch.tensor(b_val, requires_grad=True, device=torch_device)
 
         dev = qml.device("default.qubit", wires=2)
 
         with qml.tape.JacobianTape() as tape:
-            qml.RZ(torch.tensor(0.543), wires=0)
+            qml.RZ(torch.tensor(0.543, device=torch_device), wires=0)
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
@@ -412,10 +419,10 @@ class TestTorchExecuteIntegration:
         assert np.allclose(a.grad, expected[0], atol=tol, rtol=0)
         assert np.allclose(b.grad, expected[1], atol=tol, rtol=0)
 
-    def test_reusing_quantum_tape(self, execute_kwargs, tol):
+    def test_reusing_quantum_tape(self, torch_device, execute_kwargs, tol):
         """Test re-using a quantum tape by passing new parameters"""
-        a = torch.tensor(0.1, requires_grad=True)
-        b = torch.tensor(0.2, requires_grad=True)
+        a = torch.tensor(0.1, requires_grad=True, device=torch_device)
+        b = torch.tensor(0.2, requires_grad=True, device=torch_device)
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -434,8 +441,8 @@ class TestTorchExecuteIntegration:
 
         a_val = 0.54
         b_val = 0.8
-        a = torch.tensor(a_val, requires_grad=True)
-        b = torch.tensor(b_val, requires_grad=True)
+        a = torch.tensor(a_val, requires_grad=True, device=torch_device)
+        b = torch.tensor(b_val, requires_grad=True, device=torch_device)
 
         tape.set_parameters([2 * a, b])
         res2 = execute([tape], dev, **execute_kwargs)[0]
@@ -454,10 +461,10 @@ class TestTorchExecuteIntegration:
         assert np.allclose(a.grad, expected[0], atol=tol, rtol=0)
         assert np.allclose(b.grad, expected[1], atol=tol, rtol=0)
 
-    def test_classical_processing(self, execute_kwargs, tol):
+    def test_classical_processing(self, torch_device, execute_kwargs, tol):
         """Test classical processing within the quantum tape"""
         p_val = [0.1, 0.2]
-        params = torch.tensor(p_val, requires_grad=True)
+        params = torch.tensor(p_val, requires_grad=True, device=torch_device)
 
         dev = qml.device("default.qubit", wires=1)
 
@@ -484,13 +491,13 @@ class TestTorchExecuteIntegration:
         assert isinstance(params.grad, torch.Tensor)
         assert params.shape == (2,)
 
-    def test_no_trainable_parameters(self, execute_kwargs, tol):
+    def test_no_trainable_parameters(self, torch_device, execute_kwargs, tol):
         """Test evaluation and Jacobian if there are no trainable parameters"""
         dev = qml.device("default.qubit", wires=2)
 
         with qml.tape.JacobianTape() as tape:
             qml.RY(0.2, wires=0)
-            qml.RX(torch.tensor(0.1), wires=0)
+            qml.RX(torch.tensor(0.1, device=torch_device), wires=0)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliZ(1))
@@ -508,11 +515,14 @@ class TestTorchExecuteIntegration:
             res.backward()
 
     @pytest.mark.parametrize("U", [torch.tensor([[0, 1], [1, 0]]), np.array([[0, 1], [1, 0]])])
-    def test_matrix_parameter(self, U, execute_kwargs, tol):
+    def test_matrix_parameter(self, torch_device, U, execute_kwargs, tol):
         """Test that the torch interface works correctly
         with a matrix parameter"""
         a_val = 0.1
-        a = torch.tensor(a_val, requires_grad=True)
+        a = torch.tensor(a_val, requires_grad=True, device=torch_device)
+
+        if isinstance(U, torch.Tensor):
+            U = U.to(torch_device)
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -529,7 +539,7 @@ class TestTorchExecuteIntegration:
         res.backward()
         assert np.allclose(a.grad, np.sin(a_val), atol=tol, rtol=0)
 
-    def test_differentiable_expand(self, execute_kwargs, tol):
+    def test_differentiable_expand(self, torch_device, execute_kwargs, tol):
         """Test that operation and nested tape expansion
         is differentiable"""
 
@@ -549,7 +559,7 @@ class TestTorchExecuteIntegration:
         dev = qml.device("default.qubit", wires=1)
         a = np.array(0.1)
         p_val = [0.1, 0.2, 0.3]
-        p = torch.tensor(p_val, requires_grad=True)
+        p = torch.tensor(p_val, requires_grad=True, device=torch_device)
 
         with tape:
             qml.RX(a, wires=0)
@@ -590,7 +600,7 @@ class TestTorchExecuteIntegration:
         )
         assert np.allclose(p.grad, expected, atol=tol, rtol=0)
 
-    def test_probability_differentiation(self, execute_kwargs, tol):
+    def test_probability_differentiation(self, torch_device, execute_kwargs, tol):
         """Tests correct output shape and evaluation for a tape
         with prob outputs"""
 
@@ -600,8 +610,8 @@ class TestTorchExecuteIntegration:
         dev = qml.device("default.qubit", wires=2)
         x_val = 0.543
         y_val = -0.654
-        x = torch.tensor(x_val, requires_grad=True)
-        y = torch.tensor(y_val, requires_grad=True)
+        x = torch.tensor(x_val, requires_grad=True, device=torch_device)
+        y = torch.tensor(y_val, requires_grad=True, device=torch_device)
 
         with qml.tape.JacobianTape() as tape:
             qml.RX(x, wires=[0])
@@ -634,7 +644,7 @@ class TestTorchExecuteIntegration:
         assert np.allclose(x.grad, expected[0], atol=tol, rtol=0)
         assert np.allclose(y.grad, expected[1], atol=tol, rtol=0)
 
-    def test_ragged_differentiation(self, execute_kwargs, tol):
+    def test_ragged_differentiation(self, torch_device, execute_kwargs, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
         if execute_kwargs["gradient_fn"] == "device":
@@ -643,8 +653,8 @@ class TestTorchExecuteIntegration:
         dev = qml.device("default.qubit", wires=2)
         x_val = 0.543
         y_val = -0.654
-        x = torch.tensor(x_val, requires_grad=True)
-        y = torch.tensor(y_val, requires_grad=True)
+        x = torch.tensor(x_val, requires_grad=True, device=torch_device)
+        y = torch.tensor(y_val, requires_grad=True, device=torch_device)
 
         with qml.tape.JacobianTape() as tape:
             qml.RX(x, wires=[0])
@@ -677,7 +687,7 @@ class TestTorchExecuteIntegration:
         assert np.allclose(x.grad, expected[0], atol=tol, rtol=0)
         assert np.allclose(y.grad, expected[1], atol=tol, rtol=0)
 
-    def test_sampling(self, execute_kwargs):
+    def test_sampling(self, torch_device, execute_kwargs):
         """Test sampling works as expected"""
         if execute_kwargs["gradient_fn"] == "device" and execute_kwargs["mode"] == "forward":
             pytest.skip("Adjoint differentiation does not support samples")
@@ -695,7 +705,7 @@ class TestTorchExecuteIntegration:
         assert res.shape == (2, 10)
         assert isinstance(res, torch.Tensor)
 
-    def test_repeated_application_after_expand(self, execute_kwargs, tol):
+    def test_repeated_application_after_expand(self, torch_device, execute_kwargs, tol):
         """Test that the Torch interface continues to work after
         tape expansions"""
         n_qubits = 2
@@ -764,7 +774,8 @@ class TestHigherOrderDerivatives:
         )
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_hessian_vector_valued(self, tol):
+    @pytest.mark.parametrize("torch_device", torch_devices)
+    def test_hessian_vector_valued(self, torch_device, tol):
         """Test hessian calculation of a vector valued QNode"""
         dev = qml.device("default.qubit", wires=1)
 
@@ -776,7 +787,7 @@ class TestHigherOrderDerivatives:
 
             return torch.stack(execute([tape], dev, gradient_fn=param_shift, interface="torch"))
 
-        x = torch.tensor([1.0, 2.0], requires_grad=True)
+        x = torch.tensor([1.0, 2.0], requires_grad=True, device=torch_device)
         res = circuit(x)
 
         a, b = x.detach().numpy()
