@@ -331,7 +331,7 @@ class TestValidation:
         )
         assert qn.diff_method_change == False
 
-    def test_qnode_best_diff_method(self):
+    def test_qnode_best_diff_method(self, monkeypatch):
         """Test that selected "best" diff_method is available after QNode initialization."""
         dev = qml.device("default.qubit", wires=1)
 
@@ -342,7 +342,33 @@ class TestValidation:
         qn = qml.QNode(func, dev)
 
         assert qn.diff_method == "backprop"
-        assert qn.diff_method_change == True
+        assert qn.diff_method_change
+
+        dev = qml.device("default.mixed", wires=1)
+        qn = qml.QNode(func, dev)
+
+        assert qn.diff_method == "parameter-shift"
+        assert qn.diff_method_change
+
+        dev = qml.device("default.qubit", wires=1)
+        monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
+        monkeypatch.setitem(dev._capabilities, "provides_jacobian", True)
+
+        qn = qml.QNode(func, dev)
+        assert qn.diff_method == "device"
+        assert qn.diff_method_change
+
+        monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
+
+        def capabilities(cls):
+            capabilities = cls._capabilities
+            capabilities.update(model="None")
+            return capabilities
+
+        monkeypatch.setattr(qml.devices.DefaultQubit, "capabilities", capabilities)
+        qn = qml.QNode(func, dev)
+        assert qn.diff_method == "finite-diff"
+        assert qn.diff_method_change
 
 
 class TestTapeConstruction:
