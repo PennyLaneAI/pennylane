@@ -91,6 +91,9 @@
 
 <h3>Improvements</h3>
 
+* Added the matrix attribute to `qml.templates.subroutines.GroverOperator`
+  [(#1553)](https://github.com/PennyLaneAI/pennylane/pull/1553)
+
 * The `tape.to_openqasm()` method now has a `measure_all` argument that specifies whether the
   serialized OpenQASM script includes computational basis measurements on all of the qubits or
   just those specified by the tape.
@@ -143,8 +146,19 @@
 and requirements-ci.txt (unpinned). This latter would be used by the CI.
   [(#1535)](https://github.com/PennyLaneAI/pennylane/pull/1535)
 
+* The QFT operation is moved to template
+  [(#1548)](https://github.com/PennyLaneAI/pennylane/pull/1548)
+  
+* The `qml.ResetError` is now supported for `default.mixed` device. 
+  [(#1541)](https://github.com/PennyLaneAI/pennylane/pull/1541)
+
 
 <h3>Breaking changes</h3>
+
+* The class `qml.Interferometer` is deprecated and will be renamed `qml.InterferometerUnitary`
+  after one release cycle.
+  [(#1546)](https://github.com/PennyLaneAI/pennylane/pull/1546)
+
 
 <h3>Bug fixes</h3>
 
@@ -157,7 +171,8 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Maria Schuld, Ingrid Strandberg.
+Thomas Bromley, Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Akash Narayanan, Maria Schuld,
+Ingrid Strandberg, Vincent Wong.
 
 # Release 0.17.0 (current release)
 
@@ -1924,7 +1939,7 @@ fully differentiable.
   @qml.qnode(dev)
   def circuit_qft(basis_state):
       qml.BasisState(basis_state, wires=range(3))
-      qml.QFT(wires=range(3))
+      qml.templates.QFT(wires=range(3))
       return qml.state()
   ```
 
