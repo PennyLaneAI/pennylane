@@ -52,7 +52,8 @@ def _validate_num_freqs(num_freqs, requires_grad):
                 num_frequency_flat = num_frequency
             else:
                 num_frequency_flat = list(_flatten(num_frequency))
-                _ = [_assert_integer(_num_freq) for _num_freq in num_frequency_flat]
+                for _num_freq in num_frequency_flat:
+                    _assert_integer(_num_freq)
                 num_frequency_flat = np.array(num_frequency_flat, dtype=int)
             num_freqs_flat.append(num_frequency_flat)
         if len(num_freqs) != sum(requires_grad):
