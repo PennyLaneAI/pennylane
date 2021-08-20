@@ -35,6 +35,7 @@ from .observables import *
 from .parametric_ops import *
 from .qchem_ops import *
 from .state_preparation import *
+from .hamiltonian import Hamiltonian
 
 ops = {
     "Hadamard",
@@ -76,7 +77,6 @@ ops = {
     "ControlledQubitUnitary",
     "MultiControlledX",
     "DiagonalQubitUnitary",
-    "QFT",
     "SingleExcitation",
     "SingleExcitationPlus",
     "SingleExcitationMinus",
@@ -96,6 +96,7 @@ obs = {
     "Hermitian",
     "Projector",
     "SparseHamiltonian",
+    "Hamiltonian",
 }
 
 

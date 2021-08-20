@@ -13,9 +13,9 @@
 
   - `qml.gradients.vjp`
   - `qml.gradients.batch_vjp`
-  
-* The Hamiltonian can now store grouping information, which can be accessed by a device to 
-  speed up computations of the expectation value of a Hamiltonian. 
+
+* The Hamiltonian can now store grouping information, which can be accessed by a device to
+  speed up computations of the expectation value of a Hamiltonian.
   [(#1515)](https://github.com/PennyLaneAI/pennylane/pull/1515)
 
   ```python
@@ -23,10 +23,10 @@
   coeffs = np.array([1., 2., 3.])
   H = qml.Hamiltonian(coeffs, obs, grouping_type='qwc')
   ```
-  
-  Initialization with a ``grouping_type`` other than ``None`` stores the indices 
-  required to make groups of commuting observables and their coefficients. 
-  
+
+  Initialization with a ``grouping_type`` other than ``None`` stores the indices
+  required to make groups of commuting observables and their coefficients.
+
   ``` pycon
   >>> H.grouping_indices
   [[0, 1], [2]]
@@ -37,7 +37,7 @@
 
   ``` python
   from pennylane import numpy as np
-  
+
   dev = qml.device("default.qubit", wires=2)
   @qml.qnode(dev)
   def circuit(coeffs, param):
@@ -46,7 +46,7 @@
       return qml.expval(
           qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=True)
       )
-    
+
   coeffs = np.array([-0.05, 0.17])
   param = np.array(1.7)
   grad_fn = qml.grad(circuit)
@@ -92,15 +92,34 @@
 
 <h3>Improvements</h3>
 
+* The `utils.sparse_hamiltonian` function can now deal with non-integer 
+  wire labels, and it throws an error for the edge case of observables that are 
+  created from multi-qubit operations.
+  [(#1550)](https://github.com/PennyLaneAI/pennylane/pull/1550)
+
+* Added the matrix attribute to `qml.templates.subroutines.GroverOperator`
+  [(#1553)](https://github.com/PennyLaneAI/pennylane/pull/1553)
+
+* The `tape.to_openqasm()` method now has a `measure_all` argument that specifies whether the
+  serialized OpenQASM script includes computational basis measurements on all of the qubits or
+  just those specified by the tape.
+  [(#1559)](https://github.com/PennyLaneAI/pennylane/pull/1559)
+
+* An error is raised when no arguments are passed to a `qml.operation.Observable` to inform the user about specifying wires.
+  [(#1547)](https://github.com/PennyLaneAI/pennylane/pull/1547)
+
+* The Hamiltonian class was moved to the `ops/qubit` folder from the `vqe` module, since it is now an observable.
+  [(#1534)](https://github.com/PennyLaneAI/pennylane/pull/1534)
+
 * The `group_observables` transform is now differentiable.
   [(#1483)](https://github.com/PennyLaneAI/pennylane/pull/1483)
- 
+
   For example:
 
   ``` python
   import jax
   from jax import numpy as jnp
-  
+
   coeffs = jnp.array([1., 2., 3.])
   obs = [PauliX(wires=0), PauliX(wires=1), PauliZ(wires=1)]
 
@@ -116,7 +135,7 @@
   >>> jac_fn(coeffs, select=0)
   [[1. 0. 0.]
   [0. 1. 0.]]
-  
+
   >>> jac_fn(coeffs, select=1)
   [[0., 0., 1.]]
   ```
@@ -133,8 +152,19 @@
 and requirements-ci.txt (unpinned). This latter would be used by the CI.
   [(#1535)](https://github.com/PennyLaneAI/pennylane/pull/1535)
 
+* The QFT operation is moved to template
+  [(#1548)](https://github.com/PennyLaneAI/pennylane/pull/1548)
+  
+* The `qml.ResetError` is now supported for `default.mixed` device. 
+  [(#1541)](https://github.com/PennyLaneAI/pennylane/pull/1541)
+
 
 <h3>Breaking changes</h3>
+
+* The class `qml.Interferometer` is deprecated and will be renamed `qml.InterferometerUnitary`
+  after one release cycle.
+  [(#1546)](https://github.com/PennyLaneAI/pennylane/pull/1546)
+
 
 <h3>Bug fixes</h3>
 
@@ -147,7 +177,8 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 This release contains contributions from (in alphabetical order):
 
-Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Maria Schuld.
+Thomas Bromley, Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Akash Narayanan, Maria Schuld,
+Ingrid Strandberg, Vincent Wong.
 
 # Release 0.17.0 (current release)
 
@@ -573,9 +604,9 @@ Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Maria Schuld.
 * The tape does not verify any more that all Observables have owners in the annotated queue.
   [(#1505)](https://github.com/PennyLaneAI/pennylane/pull/1505)
 
-  This allows manipulation of Observables inside a tape context. An example is 
-  `expval(Tensor(qml.PauliX(0), qml.Identity(1)).prune())` which makes the expval an owner 
-  of the pruned tensor and its constituent observables, but leaves the original tensor in 
+  This allows manipulation of Observables inside a tape context. An example is
+  `expval(Tensor(qml.PauliX(0), qml.Identity(1)).prune())` which makes the expval an owner
+  of the pruned tensor and its constituent observables, but leaves the original tensor in
   the queue without an owner.
 
 * The `step` and `step_and_cost` methods of `QNGOptimizer` now accept a custom `grad_fn`
@@ -1914,7 +1945,7 @@ fully differentiable.
   @qml.qnode(dev)
   def circuit_qft(basis_state):
       qml.BasisState(basis_state, wires=range(3))
-      qml.QFT(wires=range(3))
+      qml.templates.QFT(wires=range(3))
       return qml.state()
   ```
 
