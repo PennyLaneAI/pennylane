@@ -340,7 +340,7 @@ class RepresentationResolver:
         try:
             if wire in op.control_wires:
                 return self.charset.CONTROL
-        except NotImplementedError:
+        except AttributeError:
             pass
 
         if op.num_params == 0:
