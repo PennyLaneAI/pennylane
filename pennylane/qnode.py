@@ -856,11 +856,11 @@ class QNode:
                 # if method was changed from "best", set it back to best
                 if self.diff_method_change:
                     self._tape, interface, self.device, diff_options = self.get_tape(
-                    self._original_device, "tf", "best"
+                        self._original_device, "tf", "best"
                     )
                 else:
                     self._tape, interface, self.device, diff_options = self.get_tape(
-                    self._original_device, "tf", self.diff_method
+                        self._original_device, "tf", self.diff_method
                     )
 
                 self.interface = interface
@@ -902,11 +902,11 @@ class QNode:
                 # if method was changed from "best", set it back to best
                 if self.diff_method_change:
                     self._tape, interface, self.device, diff_options = self.get_tape(
-                    self._original_device, "torch", "best"
+                        self._original_device, "torch", "best"
                     )
                 else:
                     self._tape, interface, self.device, diff_options = self.get_tape(
-                    self._original_device, "torch", self.diff_method
+                        self._original_device, "torch", self.diff_method
                     )
 
                 self.interface = interface
@@ -940,11 +940,11 @@ class QNode:
             # if method was changed from "best", set it back to best
             if self.diff_method_change:
                 self._tape, interface, self.device, diff_options = self.get_tape(
-                self._original_device, "autograd", "best"
+                    self._original_device, "autograd", "best"
                 )
             else:
                 self._tape, interface, self.device, diff_options = self.get_tape(
-                self._original_device, "autograd", self.diff_method
+                    self._original_device, "autograd", self.diff_method
                 )
 
             self.interface = interface
@@ -974,11 +974,11 @@ class QNode:
                 # if method was changed from "best", set it back to best
                 if self.diff_method_change:
                     self._tape, interface, self.device, diff_options = self.get_tape(
-                    self._original_device, "jax", "best"
+                        self._original_device, "jax", "best"
                     )
                 else:
                     self._tape, interface, self.device, diff_options = self.get_tape(
-                    self._original_device, "jax", self.diff_method
+                        self._original_device, "jax", self.diff_method
                     )
 
                 self.interface = interface
