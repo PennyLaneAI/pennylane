@@ -91,7 +91,7 @@ def _execute(
 
     >>> parameters = [autograd.builtins.list(t.get_parameters()) for t in tapes])
     >>> parameters = autograd.builtins.tuple(parameters)
-    >>> _batch_execute(parameters, tapes=tapes, device=device)
+    >>> _execute(parameters, tapes=tapes, device=device)
 
     In particular:
 
