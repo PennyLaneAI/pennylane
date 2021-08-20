@@ -50,7 +50,7 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True):
             This function should have the signature ``fn(tapes, **kwargs)``,
             and it should return ``list[tensor_like]``, with the
             same length as the input ``tapes``.
-        cache (None or dict or Cache): The cache to use. If ``None``,
+        cache (None or dict or Cache or bool): The cache to use. If ``None``,
             caching will not occur.
         pass_kwargs (bool): If ``True``, keyword arguments passed to the
             wrapped function will be passed directly to ``fn``. If ``False``,
@@ -86,7 +86,7 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True):
 
             if h in hashes.values():
                 # Tape already exists within ``tapes``. Determine the
-                # index of the first occurance of the tape, store this,
+                # index of the first occurrence of the tape, store this,
                 # and continue to the next iteration.
                 idx = list(hashes.keys())[list(hashes.values()).index(h)]
                 repeated[i] = idx

@@ -1541,8 +1541,8 @@ class TestHashing:
         assert tape1.hash != tape2.hash
 
     def test_different_trainabilities(self):
-        """Tests that the circuit hash of identical circuits are identical
-        even though the datatype of the arguments may differ"""
+        """Tests that the circuit hash of identical circuits differ
+        if the circuits have different trainable parameters"""
         a = 0.3
         b = 0.2
 
@@ -1668,7 +1668,7 @@ class TestHashing:
         assert tape1.hash == tape2.hash
 
     def test_controlled_rotation_modulo_identical(self):
-        """Tests that the circuit hash of circuits with single-qubit
+        """Tests that the circuit hash of circuits with controlled
         rotations differing by multiples of 2pi have identical hash"""
         a = np.array(np.pi / 2, dtype=np.float64)
         b = np.array(np.pi / 2, dtype=np.float64)
