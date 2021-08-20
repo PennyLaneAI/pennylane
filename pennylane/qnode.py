@@ -188,6 +188,15 @@ class QNode:
         self._tape, self.interface, self.device, tape_diff_options = self.get_tape(
             device, interface, diff_method
         )
+        if self.diff_method == "best":
+            if tape_diff_options["method"] == "device":
+                self.diff_method = "device"
+            elif tape_diff_options["method"] == "backprop":
+                self.diff_method = "backprop"
+            elif tape_diff_options["method"] == "best":
+                self.diff_method = "parameter-shift"
+            elif tape_diff_options["method"] == "numeric":
+                self.diff_method = "finite-diff"
 
         # The arguments to be passed to JacobianTape.jacobian
         self.diff_options = diff_options or {}
