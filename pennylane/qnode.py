@@ -980,7 +980,7 @@ class QNode:
                     self._tape, interface, self.device, diff_options = self.get_tape(
                     self._original_device, "jax", self.diff_method
                     )
-                
+
                 self.interface = interface
                 self.diff_options.update(diff_options)
             else:
