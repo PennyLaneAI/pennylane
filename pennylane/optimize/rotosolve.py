@@ -271,8 +271,6 @@ class RotosolveOptimizer:
                 num_frequency_flat = num_freqs_flat[train_arg_index]
                 x_flat = np.fromiter(_flatten(arg), dtype=float)
                 num_params = len(x_flat)
-                print(num_frequency_flat)
-                print(np.isscalar(num_frequency_flat))
                 if np.isscalar(num_frequency_flat):
                     num_frequency_flat = [num_frequency_flat] * num_params
                 else:
