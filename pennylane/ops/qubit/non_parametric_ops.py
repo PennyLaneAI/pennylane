@@ -867,7 +867,6 @@ class MultiControlledX(Operation):
         self._control_wires = control_wires
 
         wires = control_wires + wires
-        self.U = PauliX.matrix
 
         if not control_values:
             control_values = "1" * len(control_wires)
