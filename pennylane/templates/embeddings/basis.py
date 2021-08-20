@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,19 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the ``BasisEmbedding`` template.
+Contains the BasisEmbedding template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from collections import Iterable
-
-from pennylane.templates.decorator import template
-from pennylane.templates.utils import check_shape, get_shape, check_type
 import pennylane as qml
+from pennylane.operation import Operation, AnyWires
 from pennylane.wires import Wires
 
 
-@template
-def BasisEmbedding(features, wires):
+class BasisEmbedding(Operation):
     r"""Encodes :math:`n` binary features into a basis state of :math:`n` qubits.
 
     For example, for ``features=np.array([0, 1, 0])``, the quantum system will be
@@ -37,35 +33,41 @@ def BasisEmbedding(features, wires):
         gradients with respect to the argument cannot be computed by PennyLane.
 
     Args:
-        features (array): binary input array of shape ``(n, )``
-        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
-            a Wires object.
-
-    Raises:
-        ValueError: if inputs do not have the correct format
+        features (tensor-like): binary input of shape ``(n, )``
+        wires (Iterable): wires that the template acts on
     """
 
-    #############
-    # Input checks
+    num_params = 1
+    num_wires = AnyWires
+    par_domain = "A"
 
-    wires = Wires(wires)
+    def __init__(self, features, wires, do_queue=True, id=None):
 
-    check_type(
-        features, [Iterable], msg="'features' must be iterable; got type {}".format(type(features))
-    )
+        wires = Wires(wires)
+        shape = qml.math.shape(features)
 
-    expected_shape = (len(wires),)
-    check_shape(
-        features,
-        expected_shape,
-        msg="'features' must be of shape {}; got {}" "".format(expected_shape, get_shape(features)),
-    )
+        if len(shape) != 1:
+            raise ValueError(f"Features must be one-dimensional; got shape {shape}.")
 
-    if any([b not in [0, 1] for b in features]):
-        raise ValueError("'basis_state' must only consist of 0s and 1s; got {}".format(features))
+        n_features = shape[0]
+        if n_features != len(wires):
+            raise ValueError(f"Features must be of length {len(wires)}; got length {n_features}.")
 
-    ###############
+        features = list(qml.math.toarray(features))
 
-    for wire, bit in zip(wires, features):
-        if bit == 1:
-            qml.PauliX(wire)
+        if not set(features).issubset({0, 1}):
+            raise ValueError(f"Basis state must only consist of 0s and 1s; got {features}")
+
+        super().__init__(features, wires=wires, do_queue=do_queue, id=id)
+
+    def expand(self):
+
+        features = self.parameters[0]
+
+        with qml.tape.QuantumTape() as tape:
+
+            for wire, bit in zip(self.wires, features):
+                if bit == 1:
+                    qml.PauliX(wire)
+
+        return tape

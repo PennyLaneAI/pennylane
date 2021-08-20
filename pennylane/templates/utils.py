@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,26 +19,6 @@ for example to make sure that arguments have the right shape, range or type.
 from collections.abc import Iterable
 
 import numpy as np
-from pennylane.variable import Variable
-
-
-def check_no_variable(arg, msg):
-    """Checks that ``arg`` does not represent or contain a :func:`~.pennylane.Variable` object.
-
-    This ensures that the user has not passed ``arg`` to the qnode as a
-    primary argument.
-
-    Args:
-        arg: argument to check
-        msg (str): error message to display
-    """
-
-    if isinstance(arg, Variable):
-        raise ValueError(msg)
-
-    if isinstance(arg, Iterable):
-        if any([isinstance(a_, Variable) for a_ in arg]):
-            raise ValueError(msg)
 
 
 def check_wires(wires):
@@ -81,7 +61,7 @@ def get_shape(inpt):
     """
 
     # avoids incorrect assignment of shape
-    if isinstance(inpt, (float, int, complex, Variable)):
+    if isinstance(inpt, (float, int, complex)):
         shape = ()
 
     else:
@@ -91,8 +71,10 @@ def get_shape(inpt):
 
         try:
             shape = inpt.shape
-        except AttributeError:
-            raise ValueError("could not extract shape of object of type {}".format(type(inpt)))
+        except AttributeError as e:
+            raise ValueError(
+                "could not extract shape of object of type {}".format(type(inpt))
+            ) from e
 
         # turn result into tuple to avoid type TensorShape
         shape = tuple(shape)
@@ -108,6 +90,9 @@ def check_shape(inpt, target_shape, msg, bound=None):
         target_shape (tuple[int]): expected shape of inpt
         msg (str): error message to display if the shapes are different
         bound (str): If 'max' or 'min', the target shape is merely required to be a bound on the input shape
+
+    Returns:
+        tuple: shape of ``inpt``
 
     Raises:
         ValueError
@@ -138,6 +123,9 @@ def check_shapes(inpt_list, target_shapes, msg, bounds=None):
         msg (str): error message to display
         bounds (list): list of 'max' or 'min', indicating the bound that the target shape imposes on the input
             shape
+
+    Returns:
+        list: list of shapes for ``inpt_list``
 
     Raises:
         ValueError
@@ -195,7 +183,7 @@ def check_number_of_layers(list_of_weights):
 
     if any(len(s) == 0 for s in shapes):
         raise ValueError(
-            "the first dimension of the weight parameters must be the number of layers in the "
+            "The first dimension of all parameters needs to be the number of layers in the "
             "template; got scalar weights."
         )
 
@@ -205,7 +193,7 @@ def check_number_of_layers(list_of_weights):
 
     if n_different_first_dims > 1:
         raise ValueError(
-            "the first dimension of the weight parameters must be the number of layers in the "
+            "The first dimension of all parameters needs to be the number of layers in the "
             "template; got differing first dimensions: {}.".format(*different_first_dims)
         )
 

@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ try:
 
     if tf.__version__[0] == "1":
         raise ImportError("default.qubit.tf device requires TensorFlow>=2.0")
+
+    from tensorflow.python.framework.errors_impl import InvalidArgumentError
 
     SUPPORTS_APPLY_OPS = semantic_version.match(">=2.3.0", tf.__version__)
 
@@ -115,13 +117,12 @@ class DefaultQubitTF(DefaultQubit):
         wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
             or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
             or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
-        shots (int): How many times the circuit should be evaluated (or sampled) to estimate
-            the expectation values. Defaults to 1000 if not specified.
-            If ``analytic == True``, then the number of shots is ignored
-            in the calculation of expectation values and variances, and only controls the number
-            of samples returned by ``sample``.
-        analytic (bool): indicates if the device should calculate expectations
-            and variances analytically
+        shots (None, int): How many times the circuit should be evaluated (or sampled) to estimate
+            the expectation values. Defaults to ``None`` if not specified, which means
+            that the device returns analytical results.
+            If ``shots > 0`` is used, the ``diff_method="backprop"``
+            QNode differentiation method is not supported and it is recommended to consider
+            switching device to ``default.qubit`` and using ``diff_method="parameter-shift"``.
     """
 
     name = "Default qubit (TensorFlow) PennyLane plugin"
@@ -129,13 +130,26 @@ class DefaultQubitTF(DefaultQubit):
 
     parametric_ops = {
         "PhaseShift": tf_ops.PhaseShift,
+        "ControlledPhaseShift": tf_ops.ControlledPhaseShift,
+        "CPhase": tf_ops.ControlledPhaseShift,
         "RX": tf_ops.RX,
         "RY": tf_ops.RY,
         "RZ": tf_ops.RZ,
         "Rot": tf_ops.Rot,
+        "MultiRZ": tf_ops.MultiRZ,
         "CRX": tf_ops.CRX,
         "CRY": tf_ops.CRY,
         "CRZ": tf_ops.CRZ,
+        "CRot": tf_ops.CRot,
+        "IsingXX": tf_ops.IsingXX,
+        "IsingYY": tf_ops.IsingYY,
+        "IsingZZ": tf_ops.IsingZZ,
+        "SingleExcitation": tf_ops.SingleExcitation,
+        "SingleExcitationPlus": tf_ops.SingleExcitationPlus,
+        "SingleExcitationMinus": tf_ops.SingleExcitationMinus,
+        "DoubleExcitation": tf_ops.DoubleExcitation,
+        "DoubleExcitationPlus": tf_ops.DoubleExcitationPlus,
+        "DoubleExcitationMinus": tf_ops.DoubleExcitationMinus,
     }
 
     C_DTYPE = tf.complex128
@@ -152,12 +166,24 @@ class DefaultQubitTF(DefaultQubit):
     _transpose = staticmethod(tf.transpose)
     _tensordot = staticmethod(tf.tensordot)
     _conj = staticmethod(tf.math.conj)
-    _imag = staticmethod(tf.math.conj)
+    _imag = staticmethod(tf.math.imag)
     _roll = staticmethod(tf.roll)
     _stack = staticmethod(tf.stack)
 
-    def __init__(self, wires, *, shots=1000, analytic=True):
-        super().__init__(wires, shots=shots, analytic=analytic)
+    @staticmethod
+    def _asarray(array, dtype=None):
+        try:
+            res = tf.convert_to_tensor(array, dtype=dtype)
+        except InvalidArgumentError:
+            res = tf.concat([tf.reshape(i, [-1]) for i in array], axis=0)
+
+            if dtype is not None:
+                res = tf.cast(res, dtype=dtype)
+
+        return res
+
+    def __init__(self, wires, *, shots=None, analytic=None):
+        super().__init__(wires, shots=shots, cache=0, analytic=analytic)
 
         # prevent using special apply method for this gate due to slowdown in TF implementation
         del self._apply_ops["CZ"]
@@ -196,8 +222,18 @@ class DefaultQubitTF(DefaultQubit):
             the return type will be a ``np.ndarray``. For parametric unitaries, a ``tf.Tensor``
             object will be returned.
         """
-        if unitary.name in self.parametric_ops:
-            return self.parametric_ops[unitary.name](*unitary.parameters)
+        op_name = unitary.name.split(".inv")[0]
+
+        if op_name in self.parametric_ops:
+            if op_name == "MultiRZ":
+                mat = self.parametric_ops[op_name](*unitary.parameters, len(unitary.wires))
+            else:
+                mat = self.parametric_ops[op_name](*unitary.parameters)
+
+            if unitary.inverse:
+                mat = self._transpose(self._conj(mat))
+
+            return mat
 
         if isinstance(unitary, DiagonalOperation):
             return unitary.eigvals

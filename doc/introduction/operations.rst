@@ -58,6 +58,7 @@ Qubit gates
     ~pennylane.PauliZ
     ~pennylane.S
     ~pennylane.T
+    ~pennylane.SX
     ~pennylane.Rot
     ~pennylane.RX
     ~pennylane.RY
@@ -65,10 +66,16 @@ Qubit gates
     ~pennylane.MultiRZ
     ~pennylane.PauliRot
     ~pennylane.PhaseShift
+    ~pennylane.CPhase
+    ~pennylane.ControlledPhaseShift
     ~pennylane.CNOT
     ~pennylane.CZ
     ~pennylane.CY
     ~pennylane.SWAP
+    ~pennylane.ISWAP
+    ~pennylane.IsingXX
+    ~pennylane.IsingYY
+    ~pennylane.IsingZZ
     ~pennylane.U1
     ~pennylane.U2
     ~pennylane.U3
@@ -79,7 +86,19 @@ Qubit gates
     ~pennylane.Toffoli
     ~pennylane.CSWAP
     ~pennylane.QubitUnitary
+    ~pennylane.ControlledQubitUnitary
+    ~pennylane.MultiControlledX
     ~pennylane.DiagonalQubitUnitary
+    ~pennylane.SingleExcitation
+    ~pennylane.SingleExcitationPlus
+    ~pennylane.SingleExcitationMinus
+    ~pennylane.DoubleExcitation
+    ~pennylane.DoubleExcitationPlus
+    ~pennylane.DoubleExcitationMinus
+    ~pennylane.QubitCarry
+    ~pennylane.QubitSum
+    ~pennylane.Hamiltonian
+
 
 :html:`</div>`
 
@@ -114,6 +133,9 @@ Noisy channels
     ~pennylane.GeneralizedAmplitudeDamping
     ~pennylane.PhaseDamping
     ~pennylane.DepolarizingChannel
+    ~pennylane.BitFlip
+    ~pennylane.PhaseFlip
+    ~pennylane.ResetError
     ~pennylane.QubitChannel
 
 :html:`</div>`
@@ -134,6 +156,8 @@ Qubit observables
     ~pennylane.PauliX
     ~pennylane.PauliY
     ~pennylane.PauliZ
+    ~pennylane.Projector
+    ~pennylane.Hamiltonian
 
 :html:`</div>`
 

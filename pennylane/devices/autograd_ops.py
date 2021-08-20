@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,6 +28,8 @@ Z = np.array([[1, 0], [0, -1]], dtype=C_DTYPE)
 
 II = np.eye(4, dtype=C_DTYPE)
 ZZ = np.array(kron(Z, Z), dtype=C_DTYPE)
+XX = np.array(kron(X, X), dtype=C_DTYPE)
+YY = np.array(kron(Y, Y), dtype=C_DTYPE)
 
 IX = np.array(kron(I, X), dtype=C_DTYPE)
 IY = np.array(kron(I, Y), dtype=C_DTYPE)
@@ -48,6 +50,18 @@ def PhaseShift(phi):
         array[complex]: diagonal part of the phase shift matrix
     """
     return np.array([1.0, np.exp(1j * phi)])
+
+
+def ControlledPhaseShift(phi):
+    r"""Two-qubit controlled phase shift.
+
+    Args:
+        phi (float): phase shift angle
+
+    Returns:
+        array[complex]: diagonal part of the controlled phase shift matrix
+    """
+    return np.array([1.0, 1.0, 1.0, np.exp(1j * phi)])
 
 
 def RX(theta):
@@ -168,3 +182,207 @@ def MultiRZ(theta, n):
         array[complex]: diagonal part of the multi-qubit rotation matrix
     """
     return np.exp(-1j * theta / 2 * pauli_eigs(n))
+
+
+def IsingXX(phi):
+    r"""Ising XX coupling gate
+
+    .. math:: XX(\phi) = \begin{bmatrix}
+        \cos(\phi / 2) & 0 & 0 & -i \sin(\phi / 2) \\
+        0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
+        0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
+        -i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
+        \end{bmatrix}.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+    Returns:
+        array[complex]: unitary 4x4 rotation matrix
+    """
+    return np.cos(phi / 2) * II - 1j * np.sin(phi / 2) * XX
+
+
+def IsingYY(phi):
+    r"""Ising YY coupling gate.
+
+    .. math:: YY(\phi) = \begin{bmatrix}
+        \cos(\phi / 2) & 0 & 0 & i \sin(\phi / 2) \\
+        0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
+        0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
+        i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
+        \end{bmatrix}.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+    Returns:
+        array[complex]: unitary 4x4 rotation matrix
+    """
+    return np.cos(phi / 2) * II - 1j * np.sin(phi / 2) * YY
+
+
+def IsingZZ(phi):
+    r"""Ising ZZ coupling gate
+
+    .. math:: ZZ(\phi) = \begin{bmatrix}
+        e^{-i \phi / 2} & 0 & 0 & 0 \\
+        0 & e^{i \phi / 2} & 0 & 0 \\
+        0 & 0 & e^{i \phi / 2} & 0 \\
+        0 & 0 & 0 & e^{-i \phi / 2}
+        \end{bmatrix}.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+    Returns:
+        array[complex]: unitary 4x4 rotation matrix
+    """
+    e_m = np.exp(-1j * phi / 2)
+    e = np.exp(1j * phi / 2)
+    return np.array([[e_m, 0, 0, 0], [0, e, 0, 0], [0, 0, e, 0], [0, 0, 0, e_m]])
+
+
+def SingleExcitation(phi):
+    r"""Single excitation rotation.
+
+    Args:
+        phi (float): rotation angle
+
+    Returns:
+        array[float]: Single excitation rotation matrix
+    """
+    c = np.cos(phi / 2)
+    s = np.sin(phi / 2)
+    return np.array([[1, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, 1]])
+
+
+def SingleExcitationPlus(phi):
+    r"""Single excitation rotation with positive phase-shift outside the rotation subspace.
+
+    Args:
+        phi (float): rotation angle
+
+    Returns:
+        array[complex]: Single excitation rotation matrix with positive phase-shift
+    """
+    c = np.cos(phi / 2)
+    s = np.sin(phi / 2)
+    e = np.exp(1j * phi / 2)
+    return np.array([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
+
+
+def SingleExcitationMinus(phi):
+    r"""Single excitation rotation with negative phase-shift outside the rotation subspace.
+
+    Args:
+        phi (float): rotation angle
+
+    Returns:
+       array[complex]: Single excitation rotation matrix with negative phase-shift
+    """
+    c = np.cos(phi / 2)
+    s = np.sin(phi / 2)
+    e = np.exp(-1j * phi / 2)
+    return np.array([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
+
+
+def DoubleExcitation(phi):
+    r"""Double excitation rotation.
+
+    Args:
+        phi (float): rotation angle
+    Returns:
+        array[float]: Double excitation rotation matrix
+
+    """
+    c = np.cos(phi / 2)
+    s = np.sin(phi / 2)
+
+    U = [
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, c, 0, 0, 0, 0, 0, 0, 0, 0, -s, 0, 0, 0],
+        [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+        [0, 0, 0, s, 0, 0, 0, 0, 0, 0, 0, 0, c, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    ]
+
+    return np.array(U)
+
+
+def DoubleExcitationPlus(phi):
+    r"""Double excitation rotation with positive phase-shift.
+
+    Args:
+        phi (float): rotation angle
+    Returns:
+        array[complex]: rotation matrix
+    """
+
+    c = np.cos(phi / 2)
+    s = np.sin(phi / 2)
+    e = np.exp(1j * phi / 2)
+
+    U = [
+        [e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, c, 0, 0, 0, 0, 0, 0, 0, 0, -s, 0, 0, 0],
+        [0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0],
+        [0, 0, 0, s, 0, 0, 0, 0, 0, 0, 0, 0, c, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e],
+    ]
+
+    return np.array(U)
+
+
+def DoubleExcitationMinus(phi):
+    r"""Double excitation rotation with negative phase-shift.
+
+    Args:
+        phi (float): rotation angle
+    Returns:
+        array[complex]: rotation matrix
+    """
+
+    c = np.cos(phi / 2)
+    s = np.sin(phi / 2)
+    e = np.exp(-1j * phi / 2)
+
+    U = [
+        [e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, c, 0, 0, 0, 0, 0, 0, 0, 0, -s, 0, 0, 0],
+        [0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0, 0, 0],
+        [0, 0, 0, s, 0, 0, 0, 0, 0, 0, 0, 0, c, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, e],
+    ]
+
+    return np.array(U)

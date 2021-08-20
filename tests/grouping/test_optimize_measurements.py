@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 Unit tests for ``optimize_measurements`` function in ``grouping/optimize_measurements.py``.
 """
 import pytest
+import numpy as np
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane.grouping.utils import are_identical_pauli_words
 from pennylane.grouping.optimize_measurements import optimize_measurements
@@ -108,7 +109,41 @@ class TestOptimizeMeasurements:
         assert len(grouped_coeffs) == len(grouped_coeffs)
 
         assert all(
-            grouped_coeffs[i] == grouped_coeffs_sol[i] for i in range(len(grouped_coeffs_sol))
+            np.allclose(grouped_coeffs[i], grouped_coeffs_sol[i])
+            for i in range(len(grouped_coeffs_sol))
+        )
+
+    @pytest.mark.parametrize(
+        "obs",
+        [
+            [PauliZ(0), PauliZ(0)],
+            [PauliX(0) @ PauliX(1), PauliX(0) @ PauliX(1)],
+            [PauliX(0) @ PauliX(1), PauliX(1) @ PauliX(0)],
+        ],
+    )
+    def test_optimize_measurements_qwc_term_multiple_times(self, obs):
+        """Tests if coefficients are properly re-structured even if the same
+        terms appear multiple times.
+
+        Although it should be fair to assume that the terms are unique in the
+        Hamiltonian, making sure that grouping happens even with terms appearing
+        multiple times can ensure that there is no unexpected behaviour.
+        """
+        coefficients = [1.43, 4.21]
+
+        diagonalized_groupings_sol = [obs]
+
+        grouped_coeffs_sol = [[1.43, 4.21]]
+
+        grouped_coeffs = optimize_measurements(
+            obs, coefficients, grouping="qwc", colouring_method="rlf"
+        )[2]
+
+        assert len(grouped_coeffs) == len(grouped_coeffs)
+
+        assert all(
+            np.allclose(grouped_coeffs[i], grouped_coeffs_sol[i])
+            for i in range(len(grouped_coeffs_sol))
         )
 
     def test_optimize_measurements_not_implemented_catch(self):

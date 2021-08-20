@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,4 +15,4 @@
 This package contains functionality for running Variational Quantum Eigensolver (VQE)
 computations using PennyLane.
 """
-from .vqe import Hamiltonian, VQECost
+from .vqe import ExpvalCost, VQECost

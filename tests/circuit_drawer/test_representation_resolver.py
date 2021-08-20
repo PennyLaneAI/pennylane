@@ -20,9 +20,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.circuit_drawer import RepresentationResolver
-from pennylane.variable import Variable
-from pennylane.wires import Wires
-from pennylane.tape.measure import state
+from pennylane.measure import state
 
 
 @pytest.fixture
@@ -35,26 +33,6 @@ def unicode_representation_resolver():
 def ascii_representation_resolver():
     """An instance of a RepresentationResolver with unicode charset."""
     return RepresentationResolver(charset=qml.circuit_drawer.AsciiCharSet)
-
-
-@pytest.fixture
-def unicode_representation_resolver_varnames():
-    """An instance of a RepresentationResolver with unicode charset and show_variable_names=True."""
-    return RepresentationResolver(show_variable_names=True)
-
-
-@pytest.fixture
-def variable(monkeypatch):
-    """A mocked Variable instance for a non-keyword variable."""
-    monkeypatch.setattr(Variable, "positional_arg_values", [0, 1, 2, 3])
-    yield Variable(2, "test")
-
-
-@pytest.fixture
-def kwarg_variable(monkeypatch):
-    """A mocked Variable instance for a keyword variable."""
-    monkeypatch.setattr(Variable, "kwarg_values", {"kwarg_test": [0, 1, 2, 3]})
-    yield Variable(1, "kwarg_test", True)
 
 
 class TestRepresentationResolver:
@@ -74,56 +52,16 @@ class TestRepresentationResolver:
         assert RepresentationResolver.index_of_array_or_append(element, list) == index
         assert list == list_after
 
-    @pytest.mark.parametrize("par,expected", [(3, "3"), (5.236422, "5.24"),])
+    @pytest.mark.parametrize(
+        "par,expected",
+        [
+            (3, "3"),
+            (5.236422, "5.24"),
+        ],
+    )
     def test_single_parameter_representation(self, unicode_representation_resolver, par, expected):
         """Test that single parameters are properly resolved."""
         assert unicode_representation_resolver.single_parameter_representation(par) == expected
-
-    def test_single_parameter_representation_variable(
-        self, unicode_representation_resolver, variable
-    ):
-        """Test that variables are properly resolved."""
-
-        assert unicode_representation_resolver.single_parameter_representation(variable) == "2"
-
-    def test_single_parameter_representation_kwarg_variable(
-        self, unicode_representation_resolver, kwarg_variable
-    ):
-        """Test that kwarg variables are properly resolved."""
-
-        assert (
-            unicode_representation_resolver.single_parameter_representation(kwarg_variable) == "1"
-        )
-
-    @pytest.mark.parametrize("par,expected", [(3, "3"), (5.236422, "5.24"),])
-    def test_single_parameter_representation_varnames(
-        self, unicode_representation_resolver_varnames, par, expected
-    ):
-        """Test that single parameters are properly resolved when show_variable_names is True."""
-        assert (
-            unicode_representation_resolver_varnames.single_parameter_representation(par)
-            == expected
-        )
-
-    def test_single_parameter_representation_variable_varnames(
-        self, unicode_representation_resolver_varnames, variable
-    ):
-        """Test that variables are properly resolved when show_variable_names is True."""
-
-        assert (
-            unicode_representation_resolver_varnames.single_parameter_representation(variable)
-            == "test"
-        )
-
-    def test_single_parameter_representation_kwarg_variable_varnames(
-        self, unicode_representation_resolver_varnames, kwarg_variable
-    ):
-        """Test that kwarg variables are properly resolved when show_variable_names is True."""
-
-        assert (
-            unicode_representation_resolver_varnames.single_parameter_representation(kwarg_variable)
-            == "kwarg_test"
-        )
 
     @pytest.mark.parametrize(
         "op,wire,target",
@@ -175,7 +113,7 @@ class TestRepresentationResolver:
             (qml.ControlledPhase(3.14, wires=[0, 1]), 0, "C"),
             (qml.ThermalState(3, wires=[1]), 1, "Thermal(3)"),
             (
-                qml.GaussianState(np.array([1, 2]), np.array([[2, 0], [0, 2]]), wires=[1]),
+                qml.GaussianState(np.array([[2, 0], [0, 2]]), np.array([1, 2]), wires=[1]),
                 1,
                 "Gaussian(M0,M1)",
             ),
@@ -230,7 +168,11 @@ class TestRepresentationResolver:
             (qml.X(wires=[1]), 1, "x"),
             (qml.P(wires=[1]), 1, "p"),
             (qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]), 1, "|4,5,7╳4,5,7|"),
-            (qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1]), 2, "1+2x₀-1.3x₁+6p₁",),
+            (
+                qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1]),
+                2,
+                "1+2x₀-1.3x₁+6p₁",
+            ),
             (
                 qml.PolyXP(
                     np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1]
@@ -261,13 +203,15 @@ class TestRepresentationResolver:
             (qml.Toffoli(wires=[0, 2, 1]).inv(), 1, "X⁻¹"),
             (qml.Toffoli(wires=[0, 2, 1]).inv(), 0, "C"),
             (qml.Toffoli(wires=[0, 2, 1]).inv(), 2, "C"),
+            (qml.measure.sample(wires=[0, 1]), 0, "basis"),  # not providing an observable in
+            (qml.measure.sample(wires=[0, 1]), 1, "basis"),  # sample gets displayed as raw
         ],
     )
     def test_operator_representation_unicode(
         self, unicode_representation_resolver, op, wire, target
     ):
         """Test that an Operator instance is properly resolved."""
-        assert unicode_representation_resolver.operator_representation(op, Wires(wire)) == target
+        assert unicode_representation_resolver.operator_representation(op, wire) == target
 
     @pytest.mark.parametrize(
         "op,wire,target",
@@ -310,7 +254,7 @@ class TestRepresentationResolver:
             (qml.ControlledPhase(3.14, wires=[0, 1]), 0, "C"),
             (qml.ThermalState(3, wires=[1]), 1, "Thermal(3)"),
             (
-                qml.GaussianState(np.array([1, 2]), np.array([[2, 0], [0, 2]]), wires=[1]),
+                qml.GaussianState(np.array([[2, 0], [0, 2]]), np.array([1, 2]), wires=[1]),
                 1,
                 "Gaussian(M0,M1)",
             ),
@@ -365,7 +309,11 @@ class TestRepresentationResolver:
             (qml.X(wires=[1]), 1, "x"),
             (qml.P(wires=[1]), 1, "p"),
             (qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]), 1, "|4,5,7X4,5,7|"),
-            (qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1]), 2, "1+2x_0-1.3x_1+6p_1",),
+            (
+                qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1]),
+                2,
+                "1+2x_0-1.3x_1+6p_1",
+            ),
             (
                 qml.PolyXP(
                     np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1]
@@ -397,11 +345,13 @@ class TestRepresentationResolver:
             (qml.Toffoli(wires=[0, 2, 1]).inv(), 1, "X^-1"),
             (qml.Toffoli(wires=[0, 2, 1]).inv(), 0, "C"),
             (qml.Toffoli(wires=[0, 2, 1]).inv(), 2, "C"),
+            (qml.measure.sample(wires=[0, 1]), 0, "basis"),  # not providing an observable in
+            (qml.measure.sample(wires=[0, 1]), 1, "basis"),  # sample gets displayed as raw
         ],
     )
     def test_operator_representation_ascii(self, ascii_representation_resolver, op, wire, target):
         """Test that an Operator instance is properly resolved."""
-        assert ascii_representation_resolver.operator_representation(op, Wires(wire)) == target
+        assert ascii_representation_resolver.operator_representation(op, wire) == target
 
     @pytest.mark.parametrize(
         "obs,wire,target",
@@ -549,14 +499,14 @@ class TestRepresentationResolver:
         self, unicode_representation_resolver, obs, wire, target
     ):
         """Test that an Observable instance with return type is properly resolved."""
-        assert unicode_representation_resolver.output_representation(obs, Wires(wire)) == target
+        assert unicode_representation_resolver.output_representation(obs, wire) == target
 
     def test_fallback_output_representation_unicode(self, unicode_representation_resolver):
         """Test that an Observable instance with return type is properly resolved."""
         obs = qml.PauliZ(0)
         obs.return_type = "TestReturnType"
 
-        assert unicode_representation_resolver.output_representation(obs, Wires(0)) == "TestReturnType[Z]"
+        assert unicode_representation_resolver.output_representation(obs, 0) == "TestReturnType[Z]"
 
     @pytest.mark.parametrize(
         "obs,wire,target",
@@ -702,15 +652,15 @@ class TestRepresentationResolver:
     )
     def test_output_representation_ascii(self, ascii_representation_resolver, obs, wire, target):
         """Test that an Observable instance with return type is properly resolved."""
-        assert ascii_representation_resolver.output_representation(obs, Wires(wire)) == target
+        assert ascii_representation_resolver.output_representation(obs, wire) == target
 
     def test_element_representation_none(self, unicode_representation_resolver):
         """Test that element_representation properly handles None."""
-        assert unicode_representation_resolver.element_representation(None, Wires(0)) == ""
+        assert unicode_representation_resolver.element_representation(None, 0) == ""
 
     def test_element_representation_str(self, unicode_representation_resolver):
         """Test that element_representation properly handles strings."""
-        assert unicode_representation_resolver.element_representation("Test", Wires(0)) == "Test"
+        assert unicode_representation_resolver.element_representation("Test", 0) == "Test"
 
     def test_element_representation_calls_output(self, unicode_representation_resolver):
         """Test that element_representation calls output_representation for returned observables."""
@@ -720,9 +670,9 @@ class TestRepresentationResolver:
         obs = qml.sample(qml.PauliX(3))
         wire = 3
 
-        unicode_representation_resolver.element_representation(obs, Wires(wire))
+        unicode_representation_resolver.element_representation(obs, wire)
 
-        assert unicode_representation_resolver.output_representation.call_args[0] == (obs, Wires(wire))
+        assert unicode_representation_resolver.output_representation.call_args[0] == (obs, wire)
 
     def test_element_representation_calls_operator(self, unicode_representation_resolver):
         """Test that element_representation calls operator_representation for all operators that are not returned."""
@@ -732,6 +682,6 @@ class TestRepresentationResolver:
         op = qml.PauliX(3)
         wire = 3
 
-        unicode_representation_resolver.element_representation(op, Wires(wire))
+        unicode_representation_resolver.element_representation(op, wire)
 
-        assert unicode_representation_resolver.operator_representation.call_args[0] == (op, Wires(wire))
+        assert unicode_representation_resolver.operator_representation.call_args[0] == (op, wire)

@@ -70,7 +70,7 @@ Punctuation and spelling
           ``QNodeCollection`` should be executed. This can either be a single device, or a list
           of devices of length ``len(observables)``.
 
-* Comments may written more informally then docstrings, as long as consistency and clarity is maintained.
+* Comments may be written more informally than docstrings, as long as consistency and clarity are maintained.
   Capitalization and punctuation should be used with multi-sentence comments to aid with readability.
 
 

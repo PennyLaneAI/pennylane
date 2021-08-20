@@ -17,104 +17,97 @@ Tests for the templates utility functions.
 # pylint: disable=protected-access,cell-var-from-loop
 import pytest
 import numpy as np
-from pennylane.variable import Variable
-from pennylane.templates.utils import (check_wires,
-                                       check_shape,
-                                       check_shapes,
-                                       get_shape,
-                                       check_number_of_layers,
-                                       check_no_variable,
-                                       check_is_in_options,
-                                       check_type)
+from pennylane.templates.utils import (
+    check_wires,
+    check_shape,
+    check_shapes,
+    get_shape,
+    check_number_of_layers,
+    check_is_in_options,
+    check_type,
+)
 
 #########################################
 # Inputs
 
-WIRES_PASS = [(0, [0]),
-              ([4], [4]),
-              ([1, 2], [1, 2])]
-WIRES_FAIL = [[-1],
-              ['a'],
-              lambda x: x,
-              None
-              ]
+WIRES_PASS = [(0, [0]), ([4], [4]), ([1, 2], [1, 2])]
+WIRES_FAIL = [[-1], ["a"], lambda x: x, None]
 
-SHAPE_PASS = [(0.231, (), None),
-              ([[1., 2.], [3., 4.]], (2, 2), None),
-              ([-2.3], (1,), None),
-              ([-2.3, 3.4], (4,), 'max'),
-              ([-2.3, 3.4], (1,), 'min'),
-              ([-2.3], (1,), 'max'),
-              ([-2.3], (1,), 'min'),
-              ([[-2.3, 3.4], [1., 0.2]], (3, 3), 'max'),
-              ([[-2.3, 3.4, 1.], [1., 0.2, 1.]], (1, 2), 'min'),
-              ]
+SHAPE_PASS = [
+    (0.231, (), None),
+    ([[1.0, 2.0], [3.0, 4.0]], (2, 2), None),
+    ([-2.3], (1,), None),
+    ([-2.3, 3.4], (4,), "max"),
+    ([-2.3, 3.4], (1,), "min"),
+    ([-2.3], (1,), "max"),
+    ([-2.3], (1,), "min"),
+    ([[-2.3, 3.4], [1.0, 0.2]], (3, 3), "max"),
+    ([[-2.3, 3.4, 1.0], [1.0, 0.2, 1.0]], (1, 2), "min"),
+]
 
-SHAPE_LST_PASS = [([0.231, 0.1], [(), ()], None),
-                  ([[1., 2.], [4.]], [(2,), (1,)], None),
-                  ([[-2.3], -1.], [(1,), ()], None),
-                  ([[-2.3, 0.1], -1.], [(1,), ()], 'min'),
-                  ([[-2.3, 0.1], -1.], [(3,), ()], 'max')
-                  ]
+SHAPE_LST_PASS = [
+    ([0.231, 0.1], [(), ()], None),
+    ([[1.0, 2.0], [4.0]], [(2,), (1,)], None),
+    ([[-2.3], -1.0], [(1,), ()], None),
+    ([[-2.3, 0.1], -1.0], [(1,), ()], "min"),
+    ([[-2.3, 0.1], -1.0], [(3,), ()], "max"),
+]
 
-SHAPE_FAIL = [(0.231, (1,), None),
-              ([[1., 2.], [3., 4.]], (2,), None),
-              ([-2.3], (4, 5), None),
-              ([-2.3, 3.4], (4,), 'min'),
-              ([-2.3, 3.4], (1,), 'max'),
-              ([[-2.3, 3.4], [1., 0.2]], (3, 3), 'min'),
-              ([[-2.3, 3.4, 1.], [1., 0.2, 1.]], (1, 2), 'max'),
-              ]
+SHAPE_FAIL = [
+    (0.231, (1,), None),
+    ([[1.0, 2.0], [3.0, 4.0]], (2,), None),
+    ([-2.3], (4, 5), None),
+    ([-2.3, 3.4], (4,), "min"),
+    ([-2.3, 3.4], (1,), "max"),
+    ([[-2.3, 3.4], [1.0, 0.2]], (3, 3), "min"),
+    ([[-2.3, 3.4, 1.0], [1.0, 0.2, 1.0]], (1, 2), "max"),
+]
 
-GET_SHAPE_PASS = [(0.231, ()),
-                  (complex(1, 0), ()),
-                  (1, ()),
-                  ([[1., 2.], [3., 4.]], (2, 2)),
-                  ([-2.3], (1,)),
-                  ([-2.3, 3.4], (2,)),
-                  ([-2.3], (1,)),
-                  ([[-2.3, 3.4, 1.], [1., 0.2, 1.]], (2, 3)),
-                  ]
+GET_SHAPE_PASS = [
+    (0.231, ()),
+    (complex(1, 0), ()),
+    (1, ()),
+    ([[1.0, 2.0], [3.0, 4.0]], (2, 2)),
+    ([-2.3], (1,)),
+    ([-2.3, 3.4], (2,)),
+    ([-2.3], (1,)),
+    ([[-2.3, 3.4, 1.0], [1.0, 0.2, 1.0]], (2, 3)),
+]
 
-GET_SHAPE_FAIL = [("a",),
-                  (None,)]
+GET_SHAPE_FAIL = [("a",), (None,)]
 
-SHAPE_LST_FAIL = [([[0.231, 0.1]], [[()], [(3, 4)]], None),
-                  ([[1., 2.], [4.]], [(1,), (1,)], None),
-                  ([[-2.3], -1.], [(1, 2), (1,)], None),
-                  ([[-2.3, 0.1], -1.], [(1,), ()], 'max'),
-                  ([[-2.3, 0.1], -1.], [(3,), ()], 'min')
-                  ]
+SHAPE_LST_FAIL = [
+    ([[0.231, 0.1]], [[()], [(3, 4)]], None),
+    ([[1.0, 2.0], [4.0]], [(1,), (1,)], None),
+    ([[-2.3], -1.0], [(1, 2), (1,)], None),
+    ([[-2.3, 0.1], -1.0], [(1,), ()], "max"),
+    ([[-2.3, 0.1], -1.0], [(3,), ()], "min"),
+]
 
-LAYERS_PASS = [([[1], [2], [3]], 1),
-               ([[[1], [2], [3]], [[1], [2], [3]]], 3),
-               ]
+LAYERS_PASS = [
+    ([[1], [2], [3]], 1),
+    ([[[1], [2], [3]], [[1], [2], [3]]], 3),
+]
 
-LAYERS_FAIL = [([[[1], [2], [3]], 1], 5),
-               ([[[1], [2], [3]], [[1], [2]]], 4),
-               ]
-
-NO_VARIABLES_PASS = [[[], np.array([1., 4.])],
-                     [1, 'a']]
-
-NO_VARIABLES_FAIL = [[[Variable(0.1)], Variable([0.1])],
-                     np.array([Variable(0.3), Variable(4.)]),
-                     Variable(-1.)]
+LAYERS_FAIL = [
+    ([[[1], [2], [3]], 1], 5),
+    ([[[1], [2], [3]], [[1], [2]]], 4),
+]
 
 OPTIONS_PASS = [("a", ["a", "b"])]
 
 OPTIONS_FAIL = [("c", ["a", "b"])]
 
-TYPE_PASS = [(["a"], list, type(None)),
-             (1, int, type(None)),
-             ("a", int, str),
-             (Variable(1.), list, Variable)
-             ]
+TYPE_PASS = [
+    (["a"], list, type(None)),
+    (1, int, type(None)),
+    ("a", int, str),
+]
 
-TYPE_FAIL = [("a", list, type(None)),
-             (Variable(1.), int, list),
-             (1., Variable, type(None))
-             ]
+TYPE_FAIL = [
+    ("a", list, type(None)),
+    (type(None), int, list),
+]
 
 
 ##############################
@@ -122,17 +115,6 @@ TYPE_FAIL = [("a", list, type(None)),
 
 class TestInputChecks:
     """Test private functions that check the input of templates."""
-
-    @pytest.mark.parametrize("arg", NO_VARIABLES_PASS)
-    def test_check_no_variable(self, arg):
-        """Tests that variable check succeeds for valid arguments."""
-        check_no_variable(arg, msg="XXX")
-
-    @pytest.mark.parametrize("arg", NO_VARIABLES_FAIL)
-    def test_check_no_variable_exception(self, arg):
-        """Tests that variable check throws error for invalid arguments."""
-        with pytest.raises(ValueError, match="XXX"):
-            check_no_variable(arg, msg="XXX")
 
     @pytest.mark.parametrize("wires, target", WIRES_PASS)
     def test_check_wires(self, wires, target):
@@ -211,5 +193,5 @@ class TestInputChecks:
     @pytest.mark.parametrize("inpt, repeat", LAYERS_FAIL)
     def test_check_num_layers_exception(self, inpt, repeat):
         """Tests that layer check throws exception if number of layers not consistent."""
-        with pytest.raises(ValueError, match="the first dimension of the weight parameters"):
+        with pytest.raises(ValueError, match="The first dimension of all parameters"):
             check_number_of_layers(inpt)

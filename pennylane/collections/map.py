@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,14 +17,13 @@ Contains the map function, for mapping templates over observables and devices.
 # pylint: disable=too-many-arguments
 from collections.abc import Sequence
 
-from pennylane.qnodes import QNode
-from pennylane.measure import expval, var, sample
+import pennylane as qml
 from pennylane.operation import Observable
 
 from .qnode_collection import QNodeCollection
 
 
-MEASURE_MAP = {"expval": expval, "var": var, "sample": sample}
+MEASURE_MAP = {"expval": qml.expval, "var": qml.var, "sample": qml.sample}
 
 
 def map(
@@ -137,7 +136,7 @@ def map(
             template(params, wires=_wires, **circuit_kwargs)
             return MEASURE_MAP[_m](_obs)
 
-        qnode = QNode(circuit, dev, interface=interface, diff_method=diff_method, **kwargs)
+        qnode = qml.QNode(circuit, dev, interface=interface, diff_method=diff_method, **kwargs)
         qnodes.append(qnode)
 
     return qnodes

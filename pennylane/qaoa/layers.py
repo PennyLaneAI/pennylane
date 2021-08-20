@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,8 +31,8 @@ def _diagonal_terms(hamiltonian):
     val = True
 
     for i in hamiltonian.ops:
-        i = Tensor(i) if not isinstance(i, Tensor) else i
-        for j in i.obs:
+        obs = i.obs if isinstance(i, Tensor) else [i]
+        for j in obs:
             if j.name not in ("PauliZ", "Identity"):
                 val = False
                 break
@@ -87,8 +87,8 @@ def cost_layer(gamma, hamiltonian):
 
         >>> circuit(0.5)
         >>> print(circuit.draw())
-        0: ──H──RZ(-1.0)──╭RZ(-1.0)──┤ ⟨Z⟩
-        1: ──H────────────╰RZ(-1.0)──┤ ⟨Z⟩
+        0: ──H──RZ(1)──╭RZ(1)──┤ ⟨Z⟩
+        1: ──H─────────╰RZ(1)──┤ ⟨Z⟩
 
     """
     if not isinstance(hamiltonian, qml.Hamiltonian):
@@ -148,8 +148,8 @@ def mixer_layer(alpha, hamiltonian):
 
         >>> circuit(0.5)
         >>> print(circuit.draw())
-        0: ──H──RZ(-1.0)──H──H──╭RZ(-1.0)──H──┤ ⟨Z⟩
-        1: ──H──────────────────╰RZ(-1.0)──H──┤ ⟨Z⟩
+        0: ──H──RZ(1)──H──H──╭RZ(1)──H──┤ ⟨Z⟩
+        1: ──H───────────────╰RZ(1)──H──┤ ⟨Z⟩
 
     """
     if not isinstance(hamiltonian, qml.Hamiltonian):

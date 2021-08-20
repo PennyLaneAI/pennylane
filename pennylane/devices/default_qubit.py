@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,9 +23,12 @@ import functools
 from string import ascii_letters as ABC
 
 import numpy as np
+from scipy.sparse import coo_matrix
 
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
 from pennylane.operation import DiagonalOperation
+from pennylane.wires import WireError
+from .._version import __version__
 
 ABC_ARRAY = np.array(list(ABC))
 
@@ -72,25 +75,27 @@ class DefaultQubit(QubitDevice):
         wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
             or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
             or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
-        shots (int): How many times the circuit should be evaluated (or sampled) to estimate
-            the expectation values. Defaults to 1000 if not specified.
-            If ``analytic == True``, then the number of shots is ignored
-            in the calculation of expectation values and variances, and only controls the number
-            of samples returned by ``sample``.
-        analytic (bool): indicates if the device should calculate expectations
-            and variances analytically
+        shots (None, int): How many times the circuit should be evaluated (or sampled) to estimate
+            the expectation values. Defaults to ``None`` if not specified, which means that the device
+            returns analytical results.
+        cache (int): Number of device executions to store in a cache to speed up subsequent
+            executions. A value of ``0`` indicates that no caching will take place. Once filled,
+            older elements of the cache are removed and replaced with the most recent device
+            executions to keep the cache up to date.
     """
 
     name = "Default qubit PennyLane plugin"
     short_name = "default.qubit"
-    pennylane_requires = "0.13"
-    version = "0.13.0"
+    pennylane_requires = __version__
+    version = __version__
     author = "Xanadu Inc."
 
     operations = {
         "BasisState",
         "QubitStateVector",
         "QubitUnitary",
+        "ControlledQubitUnitary",
+        "MultiControlledX",
         "DiagonalQubitUnitary",
         "PauliX",
         "PauliY",
@@ -99,13 +104,17 @@ class DefaultQubit(QubitDevice):
         "Hadamard",
         "S",
         "T",
+        "SX",
         "CNOT",
         "SWAP",
+        "ISWAP",
         "CSWAP",
         "Toffoli",
         "CY",
         "CZ",
         "PhaseShift",
+        "ControlledPhaseShift",
+        "CPhase",
         "RX",
         "RY",
         "RZ",
@@ -114,13 +123,33 @@ class DefaultQubit(QubitDevice):
         "CRY",
         "CRZ",
         "CRot",
+        "QFT",
+        "IsingXX",
+        "IsingYY",
+        "IsingZZ",
+        "SingleExcitation",
+        "SingleExcitationPlus",
+        "SingleExcitationMinus",
+        "DoubleExcitation",
+        "DoubleExcitationPlus",
+        "DoubleExcitationMinus",
+        "QubitCarry",
+        "QubitSum",
     }
 
-    observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}
+    observables = {
+        "PauliX",
+        "PauliY",
+        "PauliZ",
+        "Hadamard",
+        "Hermitian",
+        "Identity",
+        "Projector",
+        "SparseHamiltonian",
+    }
 
-    def __init__(self, wires, *, shots=1000, analytic=True):
-        # call QubitDevice init
-        super().__init__(wires, shots, analytic)
+    def __init__(self, wires, *, shots=None, cache=0, analytic=None):
+        super().__init__(wires, shots, cache=cache, analytic=analytic)
 
         # Create the initial state. Internally, we store the
         # state as an array of dimension [2]*wires.
@@ -134,10 +163,34 @@ class DefaultQubit(QubitDevice):
             "Hadamard": self._apply_hadamard,
             "S": self._apply_s,
             "T": self._apply_t,
+            "SX": self._apply_sx,
             "CNOT": self._apply_cnot,
             "SWAP": self._apply_swap,
             "CZ": self._apply_cz,
+            "Toffoli": self._apply_toffoli,
         }
+
+    @functools.lru_cache()
+    def map_wires(self, wires):
+        # temporarily overwrite this method to bypass
+        # wire map that produces Wires objects
+        try:
+            mapped_wires = [self.wire_map[w] for w in wires]
+        except KeyError as e:
+            raise WireError(
+                "Did not find some of the wires {} on device with wires {}.".format(
+                    wires.labels, self.wires.labels
+                )
+            ) from e
+
+        return mapped_wires
+
+    def define_wire_map(self, wires):
+        # temporarily overwrite this method to bypass
+        # wire map that produces Wires objects
+        consecutive_wires = range(self.num_wires)
+        wire_map = zip(wires, consecutive_wires)
+        return dict(wire_map)
 
     def apply(self, operations, rotations=None, **kwargs):
         rotations = rotations or []
@@ -151,47 +204,45 @@ class DefaultQubit(QubitDevice):
                     "on a {} device.".format(operation.name, self.short_name)
                 )
 
-            self._apply_operation(operation)
+            if isinstance(operation, QubitStateVector):
+                self._apply_state_vector(operation.parameters[0], operation.wires)
+            elif isinstance(operation, BasisState):
+                self._apply_basis_state(operation.parameters[0], operation.wires)
+            else:
+                self._state = self._apply_operation(self._state, operation)
 
         # store the pre-rotated state
         self._pre_rotated_state = self._state
 
         # apply the circuit rotations
         for operation in rotations:
-            self._apply_operation(operation)
+            self._state = self._apply_operation(self._state, operation)
 
-    def _apply_operation(self, operation):
-        """Applies operations to the internal device state.
+    def _apply_operation(self, state, operation):
+        """Applies operations to the input state.
 
         Args:
+            state (array[complex]): input state
             operation (~.Operation): operation to apply on the device
+
+        Returns:
+            array[complex]: output state
         """
         wires = operation.wires
 
-        if isinstance(operation, QubitStateVector):
-            self._apply_state_vector(operation.parameters[0], wires)
-            return
-
-        if isinstance(operation, BasisState):
-            self._apply_basis_state(operation.parameters[0], wires)
-            return
-
-        if operation.name in self._apply_ops:
+        if operation.base_name in self._apply_ops:
             axes = self.wires.indices(wires)
-            self._state = self._apply_ops[operation.name](
-                self._state, axes, inverse=operation.inverse
-            )
-            return
+            return self._apply_ops[operation.base_name](state, axes, inverse=operation.inverse)
 
         matrix = self._get_unitary_matrix(operation)
 
         if isinstance(operation, DiagonalOperation):
-            self._apply_diagonal_unitary(matrix, wires)
-        elif len(wires) <= 2:
+            return self._apply_diagonal_unitary(state, matrix, wires)
+        if len(wires) <= 2:
             # Einsum is faster for small gates
-            self._apply_unitary_einsum(matrix, wires)
-        else:
-            self._apply_unitary(matrix, wires)
+            return self._apply_unitary_einsum(state, matrix, wires)
+
+        return self._apply_unitary(state, matrix, wires)
 
     def _apply_x(self, state, axes, **kwargs):
         """Applies a PauliX gate by rolling 1 unit along the axis specified in ``axes``.
@@ -256,6 +307,21 @@ class DefaultQubit(QubitDevice):
     def _apply_t(self, state, axes, inverse=False):
         return self._apply_phase(state, axes, TPHASE, inverse)
 
+    def _apply_sx(self, state, axes, inverse=False):
+        """Apply the Square Root X gate.
+
+        Args:
+            state (array[complex]): input state
+            axes (List[int]): target axes to apply transformation
+
+        Returns:
+            array[complex]: output state
+        """
+        if inverse:
+            return 0.5 * ((1 - 1j) * state + (1 + 1j) * self._apply_x(state, axes))
+
+        return 0.5 * ((1 + 1j) * state + (1 - 1j) * self._apply_x(state, axes))
+
     def _apply_cnot(self, state, axes, **kwargs):
         """Applies a CNOT gate by slicing along the first axis specified in ``axes`` and then
         applying an X transformation along the second axis.
@@ -287,6 +353,44 @@ class DefaultQubit(QubitDevice):
 
         state_x = self._apply_x(state[sl_1], axes=target_axes)
         return self._stack([state[sl_0], state_x], axis=axes[0])
+
+    def _apply_toffoli(self, state, axes, **kwargs):
+        """Applies a Toffoli gate by slicing along the axis of the greater control qubit, slicing
+        each of the resulting sub-arrays along the axis of the smaller control qubit, and then applying
+        an X transformation along the axis of the target qubit of the fourth sub-sub-array.
+
+        By performing two consecutive slices in this way, we are able to select all of the amplitudes with
+        a corresponding :math:`|11\rangle` for the two control qubits. This means we then just need to apply
+        a :class:`~.PauliX` (NOT) gate to the result.
+
+        Args:
+            state (array[complex]): input state
+            axes (List[int]): target axes to apply transformation
+
+        Returns:
+            array[complex]: output state
+        """
+        cntrl_max = np.argmax(axes[:2])
+        cntrl_min = cntrl_max ^ 1
+        sl_a0 = _get_slice(0, axes[cntrl_max], self.num_wires)
+        sl_a1 = _get_slice(1, axes[cntrl_max], self.num_wires)
+        sl_b0 = _get_slice(0, axes[cntrl_min], self.num_wires - 1)
+        sl_b1 = _get_slice(1, axes[cntrl_min], self.num_wires - 1)
+
+        # If both controls are smaller than the target, shift the target axis down by two. If one
+        # control is greater and one control is smaller than the target, shift the target axis
+        # down by one. If both controls are greater than the target, leave the target axis as-is.
+        if axes[cntrl_min] > axes[2]:
+            target_axes = [axes[2]]
+        elif axes[cntrl_max] > axes[2]:
+            target_axes = [axes[2] - 1]
+        else:
+            target_axes = [axes[2] - 2]
+
+        # state[sl_a1][sl_b1] gives us all of the amplitudes with a |11> for the two control qubits.
+        state_x = self._apply_x(state[sl_a1][sl_b1], axes=target_axes)
+        state_stacked_a1 = self._stack([state[sl_a1][sl_b0], state_x], axis=axes[cntrl_min])
+        return self._stack([state[sl_a0], state_stacked_a1], axis=axes[cntrl_max])
 
     def _apply_swap(self, state, axes, **kwargs):
         """Applies a SWAP gate by performing a partial transposition along the specified axes.
@@ -344,6 +448,39 @@ class DefaultQubit(QubitDevice):
         phase = self._conj(parameters) if inverse else parameters
         return self._stack([state[sl_0], phase * state[sl_1]], axis=axes[0])
 
+    def expval(self, observable, shot_range=None, bin_size=None):
+        """Returns the expectation value of a Hamiltonian observable. When the observable is a
+         ``SparseHamiltonian`` object, the expectation value is computed directly for the full
+         Hamiltonian, which leads to faster execution.
+
+        Args:
+            observable (~.Observable): a PennyLane observable
+            shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
+                to use. If not specified, all samples are used.
+            bin_size (int): Divides the shot range into bins of size ``bin_size``, and
+                returns the measurement statistic separately over each bin. If not
+                provided, the entire shot range is treated as a single bin.
+
+        Returns:
+            float: returns the expectation value of the observable
+        """
+        if observable.name == "SparseHamiltonian":
+            if self.shots is not None:
+                raise DeviceError("SparseHamiltonian must be used with shots=None")
+
+        if observable.name == "SparseHamiltonian" and self.shots is None:
+
+            ev = coo_matrix.dot(
+                coo_matrix(self._conj(self.state)),
+                coo_matrix.dot(
+                    observable.matrix, coo_matrix(self.state.reshape(len(self.state), 1))
+                ),
+            )
+
+            return np.real(ev.toarray()[0])
+
+        return super().expval(observable, shot_range=shot_range, bin_size=bin_size)
+
     def _get_unitary_matrix(self, unitary):  # pylint: disable=no-self-use
         """Return the matrix representing a unitary operation.
 
@@ -369,6 +506,11 @@ class DefaultQubit(QubitDevice):
             supports_inverse_operations=True,
             supports_analytic_computation=True,
             returns_state=True,
+            passthru_devices={
+                "tf": "default.qubit.tf",
+                "autograd": "default.qubit.autograd",
+                "jax": "default.qubit.jax",
+            },
         )
         return capabilities
 
@@ -391,6 +533,36 @@ class DefaultQubit(QubitDevice):
     def state(self):
         return self._flatten(self._pre_rotated_state)
 
+    def density_matrix(self, wires):
+        """Returns the reduced density matrix of a given set of wires.
+
+        Args:
+            wires (Wires): wires of the reduced system.
+
+        Returns:
+            array[complex]: complex tensor of shape ``(2 ** len(wires), 2 ** len(wires))``
+            representing the reduced density matrix.
+        """
+        dim = self.num_wires
+        state = self._pre_rotated_state
+
+        # Return the full density matrix by using numpy tensor product
+        if wires == self.wires:
+            density_matrix = self._tensordot(state, self._conj(state), 0)
+            density_matrix = self._reshape(density_matrix, (2 ** len(wires), 2 ** len(wires)))
+            return density_matrix
+
+        complete_system = list(range(0, dim))
+        traced_system = [x for x in complete_system if x not in wires.labels]
+
+        # Return the reduced density matrix by using numpy tensor product
+        density_matrix = self._tensordot(
+            state, self._conj(state), axes=(traced_system, traced_system)
+        )
+        density_matrix = self._reshape(density_matrix, (2 ** len(wires), 2 ** len(wires)))
+
+        return density_matrix
+
     def _apply_state_vector(self, state, device_wires):
         """Initialize the internal state vector in a specified state.
 
@@ -412,10 +584,7 @@ class DefaultQubit(QubitDevice):
         if not np.allclose(np.linalg.norm(state, ord=2), 1.0, atol=tolerance):
             raise ValueError("Sum of amplitudes-squared does not equal one.")
 
-        if (
-            len(device_wires) == self.num_wires
-            and sorted(device_wires.labels) == device_wires.tolist()
-        ):
+        if len(device_wires) == self.num_wires and sorted(device_wires) == device_wires:
             # Initialize the entire wires with the state
             self._state = self._reshape(state, [2] * self.num_wires)
             return
@@ -455,43 +624,51 @@ class DefaultQubit(QubitDevice):
             raise ValueError("BasisState parameter and wires must be of equal length.")
 
         # get computational basis state number
-        basis_states = 2 ** (self.num_wires - 1 - device_wires.toarray())
+        basis_states = 2 ** (self.num_wires - 1 - np.array(device_wires))
         num = int(np.dot(state, basis_states))
 
         self._state = self._create_basis_state(num)
 
-    def _apply_unitary(self, mat, wires):
+    def _apply_unitary(self, state, mat, wires):
         r"""Apply multiplication of a matrix to subsystems of the quantum state.
 
         Args:
+            state (array[complex]): input state
             mat (array): matrix to multiply
             wires (Wires): target wires
+
+        Returns:
+            array[complex]: output state
         """
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
 
         mat = self._cast(self._reshape(mat, [2] * len(device_wires) * 2), dtype=self.C_DTYPE)
-        axes = (np.arange(len(device_wires), 2 * len(device_wires)), device_wires.labels)
-        tdot = self._tensordot(mat, self._state, axes=axes)
+        axes = (np.arange(len(device_wires), 2 * len(device_wires)), device_wires)
+        tdot = self._tensordot(mat, state, axes=axes)
 
         # tensordot causes the axes given in `wires` to end up in the first positions
         # of the resulting tensor. This corresponds to a (partial) transpose of
         # the correct output state
         # We'll need to invert this permutation to put the indices in the correct place
-        unused_idxs = [idx for idx in range(self.num_wires) if idx not in device_wires.labels]
-        perm = list(device_wires.labels) + unused_idxs
+        unused_idxs = [idx for idx in range(self.num_wires) if idx not in device_wires]
+        perm = list(device_wires) + unused_idxs
         inv_perm = np.argsort(perm)  # argsort gives inverse permutation
-        self._state = self._transpose(tdot, inv_perm)
+        return self._transpose(tdot, inv_perm)
 
-    def _apply_unitary_einsum(self, mat, wires):
+    def _apply_unitary_einsum(self, state, mat, wires):
         r"""Apply multiplication of a matrix to subsystems of the quantum state.
 
         This function uses einsum instead of tensordot. This approach is only
         faster for single- and two-qubit gates.
 
         Args:
+            state (array[complex]): input state
             mat (array): matrix to multiply
             wires (Wires): target wires
+
+        Returns:
+            array[complex]: output state
         """
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
@@ -502,7 +679,7 @@ class DefaultQubit(QubitDevice):
         state_indices = ABC[: self.num_wires]
 
         # Indices of the quantum state affected by this operation
-        affected_indices = "".join(ABC_ARRAY[device_wires.tolist()].tolist())
+        affected_indices = "".join(ABC_ARRAY[list(device_wires)].tolist())
 
         # All affected indices will be summed over, so we need the same number of new indices
         new_indices = ABC[self.num_wires : self.num_wires + len(device_wires)]
@@ -525,16 +702,20 @@ class DefaultQubit(QubitDevice):
             )
         )
 
-        self._state = self._einsum(einsum_indices, mat, self._state)
+        return self._einsum(einsum_indices, mat, state)
 
-    def _apply_diagonal_unitary(self, phases, wires):
+    def _apply_diagonal_unitary(self, state, phases, wires):
         r"""Apply multiplication of a phase vector to subsystems of the quantum state.
 
         This represents the multiplication with diagonal gates in a more efficient manner.
 
         Args:
+            state (array[complex]): input state
             phases (array): vector to multiply
             wires (Wires): target wires
+
+        Returns:
+            array[complex]: output state
         """
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
@@ -543,13 +724,13 @@ class DefaultQubit(QubitDevice):
         phases = self._cast(self._reshape(phases, [2] * len(device_wires)), dtype=self.C_DTYPE)
 
         state_indices = ABC[: self.num_wires]
-        affected_indices = "".join(ABC_ARRAY[device_wires.tolist()].tolist())
+        affected_indices = "".join(ABC_ARRAY[list(device_wires)].tolist())
 
         einsum_indices = "{affected_indices},{state_indices}->{state_indices}".format(
             affected_indices=affected_indices, state_indices=state_indices
         )
 
-        self._state = self._einsum(einsum_indices, phases, self._state)
+        return self._einsum(einsum_indices, phases, state)
 
     def reset(self):
         """Reset the device"""

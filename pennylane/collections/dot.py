@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -55,6 +55,14 @@ def _get_dot_func(interface, x=None):
             x = np.array(x)
 
         return np.dot, x
+
+    if interface == "jax":
+        import jax.numpy as jnp
+
+        if x is not None and not isinstance(x, jnp.ndarray):
+            x = jnp.array(x)
+
+        return jnp.dot, x
 
     if interface is None:
         import numpy as np

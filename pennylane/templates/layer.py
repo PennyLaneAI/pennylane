@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +17,25 @@ Contains the ``layer`` template constructor.
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.templates.decorator import template as temp
 
-###################
+
+def _preprocess(args, depth):
+    """Validate and pre-process inputs as follows:
+
+    * Check that the dimension of the arguments corresponds to the depth
+
+    Args:
+        args (tensor_like): trainable parameters of the template
+        depth (int): how often the layer is repeated
+    """
+
+    for arg in args:
+
+        if len(arg) != depth:
+            raise ValueError(
+                "Each positional argument must have length matching 'depth'; expected {} got {}".format(
+                    depth, len(arg)
+                )
+            )
 
 
 @temp
@@ -73,8 +91,8 @@ def layer(template, depth, *args, **kwargs):
 
         >>> circuit()
         >>> print(circuit.draw())
-        0: ──H──╭C──X──H──╭C──X──H──╭C──X──┤ ⟨Z⟩
-        1: ─────╰X────────╰X────────╰X─────┤ ⟨Z⟩
+        0: ──H──╭C──H──╭C──H──╭C─────┤ ⟨Z⟩
+        1: ─────╰X──X──╰X──X──╰X──X──┤ ⟨Z⟩
 
         **Static Arguments**
 
@@ -104,8 +122,8 @@ def layer(template, depth, *args, **kwargs):
 
         >>> circuit()
         >>> print(circuit.draw())
-        1: ──H──╭C──X──H──╭C──X──H──╭C──X──┤ ⟨Z⟩
-        2: ─────╰X────────╰X────────╰X─────┤ ⟨Z⟩
+        1: ──H──╭C──H──╭C──H──╭C─────┤ ⟨Z⟩
+        2: ─────╰X──X──╰X──X──╰X──X──┤ ⟨Z⟩
 
         **Dynamic Arguments**
 
@@ -146,8 +164,8 @@ def layer(template, depth, *args, **kwargs):
 
         >>> circuit(params)
         >>> print(circuit.draw())
-        0: ──RX(0.5)──╭RZ(0.5)──RX(0.4)──╭RZ(0.4)──RX(0.3)──╭RZ(0.3)───────────┤ ⟨Z⟩
-        1: ───────────╰RZ(0.5)──RY(0.5)──╰RZ(0.4)──RY(0.4)──╰RZ(0.3)──RY(0.3)──┤ ⟨Z⟩
+        0: ──RX(0.5)──╭RZ(0.5)──RX(0.4)──╭RZ(0.4)───────────┤ ⟨Z⟩
+        1: ───────────╰RZ(0.5)──RY(0.5)──╰RZ(0.4)──RY(0.4)──┤ ⟨Z⟩
 
         **Passing Multiple Static and Dynamic Arguments**
 
@@ -186,28 +204,14 @@ def layer(template, depth, *args, **kwargs):
 
         This gives us the following circuit:
 
-        >>> circuit(parm1, param2)
+        >>> circuit(param1, param2)
         >>> print(circuit.draw())
         1: ──RX(0.1)──╭RZ(0.3)──RX(0.2)──╭RZ(0.4)─────┤ ⟨Z⟩
         2: ───────────╰RZ(0.3)──H────────╰RZ(0.4)──H──┤ ⟨Z⟩
     """
 
-    ##############
-    # Input checks
+    _preprocess(args, depth)
 
-    if not isinstance(depth, int):
-        raise ValueError("'depth' must be of type int, got {}".format(type(depth).__name__))
-
-    for arg in args:
-        if len(arg) != depth:
-            raise ValueError(
-                "Each positional argument must have length matching 'depth'; expected {} got {}".format(
-                    depth, len(arg)
-                )
-            )
-
-    ##############
-
-    for i in range(0, depth):
+    for i in range(0, int(depth)):
         arg_params = [k[i] for k in args]
         template(*arg_params, **kwargs)

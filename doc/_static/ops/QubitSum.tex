@@ -1,0 +1,15 @@
+\documentclass{standalone}
+\usepackage{qcircuit}
+\usepackage{braket}
+
+\begin{document}
+
+\Qcircuit @C=1em @R=0.9em {
+&&\\
+&&\lstick{ \ket{a}}& \qw & \ctrl{2} & \rstick{\ket{a}} \qw &&&&\\
+&&\lstick{\ket{b}}]& \ctrl{1} & \qw & \rstick{\ket{b}} \qw &&&&\\
+&&\lstick{ \ket{c}}& \targ & \targ & \rstick{\ket{a \oplus b \oplus c}} \qw &&&&&\\
+&&
+}
+
+\end{document}

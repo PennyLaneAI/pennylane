@@ -7,8 +7,8 @@ on:
 
 
 env:
-  TF_VERSION: 2.3
-  TORCH_VERSION: 1.6
+  TF_VERSION: 2.4
+  TORCH_VERSION: 1.9.0+cpu
   COVERAGE_FLAGS: "--cov=pennylane --cov-report=term-missing --cov-report=xml --no-flaky-report -p no:warnings --tb=native"
 
 
@@ -19,10 +19,10 @@ jobs:
     strategy:
       matrix:
         config:
-          - {python-version: 3.6, interfaces: ['tf']}
           - {python-version: 3.7, interfaces: ['torch']}
-          - {python-version: 3.8, interfaces: ['tf', 'torch']}
-          - {python-version: 3.8, interfaces: []}
+          - {python-version: 3.7, interfaces: ['tf']}
+          - {python-version: 3.8, interfaces: ['tf', 'torch', 'jax']}
+          - {python-version: 3.9, interfaces: []}
 
     steps:
       - name: Cancel Previous Runs
@@ -31,6 +31,8 @@ jobs:
           access_token: ${{ github.token }}
 
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
 
       - name: Set up Python
         uses: actions/setup-python@v2
@@ -40,7 +42,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements-ci.txt
           pip install wheel pytest pytest-cov pytest-mock flaky --upgrade
 
       - name: Conditionally install PyTorch
@@ -51,9 +53,15 @@ jobs:
         if: contains(matrix.config.interfaces, 'tf')
         run: pip3 install tensorflow==$TF_VERSION
 
+      # Jax releases new version very frequently, so we should always build
+      # to the latest release. We can always fix a version later if it breaks.
+      - name: Conditionally install JAX
+        if: contains(matrix.config.interfaces, 'jax')
+        run: pip3 install jax jaxlib
+
       - name: Install PennyLane
         run: |
-          pip install -r requirements.txt
+          pip install -r requirements-ci.txt
           python setup.py bdist_wheel
           pip install dist/PennyLane*.whl
 
@@ -75,11 +83,11 @@ jobs:
     strategy:
       matrix:
         config:
-          # - {device: "default.qubit", analytic: true, shots: 1000}
-          # - {device: "default.qubit", analytic: false, shots: 1000}
-          # - {device: "default.qubit.tf", analytic: true, shots: 1000}
-          - {device: "default.qubit.autograd", analytic: true, shots: 1000}
-          - {device: "default.mixed", analytic: true, shots: 1000}
+          - {device: "default.qubit", shots: None}
+          - {device: "default.qubit", shots: 10000}
+          # - {device: "default.qubit.tf", shots: None}
+          - {device: "default.qubit.autograd", shots: None}
+          - {device: "default.mixed", shots: None}
 
     steps:
       - name: Cancel Previous Runs
@@ -88,6 +96,8 @@ jobs:
           access_token: ${{ github.token }}
 
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
 
       - name: Set up Python
         uses: actions/setup-python@v2
@@ -97,7 +107,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements-ci.txt
           pip install wheel pytest pytest-cov pytest-mock flaky --upgrade
 
       - name: Conditionally install PyTorch
@@ -108,9 +118,13 @@ jobs:
         if: contains(matrix.config.device, 'tf')
         run: pip3 install tensorflow==$TF_VERSION
 
+      - name: Conditionally install Jax
+        if: contains(matrix.config.device, 'jax')
+        run: pip3 install jax jaxlib
+
       - name: Install PennyLane
         run: |
-          pip install -r requirements.txt
+          pip install -r requirements-ci.txt
           python setup.py bdist_wheel
           pip install dist/PennyLane*.whl
 
@@ -118,7 +132,6 @@ jobs:
         run: |
           python -m pytest pennylane/devices/tests \
             --device=${{ matrix.config.device }} \
-            --analytic=${{ matrix.config.analytic }} \
             --shots=${{ matrix.config.shots }} \
             --cov=pennylane $COVERAGE_FLAGS
 
@@ -141,6 +154,8 @@ jobs:
           access_token: ${{ github.token }}
 
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
 
       - name: Setup conda
         uses: s-weigand/setup-conda@v1
@@ -157,7 +172,7 @@ jobs:
 
       - name: Install QChem
         run: |
-          pip install -r requirements.txt
+          pip install -r requirements-ci.txt
           python setup.py bdist_wheel
           pip install dist/PennyLane*.whl
           cd qchem && python setup.py bdist_wheel && cd ../

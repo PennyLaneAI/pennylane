@@ -19,9 +19,11 @@ declare the quantum circuit, and also ties the computation to a specific device 
 Quantum nodes can be easily created by using the :ref:`qnode <intro_vcirc_decorator>` decorator.
 
 QNodes can interface with any of the supported numerical and machine learning libraries---:doc:`NumPy <interfaces/numpy>`,
-:doc:`PyTorch <interfaces/torch>`, and :doc:`TensorFlow <interfaces/tf>`---indicated by providing an optional ``interface``
-argument when creating a QNode. Each interface allows the quantum circuit to integrate seamlessly with library-specific data
-structures (e.g., NumPy arrays, or Pytorch/TensorFlow tensors) and :doc:`optimizers <optimizers>`.
+:doc:`PyTorch <interfaces/torch>`, :doc:`TensorFlow <interfaces/tf>`, and
+`JAX <https://github.com/google/jax>`__---indicated by providing an optional ``interface`` argument
+when creating a QNode. Each interface allows the quantum circuit to integrate seamlessly with
+library-specific data structures (e.g., NumPy arrays, or Pytorch/TensorFlow tensors) and
+:doc:`optimizers <optimizers>`.
 
 By default, QNodes use the NumPy interface. The other PennyLane interfaces are
 introduced in more detail in the section on :doc:`interfaces <interfaces>`.
@@ -90,7 +92,7 @@ instantiated using the :func:`device <pennylane.device>` loader.
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit', wires=2, shots=1000, analytic=False)
+    dev = qml.device('default.qubit', wires=2, shots=1000)
 
 PennyLane offers some basic devices such as the ``'default.qubit'`` and ``'default.gaussian'``
 simulators; additional devices can be installed as plugins (see
@@ -110,13 +112,45 @@ devices, the options are:
   or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
   and/or strings (``['ancilla', 'q1', 'q2']``).
 
-* ``analytic`` (*bool*): Indicates if the device should calculate expectations
-  and variances analytically. Only possible with simulator devices. Defaults to ``True``.
-
-* ``shots`` (*int*): How many times the circuit should be evaluated (or sampled) to estimate
-  the expectation values. Defaults to 1000 if not specified.
+* ``shots`` (*None* or *int* or *list[int]*): How many times the circuit should be evaluated (or
+  sampled) to estimate statistical quantities. On some supported simulator devices,
+  ``shots=None`` indicates to compute measurement statistics *exactly*. Note that this
+  argument can be temporarily overwritten when a QNode is called. For example, ``my_qnode(shots=3)``
+  will temporarily evaluate ``my_qnode`` using three shots.
 
 For a plugin device, refer to the plugin documentation for available device options.
+
+Shot batches
+^^^^^^^^^^^^
+
+Batches of shots can be specified by passing a list, allowing measurement statistics
+to be course-grained with a single QNode evaluation.
+
+Consider
+
+>>> shots_list = [5, 10, 1000]
+>>> dev = qml.device("default.qubit", wires=2, shots=shots_list)
+
+When QNodes are executed on this device, a single execution of 1015 shots will be submitted.
+However, three sets of measurement statistics will be returned; using the first 5 shots,
+second set of 10 shots, and final 1000 shots, separately.
+
+For example:
+
+.. code-block:: python
+
+    @qml.qnode(dev)
+    def circuit(x):
+      qml.RX(x, wires=0)
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
+
+Executing this, we will get an output of size ``(3, 2)``:
+
+>>> circuit(0.5)
+[[0.33333333 1.        ]
+[0.2        1.        ]
+[0.012      0.868     ]]
 
 Custom wire labels
 ^^^^^^^^^^^^^^^^^^
@@ -132,7 +166,7 @@ This is done by passing an iterable of wire labels to the ``wires`` argument:
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit', wires=['wire1', 'wire2'], shots=1000, analytic=False)
+    dev = qml.device('default.qubit', wires=['wire1', 'wire2'], shots=1000)
 
 In the quantum function you can now use your own labels to address wires:
 
@@ -295,8 +329,8 @@ pennylane.collections.qnode_collection.QNodeCollection
 >>> qnodes(params)
 array([-0.02854835  0.99280864])
 
-Functions are available to process QNode collections, including :func:`~.dot`,
-:func:`~.sum`, and :func:`~.apply`:
+Functions are available to process QNode collections, including :func:`~.pennylane.collections.dot`,
+:func:`~.pennylane.collections.sum`, and :func:`~.pennylane.collections.apply`:
 
 >>> cost_fn = qml.sum(qnodes)
 >>> cost_fn(params)

@@ -14,11 +14,13 @@
 """
 Unit tests for the :mod:`pennylane.vqe` submodule.
 """
-import pytest
-import pennylane as qml
 import numpy as np
-from pennylane.wires import Wires
+import pytest
 
+import pennylane as qml
+from pennylane import numpy as pnp
+from pennylane.wires import Wires
+from pennylane.devices import DefaultQubit, DefaultMixed
 
 try:
     import torch
@@ -63,29 +65,6 @@ OBSERVABLES = [
 
 JUNK_INPUTS = [None, [], tuple(), 5.0, {"junk": -1}]
 
-valid_hamiltonians = [
-    ((1.0,), (qml.Hermitian(H_TWO_QUBITS, [0, 1]),)),
-    ((-0.8,), (qml.PauliZ(0),)),
-    ((0.5, -1.6), (qml.PauliX(0), qml.PauliY(1))),
-    ((0.5, -1.6), (qml.PauliX(1), qml.PauliY(1))),
-    ((0.5, -1.6), (qml.PauliX('a'), qml.PauliY('b'))),
-    ((1.1, -0.4, 0.333), (qml.PauliX(0), qml.Hermitian(H_ONE_QUBIT, 2), qml.PauliZ(2))),
-    ((-0.4, 0.15), (qml.Hermitian(H_TWO_QUBITS, [0, 2]), qml.PauliZ(1))),
-    ([1.5, 2.0], [qml.PauliZ(0), qml.PauliY(2)]),
-    (np.array([-0.1, 0.5]), [qml.Hermitian(H_TWO_QUBITS, [0, 1]), qml.PauliY(0)]),
-    ((0.5, 1.2), (qml.PauliX(0), qml.PauliX(0) @ qml.PauliX(1))),
-]
-
-invalid_hamiltonians = [
-    ((), (qml.PauliZ(0),)),
-    ((), (qml.PauliZ(0), qml.PauliY(1))),
-    ((3.5,), ()),
-    ((1.2, -0.4), ()),
-    ((0.5, 1.2), (qml.PauliZ(0),)),
-    ((1.0,), (qml.PauliZ(0), qml.PauliY(0))),
-]
-
-
 hamiltonians_with_expvals = [
     ((-0.6,), (qml.PauliZ(0),), [-0.6 * 1.0]),
     ((1.0,), (qml.PauliX(0),), [0.0]),
@@ -95,184 +74,74 @@ hamiltonians_with_expvals = [
     ((0.5, 1.2), (qml.PauliZ(0), qml.PauliZ(1)), [0.5 * 1.0, 1.2 * 1.0]),
 ]
 
-simplify_hamiltonians = [
-    (
-        qml.Hamiltonian([1, 1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0), qml.PauliX(1)]),
-        qml.Hamiltonian([2, 1], [qml.PauliX(0), qml.PauliX(1)])
-    ),
-    (
-        qml.Hamiltonian([-1, 1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0), qml.PauliX(1)]),
-        qml.Hamiltonian([1], [qml.PauliX(1)])
-    ),
-    (
-        qml.Hamiltonian([1, 0.5], [qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(1) @ qml.Identity(2) @ qml.PauliX(0)]),
-        qml.Hamiltonian([1.5], [qml.PauliX(0) @ qml.PauliY(1)])
-    ),
-    (
-        qml.Hamiltonian([1, 1, 0.5], [
-            qml.Hermitian(np.array([[1, 0], [0, -1]]), "a"),
-            qml.PauliX("b") @ qml.PauliY(1.3), qml.PauliY(1.3) @ qml.Identity(-0.9) @ qml.PauliX("b")
-        ]),
-        qml.Hamiltonian([1, 1.5], [
-            qml.Hermitian(np.array([[1, 0], [0, -1]]), "a"),
-            qml.PauliX("b") @ qml.PauliY(1.3)
-        ])
-    )
+zero_hamiltonians_with_expvals = [
+    ([], [], [0]),
+    ((0, 0), (qml.PauliZ(0), qml.PauliZ(1)), [0]),
+    ((0, 0, 0), (qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0), qml.PauliX(1)), [0]),
 ]
 
-equal_hamiltonians = [
-    (
-        qml.Hamiltonian([1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliZ(0)]),
-        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(0)]),
-        True
-    ),
-    (
-        qml.Hamiltonian([1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliY(2) @ qml.PauliZ(0)]),
-        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(0) @ qml.PauliY(2) @ qml.Identity(1)]),
-        True
-    ),
-    (
-        qml.Hamiltonian([1, 1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliZ(0), qml.Identity(1)]),
-        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(0)]),
-        False
-    ),
-    (
-        qml.Hamiltonian([1], [qml.PauliZ(0) @ qml.PauliX(1)]),
-        qml.PauliZ(0) @ qml.PauliX(1),
-        True
-    ),
-    (
-        qml.Hamiltonian([1], [qml.PauliZ(0)]),
-        qml.PauliZ(0),
-        True
-    ),
-    (
-        qml.Hamiltonian([1, 1, 1], [qml.Hermitian(np.array([[1, 0], [0, -1]]), "b") @ qml.Identity(7), qml.PauliZ(3), qml.Identity(1.2)]),
-        qml.Hamiltonian([1, 1, 1], [qml.Hermitian(np.array([[1, 0], [0, -1]]), "b"), qml.PauliZ(3), qml.Identity(1.2)]),
-        True
-    ),
-    (
-        qml.Hamiltonian([1, 1], [qml.PauliZ(3) @ qml.Identity(1.2), qml.PauliZ(3)]),
-        qml.Hamiltonian([2], [qml.PauliZ(3)]),
-        True
-    )
+big_hamiltonian_coeffs = np.array(
+    [
+        -0.04207898,
+        0.17771287,
+        0.17771287,
+        -0.24274281,
+        -0.24274281,
+        0.17059738,
+        0.04475014,
+        -0.04475014,
+        -0.04475014,
+        0.04475014,
+        0.12293305,
+        0.16768319,
+        0.16768319,
+        0.12293305,
+        0.17627641,
+    ]
+)
+
+big_hamiltonian_ops = [
+    qml.Identity(wires=[0]),
+    qml.PauliZ(wires=[0]),
+    qml.PauliZ(wires=[1]),
+    qml.PauliZ(wires=[2]),
+    qml.PauliZ(wires=[3]),
+    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
+    qml.PauliY(wires=[0]) @ qml.PauliX(wires=[1]) @ qml.PauliX(wires=[2]) @ qml.PauliY(wires=[3]),
+    qml.PauliY(wires=[0]) @ qml.PauliY(wires=[1]) @ qml.PauliX(wires=[2]) @ qml.PauliX(wires=[3]),
+    qml.PauliX(wires=[0]) @ qml.PauliX(wires=[1]) @ qml.PauliY(wires=[2]) @ qml.PauliY(wires=[3]),
+    qml.PauliX(wires=[0]) @ qml.PauliY(wires=[1]) @ qml.PauliY(wires=[2]) @ qml.PauliX(wires=[3]),
+    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[2]),
+    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]),
+    qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
+    qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[3]),
+    qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[3]),
 ]
 
-add_hamiltonians = [
-    (
-        qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
-        qml.Hamiltonian([0.5, 0.3, 1], [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)]),
-        qml.Hamiltonian([1.5, 1.2, 1.1, 0.3], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)])
-    ),
-    (
-        qml.Hamiltonian([1.3, 0.2, 0.7], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2)]),
-        qml.Hamiltonian([0.5, 0.3, 1.6], [qml.PauliX(0), qml.PauliX(1) @ qml.PauliX(0), qml.PauliX(2)]),
-        qml.Hamiltonian([1.6, 0.2, 2.3, 0.5], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2), qml.PauliX(0)])
-    ),
-    (
-        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
-        qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
-        qml.Hamiltonian([1.5, 1.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)])
-    ),
-    (
-        qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
-        qml.PauliX(0) @ qml.Identity(1),
-        qml.Hamiltonian([2, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
-    ),
-    (
-        qml.Hamiltonian([1.3, 0.2, 0.7], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2)]),
-        qml.Hadamard(1),
-        qml.Hamiltonian([1.3, 1.2, 0.7], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2)])
-    ),
-    (
-        qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX("b"), qml.PauliZ(3.1), qml.PauliX(1.6)]),
-        qml.PauliX("b") @ qml.Identity(5),
-        qml.Hamiltonian([2, 1.2, 0.1], [qml.PauliX("b"), qml.PauliZ(3.1), qml.PauliX(1.6)]),
-    )
-]
+big_hamiltonian = qml.Hamiltonian(big_hamiltonian_coeffs, big_hamiltonian_ops)
 
-sub_hamiltonians = [
-    (
-        qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
-        qml.Hamiltonian([0.5, 0.3, 1.6], [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)]),
-        qml.Hamiltonian([0.5, 1.2, -1.5, -0.3], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)])
+big_hamiltonian_grad = (
+    np.array(
+        [
+            [
+                [6.52084595e-18, -2.11464420e-02, -1.16576858e-02],
+                [-8.22589330e-18, -5.20597922e-02, -1.85365365e-02],
+                [-2.73850768e-17, 1.14202988e-01, -5.45041403e-03],
+                [-1.27514307e-17, -1.10465531e-01, 5.19489457e-02],
+            ],
+            [
+                [-2.45428288e-02, 8.38921555e-02, -2.00641818e-17],
+                [-2.21085973e-02, 7.39332741e-04, -1.25580654e-17],
+                [9.62058625e-03, -1.51398765e-01, 2.02129847e-03],
+                [1.10020832e-03, -3.49066271e-01, 2.13669117e-03],
+            ],
+        ]
     ),
-    (
-        qml.Hamiltonian([1.3, 0.2, 1], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2)]),
-        qml.Hamiltonian([0.5, 0.3, 1], [qml.PauliX(0), qml.PauliX(1) @ qml.PauliX(0), qml.PauliX(2)]),
-        qml.Hamiltonian([1, 0.2, -0.5], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(0)])
-    ),
-    (
-        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
-        qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
-        qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)])
-    ),
-    (
-        qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
-        qml.PauliX(0) @ qml.Identity(1),
-        qml.Hamiltonian([1.2, 0.1], [qml.PauliZ(1), qml.PauliX(2)]),
-    ),
-    (
-        qml.Hamiltonian([1.3, 0.2, 0.7], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2)]),
-        qml.Hadamard(1),
-        qml.Hamiltonian([1.3, -0.8, 0.7], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2)])
-    ),
-    (
-        qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX("b"), qml.PauliZ(3.1), qml.PauliX(1.6)]),
-        qml.PauliX("b") @ qml.Identity(1),
-        qml.Hamiltonian([1.2, 0.1], [qml.PauliZ(3.1), qml.PauliX(1.6)]),
-    )
-]
-
-mul_hamiltonians = [
-    (3, qml.Hamiltonian([1.5, 0.5], [qml.PauliX(0), qml.PauliZ(1)]),
-     qml.Hamiltonian([4.5, 1.5], [qml.PauliX(0), qml.PauliZ(1)])),
-    (-1.3, qml.Hamiltonian([1, -0.3], [qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)]),
-     qml.Hamiltonian([-1.3, 0.39], [qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)])),
-    (-1.3, qml.Hamiltonian([1, -0.3], [qml.Hermitian(np.array([[1, 0], [0, -1]]), "b"), qml.PauliZ(23) @ qml.PauliZ(0)]),
-     qml.Hamiltonian([-1.3, 0.39], [qml.Hermitian(np.array([[1, 0], [0, -1]]), "b"), qml.PauliZ(23) @ qml.PauliZ(0)])),
-]
-
-matmul_hamiltonians = [
-    (
-        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
-        qml.Hamiltonian([0.5, 0.5], [qml.PauliZ(2), qml.PauliZ(3)]),
-        qml.Hamiltonian([0.5, 0.5, 0.5, 0.5], [
-            qml.PauliX(0) @ qml.PauliZ(2),
-            qml.PauliX(0) @ qml.PauliZ(3),
-            qml.PauliZ(1) @ qml.PauliZ(2),
-            qml.PauliZ(1) @ qml.PauliZ(3)
-        ])
-    ),
-    (
-        qml.Hamiltonian([0.5, 0.25], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0)]),
-        qml.Hamiltonian([1, 1], [qml.PauliX(3) @ qml.PauliZ(2), qml.PauliZ(2)]),
-        qml.Hamiltonian([0.5, 0.5, 0.25, 0.25], [
-            qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(3) @ qml.PauliZ(2),
-            qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliZ(2),
-            qml.PauliZ(0) @ qml.PauliX(3) @ qml.PauliZ(2),
-            qml.PauliZ(0) @ qml.PauliZ(2)
-        ])
-    ),
-    (
-        qml.Hamiltonian([1, 1], [qml.PauliX("b"), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
-        qml.Hamiltonian([2, 2], [qml.PauliZ(1.2), qml.PauliY("c")]),
-        qml.Hamiltonian([2, 2, 2, 2], [
-            qml.PauliX("b") @ qml.PauliZ(1.2),
-            qml.PauliX("b") @ qml.PauliY("c"),
-            qml.Hermitian(np.array([[1, 0], [0, -1]]), 0) @ qml.PauliZ(1.2),
-            qml.Hermitian(np.array([[1, 0], [0, -1]]), 0) @ qml.PauliY("c")
-        ])
-    ),
-    (
-        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
-        qml.PauliX(2),
-        qml.Hamiltonian([1, 1], [qml.PauliX(0) @ qml.PauliX(2), qml.PauliZ(1) @ qml.PauliX(2)])
-    )
-]
+)
 
 #####################################################
 # Ansatz
+
 
 def custom_fixed_ansatz(params, wires=None):
     """Custom fixed ansatz"""
@@ -333,11 +202,14 @@ CIRCUITS = [
 #####################################################
 # Device
 
+
 @pytest.fixture(scope="function")
 def mock_device(monkeypatch):
     with monkeypatch.context() as m:
         m.setattr(qml.Device, "__abstractmethods__", frozenset())
-        m.setattr(qml.Device, "_capabilities", {"supports_tensor_observables": True, "model": "qubit"})
+        m.setattr(
+            qml.Device, "_capabilities", {"supports_tensor_observables": True, "model": "qubit"}
+        )
         m.setattr(qml.Device, "operations", ["RX", "Rot", "CNOT", "Hadamard", "QubitStateVector"])
         m.setattr(
             qml.Device, "observables", ["PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian"]
@@ -353,138 +225,45 @@ def mock_device(monkeypatch):
 
         yield get_device
 
+
+#####################################################
+# Queues
+
+QUEUE_HAMILTONIANS_1 = [
+    qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
+    qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
+]
+
+QUEUE_HAMILTONIANS_2 = [
+    qml.Hamiltonian([1], [qml.PauliX(0)]),
+    qml.Hamiltonian([5], [qml.PauliX(0) @ qml.PauliZ(1)]),
+]
+
+QUEUES = [
+    [
+        qml.PauliX(0),
+        qml.PauliZ(1),
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
+        qml.PauliX(0),
+        qml.Hamiltonian([1], [qml.PauliX(0)]),
+        qml.Hamiltonian([2, 1], [qml.PauliX(0), qml.PauliZ(1)]),
+    ],
+    [
+        qml.PauliX(0),
+        qml.PauliZ(1),
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
+        qml.PauliX(0),
+        qml.PauliZ(1),
+        qml.PauliX(0) @ qml.PauliZ(1),
+        qml.Hamiltonian([1], [qml.PauliX(0) @ qml.PauliZ(1)]),
+        qml.Hamiltonian([1, 1, 2], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(0) @ qml.PauliZ(1)]),
+    ],
+]
+
+add_queue = zip(QUEUE_HAMILTONIANS_1, QUEUE_HAMILTONIANS_2, QUEUES)
+
 #####################################################
 # Tests
-
-class TestHamiltonian:
-    """Test the Hamiltonian class"""
-
-    @pytest.mark.parametrize("coeffs, ops", valid_hamiltonians)
-    def test_hamiltonian_valid_init(self, coeffs, ops):
-        """Tests that the Hamiltonian object is created with
-        the correct attributes"""
-        H = qml.vqe.Hamiltonian(coeffs, ops)
-        assert H.terms == (coeffs, ops)
-
-    @pytest.mark.parametrize("coeffs, ops", invalid_hamiltonians)
-    def test_hamiltonian_invalid_init_exception(self, coeffs, ops):
-        """Tests that an exception is raised when giving an invalid
-        combination of coefficients and ops"""
-        with pytest.raises(ValueError, match="number of coefficients and operators does not match"):
-            H = qml.vqe.Hamiltonian(coeffs, ops)
-
-    @pytest.mark.parametrize("coeffs", [[0.2, -1j], [0.5j, 2-1j]])
-    def test_hamiltonian_complex(self, coeffs):
-        """Tests that an exception is raised when
-        a complex Hamiltonian is given"""
-        obs = [qml.PauliX(0), qml.PauliZ(1)]
-
-        with pytest.raises(ValueError, match="coefficients are not real-valued"):
-            H = qml.vqe.Hamiltonian(coeffs, obs)
-
-    @pytest.mark.parametrize("obs", [[qml.PauliX(0), qml.CNOT(wires=[0, 1])], [qml.PauliZ, qml.PauliZ(0)]])
-    def test_hamiltonian_invalid_observables(self, obs):
-        """Tests that an exception is raised when
-        a complex Hamiltonian is given"""
-        coeffs = [0.1, 0.2]
-
-        with pytest.raises(ValueError, match="observables are not valid"):
-            H = qml.vqe.Hamiltonian(coeffs, obs)
-
-    @pytest.mark.parametrize("coeffs, ops", valid_hamiltonians)
-    def test_hamiltonian_wires(self, coeffs, ops):
-        """Tests that the Hamiltonian object has correct wires.
-        """
-        H = qml.vqe.Hamiltonian(coeffs, ops)
-        assert set(H.wires) == set([w for op in H.ops for w in op.wires])
-
-    @pytest.mark.parametrize(("old_H", "new_H"), simplify_hamiltonians)
-    def test_simplify(self, old_H, new_H):
-        """Tests the simplify method"""
-        old_H.simplify()
-        assert old_H.compare(new_H)
-
-    def test_data(self):
-        """Tests the obs_data method"""
-
-        H = qml.Hamiltonian([1, 1, 0.5], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliX(2) @ qml.Identity(1)])
-        data = H._obs_data()
-
-        assert data == {
-            (1, frozenset([('PauliZ', Wires(0), ())])),
-            (1, frozenset([('PauliZ', Wires(0), ()), ('PauliX', Wires(1), ())])),
-            (0.5, frozenset([('PauliX', Wires(2), ())]))
-        }
-
-    def test_hamiltonian_equal_error(self):
-        """Tests that the correct error is raised when compare() is called on invalid type"""
-
-        H = qml.Hamiltonian([1], [qml.PauliZ(0)])
-        with pytest.raises(ValueError, match=r"Can only compare a Hamiltonian, and a Hamiltonian/Observable/Tensor."):
-            H.compare([[1, 0], [0, -1]])
-
-    @pytest.mark.parametrize(("H1", "H2", "res"), equal_hamiltonians)
-    def test_hamiltonian_equal(self, H1, H2, res):
-        """Tests that equality can be checked between Hamiltonians"""
-        assert H1.compare(H2) == res
-
-    @pytest.mark.parametrize(("H1", "H2", "H"), add_hamiltonians)
-    def test_hamiltonian_add(self, H1, H2, H):
-        """Tests that Hamiltonians are added correctly"""
-        assert H.compare(H1 + H2)
-
-    @pytest.mark.parametrize(("coeff", "H", "res"), mul_hamiltonians)
-    def test_hamiltonian_mul(self, coeff, H, res):
-        """Tests that scalars and Hamiltonians are multiplied correctly"""
-        assert res.compare(coeff * H)
-        assert res.compare(H * coeff)
-
-    @pytest.mark.parametrize(("H1", "H2", "H"), sub_hamiltonians)
-    def test_hamiltonian_sub(self, H1, H2, H):
-        """Tests that Hamiltonians are subtracted correctly"""
-        assert H.compare(H1 - H2)
-
-    @pytest.mark.parametrize(("H1", "H2", "H"), matmul_hamiltonians)
-    def test_hamiltonian_matmul(self, H1, H2, H):
-        """Tests that Hamiltonians are tensored correctly"""
-        assert H.compare(H1 @ H2)
-
-    @pytest.mark.parametrize(("H1", "H2", "H"), add_hamiltonians)
-    def test_hamiltonian_iadd(self, H1, H2, H):
-        """Tests that Hamiltonians are added inline correctly"""
-        H1 += H2
-        assert H.compare(H1)
-
-    @pytest.mark.parametrize(("coeff", "H", "res"), mul_hamiltonians)
-    def test_hamiltonian_imul(self, coeff, H, res):
-        """Tests that scalars and Hamiltonians are multiplied inline correctly"""
-        H *= coeff
-        assert res.compare(H)
-
-    @pytest.mark.parametrize(("H1", "H2", "H"), sub_hamiltonians)
-    def test_hamiltonian_isub(self, H1, H2, H):
-        """Tests that Hamiltonians are subtracted inline correctly"""
-        H1 -= H2
-        assert H.compare(H1)
-
-    def test_arithmetic_errors(self):
-        """Tests that the arithmetic operations thrown the correct errors"""
-        H = qml.Hamiltonian([1], [qml.PauliZ(0)])
-        A = [[1, 0], [0, -1]]
-        with pytest.raises(ValueError, match="Cannot tensor product Hamiltonian"):
-            H @ A
-        with pytest.raises(ValueError, match="Cannot add Hamiltonian"):
-            H + A
-        with pytest.raises(ValueError, match="Cannot multiply Hamiltonian"):
-            H * A
-        with pytest.raises(ValueError, match="Cannot subtract"):
-            H - A
-        with pytest.raises(ValueError, match="Cannot add Hamiltonian"):
-            H += A
-        with pytest.raises(ValueError, match="Cannot multiply Hamiltonian"):
-            H *= A
-        with pytest.raises(ValueError, match="Cannot subtract"):
-            H -= A
 
 
 class TestVQE:
@@ -500,7 +279,6 @@ class TestVQE:
         assert len(circuits) == len(observables)
         assert all(callable(c) for c in circuits)
         assert all(c.device == dev for c in circuits)
-        assert all(hasattr(c, "jacobian") for c in circuits)
 
     @pytest.mark.parametrize("ansatz, params", CIRCUITS)
     @pytest.mark.parametrize("observables", OBSERVABLES)
@@ -546,26 +324,28 @@ class TestVQE:
     @pytest.mark.parametrize("coeffs, observables", [z for z in zip(COEFFS, OBSERVABLES)])
     def test_cost_evaluate(self, params, ansatz, coeffs, observables):
         """Tests that the cost function evaluates properly"""
-        hamiltonian = qml.vqe.Hamiltonian(coeffs, observables)
+        hamiltonian = qml.Hamiltonian(coeffs, observables)
         dev = qml.device("default.qubit", wires=3)
-        expval = qml.VQECost(ansatz, hamiltonian, dev)
+        expval = qml.ExpvalCost(ansatz, hamiltonian, dev)
         assert type(expval(params)) == np.float64
         assert np.shape(expval(params)) == ()  # expval should be scalar
 
-    @pytest.mark.parametrize("coeffs, observables, expected", hamiltonians_with_expvals)
+    @pytest.mark.parametrize(
+        "coeffs, observables, expected", hamiltonians_with_expvals + zero_hamiltonians_with_expvals
+    )
     def test_cost_expvals(self, coeffs, observables, expected):
         """Tests that the cost function returns correct expectation values"""
         dev = qml.device("default.qubit", wires=2)
-        hamiltonian = qml.vqe.Hamiltonian(coeffs, observables)
-        cost = qml.VQECost(lambda params, **kwargs: None, hamiltonian, dev)
+        hamiltonian = qml.Hamiltonian(coeffs, observables)
+        cost = qml.ExpvalCost(lambda params, **kwargs: None, hamiltonian, dev)
         assert cost([]) == sum(expected)
 
     @pytest.mark.parametrize("ansatz", JUNK_INPUTS)
     def test_cost_invalid_ansatz(self, ansatz, mock_device):
         """Tests that the cost function raises an exception if the ansatz is not valid"""
-        hamiltonian = qml.vqe.Hamiltonian((1.0,), [qml.PauliZ(0)])
+        hamiltonian = qml.Hamiltonian((1.0,), [qml.PauliZ(0)])
         with pytest.raises(ValueError, match="not a callable function."):
-            cost = qml.VQECost(4, hamiltonian, mock_device())
+            cost = qml.ExpvalCost(4, hamiltonian, mock_device())
 
     @pytest.mark.parametrize("coeffs, observables, expected", hamiltonians_with_expvals)
     def test_passing_kwargs(self, coeffs, observables, expected):
@@ -573,13 +353,521 @@ class TestVQE:
         differentiation method were passed to the QNode instances using the
         keyword arguments."""
         dev = qml.device("default.qubit", wires=2)
-        hamiltonian = qml.vqe.Hamiltonian(coeffs, observables)
-        cost = qml.VQECost(lambda params, **kwargs: None, hamiltonian, dev, h=123, order=2)
+        hamiltonian = qml.Hamiltonian(coeffs, observables)
+        cost = qml.ExpvalCost(lambda params, **kwargs: None, hamiltonian, dev, h=123, order=2)
 
         # Checking that the qnodes contain the step size and order
         for qnode in cost.qnodes:
-            assert qnode.h == 123
-            assert qnode.order == 2
+            assert qnode.diff_options["h"] == 123
+            assert qnode.diff_options["order"] == 2
+
+    @pytest.mark.parametrize("interface", ["tf", "torch", "autograd"])
+    def test_optimize(self, interface, tf_support, torch_support):
+        """Test that an ExpvalCost with observable optimization gives the same result as another
+        ExpvalCost without observable optimization."""
+        if interface == "tf" and not tf_support:
+            pytest.skip("This test requires TensorFlow")
+        if interface == "torch" and not torch_support:
+            pytest.skip("This test requires Torch")
+
+        dev = qml.device("default.qubit", wires=4)
+        hamiltonian = big_hamiltonian
+
+        cost = qml.ExpvalCost(
+            qml.templates.StronglyEntanglingLayers,
+            hamiltonian,
+            dev,
+            optimize=True,
+            interface=interface,
+            diff_method="parameter-shift",
+        )
+        cost2 = qml.ExpvalCost(
+            qml.templates.StronglyEntanglingLayers,
+            hamiltonian,
+            dev,
+            optimize=False,
+            interface=interface,
+            diff_method="parameter-shift",
+        )
+
+        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
+
+        c1 = cost(w)
+        exec_opt = dev.num_executions
+        dev._num_executions = 0
+
+        c2 = cost2(w)
+        exec_no_opt = dev.num_executions
+
+        assert exec_opt == 5  # Number of groups in the Hamiltonian
+        assert exec_no_opt == 15
+
+        assert np.allclose(c1, c2)
+
+    @pytest.mark.parametrize("interface", ["tf", "torch", "autograd"])
+    def test_optimize_multiple_terms(self, interface, tf_support, torch_support):
+        """Test that an ExpvalCost with observable optimization gives the same
+        result as another ExpvalCost without observable optimization even when there
+        are non-unique Hamiltonian terms."""
+        if interface == "tf" and not tf_support:
+            pytest.skip("This test requires TensorFlow")
+        if interface == "torch" and not torch_support:
+            pytest.skip("This test requires Torch")
+
+        dev = qml.device("default.qubit", wires=5)
+        obs = [
+            qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[4]),  # <---- These two terms
+            qml.PauliZ(wires=[4]) @ qml.PauliZ(wires=[2]),  # <---- are equal
+            qml.PauliZ(wires=[1]),
+            qml.PauliZ(wires=[2]),
+            qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
+            qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[0]),
+            qml.PauliZ(wires=[3]) @ qml.PauliZ(wires=[1]),
+            qml.PauliZ(wires=[4]) @ qml.PauliZ(wires=[3]),
+        ]
+
+        coefs = (np.random.rand(len(obs)) - 0.5) * 2
+        hamiltonian = qml.Hamiltonian(coefs, obs)
+
+        cost = qml.ExpvalCost(
+            qml.templates.StronglyEntanglingLayers,
+            hamiltonian,
+            dev,
+            optimize=True,
+            interface=interface,
+            diff_method="parameter-shift",
+        )
+        cost2 = qml.ExpvalCost(
+            qml.templates.StronglyEntanglingLayers,
+            hamiltonian,
+            dev,
+            optimize=False,
+            interface=interface,
+            diff_method="parameter-shift",
+        )
+
+        w = qml.init.strong_ent_layers_uniform(2, 5, seed=1967)
+
+        c1 = cost(w)
+        exec_opt = dev.num_executions
+        dev._num_executions = 0
+
+        c2 = cost2(w)
+        exec_no_opt = dev.num_executions
+
+        assert exec_opt == 1  # Number of groups in the Hamiltonian
+        assert exec_no_opt == 8
+
+        assert np.allclose(c1, c2)
+
+    def test_optimize_grad(self):
+        """Test that the gradient of ExpvalCost is accessible and correct when using observable
+        optimization and the autograd interface."""
+        dev = qml.device("default.qubit", wires=4)
+        hamiltonian = big_hamiltonian
+
+        cost = qml.ExpvalCost(
+            qml.templates.StronglyEntanglingLayers,
+            hamiltonian,
+            dev,
+            optimize=True,
+            diff_method="parameter-shift",
+        )
+        cost2 = qml.ExpvalCost(
+            qml.templates.StronglyEntanglingLayers,
+            hamiltonian,
+            dev,
+            optimize=False,
+            diff_method="parameter-shift",
+        )
+
+        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
+
+        dc = qml.grad(cost)(w)
+        exec_opt = dev.num_executions
+        dev._num_executions = 0
+
+        dc2 = qml.grad(cost2)(w)
+        exec_no_opt = dev.num_executions
+
+        assert exec_no_opt > exec_opt
+        assert np.allclose(dc, big_hamiltonian_grad)
+        assert np.allclose(dc2, big_hamiltonian_grad)
+
+    @pytest.mark.parametrize("opt", [True, False])
+    def test_grad_zero_hamiltonian(self, opt):
+        """Test that the gradient of ExpvalCost is accessible and correct when using observable
+        optimization and the autograd interface with a zero Hamiltonian."""
+        dev = qml.device("default.qubit", wires=4)
+        hamiltonian = qml.Hamiltonian([0], [qml.PauliX(0)])
+
+        cost = qml.ExpvalCost(
+            qml.templates.StronglyEntanglingLayers,
+            hamiltonian,
+            dev,
+            optimize=opt,
+            diff_method="parameter-shift",
+        )
+
+        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
+
+        dc = qml.grad(cost)(w)
+        assert np.allclose(dc, 0)
+
+    def test_optimize_grad_torch(self, torch_support):
+        """Test that the gradient of ExpvalCost is accessible and correct when using observable
+        optimization and the Torch interface."""
+        if not torch_support:
+            pytest.skip("This test requires Torch")
+
+        dev = qml.device("default.qubit", wires=4)
+        hamiltonian = big_hamiltonian
+
+        cost = qml.ExpvalCost(
+            qml.templates.StronglyEntanglingLayers,
+            hamiltonian,
+            dev,
+            optimize=True,
+            interface="torch",
+        )
+
+        w = torch.tensor(qml.init.strong_ent_layers_uniform(2, 4, seed=1967), requires_grad=True)
+
+        res = cost(w)
+        res.backward()
+        dc = w.grad.detach().numpy()
+
+        assert np.allclose(dc, big_hamiltonian_grad)
+
+    def test_optimize_grad_tf(self, tf_support):
+        """Test that the gradient of ExpvalCost is accessible and correct when using observable
+        optimization and the TensorFlow interface."""
+        if not tf_support:
+            pytest.skip("This test requires TensorFlow")
+
+        dev = qml.device("default.qubit", wires=4)
+        hamiltonian = big_hamiltonian
+
+        cost = qml.ExpvalCost(
+            qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=True, interface="tf"
+        )
+
+        w = tf.Variable(qml.init.strong_ent_layers_uniform(2, 4, seed=1967))
+
+        with tf.GradientTape() as tape:
+            res = cost(w)
+
+        dc = tape.gradient(res, w).numpy()
+
+        assert np.allclose(dc, big_hamiltonian_grad)
+
+    def test_metric_tensor(self):
+        """Test that the metric tensor can be calculated."""
+
+        dev = qml.device("default.qubit", wires=2)
+        p = np.array([1.0, 1.0, 1.0])
+
+        def ansatz(params, **kwargs):
+            qml.RX(params[0], wires=0)
+            qml.RY(params[1], wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PhaseShift(params[2], wires=1)
+
+        h = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
+        qnodes = qml.ExpvalCost(ansatz, h, dev)
+        mt = qml.metric_tensor(qnodes)(p)
+        assert mt.shape == (3, 3)
+        assert isinstance(mt, np.ndarray)
+
+    def test_multiple_devices(self, mocker):
+        """Test that passing multiple devices to ExpvalCost works correctly"""
+
+        dev = [qml.device("default.qubit", wires=2), qml.device("default.mixed", wires=2)]
+        spy = mocker.spy(DefaultQubit, "apply")
+        spy2 = mocker.spy(DefaultMixed, "apply")
+
+        obs = [qml.PauliZ(0), qml.PauliZ(1)]
+        h = qml.Hamiltonian([1, 1], obs)
+
+        qnodes = qml.ExpvalCost(qml.templates.BasicEntanglerLayers, h, dev)
+        w = qml.init.basic_entangler_layers_uniform(3, 2, seed=1967)
+
+        res = qnodes(w)
+
+        spy.assert_called_once()
+        spy2.assert_called_once()
+
+        mapped = qml.map(qml.templates.BasicEntanglerLayers, obs, dev)
+        exp = sum(mapped(w))
+
+        assert np.allclose(res, exp)
+
+        with pytest.warns(UserWarning, match="ExpvalCost was instantiated with multiple devices."):
+            qml.metric_tensor(qnodes)(w)
+
+    def test_multiple_devices_opt_true(self):
+        """Test if a ValueError is raised when multiple devices are passed when optimize=True."""
+        dev = [qml.device("default.qubit", wires=2), qml.device("default.qubit", wires=2)]
+
+        h = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
+
+        with pytest.raises(ValueError, match="Using multiple devices is not supported when"):
+            qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, h, dev, optimize=True)
+
+    def test_variance_error(self):
+        """Test that an error is raised if attempting to use ExpvalCost to measure
+        variances"""
+        dev = qml.device("default.qubit", wires=4)
+        hamiltonian = big_hamiltonian
+
+        with pytest.raises(ValueError, match="sums of expectation values"):
+            qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, hamiltonian, dev, measure="var")
+
+
+class TestNewVQE:
+    """Test the new VQE syntax of passing the Hamiltonian as an observable."""
+
+    @pytest.mark.parametrize("ansatz, params", CIRCUITS)
+    @pytest.mark.parametrize("observables", OBSERVABLES)
+    def test_circuits_evaluate(self, ansatz, observables, params, tol):
+        """Tests simple VQE evaluations."""
+        coeffs = [1.0] * len(observables)
+        dev = qml.device("default.qubit", wires=3)
+        H = qml.Hamiltonian(coeffs, observables)
+
+        # pass H directly
+        @qml.qnode(dev)
+        def circuit():
+            ansatz(params, wires=range(3))
+            return qml.expval(H)
+
+        res = circuit()
+
+        res_expected = []
+        for obs in observables:
+
+            @qml.qnode(dev)
+            def circuit():
+                ansatz(params, wires=range(3))
+                return qml.expval(obs)
+
+            res_expected.append(circuit())
+
+        res_expected = np.sum([c * r for c, r in zip(coeffs, res_expected)])
+
+        assert np.isclose(res, res_expected, atol=tol)
+
+    def test_acting_on_subcircuit(self, tol):
+        """Tests a VQE circuit where the observable does not act on all wires."""
+        dev = qml.device("default.qubit", wires=3)
+        coeffs = [1.0, 1.0, 1.0]
+        w = qml.init.strong_ent_layers_uniform(1, 2, seed=1967)
+
+        observables1 = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
+        H1 = qml.Hamiltonian(coeffs, observables1)
+
+        @qml.qnode(dev)
+        def circuit1():
+            qml.templates.StronglyEntanglingLayers(w, wires=range(2))
+            return qml.expval(H1)
+
+        observables2 = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1) @ qml.Identity(2)]
+        H2 = qml.Hamiltonian(coeffs, observables2)
+
+        @qml.qnode(dev)
+        def circuit2():
+            qml.templates.StronglyEntanglingLayers(w, wires=range(2))
+            return qml.expval(H2)
+
+        res1 = circuit1()
+        res2 = circuit2()
+
+        assert np.allclose(res1, res2, atol=tol)
+
+    @pytest.mark.parametrize("shots, dim", [([(1000, 2)], 2), ([30, 30], 2), ([2, 3, 4], 3)])
+    def test_shot_distribution(self, shots, dim):
+        """Tests that distributed shots work with the new VQE design."""
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(weights, coeffs):
+            qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
+            H = qml.Hamiltonian(coeffs, obs)
+            return qml.expval(H)
+
+        obs = [qml.PauliZ(0), qml.PauliX(0) @ qml.PauliZ(1)]
+        coeffs = np.array([0.1, 0.2])
+        weights = pnp.random.random([2, 2, 3], requires_grad=True)
+
+        res = circuit(weights, coeffs)
+        grad = qml.jacobian(circuit, argnum=1)(weights, coeffs)
+        assert len(res) == dim
+        assert grad.shape == (dim, 2)
+
+    def test_circuit_drawer(self):
+        """Test that the circuit drawer displays Hamiltonians well."""
+        dev = qml.device("default.qubit", wires=3)
+        coeffs = [1.0, 1.0, 1.0]
+        observables1 = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(2)]
+        H1 = qml.Hamiltonian(coeffs, observables1)
+
+        @qml.qnode(dev)
+        def circuit1():
+            qml.Hadamard(wires=0)
+            return qml.expval(H1)
+
+        res = qml.draw(circuit1)()
+        expected = " 0: ──H──╭┤ ⟨Hamiltonian(1, 1, 1)⟩ \n" + " 2: ─────╰┤ ⟨Hamiltonian(1, 1, 1)⟩ \n"
+        assert res == expected
+
+    def test_error_multiple_expvals(self):
+        """Tests that error is thrown if more than one expval is evaluated."""
+        observables = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
+        coeffs = [1.0] * len(observables)
+        dev = qml.device("default.qubit", wires=4)
+        H = qml.Hamiltonian(coeffs, observables)
+        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.templates.StronglyEntanglingLayers(w, wires=range(4))
+            return qml.expval(H), qml.expval(qml.PauliX(3))
+
+        with pytest.raises(
+            ValueError, match="Only a single expectation of a Hamiltonian observable"
+        ):
+            circuit()
+
+    def test_error_non_expval_measurement(self):
+        """Tests that error is thrown if sample() or var() is used."""
+        observables = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
+        coeffs = [1.0] * len(observables)
+        dev = qml.device("default.qubit", wires=4)
+        H = qml.Hamiltonian(coeffs, observables)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.sample(H)
+
+        with pytest.raises(
+            ValueError, match="Only a single expectation of a Hamiltonian observable "
+        ):
+            circuit()
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.var(H)
+
+        with pytest.raises(
+            ValueError, match="Only a single expectation of a Hamiltonian observable"
+        ):
+            circuit()
+
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "best"])
+    def test_grad_autograd(self, diff_method, tol):
+        """Tests the VQE gradient in the autograd interface."""
+        dev = qml.device("default.qubit", wires=4)
+        H = big_hamiltonian
+        w = pnp.array(qml.init.strong_ent_layers_uniform(2, 4, seed=1967), requires_grad=True)
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def circuit(w):
+            qml.templates.StronglyEntanglingLayers(w, wires=range(4))
+            return qml.expval(H)
+
+        dc = qml.grad(circuit)(w)
+        assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
+
+    def test_grad_zero_hamiltonian(self, tol):
+        """Tests the VQE gradient for a "zero" Hamiltonian."""
+        dev = qml.device("default.qubit", wires=4)
+        H = qml.Hamiltonian([0], [qml.PauliX(0)])
+        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit(w):
+            qml.templates.StronglyEntanglingLayers(w, wires=range(4))
+            return qml.expval(H)
+
+        dc = qml.grad(circuit)(w)
+        assert np.allclose(dc, 0, atol=tol)
+
+    def test_grad_torch(self, torch_support, tol):
+        """Tests VQE gradients in the torch interface."""
+        if not torch_support:
+            pytest.skip("This test requires Torch")
+
+        dev = qml.device("default.qubit", wires=4)
+        H = big_hamiltonian
+
+        @qml.qnode(dev, interface="torch")
+        def circuit(w):
+            qml.templates.StronglyEntanglingLayers(w, wires=range(4))
+            return qml.expval(H)
+
+        w = torch.tensor(qml.init.strong_ent_layers_uniform(2, 4, seed=1967), requires_grad=True)
+
+        res = circuit(w)
+        res.backward()
+        dc = w.grad.detach().numpy()
+
+        assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
+
+    def test_grad_tf(self, tf_support, tol):
+        """Tests VQE gradients in the tf interface."""
+        if not tf_support:
+            pytest.skip("This test requires TensorFlow")
+
+        dev = qml.device("default.qubit", wires=4)
+        H = big_hamiltonian
+
+        @qml.qnode(dev, interface="tf")
+        def circuit(w):
+            qml.templates.StronglyEntanglingLayers(w, wires=range(4))
+            return qml.expval(H)
+
+        w = tf.Variable(qml.init.strong_ent_layers_uniform(2, 4, seed=1967), dtype=tf.double)
+
+        with tf.GradientTape() as tape:
+            res = circuit(w)
+
+        dc = tape.gradient(res, w).numpy()
+
+        assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
+
+    def test_grad_jax(self, tol):
+        """Tests VQE gradients in the jax interface."""
+        jax = pytest.importorskip("jax")
+        from jax import numpy as jnp
+
+        dev = qml.device("default.qubit", wires=4)
+        H = big_hamiltonian
+        w = jnp.array(qml.init.strong_ent_layers_uniform(2, 4, seed=1967))
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(w):
+            qml.templates.StronglyEntanglingLayers(w, wires=range(4))
+            return qml.expval(H)
+
+        dc = jax.grad(circuit)(w)
+        assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
+
+    def test_specs(self):
+        """Test that the specs of a VQE circuit can be computed"""
+        dev = qml.device("default.qubit", wires=2)
+        H = qml.Hamiltonian([0.1, 0.2], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1)])
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(H)
+
+        res = qml.specs(circuit)()
+
+        assert res["num_observables"] == 1
+        assert res["num_diagonalizing_gates"] == 0
+        assert res["num_used_wires"] == 2
 
 
 class TestAutogradInterface:
@@ -587,19 +875,18 @@ class TestAutogradInterface:
 
     @pytest.mark.parametrize("ansatz, params", CIRCUITS)
     @pytest.mark.parametrize("observables", OBSERVABLES)
-    @pytest.mark.parametrize("interface", ["autograd", "numpy"])
+    @pytest.mark.parametrize("interface", ["autograd"])
     def test_QNodes_have_right_interface(self, ansatz, observables, params, mock_device, interface):
         """Test that QNodes have the Autograd interface"""
         dev = mock_device(wires=3)
         circuits = qml.map(ansatz, observables, device=dev, interface=interface)
 
         assert all(c.interface == "autograd" for c in circuits)
-        assert all(c.__class__.__name__ == "AutogradQNode" for c in circuits)
 
         res = [c(params) for c in circuits]
-        assert all(isinstance(val, float) for val in res)
+        assert all(isinstance(val, (np.ndarray, float)) for val in res)
 
-    @pytest.mark.parametrize("interface", ["autograd", "numpy"])
+    @pytest.mark.parametrize("interface", ["autograd"])
     def test_gradient(self, tol, interface):
         """Test differentiation works"""
         dev = qml.device("default.qubit", wires=1)
@@ -611,17 +898,17 @@ class TestAutogradInterface:
         coeffs = [0.2, 0.5]
         observables = [qml.PauliX(0), qml.PauliY(0)]
 
-        H = qml.vqe.Hamiltonian(coeffs, observables)
+        H = qml.Hamiltonian(coeffs, observables)
         a, b = 0.54, 0.123
         params = np.array([a, b])
 
-        cost = qml.VQECost(ansatz, H, dev, interface=interface)
+        cost = qml.ExpvalCost(ansatz, H, dev, interface=interface)
         dcost = qml.grad(cost, argnum=[0])
         res = dcost(params)
 
         expected = [
-            -coeffs[0]*np.sin(a)*np.sin(b) - coeffs[1]*np.cos(a),
-            coeffs[0]*np.cos(a)*np.cos(b)
+            -coeffs[0] * np.sin(a) * np.sin(b) - coeffs[1] * np.cos(a),
+            coeffs[0] * np.cos(a) * np.cos(b),
         ]
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -653,23 +940,22 @@ class TestTorchInterface:
         coeffs = [0.2, 0.5]
         observables = [qml.PauliX(0), qml.PauliY(0)]
 
-        H = qml.vqe.Hamiltonian(coeffs, observables)
+        H = qml.Hamiltonian(coeffs, observables)
         a, b = 0.54, 0.123
         params = torch.autograd.Variable(torch.tensor([a, b]), requires_grad=True)
 
-        cost = qml.VQECost(ansatz, H, dev, interface="torch")
+        cost = qml.ExpvalCost(ansatz, H, dev, interface="torch")
         loss = cost(params)
         loss.backward()
 
         res = params.grad.numpy()
 
         expected = [
-            -coeffs[0]*np.sin(a)*np.sin(b) - coeffs[1]*np.cos(a),
-            coeffs[0]*np.cos(a)*np.cos(b)
+            -coeffs[0] * np.sin(a) * np.sin(b) - coeffs[1] * np.cos(a),
+            coeffs[0] * np.cos(a) * np.cos(b),
         ]
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
-
 
 
 @pytest.mark.usefixtures("skip_if_no_tf_support")
@@ -701,18 +987,18 @@ class TestTFInterface:
         coeffs = [0.2, 0.5]
         observables = [qml.PauliX(0), qml.PauliY(0)]
 
-        H = qml.vqe.Hamiltonian(coeffs, observables)
+        H = qml.Hamiltonian(coeffs, observables)
         a, b = 0.54, 0.123
         params = Variable([a, b], dtype=tf.float64)
-        cost = qml.VQECost(ansatz, H, dev, interface="tf")
+        cost = qml.ExpvalCost(ansatz, H, dev, interface="tf")
 
         with tf.GradientTape() as tape:
             loss = cost(params)
             res = np.array(tape.gradient(loss, params))
 
         expected = [
-            -coeffs[0]*np.sin(a)*np.sin(b) - coeffs[1]*np.cos(a),
-            coeffs[0]*np.cos(a)*np.cos(b)
+            -coeffs[0] * np.sin(a) * np.sin(b) - coeffs[1] * np.cos(a),
+            coeffs[0] * np.cos(a) * np.cos(b),
         ]
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -728,15 +1014,15 @@ class TestMultipleInterfaceIntegration:
         dev = qml.device("default.qubit", wires=2)
 
         coeffs = [0.2, 0.5]
-        observables = [qml.PauliX(0)@qml.PauliZ(1), qml.PauliY(0)]
+        observables = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliY(0)]
 
-        H = qml.vqe.Hamiltonian(coeffs, observables)
+        H = qml.Hamiltonian(coeffs, observables)
 
         # TensorFlow interface
         params = Variable(qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1))
         ansatz = qml.templates.layers.StronglyEntanglingLayers
 
-        cost = qml.VQECost(ansatz, H, dev, interface="tf")
+        cost = qml.ExpvalCost(ansatz, H, dev, interface="tf")
 
         with tf.GradientTape() as tape:
             loss = cost(params)
@@ -747,7 +1033,7 @@ class TestMultipleInterfaceIntegration:
         params = torch.autograd.Variable(params, requires_grad=True)
         ansatz = qml.templates.layers.StronglyEntanglingLayers
 
-        cost = qml.VQECost(ansatz, H, dev, interface="torch")
+        cost = qml.ExpvalCost(ansatz, H, dev, interface="torch")
         loss = cost(params)
         loss.backward()
         res_torch = params.grad.numpy()
@@ -755,9 +1041,22 @@ class TestMultipleInterfaceIntegration:
         # NumPy interface
         params = qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1)
         ansatz = qml.templates.layers.StronglyEntanglingLayers
-        cost = qml.VQECost(ansatz, H, dev, interface="numpy")
+        cost = qml.ExpvalCost(ansatz, H, dev, interface="autograd")
         dcost = qml.grad(cost, argnum=[0])
         res = dcost(params)
 
         assert np.allclose(res, res_tf, atol=tol, rtol=0)
         assert np.allclose(res, res_torch, atol=tol, rtol=0)
+
+
+def test_vqe_cost():
+    """Tests that VQECost raises a UserWarning but otherwise behaves as ExpvalCost"""
+
+    h = qml.Hamiltonian([1], [qml.PauliZ(0)])
+    dev = qml.device("default.qubit", wires=1)
+    ansatz = qml.templates.StronglyEntanglingLayers
+
+    with pytest.warns(UserWarning, match="Use of VQECost is deprecated"):
+        cost = qml.VQECost(ansatz, h, dev)
+
+    assert isinstance(cost, qml.ExpvalCost)
