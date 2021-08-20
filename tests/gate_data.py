@@ -26,8 +26,8 @@ ISWAP = np.array([[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]])  #:
 SISWAP = np.array(
     [
         [1, 0, 0, 0],
-        [0, math.sqrt(2), math.sqrt(2) * 1j, 0],
-        [0, math.sqrt(2) * 1j, math.sqrt(2), 0],
+        [0, 1/math.sqrt(2), 1/math.sqrt(2) * 1j, 0],
+        [0, 1/math.sqrt(2) * 1j, 1/math.sqrt(2), 0],
         [0, 0, 0, 1],
     ]
 )
