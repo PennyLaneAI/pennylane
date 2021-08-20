@@ -264,9 +264,9 @@ def execute(
         raise ValueError("Gradient transforms cannot be used with mode='forward'")
 
     if interface == "autograd":
-        from .autograd import _execute
+        from .autograd import execute as _execute
     elif interface in ("tf", "tensorflow"):
-        from .tensorflow import _execute
+        from .tensorflow import execute as _execute
     else:
         raise ValueError(f"Unknown interface {interface}")
 
