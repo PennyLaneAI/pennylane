@@ -25,7 +25,7 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
-def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1):
+def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2):
     """Execute a batch of tapes with Autograd parameters on a device.
 
     Args:
@@ -42,6 +42,10 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1):
         gradient_fn (callable): the gradient function to use to compute quantum gradients
         _n (int): a positive integer used to track nesting of derivatives, for example
             if the nth-order derivative is requested.
+        max_diff (int): If ``gradient_fn`` is a gradient transform, this option specifies
+            the maximum order of derivatives to support. Increasing this value allows
+            for higher order derivatives to be extracted, at the cost of additional
+            (classical) computational overhead during the backwards pass.
 
     Returns:
         list[list[float]]: A nested list of tape results. Each element in
@@ -64,6 +68,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1):
         gradient_fn=gradient_fn,
         gradient_kwargs=gradient_kwargs,
         _n=_n,
+        max_diff=max_diff,
     )[0]
 
 
@@ -76,6 +81,7 @@ def _execute(
     gradient_fn=None,
     gradient_kwargs=None,
     _n=1,
+    max_diff=2,
 ):  # pylint: disable=dangerous-default-value,unused-argument
     """Autodifferentiable wrapper around ``Device.batch_execute``.
 
@@ -119,6 +125,7 @@ def vjp(
     gradient_fn=None,
     gradient_kwargs=None,
     _n=1,
+    max_diff=2,
 ):  # pylint: disable=dangerous-default-value,unused-argument
     """Returns the vector-Jacobian product operator for a batch of quantum tapes.
 
@@ -139,6 +146,10 @@ def vjp(
             determining the gradients of tapes
         _n (int): a positive integer used to track nesting of derivatives, for example
             if the nth-order derivative is requested.
+        max_diff (int): If ``gradient_fn`` is a gradient transform, this option specifies
+            the maximum number of derivatives to support. Increasing this value allows
+            for higher order derivatives to be extracted, at the cost of additional
+            (classical) computational overhead during the backwards pass.
 
     Returns:
         function: this function accepts the backpropagation
@@ -169,18 +180,43 @@ def vjp(
             if "pennylane.gradients" in module_name:
 
                 # Generate and execute the required gradient tapes
-                vjp_tapes, processing_fn = qml.gradients.batch_vjp(
-                    tapes, dy, gradient_fn, reduction="append", gradient_kwargs=gradient_kwargs
-                )
+                if _n == max_diff:
+                    with qml.tape.Unwrap(*tapes):
+                        vjp_tapes, processing_fn = qml.gradients.batch_vjp(
+                            tapes,
+                            dy,
+                            gradient_fn,
+                            reduction="append",
+                            gradient_kwargs=gradient_kwargs,
+                        )
 
-                # This is where the magic happens. Note that we call ``execute``.
-                # This recursion, coupled with the fact that the gradient transforms
-                # are differentiable, allows for arbitrary order differentiation.
-                vjps = processing_fn(
-                    execute(vjp_tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=_n + 1)
-                )
+                    vjps = processing_fn(execute_fn(vjp_tapes)[0])
 
-            elif inspect.ismethod(gradient_fn) and gradient_fn.__self__ is device:
+                else:
+                    vjp_tapes, processing_fn = qml.gradients.batch_vjp(
+                        tapes, dy, gradient_fn, reduction="append", gradient_kwargs=gradient_kwargs
+                    )
+
+                    # This is where the magic happens. Note that we call ``execute``.
+                    # This recursion, coupled with the fact that the gradient transforms
+                    # are differentiable, allows for arbitrary order differentiation.
+                    vjps = processing_fn(
+                        execute(
+                            vjp_tapes,
+                            device,
+                            execute_fn,
+                            gradient_fn,
+                            gradient_kwargs,
+                            _n=_n + 1,
+                            max_diff=max_diff,
+                        )
+                    )
+
+            elif (
+                hasattr(gradient_fn, "fn")
+                and inspect.ismethod(gradient_fn.fn)
+                and gradient_fn.fn.__self__ is device
+            ):
                 # Gradient function is a device method.
                 # Note that unlike the previous branch:
                 #
