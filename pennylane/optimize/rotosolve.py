@@ -23,7 +23,7 @@ def _assert_integer(x):
     x_type = type(x)
     if not np.issubdtype(x_type, np.integer):
         raise ValueError(
-            "The numbers of frequencies are expected to be integers. " f"Received {x_type}."
+            f"The numbers of frequencies are expected to be integers. Received {x_type}."
         )
 
 
