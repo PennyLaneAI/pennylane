@@ -22,6 +22,8 @@ from matplotlib import patches
 
 def _to_tuple(a):
     """converts int or iterable to always tuple"""
+    if a is None:
+        return tuple()
     if isinstance(a, Iterable):
         return tuple(a)
     return (a,)
@@ -35,6 +37,7 @@ class MPLDrawer:
         n_wires (Int): the number of wires
 
     Keyword Args:
+        wire_color=None: MPL compatible color for the wires
         figsize=None (Iterable): Allows user's to manually specify the size of the figure.  Defaults
            to scale with the size of the circuit via ``n_layers`` and ``n_wires``.
 
@@ -125,10 +128,12 @@ class MPLDrawer:
             :width: 60%
             :target: javascript:void(0);
 
-
+    Many methods accept a ``zorder_base`` keyword. Higher ``zorder`` objects are drawn 
+    on top of lower ``zorder`` objects. In the above example, we have to set a ``zorder_base``
+    to a value of ``2`` in order to draw it *on top* of the control wires, instead of below them.
     """
 
-    def __init__(self, n_layers, n_wires, figsize=None):
+    def __init__(self, n_layers, n_wires, wirecolor=None, figsize=None):
 
         self.n_layers = n_layers
         self.n_wires = n_wires
@@ -154,17 +159,22 @@ class MPLDrawer:
             xticks=[],
             yticks=[],
         )
+        
+        self.ax.invert_yaxis()
 
         # adding wire lines
         for wire in range(self.n_wires):
-            line = plt.Line2D((-1, self.n_layers), (wire, wire), zorder=1)
+            line = plt.Line2D((-1, self.n_layers), (wire, wire), zorder=1, color=wirecolor)
             self.ax.add_line(line)
 
-    def label(self, labels):
+    def label(self, labels, text_kwargs=None):
         """Label each wire.
 
         Args:
             labels [Iterable[str]]: Iterable of labels for the wires
+
+        Keyword Args:
+            text_kwargs (dict): any matplotlib keywords for a text object, such as font or size.
 
         **Example**
 
@@ -179,11 +189,15 @@ class MPLDrawer:
             :target: javascript:void(0);
 
         """
+        if text_kwargs is None:
+            text_kwargs = dict()
+
         for wire, ii_label in enumerate(labels):
-            self.ax.text(-1.5, wire, ii_label)
+            self.ax.text(-1.5, wire, ii_label, **text_kwargs)
 
     def box_gate(
-        self, layer, wires, text="", extra_width=0, rotate_text=False, zorder_base=0, color=None
+        self, layer, wires, text="", extra_width=0, rotate_text=False, zorder_base=0,
+        box_kwargs=None, text_kwargs=None
     ):
         """Draws a box and adds label text to it's center.
 
@@ -196,8 +210,9 @@ class MPLDrawer:
             extra_width=0 (float): Extra box width
             rotate_text=False (Bool): whether to rotate text 90 degrees. Helpful to long labels and
                 multi-wire boxes.
-            zorder_base (Int): shift the object in zorder
-            color=None: mpl compatible color designation
+            zorder_base=0 (Int): increase number to draw on top of other objects, like control wires
+            box_kwargs=None (dict): Any matplotlib keywords for the Rectangle patch
+            text_kwargs=None (dict): Any matplotlib keywords for the text
 
         **Example**
 
@@ -214,6 +229,11 @@ class MPLDrawer:
             :target: javascript:void(0);
 
         """
+        if box_kwargs is None:
+            box_kwargs = dict()
+        if text_kwargs is None:
+            text_kwargs = dict()
+
         wires = _to_tuple(wires)
 
         box_min = min(wires)
@@ -231,31 +251,32 @@ class MPLDrawer:
             2 * self._box_dx + extra_width,
             (box_len + 2 * self._box_dx),
             zorder=2 + zorder_base,
-            facecolor=color,
+            **box_kwargs
         )
         self.ax.add_patch(box)
+
+        default_text_kwargs = {"ha": "center", "va": "center", "fontsize": "x-large"}
+        default_text_kwargs.update(text_kwargs)
 
         self.ax.text(
             layer,
             box_center,
             text,
             zorder=3 + zorder_base,
-            rotation=rotation,
-            ha="center",
-            va="center",
-            fontsize="x-large",
+            #rotation=rotation,
+            **default_text_kwargs
         )
 
-    def ctrl(self, layer, wire_ctrl, wire_target=tuple(), color=None):
+    def ctrl(self, layer, wire_ctrl, wire_target=None, color=None):
         """Add an arbitrary number of control wires
 
         Args:
             layer (Int): the layer to draw the object in
             wire_ctrl (Union[Int, Iterable[Int]]): set of wires to control on
-            wire_target=tuple() (Union[Int, Iterable[Int]]): target wires. Used to determine min
-                and max wires for the vertical line
 
         Keyword Args:
+            wire_target=None (Union[Int, Iterable[Int]]): target wires. Used to determine min
+                and max wires for the vertical line
             color=None: mpl compatible color designation
 
         **Example**
