@@ -23,6 +23,6 @@ as circuit diagrams.
     charsets
     MPLDrawer
 """
-from .circuit_drawer import *
-from .charsets import *
+from .circuit_drawer import CircuitDrawer
+from .charsets import CHARSETS
 from .mpldrawer import MPLDrawer

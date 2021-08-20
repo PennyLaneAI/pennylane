@@ -89,6 +89,8 @@ def test_labels():
 
 
 class TestBoxGate:
+    """Tests relating to box gate."""
+
     def test_simple_box(self):
         """tests basic functionality of box_gate."""
 
@@ -356,26 +358,53 @@ class TestSWAP:
         assert x_lines[3].get_data() == ((-0.2, 0.2), (2.2, 1.8))
         plt.close()
 
+    def test_SWAP_color(self):
+        """Tests that SWAP can be colored."""
+        
+        drawer = MPLDrawer(1, 3)
+        rgba_red = (1, 0, 0, 1)
+        drawer.SWAP(0, (0, 2), color=rgba_red)
 
-def test_measure():
+        for line in drawer.ax.lines[3:]:
+            assert line.get_color() == rgba_red
+
+        plt.close()
+
+
+class TestMeasure:
     """Tests the measure method."""
 
-    drawer = MPLDrawer(1, 1)
-    drawer.measure(0, 0)
+    def test_measure(self):
+        """Tests the measure method."""
 
-    box = drawer.ax.patches[0]
-    assert box.get_xy() == (-0.4, -0.4)
-    assert box.get_width() == 0.8
-    assert box.get_height() == 0.8
+        drawer = MPLDrawer(1, 1)
+        drawer.measure(0, 0)
 
-    arc = drawer.ax.patches[1]
-    assert arc.center == (0, -0.05)
-    assert arc.theta1 == 0
-    assert arc.theta2 == 180
-    assert allclose(arc.height, 0.44)
-    assert arc.width == 0.48
+        box = drawer.ax.patches[0]
+        assert box.get_xy() == (-0.4, -0.4)
+        assert box.get_width() == 0.8
+        assert box.get_height() == 0.8
 
-    arrow = drawer.ax.patches[2]
-    assert isinstance(arrow, FancyArrow)
+        arc = drawer.ax.patches[1]
+        assert arc.center == (0, -0.05)
+        assert arc.theta1 == 0
+        assert arc.theta2 == 180
+        assert allclose(arc.height, 0.44)
+        assert arc.width == 0.48
 
-    plt.close()
+        arrow = drawer.ax.patches[2]
+        assert isinstance(arrow, FancyArrow)
+
+        plt.close()
+
+    def test_measure_color(self):
+        """Tests you can color the measure box"""
+
+        drawer = MPLDrawer(1, 1)
+        rgba_red = (1.0, 0, 0, 1.0)
+        drawer.measure(0, 0, color=rgba_red)
+
+        box = drawer.ax.patches[0]
+        assert box.get_facecolor() == rgba_red
+
+        plt.close()
