@@ -37,13 +37,9 @@ class MPLDrawer:
         n_wires (Int): the number of wires
 
     Keyword Args:
-<<<<<<< HEAD
         wire_color=None: MPL compatible color for the wires
-        figsize=None (Iterable): Allows user's to manually specify the size of the figure.  Defaults
-=======
         figsize=None (Iterable): Allows users to manually specify the size of the figure.  Defaults
->>>>>>> 51f8842209e451a995ead93d71d635d50d89fdf3
-           to scale with the size of the circuit via ``n_layers`` and ``n_wires``.
+            to scale with the size of the circuit via ``n_layers`` and ``n_wires``.
 
     **Example**
 
