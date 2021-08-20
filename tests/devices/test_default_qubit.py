@@ -231,7 +231,7 @@ class TestApply:
     ]
 
     test_data_siswap_inv = [
-        (qml.SISWAP, [1 / math.sqrt(2), 0, 0, 0], [1 / math.sqrt(2), -0.5 * 1j, 0.5, 0]),
+        (qml.SISWAP, [1 / math.sqrt(2), 0, 1 / math.sqrt(2), 0], [1 / math.sqrt(2), -0.5 * 1j, 0.5, 0]),
         (qml.SISWAP, [0, 0, 1, 0], [0, -1 / math.sqrt(2) *1j, 1 / math.sqrt(2), 0]),
         (qml.SISWAP, [1 / math.sqrt(2), 0, -1 / math.sqrt(2), 0], [1 / math.sqrt(2), 0.5 * 1j, -0.5, 0])
     ]
@@ -252,7 +252,7 @@ class TestApply:
             qubit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
         )
 
-    all_two_wires_no_parameters_inv = test_data_two_wires_no_parameters + test_data_iswap_inv + test_data_siswap_inv
+    all_two_wires_no_parameters_inv = test_data_two_wires_no_parameters + test_data_iswap_inv + test_data_siswap
 
     @pytest.mark.parametrize("operation,input,expected_output", all_two_wires_no_parameters_inv)
     def test_apply_operation_two_wires_no_parameters_inverse(

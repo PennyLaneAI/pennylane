@@ -2,6 +2,8 @@
 
 <h3>New features since last release</h3>
 
+* New SISWAP operation added to default_qubit device. Also added associated test [#1563](https://github.com/PennyLaneAI/pennylane/pull/1563)
+
 * The `frobenius_inner_product` function has been moved to the `qml.math`
   module, and is now differentiable using all autodiff frameworks.
   [(#1388)](https://github.com/PennyLaneAI/pennylane/pull/1388)

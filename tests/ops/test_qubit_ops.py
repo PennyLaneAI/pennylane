@@ -401,7 +401,7 @@ NON_PARAMETRIZED_OPERATIONS = [
     (qml.CNOT, CNOT),
     (qml.SWAP, SWAP),
     (qml.ISWAP, ISWAP),
-    (qml.SISWAP,SISWAP),
+    (qml.SISWAP, SISWAP),
     (qml.CZ, CZ),
     (qml.S, S),
     (qml.T, T),
@@ -795,7 +795,6 @@ class TestOperations:
         assert res[10].wires == Wires([0])
         assert res[11].wires == Wires([1])
 
-
         assert res[0].name == "SX"
         assert res[1].name == "RZ"
         assert res[2].name == "CNOT"
@@ -823,7 +822,6 @@ class TestOperations:
         decomposed_matrix = np.linalg.multi_dot(mats)
 
         assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
-
 
     def test_isingxx_decomposition(self, tol):
         """Tests that the decomposition of the IsingXX gate is correct"""

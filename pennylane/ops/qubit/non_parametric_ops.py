@@ -671,7 +671,14 @@ class SISWAP(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        return np.array([[1, 0, 0, 0],[0, INV_SQRT2, INV_SQRT2 * 1j, 0],[0, INV_SQRT2 * 1j, INV_SQRT2, 0],[0, 0, 0, 1]])
+        return np.array(
+            [
+                [1, 0, 0, 0],
+                [0, INV_SQRT2, INV_SQRT2 * 1j, 0],
+                [0, INV_SQRT2 * 1j, INV_SQRT2, 0],
+                [0, 0, 0, 1],
+            ]
+        )
 
     @classmethod
     def _eigvals(cls, *params):
@@ -680,23 +687,24 @@ class SISWAP(Operation):
     @staticmethod
     def decomposition(wires):
         decomp_ops = [
-                      SX(wires=wires[0]),
-                      qml.RZ(np.pi/2,wires=wires[0]),
-                      CNOT(wires=[wires[0], wires[1]]),
-                      SX(wires=0),
-                      qml.RZ(7 *np.pi/4,wires=wires[0]),
-                      SX(wires=0),
-                      qml.RZ(np.pi/2, wires=wires[0]),
-                      SX(wires=1),
-                      qml.RZ(7 *np.pi/4,wires=wires[1]),
-                      CNOT(wires=[wires[0], wires[1]]),
-                      SX(wires=wires[0]),
-                      SX(wires=wires[1])
+            SX(wires=wires[0]),
+            qml.RZ(np.pi / 2, wires=wires[0]),
+            CNOT(wires=[wires[0], wires[1]]),
+            SX(wires=0),
+            qml.RZ(7 * np.pi / 4, wires=wires[0]),
+            SX(wires=0),
+            qml.RZ(np.pi / 2, wires=wires[0]),
+            SX(wires=1),
+            qml.RZ(7 * np.pi / 4, wires=wires[1]),
+            CNOT(wires=[wires[0], wires[1]]),
+            SX(wires=wires[0]),
+            SX(wires=wires[1]),
         ]
         return decomp_ops
 
     def adjoint(self):
         return SISWAP(wires=self.wires).inv()
+
 
 SQISW = SISWAP
 
