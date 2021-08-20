@@ -48,7 +48,7 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True):
             This function should have the signature ``fn(tapes, **kwargs)``,
             and it should return ``list[tensor_like]``, with the
             same length as the input ``tapes``.
-        cache (None or dict or Cache): The cache to use. If ``None``,
+        cache (None or dict or Cache or bool): The cache to use. If ``None``,
             caching will not occur.
         pass_kwargs (bool): If ``True``, keyword arguments passed to the
             wrapped function will be passed directly to ``fn``. If ``False``,
@@ -264,12 +264,12 @@ def execute(
         raise ValueError("Gradient transforms cannot be used with mode='forward'")
 
     if interface == "autograd":
-        from .autograd import execute
+        from .autograd import execute as _execute
     elif interface in ("torch", "pytorch"):
-        from .torch import execute
+        from .torch import execute as _execute
     else:
         raise ValueError(f"Unknown interface {interface}")
 
-    res = execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff)
+    res = _execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff)
 
     return res

@@ -106,12 +106,14 @@ def decompose_hamiltonian(H, hide_identity=False):
     return coeffs, obs
 
 
-def sparse_hamiltonian(H):
+def sparse_hamiltonian(H, wires=None):
     r"""Computes the sparse matrix representation a Hamiltonian in the computational basis.
 
     Args:
         H (~.Hamiltonian): Hamiltonian operator for which the matrix representation should be
          computed
+        wires (Iterable): Wire labels that indicate the order of wires according to which the matrix
+         is constructed. If not profided, ``H.wires`` is used.
 
     Returns:
         coo_matrix: a sparse matrix in scipy coordinate list (COO) format with dimension
@@ -140,18 +142,32 @@ def sparse_hamiltonian(H):
     if not isinstance(H, qml.Hamiltonian):
         raise TypeError("Passed Hamiltonian must be of type `qml.Hamiltonian`")
 
-    n = len(H.wires)
+    if wires is None:
+        wires = H.wires
+
+    n = len(wires)
     matrix = scipy.sparse.coo_matrix((2 ** n, 2 ** n), dtype="complex128")
 
-    for coeffs, ops in zip(H.coeffs, H.ops):
+    for coeff, op in zip(H.coeffs, H.ops):
 
-        obs = [scipy.sparse.coo_matrix(o.matrix) for o in qml.operation.Tensor(ops).obs]
+        obs = []
+        for o in qml.operation.Tensor(op).obs:
+            if len(o.wires) > 1:
+                # todo: deal with operations created from multi-qubit operations such as Hermitian
+                raise ValueError(
+                    "Can only sparsify Hamiltonians whose constituent observables consist of "
+                    "(tensor products of) single-qubit operators; got {}.".format(op)
+                )
+            obs.append(scipy.sparse.coo_matrix(o.matrix))
+
         mat = [scipy.sparse.eye(2, format="coo")] * n
 
-        for i, j in enumerate(ops.wires):
-            mat[j] = obs[i]
+        for i, wire in enumerate(op.wires):
+            # find index of this wire in the ordering
+            idx = wires.index(wire)
+            mat[idx] = obs[i]
 
-        matrix += functools.reduce(lambda i, j: scipy.sparse.kron(i, j, format="coo"), mat) * coeffs
+        matrix += functools.reduce(lambda i, j: scipy.sparse.kron(i, j, format="coo"), mat) * coeff
 
     return matrix.tocoo()
 

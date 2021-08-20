@@ -4,7 +4,7 @@ import pytest
 
 from pennylane import qchem
 
-from pennylane.vqe import Hamiltonian
+from pennylane.ops import Hamiltonian
 
 import numpy as np
 
