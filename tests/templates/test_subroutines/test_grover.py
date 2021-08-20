@@ -17,6 +17,9 @@ Tests for the Grover Diffusion Operator template
 import pytest
 import numpy as np
 import pennylane as qml
+from pennylane.ops import Hadamard, PauliZ, MultiControlledX
+import functools
+import itertools
 
 
 def test_work_wires():
@@ -80,6 +83,91 @@ def decomposition_wires(wires):
         wires[1],
     ]
     return wire_order
+
+
+@pytest.mark.parametrize("n_wires", [2, 4, 7])
+def test_grover_diffusion_matrix(n_wires):
+    """Test that the Grover diffusion matrix is the same as when constructed in a different way"""
+    wires = list(range(n_wires))
+
+    # Test-oracle
+    oracle = np.identity(2 ** n_wires)
+    oracle[0, 0] = -1
+
+    # s1 = H|0>, Hadamard on a single qubit in the ground state
+    s1 = np.array([1, 1]) / np.sqrt(2)
+
+    # uniform superposition state
+    s = functools.reduce(np.kron, list(itertools.repeat(s1, n_wires)))
+    # Grover matrix
+    G_matrix = qml.templates.GroverOperator(wires=wires).matrix
+
+    amplitudes = G_matrix @ oracle @ s
+    probs = amplitudes ** 2
+
+    # Create Grover diffusion matrix G in alternative way
+    oplist = list(itertools.repeat(Hadamard.matrix, n_wires - 1))
+    oplist.append(PauliZ.matrix)
+
+    ctrl_str = "0" * (n_wires - 1)
+    CX = MultiControlledX(
+        control_values=ctrl_str,
+        control_wires=wires[:-1],
+        wires=wires[-1],
+        work_wires=None,
+    ).matrix
+
+    M = functools.reduce(np.kron, oplist)
+    G = M @ CX @ M
+
+    amplitudes2 = G @ oracle @ s
+    probs2 = amplitudes2 ** 2
+
+    assert np.allclose(probs, probs2)
+
+
+def test_grover_diffusion_matrix_results():
+    """Test that the matrix gives the same result as when running the example in the documentation `here <https://pennylane.readthedocs.io/en/stable/code/api/pennylane.templates.subroutines.GroverOperator.html>`_"""
+    n_wires = 3
+    wires = list(range(n_wires))
+
+    def oracle():
+        qml.Hadamard(wires[-1])
+        qml.Toffoli(wires=wires)
+        qml.Hadamard(wires[-1])
+
+    dev = qml.device("default.qubit", wires=wires)
+
+    @qml.qnode(dev)
+    def GroverSearch(num_iterations=1):
+        for wire in wires:
+            qml.Hadamard(wire)
+
+        for _ in range(num_iterations):
+            oracle()
+            qml.templates.GroverOperator(wires=wires)
+        return qml.probs(wires)
+
+    # Get probabilities from example
+    probs_example = GroverSearch(num_iterations=1)
+
+    # Grover diffusion matrix
+    G_matrix = qml.templates.GroverOperator(wires=wires).matrix
+
+    oracle_matrix = np.identity(2 ** n_wires)
+    oracle_matrix[-1, -1] = -1
+
+    # s1 = H|0>, Hadamard on a single qubit in the ground state
+    s1 = np.array([1, 1]) / np.sqrt(2)
+
+    # uniform superposition state
+    s = functools.reduce(np.kron, list(itertools.repeat(s1, n_wires)))
+
+    amplitudes = G_matrix @ oracle_matrix @ s
+    # Check that the probabilities are the same
+    probs_matrix = amplitudes ** 2
+
+    assert np.allclose(probs_example, probs_matrix)
 
 
 @pytest.mark.parametrize("wires", ((0, 1, 2), ("a", "c", "b")))
