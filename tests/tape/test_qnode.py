@@ -329,6 +329,20 @@ class TestValidation:
             qn.__repr__()
             == "<QNode: wires=1, device='default.qubit', interface='autograd', diff_method='finite-diff'>"
         )
+        assert qn.diff_method_change == False
+
+     def test_qnode_best_diff_method(self):
+        """Test that selected "best" diff_method is available after QNode initialization."""
+        dev = qml.device("default.qubit", wires=1)
+
+        def func(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        qn = qml.QNode(func, dev)
+
+        assert qn.diff_method == "backprop"
+        assert qn.diff_method_change == True
 
 
 class TestTapeConstruction:
