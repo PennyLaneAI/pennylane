@@ -867,6 +867,7 @@ class MultiControlledX(Operation):
         self._control_wires = control_wires
 
         wires = control_wires + wires
+        self.U = PauliX.matrix
 
         if not control_values:
             control_values = "1" * len(control_wires)
@@ -908,6 +909,9 @@ class MultiControlledX(Operation):
             raise ValueError("Alternative control values must be passed as a binary string.")
 
         return control_int
+
+    def adjoint(self):
+        return MultiControlledX(qml.math.T(qml.math.conj(self.matrix)), wires=self.wires)
 
     # pylint: disable=unused-argument
     def decomposition(self, *args, **kwargs):
