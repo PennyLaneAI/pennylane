@@ -35,7 +35,7 @@ class MPLDrawer:
         n_wires (Int): the number of wires
 
     Keyword Args:
-        figsize=None (Iterable): Allows user's to manually specify the size of the figure.  Defaults
+        figsize=None (Iterable): Allows users to manually specify the size of the figure.  Defaults
            to scale with the size of the circuit via ``n_layers`` and ``n_wires``.
 
     **Example**
@@ -185,7 +185,7 @@ class MPLDrawer:
     def box_gate(
         self, layer, wires, text="", extra_width=0, rotate_text=False, zorder_base=0, color=None
     ):
-        """Draws a box and adds label text to it's center.
+        """Draws a box and adds label text to its center.
 
         Args:
             layer (Int)
@@ -193,11 +193,11 @@ class MPLDrawer:
             text (str)
 
         Kwargs:
-            extra_width=0 (float): Extra box width
-            rotate_text=False (Bool): whether to rotate text 90 degrees. Helpful to long labels and
+            extra_width (float): Extra box width
+            rotate_text (Bool): whether to rotate text 90 degrees. Helpful to long labels and
                 multi-wire boxes.
             zorder_base (Int): shift the object in zorder
-            color=None: mpl compatible color designation
+            color (None or str): mpl compatible color designation
 
         **Example**
 
@@ -295,7 +295,7 @@ class MPLDrawer:
             wires (Int, Int): tuple of (control, target)
 
         Keyword Args:
-            color=None: mpl compatible color designation
+            color (None or str): mpl compatible color designation
 
         **Example**
 
