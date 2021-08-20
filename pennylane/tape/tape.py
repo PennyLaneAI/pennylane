@@ -1243,6 +1243,15 @@ class QuantumTape(AnnotatedQueue):
     def __copy__(self):
         return self.copy(copy_operations=True)
 
+    @property
+    def hash(self):
+        """int: returns an integer hash uniquely representing the quantum tape"""
+        fingerprint = []
+        fingerprint.extend(op.hash for op in self.operations)
+        fingerprint.extend(m.hash for m in self.measurements)
+        fingerprint.extend(self.trainable_params)
+        return hash(tuple(fingerprint))
+
     # ========================================================
     # execution methods
     # ========================================================
