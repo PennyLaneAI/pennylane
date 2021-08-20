@@ -20,6 +20,7 @@ from pennylane.utils import _flatten, unflatten
 
 
 def _assert_integer(x):
+    """Raises a ValueError if x is not of a sub-datatype of np.integer."""
     x_type = type(x)
     if not np.issubdtype(x_type, np.integer):
         raise ValueError(
@@ -28,6 +29,14 @@ def _assert_integer(x):
 
 
 def _validate_num_freqs(num_freqs, requires_grad):
+    """Checks whether a number of frequencies input is valid
+    Args:
+        num_freqs (int or array[int]): Number of frequencies data
+        requires_grad (list[bool]): Information whether an argument is to be optimized, per arg
+    Returns:
+        array[int]: Parsed input value to correct shape or simply return input if array
+        array[int]: List of flattened inputs, with each input being unwrapped if it has length 1
+    """
     if num_freqs is None:
         num_freqs = [1] * sum(requires_grad)
         num_freqs_flat = num_freqs
