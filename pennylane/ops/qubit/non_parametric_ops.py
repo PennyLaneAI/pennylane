@@ -911,7 +911,6 @@ class MultiControlledX(Operation):
 
     def adjoint(self):
         return MultiControlledX(
-            qml.math.T(qml.math.conj(self.matrix)),
             control_wires=self.wires[:-1],
             wires=self.wires[-1],
             control_values=self.control_values,
