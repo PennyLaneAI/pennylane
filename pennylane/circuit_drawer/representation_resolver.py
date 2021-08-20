@@ -65,22 +65,9 @@ class RepresentationResolver:
         "CubicPhase": "V",
         "X": "x",
         "P": "p",
+        "MultiControlledX": "X",
     }
     """Symbol used for uncontrolled wires."""
-
-    control_wire_dict = {
-        "CNOT": [0],
-        "Toffoli": [0, 1],
-        "CSWAP": [0],
-        "CRX": [0],
-        "CRY": [0],
-        "CRZ": [0],
-        "CRot": [0],
-        "CZ": [0],
-        "ControlledAddition": [0],
-        "ControlledPhase": [0],
-    }
-    """Indices of control wires."""
 
     @staticmethod
     def index_of_array_or_append(target_element, target_list):
@@ -350,12 +337,11 @@ class RepresentationResolver:
         if name in RepresentationResolver.resolution_dict:
             name = RepresentationResolver.resolution_dict[name]
 
-        # Display a control symbol for all controlling qubits of a controlled Operation
-        if base_name in self.control_wire_dict and wire in [
-            op.wires[control_idx] for control_idx in self.control_wire_dict[base_name]
-        ]:
-            # No need to add a -1 for inverse here
-            return self.charset.CONTROL
+        try:
+            if wire in op.control_wires:
+                return self.charset.CONTROL
+        except NotImplementedError:
+            pass
 
         if op.num_params == 0:
             representation = name
@@ -372,17 +358,10 @@ class RepresentationResolver:
             )
 
         elif base_name == "ControlledQubitUnitary":
-            if wire in op.control_wires:
-                return self.charset.CONTROL
-
-            representation = RepresentationResolver._format_controlled_qubit_unitary(
-                op, "U", self.unitary_matrix_cache
-            )
-
-        elif base_name == "MultiControlledX":
-            if wire in op.control_wires:
-                return self.charset.CONTROL
-            representation = "X"
+            if wire not in op.control_wires:
+                representation = RepresentationResolver._format_controlled_qubit_unitary(
+                    op, "U", self.unitary_matrix_cache
+                )
 
         elif base_name == "Hermitian":
             representation = RepresentationResolver._format_matrix_operation(
