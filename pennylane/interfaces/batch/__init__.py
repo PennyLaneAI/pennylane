@@ -84,7 +84,7 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True):
 
             if h in hashes.values():
                 # Tape already exists within ``tapes``. Determine the
-                # index of the first occurance of the tape, store this,
+                # index of the first occurrence of the tape, store this,
                 # and continue to the next iteration.
                 idx = list(hashes.keys())[list(hashes.values()).index(h)]
                 repeated[i] = idx

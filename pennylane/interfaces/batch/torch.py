@@ -40,7 +40,7 @@ def _compute_vjp(dy, jacs, device=None):
 
 class ExecuteTapes(torch.autograd.Function):
     """The signature of this ``torch.autograd.Function`` is designed to
-    workaround Torch restrictions.
+    work around Torch restrictions.
 
     In particular, ``torch.autograd.Function``:
 
@@ -49,12 +49,12 @@ class ExecuteTapes(torch.autograd.Function):
 
       * ``"tapes"``: the quantum tapes to batch evaluate
       * ``"device"``: the quantum device to use to evaluate the tapes
-      * ``execute_fn``: the execution function to use on forward passes
+      * ``"execute_fn"``: the execution function to use on forward passes
       * ``"gradient_fn"``: the gradient transform function to use
         for backward passes
-      * ``gradient_kwargs``: gradient keyword arguments to pass to the
+      * ``"gradient_kwargs"``: gradient keyword arguments to pass to the
         gradient function
-      * ``max_diff``: the maximum order of derivatives to support
+      * ``"max_diff`"`: the maximum order of derivatives to support
 
     Further, note that the ``parameters`` argument is dependent on the
     ``tapes``; this Function should always be called
