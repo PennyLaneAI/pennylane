@@ -383,7 +383,7 @@ class TestTorchExecuteIntegration:
         expected = fn(dev.batch_execute(tapes))
 
         assert expected.shape == (1, 1)
-        assert torch.allclose(a.grad, torch.from_numpy(expected), atol=tol, rtol=0)
+        assert torch.allclose(a.grad, torch.from_numpy(expected).to(torch_device), atol=tol, rtol=0)
 
     def test_jacobian(self, torch_device, execute_kwargs, tol):
         """Test jacobian calculation"""
@@ -409,15 +409,21 @@ class TestTorchExecuteIntegration:
         assert isinstance(res, torch.Tensor)
         assert res.shape == (2,)
 
-        expected = [np.cos(a_val), -np.cos(a_val) * np.sin(b_val)]
-        assert np.allclose(res.detach().numpy(), expected, atol=tol, rtol=0)
+        expected = torch.tensor(
+            [np.cos(a_val), -np.cos(a_val) * np.sin(b_val)], device=torch_device
+        )
+        assert torch.allclose(res.detach(), expected, atol=tol, rtol=0)
 
         loss = torch.sum(res)
 
         loss.backward()
-        expected = [-np.sin(a_val) + np.sin(a_val) * np.sin(b_val), -np.cos(a_val) * np.cos(b_val)]
-        assert np.allclose(a.grad, expected[0], atol=tol, rtol=0)
-        assert np.allclose(b.grad, expected[1], atol=tol, rtol=0)
+        expected = torch.tensor(
+            [-np.sin(a_val) + np.sin(a_val) * np.sin(b_val), -np.cos(a_val) * np.cos(b_val)],
+            dtype=a.dtype,
+            device=torch_device,
+        )
+        assert torch.allclose(a.grad, expected[0], atol=tol, rtol=0)
+        assert torch.allclose(b.grad, expected[1], atol=tol, rtol=0)
 
     def test_reusing_quantum_tape(self, torch_device, execute_kwargs, tol):
         """Test re-using a quantum tape by passing new parameters"""
@@ -447,19 +453,27 @@ class TestTorchExecuteIntegration:
         tape.set_parameters([2 * a, b])
         res2 = execute([tape], dev, **execute_kwargs)[0]
 
-        expected = [np.cos(2 * a_val), -np.cos(2 * a_val) * np.sin(b_val)]
-        assert np.allclose(res2.detach().numpy(), expected, atol=tol, rtol=0)
+        expected = torch.tensor(
+            [np.cos(2 * a_val), -np.cos(2 * a_val) * np.sin(b_val)],
+            device=torch_device,
+            dtype=res2.dtype,
+        )
+        assert torch.allclose(res2.detach(), expected, atol=tol, rtol=0)
 
         loss = torch.sum(res2)
         loss.backward()
 
-        expected = [
-            -2 * np.sin(2 * a_val) + 2 * np.sin(2 * a_val) * np.sin(b_val),
-            -np.cos(2 * a_val) * np.cos(b_val),
-        ]
+        expected = torch.tensor(
+            [
+                -2 * np.sin(2 * a_val) + 2 * np.sin(2 * a_val) * np.sin(b_val),
+                -np.cos(2 * a_val) * np.cos(b_val),
+            ],
+            dtype=a.dtype,
+            device=torch_device,
+        )
 
-        assert np.allclose(a.grad, expected[0], atol=tol, rtol=0)
-        assert np.allclose(b.grad, expected[1], atol=tol, rtol=0)
+        assert torch.allclose(a.grad, expected[0], atol=tol, rtol=0)
+        assert torch.allclose(b.grad, expected[1], atol=tol, rtol=0)
 
     def test_classical_processing(self, torch_device, execute_kwargs, tol):
         """Test classical processing within the quantum tape"""
@@ -478,10 +492,16 @@ class TestTorchExecuteIntegration:
 
         assert tape.trainable_params == {0, 2}
 
-        tape_params = [i.detach().numpy() for i in tape.get_parameters()]
-        assert np.allclose(
-            tape_params,
+        tape_params = torch.tensor([i.detach() for i in tape.get_parameters()], device=torch_device)
+        expected = torch.tensor(
             [p_val[0] * p_val[1], p_val[1] + p_val[1] ** 2 + np.sin(p_val[0])],
+            dtype=tape_params.dtype,
+            device=torch_device,
+        )
+
+        assert torch.allclose(
+            tape_params,
+            expected,
             atol=tol,
             rtol=0,
         )
@@ -514,14 +534,16 @@ class TestTorchExecuteIntegration:
         ):
             res.backward()
 
-    @pytest.mark.parametrize("U", [torch.tensor([[0, 1], [1, 0]]), np.array([[0, 1], [1, 0]])])
+    @pytest.mark.parametrize(
+        "U", [torch.tensor([[0.0, 1.0], [1.0, 0.0]]), np.array([[0.0, 1.0], [1.0, 0.0]])]
+    )
     def test_matrix_parameter(self, torch_device, U, execute_kwargs, tol):
         """Test that the torch interface works correctly
         with a matrix parameter"""
         a_val = 0.1
         a = torch.tensor(a_val, requires_grad=True, device=torch_device)
 
-        if isinstance(U, torch.Tensor):
+        if isinstance(U, torch.Tensor) and torch_device is not None:
             U = U.to(torch_device)
 
         dev = qml.device("default.qubit", wires=2)
@@ -534,10 +556,12 @@ class TestTorchExecuteIntegration:
         res = execute([tape], dev, **execute_kwargs)[0]
         assert tape.trainable_params == {1}
 
-        assert np.allclose(res.detach().numpy(), -np.cos(a_val), atol=tol, rtol=0)
+        expected = torch.tensor(-np.cos(a_val), dtype=res.dtype, device=torch_device)
+        assert torch.allclose(res.detach(), expected, atol=tol, rtol=0)
 
         res.backward()
-        assert np.allclose(a.grad, np.sin(a_val), atol=tol, rtol=0)
+        expected = torch.tensor([np.sin(a_val)], dtype=a.grad.dtype, device=torch_device)
+        assert torch.allclose(a.grad, expected, atol=tol, rtol=0)
 
     def test_differentiable_expand(self, torch_device, execute_kwargs, tol):
         """Test that operation and nested tape expansion
@@ -572,19 +596,26 @@ class TestTorchExecuteIntegration:
         assert tape.trainable_params == {1, 2, 3, 4}
         assert [i.name for i in tape.operations] == ["RX", "Rot", "PhaseShift"]
 
-        tape_params = [i.detach().numpy() for i in tape.get_parameters()]
-        assert np.allclose(
-            tape_params, [p_val[2], p_val[0], -p_val[2], p_val[1] + p_val[2]], atol=tol, rtol=0
+        tape_params = torch.tensor([i.detach() for i in tape.get_parameters()], device=torch_device)
+        expected = torch.tensor(
+            [p_val[2], p_val[0], -p_val[2], p_val[1] + p_val[2]], device=torch_device
         )
+        assert torch.allclose(tape_params, expected, atol=tol, rtol=0)
 
-        expected = np.cos(a) * np.cos(p_val[1]) * np.sin(p_val[0]) + np.sin(a) * (
-            np.cos(p_val[2]) * np.sin(p_val[1])
-            + np.cos(p_val[0]) * np.cos(p_val[1]) * np.sin(p_val[2])
+        expected = torch.tensor(
+            np.cos(a) * np.cos(p_val[1]) * np.sin(p_val[0])
+            + np.sin(a)
+            * (
+                np.cos(p_val[2]) * np.sin(p_val[1])
+                + np.cos(p_val[0]) * np.cos(p_val[1]) * np.sin(p_val[2])
+            ),
+            dtype=res.dtype,
+            device=torch_device,
         )
-        assert np.allclose(res.detach().numpy(), expected, atol=tol, rtol=0)
+        assert torch.allclose(res.detach(), expected, atol=tol, rtol=0)
 
         res.backward()
-        expected = np.array(
+        expected = torch.tensor(
             [
                 np.cos(p_val[1])
                 * (np.cos(a) * np.cos(p_val[0]) - np.sin(a) * np.sin(p_val[0]) * np.sin(p_val[2])),
@@ -596,9 +627,11 @@ class TestTorchExecuteIntegration:
                     np.cos(p_val[0]) * np.cos(p_val[1]) * np.cos(p_val[2])
                     - np.sin(p_val[1]) * np.sin(p_val[2])
                 ),
-            ]
+            ],
+            dtype=p.grad.dtype,
+            device=torch_device,
         )
-        assert np.allclose(p.grad, expected, atol=tol, rtol=0)
+        assert torch.allclose(p.grad, expected, atol=tol, rtol=0)
 
     def test_probability_differentiation(self, torch_device, execute_kwargs, tol):
         """Tests correct output shape and evaluation for a tape
@@ -622,27 +655,31 @@ class TestTorchExecuteIntegration:
 
         res = execute([tape], dev, **execute_kwargs)[0]
 
-        expected = np.array(
+        expected = torch.tensor(
             [
                 [np.cos(x_val / 2) ** 2, np.sin(x_val / 2) ** 2],
                 [(1 + np.cos(x_val) * np.cos(y_val)) / 2, (1 - np.cos(x_val) * np.cos(y_val)) / 2],
-            ]
+            ],
+            dtype=res.dtype,
+            device=torch_device,
         )
-        assert np.allclose(res.detach().numpy(), expected, atol=tol, rtol=0)
+        assert torch.allclose(res.detach(), expected, atol=tol, rtol=0)
 
         loss = torch.sum(res)
         loss.backward()
-        expected = np.array(
+        expected = torch.tensor(
             [
                 -np.sin(x_val) / 2
                 + np.sin(x_val) / 2
                 - np.sin(x_val) * np.cos(y_val) / 2
                 + np.cos(y_val) * np.sin(x_val) / 2,
                 -np.cos(x_val) * np.sin(y_val) / 2 + np.cos(x_val) * np.sin(y_val) / 2,
-            ]
+            ],
+            dtype=x.grad.dtype,
+            device=torch_device,
         )
-        assert np.allclose(x.grad, expected[0], atol=tol, rtol=0)
-        assert np.allclose(y.grad, expected[1], atol=tol, rtol=0)
+        assert torch.allclose(x.grad, expected[0], atol=tol, rtol=0)
+        assert torch.allclose(y.grad, expected[1], atol=tol, rtol=0)
 
     def test_ragged_differentiation(self, torch_device, execute_kwargs, tol):
         """Tests correct output shape and evaluation for a tape
@@ -665,27 +702,31 @@ class TestTorchExecuteIntegration:
 
         res = execute([tape], dev, **execute_kwargs)[0]
 
-        expected = np.array(
+        expected = torch.tensor(
             [
                 np.cos(x_val),
                 (1 + np.cos(x_val) * np.cos(y_val)) / 2,
                 (1 - np.cos(x_val) * np.cos(y_val)) / 2,
-            ]
+            ],
+            dtype=res.dtype,
+            device=torch_device,
         )
-        assert np.allclose(res.detach().numpy(), expected, atol=tol, rtol=0)
+        assert torch.allclose(res.detach(), expected, atol=tol, rtol=0)
 
         loss = torch.sum(res)
         loss.backward()
-        expected = np.array(
+        expected = torch.tensor(
             [
                 -np.sin(x_val)
                 + -np.sin(x_val) * np.cos(y_val) / 2
                 + np.cos(y_val) * np.sin(x_val) / 2,
                 -np.cos(x_val) * np.sin(y_val) / 2 + np.cos(x_val) * np.sin(y_val) / 2,
-            ]
+            ],
+            dtype=x.grad.dtype,
+            device=torch_device,
         )
-        assert np.allclose(x.grad, expected[0], atol=tol, rtol=0)
-        assert np.allclose(y.grad, expected[1], atol=tol, rtol=0)
+        assert torch.allclose(x.grad, expected[0], atol=tol, rtol=0)
+        assert torch.allclose(y.grad, expected[1], atol=tol, rtol=0)
 
     def test_sampling(self, torch_device, execute_kwargs):
         """Test sampling works as expected"""
@@ -721,6 +762,7 @@ class TestTorchExecuteIntegration:
         res1 = execute([tape], dev, **execute_kwargs)[0]
 
 
+@pytest.mark.parametrize("torch_device", torch_devices)
 class TestHigherOrderDerivatives:
     """Test that the torch execute function can be differentiated"""
 
@@ -732,7 +774,7 @@ class TestHigherOrderDerivatives:
             torch.tensor([-2.0, 0], requires_grad=True),
         ],
     )
-    def test_parameter_shift_hessian(self, params, tol):
+    def test_parameter_shift_hessian(self, torch_device, params, tol):
         """Tests that the output of the parameter-shift transform
         can be differentiated using torch, yielding second derivatives."""
         dev = qml.device("default.qubit", wires=2)
@@ -774,7 +816,6 @@ class TestHigherOrderDerivatives:
         )
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("torch_device", torch_devices)
     def test_hessian_vector_valued(self, torch_device, tol):
         """Test hessian calculation of a vector valued QNode"""
         dev = qml.device("default.qubit", wires=1)
@@ -790,13 +831,20 @@ class TestHigherOrderDerivatives:
         x = torch.tensor([1.0, 2.0], requires_grad=True, device=torch_device)
         res = circuit(x)
 
-        a, b = x.detach().numpy()
+        if torch_device is not None:
+            a, b = x.detach().cpu().numpy()
+        else:
+            a, b = x.detach().numpy()
 
-        expected_res = [
-            0.5 + 0.5 * np.cos(a) * np.cos(b),
-            0.5 - 0.5 * np.cos(a) * np.cos(b),
-        ]
-        assert np.allclose(res.detach(), expected_res, atol=tol, rtol=0)
+        expected_res = torch.tensor(
+            [
+                0.5 + 0.5 * np.cos(a) * np.cos(b),
+                0.5 - 0.5 * np.cos(a) * np.cos(b),
+            ],
+            dtype=res.dtype,
+            device=torch_device,
+        )
+        assert torch.allclose(res.detach(), expected_res, atol=tol, rtol=0)
 
         jac_fn = lambda x: torch.autograd.functional.jacobian(circuit, x, create_graph=True)
 
@@ -804,29 +852,39 @@ class TestHigherOrderDerivatives:
 
         hess = torch.autograd.functional.jacobian(jac_fn, x)
 
-        expected_g = [
-            [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
-            [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
-        ]
-        assert np.allclose(g.detach(), expected_g, atol=tol, rtol=0)
-
-        expected_hess = [
+        expected_g = torch.tensor(
             [
-                [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.sin(a) * np.sin(b)],
-                [0.5 * np.sin(a) * np.sin(b), -0.5 * np.cos(a) * np.cos(b)],
+                [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
+                [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
             ],
-            [
-                [0.5 * np.cos(a) * np.cos(b), -0.5 * np.sin(a) * np.sin(b)],
-                [-0.5 * np.sin(a) * np.sin(b), 0.5 * np.cos(a) * np.cos(b)],
-            ],
-        ]
-        assert np.allclose(hess.detach(), expected_hess, atol=tol, rtol=0)
+            dtype=g.dtype,
+            device=torch_device,
+        )
+        assert torch.allclose(g.detach(), expected_g, atol=tol, rtol=0)
 
-    def test_adjoint_hessian(self, tol):
+        expected_hess = torch.tensor(
+            [
+                [
+                    [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.sin(a) * np.sin(b)],
+                    [0.5 * np.sin(a) * np.sin(b), -0.5 * np.cos(a) * np.cos(b)],
+                ],
+                [
+                    [0.5 * np.cos(a) * np.cos(b), -0.5 * np.sin(a) * np.sin(b)],
+                    [-0.5 * np.sin(a) * np.sin(b), 0.5 * np.cos(a) * np.cos(b)],
+                ],
+            ],
+            dtype=hess.dtype,
+            device=torch_device,
+        )
+        assert torch.allclose(hess.detach(), expected_hess, atol=tol, rtol=0)
+
+    def test_adjoint_hessian(self, torch_device, tol):
         """Since the adjoint hessian is not a differentiable transform,
         higher-order derivatives are not supported."""
         dev = qml.device("default.qubit", wires=2)
-        params = torch.tensor([0.543, -0.654], requires_grad=True, dtype=torch.float64)
+        params = torch.tensor(
+            [0.543, -0.654], requires_grad=True, dtype=torch.float64, device=torch_device
+        )
 
         def cost_fn(x):
             with qml.tape.JacobianTape() as tape:
@@ -844,9 +902,10 @@ class TestHigherOrderDerivatives:
             )[0]
 
         res = torch.autograd.functional.hessian(cost_fn, params)
-        assert np.allclose(res, np.zeros([2, 2]), atol=tol, rtol=0)
+        expected = torch.zeros([2, 2], dtype=torch.float64, device=torch_device)
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_max_diff(self, tol):
+    def test_max_diff(self, torch_device, tol):
         """Test that setting the max_diff parameter blocks higher-order
         derivatives"""
         dev = qml.device("default.qubit", wires=2)
@@ -873,14 +932,16 @@ class TestHigherOrderDerivatives:
         res = cost_fn(params)
         x, y = params.detach()
         expected = torch.as_tensor(0.5 * (3 + np.cos(x) ** 2 * np.cos(2 * y)))
-        assert torch.allclose(res, expected, atol=tol, rtol=0)
+        assert torch.allclose(res.to(torch_device), expected.to(torch_device), atol=tol, rtol=0)
 
         res.backward()
         expected = torch.tensor(
             [-np.cos(x) * np.cos(2 * y) * np.sin(x), -np.cos(x) ** 2 * np.sin(2 * y)]
         )
-        assert torch.allclose(params.grad.detach(), expected, atol=tol, rtol=0)
+        assert torch.allclose(
+            params.grad.detach().to(torch_device), expected.to(torch_device), atol=tol, rtol=0
+        )
 
         res = torch.autograd.functional.hessian(cost_fn, params)
         expected = torch.zeros([2, 2], dtype=torch.float64)
-        assert torch.allclose(res, expected, atol=tol, rtol=0)
+        assert torch.allclose(res.to(torch_device), expected.to(torch_device), atol=tol, rtol=0)
