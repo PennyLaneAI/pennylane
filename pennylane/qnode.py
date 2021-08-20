@@ -188,7 +188,6 @@ class QNode:
         self._tape, self.interface, self.device, tape_diff_options = self.get_tape(
             device, interface, diff_method
         )
-        
         # Update diff_method to reflect which method has been selected
         if self.diff_method == "best":
             if tape_diff_options["method"] == "device":
