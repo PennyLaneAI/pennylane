@@ -1466,3 +1466,225 @@ def test_gate_tape():
         assert qml.tape.get_active_tape() is tape1
 
     assert qml.tape.get_active_tape() is None
+
+
+class TestHashing:
+    """Test for tape hashing"""
+
+    @pytest.mark.parametrize(
+        "m",
+        [
+            qml.expval(qml.PauliZ(0)),
+            qml.state(),
+            qml.probs(wires=0),
+            qml.density_matrix(wires=0),
+            qml.var(qml.PauliY(0)),
+        ],
+    )
+    def test_identical(self, m):
+        """Tests that the circuit hash of identical circuits are identical"""
+        a = 0.3
+        b = 0.2
+
+        with qml.tape.QuantumTape() as tape1:
+            qml.RX(a, wires=[0])
+            qml.RY(b, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.apply(m)
+
+        with qml.tape.QuantumTape() as tape2:
+            qml.RX(a, wires=[0])
+            qml.RY(b, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.apply(m)
+
+        assert tape1.hash == tape2.hash
+
+    def test_identical_numeric(self):
+        """Tests that the circuit hash of identical circuits are identical
+        even though the datatype of the arguments may differ"""
+        a = 0.3
+        b = 0.2
+
+        with qml.tape.QuantumTape() as tape1:
+            qml.RX(a, wires=[0])
+            qml.RY(b, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        with qml.tape.QuantumTape() as tape2:
+            qml.RX(np.array(a), wires=[0])
+            qml.RY(np.array(b), wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        assert tape1.hash == tape2.hash
+
+    def test_different_wires(self):
+        """Tests that the circuit hash of circuits with the same operations
+        on different wires have different hashes"""
+        a = 0.3
+        b = 0.2
+
+        with qml.tape.QuantumTape() as tape1:
+            qml.RX(a, wires=[1])
+            qml.RY(b, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        with qml.tape.QuantumTape() as tape2:
+            qml.RX(np.array(a), wires=[0])
+            qml.RY(np.array(b), wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        assert tape1.hash != tape2.hash
+
+    def test_different_trainabilities(self):
+        """Tests that the circuit hash of identical circuits differ
+        if the circuits have different trainable parameters"""
+        a = 0.3
+        b = 0.2
+
+        with qml.tape.QuantumTape() as tape1:
+            qml.RX(a, wires=[0])
+            qml.RY(b, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        with qml.tape.QuantumTape() as tape2:
+            qml.RX(a, wires=[0])
+            qml.RY(b, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        tape1.trainable_params = {0}
+        tape2.trainable_params = {0, 1}
+        assert tape1.hash != tape2.hash
+
+    def test_different_parameters(self):
+        """Tests that the circuit hash of circuits with different
+        parameters differs"""
+        a = 0.3
+        b = 0.2
+        c = 0.6
+
+        with qml.tape.QuantumTape() as tape1:
+            qml.RX(a, wires=[0])
+            qml.RY(b, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0))
+
+        with qml.tape.QuantumTape() as tape2:
+            qml.RX(a, wires=[0])
+            qml.RY(c, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0))
+
+        assert tape1.hash != tape2.hash
+
+    def test_different_operations(self):
+        """Tests that the circuit hash of circuits with different
+        operations differs"""
+        a = 0.3
+        b = 0.2
+
+        with qml.tape.QuantumTape() as tape1:
+            qml.RX(a, wires=[0])
+            qml.RZ(b, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0))
+
+        with qml.tape.QuantumTape() as tape2:
+            qml.RX(a, wires=[0])
+            qml.RY(b, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0))
+
+        assert tape1.hash != tape2.hash
+
+    def test_different_measurements(self):
+        """Tests that the circuit hash of circuits with different
+        measurements differs"""
+        a = 0.3
+        b = 0.2
+
+        with qml.tape.QuantumTape() as tape1:
+            qml.RX(a, wires=[0])
+            qml.RY(b, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0))
+
+        with qml.tape.QuantumTape() as tape2:
+            qml.RX(a, wires=[0])
+            qml.RY(b, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.var(qml.PauliZ(0))
+
+        assert tape1.hash != tape2.hash
+
+    def test_different_observables(self):
+        """Tests that the circuit hash of circuits with different
+        observables differs"""
+        a = 0.3
+        b = 0.2
+
+        A = np.diag([1.0, 2.0])
+
+        with qml.tape.QuantumTape() as tape1:
+            qml.RX(a, wires=[0])
+            qml.RY(b, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0))
+
+        with qml.tape.QuantumTape() as tape2:
+            qml.RX(a, wires=[0])
+            qml.RY(b, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.Hermitian(A, wires=0))
+
+        assert tape1.hash != tape2.hash
+
+    def test_rotation_modulo_identical(self):
+        """Tests that the circuit hash of circuits with single-qubit
+        rotations differing by multiples of 2pi have identical hash"""
+        a = np.array(np.pi / 2, dtype=np.float64)
+        b = np.array(np.pi / 4, dtype=np.float64)
+
+        H = qml.Hamiltonian([0.1, 0.2], [qml.PauliX(0), qml.PauliZ(0) @ qml.PauliY(1)])
+
+        with qml.tape.QuantumTape() as tape1:
+            qml.RX(a, wires=[0])
+            qml.RY(b, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(H)
+
+        with qml.tape.QuantumTape() as tape2:
+            qml.RX(a - 2 * np.pi, wires=[0])
+            qml.RY(b + 2 * np.pi, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(H)
+
+        assert tape1.hash == tape2.hash
+
+    def test_controlled_rotation_modulo_identical(self):
+        """Tests that the circuit hash of circuits with controlled
+        rotations differing by multiples of 2pi have identical hash"""
+        a = np.array(np.pi / 2, dtype=np.float64)
+        b = np.array(np.pi / 2, dtype=np.float64)
+
+        H = qml.Hamiltonian([0.1, 0.2], [qml.PauliX(0), qml.PauliZ(0) @ qml.PauliY(1)])
+
+        with qml.tape.QuantumTape() as tape1:
+            qml.CRX(a, wires=[0, 1])
+            qml.CRY(b, wires=[0, 1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(H)
+
+        with qml.tape.QuantumTape() as tape2:
+            qml.CRX(a - 4 * np.pi, wires=[0, 1])
+            qml.CRY(b + 4 * np.pi, wires=[0, 1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(H)
+
+        assert tape1.hash == tape2.hash
