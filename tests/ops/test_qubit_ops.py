@@ -3169,7 +3169,9 @@ class TestMultiControlledX:
         control_wires = range(3)
         target_wire = 4
         work_wires = range(2)
-        with pytest.raises(ValueError, match="The work wires must be different from the control"):
+        with pytest.raises(
+            ValueError, match="The work wires must be different from the control and target wires"
+        ):
             qml.MultiControlledX(
                 control_wires=control_wires, wires=target_wire, work_wires=work_wires
             )

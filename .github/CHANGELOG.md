@@ -91,6 +91,9 @@
 
 <h3>Improvements</h3>
 
+* The `MultiControlledX` class now inherits from `Operation` instead of `ControlledQubitUnitary` which makes the `MultiControlledX` gate a non-parameterized gate.
+  [(#1557)](https://github.com/PennyLaneAI/pennylane/pull/1557)
+
 * The `utils.sparse_hamiltonian` function can now deal with non-integer 
   wire labels, and it throws an error for the edge case of observables that are 
   created from multi-qubit operations.
@@ -176,7 +179,7 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Akash Narayanan, Maria Schuld,
+Thomas Bromley, Tanya Garg, Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Akash Narayanan, Maria Schuld,
 Ingrid Strandberg, Vincent Wong.
 
 # Release 0.17.0 (current release)
