@@ -53,6 +53,7 @@ ops = {
     "SWAP",
     "ISWAP",
     "SISWAP",
+    "SQISW",
     "CSWAP",
     "Toffoli",
     "RX",

@@ -109,6 +109,7 @@ class DefaultQubit(QubitDevice):
         "SWAP",
         "ISWAP",
         "SISWAP",
+        "SQISW",
         "CSWAP",
         "Toffoli",
         "CY",
