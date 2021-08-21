@@ -79,8 +79,6 @@ class Identity(CVObservable):
         return []
 
 
-print(_qubit__all__)
-
 __all__ = _cv__all__ + _qubit__all__ + _channel__ops__ + ["Identity"]
 __all_ops__ = list(_cv__ops__ | _qubit__ops__)
 __all_obs__ = list(_cv__obs__ | _qubit__obs__) + ["Identity"]
