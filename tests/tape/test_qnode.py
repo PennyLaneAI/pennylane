@@ -331,8 +331,8 @@ class TestValidation:
         )
         assert qn.diff_method_change == False
 
-    def test_qnode_best_diff_method(self, monkeypatch):
-        """Test that selected "best" diff_method is available after QNode initialization."""
+    def test_qnode_best_diff_method_backprop(self):
+        """Test that selected "best" diff_method is correctly set to 'backprop'."""
         dev = qml.device("default.qubit", wires=1)
 
         def func(x):
@@ -344,27 +344,49 @@ class TestValidation:
         assert qn.diff_method == "backprop"
         assert qn.diff_method_change
 
+    def test_qnode_best_diff_method_parameter_shift(self):
+        """Test that selected "best" diff_method is correctly set to 'parameter-shift'."""
         dev = qml.device("default.mixed", wires=1)
+
+        def func(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
         qn = qml.QNode(func, dev)
 
         assert qn.diff_method == "parameter-shift"
         assert qn.diff_method_change
 
+    def test_qnode_best_diff_method_device(self, monkeypatch):
+        """Test that selected "best" diff_method is correctly set to 'device'."""
         dev = qml.device("default.qubit", wires=1)
+
+        def func(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        # Force the "best" method to be "device"
         monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", True)
-
         qn = qml.QNode(func, dev)
         assert qn.diff_method == "device"
         assert qn.diff_method_change
 
-        monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
+    def test_qnode_best_diff_method_finite_diff(self, monkeypatch):
+        """Test that selected "best" diff_method is correctly set to 'finite-diff'."""
+        dev = qml.device("default.qubit", wires=1)
+
+        def func(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
 
         def capabilities(cls):
             capabilities = cls._capabilities
             capabilities.update(model="None")
             return capabilities
 
+        # Force the "best" method to be "finite-diff"
+        monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
         monkeypatch.setattr(qml.devices.DefaultQubit, "capabilities", capabilities)
         qn = qml.QNode(func, dev)
         assert qn.diff_method == "finite-diff"
