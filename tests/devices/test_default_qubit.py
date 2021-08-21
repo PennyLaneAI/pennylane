@@ -234,6 +234,16 @@ class TestApply:
         ),
     ]
 
+    test_data_sqisw = [
+        (qml.SISWAP, [1, 0, 0, 0], [1, 0, 0, 0]),
+        (qml.SISWAP, [0, 1, 0, 0], [0, 1 / math.sqrt(2), 1 / math.sqrt(2) * 1j, 0]),
+        (
+            qml.SISWAP,
+            [1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0],
+            [1 / math.sqrt(2), 0.5, 0.5 * 1j, 0],
+        ),
+    ]
+
     test_data_siswap_inv = [
         (
             qml.SISWAP,
@@ -248,8 +258,22 @@ class TestApply:
         ),
     ]
 
+    test_data_sqisw_inv = [
+        (
+            qml.SISWAP,
+            [1 / math.sqrt(2), 0, 1 / math.sqrt(2), 0],
+            [1 / math.sqrt(2), -0.5 * 1j, 0.5, 0],
+        ),
+        (qml.SISWAP, [0, 0, 1, 0], [0, -1 / math.sqrt(2) * 1j, 1 / math.sqrt(2), 0]),
+        (
+            qml.SISWAP,
+            [1 / math.sqrt(2), 0, -1 / math.sqrt(2), 0],
+            [1 / math.sqrt(2), 0.5 * 1j, -0.5, 0],
+        ),
+    ]
+
     all_two_wires_no_parameters = (
-        test_data_two_wires_no_parameters + test_data_iswap + test_data_siswap
+        test_data_two_wires_no_parameters + test_data_iswap + test_data_siswap + test_data_sqisw
     )
 
     @pytest.mark.parametrize("operation,input,expected_output", all_two_wires_no_parameters)
@@ -267,7 +291,10 @@ class TestApply:
         )
 
     all_two_wires_no_parameters_inv = (
-        test_data_two_wires_no_parameters + test_data_iswap_inv + test_data_siswap_inv
+        test_data_two_wires_no_parameters
+        + test_data_iswap_inv
+        + test_data_siswap_inv
+        + test_data_sqisw_inv
     )
 
     @pytest.mark.parametrize("operation,input,expected_output", all_two_wires_no_parameters_inv)
