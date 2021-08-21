@@ -437,7 +437,7 @@ class CNOT(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        return cls.matrix
+        return CNOT.matrix
 
     def adjoint(self):
         return CNOT(wires=self.wires)
