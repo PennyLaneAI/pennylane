@@ -648,7 +648,7 @@ class ISWAP(Operation):
 
 class SISWAP(Operation):
     r"""SISWAP(wires)
-    The square root of i-swap operator
+    The square root of i-swap operator. Can also be accessed as `qml.SQISW`
 
     .. math:: SISWAP = \begin{bmatrix}
             1 & 0 & 0 & 0 \\
