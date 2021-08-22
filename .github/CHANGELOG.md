@@ -57,12 +57,15 @@
   ```
 
 * Support for differentiable execution of batches of circuits has been
-  added, via the beta `pennylane.batch` module.
+  added, via the beta `pennylane.interfaces.batch` module.
   [(#1501)](https://github.com/PennyLaneAI/pennylane/pull/1501)
+  [(#1508)](https://github.com/PennyLaneAI/pennylane/pull/1508)
 
   For example:
 
   ```python
+  from pennylane.interfaces.batch import execute
+
   def cost_fn(x):
       with qml.tape.JacobianTape() as tape1:
           qml.RX(x[0], wires=[0])
@@ -76,13 +79,33 @@
           qml.CNOT(wires=[0, 1])
           qml.probs(wires=1)
 
-      result = execute([tape1, tape2], dev, gradient_fn=param_shift)
+      result = execute(
+          [tape1, tape2], dev,
+          gradient_fn=qml.gradients.param_shift,
+          interface="autograd"
+      )
       return result[0] + result[1][0, 0]
 
   res = qml.grad(cost_fn)(params)
   ```
 
 <h3>Improvements</h3>
+
+* The `MultiControlledX` class now inherits from `Operation` instead of `ControlledQubitUnitary` which makes the `MultiControlledX` gate a non-parameterized gate.
+  [(#1557)](https://github.com/PennyLaneAI/pennylane/pull/1557)
+
+* The `utils.sparse_hamiltonian` function can now deal with non-integer 
+  wire labels, and it throws an error for the edge case of observables that are 
+  created from multi-qubit operations.
+  [(#1550)](https://github.com/PennyLaneAI/pennylane/pull/1550)
+
+* Added the matrix attribute to `qml.templates.subroutines.GroverOperator`
+  [(#1553)](https://github.com/PennyLaneAI/pennylane/pull/1553)
+
+* The `tape.to_openqasm()` method now has a `measure_all` argument that specifies whether the
+  serialized OpenQASM script includes computational basis measurements on all of the qubits or
+  just those specified by the tape.
+  [(#1559)](https://github.com/PennyLaneAI/pennylane/pull/1559)
 
 * An error is raised when no arguments are passed to a `qml.operation.Observable` to inform the user about specifying wires.
   [(#1547)](https://github.com/PennyLaneAI/pennylane/pull/1547)
@@ -131,8 +154,19 @@
 and requirements-ci.txt (unpinned). This latter would be used by the CI.
   [(#1535)](https://github.com/PennyLaneAI/pennylane/pull/1535)
 
+* The QFT operation is moved to template
+  [(#1548)](https://github.com/PennyLaneAI/pennylane/pull/1548)
+  
+* The `qml.ResetError` is now supported for `default.mixed` device. 
+  [(#1541)](https://github.com/PennyLaneAI/pennylane/pull/1541)
+
 
 <h3>Breaking changes</h3>
+
+* The class `qml.Interferometer` is deprecated and will be renamed `qml.InterferometerUnitary`
+  after one release cycle.
+  [(#1546)](https://github.com/PennyLaneAI/pennylane/pull/1546)
+
 
 <h3>Bug fixes</h3>
 
@@ -145,7 +179,8 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 This release contains contributions from (in alphabetical order):
 
-Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Maria Schuld, Ingrid Strandberg.
+Thomas Bromley, Tanya Garg, Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Akash Narayanan, Maria Schuld,
+Ingrid Strandberg, Vincent Wong.
 
 # Release 0.17.0 (current release)
 
@@ -1912,7 +1947,7 @@ fully differentiable.
   @qml.qnode(dev)
   def circuit_qft(basis_state):
       qml.BasisState(basis_state, wires=range(3))
-      qml.QFT(wires=range(3))
+      qml.templates.QFT(wires=range(3))
       return qml.state()
   ```
 

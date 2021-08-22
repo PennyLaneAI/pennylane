@@ -220,7 +220,7 @@ class TestQuantumMonteCarlo:
         for op in tape.operations:
             unexpanded = (
                 isinstance(op, qml.MultiControlledX)
-                or isinstance(op, qml.QFT)
+                or isinstance(op, qml.templates.QFT)
                 or isinstance(op, qml.tape.QuantumTape)
             )
             assert not unexpanded
