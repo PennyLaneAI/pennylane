@@ -392,8 +392,8 @@ class TestValidation:
         assert qn.diff_method == "finite-diff"
         assert qn.diff_method_change
 
-    def test_best_diff_method_to_tf(self):
-        """Tests if interface change to tensorflow is working with diff_method='best'"""
+    def test_to_tf(self):
+        """Test if interface change is working"""
         tf = pytest.importorskip("tf")
         dev = qml.device("default.qubit", wires=1)
 
@@ -401,14 +401,23 @@ class TestValidation:
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        qn = qml.QNode(func, dev, interface="autograd", diff_method="best")
-        try:
-            qn.to_tf()
-        except Exception as exp:
-            assert False, f"qn.to_tf() raised {exp}"
+        # Test if interface change works with different diff_methods
+        for method in [
+            "best",
+            "parameter-shift",
+            "finite-diff",
+            "reversible",
+            "adjoint",
+            "backprop"
+        ]:
+            qn = qml.QNode(func, dev, interface="autograd", diff_method=method)
+            try:
+                qn.to_tf()
+            except Exception as exp:
+                assert False, f"qn.to_tf() raised {exp}"
 
-    def test_best_diff_method_to_autograd(self):
-        """Tests if interface change to autograd is working with diff_method='best'"""
+    def test_to_autograd(self):
+        """Test if interface change is working"""
         dev = qml.device("default.qubit", wires=1)
         tf = pytest.importorskip("tf")
 
@@ -416,14 +425,23 @@ class TestValidation:
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        qn = qml.QNode(func, dev, interface="tf", diff_method="best")
-        try:
-            qn.to_autograd()
-        except Exception as exp:
-            assert False, f"qn.to_autograd() raised {exp}"
+        # Test if interface change works with different diff_methods
+        for method in [
+            "best",
+            "parameter-shift",
+            "finite-diff",
+            "reversible",
+            "adjoint",
+            "backprop"
+        ]:
+            qn = qml.QNode(func, dev, interface="tf", diff_method="best")
+            try:
+                qn.to_autograd()
+            except Exception as exp:
+                assert False, f"qn.to_autograd() raised {exp}"
 
-    def test_best_diff_method_to_torch(self):
-        """Tests if interface change to torch is working with diff_method='best'"""
+    def test_to_torch(self):
+        """Test if interface change is working"""
         dev = qml.device("default.qubit", wires=1)
         torch = pytest.importorskip("torch")
 
@@ -431,11 +449,44 @@ class TestValidation:
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        qn = qml.QNode(func, dev, interface="autograd", diff_method="best")
-        try:
-            qn.to_torch()
-        except Exception as exp:
-            assert False, f"qn.to_torch() raised {exp}"
+        # Test if interface change works with different diff_methods
+        for method in [
+            "best",
+            "parameter-shift",
+            "finite-diff",
+            "reversible",
+            "adjoint",
+            "backprop"
+        ]:
+            qn = qml.QNode(func, dev, interface="autograd", diff_method="best")
+            try:
+                qn.to_torch()
+            except Exception as exp:
+                assert False, f"qn.to_torch() raised {exp}"
+
+    def test_to_jax(self):
+        """Test if interface change is working"""
+        dev = qml.device("default.qubit", wires=1)
+        jax = pytest.importorskip("jax")
+
+        def func(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        # Test if interface change works with different diff_methods
+        for method in [
+            "best",
+            "parameter-shift",
+            "finite-diff",
+            "reversible",
+            "adjoint",
+            "backprop"
+        ]:
+            qn = qml.QNode(func, dev, interface="autograd", diff_method="best")
+            try:
+                qn.to_jax()
+            except Exception as exp:
+                assert False, f"qn.to_jax() raised {exp}"
 
 
 class TestTapeConstruction:
