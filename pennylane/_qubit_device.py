@@ -227,15 +227,8 @@ class QubitDevice(Device):
             results = self.statistics(circuit.observables)
 
         if (circuit.all_sampled or not circuit.is_sampled) and not multiple_sampled_jobs:
-            print("loc 1")
-            print(results)
-            print(type(results))
             results = self._asarray(results)
-            print(type(results))
-            print(results)
-            print(self.name)
         else:
-            print("loc 2")
             results = tuple(self._asarray(r) for r in results)
 
         if self._cache and circuit_hash not in self._cache_execute:

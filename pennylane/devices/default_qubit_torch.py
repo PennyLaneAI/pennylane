@@ -186,9 +186,10 @@ class DefaultQubitTorch(DefaultQubit):
     @staticmethod
     def _asarray(a, dtype=None):
         if isinstance(a, list):
+            # here be dragons... but it seem to give the results we want
             if not isinstance(a[0], torch.Tensor):
-               res = np.asarray(a)
-               res = torch.from_numpy(res)
+                res = np.asarray(a)
+                res = torch.from_numpy(res)
             else:
                 res = torch.cat([torch.reshape(i, (-1,)) for i in a], dim=0)
             res = torch.cat([torch.reshape(i, (-1,)) for i in res], dim=0)
@@ -223,8 +224,8 @@ class DefaultQubitTorch(DefaultQubit):
 
     # I'm not sure where this gets used, so I'm commenting it out until
     # That becomes obvious, or I figure out if I can delete it
-    #@staticmethod
-    #def _ravel_multi_index(multi_index, dims):
+    # @staticmethod
+    # def _ravel_multi_index(multi_index, dims):
     #    # Idea: ravelling a multi-index can be expressed as a matrix-vector product
     #    flip = lambda x: torch.flip(x, dims=[0])
     #    dims = torch.as_tensor(dims, device=multi_index.device)
@@ -246,8 +247,8 @@ class DefaultQubitTorch(DefaultQubit):
         return new_tensor
 
     # Same as above: don't think this gets used, so I'm commenting it out
-    #@staticmethod
-    #def _allclose(a, b, atol=1e-08):
+    # @staticmethod
+    # def _allclose(a, b, atol=1e-08):
     #    return torch.allclose(a, torch.as_tensor(b, dtype=a.dtype), atol=atol)
 
     @classmethod
