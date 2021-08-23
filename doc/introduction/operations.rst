@@ -153,6 +153,7 @@ Qubit observables
 
     ~pennylane.Hadamard
     ~pennylane.Hermitian
+    ~pennylane.Identity
     ~pennylane.PauliX
     ~pennylane.PauliY
     ~pennylane.PauliZ
@@ -247,25 +248,12 @@ CV observables
     :nosignatures:
 
     ~pennylane.FockStateProjector
+    ~pennylane.Identity
     ~pennylane.NumberOperator
     ~pennylane.TensorN
     ~pennylane.P
     ~pennylane.PolyXP
     ~pennylane.QuadOperator
     ~pennylane.X
-
-:html:`</div>`
-
-Shared operations
------------------
-
-The only operation shared by both qubit and continouous-variable architectures is the Identity.
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.Identity
 
 :html:`</div>`
