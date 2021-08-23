@@ -91,6 +91,7 @@ class DefaultMixed(QubitDevice):
         "DepolarizingChannel",
         "BitFlip",
         "PhaseFlip",
+        "ResetError",
         "QubitChannel",
         "QFT",
         "SingleExcitation",

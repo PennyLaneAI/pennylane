@@ -357,7 +357,12 @@ class RepresentationResolver:
             # No need to add a -1 for inverse here
             return self.charset.CONTROL
 
-        if op.num_params == 0:
+        if base_name == "MultiControlledX":
+            if wire in op.control_wires:
+                return self.charset.CONTROL
+            representation = "X"
+
+        elif op.num_params == 0:
             representation = name
 
         elif base_name == "PauliRot":
@@ -378,11 +383,6 @@ class RepresentationResolver:
             representation = RepresentationResolver._format_controlled_qubit_unitary(
                 op, "U", self.unitary_matrix_cache
             )
-
-        elif base_name == "MultiControlledX":
-            if wire in op.control_wires:
-                return self.charset.CONTROL
-            representation = "X"
 
         elif base_name == "Hermitian":
             representation = RepresentationResolver._format_matrix_operation(
