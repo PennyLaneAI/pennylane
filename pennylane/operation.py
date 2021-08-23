@@ -233,6 +233,16 @@ def classproperty(func):
 # =============================================================================
 
 
+def _process_data(op):
+    if op.name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
+        return str([d % (2 * np.pi) for d in op.data])
+
+    if op.name in ("CRX", "CRY", "CRZ", "CRot"):
+        return str([d % (4 * np.pi) for d in op.data])
+
+    return str(op.data)
+
+
 class Operator(abc.ABC):
     r"""Base class for quantum operators supported by a device.
 
@@ -281,6 +291,11 @@ class Operator(abc.ABC):
                 # Deep copy everything else.
                 setattr(copied_op, attribute, copy.deepcopy(value, memo))
         return copied_op
+
+    @property
+    def hash(self):
+        """int: returns an integer hash uniquely representing the operator"""
+        return hash((str(self.name), tuple(self.wires.tolist()), _process_data(self)))
 
     @classmethod
     def _matrix(cls, *params):
