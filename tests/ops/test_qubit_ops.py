@@ -1589,9 +1589,10 @@ class TestOperations:
         res = op.eigvals
         assert np.allclose(res, exp)
 
-    def test_siswap_eigenval(self):
+    @pytest.mark.parametrize("siswap_op", [qml.SISWAP, qml.SQISW]) 
+    def test_siswap_eigenval(self, siswap_op):
         """Tests that the ISWAP eigenvalue matches the numpy eigenvalues of the ISWAP matrix"""
-        op = qml.SISWAP(wires=[0, 1])
+        op = siswap_op(wires=[0, 1])
         exp = np.linalg.eigvals(op.matrix)
         res = op.eigvals
         assert np.allclose(res, exp)
