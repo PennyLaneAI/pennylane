@@ -99,8 +99,9 @@ class batch_transform:
                     with tape2:
                         qml.RZ(b * qml.math.abs(param), wires=wires)
                 else:
-                    with tape1, tape2:
-                        qml.apply(op)
+                    for t in [tape1, tape2]:
+                        with t:
+                            qml.apply(op)
 
             def processing_fn(results):
                 return qml.math.sum(qml.math.stack(results))
