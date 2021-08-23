@@ -241,6 +241,12 @@ def execute(
     # the default execution function is device.batch_execute
     execute_fn = cache_execute(device.batch_execute, cache)
 
+    if interface is None or gradient_fn is None:
+        with qml.tapes.Unwrap(*tapes):
+            res = execute_fn(tapes)
+
+        return res
+
     if gradient_fn == "device":
         # gradient function is a device method
 
