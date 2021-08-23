@@ -264,7 +264,7 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 This release contains contributions from (in alphabetical order):
 
 
-Akash Narayanan B, Thomas Bromley, Tanya Garg, Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Maria Schuld,
+Vishnu Ajith, Akash Narayanan B, Thomas Bromley, Tanya Garg, Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Maria Schuld,
 Ingrid Strandberg, David Wierichs, Vincent Wong.
 
 
@@ -5559,7 +5559,7 @@ Josh Izaac and Nathan Killoran.
 
 This release contains contributions from:
 
-Vishnu Ajith, Christian Gogolin, Josh Izaac, Nathan Killoran, and Maria Schuld.
+Christian Gogolin, Josh Izaac, Nathan Killoran, and Maria Schuld.
 
 
 # Release 0.1.0

@@ -235,10 +235,10 @@ class TestApply:
     ]
 
     test_data_sqisw = [
-        (qml.SISWAP, [1, 0, 0, 0], [1, 0, 0, 0]),
-        (qml.SISWAP, [0, 1, 0, 0], [0, 1 / math.sqrt(2), 1 / math.sqrt(2) * 1j, 0]),
+        (qml.SQISW, [1, 0, 0, 0], [1, 0, 0, 0]),
+        (qml.SQISW, [0, 1, 0, 0], [0, 1 / math.sqrt(2), 1 / math.sqrt(2) * 1j, 0]),
         (
-            qml.SISWAP,
+            qml.SQISW,
             [1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0],
             [1 / math.sqrt(2), 0.5, 0.5 * 1j, 0],
         ),
@@ -260,13 +260,13 @@ class TestApply:
 
     test_data_sqisw_inv = [
         (
-            qml.SISWAP,
+            qml.SQISW,
             [1 / math.sqrt(2), 0, 1 / math.sqrt(2), 0],
             [1 / math.sqrt(2), -0.5 * 1j, 0.5, 0],
         ),
-        (qml.SISWAP, [0, 0, 1, 0], [0, -1 / math.sqrt(2) * 1j, 1 / math.sqrt(2), 0]),
+        (qml.SQISW, [0, 0, 1, 0], [0, -1 / math.sqrt(2) * 1j, 1 / math.sqrt(2), 0]),
         (
-            qml.SISWAP,
+            qml.SQISW,
             [1 / math.sqrt(2), 0, -1 / math.sqrt(2), 0],
             [1 / math.sqrt(2), 0.5 * 1j, -0.5, 0],
         ),
