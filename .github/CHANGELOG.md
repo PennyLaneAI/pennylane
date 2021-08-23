@@ -2,6 +2,85 @@
 
 <h3>New features since last release</h3>
 
+* The `RotosolveOptimizer` now can tackle general parametrized circuits, and is no longer
+  restricted to single-qubit Pauli rotations.
+  [(#1489)](https://github.com/PennyLaneAI/pennylane/pull/1489)
+  
+  This includes:
+  
+  - layers of gates controlled by the same parameter,
+  - controlled variants of parametrized gates, and
+  - Hamiltonian time evolution.
+  
+  Note that the eigenvalue spectrum of the gate generator needs to be known to
+  use `RotosolveOptimizer` for a general gate, and it
+  is required to produce equidistant frequencies.
+  For details see [Vidal and Theis, 2018](https://arxiv.org/abs/1812.06323)
+  and [Wierichs, Izaac, Wang, Lin 2021](https://arxiv.org/abs/2107.12390).
+
+  Consider a circuit with a mixture of Pauli rotation gates, controlled Pauli rotations, and
+  single-parameter layers of Pauli rotations:
+  ```python
+  dev = qml.device('default.qubit', wires=3, shots=None)
+
+  @qml.qnode(dev)
+  def cost_function(rot_param, layer_par, crot_param):
+      for i, par in enumerate(rot_param):
+          qml.RX(par, wires=i)
+      for w in dev.wires:
+          qml.RX(layer_par, wires=w)
+      for i, par in enumerate(crot_param):
+          qml.CRY(par, wires=[i, (i+1) % 3])
+
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+  ```
+  This cost function has one frequency for each of the first `RX` rotation angles,
+  three frequencies for the layer of `RX` gates that depend on `layer_par`, and two
+  frequencies for each of the `CRY` gate parameters. Rotosolve can then be used to minimize
+  the `cost_function`:
+
+  ```python
+  # Initial parameters
+  init_param = [
+      np.array([0.3, 0.2, 0.67], requires_grad=True),
+      np.array(1.1, requires_grad=True),
+      np.array([-0.2, 0.1, -2.5], requires_grad=True),
+  ]
+  # Numbers of frequencies per parameter
+  num_freqs = [[1, 1, 1], 3, [2, 2, 2]]
+
+  opt = qml.RotosolveOptimizer()
+  param = init_param.copy()
+  ```
+
+  In addition, the optimization technique for the Rotosolve substeps can be chosen via the
+  `optimizer` and `optimizer_kwargs` keyword arguments and the minimized cost of the
+  intermediate univariate reconstructions can be read out via `full_output`, including the
+  cost _after_ the full Rotosolve step:
+
+  ```python
+  for step in range(3):
+      param, cost, sub_cost = opt.step_and_cost(
+          cost_function,
+          *param,
+          num_freqs=num_freqs,
+          full_output=True,
+          optimizer="brute",
+      )
+      print(f"Cost before step: {cost}")
+      print(f"Minimization substeps: {np.round(sub_cost, 6)}")
+  ```
+  ``` pycon
+  Cost before step: 0.042008210392535605
+  Minimization substeps: [-0.230905 -0.863336 -0.980072 -0.980072 -1.       -1.       -1.      ]
+  Cost before step: -0.999999999068121
+  Minimization substeps: [-1. -1. -1. -1. -1. -1. -1.]
+  Cost before step: -1.0
+  Minimization substeps: [-1. -1. -1. -1. -1. -1. -1.]
+  ```
+
+  For usage details please consider the docstring.
+
 * The `frobenius_inner_product` function has been moved to the `qml.math`
   module, and is now differentiable using all autodiff frameworks.
   [(#1388)](https://github.com/PennyLaneAI/pennylane/pull/1388)
@@ -182,8 +261,10 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 This release contains contributions from (in alphabetical order):
 
+
 Akash Narayanan B, Thomas Bromley, Tanya Garg, Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Maria Schuld,
-Ingrid Strandberg, Vincent Wong.
+Ingrid Strandberg, David Wierichs, Vincent Wong.
+
 
 # Release 0.17.0 (current release)
 
@@ -603,7 +684,6 @@ Ingrid Strandberg, Vincent Wong.
 * Ising YY gate functionality added.
   [(#1358)](https://github.com/PennyLaneAI/pennylane/pull/1358)
 
-
 <h3>Improvements</h3>
 
 * The tape does not verify any more that all Observables have owners in the annotated queue.
@@ -641,7 +721,8 @@ Ingrid Strandberg, Vincent Wong.
 * Change the order of the covariance matrix and the vector of means internally
   in `default.gaussian`. [(#1331)](https://github.com/PennyLaneAI/pennylane/pull/1331)
 
-* Added the `id` attribute to templates. [(#1438)](https://github.com/PennyLaneAI/pennylane/pull/1438)
+* Added the `id` attribute to templates.
+  [(#1438)](https://github.com/PennyLaneAI/pennylane/pull/1438)
 
 * The `qml.math` module, for framework-agnostic tensor manipulation,
   has two new functions available:
