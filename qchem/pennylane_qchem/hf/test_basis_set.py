@@ -28,15 +28,19 @@ class TestBasis:
         [
             (
                 (0, 0, 0),
-                [3.425250914, 0.6239137298, 0.168855404],
-                [0.1543289673, 0.5353281423, 0.4446345422],
-                np.array([0.0, 0.0, -0.694349]),
+                np.array([3.4252509140, 0.6239137298, 0.168855404]),
+                np.array([0.1543289673, 0.5353281423, 0.4446345422]),
+                np.array([0.0000000000, 0.0000000000, -0.694349000]),
             )
         ],
     )
     def test_basisfunction(self, l, alpha, coeff, rgaus):
         """Test that BasisFunction class creates basis function objects correctly."""
         basis_function = BasisFunction(l, alpha, coeff, rgaus)
+
+        assert np.allclose(basis_function.alpha, alpha)
+        assert np.allclose(basis_function.coeff, coeff)
+        assert np.allclose(basis_function.rgaus, rgaus)
 
         assert np.allclose(basis_function.params[0], alpha)
         assert np.allclose(basis_function.params[1], coeff)
