@@ -17,6 +17,8 @@ import functools
 
 import pennylane as qml
 
+from pennylane.interfaces.batch import execute
+
 
 def _create_qnode_internal_wrapper(qnode, transform, targs, tkwargs):
     def _wrapper(*args, **kwargs):
@@ -27,7 +29,7 @@ def _create_qnode_internal_wrapper(qnode, transform, targs, tkwargs):
         interface = None if not transform.differentiable else qnode.interface
 
         # TODO: extract gradient_fn from QNode
-        res = qml.interfaces.batch.execute(
+        res = execute(
             tapes,
             device=qnode.device,
             gradient_fn=qml.gradients.param_shift,
@@ -169,7 +171,13 @@ class batch_transform:
             # tapes, fn = some_transform(tape, *transform_args)
             return self.construct(qnode, *targs, *tkwargs)
 
-        if not isinstance(qnode, qml.QNode):
+        elif isinstance(qnode, qml.QNode):
+            # Input is a QNode:
+            # result = some_transform(qnode, *transform_args)(*qnode_args)
+            wrapper = _create_qnode_internal_wrapper(qnode, self, targs, tkwargs)
+            wrapper = functools.wraps(qnode)(wrapper)
+
+        else:
             # Input is not a QNode nor a quantum tape.
             # Assume Python decorator syntax:
             #
@@ -191,12 +199,6 @@ class batch_transform:
                 _wrapper = _create_qnode_internal_wrapper(qnode, self, targs, tkwargs)
                 _wrapper = functools.wraps(qnode)(_wrapper)
                 return _wrapper
-
-        else:
-            # Input is a QNode:
-            # result = some_transform(qnode, *transform_args)(*qnode_args)
-            wrapper = _create_qnode_internal_wrapper(qnode, self, targs, tkwargs)
-            wrapper = functools.wraps(qnode)(wrapper)
 
         wrapper.tape_fn = functools.partial(self.transform_fn, *targs, **tkwargs)
         wrapper.expand_fn = self.expand_fn
