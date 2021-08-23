@@ -370,13 +370,27 @@ class TestApply:
         dev = DefaultQubitTorch(wires=1)
         state = init_state(1)
 
-        diag = torch.tensor([-1.0, 1.0], requires_grad=True, dtype=torch.complex128)
+        diag = torch.tensor([-1.0+1j, 1.0+1j], requires_grad=True, dtype=torch.complex128)/math.sqrt(2)
 
         queue = [qml.QubitStateVector(state, wires=0), qml.DiagonalQubitUnitary(diag, wires=0)]
         dev.apply(queue)
 
         res = dev.state
         expected = torch.diag(diag) @ state
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_diagonal_qubit_unitary_inverse(self, init_state, tol):
+        """Tests application of a diagonal qubit unitary"""
+        dev = DefaultQubitTorch(wires=1)
+        state = init_state(1)
+
+        diag = torch.tensor([-1.0+1j, 1.0+1j], requires_grad=True, dtype=torch.complex128)/math.sqrt(2)
+
+        queue = [qml.QubitStateVector(state, wires=0), qml.DiagonalQubitUnitary(diag, wires=0).inv()]
+        dev.apply(queue)
+
+        res = dev.state
+        expected = torch.diag(diag).conj() @ state
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("op, mat", three_qubit)
