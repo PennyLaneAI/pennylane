@@ -392,7 +392,17 @@ class TestValidation:
         assert qn.diff_method == "finite-diff"
         assert qn.diff_method_change
 
-    def test_to_tf(self):
+    @pytest.mark.parametrize(
+        "method", [
+            "best",
+            "parameter-shift",
+            "finite-diff",
+            "reversible",
+            "adjoint",
+            "backprop",
+        ]
+    )
+    def test_to_tf(self, method):
         """Test if interface change is working"""
         tf = pytest.importorskip("tf")
         dev = qml.device("default.qubit", wires=1)
@@ -402,21 +412,20 @@ class TestValidation:
             return qml.expval(qml.PauliZ(0))
 
         # Test if interface change works with different diff_methods
-        for method in [
+        qn = qml.QNode(func, dev, interface="autograd", diff_method=method)
+        qn.to_tf()
+
+    @pytest.mark.parametrize(
+        "method", [
             "best",
             "parameter-shift",
             "finite-diff",
             "reversible",
             "adjoint",
             "backprop",
-        ]:
-            qn = qml.QNode(func, dev, interface="autograd", diff_method=method)
-            try:
-                qn.to_tf()
-            except Exception as exp:
-                assert False, f"qn.to_tf() raised {exp}"
-
-    def test_to_autograd(self):
+        ]
+    )
+    def test_to_autograd(self, method):
         """Test if interface change is working"""
         dev = qml.device("default.qubit", wires=1)
         tf = pytest.importorskip("tf")
@@ -426,21 +435,19 @@ class TestValidation:
             return qml.expval(qml.PauliZ(0))
 
         # Test if interface change works with different diff_methods
-        for method in [
+        qn = qml.QNode(func, dev, interface="tf", diff_method=method)
+        qn.to_autograd()
+
+    @pytest.mark.parametrize(
+        "method", [
             "best",
             "parameter-shift",
             "finite-diff",
             "reversible",
             "adjoint",
-            "backprop",
-        ]:
-            qn = qml.QNode(func, dev, interface="tf", diff_method="best")
-            try:
-                qn.to_autograd()
-            except Exception as exp:
-                assert False, f"qn.to_autograd() raised {exp}"
-
-    def test_to_torch(self):
+        ]
+    )
+    def test_to_torch(self, method):
         """Test if interface change is working"""
         dev = qml.device("default.qubit", wires=1)
         torch = pytest.importorskip("torch")
@@ -450,21 +457,20 @@ class TestValidation:
             return qml.expval(qml.PauliZ(0))
 
         # Test if interface change works with different diff_methods
-        for method in [
+        qn = qml.QNode(func, dev, interface="autograd", diff_method=method)
+        qn.to_torch()
+
+    @pytest.mark.parametrize(
+        "method", [
             "best",
             "parameter-shift",
             "finite-diff",
             "reversible",
             "adjoint",
             "backprop",
-        ]:
-            qn = qml.QNode(func, dev, interface="autograd", diff_method="best")
-            try:
-                qn.to_torch()
-            except Exception as exp:
-                assert False, f"qn.to_torch() raised {exp}"
-
-    def test_to_jax(self):
+        ]
+    )
+    def test_to_jax(self, method):
         """Test if interface change is working"""
         dev = qml.device("default.qubit", wires=1)
         jax = pytest.importorskip("jax")
@@ -474,19 +480,8 @@ class TestValidation:
             return qml.expval(qml.PauliZ(0))
 
         # Test if interface change works with different diff_methods
-        for method in [
-            "best",
-            "parameter-shift",
-            "finite-diff",
-            "reversible",
-            "adjoint",
-            "backprop",
-        ]:
-            qn = qml.QNode(func, dev, interface="autograd", diff_method="best")
-            try:
-                qn.to_jax()
-            except Exception as exp:
-                assert False, f"qn.to_jax() raised {exp}"
+        qn = qml.QNode(func, dev, interface="autograd", diff_method=method)
+        qn.to_jax()
 
 
 class TestTapeConstruction:
