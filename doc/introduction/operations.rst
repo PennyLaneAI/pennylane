@@ -309,16 +309,3 @@ CV observables
 
 :html:`</div>`
 
-Shared operations
------------------
-
-The only operation shared by both qubit and continouous-variable architectures is the Identity.
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.Identity
-
-:html:`</div>`
