@@ -266,10 +266,13 @@ def execute(
         raise ValueError("Gradient transforms cannot be used with mode='forward'")
 
     if interface == "autograd":
-        res = execute_autograd(
-            tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
-        )
+        from .autograd import execute as _execute
+    elif interface == "jax":
+        from .jax import execute as _execute
+
     else:
         raise ValueError(f"Unknown interface {interface}")
+
+    res = _execute(tapes, device, device.batch_execute, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff)
 
     return res
