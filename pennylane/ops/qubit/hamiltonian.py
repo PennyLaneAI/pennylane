@@ -606,12 +606,12 @@ class Hamiltonian(Observable):
                 if len(o.wires) > 1:
                     # todo: deal with operations created from multi-qubit operations such as Hermitian
                     raise ValueError(
-                        "Can only sparsify Hamiltonians whose constituent observables consist of "
-                        "(tensor products of) single-qubit operators; got {}.".format(op)
+                        "Can only compute sparse representation of Hamiltonians whose constituent "
+                        "observables are constructed from single-qubit operators; got {}.".format(op)
                     )
                 # store the single-qubit ops according to the order of their wires
                 idx = wires.index(o.wires)
-                # todo: make o.sparse a property of the operators
+                # todo: make o.sparse a property of the operators and call `o.sparse_matrix`
                 list_of_sparse_ops[idx] = qml.math.SparseMatrix(o.matrix)
 
             tensor_prod = list_of_sparse_ops[0]
