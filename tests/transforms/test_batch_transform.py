@@ -36,23 +36,51 @@ class TestBatchTransform:
         the identity as the processing function"""
 
         @qml.batch_transform
-        def my_transform(tape, a, b):
-            """Generates two tapes, one with all RX replaced with RY,
-            and the other with all RX replaced with RZ."""
+        def my_transform(tape):
             tape1 = tape.copy()
             tape2 = tape.copy()
             return [tape1, tape2], None
-
-        a = 0.1
-        b = 0.4
-        x = 0.543
 
         with qml.tape.QuantumTape() as tape:
             qml.Hadamard(wires=0)
             qml.expval(qml.PauliX(0))
 
-        tapes, fn = my_transform(tape, a, b)
+        tapes, fn = my_transform(tape)
         assert fn(5) == 5
+
+    def test_expand_fn(self, mocker):
+        """Test that if an expansion function is provided,
+        that the input tape is expanded before being transformed."""
+
+        def expand_fn(tape):
+            return tape.expand(stop_at=lambda obj: obj.name != "PhaseShift")
+
+        class MyTransform:
+            """Dummy class to allow spying to work"""
+
+            def my_transform(self, tape):
+                tape1 = tape.copy()
+                tape2 = tape.copy()
+                return [tape1, tape2], None
+
+        spy_transform = mocker.spy(MyTransform, "my_transform")
+        transform_fn = qml.batch_transform(MyTransform().my_transform, expand_fn=expand_fn)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.PhaseShift(0.5, wires=0)
+            qml.expval(qml.PauliX(0))
+
+        spy_expand = mocker.spy(transform_fn, "expand_fn")
+
+        transform_fn(tape)
+
+        spy_transform.assert_called()
+        spy_expand.assert_called()
+
+        input_tape = spy_transform.call_args[0][1]
+        assert len(input_tape.operations) == 1
+        assert input_tape.operations[0].name == "RZ"
+        assert input_tape.operations[0].parameters == [0.5]
 
     def test_parametrized_transform_tape(self):
         """Test that a parametrized transform can be applied

@@ -171,7 +171,7 @@ class batch_transform:
             # tapes, fn = some_transform(tape, *transform_args)
             return self.construct(qnode, *targs, *tkwargs)
 
-        elif isinstance(qnode, qml.QNode):
+        if isinstance(qnode, qml.QNode):
             # Input is a QNode:
             # result = some_transform(qnode, *transform_args)(*qnode_args)
             wrapper = _create_qnode_internal_wrapper(qnode, self, targs, tkwargs)
