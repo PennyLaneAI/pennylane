@@ -11,17 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Class for frame-work agnostic sparse matrix representation."""
+"""Class for framework-agnostic sparse matrix representation."""
 from copy import copy
 import numpy as np
 import pennylane as qml
 
 
 class SparseMatrix:
-    """Framework-agnostic class for sparse matrix representation.
+    """Framework-agnostic class to represent a sparse matrix.
 
     The sparse matrix is stored as a dictionary of a tuple of indices as keys, and
-    the corresponding value (a 0-d tensor) as entries:
+    the corresponding value as entries:
 
     >>> s = SparseMatrix(tf.Variable([[3., 0., 0.],[2., 0., 0.]]))
     >>> print(s.data)
@@ -31,16 +31,16 @@ class SparseMatrix:
 
     An empty sparse matrix can be initialised by passing a shape tuple:
 
-    >>> s = SparseMatrix( (12, 12) )
+    >>> s = SparseMatrix((12, 12))
     >>> print(s.data)
     None
     >>> print(s.shape)
     (12, 12)
 
     Args:
-        arg (tuple or tensor_like): If tuple, this is interpreted as the shape of
-            the sparse matrix. Else arg is interpreted as a 2-d tensor of an autodifferentiation
-            framework.
+        arg (tuple or tensor_like): if tuple, this is interpreted as the shape of
+            the sparse matrix; else it is interpreted as a 2-d tensor which is a dense representation
+            of the matrix.
 
     **Example:**
 
@@ -140,7 +140,7 @@ class SparseMatrix:
     def __mul__(self, other):
 
         new = copy(self)
-        for idx, entry in new.data.items():
+        for idx in new.data.keys():
             new.data[idx] *= other
 
         return new
@@ -156,6 +156,8 @@ class SparseMatrix:
         Returns:
             SparseMatrix: new sparse matrix object representing the kronecker product
         """
+        if not isinstance(other, SparseMatrix):
+            raise ValueError(f"Can only compute the kronecker product with another SparseMatrix; got {type(other)}")
 
         output_shape = (self.shape[0] * other.shape[0], self.shape[1] * other.shape[1])
 

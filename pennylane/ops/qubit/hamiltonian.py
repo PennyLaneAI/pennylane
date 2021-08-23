@@ -15,7 +15,7 @@
 This submodule contains the discrete-variable quantum operations that perform
 arithmetic operations on their input states.
 """
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,consider-using-enumerate
 import itertools
 from copy import copy
 
@@ -597,7 +597,8 @@ class Hamiltonian(Observable):
         sparse_ham = qml.math.SparseMatrix((2 ** len(wires), 2 ** len(wires)))
         for i in range(len(self.ops)):
             op = self.ops[i]
-            coeff = self.coeffs[i]
+            # note: it is important for autodiff that we use `self.data` here, not `self.coeffs`
+            coeff = self.data[i]
 
             # initialise with identities
             list_of_sparse_ops = [qml.math.SparseMatrix(qml.math.convert_like(np.eye(2), coeff))] * len(wires)
