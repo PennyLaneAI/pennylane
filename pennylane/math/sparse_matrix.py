@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Class for framework-agnostic sparse matrix representation."""
-from copy import copy
+from copy import deepcopy
 import numpy as np
 import pennylane as qml
 
@@ -20,8 +20,8 @@ import pennylane as qml
 class SparseMatrix:
     """Framework-agnostic class to represent a sparse matrix.
 
-    The sparse matrix is stored as a dictionary of a tuple of indices as keys, and
-    the corresponding value as entries:
+    The sparse matrix is stored as a dictionary: The tuples of indices are the keys, and
+    the corresponding values are entries:
 
     >>> s = SparseMatrix(tf.Variable([[3., 0., 0.],[2., 0., 0.]]))
     >>> print(s.data)
@@ -82,43 +82,106 @@ class SparseMatrix:
     def __init__(self, arg):
 
         if isinstance(arg, tuple):
-            self.data = {}
-            self.shape = arg
+            self._data = {}
+            self._shape = arg
+            if len(self._shape) != 2:
+                raise ValueError(f"Expected a 2-dimensional tensor; got shape {self._shape}.")
 
         else:
-            self.shape = qml.math.shape(arg)
-            self.data = {}
-            for i in range(self.shape[0]):
-                for j in range(self.shape[1]):
+            self._shape = qml.math.shape(arg)
+            if len(self._shape) != 2:
+                raise ValueError(f"Expected a 2-dimensional tensor; got shape {self._shape}.")
+
+            self._data = {}
+            for i in range(self._shape[0]):
+                for j in range(self._shape[1]):
                     entry = arg[i, j]
                     # easiest way to check that entry is not zero
                     if qml.math.count_nonzero(entry) > 0:
-                        self.data[(i, j)] = entry
+                        self._data[(i, j)] = entry
 
-        if len(self.shape) != 2:
-            raise ValueError("Expected a 2-dimensional tensor.")
+    @property
+    def data(self):
+        """Return the data of the representation.
 
+        Returns:
+            dict
+        """
+        return self._data
+
+    @property
+    def shape(self):
+        """Return the shape of the matrix.
+
+        Returns:
+            tuple
+        """
+        return self._shape
+
+    @property
     def row(self):
-        """Return a list of the first indices of nonzero entries."""
+        """Return a list of the first indices of nonzero entries.
+
+        Returns:
+            list[int]: list of row indices
+        """
         return [idx[0] for idx in self.data]
 
+    @property
     def col(self):
-        """Return a list of the second indices of nonzero entries."""
+        """Return a list of the second indices of nonzero entries.
+
+        Returns:
+            list[int]: list of column indices
+        """
         return [idx[1] for idx in self.data]
 
+    @property
     def nnz(self):
-        """Number of nonzero entries."""
-        return len(self.data)
+        """Number of nonzero entries.
+
+        Returns:
+            int: number of elements
+        """
+        return len(self._data)
+
+    def __eq__(self, other):
+        """Comparison to another ``SparseMatrix`` object.
+        This method compares the data dictionaries.
+
+        Args:
+            other (SparseMatrix): sparse matrix to compare to
+
+        Returns:
+            bool
+        """
+        if not isinstance(other, type(self)):
+            return False
+        return self.data == other.data and self.shape == other.shape
+
+    def __repr__(self):
+        """Representation of this object.
+
+        Return:
+            str
+        """
+        return f"<SparseMatrix: entries={self.nnz}, shape={self.shape}>"
 
     def __add__(self, other):
-        """Addition of another SparseMatrix object.
+        """Addition of another ``SparseMatrix`` object.
+
         Args:
             other (SparseMatrix): sparse matrix to add
+
+        Returns:
+            .SparseMatrix: sum of sparse matrices
         """
         if not isinstance(other, type(self)):
             raise ValueError(f"Cannot add SparseMatrix and {type(other)}.")
+        if self.shape != other.shape:
+            raise ValueError(f"Cannot add SparseMatrix object of different shape, got {other.shape}")
 
-        new = copy(self)
+        new = deepcopy(self)
         for idx, entry in other.data.items():
             if idx in new.data:
                 new.data[idx] += entry
@@ -133,13 +196,16 @@ class SparseMatrix:
         """Subtraction of another SparseMatrix object.
 
         Args:
-            other (SparseMatrix): sparse matrix to add
+            other (SparseMatrix): sparse matrix to subtract
+
+        Returns:
+            .SparseMatrix: difference of sparse matrices
         """
         return self + -1. * other
 
     def __mul__(self, other):
 
-        new = copy(self)
+        new = deepcopy(self)
         for idx in new.data.keys():
             new.data[idx] *= other
 
@@ -154,7 +220,7 @@ class SparseMatrix:
             other (SparseMatrix): another sparse matrix
 
         Returns:
-            SparseMatrix: new sparse matrix object representing the kronecker product
+            .SparseMatrix: new sparse matrix object representing the kronecker product
         """
         if not isinstance(other, SparseMatrix):
             raise ValueError(f"Can only compute the kronecker product with another SparseMatrix; got {type(other)}")
@@ -162,25 +228,25 @@ class SparseMatrix:
         output_shape = (self.shape[0] * other.shape[0], self.shape[1] * other.shape[1])
 
         # note: we can use vanilla np here because we are only bookkeeping indices
-        row = np.repeat(self.row(), other.nnz())
-        col = np.repeat(self.col(), other.nnz())
-        entries = np.repeat(list(self.data.values()), other.nnz())
+        row = np.repeat(self.row, other.nnz)
+        col = np.repeat(self.col, other.nnz)
+        entries = np.repeat(list(self.data.values()), other.nnz)
 
         row *= other.shape[0]
         col *= other.shape[1]
 
         # increment block indices
-        row, col = row.reshape(-1, other.nnz()), col.reshape(-1, other.nnz())
-        row += other.row()
-        col += other.col()
+        row, col = row.reshape(-1, other.nnz), col.reshape(-1, other.nnz)
+        row += other.row
+        col += other.col
         row, col = row.reshape(-1), col.reshape(-1)
 
         # compute block entries
-        entries = qml.math.multiply(qml.math.reshape(entries, (-1, other.nnz())), list(other.data.values()))
+        entries = qml.math.multiply(qml.math.reshape(entries, (-1, other.nnz)), list(other.data.values()))
         entries = qml.math.reshape(entries, -1)
 
         res = SparseMatrix(output_shape)
         data = {(i, j): e for i, j, e in zip(row, col, entries)}
-        res.data = data
+        res._data = data
 
         return res
