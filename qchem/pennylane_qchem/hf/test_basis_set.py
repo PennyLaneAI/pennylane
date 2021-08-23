@@ -46,7 +46,6 @@ class TestBasis:
         assert np.allclose(basis_function.params[1], coeff)
         assert np.allclose(basis_function.params[2], rgaus)
 
-
     @pytest.mark.parametrize(
         "basisset, symbol, l, coefficients, exponents",
         [

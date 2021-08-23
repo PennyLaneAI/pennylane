@@ -55,6 +55,7 @@ class BasisFunction:
         coeff (array(float)): coefficients of the contracted Gaussian functions
         rgaus (array(float)): positions of the Gaussian functions forming the basis function
     """
+
     def __init__(self, l, alpha, coeff, rgaus):
         self.l = l
         self.alpha = alpha
