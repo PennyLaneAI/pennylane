@@ -59,6 +59,7 @@ from .utils import (
     requires_grad,
 )
 
+from .sparse_matrix import SparseMatrix
 
 sum = ar.numpy.sum
 toarray = ar.numpy.to_numpy

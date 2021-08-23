@@ -29,7 +29,6 @@ import pennylane as qml
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
 from pennylane.operation import DiagonalOperation
 from pennylane.wires import WireError
-from pennylane.utils import sparse
 from .._version import __version__
 
 ABC_ARRAY = np.array(list(ABC))
@@ -487,10 +486,10 @@ class DefaultQubit(QubitDevice):
                 # This case should always be intercepted by the QNode, but we want to make sure here.
                 raise DeviceError("Hamiltonian must be used with shots=None")
 
-            # get sparse representation (which fails for some Hamiltonians)
-            sparse_ham = sparse(observable, wires=self.wires)
+            # TODO: we can use this treatment for any observable that implements `sparse_matrix`
+            sparse_ham = observable.sparse_matrix(wires=self.wires)
 
-            # Execute sparse conj(state)*H*state product
+            # execute sparse conj(state)*H*state product
             res = 0.
             for idx, entry in sparse_ham.data.items():
                 res += self._conj(self.state)[idx[0]] * entry * self.state[idx[1]]
