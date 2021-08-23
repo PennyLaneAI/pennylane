@@ -106,6 +106,8 @@ class QNode:
             * ``"finite-diff"``: Uses numerical finite-differences for all quantum operation
               arguments.
 
+            * ``None``: Qnode can not be differentiated.
+
         mutable (bool): If True, the underlying quantum circuit is re-constructed with
             every evaluation. This is the recommended approach, as it allows the underlying
             quantum structure to depend on (potentially trainable) QNode input arguments,
@@ -154,6 +156,10 @@ class QNode:
         max_expansion=10,
         **diff_options,
     ):
+
+        if self.diff_method is None:
+            self.diff_method = "best"
+            self.interface = None
 
         if interface is not None and interface not in self.INTERFACE_MAP:
             raise qml.QuantumFunctionError(
