@@ -775,18 +775,26 @@ class TestSparseRepresentation:
     @pytest.mark.parametrize("converter", converters)
     def test_no_wires(self, converter):
         """Test representation using the Hamiltonian's wires"""
-        ham = qml.Hamiltonian(converter([0.1, 0.2]), [qml.PauliX('b'), qml.PauliY('a')])
+        ham = qml.Hamiltonian(converter([0.1, 0.2]), [qml.PauliX("b"), qml.PauliY("a")])
         s = ham.sparse_matrix()
-        expected = {(0, 2): 0.1, (1, 3): 0.1, (2, 0):0.1, (3, 1): 0.1,
-                    (0, 1): 0.-0.2j, (1, 0): 0.+0.2j, (2, 3): 0.-0.2j, (3, 2): 0.+0.2j}
+        expected = {
+            (0, 2): 0.1,
+            (1, 3): 0.1,
+            (2, 0): 0.1,
+            (3, 1): 0.1,
+            (0, 1): 0.0 - 0.2j,
+            (1, 0): 0.0 + 0.2j,
+            (2, 3): 0.0 - 0.2j,
+            (3, 2): 0.0 + 0.2j,
+        }
         assert s.data == {k: converter(v) for k, v in expected.items()}
         assert s.shape == (4, 4)
 
     @pytest.mark.parametrize("converter", converters)
     def test_no_wires(self, converter):
         """Test representation using custom wires"""
-        ham = qml.Hamiltonian(converter([0.1]), [qml.PauliX('b')])
-        s = ham.sparse_matrix(wires=['a', 'b'])
+        ham = qml.Hamiltonian(converter([0.1]), [qml.PauliX("b")])
+        s = ham.sparse_matrix(wires=["a", "b"])
         expected = {(0, 1): 0.1, (1, 0): 0.1, (2, 3): 0.1, (3, 2): 0.1}
         assert s.data == {k: converter(v) for k, v in expected.items()}
         assert s.shape == (4, 4)
@@ -800,7 +808,7 @@ class TestSparseRepresentation:
 
     def test_error_two_qubit_ops(self):
         """Test that error is raised when Hamiltonian is not constructed from 1-qubit ops only."""
-        ham = qml.Hamiltonian([0.1], [qml.Hermitian(np.eye(4), wires=[0, 2])@qml.PauliX(1)])
+        ham = qml.Hamiltonian([0.1], [qml.Hermitian(np.eye(4), wires=[0, 2]) @ qml.PauliX(1)])
         with pytest.raises(ValueError, match="Can only compute sparse"):
             ham.sparse_matrix()
 

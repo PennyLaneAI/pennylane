@@ -26,34 +26,43 @@ jnp = pytest.importorskip("jax.numpy")
 
 converters = [pnp.array, jnp.array, tf.Variable, torch.tensor]
 
-INIT = [([[0., 3.], [0., 2.]], {(0, 1): 3., (1, 1): 2.}, (2, 2)),
-            ([[0., 1.], [0., 0.], [0., 0.]], {(0, 1): 1.}, (3, 2)),
-            ([[1.]], {(0, 0): 1.}, (1, 1)),
-            ([[0., 0., 0.], [0., 0., 0.], [0., 0., 0.]], {}, (3, 3)),
-            ]
+INIT = [
+    ([[0.0, 3.0], [0.0, 2.0]], {(0, 1): 3.0, (1, 1): 2.0}, (2, 2)),
+    ([[0.0, 1.0], [0.0, 0.0], [0.0, 0.0]], {(0, 1): 1.0}, (3, 2)),
+    ([[1.0]], {(0, 0): 1.0}, (1, 1)),
+    ([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], {}, (3, 3)),
+]
 
-PROPERTIES = [(np.array([[0., 3.], [0., 2.]]), 2, [0, 1], [1, 1]),
-              (np.array([[0.], [1.]]), 1, [1], [0])]
+PROPERTIES = [
+    (np.array([[0.0, 3.0], [0.0, 2.0]]), 2, [0, 1], [1, 1]),
+    (np.array([[0.0], [1.0]]), 1, [1], [0]),
+]
 
-ADDITION = [([[3., 0., 0.], [2., 0., 0.]], [[-3., 0., 0.], [2., 0., 0.]], {(1, 0): 4.}),
-            ([[0., 0.], [0., 0.]], [[0., 0.], [0., 0.]], {})
-            ]
+ADDITION = [
+    ([[3.0, 0.0, 0.0], [2.0, 0.0, 0.0]], [[-3.0, 0.0, 0.0], [2.0, 0.0, 0.0]], {(1, 0): 4.0}),
+    ([[0.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]], {}),
+]
 
-SUBTRACTION = [([[3., 0., 0.], [2., 0., 0.]], [[3., 0., 0.], [-2., 0., 0.]], {(1, 0): 4.}),
-               ([[1., 0.], [0., 0.]], [[1., 0.], [0., 0.]], {})
-               ]
+SUBTRACTION = [
+    ([[3.0, 0.0, 0.0], [2.0, 0.0, 0.0]], [[3.0, 0.0, 0.0], [-2.0, 0.0, 0.0]], {(1, 0): 4.0}),
+    ([[1.0, 0.0], [0.0, 0.0]], [[1.0, 0.0], [0.0, 0.0]], {}),
+]
 
-MULTIPLICATION = [([[3., 0., 0.], [2., 0., 0.]], -1., {(0, 0): -3., (1, 0): -2.}),
-                  ([[0., 0.], [0., 0.]], 2., {})
-                  ]
+MULTIPLICATION = [
+    ([[3.0, 0.0, 0.0], [2.0, 0.0, 0.0]], -1.0, {(0, 0): -3.0, (1, 0): -2.0}),
+    ([[0.0, 0.0], [0.0, 0.0]], 2.0, {}),
+]
 
-EQUALITY = [([[3., 0., 0.], [2., 0., 0.]], [[3., 0., 0.], [2., 0., 0.]], True),
-            ([[3., 0., 0.], [2., 0., 0.]], [[3., 0., 0.], [0., 0., 0.]], False)]
+EQUALITY = [
+    ([[3.0, 0.0, 0.0], [2.0, 0.0, 0.0]], [[3.0, 0.0, 0.0], [2.0, 0.0, 0.0]], True),
+    ([[3.0, 0.0, 0.0], [2.0, 0.0, 0.0]], [[3.0, 0.0, 0.0], [0.0, 0.0, 0.0]], False),
+]
 
 
-KRON = [([[2., 0.], [0., 0.]], [[0., 2.], [-1., 0.]], {(0, 1): 4., (1, 0): -2.}, (4, 4)),
-        ([[2., 0.], [0., 0.]], [[2.]], {(0, 0): 4.}, (2, 2)),
-        ]
+KRON = [
+    ([[2.0, 0.0], [0.0, 0.0]], [[0.0, 2.0], [-1.0, 0.0]], {(0, 1): 4.0, (1, 0): -2.0}, (4, 4)),
+    ([[2.0, 0.0], [0.0, 0.0]], [[2.0]], {(0, 0): 4.0}, (2, 2)),
+]
 
 
 class TestConstruction:
@@ -74,7 +83,7 @@ class TestConstruction:
         assert s.shape == (4, 5)
         assert s.data == {}
 
-    @pytest.mark.parametrize("arg", [(4, ), np.array([0.])])
+    @pytest.mark.parametrize("arg", [(4,), np.array([0.0])])
     def test_shape_error(self, arg):
         """Test error when shape is not 2-d"""
         with pytest.raises(ValueError, match="Expected a 2-dimensional tensor"):
@@ -113,8 +122,8 @@ class TestArithmetic:
 
     def test_addition_shape_error(self):
         """Test that error raised when trying to add matrices of different shapes"""
-        tensor1 = np.array([[1., 0.], [0., 0.]])
-        tensor2 = np.array([[1., 0., 0.], [0., 0., 0.]])
+        tensor1 = np.array([[1.0, 0.0], [0.0, 0.0]])
+        tensor2 = np.array([[1.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
         s1 = SparseMatrix(tensor1)
         s2 = SparseMatrix(tensor2)
         with pytest.raises(ValueError, match="Cannot add SparseMatrix object of different shape"):
@@ -122,8 +131,8 @@ class TestArithmetic:
 
     def test_addition_type_error(self):
         """Test that error raised when trying to add matrices of different types"""
-        tensor1 = np.array([[1., 0.], [0., 0.]])
-        tensor2 = np.array([[1., 0., 0.], [0., 0., 0.]])
+        tensor1 = np.array([[1.0, 0.0], [0.0, 0.0]])
+        tensor2 = np.array([[1.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
         s1 = SparseMatrix(tensor1)
         with pytest.raises(ValueError, match="Cannot add SparseMatrix and"):
             s1 + tensor2
@@ -165,7 +174,7 @@ class TestArithmetic:
         """Test equality when initializing from tuple."""
         s1 = SparseMatrix((2, 3))
         s2 = SparseMatrix((2, 3))
-        assert (s1 == s2)
+        assert s1 == s2
 
         s1 = SparseMatrix((3, 2))
         s2 = SparseMatrix((2, 3))
@@ -185,8 +194,10 @@ class TestArithmetic:
 
     def test_kron_error(self):
         """Test that error raised when trying to compute the kronecker product of matrices of different types"""
-        tensor1 = np.array([[1., 0.], [0., 0.]])
-        tensor2 = np.array([[1., 0., 0.], [0., 0., 0.]])
+        tensor1 = np.array([[1.0, 0.0], [0.0, 0.0]])
+        tensor2 = np.array([[1.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
         s1 = SparseMatrix(tensor1)
-        with pytest.raises(ValueError, match="an only compute the kronecker product with another SparseMatrix"):
+        with pytest.raises(
+            ValueError, match="an only compute the kronecker product with another SparseMatrix"
+        ):
             s1.kron(tensor2)

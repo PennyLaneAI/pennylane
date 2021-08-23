@@ -601,13 +601,17 @@ class Hamiltonian(Observable):
             coeff = self.data[i]
 
             # initialise with identities
-            list_of_sparse_ops = [qml.math.SparseMatrix(qml.math.convert_like(np.eye(2), coeff))] * len(wires)
+            list_of_sparse_ops = [
+                qml.math.SparseMatrix(qml.math.convert_like(np.eye(2), coeff))
+            ] * len(wires)
             for o in qml.operation.Tensor(op).obs:
                 if len(o.wires) > 1:
                     # todo: deal with operations created from multi-qubit operations such as Hermitian
                     raise ValueError(
                         "Can only compute sparse representation of Hamiltonians whose constituent "
-                        "observables are constructed from single-qubit operators; got {}.".format(op)
+                        "observables are constructed from single-qubit operators; got {}.".format(
+                            op
+                        )
                     )
                 # store the single-qubit ops according to the order of their wires
                 idx = wires.index(o.wires)

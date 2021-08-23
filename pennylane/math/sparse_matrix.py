@@ -179,7 +179,9 @@ class SparseMatrix:
         if not isinstance(other, type(self)):
             raise ValueError(f"Cannot add SparseMatrix and {type(other)}.")
         if self.shape != other.shape:
-            raise ValueError(f"Cannot add SparseMatrix object of different shape, got {other.shape}")
+            raise ValueError(
+                f"Cannot add SparseMatrix object of different shape, got {other.shape}"
+            )
 
         new = deepcopy(self)
         for idx, entry in other.data.items():
@@ -201,7 +203,7 @@ class SparseMatrix:
         Returns:
             .SparseMatrix: difference of sparse matrices
         """
-        return self + -1. * other
+        return self + -1.0 * other
 
     def __mul__(self, other):
 
@@ -223,7 +225,9 @@ class SparseMatrix:
             .SparseMatrix: new sparse matrix object representing the kronecker product
         """
         if not isinstance(other, SparseMatrix):
-            raise ValueError(f"Can only compute the kronecker product with another SparseMatrix; got {type(other)}")
+            raise ValueError(
+                f"Can only compute the kronecker product with another SparseMatrix; got {type(other)}"
+            )
 
         output_shape = (self.shape[0] * other.shape[0], self.shape[1] * other.shape[1])
 
@@ -242,11 +246,13 @@ class SparseMatrix:
         row, col = row.reshape(-1), col.reshape(-1)
 
         # compute block entries
-        entries = qml.math.multiply(qml.math.reshape(entries, (-1, other.nnz)), list(other.data.values()))
+        entries = qml.math.multiply(
+            qml.math.reshape(entries, (-1, other.nnz)), list(other.data.values())
+        )
         entries = qml.math.reshape(entries, -1)
 
         res = SparseMatrix(output_shape)
         data = {(i, j): e for i, j, e in zip(row, col, entries)}
-        res._data = data
+        res._data = data  # pylint:disable=protected-access
 
         return res
