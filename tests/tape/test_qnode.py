@@ -408,7 +408,7 @@ class TestValidation:
             "finite-diff",
             "reversible",
             "adjoint",
-            "backprop"
+            "backprop",
         ]:
             qn = qml.QNode(func, dev, interface="autograd", diff_method=method)
             try:
@@ -432,7 +432,7 @@ class TestValidation:
             "finite-diff",
             "reversible",
             "adjoint",
-            "backprop"
+            "backprop",
         ]:
             qn = qml.QNode(func, dev, interface="tf", diff_method="best")
             try:
@@ -456,7 +456,7 @@ class TestValidation:
             "finite-diff",
             "reversible",
             "adjoint",
-            "backprop"
+            "backprop",
         ]:
             qn = qml.QNode(func, dev, interface="autograd", diff_method="best")
             try:
@@ -480,7 +480,7 @@ class TestValidation:
             "finite-diff",
             "reversible",
             "adjoint",
-            "backprop"
+            "backprop",
         ]:
             qn = qml.QNode(func, dev, interface="autograd", diff_method="best")
             try:
