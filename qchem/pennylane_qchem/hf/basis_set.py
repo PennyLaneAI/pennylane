@@ -16,7 +16,6 @@ This module contains functions and classes to create a BasisFunction object from
 such as STO-3G.
 """
 
-from basis_data import atomic_numbers
 from basis_data import STO3G
 
 
@@ -56,7 +55,7 @@ class BasisFunction:
         rgaus (array(float)): positions of the Gaussian functions forming the basis function
     """
 
-    def __init__(self, l, alpha, coeff, rgaus):
+    def __init__(self, l, alpha, coeff, rgaus): # pylint: disable=too-few-public-methods
         self.l = l
         self.alpha = alpha
         self.coeff = coeff
