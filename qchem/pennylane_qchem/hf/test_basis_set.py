@@ -14,7 +14,7 @@
 """
 Unit tests for generating basis set default parameters.
 """
-
+# pylint: disable=no-self-use
 import pytest
 from pennylane import numpy as np
 from basis_set import BasisFunction, atom_basis_data, mol_basis_data
@@ -38,7 +38,7 @@ class TestBasis:
     @pytest.mark.parametrize("basis_data", ref_basis_data)
     def test_basisfunction(self, basis_data):
         """Test that BasisFunction class creates basis function objects correctly."""
-        basis, symbol, n, l, alpha, coeff, rgaus = basis_data
+        _, _, _, l, alpha, coeff, rgaus = basis_data
 
         basis_function = BasisFunction(l, alpha, coeff, rgaus)
 
@@ -53,7 +53,7 @@ class TestBasis:
     @pytest.mark.parametrize("basis_data", ref_basis_data)
     def test_atom_basis_data(self, basis_data):
         """Test that correct basis set parameters are generated for a given atom."""
-        basis, symbol, n, l, alpha, coeff, rgaus = basis_data
+        basis, symbol, _, l, alpha, coeff, _ = basis_data
         params = atom_basis_data(basis, symbol)[0]
 
         assert np.allclose(params[0], l)
@@ -64,7 +64,7 @@ class TestBasis:
     def test_mol_basis_data(self, basis_data):
         """Test that correct basis set parameters are generated for a given molecule represented as
         a list of atom."""
-        basis, symbol, n, l, alpha, coeff, rgaus = basis_data
+        basis, symbol, n, l, alpha, coeff, _ = basis_data
         n_basis, params = mol_basis_data(basis, [symbol, symbol])
 
         assert n_basis == [n, n]
