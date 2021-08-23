@@ -559,7 +559,7 @@ class Hamiltonian(Observable):
              is constructed. If not provided, ``self.wires`` is used.
 
         Returns:
-            .math.SparseMatrix: sparse matrix representation
+            :class:`pennylane.math.SparseMatrix`: sparse matrix representation
 
         **Example:**
 

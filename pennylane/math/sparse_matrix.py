@@ -20,7 +20,7 @@ import pennylane as qml
 class SparseMatrix:
     """Framework-agnostic class to represent a sparse matrix.
 
-    The sparse matrix is stored as a dictionary: The tuples of indices are the keys, and
+    The sparse matrix is stored as a dictionary; the tuples of indices are the keys, and
     the corresponding values are entries:
 
     >>> s = SparseMatrix(tf.Variable([[3., 0., 0.],[2., 0., 0.]]))
@@ -74,7 +74,7 @@ class SparseMatrix:
     We can also compute the Kronecker product (or tensor product) of two sparse matrices:
     >>> res4 = s1.kron(s2)
     >>> print(res4.data)
-    {(0, 0): -9.0, (2, 0): -6.0}
+    {(0, 0): tensor(-9.0), (2, 0): tensor(-6.0)}
     >>> print(res4.shape)
     (4, 4)
     """
