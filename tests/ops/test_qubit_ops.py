@@ -779,7 +779,7 @@ class TestOperations:
     @pytest.mark.parametrize("siswap_op", [qml.SISWAP, qml.SQISW]) 
     def test_SISWAP_decomposition(self, siswap_op, tol):
         """Tests that the decomposition of the SISWAP gate and its SQISW alias gate is correct"""
-        op = qml.SISWAP(wires=[0, 1])
+        op = siswap_op(wires=[0, 1])
         res = op.decomposition(op.wires)
 
         assert len(res) == 12
