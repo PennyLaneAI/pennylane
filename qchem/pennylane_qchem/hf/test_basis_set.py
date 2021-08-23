@@ -35,6 +35,7 @@ class TestBasis:
         ],
     )
     def test_basisfunction(self, l, alpha, coeff, rgaus):
+        """Test that BasisFunction class creates basis function objects correctly."""
         basis_function = BasisFunction(l, alpha, coeff, rgaus)
 
         assert np.allclose(basis_function.params[0], alpha)
@@ -55,7 +56,7 @@ class TestBasis:
         ],
     )
     def test_atom_basis_data(self, basisset, symbol, l, coefficients, exponents):
-
+        """Test that correct basis set parameters are generated for a given atom."""
         params = atom_basis_data(basisset, symbol)[0]
 
         assert np.allclose(params[0], l)
@@ -76,7 +77,8 @@ class TestBasis:
         ],
     )
     def test_mol_basis_data(self, basisset, symbols, nbasis, l, coefficients, exponents):
-
+        """Test that correct basis set parameters are generated for a given molecule represented as
+        a list of atom."""
         n_basis, params = mol_basis_data(basisset, symbols)
 
         assert n_basis == nbasis
