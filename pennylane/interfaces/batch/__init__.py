@@ -242,7 +242,7 @@ def execute(
     execute_fn = cache_execute(device.batch_execute, cache)
 
     if interface is None or gradient_fn is None:
-        with qml.tapes.Unwrap(*tapes):
+        with qml.tape.Unwrap(*tapes):
             res = execute_fn(tapes)
 
         return res

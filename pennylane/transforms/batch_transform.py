@@ -37,6 +37,7 @@ def _create_qnode_internal_wrapper(qnode, batch_transform, targs, tkwargs):
         )
 
         return processing_fn(res)
+
     return _wrapper
 
 
@@ -165,9 +166,26 @@ class batch_transform:
 
     def __call__(self, qnode, *targs, **tkwargs):
         if isinstance(qnode, qml.tape.QuantumTape):
+            # Input is a quantum tape.
+            # tapes, fn = some_transform(tape, *transform_args)
             return self.construct(qnode, *targs, *tkwargs)
 
         if not isinstance(qnode, qml.QNode):
+            # Input is not a QNode nor a quantum tape.
+            # Assume Python decorator syntax:
+            #
+            # result = some_transform(*transform_args)(qnode)(*qnode_args)
+            #
+            # or
+            #
+            # @some_transform(*transform_args)
+            # @qml.qnode(dev)
+            # def circuit(...):
+            #     ...
+            # result = circuit(*qnode_args)
+
+            # Prepend the input to the transform args,
+            # and create a wrapper function.
             targs = (qnode,) + targs
 
             def wrapper(qnode):
@@ -176,6 +194,8 @@ class batch_transform:
                 return _wrapper
 
         else:
+            # Input is a QNode:
+            # result = some_transform(qnode, *transform_args)(*qnode_args)
             wrapper = _create_qnode_internal_wrapper(qnode, self, targs, tkwargs)
             wrapper = functools.wraps(qnode)(wrapper)
 
