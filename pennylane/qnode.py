@@ -191,18 +191,16 @@ class QNode:
         )
         # Update diff_method to reflect which method has been selected
         if self.diff_method == "best":
+            self.diff_method_change = True
             if tape_diff_options["method"] == "device":
                 self.diff_method = "device"
-                self.diff_method_change = True
             elif tape_diff_options["method"] == "backprop":
                 self.diff_method = "backprop"
-                self.diff_method_change = True
             elif tape_diff_options["method"] == "best":
                 self.diff_method = "parameter-shift"
-                self.diff_method_change = True
             elif tape_diff_options["method"] == "numeric":
                 self.diff_method = "finite-diff"
-                self.diff_method_change = True
+
 
         # The arguments to be passed to JacobianTape.jacobian
         self.diff_options = diff_options or {}
