@@ -239,7 +239,7 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 * The `qml.ResetError` is now supported for `default.mixed` device. 
   [(#1541)](https://github.com/PennyLaneAI/pennylane/pull/1541)
   
-* QNode.diff_method will now reflect which method was selected from `diff_method="best"`.
+* `QNode.diff_method` will now reflect which method was selected from `diff_method="best"`.
   [(#1568)](https://github.com/PennyLaneAI/pennylane/pull/1568)
 
 
