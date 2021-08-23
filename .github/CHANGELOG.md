@@ -2,7 +2,8 @@
 
 <h3>New features since last release</h3>
 
-* New SISWAP operation added to default_qubit device. Also added associated test [#1563](https://github.com/PennyLaneAI/pennylane/pull/1563)
+* Added a new `SISWAP` operation and a `SQISW` alias with support to the `default_qubit` device.
+  [#1563](https://github.com/PennyLaneAI/pennylane/pull/1563)
 
 * The `RotosolveOptimizer` now can tackle general parametrized circuits, and is no longer
   restricted to single-qubit Pauli rotations.
