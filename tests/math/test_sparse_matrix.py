@@ -180,6 +180,13 @@ class TestArithmetic:
         s2 = SparseMatrix((2, 3))
         assert not (s1 == s2)
 
+    def test_equality_different_opject(self):
+        """Test that error raised when trying to compare matrices of different types"""
+        tensor1 = np.array([[1.0, 0.0], [0.0, 0.0]])
+        tensor2 = [[1.0, 0.0], [0.0, 0.0]]
+        s1 = SparseMatrix(tensor1)
+        assert not (s1 == tensor2)
+
     @pytest.mark.parametrize("converter", converters)
     @pytest.mark.parametrize("matrix1, matrix2, res, shape", KRON)
     def test_kron(self, converter, matrix1, matrix2, res, shape):
