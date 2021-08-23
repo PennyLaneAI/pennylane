@@ -1597,13 +1597,6 @@ class TestOperations:
         res = op.eigvals
         assert np.allclose(res, exp)
 
-    def test_sqisw_eigenval(self):
-        """Tests that the ISWAP eigenvalue matches the numpy eigenvalues of the ISWAP matrix"""
-        op = qml.SQISW(wires=[0, 1])
-        exp = np.linalg.eigvals(op.matrix)
-        res = op.eigvals
-        assert np.allclose(res, exp)
-
     def test_swap_decomposition(self):
         """Tests the swap operator produces the correct output"""
         opr = qml.SWAP(wires=[0, 1])
