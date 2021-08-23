@@ -25,7 +25,8 @@ requirements = [
     "toml",
     "appdirs",
     "semantic_version==2.6",
-    "autoray"
+    "autoray",
+    "cachetools"
 ]
 
 info = {

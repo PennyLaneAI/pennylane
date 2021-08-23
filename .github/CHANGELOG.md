@@ -2,6 +2,85 @@
 
 <h3>New features since last release</h3>
 
+* The `RotosolveOptimizer` now can tackle general parametrized circuits, and is no longer
+  restricted to single-qubit Pauli rotations.
+  [(#1489)](https://github.com/PennyLaneAI/pennylane/pull/1489)
+  
+  This includes:
+  
+  - layers of gates controlled by the same parameter,
+  - controlled variants of parametrized gates, and
+  - Hamiltonian time evolution.
+  
+  Note that the eigenvalue spectrum of the gate generator needs to be known to
+  use `RotosolveOptimizer` for a general gate, and it
+  is required to produce equidistant frequencies.
+  For details see [Vidal and Theis, 2018](https://arxiv.org/abs/1812.06323)
+  and [Wierichs, Izaac, Wang, Lin 2021](https://arxiv.org/abs/2107.12390).
+
+  Consider a circuit with a mixture of Pauli rotation gates, controlled Pauli rotations, and
+  single-parameter layers of Pauli rotations:
+  ```python
+  dev = qml.device('default.qubit', wires=3, shots=None)
+
+  @qml.qnode(dev)
+  def cost_function(rot_param, layer_par, crot_param):
+      for i, par in enumerate(rot_param):
+          qml.RX(par, wires=i)
+      for w in dev.wires:
+          qml.RX(layer_par, wires=w)
+      for i, par in enumerate(crot_param):
+          qml.CRY(par, wires=[i, (i+1) % 3])
+
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+  ```
+  This cost function has one frequency for each of the first `RX` rotation angles,
+  three frequencies for the layer of `RX` gates that depend on `layer_par`, and two
+  frequencies for each of the `CRY` gate parameters. Rotosolve can then be used to minimize
+  the `cost_function`:
+
+  ```python
+  # Initial parameters
+  init_param = [
+      np.array([0.3, 0.2, 0.67], requires_grad=True),
+      np.array(1.1, requires_grad=True),
+      np.array([-0.2, 0.1, -2.5], requires_grad=True),
+  ]
+  # Numbers of frequencies per parameter
+  num_freqs = [[1, 1, 1], 3, [2, 2, 2]]
+
+  opt = qml.RotosolveOptimizer()
+  param = init_param.copy()
+  ```
+
+  In addition, the optimization technique for the Rotosolve substeps can be chosen via the
+  `optimizer` and `optimizer_kwargs` keyword arguments and the minimized cost of the
+  intermediate univariate reconstructions can be read out via `full_output`, including the
+  cost _after_ the full Rotosolve step:
+
+  ```python
+  for step in range(3):
+      param, cost, sub_cost = opt.step_and_cost(
+          cost_function,
+          *param,
+          num_freqs=num_freqs,
+          full_output=True,
+          optimizer="brute",
+      )
+      print(f"Cost before step: {cost}")
+      print(f"Minimization substeps: {np.round(sub_cost, 6)}")
+  ```
+  ``` pycon
+  Cost before step: 0.042008210392535605
+  Minimization substeps: [-0.230905 -0.863336 -0.980072 -0.980072 -1.       -1.       -1.      ]
+  Cost before step: -0.999999999068121
+  Minimization substeps: [-1. -1. -1. -1. -1. -1. -1.]
+  Cost before step: -1.0
+  Minimization substeps: [-1. -1. -1. -1. -1. -1. -1.]
+  ```
+
+  For usage details please consider the docstring.
+
 * The `frobenius_inner_product` function has been moved to the `qml.math`
   module, and is now differentiable using all autodiff frameworks.
   [(#1388)](https://github.com/PennyLaneAI/pennylane/pull/1388)
@@ -13,9 +92,9 @@
 
   - `qml.gradients.vjp`
   - `qml.gradients.batch_vjp`
-  
-* The Hamiltonian can now store grouping information, which can be accessed by a device to 
-  speed up computations of the expectation value of a Hamiltonian. 
+
+* The Hamiltonian can now store grouping information, which can be accessed by a device to
+  speed up computations of the expectation value of a Hamiltonian.
   [(#1515)](https://github.com/PennyLaneAI/pennylane/pull/1515)
 
   ```python
@@ -23,10 +102,10 @@
   coeffs = np.array([1., 2., 3.])
   H = qml.Hamiltonian(coeffs, obs, grouping_type='qwc')
   ```
-  
-  Initialization with a ``grouping_type`` other than ``None`` stores the indices 
-  required to make groups of commuting observables and their coefficients. 
-  
+
+  Initialization with a ``grouping_type`` other than ``None`` stores the indices
+  required to make groups of commuting observables and their coefficients.
+
   ``` pycon
   >>> H.grouping_indices
   [[0, 1], [2]]
@@ -37,7 +116,7 @@
 
   ``` python
   from pennylane import numpy as np
-  
+
   dev = qml.device("default.qubit", wires=2)
   @qml.qnode(dev)
   def circuit(coeffs, param):
@@ -46,7 +125,7 @@
       return qml.expval(
           qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=True)
       )
-    
+
   coeffs = np.array([-0.05, 0.17])
   param = np.array(1.7)
   grad_fn = qml.grad(circuit)
@@ -57,12 +136,15 @@
   ```
 
 * Support for differentiable execution of batches of circuits has been
-  added, via the beta `pennylane.batch` module.
+  added, via the beta `pennylane.interfaces.batch` module.
   [(#1501)](https://github.com/PennyLaneAI/pennylane/pull/1501)
+  [(#1508)](https://github.com/PennyLaneAI/pennylane/pull/1508)
 
   For example:
 
   ```python
+  from pennylane.interfaces.batch import execute
+
   def cost_fn(x):
       with qml.tape.JacobianTape() as tape1:
           qml.RX(x[0], wires=[0])
@@ -76,7 +158,11 @@
           qml.CNOT(wires=[0, 1])
           qml.probs(wires=1)
 
-      result = execute([tape1, tape2], dev, gradient_fn=param_shift)
+      result = execute(
+          [tape1, tape2], dev,
+          gradient_fn=qml.gradients.param_shift,
+          interface="autograd"
+      )
       return result[0] + result[1][0, 0]
 
   res = qml.grad(cost_fn)(params)
@@ -84,15 +170,37 @@
 
 <h3>Improvements</h3>
 
+* The `MultiControlledX` class now inherits from `Operation` instead of `ControlledQubitUnitary` which makes the `MultiControlledX` gate a non-parameterized gate.
+  [(#1557)](https://github.com/PennyLaneAI/pennylane/pull/1557)
+
+* The `utils.sparse_hamiltonian` function can now deal with non-integer 
+  wire labels, and it throws an error for the edge case of observables that are 
+  created from multi-qubit operations.
+  [(#1550)](https://github.com/PennyLaneAI/pennylane/pull/1550)
+
+* Added the matrix attribute to `qml.templates.subroutines.GroverOperator`
+  [(#1553)](https://github.com/PennyLaneAI/pennylane/pull/1553)
+
+* The `tape.to_openqasm()` method now has a `measure_all` argument that specifies whether the
+  serialized OpenQASM script includes computational basis measurements on all of the qubits or
+  just those specified by the tape.
+  [(#1559)](https://github.com/PennyLaneAI/pennylane/pull/1559)
+
+* An error is raised when no arguments are passed to a `qml.operation.Observable` to inform the user about specifying wires.
+  [(#1547)](https://github.com/PennyLaneAI/pennylane/pull/1547)
+
+* The Hamiltonian class was moved to the `ops/qubit` folder from the `vqe` module, since it is now an observable.
+  [(#1534)](https://github.com/PennyLaneAI/pennylane/pull/1534)
+
 * The `group_observables` transform is now differentiable.
   [(#1483)](https://github.com/PennyLaneAI/pennylane/pull/1483)
- 
+
   For example:
 
   ``` python
   import jax
   from jax import numpy as jnp
-  
+
   coeffs = jnp.array([1., 2., 3.])
   obs = [PauliX(wires=0), PauliX(wires=1), PauliZ(wires=1)]
 
@@ -108,7 +216,7 @@
   >>> jac_fn(coeffs, select=0)
   [[1. 0. 0.]
   [0. 1. 0.]]
-  
+
   >>> jac_fn(coeffs, select=1)
   [[0., 0., 1.]]
   ```
@@ -125,8 +233,19 @@
 and requirements-ci.txt (unpinned). This latter would be used by the CI.
   [(#1535)](https://github.com/PennyLaneAI/pennylane/pull/1535)
 
+* The QFT operation is moved to template
+  [(#1548)](https://github.com/PennyLaneAI/pennylane/pull/1548)
+  
+* The `qml.ResetError` is now supported for `default.mixed` device. 
+  [(#1541)](https://github.com/PennyLaneAI/pennylane/pull/1541)
+
 
 <h3>Breaking changes</h3>
+
+* The class `qml.Interferometer` is deprecated and will be renamed `qml.InterferometerUnitary`
+  after one release cycle.
+  [(#1546)](https://github.com/PennyLaneAI/pennylane/pull/1546)
+
 
 <h3>Bug fixes</h3>
 
@@ -135,11 +254,17 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 <h3>Documentation</h3>
 
+* The `qml.Identity` operation is placed under the sections Qubit observables and CV observables.
+  [(#1576)](https://github.com/PennyLaneAI/pennylane/pull/1576)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Maria Schuld.
+
+Akash Narayanan B, Thomas Bromley, Tanya Garg, Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Maria Schuld,
+Ingrid Strandberg, David Wierichs, Vincent Wong.
+
 
 # Release 0.17.0 (current release)
 
@@ -559,15 +684,14 @@ Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Maria Schuld.
 * Ising YY gate functionality added.
   [(#1358)](https://github.com/PennyLaneAI/pennylane/pull/1358)
 
-
 <h3>Improvements</h3>
 
 * The tape does not verify any more that all Observables have owners in the annotated queue.
   [(#1505)](https://github.com/PennyLaneAI/pennylane/pull/1505)
 
-  This allows manipulation of Observables inside a tape context. An example is 
-  `expval(Tensor(qml.PauliX(0), qml.Identity(1)).prune())` which makes the expval an owner 
-  of the pruned tensor and its constituent observables, but leaves the original tensor in 
+  This allows manipulation of Observables inside a tape context. An example is
+  `expval(Tensor(qml.PauliX(0), qml.Identity(1)).prune())` which makes the expval an owner
+  of the pruned tensor and its constituent observables, but leaves the original tensor in
   the queue without an owner.
 
 * The `step` and `step_and_cost` methods of `QNGOptimizer` now accept a custom `grad_fn`
@@ -597,7 +721,8 @@ Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Maria Schuld.
 * Change the order of the covariance matrix and the vector of means internally
   in `default.gaussian`. [(#1331)](https://github.com/PennyLaneAI/pennylane/pull/1331)
 
-* Added the `id` attribute to templates. [(#1438)](https://github.com/PennyLaneAI/pennylane/pull/1438)
+* Added the `id` attribute to templates.
+  [(#1438)](https://github.com/PennyLaneAI/pennylane/pull/1438)
 
 * The `qml.math` module, for framework-agnostic tensor manipulation,
   has two new functions available:
@@ -1906,7 +2031,7 @@ fully differentiable.
   @qml.qnode(dev)
   def circuit_qft(basis_state):
       qml.BasisState(basis_state, wires=range(3))
-      qml.QFT(wires=range(3))
+      qml.templates.QFT(wires=range(3))
       return qml.state()
   ```
 

@@ -39,7 +39,6 @@ extensions = [
     'sphinx.ext.inheritance_diagram',
     'sphinx.ext.viewcode',
     'sphinxcontrib.bibtex',
-    'edit_on_github',
     'sphinx.ext.graphviz',
     "sphinx.ext.intersphinx",
     "sphinx_automodapi.automodapi",

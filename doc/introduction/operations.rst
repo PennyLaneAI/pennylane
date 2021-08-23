@@ -89,7 +89,6 @@ Qubit gates
     ~pennylane.ControlledQubitUnitary
     ~pennylane.MultiControlledX
     ~pennylane.DiagonalQubitUnitary
-    ~pennylane.QFT
     ~pennylane.SingleExcitation
     ~pennylane.SingleExcitationPlus
     ~pennylane.SingleExcitationMinus
@@ -98,6 +97,7 @@ Qubit gates
     ~pennylane.DoubleExcitationMinus
     ~pennylane.QubitCarry
     ~pennylane.QubitSum
+    ~pennylane.Hamiltonian
 
 
 :html:`</div>`
@@ -135,6 +135,7 @@ Noisy channels
     ~pennylane.DepolarizingChannel
     ~pennylane.BitFlip
     ~pennylane.PhaseFlip
+    ~pennylane.ResetError
     ~pennylane.QubitChannel
 
 :html:`</div>`
@@ -152,10 +153,12 @@ Qubit observables
 
     ~pennylane.Hadamard
     ~pennylane.Hermitian
+    ~pennylane.Identity
     ~pennylane.PauliX
     ~pennylane.PauliY
     ~pennylane.PauliZ
     ~pennylane.Projector
+    ~pennylane.Hamiltonian
 
 :html:`</div>`
 
@@ -245,25 +248,12 @@ CV observables
     :nosignatures:
 
     ~pennylane.FockStateProjector
+    ~pennylane.Identity
     ~pennylane.NumberOperator
     ~pennylane.TensorN
     ~pennylane.P
     ~pennylane.PolyXP
     ~pennylane.QuadOperator
     ~pennylane.X
-
-:html:`</div>`
-
-Shared operations
------------------
-
-The only operation shared by both qubit and continouous-variable architectures is the Identity.
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.Identity
 
 :html:`</div>`

@@ -15,13 +15,137 @@
 This subpackage defines functions for interfacing devices' batch execution
 capabilities with different machine learning libraries.
 """
-# pylint: disable=import-outside-toplevel,too-many-arguments
+# pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches
+from functools import wraps
+
+from cachetools import LRUCache
+import numpy as np
+
 import pennylane as qml
 
 from .autograd import execute as execute_autograd
 
 
-def execute(tapes, device, gradient_fn, interface="autograd", mode="best", gradient_kwargs=None):
+def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True):
+    """Decorator that adds caching to a function that executes
+    multiple tapes on a device.
+
+    This decorator makes use of :attr:`.QuantumTape.hash` to identify
+    unique tapes.
+
+    - If a tape does not match a hash in the cache, then the tape
+      has not been previously executed. It is executed, and the result
+      added to the cache.
+
+    - If a tape matches a hash in the cache, then the tape has been previously
+      executed. The corresponding cached result is
+      extracted, and the tape is not passed to the execution function.
+
+    - Finally, there might be the case where one or more tapes in the current
+      set of tapes to be executed are identical and thus share a hash. If this is the case,
+      duplicates are removed, to avoid redundant evaluations.
+
+    Args:
+        fn (callable): The execution function to add caching to.
+            This function should have the signature ``fn(tapes, **kwargs)``,
+            and it should return ``list[tensor_like]``, with the
+            same length as the input ``tapes``.
+        cache (None or dict or Cache or bool): The cache to use. If ``None``,
+            caching will not occur.
+        pass_kwargs (bool): If ``True``, keyword arguments passed to the
+            wrapped function will be passed directly to ``fn``. If ``False``,
+            they will be ignored.
+        return_tuple (bool): If ``True``, the output of ``fn`` is returned
+            as a tuple ``(fn_ouput, [])``, to match the output of execution functions
+            that also return gradients.
+
+    Returns:
+        function: a wrapped version of the execution function ``fn`` with caching
+        support
+    """
+
+    @wraps(fn)
+    def wrapper(tapes, **kwargs):
+
+        if not pass_kwargs:
+            kwargs = {}
+
+        if cache is None or (isinstance(cache, bool) and not cache):
+            # No caching. Simply execute the execution function
+            # and return the results.
+            res = fn(tapes, **kwargs)
+            return res, [] if return_tuple else res
+
+        execution_tapes = {}
+        cached_results = {}
+        hashes = {}
+        repeated = {}
+
+        for i, tape in enumerate(tapes):
+            h = tape.hash
+
+            if h in hashes.values():
+                # Tape already exists within ``tapes``. Determine the
+                # index of the first occurrence of the tape, store this,
+                # and continue to the next iteration.
+                idx = list(hashes.keys())[list(hashes.values()).index(h)]
+                repeated[i] = idx
+                continue
+
+            hashes[i] = h
+
+            if hashes[i] in cache:
+                # Tape exists within the cache, store the cached result
+                cached_results[i] = cache[hashes[i]]
+            else:
+                # Tape does not exist within the cache, store the tape
+                # for execution via the execution function.
+                execution_tapes[i] = tape
+
+        # if there are no execution tapes, simply return!
+        if not execution_tapes:
+            if not repeated:
+                res = list(cached_results.values())
+                return res, [] if return_tuple else res
+
+        else:
+            # execute all unique tapes that do not exist in the cache
+            res = fn(execution_tapes.values(), **kwargs)
+
+        final_res = []
+
+        for i, tape in enumerate(tapes):
+            if i in cached_results:
+                # insert cached results into the results vector
+                final_res.append(cached_results[i])
+
+            elif i in repeated:
+                # insert repeated results into the results vector
+                final_res.append(final_res[repeated[i]])
+
+            else:
+                # insert evaluated results into the results vector
+                r = res.pop(0)
+                final_res.append(r)
+                cache[hashes[i]] = r
+
+        return final_res, [] if return_tuple else final_res
+
+    wrapper.fn = fn
+    return wrapper
+
+
+def execute(
+    tapes,
+    device,
+    gradient_fn,
+    interface="autograd",
+    mode="best",
+    gradient_kwargs=None,
+    cache=True,
+    cachesize=10000,
+    max_diff=2,
+):
     """Execute a batch of tapes on a device in an autodifferentiable-compatible manner.
 
     Args:
@@ -42,6 +166,13 @@ def execute(tapes, device, gradient_fn, interface="autograd", mode="best", gradi
             pass.
         gradient_kwargs (dict): dictionary of keyword arguments to pass when
             determining the gradients of tapes
+        cache (bool): Whether to cache evaluations. This can result in
+            a significant reduction in quantum evaluations during gradient computations.
+        cachesize (int): the size of the cache
+        max_diff (int): If ``gradient_fn`` is a gradient transform, this option specifies
+            the maximum number of derivatives to support. Increasing this value allows
+            for higher order derivatives to be extracted, at the cost of additional
+            (classical) computational overhead during the backwards pass.
 
     Returns:
         list[list[float]]: A nested list of tape results. Each element in
@@ -101,10 +232,14 @@ def execute(tapes, device, gradient_fn, interface="autograd", mode="best", gradi
            [ 0.01983384, -0.97517033,  0.        ],
            [ 0.        ,  0.        , -0.95533649]])
     """
-    # Default execution function; simply call device.batch_execute
-    # and return no Jacobians.
-    execute_fn = lambda tapes, **kwargs: (device.batch_execute(tapes), [])
     gradient_kwargs = gradient_kwargs or {}
+
+    if isinstance(cache, bool) and cache:
+        # cache=True: create a LRUCache object
+        cache = LRUCache(maxsize=cachesize, getsizeof=len)
+
+    # the default execution function is device.batch_execute
+    execute_fn = cache_execute(device.batch_execute, cache)
 
     if gradient_fn == "device":
         # gradient function is a device method
@@ -116,8 +251,13 @@ def execute(tapes, device, gradient_fn, interface="autograd", mode="best", gradi
             gradient_fn = None
 
         elif mode == "backward":
+            # disable caching on the forward pass
+            execute_fn = cache_execute(device.batch_execute, cache=None)
+
             # replace the backward gradient computation
-            gradient_fn = device.gradients
+            gradient_fn = cache_execute(
+                device.gradients, cache, pass_kwargs=True, return_tuple=False
+            )
 
     elif mode == "forward":
         # In "forward" mode, gradients are automatically handled
@@ -126,6 +266,10 @@ def execute(tapes, device, gradient_fn, interface="autograd", mode="best", gradi
         raise ValueError("Gradient transforms cannot be used with mode='forward'")
 
     if interface == "autograd":
-        return execute_autograd(tapes, device, execute_fn, gradient_fn, gradient_kwargs)
+        res = execute_autograd(
+            tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
+        )
+    else:
+        raise ValueError(f"Unknown interface {interface}")
 
-    raise ValueError(f"Unknown interface {interface}")
+    return res
