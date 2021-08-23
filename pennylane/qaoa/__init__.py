@@ -16,7 +16,7 @@ This module provides a collection of methods that help in the construction of
 QAOA workflows.
 """
 
+import pennylane.qaoa.cycle
 from .mixers import *
 from .cost import *
 from .layers import *
-import pennylane.qaoa.cycle

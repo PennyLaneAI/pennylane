@@ -49,6 +49,10 @@ cycle problem.
 
     cycle
 
+
+Solving the MaxCut problem using QAOA
+-------------------------------------
+
 We can demonstrate the PennyLane QAOA functionality with a basic application of QAOA:
 solving the `MaxCut <https://en.wikipedia.org/wiki/Maximum_cut>`__ problem.
 We begin by defining the set of wires on which QAOA is executed, as well as the graph
