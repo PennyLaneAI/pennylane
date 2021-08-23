@@ -159,6 +159,181 @@ class TestAutogradExecuteUnitTests:
         spy_gradients.assert_called()
 
 
+class TestCaching:
+    """Test for caching behaviour"""
+
+    def test_cache_maxsize(self, mocker):
+        """Test the cachesize property of the cache"""
+        dev = qml.device("default.qubit", wires=1)
+        spy = mocker.spy(qml.interfaces.batch, "cache_execute")
+
+        def cost(a, cachesize):
+            with qml.tape.JacobianTape() as tape:
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.probs(wires=0)
+
+            return execute([tape], dev, gradient_fn=param_shift, cachesize=cachesize)[0]
+
+        params = np.array([0.1, 0.2])
+        qml.jacobian(cost)(params, cachesize=2)
+        cache = spy.call_args[0][1]
+
+        assert cache.maxsize == 2
+        assert cache.currsize == 2
+        assert len(cache) == 2
+
+    def test_custom_cache(self, mocker):
+        """Test the use of a custom cache object"""
+        dev = qml.device("default.qubit", wires=1)
+        spy = mocker.spy(qml.interfaces.batch, "cache_execute")
+
+        def cost(a, cache):
+            with qml.tape.JacobianTape() as tape:
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.probs(wires=0)
+
+            return execute([tape], dev, gradient_fn=param_shift, cache=cache)[0]
+
+        custom_cache = {}
+        params = np.array([0.1, 0.2])
+        qml.jacobian(cost)(params, cache=custom_cache)
+
+        cache = spy.call_args[0][1]
+        assert cache is custom_cache
+
+    def test_caching_param_shift(self, tol):
+        """Test that, when using parameter-shift transform,
+        caching reduces the number of evaluations to their optimum."""
+        dev = qml.device("default.qubit", wires=1)
+
+        def cost(a, cache):
+            with qml.tape.JacobianTape() as tape:
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.probs(wires=0)
+
+            return execute([tape], dev, gradient_fn=param_shift, cache=cache)[0]
+
+        # Without caching, 9 evaluations are required to compute
+        # the Jacobian: 1 (forward pass) + 2 (backward pass) * (2 shifts * 2 params)
+        params = np.array([0.1, 0.2])
+        qml.jacobian(cost)(params, cache=None)
+        assert dev.num_executions == 9
+
+        # With caching, 5 evaluations are required to compute
+        # the Jacobian: 1 (forward pass) + (2 shifts * 2 params)
+        dev._num_executions = 0
+        jac_fn = qml.jacobian(cost)
+        grad1 = jac_fn(params, cache=True)
+        assert dev.num_executions == 5
+
+        # Check that calling the cost function again
+        # continues to evaluate the device (that is, the cache
+        # is emptied between calls)
+        grad2 = jac_fn(params, cache=True)
+        assert dev.num_executions == 10
+        assert np.allclose(grad1, grad2, atol=tol, rtol=0)
+
+        # Check that calling the cost function again
+        # with different parameters produces a different Jacobian
+        grad2 = jac_fn(2 * params, cache=True)
+        assert dev.num_executions == 15
+        assert not np.allclose(grad1, grad2, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("num_params", [2, 3])
+    def test_caching_param_shift_hessian(self, num_params, tol):
+        """Test that, when using parameter-shift transform,
+        caching reduces the number of evaluations to their optimum
+        when computing Hessians."""
+        dev = qml.device("default.qubit", wires=2)
+        params = np.arange(1, num_params + 1) / 10
+
+        N = len(params)
+
+        def cost(x, cache):
+            with qml.tape.JacobianTape() as tape:
+                qml.RX(x[0], wires=[0])
+                qml.RY(x[1], wires=[1])
+
+                for i in range(2, num_params):
+                    qml.RZ(x[i], wires=[i % 2])
+
+                qml.CNOT(wires=[0, 1])
+                qml.var(qml.PauliZ(0) @ qml.PauliX(1))
+
+            return execute([tape], dev, gradient_fn=param_shift, cache=cache)[0]
+
+        # No caching: number of executions is not ideal
+        hess1 = qml.jacobian(qml.grad(cost))(params, cache=False)
+
+        if num_params == 2:
+            # compare to theoretical result
+            x, y, *_ = params
+            expected = np.array(
+                [
+                    [2 * np.cos(2 * x) * np.sin(y) ** 2, np.sin(2 * x) * np.sin(2 * y)],
+                    [np.sin(2 * x) * np.sin(2 * y), -2 * np.cos(x) ** 2 * np.cos(2 * y)],
+                ]
+            )
+            assert np.allclose(expected, hess1, atol=tol, rtol=0)
+
+        expected_runs = 1  # forward pass
+        expected_runs += 2 * N  # Jacobian
+        expected_runs += 4 * N + 1  # Hessian diagonal
+        expected_runs += 4 * N ** 2  # Hessian off-diagonal
+        assert dev.num_executions == expected_runs
+
+        # Use caching: number of executions is ideal
+        dev._num_executions = 0
+        hess2 = qml.jacobian(qml.grad(cost))(params, cache=True)
+        assert np.allclose(hess1, hess2, atol=tol, rtol=0)
+
+        expected_runs_ideal = 1  # forward pass
+        expected_runs_ideal += 2 * N  # Jacobian
+        expected_runs_ideal += 2 * N + 1  # Hessian diagonal
+        expected_runs_ideal += 4 * N * (N - 1) // 2  # Hessian off-diagonal
+        assert dev.num_executions == expected_runs_ideal
+        assert expected_runs_ideal < expected_runs
+
+    def test_caching_adjoint_backward(self):
+        """Test that caching reduces the number of adjoint evaluations
+        when mode=backward"""
+        dev = qml.device("default.qubit", wires=2)
+        params = np.array([0.1, 0.2, 0.3])
+
+        def cost(a, cache):
+            with qml.tape.JacobianTape() as tape:
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.RY(a[2], wires=0)
+                qml.expval(qml.PauliZ(0))
+                qml.expval(qml.PauliZ(1))
+
+            return execute(
+                [tape],
+                dev,
+                gradient_fn="device",
+                cache=cache,
+                mode="backward",
+                gradient_kwargs={"method": "adjoint_jacobian"},
+            )[0]
+
+        # Without caching, 3 evaluations are required.
+        # 1 for the forward pass, and one per output dimension
+        # on the backward pass.
+        qml.jacobian(cost)(params, cache=None)
+        assert dev.num_executions == 3
+
+        # With caching, only 2 evaluations are required. One
+        # for the forward pass, and one for the backward pass.
+        dev._num_executions = 0
+        jac_fn = qml.jacobian(cost)
+        grad1 = jac_fn(params, cache=True)
+        assert dev.num_executions == 2
+
+
 execute_kwargs = [
     {"gradient_fn": param_shift},
     {
@@ -594,3 +769,42 @@ class TestHigherOrderDerivatives:
             res = qml.jacobian(qml.grad(cost_fn))(params)
 
         assert np.allclose(res, np.zeros([2, 2]), atol=tol, rtol=0)
+
+    def test_max_diff(self, tol):
+        """Test that setting the max_diff parameter blocks higher-order
+        derivatives"""
+        dev = qml.device("default.qubit.autograd", wires=2)
+        params = np.array([0.543, -0.654], requires_grad=True)
+
+        def cost_fn(x):
+            with qml.tape.JacobianTape() as tape1:
+                qml.RX(x[0], wires=[0])
+                qml.RY(x[1], wires=[1])
+                qml.CNOT(wires=[0, 1])
+                qml.var(qml.PauliZ(0) @ qml.PauliX(1))
+
+            with qml.tape.JacobianTape() as tape2:
+                qml.RX(x[0], wires=0)
+                qml.RY(x[0], wires=1)
+                qml.CNOT(wires=[0, 1])
+                qml.probs(wires=1)
+
+            result = execute([tape1, tape2], dev, gradient_fn=param_shift, max_diff=1)
+            return result[0] + result[1][0, 0]
+
+        res = cost_fn(params)
+        x, y = params
+        expected = 0.5 * (3 + np.cos(x) ** 2 * np.cos(2 * y))
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        res = qml.grad(cost_fn)(params)
+        expected = np.array(
+            [-np.cos(x) * np.cos(2 * y) * np.sin(x), -np.cos(x) ** 2 * np.sin(2 * y)]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        with pytest.warns(UserWarning, match="Output seems independent"):
+            res = qml.jacobian(qml.grad(cost_fn))(params)
+
+        expected = np.zeros([2, 2])
+        assert np.allclose(res, expected, atol=tol, rtol=0)
