@@ -776,7 +776,8 @@ class TestOperations:
 
         assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
 
-    def test_SISWAP_decomposition(self, tol):
+    @pytest.mark.parametrize("siswap_op", [qml.SISWAP, qml.SQISW]) 
+    def test_SISWAP_decomposition(self, siswap_op, tol):
         """Tests that the decomposition of the SISWAP gate and its SQISW alias gate is correct"""
         op = qml.SISWAP(wires=[0, 1])
         res = op.decomposition(op.wires)
