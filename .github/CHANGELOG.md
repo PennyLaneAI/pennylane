@@ -175,11 +175,14 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 <h3>Documentation</h3>
 
+* The `qml.Identity` operation is placed under the sections Qubit observables and CV observables.
+  [(#1576)](https://github.com/PennyLaneAI/pennylane/pull/1576)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Tanya Garg, Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Akash Narayanan, Maria Schuld,
+Akash Narayanan B, Thomas Bromley, Tanya Garg, Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Maria Schuld,
 Ingrid Strandberg, Vincent Wong.
 
 # Release 0.17.0 (current release)
