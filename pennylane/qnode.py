@@ -201,7 +201,6 @@ class QNode:
             elif tape_diff_options["method"] == "numeric":
                 self.diff_method = "finite-diff"
 
-
         # The arguments to be passed to JacobianTape.jacobian
         self.diff_options = diff_options or {}
         self.diff_options.update(tape_diff_options)
