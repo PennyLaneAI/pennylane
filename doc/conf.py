@@ -39,7 +39,7 @@ extensions = [
     'sphinx.ext.inheritance_diagram',
     'sphinx.ext.viewcode',
     'sphinxcontrib.bibtex',
-    'edit_on_github',
+    # 'edit_on_github', # disabled because the rst files in code/api are not found
     'sphinx.ext.graphviz',
     "sphinx.ext.intersphinx",
     "sphinx_automodapi.automodapi",
