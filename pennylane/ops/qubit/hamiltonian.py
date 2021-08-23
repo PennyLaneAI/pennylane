@@ -571,7 +571,7 @@ class Hamiltonian(Observable):
         <Wires = ['b', 'a']>
         >>> s = ham.sparse_matrix()
         >>> print(s)
-        <pennylane.math.SparseMatrix object at 0x7f045f1e6d90>
+        <SparseMatrix: entries=8, shape=(4, 4)>
         >>> print(s.data)
         {(0, 2): tensor(0.1), (1, 3): tensor(0.1), (2, 0): tensor(0.1), (3, 1): tensor(0.1),
         (0, 1): tensor(0.-0.2j), (1, 0): tensor(0.+0.2j), (2, 3): tensor(0.-0.2j), (3, 2): tensor(0.+0.2j)}
@@ -581,7 +581,7 @@ class Hamiltonian(Observable):
         Alternatively, one can provide a wire ordering. If no operation is found for a wire, an identity is inserted
         at the position.
 
-        >>> ham = qml.Hamiltonian(torch.tensor([0.1]), [qml.PauliX('b'))])
+        >>> ham = qml.Hamiltonian(torch.tensor([0.1]), [qml.PauliX('b')])
         >>> s = ham.sparse_matrix(wires = ['a', 'b'])
         >>> print(s.data)
         {(0, 1): tensor(0.1), (1, 0): tensor(0.1), (2, 3): tensor(0.1), (3, 2): tensor(0.1)}

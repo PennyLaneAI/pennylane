@@ -175,7 +175,7 @@ class TestArithmetic:
     @pytest.mark.parametrize("converter", converters)
     @pytest.mark.parametrize("matrix1, matrix2, res, shape", KRON)
     def test_kron(self, converter, matrix1, matrix2, res, shape):
-        """Test kron product in all frameworks."""
+        """Test kronecker product in all frameworks."""
         tensor1 = converter(matrix1)
         tensor2 = converter(matrix2)
         s1 = SparseMatrix(tensor1)
