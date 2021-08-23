@@ -18,15 +18,13 @@ import functools
 import pennylane as qml
 
 
-def _create_qnode_internal_wrapper(qnode, batch_transform, targs, tkwargs):
+def _create_qnode_internal_wrapper(qnode, transform, targs, tkwargs):
     def _wrapper(*args, **kwargs):
-        dev = qnode.device
-
         qnode.construct(args, kwargs)
-        tapes, processing_fn = batch_transform.construct(qnode.qtape, *targs, **tkwargs)
+        tapes, processing_fn = transform.construct(qnode.qtape, *targs, **tkwargs)
 
         # TODO: work out what to do for backprop
-        interface = None if not batch_transform.differentiable else qnode.interface
+        interface = None if not transform.differentiable else qnode.interface
 
         # TODO: extract gradient_fn from QNode
         res = qml.interfaces.batch.execute(
