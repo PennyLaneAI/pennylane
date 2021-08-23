@@ -855,13 +855,12 @@ class QNode:
                 # Since the interface is changing, need to re-validate the tape class.
                 # if method was changed from "best", set it back to best
                 if self.diff_method_change:
-                    self._tape, interface, self.device, diff_options = self.get_tape(
-                        self._original_device, "tf", "best"
-                    )
+                    diff_method = "best"
                 else:
-                    self._tape, interface, self.device, diff_options = self.get_tape(
-                        self._original_device, "tf", self.diff_method
-                    )
+                    diff_method = self.diff_method
+                self._tape, interface, self.device, diff_options = self.get_tape(
+                    self._original_device, "tf", diff_method
+                )
 
                 self.interface = interface
                 self.diff_options.update(diff_options)
@@ -901,13 +900,12 @@ class QNode:
                 # Since the interface is changing, need to re-validate the tape class.
                 # if method was changed from "best", set it back to best
                 if self.diff_method_change:
-                    self._tape, interface, self.device, diff_options = self.get_tape(
-                        self._original_device, "torch", "best"
-                    )
+                    diff_method = "best"
                 else:
-                    self._tape, interface, self.device, diff_options = self.get_tape(
-                        self._original_device, "torch", self.diff_method
-                    )
+                    diff_method = self.diff_method
+                self._tape, interface, self.device, diff_options = self.get_tape(
+                    self._original_device, "torch", diff_method
+                )
 
                 self.interface = interface
                 self.diff_options.update(diff_options)
@@ -939,13 +937,12 @@ class QNode:
             # Since the interface is changing, need to re-validate the tape class.
             # if method was changed from "best", set it back to best
             if self.diff_method_change:
-                self._tape, interface, self.device, diff_options = self.get_tape(
-                    self._original_device, "autograd", "best"
-                )
+                diff_method = "best"
             else:
-                self._tape, interface, self.device, diff_options = self.get_tape(
-                    self._original_device, "autograd", self.diff_method
-                )
+                diff_method = self.diff_method
+            self._tape, interface, self.device, diff_options = self.get_tape(
+                self._original_device, "autograd", diff_method
+            )
 
             self.interface = interface
             self.diff_options.update(diff_options)
@@ -973,13 +970,12 @@ class QNode:
                 # Since the interface is changing, need to re-validate the tape class.
                 # if method was changed from "best", set it back to best
                 if self.diff_method_change:
-                    self._tape, interface, self.device, diff_options = self.get_tape(
-                        self._original_device, "jax", "best"
-                    )
+                    diff_method = "best"
                 else:
-                    self._tape, interface, self.device, diff_options = self.get_tape(
-                        self._original_device, "jax", self.diff_method
-                    )
+                    diff_method = self.diff_method
+                self._tape, interface, self.device, diff_options = self.get_tape(
+                    self._original_device, "jax", diff_method
+                )
 
                 self.interface = interface
                 self.diff_options.update(diff_options)
