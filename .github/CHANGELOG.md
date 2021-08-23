@@ -2,6 +2,9 @@
 
 <h3>New features since last release</h3>
 
+* Added a new `SISWAP` operation and a `SQISW` alias with support to the `default_qubit` device.
+  [#1563](https://github.com/PennyLaneAI/pennylane/pull/1563)
+
 * The `RotosolveOptimizer` now can tackle general parametrized circuits, and is no longer
   restricted to single-qubit Pauli rotations.
   [(#1489)](https://github.com/PennyLaneAI/pennylane/pull/1489)
@@ -262,7 +265,7 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 This release contains contributions from (in alphabetical order):
 
 
-Akash Narayanan B, Thomas Bromley, Tanya Garg, Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Maria Schuld,
+Vishnu Ajith, Akash Narayanan B, Thomas Bromley, Tanya Garg, Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Maria Schuld,
 Ingrid Strandberg, David Wierichs, Vincent Wong.
 
 
