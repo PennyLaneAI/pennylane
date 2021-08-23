@@ -65,6 +65,8 @@ Non-parametric Ops
     ~pennylane.CY
     ~pennylane.SWAP
     ~pennylane.ISWAP
+    ~pennylane.SISWAP
+    ~pennylane.SQISW
     ~pennylane.CSWAP
     ~pennylane.Toffoli
     ~pennylane.MultiControlledX
