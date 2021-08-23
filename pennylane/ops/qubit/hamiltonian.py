@@ -15,7 +15,7 @@
 This submodule contains the discrete-variable quantum operations that perform
 arithmetic operations on their input states.
 """
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,consider-using-enumerate
 import itertools
 from copy import copy
 
@@ -550,3 +550,73 @@ class Hamiltonian(Observable):
 
         context.append(self, owns=tuple(self.ops))
         return self
+
+    def sparse_matrix(self, wires=None):
+        """Sparse matrix representation of this Hamiltonian.
+
+        Args:
+            wires (Iterable): Wire labels that indicate the order of wires according to which the matrix
+             is constructed. If not provided, ``self.wires`` is used.
+
+        Returns:
+            .math.SparseMatrix: sparse matrix representation
+
+        **Example:**
+
+        If no wires are given, the matrix is constructed under the assumption that the wires are ordered
+        according to the Hamiltonian's wire ordering, which is inferred from the order of the operations.
+
+        >>> ham = qml.Hamiltonian(torch.tensor([0.1, 0.2]), [qml.PauliX('b'), qml.PauliY('a')])
+        >>> ham.wires
+        <Wires = ['b', 'a']>
+        >>> s = ham.sparse_matrix()
+        >>> print(s)
+        <pennylane.math.SparseMatrix object at 0x7f045f1e6d90>
+        >>> print(s.data)
+        {(0, 2): tensor(0.1), (1, 3): tensor(0.1), (2, 0): tensor(0.1), (3, 1): tensor(0.1),
+        (0, 1): tensor(0.-0.2j), (1, 0): tensor(0.+0.2j), (2, 3): tensor(0.-0.2j), (3, 2): tensor(0.+0.2j)}
+        >>> print(s.shape)
+        (4, 4)
+
+        Alternatively, one can provide a wire ordering. If no operation is found for a wire, an identity is inserted
+        at the position.
+
+        >>> ham = qml.Hamiltonian(torch.tensor([0.1]), [qml.PauliX('b'))])
+        >>> s = ham.sparse_matrix(wires = ['a', 'b'])
+        >>> print(s.data)
+        {(0, 1): tensor(0.1), (1, 0): tensor(0.1), (2, 3): tensor(0.1), (3, 2): tensor(0.1)}
+        >>> print(s.shape)
+        (4, 4)
+        """
+
+        if wires is None:
+            wires = self.wires
+        else:
+            wires = Wires(wires)
+
+        sparse_ham = qml.math.SparseMatrix((2 ** len(wires), 2 ** len(wires)))
+        for i in range(len(self.ops)):
+            op = self.ops[i]
+            # note: it is important for autodiff that we use `self.data` here, not `self.coeffs`
+            coeff = self.data[i]
+
+            # initialise with identities
+            list_of_sparse_ops = [qml.math.SparseMatrix(qml.math.convert_like(np.eye(2), coeff))] * len(wires)
+            for o in qml.operation.Tensor(op).obs:
+                if len(o.wires) > 1:
+                    # todo: deal with operations created from multi-qubit operations such as Hermitian
+                    raise ValueError(
+                        "Can only compute sparse representation of Hamiltonians whose constituent "
+                        "observables are constructed from single-qubit operators; got {}.".format(op)
+                    )
+                # store the single-qubit ops according to the order of their wires
+                idx = wires.index(o.wires)
+                # todo: make o.sparse a property of the operators and call `o.sparse_matrix`
+                list_of_sparse_ops[idx] = qml.math.SparseMatrix(o.matrix)
+
+            tensor_prod = list_of_sparse_ops[0]
+            for o in list_of_sparse_ops[1:]:
+                tensor_prod = tensor_prod.kron(o)
+
+            sparse_ham += tensor_prod * coeff
+        return sparse_ham
