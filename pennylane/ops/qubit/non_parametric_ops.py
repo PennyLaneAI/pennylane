@@ -692,7 +692,7 @@ class SISWAP(Operation):
             CNOT(wires=[wires[0], wires[1]]),
             SX(wires=0),
             qml.RZ(7 * np.pi / 4, wires=wires[0]),
-            SX(wires=0),
+            SX(wires=wires[0]),
             qml.RZ(np.pi / 2, wires=wires[0]),
             SX(wires=wires[1]),
             qml.RZ(7 * np.pi / 4, wires=wires[1]),
