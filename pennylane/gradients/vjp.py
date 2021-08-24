@@ -37,6 +37,10 @@ def compute_vjp(dy, jac):
         return None
 
     dy_row = math.reshape(dy, [-1])
+
+    if not isinstance(dy_row, np.ndarray):
+        jac = math.convert_like(jac, dy_row)
+
     jac = math.reshape(jac, [dy_row.shape[0], -1])
 
     if math.allclose(dy, 0):
@@ -143,8 +147,6 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
     tensor([[-1.1025e+00, -2.0554e-01, -1.4917e-01],
             [-1.9429e-09, -9.1580e-01,  1.3878e-09]], dtype=torch.float64)
     """
-    # t._par_info = {}
-    # t._update()
     gradient_kwargs = gradient_kwargs or {}
     num_params = len(tape.trainable_params)
 
