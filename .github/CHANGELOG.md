@@ -239,6 +239,7 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 * The `qml.ResetError` is now supported for `default.mixed` device. 
   [(#1541)](https://github.com/PennyLaneAI/pennylane/pull/1541)
 
+
 <h3>Breaking changes</h3>
 
 * The class `qml.Interferometer` is deprecated and will be renamed `qml.InterferometerUnitary`
@@ -261,8 +262,8 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 This release contains contributions from (in alphabetical order):
 
 
-Akash Narayanan B, Thomas Bromley, Tanya Garg, Josh Izaac, Prateek Jain, Johannes Jakob Meyer,
-Maria Schuld, Ingrid Strandberg, David Wierichs, Vincent Wong.
+Akash Narayanan B, Thomas Bromley, Tanya Garg, Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Maria Schuld,
+Ingrid Strandberg, David Wierichs, Vincent Wong.
 
 
 # Release 0.17.0 (current release)
