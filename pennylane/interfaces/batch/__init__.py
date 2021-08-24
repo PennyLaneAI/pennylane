@@ -23,8 +23,6 @@ import numpy as np
 
 import pennylane as qml
 
-from .autograd import execute as execute_autograd
-
 
 def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True):
     """Decorator that adds caching to a function that executes
@@ -74,7 +72,7 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True):
             # No caching. Simply execute the execution function
             # and return the results.
             res = fn(tapes, **kwargs)
-            return res, [] if return_tuple else res
+            return (res, []) if return_tuple else res
 
         execution_tapes = {}
         cached_results = {}
@@ -106,7 +104,7 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True):
         if not execution_tapes:
             if not repeated:
                 res = list(cached_results.values())
-                return res, [] if return_tuple else res
+                return (res, []) if return_tuple else res
 
         else:
             # execute all unique tapes that do not exist in the cache
@@ -129,7 +127,7 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True):
                 final_res.append(r)
                 cache[hashes[i]] = r
 
-        return final_res, [] if return_tuple else final_res
+        return (final_res, []) if return_tuple else final_res
 
     wrapper.fn = fn
     return wrapper
@@ -236,7 +234,7 @@ def execute(
 
     if isinstance(cache, bool) and cache:
         # cache=True: create a LRUCache object
-        cache = LRUCache(maxsize=cachesize, getsizeof=len)
+        cache = LRUCache(maxsize=cachesize, getsizeof=lambda x: qml.math.shape(x)[0])
 
     # the default execution function is device.batch_execute
     execute_fn = cache_execute(device.batch_execute, cache)
@@ -266,10 +264,12 @@ def execute(
         raise ValueError("Gradient transforms cannot be used with mode='forward'")
 
     if interface == "autograd":
-        res = execute_autograd(
-            tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
-        )
+        from .autograd import execute as _execute
+    elif interface in ("torch", "pytorch"):
+        from .torch import execute as _execute
     else:
         raise ValueError(f"Unknown interface {interface}")
+
+    res = _execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff)
 
     return res
