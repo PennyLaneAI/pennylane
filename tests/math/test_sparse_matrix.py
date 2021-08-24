@@ -230,7 +230,9 @@ def non_sparse_cost(c1, c2):
 
 
 class TestGradients:
-    """Integration tests to ensure the logic is differentiable"""
+    """Integration tests to ensure the logic is differentiable.
+    Note that only scalar multiplication coefficients are differentiable;
+    the SparseMatrix data elements themselves are not."""
 
     def test_autograd(self):
         """Test that the sparse matrix methods are differentiable using
@@ -239,6 +241,7 @@ class TestGradients:
         def cost(c1, c2):
             s1 = SparseMatrix(m1)
             s2 = SparseMatrix(m2)
+            # Note: c1 * s1 will not work
             y3 = s1 * c1 - s2 * c2
             return pnp.sum(list(y3.data.values()))
 
