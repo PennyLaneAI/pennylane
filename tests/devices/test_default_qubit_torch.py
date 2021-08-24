@@ -983,8 +983,8 @@ class TestQNodeIntegration:
         }
         assert cap == capabilities
 
-    def test_load_tensornet_torch_device(self):
-        """Test that the tensor network plugin loads correctly"""
+    def test_load_torch_device(self):
+        """Test that the torch device plugin loads correctly"""
         dev = qml.device("default.qubit.torch", wires=2)
         assert dev.num_wires == 2
         assert dev.shots is None
