@@ -252,6 +252,9 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 <h3>Bug fixes</h3>
 
+* Fix bug when computing expectations of Hamiltonians using TensorFlow.
+  [(#1586)](https://github.com/PennyLaneAI/pennylane/pull/1586)
+
 * Fix bug when computing the specs of a circuit with a Hamiltonian observable.
   [(#1533)](https://github.com/PennyLaneAI/pennylane/pull/1533)
 
@@ -264,12 +267,16 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
   the list of functions first followed by the technical details of the module.
   [(#1581)](https://github.com/PennyLaneAI/pennylane/pull/1581) 
 
+* Recategorized Qubit operations into new and existing categories so that code for each
+  operation is easier to locate.
+  [(#1566)](https://github.com/PennyLaneAI/pennylane/pull/1583)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
 
-Vishnu Ajith, Akash Narayanan B, Thomas Bromley, Tanya Garg, Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Maria Schuld,
+Vishnu Ajith, Akash Narayanan B, Thomas Bromley, Tanya Garg, Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Pratul Saini, Maria Schuld,
 Ingrid Strandberg, David Wierichs, Vincent Wong.
 
 
