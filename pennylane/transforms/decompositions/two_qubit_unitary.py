@@ -15,6 +15,7 @@
 unitary operations into elementary gates.
 """
 import pennylane as qml
+from pennylane import numpy as np
 from pennylane import math
 
 from .single_qubit_unitary import zyz_decomposition
@@ -59,7 +60,7 @@ def _convert_to_su4(U):
     det = math.linalg.det(U)
 
     # Convert to SU(4) if it's not close to 1
-    if not math.allclose(det, 1.0):
+    if not qml.math.allclose(det, 1.0):
         exp_angle = -1j * math.cast_like(math.angle(det), 1j) / 4
         U = math.cast_like(U, exp_angle) * math.exp(exp_angle)
 
@@ -69,13 +70,13 @@ def _convert_to_su4(U):
 def _select_rotation_angles(U):
     r"""Choose the rotation angles of RZ, RY in the two-qubit decomposition.
     They are chosen as per Proposition V.1 in quant-ph/0308033 and are based
-    on the phases of the eigenvalues of :math:`E^\dagger gamma(U) E`, where
+    on the phases of the eigenvalues of :math:`E^\dagger \gamma(U) E`, where
 
     .. math::
 
-        \gamma(U) = U (Y \otimes Y) U^T (Y \otimes Y)
+        \gamma(U) = U (Y \otimes Y) U^T (Y \otimes Y),
 
-    where :math:`Y` is the Pauli :math:`y`, or equivalently,
+    and :math:`Y` is the Pauli :math:`Y` operation. Equivalently,
 
     .. math::
 
@@ -140,34 +141,96 @@ def _extract_su2su2_prefactors(U, V):
     ev_q, q = qml.math.linalg.eig(vvT)
     q_diag = ev_q.copy()
 
-    # In order for the decompositions to be equal, we have to permute their
-    # eigenvalues. Do so by sorting the eigenvalues in both p and q, then
-    # reshuffling them to match.
-    p_diag.real[np.abs(p_diag.real) < 1e-8] = 0
-    p_diag.imag[np.abs(p_diag.imag) < 1e-8] = 0
-    q_diag.real[np.abs(q_diag.real) < 1e-8] = 0
-    q_diag.imag[np.abs(q_diag.imag) < 1e-8] = 0
+    # If determinants are not 1, need to negate one of the columns
+    if not qml.math.isclose(qml.math.linalg.det(p), 1.0):
+       p[:, -1] = -p[:, -1]
 
-    p_order = qml.math.argsort(p_diag)
-    q_order = qml.math.argsort(q_diag)
+    #if not qml.math.isclose(qml.math.linalg.det(q), 1.0):
+    #   q[:, -1] = -q[:, -1]
+    
+    print(f"p in O(4): {qml.math.allclose(qml.math.dot(p, qml.math.T(p)), np.eye(4))}")
+    print(f"p det = {qml.math.linalg.det(p)}\n")
+    print(f"q in O(4): {qml.math.allclose(qml.math.dot(q, qml.math.T(q)), np.eye(4))}")
+    print(f"q det = {qml.math.linalg.det(q)}\n")
 
-    new_p_eigvals = p_diag[[p_order]]
-    new_q_eigvals = q_diag[[q_order]]
+    # Reorder the columns of p so that the eigenvalues are in the same order
+    # as those of q.
+
+    print(p_diag)
+    print(q_diag)
+
+    print(f"\nInitial q = \n{np.round(q, decimals=4)}\n")
+
+    column_phases = [1, 1, 1, 1]
+    new_q_order = []
+    
+    for idx, eigval in enumerate(p_diag):
+        for phase in [1, -1, 1j, -1j]:
+            are_close = [qml.math.isclose(x, phase * eigval) for x in q_diag]
+
+            if any(are_close):
+                where = qml.math.argmax(are_close)
+                column_phases[where] = phase
+                new_q_order.append(where)
+                break
+
+    print("\nAfter re-ordering")
+    print(p_diag)
+    print(q_diag[[new_q_order]] / column_phases)
+
+    for idx, phase in enumerate(column_phases):
+        q[:, idx] = q[:, idx] / qml.math.sqrt(phase)
 
     # Given the new order, get the permutation matrices needed to reshuffle the
     # columns of p and q.
-    p_perm = _perm_matrix_from_sequence(p_order)
-    q_perm = _perm_matrix_from_sequence(q_order)
+    q_perm, q_phase = _perm_matrix_from_sequence(new_q_order)
 
+    print(q_perm)
+    print(q_phase)
+    print()
     #  After the shuffling below, we will have that p^T u u^T p = q^T v v^T q.
-    p = qml.math.linalg.multi_dot([p, qml.math.T(p_perm)])
     q = qml.math.linalg.multi_dot([q, qml.math.T(q_perm)])
+    
+    print(f"Final q = \n{np.round(q, decimals=4)}\n")
+    print(f"q in O(4): {qml.math.allclose(qml.math.dot(q, qml.math.T(q)), np.eye(4))}")
+    print(f"q det = {qml.math.linalg.det(q)}\n")
 
+    #if not qml.math.isclose(qml.math.linalg.det(q), 1.0):
+    #   q[:, -1] = -q[:, -1]
+    
+    p_product = qml.math.linalg.multi_dot([qml.math.T(p), uuT, p])
+    q_product = qml.math.linalg.multi_dot([qml.math.T(q), vvT, q])
+        
+    print(f"pT uuT p = {np.round(p_product, decimals=4)}\n")
+    print(f"qT vvT q = {np.round(q_product, decimals=4)}\n")     
+
+    print(np.round(qml.math.dot(q / q_phase, qml.math.T(q)), decimals=4))
+    
+    print("After permuting the order")
+    print(f"p in O(4): {qml.math.allclose(qml.math.dot(p, qml.math.T(p)), np.eye(4))}")
+    print(f"p det = {qml.math.linalg.det(p)}\n")
+    print(f"q in O(4): {qml.math.allclose(qml.math.dot(q, qml.math.T(q)), np.eye(4))}")
+    print(f"q det = {qml.math.linalg.det(q)}\n")
+        
     # This means there exist p, q in SO(4) such that p^T u u^T p = q^T v v^T q.
     # Then (v^\dag q p^T u)(v^\dag q p^T U)^T = I.
     # So we can set G = p q^T, H = v^\dag q p^T u to obtain G v H = u.
-    G = qml.math.dot(p, qml.math.T(q))
+    G = qml.math.dot(p, qml.math.T(q) )
     H = qml.math.linalg.multi_dot([qml.math.conj(qml.math.T(v)), q, qml.math.T(p), u])
+
+    # Remove global phase to ensure determinant 1 (SO(4))
+    GGT = qml.math.dot(G, qml.math.T(G))
+    G = G * qml.math.sqrt(GGT[0, 0])
+
+    HHT = qml.math.dot(H, qml.math.T(H))
+    H = H / HHT[0, 0]
+    
+    print(f"GGT = {np.round(qml.math.dot(G, qml.math.T(G)), decimals=4)}\n")
+    print(f"HHT = {np.round(qml.math.dot(H, qml.math.T(H)), decimals=4)}\n")
+    print(f"G in O(4): {qml.math.allclose(qml.math.dot(G, qml.math.T(G)), np.eye(4))}")
+    print(f"G det = {qml.math.linalg.det(G)}\n")
+    print(f"H in O(4): {qml.math.allclose(qml.math.dot(H, qml.math.T(H)), np.eye(4))}")
+    print(f"H det = {qml.math.linalg.det(H)}\n")
 
     # These are still in SO(4) though - we want to convert things into SU(2) x SU(2)
     # so use the entangler. Since u = E^\dagger U E and v = E^\dagger V E where U, V
@@ -240,6 +303,8 @@ def two_qubit_decomposition(U, wires):
     V = qml.math.linalg.multi_dot(
         [CNOT10, np.kron(np.eye(2), RYa), CNOT01, np.kron(RZd, RYb), CNOT10]
     )
+
+    V = _convert_to_su4(V)
 
     # Now we need to find the four SU(2) operations A, B, C, D
     A, B, C, D = _extract_su2su2_prefactors(U, V)
