@@ -233,6 +233,16 @@ def classproperty(func):
 # =============================================================================
 
 
+def _process_data(op):
+    if op.name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
+        return str([d % (2 * np.pi) for d in op.data])
+
+    if op.name in ("CRX", "CRY", "CRZ", "CRot"):
+        return str([d % (4 * np.pi) for d in op.data])
+
+    return str(op.data)
+
+
 class Operator(abc.ABC):
     r"""Base class for quantum operators supported by a device.
 
@@ -281,6 +291,11 @@ class Operator(abc.ABC):
                 # Deep copy everything else.
                 setattr(copied_op, attribute, copy.deepcopy(value, memo))
         return copied_op
+
+    @property
+    def hash(self):
+        """int: returns an integer hash uniquely representing the operator"""
+        return hash((str(self.name), tuple(self.wires.tolist()), _process_data(self)))
 
     @classmethod
     def _matrix(cls, *params):
@@ -1039,8 +1054,14 @@ class Observable(Operator):
     def __init__(self, *params, wires=None, do_queue=True, id=None):
         # extract the arguments
         if wires is None:
-            wires = params[-1]
-            params = params[:-1]
+            try:
+                wires = params[-1]
+                params = params[:-1]
+                # error if no arguments are given
+            except IndexError as err:
+                raise ValueError(
+                    f"Must specify the wires that {type(self).__name__} acts on"
+                ) from err
 
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
