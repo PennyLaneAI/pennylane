@@ -1,8 +1,54 @@
 qml.qaoa
 ========
 
+Overview
+--------
+
 This module provides a collection of methods that help in the construction of
 QAOA workflows.
+
+.. currentmodule:: pennylane.qaoa
+
+Mixer Hamiltonians
+------------------
+
+.. automodapi:: pennylane.qaoa.mixers
+    :no-heading:
+    :no-inheritance-diagram:
+    :no-inherited-members:
+
+Cost Hamiltonians
+-----------------
+
+.. automodapi:: pennylane.qaoa.cost
+    :no-heading:
+    :no-inheritance-diagram:
+    :no-inherited-members:
+
+QAOA Layers
+-----------
+
+.. automodapi:: pennylane.qaoa.layers
+    :no-heading:
+    :no-inheritance-diagram:
+    :no-inherited-members:
+
+Cycle Optimization
+------------------
+
+The :mod:`~.cycle` module is available for additional functionality related to the maximum-weighted
+cycle problem.
+
+.. currentmodule:: pennylane.qaoa
+
+.. autosummary::
+    :toctree: api
+
+    cycle
+
+
+Solving the MaxCut problem using QAOA
+-------------------------------------
 
 We can demonstrate the PennyLane QAOA functionality with a basic application of QAOA:
 solving the `MaxCut <https://en.wikipedia.org/wiki/Maximum_cut>`__ problem.
@@ -66,42 +112,3 @@ of the QAOA circuit.
 
 The QAOA cost function can then be optimized in the usual way, by calling one of the built-in PennyLane optimizers
 and updating the variational parameters until the expected value of the cost Hamiltonian is minimized.
-
-.. currentmodule:: pennylane.qaoa
-
-Mixer Hamiltonians
-------------------
-
-.. automodapi:: pennylane.qaoa.mixers
-    :no-heading:
-    :no-inheritance-diagram:
-    :no-inherited-members:
-
-Cost Hamiltonians
------------------
-
-.. automodapi:: pennylane.qaoa.cost
-    :no-heading:
-    :no-inheritance-diagram:
-    :no-inherited-members:
-
-QAOA Layers
------------
-
-.. automodapi:: pennylane.qaoa.layers
-    :no-heading:
-    :no-inheritance-diagram:
-    :no-inherited-members:
-
-Cycle Optimization
-------------------
-
-The :mod:`~.cycle` module is available for additional functionality related to the maximum-weighted
-cycle problem.
-
-.. currentmodule:: pennylane.qaoa
-
-.. autosummary::
-    :toctree: api
-
-	cycle
