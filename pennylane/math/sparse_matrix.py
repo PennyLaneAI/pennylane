@@ -92,6 +92,7 @@ class SparseMatrix:
             if len(self._shape) != 2:
                 raise ValueError(f"Expected a 2-dimensional tensor; got shape {self._shape}.")
 
+            # todo: vectorise this loop
             self._data = {}
             for i in range(self._shape[0]):
                 for j in range(self._shape[1]):
