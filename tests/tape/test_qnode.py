@@ -393,7 +393,8 @@ class TestValidation:
         assert qn.diff_method_change
 
     @pytest.mark.parametrize(
-        "method", [
+        "method",
+        [
             "best",
             "parameter-shift",
             "finite-diff",
@@ -416,7 +417,8 @@ class TestValidation:
         qn.to_tf()
 
     @pytest.mark.parametrize(
-        "method", [
+        "method",
+        [
             "best",
             "parameter-shift",
             "finite-diff",
@@ -439,7 +441,8 @@ class TestValidation:
         qn.to_autograd()
 
     @pytest.mark.parametrize(
-        "method", [
+        "method",
+        [
             "best",
             "parameter-shift",
             "finite-diff",
@@ -461,7 +464,8 @@ class TestValidation:
         qn.to_torch()
 
     @pytest.mark.parametrize(
-        "method", [
+        "method",
+        [
             "best",
             "parameter-shift",
             "finite-diff",
