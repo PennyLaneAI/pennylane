@@ -378,27 +378,27 @@ class TestQFuncTransformGradients:
     #     expected = qml.grad(self.expval)(x.numpy(), weights.numpy())
     #     assert all(np.allclose(g, e) for g, e in zip(grad, expected))
 
-    # def test_differentiable_torch(self, diff_method):
-    #     """Test that a batch transform is differentiable when using
-    #     PyTorch"""
-    #     if diff_method == "backprop":
-    #         pytest.skip("Does not support backprop mode")
+    def test_differentiable_torch(self, diff_method):
+        """Test that a batch transform is differentiable when using
+        PyTorch"""
+        if diff_method == "backprop":
+            pytest.skip("Does not support backprop mode")
 
-    #     torch = pytest.importorskip("torch")
-    #     dev = qml.device("default.qubit", wires=2)
-    #     qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
+        torch = pytest.importorskip("torch")
+        dev = qml.device("default.qubit", wires=2)
+        qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
 
-    #     weights = torch.tensor([0.1, 0.2], requires_grad=True)
-    #     x = torch.tensor(0.543, requires_grad=True)
+        weights = torch.tensor([0.1, 0.2], requires_grad=True)
+        x = torch.tensor(0.543, requires_grad=True)
 
-    #     res = self.my_transform(qnode, weights)(x)
-    #     expected = self.expval(x.detach().numpy(), weights.detach().numpy())
-    #     assert np.allclose(res.detach().numpy(), expected)
+        res = self.my_transform(qnode, weights)(x)
+        expected = self.expval(x.detach().numpy(), weights.detach().numpy())
+        assert np.allclose(res.detach().numpy(), expected)
 
-    #     res.backward()
-    #     expected = qml.grad(self.expval)(x.detach().numpy(), weights.detach().numpy())
-    #     assert np.allclose(x.grad, expected[0])
-    #     assert np.allclose(weights.grad, expected[1])
+        res.backward()
+        expected = qml.grad(self.expval)(x.detach().numpy(), weights.detach().numpy())
+        assert np.allclose(x.grad, expected[0])
+        assert np.allclose(weights.grad, expected[1])
 
     # def test_differentiable_jax(self, diff_method):
     #     """Test that a batch transform is differentiable when using
