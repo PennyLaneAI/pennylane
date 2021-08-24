@@ -91,7 +91,24 @@ Parametric Ops
     ~pennylane.PauliRot
     ~pennylane.PhaseShift
     ~pennylane.ControlledPhaseShift
+<<<<<<< HEAD
     ~pennylane.CPhase
+=======
+    ~pennylane.CNOT
+    ~pennylane.CZ
+    ~pennylane.CY
+    ~pennylane.SWAP
+    ~pennylane.ISWAP
+    ~pennylane.SISWAP
+    ~pennylane.SQISW
+    ~pennylane.IsingXX
+    ~pennylane.IsingYY
+    ~pennylane.IsingZZ
+    ~pennylane.U1
+    ~pennylane.U2
+    ~pennylane.U3
+    ~pennylane.CRot
+>>>>>>> 068439feb3f74f36b0109ed5a3bee9d236314c7f
     ~pennylane.CRX
     ~pennylane.CRY
     ~pennylane.CRZ
