@@ -401,7 +401,7 @@ class TestValidation:
             "reversible",
             "adjoint",
             "backprop",
-        ]
+        ],
     )
     def test_to_tf(self, method):
         """Test if interface change is working"""
@@ -425,7 +425,7 @@ class TestValidation:
             "reversible",
             "adjoint",
             "backprop",
-        ]
+        ],
     )
     def test_to_autograd(self, method):
         """Test if interface change is working"""
@@ -448,7 +448,7 @@ class TestValidation:
             "finite-diff",
             "reversible",
             "adjoint",
-        ]
+        ],
     )
     def test_to_torch(self, method):
         """Test if interface change is working"""
@@ -472,7 +472,7 @@ class TestValidation:
             "reversible",
             "adjoint",
             "backprop",
-        ]
+        ],
     )
     def test_to_jax(self, method):
         """Test if interface change is working"""
