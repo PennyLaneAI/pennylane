@@ -32,7 +32,7 @@ def op_matrix(elements):
         element : torch.Tensor
 
     Returns:
-        lambda dev : torch.Tensor elements instanciated on torch device dev
+        lambda dev : torch.Tensor elements instantiated on torch device dev
     """
     return lambda dev: torch.as_tensor(elements, dtype=C_DTYPE, device=dev)
 
