@@ -87,8 +87,9 @@ class TestTorchExecuteUnitTests:
         ):
             execute([tape], dev, gradient_fn=param_shift, mode="forward", interface="torch")[0]
 
-    def test_forward_mode(self, mocker):
-        """Test that forward mode uses the `device.execute_and_gradients` pathway"""
+    def test_forward_mode_reuse_state(self, mocker):
+        """Test that forward mode uses the `device.execute_and_gradients` pathway
+        while reusing the quantum state."""
         dev = qml.device("default.qubit", wires=1)
         spy = mocker.spy(dev, "execute_and_gradients")
 
@@ -109,6 +110,30 @@ class TestTorchExecuteUnitTests:
 
         # adjoint method only performs a single device execution, but gets both result and gradient
         assert dev.num_executions == 1
+        spy.assert_called()
+
+    def test_forward_mode(self, mocker):
+        """Test that forward mode uses the `device.execute_and_gradients` pathway"""
+        dev = qml.device("default.qubit", wires=1)
+        spy = mocker.spy(dev, "execute_and_gradients")
+
+        a = torch.tensor([0.1, 0.2], requires_grad=True)
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RY(a[0], wires=0)
+            qml.RX(a[1], wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        res = execute(
+            [tape],
+            dev,
+            gradient_fn="device",
+            gradient_kwargs={"method": "adjoint_jacobian"},
+            interface="torch",
+        )[0]
+
+        # two device executions; one for the value, one for the Jacobian
+        assert dev.num_executions == 2
         spy.assert_called()
 
     def test_backward_mode(self, mocker):
@@ -318,6 +343,12 @@ if torch.cuda.is_available():
 
 execute_kwargs = [
     {"gradient_fn": param_shift, "interface": "torch"},
+    {
+        "gradient_fn": "device",
+        "mode": "forward",
+        "gradient_kwargs": {"method": "adjoint_jacobian", "use_device_state": False},
+        "interface": "torch",
+    },
     {
         "gradient_fn": "device",
         "mode": "forward",
@@ -745,6 +776,27 @@ class TestTorchExecuteIntegration:
 
         assert res.shape == (2, 10)
         assert isinstance(res, torch.Tensor)
+
+    def test_sampling_gradient_error(self, torch_device, execute_kwargs):
+        """Test differentiating a tape with sampling results in an error"""
+        if execute_kwargs["gradient_fn"] == "device" and execute_kwargs["mode"] == "forward":
+            pytest.skip("Adjoint differentiation does not support samples")
+
+        dev = qml.device("default.qubit", wires=2, shots=10)
+
+        with qml.tape.JacobianTape() as tape:
+            qml.Hadamard(wires=[0])
+            qml.CNOT(wires=[0, 1])
+            qml.sample(qml.PauliZ(0))
+            qml.sample(qml.PauliX(1))
+
+        res = execute([tape], dev, **execute_kwargs)[0]
+
+        with pytest.raises(
+            RuntimeError,
+            match="element 0 of tensors does not require grad and does not have a grad_fn",
+        ):
+            res.backward()
 
     def test_repeated_application_after_expand(self, torch_device, execute_kwargs, tol):
         """Test that the Torch interface continues to work after

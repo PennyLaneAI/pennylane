@@ -130,19 +130,13 @@ class ExecuteTapes(torch.autograd.Function):
             if "pennylane.gradients" in module_name:
 
                 # Generate and execute the required gradient tapes
-                if ctx._n == ctx.max_diff:
-                    with qml.tape.Unwrap(*ctx.tapes):
-                        vjp_tapes, processing_fn = qml.gradients.batch_vjp(
-                            ctx.tapes,
-                            dy,
-                            ctx.gradient_fn,
-                            reduction="extend",
-                            gradient_kwargs=ctx.gradient_kwargs,
-                        )
+                if ctx._n < ctx.max_diff:
+                    # The derivative order is less than the max derivative order.
+                    # Compute the VJP recursively by using the gradient transform
+                    # and calling ``execute`` to compute the results.
+                    # This will allow higher-order derivatives to be computed
+                    # if requested.
 
-                    vjps = processing_fn(ctx.execute_fn(vjp_tapes)[0])
-
-                else:
                     vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                         ctx.tapes,
                         dy,
@@ -165,6 +159,20 @@ class ExecuteTapes(torch.autograd.Function):
                             max_diff=ctx.max_diff,
                         )
                     )
+                else:
+                    # The derivative order is at the maximum. Compute the VJP
+                    # in a non-differentiable manner to reduce overhead.
+
+                    with qml.tape.Unwrap(*ctx.tapes):
+                        vjp_tapes, processing_fn = qml.gradients.batch_vjp(
+                            ctx.tapes,
+                            dy,
+                            ctx.gradient_fn,
+                            reduction="extend",
+                            gradient_kwargs=ctx.gradient_kwargs,
+                        )
+
+                    vjps = processing_fn(ctx.execute_fn(vjp_tapes)[0])
 
             elif (
                 hasattr(ctx.gradient_fn, "fn")
@@ -194,6 +202,9 @@ class ExecuteTapes(torch.autograd.Function):
 
 def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2):
     """Execute a batch of tapes with Torch parameters on a device.
+
+    This function may be called recursively, if ``gradient_fn`` is a differentiable
+    transform, and ``_n < max_diff``.
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
