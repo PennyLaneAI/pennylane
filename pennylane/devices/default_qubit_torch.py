@@ -235,11 +235,6 @@ class DefaultQubitTorch(DefaultQubit):
         new_tensor[indices] = tensor
         return new_tensor
 
-    # Same as above: don't think this gets used, so I'm commenting it out
-    # @staticmethod
-    # def _allclose(a, b, atol=1e-08):
-    #    return torch.allclose(a, torch.as_tensor(b, dtype=a.dtype), atol=atol)
-
     @classmethod
     def capabilities(cls):
         capabilities = super().capabilities().copy()
