@@ -21,7 +21,6 @@ import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane import math as qmlmath
 from pennylane.operation import AnyWires, DiagonalOperation, Operation
 from pennylane.wires import Wires
 
@@ -62,9 +61,9 @@ class QubitUnitary(Operation):
 
             # Check for unitarity; due to variable precision across the different ML frameworks,
             # here we issue a warning to check the operation, instead of raising an error outright.
-            if not qmlmath.allclose(
-                qmlmath.dot(U, qmlmath.T(qmlmath.conj(U))),
-                qmlmath.eye(qmlmath.shape(U)[0]),
+            if not qml.math.allclose(
+                qml.math.dot(U, qml.math.T(qml.math.conj(U))),
+                qml.math.eye(qml.math.shape(U)[0]),
             ):
                 warnings.warn(
                     f"Operator {U}\n may not be unitary."
@@ -82,7 +81,7 @@ class QubitUnitary(Operation):
     def decomposition(U, wires):
         # Decomposes arbitrary single-qubit unitaries as Rot gates (RZ - RY - RZ format),
         # or a single RZ for diagonal matrices.
-        if qmlmath.shape(U) == (2, 2):
+        if qml.math.shape(U) == (2, 2):
             wire = Wires(wires)[0]
             decomp_ops = qml.transforms.decompositions.zyz_decomposition(U, wire)
             return decomp_ops
@@ -90,7 +89,7 @@ class QubitUnitary(Operation):
         raise NotImplementedError("Decompositions only supported for single-qubit unitaries")
 
     def adjoint(self):
-        return QubitUnitary(qmlmath.T(qmlmath.conj(self.matrix)), wires=self.wires)
+        return QubitUnitary(qml.math.T(qml.math.conj(self.matrix)), wires=self.wires)
 
     def _controlled(self, wire):
         ControlledQubitUnitary(*self.parameters, control_wires=wire, wires=self.wires)
@@ -252,22 +251,22 @@ class DiagonalQubitUnitary(DiagonalOperation):
 
     @classmethod
     def _eigvals(cls, *params):
-        D = qmlmath.asarray(params[0])
+        D = qml.math.asarray(params[0])
 
-        if not qmlmath.allclose(D * D.conj(), qmlmath.ones_like(D)):
+        if not qml.math.allclose(D * D.conj(), qml.math.ones_like(D)):
             raise ValueError("Operator must be unitary.")
 
         return D
 
     @staticmethod
     def decomposition(D, wires):
-        return [QubitUnitary(qmlmath.diag(D), wires=wires)]
+        return [QubitUnitary(qml.math.diag(D), wires=wires)]
 
     def adjoint(self):
-        return DiagonalQubitUnitary(qmlmath.conj(self.parameters[0]), wires=self.wires)
+        return DiagonalQubitUnitary(qml.math.conj(self.parameters[0]), wires=self.wires)
 
     def _controlled(self, control):
         DiagonalQubitUnitary(
-            qmlmath.concatenate([np.array([1, 1]), self.parameters[0]]),
+            qml.math.concatenate([np.array([1, 1]), self.parameters[0]]),
             wires=Wires(control) + self.wires,
         )
