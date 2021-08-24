@@ -263,8 +263,12 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 * The `qml.Identity` operation is placed under the sections Qubit observables and CV observables.
   [(#1576)](https://github.com/PennyLaneAI/pennylane/pull/1576)
 
+* Updated the documentation of `qml.grouping`, `qml.kernels` and `qml.qaoa` modules to present 
+  the list of functions first followed by the technical details of the module.
+  [(#1581)](https://github.com/PennyLaneAI/pennylane/pull/1581) 
+
 * Recategorized Qubit operations into new and existing categories so that code for each
-operation is easier to locate.
+  operation is easier to locate.
   [(#1566)](https://github.com/PennyLaneAI/pennylane/pull/1583)
 
 <h3>Contributors</h3>
