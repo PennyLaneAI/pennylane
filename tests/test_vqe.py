@@ -734,7 +734,7 @@ class TestNewVQE:
             return qml.expval(H), qml.expval(qml.PauliX(3))
 
         with pytest.raises(
-            ValueError, match="Only a single expectation of a Hamiltonian observable"
+            ValueError, match="expectation of a Hamiltonian observable"
         ):
             circuit()
 
@@ -750,7 +750,7 @@ class TestNewVQE:
             return qml.sample(H)
 
         with pytest.raises(
-            ValueError, match="Only a single expectation of a Hamiltonian observable "
+            ValueError, match="expectation of a Hamiltonian observable"
         ):
             circuit()
 
@@ -759,7 +759,7 @@ class TestNewVQE:
             return qml.var(H)
 
         with pytest.raises(
-            ValueError, match="Only a single expectation of a Hamiltonian observable"
+            ValueError, match="expectation of a Hamiltonian observable"
         ):
             circuit()
 
