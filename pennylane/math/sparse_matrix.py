@@ -23,7 +23,11 @@ class SparseMatrix:
     The sparse matrix is stored as a dictionary; the tuples of indices are the keys, and
     the corresponding values are entries:
 
+<<<<<<< HEAD
     >>> s = SparseMatrix(tf.Variable([[3., 0., 0.],[2., 0., 0.]]))
+=======
+    >>> s = SparseMatrix(tf.Variable([[3., 0., 0.], [2., 0., 0.]]))
+>>>>>>> add_sparse_representation
     >>> print(s.data)
     {(0, 0): <tf.Tensor: shape=(), dtype=float32, numpy=3.0>, (1, 0): <tf.Tensor: shape=(), dtype=float32, numpy=2.0>}
     >>> print(s.shape)
@@ -38,7 +42,11 @@ class SparseMatrix:
     (12, 12)
 
     Args:
+<<<<<<< HEAD
         arg (tuple or tensor_like): if tuple, this is interpreted as the shape of
+=======
+        arg (tuple[int] or tensor_like): if tuple, this is interpreted as the shape of
+>>>>>>> add_sparse_representation
             the sparse matrix; else it is interpreted as a 2-d tensor which is a dense representation
             of the matrix.
 
@@ -102,47 +110,27 @@ class SparseMatrix:
 
     @property
     def data(self):
-        """Return the data of the representation.
-
-        Returns:
-            dict
-        """
+        """dict: return the data of the representation"""
         return self._data
 
     @property
     def shape(self):
-        """Return the shape of the matrix.
-
-        Returns:
-            tuple
-        """
+        """tuple: return the shape of the matrix"""
         return self._shape
 
     @property
     def row(self):
-        """Return a list of the first indices of nonzero entries.
-
-        Returns:
-            list[int]: list of row indices
-        """
+        """list[int]: list of row indices of nonzero entries"""
         return [idx[0] for idx in self.data]
 
     @property
     def col(self):
-        """Return a list of the second indices of nonzero entries.
-
-        Returns:
-            list[int]: list of column indices
-        """
+        """list[int]: list of column indices of nonzero entries"""
         return [idx[1] for idx in self.data]
 
     @property
     def nnz(self):
-        """Number of nonzero entries.
-
-        Returns:
-            int: number of elements
-        """
+        """int: number of nonzero entries"""
         return len(self._data)
 
     def __eq__(self, other):
@@ -210,6 +198,9 @@ class SparseMatrix:
         new = deepcopy(self)
         for idx in new.data.keys():
             new.data[idx] *= other
+            # if the product cancelled the element, remove it
+            if qml.math.count_nonzero(new.data[idx]) == 0:
+                del new.data[idx]
 
         return new
 
