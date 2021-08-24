@@ -393,7 +393,7 @@ class TestTorchExecuteIntegration:
         assert res[1].shape == (1,)
 
     def test_scalar_jacobian(self, torch_device, execute_kwargs, tol):
-        """Test scalar jacobian calculation by comparing two types of pilpelines"""
+        """Test scalar jacobian calculation by comparing two types of pipelines"""
         a = torch.tensor(0.1, requires_grad=True, dtype=torch.float64, device=torch_device)
         dev = qml.device("default.qubit", wires=2)
 
