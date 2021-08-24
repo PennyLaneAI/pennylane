@@ -256,6 +256,9 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 <h3>Bug fixes</h3>
 
+* Fix bug when computing expectations of Hamiltonians using TensorFlow.
+  [(#1586)](https://github.com/PennyLaneAI/pennylane/pull/1586)
+
 * Fix bug when computing the specs of a circuit with a Hamiltonian observable.
   [(#1533)](https://github.com/PennyLaneAI/pennylane/pull/1533)
 
@@ -264,13 +267,17 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 * The `qml.Identity` operation is placed under the sections Qubit observables and CV observables.
   [(#1576)](https://github.com/PennyLaneAI/pennylane/pull/1576)
 
+* Recategorized Qubit operations into new and existing categories so that code for each
+operation is easier to locate.
+  [(#1566)](https://github.com/PennyLaneAI/pennylane/pull/1583)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
 
 Vishnu Ajith, Akash Narayanan B, Thomas Bromley, Tanya Garg, Josh Izaac, Prateek Jain, Ankit Khandelwal, Johannes Jakob Meyer,
-Maria Schuld, Ingrid Strandberg, David Wierichs, Vincent Wong.
+Pratul Saini, Maria Schuld, Ingrid Strandberg, David Wierichs, Vincent Wong.
 
 
 # Release 0.17.0 (current release)
