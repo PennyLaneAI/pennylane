@@ -90,4 +90,5 @@ __all__ = [
     "marginal_prob",
     "unwrap",
     "get_trainable_indices",
+    "SparseMatrix",
 ]
