@@ -18,6 +18,10 @@ matrices which can be used to mitigate device noise and sampling errors.
     :include-all-objects:
     :no-inheritance-diagram:
 
+
+Description
+-----------
+
 Given a kernel
 
 .. math ::

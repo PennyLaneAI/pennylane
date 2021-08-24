@@ -4,13 +4,10 @@ qml.qaoa
 Overview
 --------
 
-.. currentmodule:: pennylane.qaoa
+This module provides a collection of methods that help in the construction of
+QAOA workflows.
 
-.. automodapi:: pennylane.qaoa
-    :no-heading:
-    :include-all-objects:
-    :no-inheritance-diagram:
-    :no-inherited-members:
+.. currentmodule:: pennylane.qaoa
 
 Mixer Hamiltonians
 ------------------
