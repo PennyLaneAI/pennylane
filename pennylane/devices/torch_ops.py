@@ -26,7 +26,7 @@ R_DTYPE = torch.float64
 
 # Instantiating on the device (rather than moving) is approx. 100x faster
 def op_matrix(elements):
-    r"""Decorator to instanciate a tensor on a device.
+    r"""Decorator to instantiate a tensor on a device.
 
     Args:
         element : torch.Tensor
