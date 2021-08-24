@@ -824,10 +824,10 @@ class TestSparseRepresentation:
         ham = qml.Hamiltonian([0.1], [qml.PauliX(0) @ qml.PauliY(2)])
         s = ham.sparse_matrix()
         expected = {
-            (0, 3): 0. - 0.1j,
-            (1, 2): 0. + 0.1j,
-            (2, 1): 0. - 0.1j,
-            (3, 0): 0. + 0.1j,
+            (0, 3): 0.0 - 0.1j,
+            (1, 2): 0.0 + 0.1j,
+            (2, 1): 0.0 - 0.1j,
+            (3, 0): 0.0 + 0.1j,
         }
         assert s.data == {k: v for k, v in expected.items()}
         assert s.shape == (4, 4)
