@@ -245,6 +245,7 @@ def MultiRZ2(theta):
         ]
     )
 
+
 def IsingXX(phi):
     r"""Ising XX coupling gate
 
