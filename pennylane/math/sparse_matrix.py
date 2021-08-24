@@ -23,11 +23,7 @@ class SparseMatrix:
     The sparse matrix is stored as a dictionary; the tuples of indices are the keys, and
     the corresponding values are entries:
 
-<<<<<<< HEAD
-    >>> s = SparseMatrix(tf.Variable([[3., 0., 0.],[2., 0., 0.]]))
-=======
     >>> s = SparseMatrix(tf.Variable([[3., 0., 0.], [2., 0., 0.]]))
->>>>>>> add_sparse_representation
     >>> print(s.data)
     {(0, 0): <tf.Tensor: shape=(), dtype=float32, numpy=3.0>, (1, 0): <tf.Tensor: shape=(), dtype=float32, numpy=2.0>}
     >>> print(s.shape)
@@ -42,11 +38,7 @@ class SparseMatrix:
     (12, 12)
 
     Args:
-<<<<<<< HEAD
-        arg (tuple or tensor_like): if tuple, this is interpreted as the shape of
-=======
         arg (tuple[int] or tensor_like): if tuple, this is interpreted as the shape of
->>>>>>> add_sparse_representation
             the sparse matrix; else it is interpreted as a 2-d tensor which is a dense representation
             of the matrix.
 

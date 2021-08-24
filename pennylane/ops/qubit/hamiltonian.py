@@ -556,20 +556,12 @@ class Hamiltonian(Observable):
 
         Args:
             wires (Iterable): Wire labels that indicate the order of wires according to which the matrix
-<<<<<<< HEAD
-             is constructed. If not provided, ``self.wires`` is used.
-=======
                 is constructed. If not provided, ``self.wires`` is used.
->>>>>>> add_sparse_representation
 
         Returns:
             :class:`pennylane.math.SparseMatrix`: sparse matrix representation
 
-<<<<<<< HEAD
-        **Example:**
-=======
         **Example**
->>>>>>> add_sparse_representation
 
         If no wires are given, the matrix is constructed under the assumption that the wires are ordered
         according to the Hamiltonian's wire ordering, which is inferred from the order of the operations.

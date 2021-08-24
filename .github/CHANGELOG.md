@@ -173,6 +173,15 @@
 
 <h3>Improvements</h3>
 
+* Hamiltonians are now natively supported on the `default.qubit` device if `shots=None`. 
+  This makes VQE workflows a lot faster in some cases.
+  [(#1551)](https://github.com/PennyLaneAI/pennylane/pull/1551)
+
+* A gradient recipe for Hamiltonian coefficients has been added. This makes it possible 
+  to compute parameter-shift gradients of these coefficients on devices that natively 
+  support Hamiltonians.
+  [(#1551)](https://github.com/PennyLaneAI/pennylane/pull/1551)
+
 * The `MultiControlledX` class now inherits from `Operation` instead of `ControlledQubitUnitary` which makes the `MultiControlledX` gate a non-parameterized gate.
   [(#1557)](https://github.com/PennyLaneAI/pennylane/pull/1557)
 
