@@ -188,7 +188,7 @@ class SparseMatrix:
 
     def __mul__(self, other):
 
-        if qml.count_nonzero(other) == 0:
+        if qml.math.count_nonzero(other) == 0:
             # return an empty matrix
             return SparseMatrix(self.shape)
 
