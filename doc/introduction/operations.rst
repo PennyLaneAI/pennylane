@@ -44,8 +44,9 @@ Qubit operations
 
 .. _intro_ref_ops_qgates:
 
-Qubit gates
-^^^^^^^^^^^
+Non-parametric Ops
+^^^^^^^^^^^^^^^^^^ 
+
 
 :html:`<div class="summary-table">`
 
@@ -59,6 +60,29 @@ Qubit gates
     ~pennylane.S
     ~pennylane.T
     ~pennylane.SX
+    ~pennylane.CNOT
+    ~pennylane.CZ
+    ~pennylane.CY
+    ~pennylane.SWAP
+    ~pennylane.ISWAP
+    ~pennylane.SISWAP
+    ~pennylane.SQISW
+    ~pennylane.CSWAP
+    ~pennylane.Toffoli
+    ~pennylane.MultiControlledX
+
+:html:`</div>`
+
+
+Parametric Ops
+^^^^^^^^^^^^^^
+
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
     ~pennylane.Rot
     ~pennylane.RX
     ~pennylane.RY
@@ -66,39 +90,68 @@ Qubit gates
     ~pennylane.MultiRZ
     ~pennylane.PauliRot
     ~pennylane.PhaseShift
-    ~pennylane.CPhase
     ~pennylane.ControlledPhaseShift
-    ~pennylane.CNOT
-    ~pennylane.CZ
-    ~pennylane.CY
-    ~pennylane.SWAP
-    ~pennylane.ISWAP
-    ~pennylane.IsingXX
-    ~pennylane.IsingYY
-    ~pennylane.IsingZZ
-    ~pennylane.U1
-    ~pennylane.U2
-    ~pennylane.U3
-    ~pennylane.CRot
+    ~pennylane.CPhase
     ~pennylane.CRX
     ~pennylane.CRY
     ~pennylane.CRZ
-    ~pennylane.Toffoli
-    ~pennylane.CSWAP
-    ~pennylane.QubitUnitary
-    ~pennylane.ControlledQubitUnitary
-    ~pennylane.MultiControlledX
-    ~pennylane.DiagonalQubitUnitary
+    ~pennylane.CRot
+    ~pennylane.U1
+    ~pennylane.U2
+    ~pennylane.U3
+    ~pennylane.IsingXX
+    ~pennylane.IsingYY
+    ~pennylane.IsingZZ
+
+:html:`</div>`
+
+
+Quantum Chemistry Ops
+^^^^^^^^^^^^^^^^^^^^^
+
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
     ~pennylane.SingleExcitation
     ~pennylane.SingleExcitationPlus
     ~pennylane.SingleExcitationMinus
     ~pennylane.DoubleExcitation
     ~pennylane.DoubleExcitationPlus
     ~pennylane.DoubleExcitationMinus
+
+:html:`</div>`
+
+
+Matrix Ops
+^^^^^^^^^^
+
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.QubitUnitary
+    ~pennylane.ControlledQubitUnitary
+    ~pennylane.DiagonalQubitUnitary
+
+:html:`</div>`
+
+
+Arithmetic Ops
+^^^^^^^^^^^^^^
+
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
     ~pennylane.QubitCarry
     ~pennylane.QubitSum
-    ~pennylane.Hamiltonian
-
 
 :html:`</div>`
 
@@ -159,6 +212,7 @@ Qubit observables
     ~pennylane.PauliZ
     ~pennylane.Projector
     ~pennylane.Hamiltonian
+    ~pennylane.SparseHamiltonian
 
 :html:`</div>`
 
@@ -257,3 +311,4 @@ CV observables
     ~pennylane.X
 
 :html:`</div>`
+

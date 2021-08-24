@@ -646,6 +646,69 @@ class ISWAP(Operation):
         return ISWAP(wires=self.wires).inv()
 
 
+class SISWAP(Operation):
+    r"""SISWAP(wires)
+    The square root of i-swap operator. Can also be accessed as ``qml.SQISW``
+
+    .. math:: SISWAP = \begin{bmatrix}
+            1 & 0 & 0 & 0 \\
+            0 & 1/ \sqrt{2} & i/\sqrt{2} & 0\\
+            0 & i/ \sqrt{2} & 1/ \sqrt{2} & 0\\
+            0 & 0 & 0 & 1
+        \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int]): the wires the operation acts on
+    """
+    num_params = 0
+    num_wires = 2
+    par_domain = None
+
+    @classmethod
+    def _matrix(cls, *params):
+        return np.array(
+            [
+                [1, 0, 0, 0],
+                [0, INV_SQRT2, INV_SQRT2 * 1j, 0],
+                [0, INV_SQRT2 * 1j, INV_SQRT2, 0],
+                [0, 0, 0, 1],
+            ]
+        )
+
+    @classmethod
+    def _eigvals(cls, *params):
+        return np.array([INV_SQRT2 * (1 + 1j), INV_SQRT2 * (1 - 1j), 1, 1])
+
+    @staticmethod
+    def decomposition(wires):
+        decomp_ops = [
+            SX(wires=wires[0]),
+            qml.RZ(np.pi / 2, wires=wires[0]),
+            CNOT(wires=[wires[0], wires[1]]),
+            SX(wires=wires[0]),
+            qml.RZ(7 * np.pi / 4, wires=wires[0]),
+            SX(wires=wires[0]),
+            qml.RZ(np.pi / 2, wires=wires[0]),
+            SX(wires=wires[1]),
+            qml.RZ(7 * np.pi / 4, wires=wires[1]),
+            CNOT(wires=[wires[0], wires[1]]),
+            SX(wires=wires[0]),
+            SX(wires=wires[1]),
+        ]
+        return decomp_ops
+
+    def adjoint(self):
+        return SISWAP(wires=self.wires).inv()
+
+
+SQISW = SISWAP
+
+
 class CSWAP(Operation):
     r"""CSWAP(wires)
     The controlled-swap operator
