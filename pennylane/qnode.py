@@ -157,9 +157,9 @@ class QNode:
         **diff_options,
     ):
 
-        if self.diff_method is None:
-            self.diff_method = "best"
-            self.interface = None
+        if diff_method is None:
+            diff_method = "best"
+            interface = None
 
         if interface is not None and interface not in self.INTERFACE_MAP:
             raise qml.QuantumFunctionError(
