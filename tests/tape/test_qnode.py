@@ -487,6 +487,12 @@ class TestValidation:
         qn = qml.QNode(func, dev, interface="autograd", diff_method=method)
         qn.to_jax()
 
+     def test_diff_method_None(self):
+        """Test if diff_method=None works as intended"""
+        dev = qml.device("default.qubit", wires=1)
+        qn = qml.Qnode(dummyfunc, dev, diff_method=None)
+        assert qn.interface is None
+
 
 class TestTapeConstruction:
     """Tests for the tape construction"""
