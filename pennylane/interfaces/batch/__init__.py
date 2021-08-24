@@ -236,7 +236,7 @@ def execute(
         # cache=True: create a LRUCache object
         cache = LRUCache(maxsize=cachesize, getsizeof=lambda x: qml.math.shape(x)[0])
 
-    if interface is None or gradient_fn is None:
+    if gradient_fn is None:
         with qml.tape.Unwrap(*tapes):
             res = cache_execute(device.batch_execute, cache, return_tuple=False)(tapes)
 

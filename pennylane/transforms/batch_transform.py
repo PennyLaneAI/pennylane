@@ -26,13 +26,24 @@ def _create_qnode_internal_wrapper(qnode, transform, targs, tkwargs):
         tapes, processing_fn = transform.construct(qnode.qtape, *targs, **tkwargs)
 
         # TODO: work out what to do for backprop
-        interface = None if not transform.differentiable else qnode.interface
+        interface = qnode.interface
 
         # TODO: extract gradient_fn from QNode
+        gradient_fn = qnode.diff_method
+
+        if interface is None or not transform.differentiable:
+            gradient_fn = None
+
+        elif gradient_fn in ("best", "parameter-shift"):
+            gradient_fn = qml.gradients.param_shift
+
+        elif gradient_fn == "finite-diff":
+            gradient_fn = qml.gradients.finite_diff
+
         res = execute(
             tapes,
             device=qnode.device,
-            gradient_fn=qml.gradients.param_shift,
+            gradient_fn=gradient_fn,
             interface=interface,
         )
 

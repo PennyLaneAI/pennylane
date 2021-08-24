@@ -359,24 +359,27 @@ class TestQFuncTransformGradients:
         expected = qml.grad(self.expval)(x, weights)
         assert all(np.allclose(g, e) for g, e in zip(grad, expected))
 
-    # def test_differentiable_tf(self, diff_method):
-    #     """Test that a batch transform is differentiable when using
-    #     TensorFlow"""
-    #     tf = pytest.importorskip("tensorflow")
-    #     dev = qml.device("default.qubit", wires=2)
-    #     qnode = qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method)
+    def test_differentiable_tf(self, diff_method):
+        """Test that a batch transform is differentiable when using
+        TensorFlow"""
+        if diff_method == "parameter-shift":
+            pytest.skip("Does not support parameter-shift mode")
 
-    #     weights = tf.Variable([0.1, 0.2], dtype=tf.float64)
-    #     x = tf.Variable(0.543, dtype=tf.float64)
+        tf = pytest.importorskip("tensorflow")
+        dev = qml.device("default.qubit", wires=2)
+        qnode = qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method)
 
-    #     with tf.GradientTape() as tape:
-    #         res = self.my_transform(qnode, weights)(x)
+        weights = tf.Variable([0.1, 0.2], dtype=tf.float64)
+        x = tf.Variable(0.543, dtype=tf.float64)
 
-    #     assert np.allclose(res, self.expval(x, weights))
+        with tf.GradientTape() as tape:
+            res = self.my_transform(qnode, weights)(x)
 
-    #     grad = tape.gradient(res, [x, weights])
-    #     expected = qml.grad(self.expval)(x.numpy(), weights.numpy())
-    #     assert all(np.allclose(g, e) for g, e in zip(grad, expected))
+        assert np.allclose(res, self.expval(x, weights))
+
+        grad = tape.gradient(res, [x, weights])
+        expected = qml.grad(self.expval)(x.numpy(), weights.numpy())
+        assert all(np.allclose(g, e) for g, e in zip(grad, expected))
 
     def test_differentiable_torch(self, diff_method):
         """Test that a batch transform is differentiable when using
@@ -400,22 +403,25 @@ class TestQFuncTransformGradients:
         assert np.allclose(x.grad, expected[0])
         assert np.allclose(weights.grad, expected[1])
 
-    # def test_differentiable_jax(self, diff_method):
-    #     """Test that a batch transform is differentiable when using
-    #     jax"""
-    #     jax = pytest.importorskip("jax")
-    #     dev = qml.device("default.qubit", wires=2)
-    #     qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method)
+    def test_differentiable_jax(self, diff_method):
+        """Test that a batch transform is differentiable when using
+        jax"""
+        if diff_method == "parameter-shift":
+            pytest.skip("Does not support parameter-shift mode")
 
-    #     def cost(x, weights):
-    #         return self.my_transform(qnode, weights)(x)
+        jax = pytest.importorskip("jax")
+        dev = qml.device("default.qubit", wires=2)
+        qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method)
 
-    #     weights = jax.numpy.array([0.1, 0.2])
-    #     x = jax.numpy.array(0.543)
+        def cost(x, weights):
+            return self.my_transform(qnode, weights)(x)
 
-    #     res = cost(x, weights)
-    #     assert np.allclose(res, self.expval(x, weights))
+        weights = jax.numpy.array([0.1, 0.2])
+        x = jax.numpy.array(0.543)
 
-    #     grad = jax.grad(cost, argnums=[0, 1])(x, weights)
-    #     expected = qml.grad(self.expval)(np.array(x), np.array(weights))
-    #     assert all(np.allclose(g, e) for g, e in zip(grad, expected))
+        res = cost(x, weights)
+        assert np.allclose(res, self.expval(x, weights))
+
+        grad = jax.grad(cost, argnums=[0, 1])(x, weights)
+        expected = qml.grad(self.expval)(np.array(x), np.array(weights))
+        assert all(np.allclose(g, e) for g, e in zip(grad, expected))
