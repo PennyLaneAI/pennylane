@@ -71,6 +71,11 @@ def allclose(a, b, rtol=1e-05, atol=1e-08, **kwargs):
         t2 = ar.to_numpy(b)
         res = np.allclose(t1, t2, rtol=rtol, atol=atol, **kwargs)
 
+    if hasattr(res, "val"):
+        res = res.val
+        if hasattr(res, "all"):
+            res = res.all()
+
     return res
 
 
@@ -281,6 +286,9 @@ def requires_grad(tensor, interface=None):
     if interface == "jax":
         import jax
 
-        return isinstance(tensor, jax.interpreters.ad.JVPTracer)
+        # TODO: modify this once we have a way of distinguishing jax arrays to
+        # be differentiable or not
+        #return isinstance(tensor, jax.interpreters.ad.JVPTracer)
+        return isinstance(tensor, jax.numpy.ndarray)
 
     raise ValueError(f"Argument {tensor} is an unknown object")

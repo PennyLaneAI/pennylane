@@ -278,6 +278,8 @@ def get_trainable_indices(values):
     trainable_params = set()
 
     for idx, p in enumerate(values):
+        # TODO: modify this once we have a way of distinguishing jax arrays to
+        # be differentiable or not
         if requires_grad(p, interface=interface):
             trainable_params.add(idx)
 

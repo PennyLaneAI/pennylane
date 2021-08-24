@@ -29,7 +29,7 @@ from pennylane.queuing import AnnotatedQueue
 from pennylane.operation import Variance, Expectation
 import pennylane as qml
 
-dtype = jnp.float64
+dtype = jnp.float32
 
 def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2):
     """Execute a batch of tapes with Autograd parameters on a device.
@@ -68,7 +68,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         gradient_fn=gradient_fn,
         gradient_kwargs=gradient_kwargs,
         _n=_n,
-    )[0]
+    )
 
 
 # @autograd.extend.primitive
@@ -82,36 +82,36 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 #     _n=1,
 # ):  # pylint: disable=dangerous-default-value,unused-argument
 #     """Autodifferentiable wrapper around ``Device.batch_execute``.
-# 
+#
 #     The signature of this function is designed to work around Autograd restrictions.
 #     Note that the ``parameters`` argument is dependent on the ``tapes`` argument;
 #     this function should always be called as follows:
-# 
+#
 #     >>> parameters = [autograd.builtins.list(t.get_parameters()) for t in tapes])
 #     >>> parameters = autograd.builtins.tuple(parameters)
 #     >>> _execute(parameters, tapes=tapes, device=device)
-# 
+#
 #     In particular:
-# 
+#
 #     - ``parameters`` is dependent on the provided tapes: always extract them as above
 #     - ``tapes`` is a *required* argument
 #     - ``device`` is a *required* argument
-# 
+#
 #     The private argument ``_n`` is used to track nesting of derivatives, for example
 #     if the nth-order derivative is requested. Do not set this argument unless you
 #     understand the consequences!
 #     """
 #     with qml.tape.Unwrap(*tapes):
 #         res, jacs = execute_fn(tapes, **gradient_kwargs)
-# 
+#
 #     for i, r in enumerate(res):
 #         res[i] = jax.numpy.array(r)
-# 
+#
 #         # TODO: need?
 #         # if r.dtype == np.dtype("object"):
 #         #     # For backwards compatibility, we flatten ragged tape outputs
 #         #     res[i] = np.hstack(r)
-# 
+#
 #     return res, jacs
 
 
@@ -218,56 +218,78 @@ def _execute(
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
 
-    tape = tapes[0]
-
-    # TODO (chase): Add support for more than 1 measured observable.
-    if len(tape.observables) != 1:
-        raise ValueError(
-            "The JAX interface currently only supports quantum nodes with a single return type."
-        )
-    return_type = tape.observables[0].return_type
-    if return_type is not Variance and return_type is not Expectation:
-        raise ValueError(
-            f"Only Variance and Expectation returns are supported for the JAX interface, given {return_type}."
-        )
+    for tape in tapes:
+        # TODO (chase): Add support for more than 1 measured observable.
+        if len(tape.observables) != 1:
+            raise ValueError(
+                "The JAX interface currently only supports quantum nodes with a single return type."
+            )
+        return_type = tape.observables[0].return_type
+        if return_type is not Variance and return_type is not Expectation:
+            raise ValueError(
+                f"Only Variance and Expectation returns are supported for the JAX interface, given {return_type}."
+            )
 
     @jax.custom_vjp
     def wrapped_exec(params):
-        if not isinstance(params, list):
-            params = [params]
 
-        exec_fn = partial(tape.execute_device, device=device)
-        return host_callback.call(
-            exec_fn,
-            params,
-            result_shape=jax.ShapeDtypeStruct((1,), dtype),
-        )
+        def wrapper(p):
+            new_tapes = [t.copy() for t in tapes]
+
+            for tape, tape_params in zip(new_tapes, p):
+                tape.set_parameters(tape_params, trainable_only=False)
+
+            res = execute_fn(new_tapes)
+            return jnp.asarray(res)
+
+        return host_callback.call( wrapper, params, result_shape=jax.ShapeDtypeStruct((len(tapes), 1), dtype),)
 
     def wrapped_exec_fwd(params):
         return wrapped_exec(params), params
 
     def wrapped_exec_bwd(params, g):
-        if not isinstance(params, list):
-            params = [params]
+        # The derivative order is at the maximum. Compute the VJP
+        # in a non-differentiable manner to reduce overhead.
+        with qml.tape.Unwrap(*tapes):
+            vjp_tapes, processing_fn = qml.gradients.batch_vjp(
+                tapes,
+                g,
+                gradient_fn,
+                reduction="extend",
+                gradient_kwargs=gradient_kwargs,
+            )
 
-        # def jacobian(params):
-        #     new_tape = tape.copy()
-        #     new_tape.set_parameters(params)
-        #     return new_tape.jacobian(device, **new_tape.jacobian_options)
+        # 1. Vanilla computations (to be removed)
+        vjps = processing_fn(execute_fn(vjp_tapes))
+        vjps = tuple([v] for v in vjps),
 
-        # val = g.reshape((-1,)) * host_callback.call(
-        #     jacobian,
+        vjps = g.reshape((-1,)) * jnp.asarray(vjps)
+
+        # 2. host_callback.call (todo)
+
+        # def wrapper(p):
+
+        #     new_tapes = [t.copy() for t in tapes]
+
+        #     for tape, tape_params in zip(new_tapes, p):
+        #         tape.set_parameters(tape_params, trainable_only=False)
+
+        #     vjp_tapes, processing_fn = qml.gradients.batch_vjp(
+        #         new_tapes,
+        #         g,
+        #         gradient_fn,
+        #         reduction="extend",
+        #         gradient_kwargs=gradient_kwargs,
+        #     )
+        #     res = processing_fn(execute_fn(vjp_tapes))
+        #     return jnp.asarray(res)
+
+        # vjps = host_callback.call(
+        #     wrapper,
         #     params,
         #     result_shape=jax.ShapeDtypeStruct((1,1), dtype),
         # )
-
-        bwd_fn = partial(vjp, ans=g, tapes=[tape], device=device, gradient_fn=gradient_fn)
-        val = g.reshape((-1,)) * host_callback.call(
-            bwd_fn,
-            params,
-            result_shape=jax.ShapeDtypeStruct((1,1), dtype),
-        )
-        return (val,)  # Comma is on purpose.
+        return tuple(vjps)  # Comma is on purpose.
 
     wrapped_exec.defvjp(wrapped_exec_fwd, wrapped_exec_bwd)
     return wrapped_exec(params)
