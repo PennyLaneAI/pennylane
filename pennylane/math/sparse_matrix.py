@@ -188,12 +188,13 @@ class SparseMatrix:
 
     def __mul__(self, other):
 
+        if qml.count_nonzero(other) == 0:
+            # return an empty matrix
+            return SparseMatrix(self.shape)
+
         new = deepcopy(self)
         for idx in new.data.keys():
             new.data[idx] *= other
-            # if the product cancelled the element, remove it
-            if qml.math.count_nonzero(new.data[idx]) == 0:
-                del new.data[idx]
 
         return new
 

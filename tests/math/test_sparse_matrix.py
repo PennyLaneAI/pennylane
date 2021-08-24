@@ -160,6 +160,17 @@ class TestArithmetic:
         assert s4 == s3
 
     @pytest.mark.parametrize("converter", converters)
+    def test_multiplication_zero(self, converter):
+        """Test scalar multiplication with zero."""
+        tensor1 = converter([[1.0, 2.0], [1.0, 0.0]])
+        s1 = SparseMatrix(tensor1)
+        s3 = s1 * 0.0
+        s4 = 0.0 * s1
+        assert s3.data == {}
+        assert s3.shape == (2, 2)
+        assert s4 == s3
+
+    @pytest.mark.parametrize("converter", converters)
     @pytest.mark.parametrize("arg1, arg2, res", EQUALITY)
     def test_equality(self, converter, arg1, arg2, res):
         """Test equality in all frameworks."""
