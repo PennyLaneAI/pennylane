@@ -992,7 +992,7 @@ class TestQNodeIntegration:
         assert dev.capabilities()["passthru_interface"] == "torch"
 
     def test_qubit_circuit(self, tol, torch_device="cpu"):
-        """Test that the tensor network plugin provides correct
+        """Test that the torch device provides correct
         result for a simple circuit using the old QNode."""
         p = torch.tensor([0.543], device=torch_device, dtype=torch.float64)
 
