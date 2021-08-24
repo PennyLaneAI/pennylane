@@ -277,7 +277,7 @@ class DefaultQubitTorch(DefaultQubit):
         """Sample from the computational basis states based on the state
         probability.
 
-        This is an auxiliary method to the generate_samples method.
+        This is an auxiliary method to the ``generate_samples`` method.
 
         Args:
             number_of_states (int): the number of basis states to sample from
