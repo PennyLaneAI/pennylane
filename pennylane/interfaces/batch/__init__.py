@@ -238,14 +238,17 @@ def execute(
         # cache=True: create a LRUCache object
         cache = LRUCache(maxsize=cachesize, getsizeof=len)
 
-    # the default execution function is device.batch_execute
-    execute_fn = cache_execute(device.batch_execute, cache)
-
     if interface is None or gradient_fn is None:
         with qml.tape.Unwrap(*tapes):
             res = cache_execute(device.batch_execute, cache, return_tuple=False)(tapes)
 
         return res
+
+    if gradient_fn == "backprop":
+        return cache_execute(device.batch_execute, cache, return_tuple=False)(tapes)
+
+    # the default execution function is device.batch_execute
+    execute_fn = cache_execute(device.batch_execute, cache)
 
     if gradient_fn == "device":
         # gradient function is a device method

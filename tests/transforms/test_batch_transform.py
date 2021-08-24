@@ -292,3 +292,130 @@ class TestBatchTransform:
 
         expected = fn(dev.batch_execute(tapes))
         assert res == expected
+
+
+@pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
+class TestQFuncTransformGradients:
+    """Tests for the batch_transform decorator differentiability"""
+
+    @staticmethod
+    @qml.batch_transform
+    def my_transform(tape, weights):
+        """Generates two tapes, one with all RX replaced with RY,
+        and the other with all RX replaced with RZ."""
+
+        tape1 = qml.tape.JacobianTape()
+        tape2 = qml.tape.JacobianTape()
+
+        # loop through all operations on the input tape
+        for op in tape.operations + tape.measurements:
+            if op.name == "RX":
+                wires = op.wires
+                param = op.parameters[0]
+
+                with tape1:
+                    qml.RY(weights[0] * qml.math.sin(param), wires=wires)
+
+                with tape2:
+                    qml.RZ(weights[1] * qml.math.cos(param), wires=wires)
+            else:
+                for t in [tape1, tape2]:
+                    with t:
+                        qml.apply(op)
+
+        def processing_fn(results):
+            return qml.math.sum(qml.math.stack(results))
+
+        return [tape1, tape2], processing_fn
+
+    @staticmethod
+    def circuit(x):
+        """Test ansatz"""
+        qml.Hadamard(wires=0)
+        qml.RX(x, wires=0)
+        return qml.expval(qml.PauliX(0))
+
+    @staticmethod
+    def expval(x, weights):
+        """Analytic expectation value of the above circuit qfunc"""
+        return np.cos(weights[1] * np.cos(x)) + np.cos(weights[0] * np.sin(x))
+
+    def test_differentiable_autograd(self, diff_method):
+        """Test that a batch transform is differentiable when using
+        autograd"""
+        dev = qml.device("default.qubit", wires=2)
+        qnode = qml.QNode(self.circuit, dev, interface="autograd", diff_method=diff_method)
+
+        def cost(x, weights):
+            return self.my_transform(qnode, weights)(x)
+
+        weights = np.array([0.1, 0.2], requires_grad=True)
+        x = np.array(0.543, requires_grad=True)
+
+        res = cost(x, weights)
+        assert np.allclose(res, self.expval(x, weights))
+
+        grad = qml.grad(cost)(x, weights)
+        expected = qml.grad(self.expval)(x, weights)
+        assert all(np.allclose(g, e) for g, e in zip(grad, expected))
+
+    # def test_differentiable_tf(self, diff_method):
+    #     """Test that a batch transform is differentiable when using
+    #     TensorFlow"""
+    #     tf = pytest.importorskip("tensorflow")
+    #     dev = qml.device("default.qubit", wires=2)
+    #     qnode = qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method)
+
+    #     weights = tf.Variable([0.1, 0.2], dtype=tf.float64)
+    #     x = tf.Variable(0.543, dtype=tf.float64)
+
+    #     with tf.GradientTape() as tape:
+    #         res = self.my_transform(qnode, weights)(x)
+
+    #     assert np.allclose(res, self.expval(x, weights))
+
+    #     grad = tape.gradient(res, [x, weights])
+    #     expected = qml.grad(self.expval)(x.numpy(), weights.numpy())
+    #     assert all(np.allclose(g, e) for g, e in zip(grad, expected))
+
+    # def test_differentiable_torch(self, diff_method):
+    #     """Test that a batch transform is differentiable when using
+    #     PyTorch"""
+    #     if diff_method == "backprop":
+    #         pytest.skip("Does not support backprop mode")
+
+    #     torch = pytest.importorskip("torch")
+    #     dev = qml.device("default.qubit", wires=2)
+    #     qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
+
+    #     weights = torch.tensor([0.1, 0.2], requires_grad=True)
+    #     x = torch.tensor(0.543, requires_grad=True)
+
+    #     res = self.my_transform(qnode, weights)(x)
+    #     expected = self.expval(x.detach().numpy(), weights.detach().numpy())
+    #     assert np.allclose(res.detach().numpy(), expected)
+
+    #     res.backward()
+    #     expected = qml.grad(self.expval)(x.detach().numpy(), weights.detach().numpy())
+    #     assert np.allclose(x.grad, expected[0])
+    #     assert np.allclose(weights.grad, expected[1])
+
+    # def test_differentiable_jax(self, diff_method):
+    #     """Test that a batch transform is differentiable when using
+    #     jax"""
+    #     jax = pytest.importorskip("jax")
+    #     dev = qml.device("default.qubit", wires=2)
+    #     qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method)
+
+    #     def cost(x, weights):
+    #         return self.my_transform(qnode, weights)(x)
+
+    #     weights = jax.numpy.array([0.1, 0.2])
+    #     x = jax.numpy.array(0.543)
+
+    #     res = cost(x, weights)
+    #     assert np.allclose(res, self.expval(x, weights))
+
+    #     grad = jax.grad(cost, argnums=[0, 1])(x, weights)
+    #     expected = qml.grad(self.expval)(np.array(x), np.array(weights))
+    #     assert all(np.allclose(g, e) for g, e in zip(grad, expected))
