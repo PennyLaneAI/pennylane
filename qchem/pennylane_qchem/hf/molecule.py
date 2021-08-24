@@ -23,6 +23,7 @@ from pennylane import numpy as pnp
 from basis_data import atomic_numbers, STO3G
 from basis_set import BasisFunction, atom_basis_data, mol_basis_data
 
+
 class Molecule:
     r"""Create a molecule object that stores molecular information and default basis set parameters.
 
@@ -47,6 +48,7 @@ class Molecule:
         coeff (array[float]): coefficients of the contracted Gaussian functions
         rgaus (array[float]): positions of the Gaussian functions forming the basis function
     """
+
     def __init__(
         self,
         symbols,
@@ -56,10 +58,10 @@ class Molecule:
         basis_name="sto-3g",
         active_electrons=None,
         active_orbitals=None,
-        l = None,
-        alpha = None,
-        coeff = None,
-        rgaus = None
+        l=None,
+        alpha=None,
+        coeff=None,
+        rgaus=None,
     ):
 
         if basis_name not in ["sto-3g", "STO-3G"]:
@@ -103,10 +105,11 @@ class Molecule:
             self.n_electrons,
             self.n_orbitals,
             active_electrons=active_electrons,
-            active_orbitals=active_orbitals
+            active_orbitals=active_orbitals,
         )
 
         self.wires = [i for i in range(len(self.active * 2))]
+
 
 def generate_basis_functions(l, alpha, coeff, rgaus):
     r"""Generate a set of basis function objects.

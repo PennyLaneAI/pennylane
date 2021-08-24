@@ -33,7 +33,6 @@ class TestMolecule:
 
         assert isinstance(mol, Molecule)
 
-
     @pytest.mark.parametrize("molecular_data", molecular_data)
     def test_molecular_prop(self, molecular_data):
         symbols, geometry = molecular_data[0], molecular_data[1]
@@ -45,12 +44,9 @@ class TestMolecule:
         assert mol.mult == 1
         assert mol.basis_name == "sto-3g"
 
-
     @pytest.mark.parametrize("molecular_data", molecular_data)
     def test_molecular_error(self, molecular_data):
         symbols, geometry = molecular_data[0], molecular_data[1]
 
-        with pytest.raises(
-            ValueError, match="The only supported basis set is"
-        ):
-            mol = Molecule(symbols, geometry, basis_name = "6-31g")
+        with pytest.raises(ValueError, match="The only supported basis set is"):
+            mol = Molecule(symbols, geometry, basis_name="6-31g")
