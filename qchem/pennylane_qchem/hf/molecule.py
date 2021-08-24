@@ -12,22 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains functions and classes to create a Molecule object. This object contains all
+This module contains functions and classes to create a Molecule object. This object stores all
 the necessary information to perform a Hartree-Fock calculation for a given molecule.
 """
 
 import numpy as np
 import pennylane as qml
-# from basis_data import atomic_numbers
-# from basis_data import STO3G
 import autograd.numpy as anp
 from pennylane import numpy as pnp
-
+from basis_data import atomic_numbers, STO3G
+from basis_set import BasisFunction, atom_basis_data, mol_basis_data
 
 class Molecule:
     r"""Create a molecule object that stores molecular information and default basis set parameters.
 
-    The molecule object can be passed to functions that perform Hartree-Fock calculations.
+    The molecule object can be passed to functions that perform a Hartree-Fock calculation.
 
     Args:
         symbols (list[str]): symbols of the atomic species in the molecule
@@ -48,7 +47,6 @@ class Molecule:
         coeff (array[float]): coefficients of the contracted Gaussian functions
         rgaus (array[float]): positions of the Gaussian functions forming the basis function
     """
-
     def __init__(
         self,
         symbols,
@@ -58,6 +56,7 @@ class Molecule:
         basis_name="sto-3g",
         active_electrons=None,
         active_orbitals=None,
+        l = None,
         alpha = None,
         coeff = None,
         rgaus = None
@@ -72,37 +71,63 @@ class Molecule:
         self.mult = mult
         self.basis_name = basis_name
 
-        # self.n_basis, self.basis_data = mol_basis_data(self.basis_name, self.symbols)
-        #
-        # self.l = [i[0] for i in self.basis_data]
-        #
-        # if alpha is None:
-        #     alpha = [pnp.array(i[1], requires_grad=False) for i in self.basis_data]
-        #
-        # if coeff is None:
-        #     coeff = [pnp.array(i[2], requires_grad=False) for i in self.basis_data]
-        #
-        # if rgaus is None:
-        #     r_atom = [i for i in self.coordinates]
-        #     rgaus = sum([[r_atom[i]] * self.n_basis[i] for i in range(len(self.n_basis))], [])
+        self.n_basis, self.basis_data = mol_basis_data(self.basis_name, self.symbols)
 
-        # self.alpha = alpha
-        # self.coeff = coeff
-        # self.rgaus = rgaus
+        if l is None:
+            l = [i[0] for i in self.basis_data]
 
-        # self.basis_set = generate_basis_functions(self.l, alpha, coeff, rgaus)
+        if alpha is None:
+            alpha = [pnp.array(i[1], requires_grad=False) for i in self.basis_data]
 
-        # self.n_orbitals = len(self.l)
-        #
-        # self.nuclear_charges = [atomic_numbers[s] for s in symbols]
-        #
-        # self.n_electrons = sum(np.array(self.nuclear_charges))
+        if coeff is None:
+            coeff = [pnp.array(i[2], requires_grad=False) for i in self.basis_data]
 
-        # self.core, self.active = qml.qchem.active_space(
-        #     self.n_electrons,
-        #     self.n_orbitals,
-        #     active_electrons=active_electrons,
-        #     active_orbitals=active_orbitals
-        # )
-        #
-        # self.wires = [i for i in range(len(self.active * 2))]
+        if rgaus is None:
+            r_atom = [i for i in self.coordinates]
+            rgaus = sum([[r_atom[i]] * self.n_basis[i] for i in range(len(self.n_basis))], [])
+
+        self.l = l
+        self.alpha = alpha
+        self.coeff = coeff
+        self.rgaus = rgaus
+
+        self.basis_set = generate_basis_functions(self.l, alpha, coeff, rgaus)
+
+        self.n_orbitals = len(self.l)
+
+        self.nuclear_charges = [atomic_numbers[s] for s in symbols]
+
+        self.n_electrons = sum(np.array(self.nuclear_charges)) - self.charge
+
+        self.core, self.active = qml.qchem.active_space(
+            self.n_electrons,
+            self.n_orbitals,
+            active_electrons=active_electrons,
+            active_orbitals=active_orbitals
+        )
+
+        self.wires = [i for i in range(len(self.active * 2))]
+
+def generate_basis_functions(l, alpha, coeff, rgaus):
+    r"""Generate a set of basis function objects.
+
+    Args:
+        l list((tuple[int])): angular momentum numbers of the basis function.
+        alpha list((array(float))): exponents of the Gaussian functions forming basis functions
+        coeff list((array(float))): coefficients of the contracted Gaussian functions
+        rgaus list((array(float))): positions of the Gaussian functions forming the basis functions
+
+    Returns:
+        list(BasisFunction): list containing a set of basis function objects.
+
+    **Example**
+
+    >>> l = [(0, 0, 0), (0, 0, 0)]
+    >>> exponents = [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]]
+    >>> coefficients = [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]]
+    >>> centers = [[0.0, 0.0, -0.694349], [0.0, 0.0, 0.694349]]
+    >>>  basis_set = generate_basis_functions(l, exponents, coefficients, centers)
+    >>> print(basis_set)
+    [<molecule.BasisFunction object at 0x7f7566db2910>, <molecule.BasisFunction object at 0x7f7566db2a30>]
+    """
+    return [BasisFunction(l[i], alpha[i], coeff[i], rgaus[i]) for i in range(len(l))]
