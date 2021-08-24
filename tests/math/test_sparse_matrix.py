@@ -223,10 +223,8 @@ class TestArithmetic:
 
 m1 = pnp.array([[1, 0, 0, 2], [0.34, 0, 0, 0], [0, 0, 0, -1.2], [0.124, 0.43, 0.0, 0.0]])
 m2 = pnp.array([[0, 0, 0.78, 0], [0, 0, 0, -0.5432], [0, 0, 0.123, 0], [0, 0.543, 1.20, 1.20]])
-
-
-def non_sparse_cost(c1, c2):
-    return pnp.sum(c1 * m1 - c2 * m2)
+non_sparse_cost = lambda c1, c2: pnp.sum(c1 * m1 - c2 * m2)
+expected_grad_fn = qml.grad(non_sparse_cost)
 
 
 class TestGradients:
@@ -249,5 +247,5 @@ class TestGradients:
         b = -0.6
 
         res = qml.grad(cost)(a, b)
-        expected = qml.grad(non_sparse_cost)(a, b)
-        assert all(np.allclose(g1, g2) for g1, g2 in zip(res, expected))
+        expected = expected_grad_fn(a, b)
+        assert np.allclose(res, expected)
