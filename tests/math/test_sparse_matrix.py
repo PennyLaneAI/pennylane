@@ -191,8 +191,8 @@ class TestArithmetic:
         s2 = SparseMatrix((2, 3))
         assert not (s1 == s2)
 
-    def test_equality_different_opject(self):
-        """Test that error raised when trying to compare matrices of different types"""
+    def test_equality_different_object(self):
+        """Test that comparison with non-sparse objects return False."""
         tensor1 = np.array([[1.0, 0.0], [0.0, 0.0]])
         tensor2 = [[1.0, 0.0], [0.0, 0.0]]
         s1 = SparseMatrix(tensor1)

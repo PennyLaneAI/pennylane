@@ -606,6 +606,7 @@ class Hamiltonian(Observable):
             list_of_sparse_ops = [
                 qml.math.SparseMatrix(qml.math.convert_like(np.eye(2), coeff))
             ] * len(wires)
+
             for o in qml.operation.Tensor(op).obs:
                 if len(o.wires) > 1:
                     # todo: deal with operations created from multi-qubit operations such as Hermitian
