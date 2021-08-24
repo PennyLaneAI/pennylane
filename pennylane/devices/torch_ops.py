@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,13 +26,13 @@ R_DTYPE = torch.float64
 
 # Instantiating on the device (rather than moving) is approx. 100x faster
 def op_matrix(elements):
-    r"""Decorator to instanciate a tensor on a device.
+    r"""Decorator to instantiate a tensor on a device.
 
     Args:
         element : torch.Tensor
 
     Returns:
-        lambda dev : torch.Tensor elements instanciated on torch device dev
+        lambda dev : torch.Tensor elements instantiated on torch device dev
     """
     return lambda dev: torch.as_tensor(elements, dtype=C_DTYPE, device=dev)
 

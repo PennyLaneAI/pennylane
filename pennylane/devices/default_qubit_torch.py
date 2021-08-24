@@ -188,7 +188,7 @@ class DefaultQubitTorch(DefaultQubit):
     @staticmethod
     def _asarray(a, dtype=None):
         if isinstance(a, list):
-            # here be dragons... but it seem to give the results we want
+            # Handle unexpected cases where we don't have a list of tensors
             if not isinstance(a[0], torch.Tensor):
                 res = np.asarray(a)
                 res = torch.from_numpy(res)
@@ -224,20 +224,6 @@ class DefaultQubitTorch(DefaultQubit):
             return torch.conj(array)
         return np.conj(array)
 
-    # I'm not sure where this gets used, so I'm commenting it out until
-    # That becomes obvious, or I figure out if I can delete it
-    # @staticmethod
-    # def _ravel_multi_index(multi_index, dims):
-    #    # Idea: ravelling a multi-index can be expressed as a matrix-vector product
-    #    flip = lambda x: torch.flip(x, dims=[0])
-    #    dims = torch.as_tensor(dims, device=multi_index.device)
-    #    coeffs = torch.ones_like(dims, device=multi_index.device)
-    #    coeffs[:-1] = dims[1:]
-    #    coeffs = flip(torch.cumprod(flip(coeffs), dim=0))
-    #    ravelled_indices = (multi_index.T.type(torch.float) @ coeffs.type(torch.float)).type(
-    #        torch.long
-    #    )
-    #    return ravelled_indices
 
     @staticmethod
     def _scatter(indices, array, new_dimensions):
@@ -247,11 +233,6 @@ class DefaultQubitTorch(DefaultQubit):
         new_tensor = torch.zeros(new_dimensions, dtype=tensor.dtype, device=tensor.device)
         new_tensor[indices] = tensor
         return new_tensor
-
-    # Same as above: don't think this gets used, so I'm commenting it out
-    # @staticmethod
-    # def _allclose(a, b, atol=1e-08):
-    #    return torch.allclose(a, torch.as_tensor(b, dtype=a.dtype), atol=atol)
 
     @classmethod
     def capabilities(cls):
@@ -295,7 +276,7 @@ class DefaultQubitTorch(DefaultQubit):
         """Sample from the computational basis states based on the state
         probability.
 
-        This is an auxiliary method to the generate_samples method.
+        This is an auxiliary method to the ``generate_samples`` method.
 
         Args:
             number_of_states (int): the number of basis states to sample from

@@ -983,8 +983,8 @@ class TestQNodeIntegration:
         }
         assert cap == capabilities
 
-    def test_load_tensornet_torch_device(self):
-        """Test that the tensor network plugin loads correctly"""
+    def test_load_torch_device(self):
+        """Test that the torch device plugin loads correctly"""
         dev = qml.device("default.qubit.torch", wires=2)
         assert dev.num_wires == 2
         assert dev.shots is None
@@ -992,7 +992,7 @@ class TestQNodeIntegration:
         assert dev.capabilities()["passthru_interface"] == "torch"
 
     def test_qubit_circuit(self, tol, torch_device="cpu"):
-        """Test that the tensor network plugin provides correct
+        """Test that the torch device provides correct
         result for a simple circuit using the old QNode."""
         p = torch.tensor([0.543], device=torch_device, dtype=torch.float64)
 
@@ -1378,23 +1378,6 @@ class TestSamples:
         assert torch.is_tensor(res)
         assert res.shape == (shots,)
         assert torch.allclose(torch.unique(res), torch.tensor([-1, 1], dtype=torch.int64))
-
-    # def test_sample_observables_non_differentiable(self):
-    #     """Test that sampled observables cannot be differentiated."""
-    #     shots = 100
-    #     dev = qml.device("default.qubit.torch", wires=2, shots=shots)
-    #
-    #     @qml.qnode(dev, diff_method="backprop", interface="torch")
-    #     def circuit(a):
-    #         qml.RX(a, wires=0)
-    #         return qml.sample(qml.PauliZ(0))
-    #
-    #     a = torch.autograd.Variable(torch.tensor(0.54))
-    #     import pdb; pdb.set_trace()
-    #     res = torch.tensor(circuit(a))
-    #     res.backward()
-    #
-    #     assert a.grad is None
 
     def test_estimating_marginal_probability(self, tol):
         """Test that the probability of a subset of wires is accurately estimated."""
