@@ -133,7 +133,7 @@ class MPLDrawer:
     to a value of ``2`` in order to draw it *on top* of the control wires, instead of below them.
     """
 
-    def __init__(self, n_layers, n_wires, wirecolor=None, figsize=None):
+    def __init__(self, n_layers, n_wires, wire_kwargs=None, figsize=None):
 
         self.n_layers = n_layers
         self.n_wires = n_wires
@@ -162,9 +162,12 @@ class MPLDrawer:
         
         self.ax.invert_yaxis()
 
+        if wire_kwargs is None:
+            wire_kwargs = dict()
+
         # adding wire lines
         for wire in range(self.n_wires):
-            line = plt.Line2D((-1, self.n_layers), (wire, wire), zorder=1, color=wirecolor)
+            line = plt.Line2D((-1, self.n_layers), (wire, wire), zorder=1, **wire_kwargs)
             self.ax.add_line(line)
 
     def label(self, labels, text_kwargs=None):
@@ -196,7 +199,7 @@ class MPLDrawer:
             self.ax.text(-1.5, wire, ii_label, **text_kwargs)
 
     def box_gate(
-        self, layer, wires, text="", extra_width=0, rotate_text=False, zorder_base=0,
+        self, layer, wires, text="", extra_width=0, zorder_base=0,
         box_kwargs=None, text_kwargs=None
     ):
         """Draws a box and adds label text to its center.
@@ -208,8 +211,6 @@ class MPLDrawer:
 
         Kwargs:
             extra_width (float): Extra box width
-            rotate_text (Bool): whether to rotate text 90 degrees. Helpful to long labels and
-                multi-wire boxes.
             zorder_base=0 (Int): increase number to draw on top of other objects, like control wires
             box_kwargs=None (dict): Any matplotlib keywords for the Rectangle patch
             text_kwargs=None (dict): Any matplotlib keywords for the text
@@ -240,9 +241,6 @@ class MPLDrawer:
         box_max = max(wires)
         box_len = box_max - box_min
         box_center = (box_max + box_min) / 2.0
-
-        if rotate_text:
-            text_kwargs['rotation'] = "vertical"
 
         box = plt.Rectangle(
             (layer - self._box_dx - extra_width / 2, box_min - self._box_dx),
@@ -277,7 +275,7 @@ class MPLDrawer:
                 and max wires for the vertical line
             control_values=None (Iterable[Bool]): for each control wire, denotes whether to control
                 on ``False=0`` or ``True=1``.
-            color=None: mpl compatible color designation
+            kwargs=None (dict): mpl line keywords
 
         **Example**
 
@@ -306,27 +304,32 @@ class MPLDrawer:
 
         if control_values is None:
             for wire in wire_ctrl:
-                self._ctrl_circ(layer, wire, color, zorder=3)
+                self._ctrl_circ(layer, wire, zorder=3, color=color)
         else:
             if len(control_values) != len(wire_ctrl):
                 raise ValueError('`control_values` must be the same length as `wire_ctrl`')
             for wire, control_on in zip(wire_ctrl, control_values):
                 if control_on:
-                    self._ctrlo_circ(layer, wire, color, zorder=3)
+                    self._ctrlo_circ(layer, wire, zorder=3, color=color)
                 else:
-                    self._ctrl_circ(layer, wire, color, zorder=3)
+                    self._ctrl_circ(layer, wire, zorder=3, color=color)
 
-    def _ctrl_circ(self, layer, wire, color=None, zorder=3):
-        circ_ctrl= plt.Circle((layer, wire), radius=self._ctrl_rad, color=color, zorder=zorder)
+    def _ctrl_circ(self, layer, wire, zorder=3, color=None):
+    
+        circ_ctrl= plt.Circle((layer, wire), radius=self._ctrl_rad, zorder=zorder, color=color)
         self.ax.add_patch(circ_ctrl)
 
-    def _ctrlo_circ(self, layer, wire, color=None, zorder=3):
-        if color is None:
-            color = plt.rcParams['lines.color']
+    def _ctrlo_circ(self, layer, wire, zorder=3, color=None):
+        kwargs = {
+            'edgecolor': plt.rcParams['lines.color'],
+            'facecolor': plt.rcParams['axes.facecolor'],
+            'linewidth': plt.rcParams['lines.linewidth']
+        }
+        if color is not None:
+            kwargs['edgecolor'] = color
 
-        circ_ctrlo = plt.Circle((layer, wire), radius=(1.5*self._ctrl_rad),
-            edgecolor=color, facecolor=plt.rcParams['axes.facecolor'],
-            linewidth=plt.rcParams['lines.linewidth'], zorder=zorder)
+        circ_ctrlo = plt.Circle((layer, wire), radius=(1.5*self._ctrl_rad), zorder=zorder, **kwargs)
+
         self.ax.add_patch(circ_ctrlo)
 
     def CNOT(self, layer, wires, color=None):
@@ -369,26 +372,31 @@ class MPLDrawer:
         Keyword Args:
             color=None: mpl compatible color designation
         """
+        default_kwargs = {
+            'edgecolor': plt.rcParams['lines.color'],
+            'linewidth': plt.rcParams['lines.linewidth'],
+            'facecolor': plt.rcParams['axes.facecolor']
+            }
         if color is not None:
-            edgecolor = color
-        else:
-            edgecolor = plt.rcParams["lines.color"]
+            default_kwargs['edgecolor'] = color
 
         target_circ = plt.Circle(
             (layer, wire),
             radius=self._circ_rad,
             zorder=3,
-            fill=False,
-            edgecolor=edgecolor,
-            linewidth=plt.rcParams["lines.linewidth"],
+            **default_kwargs
         )
         target_v = plt.Line2D(
             (layer, layer), (wire - self._circ_rad, wire + self._circ_rad), zorder=4, color=color
         )
+        target_h = plt.Line2D(
+            (layer - self._circ_rad, layer + self._circ_rad), (wire, wire), zorder=4, color=color
+        )
         self.ax.add_patch(target_circ)
         self.ax.add_line(target_v)
+        self.ax.add_line(target_h)
 
-    def SWAP(self, layer, wires, color=None):
+    def SWAP(self, layer, wires, kwargs=None):
         """Draws a SWAP gate
 
         Args:
@@ -412,13 +420,16 @@ class MPLDrawer:
             :target: javascript:void(0);
 
         """
-        line = plt.Line2D((layer, layer), wires, zorder=2, color=color)
+        if kwargs is None:
+            kwargs = dict()
+
+        line = plt.Line2D((layer, layer), wires, zorder=2, **kwargs)
         self.ax.add_line(line)
 
         for wire in wires:
-            self._swap_x(layer, wire, color=color)
+            self._swap_x(layer, wire, kwargs)
 
-    def _swap_x(self, layer, wire, color=None):
+    def _swap_x(self, layer, wire, kwargs=None):
         """Draw an x such as used in drawing a swap gate
 
         Args:
@@ -429,23 +440,26 @@ class MPLDrawer:
             color=None: mpl compatible color designation
 
         """
+        if kwargs is None:
+            kwargs = dict()
+
         l1 = plt.Line2D(
             (layer - self._swap_dx, layer + self._swap_dx),
             (wire - self._swap_dx, wire + self._swap_dx),
             zorder=2,
-            color=color,
+            **kwargs,
         )
         l2 = plt.Line2D(
             (layer - self._swap_dx, layer + self._swap_dx),
             (wire + self._swap_dx, wire - self._swap_dx),
             zorder=2,
-            color=color,
+            **kwargs
         )
 
         self.ax.add_line(l1)
         self.ax.add_line(l2)
 
-    def measure(self, layer, wire, zorder_base=0, color=None, linecolor=None):
+    def measure(self, layer, wire, zorder_base=0, box_kwargs=None, lines_kwargs=None):
         """Draw a Measurement graphic at designated layer, wire combination.
 
         Args:
@@ -469,14 +483,18 @@ class MPLDrawer:
             :target: javascript:void(0);
 
         """
+        if box_kwargs is None:
+            box_kwargs = dict()
+
+        if lines_kwargs is None:
+            lines_kwargs = dict()
 
         box = plt.Rectangle(
             (layer - self._box_dx, wire - self._box_dx),
             2 * self._box_dx,
             2 * self._box_dx,
             zorder=2 + zorder_base,
-            facecolor=color,
-            edgecolor=linecolor
+            **box_kwargs
         )
         self.ax.add_patch(box)
 
@@ -487,7 +505,7 @@ class MPLDrawer:
             theta1=180,
             theta2=0,
             zorder=3 + zorder_base,
-            color=linecolor
+            **lines_kwargs
         )
         self.ax.add_patch(arc)
 
@@ -504,7 +522,6 @@ class MPLDrawer:
             arrow_height,
             head_width=self._box_dx / 4,
             zorder=4 + zorder_base,
-            facecolor=color,
-            edgecolor=linecolor
+            **lines_kwargs
         )
         self.ax.add_line(arrow)
