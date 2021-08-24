@@ -313,7 +313,7 @@ def IsingXX(phi, device):
         torch.Tensor[complex]:: unitary 4x4 rotation matrix
     """
     phi = torch.as_tensor(phi, dtype=C_DTYPE, device=device)
-    return torch.cos(phi / 2) * II - 1j * torch.sin(phi / 2) * XX
+    return torch.cos(phi / 2) * II(device) - 1j * torch.sin(phi / 2) * XX(device)
 
 
 def IsingYY(phi, device):
@@ -334,7 +334,7 @@ def IsingYY(phi, device):
         torch.Tensor[complex]:: unitary 4x4 rotation matrix
     """
     phi = torch.as_tensor(phi, dtype=C_DTYPE, device=device)
-    return torch.cos(phi / 2) * II - 1j * torch.sin(phi / 2) * YY
+    return torch.cos(phi / 2) * II(device) - 1j * torch.sin(phi / 2) * YY(device)
 
 
 def IsingZZ(phi, device):
