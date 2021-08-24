@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Class for framework-agnostic sparse matrix representation."""
-from copy import deepcopy
+from copy import deepcopy, copy
 import numpy as np
 import pennylane as qml
 
@@ -166,7 +166,7 @@ class SparseMatrix:
                 f"Cannot add SparseMatrix object of different shape, got {other.shape}"
             )
 
-        new = deepcopy(self)
+        new = copy(self)
         for idx, entry in other.data.items():
             if idx in new.data:
                 new.data[idx] += entry
@@ -194,7 +194,7 @@ class SparseMatrix:
             # return an empty matrix
             return SparseMatrix(self.shape)
 
-        new = deepcopy(self)
+        new = copy(self)
         for idx in new.data.keys():
             new.data[idx] *= other
 

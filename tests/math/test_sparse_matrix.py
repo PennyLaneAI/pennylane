@@ -221,6 +221,14 @@ class TestArithmetic:
             s1.kron(tensor2)
 
 
+m1 = pnp.array([[1, 0, 0, 2], [0.34, 0, 0, 0], [0, 0, 0, -1.2], [0.124, 0.43, 0.0, 0.0]])
+m2 = pnp.array([[0, 0, 0.78, 0], [0, 0, 0, -0.5432], [0, 0, 0.123, 0], [0, 0.543, 1.20, 1.20]])
+
+
+def non_sparse_cost(c1, c2):
+    return pnp.sum(c1 * m1 - c2 * m2)
+
+
 class TestGradients:
     """Integration tests to ensure the logic is differentiable"""
 
@@ -228,16 +236,15 @@ class TestGradients:
         """Test that the sparse matrix methods are differentiable using
         autograd"""
 
-        m1 = pnp.array([[1, 0, 0, 2], [0.34, 0, 0, 0], [0, 0, 0, -1.2], [0.124, 0.43, 0.0, 0.0]])
-        m2 = pnp.array(
-            [[0, 0, 0.45, 0], [0, 0, 0, -0.5432], [0, 0, 0.123, 0], [0, 0.543, 1.20, 1.20]]
-        )
+        def cost(c1, c2):
+            s1 = SparseMatrix(m1)
+            s2 = SparseMatrix(m2)
+            y3 = s1 * c1 - s2 * c2
+            return pnp.sum(list(y3.data.values()))
 
-        def cost(a, b):
-            s1 = SparseMatrix(a)
-            s2 = SparseMatrix(b)
-            y1 = s1.kron(s2)
-            y2 = s2.kron(s1)
-            return 0.5 * y1 - 8.6 * y2
+        a = 0.5643
+        b = -0.6
 
-        res = qml.grad(cost)(m1, m2)
+        res = qml.grad(cost)(a, b)
+        expected = qml.grad(non_sparse_cost)(a, b)
+        assert all(np.allclose(g1, g2) for g1, g2 in zip(res, expected))
