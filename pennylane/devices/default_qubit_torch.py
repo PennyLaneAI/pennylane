@@ -189,7 +189,7 @@ class DefaultQubitTorch(DefaultQubit):
     @staticmethod
     def _asarray(a, dtype=None):
         if isinstance(a, list):
-            # here be dragons... but it seem to give the results we want
+            # Handle unexpected cases where we don't have a list of tensors
             if not isinstance(a[0], torch.Tensor):
                 res = np.asarray(a)
                 res = torch.from_numpy(res)
