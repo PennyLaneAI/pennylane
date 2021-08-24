@@ -106,7 +106,7 @@ class QNode:
             * ``"finite-diff"``: Uses numerical finite-differences for all quantum operation
               arguments.
 
-            * ``None``: Qnode can not be differentiated. Works the same as `interface=None`.
+            * ``None``: QNode cannot be differentiated. Works the same as ``interface=None``.
 
         mutable (bool): If True, the underlying quantum circuit is re-constructed with
             every evaluation. This is the recommended approach, as it allows the underlying
