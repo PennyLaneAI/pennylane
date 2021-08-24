@@ -764,7 +764,9 @@ class QubitDevice(Device):
             try:
                 eigvals = self._asarray(observable.eigvals, dtype=self.R_DTYPE)
             except NotImplementedError as e:
-                raise ValueError(f"Cannot compute expectations of {observable.name} observables.") from e
+                raise ValueError(
+                    f"Cannot compute expectations of {observable.name} observables."
+                ) from e
 
             prob = self.probability(wires=observable.wires)
             return self._dot(eigvals, prob)

@@ -20,6 +20,13 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as pnp
 
+tf = pytest.importorskip("tensorflow", minversion="2.1")
+torch = pytest.importorskip("torch")
+jax = pytest.importorskip("jax")
+jnp = pytest.importorskip("jax.numpy")
+
+converters = [pnp.array, jnp.array, tf.Variable, torch.tensor]
+
 # Make test data in different interfaces, if installed
 COEFFS_PARAM_INTERFACE = [
     ([-0.05, 0.17], 1.7, "autograd"),
@@ -762,36 +769,78 @@ class TestHamiltonianCoefficients:
         assert H1.data == H2.data
 
 
-class TestHamiltonianArithmeticTF:
-    """Tests creation of Hamiltonians using arithmetic
-    operations with TensorFlow tensor coefficients."""
+class TestSparseRepresentation:
+    """Tests the sparse representation of a Hamiltonian"""
 
-    def test_hamiltonian_equal(self):
+    @pytest.mark.parametrize("converter", converters)
+    def test_no_wires(self, converter):
+        """Test representation using the Hamiltonian's wires"""
+        ham = qml.Hamiltonian(converter([0.1, 0.2]), [qml.PauliX("b"), qml.PauliY("a")])
+        s = ham.sparse_matrix()
+        expected = {
+            (0, 2): 0.1,
+            (1, 3): 0.1,
+            (2, 0): 0.1,
+            (3, 1): 0.1,
+            (0, 1): 0.0 - 0.2j,
+            (1, 0): 0.0 + 0.2j,
+            (2, 3): 0.0 - 0.2j,
+            (3, 2): 0.0 + 0.2j,
+        }
+        assert s.data == {k: converter(v) for k, v in expected.items()}
+        assert s.shape == (4, 4)
+
+    @pytest.mark.parametrize("converter", converters)
+    def test_no_wires(self, converter):
+        """Test representation using custom wires"""
+        ham = qml.Hamiltonian(converter([0.1]), [qml.PauliX("b")])
+        s = ham.sparse_matrix(wires=["a", "b"])
+        expected = {(0, 1): 0.1, (1, 0): 0.1, (2, 3): 0.1, (3, 2): 0.1}
+        assert s.data == {k: converter(v) for k, v in expected.items()}
+        assert s.shape == (4, 4)
+
+    def test_empty_hamiltonian(self):
+        """Test representation of an empty Hamiltonian"""
+        ham = qml.Hamiltonian([], [])
+        s = ham.sparse_matrix()
+        assert s.data == {}
+        assert s.shape == (1, 1)
+
+    def test_error_two_qubit_ops(self):
+        """Test that error is raised when Hamiltonian is not constructed from 1-qubit ops only."""
+        ham = qml.Hamiltonian([0.1], [qml.Hermitian(np.eye(4), wires=[0, 2]) @ qml.PauliX(1)])
+        with pytest.raises(ValueError, match="Can only compute sparse"):
+            ham.sparse_matrix()
+
+
+class TestHamiltonianArithmetic:
+    """Tests creation of Hamiltonians using arithmetic operations."""
+
+    @pytest.mark.parametrize("converter", converters)
+    def test_hamiltonian_equal(self, converter):
         """Tests equality"""
-        tf = pytest.importorskip("tensorflow")
-
-        coeffs = tf.Variable([0.5, -1.6])
+        coeffs = converter([0.5, -1.6])
         obs = [qml.PauliX(0), qml.PauliY(1)]
         H1 = qml.Hamiltonian(coeffs, obs)
 
-        coeffs2 = tf.Variable([-1.6, 0.5])
+        coeffs2 = converter([-1.6, 0.5])
         obs2 = [qml.PauliY(1), qml.PauliX(0)]
         H2 = qml.Hamiltonian(coeffs2, obs2)
 
         assert H1.compare(H2)
 
-    def test_hamiltonian_add(self):
+    @pytest.mark.parametrize("converter", converters)
+    def test_hamiltonian_add(self, converter):
         """Tests that Hamiltonians are added correctly"""
-        tf = pytest.importorskip("tensorflow")
 
-        coeffs = tf.Variable([0.5, -1.6])
+        coeffs = converter([0.5, -1.6])
         obs = [qml.PauliX(0), qml.PauliY(1)]
         H1 = qml.Hamiltonian(coeffs, obs)
 
-        coeffs2 = tf.Variable([0.5, -0.4])
+        coeffs2 = converter([0.5, -0.4])
         H2 = qml.Hamiltonian(coeffs2, obs)
 
-        coeffs_expected = tf.Variable([1.0, -2.0])
+        coeffs_expected = converter([1.0, -2.0])
         H = qml.Hamiltonian(coeffs_expected, obs)
 
         assert H.compare(H1 + H2)
@@ -799,18 +848,18 @@ class TestHamiltonianArithmeticTF:
         H1 += H2
         assert H.compare(H1)
 
-    def test_hamiltonian_sub(self):
+    @pytest.mark.parametrize("converter", converters)
+    def test_hamiltonian_sub(self, converter):
         """Tests that Hamiltonians are subtracted correctly"""
-        tf = pytest.importorskip("tensorflow")
 
-        coeffs = tf.Variable([1.0, -2.0])
+        coeffs = converter([1.0, -2.0])
         obs = [qml.PauliX(0), qml.PauliY(1)]
         H1 = qml.Hamiltonian(coeffs, obs)
 
-        coeffs2 = tf.Variable([0.5, -0.4])
+        coeffs2 = converter([0.5, -0.4])
         H2 = qml.Hamiltonian(coeffs2, obs)
 
-        coeffs_expected = tf.Variable([0.5, -1.6])
+        coeffs_expected = converter([0.5, -1.6])
         H = qml.Hamiltonian(coeffs_expected, obs)
 
         assert H.compare(H1 - H2)
@@ -818,255 +867,19 @@ class TestHamiltonianArithmeticTF:
         H1 -= H2
         assert H.compare(H1)
 
-    def test_hamiltonian_matmul(self):
+    @pytest.mark.parametrize("converter", converters)
+    def test_hamiltonian_matmul(self, converter):
         """Tests that Hamiltonians are tensored correctly"""
-        tf = pytest.importorskip("tensorflow")
 
-        coeffs = tf.Variable([1.0, 2.0])
+        coeffs = converter([1.0, 2.0])
         obs = [qml.PauliX(0), qml.PauliY(1)]
         H1 = qml.Hamiltonian(coeffs, obs)
 
-        coeffs2 = tf.Variable([-1.0, -2.0])
+        coeffs2 = converter([-1.0, -2.0])
         obs2 = [qml.PauliX(2), qml.PauliY(3)]
         H2 = qml.Hamiltonian(coeffs2, obs2)
 
-        coeffs_expected = tf.Variable([-4.0, -2.0, -2.0, -1.0])
-        obs_expected = [
-            qml.PauliY(1) @ qml.PauliY(3),
-            qml.PauliX(0) @ qml.PauliY(3),
-            qml.PauliX(2) @ qml.PauliY(1),
-            qml.PauliX(0) @ qml.PauliX(2),
-        ]
-        H = qml.Hamiltonian(coeffs_expected, obs_expected)
-
-        assert H.compare(H1 @ H2)
-
-
-class TestHamiltonianArithmeticTorch:
-    """Tests creation of Hamiltonians using arithmetic
-    operations with torch tensor coefficients."""
-
-    def test_hamiltonian_equal(self):
-        """Tests equality"""
-        torch = pytest.importorskip("torch")
-
-        coeffs = torch.tensor([0.5, -1.6])
-        obs = [qml.PauliX(0), qml.PauliY(1)]
-        H1 = qml.Hamiltonian(coeffs, obs)
-
-        coeffs2 = torch.tensor([-1.6, 0.5])
-        obs2 = [qml.PauliY(1), qml.PauliX(0)]
-        H2 = qml.Hamiltonian(coeffs2, obs2)
-
-        assert H1.compare(H2)
-
-    def test_hamiltonian_add(self):
-        """Tests that Hamiltonians are added correctly"""
-        torch = pytest.importorskip("torch")
-
-        coeffs = torch.tensor([0.5, -1.6])
-        obs = [qml.PauliX(0), qml.PauliY(1)]
-        H1 = qml.Hamiltonian(coeffs, obs)
-
-        coeffs2 = torch.tensor([0.5, -0.4])
-        H2 = qml.Hamiltonian(coeffs2, obs)
-
-        coeffs_expected = torch.tensor([1.0, -2.0])
-        H = qml.Hamiltonian(coeffs_expected, obs)
-
-        assert H.compare(H1 + H2)
-
-        H1 += H2
-        assert H.compare(H1)
-
-    def test_hamiltonian_sub(self):
-        """Tests that Hamiltonians are subtracted correctly"""
-        torch = pytest.importorskip("torch")
-
-        coeffs = torch.tensor([1.0, -2.0])
-        obs = [qml.PauliX(0), qml.PauliY(1)]
-        H1 = qml.Hamiltonian(coeffs, obs)
-
-        coeffs2 = torch.tensor([0.5, -0.4])
-        H2 = qml.Hamiltonian(coeffs2, obs)
-
-        coeffs_expected = torch.tensor([0.5, -1.6])
-        H = qml.Hamiltonian(coeffs_expected, obs)
-
-        assert H.compare(H1 - H2)
-
-        H1 -= H2
-        assert H.compare(H1)
-
-    def test_hamiltonian_matmul(self):
-        """Tests that Hamiltonians are tensored correctly"""
-        torch = pytest.importorskip("torch")
-
-        coeffs = torch.tensor([1.0, 2.0])
-        obs = [qml.PauliX(0), qml.PauliY(1)]
-        H1 = qml.Hamiltonian(coeffs, obs)
-
-        coeffs2 = torch.tensor([-1.0, -2.0])
-        obs2 = [qml.PauliX(2), qml.PauliY(3)]
-        H2 = qml.Hamiltonian(coeffs2, obs2)
-
-        coeffs_expected = torch.tensor([-4.0, -2.0, -2.0, -1.0])
-        obs_expected = [
-            qml.PauliY(1) @ qml.PauliY(3),
-            qml.PauliX(0) @ qml.PauliY(3),
-            qml.PauliX(2) @ qml.PauliY(1),
-            qml.PauliX(0) @ qml.PauliX(2),
-        ]
-        H = qml.Hamiltonian(coeffs_expected, obs_expected)
-
-        assert H.compare(H1 @ H2)
-
-
-class TestHamiltonianArithmeticAutograd:
-    """Tests creation of Hamiltonians using arithmetic
-    operations with autograd tensor coefficients."""
-
-    def test_hamiltonian_equal(self):
-        """Tests equality"""
-        coeffs = pnp.array([0.5, -1.6])
-        obs = [qml.PauliX(0), qml.PauliY(1)]
-        H1 = qml.Hamiltonian(coeffs, obs)
-
-        coeffs2 = pnp.array([-1.6, 0.5])
-        obs2 = [qml.PauliY(1), qml.PauliX(0)]
-        H2 = qml.Hamiltonian(coeffs2, obs2)
-
-        assert H1.compare(H2)
-
-    def test_hamiltonian_add(self):
-        """Tests that Hamiltonians are added correctly"""
-        coeffs = pnp.array([0.5, -1.6])
-        obs = [qml.PauliX(0), qml.PauliY(1)]
-        H1 = qml.Hamiltonian(coeffs, obs)
-
-        coeffs2 = pnp.array([0.5, -0.4])
-        H2 = qml.Hamiltonian(coeffs2, obs)
-
-        coeffs_expected = pnp.array([1.0, -2.0])
-        H = qml.Hamiltonian(coeffs_expected, obs)
-
-        assert H.compare(H1 + H2)
-
-        H1 += H2
-        assert H.compare(H1)
-
-    def test_hamiltonian_sub(self):
-        """Tests that Hamiltonians are subtracted correctly"""
-        coeffs = pnp.array([1.0, -2.0])
-        obs = [qml.PauliX(0), qml.PauliY(1)]
-        H1 = qml.Hamiltonian(coeffs, obs)
-
-        coeffs2 = pnp.array([0.5, -0.4])
-        H2 = qml.Hamiltonian(coeffs2, obs)
-
-        coeffs_expected = pnp.array([0.5, -1.6])
-        H = qml.Hamiltonian(coeffs_expected, obs)
-
-        assert H.compare(H1 - H2)
-
-        H1 -= H2
-        assert H.compare(H1)
-
-    def test_hamiltonian_matmul(self):
-        """Tests that Hamiltonians are tensored correctly"""
-        coeffs = pnp.array([1.0, 2.0])
-        obs = [qml.PauliX(0), qml.PauliY(1)]
-        H1 = qml.Hamiltonian(coeffs, obs)
-
-        coeffs2 = pnp.array([-1.0, -2.0])
-        obs2 = [qml.PauliX(2), qml.PauliY(3)]
-        H2 = qml.Hamiltonian(coeffs2, obs2)
-
-        coeffs_expected = pnp.array([-4.0, -2.0, -2.0, -1.0])
-        obs_expected = [
-            qml.PauliY(1) @ qml.PauliY(3),
-            qml.PauliX(0) @ qml.PauliY(3),
-            qml.PauliX(2) @ qml.PauliY(1),
-            qml.PauliX(0) @ qml.PauliX(2),
-        ]
-        H = qml.Hamiltonian(coeffs_expected, obs_expected)
-
-        assert H.compare(H1 @ H2)
-
-
-class TestHamiltonianArithmeticJax:
-    """Tests creation of Hamiltonians using arithmetic
-    operations with jax tensor coefficients."""
-
-    def test_hamiltonian_equal(self):
-        """Tests equality"""
-        jax = pytest.importorskip("jax")
-        from jax import numpy as jnp
-
-        coeffs = jnp.array([0.5, -1.6])
-        obs = [qml.PauliX(0), qml.PauliY(1)]
-        H1 = qml.Hamiltonian(coeffs, obs)
-
-        coeffs2 = jnp.array([-1.6, 0.5])
-        obs2 = [qml.PauliY(1), qml.PauliX(0)]
-        H2 = qml.Hamiltonian(coeffs2, obs2)
-
-        assert H1.compare(H2)
-
-    def test_hamiltonian_add(self):
-        """Tests that Hamiltonians are added correctly"""
-        jax = pytest.importorskip("jax")
-        from jax import numpy as jnp
-
-        coeffs = jnp.array([0.5, -1.6])
-        obs = [qml.PauliX(0), qml.PauliY(1)]
-        H1 = qml.Hamiltonian(coeffs, obs)
-
-        coeffs2 = jnp.array([0.5, -0.4])
-        H2 = qml.Hamiltonian(coeffs2, obs)
-
-        coeffs_expected = jnp.array([1.0, -2.0])
-        H = qml.Hamiltonian(coeffs_expected, obs)
-
-        assert H.compare(H1 + H2)
-
-        H1 += H2
-        assert H.compare(H1)
-
-    def test_hamiltonian_sub(self):
-        """Tests that Hamiltonians are subtracted correctly"""
-        jax = pytest.importorskip("jax")
-        from jax import numpy as jnp
-
-        coeffs = jnp.array([1.0, -2.0])
-        obs = [qml.PauliX(0), qml.PauliY(1)]
-        H1 = qml.Hamiltonian(coeffs, obs)
-
-        coeffs2 = jnp.array([0.5, -0.4])
-        H2 = qml.Hamiltonian(coeffs2, obs)
-
-        coeffs_expected = jnp.array([0.5, -1.6])
-        H = qml.Hamiltonian(coeffs_expected, obs)
-
-        assert H.compare(H1 - H2)
-
-        H1 -= H2
-        assert H.compare(H1)
-
-    def test_hamiltonian_matmul(self):
-        """Tests that Hamiltonians are tensored correctly"""
-        jax = pytest.importorskip("jax")
-        from jax import numpy as jnp
-
-        coeffs = jnp.array([1.0, 2.0])
-        obs = [qml.PauliX(0), qml.PauliY(1)]
-        H1 = qml.Hamiltonian(coeffs, obs)
-
-        coeffs2 = jnp.array([-1.0, -2.0])
-        obs2 = [qml.PauliX(2), qml.PauliY(3)]
-        H2 = qml.Hamiltonian(coeffs2, obs2)
-
-        coeffs_expected = jnp.array([-4.0, -2.0, -2.0, -1.0])
+        coeffs_expected = converter([-4.0, -2.0, -2.0, -1.0])
         obs_expected = [
             qml.PauliY(1) @ qml.PauliY(3),
             qml.PauliX(0) @ qml.PauliY(3),

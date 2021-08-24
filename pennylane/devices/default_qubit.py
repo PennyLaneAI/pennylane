@@ -149,7 +149,7 @@ class DefaultQubit(QubitDevice):
         "Identity",
         "Projector",
         "SparseHamiltonian",
-        "Hamiltonian"
+        "Hamiltonian",
     }
 
     def __init__(self, wires, *, shots=None, cache=0, analytic=None):
@@ -492,7 +492,7 @@ class DefaultQubit(QubitDevice):
             sparse_ham = observable.sparse_matrix(wires=self.wires)
 
             # execute sparse conj(state)*H*state product
-            res = 0.
+            res = 0.0
             for idx, entry in sparse_ham.data.items():
                 res += self._conj(self.state)[idx[0]] * entry * self.state[idx[1]]
             return qml.math.real(res)
