@@ -30,6 +30,7 @@ except ImportError as e:
 import numpy as np
 from pennylane.operation import DiagonalOperation
 from pennylane.devices import torch_ops
+from pennylane import QuantumFunctionError
 from . import DefaultQubit
 
 
@@ -303,7 +304,7 @@ class DefaultQubitTorch(DefaultQubit):
         """
         if self.shots is None:
 
-            raise qml.QuantumFunctionError(
+            raise QuantumFunctionError(
                 "The number of shots has to be explicitly set on the device "
                 "when using sample-based measurements."
             )

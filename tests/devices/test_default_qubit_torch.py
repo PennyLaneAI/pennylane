@@ -1527,3 +1527,18 @@ class TestHighLevelIntegration:
 
         assert torch.is_tensor(res)
         assert grad.shape == weights.shape
+
+    def test_sampling_analytic_mode(self):
+        """Test that when sampling with shots=None, dev uses 1000 shots and
+        raises an error.
+        """
+        dev = qml.device("default.qubit.torch", wires=1, shots=None)
+
+        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        def circuit():
+            return qml.sample(qml.PauliZ(wires=0))
+
+        with pytest.raises(
+            qml.QuantumFunctionError, match="The number of shots has to be explicitly set on the device"
+        ):
+            res = circuit()
