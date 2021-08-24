@@ -48,6 +48,32 @@ class TestBatchTransform:
         tapes, fn = my_transform(tape)
         assert fn(5) == 5
 
+    def test_not_differentiable(self):
+        """Test that a non-differentiable transform cannot be differentiated"""
+
+        def my_transform(tape):
+            tape1 = tape.copy()
+            tape2 = tape.copy()
+            return [tape1, tape2], qml.math.sum
+
+        my_transform = qml.batch_transform(my_transform, differentiable=False)
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @my_transform
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.Hadamard(wires=0)
+            qml.RY(x, wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        res = circuit(0.5)
+        assert isinstance(res, float)
+        assert not np.allclose(res, 0)
+
+        with pytest.warns(UserWarning, match="Output seems independent of input"):
+            qml.grad(circuit)(0.5)
+
     def test_expand_fn(self, mocker):
         """Test that if an expansion function is provided,
         that the input tape is expanded before being transformed."""

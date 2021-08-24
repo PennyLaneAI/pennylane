@@ -74,7 +74,7 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True):
             # No caching. Simply execute the execution function
             # and return the results.
             res = fn(tapes, **kwargs)
-            return res, [] if return_tuple else res
+            return (res, []) if return_tuple else res
 
         execution_tapes = {}
         cached_results = {}
@@ -106,7 +106,7 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True):
         if not execution_tapes:
             if not repeated:
                 res = list(cached_results.values())
-                return res, [] if return_tuple else res
+                return (res, []) if return_tuple else res
 
         else:
             # execute all unique tapes that do not exist in the cache
@@ -129,7 +129,7 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True):
                 final_res.append(r)
                 cache[hashes[i]] = r
 
-        return final_res, [] if return_tuple else final_res
+        return (final_res, []) if return_tuple else final_res
 
     wrapper.fn = fn
     return wrapper
@@ -243,7 +243,7 @@ def execute(
 
     if interface is None or gradient_fn is None:
         with qml.tape.Unwrap(*tapes):
-            res = execute_fn(tapes)
+            res = cache_execute(device.batch_execute, cache, return_tuple=False)(tapes)
 
         return res
 
