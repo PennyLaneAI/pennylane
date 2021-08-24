@@ -39,6 +39,7 @@ from gate_data import (
     CNOT,
     SWAP,
     ISWAP,
+    SISWAP,
     CZ,
     S,
     T,
@@ -400,6 +401,7 @@ NON_PARAMETRIZED_OPERATIONS = [
     (qml.CNOT, CNOT),
     (qml.SWAP, SWAP),
     (qml.ISWAP, ISWAP),
+    (qml.SISWAP, SISWAP),
     (qml.CZ, CZ),
     (qml.S, S),
     (qml.T, T),
@@ -419,6 +421,8 @@ PARAMETRIZED_OPERATIONS = [
     qml.CY(wires=[0, 1]),
     qml.SWAP(wires=[0, 1]),
     qml.ISWAP(wires=[0, 1]),
+    qml.SISWAP(wires=[0, 1]),
+    qml.SQISW(wires=[0, 1]),
     qml.CSWAP(wires=[0, 1, 2]),
     qml.PauliRot(0.123, "Y", wires=0),
     qml.IsingXX(0.123, wires=[0, 1]),
@@ -756,6 +760,55 @@ class TestOperations:
         assert res[3].name == "CNOT"
         assert res[4].name == "CNOT"
         assert res[5].name == "Hadamard"
+
+        mats = []
+        for i in reversed(res):
+            if i.wires == Wires([1]):
+                mats.append(np.kron(np.eye(2), i.matrix))
+            elif i.wires == Wires([0]):
+                mats.append(np.kron(i.matrix, np.eye(2)))
+            elif i.wires == Wires([1, 0]) and i.name == "CNOT":
+                mats.append(np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]]))
+            else:
+                mats.append(i.matrix)
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+
+        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("siswap_op", [qml.SISWAP, qml.SQISW])
+    def test_SISWAP_decomposition(self, siswap_op, tol):
+        """Tests that the decomposition of the SISWAP gate and its SQISW alias gate is correct"""
+        op = siswap_op(wires=[0, 1])
+        res = op.decomposition(op.wires)
+
+        assert len(res) == 12
+
+        assert res[0].wires == Wires([0])
+        assert res[1].wires == Wires([0])
+        assert res[2].wires == Wires([0, 1])
+        assert res[3].wires == Wires([0])
+        assert res[4].wires == Wires([0])
+        assert res[5].wires == Wires([0])
+        assert res[6].wires == Wires([0])
+        assert res[7].wires == Wires([1])
+        assert res[8].wires == Wires([1])
+        assert res[9].wires == Wires([0, 1])
+        assert res[10].wires == Wires([0])
+        assert res[11].wires == Wires([1])
+
+        assert res[0].name == "SX"
+        assert res[1].name == "RZ"
+        assert res[2].name == "CNOT"
+        assert res[3].name == "SX"
+        assert res[4].name == "RZ"
+        assert res[5].name == "SX"
+        assert res[6].name == "RZ"
+        assert res[7].name == "SX"
+        assert res[8].name == "RZ"
+        assert res[9].name == "CNOT"
+        assert res[10].name == "SX"
+        assert res[11].name == "SX"
 
         mats = []
         for i in reversed(res):
@@ -1532,6 +1585,14 @@ class TestOperations:
     def test_iswap_eigenval(self):
         """Tests that the ISWAP eigenvalue matches the numpy eigenvalues of the ISWAP matrix"""
         op = qml.ISWAP(wires=[0, 1])
+        exp = np.linalg.eigvals(op.matrix)
+        res = op.eigvals
+        assert np.allclose(res, exp)
+
+    @pytest.mark.parametrize("siswap_op", [qml.SISWAP, qml.SQISW])
+    def test_siswap_eigenval(self, siswap_op):
+        """Tests that the ISWAP eigenvalue matches the numpy eigenvalues of the ISWAP matrix"""
+        op = siswap_op(wires=[0, 1])
         exp = np.linalg.eigvals(op.matrix)
         res = op.eigvals
         assert np.allclose(res, exp)
