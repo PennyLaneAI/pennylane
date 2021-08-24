@@ -23,8 +23,6 @@ import numpy as np
 
 import pennylane as qml
 
-from .autograd import execute as execute_autograd
-
 
 def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True):
     """Decorator that adds caching to a function that executes
@@ -236,7 +234,7 @@ def execute(
 
     if isinstance(cache, bool) and cache:
         # cache=True: create a LRUCache object
-        cache = LRUCache(maxsize=cachesize, getsizeof=len)
+        cache = LRUCache(maxsize=cachesize, getsizeof=lambda x: qml.math.shape(x)[0])
 
     if interface is None or gradient_fn is None:
         with qml.tape.Unwrap(*tapes):
@@ -275,10 +273,12 @@ def execute(
         raise ValueError("Gradient transforms cannot be used with mode='forward'")
 
     if interface == "autograd":
-        res = execute_autograd(
-            tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
-        )
+        from .autograd import execute as _execute
+    elif interface in ("torch", "pytorch"):
+        from .torch import execute as _execute
     else:
         raise ValueError(f"Unknown interface {interface}")
+
+    res = _execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff)
 
     return res
