@@ -242,6 +242,9 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 * The `qml.ResetError` is now supported for `default.mixed` device. 
   [(#1541)](https://github.com/PennyLaneAI/pennylane/pull/1541)
 
+* QNode now supports `diff_method=None`.
+  [(#1585)](https://github.com/PennyLaneAI/pennylane/pull/1585)
+
 
 <h3>Breaking changes</h3>
 
@@ -265,8 +268,8 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 This release contains contributions from (in alphabetical order):
 
 
-Vishnu Ajith, Akash Narayanan B, Thomas Bromley, Tanya Garg, Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Maria Schuld,
-Ingrid Strandberg, David Wierichs, Vincent Wong.
+Vishnu Ajith, Akash Narayanan B, Thomas Bromley, Tanya Garg, Josh Izaac, Prateek Jain, Ankit Khandelwal, Johannes Jakob Meyer,
+Maria Schuld, Ingrid Strandberg, David Wierichs, Vincent Wong.
 
 
 # Release 0.17.0 (current release)
