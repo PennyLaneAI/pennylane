@@ -302,6 +302,7 @@ CV observables
     :nosignatures:
 
     ~pennylane.FockStateProjector
+    ~pennylane.Identity
     ~pennylane.NumberOperator
     ~pennylane.TensorN
     ~pennylane.P
