@@ -370,7 +370,9 @@ class TestApply:
         dev = DefaultQubitTorch(wires=1)
         state = init_state(1)
 
-        diag = torch.tensor([-1.0+1j, 1.0+1j], requires_grad=True, dtype=torch.complex128)/math.sqrt(2)
+        diag = torch.tensor(
+            [-1.0 + 1j, 1.0 + 1j], requires_grad=True, dtype=torch.complex128
+        ) / math.sqrt(2)
 
         queue = [qml.QubitStateVector(state, wires=0), qml.DiagonalQubitUnitary(diag, wires=0)]
         dev.apply(queue)
@@ -384,9 +386,14 @@ class TestApply:
         dev = DefaultQubitTorch(wires=1)
         state = init_state(1)
 
-        diag = torch.tensor([-1.0+1j, 1.0+1j], requires_grad=True, dtype=torch.complex128)/math.sqrt(2)
+        diag = torch.tensor(
+            [-1.0 + 1j, 1.0 + 1j], requires_grad=True, dtype=torch.complex128
+        ) / math.sqrt(2)
 
-        queue = [qml.QubitStateVector(state, wires=0), qml.DiagonalQubitUnitary(diag, wires=0).inv()]
+        queue = [
+            qml.QubitStateVector(state, wires=0),
+            qml.DiagonalQubitUnitary(diag, wires=0).inv(),
+        ]
         dev.apply(queue)
 
         res = dev.state

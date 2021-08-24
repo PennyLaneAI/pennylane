@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* A new pytorch device, `qml.device('default.qubit.torch', wires=wires)`, supports
+  backpropogation with the torch interface.
+  [(#1225)](https://github.com/PennyLaneAI/pennylane/pull/1360)
+
 * The `RotosolveOptimizer` now can tackle general parametrized circuits, and is no longer
   restricted to single-qubit Pauli rotations.
   [(#1489)](https://github.com/PennyLaneAI/pennylane/pull/1489)
@@ -262,8 +266,9 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 This release contains contributions from (in alphabetical order):
 
 
-Akash Narayanan B, Thomas Bromley, Tanya Garg, Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Maria Schuld,
-Ingrid Strandberg, David Wierichs, Vincent Wong.
+Akash Narayanan B, Thomas Bromley, Tanya Garg, Josh Izaac, Prateek Jain, Johannes Jakob Meyer,
+Esteban Payares, Maria Schuld, Arshpreet Singh, Ingrid Strandberg, Slimane Thabet,
+David Wierichs, Vincent Wong.
 
 
 # Release 0.17.0 (current release)
