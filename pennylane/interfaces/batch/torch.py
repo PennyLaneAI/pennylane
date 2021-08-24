@@ -57,7 +57,7 @@ class ExecuteTapes(torch.autograd.Function):
       * ``"max_diff`"`: the maximum order of derivatives to support
 
     Further, note that the ``parameters`` argument is dependent on the
-    ``tapes``; this Function should always be called
+    ``tapes``; this function should always be called
     with the parameters extracted directly from the tapes as follows:
 
     >>> parameters = []
@@ -90,10 +90,9 @@ class ExecuteTapes(torch.autograd.Function):
         ctx.torch_device = None
 
         for p in parameters:
-            if isinstance(p, torch.Tensor):
-                if p.is_cuda:  # pragma: no cover
-                    ctx.torch_device = p.get_device()
-                    break
+            if isinstance(p, torch.Tensor) and p.is_cuda:  # pragma: no cover
+                ctx.torch_device = p.get_device()
+                break
 
         for i, r in enumerate(res):
             if r.dtype == np.dtype("object"):
@@ -188,6 +187,8 @@ class ExecuteTapes(torch.autograd.Function):
             else:
                 raise ValueError("Unknown gradient function.")
 
+        # The output of backward must match the input of forward.
+        # Therefore, we return `None` for the gradient of `kwargs`.
         return (None,) + tuple(vjps)
 
 

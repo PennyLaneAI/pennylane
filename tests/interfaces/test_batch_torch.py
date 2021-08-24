@@ -192,7 +192,7 @@ class TestCaching:
         assert cache is custom_cache
 
     def test_caching_param_shift(self, tol):
-        """Test that, when using parameter-shift transform,
+        """Test that, with the parameter-shift transform,
         Torch always uses the optimum number of evals when computing the Jacobian."""
         dev = qml.device("default.qubit", wires=1)
 
@@ -220,7 +220,7 @@ class TestCaching:
 
     @pytest.mark.parametrize("num_params", [2, 3])
     def test_caching_param_shift_hessian(self, num_params, tol):
-        """Test that, when using parameter-shift transform,
+        """Test that, with the parameter-shift transform,
         caching reduces the number of evaluations to their optimum
         when computing Hessians."""
         dev = qml.device("default.qubit", wires=2)
@@ -362,7 +362,7 @@ class TestTorchExecuteIntegration:
         assert res[1].shape == (1,)
 
     def test_scalar_jacobian(self, torch_device, execute_kwargs, tol):
-        """Test scalar jacobian calculation"""
+        """Test scalar jacobian calculation by comparing two types of pilpelines"""
         a = torch.tensor(0.1, requires_grad=True, dtype=torch.float64, device=torch_device)
         dev = qml.device("default.qubit", wires=2)
 
@@ -386,7 +386,7 @@ class TestTorchExecuteIntegration:
         assert torch.allclose(a.grad, torch.from_numpy(expected).to(torch_device), atol=tol, rtol=0)
 
     def test_jacobian(self, torch_device, execute_kwargs, tol):
-        """Test jacobian calculation"""
+        """Test jacobian calculation by checking against analytic values"""
         a_val = 0.1
         b_val = 0.2
 
@@ -476,7 +476,7 @@ class TestTorchExecuteIntegration:
         assert torch.allclose(b.grad, expected[1], atol=tol, rtol=0)
 
     def test_classical_processing(self, torch_device, execute_kwargs, tol):
-        """Test classical processing within the quantum tape"""
+        """Test the classical processing of gate parameters within the quantum tape"""
         p_val = [0.1, 0.2]
         params = torch.tensor(p_val, requires_grad=True, device=torch_device)
 
@@ -817,7 +817,7 @@ class TestHigherOrderDerivatives:
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
     def test_hessian_vector_valued(self, torch_device, tol):
-        """Test hessian calculation of a vector valued QNode"""
+        """Test hessian calculation of a vector valued tape"""
         dev = qml.device("default.qubit", wires=1)
 
         def circuit(x):
