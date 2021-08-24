@@ -42,7 +42,7 @@ class SparseMatrix:
             the sparse matrix; else it is interpreted as a 2-d tensor which is a dense representation
             of the matrix.
 
-    **Example:**
+    **Example**
 
     To mimic ``scipy.sparse`` objects, sparse matrices give acces to lists of row and column indices,
     as well as the number of non-zero elements:
@@ -72,6 +72,7 @@ class SparseMatrix:
     {(0, 0): tensor(6.), (1, 0): tensor(4.)}
 
     We can also compute the Kronecker product (or tensor product) of two sparse matrices:
+
     >>> res4 = s1.kron(s2)
     >>> print(res4.data)
     {(0, 0): tensor(-9.0), (2, 0): tensor(-6.0)}
@@ -92,7 +93,8 @@ class SparseMatrix:
             if len(self._shape) != 2:
                 raise ValueError(f"Expected a 2-dimensional tensor; got shape {self._shape}.")
 
-            # todo: vectorise this loop
+            # TODO: rewrite the loop to only loop
+            # over non-zero entries of the input array
             self._data = {}
             for i in range(self._shape[0]):
                 for j in range(self._shape[1]):

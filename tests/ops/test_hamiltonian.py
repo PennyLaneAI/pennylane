@@ -775,28 +775,61 @@ class TestSparseRepresentation:
     @pytest.mark.parametrize("converter", converters)
     def test_no_wires(self, converter):
         """Test representation using the Hamiltonian's wires"""
-        ham = qml.Hamiltonian(converter([0.1, 0.2]), [qml.PauliX("b"), qml.PauliY("a")])
+        ham = qml.Hamiltonian(converter([0.1, 0.2]), [qml.PauliX("b"), qml.PauliX("a")])
+        assert ham.wires == qml.wires.Wires(["a", "b"])
+
         s = ham.sparse_matrix()
+        expected = {
+            (0, 1): 0.1,
+            (1, 0): 0.1,
+            (2, 3): 0.1,
+            (3, 2): 0.1,
+            (0, 2): 0.2,
+            (1, 3): 0.2,
+            (2, 0): 0.2,
+            (3, 1): 0.2,
+        }
+        assert s.shape == (4, 4)
+        assert s.data == {k: converter(v) for k, v in expected.items()}
+
+    @pytest.mark.parametrize("converter", converters)
+    def test_custom_wires(self, converter):
+        """Test representation using custom wires"""
+        ham = qml.Hamiltonian(converter([0.1, 0.2]), [qml.PauliX("b"), qml.PauliX("a")])
+        s = ham.sparse_matrix(wires=["b", "a"])
         expected = {
             (0, 2): 0.1,
             (1, 3): 0.1,
             (2, 0): 0.1,
             (3, 1): 0.1,
-            (0, 1): 0.0 - 0.2j,
-            (1, 0): 0.0 + 0.2j,
-            (2, 3): 0.0 - 0.2j,
-            (3, 2): 0.0 + 0.2j,
+            (0, 1): 0.2,
+            (1, 0): 0.2,
+            (2, 3): 0.2,
+            (3, 2): 0.2,
         }
-        assert s.data == {k: converter(v) for k, v in expected.items()}
         assert s.shape == (4, 4)
+        assert s.data == {k: converter(v) for k, v in expected.items()}
 
     @pytest.mark.parametrize("converter", converters)
-    def test_no_wires(self, converter):
-        """Test representation using custom wires"""
+    def test_custom_wires_identity(self, converter):
+        """Test representation using custom wires, including an identity observable"""
         ham = qml.Hamiltonian(converter([0.1]), [qml.PauliX("b")])
         s = ham.sparse_matrix(wires=["a", "b"])
         expected = {(0, 1): 0.1, (1, 0): 0.1, (2, 3): 0.1, (3, 2): 0.1}
         assert s.data == {k: converter(v) for k, v in expected.items()}
+        assert s.shape == (4, 4)
+
+    def test_tensor_observables(self):
+        """Test representation using a Hamiltonian consisting of tensor observables"""
+        ham = qml.Hamiltonian([0.1], [qml.PauliX(0) @ qml.PauliY(2)])
+        s = ham.sparse_matrix()
+        expected = {
+            (0, 3): 0.0 - 0.1j,
+            (1, 2): 0.0 + 0.1j,
+            (2, 1): 0.0 - 0.1j,
+            (3, 0): 0.0 + 0.1j,
+        }
+        assert s.data == {k: v for k, v in expected.items()}
         assert s.shape == (4, 4)
 
     def test_empty_hamiltonian(self):
