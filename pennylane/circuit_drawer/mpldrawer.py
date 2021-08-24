@@ -242,9 +242,7 @@ class MPLDrawer:
         box_center = (box_max + box_min) / 2.0
 
         if rotate_text:
-            rotation = "vertical"
-        else:
-            rotation = "horizontal"
+            text_kwargs['rotation'] = "vertical"
 
         box = plt.Rectangle(
             (layer - self._box_dx - extra_width / 2, box_min - self._box_dx),
@@ -267,7 +265,7 @@ class MPLDrawer:
             **default_text_kwargs
         )
 
-    def ctrl(self, layer, wire_ctrl, wire_target=None, color=None):
+    def ctrl(self, layer, wire_ctrl, wire_target=None, control_values=None, color=None):
         """Add an arbitrary number of control wires
 
         Args:
@@ -277,6 +275,8 @@ class MPLDrawer:
         Keyword Args:
             wire_target=None (Union[Int, Iterable[Int]]): target wires. Used to determine min
                 and max wires for the vertical line
+            control_values=None (Iterable[Bool]): for each control wire, denotes whether to control
+                on ``False=0`` or ``True=1``.
             color=None: mpl compatible color designation
 
         **Example**
@@ -304,9 +304,30 @@ class MPLDrawer:
         line = plt.Line2D((layer, layer), (min_wire, max_wire), zorder=2, color=color)
         self.ax.add_line(line)
 
-        for wire in wire_ctrl:
-            circ_ctrl = plt.Circle((layer, wire), radius=self._ctrl_rad, zorder=2, color=color)
-            self.ax.add_patch(circ_ctrl)
+        if control_values is None:
+            for wire in wire_ctrl:
+                self._ctrl_circ(layer, wire, color, zorder=3)
+        else:
+            if len(control_values) != len(wire_ctrl):
+                raise ValueError('`control_values` must be the same length as `wire_ctrl`')
+            for wire, control_on in zip(wire_ctrl, control_values):
+                if control_on:
+                    self._ctrlo_circ(layer, wire, color, zorder=3)
+                else:
+                    self._ctrl_circ(layer, wire, color, zorder=3)
+
+    def _ctrl_circ(self, layer, wire, color=None, zorder=3):
+        circ_ctrl= plt.Circle((layer, wire), radius=self._ctrl_rad, color=color, zorder=zorder)
+        self.ax.add_patch(circ_ctrl)
+
+    def _ctrlo_circ(self, layer, wire, color=None, zorder=3):
+        if color is None:
+            color = plt.rcParams['lines.color']
+
+        circ_ctrlo = plt.Circle((layer, wire), radius=(1.5*self._ctrl_rad),
+            edgecolor=color, facecolor=plt.rcParams['axes.facecolor'],
+            linewidth=plt.rcParams['lines.linewidth'], zorder=zorder)
+        self.ax.add_patch(circ_ctrlo)
 
     def CNOT(self, layer, wires, color=None):
         """Draws a CNOT gate.
@@ -424,7 +445,7 @@ class MPLDrawer:
         self.ax.add_line(l1)
         self.ax.add_line(l2)
 
-    def measure(self, layer, wire, zorder_base=0, color=None):
+    def measure(self, layer, wire, zorder_base=0, color=None, linecolor=None):
         """Draw a Measurement graphic at designated layer, wire combination.
 
         Args:
@@ -454,25 +475,27 @@ class MPLDrawer:
             2 * self._box_dx,
             2 * self._box_dx,
             zorder=2 + zorder_base,
-            color=color,
+            facecolor=color,
+            edgecolor=linecolor
         )
         self.ax.add_patch(box)
 
         arc = patches.Arc(
-            (layer, wire - self._box_dx / 8),
+            (layer, wire + self._box_dx / 8),
             1.2 * self._box_dx,
             1.1 * self._box_dx,
-            theta1=0,
-            theta2=180,
+            theta1=180,
+            theta2=0,
             zorder=3 + zorder_base,
+            color=linecolor
         )
         self.ax.add_patch(arc)
 
         # can experiment with the specific numbers to make it look decent
         arrow_start_x = layer - 0.33 * self._box_dx
-        arrow_start_y = wire - 0.5 * self._box_dx
+        arrow_start_y = wire + 0.5 * self._box_dx
         arrow_width = 0.6 * self._box_dx
-        arrow_height = 1.0 * self._box_dx
+        arrow_height = - 1.0 * self._box_dx
 
         arrow = plt.arrow(
             arrow_start_x,
@@ -482,5 +505,6 @@ class MPLDrawer:
             head_width=self._box_dx / 4,
             zorder=4 + zorder_base,
             facecolor=color,
+            edgecolor=linecolor
         )
         self.ax.add_line(arrow)
