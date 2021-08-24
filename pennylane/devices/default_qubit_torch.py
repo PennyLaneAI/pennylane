@@ -225,20 +225,6 @@ class DefaultQubitTorch(DefaultQubit):
             return torch.conj(array)
         return np.conj(array)
 
-    # I'm not sure where this gets used, so I'm commenting it out until
-    # That becomes obvious, or I figure out if I can delete it
-    # @staticmethod
-    # def _ravel_multi_index(multi_index, dims):
-    #    # Idea: ravelling a multi-index can be expressed as a matrix-vector product
-    #    flip = lambda x: torch.flip(x, dims=[0])
-    #    dims = torch.as_tensor(dims, device=multi_index.device)
-    #    coeffs = torch.ones_like(dims, device=multi_index.device)
-    #    coeffs[:-1] = dims[1:]
-    #    coeffs = flip(torch.cumprod(flip(coeffs), dim=0))
-    #    ravelled_indices = (multi_index.T.type(torch.float) @ coeffs.type(torch.float)).type(
-    #        torch.long
-    #    )
-    #    return ravelled_indices
 
     @staticmethod
     def _scatter(indices, array, new_dimensions):
