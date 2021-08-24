@@ -404,17 +404,17 @@ class TestTorchExecuteIntegration:
         res = execute([tape], dev, **execute_kwargs)[0]
         res.backward()
 
-        # compare to standard tape jacobian
-        with qml.tape.JacobianTape() as tape:
-            qml.RY(a, wires=0)
-            qml.expval(qml.PauliZ(0))
+        # compare to backprop gradient
+        def cost(a):
+            with qml.tape.QuantumTape() as tape:
+                qml.RY(a, wires=0)
+                qml.expval(qml.PauliZ(0))
 
-        tape.trainable_params = {0}
-        tapes, fn = param_shift(tape)
-        expected = fn(dev.batch_execute(tapes))
+            dev = qml.device("default.qubit.autograd", wires=2)
+            return dev.batch_execute([tape])[0]
 
-        assert expected.shape == (1, 1)
-        assert torch.allclose(a.grad, torch.from_numpy(expected).to(torch_device), atol=tol, rtol=0)
+        expected = qml.grad(cost)(0.1)
+        assert torch.allclose(a.grad, torch.tensor(expected, device=torch_device), atol=tol, rtol=0)
 
     def test_jacobian(self, torch_device, execute_kwargs, tol):
         """Test jacobian calculation by checking against analytic values"""
@@ -782,13 +782,13 @@ class TestTorchExecuteIntegration:
         if execute_kwargs["gradient_fn"] == "device" and execute_kwargs["mode"] == "forward":
             pytest.skip("Adjoint differentiation does not support samples")
 
-        dev = qml.device("default.qubit", wires=2, shots=10)
+        dev = qml.device("default.qubit", wires=1, shots=10)
+
+        x = torch.tensor(0.65, requires_grad=True)
 
         with qml.tape.JacobianTape() as tape:
-            qml.Hadamard(wires=[0])
-            qml.CNOT(wires=[0, 1])
+            qml.RX(x, wires=[0])
             qml.sample(qml.PauliZ(0))
-            qml.sample(qml.PauliX(1))
 
         res = execute([tape], dev, **execute_kwargs)[0]
 
