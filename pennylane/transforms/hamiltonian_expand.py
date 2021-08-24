@@ -185,10 +185,9 @@ def hamiltonian_expand(tape, group=True):
 
         tapes.append(new_tape)
 
+    # pylint: disable=function-redefined
     def processing_fn(res):
         dot_products = [qml.math.dot(qml.math.squeeze(r), c) for c, r in zip(coeffs, res)]
-        print(coeffs)
-        print(res)
         return qml.math.sum(qml.math.stack(dot_products), axis=0)
 
     return tapes, processing_fn
