@@ -252,6 +252,9 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 <h3>Bug fixes</h3>
 
+* Fix bug when computing expectations of Hamiltonians using TensorFlow.
+  [(#1586)](https://github.com/PennyLaneAI/pennylane/pull/1586)
+
 * Fix bug when computing the specs of a circuit with a Hamiltonian observable.
   [(#1533)](https://github.com/PennyLaneAI/pennylane/pull/1533)
 
