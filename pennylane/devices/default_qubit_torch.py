@@ -224,7 +224,6 @@ class DefaultQubitTorch(DefaultQubit):
             return torch.conj(array)
         return np.conj(array)
 
-
     @staticmethod
     def _scatter(indices, array, new_dimensions):
 
