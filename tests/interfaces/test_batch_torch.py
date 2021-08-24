@@ -371,7 +371,7 @@ class TestTorchExecuteIntegration:
     integrates well for both forward and backward execution"""
 
     def test_execution(self, torch_device, execute_kwargs):
-        """Test execution"""
+        """Test that the execute function produces results with the expected shapes"""
         dev = qml.device("default.qubit", wires=1)
         a = torch.tensor(0.1, requires_grad=True, device=torch_device)
         b = torch.tensor(0.2, requires_grad=False, device=torch_device)
