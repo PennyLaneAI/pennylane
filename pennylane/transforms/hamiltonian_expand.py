@@ -167,8 +167,6 @@ def hamiltonian_expand(tape, group=True):
                 qml.math.dot(r_group, c_group)
                 for c_group, r_group in zip(coeff_groupings, res_groupings)
             ]
-            print(coeff_groupings)
-            print(res_groupings)
             return qml.math.sum(qml.math.stack(dot_products), axis=0)
 
         return tapes, processing_fn
