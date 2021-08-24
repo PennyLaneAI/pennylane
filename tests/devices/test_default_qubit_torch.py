@@ -1379,23 +1379,6 @@ class TestSamples:
         assert res.shape == (shots,)
         assert torch.allclose(torch.unique(res), torch.tensor([-1, 1], dtype=torch.int64))
 
-    # def test_sample_observables_non_differentiable(self):
-    #     """Test that sampled observables cannot be differentiated."""
-    #     shots = 100
-    #     dev = qml.device("default.qubit.torch", wires=2, shots=shots)
-    #
-    #     @qml.qnode(dev, diff_method="backprop", interface="torch")
-    #     def circuit(a):
-    #         qml.RX(a, wires=0)
-    #         return qml.sample(qml.PauliZ(0))
-    #
-    #     a = torch.autograd.Variable(torch.tensor(0.54))
-    #     import pdb; pdb.set_trace()
-    #     res = torch.tensor(circuit(a))
-    #     res.backward()
-    #
-    #     assert a.grad is None
-
     def test_estimating_marginal_probability(self, tol):
         """Test that the probability of a subset of wires is accurately estimated."""
         dev = qml.device("default.qubit.torch", wires=2, shots=1000)
