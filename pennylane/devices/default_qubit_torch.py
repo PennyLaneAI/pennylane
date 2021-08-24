@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -127,8 +127,7 @@ class DefaultQubitTorch(DefaultQubit):
             If ``shots > 0`` is used, the ``diff_method="backprop"``
             QNode differentiation method is not supported and it is recommended to consider
             switching device to ``default.qubit`` and using ``diff_method="parameter-shift"``.
-        torch_device: the device on which the computation will be run, 'cpu' or 'cuda'
-            default='cpu'
+        torch_device='cpu' (str): the device on which the computation will be run, ``'cpu'`` or ``'cuda'``
     """
 
     name = "Default qubit (Torch) PennyLane plugin"
