@@ -294,7 +294,7 @@ class TestBatchTransform:
         assert res == expected
 
 
-@pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
+@pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop", "finite-diff"])
 class TestQFuncTransformGradients:
     """Tests for the batch_transform decorator differentiability"""
 
@@ -362,7 +362,7 @@ class TestQFuncTransformGradients:
     def test_differentiable_tf(self, diff_method):
         """Test that a batch transform is differentiable when using
         TensorFlow"""
-        if diff_method == "parameter-shift":
+        if diff_method in ("parameter-shift", "finite-diff"):
             pytest.skip("Does not support parameter-shift mode")
 
         tf = pytest.importorskip("tensorflow")
@@ -406,7 +406,7 @@ class TestQFuncTransformGradients:
     def test_differentiable_jax(self, diff_method):
         """Test that a batch transform is differentiable when using
         jax"""
-        if diff_method == "parameter-shift":
+        if diff_method in ("parameter-shift", "finite-diff"):
             pytest.skip("Does not support parameter-shift mode")
 
         jax = pytest.importorskip("jax")
