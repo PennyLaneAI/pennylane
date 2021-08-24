@@ -136,7 +136,7 @@ class SparseMatrix:
         Returns:
             bool
         """
-        if not isinstance(other, type(self)):
+        if not isinstance(other, SparseMatrix):
             return False
         return self.data == other.data and self.shape == other.shape
 
@@ -157,7 +157,7 @@ class SparseMatrix:
         Returns:
             .SparseMatrix: sum of sparse matrices
         """
-        if not isinstance(other, type(self)):
+        if not isinstance(other, SparseMatrix):
             raise ValueError(f"Cannot add SparseMatrix and {type(other)}.")
         if self.shape != other.shape:
             raise ValueError(

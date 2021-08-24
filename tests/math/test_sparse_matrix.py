@@ -219,3 +219,25 @@ class TestArithmetic:
             ValueError, match="an only compute the kronecker product with another SparseMatrix"
         ):
             s1.kron(tensor2)
+
+
+class TestGradients:
+    """Integration tests to ensure the logic is differentiable"""
+
+    def test_autograd(self):
+        """Test that the sparse matrix methods are differentiable using
+        autograd"""
+
+        m1 = pnp.array([[1, 0, 0, 2], [0.34, 0, 0, 0], [0, 0, 0, -1.2], [0.124, 0.43, 0.0, 0.0]])
+        m2 = pnp.array(
+            [[0, 0, 0.45, 0], [0, 0, 0, -0.5432], [0, 0, 0.123, 0], [0, 0.543, 1.20, 1.20]]
+        )
+
+        def cost(a, b):
+            s1 = SparseMatrix(a)
+            s2 = SparseMatrix(b)
+            y1 = s1.kron(s2)
+            y2 = s2.kron(s1)
+            return 0.5 * y1 - 8.6 * y2
+
+        res = qml.grad(cost)(m1, m2)
