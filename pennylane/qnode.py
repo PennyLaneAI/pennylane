@@ -190,22 +190,10 @@ class QNode:
         self.qfunc_output = None
         # store the user-specified differentiation method
         self.diff_method = diff_method
-        self.diff_method_change = False
 
         self._tape, self.interface, self.device, tape_diff_options = self.get_tape(
             device, interface, diff_method
         )
-        # Update diff_method to reflect which method has been selected
-        if self.diff_method == "best":
-            self.diff_method_change = True
-            if tape_diff_options["method"] == "device":
-                self.diff_method = "device"
-            elif tape_diff_options["method"] == "backprop":
-                self.diff_method = "backprop"
-            elif tape_diff_options["method"] == "best":
-                self.diff_method = "parameter-shift"
-            elif tape_diff_options["method"] == "numeric":
-                self.diff_method = "finite-diff"
 
         # The arguments to be passed to JacobianTape.jacobian
         self.diff_options = diff_options or {}
@@ -856,13 +844,8 @@ class QNode:
 
             if self.interface != "tf" and self.interface is not None:
                 # Since the interface is changing, need to re-validate the tape class.
-                # if method was changed from "best", set it back to best
-                if self.diff_method_change:
-                    diff_method = "best"
-                else:
-                    diff_method = self.diff_method
                 self._tape, interface, self.device, diff_options = self.get_tape(
-                    self._original_device, "tf", diff_method
+                    self._original_device, "tf", self.diff_method
                 )
 
                 self.interface = interface
@@ -901,13 +884,8 @@ class QNode:
 
             if self.interface != "torch" and self.interface is not None:
                 # Since the interface is changing, need to re-validate the tape class.
-                # if method was changed from "best", set it back to best
-                if self.diff_method_change:
-                    diff_method = "best"
-                else:
-                    diff_method = self.diff_method
                 self._tape, interface, self.device, diff_options = self.get_tape(
-                    self._original_device, "torch", diff_method
+                    self._original_device, "torch", self.diff_method
                 )
 
                 self.interface = interface
@@ -938,13 +916,8 @@ class QNode:
 
         if self.interface != "autograd" and self.interface is not None:
             # Since the interface is changing, need to re-validate the tape class.
-            # if method was changed from "best", set it back to best
-            if self.diff_method_change:
-                diff_method = "best"
-            else:
-                diff_method = self.diff_method
             self._tape, interface, self.device, diff_options = self.get_tape(
-                self._original_device, "autograd", diff_method
+                self._original_device, "autograd", self.diff_method
             )
 
             self.interface = interface
@@ -971,13 +944,8 @@ class QNode:
 
             if self.interface != "jax" and self.interface is not None:
                 # Since the interface is changing, need to re-validate the tape class.
-                # if method was changed from "best", set it back to best
-                if self.diff_method_change:
-                    diff_method = "best"
-                else:
-                    diff_method = self.diff_method
                 self._tape, interface, self.device, diff_options = self.get_tape(
-                    self._original_device, "jax", diff_method
+                    self._original_device, "jax", self.diff_method
                 )
 
                 self.interface = interface
