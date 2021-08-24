@@ -329,7 +329,6 @@ class TestValidation:
             qn.__repr__()
             == "<QNode: wires=1, device='default.qubit.autograd', interface='autograd', diff_method='best'>"
         )
-        assert qn.diff_method_change == False
 
      def test_diff_method_None(self):
         """Test if diff_method=None works as intended"""
