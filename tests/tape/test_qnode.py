@@ -70,6 +70,14 @@ class TestValidation:
         assert interface == "interface"
         assert device is dev
 
+    def test_validate_backprop_method_finite_shots(self):
+        """Tests an error is raised for backpropogation with finite shots."""
+
+        dev = qml.device('default.qubit', wires=1, shots=3)
+
+        with pytest.raises(qml.QuantumFunctionError, match="Devices with finite shots"):
+            QNode._validate_backprop_method(dev, "doesnt matter")
+
     def test_validate_backprop_method_invalid_device(self):
         """Test that the method for validating the backprop diff method
         tape raises an exception if the device does not support backprop."""
