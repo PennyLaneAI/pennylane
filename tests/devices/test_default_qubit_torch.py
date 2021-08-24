@@ -287,6 +287,23 @@ class TestApply:
         expected = torch.matmul(op_mat, state)
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("theta", [0.5432, -0.232])
+    @pytest.mark.parametrize("op,func", single_qubit_param)
+    def test_single_qubit_parameters_inverse(self, init_state, op, func, theta, tol):
+        """Test parametrized single qubit operations"""
+        dev = DefaultQubitTorch(wires=1)
+        state = init_state(1)
+
+        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue += [op(theta, wires=0).inv()]
+        dev.apply(queue)
+
+        res = dev.state
+        op_mat = torch.tensor(func(theta), dtype=torch.complex128)
+        op_mat = torch.transpose(torch.conj(op_mat), 0, 1)
+        expected = torch.matmul(op_mat, state)
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
+
     def test_rotation(self, init_state, tol):
         """Test three axis rotation gate"""
         dev = DefaultQubitTorch(wires=1)

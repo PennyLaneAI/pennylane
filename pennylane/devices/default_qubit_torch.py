@@ -144,6 +144,7 @@ class DefaultQubitTorch(DefaultQubit):
         "CRX": torch_ops.CRX,
         "CRY": torch_ops.CRY,
         "CRZ": torch_ops.CRZ,
+        "CRot": torch_ops.CRot,
         "IsingXX": torch_ops.IsingXX,
         "IsingYY": torch_ops.IsingYY,
         "IsingZZ": torch_ops.IsingZZ,
