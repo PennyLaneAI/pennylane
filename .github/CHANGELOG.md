@@ -252,6 +252,9 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 <h3>Bug fixes</h3>
 
+* Fixed circuit representation of CY gates to align with CNOT and CZ gates when calling the circuit drawer.
+  [(#1443)](https://github.com/PennyLaneAI/pennylane/issues/1443)
+
 * Fix bug when computing expectations of Hamiltonians using TensorFlow.
   [(#1586)](https://github.com/PennyLaneAI/pennylane/pull/1586)
 
@@ -832,9 +835,6 @@ Johannes Jakob Meyer, Pratul Saini, Maria Schuld, Ingrid Strandberg, David Wieri
   the matrix was not checked against the number of wires.
   [(#1439)](https://github.com/PennyLaneAI/pennylane/pull/1439)
   
-* Fixed circuit representation of CY gates to align with CNOT and CZ gates when calling the circuit drawer.
-  [(#1443)](https://github.com/PennyLaneAI/pennylane/issues/1443)
-
 <h3>Documentation</h3>
 
 * Improved Contribution Guide and Pull Requests Guide.
