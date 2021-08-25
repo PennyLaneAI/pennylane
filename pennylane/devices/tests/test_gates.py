@@ -96,7 +96,7 @@ all_available_ops.remove("SQISW")  # SQISW is an alias of SISWAP
 if not set(all_ops) == all_available_ops:
     raise ValueError("A qubit operation has been added that is not being tested in the "
                      "device test suite. Please add to the ops dictionary in "
-                     "pennylane/devices/tests/test_measurements.py")
+                     "pennylane/devices/tests/test_gates.py")
 
 # non-parametrized qubit gates
 I = np.identity(2)

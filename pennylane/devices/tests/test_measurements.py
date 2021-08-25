@@ -36,6 +36,7 @@ obs = {
     "PauliZ": qml.PauliZ(wires=[0]),
     "Projector": qml.Projector(np.array([1]), wires=[0]),
     "SparseHamiltonian": qml.SparseHamiltonian(coo_matrix(np.eye(8)), wires=[0, 1, 2]),
+    "Hamiltonian": qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliX(0)])
 }
 
 all_obs = obs.keys()
@@ -44,7 +45,11 @@ all_obs = obs.keys()
 all_available_obs = qml.ops._qubit__obs__.copy()  # pylint: disable=protected-access
 # Note that the identity is not technically a qubit observable
 all_available_obs |= {"Identity"}
-assert set(all_obs) == all_available_obs
+
+if not set(all_obs) == all_available_obs:
+    raise ValueError("A qubit observable has been added that is not being tested in the "
+                     "device test suite. Please add to the obs dictionary in "
+                     "pennylane/devices/tests/test_measurements.py")
 
 # single qubit Hermitian observable
 A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
