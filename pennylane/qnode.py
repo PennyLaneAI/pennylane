@@ -618,7 +618,7 @@ class QNode:
                 tapes, fn = qml.transforms.hamiltonian_expand(self.qtape, group=False)
             except ValueError as e:
                 raise ValueError(
-                    "Only a (single) expectation of a Hamiltonian observable can be returned "
+                    "Hamiltonian observables can can only be measured with `expval` "
                     "when using the {} device.".format(self.device.name)
                 ) from e
             results = [tape.execute(device=self.device) for tape in tapes]

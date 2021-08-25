@@ -25,7 +25,7 @@ def test_behaviour():
         qml.RY(0.3, wires=0)
         qml.RX(0.5, wires=1)
         qml.CNOT(wires=[0, 1])
-        qml.expval(qml.Hamiltonian( [-1.5, 2.], [qml.PauliZ(0), qml.PauliZ(1)]))
+        qml.expval(qml.Hamiltonian([-1.5, 2.0], [qml.PauliZ(0), qml.PauliZ(1)]))
 
     tape.trainable_params = {2, 3}
     tapes, processing_fn = hamiltonian_grad(tape, idx=0)
