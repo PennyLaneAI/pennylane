@@ -7,7 +7,7 @@
   [(#1493)](https://github.com/PennyLaneAI/pennylane/pull/1493)
 
   A batch transform is a transform that takes a single tape or QNode as input,
-  and executes multiple QNodes independently. The results may then be post-processed
+  and executes multiple tapes or QNodes independently. The results may then be post-processed
   before being returned.
 
   For example, consider the following batch transform:
@@ -74,6 +74,7 @@
   >>> from pennylane.interfaces.batch import execute
   >>> dev = qml.device("default.qubit", wires=1)
   >>> res = execute(tapes, dev, interface="autograd", gradient_fn=qml.gradients.param_shift)
+  1.2629730888100839
   ```
 
 * Added a new `SISWAP` operation and a `SQISW` alias with support to the `default_qubit` device.
