@@ -174,6 +174,9 @@
 
 <h3>Improvements</h3>
 
+* The device test suite has been expanded to cover more qubit operations and observables.
+  [(#1510)](https://github.com/PennyLaneAI/pennylane/pull/1510)
+  
 * The `MultiControlledX` class now inherits from `Operation` instead of `ControlledQubitUnitary` which makes the `MultiControlledX` gate a non-parameterized gate.
   [(#1557)](https://github.com/PennyLaneAI/pennylane/pull/1557)
 
