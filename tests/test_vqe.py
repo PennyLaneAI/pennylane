@@ -781,7 +781,7 @@ class TestNewVQE:
         def circuit():
             return qml.var(H)
 
-        with pytest.raises(ValueError, match="Cannot compute variance"):
+        with pytest.raises(ValueError, match="Cannot compute analytic variance"):
             circuit()
 
     def test_error_sample_measurement(self):
@@ -795,7 +795,7 @@ class TestNewVQE:
         def circuit():
             return qml.sample(H)
 
-        with pytest.raises(ValueError, match="Hamiltonian observables"):
+        with pytest.raises(ValueError, match="Can only return the expectation of a single"):
             circuit()
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "best"])
