@@ -13,7 +13,7 @@
 # limitations under the License.
 """This module contains utilities for defining custom gradient transforms,
 including a decorator for specifying gradient expansions."""
-import functools
+# pylint: disable=too-few-public-methods
 import pennylane as qml
 
 
@@ -126,4 +126,4 @@ class gradient_transform(qml.batch_transform):
     """
 
     def __init__(self, transform_fn, expand_fn=gradient_expand, differentiable=True):
-        return super().__init__(transform_fn, expand_fn=expand_fn, differentiable=differentiable)
+        super().__init__(transform_fn, expand_fn=expand_fn, differentiable=differentiable)
