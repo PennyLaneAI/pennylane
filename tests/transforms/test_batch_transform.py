@@ -24,6 +24,36 @@ from pennylane import numpy as np
 class TestBatchTransform:
     """Unit tests for the batch_transform class"""
 
+    @staticmethod
+    @qml.batch_transform
+    def my_transform(tape, a, b):
+        """Generates two tapes, one with all RX replaced with RY,
+        and the other with all RX replaced with RZ."""
+
+        tape1 = qml.tape.QuantumTape()
+        tape2 = qml.tape.QuantumTape()
+
+        # loop through all operations on the input tape
+        for op in tape.operations + tape.measurements:
+            if op.name == "RX":
+                wires = op.wires
+                param = op.parameters[0]
+
+                with tape1:
+                    qml.RY(a * qml.math.abs(param), wires=wires)
+
+                with tape2:
+                    qml.RZ(b * qml.math.sin(param), wires=wires)
+            else:
+                for t in [tape1, tape2]:
+                    with t:
+                        qml.apply(op)
+
+        def processing_fn(results):
+            return qml.math.sum(qml.math.stack(results))
+
+        return [tape1, tape2], processing_fn
+
     def test_error_invalid_callable(self):
         """Test that an error is raised if the transform
         is applied to an invalid function"""
@@ -112,35 +142,6 @@ class TestBatchTransform:
         """Test that a parametrized transform can be applied
         to a tape"""
 
-        @qml.batch_transform
-        def my_transform(tape, a, b):
-            """Generates two tapes, one with all RX replaced with RY,
-            and the other with all RX replaced with RZ."""
-
-            tape1 = qml.tape.QuantumTape()
-            tape2 = qml.tape.QuantumTape()
-
-            # loop through all operations on the input tape
-            for op in tape.operations + tape.measurements:
-                if op.name == "RX":
-                    wires = op.wires
-                    param = op.parameters[0]
-
-                    with tape1:
-                        qml.RY(a * qml.math.abs(param), wires=wires)
-
-                    with tape2:
-                        qml.RZ(b * qml.math.sin(param), wires=wires)
-                else:
-                    for t in [tape1, tape2]:
-                        with t:
-                            qml.apply(op)
-
-            def processing_fn(results):
-                return qml.math.sum(qml.math.stack(results))
-
-            return [tape1, tape2], processing_fn
-
         a = 0.1
         b = 0.4
         x = 0.543
@@ -150,7 +151,7 @@ class TestBatchTransform:
             qml.RX(x, wires=0)
             qml.expval(qml.PauliX(0))
 
-        tapes, fn = my_transform(tape, a, b)
+        tapes, fn = self.my_transform(tape, a, b)
 
         assert len(tapes[0].operations) == 2
         assert tapes[0].operations[0].name == "Hadamard"
@@ -166,35 +167,6 @@ class TestBatchTransform:
         """Test that a parametrized transform can be applied
         to a QNode"""
 
-        @qml.batch_transform
-        def my_transform(tape, a, b):
-            """Generates two tapes, one with all RX replaced with RY,
-            and the other with all RX replaced with RZ."""
-
-            tape1 = qml.tape.QuantumTape()
-            tape2 = qml.tape.QuantumTape()
-
-            # loop through all operations on the input tape
-            for op in tape.operations + tape.measurements:
-                if op.name == "RX":
-                    wires = op.wires
-                    param = op.parameters[0]
-
-                    with tape1:
-                        qml.RY(a * qml.math.abs(param), wires=wires)
-
-                    with tape2:
-                        qml.RZ(b * qml.math.sin(param), wires=wires)
-                else:
-                    for t in [tape1, tape2]:
-                        with t:
-                            qml.apply(op)
-
-            def processing_fn(results):
-                return qml.math.sum(qml.math.stack(results))
-
-            return [tape1, tape2], processing_fn
-
         a = 0.1
         b = 0.4
         x = 0.543
@@ -207,9 +179,9 @@ class TestBatchTransform:
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliX(0))
 
-        transform_fn = my_transform(circuit, a, b)
+        transform_fn = self.my_transform(circuit, a, b)
 
-        spy = mocker.spy(my_transform, "construct")
+        spy = mocker.spy(self.my_transform, "construct")
         res = transform_fn(x)
 
         spy.assert_called()
@@ -231,50 +203,20 @@ class TestBatchTransform:
     def test_parametrized_transform_qnode_decorator(self, mocker):
         """Test that a parametrized transform can be applied
         to a QNode as a decorator"""
-
-        @qml.batch_transform
-        def my_transform(tape, a, b):
-            """Generates two tapes, one with all RX replaced with RY,
-            and the other with all RX replaced with RZ."""
-
-            tape1 = qml.tape.QuantumTape()
-            tape2 = qml.tape.QuantumTape()
-
-            # loop through all operations on the input tape
-            for op in tape.operations + tape.measurements:
-                if op.name == "RX":
-                    wires = op.wires
-                    param = op.parameters[0]
-
-                    with tape1:
-                        qml.RY(a * qml.math.abs(param), wires=wires)
-
-                    with tape2:
-                        qml.RZ(b * qml.math.sin(param), wires=wires)
-                else:
-                    for t in [tape1, tape2]:
-                        with t:
-                            qml.apply(op)
-
-            def processing_fn(results):
-                return qml.math.sum(qml.math.stack(results))
-
-            return [tape1, tape2], processing_fn
-
         a = 0.1
         b = 0.4
         x = 0.543
 
         dev = qml.device("default.qubit", wires=2)
 
-        @my_transform(a, b)
+        @self.my_transform(a, b)
         @qml.qnode(dev)
         def circuit(x):
             qml.Hadamard(wires=0)
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliX(0))
 
-        spy = mocker.spy(my_transform, "construct")
+        spy = mocker.spy(self.my_transform, "construct")
         res = circuit(x)
 
         spy.assert_called()

@@ -67,7 +67,14 @@ class batch_transform:
         expand_fn (function): An expansion function (if required) to be applied to the
             input tape before the transformation takes place.
         differentiable (bool): Specifies whether the transform is differentiable or
-            not.
+            not. A transform may be non-differentiable for several reasons:
+
+            - It does use an autodiff framework for its tensor manipulations;
+            - It returns a non-differentiable or non-numeric quantity, such as
+              a boolean, string, or integer.
+
+            In such a case, setting ``differentiable=False`` instructs the decorator
+            to mark the output as 'constant', reducing potential overhead.
 
     **Example**
 
@@ -146,7 +153,8 @@ class batch_transform:
     >>> print(fn(res))
     1.2629730888100839
 
-    Alternatively, we may also transform a QNode directly:
+    Alternatively, we may also transform a QNode directly, using either
+    decorator syntax:
 
     >>> @my_transform(0.65, 2.5)
     ... @qml.qnode(dev)
@@ -154,6 +162,17 @@ class batch_transform:
     ...     qml.Hadamard(wires=0)
     ...     qml.RX(x, wires=0)
     ...     return qml.expval(qml.PauliX(0))
+    >>> print(circuit(-0.5))
+    1.2629730888100839
+
+    or by transforming an existing QNode:
+
+    >>> @qml.qnode(dev)
+    ... def circuit(x):
+    ...     qml.Hadamard(wires=0)
+    ...     qml.RX(x, wires=0)
+    ...     return qml.expval(qml.PauliX(0))
+    >>> circuit = my_transform(circuit, 0.65, 2.5)
     >>> print(circuit(-0.5))
     1.2629730888100839
 
