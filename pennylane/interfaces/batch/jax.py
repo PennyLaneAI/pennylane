@@ -17,8 +17,9 @@ to a PennyLane Device class.
 """
 # pylint: disable=too-many-arguments
 import jax
-import jax.numpy as jnp
 from jax.experimental import host_callback
+import jax.numpy as jnp
+import numpy as np
 
 import pennylane as qml
 
@@ -75,57 +76,71 @@ def _execute(
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
     jacs = None
+    total_size = np.sum([t.output_dim for t in tapes])
+    total_params = np.sum([len(p) for p in params])
 
     @jax.custom_vjp
     def wrapped_exec(params):
-        res = None
+        def wrapper(p):
+            new_tapes = []
 
-        def wrapper(p, a):
-            nonlocal jacs
-            nonlocal res
+            for t, a in zip(tapes, p):
+                new_tapes.append(t.copy(copy_operations=True))
+                new_tapes[-1].set_parameters(a)
 
-            with qml.tape.Unwrap(*tapes):
-                res, jacs = execute_fn(tapes, **gradient_kwargs)
+            with qml.tape.Unwrap(*new_tapes):
+                res, jacs = execute_fn(new_tapes, **gradient_kwargs)
 
-            for i, r in enumerate(res):
-                res[i] = jnp.asarray(r)
+            return np.stack(res)
 
-                if r.dtype == jnp.dtype("object"):
-                    # For backwards compatibility, we flatten ragged tape outputs
-                    res[i] = jnp.hstack(r)
-
-            return 0.0
-
-        host_callback.id_tap(wrapper, params)
-        host_callback.barrier_wait()
+        res = host_callback.call(
+            wrapper, params, result_shape=jax.ShapeDtypeStruct((total_size, 1), jnp.float32)
+        )
         return res
 
     def wrapped_exec_fwd(params):
         return wrapped_exec(params), params
 
     def wrapped_exec_bwd(params, g):
-        vjps = None
-
-        def non_diff_wrapper(p, a):
+        def non_diff_wrapper(args):
             """The derivative order is at the maximum. Compute the VJP
             in a non-differentiable manner to reduce overhead."""
-            nonlocal vjps
+            new_tapes = []
+            p = args[:-1]
+            dy = args[-1]
 
-            with qml.tape.Unwrap(*tapes):
-                vjp_tapes, processing_fn = qml.gradients.batch_vjp(
-                    tapes,
-                    g,
-                    gradient_fn,
-                    reduction="append",
-                    gradient_kwargs=gradient_kwargs,
-                )
+            for t, a in zip(tapes, p):
+                new_tapes.append(t.copy(copy_operations=True))
+                new_tapes[-1].set_parameters(a)
+                new_tapes[-1].trainable_params = t.trainable_params
+
+            vjp_tapes, processing_fn = qml.gradients.batch_vjp(
+                new_tapes,
+                dy,
+                gradient_fn,
+                reduction="append",
+                gradient_kwargs=gradient_kwargs,
+            )
+
             partial_res = execute_fn(vjp_tapes)[0]
-            vjps = [[jnp.asarray(s) for s in r] for r in processing_fn(partial_res)]
-            return 0.0
+            res = processing_fn(partial_res)
+            return np.concatenate(res)
 
-        host_callback.id_tap(non_diff_wrapper, params)
-        host_callback.barrier_wait()
-        return (tuple(vjps),)
+        args = params + (g,)
+        vjps = host_callback.call(
+            non_diff_wrapper, args, result_shape=jax.ShapeDtypeStruct((total_params,), jnp.float32)
+        )
+
+        start = 0
+        res = []
+
+        for p in params:
+            res.append(vjps[start : start + len(p)])
+            start += len(p)
+            if len(p) == 1:
+                res[-1] = res[-1][0]
+
+        return (tuple(res),)
 
     wrapped_exec.defvjp(wrapped_exec_fwd, wrapped_exec_bwd)
     return wrapped_exec(params)
