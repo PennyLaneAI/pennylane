@@ -199,7 +199,7 @@ class batch_transform:
         if isinstance(qnode, qml.tape.QuantumTape):
             # Input is a quantum tape.
             # tapes, fn = some_transform(tape, *transform_args)
-            return self.construct(qnode, *targs, *tkwargs)
+            return self.construct(qnode, *targs, **tkwargs)
 
         if isinstance(qnode, qml.QNode):
             # Input is a QNode:
@@ -247,7 +247,9 @@ class batch_transform:
             tuple[list[tapes], callable]: list of transformed tapes
             to execute and a post-processing function.
         """
-        if self.expand_fn is not None:
+        expand = kwargs.pop("_expand", True)
+
+        if expand and self.expand_fn is not None:
             tape = self.expand_fn(tape)
 
         tapes, processing_fn = self.transform_fn(tape, *args, **kwargs)
