@@ -158,7 +158,7 @@ class QNode:
     ):
 
         if diff_method is None:
-            # TODO: update this behaviour once the new differentiable pipeline is the default        
+            # TODO: update this behaviour once the new differentiable pipeline is the default
             # We set "best" to allow internals to work and leverage the interface = None
             # feature to restrict differentiability
             diff_method = "best"
