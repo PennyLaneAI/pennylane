@@ -791,7 +791,7 @@ class QubitDevice(Device):
                 eigvals = self._asarray(observable.eigvals, dtype=self.R_DTYPE)
             except NotImplementedError as e:
                 # if observable has no info on eigenvalues, we cannot return this measurement
-                raise ValueError(f"Cannot compute samples of {observable.name}.") from e
+                raise ValueError(f"Cannot compute analytic variance of {observable.name}.") from e
             prob = self.probability(wires=observable.wires)
             return self._dot((eigvals ** 2), prob) - self._dot(eigvals, prob) ** 2
 
