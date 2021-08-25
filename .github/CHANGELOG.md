@@ -183,7 +183,6 @@
   support Hamiltonians.
   [(#1551)](https://github.com/PennyLaneAI/pennylane/pull/1551)
 
-
 * The device test suite has been expanded to cover more qubit operations and observables.
   [(#1510)](https://github.com/PennyLaneAI/pennylane/pull/1510)
 

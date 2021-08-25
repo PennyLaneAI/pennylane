@@ -135,8 +135,6 @@ class TestHamiltonianSupport:
             qml.RY(param, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        # differentiating a cost that combines circuits with
-        # measurements expval(Pauli)
         half1 = qml.QNode(circuit1, dev, diff_method="parameter-shift")
         half2 = qml.QNode(circuit2, dev, diff_method="parameter-shift")
 

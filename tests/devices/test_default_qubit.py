@@ -2375,8 +2375,7 @@ class TestHamiltonianSupport:
         "dev_name, converter, diffmethod, interface", DEVICE_CONVERTER_DIFFMETHOD_IF
     )
     def test_do_not_split_analytic(self, mocker, dev_name, converter, diffmethod, interface):
-        """Tests that the Hamiltonian is not split for shots=None
-        by checking the number of tapes produced."""
+        """Tests that the Hamiltonian is not split for shots=None."""
         dev = qml.device(dev_name, wires=2)
         H = qml.Hamiltonian(converter([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
 
