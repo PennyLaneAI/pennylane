@@ -29,7 +29,6 @@ except ImportError as e:
 import numpy as np
 from pennylane.operation import DiagonalOperation
 from pennylane.devices import torch_ops
-from pennylane import QuantumFunctionError
 from . import DefaultQubit
 
 
