@@ -32,7 +32,6 @@ U = np.array(
     ]
 )
 
-
 U2 = np.array(
     [
         [
@@ -62,7 +61,6 @@ U2 = np.array(
     ]
 )
 
-
 U_toffoli = np.diag([1 for i in range(8)])
 U_toffoli[6:8, 6:8] = np.array([[0, 1], [1, 0]])
 
@@ -81,9 +79,7 @@ U_cswap = np.array(
     ]
 )
 
-
 H = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
-
 
 THETA = np.linspace(0.11, 1, 3)
 PHI = np.linspace(0.32, 1, 3)
@@ -2357,3 +2353,58 @@ class TestApplyOperationUnit:
             assert np.allclose(res_state, test_state)
             assert np.allclose(res_mat, op.matrix)
             assert np.allclose(res_wires, wires)
+
+
+tf = pytest.importorskip("tensorflow", minversion="2.1")
+torch = pytest.importorskip("torch")
+jax = pytest.importorskip("jax")
+jnp = pytest.importorskip("jax.numpy")
+
+DEVICE_CONVERTER_DIFFMETHOD_IF = [
+    ("default.qubit", np.array, "parameter-shift", None),
+    ("default.qubit.autograd", np.array, "backprop", "autograd"),
+    ("default.qubit.jax", jnp.array, "backprop", "jax"),
+    ("default.qubit.tf", tf.Variable, "backprop", "tf"),
+]
+
+
+class TestHamiltonianSupport:
+    """Tests the devices' native support for Hamiltonian observables."""
+
+    @pytest.mark.parametrize(
+        "dev_name, converter, diffmethod, interface", DEVICE_CONVERTER_DIFFMETHOD_IF
+    )
+    def test_do_not_split_analytic(self, mocker, dev_name, converter, diffmethod, interface):
+        """Tests that the Hamiltonian is not split for shots=None
+        by checking the number of tapes produced."""
+        dev = qml.device(dev_name, wires=2)
+        H = qml.Hamiltonian(converter([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
+
+        @qml.qnode(dev, diff_method=diffmethod, interface=interface)
+        def circuit():
+            return qml.expval(H)
+
+        spy = mocker.spy(dev, "expval")
+
+        circuit()
+        # evaluated one expval altogether
+        assert spy.call_count == 1
+
+    @pytest.mark.parametrize(
+        "dev_name, converter, diffmethod, interface", DEVICE_CONVERTER_DIFFMETHOD_IF
+    )
+    def test_split_finite_shots(self, mocker, dev_name, converter, diffmethod, interface):
+        """Tests that the Hamiltonian is split for finite shots."""
+        dev = qml.device(dev_name, wires=2, shots=10)
+        spy = mocker.spy(dev, "expval")
+
+        H = qml.Hamiltonian(converter([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
+
+        @qml.qnode(dev, diff_method=diffmethod, interface=interface)
+        def circuit():
+            return qml.expval(H)
+
+        circuit()
+
+        # evaluated one expval per Pauli observable
+        assert spy.call_count == 2
