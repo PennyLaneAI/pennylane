@@ -26,6 +26,8 @@ import pennylane as qml
 
 
 def _compute_vjp(dy, jacs):
+    # compute the vector-Jacobian product dy @ jac
+    # for a list of dy's and Jacobian matrices.
     vjps = []
 
     for d, jac in zip(dy, jacs):
