@@ -69,7 +69,7 @@ class batch_transform:
         differentiable (bool): Specifies whether the transform is differentiable or
             not. A transform may be non-differentiable for several reasons:
 
-            - It does use an autodiff framework for its tensor manipulations;
+            - It does not use an autodiff framework for its tensor manipulations;
             - It returns a non-differentiable or non-numeric quantity, such as
               a boolean, string, or integer.
 
