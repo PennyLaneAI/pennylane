@@ -99,6 +99,7 @@ class TestSupportedObservables:
         assert isinstance(circuit(), (float, np.ndarray))
 
 
+# pylint: disable=too-few-public-methods
 @flaky(max_runs=10)
 class TestHamiltonianSupport:
     """Separate test to ensure that the device can differentiate Hamiltonian observables."""
