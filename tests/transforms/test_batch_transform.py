@@ -32,7 +32,7 @@ class TestBatchTransform:
             qml.batch_transform(5)
 
     def test_none_processing(self):
-        """Test that a transform that return None for a processing function applies
+        """Test that a transform that returns None for a processing function applies
         the identity as the processing function"""
 
         @qml.batch_transform

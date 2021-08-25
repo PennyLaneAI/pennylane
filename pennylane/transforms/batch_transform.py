@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains tools and decorators for registering qfunc transforms."""
+"""Contains tools and decorators for registering batch transforms."""
 # pylint: disable=too-few-public-methods
 import functools
 
@@ -71,9 +71,9 @@ class batch_transform:
 
     **Example**
 
-    A valid batch tape transform is a quantum function that satisfies the following:
+    A valid batch tape transform is a function that satisfies the following:
 
-    - The first argument must be an input tape.
+    - The first argument must be a tape.
 
     - Depending on the structure of this input tape, various quantum operations, functions,
       and templates may be called.
@@ -167,7 +167,7 @@ class batch_transform:
     def __init__(self, transform_fn, expand_fn=None, differentiable=True):
         if not callable(transform_fn):
             raise ValueError(
-                f"The batch-reduce transform_fn function to register, {transform_fn}, "
+                f"The batch transform function to register, {transform_fn}, "
                 "does not appear to be a valid Python function or callable."
             )
 
