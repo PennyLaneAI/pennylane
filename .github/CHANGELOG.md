@@ -14,15 +14,16 @@
 
   drawer.label(["0","a",r"$|\Psi\rangle$",r"$|\theta\rangle$", "aux"])
 
-  drawer.box_gate(0, [0,1,2,3,4], "Entangling Layers", rotate_text=True)
+  drawer.box_gate(0, [0,1,2,3,4], "Entangling Layers", text_kwargs={'rotation':'vertical'})
   drawer.box_gate(1, [0, 1], "U(θ)")
-  drawer.box_gate(1, 4, "X", color='lightcoral')
+
+  drawer.box_gate(1, 4, "Z")
 
   drawer.SWAP(1, (2, 3))
-  drawer.CNOT(2, (0,2), color='forestgreen')
+  drawer.CNOT(2, (0,2))
 
-  drawer.ctrl(3, [1,3])
-  drawer.box_gate(3, 2, "H", zorder_base=2)
+  drawer.ctrl(3, [1,3], control_values = [True, False])
+  drawer.box_gate(3, 2, "H", zorder=2)
 
   drawer.ctrl(4, [1,2])
 
