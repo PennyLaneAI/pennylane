@@ -157,7 +157,13 @@ def convert_like(tensor1, tensor2):
     >>> convert_like(x, y)
     <tf.Tensor: shape=(2,), dtype=int64, numpy=array([1, 2])>
     """
-    return np.asarray(tensor1, like=get_interface(tensor2))
+    interface = get_interface(tensor2)
+
+    if interface == "torch":
+        dev = tensor2.device
+        return np.asarray(tensor1, device=dev, like=interface)
+
+    return np.asarray(tensor1, like=interface)
 
 
 def get_interface(tensor):
