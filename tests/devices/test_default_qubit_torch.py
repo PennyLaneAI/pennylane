@@ -56,6 +56,12 @@ from gate_data import (
     MultiRZ1,
     MultiRZ2,
     ControlledPhaseShift,
+    SingleExcitation,
+    SingleExcitationPlus,
+    SingleExcitationMinus,
+    DoubleExcitation,
+    DoubleExcitationPlus,
+    DoubleExcitationMinus,
 )
 
 np.random.seed(42)
@@ -107,6 +113,12 @@ two_qubit_param = [
     (qml.IsingZZ, IsingZZ),
     (qml.MultiRZ, MultiRZ2),
     (qml.ControlledPhaseShift, ControlledPhaseShift),
+    (qml.SingleExcitation, SingleExcitation),
+    (qml.SingleExcitationPlus, SingleExcitationPlus),
+    (qml.SingleExcitationMinus, SingleExcitationMinus),
+    (qml.DoubleExcitation, DoubleExcitation),
+    (qml.DoubleExcitationPlus, DoubleExcitationPlus),
+    (qml.DoubleExcitationMinus, DoubleExcitationMinus),
 ]
 three_qubit = [(qml.Toffoli, Toffoli), (qml.CSWAP, CSWAP)]
 
