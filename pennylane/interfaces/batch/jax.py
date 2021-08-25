@@ -12,24 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains functions for adding the Autograd interface
+This module contains functions for adding the JAX interface
 to a PennyLane Device class.
 """
 # pylint: disable=too-many-arguments
-import inspect
-
-from functools import partial
 import jax
 import jax.experimental.host_callback as host_callback
 import jax.numpy as jnp
-import numpy as np
 
-from pennylane.interfaces.jax import JAXInterface
-from pennylane.queuing import AnnotatedQueue
-from pennylane.operation import Variance, Expectation
 import pennylane as qml
 
 dtype = jnp.float32
+
 
 def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2):
     """Execute a batch of tapes with Autograd parameters on a device.
@@ -58,7 +52,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         params = tape.get_parameters(trainable_only=False)
         tape.trainable_params = qml.math.get_trainable_indices(params)
 
-    parameters = tuple( list(t.get_parameters()) for t in tapes)
+    parameters = tuple(list(t.get_parameters()) for t in tapes)
 
     return _execute(
         parameters,
@@ -68,7 +62,8 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         gradient_fn=gradient_fn,
         gradient_kwargs=gradient_kwargs,
         _n=_n,
-    )[0]
+    )
+
 
 def _execute(
     params,
@@ -79,70 +74,58 @@ def _execute(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
-
-    for tape in tapes:
-        # TODO (chase): Add support for more than 1 measured observable.
-        if len(tape.observables) != 1:
-            raise ValueError(
-                "The JAX interface currently only supports quantum nodes with a single return type."
-            )
-        return_type = tape.observables[0].return_type
-        if return_type is not Variance and return_type is not Expectation:
-            raise ValueError(
-                f"Only Variance and Expectation returns are supported for the JAX interface, given {return_type}."
-            )
+    jacs = None
 
     @jax.custom_vjp
     def wrapped_exec(params):
+        res = None
 
-        def wrapper(p):
-            new_tapes = [t.copy() for t in tapes]
+        def wrapper(p, a):
+            nonlocal jacs
+            nonlocal res
 
-            for tape, tape_params in zip(new_tapes, p):
-                tape.set_parameters(tape_params, trainable_only=False)
+            with qml.tape.Unwrap(*tapes):
+                res, jacs = execute_fn(tapes, **gradient_kwargs)
 
-            res = execute_fn(new_tapes)
-            return jnp.asarray(res)
+            for i, r in enumerate(res):
+                res[i] = jnp.asarray(r)
 
-        sima_res = wrapper(params)
-        res = host_callback.call( wrapper, params, result_shape=jax.ShapeDtypeStruct((len(tapes), 1), dtype),)
+                if r.dtype == jnp.dtype("object"):
+                    # For backwards compatibility, we flatten ragged tape outputs
+                    res[i] = jnp.hstack(r)
+
+            return 0.0
+
+        host_callback.id_tap(wrapper, params)
+        host_callback.barrier_wait()
         return res
 
     def wrapped_exec_fwd(params):
         return wrapped_exec(params), params
 
     def wrapped_exec_bwd(params, g):
-        # The derivative order is at the maximum. Compute the VJP
-        # in a non-differentiable manner to reduce overhead.
-        def wrapper(p):
+        vjps = None
 
-            new_tapes = [t.copy() for t in tapes]
+        def non_diff_wrapper(p, a):
+            """The derivative order is at the maximum. Compute the VJP
+            in a non-differentiable manner to reduce overhead."""
+            nonlocal vjps
 
-            for tape, tape_params in zip(new_tapes, p):
-                tape.set_parameters(tape_params, trainable_only=False)
+            with qml.tape.Unwrap(*tapes):
+                vjp_tapes, processing_fn = qml.gradients.batch_vjp(
+                    tapes,
+                    g,
+                    gradient_fn,
+                    reduction="append",
+                    gradient_kwargs=gradient_kwargs,
+                )
+            partial_res = execute_fn(vjp_tapes)[0]
+            vjps = [[jnp.asarray(s) for s in r] for r in processing_fn(partial_res)]
+            return 0.0
 
-            vjp_tapes, processing_fn = qml.gradients.batch_vjp(
-                new_tapes,
-                g,
-                gradient_fn,
-                reduction="extend",
-                gradient_kwargs=gradient_kwargs,
-            )
-            partial_res = execute_fn(vjp_tapes)
-            res = processing_fn(partial_res)
-            return jnp.asarray(res)
-
-        # 2. host_callback.call
-        vjps = host_callback.call(
-            wrapper,
-            params,
-            result_shape=jax.ShapeDtypeStruct((len(tapes),), dtype),
-        )
-        vjps = tuple([v] for v in vjps),
-
-        vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(g, vjps)]
-        return tuple(vjps)  # Comma is on purpose.
+        host_callback.id_tap(non_diff_wrapper, params)
+        host_callback.barrier_wait()
+        return (tuple(vjps),)
 
     wrapped_exec.defvjp(wrapped_exec_fwd, wrapped_exec_bwd)
     return wrapped_exec(params)
-

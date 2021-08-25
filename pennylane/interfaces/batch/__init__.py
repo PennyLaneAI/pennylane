@@ -269,7 +269,6 @@ def execute(
         from .torch import execute as _execute
     elif interface == "jax":
         from .jax import execute as _execute
-        execute_fn = cache_execute(device.batch_execute, cache, return_tuple=False)
 
     else:
         raise ValueError(f"Unknown interface {interface}")
