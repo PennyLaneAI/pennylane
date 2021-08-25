@@ -503,6 +503,12 @@ class TestExpval:
 
         assert res == obs
 
+    def test_no_eigval_error(self, mock_qubit_device_with_original_statistics):
+        """Tests that an error is thrown if expval is called with an observable that does not have eigenvalues defined."""
+        dev = mock_qubit_device_with_original_statistics()
+        with pytest.raises(ValueError, match="Cannot compute analytic expectations"):
+            dev.expval(qml.Hamiltonian([1.0], [qml.PauliX(0)]))
+
 
 class TestVar:
     """Test the var method"""
@@ -547,6 +553,12 @@ class TestVar:
             res = dev.var(obs)
 
         assert res == obs
+
+    def test_no_eigval_error(self, mock_qubit_device_with_original_statistics):
+        """Tests that an error is thrown if var is called with an observable that does not have eigenvalues defined."""
+        dev = mock_qubit_device_with_original_statistics()
+        with pytest.raises(ValueError, match="Cannot compute analytic variance"):
+            dev.var(qml.Hamiltonian([1.0], [qml.PauliX(0)]))
 
 
 class TestSample:
@@ -605,6 +617,13 @@ class TestSample:
         res = dev.sample(obs)
 
         assert np.array_equal(res, wire_samples)
+
+    def test_no_eigval_error(self, mock_qubit_device_with_original_statistics):
+        """Tests that an error is thrown if sample is called with an observable that does not have eigenvalues defined."""
+        dev = mock_qubit_device_with_original_statistics()
+        dev._samples = np.array([[1, 0], [0, 0]])
+        with pytest.raises(ValueError, match="Cannot compute samples"):
+            dev.sample(qml.Hamiltonian([1.0], [qml.PauliX(0)]))
 
 
 class TestEstimateProb:
