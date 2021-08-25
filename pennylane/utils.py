@@ -144,11 +144,15 @@ def sparse_hamiltonian(H, wires=None):
 
     if wires is None:
         wires = H.wires
+    else:
+        wires = qml.wires.Wires(wires)
 
     n = len(wires)
     matrix = scipy.sparse.coo_matrix((2 ** n, 2 ** n), dtype="complex128")
 
-    for coeff, op in zip(H.coeffs, H.ops):
+    coeffs = qml.math.toarray(H.coeffs)
+
+    for coeff, op in zip(coeffs, H.ops):
 
         obs = []
         for o in qml.operation.Tensor(op).obs:
