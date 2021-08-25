@@ -71,11 +71,6 @@ def allclose(a, b, rtol=1e-05, atol=1e-08, **kwargs):
         t2 = ar.to_numpy(b)
         res = np.allclose(t1, t2, rtol=rtol, atol=atol, **kwargs)
 
-    if hasattr(res, "val"):
-        res = res.val
-        if hasattr(res, "all"):
-            res = res.all()
-
     return res
 
 
