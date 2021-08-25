@@ -29,30 +29,41 @@ def labels(savefile="labels.png"):
     drawer.label(["a", "b"])
     plt.savefig(path.join(folder, savefile))
 
+def labels_formatted(savefile="labels_formatted.png"):
+    drawer = MPLDrawer(n_wires=2, n_layers=1)
+    drawer.label(["a", "b"], text_kwargs={"color": "indigo", "fontsize": "xx-large"})
+    plt.savefig(path.join(folder, savefile))
 
 def box_gates(savefile="box_gates.png"):
-    drawer = MPLDrawer(n_wires=2, n_layers=2)
+    drawer = MPLDrawer(n_wires=2, n_layers=1)
 
-    drawer.box_gate(layer=0, wires=0, text="Y")
-    drawer.box_gate(layer=1, wires=(0, 1), text="CRy(0.1)", rotate_text=True)
+    drawer.box_gate(layer=0, wires=(0, 1), text="CY")
     plt.savefig(path.join(folder, savefile))
 
+def box_gates_formatted(savefile="box_gates_formatted.png"):
+    box_kwargs = {'facecolor':'lightcoral', 'edgecolor': 'maroon', 'linewidth': 5}
+    text_kwargs = {'fontsize': 'xx-large', 'color':'maroon'}
+
+    drawer = MPLDrawer(n_wires=2, n_layers=1)
+
+    drawer.box_gate(layer=0, wires=(0, 1), text="CY", 
+        box_kwargs=box_kwargs, text_kwargs=text_kwargs)
+    plt.savefig(path.join(folder, savefile))
 
 def ctrl(savefile="ctrl.png"):
-    drawer = MPLDrawer(n_wires=2, n_layers=2)
+    drawer = MPLDrawer(n_wires=2, n_layers=3)
 
     drawer.ctrl(layer=0, wire_ctrl=0, wire_target=1)
-    drawer.ctrl(layer=1, wire_ctrl=(0, 1))
+    drawer.ctrl(layer=1, wire_ctrl=(0,1), control_values=[0,1])
+    drawer.ctrl(layer=2, wire_ctrl=(0,1), color="indigo")
     plt.savefig(path.join(folder, savefile))
-
 
 def CNOT(savefile="cnot.png"):
     drawer = MPLDrawer(n_wires=2, n_layers=2)
 
     drawer.CNOT(0, (0, 1))
-    drawer.CNOT(1, (1, 0))
+    drawer.CNOT(1, (1, 0), color='indigo')
     plt.savefig(path.join(folder, savefile))
-
 
 def SWAP(savefile="SWAP.png"):
     drawer = MPLDrawer(n_wires=2, n_layers=1)
@@ -60,6 +71,13 @@ def SWAP(savefile="SWAP.png"):
     drawer.SWAP(0, (0, 1))
     plt.savefig(path.join(folder, savefile))
 
+def SWAP_formatted(savefile="SWAP_formatted.png"):
+    swap_keywords = {"linewidth":2, "color":"indigo"}
+
+    drawer = MPLDrawer(n_wires=2, n_layers=1)
+
+    drawer.SWAP(0, (0, 1), kwargs=swap_keywords)
+    plt.savefig(path.join(folder, savefile))
 
 def measure(savefile="measure.png"):
     drawer = MPLDrawer(n_wires=1, n_layers=1)
@@ -73,15 +91,16 @@ def integration(style='default', savefile="example_basic.png"):
 
     drawer.label(["0","a",r"$|\Psi\rangle$",r"$|\theta\rangle$", "aux"])
 
-    drawer.box_gate(0, [0,1,2,3,4], "Entangling Layers", rotate_text=True)
+    drawer.box_gate(0, [0,1,2,3,4], "Entangling Layers", text_kwargs={'rotation':'vertical'})
     drawer.box_gate(1, [0, 1], "U(θ)")
-    drawer.box_gate(1, 4, "X", color='lightcoral')
+
+    drawer.box_gate(1, 4, "Z")
 
     drawer.SWAP(1, (2, 3))
-    drawer.CNOT(2, (0,2), color='forestgreen')
+    drawer.CNOT(2, (0,2))
 
-    drawer.ctrl(3, [1,3])
-    drawer.box_gate(3, 2, "H", zorder_base=2)
+    drawer.ctrl(3, [1,3], control_values = [True, False])
+    drawer.box_gate(3, 2, "H", zorder=2)
 
     drawer.ctrl(4, [1,2])
 
@@ -91,7 +110,40 @@ def integration(style='default', savefile="example_basic.png"):
     plt.savefig(path.join(folder, savefile))
     plt.style.use('default')
 
+def integration_formatted(savefile="example_formatted.png"):
+
+    wire_kwargs = {"color": "indigo", "linewidth": 4}
+    label_kwargs = {"fontsize": "x-large", 'color': 'indigo'}
+    box_kwargs = {'facecolor':'lightcoral', 'edgecolor': 'maroon', 'linewidth': 5}
+    text_kwargs = {'fontsize': 'xx-large', 'color':'maroon'}
+    swap_kwargs = {'linewidth': 4, 'color': 'darkgreen'}
+
+    measure_box = {'facecolor': 'white', 'edgecolor': 'indigo'}
+    measure_lines = {'edgecolor': 'indigo', 'facecolor': 'plum', 'linewidth': 2}
+
+    #########################################################
+
+    drawer = MPLDrawer(n_wires=2,n_layers=4, wire_kwargs=wire_kwargs)
+
+    drawer.label(["0","a"],
+                text_kwargs=label_kwargs)
+
+    drawer.box_gate(0, 0, "Z", box_kwargs = box_kwargs, text_kwargs=text_kwargs)
+
+    drawer.SWAP(1, (0,1), kwargs=swap_kwargs)
+
+    drawer.CNOT(2, (0,1), color='teal')
+
+    drawer.ctrl(3, (0,1), color='black')
+
+    for wire in range(2):
+        drawer.measure(4, wire, box_kwargs=measure_box, lines_kwargs=measure_lines)
+
+    drawer.fig.suptitle('My Circuit', fontsize='xx-large')
+    plt.savefig(path.join(folder, savefile))
+
 def float_layer(savefile="float_layer.png"):
+
     drawer = MPLDrawer(2,2)
 
     drawer.box_gate(layer=0.5, wires=0, text="Big Gate", extra_width=0.5)
@@ -102,12 +154,16 @@ def float_layer(savefile="float_layer.png"):
 
 
 labels()
+labels_formatted()
 box_gates()
+box_gates_formatted()
 ctrl()
 CNOT()
 SWAP()
+SWAP_formatted()
 measure()
 integration()
 float_layer()
 integration(style='Solarize_Light2', savefile="example_Solarize_Light2.png")
+integration_formatted()
 
