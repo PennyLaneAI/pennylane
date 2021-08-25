@@ -60,7 +60,12 @@ COEFFS = [(0.5, 1.2, -0.7), (2.2, -0.2, 0.0), (0.33,)]
 OBSERVABLES = [
     (qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)),
     (qml.PauliX(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1), qml.PauliZ(1)),
-    # (qml.Hermitian(H_TWO_QUBITS, [0, 1]),),
+    (qml.Hermitian(H_TWO_QUBITS, [0, 1]),),
+]
+
+OBSERVABLES_NO_HERMITIAN = [
+    (qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)),
+    (qml.PauliX(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1), qml.PauliZ(1)),
 ]
 
 JUNK_INPUTS = [None, [], tuple(), 5.0, {"junk": -1}]
@@ -628,7 +633,7 @@ class TestNewVQE:
     """Test the new VQE syntax of passing the Hamiltonian as an observable."""
 
     @pytest.mark.parametrize("ansatz, params", CIRCUITS)
-    @pytest.mark.parametrize("observables", OBSERVABLES)
+    @pytest.mark.parametrize("observables", OBSERVABLES_NO_HERMITIAN)
     def test_circuits_evaluate(self, ansatz, observables, params, tol):
         """Tests simple VQE evaluations."""
         coeffs = [1.0] * len(observables)

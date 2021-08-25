@@ -489,14 +489,14 @@ class DefaultQubit(QubitDevice):
                 raise DeviceError("Hamiltonian must be used with shots=None")
 
             # compute  <psi| H |psi> via sum_i coeff_i * <psi| PauliWord |psi> using a sparse
-            # representation of the Pauli Word
+            # representation of the Pauliword
             res = qml.math.cast(qml.math.convert_like(0.0, observable.coeffs), dtype=complex)
             # note: it is important that we use the Hamiltonian's data and not the coeffs attribute
             for op, coeff in zip(observable.ops, observable.data):
                 # extract a scipy.sparse.coo_matrix representation of this Pauli word
                 coo = qml.operation.Tensor(op).sparse_matrix(wires=self.wires)
-
                 for idx_row, idx_col, entry in zip(coo.row, coo.col, coo.data):
+                    # while "entry" is not differentiable, it will be parsed during multiplication
                     product = self._conj(self.state)[idx_row] * entry * self.state[idx_col]
                     res += (
                         qml.math.cast(qml.math.convert_like(coeff, product), "complex128") * product
