@@ -619,7 +619,7 @@ class TestSample:
         assert np.array_equal(res, wire_samples)
 
     def test_no_eigval_error(self, mock_qubit_device_with_original_statistics):
-        """Tests that error is thrown if sample is called with an observable that does not have eigenvalues defined."""
+        """Tests that an error is thrown if sample is called with an observable that does not have eigenvalues defined."""
         dev = mock_qubit_device_with_original_statistics()
         dev._samples = np.array([[1, 0], [0, 0]])
         with pytest.raises(ValueError, match="Cannot compute samples"):
