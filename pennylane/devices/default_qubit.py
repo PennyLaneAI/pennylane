@@ -468,7 +468,6 @@ class DefaultQubit(QubitDevice):
         Returns:
             float: returns the expectation value of the observable
         """
-        print("HERE")
         if observable.name == "SparseHamiltonian":
             if self.shots is not None:
                 raise DeviceError("SparseHamiltonian must be used with shots=None")
