@@ -208,7 +208,7 @@ class TestCapabilities:
         # no need to check else statement, since the reversible qnode creation fails in that case by default
 
     def test_returns_state(self, device_kwargs):
-        """Tests that the device reports correctly whether it supports reversible differentiation."""
+        """Tests that the device reports correctly whether it supports returning the state."""
         device_kwargs["wires"] = 1
         dev = qml.device(**device_kwargs)
         cap = dev.capabilities()
