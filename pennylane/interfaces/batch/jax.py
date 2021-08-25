@@ -68,7 +68,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         gradient_fn=gradient_fn,
         gradient_kwargs=gradient_kwargs,
         _n=_n,
-    )
+    )[0]
 
 def _execute(
     params,
@@ -104,7 +104,9 @@ def _execute(
             res = execute_fn(new_tapes)
             return jnp.asarray(res)
 
-        return host_callback.call( wrapper, params, result_shape=jax.ShapeDtypeStruct((len(tapes), 1), dtype),)
+        sima_res = wrapper(params)
+        res = host_callback.call( wrapper, params, result_shape=jax.ShapeDtypeStruct((len(tapes), 1), dtype),)
+        return res
 
     def wrapped_exec_fwd(params):
         return wrapped_exec(params), params
@@ -112,45 +114,33 @@ def _execute(
     def wrapped_exec_bwd(params, g):
         # The derivative order is at the maximum. Compute the VJP
         # in a non-differentiable manner to reduce overhead.
-        with qml.tape.Unwrap(*tapes):
+        def wrapper(p):
+
+            new_tapes = [t.copy() for t in tapes]
+
+            for tape, tape_params in zip(new_tapes, p):
+                tape.set_parameters(tape_params, trainable_only=False)
+
             vjp_tapes, processing_fn = qml.gradients.batch_vjp(
-                tapes,
+                new_tapes,
                 g,
                 gradient_fn,
                 reduction="extend",
                 gradient_kwargs=gradient_kwargs,
             )
+            partial_res = execute_fn(vjp_tapes)
+            res = processing_fn(partial_res)
+            return jnp.asarray(res)
 
-        # 1. Vanilla computations (to be removed)
-        vjps = processing_fn(execute_fn(vjp_tapes))
+        # 2. host_callback.call
+        vjps = host_callback.call(
+            wrapper,
+            params,
+            result_shape=jax.ShapeDtypeStruct((len(tapes),), dtype),
+        )
         vjps = tuple([v] for v in vjps),
 
-        vjps = g.reshape((-1,)) * jnp.asarray(vjps)
-
-        # 2. host_callback.call (todo)
-
-        # def wrapper(p):
-
-        #     new_tapes = [t.copy() for t in tapes]
-
-        #     for tape, tape_params in zip(new_tapes, p):
-        #         tape.set_parameters(tape_params, trainable_only=False)
-
-        #     vjp_tapes, processing_fn = qml.gradients.batch_vjp(
-        #         new_tapes,
-        #         g,
-        #         gradient_fn,
-        #         reduction="extend",
-        #         gradient_kwargs=gradient_kwargs,
-        #     )
-        #     res = processing_fn(execute_fn(vjp_tapes))
-        #     return jnp.asarray(res)
-
-        # vjps = host_callback.call(
-        #     wrapper,
-        #     params,
-        #     result_shape=jax.ShapeDtypeStruct((1,1), dtype),
-        # )
+        vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(g, vjps)]
         return tuple(vjps)  # Comma is on purpose.
 
     wrapped_exec.defvjp(wrapped_exec_fwd, wrapped_exec_bwd)
