@@ -152,7 +152,12 @@ class QNode:
         diff_method="best",
         mutable=True,
         max_expansion=10,
-        **diff_options,
+        h=1e-7,
+        order=1,
+        shift=pi/2,
+        adjoint_cache=True,
+        argnum=None,
+        **kwargs,
     ):
 
         if interface is not None and interface not in self.INTERFACE_MAP:
@@ -176,6 +181,12 @@ class QNode:
             self._qfunc_uses_shots_arg = True
         else:
             self._qfunc_uses_shots_arg = False
+            
+        """
+        If kwargs has anything, raise a warning for each kwargs element. Also, create a "diff_options" dictionary with the
+        keyword arguments that were mentioned above and newly added as arguments (e.g. adjoint_cache) ... so that the existing
+        usages remain functional. 
+        """
 
         self.mutable = mutable
         self.func = func
