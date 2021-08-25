@@ -68,6 +68,7 @@ ops = {
     "T": qml.T(wires=[0]),
     "SX": qml.SX(wires=[0]),
     "Toffoli": qml.Toffoli(wires=[0, 1, 2]),
+    "QFT": qml.templates.QFT(wires=[0, 1, 2]),
     "IsingXX": qml.IsingXX(0, wires=[0, 1]),
     "IsingYY": qml.IsingYY(0, wires=[0, 1]),
     "IsingZZ": qml.IsingZZ(0, wires=[0, 1]),
@@ -92,6 +93,7 @@ all_ops = ops.keys()
 all_available_ops = qml.ops._qubit__ops__.copy()  # pylint: disable=protected-access
 all_available_ops.remove("CPhase")  # CPhase is an alias of ControlledPhaseShift
 all_available_ops.remove("SQISW")  # SQISW is an alias of SISWAP
+all_available_ops.add("QFT")  # QFT was recently moved to being a template, but let's keep it here
 
 if not set(all_ops) == all_available_ops:
     raise ValueError("A qubit operation has been added that is not being tested in the "
