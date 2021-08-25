@@ -174,6 +174,9 @@
 
 <h3>Improvements</h3>
 
+* The device test suite has been expanded to cover more qubit operations and observables.
+  [(#1510)](https://github.com/PennyLaneAI/pennylane/pull/1510)
+  
 * The `MultiControlledX` class now inherits from `Operation` instead of `ControlledQubitUnitary` which makes the `MultiControlledX` gate a non-parameterized gate.
   [(#1557)](https://github.com/PennyLaneAI/pennylane/pull/1557)
 
@@ -700,9 +703,6 @@ Ingrid Strandberg, David Wierichs, Vincent Wong.
   [(#1358)](https://github.com/PennyLaneAI/pennylane/pull/1358)
 
 <h3>Improvements</h3>
-
-* The device test suite has been expanded to cover more qubit operations and observables.
-  [(#1510)](https://github.com/PennyLaneAI/pennylane/pull/1510)
 
 * The tape does not verify any more that all Observables have owners in the annotated queue.
   [(#1505)](https://github.com/PennyLaneAI/pennylane/pull/1505)
