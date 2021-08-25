@@ -78,53 +78,36 @@ def _execute(
 
     @jax.custom_vjp
     def wrapped_exec(params):
-        res = None
+        nonlocal jacs
 
-        def wrapper(p, a):
-            nonlocal jacs
-            nonlocal res
+        with qml.tape.Unwrap(*tapes):
+            res, jacs = execute_fn(tapes, **gradient_kwargs)
 
-            with qml.tape.Unwrap(*tapes):
-                res, jacs = execute_fn(tapes, **gradient_kwargs)
+        for i, r in enumerate(res):
+            res[i] = jnp.asarray(r)
 
-            for i, r in enumerate(res):
-                res[i] = jnp.asarray(r)
+            if r.dtype == jnp.dtype("object"):
+                # For backwards compatibility, we flatten ragged tape outputs
+                res[i] = jnp.hstack(r)
 
-                if r.dtype == jnp.dtype("object"):
-                    # For backwards compatibility, we flatten ragged tape outputs
-                    res[i] = jnp.hstack(r)
-
-            return 0.0
-
-        host_callback.id_tap(wrapper, params)
-        host_callback.barrier_wait()
         return res
 
     def wrapped_exec_fwd(params):
         return wrapped_exec(params), params
 
     def wrapped_exec_bwd(params, g):
-        vjps = None
 
-        def non_diff_wrapper(p, a):
-            """The derivative order is at the maximum. Compute the VJP
-            in a non-differentiable manner to reduce overhead."""
-            nonlocal vjps
+        with qml.tape.Unwrap(*tapes):
+            vjp_tapes, processing_fn = qml.gradients.batch_vjp(
+                tapes,
+                g,
+                gradient_fn,
+                reduction="append",
+                gradient_kwargs=gradient_kwargs,
+            )
+        partial_res = execute_fn(vjp_tapes)[0]
+        vjps = [[jnp.asarray(s) for s in r] for r in processing_fn(partial_res)]
 
-            with qml.tape.Unwrap(*tapes):
-                vjp_tapes, processing_fn = qml.gradients.batch_vjp(
-                    tapes,
-                    g,
-                    gradient_fn,
-                    reduction="append",
-                    gradient_kwargs=gradient_kwargs,
-                )
-            partial_res = execute_fn(vjp_tapes)[0]
-            vjps = [[jnp.asarray(s) for s in r] for r in processing_fn(partial_res)]
-            return 0.0
-
-        host_callback.id_tap(non_diff_wrapper, params)
-        host_callback.barrier_wait()
         return (tuple(vjps),)
 
     wrapped_exec.defvjp(wrapped_exec_fwd, wrapped_exec_bwd)
