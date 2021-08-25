@@ -36,7 +36,7 @@ obs = {
     "PauliZ": qml.PauliZ(wires=[0]),
     "Projector": qml.Projector(np.array([1]), wires=[0]),
     "SparseHamiltonian": qml.SparseHamiltonian(coo_matrix(np.eye(8)), wires=[0, 1, 2]),
-    "Hamiltonian": qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliX(0)])
+    "Hamiltonian": qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliX(0)]),
 }
 
 all_obs = obs.keys()
@@ -47,9 +47,11 @@ all_available_obs = qml.ops._qubit__obs__.copy()  # pylint: disable=protected-ac
 all_available_obs |= {"Identity"}
 
 if not set(all_obs) == all_available_obs:
-    raise ValueError("A qubit observable has been added that is not being tested in the "
-                     "device test suite. Please add to the obs dictionary in "
-                     "pennylane/devices/tests/test_measurements.py")
+    raise ValueError(
+        "A qubit observable has been added that is not being tested in the "
+        "device test suite. Please add to the obs dictionary in "
+        "pennylane/devices/tests/test_measurements.py"
+    )
 
 # single qubit Hermitian observable
 A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
@@ -454,7 +456,9 @@ class TestTensorExpval:
 
         h_row = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15])
         h_col = np.array([15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0])
-        h_data = np.array([-1, 1, 1, -1, -1, 1, 1, -1, -1, 1, 1, -1, -1, 1, 1, -1], dtype=np.complex128)
+        h_data = np.array(
+            [-1, 1, 1, -1, -1, 1, 1, -1, -1, 1, 1, -1, -1, 1, 1, -1], dtype=np.complex128
+        )
         h = coo_matrix((h_data, (h_row, h_col)), shape=(16, 16))  # XXYY
 
         @qml.qnode(dev, diff_method="parameter-shift")
