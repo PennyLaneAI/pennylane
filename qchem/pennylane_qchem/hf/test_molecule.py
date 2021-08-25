@@ -17,7 +17,7 @@ Unit tests for the molecule object.
 
 import pytest
 from pennylane import numpy as np
-from molecule import Molecule
+from molecule import Molecule, generate_nuclear_charges
 
 
 molecular_data = [(["H", "H"], np.array([[0.0, 0.0, -0.694349], [0.0, 0.0, 0.694349]]))]
@@ -50,3 +50,11 @@ class TestMolecule:
 
         with pytest.raises(ValueError, match="The only supported basis set is"):
             mol = Molecule(symbols, geometry, basis_name="6-31g")
+
+    molecular_symbols = [(["H", "H"], [1, 1]), (["H", "F"], [1, 9]), (["F", "C", "N"], [9, 6, 7])]
+
+    @pytest.mark.parametrize("molecular_symbols", molecular_symbols)
+    def test_generate_nuclear_charges(self, molecular_symbols):
+        symbols, charges = molecular_symbols
+
+        assert generate_nuclear_charges(symbols) == charges

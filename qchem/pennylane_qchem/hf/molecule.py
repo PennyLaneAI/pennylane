@@ -93,21 +93,18 @@ class Molecule:
         self.coeff = coeff
         self.rgaus = rgaus
 
-        self.basis_set = generate_basis_functions(self.l, alpha, coeff, rgaus)
-
+        self.basis_set = generate_basis_functions(self.l, self.alpha, self.coeff, self.rgaus)
         self.n_orbitals = len(self.l)
 
-        self.nuclear_charges = [atomic_numbers[s] for s in symbols]
+        self.nuclear_charges = generate_nuclear_charges(self.symbols)
 
         self.n_electrons = sum(np.array(self.nuclear_charges)) - self.charge
-
         self.core, self.active = qml.qchem.active_space(
             self.n_electrons,
             self.n_orbitals,
             active_electrons=active_electrons,
             active_orbitals=active_orbitals,
         )
-
         self.wires = [i for i in range(len(self.active * 2))]
 
 
@@ -134,3 +131,22 @@ def generate_basis_functions(l, alpha, coeff, rgaus):
     [<molecule.BasisFunction object at 0x7f7566db2910>, <molecule.BasisFunction object at 0x7f7566db2a30>]
     """
     return [BasisFunction(l[i], alpha[i], coeff[i], rgaus[i]) for i in range(len(l))]
+
+
+def generate_nuclear_charges(symbols):
+    r"""Generate a list of atomic nuclear charges.
+
+    Args:
+    symbols (list[str]): symbols of the atomic species in the molecule
+
+    Returns:
+        list(int): list containing atomic nuclear charges.
+
+    **Example**
+
+    >>> symbols = ["H", "F"]
+    >>> z = generate_nuclear_charges(symbols)
+    >>> print(z)
+    [1, 9]
+    """
+    return [atomic_numbers[s] for s in symbols]
