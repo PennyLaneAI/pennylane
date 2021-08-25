@@ -23,23 +23,26 @@ class BasisFunction:
     r"""Create a basis function object.
 
     A basis set is composed of a set of basis functions that are typically constructed as a linear
-    combination of primitive Gaussian orbitals. For instance, a basis function in the STO-3G basis
+    combination of primitive Gaussian functions. For instance, a basis function in the STO-3G basis
     set is formed as
 
     .. math::
 
         \psi = c_1 G_1 + c_2 G_2 + c_3 G_3,
 
-    where :math:`c_i` is a constant and :math:`G_i` is a Gaussian function defined as
+    where :math:`c` denotes the contraction coefficients and :math:`G` is a Gaussian function
+    defined as
 
     .. math::
 
-        G_i = x^l y^m z^n e^{-\alpha r^2}.
+        G = x^l y^m z^n e^{-\alpha r^2}.
 
     Each Gaussian function is characterized by the angular momentum numbers :math:`(l, m, n)`, which
-    determine the type of the orbital, the exponents :math:`\alpha = (\alpha_x, \alpha_y, \alpha_z)`
-    and the position vector :math:`r = (x, y, z)`. These parameters and the contraction coefficients
-    :math:`c_i` define each specific atomic basis functions of a reference basis set such as STO-3G.
+    determine the type of the orbital, the exponent :math:`\alpha` and the position vector
+    :math:`r = (x, y, z)`. These parameters and the contraction coefficients :math:`c` define
+    atomic basis functions. Predefined values of the exponents and contraction coefficients for
+    each atomic orbital of a given chemical element can be obtained from reference libraries such as
+    the Basis Set Exchange `library <https://www.basissetexchange.org>`_.
 
     The basis function object created by the BasisFunction class stores all the basis set parameters
     including the angular momentum, exponents, positions and coefficients of the Gaussian functions.
@@ -50,9 +53,9 @@ class BasisFunction:
 
     Args:
         l (tuple[int]): angular momentum numbers of the basis function.
-        alpha (array(float)): exponents of the Gaussian functions forming the basis function
+        alpha (array(float)): exponents of the primitive Gaussian functions
         coeff (array(float)): coefficients of the contracted Gaussian functions
-        rgaus (array(float)): positions of the Gaussian functions forming the basis function
+        rgaus (array(float)): positions of the Gaussian functions
     """
 
     def __init__(self, l, alpha, coeff, rgaus):
@@ -66,7 +69,7 @@ class BasisFunction:
 def atom_basis_data(name, atom):
     r"""Generate default basis set parameters for an atom.
 
-    This function extracts the default angular momentum and the exponents and contraction
+    This function extracts the angular momentum and the exponents and contraction
     coefficients of Gaussian functions forming a Gaussian Type Orbital (GTO) for a given atom. These
     values are taken from the basis set data provided in ``basis_data.py``.
 
@@ -80,14 +83,14 @@ def atom_basis_data(name, atom):
 
     **Example**
 
-    >>>  params = atom_basis_data('sto-3g', 'H')
+    >>> params = atom_basis_data('sto-3g', 'H')
     >>> print(params)
     [((0, 0, 0), [3.425250914, 0.6239137298, 0.168855404], [0.1543289673, 0.5353281423, 0.4446345422])]
     """
     basis_sets = {"sto-3g": STO3G}
 
     s = [(0, 0, 0)]
-    p = [(0, 0, 1), (0, 1, 0), (1, 0, 0)]
+    p = [(0, 0, 1), (0, 1, 0), (1, 0, 0)]  # for pz, py, px, respectively
 
     basis = basis_sets[name][atom]
     params = []
@@ -115,12 +118,12 @@ def mol_basis_data(name, symbols):
         symbols (list[str]): symbols of the atomic species in the molecule
 
     Returns:
-        tuple(list, tuple): the number of basis functions and the basis set parameters for each atom
-        in the molecule
+        tuple(list, tuple): the number of atomic basis functions and the basis set parameters for
+        each atom in the molecule
 
     **Example**
 
-    >>>  n_basis, params = mol_basis_data('sto-3g', ['H', 'H'])
+    >>> n_basis, params = mol_basis_data('sto-3g', ['H', 'H'])
     >>> print(n_basis)
     [1, 1]
     >>> print(params)
