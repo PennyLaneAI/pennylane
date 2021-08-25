@@ -99,10 +99,11 @@ class TestSupportedObservables:
         assert isinstance(circuit(), (float, np.ndarray))
 
 
+@flaky(max_runs=10)
 class TestHamiltonianSupport:
     """Separate test to ensure that the device can differentiate Hamiltonian observables."""
 
-    def test_hamiltonian_diff(self, device_kwargs):
+    def test_hamiltonian_diff(self, device_kwargs, tol):
         """Tests a simple VQE gradient using parameter-shift rules."""
         device_kwargs["wires"] = 1
         dev = qml.device(**device_kwargs)
@@ -144,8 +145,8 @@ class TestHamiltonianSupport:
         grad_fn_expected = qml.grad(combine)
         grad_expected = grad_fn_expected(coeffs, param)
 
-        assert np.allclose(grad[0], grad_expected[0])
-        assert np.allclose(grad[1], grad_expected[1])
+        assert np.allclose(grad[0], grad_expected[0], atol=tol(dev.shots))
+        assert np.allclose(grad[1], grad_expected[1], atol=tol(dev.shots))
 
 
 @flaky(max_runs=10)
