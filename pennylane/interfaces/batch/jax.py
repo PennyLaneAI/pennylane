@@ -17,8 +17,8 @@ to a PennyLane Device class.
 """
 # pylint: disable=too-many-arguments
 import jax
-import jax.experimental.host_callback as host_callback
 import jax.numpy as jnp
+from jax.experimental import host_callback
 
 import pennylane as qml
 
