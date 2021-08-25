@@ -14,12 +14,13 @@
 r"""
 Functionality for finding the maximum weighted cycle of directed graphs.
 """
+# pylint: disable=unnecessary-comprehension
 import itertools
 from typing import Dict, Tuple, Iterable, List
 import networkx as nx
 import numpy as np
 import pennylane as qml
-from pennylane.vqe import Hamiltonian
+from pennylane.ops import Hamiltonian
 
 
 def edges_to_wires(graph: nx.Graph) -> Dict[Tuple, int]:
@@ -299,6 +300,7 @@ def _square_hamiltonian_terms(
             squared_ops.append(op2)
         elif isinstance(op2, qml.Identity):
             squared_ops.append(op1)
+        # pylint: disable=unidiomatic-typecheck
         elif op1.wires == op2.wires and type(op1) == type(op2):
             squared_ops.append(qml.Identity(0))
         elif op2.wires[0] < op1.wires[0]:

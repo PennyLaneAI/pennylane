@@ -17,14 +17,13 @@ not depend on any parameters.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import cmath
-import functools
 import numpy as np
+from scipy.linalg import block_diag
 
 import pennylane as qml
 from pennylane.operation import AnyWires, DiagonalOperation, Observable, Operation
 from pennylane.utils import pauli_eigs
 from pennylane.wires import Wires
-from pennylane.ops.qubit.matrix_ops import ControlledQubitUnitary
 
 INV_SQRT2 = 1 / qml.math.sqrt(2)
 
@@ -647,6 +646,69 @@ class ISWAP(Operation):
         return ISWAP(wires=self.wires).inv()
 
 
+class SISWAP(Operation):
+    r"""SISWAP(wires)
+    The square root of i-swap operator. Can also be accessed as ``qml.SQISW``
+
+    .. math:: SISWAP = \begin{bmatrix}
+            1 & 0 & 0 & 0 \\
+            0 & 1/ \sqrt{2} & i/\sqrt{2} & 0\\
+            0 & i/ \sqrt{2} & 1/ \sqrt{2} & 0\\
+            0 & 0 & 0 & 1
+        \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int]): the wires the operation acts on
+    """
+    num_params = 0
+    num_wires = 2
+    par_domain = None
+
+    @classmethod
+    def _matrix(cls, *params):
+        return np.array(
+            [
+                [1, 0, 0, 0],
+                [0, INV_SQRT2, INV_SQRT2 * 1j, 0],
+                [0, INV_SQRT2 * 1j, INV_SQRT2, 0],
+                [0, 0, 0, 1],
+            ]
+        )
+
+    @classmethod
+    def _eigvals(cls, *params):
+        return np.array([INV_SQRT2 * (1 + 1j), INV_SQRT2 * (1 - 1j), 1, 1])
+
+    @staticmethod
+    def decomposition(wires):
+        decomp_ops = [
+            SX(wires=wires[0]),
+            qml.RZ(np.pi / 2, wires=wires[0]),
+            CNOT(wires=[wires[0], wires[1]]),
+            SX(wires=wires[0]),
+            qml.RZ(7 * np.pi / 4, wires=wires[0]),
+            SX(wires=wires[0]),
+            qml.RZ(np.pi / 2, wires=wires[0]),
+            SX(wires=wires[1]),
+            qml.RZ(7 * np.pi / 4, wires=wires[1]),
+            CNOT(wires=[wires[0], wires[1]]),
+            SX(wires=wires[0]),
+            SX(wires=wires[1]),
+        ]
+        return decomp_ops
+
+    def adjoint(self):
+        return SISWAP(wires=self.wires).inv()
+
+
+SQISW = SISWAP
+
+
 class CSWAP(Operation):
     r"""CSWAP(wires)
     The controlled-swap operator
@@ -783,14 +845,14 @@ class Toffoli(Operation):
         return Wires(self.wires[:2])
 
 
-class MultiControlledX(ControlledQubitUnitary):
+class MultiControlledX(Operation):
     r"""MultiControlledX(control_wires, wires, control_values)
     Apply a Pauli X gate controlled on an arbitrary computational basis state.
 
     **Details:**
 
     * Number of wires: Any (the operation can act on any number of wires)
-    * Number of parameters: 1
+    * Number of parameters: 0
     * Gradient recipe: None
 
     Args:
@@ -836,7 +898,7 @@ class MultiControlledX(ControlledQubitUnitary):
     >>> qml.MultiControlledX(control_wires=[0, 1, 2, 3], wires=4, control_values='1110')
 
     """
-    num_params = 1
+    num_params = 0
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
@@ -844,6 +906,7 @@ class MultiControlledX(ControlledQubitUnitary):
     # pylint: disable=too-many-arguments
     def __init__(
         self,
+        *params,
         control_wires=None,
         wires=None,
         control_values=None,
@@ -864,13 +927,57 @@ class MultiControlledX(ControlledQubitUnitary):
 
         self._target_wire = wires[0]
         self._work_wires = work_wires
+        self._control_wires = control_wires
 
-        super().__init__(
-            np.array([[0, 1], [1, 0]]),
-            control_wires=control_wires,
-            wires=wires,
-            control_values=control_values,
-            do_queue=do_queue,
+        wires = control_wires + wires
+
+        if not control_values:
+            control_values = "1" * len(control_wires)
+
+        control_int = self._parse_control_values(control_wires, control_values)
+        self.control_values = control_values
+
+        self._padding_left = control_int * 2
+        self._padding_right = 2 ** len(wires) - 2 - self._padding_left
+        self._CX = None
+
+        super().__init__(*params, wires=wires, do_queue=do_queue)
+
+    def _matrix(self, *params):
+        if self._CX is None:
+            self._CX = block_diag(
+                np.eye(self._padding_left), PauliX.matrix, np.eye(self._padding_right)
+            )
+
+        return self._CX
+
+    @property
+    def control_wires(self):
+        return self._control_wires
+
+    @staticmethod
+    def _parse_control_values(control_wires, control_values):
+        """Ensure any user-specified control strings have the right format."""
+        if isinstance(control_values, str):
+            if len(control_values) != len(control_wires):
+                raise ValueError("Length of control bit string must equal number of control wires.")
+
+            # Make sure all values are either 0 or 1
+            if any(x not in ["0", "1"] for x in control_values):
+                raise ValueError("String of control values can contain only '0' or '1'.")
+
+            control_int = int(control_values, 2)
+        else:
+            raise ValueError("Alternative control values must be passed as a binary string.")
+
+        return control_int
+
+    def adjoint(self):
+        return MultiControlledX(
+            control_wires=self.wires[:-1],
+            wires=self.wires[-1],
+            control_values=self.control_values,
+            work_wires=self._work_wires,
         )
 
     # pylint: disable=unused-argument
@@ -987,97 +1094,3 @@ class MultiControlledX(ControlledQubitUnitary):
         ]
 
         return gates
-
-
-# TODO: this should be moved to a template
-class QFT(Operation):
-    r"""QFT(wires)
-    Apply a quantum Fourier transform (QFT).
-
-    For the :math:`N`-qubit computational basis state :math:`|m\rangle`, the QFT performs the
-    transformation
-
-    .. math::
-
-        |m\rangle \rightarrow \frac{1}{\sqrt{2^{N}}}\sum_{n=0}^{2^{N} - 1}\omega_{N}^{mn} |n\rangle,
-
-    where :math:`\omega_{N} = e^{\frac{2 \pi i}{2^{N}}}` is the :math:`2^{N}`-th root of unity.
-
-    **Details:**
-
-    * Number of wires: Any (the operation can act on any number of wires)
-    * Number of parameters: 0
-    * Gradient recipe: None
-
-    Args:
-        wires (int or Iterable[Number, str]]): the wire(s) the operation acts on
-
-    **Example**
-
-    The quantum Fourier transform is applied by specifying the corresponding wires:
-
-    .. code-block::
-
-        wires = 3
-
-        dev = qml.device('default.qubit',wires=wires)
-
-        @qml.qnode(dev)
-        def circuit_qft(basis_state):
-            qml.BasisState(basis_state, wires=range(wires))
-            qml.QFT(wires=range(wires))
-            return qml.state()
-
-        circuit_qft([1.0, 0.0, 0.0])
-    """
-    num_params = 0
-    num_wires = AnyWires
-    par_domain = None
-    grad_method = None
-
-    @property
-    def matrix(self):
-        # Redefine the property here to allow for a custom _matrix signature
-        mat = self._matrix(len(self.wires))
-        if self.inverse:
-            mat = mat.conj()
-        return mat
-
-    @classmethod
-    @functools.lru_cache()
-    def _matrix(cls, num_wires):
-        dimension = 2 ** num_wires
-
-        mat = np.zeros((dimension, dimension), dtype=np.complex128)
-        omega = np.exp(2 * np.pi * 1j / dimension)
-
-        for m in range(dimension):
-            for n in range(dimension):
-                mat[m, n] = omega ** (m * n)
-
-        return mat / np.sqrt(dimension)
-
-    @staticmethod
-    def decomposition(wires):
-        num_wires = len(wires)
-        shifts = [2 * np.pi * 2 ** -i for i in range(2, num_wires + 1)]
-
-        decomp_ops = []
-        for i, wire in enumerate(wires):
-            decomp_ops.append(qml.Hadamard(wire))
-
-            for shift, control_wire in zip(shifts[: len(shifts) - i], wires[i + 1 :]):
-                op = qml.ControlledPhaseShift(shift, wires=[control_wire, wire])
-                decomp_ops.append(op)
-
-        first_half_wires = wires[: num_wires // 2]
-        last_half_wires = wires[-(num_wires // 2) :]
-
-        for wire1, wire2 in zip(first_half_wires, reversed(last_half_wires)):
-            swap = qml.SWAP(wires=[wire1, wire2])
-            decomp_ops.append(swap)
-
-        return decomp_ops
-
-    def adjoint(self):
-        return QFT(wires=self.wires).inv()
