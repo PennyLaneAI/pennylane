@@ -90,7 +90,7 @@ def atom_basis_data(name, atom):
     basis_sets = {"sto-3g": STO3G}
 
     s = [(0, 0, 0)]
-    p = [(0, 0, 1), (0, 1, 0), (1, 0, 0)]  # for pz, py, px, respectively
+    p = [(1, 0, 0), (0, 1, 0), (0, 0, 1)]  # for px, py, pz, respectively
 
     basis = basis_sets[name][atom]
     params = []
