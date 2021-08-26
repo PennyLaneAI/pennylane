@@ -119,6 +119,7 @@ import copy
 import itertools
 import functools
 from enum import Enum, IntEnum
+from scipy.sparse import kron, eye, coo_matrix
 
 import numpy as np
 from numpy.linalg import multi_dot
@@ -1462,6 +1463,69 @@ class Tensor(Observable):
         # Return the Hermitian matrix representing the observable
         # over the defined wires.
         return functools.reduce(np.kron, U_list)
+
+    def sparse_matrix(self, wires=None):
+        r"""Computes a `scipy.sparse.coo_matrix` representation of this Tensor.
+
+        This is useful for larger qubit numbers, where the dense matrix becomes very large, while
+        consisting mostly of zero entries.
+
+        Args:
+            wires (Iterable): Wire labels that indicate the order of wires according to which the matrix
+                is constructed. If not provided, ``self.wires`` is used.
+
+        Returns:
+            :class:`scipy.sparse.coo_matrix`: sparse matrix representation
+
+        **Example**
+
+        Consider the following tensor:
+
+        >>> t = qml.PauliX(0) @ qml.PauliZ(1)
+
+        Without passing wires, the sparse representation is given by:
+
+        >>> print(t.sparse_matrix())
+        (0, 2)	1
+        (1, 3)	-1
+        (2, 0)	1
+        (3, 1)	-1
+
+        If we define a custom wire ordering, the matrix representation changes
+        accordingly:
+        >>> print(t.sparse_matrix(wires=[1, 0]))
+        (0, 1)	1
+        (1, 0)	1
+        (2, 3)	-1
+        (3, 2)	-1
+
+        We can also enforce implicit identities by passing wire labels that
+        are not present in the consituent operations:
+
+        >>> res = t.sparse_matrix(wires=[0, 1, 2])
+        >>> print(res.shape)
+        (8, 8)
+        """
+
+        if wires is None:
+            wires = self.wires
+        else:
+            wires = Wires(wires)
+
+        list_of_sparse_ops = [eye(2, format="coo")] * len(wires)
+
+        for o in self.obs:
+            if len(o.wires) > 1:
+                # todo: deal with multi-qubit operations that do not act on consecutive qubits
+                raise ValueError(
+                    "Can only compute sparse representation for tensors whose operations "
+                    "act on consecutive wires; got {}.".format(o)
+                )
+            # store the single-qubit ops according to the order of their wires
+            idx = wires.index(o.wires)
+            list_of_sparse_ops[idx] = coo_matrix(o.matrix)
+
+        return functools.reduce(lambda i, j: kron(i, j, format="coo"), list_of_sparse_ops)
 
     def prune(self):
         """Returns a pruned tensor product of observables by removing :class:`~.Identity` instances from
