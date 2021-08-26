@@ -2407,3 +2407,11 @@ class TestHamiltonianSupport:
 
         # evaluated one expval per Pauli observable
         assert spy.call_count == 2
+
+    def test_error_hamiltonian_expval_finite_shots(self):
+        """Tests that the Hamiltonian is split for finite shots."""
+        dev = qml.device("default.qubit", wires=2, shots=10)
+        H = qml.Hamiltonian([0.1, 0.2], [qml.PauliX(0), qml.PauliZ(1)])
+
+        with pytest.raises(qml.DeviceError, match="Hamiltonian must be used with shots=None"):
+            dev.expval(H)
