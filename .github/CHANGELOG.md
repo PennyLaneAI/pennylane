@@ -52,7 +52,7 @@
   [(#1493)](https://github.com/PennyLaneAI/pennylane/pull/1493)
 
   A batch transform is a transform that takes a single tape or QNode as input,
-  and executes multiple QNodes independently. The results may then be post-processed
+  and executes multiple tapes or QNodes independently. The results may then be post-processed
   before being returned.
 
   For example, consider the following batch transform:
@@ -119,6 +119,7 @@
   >>> from pennylane.interfaces.batch import execute
   >>> dev = qml.device("default.qubit", wires=1)
   >>> res = execute(tapes, dev, interface="autograd", gradient_fn=qml.gradients.param_shift)
+  1.2629730888100839
   ```
 
 * Added a new `SISWAP` operation and a `SQISW` alias with support to the `default_qubit` device.
@@ -261,6 +262,7 @@
   added, via the beta `pennylane.interfaces.batch` module.
   [(#1501)](https://github.com/PennyLaneAI/pennylane/pull/1501)
   [(#1508)](https://github.com/PennyLaneAI/pennylane/pull/1508)
+  [(#1542)](https://github.com/PennyLaneAI/pennylane/pull/1542)
   [(#1549)](https://github.com/PennyLaneAI/pennylane/pull/1549)
 
   For example:
@@ -293,6 +295,9 @@
 
 <h3>Improvements</h3>
 
+* The device test suite has been expanded to cover more qubit operations and observables.
+  [(#1510)](https://github.com/PennyLaneAI/pennylane/pull/1510)
+  
 * The `MultiControlledX` class now inherits from `Operation` instead of `ControlledQubitUnitary` which makes the `MultiControlledX` gate a non-parameterized gate.
   [(#1557)](https://github.com/PennyLaneAI/pennylane/pull/1557)
 

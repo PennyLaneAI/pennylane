@@ -237,7 +237,7 @@ class TestBatchTransform:
 
 
 @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop", "finite-diff"])
-class TestQFuncTransformGradients:
+class TestBatchTransformGradients:
     """Tests for the batch_transform decorator differentiability"""
 
     @staticmethod
