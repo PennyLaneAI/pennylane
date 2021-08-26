@@ -498,10 +498,9 @@ class DefaultQubit(QubitDevice):
                 for idx_row, idx_col, entry in zip(coo.row, coo.col, coo.data):
                     # while "entry" is not differentiable, it will be parsed during multiplication
                     product = self._conj(self.state)[idx_row] * entry * self.state[idx_col]
-                    res += (
+                    res = res + (
                         qml.math.cast(qml.math.convert_like(coeff, product), "complex128") * product
                     )
-
             return qml.math.real(res)
 
         return super().expval(observable, shot_range=shot_range, bin_size=bin_size)
