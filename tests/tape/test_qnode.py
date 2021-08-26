@@ -73,7 +73,7 @@ class TestValidation:
     def test_validate_backprop_method_finite_shots(self):
         """Tests an error is raised for backpropogation with finite shots."""
 
-        dev = qml.device('default.qubit', wires=1, shots=3)
+        dev = qml.device("default.qubit", wires=1, shots=3)
 
         with pytest.raises(qml.QuantumFunctionError, match="Devices with finite shots"):
             QNode._validate_backprop_method(dev, "doesnt matter")
