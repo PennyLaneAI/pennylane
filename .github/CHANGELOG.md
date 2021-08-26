@@ -2,6 +2,81 @@
 
 <h3>New features since last release</h3>
 
+* The ability to define *batch* transforms has been added via the new
+  `@qml.batch_transform` decorator.
+  [(#1493)](https://github.com/PennyLaneAI/pennylane/pull/1493)
+
+  A batch transform is a transform that takes a single tape or QNode as input,
+  and executes multiple tapes or QNodes independently. The results may then be post-processed
+  before being returned.
+
+  For example, consider the following batch transform:
+
+  ```python
+  @qml.batch_transform
+  def my_transform(tape, a, b):
+      """Generates two tapes, one with all RX replaced with RY,
+      and the other with all RX replaced with RZ."""
+      tape1 = qml.tape.JacobianTape()
+      tape2 = qml.tape.JacobianTape()
+
+      # loop through all operations on the input tape
+      for op in tape.operations + tape.measurements:
+          if op.name == "RX":
+              with tape1:
+                  qml.RY(a * qml.math.abs(op.parameters[0]), wires=op.wires)
+              with tape2:
+                  qml.RZ(b * qml.math.abs(op.parameters[0]), wires=op.wires)
+          else:
+              for t in [tape1, tape2]:
+                  with t:
+                      qml.apply(op)
+
+      def processing_fn(results):
+          return qml.math.sum(qml.math.stack(results))
+
+      return [tape1, tape2], processing_fn
+  ```
+
+  We can transform a QNode directly using decorator syntax:
+
+  ```pycon
+  >>> @my_transform(0.65, 2.5)
+  ... @qml.qnode(dev)
+  ... def circuit(x):
+  ...     qml.Hadamard(wires=0)
+  ...     qml.RX(x, wires=0)
+  ...     return qml.expval(qml.PauliX(0))
+  >>> print(circuit(-0.5))
+  1.2629730888100839
+  ```
+
+  Batch tape transforms are fully differentiable:
+
+  ```pycon
+  >>> gradient = qml.grad(circuit)(-0.5)
+  >>> print(gradient)
+  2.5800122591960153
+  ```
+
+  Batch transforms can also be applied to existing QNodes,
+
+  ```pycon
+  >>> new_qnode = my_transform(existing_qnode, *transform_weights)
+  >>> new_qnode(weights)
+  ```
+
+  or to tapes (in which case, the processed tapes and classical post-processing
+  functions are returned):
+
+  ```pycon
+  >>> tapes, fn = my_transform(tape, 0.65, 2.5)
+  >>> from pennylane.interfaces.batch import execute
+  >>> dev = qml.device("default.qubit", wires=1)
+  >>> res = execute(tapes, dev, interface="autograd", gradient_fn=qml.gradients.param_shift)
+  1.2629730888100839
+  ```
+
 * Added a new `SISWAP` operation and a `SQISW` alias with support to the `default_qubit` device.
   [#1563](https://github.com/PennyLaneAI/pennylane/pull/1563)
 
