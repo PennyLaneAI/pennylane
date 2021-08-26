@@ -20,7 +20,7 @@ import numpy as np
 import pennylane as qml
 from pennylane import numpy as pnp
 from basis_data import atomic_numbers
-from basis_set import BasisFunction
+from basis_set import BasisFunction, mol_basis_data
 
 
 class Molecule:
@@ -60,7 +60,7 @@ class Molecule:
         l=None,
         alpha=None,
         coeff=None,
-        rgaus=None,
+        r=None,
     ):
 
         if basis_name not in ["sto-3g", "STO-3G"]:
@@ -83,16 +83,16 @@ class Molecule:
         if coeff is None:
             coeff = [pnp.array(i[2], requires_grad=False) for i in self.basis_data]
 
-        if rgaus is None:
+        if r is None:
             r_atom = [i for i in self.coordinates]
-            rgaus = sum([[r_atom[i]] * self.n_basis[i] for i in range(len(self.n_basis))], [])
+            r = sum([[r_atom[i]] * self.n_basis[i] for i in range(len(self.n_basis))], [])
 
         self.l = l
         self.alpha = alpha
         self.coeff = coeff
-        self.rgaus = rgaus
+        self.r = r
 
-        self.basis_set = generate_basis_functions(self.l, self.alpha, self.coeff, self.rgaus)
+        self.basis_set = generate_basis_set(self.l, self.alpha, self.coeff, self.r)
         self.n_orbitals = len(self.l)
 
         self.nuclear_charges = generate_nuclear_charges(self.symbols)
@@ -107,14 +107,14 @@ class Molecule:
         self.wires = [i for i in range(len(self.active * 2))]
 
 
-def generate_basis_functions(l, alpha, coeff, rgaus):
+def generate_basis_set(l, alpha, coeff, r):
     r"""Generate a set of basis function objects.
 
     Args:
         l list((tuple[int])): angular momentum numbers of the basis function.
         alpha list((array(float))): exponents of the Gaussian functions forming basis functions
         coeff list((array(float))): coefficients of the contracted Gaussian functions
-        rgaus list((array(float))): positions of the Gaussian functions forming the basis functions
+        r list((array(float))): positions of the Gaussian functions forming the basis functions
 
     Returns:
         list(BasisFunction): list containing a set of basis function objects.
@@ -125,11 +125,11 @@ def generate_basis_functions(l, alpha, coeff, rgaus):
     >>> exponents = [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]]
     >>> coefficients = [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]]
     >>> centers = [[0.0, 0.0, -0.694349], [0.0, 0.0, 0.694349]]
-    >>>  basis_set = generate_basis_functions(l, exponents, coefficients, centers)
+    >>>  basis_set = generate_basis_set(l, exponents, coefficients, centers)
     >>> print(basis_set)
     [<molecule.BasisFunction object at 0x7f7566db2910>, <molecule.BasisFunction object at 0x7f7566db2a30>]
     """
-    return [BasisFunction(l[i], alpha[i], coeff[i], rgaus[i]) for i in range(len(l))]
+    return [BasisFunction(l[i], alpha[i], coeff[i], r[i]) for i in range(len(l))]
 
 
 def generate_nuclear_charges(symbols):

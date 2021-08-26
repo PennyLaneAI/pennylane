@@ -17,7 +17,7 @@ Unit tests for the molecule object.
 # pylint: disable=no-self-use
 import pytest
 from pennylane import numpy as np
-from molecule import Molecule, generate_nuclear_charges
+from molecule import Molecule, generate_basis_set, generate_nuclear_charges
 
 
 molecular_data_ref = [(["H", "H"], np.array([[0.0, 0.0, -0.694349], [0.0, 0.0, 0.694349]]))]
@@ -28,7 +28,7 @@ class TestMolecule:
 
     @pytest.mark.parametrize("molecular_data", molecular_data_ref)
     def test_build_molecule(self, molecular_data):
-        r"""Test that the molecule object has the correct type."""
+        r"""Test that the generated molecule object has the correct type."""
         symbols, geometry = molecular_data[0], molecular_data[1]
         mol = Molecule(symbols, geometry)
 
@@ -62,3 +62,30 @@ class TestMolecule:
         symbols, charges = molecular_symbols
 
         assert generate_nuclear_charges(symbols) == charges
+
+    basis_data_H2 = [
+        (
+            [(0, 0, 0), (0, 0, 0)],
+            [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+            [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
+            [[0.0, 0.0, -0.694349], [0.0, 0.0, 0.694349]],
+        )
+    ]
+
+    @pytest.mark.parametrize("basis_data", basis_data_H2)
+    def test_generate_nuclear_charges(self, basis_data):
+        r"""Test that correct atomic nuclear charges are generated for a given molecule."""
+        l, alpha, coeff, r = basis_data
+        basis_set = generate_basis_set(l, alpha, coeff, r)
+
+        assert np.allclose(basis_set[0].l, l[0])
+        assert np.allclose(basis_set[1].l, l[1])
+
+        assert np.allclose(basis_set[0].alpha, alpha[0])
+        assert np.allclose(basis_set[1].alpha, alpha[1])
+
+        assert np.allclose(basis_set[0].coeff, coeff[0])
+        assert np.allclose(basis_set[1].coeff, coeff[1])
+
+        assert np.allclose(basis_set[0].r, r[0])
+        assert np.allclose(basis_set[1].r, r[1])
