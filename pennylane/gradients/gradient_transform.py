@@ -76,7 +76,7 @@ class gradient_transform(qml.batch_transform):
 
     .. code-block:: python
 
-        @quantum_gradient
+        @gradient_transform
         def my_custom_gradient(tape, argnum=None, **kwargs):
             ...
             return gradient_tapes, processing_fn
