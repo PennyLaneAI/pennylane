@@ -481,12 +481,10 @@ class DefaultQubit(QubitDevice):
 
             return np.real(ev.toarray()[0])
 
+        # intercept Hamiltonians here; in future, we want a logic that handles
+        # general observables that do not define eigenvalues
         if observable.name == "Hamiltonian":
-            # intercept Hamiltonians here; in future, we want a logic that handles
-            # general observables that do not define eigenvalues
-            if self.shots is not None:
-                # This case should always be intercepted by the QNode, but we want to make sure here.
-                raise DeviceError("Hamiltonian must be used with shots=None")
+            assert self.shots is None, "Hamiltonian must be used with shots=None"
 
             # compute  <psi| H |psi> via sum_i coeff_i * <psi| PauliWord |psi> using a sparse
             # representation of the Pauliword
