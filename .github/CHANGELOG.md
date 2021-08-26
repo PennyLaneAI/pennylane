@@ -325,7 +325,7 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 <h3>Breaking changes</h3>
 
-* And error is raised during QNode creation when a user requests backpropogation on
+* An error is raised during QNode creation when a user requests backpropagation on
   a device with finite-shots.
   [(#1588)](https://github.com/PennyLaneAI/pennylane/pull/1588)
 
