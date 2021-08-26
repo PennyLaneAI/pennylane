@@ -115,17 +115,6 @@ for each QNode will be used.
 Transforming QNodes
 -------------------
 
-.. warning::
-
-    Note that, since autodifferentiation is not being used, only the **quantum** component
-    of the Jacobian will be returned. That is, the Jacobian of the QNode output
-    with respect to **gate** (not QNode!) arguments.
-
-    Any classical processing inside the QNode is ignored.
-
-    If your QNode contains classical processing, please instead use
-    autodifferentiation to compute the gradients.
-
 Alternatively, quantum gradient transforms can be applied manually to QNodes.
 
 .. code-block:: python
@@ -174,12 +163,20 @@ automatically return the gradient:
 tensor([[-0.04673668, -0.09442394, -0.14409127],
         [ 0.04673668,  0.09442394,  0.14409127]], requires_grad=True)
 
-
 .. note::
 
     If your circuit contains any operations not supported by the gradient
     transform, the transform will attempt to automatically decompose the
     circuit to find one supporting gradients.
+
+.. note::
+
+    If you wish to only return the purely **quantum** component of the
+    gradient---that is, the gradient of the output with respect to
+    **gate** arguments, not QNode arguments---pass ``hybrid=False``
+    when applying the transform:
+
+    >>> qml.gradients.param_shift(circuit, hybrid=False)(weights)
 
 
 Differentiating gradient transforms

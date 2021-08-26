@@ -593,9 +593,6 @@ def param_shift_cv(
     >>> qml.jacobian(circuit)(params)
     array([ 0.87516064,  0.01273285,  0.88334834, -0.01273285])
 
-    This approach allows for classical pre-processing of gate arguments,
-    as well as classical post-processing of the QNode output.
-
     .. UsageDetails::
 
         This gradient transform can also be applied directly to :class:`~.QNode` objects:
@@ -608,16 +605,6 @@ def param_shift_cv(
         >>> params = np.array([0.1, 0.2, 0.3, 0.4], requires_grad=True)
         >>> qml.gradients.param_shift_cv(circuit, dev)(params)
         tensor([[ 0.87516064,  0.01273285,  0.88334834, -0.01273285]], requires_grad=True)
-
-        .. warning::
-
-            In this case, classical pre-processing of gate arguments,
-            as well as classical post-processing of the QNode output is **ignored**.
-            The returned Jacobian is purely quantum, representing the derivative of the
-            measurement statistic with respect to **gate arguments**.
-
-            If your QNode contains classical processing, please instead use
-            autodifferentiation to compute the gradients.
 
         This quantum gradient transform can also be applied to low-level
         :class:`~.QuantumTape` objects. This will result in no implicit quantum

@@ -463,9 +463,6 @@ def param_shift(
     tensor([[-0.38751725, -0.18884792, -0.38355708],
             [ 0.69916868,  0.34072432,  0.69202365]], requires_grad=True)
 
-    This approach allows for classical pre-processing of gate arguments,
-    as well as classical post-processing of the QNode output.
-
     .. UsageDetails::
 
         This gradient transform can also be applied directly to :class:`~.QNode` objects:
@@ -479,16 +476,6 @@ def param_shift(
         >>> qml.gradients.param_shift(circuit)(params)
         tensor([[-0.38751725, -0.18884792, -0.38355708],
                 [ 0.69916868,  0.34072432,  0.69202365]], requires_grad=True)
-
-        .. warning::
-
-            In this case, classical pre-processing of gate arguments,
-            as well as classical post-processing of the QNode output is **ignored**.
-            The returned Jacobian is purely quantum, representing the derivative of the
-            measurement statistic with respect to **gate arguments**.
-
-            If your QNode contains classical processing, please instead use
-            autodifferentiation to compute the gradients.
 
         This quantum gradient transform can also be applied to low-level
         :class:`~.QuantumTape` objects. This will result in no implicit quantum
