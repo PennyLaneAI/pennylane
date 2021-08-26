@@ -1376,7 +1376,7 @@ class TestHamiltonianDifferentiation:
         """Test the tf interface by comparing the differentiation of linearly combined subcircuits
         with the differentiation of a Hamiltonian expectation"""
 
-        tf = pytest.importorskip("tf")
+        tf = pytest.importorskip("tensorflow")
         coeffs = tf.Variable([-0.05, 0.17], dtype=tf.double)
         param = tf.Variable(1.7, dtype=tf.double)
 
