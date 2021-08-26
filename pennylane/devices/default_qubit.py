@@ -498,6 +498,12 @@ class DefaultQubit(QubitDevice):
                 for idx_row, idx_col, entry in zip(coo.row, coo.col, coo.data):
                     # while "entry" is not differentiable, it will be parsed during multiplication
                     product = self._conj(self.state)[idx_row] * entry * self.state[idx_col]
+
+                    # todo: remove this hack that avoids errors when attempting to multiply
+                    # a nontrainable qml.tensor to a trainable Arraybox
+                    if isinstance(coeff, qml.numpy.tensor) and not coeff.requires_grad:
+                        coeff = qml.math.toarray(coeff)
+
                     res = res + (
                         qml.math.cast(qml.math.convert_like(coeff, product), "complex128") * product
                     )
