@@ -28,9 +28,9 @@ class BasisFunction:
 
     .. math::
 
-        \psi = c_1 G_1 + c_2 G_2 + c_3 G_3,
+        \psi = a_1 G_1 + a_2 G_2 + a_3 G_3,
 
-    where :math:`c` denotes the contraction coefficients and :math:`G` is a Gaussian function
+    where :math:`a` denotes the contraction coefficients and :math:`G` is a Gaussian function
     defined as
 
     .. math::
@@ -39,7 +39,7 @@ class BasisFunction:
 
     Each Gaussian function is characterized by the angular momentum numbers :math:`(l, m, n)` that
     determine the type of the orbital, the exponent :math:`\alpha` and the position vector
-    :math:`r = (x, y, z)`. These parameters and the contraction coefficients :math:`c` define
+    :math:`r = (x, y, z)`. These parameters and the contraction coefficients :math:`a` define
     atomic basis functions. Predefined values of the exponents and contraction coefficients for
     each atomic orbital of a given chemical element can be obtained from reference libraries such as
     the Basis Set Exchange `library <https://www.basissetexchange.org>`_.
@@ -55,23 +55,23 @@ class BasisFunction:
         l (tuple[int]): angular momentum numbers of the basis function.
         alpha (array(float)): exponents of the primitive Gaussian functions
         coeff (array(float)): coefficients of the contracted Gaussian functions
-        rgaus (array(float)): positions of the Gaussian functions
+        r (array(float)): positions of the Gaussian functions
     """
 
-    def __init__(self, l, alpha, coeff, rgaus):
+    def __init__(self, l, alpha, coeff, r):
         self.l = l
         self.alpha = alpha
         self.coeff = coeff
-        self.rgaus = rgaus
-        self.params = [self.alpha, self.coeff, self.rgaus]
+        self.r = r
+        self.params = [self.alpha, self.coeff, self.r]
 
 
 def atom_basis_data(name, atom):
     r"""Generate default basis set parameters for an atom.
 
-    This function extracts the angular momentum, exponents, and contraction
-    coefficients of Gaussian functions forming a Gaussian Type Orbital (GTO) for a given atom. These
-    values are taken from the basis set data provided in ``basis_data.py``.
+    This function extracts the angular momentum, exponents, and contraction coefficients of
+    Gaussian functions forming atomic orbitals for a given atom. These values are taken from the
+    basis set data provided in ``basis_data.py``.
 
     Args:
         name (str): name of the basis set

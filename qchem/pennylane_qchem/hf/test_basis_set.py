@@ -38,17 +38,17 @@ class TestBasis:
     @pytest.mark.parametrize("basis_data", basis_data_H)
     def test_basisfunction(self, basis_data):
         """Test that BasisFunction class creates basis function objects correctly."""
-        _, _, _, l, alpha, coeff, rgaus = basis_data
+        _, _, _, l, alpha, coeff, r = basis_data
 
-        basis_function = BasisFunction(l, alpha, coeff, rgaus)
+        basis_function = BasisFunction(l, alpha, coeff, r)
 
         assert np.allclose(np.array(basis_function.alpha), np.array(alpha))
         assert np.allclose(np.array(basis_function.coeff), np.array(coeff))
-        assert np.allclose(np.array(basis_function.rgaus), np.array(rgaus))
+        assert np.allclose(np.array(basis_function.r), np.array(r))
 
         assert np.allclose(basis_function.params[0], alpha)
         assert np.allclose(basis_function.params[1], coeff)
-        assert np.allclose(basis_function.params[2], rgaus)
+        assert np.allclose(basis_function.params[2], r)
 
     @pytest.mark.parametrize("basis_data", basis_data_H)
     def test_atom_basis_data(self, basis_data):
