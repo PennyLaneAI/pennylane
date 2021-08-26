@@ -259,7 +259,23 @@ class TestGradientTransformIntegration:
 
         w = np.array([[0.543, -0.654], [0.0, 0.0]], requires_grad=True)
         res = qml.gradients.param_shift(circuit)(w)
+        assert res.shape == (4, 2, 2)
 
+        expected = qml.jacobian(circuit)(w)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # when executed with hybrid=False, only the quantum jacobian is returned
+        res = qml.gradients.param_shift(circuit, hybrid=False)(w)
+        assert res.shape == (4, 2)
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            qml.RX(weights[0], wires=[0])
+            qml.RY(weights[1], wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=[0, 1])
+
+        w = np.array([0.543 ** 2, -0.654], requires_grad=True)
         expected = qml.jacobian(circuit)(w)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
