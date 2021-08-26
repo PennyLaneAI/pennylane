@@ -15,13 +15,12 @@
 This module contains functions and classes to create a Molecule object. This object stores all
 the necessary information to perform a Hartree-Fock calculation for a given molecule.
 """
-
+# pylint: disable=too-few-public-methods, too-many-arguments
 import numpy as np
 import pennylane as qml
-import autograd.numpy as anp
 from pennylane import numpy as pnp
-from basis_data import atomic_numbers, STO3G
-from basis_set import BasisFunction, atom_basis_data, mol_basis_data
+from basis_data import atomic_numbers
+from basis_set import BasisFunction
 
 
 class Molecule:
