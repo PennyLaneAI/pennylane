@@ -282,7 +282,9 @@ class DefaultQubitTorch(DefaultQubit):
         Returns:
             List[int]: the sampled basis states
         """
-        return super().sample_basis_states(number_of_states,state_probability.cpu().detach().numpy())
+        return super().sample_basis_states(
+            number_of_states, state_probability.cpu().detach().numpy()
+        )
 
     def _apply_operation(self, state, operation):
         """Applies operations to the input state.
