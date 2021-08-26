@@ -7,9 +7,9 @@
   [(#1589)](https://github.com/PennyLaneAI/pennylane/pull/1589)
 
   Quantum gradient transforms are a specific case of `qml.batch_transform`.
-  All quantum gradient transforms accept a tape, and outputs
+  All quantum gradient transforms accept a tape, and output
   a batch of tapes to be independently executed on a quantum device, alongside
-  a post-processing function that returns the result.
+  a post-processing function that processes the tape results into the gradient.
 
   Furthermore, a smart default expansion function is provided, which automatically expands tape
   operations which are not differentiable prior to applying the quantum gradient.
