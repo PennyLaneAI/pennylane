@@ -24,7 +24,7 @@ import math
 torch = pytest.importorskip("torch", minversion="1.8.1")
 
 import pennylane as qml
-from pennylane import DeviceError, QuantumFunctionError
+from pennylane import DeviceError
 from pennylane.wires import Wires
 from pennylane.devices.default_qubit_torch import DefaultQubitTorch
 from gate_data import (

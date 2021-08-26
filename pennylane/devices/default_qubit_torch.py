@@ -27,7 +27,6 @@ except ImportError as e:
     raise ImportError("default.qubit.torch device requires Torch>=1.8.1") from e
 
 import numpy as np
-from 
 from pennylane.operation import DiagonalOperation
 from pennylane.devices import torch_ops
 from . import DefaultQubit
