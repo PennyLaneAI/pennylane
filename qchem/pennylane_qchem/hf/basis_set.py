@@ -37,7 +37,7 @@ class BasisFunction:
 
         G = x^l y^m z^n e^{-\alpha r^2}.
 
-    Each Gaussian function is characterized by the angular momentum numbers :math:`(l, m, n)`, which
+    Each Gaussian function is characterized by the angular momentum numbers :math:`(l, m, n)` that
     determine the type of the orbital, the exponent :math:`\alpha` and the position vector
     :math:`r = (x, y, z)`. These parameters and the contraction coefficients :math:`c` define
     atomic basis functions. Predefined values of the exponents and contraction coefficients for
@@ -69,7 +69,7 @@ class BasisFunction:
 def atom_basis_data(name, atom):
     r"""Generate default basis set parameters for an atom.
 
-    This function extracts the angular momentum and the exponents and contraction
+    This function extracts the angular momentum, exponents, and contraction
     coefficients of Gaussian functions forming a Gaussian Type Orbital (GTO) for a given atom. These
     values are taken from the basis set data provided in ``basis_data.py``.
 

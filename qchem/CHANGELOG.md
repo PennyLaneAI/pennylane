@@ -1,8 +1,8 @@
 # Release 0.18.0-dev
 
-* Functionality is added to create basis function objects and default basis set parameters. These
-  functions are needed to perform auto-differentiable Hartree-Fock calculations.
-  [(#1582)](https://github.com/PennyLaneAI/pennylane/pull/1582)
+* Functionality is added to create basis function objects and default basis set parameters
+  for quantum chemistry. These functions are needed to perform auto-differentiable
+  Hartree-Fock calculations. [(#1582)](https://github.com/PennyLaneAI/pennylane/pull/1582)
 
 <h3>New features</h3>
 

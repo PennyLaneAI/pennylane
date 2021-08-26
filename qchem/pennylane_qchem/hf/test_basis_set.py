@@ -103,7 +103,7 @@ class TestBasis:
     @pytest.mark.parametrize("basis_data", basis_data_HF)
     def test_mol_basis_data(self, basis_data):
         """Test that correct basis set parameters are generated for a given molecule represented as
-        a list of atom."""
+        a list of atoms."""
         basis, symbols, n_ref, params_ref = basis_data
         n_basis, params = mol_basis_data(basis, symbols)
 
