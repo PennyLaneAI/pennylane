@@ -116,11 +116,13 @@ two_qubit_param = [
     (qml.SingleExcitation, SingleExcitation),
     (qml.SingleExcitationPlus, SingleExcitationPlus),
     (qml.SingleExcitationMinus, SingleExcitationMinus),
+]
+three_qubit = [(qml.Toffoli, Toffoli), (qml.CSWAP, CSWAP)]
+four_qubit_param = [
     (qml.DoubleExcitation, DoubleExcitation),
     (qml.DoubleExcitationPlus, DoubleExcitationPlus),
     (qml.DoubleExcitationMinus, DoubleExcitationMinus),
 ]
-three_qubit = [(qml.Toffoli, Toffoli), (qml.CSWAP, CSWAP)]
 
 
 #####################################################
@@ -464,6 +466,23 @@ class TestApply:
         op_mat = torch.tensor(func(theta), dtype=torch.complex128)
         expected = op_mat @ state
         assert torch.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("theta", [0.5432, -0.232])
+    @pytest.mark.parametrize("op,func", four_qubit_param)
+    def test_four_qubit_parameters(self, init_state, op, func, theta, tol):
+        """Test two qubit parametrized operations"""
+        dev = DefaultQubitTorch(wires=4)
+        state = init_state(4)
+
+        queue = [qml.QubitStateVector(state, wires=[0, 1, 2, 3])]
+        queue += [op(theta, wires=[0, 1, 2, 3])]
+        dev.apply(queue)
+
+        res = dev.state
+        op_mat = torch.tensor(func(theta), dtype=torch.complex128)
+        expected = op_mat @ state
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
+
 
     def test_apply_ops_above_8_wires_using_special(self):
         """Test that special apply methods that involve slicing function correctly when using 9
@@ -1093,6 +1112,27 @@ class TestQNodeIntegration:
         def circuit(params):
             qml.QubitStateVector(state, wires=[0, 1])
             op(params[0], wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        # Pass a Torch Variable to the qfunc
+        params = torch.tensor([theta])
+        circuit(params)
+        res = dev.state
+        expected = torch.tensor(func(theta), dtype=torch.complex128) @ state
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("theta", [0.5432, 4.213])
+    @pytest.mark.parametrize("op,func", four_qubit_param)
+    def test_four_qubit_param_gates(self, theta, op, func, init_state, tol):
+        """Test the integration of the two-qubit single parameter rotations by passing
+        a Torch data structure as a parameter"""
+        dev = qml.device("default.qubit.torch", wires=4)
+        state = init_state(4)
+
+        @qml.qnode(dev, interface="torch")
+        def circuit(params):
+            qml.QubitStateVector(state, wires=[0, 1, 2, 3])
+            op(params[0], wires=[0, 1, 2, 3])
             return qml.expval(qml.PauliZ(0))
 
         # Pass a Torch Variable to the qfunc
