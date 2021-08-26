@@ -127,3 +127,26 @@ class gradient_transform(qml.batch_transform):
 
     def __init__(self, transform_fn, expand_fn=gradient_expand, differentiable=True):
         super().__init__(transform_fn, expand_fn=expand_fn, differentiable=differentiable)
+
+    def qnode_execution_wrapper(self, qnode, targs, tkwargs):
+        # Here, we overwrite the QNode execution wrapper in order
+        # to take into account that classical processing may be present
+        # inside the QNode.
+
+        _wrapper = super().qnode_execution_wrapper(qnode, targs, tkwargs)
+        cjac_fn = qml.transforms.classical_jacobian(qnode)
+
+        def jacobian_wrapper(*args, **kwargs):
+            qjac = qml.math.squeeze(_wrapper(*args, **kwargs))
+            cjac = cjac_fn(*args, **kwargs)
+
+            if qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
+                # Classical Jacobian is the identity. No classical processing
+                # is present inside the QNode.
+                return qjac
+
+            # Classical processing is present. Return qjac @ cjac
+            jac = qml.math.squeeze(qml.math.tensordot(cjac, qjac, [[-1], [-1]]))
+            return qml.math.transpose(jac)
+
+        return jacobian_wrapper
