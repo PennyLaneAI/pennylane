@@ -483,7 +483,6 @@ class TestApply:
         expected = op_mat @ state
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
-
     def test_apply_ops_above_8_wires_using_special(self):
         """Test that special apply methods that involve slicing function correctly when using 9
         wires"""
