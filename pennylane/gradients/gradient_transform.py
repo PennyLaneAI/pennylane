@@ -71,6 +71,17 @@ class gradient_transform(qml.batch_transform):
             autodiff framework for its tensor manipulations. In such a case, setting
             ``differentiable=False`` instructs the decorator
             to mark the output as 'constant', reducing potential overhead.
+        hybrid (bool): Specifies whether classical processing inside a QNode
+            should be taken into account when transforming a QNode.
+
+            - If ``True``, and classical processing is detected and this
+              option is set to ``True``, the Jacobian of the classical
+              processing will be computed and included. When evaluated, the
+              returned Jacobian will be with respect to the QNode arguments.
+
+            - If ``False``, any internal QNode classical processing will be
+              **ignored**. When evaluated, the returned Jacobian will be with
+              respect to the **gate** arguments, and not the QNode arguments.
 
     Supported gradient transforms must be of the following form:
 
@@ -125,14 +136,15 @@ class gradient_transform(qml.batch_transform):
         ...     params = tape.get_parameters()  # list of floats
     """
 
-    def __init__(self, transform_fn, expand_fn=gradient_expand, differentiable=True):
+    def __init__(self, transform_fn, expand_fn=gradient_expand, differentiable=True, hybrid=True):
+        self.hybrid = hybrid
         super().__init__(transform_fn, expand_fn=expand_fn, differentiable=differentiable)
 
     def qnode_execution_wrapper(self, qnode, targs, tkwargs):
         # Here, we overwrite the QNode execution wrapper in order
         # to take into account that classical processing may be present
         # inside the QNode.
-
+        hybrid = tkwargs.pop("hybrid", self.hybrid)
         _wrapper = super().qnode_execution_wrapper(qnode, targs, tkwargs)
         cjac_fn = qml.transforms.classical_jacobian(qnode)
 
@@ -140,7 +152,7 @@ class gradient_transform(qml.batch_transform):
             qjac = qml.math.squeeze(_wrapper(*args, **kwargs))
             cjac = cjac_fn(*args, **kwargs)
 
-            if qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
+            if not hybrid or qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
                 # Classical Jacobian is the identity. No classical processing
                 # is present inside the QNode.
                 return qjac
