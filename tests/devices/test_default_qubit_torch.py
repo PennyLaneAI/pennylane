@@ -1563,6 +1563,6 @@ class TestHighLevelIntegration:
             return qml.sample(qml.PauliZ(wires=0))
 
         with pytest.raises(
-            QuantumFunctionError, match="The number of shots has to be explicitly set on the device"
+            qml.QuantumFunctionError, match="The number of shots has to be explicitly set on the device"
         ):
             res = circuit()

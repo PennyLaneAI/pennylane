@@ -27,6 +27,7 @@ except ImportError as e:
     raise ImportError("default.qubit.torch device requires Torch>=1.8.1") from e
 
 import numpy as np
+from 
 from pennylane.operation import DiagonalOperation
 from pennylane.devices import torch_ops
 from . import DefaultQubit
@@ -282,17 +283,7 @@ class DefaultQubitTorch(DefaultQubit):
         Returns:
             List[int]: the sampled basis states
         """
-        if self.shots is None:
-
-            raise QuantumFunctionError(
-                "The number of shots has to be explicitly set on the device "
-                "when using sample-based measurements."
-            )
-
-        shots = self.shots
-        basis_states = np.arange(number_of_states)
-        state_probability = state_probability.cpu().detach().numpy()
-        return np.random.choice(basis_states, shots, p=state_probability)
+        return super().sample_basis_states(number_of_states,state_probability.cpu().detach().numpy())
 
     def _apply_operation(self, state, operation):
         """Applies operations to the input state.
