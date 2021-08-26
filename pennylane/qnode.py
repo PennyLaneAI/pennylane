@@ -316,8 +316,10 @@ class QNode:
             interface provided is not compatible with the device
         """
         if device.shots is not None:
-            raise qml.QuantumFunctionError("Devices with finite shots are incompatible with backpropogation. "
-                                           "Please set ``shots=None`` or chose a different diff_method.")
+            raise qml.QuantumFunctionError(
+                "Devices with finite shots are incompatible with backpropogation. "
+                "Please set ``shots=None`` or chose a different diff_method."
+            )
 
         # determine if the device supports backpropagation
         backprop_interface = device.capabilities().get("passthru_interface", None)

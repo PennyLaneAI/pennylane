@@ -1311,7 +1311,7 @@ class TestSamples:
         shots = 100
         dev = qml.device("default.qubit.tf", wires=2, shots=shots)
 
-        @qml.qnode(dev, diff_method="backprop", interface="tf")
+        @qml.qnode(dev, diff_method="best", interface="tf")
         def circuit(a):
             qml.RX(a, wires=0)
             return qml.sample(qml.PauliZ(0))
