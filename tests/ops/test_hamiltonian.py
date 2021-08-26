@@ -1101,12 +1101,7 @@ class TestHamiltonianDifferentiation:
         def circuit(coeffs, param):
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
-            return qml.expval(
-                qml.Hamiltonian(
-                    coeffs,
-                    [qml.PauliX(0), qml.PauliZ(0)]
-                )
-            )
+            return qml.expval(qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)]))
 
         grad_fn = qml.grad(circuit)
         grad = grad_fn(coeffs, param)
@@ -1179,12 +1174,7 @@ class TestHamiltonianDifferentiation:
         def circuit(coeffs, param):
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
-            return qml.expval(
-                qml.Hamiltonian(
-                    coeffs,
-                    [qml.PauliX(0), qml.PauliZ(0)]
-                )
-            )
+            return qml.expval(qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)]))
 
         grad_fn = jax.grad(circuit, argnums=(1))
         grad = grad_fn(coeffs, param)
