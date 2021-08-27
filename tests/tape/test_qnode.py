@@ -330,7 +330,8 @@ class TestValidation:
             == "<QNode: wires=1, device='default.qubit.autograd', interface='autograd', diff_method='best'>"
         )
 
-    def test_diff_method_None(self):
+    @pytest.mark.parametrize("par", [None, 1, 1.1, np.array(1.2)])
+    def test_diff_method_none(self, par):
         """Test if diff_method=None works as intended."""
         dev = qml.device("default.qubit", wires=1)
 
@@ -344,10 +345,17 @@ class TestValidation:
         grad = qml.grad(qn)
 
         # Raise error in all cases
+        # Case 1: No input
+        # Case 2: int input
+        # Case 3: float input
+        # Case 4: numpy input
         with pytest.raises(TypeError) as exp:
-            grad()
-            grad(0)
-            grad(1.1)
+            grad() if par is None else grad(par)
+
+    @pytest.mark.parametrize("par", [1, 1.1, np.array(1.2)])
+    def test_diff_method_none_no_qnode_param(self, par):
+        """Test if diff_method=None works as intended."""
+        dev = qml.device("default.qubit", wires=1)
 
         def func():
             qml.PauliX(wires=0)
@@ -362,9 +370,11 @@ class TestValidation:
         grad()
 
         # Raise error
+        # Case 1: int input
+        # Case 2: float input
+        # Case 3: numpy input
         with pytest.raises(TypeError) as exp:
-            grad(0)
-            grad(1.1)
+            grad(par)
 
 
 class TestTapeConstruction:
