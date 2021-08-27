@@ -32,7 +32,6 @@ U = np.array(
     ]
 )
 
-
 U2 = np.array(
     [
         [
@@ -62,7 +61,6 @@ U2 = np.array(
     ]
 )
 
-
 U_toffoli = np.diag([1 for i in range(8)])
 U_toffoli[6:8, 6:8] = np.array([[0, 1], [1, 0]])
 
@@ -81,9 +79,7 @@ U_cswap = np.array(
     ]
 )
 
-
 H = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
-
 
 THETA = np.linspace(0.11, 1, 3)
 PHI = np.linspace(0.32, 1, 3)
@@ -2357,3 +2353,96 @@ class TestApplyOperationUnit:
             assert np.allclose(res_state, test_state)
             assert np.allclose(res_mat, op.matrix)
             assert np.allclose(res_wires, wires)
+
+
+class TestHamiltonianSupport:
+    """Tests the devices' native support for Hamiltonian observables."""
+
+    def test_do_not_split_analytic(self, mocker):
+        """Tests that the Hamiltonian is not split for shots=None."""
+        dev = qml.device("default.qubit", wires=2)
+        H = qml.Hamiltonian(np.array([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
+
+        @qml.qnode(dev, diff_method="parameter-shift", interface=None)
+        def circuit():
+            return qml.expval(H)
+
+        spy = mocker.spy(dev, "expval")
+
+        circuit()
+        # evaluated one expval altogether
+        assert spy.call_count == 1
+
+    def test_do_not_split_analytic_autograd(self, mocker):
+        """Tests that the Hamiltonian is not split for shots=None using the autograd device."""
+        dev = qml.device("default.qubit.autograd", wires=2)
+        H = qml.Hamiltonian(np.array([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
+
+        @qml.qnode(dev, diff_method="backprop", interface="autograd")
+        def circuit():
+            return qml.expval(H)
+
+        spy = mocker.spy(dev, "expval")
+
+        circuit()
+        # evaluated one expval altogether
+        assert spy.call_count == 1
+
+    def test_do_not_split_analytic_tf(self, mocker):
+        """Tests that the Hamiltonian is not split for shots=None using the tf device."""
+        tf = pytest.importorskip("tensorflow")
+
+        dev = qml.device("default.qubit.tf", wires=2)
+        H = qml.Hamiltonian(tf.Variable([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
+
+        @qml.qnode(dev, diff_method="backprop", interface="tf")
+        def circuit():
+            return qml.expval(H)
+
+        spy = mocker.spy(dev, "expval")
+
+        circuit()
+        # evaluated one expval altogether
+        assert spy.call_count == 1
+
+    def test_do_not_split_analytic_jax(self, mocker):
+        """Tests that the Hamiltonian is not split for shots=None using the jax device."""
+        jax = pytest.importorskip("jax")
+        jnp = pytest.importorskip("jax.numpy")
+
+        dev = qml.device("default.qubit.jax", wires=2)
+        H = qml.Hamiltonian(jnp.array([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
+
+        @qml.qnode(dev, diff_method="backprop", interface="jax")
+        def circuit():
+            return qml.expval(H)
+
+        spy = mocker.spy(dev, "expval")
+
+        circuit()
+        # evaluated one expval altogether
+        assert spy.call_count == 1
+
+    def test_split_finite_shots(self, mocker):
+        """Tests that the Hamiltonian is split for finite shots."""
+        dev = qml.device("default.qubit", wires=2, shots=10)
+        spy = mocker.spy(dev, "expval")
+
+        H = qml.Hamiltonian(np.array([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(H)
+
+        circuit()
+
+        # evaluated one expval per Pauli observable
+        assert spy.call_count == 2
+
+    def test_error_hamiltonian_expval_finite_shots(self):
+        """Tests that the Hamiltonian is split for finite shots."""
+        dev = qml.device("default.qubit", wires=2, shots=10)
+        H = qml.Hamiltonian([0.1, 0.2], [qml.PauliX(0), qml.PauliZ(1)])
+
+        with pytest.raises(AssertionError, match="Hamiltonian must be used with shots=None"):
+            dev.expval(H)
