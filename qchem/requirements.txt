@@ -6,5 +6,3 @@ openfermionpsi4==0.5
 h5py<=3.2.1
 pyscf>=1.7.2
 openfermionpyscf==0.5
-google-api-core==1.31.2
-google-api-core-grpc==1.31.2

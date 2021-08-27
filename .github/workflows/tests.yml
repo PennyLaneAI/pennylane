@@ -161,13 +161,13 @@ jobs:
         uses: s-weigand/setup-conda@v1
         with:
           activate-conda: true
-          python-version: 3.8
+          python-version: 3.7
           conda-channels: anaconda, conda-forge
 
       - name: Install dependencies
         run: |
           sudo apt-get install -y openbabel
-          conda install psi4 psi4-rt python=3.8 -c psi4
+          conda install psi4 psi4-rt h5py==3.2.1 python=3.8 -c psi4
           pip install pytest pytest-cov pytest-mock flaky
 
       - name: Install QChem
