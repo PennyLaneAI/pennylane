@@ -181,7 +181,6 @@ jobs:
 
       - name: Run tests
         run: |
-          python -c "import h5py; print(h5py.version.info)"
           cd qchem && python -m pytest tests --cov=pennylane_qchem $COVERAGE_FLAGS
 
       - name: Upload coverage to Codecov
