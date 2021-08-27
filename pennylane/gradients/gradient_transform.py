@@ -152,6 +152,15 @@ class gradient_transform(qml.batch_transform):
             qjac = qml.math.squeeze(_wrapper(*args, **kwargs))
             cjac = cjac_fn(*args, **kwargs)
 
+            if isinstance(cjac, tuple):
+                # Classical processing is present. Return qjac @ cjac
+                jacs = [
+                    qml.math.squeeze(qml.math.tensordot(c, qjac, [[0], [-1]]))
+                    for c in cjac
+                    if c is not None
+                ]
+                return jacs
+
             if not hybrid or qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
                 # Classical Jacobian is the identity. No classical processing
                 # is present inside the QNode.
@@ -159,6 +168,47 @@ class gradient_transform(qml.batch_transform):
 
             # Classical processing is present. Return qjac @ cjac
             jac = qml.math.squeeze(qml.math.tensordot(cjac, qjac, [[-1], [-1]]))
-            return qml.math.transpose(jac)
+            return qml.math.T(jac)
 
         return jacobian_wrapper
+
+    def construct(self, tape, *args, **kwargs):
+        """Applies the batch tape transform to an input tape.
+
+        Args:
+            tape (.QuantumTape): the tape to be transformed
+            *args: positional arguments to pass to the tape transform
+            **kwargs: keyword arguments to pass to the tape transform
+
+        Returns:
+            tuple[list[tapes], callable]: list of transformed tapes
+            to execute and a post-processing function.
+        """
+        h_indices = []
+        other_indices = []
+
+        for i in range(tape.num_params):
+            op = tape.get_operation(i)[0]
+            h_indices.append(i) if op.name == "Hamiltonian" else other_indices.append(i)
+
+        if h_indices:
+            argnum = kwargs.get("argnum", other_indices)
+            kwargs.update({"argnum": argnum})
+            h_tapes = [qml.gradients.hamiltonian_grad(tape, i)[0][0] for i in h_indices]
+
+        tapes, processing_fn = super().construct(tape, *args, **kwargs)
+
+        if not h_indices:
+            return tapes, processing_fn
+
+        if not tapes:
+            return h_tapes, qml.math.stack
+
+        def fn(results):
+            h_grad = qml.math.stack(results[len(tapes) :])
+            qjac = processing_fn(results[: len(tapes)])
+            qjac = qml.math.take(qjac, other_indices, axis=1)
+            qjac = qml.math.T(qjac)
+            return qml.math.concatenate([qjac, h_grad], axis=0)
+
+        return tapes + h_tapes, fn

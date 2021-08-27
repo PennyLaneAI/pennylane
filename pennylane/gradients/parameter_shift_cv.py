@@ -465,6 +465,7 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shift=np.pi / 2, grad
 def param_shift_cv(
     tape,
     dev,
+    *,
     argnum=None,
     shift=np.pi / 2,
     gradient_recipes=None,

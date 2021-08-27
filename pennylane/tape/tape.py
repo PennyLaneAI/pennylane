@@ -738,6 +738,23 @@ class QuantumTape(AnnotatedQueue):
 
         self._trainable_params = param_indices
 
+    def get_operation(self, idx):
+        """Returns the trainable operation, and the corresponding oepration argument
+        index, for a specified trainable parameter index.
+
+        Args:
+            idx (int): the trainable parameter index
+
+        Returns:
+            tuple[.Operation, int]: tuple containing the corresponding
+            operation, and an integer representing the argument index,
+            for the provided trainable parameter.
+        """
+        t_idx = list(self.trainable_params)[idx]
+        op = self._par_info[t_idx]["op"]
+        p_idx = self._par_info[t_idx]["p_idx"]
+        return op, p_idx
+
     def get_parameters(self, trainable_only=True, **kwargs):  # pylint:disable=unused-argument
         """Return the parameters incident on the tape operations.
 

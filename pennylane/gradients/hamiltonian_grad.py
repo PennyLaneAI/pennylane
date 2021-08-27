@@ -15,6 +15,8 @@
 # pylint: disable=protected-access,unnecessary-lambda
 import pennylane as qml
 
+from .gradient_transform import gradient_transform
+
 
 def hamiltonian_grad(tape, idx, params=None):
     """Computes the tapes necessary to get the gradient of a tape with respect to
@@ -25,12 +27,16 @@ def hamiltonian_grad(tape, idx, params=None):
         idx (int): index of parameter that we differentiate with respect to
         params (array): explicit parameters to set
     """
+    op, p_idx = tape.get_operation(idx)
 
-    t_idx = list(tape.trainable_params)[idx]
-    op = tape._par_info[t_idx]["op"]
-    p_idx = tape._par_info[t_idx]["p_idx"]
+    if op.name != "Hamiltonian":
+        raise ValueError(
+            f"This gradient transform can only be used to compute "
+            f"the gradient with respect to Hamiltonian coefficients, not {op}"
+        )
 
-    new_tape = tape.copy(copy_operations=True, tape_cls=qml.tape.QuantumTape)
+    new_tape = tape.copy(copy_operations=True)
+
     if params is not None:
         new_tape.set_parameters(params=params)
 
