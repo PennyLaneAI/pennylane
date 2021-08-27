@@ -637,6 +637,10 @@ class QNode:
         else:
             res = self.qtape.execute(device=self.device)
 
+        finite_diff = any([getattr(x["op"], 'grad_method', None) == "F" for x in self.qtape._par_info.values()])
+        if finite_diff and self.diff_method_change:
+            self.diff_method = "finite-diff"
+
         # if shots was changed
         if original_shots != -1:
             # reinstate default on device
