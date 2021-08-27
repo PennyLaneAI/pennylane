@@ -167,7 +167,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get install -y openbabel
-          conda install psi4 psi4-rt h5py==3.2.1 hdf5==1.12.0 python=3.8 -c psi4
+          conda install psi4 psi4-rt python=3.7 -c psi4
           pip install pytest pytest-cov pytest-mock flaky
 
       - name: Install QChem
