@@ -468,43 +468,52 @@ class DefaultQubit(QubitDevice):
         Returns:
             float: returns the expectation value of the observable
         """
-        if observable.name == "SparseHamiltonian":
-            if self.shots is not None:
-                raise DeviceError("SparseHamiltonian must be used with shots=None")
-
-            ev = coo_matrix.dot(
-                coo_matrix(self._conj(self.state)),
-                coo_matrix.dot(
-                    observable.matrix, coo_matrix(self.state.reshape(len(self.state), 1))
-                ),
-            )
-
-            return np.real(ev.toarray()[0])
-
         # intercept Hamiltonians here; in future, we want a logic that handles
         # general observables that do not define eigenvalues
-        if observable.name == "Hamiltonian":
+        if observable.name in ("Hamiltonian", "SparseHamiltonian"):
             assert self.shots is None, "Hamiltonian must be used with shots=None"
 
-            # compute  <psi| H |psi> via sum_i coeff_i * <psi| PauliWord |psi> using a sparse
-            # representation of the Pauliword
-            res = qml.math.cast(qml.math.convert_like(0.0, observable.data), dtype=complex)
+            backprop_mode = not isinstance(self.state, np.ndarray)
 
-            # Note: it is important that we use the Hamiltonian's data and not the coeffs attribute.
-            # This is because the .data attribute may be 'unwrapped' as required by the interfaces,
-            # whereas the .coeff attribute will always be the same input dtype that the user provided.
-            for op, coeff in zip(observable.ops, observable.data):
+            if backprop_mode:
+                # We must compute the expectation value assuming that the Hamiltonian
+                # coefficients *and* the quantum states are tensor objects.
 
-                # extract a scipy.sparse.coo_matrix representation of this Pauli word
-                coo = qml.operation.Tensor(op).sparse_matrix(wires=self.wires)
+                # Compute  <psi| H |psi> via sum_i coeff_i * <psi| PauliWord |psi> using a sparse
+                # representation of the Pauliword
+                res = qml.math.cast(qml.math.convert_like(0.0, observable.data), dtype=complex)
 
-                product = (
-                    qml.math.gather(self._conj(self.state), coo.row)
-                    * coo.data
-                    * qml.math.gather(self.state, coo.col)
-                )
-                c = qml.math.cast(qml.math.convert_like(coeff, product), "complex128")
-                res = res + qml.math.sum(c * product)
+                # Note: it is important that we use the Hamiltonian's data and not the coeffs attribute.
+                # This is because the .data attribute may be 'unwrapped' as required by the interfaces,
+                # whereas the .coeff attribute will always be the same input dtype that the user provided.
+                for op, coeff in zip(observable.ops, observable.data):
+
+                    # extract a scipy.sparse.coo_matrix representation of this Pauli word
+                    coo = qml.operation.Tensor(op).sparse_matrix(wires=self.wires)
+
+                    product = (
+                        qml.math.gather(self._conj(self.state), coo.row)
+                        * coo.data
+                        * qml.math.gather(self.state, coo.col)
+                    )
+                    c = qml.math.cast(qml.math.convert_like(coeff, product), "complex128")
+                    res = res + qml.math.sum(c * product)
+
+            else:
+                # Coefficients and the state are not trainable, we can be more
+                # efficient in how we compute the Hamiltonian sparse matrix.
+
+                if observable.name == "Hamiltonian":
+                    Hmat = qml.utils.sparse_hamiltonian(observable)
+                elif observable.name == "SparseHamiltonian":
+                    Hmat = observable.matrix
+
+                res = coo_matrix.dot(
+                    coo_matrix(self._conj(self.state)),
+                    coo_matrix.dot(
+                        Hmat, coo_matrix(self.state.reshape(len(self.state), 1))
+                    ),
+                ).toarray()[0]
 
             return qml.math.real(res)
 
