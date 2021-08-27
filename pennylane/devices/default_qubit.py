@@ -471,7 +471,7 @@ class DefaultQubit(QubitDevice):
         # intercept Hamiltonians here; in future, we want a logic that handles
         # general observables that do not define eigenvalues
         if observable.name in ("Hamiltonian", "SparseHamiltonian"):
-            assert self.shots is None, "Hamiltonian must be used with shots=None"
+            assert self.shots is None, f"{observable.name} must be used with shots=None"
 
             backprop_mode = not isinstance(self.state, np.ndarray)
 
