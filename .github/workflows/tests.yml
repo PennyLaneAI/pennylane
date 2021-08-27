@@ -167,7 +167,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get install -y openbabel
-          conda install h5py psi4 psi4-rt python=3.7 -c psi4
+          conda install psi4 psi4-rt python=3.7 -c psi4
           pip install pytest pytest-cov pytest-mock flaky
 
       - name: Install QChem
@@ -180,6 +180,7 @@ jobs:
 
       - name: Run tests
         run: |
+          python -c "import h5py; print(h5py.version.info)"
           cd qchem && python -m pytest tests --cov=pennylane_qchem $COVERAGE_FLAGS
 
       - name: Upload coverage to Codecov
