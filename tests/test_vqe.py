@@ -63,6 +63,11 @@ OBSERVABLES = [
     (qml.Hermitian(H_TWO_QUBITS, [0, 1]),),
 ]
 
+OBSERVABLES_NO_HERMITIAN = [
+    (qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)),
+    (qml.PauliX(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1), qml.PauliZ(1)),
+]
+
 JUNK_INPUTS = [None, [], tuple(), 5.0, {"junk": -1}]
 
 hamiltonians_with_expvals = [
@@ -628,7 +633,7 @@ class TestNewVQE:
     """Test the new VQE syntax of passing the Hamiltonian as an observable."""
 
     @pytest.mark.parametrize("ansatz, params", CIRCUITS)
-    @pytest.mark.parametrize("observables", OBSERVABLES)
+    @pytest.mark.parametrize("observables", OBSERVABLES_NO_HERMITIAN)
     def test_circuits_evaluate(self, ansatz, observables, params, tol):
         """Tests simple VQE evaluations."""
         coeffs = [1.0] * len(observables)
@@ -720,41 +725,77 @@ class TestNewVQE:
         expected = " 0: ──H──╭┤ ⟨Hamiltonian(1, 1, 1)⟩ \n" + " 2: ─────╰┤ ⟨Hamiltonian(1, 1, 1)⟩ \n"
         assert res == expected
 
-    def test_error_multiple_expvals(self):
-        """Tests that error is thrown if more than one expval is evaluated."""
-        observables = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
-        coeffs = [1.0] * len(observables)
+    def test_multiple_expvals(self):
+        """Tests that more than one Hamiltonian expval can be evaluated."""
+
+        coeffs = [1.0, 1.0, 1.0]
         dev = qml.device("default.qubit", wires=4)
-        H = qml.Hamiltonian(coeffs, observables)
+        H1 = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)])
+        H2 = qml.Hamiltonian(coeffs, [qml.PauliZ(2), qml.PauliY(2), qml.PauliZ(3)])
         w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
 
         @qml.qnode(dev)
         def circuit():
             qml.templates.StronglyEntanglingLayers(w, wires=range(4))
-            return qml.expval(H), qml.expval(qml.PauliX(3))
+            return qml.expval(H1), qml.expval(H2)
 
-        with pytest.raises(ValueError, match="expectation measurement of a Hamiltonian observable"):
+        res = circuit()
+
+        @qml.qnode(dev)
+        def circuit1():
+            qml.templates.StronglyEntanglingLayers(w, wires=range(4))
+            return qml.expval(H1)
+
+        @qml.qnode(dev)
+        def circuit2():
+            qml.templates.StronglyEntanglingLayers(w, wires=range(4))
+            return qml.expval(H2)
+
+        assert res[0] == circuit1()
+        assert res[1] == circuit2()
+
+    def test_error_multiple_expvals_same_wire(self):
+        """Tests that more than one Hamiltonian expval can be evaluated."""
+
+        coeffs = [1.0, 1.0, 1.0]
+        dev = qml.device("default.qubit", wires=4)
+        H1 = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)])
+        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.templates.StronglyEntanglingLayers(w, wires=range(4))
+            return qml.expval(H1), qml.expval(H1)
+
+        with pytest.raises(qml.QuantumFunctionError, match="Only observables that are qubit-wise"):
             circuit()
 
-    def test_error_non_expval_measurement(self):
-        """Tests that error is thrown if sample() or var() is used."""
+    def test_error_var_measurement(self):
+        """Tests that error is thrown if var(H) is measured."""
         observables = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
         coeffs = [1.0] * len(observables)
-        dev = qml.device("default.qubit", wires=4)
+        dev = qml.device("default.qubit", wires=2)
+        H = qml.Hamiltonian(coeffs, observables)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.var(H)
+
+        with pytest.raises(ValueError, match="Cannot compute analytic variance"):
+            circuit()
+
+    def test_error_sample_measurement(self):
+        """Tests that error is thrown if sample(H) is measured."""
+        observables = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
+        coeffs = [1.0] * len(observables)
+        dev = qml.device("default.qubit", wires=2, shots=10)
         H = qml.Hamiltonian(coeffs, observables)
 
         @qml.qnode(dev)
         def circuit():
             return qml.sample(H)
 
-        with pytest.raises(ValueError, match="expectation measurement of a Hamiltonian observable"):
-            circuit()
-
-        @qml.qnode(dev)
-        def circuit():
-            return qml.var(H)
-
-        with pytest.raises(ValueError, match="expectation measurement of a Hamiltonian observable"):
+        with pytest.raises(ValueError, match="Can only return the expectation of a single"):
             circuit()
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "best"])

@@ -25,6 +25,7 @@ from string import ascii_letters as ABC
 import numpy as np
 from scipy.sparse import coo_matrix
 
+import pennylane as qml
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
 from pennylane.operation import DiagonalOperation
 from pennylane.wires import WireError
@@ -148,6 +149,7 @@ class DefaultQubit(QubitDevice):
         "Identity",
         "Projector",
         "SparseHamiltonian",
+        "Hamiltonian",
     }
 
     def __init__(self, wires, *, shots=None, cache=0, analytic=None):
@@ -470,8 +472,6 @@ class DefaultQubit(QubitDevice):
             if self.shots is not None:
                 raise DeviceError("SparseHamiltonian must be used with shots=None")
 
-        if observable.name == "SparseHamiltonian" and self.shots is None:
-
             ev = coo_matrix.dot(
                 coo_matrix(self._conj(self.state)),
                 coo_matrix.dot(
@@ -480,6 +480,32 @@ class DefaultQubit(QubitDevice):
             )
 
             return np.real(ev.toarray()[0])
+
+        # intercept Hamiltonians here; in future, we want a logic that handles
+        # general observables that do not define eigenvalues
+        if observable.name == "Hamiltonian":
+            assert self.shots is None, "Hamiltonian must be used with shots=None"
+
+            # compute  <psi| H |psi> via sum_i coeff_i * <psi| PauliWord |psi> using a sparse
+            # representation of the Pauliword
+            res = qml.math.cast(qml.math.convert_like(0.0, observable.coeffs), dtype=complex)
+            # note: it is important that we use the Hamiltonian's data and not the coeffs attribute
+            for op, coeff in zip(observable.ops, observable.data):
+                # extract a scipy.sparse.coo_matrix representation of this Pauli word
+                coo = qml.operation.Tensor(op).sparse_matrix(wires=self.wires)
+                for idx_row, idx_col, entry in zip(coo.row, coo.col, coo.data):
+                    # while "entry" is not differentiable, it will be parsed during multiplication
+                    product = self._conj(self.state)[idx_row] * entry * self.state[idx_col]
+
+                    # todo: remove this hack that avoids errors when attempting to multiply
+                    # a nontrainable qml.tensor to a trainable Arraybox
+                    if isinstance(coeff, qml.numpy.tensor) and not coeff.requires_grad:
+                        coeff = qml.math.toarray(coeff)
+
+                    res = res + (
+                        qml.math.cast(qml.math.convert_like(coeff, product), "complex128") * product
+                    )
+            return qml.math.real(res)
 
         return super().expval(observable, shot_range=shot_range, bin_size=bin_size)
 
