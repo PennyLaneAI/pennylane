@@ -610,7 +610,7 @@ class DefaultQubit(QubitDevice):
         if state.ndim != 1 or n_state_vector != 2 ** len(device_wires):
             raise ValueError("State vector must be of length 2**wires.")
 
-        if not qmlmath.allclose(qmlmath.linalg.norm(state, ord=2), 1.0, atol=tolerance):
+        if not qml.math.allclose(qml.math.linalg.norm(state, ord=2), 1.0, atol=tolerance):
             raise ValueError("Sum of amplitudes-squared does not equal one.")
 
         if len(device_wires) == self.num_wires and sorted(device_wires) == device_wires:
