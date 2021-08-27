@@ -677,13 +677,13 @@ class SISWAP(Operation):
     num_wires = 2
     par_domain = None
     matrix = np.array(
-            [
-                [1, 0, 0, 0],
-                [0, INV_SQRT2, INV_SQRT2 * 1j, 0],
-                [0, INV_SQRT2 * 1j, INV_SQRT2, 0],
-                [0, 0, 0, 1],
-            ]
-        )
+        [
+            [1, 0, 0, 0],
+            [0, INV_SQRT2, INV_SQRT2 * 1j, 0],
+            [0, INV_SQRT2 * 1j, INV_SQRT2, 0],
+            [0, 0, 0, 1],
+        ]
+    )
     eigvals = np.array([INV_SQRT2 * (1 + 1j), INV_SQRT2 * (1 - 1j), 1, 1])
 
     @classmethod
