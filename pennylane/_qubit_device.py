@@ -856,6 +856,8 @@ class QubitDevice(Device):
 
             * Only expectation values are supported as measurements.
 
+            * Does not work for Hamiltonian observables.
+
         Args:
             tape (.QuantumTape): circuit that the function takes the gradient of
 
@@ -883,6 +885,11 @@ class QubitDevice(Device):
                 raise qml.QuantumFunctionError(
                     "Adjoint differentiation method does not support"
                     f" measurement {m.return_type.value}"
+                )
+
+            if m.obs.name == "Hamiltonian":
+                raise qml.QuantumFunctionError(
+                    "Adjoint differentiation method does not support Hamiltonian observables."
                 )
 
             if not hasattr(m.obs, "base_name"):
