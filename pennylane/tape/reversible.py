@@ -151,6 +151,10 @@ class ReversibleTape(JacobianTape):
                 raise ValueError(
                     f"{m.return_type} is not supported with the reversible gradient method"
                 )
+            if m.obs.name == "Hamiltonian":
+                raise qml.QuantumFunctionError(
+                    "Reverse differentiation method does not support Hamiltonian observables."
+                )
 
         t_idx = list(self.trainable_params)[idx]
         op = self._par_info[t_idx]["op"]
