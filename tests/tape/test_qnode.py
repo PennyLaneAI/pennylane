@@ -331,10 +331,40 @@ class TestValidation:
         )
 
     def test_diff_method_None(self):
-        """Test if diff_method=None works as intended"""
+        """Test if diff_method=None works as intended."""
         dev = qml.device("default.qubit", wires=1)
-        qn = qml.QNode(dummyfunc, dev, diff_method=None)
+
+        def func(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        qn = qml.QNode(func, dev, diff_method=None)
         assert qn.interface is None
+
+        grad = qml.grad(qn)
+
+        # Raise error in all cases
+        with pytest.raises(TypeError) as exp:
+            grad()
+            grad(0)
+            grad(1.1)
+
+        def func():
+            qml.PauliX(wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        qn = qml.QNode(func, dev, diff_method=None)
+        assert qn.interface is None
+
+        grad = qml.grad(qn)
+
+        # No differentiation required. No error raised.
+        grad()
+
+        # Raise error
+        with pytest.raises(TypeError) as exp:
+            grad(0)
+            grad(1.1)
 
 
 class TestTapeConstruction:
