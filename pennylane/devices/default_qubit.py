@@ -490,21 +490,24 @@ class DefaultQubit(QubitDevice):
             # representation of the Pauliword
             res = qml.math.cast(qml.math.convert_like(0.0, observable.coeffs), dtype=complex)
             # note: it is important that we use the Hamiltonian's data and not the coeffs attribute
+
             for op, coeff in zip(observable.ops, observable.data):
                 # extract a scipy.sparse.coo_matrix representation of this Pauli word
                 coo = qml.operation.Tensor(op).sparse_matrix(wires=self.wires)
-                for idx_row, idx_col, entry in zip(coo.row, coo.col, coo.data):
-                    # while "entry" is not differentiable, it will be parsed during multiplication
-                    product = self._conj(self.state)[idx_row] * entry * self.state[idx_col]
 
-                    # todo: remove this hack that avoids errors when attempting to multiply
-                    # a nontrainable qml.tensor to a trainable Arraybox
-                    if isinstance(coeff, qml.numpy.tensor) and not coeff.requires_grad:
-                        coeff = qml.math.toarray(coeff)
+                # todo: remove this hack that avoids errors when attempting to multiply
+                # a nontrainable qml.tensor to a trainable Arraybox
+                if isinstance(coeff, qml.numpy.tensor) and not coeff.requires_grad:
+                    coeff = qml.math.toarray(coeff)
 
-                    res = res + (
-                        qml.math.cast(qml.math.convert_like(coeff, product), "complex128") * product
-                    )
+                product = (
+                    qml.math.gather(self._conj(self.state), coo.row)
+                    * coo.data
+                    * qml.math.gather(self.state, coo.col)
+                )
+                c = qml.math.cast(qml.math.convert_like(coeff, product), "complex128")
+                res = res + qml.math.sum(c * product)
+
             return qml.math.real(res)
 
         return super().expval(observable, shot_range=shot_range, bin_size=bin_size)
