@@ -177,9 +177,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
     for queue in ("_prep", "_ops", "_measurements"):
         for obj in getattr(tape, queue):
-
             stop = stop_at(obj)
-
             if not expand_measurements:
                 # Measurements should not be expanded; treat measurements
                 # as a stopping condition
@@ -203,7 +201,6 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
             # recursively expand out the newly created tape
             expanded_tape = expand_tape(obj, stop_at=stop_at, depth=depth - 1)
-
             new_tape._prep += expanded_tape._prep
             new_tape._ops += expanded_tape._ops
             new_tape._measurements += expanded_tape._measurements
