@@ -22,3 +22,4 @@ from .finite_difference import finite_diff, finite_diff_coeffs, generate_shifted
 from .parameter_shift import param_shift
 from .parameter_shift_cv import param_shift_cv
 from .vjp import compute_vjp, batch_vjp, vjp
+from .hamiltonian_grad import hamiltonian_grad

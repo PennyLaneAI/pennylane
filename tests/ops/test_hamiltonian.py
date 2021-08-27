@@ -1207,12 +1207,12 @@ class TestHamiltonianEvaluation:
         assert pars == [0.1, 3.0]
 
 
-@pytest.mark.parametrize("simplify", [True, False])
-@pytest.mark.parametrize("group", [None, "qwc"])
 class TestHamiltonianDifferentiation:
     """Test that the Hamiltonian coefficients are differentiable"""
 
-    def test_vqe_differentiation_paramshift(self, simplify, group):
+    @pytest.mark.parametrize("simplify", [True, False])
+    @pytest.mark.parametrize("group", [None, "qwc"])
+    def test_trainable_coeffs_paramshift(self, simplify, group):
         """Test the parameter-shift method by comparing the differentiation of linearly combined subcircuits
         with the differentiation of a Hamiltonian expectation"""
         coeffs = np.array([-0.05, 0.17])
@@ -1249,7 +1249,43 @@ class TestHamiltonianDifferentiation:
         assert np.allclose(grad[0], grad_expected[0])
         assert np.allclose(grad[1], grad_expected[1])
 
-    def test_vqe_differentiation_autograd(self, simplify, group):
+    def test_nontrainable_coeffs_paramshift(self):
+        """Test the parameter-shift method if the coefficients are explicitly set non-trainable
+        by not passing them to the qnode."""
+        coeffs = np.array([-0.05, 0.17])
+        param = np.array(1.7)
+
+        # differentiating a circuit with measurement expval(H)
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit(param):
+            qml.RX(param, wires=0)
+            qml.RY(param, wires=0)
+            return qml.expval(
+                qml.Hamiltonian(
+                    coeffs,
+                    [qml.PauliX(0), qml.PauliZ(0)],
+                )
+            )
+
+        grad_fn = qml.grad(circuit)
+        grad = grad_fn(param)
+
+        # differentiating a cost that combines circuits with
+        # measurements expval(Pauli)
+        half1 = qml.QNode(circuit1, dev, diff_method="parameter-shift")
+        half2 = qml.QNode(circuit2, dev, diff_method="parameter-shift")
+
+        def combine(param):
+            return coeffs[0] * half1(param) + coeffs[1] * half2(param)
+
+        grad_fn_expected = qml.grad(combine)
+        grad_expected = grad_fn_expected(param)
+
+        assert np.allclose(grad, grad_expected)
+
+    @pytest.mark.parametrize("simplify", [True, False])
+    @pytest.mark.parametrize("group", [None, "qwc"])
+    def test_trainable_coeffs_autograd(self, simplify, group):
         """Test the autograd interface by comparing the differentiation of linearly combined subcircuits
         with the differentiation of a Hamiltonian expectation"""
         coeffs = pnp.array([-0.05, 0.17], requires_grad=True)
@@ -1286,7 +1322,37 @@ class TestHamiltonianDifferentiation:
         assert np.allclose(grad[0], grad_expected[0])
         assert np.allclose(grad[1], grad_expected[1])
 
-    def test_vqe_differentiation_jax(self, simplify, group):
+    def test_nontrainable_coeffs_autograd(self):
+        """Test the autograd interface if the coefficients are explicitly set non-trainable"""
+        coeffs = pnp.array([-0.05, 0.17], requires_grad=False)
+        param = pnp.array(1.7, requires_grad=True)
+
+        # differentiating a circuit with measurement expval(H)
+        @qml.qnode(dev, interface="autograd")
+        def circuit(coeffs, param):
+            qml.RX(param, wires=0)
+            qml.RY(param, wires=0)
+            return qml.expval(qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)]))
+
+        grad_fn = qml.grad(circuit)
+        grad = grad_fn(coeffs, param)
+
+        # differentiating a cost that combines circuits with
+        # measurements expval(Pauli)
+        half1 = qml.QNode(circuit1, dev, interface="autograd")
+        half2 = qml.QNode(circuit2, dev, interface="autograd")
+
+        def combine(coeffs, param):
+            return coeffs[0] * half1(param) + coeffs[1] * half2(param)
+
+        grad_fn_expected = qml.grad(combine)
+        grad_expected = grad_fn_expected(coeffs, param)
+
+        assert np.allclose(grad, grad_expected)
+
+    @pytest.mark.parametrize("simplify", [True, False])
+    @pytest.mark.parametrize("group", [None, "qwc"])
+    def test_trainable_coeffs_jax(self, simplify, group):
         """Test the jax interface by comparing the differentiation of linearly combined subcircuits
         with the differentiation of a Hamiltonian expectation"""
 
@@ -1326,7 +1392,40 @@ class TestHamiltonianDifferentiation:
         assert np.allclose(grad[0], grad_expected[0])
         assert np.allclose(grad[1], grad_expected[1])
 
-    def test_vqe_differentiation_torch(self, simplify, group):
+    def test_nontrainable_coeffs_jax(self):
+        """Test the jax interface if the coefficients are explicitly set non-trainable"""
+
+        jax = pytest.importorskip("jax")
+        jnp = pytest.importorskip("jax.numpy")
+        coeffs = np.array([-0.05, 0.17])
+        param = jnp.array(1.7)
+
+        # differentiating a circuit with measurement expval(H)
+        @qml.qnode(dev, interface="jax", diff_method="backprop")
+        def circuit(coeffs, param):
+            qml.RX(param, wires=0)
+            qml.RY(param, wires=0)
+            return qml.expval(qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)]))
+
+        grad_fn = jax.grad(circuit, argnums=(1))
+        grad = grad_fn(coeffs, param)
+
+        # differentiating a cost that combines circuits with
+        # measurements expval(Pauli)
+        half1 = qml.QNode(circuit1, dev, interface="jax", diff_method="backprop")
+        half2 = qml.QNode(circuit2, dev, interface="jax", diff_method="backprop")
+
+        def combine(coeffs, param):
+            return coeffs[0] * half1(param) + coeffs[1] * half2(param)
+
+        grad_fn_expected = jax.grad(combine, argnums=(1))
+        grad_expected = grad_fn_expected(coeffs, param)
+
+        assert np.allclose(grad, grad_expected)
+
+    @pytest.mark.parametrize("simplify", [True, False])
+    @pytest.mark.parametrize("group", [None, "qwc"])
+    def test_trainable_coeffs_torch(self, simplify, group):
         """Test the torch interface by comparing the differentiation of linearly combined subcircuits
         with the differentiation of a Hamiltonian expectation"""
 
@@ -1372,7 +1471,50 @@ class TestHamiltonianDifferentiation:
         assert np.allclose(grad[0], grad_expected[0])
         assert np.allclose(grad[1], grad_expected[1])
 
-    def test_vqe_differentiation_tf(self, simplify, group):
+    def test_nontrainable_coeffs_torch(self):
+        """Test the torch interface if the coefficients are explicitly set non-trainable"""
+
+        torch = pytest.importorskip("torch")
+        coeffs = torch.tensor([-0.05, 0.17], requires_grad=False)
+        param = torch.tensor(1.7, requires_grad=True)
+
+        # differentiating a circuit with measurement expval(H)
+        @qml.qnode(dev, interface="torch")
+        def circuit(coeffs, param):
+            qml.RX(param, wires=0)
+            qml.RY(param, wires=0)
+            return qml.expval(
+                qml.Hamiltonian(
+                    coeffs,
+                    [qml.PauliX(0), qml.PauliZ(0)],
+                )
+            )
+
+        res = circuit(coeffs, param)
+        res.backward()
+
+        # differentiating a cost that combines circuits with
+        # measurements expval(Pauli)
+
+        # we need to create new tensors here
+        coeffs2 = torch.tensor([-0.05, 0.17], requires_grad=False)
+        param2 = torch.tensor(1.7, requires_grad=True)
+
+        half1 = qml.QNode(circuit1, dev, interface="torch")
+        half2 = qml.QNode(circuit2, dev, interface="torch")
+
+        def combine(coeffs, param):
+            return coeffs[0] * half1(param) + coeffs[1] * half2(param)
+
+        res_expected = combine(coeffs2, param2)
+        res_expected.backward()
+
+        assert coeffs.grad is None
+        assert np.allclose(param.grad, param2.grad)
+
+    @pytest.mark.parametrize("simplify", [True, False])
+    @pytest.mark.parametrize("group", [None, "qwc"])
+    def test_trainable_coeffs_tf(self, simplify, group):
         """Test the tf interface by comparing the differentiation of linearly combined subcircuits
         with the differentiation of a Hamiltonian expectation"""
 
@@ -1416,3 +1558,95 @@ class TestHamiltonianDifferentiation:
 
         assert np.allclose(grad[0], grad_expected[0])
         assert np.allclose(grad[1], grad_expected[1])
+
+    def test_nontrainable_coeffs_tf(self):
+        """Test the tf interface if the coefficients are explicitly set non-trainable"""
+
+        tf = pytest.importorskip("tensorflow")
+        coeffs = tf.constant([-0.05, 0.17], dtype=tf.double)
+        param = tf.Variable(1.7, dtype=tf.double)
+
+        # differentiating a circuit with measurement expval(H)
+        @qml.qnode(dev, interface="tf", diff_method="backprop")
+        def circuit(coeffs, param):
+            qml.RX(param, wires=0)
+            qml.RY(param, wires=0)
+            return qml.expval(
+                qml.Hamiltonian(
+                    coeffs,
+                    [qml.PauliX(0), qml.PauliZ(0)],
+                )
+            )
+
+        with tf.GradientTape() as tape:
+            res = circuit(coeffs, param)
+        grad = tape.gradient(res, [coeffs, param])
+
+        # differentiating a cost that combines circuits with
+        # measurements expval(Pauli)
+
+        # we need to create new tensors here
+        coeffs2 = tf.constant([-0.05, 0.17], dtype=tf.double)
+        param2 = tf.Variable(1.7, dtype=tf.double)
+        half1 = qml.QNode(circuit1, dev, interface="tf", diff_method="backprop")
+        half2 = qml.QNode(circuit2, dev, interface="tf", diff_method="backprop")
+
+        def combine(coeffs, param):
+            return coeffs[0] * half1(param) + coeffs[1] * half2(param)
+
+        with tf.GradientTape() as tape2:
+            res_expected = combine(coeffs2, param2)
+        grad_expected = tape2.gradient(res_expected, [coeffs2, param2])
+
+        assert grad[0] is None
+        assert np.allclose(grad[1], grad_expected[1])
+
+    def test_not_supported_by_adjoint_differentiation(self):
+        """Test that error is raised when attempting the adjoint differentiation method."""
+        dev = qml.device("default.qubit", wires=2)
+
+        coeffs = pnp.array([-0.05, 0.17], requires_grad=True)
+        param = pnp.array(1.7, requires_grad=True)
+
+        @qml.qnode(dev, diff_method="adjoint")
+        def circuit(coeffs, param):
+            qml.RX(param, wires=0)
+            qml.RY(param, wires=0)
+            return qml.expval(
+                qml.Hamiltonian(
+                    coeffs,
+                    [qml.PauliX(0), qml.PauliZ(0)],
+                )
+            )
+
+        grad_fn = qml.grad(circuit)
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="Adjoint differentiation method does not support Hamiltonian observables",
+        ):
+            grad_fn(coeffs, param)
+
+    def test_not_supported_by_reverse_differentiation(self):
+        """Test that error is raised when attempting the reverse differentiation method."""
+        dev = qml.device("default.qubit", wires=2)
+
+        coeffs = pnp.array([-0.05, 0.17], requires_grad=True)
+        param = pnp.array(1.7, requires_grad=True)
+
+        @qml.qnode(dev, diff_method="reversible")
+        def circuit(coeffs, param):
+            qml.RX(param, wires=0)
+            qml.RY(param, wires=0)
+            return qml.expval(
+                qml.Hamiltonian(
+                    coeffs,
+                    [qml.PauliX(0), qml.PauliZ(0)],
+                )
+            )
+
+        grad_fn = qml.grad(circuit)
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="Reverse differentiation method does not support Hamiltonian observables",
+        ):
+            grad_fn(coeffs, param)
