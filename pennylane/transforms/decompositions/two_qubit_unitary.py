@@ -23,24 +23,8 @@ from .single_qubit_unitary import zyz_decomposition
 # This gate E is called the "magic basis". It can be used to convert between
 # SO(4) and SU(2) x SU(2). For A in SO(4), E A E^\dag is in SU(2) x SU(2).
 E = np.array([[1, 1j, 0, 0], [0, 0, 1j, 1], [0, 0, 1j, -1], [1, -1j, 0, 0]]) / np.sqrt(2)
-
 Et = qml.math.T(E)
 Edag = qml.math.conj(Et)
-
-odd_perms = [
-    [0, 1, 2, 3],
-    [0, 2, 3, 1],
-    [0, 3, 1, 2],
-    [1, 0, 3, 2],
-    [1, 2, 0, 3],
-    [1, 3, 2, 0],
-    [2, 1, 3, 0],
-    [2, 0, 1, 3],
-    [2, 3, 0, 1],
-    [3, 0, 2, 1],
-    [3, 2, 1, 0],
-    [3, 1, 0, 2],
-]
 
 
 def _perm_matrix_from_sequence(seq):
