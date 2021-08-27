@@ -37,7 +37,7 @@ def get_unitary_matrix(fn, wire_order):
 
         for op in tape.operations:
 
-            tmpmat = _get_op_matrix(op, wire_order, matrix, np.eye(2 ** n_wires))
+            tmpmat = _get_op_matrix(op, wire_order, np.eye(2 ** n_wires), np.eye(2 ** n_wires))
             print("tmpmat", tmpmat)
             print("MAT in main1 \n", matrix)
             matrix = np.dot(tmpmat, matrix)
@@ -58,7 +58,7 @@ def _get_op_matrix(op, wire_order, matrix, SWAP):
 
     # if all operator wires are adjacent
     # match [2] is the length of the matching sequence
-
+    print("OP", op)
     if match[2] == len(op.wires):
 
         # match[1] is the index of the first match in wire_order
@@ -68,8 +68,10 @@ def _get_op_matrix(op, wire_order, matrix, SWAP):
 
         # matrix representation of all operators so far
         matrix = np.dot(np.kron(I_left, np.kron(op.matrix, I_right)), matrix)
+
         # print("SWAP",SWAP,"\n")
         print("MAT after op before swap\n", matrix)
+
         # Swap back if wires were swapped
         matrix = SWAP @ matrix
         print("MAT after swap\n", matrix)
@@ -77,13 +79,11 @@ def _get_op_matrix(op, wire_order, matrix, SWAP):
 
     # if there are non-adjacent wires
     else:
-        print(match, match[2])
-
         wire_order_indices = wire_order.toarray().searchsorted(op.wires.toarray())
         for idx, position in enumerate(wire_order_indices[1:]):
             swaps = np.sort([position, wire_order_indices[idx] + 1])
 
-            print("swap qubit %d with qubit %d" % (swaps[0], swaps[1]))
+            print("swap qubit index %d with qubit index %d" % (swaps[0], swaps[1]))
             # print(swaps)
             I_left = np.eye(2 ** (swaps[0]))
             # print("LEFT",I_left)
@@ -107,11 +107,14 @@ def _get_op_matrix(op, wire_order, matrix, SWAP):
             # SWAP1 = swap(3, targets=[2,0]).full().real
             SWAP = np.matmul(SWAP, SWAP1)
             # SWAP =  np.kron(np.eye(2), qml.SWAP.matrix)
+
             matrix = SWAP @ matrix
+
             wire_order = wire_order.tolist()
             wire_order[swaps[0]], wire_order[swaps[1]] = wire_order[swaps[1]], wire_order[swaps[0]]
             print("order", wire_order)
             wire_order = Wires(wire_order)
+
             # print("mat in swap\n", matrix)
             print("SWAP in swap\n", SWAP)
 
