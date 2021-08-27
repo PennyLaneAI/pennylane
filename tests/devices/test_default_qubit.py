@@ -1127,6 +1127,7 @@ class TestDefaultQubitIntegration:
             "supports_inverse_operations": True,
             "supports_analytic_computation": True,
             "passthru_devices": {
+                "torch": "default.qubit.torch",
                 "tf": "default.qubit.tf",
                 "autograd": "default.qubit.autograd",
                 "jax": "default.qubit.jax",

@@ -502,7 +502,7 @@ class DefaultQubit(QubitDevice):
                     if isinstance(coeff, qml.numpy.tensor) and not coeff.requires_grad:
                         coeff = qml.math.toarray(coeff)
 
-                    res = res + (
+                    res = qml.math.convert_like(res, product) + (
                         qml.math.cast(qml.math.convert_like(coeff, product), "complex128") * product
                     )
             return qml.math.real(res)
@@ -536,6 +536,7 @@ class DefaultQubit(QubitDevice):
             returns_state=True,
             passthru_devices={
                 "tf": "default.qubit.tf",
+                "torch": "default.qubit.torch",
                 "autograd": "default.qubit.autograd",
                 "jax": "default.qubit.jax",
             },
@@ -609,7 +610,7 @@ class DefaultQubit(QubitDevice):
         if state.ndim != 1 or n_state_vector != 2 ** len(device_wires):
             raise ValueError("State vector must be of length 2**wires.")
 
-        if not np.allclose(np.linalg.norm(state, ord=2), 1.0, atol=tolerance):
+        if not qml.math.allclose(qml.math.linalg.norm(state, ord=2), 1.0, atol=tolerance):
             raise ValueError("Sum of amplitudes-squared does not equal one.")
 
         if len(device_wires) == self.num_wires and sorted(device_wires) == device_wires:

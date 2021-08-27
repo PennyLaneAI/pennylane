@@ -44,6 +44,7 @@ info = {
             'default.qubit = pennylane.devices:DefaultQubit',
             'default.gaussian = pennylane.devices:DefaultGaussian',
             'default.qubit.tf = pennylane.devices.default_qubit_tf:DefaultQubitTF',
+            'default.qubit.torch = pennylane.devices.default_qubit_torch:DefaultQubitTorch',
             'default.qubit.autograd = pennylane.devices.default_qubit_autograd:DefaultQubitAutograd',
             'default.qubit.jax = pennylane.devices.default_qubit_jax:DefaultQubitJax',
             'default.tensor = pennylane.beta.devices.default_tensor:DefaultTensor',
