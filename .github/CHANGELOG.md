@@ -7,9 +7,9 @@
   [(#1589)](https://github.com/PennyLaneAI/pennylane/pull/1589)
 
   Quantum gradient transforms are a specific case of `qml.batch_transform`.
-  All quantum gradient transforms accept a tape, and outputs
+  All quantum gradient transforms accept a tape, and output
   a batch of tapes to be independently executed on a quantum device, alongside
-  a post-processing function that returns the result.
+  a post-processing function that processes the tape results into the gradient.
 
   Furthermore, a smart default expansion function is provided, which automatically expands tape
   operations which are not differentiable prior to applying the quantum gradient.
@@ -46,6 +46,10 @@
   >>> qml.grad(qml.gradients.param_shift(circuit))(0.5)
   tensor(-0.87758256, requires_grad=True)
   ```
+
+* A new pytorch device, `qml.device('default.qubit.torch', wires=wires)`, supports
+  backpropogation with the torch interface.
+  [(#1225)](https://github.com/PennyLaneAI/pennylane/pull/1360)
 
 * The ability to define *batch* transforms has been added via the new
   `@qml.batch_transform` decorator.
@@ -295,9 +299,18 @@
 
 <h3>Improvements</h3>
 
+* Hamiltonians are now natively supported on the `default.qubit` device if `shots=None`. 
+  This makes VQE workflows a lot faster in some cases.
+  [(#1551)](https://github.com/PennyLaneAI/pennylane/pull/1551)
+
+* A gradient recipe for Hamiltonian coefficients has been added. This makes it possible 
+  to compute parameter-shift gradients of these coefficients on devices that natively 
+  support Hamiltonians.
+  [(#1551)](https://github.com/PennyLaneAI/pennylane/pull/1551)
+
 * The device test suite has been expanded to cover more qubit operations and observables.
   [(#1510)](https://github.com/PennyLaneAI/pennylane/pull/1510)
-  
+
 * The `MultiControlledX` class now inherits from `Operation` instead of `ControlledQubitUnitary` which makes the `MultiControlledX` gate a non-parameterized gate.
   [(#1557)](https://github.com/PennyLaneAI/pennylane/pull/1557)
 
@@ -400,10 +413,9 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 This release contains contributions from (in alphabetical order):
 
-
-Vishnu Ajith, Akash Narayanan B, Thomas Bromley, Tanya Garg, Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Pratul Saini, Maria Schuld,
-Ingrid Strandberg, David Wierichs, Vincent Wong.
-
+Vishnu Ajith, Akash Narayanan B, Thomas Bromley, Tanya Garg, Josh Izaac, Prateek Jain, Christina Lee,
+Johannes Jakob Meyer, Esteban Payares, Pratul Saini, Maria Schuld, Arshpreet Singh, Ingrid Strandberg,
+Slimane Thabet, David Wierichs, Vincent Wong.
 
 # Release 0.17.0 (current release)
 
