@@ -39,7 +39,7 @@ odd_perms = [
     [2, 3, 0, 1],
     [3, 0, 2, 1],
     [3, 2, 1, 0],
-    [3, 1, 0, 2]
+    [3, 1, 0, 2],
 ]
 
 
@@ -50,7 +50,7 @@ def _perm_matrix_from_sequence(seq):
     simultaneous eigenvalues/vectors into the same order.
     """
     mat = qml.math.zeros((4, 4))
-    
+
     for row_idx in range(4):
         mat[row_idx, seq[row_idx]] = 1
 
@@ -78,7 +78,7 @@ def _convert_to_su4(U):
     if not qml.math.allclose(det, 1.0):
         exp_angle = -1j * math.cast_like(math.angle(det), 1j) / 4
         U = math.cast_like(U, exp_angle) * math.exp(exp_angle)
-        
+
     return U
 
 
@@ -100,7 +100,8 @@ def _select_rotation_angles(U):
     since :math:`EE^T = Y \otimes Y`.
     """
 
-    gammaU = qml.math.linalg.multi_dot([Edag, U, E, Et, qml.math.T(U), E, Et, E])
+    u = qml.math.linalg.multi_dot([Edag, U, E])
+    gammaU = qml.math.dot(u, qml.math.T(u))
     evs = qml.math.linalg.eigvals(gammaU)
     x, y, z = qml.math.angle(evs[0]), qml.math.angle(evs[1]), qml.math.angle(evs[2])
 
@@ -119,15 +120,6 @@ def _su2su2_to_tensor_products(U):
     This process has been described in detail in the Appendix of Coffey & Deiotte
     https://link.springer.com/article/10.1007/s11128-009-0156-3
     """
-
-    if not qml.math.isclose(qml.math.linalg.det(U), 1.0):
-        print(f"Original U = {U}\n")
-        #U = U * np.exp(1j * np.pi/4)
-        #U = qml.math.dot(U, qml.math.T(U))
-        #print(f"New U = {U}\n")
-        
-        #print(f"New determinant is {qml.math.linalg.det(U)}")
-        #print(f"Is it unitary {np.round(qml.math.dot(U, qml.math.T(qml.math.conj(U))), decimals=4)}\n")
 
     # First, write A = [[a1, a2], [-a2*, a1*]], which we can do for any SU(2) element.
     # Then, A \otimes B = [[a1 B, a2 B], [-a2*B, a1*B]] = [[C1, C2], [C3, C4]]
@@ -152,12 +144,12 @@ def _su2su2_to_tensor_products(U):
         a1 = C12[0, 0] / qml.math.conj(a2)
     else:
         a2 = qml.math.conj(C12[0, 0] / a1)
-    
+
     # Construct A
     A = qml.math.stack([[a1, a2], [-qml.math.conj(a2), qml.math.conj(a1)]])
 
     # Next, extract B. Can do from any of the C, just need to be careful in
-    # case one of the elements of A is 0. 
+    # case one of the elements of A is 0.
     if not qml.math.isclose(A[0, 0], 0.0, atol=1e-10):
         B = C1 / A[0, 0]
     else:
@@ -176,9 +168,6 @@ def _extract_su2su2_prefactors(U, V):
     guaranteed by how the eigenvalues of U were used to construct V.
     """
 
-    det_V = qml.math.linalg.det(V)
-    V = _convert_to_su4(V)
-
     # A lot of the work here happens in the magic basis. Essentially, we
     # don't look explicitly at U = G V H, but rather at
     #     E^\dagger U E = G E^\dagger V E H
@@ -191,200 +180,69 @@ def _extract_su2su2_prefactors(U, V):
     u = qml.math.linalg.multi_dot([Edag, U, E])
     v = qml.math.linalg.multi_dot([Edag, V, E])
 
-    print(f"Initial value of v = {v}")
-
-    print(f"det v = {qml.math.linalg.det(qml.math.conj(qml.math.T(v)))}")
-    
     uuT = qml.math.dot(u, qml.math.T(u))
     vvT = qml.math.dot(v, qml.math.T(v))
 
-    # First, we find a matrix p in SO(4) s.t. p^T u u^T p is diagonal.
+    # First, we find a matrix p (hopefully) in SO(4) s.t. p^T u u^T p is diagonal.
     ev_p, p = qml.math.linalg.eig(uuT)
-    p_diag = ev_p.copy()
 
-    # We also do this for v, i.e., find q in SO(4) s.t. q^T v v^T q is diagonal.
+    # We also do this for v, i.e., find q (hopefully) in SO(4) s.t. q^T v v^T q is diagonal.
     ev_q, q = qml.math.linalg.eig(vvT)
-    q_diag = ev_q.copy()
 
-    print(f"p in O(4): {qml.math.allclose(qml.math.dot(p, qml.math.T(p)), np.eye(4))}")
-    print(f"p det = {qml.math.linalg.det(p)}\n")
-    print(f"q in O(4): {qml.math.allclose(qml.math.dot(q, qml.math.T(q)), np.eye(4))}")
-    print(f"q det = {qml.math.linalg.det(q)}\n")
-    
-    p_in_so4 = qml.math.isclose(qml.math.linalg.det(p), 1.0)
-    q_in_so4 = qml.math.isclose(qml.math.linalg.det(q), 1.0)
+    # If determinants of p is not 1, it is in O(4) but not SO(4), and has
+    # determinant -1. We can transform it to SO(4) by simply negating one
+    # of the columns.
+    if not qml.math.isclose(qml.math.linalg.det(p), 1.0):
+        p[:, -1] = -p[:, -1]
 
+    # Next, we are going to reorder the columns of q so that the order of the
+    # eigenvalues matches those of p.
     p_product = qml.math.linalg.multi_dot([qml.math.T(p), uuT, p])
     q_product = qml.math.linalg.multi_dot([qml.math.T(q), vvT, q])
-    
-    print("Initial diagonalization results")
-    print(f"pT uuT p = {np.round(p_product, decimals=4)}\n")
-    print(f"qT vvT q = {np.round(q_product, decimals=4)}\n")
-    
 
-    # If determinants are not 1, need to negate one of the columns. This ensures
-    # things are in SO(4), and simply negates one of the eigenvalues.
-    if not p_in_so4:
-       p[:, -1] = -p[:, -1]
+    p_diag = qml.math.diag(p_product)
+    q_diag = qml.math.diag(q_product)
 
-    if not q_in_so4:
-       q[:, -1] = -q[:, -1]
-
-    print(f"p in O(4): {qml.math.allclose(qml.math.dot(p, qml.math.T(p)), np.eye(4))}")
-    print(f"p det = {qml.math.linalg.det(p)}\n")
-    print(f"q in O(4): {qml.math.allclose(qml.math.dot(q, qml.math.T(q)), np.eye(4))}")
-    print(f"q det = {qml.math.linalg.det(q)}\n")
-
-    p_product = qml.math.linalg.multi_dot([qml.math.T(p), uuT, p])
-    q_product = qml.math.linalg.multi_dot([qml.math.T(q), vvT, q])
-    
-    print("Final diagonalization results")
-    print(f"pT uuT p = {np.round(p_product, decimals=4)}\n")
-    print(f"qT vvT q = {np.round(q_product, decimals=4)}\n")
-
-
-    # Reorder the columns of p so that the eigenvalues are in the same order
-    # as those of q.
-
-    print(p_diag)
-    print(q_diag)
-
-    print(f"\nInitial q = \n{np.round(q, decimals=4)}\n")
-
-    column_phases = [1, 1, 1, 1]
     new_q_order = []
 
     for idx, eigval in enumerate(p_diag):
-        for phase in [1, -1, 1j, -1j]:
-            are_close = [qml.math.isclose(x, phase * eigval) for x in q_diag]
+        are_close = [qml.math.isclose(x, eigval) for x in q_diag]
 
-            if any(are_close):
-                where = qml.math.argmax(are_close)
-                column_phases[where] = phase
-                new_q_order.append(where)
-                break
+        if any(are_close):
+            new_q_order.append(qml.math.argmax(are_close))
 
-    print("\nAfter re-ordering")
-    print(p_diag)
-    print(q_diag[[new_q_order]] / column_phases)
-
-    # Given the new order, get the permutation matrices needed to reshuffle the
-    # columns of p and q.
+    # Get the permutation matrix needed to reshuffle the columns
     q_perm = _perm_matrix_from_sequence(new_q_order)
-
-    print(q_perm)
-    print()
-    #  After the shuffling below, we will have that p^T u u^T p = q^T v v^T q.
     q = qml.math.linalg.multi_dot([q, qml.math.T(q_perm)])
 
-    p_product = qml.math.linalg.multi_dot([qml.math.T(p), uuT, p])
-    q_product = qml.math.linalg.multi_dot([qml.math.T(q), vvT, q])
-
-    # p_product and q_product should be the same, potentially up to a phase
-    # if there is a phase, let's absorb it into the matrix v.
-    phase = q_product[0, 0] / p_product[0, 0]
-
-    if not qml.math.isclose(phase, 1.0):
-        print(f"Extracted an extra phase of {phase}")
-        v = v / qml.math.sqrt(phase)
-        vvT = vvT / phase
-        print(f"New value of v is {v}")
-        
-    p_product = qml.math.linalg.multi_dot([qml.math.T(p), uuT, p])
-    q_product = qml.math.linalg.multi_dot([qml.math.T(q), vvT, q])
-
-    print("After phase extra, diagonal operations are now")
-    print(f"pT uuT p = {np.round(p_product, decimals=4)}\n")
-    print(f"qT vvT q = {np.round(q_product, decimals=4)}\n")     
-        
-    print(f"Final p = \n{np.round(p, decimals=4)}\n")
-    print(f"p in O(4): {qml.math.allclose(qml.math.dot(p, qml.math.T(p)), np.eye(4))}")
-    print(f"p det = {qml.math.linalg.det(p)}\n")
-    
-    print(f"Final q = \n{np.round(q, decimals=4)}\n")
-    print(f"q in O(4): {qml.math.allclose(qml.math.dot(q, qml.math.T(q)), np.eye(4))}")
-    print(f"q det = {qml.math.linalg.det(q)}\n")
-
-    
-    p_in_so4 = qml.math.isclose(qml.math.linalg.det(p), 1.0)
+    # Depending on the sign of the permutation, it may be that q was in O(4)
+    # but not SO(4). Again we can fix this by simply negating a column.
     q_in_so4 = qml.math.isclose(qml.math.linalg.det(q), 1.0)
-
-    
-    if not p_in_so4:
-        print("Adjusting p to be in SO(4)")
-        p[:, -1] = -p[:, -1]
- 
     if not q_in_so4:
-        print("Adjusting q to be in SO(4)")
         q[:, -1] = -q[:, -1]
 
-    print(f"Final p = \n{np.round(p, decimals=4)}\n")
-    print(f"p in O(4): {qml.math.allclose(qml.math.dot(p, qml.math.T(p)), np.eye(4))}")
-    print(f"p det = {qml.math.linalg.det(p)}\n")
-    
-    print(f"Final q = \n{np.round(q, decimals=4)}\n")
-    print(f"q in O(4): {qml.math.allclose(qml.math.dot(q, qml.math.T(q)), np.eye(4))}")
-    print(f"q det = {qml.math.linalg.det(q)}\n")
-
-    p_product = qml.math.linalg.multi_dot([qml.math.T(p), uuT, p])
-    q_product = qml.math.linalg.multi_dot([qml.math.T(q), vvT, q])
-
-    print("After making things SO(4) again,")
-    print(f"pT uuT p = {np.round(p_product, decimals=4)}\n")
-    print(f"qT vvT q = {np.round(q_product, decimals=4)}\n")     
-    
-    # This means there exist p, q in SO(4) such that p^T u u^T p = q^T v v^T q.
+    # Now, we should have p, q in SO(4) such that p^T u u^T p = q^T v v^T q.
     # Then (v^\dag q p^T u)(v^\dag q p^T U)^T = I.
     # So we can set G = p q^T, H = v^\dag q p^T u to obtain G v H = u.
     G = qml.math.dot(p, qml.math.T(q))
-
-    print(f"det v = {qml.math.linalg.det(qml.math.conj(qml.math.T(v)))}")
-    print(f"det q = {qml.math.linalg.det(q)}")
-    print(f"det p = {qml.math.linalg.det(p)}")
-    print(f"det u = {qml.math.linalg.det(u)}")
-    
-    H = qml.math.sqrt(phase) * qml.math.linalg.multi_dot([qml.math.conj(qml.math.T(v)), q, qml.math.T(p), u])
-
-    #exp_angle = -1j * math.cast_like(math.angle(det_V), 1j) / 4
-    #H = math.cast_like(H, exp_angle) / math.exp(exp_angle)
-    
-    # Remove global phase to ensure determinant 1 (SO(4))
-    #GGT = qml.math.dot(G, qml.math.T(G))
-    #G = G * qml.math.sqrt(GGT[0, 0])
-
-    HHT = qml.math.dot(H, qml.math.T(H))
-    #H = H / HHT[0, 0]
-    
-    #print(f"GGT = {np.round(qml.math.dot(G, qml.math.T(G)), decimals=4)}\n")
-    print(f"HHT = {np.round(HHT, decimals=4)}\n")
-    print(f"G in O(4): {qml.math.allclose(qml.math.dot(G, qml.math.T(G)), np.eye(4))}")
-    print(f"G det = {qml.math.linalg.det(G)}\n")
-    print(f"H in O(4): {qml.math.allclose(qml.math.dot(H, qml.math.T(H)), np.eye(4))}")
-    print(f"H det = {qml.math.linalg.det(H)}\n")
+    H = qml.math.linalg.multi_dot([qml.math.conj(qml.math.T(v)), q, qml.math.T(p), u])
 
     # These are still in SO(4) though - we want to convert things into SU(2) x SU(2)
     # so use the entangler. Since u = E^\dagger U E and v = E^\dagger V E where U, V
-    # are the target matrices, we can reshuffle as in the
+    # are the target matrices, we can reshuffle as in the docstring above,
     #     U = (E G E^\dagger) V (E H E^\dagger) = (A \otimes B) V (C \otimes D)
     # where A, B, C, D are in SU(2) x SU(2).
     AB = qml.math.linalg.multi_dot([E, G, Edag])
     CD = qml.math.linalg.multi_dot([E, H, Edag])
-    
-    print(f"Original U = {U}\n")
-    print(f"AB V CD = {qml.math.linalg.multi_dot([AB, V, CD])}\n")
 
-    print(f"AB = {np.round(AB, decimals=4)}\n")
-    print(f"CD = {np.round(CD, decimals=4)}\n")
-    
+    new_U = _convert_to_su4(qml.math.linalg.multi_dot([AB, V, CD]))
+
+    assert qml.math.allclose(U, new_U)
+
     # Now, we just need to extract the constituent tensor products.
     A, B = _su2su2_to_tensor_products(AB)
     C, D = _su2su2_to_tensor_products(CD)
 
-    #print(f"A in the decomp func = {A}\n")
-    #print(f"B in the decomp func = {B}\n")
-    #print(f"C in the decomp func = {C}\n")
-    #print(f"D in the decomp func = {D}\n")
-    
     # Return the four single-qubit operations.
     return A, B, C, D
 
@@ -421,7 +279,6 @@ def two_qubit_decomposition(U, wires):
     # Next, we can choose the angles of the RZ / RY rotations.
     # See documentation within the function used below.
     alpha, beta, delta = _select_rotation_angles(U)
-    print(f"Angles are {alpha}, {beta}, {delta}\n")
 
     # This gives us the full interior portion of the decomposition
     interior_decomp = [
@@ -441,8 +298,18 @@ def two_qubit_decomposition(U, wires):
     RYb = qml.RY(beta, wires=0).matrix
     RYa = qml.RY(alpha, wires=0).matrix
 
+    # This matrix has determinant -1, so we add a SWAP which serves only to
+    # change the order of the two-qubit tensor product on the "outside", while
+    # fixing the determinant so that V is in SU4.
     V = qml.math.linalg.multi_dot(
-        [CNOT10, np.kron(np.eye(2), RYa), CNOT01, np.kron(RZd, RYb), CNOT10]
+        [
+            qml.SWAP(wires=[0, 1]).matrix,
+            CNOT10,
+            np.kron(np.eye(2), RYa),
+            CNOT01,
+            np.kron(RZd, RYb),
+            CNOT10,
+        ]
     )
 
     # Now we need to find the four SU(2) operations A, B, C, D
@@ -454,9 +321,5 @@ def two_qubit_decomposition(U, wires):
     C_ops = zyz_decomposition(C, wires[0])
     D_ops = zyz_decomposition(D, wires[1])
 
-    right_part = qml.math.kron(C_ops[0].matrix, D_ops[0].matrix)
-    left_part = qml.math.kron(A_ops[0].matrix, B_ops[0].matrix)
-
-    recovered_U = qml.math.linalg.multi_dot([left_part, V, right_part])
     # Return the full decomposition
     return C_ops + D_ops + interior_decomp + A_ops + B_ops
