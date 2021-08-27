@@ -497,7 +497,7 @@ class DefaultQubit(QubitDevice):
                         * qml.math.gather(self.state, coo.col)
                     )
                     c = qml.math.cast(qml.math.convert_like(coeff, product), "complex128")
-                    res = res + qml.math.sum(c * product)
+                    res = qml.math.convert_like(res, product) + qml.math.sum(c * product)
 
             else:
                 # Coefficients and the state are not trainable, we can be more
