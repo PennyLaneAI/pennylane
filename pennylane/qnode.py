@@ -1180,7 +1180,7 @@ def qnode(
             shift=shift,
             adjoint_cache=adjoint_cache,
             argnum=argnum,
-            kwargs=kwargs,
+            **kwargs,
         )
         return update_wrapper(qn, func)
 
