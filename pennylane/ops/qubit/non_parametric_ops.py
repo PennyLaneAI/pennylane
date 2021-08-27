@@ -629,7 +629,7 @@ class ISWAP(Operation):
     par_domain = None
     matrix = np.array([[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]])
     eigvals = np.array([1j, -1j, 1, 1])
-    
+
     @classmethod
     def _matrix(cls, *params):
         return cls.matrix
