@@ -104,7 +104,6 @@ class Molecule:
             active_electrons=active_electrons,
             active_orbitals=active_orbitals,
         )
-        self.wires = [i for i in range(len(self.active * 2))]
 
 
 def generate_basis_set(l, alpha, coeff, r):
