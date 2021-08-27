@@ -2,6 +2,11 @@
 
 <h3>New features since last release</h3>
 
+
+* A new pytorch device, `qml.device('default.qubit.torch', wires=wires)`, supports
+  backpropogation with the torch interface.
+  [(#1225)](https://github.com/PennyLaneAI/pennylane/pull/1360)
+
 * The ability to define *batch* transforms has been added via the new
   `@qml.batch_transform` decorator.
   [(#1493)](https://github.com/PennyLaneAI/pennylane/pull/1493)
@@ -364,10 +369,9 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 This release contains contributions from (in alphabetical order):
 
-
-Vishnu Ajith, Akash Narayanan B, Thomas Bromley, Tanya Garg, Josh Izaac, Prateek Jain, Johannes Jakob Meyer, Pratul Saini, Maria Schuld,
-Ingrid Strandberg, David Wierichs, Vincent Wong.
-
+Vishnu Ajith, Akash Narayanan B, Thomas Bromley, Tanya Garg, Josh Izaac, Prateek Jain, Christina Lee,
+Johannes Jakob Meyer, Esteban Payares, Pratul Saini, Maria Schuld, Arshpreet Singh, Ingrid Strandberg,
+Slimane Thabet, David Wierichs, Vincent Wong.
 
 # Release 0.17.0 (current release)
 

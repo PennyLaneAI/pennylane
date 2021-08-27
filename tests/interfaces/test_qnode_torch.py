@@ -213,7 +213,7 @@ class TestQNode:
 
         dev = qml.device(dev_name, wires=2)
 
-        @qnode(dev)
+        @qnode(dev, interface="torch", diff_method=diff_method)
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
