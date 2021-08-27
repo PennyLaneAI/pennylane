@@ -490,10 +490,11 @@ class DefaultQubit(QubitDevice):
 
                     # extract a scipy.sparse.coo_matrix representation of this Pauli word
                     coo = qml.operation.Tensor(op).sparse_matrix(wires=self.wires)
+                    Hmat = qml.math.cast(qml.math.convert_like(coo.data, self.state), "complex128")
 
                     product = (
-                        qml.math.gather(self._conj(self.state), coo.row)
-                        * coo.data
+                        qml.math.gather(qml.math.conj(self.state), coo.row)
+                        * Hmat
                         * qml.math.gather(self.state, coo.col)
                     )
                     c = qml.math.cast(qml.math.convert_like(coeff, product), "complex128")
@@ -509,7 +510,7 @@ class DefaultQubit(QubitDevice):
                     Hmat = observable.matrix
 
                 res = coo_matrix.dot(
-                    coo_matrix(self._conj(self.state)),
+                    coo_matrix(qml.math.conj(self.state)),
                     coo_matrix.dot(Hmat, coo_matrix(self.state.reshape(len(self.state), 1))),
                 ).toarray()[0]
 
@@ -544,6 +545,7 @@ class DefaultQubit(QubitDevice):
             returns_state=True,
             passthru_devices={
                 "tf": "default.qubit.tf",
+                "torch": "default.qubit.torch",
                 "autograd": "default.qubit.autograd",
                 "jax": "default.qubit.jax",
             },
@@ -617,7 +619,7 @@ class DefaultQubit(QubitDevice):
         if state.ndim != 1 or n_state_vector != 2 ** len(device_wires):
             raise ValueError("State vector must be of length 2**wires.")
 
-        if not np.allclose(np.linalg.norm(state, ord=2), 1.0, atol=tolerance):
+        if not qml.math.allclose(qml.math.linalg.norm(state, ord=2), 1.0, atol=tolerance):
             raise ValueError("Sum of amplitudes-squared does not equal one.")
 
         if len(device_wires) == self.num_wires and sorted(device_wires) == device_wires:
