@@ -488,17 +488,15 @@ class DefaultQubit(QubitDevice):
 
             # compute  <psi| H |psi> via sum_i coeff_i * <psi| PauliWord |psi> using a sparse
             # representation of the Pauliword
-            res = qml.math.cast(qml.math.convert_like(0.0, observable.coeffs), dtype=complex)
-            # note: it is important that we use the Hamiltonian's data and not the coeffs attribute
+            res = qml.math.cast(qml.math.convert_like(0.0, observable.data), dtype=complex)
 
+            # Note: it is important that we use the Hamiltonian's data and not the coeffs attribute.
+            # This is because the .data attribute may be 'unwrapped' as required by the interfaces,
+            # whereas the .coeff attribute will always be the same input dtype that the user provided.
             for op, coeff in zip(observable.ops, observable.data):
+
                 # extract a scipy.sparse.coo_matrix representation of this Pauli word
                 coo = qml.operation.Tensor(op).sparse_matrix(wires=self.wires)
-
-                # todo: remove this hack that avoids errors when attempting to multiply
-                # a nontrainable qml.tensor to a trainable Arraybox
-                if isinstance(coeff, qml.numpy.tensor) and not coeff.requires_grad:
-                    coeff = qml.math.toarray(coeff)
 
                 product = (
                     qml.math.gather(self._conj(self.state), coo.row)
