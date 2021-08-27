@@ -646,6 +646,7 @@ class TestNewVQE:
             ansatz(params, wires=range(3))
             return qml.expval(H)
 
+        print(H)
         res = circuit()
 
         res_expected = []

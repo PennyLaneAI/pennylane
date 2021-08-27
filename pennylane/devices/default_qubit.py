@@ -504,7 +504,7 @@ class DefaultQubit(QubitDevice):
                 # efficient in how we compute the Hamiltonian sparse matrix.
 
                 if observable.name == "Hamiltonian":
-                    Hmat = qml.utils.sparse_hamiltonian(observable)
+                    Hmat = qml.utils.sparse_hamiltonian(observable, wires=self.wires)
                 elif observable.name == "SparseHamiltonian":
                     Hmat = observable.matrix
 
