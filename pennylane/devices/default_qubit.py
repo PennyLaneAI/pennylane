@@ -502,7 +502,7 @@ class DefaultQubit(QubitDevice):
                     if isinstance(coeff, qml.numpy.tensor) and not coeff.requires_grad:
                         coeff = qml.math.toarray(coeff)
 
-                    res = res + (
+                    res = qml.math.convert_like(res, product) + (
                         qml.math.cast(qml.math.convert_like(coeff, product), "complex128") * product
                     )
             return qml.math.real(res)
