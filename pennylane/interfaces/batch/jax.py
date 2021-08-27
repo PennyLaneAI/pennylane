@@ -62,6 +62,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         gradient_fn=gradient_fn,
         gradient_kwargs=gradient_kwargs,
         _n=_n,
+        max_diff=max_diff,
     )
 
 
@@ -73,6 +74,7 @@ def _execute(
     gradient_fn=None,
     gradient_kwargs=None,
     _n=1,
+    max_diff=2,
 ):  # pylint: disable=dangerous-default-value,unused-argument
     jacs = None
 
@@ -97,18 +99,43 @@ def _execute(
 
     def wrapped_exec_bwd(params, g):
 
-        with qml.tape.Unwrap(*tapes):
-            vjp_tapes, processing_fn = qml.gradients.batch_vjp(
-                tapes,
-                g,
-                gradient_fn,
-                reduction="append",
-                gradient_kwargs=gradient_kwargs,
-            )
-        partial_res = execute_fn(vjp_tapes)[0]
-        vjps = [[jnp.asarray(s) for s in r] for r in processing_fn(partial_res)]
+        # Generate and execute the required gradient tapes
+        if _n == max_diff:
+            with qml.tape.Unwrap(*tapes):
+                vjp_tapes, processing_fn = qml.gradients.batch_vjp(
+                    tapes,
+                    g,
+                    gradient_fn,
+                    reduction="append",
+                    gradient_kwargs=gradient_kwargs,
+                )
+            partial_res = execute_fn(vjp_tapes)[0]
+            vjps = [[jnp.asarray(s) for s in r] for r in processing_fn(partial_res)]
+            vjps = (tuple(vjps),)
 
-        return (tuple(vjps),)
+        else:
+            with qml.tape.Unwrap(*tapes):
+                vjp_tapes, processing_fn = qml.gradients.batch_vjp(
+                    tapes, g, gradient_fn, reduction="append", gradient_kwargs=gradient_kwargs
+                )
+
+            # This is where the magic happens. Note that we call ``execute``.
+            # This recursion, coupled with the fact that the gradient transforms
+            # are differentiable, allows for arbitrary order differentiation.
+            vjps = processing_fn(
+                execute(
+                    vjp_tapes,
+                    device,
+                    execute_fn,
+                    gradient_fn,
+                    gradient_kwargs,
+                    _n=_n + 1,
+                    max_diff=max_diff,
+                )
+            )
+            vjps = [[jnp.asarray(s) for s in r] for r in vjps]
+            vjps = (tuple(vjps),)
+        return vjps
 
     wrapped_exec.defvjp(wrapped_exec_fwd, wrapped_exec_bwd)
     return wrapped_exec(params)
