@@ -15,7 +15,7 @@
 This module contains functions and classes to create a Molecule object. This object stores all
 the necessary information to perform a Hartree-Fock calculation for a given molecule.
 """
-# pylint: disable=too-few-public-methods, too-many-arguments
+# pylint: disable=too-few-public-methods, too-many-arguments, too-many-instance-attributes
 import numpy as np
 import pennylane as qml
 from pennylane import numpy as pnp
@@ -84,8 +84,7 @@ class Molecule:
             coeff = [pnp.array(i[2], requires_grad=False) for i in self.basis_data]
 
         if r is None:
-            r_atom = [i for i in self.coordinates]
-            r = sum([[r_atom[i]] * self.n_basis[i] for i in range(len(self.n_basis))], [])
+            r = sum([[self.coordinates[i]] * self.n_basis[i] for i in range(len(self.n_basis))], [])
 
         self.l = l
         self.alpha = alpha
