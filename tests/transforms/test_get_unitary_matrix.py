@@ -85,7 +85,7 @@ def test_get_unitary_matrix_CNOT(target_wire):
 
 
 # TEST CRX with non-adjacent wire
-def test_controlled_2qubit_ops():
+def test_get_unitary_matrix_CRX():
 
     testangle = np.pi / 4
 
@@ -114,3 +114,31 @@ def test_controlled_2qubit_ops():
 
     assert np.allclose(obtained_state1, expected_state1)
     assert np.allclose(obtained_state0, expected_state0)
+
+
+# Test Toffoli
+def test_get_unitary_matrix_Toffoli():
+
+    wires = [0, 1, 2, 3, 4]
+
+    def testcircuit():
+        qml.Toffoli(wires=[0, 4, 1])
+
+    # test applying to state
+    state0 = [1, 0]
+    state1 = [0, 1]
+
+    teststate1 = reduce(np.kron, [state1, state1, state1, state1, state1])
+    teststate2 = reduce(np.kron, [state0, state1, state1, state1, state1])
+
+    expected_state1 = reduce(np.kron, [state1, state0, state1, state1, state1])
+    expected_state2 = teststate2
+
+    get_matrix = get_unitary_matrix(testcircuit, wires)
+    matrix = get_matrix()
+
+    obtained_state1 = matrix @ teststate1
+    obtained_state2 = matrix @ teststate2
+
+    assert np.allclose(obtained_state1, expected_state1)
+    assert np.allclose(obtained_state2, expected_state2)
