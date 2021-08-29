@@ -129,7 +129,7 @@ def test_get_unitary_matrix_Toffoli():
     state1 = [0, 1]
 
     teststate1 = reduce(np.kron, [state1, state1, state1, state1, state1])
-    teststate2 = reduce(np.kron, [state0, state1, state1, state1, state1])
+    teststate2 = reduce(np.kron, [state0, state0, state1, state1, state0])
 
     expected_state1 = reduce(np.kron, [state1, state0, state1, state1, state1])
     expected_state2 = teststate2
