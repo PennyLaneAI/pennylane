@@ -236,6 +236,15 @@ def execute(
         # cache=True: create a LRUCache object
         cache = LRUCache(maxsize=cachesize, getsizeof=lambda x: qml.math.shape(x)[0])
 
+    if gradient_fn is None:
+        with qml.tape.Unwrap(*tapes):
+            res = cache_execute(device.batch_execute, cache, return_tuple=False)(tapes)
+
+        return res
+
+    if gradient_fn == "backprop":
+        return cache_execute(device.batch_execute, cache, return_tuple=False)(tapes)
+
     # the default execution function is device.batch_execute
     execute_fn = cache_execute(device.batch_execute, cache)
 
@@ -265,6 +274,8 @@ def execute(
 
     if interface == "autograd":
         from .autograd import execute as _execute
+    elif interface in ("tf", "tensorflow"):
+        from .tensorflow import execute as _execute
     elif interface in ("torch", "pytorch"):
         from .torch import execute as _execute
     elif interface == "jax":
