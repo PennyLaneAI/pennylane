@@ -263,19 +263,30 @@ class TestGradientTransformIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
+        # set d as non-differentiable
+        d = np.array(0.56, requires_grad=False)
+        w = np.array([0.543, -0.654], requires_grad=True)
+        x, y = w
+
+        res = qml.gradients.param_shift(circuit)(d, w)
+        classical_jac = spy.spy_return(d, w)
+        assert np.allclose(classical_jac, np.array([[0, 2 * w[0], 0], [0, 0, 1]]).T)
+
+        expected = np.array([-2 * x * np.cos(np.cos(d)) * np.sin(x ** 2), 0])
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # set d as differentiable
         d = np.array(0.56, requires_grad=True)
         w = np.array([0.543, -0.654], requires_grad=True)
-        res = qml.gradients.param_shift(circuit)(d, w)
 
+        res = qml.gradients.param_shift(circuit)(d, w)
         classical_jac = spy.spy_return(d, w)
         assert isinstance(classical_jac, tuple)
         assert np.allclose(classical_jac[0], [-np.sin(d), 0, 0])
         assert np.allclose(classical_jac[1], np.array([[0, 2 * w[0], 0], [0, 0, 1]]).T)
 
-        x, y = w
         expected_dd = np.cos(x ** 2) * np.sin(d) * np.sin(np.cos(d))
         expected_dw = np.array([-2 * x * np.cos(np.cos(d)) * np.sin(x ** 2), 0])
-
         assert np.allclose(res[0], expected_dd, atol=tol, rtol=0)
         assert np.allclose(res[1], expected_dw, atol=tol, rtol=0)
 
@@ -314,27 +325,79 @@ class TestGradientTransformIntegration:
         expected = qml.jacobian(circuit)(w)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_differentiation(self, tol):
-        """Test that a gradient transform remains differentiable"""
+
+class TestInterfaceIntegration:
+    """Test that the gradient transforms are differentiable
+    using each interface"""
+
+    def test_autograd(self, tol):
+        """Test that a gradient transform remains differentiable
+        with autograd"""
         dev = qml.device("default.qubit", wires=2)
 
         @qml.gradients.param_shift
         @qml.qnode(dev)
         def circuit(x):
-            qml.RY(x, wires=[1])
+            qml.RY(x ** 2, wires=[1])
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliX(1))
 
         x = np.array(-0.654, requires_grad=True)
 
         res = circuit(x)
-        expected = -2 * np.cos(x) * np.sin(x)
+        expected = -4 * x * np.cos(x ** 2) * np.sin(x ** 2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         res = qml.grad(circuit)(x)
-        expected = 2 * np.sin(x) ** 2 - 2 * np.cos(x) ** 2
+        expected = -2 * (4 * x ** 2 * np.cos(2 * x ** 2) + np.sin(2 * x ** 2))
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_hamiltonian_differentiation(self):
-        """Test that a Hamiltonian with trainable
-        coefficients is correctly differentiated"""
+    def test_tf(self, tol):
+        """Test that a gradient transform remains differentiable
+        with TF"""
+        tf = pytest.importorskip("tensorflow")
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.gradients.param_shift
+        @qml.qnode(dev, interface="tf", diff_method="parameter-shift")
+        def circuit(x):
+            qml.RY(x ** 2, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.var(qml.PauliX(1))
+
+        x_ = -0.654
+        x = tf.Variable(x_, dtype=tf.float64)
+
+        with tf.GradientTape() as tape:
+            res = circuit(x)
+
+        expected = -4 * x_ * np.cos(x_ ** 2) * np.sin(x_ ** 2)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        res = tape.gradient(res, x)
+        expected = -2 * (4 * x_ ** 2 * np.cos(2 * x_ ** 2) + np.sin(2 * x_ ** 2))
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_torch(self, tol):
+        """Test that a gradient transform remains differentiable
+        with PyTorch"""
+        torch = pytest.importorskip("torch")
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.gradients.param_shift
+        @qml.qnode(dev, interface="torch")
+        def circuit(x):
+            qml.RY(x, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.var(qml.PauliX(1))
+
+        x_ = -0.654
+        x = torch.tensor(x_, dtype=torch.float64, requires_grad=True)
+        res = circuit(x)[0]
+
+        expected = -2 * np.cos(x_) * np.sin(x_)
+        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+
+        res.backward()
+        expected = -2 * np.cos(2 * x_)
+        assert np.allclose(x.grad.detach(), expected, atol=tol, rtol=0)
