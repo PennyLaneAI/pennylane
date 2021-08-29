@@ -93,7 +93,6 @@ class DefaultMixed(QubitDevice):
         "PhaseFlip",
         "ResetError",
         "QubitChannel",
-        "QFT",
         "SingleExcitation",
         "SingleExcitationPlus",
         "SingleExcitationMinus",
