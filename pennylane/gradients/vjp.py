@@ -41,7 +41,12 @@ def compute_vjp(dy, jac):
     if not isinstance(dy_row, np.ndarray):
         jac = math.convert_like(jac, dy_row)
 
-    jac = math.reshape(jac, [dy_row.shape[0], -1])
+    try:
+        jac = math.reshape(jac, [dy_row.shape[0], -1])
+    except:
+        print('in')
+        dy_row = dy_row[0].reshape(1)
+        jac = math.reshape(jac, [1, 1])
 
     if math.allclose(dy, 0):
         # If the dy vector is zero, then the
@@ -154,6 +159,9 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
         # The tape has no trainable parameters; the VJP
         # is simply none.
         return [], lambda _: None
+
+    if hasattr(dy, "val"):
+        dy = dy.val
 
     if math.allclose(dy, 0):
         # If the dy vector is zero, then the

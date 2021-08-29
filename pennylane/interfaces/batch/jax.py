@@ -114,10 +114,9 @@ def _execute(
             vjps = (tuple(vjps),)
 
         else:
-            with qml.tape.Unwrap(*tapes):
-                vjp_tapes, processing_fn = qml.gradients.batch_vjp(
-                    tapes, g, gradient_fn, reduction="append", gradient_kwargs=gradient_kwargs
-                )
+            vjp_tapes, processing_fn = qml.gradients.batch_vjp(
+                tapes, g, gradient_fn, reduction="append", gradient_kwargs=gradient_kwargs
+            )
 
             # This is where the magic happens. Note that we call ``execute``.
             # This recursion, coupled with the fact that the gradient transforms
@@ -133,7 +132,7 @@ def _execute(
                     max_diff=max_diff,
                 )
             )
-            vjps = [[jnp.asarray(s) for s in r] for r in vjps]
+            vjps = [[jnp.asarray(s).primal for s in r] for r in vjps]
             vjps = (tuple(vjps),)
         return vjps
 

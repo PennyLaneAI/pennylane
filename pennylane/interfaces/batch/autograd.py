@@ -103,6 +103,7 @@ def _execute(
     if the nth-order derivative is requested. Do not set this argument unless you
     understand the consequences!
     """
+    print("Parameters: ", parameters)
     with qml.tape.Unwrap(*tapes):
         res, jacs = execute_fn(tapes, **gradient_kwargs)
 
@@ -113,6 +114,7 @@ def _execute(
             # For backwards compatibility, we flatten ragged tape outputs
             res[i] = np.hstack(r)
 
+    print(res, jacs)
     return res, jacs
 
 
@@ -191,6 +193,7 @@ def vjp(
                         )
 
                     vjps = processing_fn(execute_fn(vjp_tapes)[0])
+                    print(vjps)
 
                 else:
                     vjp_tapes, processing_fn = qml.gradients.batch_vjp(
