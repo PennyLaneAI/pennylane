@@ -180,7 +180,12 @@ def jacobian(func, argnum=None):
         if len(argnum) == 1:
             return _jacobian(func, argnum[0])(*args, **kwargs)
 
-        return np.stack([_jacobian(func, arg)(*args, **kwargs) for arg in argnum]).T
+        jacobians = [_jacobian(func, arg)(*args, **kwargs) for arg in argnum]
+
+        try:
+            return np.stack(jacobians).T
+        except ValueError:
+            return tuple(jacobians)
 
     return _jacobian_function
 
