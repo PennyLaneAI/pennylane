@@ -1,13 +1,13 @@
 import pennylane as qml
 from pennylane.wires import Wires
 from functools import wraps, reduce
-from itertools import repeat
 from pennylane.tape import QuantumTape, get_active_tape
 import numpy as np
 from difflib import SequenceMatcher
 
 
 def get_unitary_matrix(fn, wire_order):
+    """Given a quantum circuit and a list of wire ordering, construct the matrix representation"""
 
     wire_order = Wires(wire_order)
     n_wires = len(wire_order)
@@ -46,7 +46,7 @@ def get_unitary_matrix(fn, wire_order):
 
 
 def _get_op_matrix(op, wire_order, SWAP_list):
-
+    """Called by get_unitary_matrix(fn, wire_order) to construct the matrix representation for an operator"""
     # check if the operator wires match the wire order
     s = SequenceMatcher(lambda x: x == " ", op.wires.tolist(), wire_order.tolist())
     match = s.find_longest_match()
@@ -114,4 +114,5 @@ def _get_op_matrix(op, wire_order, SWAP_list):
                     )
                     wire_order = Wires(wire_order)
 
+                    # call recursively until all wires are ordered
                     return _get_op_matrix(op, wire_order, SWAP_list)
