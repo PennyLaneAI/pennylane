@@ -808,3 +808,8 @@ class TestHigherOrderDerivatives:
 
         expected = np.zeros([2, 2])
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
+class TestHamiltonianWorkflows:
+    """Test that tapes ending with expectations
+    of Hamiltonians provide correct results and gradients"""

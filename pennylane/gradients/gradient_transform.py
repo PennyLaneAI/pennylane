@@ -153,7 +153,7 @@ class gradient_transform(qml.batch_transform):
             cjac = cjac_fn(*args, **kwargs)
 
             if isinstance(cjac, tuple):
-                # Classical processing is present. Return qjac @ cjac
+                # Classical processing of multiple arguments is present. Return qjac @ cjac.
                 jacs = [
                     qml.math.squeeze(qml.math.tensordot(c, qjac, [[0], [-1]]))
                     for c in cjac
@@ -166,7 +166,7 @@ class gradient_transform(qml.batch_transform):
                 # is present inside the QNode.
                 return qjac
 
-            # Classical processing is present. Return qjac @ cjac
+            # Classical processing of a single argument is present. Return qjac @ cjac.
             jac = qml.math.squeeze(qml.math.tensordot(cjac, qjac, [[-1], [-1]]))
             return qml.math.T(jac)
 

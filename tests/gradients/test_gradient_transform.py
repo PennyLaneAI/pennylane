@@ -225,10 +225,11 @@ class TestGradientTransformIntegration:
         expected = qml.jacobian(circuit)(w)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_classical_processing_arguments(self, tol):
+    def test_classical_processing_arguments(self, mocker, tol):
         """Test that a gradient transform acts on QNodes
         correctly when the QNode arguments are classical processed"""
         dev = qml.device("default.qubit", wires=2)
+        spy = mocker.spy(qml.transforms, "classical_jacobian")
 
         @qml.qnode(dev)
         def circuit(weights):
@@ -240,9 +241,43 @@ class TestGradientTransformIntegration:
         w = np.array([0.543, -0.654], requires_grad=True)
         res = qml.gradients.param_shift(circuit)(w)
 
+        classical_jac = spy.spy_return(w)
+        assert isinstance(classical_jac, np.ndarray)
+        assert np.allclose(classical_jac, np.array([[2 * w[0], 0], [0, 1]]))
+
         x, y = w
         expected = [-2 * x * np.sin(x ** 2), 0]
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_classical_processing_multiple_arguments(self, mocker, tol):
+        """Test that a gradient transform acts on QNodes
+        correctly when multiple QNode arguments are classical processed"""
+        dev = qml.device("default.qubit", wires=2)
+        spy = mocker.spy(qml.transforms, "classical_jacobian")
+
+        @qml.qnode(dev)
+        def circuit(data, weights):
+            qml.RY(np.cos(data), wires=0)
+            qml.RX(weights[0] ** 2, wires=[0])
+            qml.RY(weights[1], wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        d = np.array(0.56, requires_grad=True)
+        w = np.array([0.543, -0.654], requires_grad=True)
+        res = qml.gradients.param_shift(circuit)(d, w)
+
+        classical_jac = spy.spy_return(d, w)
+        assert isinstance(classical_jac, tuple)
+        assert np.allclose(classical_jac[0], [-np.sin(d), 0, 0])
+        assert np.allclose(classical_jac[1], np.array([[0, 2 * w[0], 0], [0, 0, 1]]).T)
+
+        x, y = w
+        expected_dd = np.cos(x ** 2) * np.sin(d) * np.sin(np.cos(d))
+        expected_dw = np.array([-2 * x * np.cos(np.cos(d)) * np.sin(x ** 2), 0])
+
+        assert np.allclose(res[0], expected_dd, atol=tol, rtol=0)
+        assert np.allclose(res[1], expected_dw, atol=tol, rtol=0)
 
     def test_advanced_classical_processing_arguments(self, tol):
         """Test that a gradient transform acts on QNodes
@@ -299,3 +334,7 @@ class TestGradientTransformIntegration:
         res = qml.grad(circuit)(x)
         expected = 2 * np.sin(x) ** 2 - 2 * np.cos(x) ** 2
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_hamiltonian_differentiation(self):
+        """Test that a Hamiltonian with trainable
+        coefficients is correctly differentiated"""
