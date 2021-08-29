@@ -126,7 +126,6 @@ class DefaultQubit(QubitDevice):
         "CRY",
         "CRZ",
         "CRot",
-        "QFT",
         "IsingXX",
         "IsingYY",
         "IsingZZ",
