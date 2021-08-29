@@ -294,8 +294,8 @@ class S(DiagonalOperation):
     num_wires = 1
     par_domain = None
     basis = "Z"
-	matrix = np.array([[1, 0], [0, 1j]])
-	eigvals = np.array([1, 1j])
+    matrix = np.array([[1, 0], [0, 1j]])
+    eigvals = np.array([1, 1j])
 
     @classmethod
     def _matrix(cls, *params):
@@ -339,8 +339,8 @@ class T(DiagonalOperation):
     num_wires = 1
     par_domain = None
     basis = "Z"
-	matrix = np.array([[1, 0], [0, cmath.exp(1j * np.pi / 4)]])
-	eigvals = np.array([1, cmath.exp(1j * np.pi / 4)])
+    matrix = np.array([[1, 0], [0, cmath.exp(1j * np.pi / 4)]])
+    eigvals = np.array([1, cmath.exp(1j * np.pi / 4)])
 
     @classmethod
     def _matrix(cls, *params):
@@ -384,8 +384,8 @@ class SX(Operation):
     num_wires = 1
     par_domain = None
     basis = "X"
-	matrix = 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
-	eigvals = np.array([1, 1j])
+    matrix = 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
+    eigvals = np.array([1, 1j])
 
     @classmethod
     def _matrix(cls, *params):
@@ -627,8 +627,8 @@ class ISWAP(Operation):
     num_params = 0
     num_wires = 2
     par_domain = None
-	matrix = np.array([[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]])
-	eigvals = np.array([1j, -1j, 1, 1])
+    matrix = np.array([[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]])
+    eigvals = np.array([1j, -1j, 1, 1])
 
     @classmethod
     def _matrix(cls, *params):
@@ -676,15 +676,15 @@ class SISWAP(Operation):
     num_params = 0
     num_wires = 2
     par_domain = None
-	matrix = np.array(
+    matrix = np.array(
             [
                 [1, 0, 0, 0],
                 [0, INV_SQRT2, INV_SQRT2 * 1j, 0],
                 [0, INV_SQRT2 * 1j, INV_SQRT2, 0],
                 [0, 0, 0, 1],
             ]
-        )
-	eigvals = np.array([INV_SQRT2 * (1 + 1j), INV_SQRT2 * (1 - 1j), 1, 1])
+	)
+    eigvals = np.array([INV_SQRT2 * (1 + 1j), INV_SQRT2 * (1 - 1j), 1, 1])
 
     @classmethod
     def _matrix(cls, *params):
