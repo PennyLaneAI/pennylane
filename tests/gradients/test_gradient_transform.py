@@ -263,17 +263,32 @@ class TestGradientTransformIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
+        # set d as non-differentiable
         d = np.array(0.56, requires_grad=False)
         w = np.array([0.543, -0.654], requires_grad=True)
-        res = qml.gradients.param_shift(circuit)(d, w)
+        x, y = w
 
+        res = qml.gradients.param_shift(circuit)(d, w)
         classical_jac = spy.spy_return(d, w)
         assert np.allclose(classical_jac, np.array([[0, 2 * w[0], 0], [0, 0, 1]]).T)
 
-        x, y = w
         expected = np.array([-2 * x * np.cos(np.cos(d)) * np.sin(x ** 2), 0])
-
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # set d as differentiable
+        d = np.array(0.56, requires_grad=True)
+        w = np.array([0.543, -0.654], requires_grad=True)
+
+        res = qml.gradients.param_shift(circuit)(d, w)
+        classical_jac = spy.spy_return(d, w)
+        assert isinstance(classical_jac, tuple)
+        assert np.allclose(classical_jac[0], [-np.sin(d), 0, 0])
+        assert np.allclose(classical_jac[1], np.array([[0, 2 * w[0], 0], [0, 0, 1]]).T)
+
+        expected_dd = np.cos(x ** 2) * np.sin(d) * np.sin(np.cos(d))
+        expected_dw = np.array([-2 * x * np.cos(np.cos(d)) * np.sin(x ** 2), 0])
+        assert np.allclose(res[0], expected_dd, atol=tol, rtol=0)
+        assert np.allclose(res[1], expected_dw, atol=tol, rtol=0)
 
     def test_advanced_classical_processing_arguments(self, tol):
         """Test that a gradient transform acts on QNodes
@@ -383,5 +398,6 @@ class TestInterfaceIntegration:
         expected = -2 * np.cos(x_) * np.sin(x_)
         assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
 
+        res.backward()
         expected = -2 * np.cos(2 * x_)
         assert np.allclose(x.grad.detach(), expected, atol=tol, rtol=0)
