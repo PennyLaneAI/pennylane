@@ -8,12 +8,9 @@ from difflib import SequenceMatcher
 
 
 def get_unitary_matrix(fn, wire_order):
-    # wires or wire_order?
+
     wire_order = Wires(wire_order)
     n_wires = len(wire_order)
-    # print(wires)
-
-    matrix = np.eye(2 ** n_wires)
 
     @wraps(fn)
     def wrapper(*args, **kwargs):
@@ -33,71 +30,65 @@ def get_unitary_matrix(fn, wire_order):
             tape = fn(*args, **kwargs)
         #### NOTE took the above from qml.adjoint. Appropriate here?
 
-        matrix = np.eye(2 ** n_wires)
+        # initialize the unitary matrix
+        unitary_matrix = np.eye(2 ** n_wires)
 
         for op in tape.operations:
 
-            tmpmat = _get_op_matrix(op, wire_order, [np.eye(2 ** n_wires)])
-            matrix = np.dot(tmpmat, matrix)
+            # get the matrix for the operator op
+            op_matrix = _get_op_matrix(op, wire_order, [np.eye(2 ** n_wires)])
+            # add the single operator matrix to the full unitary matrix
+            unitary_matrix = np.dot(op_matrix, unitary_matrix)
 
-        return matrix
+        return unitary_matrix
 
     return wrapper
 
 
 def _get_op_matrix(op, wire_order, SWAP_list):
+
     # check if the operator wires match the wire order
     s = SequenceMatcher(lambda x: x == " ", op.wires.tolist(), wire_order.tolist())
     match = s.find_longest_match()
     n_wires = len(wire_order)
-    print(s.get_matching_blocks())
 
+    # Initialize matrix
     matrix = np.eye(2 ** n_wires)
 
-    # if all operator wires are adjacent (match [2] is the length of the matching sequence)
-    print("OP", op)
+    # if all operator wires are adjacent, just perform the operation
+    # match [2] is the length of the matching sequence
     if match[2] == len(op.wires):
 
+        # Operate with the identity on wires not affected by op
         # match[1] is the index of the first match in wire_order
         I_left = np.eye(2 ** match[1])
         I_right = np.eye(2 ** (n_wires - len(op.wires) - match[1]))
-        # print("MAT before op\n", matrix)
 
         # matrix representation of the operator op on the full space
         matrix = np.kron(I_left, np.kron(op.matrix, I_right))
 
-        print(type(SWAP_list))
+        # Compose SWAP and re-SWAP operators
         SWAP1 = reduce(np.dot, SWAP_list)
         SWAP2 = reduce(np.dot, reversed(SWAP_list))
 
-        # Swap back if wires were swapped
+        # Swap if wires were non-adjacent
         matrix = SWAP1 @ matrix @ SWAP2
 
         return matrix
 
-    # if there are non-adjacent wires
-    else:
+    else:  # if there are non-adjacent wires
 
         all_matches = s.get_matching_blocks()
         for m in all_matches:
-            if m[2] > 0:  # don't know why "matches" of length 0 are included
-                print(m)
-                if m[0] != m[1]:  # if indices match, do nothing
-
-                    # wire_order_indices = wire_order.toarray().searchsorted(op.wires.toarray())
-                    # print("WIRE ORDER INDICES", wire_order_indices)
-                    # print("wire order", wire_order)
-                    # print("match", match)
-                    # for idx, position in enumerate(wire_order_indices[1:]):
+            if m[2] > 0:  # For some reason, matches of length 0 are otherwise included
+                # if indices don't match, swap wire positions
+                if m[0] != m[1]:
                     swaps = np.sort([m[0], m[1]])
 
-                    print("swap qubit index %d with qubit index %d" % (swaps[0], swaps[1]))
-                    # print(swaps)
-                    # construct SWAP operator working on the full space
+                    # print("swap qubit index %d with qubit index %d" % (swaps[0], swaps[1]))
+                    # construct SWAP operator to swap wires m[0] and m[1]
                     I_left = np.eye(2 ** (swaps[0]))
-                    # print("LEFT",I_left)
                     I_right = np.eye(2 ** (n_wires - swaps[1] - 1))
-                    # print("RIGHT",I_right)
                     I_middle = np.eye(2 ** (swaps[1] - swaps[0] - 1))
 
                     state0 = [1, 0]
@@ -107,30 +98,20 @@ def _get_op_matrix(op, wire_order, SWAP_list):
                     op01 = np.outer(state0, state1)
                     op10 = np.outer(state1, state0)
 
-                    SWAP1 = reduce(np.kron, [I_left, op00, I_middle, op00, I_right])
-                    SWAP1 += reduce(np.kron, [I_left, op11, I_middle, op11, I_right])
-                    SWAP1 += reduce(np.kron, [I_left, op10, I_middle, op01, I_right])
-                    SWAP1 += reduce(np.kron, [I_left, op01, I_middle, op10, I_right])
+                    SWAP = reduce(np.kron, [I_left, op00, I_middle, op00, I_right])
+                    SWAP += reduce(np.kron, [I_left, op11, I_middle, op11, I_right])
+                    SWAP += reduce(np.kron, [I_left, op10, I_middle, op01, I_right])
+                    SWAP += reduce(np.kron, [I_left, op01, I_middle, op10, I_right])
 
-                    SWAP_list.append(SWAP1)
-                    # print("SWAP1 in swap\n", SWAP)
-                    # SWAP1 = swap(3, targets=[2,0]).full().real
+                    # Append to list of all SWAPs
+                    SWAP_list.append(SWAP)
 
-                    ## IS THIS RIGHT? check how it works with multiple swaps (i.e. multiple non-adjacent wires)
-                    # SWAP = np.matmul(SWAP, SWAP1)
-                    # SWAP =  np.kron(np.eye(2), qml.SWAP.matrix)
-
+                    # Swap wires in wire_order
                     wire_order = wire_order.tolist()
-                    print("wire order before swap", wire_order)
                     wire_order[swaps[0]], wire_order[swaps[1]] = (
                         wire_order[swaps[1]],
                         wire_order[swaps[0]],
                     )
-                    print("order after swap", wire_order)
                     wire_order = Wires(wire_order)
 
-                    # print("mat in swap\n", matrix)
-                    # print("SWAP in swap\n", SWAP)
-
-                    print("recursion")
                     return _get_op_matrix(op, wire_order, SWAP_list)
