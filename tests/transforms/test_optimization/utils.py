@@ -18,35 +18,6 @@ import pennylane as qml
 from gate_data import I
 
 
-def compute_matrix_from_ops_one_qubit(ops):
-    """Given a list of single-qubit operations, construct its matrix representation."""
-
-    mat = I
-
-    for op in ops:
-        mat = qml.math.dot(op.matrix, mat)
-    return mat
-
-
-def compute_matrix_from_ops_two_qubit(ops, wire_order):
-    """Given a list of two-qubit operations, construct its matrix representation."""
-
-    mat = qml.math.kron(I, I)
-
-    for op in ops:
-        if len(op.wires) == 1:
-            if op.wires == qml.wires.Wires(wire_order[0]):
-                mat = qml.math.dot(qml.math.kron(op.matrix, I), mat)
-            else:
-                mat = qml.math.dot(qml.math.kron(I, op.matrix), mat)
-        else:
-            if op.wires == qml.wires.Wires(wire_order):
-                mat = qml.math.dot(op.matrix, mat)
-            else:
-                mat = qml.math.dot(qml.SWAP(wires=[0, 1]).matrix, qml.math.dot(op.matrix, mat))
-    return mat
-
-
 def check_matrix_equivalence(matrix_expected, matrix_obtained):
     """Takes two matrices and checks if multiplying one by the conjugate
     transpose of the other gives the identity."""

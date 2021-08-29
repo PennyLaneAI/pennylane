@@ -18,6 +18,7 @@ from pennylane import numpy as np
 import pennylane as qml
 from pennylane.wires import Wires
 from pennylane.transforms.optimization import single_qubit_fusion
+from pennylane.transforms.get_unitary_matrix import get_unitary_matrix
 
 from utils import *
 
@@ -39,14 +40,12 @@ class TestSingleQubitFusion:
 
         transformed_qfunc = single_qubit_fusion()(qfunc)
 
-        original_ops = qml.transforms.make_tape(qfunc)().operations
-        transformed_ops = qml.transforms.make_tape(transformed_qfunc)().operations
-
-        assert len(transformed_ops) == 1
-
         # Compare matrices
-        matrix_expected = compute_matrix_from_ops_one_qubit(original_ops)
-        matrix_obtained = compute_matrix_from_ops_one_qubit(transformed_ops)
+        compute_matrix = get_unitary_matrix(qfunc, [0])
+        matrix_expected = compute_matrix()
+
+        compute_transformed_matrix = get_unitary_matrix(transformed_qfunc, [0])
+        matrix_obtained = compute_transformed_matrix()
         assert check_matrix_equivalence(matrix_expected, matrix_obtained)
 
     def test_single_qubit_fusion_no_gates_after(self):
@@ -127,8 +126,11 @@ class TestSingleQubitFusion:
         compare_operation_lists(transformed_ops, names_expected, wires_expected)
 
         # Compare matrices
-        matrix_expected = compute_matrix_from_ops_two_qubit(original_ops, wire_order=[0, 1])
-        matrix_obtained = compute_matrix_from_ops_two_qubit(transformed_ops, wire_order=[0, 1])
+        compute_matrix = get_unitary_matrix(qfunc, [0, 1])
+        matrix_expected = compute_matrix()
+
+        compute_transformed_matrix = get_unitary_matrix(transformed_qfunc, [0, 1])
+        matrix_obtained = compute_transformed_matrix()
         assert check_matrix_equivalence(matrix_expected, matrix_obtained)
 
     def test_single_qubit_fusion_multiple_qubits(self):
@@ -154,8 +156,12 @@ class TestSingleQubitFusion:
         compare_operation_lists(transformed_ops, names_expected, wires_expected)
 
         # Check matrix representation
-        matrix_expected = compute_matrix_from_ops_two_qubit(original_ops, ["a", "b"])
-        matrix_obtained = compute_matrix_from_ops_two_qubit(transformed_ops, ["a", "b"])
+        compute_matrix = get_unitary_matrix(qfunc, ["a", "b"])
+        matrix_expected = compute_matrix()
+
+        compute_transformed_matrix = get_unitary_matrix(transformed_qfunc, ["a", "b"])
+        matrix_obtained = compute_transformed_matrix()
+
         assert check_matrix_equivalence(matrix_expected, matrix_obtained)
 
 
