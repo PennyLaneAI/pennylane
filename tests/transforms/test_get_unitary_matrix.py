@@ -1,11 +1,22 @@
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import pennylane as qml
 import numpy as np
 import pytest
 from gate_data import I, X, Y, Z, H, S, T
 from functools import reduce
-
-
-np.set_printoptions(suppress=True, linewidth=np.nan, precision=3)
 
 from pennylane.transforms.get_unitary_matrix import get_unitary_matrix
 
@@ -54,6 +65,39 @@ def test_get_unitary_matrix_multiple_ops():
     assert np.allclose(matrix, expected_matrix)
 
 
+def test_get_unitary_matrix_more_ops():
+    # Same circuit as test_single_qubit_fusion_multiple_qubits() in test_single_qubit_fusion.py
+    wires = ["a", "b"]
+
+    def testcircuit():
+        qml.RZ(0.3, wires="a")
+        qml.RY(0.5, wires="a")
+        qml.Rot(0.1, 0.2, 0.3, wires="b")
+        qml.RX(0.1, wires="a")
+        qml.CNOT(wires=["b", "a"])
+        qml.SX(wires="b")
+        qml.S(wires="b")
+        qml.PhaseShift(0.3, wires="b")
+
+    op1 = np.kron(qml.RZ(0.3, wires="a").matrix, I)
+    op2 = np.kron(qml.RY(0.5, wires="a").matrix, I)
+    op3 = np.kron(I, qml.Rot(0.1, 0.2, 0.3, wires="b").matrix)
+    op4 = np.kron(qml.RX(0.1, wires="a").matrix, I)
+    op5 = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
+    op6 = np.kron(I, qml.SX(wires="b").matrix)
+    op7 = np.kron(I, qml.S(wires="b").matrix)
+    op8 = np.kron(I, qml.PhaseShift(0.3, wires="b").matrix)
+
+    ops = [op8, op7, op6, op5, op4, op3, op2, op1]
+
+    expected_matrix = reduce(np.dot, ops)
+
+    get_matrix = get_unitary_matrix(testcircuit, wires)
+    matrix = get_matrix()
+
+    assert np.allclose(matrix, expected_matrix)
+
+
 # Test CNOT: 2-qubit gate with different target wires, some non-adjacent
 @pytest.mark.parametrize("target_wire", [0, 2, 3, 4])
 def test_get_unitary_matrix_CNOT(target_wire):
@@ -92,7 +136,7 @@ def test_get_unitary_matrix_CRX():
     wires = [0, 1, 2]
 
     def testcircuit():
-        qml.CRX(testangle, wires=[0, 2])
+        qml.CRX(testangle, wires=[2, 0])
 
     # test applying to state
     state0 = [1, 0]
@@ -101,9 +145,9 @@ def test_get_unitary_matrix_CRX():
     # perform controlled rotation
     teststate1 = reduce(np.kron, [state1, state1, state1])
     # do not perform controlled rotation
-    teststate0 = reduce(np.kron, [state0, state1, state1])
+    teststate0 = reduce(np.kron, [state1, state1, state0])
 
-    expected_state1 = reduce(np.kron, [state1, state1, qml.RX(testangle, wires=1).matrix @ state1])
+    expected_state1 = reduce(np.kron, [qml.RX(testangle, wires=1).matrix @ state1, state1, state1])
     expected_state0 = teststate0
 
     get_matrix = get_unitary_matrix(testcircuit, wires)
@@ -119,10 +163,10 @@ def test_get_unitary_matrix_CRX():
 # Test Toffoli
 def test_get_unitary_matrix_Toffoli():
 
-    wires = [0, 1, 2, 3, 4]
+    wires = [0, "a", 2, "c", 4]
 
     def testcircuit():
-        qml.Toffoli(wires=[0, 4, 1])
+        qml.Toffoli(wires=[0, 4, "a"])
 
     # test applying to state
     state0 = [1, 0]
@@ -145,8 +189,6 @@ def test_get_unitary_matrix_Toffoli():
 
 
 # Test MultiControlledX
-
-
 def test_get_unitary_matrix_MultiControlledX():
 
     wires = [0, 1, 2, 3, 4, 5]
