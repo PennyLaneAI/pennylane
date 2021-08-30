@@ -190,7 +190,7 @@ def vjp(
                             gradient_kwargs=gradient_kwargs,
                         )
 
-                    vjps = processing_fn(execute_fn(vjp_tapes)[0])
+                        vjps = processing_fn(execute_fn(vjp_tapes)[0])
 
                 else:
                     vjp_tapes, processing_fn = qml.gradients.batch_vjp(
