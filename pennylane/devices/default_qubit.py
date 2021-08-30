@@ -516,7 +516,10 @@ class DefaultQubit(QubitDevice):
                     coo_matrix.dot(Hmat, coo_matrix(self.state.reshape(len(self.state), 1))),
                 ).toarray()[0]
 
-            return qml.math.real(qml.math.squeeze(res))
+            if observable.name == "Hamiltonian":
+                res = qml.math.squeeze(res)
+
+            return qml.math.real(res)
 
         return super().expval(observable, shot_range=shot_range, bin_size=bin_size)
 

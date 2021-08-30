@@ -147,6 +147,7 @@ def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None
             # parameter has zero gradient
             shapes.append(0)
             gradient_coeffs.append([])
+            fns.append(None)
             continue
 
         op, p_idx = tape.get_operation(idx)
