@@ -352,8 +352,7 @@ class TestValidation:
         with pytest.raises(TypeError) as exp:
             grad() if par is None else grad(par)
 
-    @pytest.mark.parametrize("par", [1, 1.1, np.array(1.2)])
-    def test_diff_method_none_no_qnode_param(self, par):
+    def test_diff_method_none_no_qnode_param(self):
         """Test if diff_method=None works as intended."""
         dev = qml.device("default.qubit", wires=1)
 
@@ -368,13 +367,6 @@ class TestValidation:
 
         # No differentiation required. No error raised.
         grad()
-
-        # Raise error
-        # Case 1: int input
-        # Case 2: float input
-        # Case 3: numpy input
-        with pytest.raises(TypeError) as exp:
-            grad(par)
 
 
 class TestTapeConstruction:
