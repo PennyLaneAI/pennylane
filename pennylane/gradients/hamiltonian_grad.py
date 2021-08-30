@@ -41,12 +41,26 @@ def hamiltonian_grad(tape, idx, params=None):
         new_tape.set_parameters(params=params)
 
     # get position in queue
+
     for i, m in enumerate(tape.measurements):
         if op is m.obs:
             new_tape._measurements[i] = qml.expval(op.ops[p_idx])
+            queue_position = i
             break
 
     new_tape._par_info = {}
     new_tape._update()
 
-    return [new_tape], lambda x: qml.math.squeeze(x)
+    if len(tape.measurements) > 1:
+
+        def processing_fn(results):
+            res = qml.math.stack(results)
+            final_results = qml.math.zeros_like(qml.math.T(res))
+            final_results = qml.math.scatter_element_add(
+                final_results, (queue_position,), res[:, queue_position]
+            )
+            return qml.math.T(final_results)
+
+        return [new_tape], processing_fn
+
+    return [new_tape], lambda x: x

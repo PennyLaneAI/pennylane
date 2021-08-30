@@ -139,6 +139,8 @@ def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None
     shapes = []
     unshifted_coeffs = []
 
+    fns = []
+
     for idx, _ in enumerate(tape.trainable_params):
 
         if idx not in argnum:
@@ -157,10 +159,11 @@ def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None
                     f"coefficients for expectations, not {op.return_type}"
                 )
 
-            g_tapes = qml.gradients.hamiltonian_grad(tape, idx)[0]
+            g_tapes, h_fn = qml.gradients.hamiltonian_grad(tape, idx)
             gradient_tapes.extend(g_tapes)
             shapes.append(1)
             gradient_coeffs.append([1.0])
+            fns.append(h_fn)
             continue
 
         # get the gradient recipe for the trainable parameter
@@ -168,6 +171,7 @@ def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None
         recipe = recipe or _get_operation_recipe(tape, idx, shift=shift)
         recipe = _process_gradient_recipe(recipe)
         coeffs, multipliers, shifts = recipe
+        fns.append(None)
 
         if shifts[0] == 0 and multipliers[0] == 1:
             # Gradient recipe includes a term with zero shift.
@@ -194,7 +198,7 @@ def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None
         start = 1 if unshifted_coeffs and f0 is None else 0
         r0 = f0 or results[0]
 
-        for i, s in enumerate(shapes):
+        for i, (s, f) in enumerate(zip(shapes, fns)):
 
             if s == 0:
                 # parameter has zero gradient
@@ -204,6 +208,9 @@ def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None
 
             res = results[start : start + s]
             start = start + s
+
+            if f is not None:
+                res = f(res)
 
             # compute the linear combination of results and coefficients
             res = qml.math.stack(res)

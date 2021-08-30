@@ -1050,6 +1050,4 @@ class TestHamiltonianExpvalGradients:
             [-d * np.sin(x), 0, 0, 0, np.cos(x)],
         ]
 
-        for t in tapes:
-            print(t.draw())
         assert np.allclose(res, expected, atol=tol, rtol=0)
