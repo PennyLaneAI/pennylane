@@ -1434,7 +1434,7 @@ class TestHamiltonianDifferentiation:
         param = torch.tensor(1.7, requires_grad=True)
 
         # differentiating a circuit with measurement expval(H)
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev, interface="torch", diff_method="backprop")
         def circuit(coeffs, param):
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
@@ -1458,8 +1458,8 @@ class TestHamiltonianDifferentiation:
         coeffs2 = torch.tensor([-0.05, 0.17], requires_grad=True)
         param2 = torch.tensor(1.7, requires_grad=True)
 
-        half1 = qml.QNode(circuit1, dev, interface="torch")
-        half2 = qml.QNode(circuit2, dev, interface="torch")
+        half1 = qml.QNode(circuit1, dev, interface="torch", diff_method="backprop")
+        half2 = qml.QNode(circuit2, dev, interface="torch", diff_method="backprop")
 
         def combine(coeffs, param):
             return coeffs[0] * half1(param) + coeffs[1] * half2(param)
@@ -1479,7 +1479,7 @@ class TestHamiltonianDifferentiation:
         param = torch.tensor(1.7, requires_grad=True)
 
         # differentiating a circuit with measurement expval(H)
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev, interface="torch", diff_method="backprop")
         def circuit(coeffs, param):
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
@@ -1500,8 +1500,8 @@ class TestHamiltonianDifferentiation:
         coeffs2 = torch.tensor([-0.05, 0.17], requires_grad=False)
         param2 = torch.tensor(1.7, requires_grad=True)
 
-        half1 = qml.QNode(circuit1, dev, interface="torch")
-        half2 = qml.QNode(circuit2, dev, interface="torch")
+        half1 = qml.QNode(circuit1, dev, interface="torch", diff_method="backprop")
+        half2 = qml.QNode(circuit2, dev, interface="torch", diff_method="backprop")
 
         def combine(coeffs, param):
             return coeffs[0] * half1(param) + coeffs[1] * half2(param)
