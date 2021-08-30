@@ -156,13 +156,13 @@ def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None
             if op.return_type is not qml.operation.Expectation:
                 raise ValueError(
                     "Can only differentiate Hamiltonian "
-                    f"coefficients for expectations, not {op.return_type}"
+                    f"coefficients for expectations, not {op.return_type.value}"
                 )
 
             g_tapes, h_fn = qml.gradients.hamiltonian_grad(tape, idx)
             gradient_tapes.extend(g_tapes)
             shapes.append(1)
-            gradient_coeffs.append([1.0])
+            gradient_coeffs.append(np.array([1.0]))
             fns.append(h_fn)
             continue
 

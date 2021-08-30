@@ -54,12 +54,14 @@ def hamiltonian_grad(tape, idx, params=None):
     if len(tape.measurements) > 1:
 
         def processing_fn(results):
-            res = qml.math.stack(results)
-            final_results = qml.math.zeros_like(qml.math.T(res))
-            final_results = qml.math.scatter_element_add(
-                final_results, (queue_position,), res[:, queue_position]
-            )
-            return qml.math.T(final_results)
+            res = results[0][queue_position]
+            zeros = qml.math.zeros_like(res)
+
+            final = []
+            for i, _ in enumerate(tape.measurements):
+                final.append(res if i == queue_position else zeros)
+
+            return qml.math.expand_dims(qml.math.stack(final), 0)
 
         return [new_tape], processing_fn
 
