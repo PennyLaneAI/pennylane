@@ -1,9 +1,9 @@
-import pennylane as qml
-from pennylane.wires import Wires
+from difflib import SequenceMatcher
 from functools import wraps, reduce
+
+from pennylane.wires import Wires
 from pennylane.tape import QuantumTape, get_active_tape
 import numpy as np
-from difflib import SequenceMatcher
 
 
 def get_unitary_matrix(fn, wire_order):
@@ -76,43 +76,44 @@ def _get_op_matrix(op, wire_order, SWAP_list):
 
         return matrix
 
-    else:  # if there are non-adjacent wires
+    # else if there are non-adjacent wires
+    all_matches = s.get_matching_blocks()
+    for m in all_matches:
+        if m[2] > 0:  # For some reason, matches of length 0 are otherwise included
+            # if indices don't match, swap wire positions
+            if m[0] != m[1]:
+                swaps = np.sort([m[0], m[1]])
 
-        all_matches = s.get_matching_blocks()
-        for m in all_matches:
-            if m[2] > 0:  # For some reason, matches of length 0 are otherwise included
-                # if indices don't match, swap wire positions
-                if m[0] != m[1]:
-                    swaps = np.sort([m[0], m[1]])
+                # print("swap qubit index %d with qubit index %d" % (swaps[0], swaps[1]))
+                # construct SWAP operator to swap wires m[0] and m[1]
+                I_left = np.eye(2 ** (swaps[0]))
+                I_right = np.eye(2 ** (n_wires - swaps[1] - 1))
+                I_middle = np.eye(2 ** (swaps[1] - swaps[0] - 1))
 
-                    # print("swap qubit index %d with qubit index %d" % (swaps[0], swaps[1]))
-                    # construct SWAP operator to swap wires m[0] and m[1]
-                    I_left = np.eye(2 ** (swaps[0]))
-                    I_right = np.eye(2 ** (n_wires - swaps[1] - 1))
-                    I_middle = np.eye(2 ** (swaps[1] - swaps[0] - 1))
+                state0 = [1, 0]
+                state1 = [0, 1]
+                op00 = np.outer(state0, state0)
+                op11 = np.outer(state1, state1)
+                op01 = np.outer(state0, state1)
+                op10 = np.outer(state1, state0)
 
-                    state0 = [1, 0]
-                    state1 = [0, 1]
-                    op00 = np.outer(state0, state0)
-                    op11 = np.outer(state1, state1)
-                    op01 = np.outer(state0, state1)
-                    op10 = np.outer(state1, state0)
+                SWAP = reduce(np.kron, [I_left, op00, I_middle, op00, I_right])
+                SWAP += reduce(np.kron, [I_left, op11, I_middle, op11, I_right])
+                SWAP += reduce(np.kron, [I_left, op10, I_middle, op01, I_right])
+                SWAP += reduce(np.kron, [I_left, op01, I_middle, op10, I_right])
 
-                    SWAP = reduce(np.kron, [I_left, op00, I_middle, op00, I_right])
-                    SWAP += reduce(np.kron, [I_left, op11, I_middle, op11, I_right])
-                    SWAP += reduce(np.kron, [I_left, op10, I_middle, op01, I_right])
-                    SWAP += reduce(np.kron, [I_left, op01, I_middle, op10, I_right])
+                # Append to list of all SWAPs
+                SWAP_list.append(SWAP)
 
-                    # Append to list of all SWAPs
-                    SWAP_list.append(SWAP)
+                # Swap wires in wire_order
+                wire_order = wire_order.tolist()
+                wire_order[swaps[0]], wire_order[swaps[1]] = (
+                    wire_order[swaps[1]],
+                    wire_order[swaps[0]],
+                )
+                wire_order = Wires(wire_order)
 
-                    # Swap wires in wire_order
-                    wire_order = wire_order.tolist()
-                    wire_order[swaps[0]], wire_order[swaps[1]] = (
-                        wire_order[swaps[1]],
-                        wire_order[swaps[0]],
-                    )
-                    wire_order = Wires(wire_order)
+                # call recursively until all wires are ordered
+                return _get_op_matrix(op, wire_order, SWAP_list)
 
-                    # call recursively until all wires are ordered
-                    return _get_op_matrix(op, wire_order, SWAP_list)
+    return None  # Because pylint wants it

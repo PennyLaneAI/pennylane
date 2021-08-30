@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pennylane as qml
-import numpy as np
-import pytest
-from gate_data import I, X, Y, Z, H, S, T
 from functools import reduce
+import pytest
+import numpy as np
+from gate_data import I, X, H, S, CNOT
+import pennylane as qml
 
 from pennylane.transforms.get_unitary_matrix import get_unitary_matrix
 
@@ -60,7 +60,7 @@ def test_get_unitary_matrix_multiple_ops():
     get_matrix = get_unitary_matrix(testcircuit, wires)
     matrix = get_matrix()
 
-    expected_matrix = np.kron(I, qml.CNOT.matrix) @ np.kron(X, np.kron(S, H))
+    expected_matrix = np.kron(I, CNOT) @ np.kron(X, np.kron(S, H))
 
     assert np.allclose(matrix, expected_matrix)
 
@@ -85,12 +85,12 @@ def test_get_unitary_matrix_more_ops():
     op4 = np.kron(qml.RX(0.1, wires="a").matrix, I)
     op5 = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
     op6 = np.kron(I, qml.SX(wires="b").matrix)
-    op7 = np.kron(I, qml.S(wires="b").matrix)
+    op7 = np.kron(I, S)
     op8 = np.kron(I, qml.PhaseShift(0.3, wires="b").matrix)
 
     ops = [op8, op7, op6, op5, op4, op3, op2, op1]
 
-    expected_matrix = reduce(np.dot, ops)
+    expected_matrix = np.linalg.multi_dot(ops)
 
     get_matrix = get_unitary_matrix(testcircuit, wires)
     matrix = get_matrix()
