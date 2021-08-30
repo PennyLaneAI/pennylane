@@ -467,43 +467,52 @@ class DefaultQubit(QubitDevice):
         Returns:
             float: returns the expectation value of the observable
         """
-        if observable.name == "SparseHamiltonian":
-            if self.shots is not None:
-                raise DeviceError("SparseHamiltonian must be used with shots=None")
-
-            ev = coo_matrix.dot(
-                coo_matrix(self._conj(self.state)),
-                coo_matrix.dot(
-                    observable.matrix, coo_matrix(self.state.reshape(len(self.state), 1))
-                ),
-            )
-
-            return np.real(ev.toarray()[0])
-
         # intercept Hamiltonians here; in future, we want a logic that handles
         # general observables that do not define eigenvalues
-        if observable.name == "Hamiltonian":
-            assert self.shots is None, "Hamiltonian must be used with shots=None"
+        if observable.name in ("Hamiltonian", "SparseHamiltonian"):
+            assert self.shots is None, f"{observable.name} must be used with shots=None"
 
-            # compute  <psi| H |psi> via sum_i coeff_i * <psi| PauliWord |psi> using a sparse
-            # representation of the Pauliword
-            res = qml.math.cast(qml.math.convert_like(0.0, observable.coeffs), dtype=complex)
-            # note: it is important that we use the Hamiltonian's data and not the coeffs attribute
-            for op, coeff in zip(observable.ops, observable.data):
-                # extract a scipy.sparse.coo_matrix representation of this Pauli word
-                coo = qml.operation.Tensor(op).sparse_matrix(wires=self.wires)
-                for idx_row, idx_col, entry in zip(coo.row, coo.col, coo.data):
-                    # while "entry" is not differentiable, it will be parsed during multiplication
-                    product = self._conj(self.state)[idx_row] * entry * self.state[idx_col]
+            backprop_mode = not isinstance(self.state, np.ndarray)
 
-                    # todo: remove this hack that avoids errors when attempting to multiply
-                    # a nontrainable qml.tensor to a trainable Arraybox
-                    if isinstance(coeff, qml.numpy.tensor) and not coeff.requires_grad:
-                        coeff = qml.math.toarray(coeff)
+            if backprop_mode:
+                # We must compute the expectation value assuming that the Hamiltonian
+                # coefficients *and* the quantum states are tensor objects.
 
-                    res = qml.math.convert_like(res, product) + (
-                        qml.math.cast(qml.math.convert_like(coeff, product), "complex128") * product
+                # Compute  <psi| H |psi> via sum_i coeff_i * <psi| PauliWord |psi> using a sparse
+                # representation of the Pauliword
+                res = qml.math.cast(qml.math.convert_like(0.0, observable.data), dtype=complex)
+
+                # Note: it is important that we use the Hamiltonian's data and not the coeffs attribute.
+                # This is because the .data attribute may be 'unwrapped' as required by the interfaces,
+                # whereas the .coeff attribute will always be the same input dtype that the user provided.
+                for op, coeff in zip(observable.ops, observable.data):
+
+                    # extract a scipy.sparse.coo_matrix representation of this Pauli word
+                    coo = qml.operation.Tensor(op).sparse_matrix(wires=self.wires)
+                    Hmat = qml.math.cast(qml.math.convert_like(coo.data, self.state), "complex128")
+
+                    product = (
+                        qml.math.gather(qml.math.conj(self.state), coo.row)
+                        * Hmat
+                        * qml.math.gather(self.state, coo.col)
                     )
+                    c = qml.math.cast(qml.math.convert_like(coeff, product), "complex128")
+                    res = qml.math.convert_like(res, product) + qml.math.sum(c * product)
+
+            else:
+                # Coefficients and the state are not trainable, we can be more
+                # efficient in how we compute the Hamiltonian sparse matrix.
+
+                if observable.name == "Hamiltonian":
+                    Hmat = qml.utils.sparse_hamiltonian(observable, wires=self.wires)
+                elif observable.name == "SparseHamiltonian":
+                    Hmat = observable.matrix
+
+                res = coo_matrix.dot(
+                    coo_matrix(qml.math.conj(self.state)),
+                    coo_matrix.dot(Hmat, coo_matrix(self.state.reshape(len(self.state), 1))),
+                ).toarray()[0]
+
             return qml.math.real(res)
 
         return super().expval(observable, shot_range=shot_range, bin_size=bin_size)
