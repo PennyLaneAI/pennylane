@@ -905,6 +905,7 @@ class TestQNodeIntegration:
             "supports_analytic_computation": True,
             "passthru_interface": "tf",
             "passthru_devices": {
+                "torch": "default.qubit.torch",
                 "tf": "default.qubit.tf",
                 "autograd": "default.qubit.autograd",
                 "jax": "default.qubit.jax",
