@@ -90,7 +90,7 @@ class TestMolecule:
     def test_molecule_data(
         self, symbols, geometry, n_electrons, n_orbitals, nuclear_charges, core, active
     ):
-        r"""Test that the molecule object computes correct molecular data."""
+        r"""Test that the molecule object contains correct molecular data."""
         mol = Molecule(symbols, geometry)
 
         assert mol.n_electrons == n_electrons
@@ -122,7 +122,7 @@ class TestMolecule:
         ],
     )
     def test_default_basisdata(self, symbols, geometry, n_basis, basis_data):
-        r"""Test that correct default basis data are generated for a given molecule."""
+        r"""Test that the molecule object contains correct default basis data for a given molecule."""
         mol = Molecule(symbols, geometry)
 
         assert mol.n_basis == n_basis
@@ -142,7 +142,9 @@ class TestMolecule:
         ],
     )
     def test_basisset(self, symbols, geometry, l, alpha, coeff, r):
-        r"""Test that correct basis set and basis data are generated for a given molecule."""
+        r"""Test that the molecule object contains the correct basis set and non-default basis data
+        for a given molecule.
+        """
         mol = Molecule(symbols, geometry)
 
         assert set(map(type, mol.basis_set)) == {BasisFunction}
@@ -155,19 +157,12 @@ class TestMolecule:
 
     @pytest.mark.parametrize("molecular_symbols", nuclear_charge_data)
     def test_generate_nuclear_charges(self, molecular_symbols):
-        r"""Test that correct atomic nuclear charges are generated for a given molecule."""
+        r"""Test that the function generate_nuclear_charges creates correct atomic nuclear charges
+        for a given molecule.
+        """
         symbols, charges = molecular_symbols
 
         assert generate_nuclear_charges(symbols) == charges
-
-    basis_data_H2 = [
-        (
-            [(0, 0, 0), (0, 0, 0)],
-            [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-            [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
-            [[0.0, 0.0, -0.694349], [0.0, 0.0, 0.694349]],
-        )
-    ]
 
     @pytest.mark.parametrize(
         ("l", "alpha", "coeff", "r"),
