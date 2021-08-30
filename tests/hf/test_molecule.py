@@ -17,57 +17,87 @@ Unit tests for the molecule object.
 # pylint: disable=no-self-use
 import pytest
 from pennylane import numpy as np
-from molecule import Molecule, generate_basis_set, generate_nuclear_charges
-from basis_set import BasisFunction
-
-molecular_data_ref = [(["H", "H"], np.array([[0.0, 0.0, -0.694349], [0.0, 0.0, 0.694349]]))]
+from pennylane.hf.molecule import Molecule, generate_basis_set, generate_nuclear_charges
+from pennylane.hf.basis_set import BasisFunction
 
 
 class TestMolecule:
     """Tests for generating a molecule object."""
 
-    @pytest.mark.parametrize("molecular_data", molecular_data_ref)
-    def test_build_molecule(self, molecular_data):
+    @pytest.mark.parametrize(
+        ("symbols", "geometry"),
+        [
+            (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])),
+        ],
+    )
+    def test_build_molecule(self, symbols, geometry):
         r"""Test that the generated molecule object has the correct type."""
-        symbols, geometry = molecular_data[0], molecular_data[1]
         mol = Molecule(symbols, geometry)
-
         assert isinstance(mol, Molecule)
 
-    @pytest.mark.parametrize("molecular_data", molecular_data_ref)
-    def test_molecule_error(self, molecular_data):
+    @pytest.mark.parametrize(
+        ("symbols", "geometry"),
+        [
+            (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])),
+        ],
+    )
+    def test_basis_error(self, symbols, geometry):
         r"""Test that an error is raised if a wrong basis set name is entered."""
-        symbols, geometry = molecular_data[0], molecular_data[1]
-
         with pytest.raises(ValueError, match="The only supported basis set is"):
             Molecule(symbols, geometry, basis_name="6-31g")
 
-    molecular_data_ref = [
-        (
-            ["H", "H"],
-            np.array([[0.0, 0.0, -0.694349], [0.0, 0.0, 0.694349]]),
-            [2, 2, [1, 1], [], [0, 1]],
-        )
-    ]
+    @pytest.mark.parametrize(
+        ("symbols", "geometry"),
+        [
+            (["H", "Og"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])),
+        ],
+    )
+    def test_symbol_error(self, symbols, geometry):
+        r"""Test that an error is raised if a wrong/not-supported atomic symbol is entered."""
+        with pytest.raises(ValueError, match="are not supported"):
+            Molecule(symbols, geometry)
 
-    @pytest.mark.parametrize("molecular_data", molecular_data_ref)
-    def test_molecular_prop(self, molecular_data):
-        r"""Test that the molecule object contains correct molecular properties."""
-        symbols, geometry = molecular_data[0], molecular_data[1]
-
+    @pytest.mark.parametrize(
+        ("symbols", "geometry", "charge", "mult", "basis_name"),
+        [
+            (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 0, 1, "sto-3g"),
+        ],
+    )
+    def test_default_inputs(self, symbols, geometry, charge, mult, basis_name):
+        r"""Test that the molecule object contains correct default molecular input data."""
         mol = Molecule(symbols, geometry)
 
         assert mol.symbols == symbols
         assert np.allclose(mol.coordinates, geometry)
-        assert mol.charge == 0
-        assert mol.mult == 1
-        assert mol.basis_name == "sto-3g"
+        assert mol.charge == charge
+        assert mol.mult == mult
+        assert mol.basis_name == basis_name
 
-        assert mol.n_electrons == molecular_data[2][0]
-        assert mol.n_orbitals == molecular_data[2][1]
-        assert mol.nuclear_charges == molecular_data[2][2]
-        assert mol.core == molecular_data[2][3]
-        assert mol.active == molecular_data[2][4]
+    @pytest.mark.parametrize(
+        ("symbols", "geometry", "n_electrons", "n_orbitals", "nuclear_charges", "core", "active"),
+        [
+            (
+                ["H", "F"],
+                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+                10,
+                6,
+                [1, 9],
+                [],
+                [0, 1, 2, 3, 4, 5],
+            ),
+        ],
+    )
+    def test_mol_data(
+        self, symbols, geometry, n_electrons, n_orbitals, nuclear_charges, core, active
+    ):
+        r"""Test that the molecule object computes correct molecular data."""
+        mol = Molecule(symbols, geometry)
+
+        assert mol.n_electrons == n_electrons
+        assert mol.n_orbitals == n_orbitals
+        assert mol.nuclear_charges == nuclear_charges
+        assert mol.core == core
+        assert mol.active == active
 
     data_H2 = [
         (

@@ -19,8 +19,8 @@ the necessary information to perform a Hartree-Fock calculation for a given mole
 import numpy as np
 import pennylane as qml
 from pennylane import numpy as pnp
-from basis_data import atomic_numbers
-from basis_set import BasisFunction, mol_basis_data
+from pennylane.hf.basis_data import atomic_numbers
+from pennylane.hf.basis_set import BasisFunction, mol_basis_data
 
 
 class Molecule:
@@ -65,6 +65,9 @@ class Molecule:
 
         if basis_name not in ["sto-3g", "STO-3G"]:
             raise ValueError("The only supported basis set is 'sto-3g'.")
+
+        if set(symbols) - set(atomic_numbers):
+            raise ValueError(f"Atoms in {set(symbols) - set(atomic_numbers)} are not supported.")
 
         self.symbols = symbols
         self.coordinates = coordinates
