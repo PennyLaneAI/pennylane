@@ -920,13 +920,14 @@ class TestHamiltonianExpvalGradients:
     """Test that tapes ending with expval(H) can be
     differentiated"""
 
-    def test_trainable_coeffs(self):
-        """Test trainable Hamiltonian coefficients"""
+    def test_no_trainable_coeffs(self, mocker, tol):
+        """Test no trainable Hamiltonian coefficients"""
         dev = qml.device("default.qubit", wires=2)
+        spy = mocker.spy(qml.gradients, "hamiltonian_grad")
 
-        obs = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliX(1)]
+        obs = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
         coeffs = np.array([0.1, 0.2, 0.3])
-        H  = qml.Hamiltonian(coeffs, obs)
+        H = qml.Hamiltonian(coeffs, obs)
 
         weights = np.array([0.4, 0.5])
 
@@ -936,14 +937,119 @@ class TestHamiltonianExpvalGradients:
             qml.CNOT(wires=[0, 1])
             qml.expval(H)
 
+        a, b, c = coeffs
+        x, y = weights
+        tape.trainable_params = {0, 1}
+
+        res = dev.batch_execute([tape])
+        expected = -c * np.sin(x) * np.sin(y) + np.cos(x) * (a + b * np.sin(y))
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        tapes, fn = qml.gradients.param_shift(tape)
+        # two shifts per rotation gate, one circuit per trainable H term
+        assert len(tapes) == 2 * 2
+        spy.assert_not_called()
+
+        res = fn(dev.batch_execute(tapes))
+        assert res.shape == (1, 2)
+
+        expected = [
+            -c * np.cos(x) * np.sin(y) - np.sin(x) * (a + b * np.sin(y)),
+            b * np.cos(x) * np.cos(y) - c * np.cos(y) * np.sin(x),
+        ]
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_trainable_coeffs(self, mocker, tol):
+        """Test trainable Hamiltonian coefficients"""
+        dev = qml.device("default.qubit", wires=2)
+        spy = mocker.spy(qml.gradients, "hamiltonian_grad")
+
+        obs = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
+        coeffs = np.array([0.1, 0.2, 0.3])
+        H = qml.Hamiltonian(coeffs, obs)
+
+        weights = np.array([0.4, 0.5])
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(H)
+
+        a, b, c = coeffs
+        x, y = weights
         tape.trainable_params = {0, 1, 2, 4}
+
+        res = dev.batch_execute([tape])
+        expected = -c * np.sin(x) * np.sin(y) + np.cos(x) * (a + b * np.sin(y))
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
         tapes, fn = qml.gradients.param_shift(tape)
         # two shifts per rotation gate, one circuit per trainable H term
         assert len(tapes) == 2 * 2 + 2
+        spy.assert_called()
 
         res = fn(dev.batch_execute(tapes))
         assert res.shape == (1, 4)
 
-        expected = np.array([[-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]])
+        expected = [
+            -c * np.cos(x) * np.sin(y) - np.sin(x) * (a + b * np.sin(y)),
+            b * np.cos(x) * np.cos(y) - c * np.cos(y) * np.sin(x),
+            np.cos(x),
+            -(np.sin(x) * np.sin(y)),
+        ]
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_multiple_hamiltonians(self, mocker, tol):
+        """Test multiple trainable Hamiltonian coefficients"""
+        dev = qml.device("default.qubit", wires=2)
+        spy = mocker.spy(qml.gradients, "hamiltonian_grad")
+
+        obs = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
+        coeffs = np.array([0.1, 0.2, 0.3])
+        a, b, c = coeffs
+        H1 = qml.Hamiltonian(coeffs, obs)
+
+        obs = [qml.PauliZ(0)]
+        coeffs = np.array([0.7])
+        d = coeffs[0]
+        H2 = qml.Hamiltonian(coeffs, obs)
+
+        weights = np.array([0.4, 0.5])
+        x, y = weights
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(H1)
+            qml.expval(H2)
+
+        tape.trainable_params = {0, 1, 2, 4, 5}
+
+        res = dev.batch_execute([tape])
+        expected = [-c * np.sin(x) * np.sin(y) + np.cos(x) * (a + b * np.sin(y)), d * np.cos(x)]
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        tapes, fn = qml.gradients.param_shift(tape)
+        # two shifts per rotation gate, one circuit per trainable H term
+        assert len(tapes) == 2 * 2 + 3
+        spy.assert_called()
+
+        res = fn(dev.batch_execute(tapes))
+        assert res.shape == (2, 5)
+
+        expected = [
+            [
+                -c * np.cos(x) * np.sin(y) - np.sin(x) * (a + b * np.sin(y)),
+                b * np.cos(x) * np.cos(y) - c * np.cos(y) * np.sin(x),
+                np.cos(x),
+                -(np.sin(x) * np.sin(y)),
+                0,
+            ],
+            [-d * np.sin(x), 0, 0, 0, np.cos(x)],
+        ]
+
+        for t in tapes:
+            print(t.draw())
         assert np.allclose(res, expected, atol=tol, rtol=0)

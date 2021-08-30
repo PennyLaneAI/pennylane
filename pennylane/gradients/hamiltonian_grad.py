@@ -40,7 +40,11 @@ def hamiltonian_grad(tape, idx, params=None):
     if params is not None:
         new_tape.set_parameters(params=params)
 
-    new_tape._measurements = [qml.expval(op.ops[p_idx])]
+    # get position in queue
+    for i, m in enumerate(tape.measurements):
+        if op is m.obs:
+            new_tape._measurements[i] = qml.expval(op.ops[p_idx])
+            break
 
     new_tape._par_info = {}
     new_tape._update()
