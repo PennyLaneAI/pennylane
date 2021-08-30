@@ -26,7 +26,11 @@ class TestExceptions:
         """Test that an exception is raised if an analytic device is used"""
         H = qml.Hamiltonian([0.3, 0.1], [qml.PauliX(0), qml.PauliZ(0)])
         dev = qml.device("default.qubit", wires=1, shots=None)
-        expval_cost = qml.ExpvalCost(lambda x, **kwargs: qml.RX(x, wires=0), H, dev)
+
+        def ansatz(x, **kwargs):
+            qml.RX(x, wires=0)
+
+        expval_cost = qml.ExpvalCost(ansatz, H, dev)
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
 
@@ -44,7 +48,11 @@ class TestExceptions:
         coeffs = [0.3, 0.1]
         H = qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)])
         dev = qml.device("default.qubit", wires=1, shots=100)
-        expval_cost = qml.ExpvalCost(lambda x, **kwargs: qml.RX(x, wires=0), H, dev)
+
+        def ansatz(x, **kwargs):
+            qml.RX(x, wires=0)
+
+        expval_cost = qml.ExpvalCost(ansatz, H, dev)
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10, stepsize=100.0)
 
@@ -97,7 +105,9 @@ class TestSingleShotGradientIntegration:
     dev = qml.device("default.qubit", wires=1, shots=100)
     H = qml.Hamiltonian([1.0], [qml.PauliZ(0)])
 
-    ansatz = lambda x, **kwargs: qml.RX(x, wires=0)
+    def ansatz(x, **kwargs):
+        qml.RX(x, wires=0)
+
     expval_cost = qml.ExpvalCost(ansatz, H, dev)
 
     @qml.qnode(dev)
