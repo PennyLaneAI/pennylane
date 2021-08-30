@@ -449,9 +449,10 @@ class TestValidation:
 
         # Test if interface change works with different diff_methods
         qn = qml.QNode(func, dev, interface="autograd", diff_method=method)
-        spy = mocker.spy(qn, "set_best_diff_method")
+        spy = mocker.spy(qn, "_get_best_diff_method")
         qn.to_tf()
-        spy.assert_called_once()
+        if method == "best":
+            spy.assert_called_once()
 
     @pytest.mark.parametrize(
         "method",
@@ -475,9 +476,10 @@ class TestValidation:
 
         # Test if interface change works with different diff_methods
         qn = qml.QNode(func, dev, interface="tf", diff_method=method)
-        spy = mocker.spy(qn, "set_best_diff_method")
+        spy = mocker.spy(qn, "_get_best_diff_method")
         qn.to_autograd()
-        spy.assert_called_once()
+        if method == "best":
+            spy.assert_called_once()
 
     @pytest.mark.parametrize(
         "method",
@@ -500,9 +502,10 @@ class TestValidation:
 
         # Test if interface change works with different diff_methods
         qn = qml.QNode(func, dev, interface="autograd", diff_method=method)
-        spy = mocker.spy(qn, "set_best_diff_method")
+        spy = mocker.spy(qn, "_get_best_diff_method")
         qn.to_torch()
-        spy.assert_called_once()
+        if method == "best":
+            spy.assert_called_once()
 
     @pytest.mark.parametrize(
         "method",
@@ -526,9 +529,10 @@ class TestValidation:
 
         # Test if interface change works with different diff_methods
         qn = qml.QNode(func, dev, interface="autograd", diff_method=method)
-        spy = mocker.spy(qn, "set_best_diff_method")
+        spy = mocker.spy(qn, "_get_best_diff_method")
         qn.to_jax()
-        spy.assert_called_once()
+        if method == "best":
+            spy.assert_called_once()
 
 
 class TestTapeConstruction:
