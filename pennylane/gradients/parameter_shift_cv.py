@@ -584,7 +584,7 @@ def param_shift_cv(
     to use during autodifferentiation:
 
     >>> dev = qml.device("default.gaussian", wires=2)
-    >>> @qml.qnode(dev)#, gradient_fn=qml.gradients.param_shift_cv)
+    >>> @qml.qnode(dev, gradient_fn=qml.gradients.param_shift_cv)
     ... def circuit(params):
     ...     qml.Squeezing(params[0], params[1], wires=[0])
     ...     qml.Squeezing(params[2], params[3], wires=[0])
@@ -595,7 +595,7 @@ def param_shift_cv(
 
     .. UsageDetails::
 
-        This gradient transform can also be applied directly to :class:`~.QNode` objects:
+        This gradient transform can be applied directly to :class:`~.QNode` objects:
 
         >>> @qml.qnode(dev)
         ... def circuit(params):

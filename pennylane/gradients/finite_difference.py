@@ -184,13 +184,13 @@ def generate_shifted_tapes(tape, idx, shifts, multipliers=None):
 @gradient_transform
 def finite_diff(tape, argnum=None, h=1e-7, approx_order=1, n=1, strategy="forward", f0=None):
     r"""Transform a QNode to compute the finite-difference gradient of all gate
-    parameters with respect to its outputs.
+    parameters with respect to its inputs.
 
     Args:
         qnode (.QNode or .QuantumTape): quantum tape or QNode to differentiate
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
-            trainable indices are returned.
+            trainable parameters are returned.
         h (float): finite difference method step size
         approx_order (int): The approximation order of the finite-difference method to use.
         n (int): compute the :math:`n`-th derivative
