@@ -211,16 +211,18 @@ class QNode:
             self.diff_method,
         )
 
-    def _get_best_diff_method(self, tape_diff_options):
+    @staticmethod
+    def _get_best_diff_method(tape_diff_options):
         """Update diff_method to reflect which method has been selected"""
         if tape_diff_options["method"] == "device":
-            return "device"
+            method = "device"
         elif tape_diff_options["method"] == "backprop":
-            return "backprop"
+            method = "backprop"
         elif tape_diff_options["method"] == "best":
-            return "parameter-shift"
+            method = "parameter-shift"
         elif tape_diff_options["method"] == "numeric":
-            return "finite-diff"
+            method = "finite-diff"
+        return method
 
     # pylint: disable=too-many-return-statements
     @staticmethod
