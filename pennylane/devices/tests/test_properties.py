@@ -28,6 +28,14 @@ except ImportError:
     TF_SUPPORT = False
 
 try:
+    import torch
+
+    TORCH_SUPPORT = True
+
+except ImportError:
+    TORCH_SUPPORT = False
+
+try:
     import jax
 
     JAX_SUPPORT = True
@@ -130,11 +138,10 @@ class TestCapabilities:
             pytest.skip("No passthru_interface capability specified by device.")
 
         interface = cap["passthru_interface"]
-        assert interface in ["tf", "autograd", "jax"]  # for new interface, add test case
+        assert interface in ["tf", "autograd", "jax", "torch"]  # for new interface, add test case
 
         qfunc = qfunc_with_scalar_input(cap["model"])
-        qnode = qml.QNode(qfunc, dev)
-        qnode.interface = interface
+        qnode = qml.QNode(qfunc, dev, interface=interface)
 
         # assert that we can do a simple gradient computation in the passthru interface
         # without raising an error
@@ -160,6 +167,15 @@ class TestCapabilities:
                 g(x)
             else:
                 pytest.skip("Cannot import jax")
+
+        if interface == "torch":
+            if TORCH_SUPPORT:
+                x = torch.tensor(0.1, requires_grad=True)
+                res = qnode(x)
+                res.backward()
+                assert hasattr(x, "grad")
+            else:
+                pytest.skip("Cannot import torch")
 
     def test_provides_jacobian(self, device_kwargs):
         """Test that the device computes the jacobian."""
