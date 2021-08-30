@@ -258,6 +258,7 @@
 * Hamiltonians are now natively supported on the `default.qubit` device if `shots=None`. 
   This makes VQE workflows a lot faster in some cases.
   [(#1551)](https://github.com/PennyLaneAI/pennylane/pull/1551)
+  [(#1596)](https://github.com/PennyLaneAI/pennylane/pull/1596)
 
 * A gradient recipe for Hamiltonian coefficients has been added. This makes it possible 
   to compute parameter-shift gradients of these coefficients on devices that natively 
@@ -346,6 +347,9 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 <h3>Bug fixes</h3>
 
+* Remove `QFT` from possible operations in `default.qubit` and `default.mixed`.
+  [(#1600)](https://github.com/PennyLaneAI/pennylane/pull/1600)
+
 * Fix bug when computing expectations of Hamiltonians using TensorFlow.
   [(#1586)](https://github.com/PennyLaneAI/pennylane/pull/1586)
 
@@ -370,8 +374,8 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 This release contains contributions from (in alphabetical order):
 
 Vishnu Ajith, Akash Narayanan B, Thomas Bromley, Tanya Garg, Josh Izaac, Prateek Jain, Christina Lee,
-Johannes Jakob Meyer, Esteban Payares, Pratul Saini, Maria Schuld, Arshpreet Singh, Ingrid Strandberg,
-Slimane Thabet, David Wierichs, Vincent Wong.
+Johannes Jakob Meyer, Romain Moyard, Esteban Payares, Pratul Saini, Maria Schuld, Arshpreet Singh,
+Ingrid Strandberg, Slimane Thabet, David Wierichs, Vincent Wong.
 
 # Release 0.17.0 (current release)
 
