@@ -472,9 +472,10 @@ class DefaultQubit(QubitDevice):
         if observable.name in ("Hamiltonian", "SparseHamiltonian"):
             assert self.shots is None, f"{observable.name} must be used with shots=None"
 
-            backprop_mode = not isinstance(self.state, np.ndarray) or any(
-                not isinstance(d, (float, np.ndarray)) for d in observable.data
-            )
+            backprop_mode = (
+                not isinstance(self.state, np.ndarray)
+                or any(not isinstance(d, (float, np.ndarray)) for d in observable.data)
+            ) and observable.name == "Hamiltonian"
 
             if backprop_mode:
                 # We must compute the expectation value assuming that the Hamiltonian
