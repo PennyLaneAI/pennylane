@@ -22,10 +22,13 @@ from .single_qubit_unitary import zyz_decomposition
 
 # This gate E is called the "magic basis". It can be used to convert between
 # SO(4) and SU(2) x SU(2). For A in SO(4), E A E^\dag is in SU(2) x SU(2).
-E = np.array([[1, 1j, 0, 0], [0, 0, 1j, 1], [0, 0, 1j, -1], [1, -1j, 0, 0]]) / np.sqrt(2)
+#E = np.array([[1, 1j, 0, 0], [0, 0, 1j, 1], [0, 0, 1j, -1], [1, -1j, 0, 0]]) / np.sqrt(2)
+E = np.array([[1, -1j, 0, 0], [0, 0, -1j, 1], [0, 0, 1j, 1], [-1, -1j, 0, 0]]) / np.sqrt(2)
 Et = qml.math.T(E)
 Edag = qml.math.conj(Et)
 
+CNOT01 = qml.CNOT(wires=[0, 1]).matrix
+CNOT10 = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
 
 def _perm_matrix_from_sequence(seq):
     """Construct a permutation matrix based on a provided permutation of integers.
@@ -61,7 +64,7 @@ def _convert_to_su4(U):
     # Convert to SU(4) if it's not close to 1
     if not qml.math.allclose(det, 1.0):
         exp_angle = -1j * math.cast_like(math.angle(det), 1j) / 4
-        U = math.cast_like(U, exp_angle) * math.exp(exp_angle)
+        U = math.cast_like(U, det) * qml.math.exp(exp_angle)
 
     return U
 
@@ -83,16 +86,18 @@ def _select_rotation_angles(U):
 
     since :math:`EE^T = Y \otimes Y`.
     """
-
-    u = qml.math.linalg.multi_dot([Edag, U, E])
-    gammaU = qml.math.dot(u, qml.math.T(u))
-    evs = qml.math.linalg.eigvals(gammaU)
-    x, y, z = qml.math.angle(evs[0]), qml.math.angle(evs[1]), qml.math.angle(evs[2])
+    gammaU = qml.math.linalg.multi_dot([Edag, U, E, Et, qml.math.T(U), qml.math.T(Edag)])
+    evs = qml.math.linalg.eigvals(gammaU) 
 
     # The rotation angles can be computed as follows (any three eigenvalues can be used)
-    alpha = (x + y) / 2
-    beta = (x + z) / 2
-    delta = (y + z) / 2
+    x, y, z = qml.math.angle(evs[0]), qml.math.angle(evs[1]), qml.math.angle(evs[2])
+
+    alpha = (y + z) / 2
+    beta = -(x + z) / 2
+    delta = -(x + y) / 2
+    #alpha = (y + x) / 2
+    #beta = (x + z) / 2
+    #delta = (z + y) / 2
 
     return alpha, beta, delta
 
@@ -113,28 +118,27 @@ def _su2su2_to_tensor_products(U):
     C3 = U[2:4, 0:2]
     C4 = U[2:4, 2:4]
 
-    # From the definition of A \otimes B, C1 C4^\dag = a1^2 I
+    # From the definition of A \otimes B, C1 C4^\dag = a1^2 I, so we can extract a1
     C14 = qml.math.dot(C1, qml.math.conj(qml.math.T(C4)))
     a1 = qml.math.sqrt(C14[0, 0])
 
+    # Similarly, -C2 C3^\dag = a2^2 I, so we can extract a2
+    C23 = qml.math.dot(C2, qml.math.conj(qml.math.T(C3)))
+    a2 = qml.math.sqrt(-C23[0, 0])
+
+    # This gets us a1, a2 up to a sign. To resolve the sign, ensure that
+    # C1 C2^dag = a1 a2* I
     C12 = qml.math.dot(C1, qml.math.conj(qml.math.T(C2)))
 
-    if qml.math.isclose(a1, 0.0, atol=1e-6):
-        # If the a1 we got was close to 0, try extracting it from elsewhere
-        # C2 C3^\dag = -a2^2 I
-        C23 = -qml.math.dot(C2, qml.math.conj(qml.math.T(C3)))
-
-        a2 = qml.math.sqrt(-1 * C23[0, 0])
-        a1 = C12[0, 0] / qml.math.conj(a2)
-    else:
-        a2 = qml.math.conj(C12[0, 0] / a1)
+    if not qml.math.isclose(a1 * np.conj(a2), C12[0, 0]):
+        a2 *= -1
 
     # Construct A
     A = qml.math.stack([[a1, a2], [-qml.math.conj(a2), qml.math.conj(a1)]])
 
     # Next, extract B. Can do from any of the C, just need to be careful in
     # case one of the elements of A is 0.
-    if not qml.math.isclose(A[0, 0], 0.0, atol=1e-10):
+    if not qml.math.isclose(A[0, 0], 0.0, atol=1e-8):
         B = C1 / A[0, 0]
     else:
         B = C2 / A[0, 1]
@@ -228,7 +232,7 @@ def _extract_su2su2_prefactors(U, V):
     C, D = _su2su2_to_tensor_products(CD)
 
     # Return the four single-qubit operations.
-    return A, B, C, D
+    return B, A, C, D
 
 
 def two_qubit_decomposition(U, wires):
@@ -258,11 +262,12 @@ def two_qubit_decomposition(U, wires):
 
     # First, we note that this method works only for SU(4) gates, meaning that
     # we need to compute rescale the matrix by its determinant.
-    U = _convert_to_su4(U)
+
+    swap_U = np.exp(1j * np.pi/4) * qml.math.dot(qml.SWAP(wires=[0, 1]).matrix, _convert_to_su4(U))
 
     # Next, we can choose the angles of the RZ / RY rotations.
     # See documentation within the function used below.
-    alpha, beta, delta = _select_rotation_angles(U)
+    alpha, beta, delta = _select_rotation_angles(swap_U)
 
     # This gives us the full interior portion of the decomposition
     interior_decomp = [
@@ -271,13 +276,12 @@ def two_qubit_decomposition(U, wires):
         qml.RY(beta, wires=wires[1]),
         qml.CNOT(wires=[wires[0], wires[1]]),
         qml.RY(alpha, wires=wires[1]),
-        qml.CNOT(wires=[wires[1], wires[0]]),
+        qml.CNOT(wires=[wires[1], wires[0]])
     ]
 
     # We need the matrix representation of this interior part, V, in order to decompose
     # U = (A \otimes B) V (C \otimes D)
-    CNOT10 = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
-    CNOT01 = qml.CNOT(wires=[0, 1]).matrix
+
     RZd = qml.RZ(delta, wires=0).matrix
     RYb = qml.RY(beta, wires=0).matrix
     RYa = qml.RY(alpha, wires=0).matrix
@@ -297,7 +301,7 @@ def two_qubit_decomposition(U, wires):
     )
 
     # Now we need to find the four SU(2) operations A, B, C, D
-    A, B, C, D = _extract_su2su2_prefactors(U, V)
+    A, B, C, D = _extract_su2su2_prefactors(swap_U, V)    
 
     # Since this gives us their unitary form, we need to decompose them as well.
     A_ops = zyz_decomposition(A, wires[0])
