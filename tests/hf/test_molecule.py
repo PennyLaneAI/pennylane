@@ -87,7 +87,7 @@ class TestMolecule:
             ),
         ],
     )
-    def test_mol_data(
+    def test_molecule_data(
         self, symbols, geometry, n_electrons, n_orbitals, nuclear_charges, core, active
     ):
         r"""Test that the molecule object computes correct molecular data."""
@@ -99,66 +99,61 @@ class TestMolecule:
         assert mol.core == core
         assert mol.active == active
 
-    data_H2 = [
-        (
-            ["H", "H"],
-            np.array([[0.0, 0.0, -0.694349], [0.0, 0.0, 0.694349]]),
-            [1, 1],
+    @pytest.mark.parametrize(
+        ("symbols", "geometry", "n_basis", "basis_data"),
+        [
             (
+                ["H", "H"],
+                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+                [1, 1],
                 (
-                    (0, 0, 0),
-                    [3.42525091, 0.62391373, 0.1688554],
-                    [0.15432897, 0.53532814, 0.44463454],
-                ),
-                (
-                    (0, 0, 0),
-                    [3.42525091, 0.62391373, 0.1688554],
-                    [0.15432897, 0.53532814, 0.44463454],
+                    (
+                        (0, 0, 0),
+                        [3.42525091, 0.62391373, 0.1688554],
+                        [0.15432897, 0.53532814, 0.44463454],
+                    ),
+                    (
+                        (0, 0, 0),
+                        [3.42525091, 0.62391373, 0.1688554],
+                        [0.15432897, 0.53532814, 0.44463454],
+                    ),
                 ),
             ),
-        )
-    ]
-
-    @pytest.mark.parametrize("molecular_data", data_H2)
-    def test_molecule_basisdata(self, molecular_data):
-        r"""Test that correct atomic nuclear charges are generated for a given molecule."""
-        symbols, geometry = molecular_data[0], molecular_data[1]
-        n_basis_H2 = molecular_data[2]
-        basis_data_H2 = molecular_data[3]
-
+        ],
+    )
+    def test_default_basisdata(self, symbols, geometry, n_basis, basis_data):
+        r"""Test that correct default basis data are generated for a given molecule."""
         mol = Molecule(symbols, geometry)
 
-        assert mol.n_basis == n_basis_H2
-        assert np.allclose(mol.basis_data, basis_data_H2)
+        assert mol.n_basis == n_basis
+        assert np.allclose(mol.basis_data, basis_data)
 
-    basis_data_H2 = [
-        (
-            ["H", "H"],
-            np.array([[0.0, 0.0, -0.694349], [0.0, 0.0, 0.694349]]),
-            [(0, 0, 0), (0, 0, 0)],
-            [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-            [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
-            [[0.0, 0.0, -0.694349], [0.0, 0.0, 0.694349]],
-        )
-    ]
-
-    @pytest.mark.parametrize("molecular_data", basis_data_H2)
-    def test_molecule_basisset(self, molecular_data):
-        r"""Test that correct basis set is generated for a given molecule."""
-        symbols, geometry = molecular_data[0], molecular_data[1]
+    @pytest.mark.parametrize(
+        ("symbols", "geometry", "l", "alpha", "coeff", "r"),
+        [
+            (
+                ["H", "H"],
+                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+                [(0, 0, 0), (0, 0, 0)],
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
+                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+            )
+        ],
+    )
+    def test_basisset(self, symbols, geometry, l, alpha, coeff, r):
+        r"""Test that correct basis set and basis data are generated for a given molecule."""
         mol = Molecule(symbols, geometry)
 
-        assert mol.l == molecular_data[2]
-        assert np.allclose(mol.alpha, molecular_data[3])
-        assert np.allclose(mol.coeff, molecular_data[4])
-        assert np.allclose(mol.r, molecular_data[5])
+        assert set(map(type, mol.basis_set)) == {BasisFunction}
+        assert mol.l == l
+        assert np.allclose(mol.alpha, alpha)
+        assert np.allclose(mol.coeff, coeff)
+        assert np.allclose(mol.r, r)
 
-        assert isinstance(mol.basis_set[0], BasisFunction)
-        assert isinstance(mol.basis_set[1], BasisFunction)
+    nuclear_charge_data = [(["H", "H"], [1, 1]), (["H", "F"], [1, 9]), (["F", "C", "N"], [9, 6, 7])]
 
-    molecular_symbols = [(["H", "H"], [1, 1]), (["H", "F"], [1, 9]), (["F", "C", "N"], [9, 6, 7])]
-
-    @pytest.mark.parametrize("molecular_symbols", molecular_symbols)
+    @pytest.mark.parametrize("molecular_symbols", nuclear_charge_data)
     def test_generate_nuclear_charges(self, molecular_symbols):
         r"""Test that correct atomic nuclear charges are generated for a given molecule."""
         symbols, charges = molecular_symbols
@@ -174,10 +169,21 @@ class TestMolecule:
         )
     ]
 
-    @pytest.mark.parametrize("basis_data", basis_data_H2)
-    def test_generate_basis_set(self, basis_data):
-        r"""Test that correct atomic nuclear charges are generated for a given molecule."""
-        l, alpha, coeff, r = basis_data
+    @pytest.mark.parametrize(
+        ("l", "alpha", "coeff", "r"),
+        [
+            (
+                [(0, 0, 0), (0, 0, 0)],
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
+                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+            )
+        ],
+    )
+    def test_generate_basis_set(self, l, alpha, coeff, r):
+        r"""Test that the function generate_basis_set returns a correct basis set for a (diatomic)
+        molecule. The diatomic molecule is used to avoid asserting data in loops.
+        """
         basis_set = generate_basis_set(l, alpha, coeff, r)
 
         assert np.allclose(basis_set[0].l, l[0])
