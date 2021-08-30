@@ -22,13 +22,15 @@ from .single_qubit_unitary import zyz_decomposition
 
 # This gate E is called the "magic basis". It can be used to convert between
 # SO(4) and SU(2) x SU(2). For A in SO(4), E A E^\dag is in SU(2) x SU(2).
-#E = np.array([[1, 1j, 0, 0], [0, 0, 1j, 1], [0, 0, 1j, -1], [1, -1j, 0, 0]]) / np.sqrt(2)
+# E = np.array([[1, 1j, 0, 0], [0, 0, 1j, 1], [0, 0, 1j, -1], [1, -1j, 0, 0]]) / np.sqrt(2)
 E = np.array([[1, -1j, 0, 0], [0, 0, -1j, 1], [0, 0, 1j, 1], [-1, -1j, 0, 0]]) / np.sqrt(2)
 Et = qml.math.T(E)
 Edag = qml.math.conj(Et)
 
 CNOT01 = qml.CNOT(wires=[0, 1]).matrix
 CNOT10 = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
+SWAP = qml.SWAP(wires=[0, 1]).matrix
+
 
 def _perm_matrix_from_sequence(seq):
     """Construct a permutation matrix based on a provided permutation of integers.
@@ -87,7 +89,7 @@ def _select_rotation_angles(U):
     since :math:`EE^T = Y \otimes Y`.
     """
     gammaU = qml.math.linalg.multi_dot([Edag, U, E, Et, qml.math.T(U), qml.math.T(Edag)])
-    evs = qml.math.linalg.eigvals(gammaU) 
+    evs = qml.math.linalg.eigvals(gammaU)
 
     # The rotation angles can be computed as follows (any three eigenvalues can be used)
     x, y, z = qml.math.angle(evs[0]), qml.math.angle(evs[1]), qml.math.angle(evs[2])
@@ -95,9 +97,9 @@ def _select_rotation_angles(U):
     alpha = (y + z) / 2
     beta = -(x + z) / 2
     delta = -(x + y) / 2
-    #alpha = (y + x) / 2
-    #beta = (x + z) / 2
-    #delta = (z + y) / 2
+    # alpha = (y + x) / 2
+    # beta = (x + z) / 2
+    # delta = (z + y) / 2
 
     return alpha, beta, delta
 
@@ -172,12 +174,14 @@ def _extract_su2su2_prefactors(U, V):
     vvT = qml.math.dot(v, qml.math.T(v))
 
     # First, we find a matrix p (hopefully) in SO(4) s.t. p^T u u^T p is diagonal.
-    ev_p, p = qml.math.linalg.eig(uuT)
+    # Since uuT is complex and symmetric, both its real / imag parts share a set
+    # of real-valued eigenvectors.
+    ev_p, p = qml.math.linalg.eigh(uuT.real)
 
     # We also do this for v, i.e., find q (hopefully) in SO(4) s.t. q^T v v^T q is diagonal.
-    ev_q, q = qml.math.linalg.eig(vvT)
+    ev_q, q = qml.math.linalg.eig(vvT.real)
 
-    # If determinants of p is not 1, it is in O(4) but not SO(4), and has
+    # If determinant of p is not 1, it is in O(4) but not SO(4), and has
     # determinant -1. We can transform it to SO(4) by simply negating one
     # of the columns.
     if not qml.math.isclose(qml.math.linalg.det(p), 1.0):
@@ -261,9 +265,11 @@ def two_qubit_decomposition(U, wires):
     """
 
     # First, we note that this method works only for SU(4) gates, meaning that
-    # we need to compute rescale the matrix by its determinant.
-
-    swap_U = np.exp(1j * np.pi/4) * qml.math.dot(qml.SWAP(wires=[0, 1]).matrix, _convert_to_su4(U))
+    # we need to compute rescale the matrix by its determinant. Furthermore, we
+    # add a SWAP as per v1 of 0308033, which helps with some rearranging of gates
+    # in the decomposition (it enables the interior part to have determinant 1, and
+    # and subsequently cancels out).
+    swap_U = np.exp(1j * np.pi / 4) * qml.math.dot(SWAP, _convert_to_su4(U))
 
     # Next, we can choose the angles of the RZ / RY rotations.
     # See documentation within the function used below.
@@ -276,7 +282,7 @@ def two_qubit_decomposition(U, wires):
         qml.RY(beta, wires=wires[1]),
         qml.CNOT(wires=[wires[0], wires[1]]),
         qml.RY(alpha, wires=wires[1]),
-        qml.CNOT(wires=[wires[1], wires[0]])
+        qml.CNOT(wires=[wires[1], wires[0]]),
     ]
 
     # We need the matrix representation of this interior part, V, in order to decompose
@@ -291,7 +297,7 @@ def two_qubit_decomposition(U, wires):
     # fixing the determinant so that V is in SU4.
     V = qml.math.linalg.multi_dot(
         [
-            qml.SWAP(wires=[0, 1]).matrix,
+            SWAP,
             CNOT10,
             np.kron(np.eye(2), RYa),
             CNOT01,
@@ -301,7 +307,7 @@ def two_qubit_decomposition(U, wires):
     )
 
     # Now we need to find the four SU(2) operations A, B, C, D
-    A, B, C, D = _extract_su2su2_prefactors(swap_U, V)    
+    A, B, C, D = _extract_su2su2_prefactors(swap_U, V)
 
     # Since this gives us their unitary form, we need to decompose them as well.
     A_ops = zyz_decomposition(A, wires[0])
