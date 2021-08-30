@@ -6,6 +6,7 @@
 * A new pytorch device, `qml.device('default.qubit.torch', wires=wires)`, supports
   backpropogation with the torch interface.
   [(#1225)](https://github.com/PennyLaneAI/pennylane/pull/1360)
+  [(#1598)](https://github.com/PennyLaneAI/pennylane/pull/1598)
 
 * The ability to define *batch* transforms has been added via the new
   `@qml.batch_transform` decorator.

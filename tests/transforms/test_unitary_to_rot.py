@@ -194,10 +194,9 @@ class TestQubitUnitaryDifferentiability:
 
         assert qml.math.allclose(original_grad, transformed_grad)
 
-    @pytest.mark.parametrize("rot_angles", angle_pairs)
-    def test_gradient_unitary_to_rot_torch(self, rot_angles):
-        """Tests differentiability in torch interface. Torch interface doesn't use
-        backprop so we test only with parameter-shift."""
+    @pytest.mark.parametrize("rot_angles,diff_method", angle_diff_pairs)
+    def test_gradient_unitary_to_rot_torch(self, rot_angles, diff_method):
+        """Tests differentiability in torch interface."""
         torch = pytest.importorskip("torch", minversion="1.8")
 
         def qfunc_with_qubit_unitary(angles):
@@ -227,14 +226,14 @@ class TestQubitUnitaryDifferentiability:
             return qml.expval(qml.PauliX(wires="a"))
 
         original_qnode = qml.QNode(
-            original_qfunc_for_grad, dev, interface="torch", diff_method="parameter-shift"
+            original_qfunc_for_grad, dev, interface="torch", diff_method=diff_method
         )
         original_input = torch.tensor(rot_angles, dtype=torch.float64, requires_grad=True)
         original_result = original_qnode(original_input)
 
         transformed_qfunc = unitary_to_rot(qfunc_with_qubit_unitary)
         transformed_qnode = qml.QNode(
-            transformed_qfunc, dev, interface="torch", diff_method="parameter-shift"
+            transformed_qfunc, dev, interface="torch", diff_method=diff_method
         )
         transformed_input = torch.tensor(rot_angles, dtype=torch.float64, requires_grad=True)
         transformed_result = transformed_qnode(transformed_input)
