@@ -2,6 +2,9 @@
 
 <h3>New features since last release</h3>
 
+* Functionality is added to create basis function objects and default basis set parameters
+  for quantum chemistry. These functions are needed to perform auto-differentiable
+  Hartree-Fock calculations. [(#1582)](https://github.com/PennyLaneAI/pennylane/pull/1582)
 
 * A new pytorch device, `qml.device('default.qubit.torch', wires=wires)`, supports
   backpropogation with the torch interface.
