@@ -415,9 +415,9 @@ class TestValidation:
 
         # After execution correctly show 'finite-diff'
         assert qnode.diff_method == "finite-diff"
-        
+
         # Reset grad_method to 'A'
-        qml.RX.grad_method = 'A'
+        qml.RX.grad_method = "A"
 
     @pytest.mark.parametrize(
         "method",
