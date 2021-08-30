@@ -22,8 +22,7 @@ from .single_qubit_unitary import zyz_decomposition
 
 # This gate E is called the "magic basis". It can be used to convert between
 # SO(4) and SU(2) x SU(2). For A in SO(4), E A E^\dag is in SU(2) x SU(2).
-# E = np.array([[1, 1j, 0, 0], [0, 0, 1j, 1], [0, 0, 1j, -1], [1, -1j, 0, 0]]) / np.sqrt(2)
-E = np.array([[1, -1j, 0, 0], [0, 0, -1j, 1], [0, 0, 1j, 1], [-1, -1j, 0, 0]]) / np.sqrt(2)
+E = np.array([[1, 1j, 0, 0], [0, 0, 1j, 1], [0, 0, 1j, -1], [1, -1j, 0, 0]]) / np.sqrt(2)
 Et = qml.math.T(E)
 Edag = qml.math.conj(Et)
 
@@ -64,7 +63,7 @@ def _convert_to_su4(U):
     det = math.linalg.det(U)
 
     # Convert to SU(4) if it's not close to 1
-    if not qml.math.allclose(det, 1.0):
+    if not math.allclose(det, 1.0):
         exp_angle = -1j * math.cast_like(math.angle(det), 1j) / 4
         U = math.cast_like(U, det) * qml.math.exp(exp_angle)
 
@@ -78,28 +77,20 @@ def _select_rotation_angles(U):
 
     .. math::
 
-        \gamma(U) = U (Y \otimes Y) U^T (Y \otimes Y),
-
-    and :math:`Y` is the Pauli :math:`Y` operation. Equivalently,
-
-    .. math::
-
-        \gamma(U) = U E E^T U^T E E^T
-
-    since :math:`EE^T = Y \otimes Y`.
+        \gamma(U) = (E^\dag U E) (E^\dag U E)^T.
     """
+    
     gammaU = qml.math.linalg.multi_dot([Edag, U, E, Et, qml.math.T(U), qml.math.T(Edag)])
     evs = qml.math.linalg.eigvals(gammaU)
 
     # The rotation angles can be computed as follows (any three eigenvalues can be used)
     x, y, z = qml.math.angle(evs[0]), qml.math.angle(evs[1]), qml.math.angle(evs[2])
 
+    # Choose the eigenvalues; there are different options in v1 vs. v3 of the paper,
+    # I'm not entirely sure why.
     alpha = (y + z) / 2
     beta = -(x + z) / 2
     delta = -(x + y) / 2
-    # alpha = (y + x) / 2
-    # beta = (x + z) / 2
-    # delta = (z + y) / 2
 
     return alpha, beta, delta
 
@@ -176,7 +167,7 @@ def _extract_su2su2_prefactors(U, V):
     # First, we find a matrix p (hopefully) in SO(4) s.t. p^T u u^T p is diagonal.
     # Since uuT is complex and symmetric, both its real / imag parts share a set
     # of real-valued eigenvectors.
-    ev_p, p = qml.math.linalg.eigh(uuT.real)
+    ev_p, p = qml.math.linalg.eig(uuT.real)
 
     # We also do this for v, i.e., find q (hopefully) in SO(4) s.t. q^T v v^T q is diagonal.
     ev_q, q = qml.math.linalg.eig(vvT.real)
