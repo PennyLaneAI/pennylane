@@ -43,9 +43,10 @@ class Molecule:
             considered to be active.
         active_orbitals (int): Number of active orbitals. If not specified, all orbitals are
             considered to be active.
-        alpha (array[float]): exponents of the Gaussian functions forming the basis function
-        coeff (array[float]): coefficients of the contracted Gaussian functions
-        r (array[float]): positions of the Gaussian functions forming the basis function
+        l (tuple[int]): angular momentum numbers of the basis function.
+        alpha (array(float)): exponents of the primitive Gaussian functions
+        coeff (array(float)): coefficients of the contracted Gaussian functions
+        r (array(float)): positions of the Gaussian functions
     """
 
     def __init__(
