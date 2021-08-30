@@ -473,7 +473,7 @@ def param_shift_cv(
     force_order2=False,
 ):
     r"""Transform a continuous-variable QNode to compute the parameter-shift gradient of all gate
-    parameters with respect to its outputs.
+    parameters with respect to its inputs.
 
     Args:
         tape (.QuantumTape): quantum tape to differentiate
