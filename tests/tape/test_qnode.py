@@ -396,6 +396,7 @@ class TestValidation:
         """Test that selected "best" diff_method is correctly set to 'finite-diff'
         in cases where other methods are not available."""
 
+        # Custom operation which has grad_method="finite_diff"
         class MyRX(qml.operation.Operation):
             num_params = 1
             num_wires = 1
@@ -437,7 +438,7 @@ class TestValidation:
             "backprop",
         ],
     )
-    def test_to_tf(self, method):
+    def test_to_tf(self, method, mocker):
         """Test if interface change is working"""
         tf = pytest.importorskip("tf")
         dev = qml.device("default.qubit", wires=1)
@@ -448,7 +449,9 @@ class TestValidation:
 
         # Test if interface change works with different diff_methods
         qn = qml.QNode(func, dev, interface="autograd", diff_method=method)
+        spy = mocker.spy(qn, "set_best_diff_method")
         qn.to_tf()
+        spy.assert_called_once()
 
     @pytest.mark.parametrize(
         "method",
@@ -461,7 +464,7 @@ class TestValidation:
             "backprop",
         ],
     )
-    def test_to_autograd(self, method):
+    def test_to_autograd(self, method, mocker):
         """Test if interface change is working"""
         dev = qml.device("default.qubit", wires=1)
         tf = pytest.importorskip("tf")
@@ -472,7 +475,9 @@ class TestValidation:
 
         # Test if interface change works with different diff_methods
         qn = qml.QNode(func, dev, interface="tf", diff_method=method)
+        spy = mocker.spy(qn, "set_best_diff_method")
         qn.to_autograd()
+        spy.assert_called_once()
 
     @pytest.mark.parametrize(
         "method",
@@ -484,7 +489,7 @@ class TestValidation:
             "adjoint",
         ],
     )
-    def test_to_torch(self, method):
+    def test_to_torch(self, method, mocker):
         """Test if interface change is working"""
         dev = qml.device("default.qubit", wires=1)
         torch = pytest.importorskip("torch")
@@ -495,7 +500,9 @@ class TestValidation:
 
         # Test if interface change works with different diff_methods
         qn = qml.QNode(func, dev, interface="autograd", diff_method=method)
+        spy = mocker.spy(qn, "set_best_diff_method")
         qn.to_torch()
+        spy.assert_called_once()
 
     @pytest.mark.parametrize(
         "method",
@@ -508,7 +515,7 @@ class TestValidation:
             "backprop",
         ],
     )
-    def test_to_jax(self, method):
+    def test_to_jax(self, method, mocker):
         """Test if interface change is working"""
         dev = qml.device("default.qubit", wires=1)
         jax = pytest.importorskip("jax")
@@ -519,7 +526,9 @@ class TestValidation:
 
         # Test if interface change works with different diff_methods
         qn = qml.QNode(func, dev, interface="autograd", diff_method=method)
+        spy = mocker.spy(qn, "set_best_diff_method")
         qn.to_jax()
+        spy.assert_called_once()
 
 
 class TestTapeConstruction:
