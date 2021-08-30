@@ -395,14 +395,24 @@ class TestValidation:
     def test_qnode_best_diff_method_finite_fallback(self):
         """Test that selected "best" diff_method is correctly set to 'finite-diff'
         in cases where other methods are not available."""
-        dev = qml.device("default.mixed", wires=3, shots=None)
 
-        # Force 'finite-diff' diff_method
-        qml.RX.grad_method = "F"
-        assert qml.RX.grad_method == "F"
+        class MyRX(qml.operation.Operation):
+            num_params = 1
+            num_wires = 1
+            par_domain = "R"
+            is_composable_rotation = True
+            basis = "X"
+            grad_method = "F"
+
+            @classmethod
+            def _matrix(cls, *params):
+                return qml.RX._matrix(*params)
+
+        dev = qml.device("default.mixed", wires=3, shots=None)
+        dev.operations.add("MyRX")
 
         def circuit(x):
-            qml.RX(x, wires=1)
+            MyRX(x, wires=1)
             return qml.expval(qml.PauliZ(1))
 
         qnode = qml.QNode(circuit, dev, diff_method="best")
@@ -415,9 +425,6 @@ class TestValidation:
 
         # After execution correctly show 'finite-diff'
         assert qnode.diff_method == "finite-diff"
-
-        # Reset grad_method to 'A'
-        qml.RX.grad_method = "A"
 
     @pytest.mark.parametrize(
         "method",
