@@ -189,7 +189,10 @@ class QNode:
         self._tape, self.interface, self.device, tape_diff_options = self.get_tape(
             device, interface, diff_method
         )
-        self.set_best_diff_method(tape_diff_options)
+        # if diff_method is best, then set it to the actual diff method being used
+        if self.diff_method == "best":
+            self.diff_method_change = True
+            self.diff_method = self._get_best_diff_method(tape_diff_options)
 
         # The arguments to be passed to JacobianTape.jacobian
         self.diff_options = diff_options or {}
@@ -208,18 +211,16 @@ class QNode:
             self.diff_method,
         )
 
-    def set_best_diff_method(self, tape_diff_options):
+    def _get_best_diff_method(self, tape_diff_options):
         """Update diff_method to reflect which method has been selected"""
-        if self.diff_method == "best":
-            self.diff_method_change = True
-            if tape_diff_options["method"] == "device":
-                self.diff_method = "device"
-            elif tape_diff_options["method"] == "backprop":
-                self.diff_method = "backprop"
-            elif tape_diff_options["method"] == "best":
-                self.diff_method = "parameter-shift"
-            elif tape_diff_options["method"] == "numeric":
-                self.diff_method = "finite-diff"
+        if tape_diff_options["method"] == "device":
+            return "device"
+        elif tape_diff_options["method"] == "backprop":
+            return "backprop"
+        elif tape_diff_options["method"] == "best":
+            return "parameter-shift"
+        elif tape_diff_options["method"] == "numeric":
+            return "finite-diff"
 
     # pylint: disable=too-many-return-statements
     @staticmethod
@@ -867,7 +868,8 @@ class QNode:
                 self._tape, interface, self.device, diff_options = self.get_tape(
                     self._original_device, "tf", diff_method
                 )
-                self.set_best_diff_method(diff_options)
+                if self.diff_method_change:
+                    self.diff_method = self._get_best_diff_method(diff_options)
                 self.interface = interface
                 self.diff_options.update(diff_options)
             else:
@@ -912,7 +914,8 @@ class QNode:
                 self._tape, interface, self.device, diff_options = self.get_tape(
                     self._original_device, "torch", diff_method
                 )
-                self.set_best_diff_method(diff_options)
+                if self.diff_method_change:
+                    self.diff_method = self._get_best_diff_method(diff_options)
                 self.interface = interface
                 self.diff_options.update(diff_options)
             else:
@@ -949,7 +952,8 @@ class QNode:
             self._tape, interface, self.device, diff_options = self.get_tape(
                 self._original_device, "autograd", diff_method
             )
-            self.set_best_diff_method(diff_options)
+            if self.diff_method_change:
+                self.diff_method = self._get_best_diff_method(diff_options)
             self.interface = interface
             self.diff_options.update(diff_options)
         else:
@@ -982,7 +986,8 @@ class QNode:
                 self._tape, interface, self.device, diff_options = self.get_tape(
                     self._original_device, "jax", diff_method
                 )
-                self.set_best_diff_method(diff_options)
+                if self.diff_method_change:
+                    self.diff_method = self._get_best_diff_method(diff_options)
                 self.interface = interface
                 self.diff_options.update(diff_options)
             else:
