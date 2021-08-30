@@ -914,3 +914,36 @@ class TestParamShiftGradients:
             ]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
+class TestHamiltonianExpvalGradients:
+    """Test that tapes ending with expval(H) can be
+    differentiated"""
+
+    def test_trainable_coeffs(self):
+        """Test trainable Hamiltonian coefficients"""
+        dev = qml.device("default.qubit", wires=2)
+
+        obs = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliX(1)]
+        coeffs = np.array([0.1, 0.2, 0.3])
+        H  = qml.Hamiltonian(coeffs, obs)
+
+        weights = np.array([0.4, 0.5])
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(H)
+
+        tape.trainable_params = {0, 1, 2, 4}
+
+        tapes, fn = qml.gradients.param_shift(tape)
+        # two shifts per rotation gate, one circuit per trainable H term
+        assert len(tapes) == 2 * 2 + 2
+
+        res = fn(dev.batch_execute(tapes))
+        assert res.shape == (1, 4)
+
+        expected = np.array([[-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]])
+        assert np.allclose(res, expected, atol=tol, rtol=0)

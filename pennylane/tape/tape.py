@@ -750,8 +750,14 @@ class QuantumTape(AnnotatedQueue):
             operation, and an integer representing the argument index,
             for the provided trainable parameter.
         """
+        # get the index of the parameter in the tape
         t_idx = list(self.trainable_params)[idx]
+
+        # get the corresponding operation
         op = self._par_info[t_idx]["op"]
+
+        # get the corresponding operation parameter index
+        # (that is, index of the parameter within the operation)
         p_idx = self._par_info[t_idx]["p_idx"]
         return op, p_idx
 

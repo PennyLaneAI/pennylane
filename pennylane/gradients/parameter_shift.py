@@ -66,19 +66,8 @@ def _get_operation_recipe(tape, t_idx, shift=np.pi / 2):
     If the corresponding operation has grad_recipe=None, then
     the default two-term parameter-shift rule is assumed.
     """
-    # get the index of the parameter in the tape
-    parameter_idx = list(tape.trainable_params)[t_idx]
-
-    # get the corresponding operation
-    op = tape._par_info[parameter_idx]["op"]
-
-    # get the corresponding operation parameter index
-    # (that is, index of the parameter within the operation)
-    op_p_idx = tape._par_info[parameter_idx]["p_idx"]
-
-    # return the parameter-shift gradient for that
-    # operation parameter.
-    return op.get_parameter_shift(op_p_idx, shift=shift)
+    op, p_idx = tape.get_operation(t_idx)
+    return op.get_parameter_shift(p_idx, shift=shift)
 
 
 def _process_gradient_recipe(gradient_recipe, tol=1e-10):
@@ -156,6 +145,17 @@ def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None
             # parameter has zero gradient
             shapes.append(0)
             gradient_coeffs.append([])
+            continue
+
+        op, p_idx = tape.get_operation(idx)
+
+        if op.name == "Hamiltonian":
+            # operation is a Hamiltonian
+            print(op)
+            g_tapes = qml.gradients.hamiltonian_grad(tape, idx)[0]
+            gradient_tapes.extend(g_tapes)
+            shapes.append(1)
+            gradient_coeffs.append([1.0])
             continue
 
         # get the gradient recipe for the trainable parameter
