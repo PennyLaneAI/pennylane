@@ -45,7 +45,7 @@ class Molecule:
             considered to be active.
         alpha (array[float]): exponents of the Gaussian functions forming the basis function
         coeff (array[float]): coefficients of the contracted Gaussian functions
-        rgaus (array[float]): positions of the Gaussian functions forming the basis function
+        r (array[float]): positions of the Gaussian functions forming the basis function
     """
 
     def __init__(
