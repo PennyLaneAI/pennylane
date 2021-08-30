@@ -121,12 +121,12 @@ class QNode:
             supported, and results in a gate decomposition. If any operations in the decomposition
             remain unsupported by the device, another expansion occurs.
 
-        h (float): step size for the finite difference method.
+        h (float): step size for the finite difference method
 
         order (int): The order of the finite difference method to use. ``1`` corresponds
             to forward finite differences, ``2`` to centered finite differences.
 
-        shift (float): the size of the shift for two-term parameter-shift gradient computations.
+        shift (float): the size of the shift for two-term parameter-shift gradient computations
 
         adjoint_cache (bool): for TensorFlow and PyTorch interfaces and adjoint differentiation,
             this indicates whether to save the device state after the forward pass.  Doing so saves a
@@ -138,7 +138,7 @@ class QNode:
             that this option is only applicable for the following differentiation methods:
             ``"parameter-shift"``, ``"finite-diff"`` and ``"reversible"``.
 
-        **kwargs is used to catch all unrecognized keyword arguments and provide a user warning about them.
+        **kwargs is used to catch all unrecognized keyword arguments and provide a user warning about them
 
     **Example**
 
@@ -1137,12 +1137,12 @@ def qnode(
             supported, and results in a gate decomposition. If any operations in the decomposition
             remain unsupported by the device, another expansion occurs.
 
-        h (float): step size for the finite difference method.
+        h (float): step size for the finite difference method
 
         order (int): The order of the finite difference method to use. ``1`` corresponds
             to forward finite differences, ``2`` to centered finite differences.
 
-        shift (float): the size of the shift for two-term parameter-shift gradient computations.
+        shift (float): the size of the shift for two-term parameter-shift gradient computations
 
         adjoint_cache (bool): for TensorFlow and PyTorch interfaces and adjoint differentiation,
             this indicates whether to save the device state after the forward pass.  Doing so saves a
@@ -1154,7 +1154,7 @@ def qnode(
             that this option is only applicable for the following differentiation methods:
             ``"parameter-shift"``, ``"finite-diff"`` and ``"reversible"``.
 
-        **kwargs is used to catch all unrecognized keyword arguments and provide a user warning about them.
+        **kwargs is used to catch all unrecognized keyword arguments and provide a user warning about them
 
     **Example**
 
