@@ -17,7 +17,7 @@ Unit tests for generating basis set default parameters.
 # pylint: disable=no-self-use
 import pytest
 from pennylane import numpy as np
-from basis_set import BasisFunction, atom_basis_data, mol_basis_data
+from pennylane.qchem_hf.basis_set import BasisFunction, atom_basis_data, mol_basis_data
 
 basis_data_H = [
     (
