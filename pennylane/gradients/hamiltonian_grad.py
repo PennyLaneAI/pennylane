@@ -28,13 +28,6 @@ def hamiltonian_grad(tape, idx, params=None):
         params (array): explicit parameters to set
     """
     op, p_idx = tape.get_operation(idx)
-
-    if op.name != "Hamiltonian":
-        raise ValueError(
-            f"This gradient transform can only be used to compute "
-            f"the gradient with respect to Hamiltonian coefficients, not {op}"
-        )
-
     new_tape = tape.copy(copy_operations=True)
 
     if params is not None:
