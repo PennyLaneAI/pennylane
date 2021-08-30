@@ -809,10 +809,12 @@ class TestHigherOrderDerivatives:
         expected = np.zeros([2, 2])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+
 execute_kwargs = [
     {"gradient_fn": param_shift},
     {"gradient_fn": finite_diff},
 ]
+
 
 @pytest.mark.parametrize("execute_kwargs", execute_kwargs)
 class TestHamiltonianWorkflows:
@@ -855,17 +857,19 @@ class TestHamiltonianWorkflows:
         a, b, c = coeffs1
         d = coeffs2[0]
         x, y = weights
-        return np.array([
+        return np.array(
             [
-                -c * np.cos(x) * np.sin(y) - np.sin(x) * (a + b * np.sin(y)),
-                b * np.cos(x) * np.cos(y) - c * np.cos(y) * np.sin(x),
-                np.cos(x),
-                np.cos(x) * np.sin(y),
-                -(np.sin(x) * np.sin(y)),
-                0,
-            ],
-            [-d * np.sin(x), 0, 0, 0, 0, np.cos(x)],
-        ])
+                [
+                    -c * np.cos(x) * np.sin(y) - np.sin(x) * (a + b * np.sin(y)),
+                    b * np.cos(x) * np.cos(y) - c * np.cos(y) * np.sin(x),
+                    np.cos(x),
+                    np.cos(x) * np.sin(y),
+                    -(np.sin(x) * np.sin(y)),
+                    0,
+                ],
+                [-d * np.sin(x), 0, 0, 0, 0, np.cos(x)],
+            ]
+        )
 
     def test_multiple_hamiltonians_not_trainable(self, cost_fn, execute_kwargs, tol):
         coeffs1 = np.array([0.1, 0.2, 0.3], requires_grad=False)
