@@ -23,6 +23,7 @@ import numpy as np
 
 import pennylane as qml
 
+from .gradient_transform import gradient_transform
 from .finite_difference import finite_diff, generate_shifted_tapes
 from .parameter_shift import expval_param_shift, _get_operation_recipe, _process_gradient_recipe
 
@@ -460,6 +461,7 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shift=np.pi / 2, grad
     return gradient_tapes, processing_fn
 
 
+@gradient_transform
 def param_shift_cv(
     tape,
     dev,
