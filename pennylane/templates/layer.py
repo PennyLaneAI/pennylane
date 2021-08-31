@@ -18,6 +18,7 @@ Contains the ``layer`` template constructor.
 from pennylane.templates.decorator import template as temp
 from pennylane.math import shape
 
+
 def _preprocess(args, depth):
     """Validate and pre-process inputs as follows:
 
