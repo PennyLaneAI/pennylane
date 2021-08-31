@@ -394,6 +394,9 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 <h3>Bug fixes</h3>
 
+* The `qml.layer` template now works with tensorflow variables.
+[(#1615)](https://github.com/PennyLaneAI/pennylane/pull/1615)
+
 * Remove `QFT` from possible operations in `default.qubit` and `default.mixed`.
   [(#1600)](https://github.com/PennyLaneAI/pennylane/pull/1600)
 
