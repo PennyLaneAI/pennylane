@@ -157,6 +157,7 @@ class TestLayer:
         assert prep == target
 
     def test_layer_tf(self):
+    """Tests that the layering function accepts Tensorflow variables."""
 
         tf = pytest.importorskip("tensorflow")
 
