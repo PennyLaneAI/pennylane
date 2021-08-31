@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-TThis module contains functions for computing integrals over basis functions.
+TThis module contains functions needed for computing integrals over basis functions.
 """
 import numpy as np
 import autograd.numpy as anp
