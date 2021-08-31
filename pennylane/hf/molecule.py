@@ -38,15 +38,15 @@ class Molecule:
             :math:`N_\mathrm{unpaired}` unpaired electrons occupying the HF orbitals. Possible
             values of ``mult`` are :math:`1, 2, 3, \ldots`. If not specified, a closed-shell HF
             state is assumed.
-        basis_name(str): Atomic basis set used to represent the molecular orbitals.
+        basis_name (str): Atomic basis set used to represent the molecular orbitals.
         active_electrons (int): Number of active electrons. If not specified, all electrons are
             considered to be active.
         active_orbitals (int): Number of active orbitals. If not specified, all orbitals are
             considered to be active.
         l (tuple[int]): angular momentum numbers of the basis function.
-        alpha (array(float)): exponents of the primitive Gaussian functions
-        coeff (array(float)): coefficients of the contracted Gaussian functions
-        r (array(float)): positions of the Gaussian functions
+        alpha (array[float]): exponents of the primitive Gaussian functions
+        coeff (array[float]): coefficients of the contracted Gaussian functions
+        r (array[float]): positions of the Gaussian functions
     """
 
     def __init__(
@@ -113,13 +113,13 @@ def generate_basis_set(l, alpha, coeff, r):
     r"""Generate a set of basis function objects.
 
     Args:
-        l list((tuple[int])): angular momentum numbers of the basis function.
-        alpha list((array(float))): exponents of the Gaussian functions forming basis functions
-        coeff list((array(float))): coefficients of the contracted Gaussian functions
-        r list((array(float))): positions of the Gaussian functions forming the basis functions
+        l (list[tuple[int]]): angular momentum numbers of the basis function
+        alpha (list[array[float]]): exponents of the Gaussian functions forming basis functions
+        coeff (list[array[float]]): coefficients of the contracted Gaussian functions
+        r (list[array[float]]): positions of the Gaussian functions forming the basis functions
 
     Returns:
-        list(BasisFunction): list containing a set of basis function objects.
+        list[BasisFunction]: list containing a set of basis function objects
 
     **Example**
 
@@ -127,7 +127,7 @@ def generate_basis_set(l, alpha, coeff, r):
     >>> exponents = [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]]
     >>> coefficients = [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]]
     >>> centers = [[0.0, 0.0, -0.694349], [0.0, 0.0, 0.694349]]
-    >>>  basis_set = generate_basis_set(l, exponents, coefficients, centers)
+    >>> basis_set = generate_basis_set(l, exponents, coefficients, centers)
     >>> print(basis_set)
     [<molecule.BasisFunction object at 0x7f7566db2910>, <molecule.BasisFunction object at 0x7f7566db2a30>]
     """
