@@ -57,7 +57,7 @@ class gradient_transform(qml.batch_transform):
     """Decorator for defining quantum gradient transforms.
 
     Quantum gradient transforms are a specific case of :class:`~.batch_transform`.
-    All quantum gradient transforms accept a tape, and outputs
+    All quantum gradient transforms accept a tape, and output
     a batch of tapes to be independently executed on a quantum device, alongside
     a post-processing function that returns the result.
 
