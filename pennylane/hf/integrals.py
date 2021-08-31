@@ -47,9 +47,13 @@ def primitive_norm(l, alpha):
     array([1.79444183])
     """
     lx, ly, lz = l
-    n = (2 * alpha / np.pi)**0.75 * (4 * alpha)**(sum(l) / 2) / \
-    anp.sqrt(fac2(2 * lx - 1) * fac2(2 * ly - 1) * fac2(2 * lz - 1))
+    n = (
+        (2 * alpha / np.pi) ** 0.75
+        * (4 * alpha) ** (sum(l) / 2)
+        / anp.sqrt(fac2(2 * lx - 1) * fac2(2 * ly - 1) * fac2(2 * lz - 1))
+    )
     return n
+
 
 def contracted_norm(l, alpha, c):
     r"""Compute the normalization constant for a contracted Gaussian function.
@@ -82,6 +86,6 @@ def contracted_norm(l, alpha, c):
     """
     lx, ly, lz = l
     coeff = np.pi ** 1.5 / 2 ** sum(l) * fac2(2 * lx - 1) * fac2(2 * ly - 1) * fac2(2 * lz - 1)
-    s = ((c[:,anp.newaxis] * c) / ((alpha[:,anp.newaxis] + alpha) ** (sum(l) + 1.5))).sum()
+    s = ((c[:, anp.newaxis] * c) / ((alpha[:, anp.newaxis] + alpha) ** (sum(l) + 1.5))).sum()
     n = 1 / anp.sqrt(coeff * s)
     return n
