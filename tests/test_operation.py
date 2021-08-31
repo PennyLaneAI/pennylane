@@ -128,6 +128,9 @@ class TestOperation:
         if test_class == qml.QubitUnitary:
             pytest.skip("QubitUnitary can act on any number of wires.")
 
+        if test_class == qml.Hamiltonian:
+            pytest.skip("Hamiltonian has a different initialization signature.")
+
         if test_class in (qml.ControlledQubitUnitary, qml.MultiControlledX):
             pytest.skip("ControlledQubitUnitary alters the input params and wires in its __init__")
 
@@ -488,6 +491,19 @@ class TestObservableConstruction:
 
         op = DummyObserv(1.0, wires=0, id="test")
         assert op.id == "test"
+
+
+class TestObservableInstatiation:
+    """Test that wires are specified when a qml.operation.Observable is instantiated"""
+
+    def test_wire_is_given_in_argument(self):
+        class DummyObservable(qml.operation.Observable):
+            num_wires = 1
+            num_params = 0
+            par_domain = None
+
+        with pytest.raises(Exception, match="Must specify the wires *"):
+            DummyObservable()
 
 
 class TestOperatorIntegration:
@@ -971,6 +987,47 @@ class TestTensor:
 
         # the measurement owns the Pauli/pruned tensor
         assert ann_queue[m]["owns"] == T_pruned
+
+    def test_sparse_matrix_no_wires(self):
+        """Tests that the correct sparse matrix representation is used."""
+
+        t = qml.PauliX(0) @ qml.PauliZ(1)
+        s = t.sparse_matrix()
+
+        assert np.allclose(s.row, [0, 1, 2, 3])
+        assert np.allclose(s.col, [2, 3, 0, 1])
+        assert np.allclose(s.data, [1, -1, 1, -1])
+
+    def test_sparse_matrix_swapped_wires(self):
+        """Tests that the correct sparse matrix representation is used
+        when the custom wires swap the order."""
+
+        t = qml.PauliX(0) @ qml.PauliZ(1)
+        s = t.sparse_matrix(wires=[1, 0])
+
+        assert np.allclose(s.row, [0, 1, 2, 3])
+        assert np.allclose(s.col, [1, 0, 3, 2])
+        assert np.allclose(s.data, [1, 1, -1, -1])
+
+    def test_sparse_matrix_extra_wire(self):
+        """Tests that the correct sparse matrix representation is used
+        when the custom wires add an extra wire with an implied identity operation."""
+
+        t = qml.PauliX(0) @ qml.PauliZ(1)
+        s = t.sparse_matrix(wires=[0, 1, 2])
+
+        assert s.shape == (8, 8)
+        assert np.allclose(s.row, [0, 1, 2, 3, 4, 5, 6, 7])
+        assert np.allclose(s.col, [4, 5, 6, 7, 0, 1, 2, 3])
+        assert np.allclose(s.data, [1, 1, -1, -1, 1, 1, -1, -1])
+
+    def test_sparse_matrix_error(self):
+        """Tests that an error is raised if the sparse matrix is computed for
+        a tensor whose constituent operations are not all single-qubit gates."""
+
+        t = qml.PauliX(0) @ qml.Hermitian(np.eye(4), wires=[1, 2])
+        with pytest.raises(ValueError, match="Can only compute"):
+            t.sparse_matrix()
 
 
 equal_obs = [

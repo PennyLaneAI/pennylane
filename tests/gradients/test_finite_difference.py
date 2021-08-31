@@ -134,7 +134,7 @@ class TestFiniteDiff:
     def test_non_differentiable_error(self):
         """Test error raised if attempting to differentiate with
         respect to a non-differentiable argument"""
-        psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
+        psi = np.array([1, 0, 1, 0], requires_grad=False) / np.sqrt(2)
 
         with qml.tape.JacobianTape() as tape:
             qml.QubitStateVector(psi, wires=[0, 1])
@@ -147,7 +147,7 @@ class TestFiniteDiff:
         with pytest.raises(
             ValueError, match=r"Cannot differentiate with respect to parameter\(s\) {0}"
         ):
-            finite_diff(tape)
+            finite_diff(tape, _expand=False)
 
         # setting trainable parameters avoids this
         tape.trainable_params = {1, 2}

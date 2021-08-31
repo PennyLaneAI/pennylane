@@ -33,7 +33,7 @@ class TestDecomposition:
             qml.ControlledQubitUnitary(m @ m, control_wires=[1], wires=[0]),
             qml.Hadamard(2),
             qml.ControlledQubitUnitary(m, control_wires=[2], wires=[0]),
-            qml.QFT(wires=[1, 2]).inv()
+            qml.templates.QFT(wires=[1, 2]).inv()
 
         assert len(tape2.queue) == len(tape.queue)
         assert all([op1.name == op2.name for op1, op2 in zip(tape.queue, tape2.queue)])
@@ -62,7 +62,8 @@ class TestDecomposition:
                 )
                 qml.probs(estimation_wires)
 
-            tape = tape.expand()
+            tape = tape.expand(depth=2, stop_at=lambda obj: obj.name in dev.operations)
+
             res = tape.execute(dev).flatten()
             initial_estimate = np.argmax(res) / 2 ** (wires - 1)
 
@@ -110,7 +111,7 @@ class TestDecomposition:
                 )
                 qml.probs(estimation_wires)
 
-            tape = tape.expand(stop_at=lambda obj: obj.name in dev.operations)
+            tape = tape.expand(depth=2, stop_at=lambda obj: obj.name in dev.operations)
             res = tape.execute(dev).flatten()
 
             if phase < 0:
