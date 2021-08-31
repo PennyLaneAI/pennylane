@@ -183,14 +183,14 @@ def generate_shifted_tapes(tape, idx, shifts, multipliers=None):
 
 @gradient_transform
 def finite_diff(tape, argnum=None, h=1e-7, approx_order=1, n=1, strategy="forward", f0=None):
-    r"""Generate the finite-difference tapes and postprocessing methods required
-    to compute the gradient of a gate parameter with respect to its outputs.
+    r"""Transform a QNode to compute the finite-difference gradient of all gate
+    parameters with respect to its inputs.
 
     Args:
-        tape (.QuantumTape): quantum tape to differentiate
+        qnode (.QNode or .QuantumTape): quantum tape or QNode to differentiate
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
-            trainable indices are returned.
+            trainable parameters are returned.
         h (float): finite difference method step size
         approx_order (int): The approximation order of the finite-difference method to use.
         n (int): compute the :math:`n`-th derivative
@@ -207,26 +207,77 @@ def finite_diff(tape, argnum=None, h=1e-7, approx_order=1, n=1, strategy="forwar
             saving a quantum evaluation.
 
     Returns:
-        tuple[list[QuantumTape], function]: A tuple containing a
-        list of generated tapes, in addition to a post-processing
-        function to be applied to the evaluated tapes.
+        tensor_like or tuple[list[QuantumTape], function]:
+
+        - If the input is a QNode, a tensor
+          representing the output Jacobian matrix of size ``(number_outputs, number_gate_parameters)``
+          is returned.
+
+        - If the input is a tape, a tuple containing a list of generated tapes,
+          in addition to a post-processing function to be applied to the
+          evaluated tapes.
 
     **Example**
 
-    >>> with qml.tape.QuantumTape() as tape:
+    This transform can be registered directly as the quantum gradient transform
+    to use during autodifferentiation:
+
+    >>> dev = qml.device("default.qubit", wires=2)
+    >>> @qml.qnode(dev, gradient_fn=qml.gradients.finite_diff)
+    ... def circuit(params):
     ...     qml.RX(params[0], wires=0)
     ...     qml.RY(params[1], wires=0)
     ...     qml.RX(params[2], wires=0)
-    ...     qml.expval(qml.PauliZ(0))
-    ...     qml.var(qml.PauliZ(0))
-    >>> tape.trainable_params = {0, 1, 2}
-    >>> gradient_tapes, fn = qml.gradients.finite_diff.grad(tape)
-    >>> res = dev.batch_execute(gradient_tapes)
-    >>> fn(res)
-    [[-0.38751721 -0.18884787 -0.38355704]
-     [ 0.69916862  0.34072424  0.69202359]]
+    ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+    >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
+    >>> qml.jacobian(circuit)(params)
+    tensor([[-0.38751725, -0.18884792, -0.38355708],
+            [ 0.69916868,  0.34072432,  0.69202365]], requires_grad=True)
 
-    The output Jacobian matrix is of size ``(number_outputs, number_parameters)``.
+
+    .. UsageDetails::
+
+        This gradient transform can also be applied directly to :class:`~.QNode` objects:
+
+        >>> @qml.qnode(dev)
+        ... def circuit(params):
+        ...     qml.RX(params[0], wires=0)
+        ...     qml.RY(params[1], wires=0)
+        ...     qml.RX(params[2], wires=0)
+        ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+        >>> qml.gradients.finite_diff(circuit)(params)
+        tensor([[-0.38751725, -0.18884792, -0.38355708],
+                [ 0.69916868,  0.34072432,  0.69202365]], requires_grad=True)
+
+        This quantum gradient transform can also be applied to low-level
+        :class:`~.QuantumTape` objects. This will result in no implicit quantum
+        device evaluation. Instead, the processed tapes, and post-processing
+        function, which together define the gradient are directly returned:
+
+        >>> with qml.tape.JacobianTape() as tape:
+        ...     qml.RX(params[0], wires=0)
+        ...     qml.RY(params[1], wires=0)
+        ...     qml.RX(params[2], wires=0)
+        ...     qml.expval(qml.PauliZ(0))
+        ...     qml.var(qml.PauliZ(0))
+        >>> gradient_tapes, fn = qml.gradients.finite_diff.grad(tape)
+        >>> gradient_tapes
+        [<JacobianTape: wires=[0, 1], params=3>,
+         <JacobianTape: wires=[0, 1], params=3>,
+         <JacobianTape: wires=[0, 1], params=3>,
+         <JacobianTape: wires=[0, 1], params=3>]
+
+        This can be useful if the underlying circuits representing the gradient
+        computation need to be analyzed.
+
+        The output tapes can then be evaluated and post-processed to retrieve
+        the gradient:
+
+        >>> dev = qml.device("default.qubit", wires=2)
+        >>> from pennylane.interfaces.batch import execute
+        >>> fn(execute(gradient_tapes, dev, None))
+        [[-0.38751721 -0.18884787 -0.38355704]
+         [ 0.69916862  0.34072424  0.69202359]]
     """
     # TODO: replace the JacobianTape._grad_method_validation
     # functionality before deprecation.
