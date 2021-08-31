@@ -26,6 +26,7 @@ E = np.array([[1, 1j, 0, 0], [0, 0, 1j, 1], [0, 0, 1j, -1], [1, -1j, 0, 0]]) / n
 Et = qml.math.T(E)
 Edag = qml.math.conj(Et)
 
+# Helpful to have static copies of these since they are needed in a few places.
 CNOT01 = qml.CNOT(wires=[0, 1]).matrix
 CNOT10 = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
 SWAP = qml.SWAP(wires=[0, 1]).matrix
@@ -79,18 +80,15 @@ def _select_rotation_angles(U):
 
         \gamma(U) = (E^\dag U E) (E^\dag U E)^T.
     """
-    
+
     gammaU = qml.math.linalg.multi_dot([Edag, U, E, Et, qml.math.T(U), qml.math.T(Edag)])
     evs = qml.math.linalg.eigvals(gammaU)
 
     # The rotation angles can be computed as follows (any three eigenvalues can be used)
     x, y, z = qml.math.angle(evs[0]), qml.math.angle(evs[1]), qml.math.angle(evs[2])
 
-    # Choose the eigenvalues; there are different options in v1 vs. v3 of the paper,
-    # I'm not entirely sure why.
-    #alpha = (y + z) / 2
-    #beta = -(x + z) / 2
-    #delta = -(x + y) / 2
+    # Compute functions of the eigenvalues; there are different options in v1
+    # vs. v3 of the paper, I'm not entirely sure why.
     alpha = (x + y) / 2
     beta = (x + z) / 2
     delta = (z + y) / 2
@@ -144,16 +142,18 @@ def _su2su2_to_tensor_products(U):
 
 def _extract_su2su2_prefactors(U, V):
     """U, V are SU(4) matrices for which there exists A, B, C, D such that
-    (C \otimes D) V (A \otimes B) = U. The problem is to find A, B, C, D in SU(2)
+    (A \otimes B) V (C \otimes D) = U. The problem is to find A, B, C, D in SU(2)
     in an analytic and fully differentiable manner.
 
     This decomposition is possible when U and V are in the same double coset of
-    SU(4), meaning that there exists G, H in SO(4) s.t. G V H = U. This is
-    guaranteed by how the eigenvalues of U were used to construct V.
+    SU(4), meaning there exists G, H in SO(4) s.t. G (Edag V E) H = (Edag U
+    E). This is guaranteed here by how V was constructed using the
+    _select_rotation_angles method. Then, we can use the fact that E SO(4) Edag
+    gives us something in SU(2) x SU(2) to give A, B, C, D.
     """
 
     # A lot of the work here happens in the magic basis. Essentially, we
-    # don't look explicitly at U = G V H, but rather at
+    # don't look explicitly at some U = G V H, but rather at
     #     E^\dagger U E = G E^\dagger V E H
     # so that we can recover
     #     U = (E G E^\dagger) V (E H E^\dagger) = (A \otimes B) V (C \otimes D).
@@ -201,14 +201,14 @@ def _extract_su2su2_prefactors(U, V):
     q_perm = _perm_matrix_from_sequence(new_q_order)
     q = qml.math.linalg.multi_dot([q, qml.math.T(q_perm)])
 
-    # Depending on the sign of the permutation, it may be that q was in O(4)
-    # but not SO(4). Again we can fix this by simply negating a column.
+    # Depending on the sign of the permutation, it may be that q is in O(4) but
+    # not SO(4). Again we can fix this by simply negating a column.
     q_in_so4 = qml.math.isclose(qml.math.linalg.det(q), 1.0)
     if not q_in_so4:
         q[:, -1] = -q[:, -1]
 
     # Now, we should have p, q in SO(4) such that p^T u u^T p = q^T v v^T q.
-    # Then (v^\dag q p^T u)(v^\dag q p^T U)^T = I.
+    # Then (v^\dag q p^T u)(v^\dag q p^T u)^T = I.
     # So we can set G = p q^T, H = v^\dag q p^T u to obtain G v H = u.
     G = qml.math.dot(p, qml.math.T(q))
     H = qml.math.linalg.multi_dot([qml.math.conj(qml.math.T(v)), q, qml.math.T(p), u])
@@ -221,13 +221,10 @@ def _extract_su2su2_prefactors(U, V):
     AB = qml.math.linalg.multi_dot([E, G, Edag])
     CD = qml.math.linalg.multi_dot([E, H, Edag])
 
-    new_U = _convert_to_su4(qml.math.linalg.multi_dot([AB, V, CD]))
-
     # Now, we just need to extract the constituent tensor products.
     A, B = _su2su2_to_tensor_products(AB)
     C, D = _su2su2_to_tensor_products(CD)
 
-    # Return the four single-qubit operations.
     return A, B, C, D
 
 
@@ -235,39 +232,47 @@ def two_qubit_decomposition(U, wires):
     r"""Recover the decomposition of a two-qubit matrix :math:`U` in terms of
     elementary operations.
 
-    The work of https://arxiv.org/abs/quant-ph/0308033 presents a fixed-form
-    decomposition of :math:`U` in terms of single-qubit gates and CNOTs. Multiple such
-    decompositions are possible (by choosing two of {``RX``, ``RY``, ``RZ``}),
-    here we choose the ``RY``, ``RZ`` case (fig. 2 in the above) to match with
-    the default decomposition of the single-qubit ``Rot`` operations as ``RZ RY
-    RZ``. The form of the decomposition is:
+    The work of `Shende, Markov, and Bullock (2003)
+    <https://arxiv.org/abs/quant-ph/0308033>`__ presents a fixed-form
+    decomposition of :math:`U` in terms of single-qubit gates and
+    CNOTs. Multiple such decompositions are possible (by choosing two of
+    {``RX``, ``RY``, ``RZ``}). Here we choose the ``RY``, ``RZ`` case (fig. 2 in
+    the above) to match with the default decomposition of the single-qubit
+    ``Rot`` operations as ``RZ RY RZ``. The form of the decomposition is:
 
-     0: -C--X--RZ(d)--C---------X--A-|
-     1: -D--C--RY(b)--X--RY(a)--C--B-|
+    .. figure:: ../../_static/two_qubit_decomposition.svg
+        :align: center
+        :width: 60%
+        :target: javascript:void(0);
 
     where :math:`A, B, C, D` are :math:`SU(2)` gates.
 
     Args:
         U (tensor): A 4 x 4 unitary matrix.
-        wires (Union[Wires, Sequence[int] or int]): The wire on which to apply the operation.
+        wires (Union[Wires, Sequence[int] or int]): The wires on which to apply the operation.
 
     Returns:
         list[qml.Operation]: A list of operations that represent the decomposition
         of the matrix U.
     """
+    # The final form of this decomposition is U = (A \otimes B) V (C \otimes D),
+    # as expressed in the circuit below.
+    # -U- = -C--X--RZ(d)--C---------X--A-|
+    # -U- = -D--C--RY(b)--X--RY(a)--C--B-|
 
     # First, we note that this method works only for SU(4) gates, meaning that
-    # we need to compute rescale the matrix by its determinant. Furthermore, we
-    # add a SWAP as per v1 of 0308033, which helps with some rearranging of gates
-    # in the decomposition (it enables the interior part to have determinant 1, and
-    # and subsequently cancels out).
+    # we need to rescale the matrix by its determinant. Furthermore, we add a
+    # SWAP as per v1 of 0308033, which helps with some rearranging of gates in
+    # the decomposition (it will cancel out the fact that we need to add a SWAP
+    # to fix the determinant in another part later).
     swap_U = np.exp(1j * np.pi / 4) * qml.math.dot(SWAP, _convert_to_su4(U))
 
-    # Next, we can choose the angles of the RZ / RY rotations.
-    # See documentation within the function used below.
+    # Next, we can choose the angles of the RZ / RY rotations. See the docstring
+    # within the function used below. This is to ensure U and V somehow maintain
+    # a relationship between their spectra to ensure we can recover A, B, C, D.
     alpha, beta, delta = _select_rotation_angles(swap_U)
 
-    # This gives us the full interior portion of the decomposition
+    # This is the interior portion of the decomposition circuit
     interior_decomp = [
         qml.CNOT(wires=[wires[1], wires[0]]),
         qml.RZ(delta, wires=wires[0]),
@@ -277,16 +282,21 @@ def two_qubit_decomposition(U, wires):
         qml.CNOT(wires=[wires[1], wires[0]]),
     ]
 
-    # We need the matrix representation of this interior part, V, in order to decompose
-    # U = (A \otimes B) V (C \otimes D)
+    # We need the matrix representation of this interior part, V, in order to
+    # decompose U = (A \otimes B) V (C \otimes D)
+    #
+    # Looking at the decomposition above, V has determinant -1 (because there
+    # are 3 CNOTs, each with determinant -1). The relationship between U and V
+    # requires that both are in SU(4), so we add a SWAP after to V. We will see
+    # how this gets fixed later.
+    #
+    # -V- = -X--RZ(d)--C---------X--SWAP-|
+    # -V- = -C--RY(b)--X--RY(a)--C--SWAP-|
 
     RZd = qml.RZ(delta, wires=0).matrix
     RYb = qml.RY(beta, wires=0).matrix
     RYa = qml.RY(alpha, wires=0).matrix
 
-    # This matrix has determinant -1, so we add a SWAP which serves only to
-    # change the order of the two-qubit tensor product on the "outside", while
-    # fixing the determinant so that V is in SU4.
     V = qml.math.linalg.multi_dot(
         [
             SWAP,
@@ -301,50 +311,23 @@ def two_qubit_decomposition(U, wires):
     # Now we need to find the four SU(2) operations A, B, C, D
     A, B, C, D = _extract_su2su2_prefactors(swap_U, V)
 
-    inside_V = qml.math.linalg.multi_dot([
-        CNOT10,
-        CNOT01,
-        np.kron(np.eye(2), RYa),
-        CNOT01,
-        np.kron(RZd, RYb),
-        CNOT10,
-    ])
+    # At this point, we have the following:
+    # -U-SWAP- = --C--X-RZ(d)-C-------X-SWAP--A|
+    # -U-SWAP- = --D--C-RZ(b)-X-RY(a)-C-SWAP--B|
+    #
+    # Using the relationship that SWAP(A \otimes B) SWAP = B \otimes A,
+    # -U-SWAP- = --C--X-RZ(d)-C-------X--B--SWAP-|
+    # -U-SWAP- = --D--C-RZ(b)-X-RY(a)-C--A--SWAP-|
+    #
+    # Now the SWAPs cancel, giving us the desired decomposition
+    # (up to a global phase).
+    # -U- = --C--X-RZ(d)-C-------X--B--|
+    # -U- = --D--C-RZ(b)-X-RY(a)-C--A--|
 
-    temp_U = qml.math.linalg.multi_dot([qml.math.kron(A, B), inside_V, qml.math.kron(C, D)])
-    assert qml.math.allclose(_convert_to_su4(swap_U), _convert_to_su4(temp_U))
-
-    inside_V = qml.math.linalg.multi_dot([
-        CNOT10,
-        np.kron(np.eye(2), RYa),
-        CNOT01,
-        np.kron(RZd, RYb),
-        CNOT10,
-    ])    
-    temp_U = qml.math.linalg.multi_dot([SWAP, qml.math.kron(B, A), inside_V, qml.math.kron(C, D)])
-    assert qml.math.allclose(_convert_to_su4(swap_U), _convert_to_su4(temp_U))
-        
-    # Since this gives us their unitary form, we need to decompose them as well.
     A_ops = zyz_decomposition(A, wires[1])
     B_ops = zyz_decomposition(B, wires[0])
     C_ops = zyz_decomposition(C, wires[0])
     D_ops = zyz_decomposition(D, wires[1])
 
-    new_A = A_ops[0].matrix
-    new_B = B_ops[0].matrix
-    new_C = C_ops[0].matrix
-    new_D = D_ops[0].matrix
-
-    temp_U = qml.math.linalg.multi_dot([SWAP, qml.math.kron(new_B, new_A), inside_V, qml.math.kron(new_C, new_D)])
-
-    Utemp_U = qml.math.dot(temp_U, qml.math.conj(qml.math.T(swap_U)))
-    assert qml.math.allclose(np.eye(4), Utemp_U / Utemp_U[0, 0])
-    
-    temp_U = qml.math.linalg.multi_dot([qml.math.kron(new_B, new_A), inside_V, qml.math.kron(new_C, new_D)])
-
-    Utemp_U = qml.math.dot(temp_U, qml.math.conj(qml.math.T(U)))
-    assert qml.math.allclose(np.eye(4), Utemp_U / Utemp_U[0, 0])
-    
-    #assert qml.math.allclose(_convert_to_su4(U), _convert_to_su4(temp_U))
-    
     # Return the full decomposition
     return C_ops + D_ops + interior_decomp + A_ops + B_ops
