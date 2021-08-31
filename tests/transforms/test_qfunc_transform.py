@@ -385,9 +385,6 @@ class TestQFuncTransformGradients:
     def test_differentiable_qfunc_torch(self, diff_method):
         """Test that a qfunc transform is differentiable when using
         PyTorch"""
-        if diff_method == "backprop":
-            pytest.skip("Does not support backprop mode")
-
         torch = pytest.importorskip("torch")
         dev = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)

@@ -207,7 +207,7 @@ class TestGradientTransformIntegration:
         assert np.allclose(res, expected, atol=tol, rtol=0)
         assert spy.call_args[0][0].operations[0].name == "RX"
 
-    def test_permutated_arguments(self, tol):
+    def test_permuted_arguments(self, tol):
         """Test that a gradient transform acts on QNodes
         correctly when the QNode arguments are permuted"""
         dev = qml.device("default.qubit", wires=2)
@@ -227,7 +227,7 @@ class TestGradientTransformIntegration:
 
     def test_classical_processing_arguments(self, mocker, tol):
         """Test that a gradient transform acts on QNodes
-        correctly when the QNode arguments are classical processed"""
+        correctly when the QNode arguments are classically processed"""
         dev = qml.device("default.qubit", wires=2)
         spy = mocker.spy(qml.transforms, "classical_jacobian")
 
@@ -251,7 +251,7 @@ class TestGradientTransformIntegration:
 
     def test_classical_processing_multiple_arguments(self, mocker, tol):
         """Test that a gradient transform acts on QNodes
-        correctly when multiple QNode arguments are classical processed"""
+        correctly when multiple QNode arguments are classically processed"""
         dev = qml.device("default.qubit", wires=2)
         spy = mocker.spy(qml.transforms, "classical_jacobian")
 
@@ -292,7 +292,7 @@ class TestGradientTransformIntegration:
 
     def test_advanced_classical_processing_arguments(self, tol):
         """Test that a gradient transform acts on QNodes
-        correctly when the QNode arguments are classical processed,
+        correctly when the QNode arguments are classically processed,
         and the input weights and the output weights have weird shape."""
         dev = qml.device("default.qubit", wires=2)
 
