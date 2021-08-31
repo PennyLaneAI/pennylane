@@ -78,7 +78,9 @@ def unitary_to_rot(tape):
                 zyz_decomposition(op.parameters[0], op.wires[0])
             # Two-qubit unitary operations
             elif qml.math.shape(op.parameters[0]) == (4, 4):
-                decomp = qml.transforms.invisible(two_qubit_decomposition)(op.parameters[0], op.wires)
+                decomp = qml.transforms.invisible(two_qubit_decomposition)(
+                    op.parameters[0], op.wires
+                )
 
                 for decomp_op in decomp:
                     qml.apply(decomp_op)

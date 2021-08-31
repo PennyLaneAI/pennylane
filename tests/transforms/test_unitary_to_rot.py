@@ -469,7 +469,8 @@ test_u4_unitaries = [
     ],
 ]
 
-dev = qml.device('default.qubit', wires=["a", "b"])
+dev = qml.device("default.qubit", wires=["a", "b"])
+
 
 def qfunc_with_qubit_unitary_two_qubit(U):
     qml.Hadamard(wires="a")
@@ -489,7 +490,9 @@ class TestTwoQubitUnitaryDifferentiability:
 
         U = np.array(U, requires_grad=True)
 
-        original_qnode = qml.QNode(qfunc_with_qubit_unitary_two_qubit, device=dev, diff_method=diff_method)
+        original_qnode = qml.QNode(
+            qfunc_with_qubit_unitary_two_qubit, device=dev, diff_method=diff_method
+        )
 
         transformed_qfunc = unitary_to_rot(qfunc_with_qubit_unitary_two_qubit)
         transformed_qnode = qml.QNode(transformed_qfunc, dev, diff_method=diff_method)
@@ -505,12 +508,15 @@ class TestTwoQubitUnitaryDifferentiability:
     def test_gradient_unitary_to_rot_torch_two_qubit(self, U):
         """Tests differentiability in autograd interface."""
         torch = pytest.importorskip("torch")
-        
+
         U = torch.tensor(U, dtype=torch.complex128, requires_grad=True)
         transformed_U = torch.tensor(U, dtype=torch.complex128, requires_grad=True)
-        
+
         original_qnode = qml.QNode(
-            qfunc_with_qubit_unitary_two_qubit, dev, interface="torch", diff_method="parameter-shift"
+            qfunc_with_qubit_unitary_two_qubit,
+            dev,
+            interface="torch",
+            diff_method="parameter-shift",
         )
         original_result = original_qnode(U)
 
