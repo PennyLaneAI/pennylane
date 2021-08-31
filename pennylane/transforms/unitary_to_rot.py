@@ -16,12 +16,12 @@ A transform for decomposing arbitrary single-qubit QubitUnitary gates into eleme
 """
 import pennylane as qml
 from pennylane.transforms import qfunc_transform
-from pennylane.transforms.decompositions import zyz_decomposition
+from pennylane.transforms.decompositions import zyz_decomposition, two_qubit_decomposition
 
 
 @qfunc_transform
 def unitary_to_rot(tape):
-    """Quantum function transform to decomposes all instances of single-qubit :class:`~.QubitUnitary`
+    """Quantum function transform to decomposes all instances of single- and two-qubit :class:`~.QubitUnitary`
     operations to parametrized single-qubit operations.
 
     Diagonal operations will be converted to a single :class:`.RZ` gate, while non-diagonal
@@ -73,10 +73,16 @@ def unitary_to_rot(tape):
     """
     for op in tape.operations + tape.measurements:
         if isinstance(op, qml.QubitUnitary):
-            # Only act on single-qubit unitary operations
-            if qml.math.shape(op.parameters[0]) != (2, 2):
-                continue
+            # Single-qubit unitary operations
+            if qml.math.shape(op.parameters[0]) == (2, 2):
+                zyz_decomposition(op.parameters[0], op.wires[0])
+            # Two-qubit unitary operations
+            elif qml.math.shape(op.parameters[0]) == (4, 4):
+                decomp = qml.transforms.invisible(two_qubit_decomposition)(op.parameters[0], op.wires)
 
-            zyz_decomposition(op.parameters[0], op.wires[0])
+                for decomp_op in decomp:
+                    qml.apply(decomp_op)
+            else:
+                qml.apply(op)
         else:
             qml.apply(op)

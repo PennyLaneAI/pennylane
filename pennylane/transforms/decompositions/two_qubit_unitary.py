@@ -22,13 +22,13 @@ from .single_qubit_unitary import zyz_decomposition
 
 # This gate E is called the "magic basis". It can be used to convert between
 # SO(4) and SU(2) x SU(2). For A in SO(4), E A E^\dag is in SU(2) x SU(2).
-E = np.array([[1, 1j, 0, 0], [0, 0, 1j, 1], [0, 0, 1j, -1], [1, -1j, 0, 0]]) / np.sqrt(2)
+E = qml.math.array([[1, 1j, 0, 0], [0, 0, 1j, 1], [0, 0, 1j, -1], [1, -1j, 0, 0]]) / np.sqrt(2)
 Et = qml.math.T(E)
 Edag = qml.math.conj(Et)
 
 # Helpful to have static copies of these since they are needed in a few places.
 CNOT01 = qml.CNOT(wires=[0, 1]).matrix
-CNOT10 = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
+CNOT10 = qml.math.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
 SWAP = qml.SWAP(wires=[0, 1]).matrix
 
 
@@ -278,7 +278,7 @@ def two_qubit_decomposition(U, wires):
     # SWAP as per v1 of 0308033, which helps with some rearranging of gates in
     # the decomposition (it will cancel out the fact that we need to add a SWAP
     # to fix the determinant in another part later).
-    swap_U = np.exp(1j * np.pi / 4) * qml.math.dot(SWAP, _convert_to_su4(U))
+    swap_U = qml.math.exp(1j * np.pi / 4) * qml.math.dot(SWAP, _convert_to_su4(U))
 
     # Next, we can choose the angles of the RZ / RY rotations. See the docstring
     # within the function used below. This is to ensure U and V somehow maintain
@@ -314,9 +314,9 @@ def two_qubit_decomposition(U, wires):
         [
             SWAP,
             CNOT10,
-            np.kron(np.eye(2), RYa),
+            qml.math.kron(qml.math.eye(2), RYa),
             CNOT01,
-            np.kron(RZd, RYb),
+            qml.math.kron(RZd, RYb),
             CNOT10,
         ]
     )
