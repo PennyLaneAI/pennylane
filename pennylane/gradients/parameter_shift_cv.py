@@ -472,8 +472,8 @@ def param_shift_cv(
     f0=None,
     force_order2=False,
 ):
-    r"""Generate the CV parameter-shift tapes and postprocessing methods required
-    to compute the gradient of a gate parameter with respect to the CV output.
+    r"""Transform a continuous-variable QNode to compute the parameter-shift gradient of all gate
+    parameters with respect to its inputs.
 
     Args:
         tape (.QuantumTape): quantum tape to differentiate
@@ -507,9 +507,15 @@ def param_shift_cv(
         force_order2 (bool): if True, use the order-2 method even if not necessary
 
     Returns:
-        tuple[list[QuantumTape], function]: A tuple containing a
-        list of generated tapes, in addition to a post-processing
-        function to be applied to the evaluated tapes.
+        tensor_like or tuple[list[QuantumTape], function]:
+
+        - If the input is a QNode, a tensor
+          representing the output Jacobian matrix of size ``(number_outputs, number_gate_parameters)``
+          is returned.
+
+        - If the input is a tape, a tuple containing a list of generated tapes,
+          in addition to a post-processing function to be applied to the
+          evaluated tapes.
 
     This transform supports analytic gradients of Gaussian CV operations using
     the parameter-shift rule. This gradient method returns *exact* gradients,
@@ -536,7 +542,7 @@ def param_shift_cv(
         Fock state probabilities (tapes that return :func:`~pennylane.probs` or
         expectation values of :class:`~.FockStateProjector`) are not supported.
 
-    In addition, the tape operations must fulfill the following requirements:
+    In addition, the operations must fulfill the following requirements:
 
     * Only Gaussian operations are differentiable.
 
@@ -545,47 +551,88 @@ def param_shift_cv(
 
       .. code-block:: python
 
-          with qml.tape.JacobianTape() as tape:
+          @qml.qnode(dev)
+          def circuit(weights):
               # Non-differentiable Fock operations
-              qml.FockState(2, wires=0)
-              qml.Kerr(0.654, wires=1)
+              qml.FockState(np.array(2, requires_grad=False), wires=0)
+              qml.Kerr(np.array(0.654, requires_grad=False), wires=1)
 
               # differentiable Gaussian operations
-              qml.Displacement(0.6, 0.5, wires=0)
-              qml.Beamsplitter(0.5, 0.1, wires=[0, 1])
-              qml.expval(qml.NumberOperator(0))
+              qml.Displacement(weights[0], weights[1], wires=0)
+              qml.Beamsplitter(weights[2], weights[3], wires=[0, 1])
 
-          tape.trainable_params = {2, 3, 4}
+              return qml.expval(qml.NumberOperator(0))
 
     * If a Fock operation succeeds a Gaussian operation, the Fock operation must
       not contribute to any measurements. For example, the following is allowed:
 
       .. code-block:: python
 
-          with qml.tape.JacobianTape() as tape:
-              qml.Displacement(0.6, 0.5, wires=0)
-              qml.Beamsplitter(0.5, 0.1, wires=[0, 1])
-              qml.Kerr(0.654, wires=1)  # there is no measurement on wire 1
-              qml.expval(qml.NumberOperator(0))
-
-          tape.trainable_params = {0, 1, 2}
+          @qml.qnode(dev)
+          def circuit(weights):
+              qml.Displacement(weights[0], weights[1], wires=0)
+              qml.Beamsplitter(weights[2], weights[3], wires=[0, 1])
+              qml.Kerr(np.array(0.654, requires_grad=False), wires=1)  # there is no measurement on wire 1
+              return qml.expval(qml.NumberOperator(0))
 
     If any of the above constraints are not followed, the tape cannot be differentiated
     via the CV parameter-shift rule. Please use numerical differentiation instead.
 
     **Example**
 
-    >>> r0, phi0, r1, phi1 = [0.4, -0.3, -0.7, 0.2]
-    >>> dev = qml.device("default.gaussian", wires=1)
-    >>> with qml.tape.JacobianTape() as tape:
-    ...     qml.Squeezing(r0, phi0, wires=[0])
-    ...     qml.Squeezing(r1, phi1, wires=[0])
-    ...     qml.expval(qml.NumberOperator(0))  # second-order
-    >>> tape.trainable_params = {0, 2}
-    >>> gradient_tapes, fn = qml.gradients.param_shift_cv(tape, dev)
-    >>> res = dev.batch_execute(gradient_tapes)
-    >>> fn(res)
-    array([[-0.32487113, -0.87049853]])
+    This transform can be registered directly as the quantum gradient transform
+    to use during autodifferentiation:
+
+    >>> dev = qml.device("default.gaussian", wires=2)
+    >>> @qml.qnode(dev, gradient_fn=qml.gradients.param_shift_cv)
+    ... def circuit(params):
+    ...     qml.Squeezing(params[0], params[1], wires=[0])
+    ...     qml.Squeezing(params[2], params[3], wires=[0])
+    ...     return qml.expval(qml.NumberOperator(0))
+    >>> params = np.array([0.1, 0.2, 0.3, 0.4], requires_grad=True)
+    >>> qml.jacobian(circuit)(params)
+    array([ 0.87516064,  0.01273285,  0.88334834, -0.01273285])
+
+    .. UsageDetails::
+
+        This gradient transform can be applied directly to :class:`~.QNode` objects:
+
+        >>> @qml.qnode(dev)
+        ... def circuit(params):
+        ...     qml.Squeezing(params[0], params[1], wires=[0])
+        ...     qml.Squeezing(params[2], params[3], wires=[0])
+        ...     return qml.expval(qml.NumberOperator(0))
+        >>> params = np.array([0.1, 0.2, 0.3, 0.4], requires_grad=True)
+        >>> qml.gradients.param_shift_cv(circuit, dev)(params)
+        tensor([[ 0.87516064,  0.01273285,  0.88334834, -0.01273285]], requires_grad=True)
+
+        This quantum gradient transform can also be applied to low-level
+        :class:`~.QuantumTape` objects. This will result in no implicit quantum
+        device evaluation. Instead, the processed tapes, and post-processing
+        function, which together define the gradient are directly returned:
+
+        >>> r0, phi0, r1, phi1 = [0.4, -0.3, -0.7, 0.2]
+        >>> with qml.tape.JacobianTape() as tape:
+        ...     qml.Squeezing(r0, phi0, wires=[0])
+        ...     qml.Squeezing(r1, phi1, wires=[0])
+        ...     qml.expval(qml.NumberOperator(0))  # second-order
+        >>> gradient_tapes, fn = qml.gradients.param_shift_cv(tape, dev)
+        >>> gradient_tapes
+        [<JacobianTape: wires=[0], params=4>,
+         <JacobianTape: wires=[0], params=4>,
+         <JacobianTape: wires=[0], params=4>,
+         <JacobianTape: wires=[0], params=4>]
+
+        This can be useful if the underlying circuits representing the gradient
+        computation need to be analyzed.
+
+        The output tapes can then be evaluated and post-processed to retrieve
+        the gradient:
+
+        >>> dev = qml.device("default.gaussian", wires=2)
+        >>> from pennylane.interfaces.batch import execute
+        >>> fn(execute(gradient_tapes, dev, None))
+        array([[-0.32487113, -0.4054074 , -0.87049853,  0.4054074 ]])
     """
 
     # perform gradient method validation
