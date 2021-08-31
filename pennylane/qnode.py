@@ -136,7 +136,8 @@ class QNode:
             that this option is only applicable for the following differentiation methods:
             ``"parameter-shift"``, ``"finite-diff"`` and ``"reversible"``.
 
-        **kwargs is used to catch all unrecognized keyword arguments and provide a user warning about them
+        kwargs: is used to catch all unrecognized keyword arguments and provide a user warning
+            about them
 
     **Example**
 
@@ -1102,7 +1103,8 @@ def qnode(
             that this option is only applicable for the following differentiation methods:
             ``"parameter-shift"``, ``"finite-diff"`` and ``"reversible"``.
 
-        **kwargs is used to catch all unrecognized keyword arguments and provide a user warning about them
+        kwargs: is used to catch all unrecognized keyword arguments and provide a user warning
+            about them
 
     **Example**
 
