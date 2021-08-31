@@ -7,8 +7,8 @@
   [(#1589)](https://github.com/PennyLaneAI/pennylane/pull/1589)
 
   Quantum gradient transforms are a specific case of `qml.batch_transform`.
-  All quantum gradient transforms accept a tape, and output
-  a batch of tapes to be independently executed on a quantum device, alongside
+  To create a quantum gradient transform, simply write a function that accepts a tape,
+  and returns a batch of tapes to be independently executed on a quantum device, alongside
   a post-processing function that processes the tape results into the gradient.
 
   Furthermore, a smart default expansion function is provided, which automatically expands tape
@@ -24,6 +24,8 @@
       return gradient_tapes, processing_fn
   ```
 
+  Various built-in quantum gradient transforms are provided within the
+  `qml.gradients` module, including `qml.gradients.param_shift`.
   Once defined, quantum gradient transforms can be applied directly
   to QNodes:
 
