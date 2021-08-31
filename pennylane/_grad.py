@@ -185,6 +185,8 @@ def jacobian(func, argnum=None):
         try:
             return np.stack(jacobians).T
         except ValueError:
+            # The Jacobian of each argument is a different shape and cannot
+            # be stacked; simply return the tuple of argument Jacobians.
             return tuple(jacobians)
 
     return _jacobian_function
