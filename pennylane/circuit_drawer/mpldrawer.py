@@ -37,7 +37,7 @@ class MPLDrawer:
         n_wires (Int): the number of wires
 
     Keyword Args:
-        wire_color=None: MPL compatible color for the wires
+        wire_kwargs=None (dict): matplotlib configuration options for drawing the wire lines
         figsize=None (Iterable): Allows users to manually specify the size of the figure.  Defaults
             to scale with the size of the circuit via ``n_layers`` and ``n_wires``.
 
@@ -45,26 +45,32 @@ class MPLDrawer:
 
     .. code-block:: python
 
-        drawer = MPLDrawer(n_wires=5,n_layers=5)
+        def example():
 
-        drawer.label(["0","a",r"$|\Psi\rangle$",r"$|\theta\rangle$", "aux"])
+            drawer = MPLDrawer(n_wires=5,n_layers=5)
 
-        drawer.box_gate(0, [0,1,2,3,4], "Entangling Layers", text_kwargs={'rotation':'vertical'})
-        drawer.box_gate(1, [0, 1], "U(θ)")
+            drawer.label(["0","a",r"$|\Psi\rangle$",r"$|\theta\rangle$", "aux"])
 
-        drawer.box_gate(1, 4, "Z")
+            drawer.box_gate(0, [0,1,2,3,4], "Entangling Layers", text_kwargs={'rotation':'vertical'})
+            drawer.box_gate(1, [0, 1], "U(θ)")
 
-        drawer.SWAP(1, (2, 3))
-        drawer.CNOT(2, (0,2))
+            drawer.box_gate(1, 4, "Z")
 
-        drawer.ctrl(3, [1,3], control_values = [True, False])
-        drawer.box_gate(3, 2, "H", zorder=2)
+            drawer.SWAP(1, (2, 3))
+            drawer.CNOT(2, (0,2))
 
-        drawer.ctrl(4, [1,2])
+            drawer.ctrl(3, [1,3], control_values = [True, False])
+            drawer.box_gate(3, 2, "H", zorder=2)
 
-        drawer.measure(5, 0)
+            drawer.ctrl(4, [1,2])
 
-        drawer.fig.suptitle('My Circuit', fontsize='xx-large')
+            drawer.measure(5, 0)
+
+            drawer.fig.suptitle('My Circuit', fontsize='xx-large')
+
+            return drawer
+
+        example()
 
     .. figure:: ../../_static/drawer/example_basic.png
             :align: center
@@ -79,7 +85,7 @@ class MPLDrawer:
 
     Each gate takes arguments in order of ``layer`` followed by ``wires``.  These translate to ``x`` and
     ``y`` coordinates in the graph. Layer number (``x``) increases as you go right, and wire number
-    (``y``) increases as you go up.  This also means you can pass non-integer values to either keyword.
+    (``y``) increases as you go down.  The y-axis is inverted.  This also means you can pass non-integer values to either keyword.
     For example, if you have a long label, the gate can span multiple layers and have extra width:
 
     .. code-block:: python
@@ -98,8 +104,32 @@ class MPLDrawer:
 
     You can globally control the style with ``plt.rcParams`` or
     `styles <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
-    See available styles with ``plt.style.available``. For example, we can set the
-    ``'Solarize_Light2'`` style with the same graph as drawn above and instead get:
+    If we customize ``plt.rcParams`` before executing our example function, we get a
+    different style:
+
+    .. code-block:: python
+
+        plt.rcParams['patch.facecolor'] = 'white'
+        plt.rcParams['patch.edgecolor'] = 'black'
+        plt.rcParams['patch.linewidth'] = 2
+        plt.rcParams['patch.force_edgecolor'] = True
+        plt.rcParams['lines.color'] = 'black'
+
+        example()
+
+    .. figure:: ../../_static/drawer/rcParams.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
+    Instead of manually customizing everything for a different look, you can choose one of
+    the provided styles in pyplot. You can see available styles with ``plt.style.available``.
+    We can set the ``'Solarize_Light2'`` style with the same graph as drawn above and instead get:
+
+    .. code-block:: python
+
+        plt.style.use('Solarize_light2')
+        example()
 
     .. figure:: ../../_static/drawer/example_Solarize_Light2.png
             :align: center
@@ -163,6 +193,7 @@ class MPLDrawer:
 
         self._circ_rad = 0.3
         self._ctrl_rad = 0.1
+        self._octrl_rad = 0.15
         self._swap_dx = 0.2
 
         ## Creating figure and ax
@@ -370,7 +401,12 @@ class MPLDrawer:
     def _ctrl_circ(self, layer, wire, zorder=3, color=None):
         """Draw a solid circle that indicates control on one"""
     
-        circ_ctrl= plt.Circle((layer, wire), radius=self._ctrl_rad, zorder=zorder, color=color)
+        if color is None:
+            kwargs = {'facecolor': plt.rcParams['lines.color']}
+        else:
+            kwargs = {'color': color}
+
+        circ_ctrl= plt.Circle((layer, wire), radius=self._ctrl_rad, zorder=zorder, **kwargs)
         self.ax.add_patch(circ_ctrl)
 
     def _ctrlo_circ(self, layer, wire, zorder=3, color=None):
@@ -383,7 +419,7 @@ class MPLDrawer:
         if color is not None:
             kwargs['edgecolor'] = color
 
-        circ_ctrlo = plt.Circle((layer, wire), radius=(1.5*self._ctrl_rad), zorder=zorder, **kwargs)
+        circ_ctrlo = plt.Circle((layer, wire), radius=(self._octrl_rad), zorder=zorder, **kwargs)
 
         self.ax.add_patch(circ_ctrlo)
 
