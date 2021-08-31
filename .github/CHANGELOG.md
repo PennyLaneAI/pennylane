@@ -2,6 +2,52 @@
 
 <h3>New features since last release</h3>
 
+* Custom gradient transforms can now be created using the new
+  `@qml.gradients.gradient_transform` decorator on a batch-tape transform.
+  [(#1589)](https://github.com/PennyLaneAI/pennylane/pull/1589)
+
+  Quantum gradient transforms are a specific case of `qml.batch_transform`.
+  To create a quantum gradient transform, simply write a function that accepts a tape,
+  and returns a batch of tapes to be independently executed on a quantum device, alongside
+  a post-processing function that processes the tape results into the gradient.
+
+  Furthermore, a smart default expansion function is provided, which automatically expands tape
+  operations which are not differentiable prior to applying the quantum gradient.
+  All gradient transforms in `qml.gradients` are now decorated with this decorator.
+
+  Supported gradient transforms must be of the following form:
+
+  ```python
+  @qml.gradients.gradient_transform
+  def my_custom_gradient(tape, argnum=None, **kwargs):
+      ...
+      return gradient_tapes, processing_fn
+  ```
+
+  Various built-in quantum gradient transforms are provided within the
+  `qml.gradients` module, including `qml.gradients.param_shift`.
+  Once defined, quantum gradient transforms can be applied directly
+  to QNodes:
+
+  ```pycon
+  >>> @qml.qnode(dev)
+  ... def circuit(x):
+  ...     qml.RX(x, wires=0)
+  ...     qml.CNOT(wires=[0, 1])
+  ...     return qml.expval(qml.PauliZ(0))
+  >>> circuit(0.3)
+  tensor(0.95533649, requires_grad=True)
+  >>> qml.gradients.param_shift(circuit)(0.5)
+  array([[-0.47942554]])
+  ```
+
+  Quantum gradient transforms are fully differentiable, allowing higher order derivatives to be
+  accessed:
+
+  ```pycon
+  >>> qml.grad(qml.gradients.param_shift(circuit))(0.5)
+  tensor(-0.87758256, requires_grad=True)
+  ```
 
 * A new pytorch device, `qml.device('default.qubit.torch', wires=wires)`, supports
   backpropogation with the torch interface.
