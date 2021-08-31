@@ -15,7 +15,7 @@
 
 import pennylane as qml
 
-from gate_data import I
+from gate_data import I, SWAP
 
 
 def compute_matrix_from_ops_one_qubit(ops):
@@ -33,27 +33,35 @@ def compute_matrix_from_ops_two_qubit(ops, wire_order):
 
     mat = qml.math.kron(I, I)
 
+    wire_order = qml.wires.Wires(wire_order)
+
     for op in ops:
-        if len(op.wires) == 1:
-            if op.wires == qml.wires.Wires(wire_order[0]):
+        op_wires = qml.wires.Wires(op.wires)
+
+        if len(op_wires) == 1:
+            if op_wires[0] == wire_order[0]:
                 mat = qml.math.dot(qml.math.kron(op.matrix, I), mat)
             else:
                 mat = qml.math.dot(qml.math.kron(I, op.matrix), mat)
         else:
-            if op.wires == qml.wires.Wires(wire_order):
+            if op_wires == wire_order:
                 mat = qml.math.dot(op.matrix, mat)
             else:
-                mat = qml.math.dot(qml.SWAP(wires=[0, 1]).matrix, qml.math.dot(op.matrix, mat))
+                mat = qml.math.linalg.multi_dot([SWAP, op.matrix, SWAP, mat])
+
     return mat
 
 
-def check_matrix_equivalence(matrix_expected, matrix_obtained):
+def check_matrix_equivalence(matrix_expected, matrix_obtained, atol=1e-8):
     """Takes two matrices and checks if multiplying one by the conjugate
     transpose of the other gives the identity."""
 
-    mat_product = qml.math.dot(qml.math.conj(matrix_obtained.T), matrix_expected)
-    mat_product /= mat_product[0, 0]
-    return qml.math.allclose(mat_product, qml.math.eye(matrix_expected.shape[0]))
+    mat_product = qml.math.dot(qml.math.conj(qml.math.T(matrix_obtained)), matrix_expected)
+    mat_product = mat_product / mat_product[0, 0]
+
+    return qml.math.allclose(
+        mat_product / mat_product[0, 0], qml.math.eye(matrix_expected.shape[0]), atol=atol
+    )
 
 
 def compare_operation_lists(ops_obtained, names_expected, wires_expected):

@@ -242,7 +242,7 @@ def two_qubit_decomposition(U, wires):
 
     .. figure:: ../../_static/two_qubit_decomposition.svg
         :align: center
-        :width: 60%
+        :width: 100%
         :target: javascript:void(0);
 
     where :math:`A, B, C, D` are :math:`SU(2)` gates.
@@ -255,6 +255,19 @@ def two_qubit_decomposition(U, wires):
         list[qml.Operation]: A list of operations that represent the decomposition
         of the matrix U.
     """
+    # First, test if we have a tensor product of two single-qubit operations. If
+    # so, we don't actually need to do a decomposition. To test this, we can
+    # check if Edag U E is in SO(4) because of the isomorphism between SO(4) and
+    # SU(2) x SU(2).
+    test_so4 = qml.math.linalg.multi_dot([Edag, U, E])
+    if qml.math.isclose(qml.math.linalg.det(test_so4), 1.0) and qml.math.allclose(
+        qml.math.dot(test_so4, qml.math.T(test_so4)), qml.math.eye(4)
+    ):
+        A, B = _su2su2_to_tensor_products(U)
+        A_ops = zyz_decomposition(A, wires[0])
+        B_ops = zyz_decomposition(B, wires[1])
+        return A_ops + B_ops
+
     # The final form of this decomposition is U = (A \otimes B) V (C \otimes D),
     # as expressed in the circuit below.
     # -U- = -C--X--RZ(d)--C---------X--A-|

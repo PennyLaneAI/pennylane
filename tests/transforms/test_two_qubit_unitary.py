@@ -393,14 +393,33 @@ class TestTwoQubitUnitaryDecompositionUtils:
 
         assert check_matrix_equivalence(qml.math.kron(A, B), true_matrix)
 
-    # @pytest.mark.parametrize("U", test_unitaries)
-    # def test_zyz_decomposition(self, U):
-    #     """Test that a one-qubit matrix in isolation is correctly decomposed."""
-    #     obtained_decomposition = two_qubit_decomposition(U, wires=[0, 1])
+    @pytest.mark.parametrize("U", test_su4_unitaries + test_u4_unitaries)
+    def test_two_qubit_decomposition(self, U):
+        """Test that a one-qubit matrix in isolation is correctly decomposed."""
+        U = np.array(U)
 
-    #     obtained_matrix = compute_matrix_from_ops_two_qubit(obtained_decomposition, [0, 1])
+        obtained_decomposition = two_qubit_decomposition(U, wires=[0, 1])
 
-    #     assert check_matrix_equivalence(U, obtained_matrix)
+        obtained_matrix = compute_matrix_from_ops_two_qubit(obtained_decomposition, [0, 1])
+
+        # We check with a slightly great tolerance threshold here simply because the
+        # test matrices were copied in here with reduced precision.
+        assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
+
+    @pytest.mark.parametrize("U_pair", test_su2_su2_pairs)
+    def test_two_qubit_decomposition_tensor_products(self, U_pair):
+        """Test that a one-qubit matrix in isolation is correctly decomposed."""
+        U = qml.math.kron(np.array(U_pair[0]), np.array(U_pair[1]))
+
+        print(U)
+
+        obtained_decomposition = two_qubit_decomposition(U, wires=[0, 1])
+
+        obtained_matrix = compute_matrix_from_ops_two_qubit(obtained_decomposition, [0, 1])
+
+        # We check with a slightly great tolerance threshold here simply because the
+        # test matrices were copied in here with reduced precision.
+        assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
     # @pytest.mark.parametrize("U,wires", single_qubit_decomps)
     # def test_zyz_decomposition_torch(self, U, expected_gate, expected_params):
