@@ -79,7 +79,9 @@ and takes into account the circuit, device, autodiff framework, and metadata
 
 .. code-block:: python
 
-    @qml.qnode(dev)
+    dev = qml.device("default.qubit", wires=2, shots=1000)
+
+    @qml.qnode(dev, interface="tf")
     def circuit(weights):
         ...
 
@@ -249,6 +251,10 @@ the gradient:
 >>> from pennylane.interfaces.batch import execute
 >>> fn(execute(gradient_tapes, dev, None))
 [[-0.09347337 -0.18884787 -0.28818254]]
+
+Note that the post-processing function ``fn`` returned by the
+gradient transform is applied to the flat list of results returned
+from executing the gradient tapes.
 
 
 Custom gradient transforms
