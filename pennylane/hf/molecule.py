@@ -43,7 +43,7 @@ class Molecule:
             considered to be active.
         active_orbitals (int): Number of active orbitals. If not specified, all orbitals are
             considered to be active.
-        l (tuple[int]): angular momentum numbers of the basis function.
+        l (tuple[int]): angular momentum quantum numbers of the basis function.
         alpha (array[float]): exponents of the primitive Gaussian functions
         coeff (array[float]): coefficients of the contracted Gaussian functions
         r (array[float]): positions of the Gaussian functions
@@ -113,7 +113,7 @@ def generate_basis_set(l, alpha, coeff, r):
     r"""Generate a set of basis function objects.
 
     Args:
-        l (list[tuple[int]]): angular momentum numbers of the basis function
+        l (list[tuple[int]]): angular momentum quantum numbers of the basis function
         alpha (list[array[float]]): exponents of the Gaussian functions forming basis functions
         coeff (list[array[float]]): coefficients of the contracted Gaussian functions
         r (list[array[float]]): positions of the Gaussian functions forming the basis functions
