@@ -30,6 +30,7 @@ from torch.autograd.functional import hessian, jacobian
         ["default.qubit", "finite-diff"],
         ["default.qubit", "parameter-shift"],
         ["default.qubit", "adjoint"],
+        ["default.qubit", "backprop"],
     ],
 )
 class TestQNode:
@@ -37,6 +38,9 @@ class TestQNode:
 
     def test_import_error(self, dev_name, diff_method, mocker):
         """Test that an exception is caught on import error"""
+        if diff_method == "backprop":
+            pytest.skip("Test only works in parameter-shift mode")
+
         mock = mocker.patch("pennylane.interfaces.torch.TorchInterface.apply")
         mock.side_effect = ImportError()
 
@@ -57,6 +61,9 @@ class TestQNode:
 
     def test_execution_no_interface(self, dev_name, diff_method):
         """Test execution works without an interface"""
+        if diff_method == "backprop":
+            pytest.skip("Test does not support backprop")
+
         dev = qml.device(dev_name, wires=1)
 
         @qnode(dev, diff_method=diff_method)
@@ -81,6 +88,9 @@ class TestQNode:
 
     def test_execution_with_interface(self, dev_name, diff_method):
         """Test execution works with the interface"""
+        if diff_method == "backprop":
+            pytest.skip("Test does not support backprop")
+
         dev = qml.device(dev_name, wires=1)
 
         @qnode(dev, diff_method=diff_method, interface="torch")
@@ -204,10 +214,16 @@ class TestQNode:
         assert np.allclose(a.grad, expected[0], atol=tol, rtol=0)
         assert np.allclose(b.grad, expected[1], atol=tol, rtol=0)
 
-        spy.assert_called()
+        if diff_method == "finite-diff":
+            spy.assert_called()
+        elif diff_method == "backprop":
+            spy.assert_not_called()
 
     def test_jacobian_dtype(self, dev_name, diff_method, tol):
         """Test calculating the jacobian with a different datatype"""
+        if diff_method == "backprop":
+            pytest.skip("Test does not support backprop")
+
         a = torch.tensor(0.1, dtype=torch.float32, requires_grad=True)
         b = torch.tensor(0.2, dtype=torch.float32, requires_grad=True)
 
@@ -345,8 +361,9 @@ class TestQNode:
 
         res = circuit(a, b, c)
 
-        assert circuit.qtape.trainable_params == {0, 2}
-        assert circuit.qtape.get_parameters() == [a * c, c + c ** 2 + torch.sin(a)]
+        if diff_method == "finite-diff":
+            assert circuit.qtape.trainable_params == {0, 2}
+            assert circuit.qtape.get_parameters() == [a * c, c + c ** 2 + torch.sin(a)]
 
         res.backward()
 
@@ -370,7 +387,8 @@ class TestQNode:
 
         res = circuit(a, b)
 
-        assert circuit.qtape.trainable_params == set()
+        if diff_method == "finite-diff":
+            assert circuit.qtape.trainable_params == set()
 
         assert res.shape == (2,)
         assert isinstance(res, torch.Tensor)
@@ -403,7 +421,9 @@ class TestQNode:
             return qml.expval(qml.PauliZ(0))
 
         res = circuit(U, a)
-        assert circuit.qtape.trainable_params == {1}
+
+        if diff_method == "finite-diff":
+            assert circuit.qtape.trainable_params == {1}
 
         assert np.allclose(res.detach(), -np.cos(a_val), atol=tol, rtol=0)
 
@@ -438,13 +458,20 @@ class TestQNode:
 
         res = circuit(a, p)
 
-        tape_params = [i.detach().numpy() for i in circuit.qtape.get_parameters()]
-        assert np.allclose(
-            tape_params,
-            [p_val[2], p_val[0], -p_val[2], p_val[1] + p_val[2]],
-            atol=tol,
-            rtol=0,
-        )
+        if diff_method == "finite-diff":
+            assert circuit.qtape.trainable_params == {1, 2, 3, 4}
+        elif diff_method == "backprop":
+            # For a backprop device, no interface wrapping is performed, and JacobianTape.jacobian()
+            # is never called. As a result, JacobianTape.trainable_params is never set --- the ML
+            # framework uses its own backprop logic and its own bookkeeping re: trainable parameters.
+            assert circuit.qtape.trainable_params == {0, 1, 2, 3, 4}
+
+        assert [i.name for i in circuit.qtape.operations] == ["RX", "Rot", "PhaseShift"]
+
+        if diff_method == "finite-diff":
+            assert np.all(circuit.qtape.get_parameters() == [p[2], p[0], -p[2], p[1] + p[2]])
+        elif diff_method == "backprop":
+            assert np.all(circuit.qtape.get_parameters() == [a, p[2], p[0], -p[2], p[1] + p[2]])
 
         expected = np.cos(a) * np.cos(p_val[1]) * np.sin(p_val[0]) + np.sin(a) * (
             np.cos(p_val[2]) * np.sin(p_val[1])
@@ -500,6 +527,11 @@ class TestQNode:
                 ],
             ]
         )
+
+        if diff_method == "backprop":
+            # TODO: check why this differs from other interfaces
+            expected = expected.flatten()
+
         assert np.allclose(res.detach().numpy(), expected, atol=tol, rtol=0)
 
         loss = torch.sum(res)
@@ -561,6 +593,9 @@ class TestQNode:
 
     def test_sampling(self, dev_name, diff_method):
         """Test sampling works as expected"""
+        if diff_method == "backprop":
+            pytest.skip("Sampling not possible with backprop differentiation.")
+
         dev = qml.device(dev_name, wires=2, shots=10)
 
         @qnode(dev, diff_method=diff_method, interface="torch")
@@ -576,6 +611,9 @@ class TestQNode:
 
     def test_sampling_expval(self, dev_name, diff_method):
         """Test sampling works as expected if combined with expectation values"""
+        if diff_method == "backprop":
+            pytest.skip("Sampling not possible with backprop differentiation.")
+
         dev = qml.device(dev_name, wires=2, shots=10)
 
         @qnode(dev, diff_method=diff_method, interface="torch")
@@ -613,7 +651,11 @@ class TestQNode:
 
         spy = mocker.spy(JacobianTape, "hessian")
         hess = hessian(circuit, x)
-        spy.assert_called_once()
+
+        if diff_method == "parameter-shift":
+            spy.assert_called_once()
+        elif diff_method == "backprop":
+            spy.assert_not_called()
 
         a, b = x.detach().numpy()
 
@@ -650,7 +692,11 @@ class TestQNode:
 
         spy = mocker.spy(JacobianTape, "hessian")
         hess = jacobian(jac_fn, x)
-        spy.assert_called_once()
+
+        if diff_method == "parameter-shift":
+            spy.assert_called_once()
+        elif diff_method == "backprop":
+            spy.assert_not_called()
 
         a, b = x.detach().numpy()
 
@@ -701,7 +747,11 @@ class TestQNode:
 
         spy = mocker.spy(JacobianTape, "hessian")
         hess = jacobian(jac_fn, x)
-        spy.assert_called_once()
+
+        if diff_method == "parameter-shift":
+            spy.assert_called_once()
+        elif diff_method == "backprop":
+            spy.assert_not_called()
 
         a, b = x.detach().numpy()
 
