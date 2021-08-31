@@ -88,9 +88,12 @@ def _select_rotation_angles(U):
 
     # Choose the eigenvalues; there are different options in v1 vs. v3 of the paper,
     # I'm not entirely sure why.
-    alpha = (y + z) / 2
-    beta = -(x + z) / 2
-    delta = -(x + y) / 2
+    #alpha = (y + z) / 2
+    #beta = -(x + z) / 2
+    #delta = -(x + y) / 2
+    alpha = (x + y) / 2
+    beta = (x + z) / 2
+    delta = (z + y) / 2
 
     return alpha, beta, delta
 
@@ -220,14 +223,12 @@ def _extract_su2su2_prefactors(U, V):
 
     new_U = _convert_to_su4(qml.math.linalg.multi_dot([AB, V, CD]))
 
-    assert qml.math.allclose(U, new_U)
-
     # Now, we just need to extract the constituent tensor products.
     A, B = _su2su2_to_tensor_products(AB)
     C, D = _su2su2_to_tensor_products(CD)
 
     # Return the four single-qubit operations.
-    return B, A, C, D
+    return A, B, C, D
 
 
 def two_qubit_decomposition(U, wires):
@@ -300,11 +301,50 @@ def two_qubit_decomposition(U, wires):
     # Now we need to find the four SU(2) operations A, B, C, D
     A, B, C, D = _extract_su2su2_prefactors(swap_U, V)
 
+    inside_V = qml.math.linalg.multi_dot([
+        CNOT10,
+        CNOT01,
+        np.kron(np.eye(2), RYa),
+        CNOT01,
+        np.kron(RZd, RYb),
+        CNOT10,
+    ])
+
+    temp_U = qml.math.linalg.multi_dot([qml.math.kron(A, B), inside_V, qml.math.kron(C, D)])
+    assert qml.math.allclose(_convert_to_su4(swap_U), _convert_to_su4(temp_U))
+
+    inside_V = qml.math.linalg.multi_dot([
+        CNOT10,
+        np.kron(np.eye(2), RYa),
+        CNOT01,
+        np.kron(RZd, RYb),
+        CNOT10,
+    ])    
+    temp_U = qml.math.linalg.multi_dot([SWAP, qml.math.kron(B, A), inside_V, qml.math.kron(C, D)])
+    assert qml.math.allclose(_convert_to_su4(swap_U), _convert_to_su4(temp_U))
+        
     # Since this gives us their unitary form, we need to decompose them as well.
-    A_ops = zyz_decomposition(A, wires[0])
-    B_ops = zyz_decomposition(B, wires[1])
+    A_ops = zyz_decomposition(A, wires[1])
+    B_ops = zyz_decomposition(B, wires[0])
     C_ops = zyz_decomposition(C, wires[0])
     D_ops = zyz_decomposition(D, wires[1])
 
+    new_A = A_ops[0].matrix
+    new_B = B_ops[0].matrix
+    new_C = C_ops[0].matrix
+    new_D = D_ops[0].matrix
+
+    temp_U = qml.math.linalg.multi_dot([SWAP, qml.math.kron(new_B, new_A), inside_V, qml.math.kron(new_C, new_D)])
+
+    Utemp_U = qml.math.dot(temp_U, qml.math.conj(qml.math.T(swap_U)))
+    assert qml.math.allclose(np.eye(4), Utemp_U / Utemp_U[0, 0])
+    
+    temp_U = qml.math.linalg.multi_dot([qml.math.kron(new_B, new_A), inside_V, qml.math.kron(new_C, new_D)])
+
+    Utemp_U = qml.math.dot(temp_U, qml.math.conj(qml.math.T(U)))
+    assert qml.math.allclose(np.eye(4), Utemp_U / Utemp_U[0, 0])
+    
+    #assert qml.math.allclose(_convert_to_su4(U), _convert_to_su4(temp_U))
+    
     # Return the full decomposition
     return C_ops + D_ops + interior_decomp + A_ops + B_ops
