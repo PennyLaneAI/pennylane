@@ -32,20 +32,6 @@ CNOT10 = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
 SWAP = qml.SWAP(wires=[0, 1]).matrix
 
 
-def _perm_matrix_from_sequence(seq):
-    """Construct a permutation matrix based on a provided permutation of integers.
-
-    This is used in the two-qubit unitary decomposition to permute a set of
-    simultaneous eigenvalues/vectors into the same order.
-    """
-    mat = qml.math.zeros((4, 4))
-
-    for row_idx in range(4):
-        mat[row_idx, seq[row_idx]] = 1
-
-    return mat
-
-
 def _convert_to_su4(U):
     r"""Check unitarity of a 4x4 matrix and convert it to :math:`SU(4)` if the determinant is not 1.
 
@@ -198,8 +184,8 @@ def _extract_su2su2_prefactors(U, V):
             new_q_order.append(qml.math.argmax(are_close))
 
     # Get the permutation matrix needed to reshuffle the columns
-    q_perm = _perm_matrix_from_sequence(new_q_order)
-    q = qml.math.linalg.multi_dot([q, qml.math.T(q_perm)])
+    q_perm = np.identity(4)[:, np.array(new_q_order)]
+    q = qml.math.dot(q, q_perm)
 
     # Depending on the sign of the permutation, it may be that q is in O(4) but
     # not SO(4). Again we can fix this by simply negating a column.
