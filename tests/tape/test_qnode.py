@@ -330,6 +330,44 @@ class TestValidation:
             == "<QNode: wires=1, device='default.qubit.autograd', interface='autograd', diff_method='best'>"
         )
 
+    @pytest.mark.parametrize("par", [None, 1, 1.1, np.array(1.2)])
+    def test_diff_method_none(self, par):
+        """Test if diff_method=None works as intended."""
+        dev = qml.device("default.qubit", wires=1)
+
+        def func(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        qn = qml.QNode(func, dev, diff_method=None)
+        assert qn.interface is None
+
+        grad = qml.grad(qn)
+
+        # Raise error in all cases
+        # Case 1: No input
+        # Case 2: int input
+        # Case 3: float input
+        # Case 4: numpy input
+        with pytest.raises(TypeError) as exp:
+            grad() if par is None else grad(par)
+
+    def test_diff_method_none_no_qnode_param(self):
+        """Test if diff_method=None works as intended."""
+        dev = qml.device("default.qubit", wires=1)
+
+        def func():
+            qml.PauliX(wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        qn = qml.QNode(func, dev, diff_method=None)
+        assert qn.interface is None
+
+        grad = qml.grad(qn)
+
+        # No differentiation required. No error raised.
+        grad()
+
 
 class TestTapeConstruction:
     """Tests for the tape construction"""
