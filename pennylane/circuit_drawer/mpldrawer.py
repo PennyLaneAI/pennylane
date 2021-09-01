@@ -33,8 +33,8 @@ class MPLDrawer:
     r"""Allows easy creation of graphics representing circuits with Matplotlib
 
     Args:
-        n_layers (Int): the number of layers
-        n_wires (Int): the number of wires
+        n_layers (int): the number of layers
+        n_wires (int): the number of wires
 
     Keyword Args:
         wire_kwargs=None (dict): matplotlib configuration options for drawing the wire lines

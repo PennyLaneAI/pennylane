@@ -10,7 +10,7 @@
   ```python
   from pennylane.circuit_drawer import MPLDrawer
 
-  drawer = MPLDrawer(n_wires=5,n_layers=5)
+  drawer = MPLDrawer(n_wires=5, n_layers=5)
 
   drawer.label(["0","a",r"$|\Psi\rangle$",r"$|\theta\rangle$", "aux"])
 
