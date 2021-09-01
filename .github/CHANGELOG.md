@@ -387,6 +387,10 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 * `QNode.diff_method` will now reflect which method was selected from `diff_method="best"`.
   [(#1568)](https://github.com/PennyLaneAI/pennylane/pull/1568)
 
+* QNodes now support `diff_method=None`. This works the same as `interface=None`. Such QNodes accept
+  floats, ints, lists and numpy arrays and return numpy output but can not be differentiated.
+  [(#1585)](https://github.com/PennyLaneAI/pennylane/pull/1585)
+
 
 <h3>Breaking changes</h3>
 
@@ -396,6 +400,9 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 
 <h3>Bug fixes</h3>
+
+* Dask and CVXPY dependent tests are skipped if those packages are not installed.
+[(#1617)](https://github.com/PennyLaneAI/pennylane/pull/1617)
 
 * The `qml.layer` template now works with tensorflow variables.
 [(#1615)](https://github.com/PennyLaneAI/pennylane/pull/1615)

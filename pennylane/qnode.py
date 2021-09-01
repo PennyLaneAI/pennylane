@@ -106,6 +106,8 @@ class QNode:
             * ``"finite-diff"``: Uses numerical finite-differences for all quantum operation
               arguments.
 
+            * ``None``: QNode cannot be differentiated. Works the same as ``interface=None``.
+
         mutable (bool): If True, the underlying quantum circuit is re-constructed with
             every evaluation. This is the recommended approach, as it allows the underlying
             quantum structure to depend on (potentially trainable) QNode input arguments,
@@ -154,6 +156,13 @@ class QNode:
         max_expansion=10,
         **diff_options,
     ):
+
+        if diff_method is None:
+            # TODO: update this behaviour once the new differentiable pipeline is the default
+            # We set "best" to allow internals to work and leverage the interface = None
+            # feature to restrict differentiability
+            diff_method = "best"
+            interface = None
 
         if interface is not None and interface not in self.INTERFACE_MAP:
             raise qml.QuantumFunctionError(
