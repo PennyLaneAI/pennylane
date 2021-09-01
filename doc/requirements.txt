@@ -4,7 +4,7 @@ appdirs
 autograd
 autoray
 jax==0.2.7
-jaxlib==0.1.57
+jaxlib==0.1.71
 m2r2
 numpy
 pygments-github-lexers
