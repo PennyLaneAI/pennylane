@@ -28,7 +28,8 @@ def gradient_expand(tape, depth=10):
 
     This is achieved by decomposing all trainable operations that have
     ``Operation.grad_method=None`` until all resulting operations
-    have a defined gradient method.
+    have a defined gradient method, up to maximum depth ``depth``. Note that this
+    might not be possible, in which case the gradient rule will fail to apply.
 
     Args:
         tape (.QuantumTape): the input tape to expand
@@ -56,7 +57,7 @@ class gradient_transform(qml.batch_transform):
     """Decorator for defining quantum gradient transforms.
 
     Quantum gradient transforms are a specific case of :class:`~.batch_transform`.
-    All quantum gradient transforms accept a tape, and outputs
+    All quantum gradient transforms accept a tape, and output
     a batch of tapes to be independently executed on a quantum device, alongside
     a post-processing function that returns the result.
 
@@ -98,7 +99,7 @@ class gradient_transform(qml.batch_transform):
 
     - ``argnum`` (*int* or *list[int]* or *None*): Which trainable parameters of the tape
       to differentiate with respect to. If not provided, the derivatives with respect to all
-      trainable indices of the tape should be returned (``tape.trainable_params``).
+      trainable inputs of the tape should be returned (``tape.trainable_params``).
 
     - ``gradient_tapes`` (*List[QuantumTape]*): is a list of output tapes to be evaluated.
       If this list is empty, no quantum evaluations will be made.
@@ -127,7 +128,7 @@ class gradient_transform(qml.batch_transform):
 
         If the gradient transform is written in a autodiff-compatible manner, either by
         using a framework such as Autograd or TensorFlow, or by using ``qml.math`` for
-        tensor manipulation, than higher-order derivatives will also be supported.
+        tensor manipulation, then higher-order derivatives will also be supported.
 
         Alternatively, you may use the ``tape.unwrap()`` context manager to temporarily
         convert all tape parameters to NumPy arrays and floats:

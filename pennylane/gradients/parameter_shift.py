@@ -368,7 +368,7 @@ def param_shift(
     tape, argnum=None, shift=np.pi / 2, gradient_recipes=None, fallback_fn=finite_diff, f0=None
 ):
     r"""Transform a QNode to compute the parameter-shift gradient of all gate
-    parameters with respect to its outputs.
+    parameters with respect to its inputs.
 
     Args:
         qnode (.QNode or .QuantumTape): quantum tape or QNode to differentiate
@@ -478,7 +478,7 @@ def param_shift(
 
     .. UsageDetails::
 
-        This gradient transform can also be applied directly to :class:`~.QNode` objects:
+        This gradient transform can be applied directly to :class:`~.QNode` objects:
 
         >>> @qml.qnode(dev)
         ... def circuit(params):

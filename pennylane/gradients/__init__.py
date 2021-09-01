@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-
-Quantum gradient transforms are strategies of computing the gradient of a quantum
-circuit by **transforming** the quantum circuit into one or more gradient circuits.
+Quantum gradient transforms are strategies for computing the gradient of a quantum
+circuit that work by **transforming** the quantum circuit into one or more gradient circuits.
 These gradient circuits, once executed and post-processed, return the gradient
 of the original circuit.
 
@@ -71,6 +70,7 @@ Utility functions
 Registering autodifferentiation gradients
 -----------------------------------------
 
+<<<<<<< HEAD
 All PennyLane QNode's are automatically differentiable, and can be included
 seamlessly within an autodiff pipeline. When creating a :class:`~.QNode`, the
 strategy for determining the optimal differentiation strategy is *automated*,
@@ -80,6 +80,19 @@ and takes into account the circuit, device, autodiff framework, and metadata
 .. code-block:: python
 
     @qml.qnode(dev)
+=======
+All PennyLane QNodes are automatically differentiable, and can be included
+seamlessly within an autodiff pipeline. When creating a :class:`~.QNode`, the
+strategy for determining the optimal differentiation strategy is *automated*,
+and takes into account the circuit, device, autodiff framework, and metadata
+(such as whether a finite number of shots are used).
+
+.. code-block:: python
+
+    dev = qml.device("default.qubit", wires=2, shots=1000)
+
+    @qml.qnode(dev, interface="tf")
+>>>>>>> master
     def circuit(weights):
         ...
 
@@ -88,8 +101,13 @@ In particular:
 - When using a simulator device with exact measurement statistics, backpropagation
   is preferred due to performance and memory improvements.
 
+<<<<<<< HEAD
 - When using a hardware device, or a simulator with a finite-number of shots,
   a quantum gradient transform---such as the parameter-shift rule---are preferred.
+=======
+- When using a hardware device, or a simulator with a finite number of shots,
+  a quantum gradient transform---such as the parameter-shift rule---is preferred.
+>>>>>>> master
 
 If you would like to specify a particular quantum gradient transform to use
 when differentiating your quantum circuit, this can be passed when
@@ -167,7 +185,11 @@ tensor([[-0.04673668, -0.09442394, -0.14409127],
 
     If your circuit contains any operations not supported by the gradient
     transform, the transform will attempt to automatically decompose the
+<<<<<<< HEAD
     circuit to find one supporting gradients.
+=======
+    circuit into only operations that support gradients.
+>>>>>>> master
 
 .. note::
 
@@ -227,7 +249,11 @@ a datastructure representing variational quantum algorithms:
 
 Unlike when transforming a QNode, transforming a tape directly
 will perform no implicit quantum device evaluation. Instead, it returns
+<<<<<<< HEAD
 the processed tapes, and post-processing function, which together
+=======
+the processed tapes, and a post-processing function, which together
+>>>>>>> master
 define the gradient:
 
 >>> gradient_tapes, fn = qml.gradients.param_shift(tape)
@@ -250,6 +276,13 @@ the gradient:
 >>> fn(execute(gradient_tapes, dev, None))
 [[-0.09347337 -0.18884787 -0.28818254]]
 
+<<<<<<< HEAD
+=======
+Note that the post-processing function ``fn`` returned by the
+gradient transform is applied to the flat list of results returned
+from executing the gradient tapes.
+
+>>>>>>> master
 
 Custom gradient transforms
 --------------------------
