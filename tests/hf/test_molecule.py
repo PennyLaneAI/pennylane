@@ -17,7 +17,7 @@ Unit tests for the molecule object.
 # pylint: disable=no-self-use
 import pytest
 from pennylane import numpy as np
-from pennylane.hf.molecule import Molecule, generate_basis_set, generate_nuclear_charges
+from pennylane.hf.molecule import Molecule
 from pennylane.hf.basis_set import BasisFunction
 
 
@@ -43,7 +43,7 @@ class TestMolecule:
     )
     def test_basis_error(self, symbols, geometry):
         r"""Test that an error is raised if a wrong basis set name is entered."""
-        with pytest.raises(ValueError, match="The only supported basis set is"):
+        with pytest.raises(ValueError, match="Currently, the only supported basis set is"):
             Molecule(symbols, geometry, basis_name="6-31g")
 
     @pytest.mark.parametrize(
@@ -74,7 +74,7 @@ class TestMolecule:
         assert mol.basis_name == basis_name
 
     @pytest.mark.parametrize(
-        ("symbols", "geometry", "n_electrons", "n_orbitals", "nuclear_charges", "core", "active"),
+        ("symbols", "geometry", "n_electrons", "n_orbitals", "nuclear_charges"),
         [
             (
                 ["H", "F"],
@@ -82,22 +82,16 @@ class TestMolecule:
                 10,
                 6,
                 [1, 9],
-                [],
-                [0, 1, 2, 3, 4, 5],
             ),
         ],
     )
-    def test_molecule_data(
-        self, symbols, geometry, n_electrons, n_orbitals, nuclear_charges, core, active
-    ):
+    def test_molecule_data(self, symbols, geometry, n_electrons, n_orbitals, nuclear_charges):
         r"""Test that the molecule object contains correct molecular data."""
         mol = Molecule(symbols, geometry)
 
         assert mol.n_electrons == n_electrons
         assert mol.n_orbitals == n_orbitals
         assert mol.nuclear_charges == nuclear_charges
-        assert mol.core == core
-        assert mol.active == active
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "n_basis", "basis_data"),
@@ -138,7 +132,38 @@ class TestMolecule:
                 [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
                 [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
                 np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
-            )
+            ),
+            (
+                ["H", "F"],
+                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+                [(0, 0, 0), (0, 0, 0), (0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1)],
+                [
+                    [0.3425250914e01, 0.6239137298e00, 0.1688554040e00],
+                    [0.1666791340e03, 0.3036081233e02, 0.8216820672e01],
+                    [0.6464803249e01, 0.1502281245e01, 0.4885884864e00],
+                    [0.6464803249e01, 0.1502281245e01, 0.4885884864e00],
+                    [0.6464803249e01, 0.1502281245e01, 0.4885884864e00],
+                    [0.6464803249e01, 0.1502281245e01, 0.4885884864e00],
+                ],
+                [
+                    [0.1543289673e00, 0.5353281423e00, 0.4446345422e00],
+                    [0.1543289673e00, 0.5353281423e00, 0.4446345422e00],
+                    [-0.9996722919e-01, 0.3995128261e00, 0.7001154689e00],
+                    [0.1559162750e00, 0.6076837186e00, 0.3919573931e00],
+                    [0.1559162750e00, 0.6076837186e00, 0.3919573931e00],
+                    [0.1559162750e00, 0.6076837186e00, 0.3919573931e00],
+                ],
+                np.array(
+                    [
+                        [0.0, 0.0, 0.0],
+                        [0.0, 0.0, 1.0],
+                        [0.0, 0.0, 1.0],
+                        [0.0, 0.0, 1.0],
+                        [0.0, 0.0, 1.0],
+                        [0.0, 0.0, 1.0],
+                    ]
+                ),
+            ),
         ],
     )
     def test_basisset(self, symbols, geometry, l, alpha, coeff, r):
@@ -152,43 +177,3 @@ class TestMolecule:
         assert np.allclose(mol.alpha, alpha)
         assert np.allclose(mol.coeff, coeff)
         assert np.allclose(mol.r, r)
-
-    nuclear_charge_data = [(["H", "H"], [1, 1]), (["H", "F"], [1, 9]), (["F", "C", "N"], [9, 6, 7])]
-
-    @pytest.mark.parametrize("molecular_symbols", nuclear_charge_data)
-    def test_generate_nuclear_charges(self, molecular_symbols):
-        r"""Test that the function generate_nuclear_charges creates correct atomic nuclear charges
-        for a given molecule.
-        """
-        symbols, charges = molecular_symbols
-
-        assert generate_nuclear_charges(symbols) == charges
-
-    @pytest.mark.parametrize(
-        ("l", "alpha", "coeff", "r"),
-        [
-            (
-                [(0, 0, 0), (0, 0, 0)],
-                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-                [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
-                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
-            )
-        ],
-    )
-    def test_generate_basis_set(self, l, alpha, coeff, r):
-        r"""Test that the function generate_basis_set returns a correct basis set for a (diatomic)
-        molecule. The diatomic molecule is used to avoid asserting data in loops.
-        """
-        basis_set = generate_basis_set(l, alpha, coeff, r)
-
-        assert np.allclose(basis_set[0].l, l[0])
-        assert np.allclose(basis_set[1].l, l[1])
-
-        assert np.allclose(basis_set[0].alpha, alpha[0])
-        assert np.allclose(basis_set[1].alpha, alpha[1])
-
-        assert np.allclose(basis_set[0].coeff, coeff[0])
-        assert np.allclose(basis_set[1].coeff, coeff[1])
-
-        assert np.allclose(basis_set[0].r, r[0])
-        assert np.allclose(basis_set[1].r, r[1])
