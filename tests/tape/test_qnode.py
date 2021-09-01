@@ -770,6 +770,7 @@ class TestDecorator:
         assert func.qtape is not old_tape
 
 
+@pytest.mark.usefixtures("skip_if_no_dask_support")
 class TestQNodeCollection:
     """Unittests for the QNodeCollection"""
 

@@ -398,6 +398,9 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 <h3>Bug fixes</h3>
 
+* Dask and CVXPY dependent tests are skipped if those packages are not installed.
+[(#1617)](https://github.com/PennyLaneAI/pennylane/pull/1617)
+
 * The `qml.layer` template now works with tensorflow variables.
 [(#1615)](https://github.com/PennyLaneAI/pennylane/pull/1615)
 
