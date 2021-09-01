@@ -16,18 +16,17 @@ TThis module contains functions needed for computing integrals over basis functi
 """
 import numpy as np
 import autograd.numpy as anp
-from norm import primitive_norm, contracted_norm
+from repo import *
 
 def generate_params(params, args):
-    """
-    Generate basis set parameters. The default values are used for the non-differentiable parameters
-    and the user-defined values are used for the differentiable ones.
+    """Generate basis set parameters. The default values are used for the non-differentiable
+    parameters and the user-defined values are used for the differentiable ones.
     """
     basis_params = []
     c = 0
 
     for i, p in enumerate(params):
-        if p is None:
+        if p.requires_grad:
             basis_params.append(args[c])
             c += 1
         else:
