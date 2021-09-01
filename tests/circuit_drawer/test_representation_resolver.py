@@ -32,7 +32,7 @@ def unicode_representation_resolver():
 @pytest.fixture
 def ascii_representation_resolver():
     """An instance of a RepresentationResolver with unicode charset."""
-    return RepresentationResolver(charset=qml.circuit_drawer.AsciiCharSet)
+    return RepresentationResolver(charset=qml.circuit_drawer.charsets.AsciiCharSet)
 
 
 class TestRepresentationResolver:
