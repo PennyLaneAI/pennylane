@@ -53,23 +53,6 @@ class TestTorchExecuteUnitTests:
         for args in spy.call_args_list:
             assert args[1]["shift"] == np.pi / 4
 
-    def test_unknown_gradient_fn_error(self):
-        """Test that an error is raised if an unknown gradient function
-        is passed"""
-        a = torch.tensor([0.1, 0.2], requires_grad=True)
-
-        dev = qml.device("default.qubit", wires=1)
-
-        with qml.tape.JacobianTape() as tape:
-            qml.RY(a[0], wires=0)
-            qml.RX(a[1], wires=0)
-            qml.expval(qml.PauliZ(0))
-
-        res = execute([tape], dev, gradient_fn=lambda x: x, interface="torch")[0]
-
-        with pytest.raises(ValueError, match="Unknown gradient function"):
-            res.backward()
-
     def test_incorrect_mode(self):
         """Test that an error is raised if a gradient transform
         is used with mode=forward"""
