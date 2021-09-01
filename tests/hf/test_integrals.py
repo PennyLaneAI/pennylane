@@ -30,9 +30,9 @@ from pennylane.hf.integrals import generate_params
             pnp.array([0.0, 0.0, 0.0], requires_grad=False),
         ),
         (
-                pnp.array([3.42525091, 0.62391373, 0.1688554], requires_grad=False),
-                pnp.array([0.15432897, 0.53532814, 0.44463454], requires_grad=False),
-                pnp.array([0.0, 0.0, 0.0], requires_grad=True),
+            pnp.array([3.42525091, 0.62391373, 0.1688554], requires_grad=False),
+            pnp.array([0.15432897, 0.53532814, 0.44463454], requires_grad=False),
+            pnp.array([0.0, 0.0, 0.0], requires_grad=True),
         ),
     ],
 )
