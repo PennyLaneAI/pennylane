@@ -169,11 +169,6 @@ def _extract_su2su2_prefactors(U, V):
     if not math.allclose(math.linalg.det(p), 1.0):
         p = math.dot(p, math.cast_like(LAST_COL_NEG, p))
 
-    # Next, we are going to reorder the columns of q so that the order of the
-    # eigenvalues matches those of p.
-    p_product = math.dot(math.T(p), math.dot(uuT, p))
-    q_product = math.dot(math.T(q), math.dot(vvT, q))
-
     new_q_order = []
 
     for _, eigval in enumerate(ev_p):
