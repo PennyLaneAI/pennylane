@@ -86,21 +86,11 @@ def _get_op_matrix(op, wire_order, SWAP_list):
 
                 # print("swap qubit index %d with qubit index %d" % (swaps[0], swaps[1]))
                 # construct SWAP operator to swap wires m[0] and m[1]
-                I_left = np.eye(2 ** (swaps[0]))
-                I_right = np.eye(2 ** (n_wires - swaps[1] - 1))
-                I_middle = np.eye(2 ** (swaps[1] - swaps[0] - 1))
+                reshapedI = np.reshape(np.eye(2 ** n_wires), [2] * n_wires * 2)
 
-                state0 = [1, 0]
-                state1 = [0, 1]
-                op00 = np.outer(state0, state0)
-                op11 = np.outer(state1, state1)
-                op01 = np.outer(state0, state1)
-                op10 = np.outer(state1, state0)
-
-                SWAP = reduce(np.kron, [I_left, op00, I_middle, op00, I_right])
-                SWAP += reduce(np.kron, [I_left, op11, I_middle, op11, I_right])
-                SWAP += reduce(np.kron, [I_left, op10, I_middle, op01, I_right])
-                SWAP += reduce(np.kron, [I_left, op01, I_middle, op10, I_right])
+                SWAP = np.reshape(
+                    np.swapaxes(reshapedI, swaps[0], swaps[1]), (2 ** n_wires, 2 ** n_wires)
+                )
 
                 # Append to list of all SWAPs
                 SWAP_list.append(SWAP)
