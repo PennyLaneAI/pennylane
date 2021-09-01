@@ -47,7 +47,7 @@ def _perm_matrix_from_sequence(seq):
 
 
 def _convert_to_su4(U):
-    r"""Check unitarity of a 4x4 matrix and convert it to :math:`SU(4)` if possible.
+    r"""Check unitarity of a 4x4 matrix and convert it to :math:`SU(4)` if the determinant is not 1.
 
     Args:
         U (array[complex]): A matrix, presumed to be :math:`4 \times 4` and unitary.
@@ -97,7 +97,7 @@ def _select_rotation_angles(U):
 
 
 def _su2su2_to_tensor_products(U):
-    """Given a matrix U = A \otimes B in SU(2) x SU(2), extract the two SU(2)
+    r"""Given a matrix :math:`U = A \otimes B` in SU(2) x SU(2), extract the two SU(2)
     operations A and B.
 
     This process has been described in detail in the Appendix of Coffey & Deiotte
@@ -141,7 +141,7 @@ def _su2su2_to_tensor_products(U):
 
 
 def _extract_su2su2_prefactors(U, V):
-    """U, V are SU(4) matrices for which there exists A, B, C, D such that
+    r"""U, V are SU(4) matrices for which there exists A, B, C, D such that
     (A \otimes B) V (C \otimes D) = U. The problem is to find A, B, C, D in SU(2)
     in an analytic and fully differentiable manner.
 
@@ -170,10 +170,10 @@ def _extract_su2su2_prefactors(U, V):
     # First, we find a matrix p (hopefully) in SO(4) s.t. p^T u u^T p is diagonal.
     # Since uuT is complex and symmetric, both its real / imag parts share a set
     # of real-valued eigenvectors.
-    ev_p, p = qml.math.linalg.eig(uuT.real)
+    _, p = qml.math.linalg.eig(qml.math.real(uuT))
 
     # We also do this for v, i.e., find q (hopefully) in SO(4) s.t. q^T v v^T q is diagonal.
-    ev_q, q = qml.math.linalg.eig(vvT.real)
+    _, q = qml.math.linalg.eig(qml.math.real(vvT))
 
     # If determinant of p is not 1, it is in O(4) but not SO(4), and has
     # determinant -1. We can transform it to SO(4) by simply negating one
@@ -236,7 +236,7 @@ def two_qubit_decomposition(U, wires):
     <https://arxiv.org/abs/quant-ph/0308033>`__ presents a fixed-form
     decomposition of :math:`U` in terms of single-qubit gates and
     CNOTs. Multiple such decompositions are possible (by choosing two of
-    {``RX``, ``RY``, ``RZ``}). Here we choose the ``RY``, ``RZ`` case (fig. 2 in
+    ``{RX, RY, RZ}``). Here we choose the ``RY``, ``RZ`` case (fig. 2 in
     the above) to match with the default decomposition of the single-qubit
     ``Rot`` operations as ``RZ RY RZ``. The form of the decomposition is:
 
@@ -252,7 +252,7 @@ def two_qubit_decomposition(U, wires):
         wires (Union[Wires, Sequence[int] or int]): The wires on which to apply the operation.
 
     Returns:
-        list[qml.Operation]: A list of operations that represent the decomposition
+        list[Operation]: A list of operations that represent the decomposition
         of the matrix U.
     """
     # First, test if we have a tensor product of two single-qubit operations. If
@@ -278,7 +278,7 @@ def two_qubit_decomposition(U, wires):
     # SWAP as per v1 of 0308033, which helps with some rearranging of gates in
     # the decomposition (it will cancel out the fact that we need to add a SWAP
     # to fix the determinant in another part later).
-    swap_U = qml.math.exp(1j * np.pi / 4) * qml.math.dot(SWAP, _convert_to_su4(U))
+    swap_U = np.exp(1j * np.pi / 4) * qml.math.dot(SWAP, _convert_to_su4(U))
 
     # Next, we can choose the angles of the RZ / RY rotations. See the docstring
     # within the function used below. This is to ensure U and V somehow maintain
@@ -314,7 +314,7 @@ def two_qubit_decomposition(U, wires):
         [
             SWAP,
             CNOT10,
-            qml.math.kron(qml.math.eye(2), RYa),
+            qml.math.kron(np.eye(2), RYa),
             CNOT01,
             qml.math.kron(RZd, RYb),
             CNOT10,

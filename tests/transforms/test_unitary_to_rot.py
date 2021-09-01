@@ -506,7 +506,7 @@ class TestTwoQubitUnitaryDifferentiability:
 
     @pytest.mark.parametrize("U", test_u4_unitaries)
     def test_gradient_unitary_to_rot_torch_two_qubit(self, U):
-        """Tests differentiability in autograd interface."""
+        """Tests differentiability in torch interface."""
         torch = pytest.importorskip("torch")
 
         U = torch.tensor(U, dtype=torch.complex128, requires_grad=True)
