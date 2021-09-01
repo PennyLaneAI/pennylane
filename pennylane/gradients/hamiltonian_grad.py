@@ -15,8 +15,6 @@
 # pylint: disable=protected-access,unnecessary-lambda
 import pennylane as qml
 
-from .gradient_transform import gradient_transform
-
 
 def hamiltonian_grad(tape, idx, params=None):
     """Computes the tapes necessary to get the gradient of a tape with respect to
