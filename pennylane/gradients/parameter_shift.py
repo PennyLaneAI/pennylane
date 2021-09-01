@@ -15,7 +15,7 @@
 This module contains functions for computing the parameter-shift gradient
 of a qubit-based quantum tape.
 """
-# pylint: disable=protected-access,too-many-arguments
+# pylint: disable=protected-access,too-many-arguments,too-many-statements
 import numpy as np
 
 import pennylane as qml
@@ -150,7 +150,7 @@ def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None
             fns.append(None)
             continue
 
-        op, p_idx = tape.get_operation(idx)
+        op, _ = tape.get_operation(idx)
 
         if op.name == "Hamiltonian":
             # operation is a Hamiltonian
