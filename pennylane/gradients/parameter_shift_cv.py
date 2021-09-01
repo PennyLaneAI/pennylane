@@ -473,174 +473,166 @@ def param_shift_cv(
     force_order2=False,
 ):
     r"""Transform a continuous-variable QNode to compute the parameter-shift gradient of all gate
-        parameters with respect to its inputs.
+    parameters with respect to its inputs.
 
-        Args:
-            tape (.QuantumTape): quantum tape to differentiate
-            dev (.Device): device the parameter-shift method is to be computed on
-            argnum (int or list[int] or None): Trainable parameter indices to differentiate
-                with respect to. If not provided, the derivative with respect to all
-                trainable indices are returned.
-            shift (float): The shift value to use for the two-term parameter-shift formula.
-                Only valid if the operation in question supports the two-term parameter-shift
-                rule (that is, it has two distinct eigenvalues) and ``gradient_recipes``
-                is ``None``.
-            gradient_recipes (tuple(list[list[float]] or None)): List of gradient recipes
-                for the parameter-shift method. One gradient recipe must be provided
-                per trainable parameter.
+    Args:
+        tape (.QuantumTape): quantum tape to differentiate
+        dev (.Device): device the parameter-shift method is to be computed on
+        argnum (int or list[int] or None): Trainable parameter indices to differentiate
+            with respect to. If not provided, the derivative with respect to all
+            trainable indices are returned.
+        shift (float): The shift value to use for the two-term parameter-shift formula.
+            Only valid if the operation in question supports the two-term parameter-shift
+            rule (that is, it has two distinct eigenvalues) and ``gradient_recipes``
+            is ``None``.
+        gradient_recipes (tuple(list[list[float]] or None)): List of gradient recipes
+            for the parameter-shift method. One gradient recipe must be provided
+            per trainable parameter.
 
-                This is a tuple with one nested list per parameter. For
-                parameter :math:`\phi_k`, the nested list contains elements of the form
-                :math:`[c_i, a_i, s_i]` where :math:`i` is the index of the
-                term, resulting in a gradient recipe of
+            This is a tuple with one nested list per parameter. For
+            parameter :math:`\phi_k`, the nested list contains elements of the form
+            :math:`[c_i, a_i, s_i]` where :math:`i` is the index of the
+            term, resulting in a gradient recipe of
 
-                .. math:: \frac{\partial}{\partial\phi_k}f = \sum_{i} c_i f(a_i \phi_k + s_i).
+            .. math:: \frac{\partial}{\partial\phi_k}f = \sum_{i} c_i f(a_i \phi_k + s_i).
 
-                If ``None``, the default gradient recipe containing the two terms
-                :math:`[c_0, a_0, s_0]=[1/2, 1, \pi/2]` and :math:`[c_1, a_1,
-                s_1]=[-1/2, 1, -\pi/2]` is assumed for every parameter.
-            fallback_fn (None or Callable): a fallback grdient function to use for
-                any parameters that do not support the parameter-shift rule.
-            f0 (tensor_like[float] or None): Output of the evaluated input tape. If provided,
-                and the gradient recipe contains an unshifted term, this value is used,
-                saving a quantum evaluation.
-            force_order2 (bool): if True, use the order-2 method even if not necessary
+            If ``None``, the default gradient recipe containing the two terms
+            :math:`[c_0, a_0, s_0]=[1/2, 1, \pi/2]` and :math:`[c_1, a_1,
+            s_1]=[-1/2, 1, -\pi/2]` is assumed for every parameter.
+        fallback_fn (None or Callable): a fallback grdient function to use for
+            any parameters that do not support the parameter-shift rule.
+        f0 (tensor_like[float] or None): Output of the evaluated input tape. If provided,
+            and the gradient recipe contains an unshifted term, this value is used,
+            saving a quantum evaluation.
+        force_order2 (bool): if True, use the order-2 method even if not necessary
 
-        Returns:
-            tensor_like or tuple[list[QuantumTape], function]:
+    Returns:
+        tensor_like or tuple[list[QuantumTape], function]:
 
-            - If the input is a QNode, a tensor
-              representing the output Jacobian matrix of size ``(number_outputs, number_gate_parameters)``
-              is returned.
+        - If the input is a QNode, a tensor
+          representing the output Jacobian matrix of size ``(number_outputs, number_gate_parameters)``
+          is returned.
 
-            - If the input is a tape, a tuple containing a list of generated tapes,
-              in addition to a post-processing function to be applied to the
-              evaluated tapes.
+        - If the input is a tape, a tuple containing a list of generated tapes,
+          in addition to a post-processing function to be applied to the
+          evaluated tapes.
 
-        This transform supports analytic gradients of Gaussian CV operations using
-        the parameter-shift rule. This gradient method returns *exact* gradients,
-        and can be computed directly on quantum hardware.
+    This transform supports analytic gradients of Gaussian CV operations using
+    the parameter-shift rule. This gradient method returns *exact* gradients,
+    and can be computed directly on quantum hardware.
 
-        Analytic gradients of photonic circuits that satisfy
-        the following constraints with regards to measurements are supported:
+    Analytic gradients of photonic circuits that satisfy
+    the following constraints with regards to measurements are supported:
 
-        * Expectation values are restricted to observables that are first- and
-          second-order in :math:`\hat{x}` and :math:`\hat{p}` only.
-          This includes :class:`~.X`, :class:`~.P`, :class:`~.QuadOperator`,
-          :class:`~.PolyXP`, and :class:`~.NumberOperator`.
+    * Expectation values are restricted to observables that are first- and
+      second-order in :math:`\hat{x}` and :math:`\hat{p}` only.
+      This includes :class:`~.X`, :class:`~.P`, :class:`~.QuadOperator`,
+      :class:`~.PolyXP`, and :class:`~.NumberOperator`.
 
-          For second-order observables, the device **must support** :class:`~.PolyXP`.
+      For second-order observables, the device **must support** :class:`~.PolyXP`.
 
-        * Variances are restricted to observables that are first-order
-          in :math:`\hat{x}` and :math:`\hat{p}` only. This includes :class:`~.X`, :class:`~.P`,
-          :class:`~.QuadOperator`, and *some* parameter values of :class:`~.PolyXP`.
+    * Variances are restricted to observables that are first-order
+      in :math:`\hat{x}` and :math:`\hat{p}` only. This includes :class:`~.X`, :class:`~.P`,
+      :class:`~.QuadOperator`, and *some* parameter values of :class:`~.PolyXP`.
 
-          The device **must support** :class:`~.PolyXP`.
+      The device **must support** :class:`~.PolyXP`.
 
-        .. warning::
+    .. warning::
 
-            Fock state probabilities (tapes that return :func:`~pennylane.probs` or
-            expectation values of :class:`~.FockStateProjector`) are not supported.
+        Fock state probabilities (tapes that return :func:`~pennylane.probs` or
+        expectation values of :class:`~.FockStateProjector`) are not supported.
 
-        In addition, the operations must fulfill the following requirements:
+    In addition, the operations must fulfill the following requirements:
 
-        * Only Gaussian operations are differentiable.
+    * Only Gaussian operations are differentiable.
 
-        * Non-differentiable Fock states and Fock operations may *precede* all differentiable Gaussian,
-          operations. For example, the following is permissible:
+    * Non-differentiable Fock states and Fock operations may *precede* all differentiable Gaussian,
+      operations. For example, the following is permissible:
 
-          .. code-block:: python
+      .. code-block:: python
 
-              @qml.qnode(dev)
-              def circuit(weights):
-                  # Non-differentiable Fock operations
-                  qml.FockState(np.array(2, requires_grad=False), wires=0)
-                  qml.Kerr(np.array(0.654, requires_grad=False), wires=1)
+          @qml.qnode(dev)
+          def circuit(weights):
+              # Non-differentiable Fock operations
+              qml.FockState(np.array(2, requires_grad=False), wires=0)
+              qml.Kerr(np.array(0.654, requires_grad=False), wires=1)
 
-                  # differentiable Gaussian operations
-                  qml.Displacement(weights[0], weights[1], wires=0)
-                  qml.Beamsplitter(weights[2], weights[3], wires=[0, 1])
+              # differentiable Gaussian operations
+              qml.Displacement(weights[0], weights[1], wires=0)
+              qml.Beamsplitter(weights[2], weights[3], wires=[0, 1])
 
-                  return qml.expval(qml.NumberOperator(0))
+              return qml.expval(qml.NumberOperator(0))
 
-        * If a Fock operation succeeds a Gaussian operation, the Fock operation must
-          not contribute to any measurements. For example, the following is allowed:
+    * If a Fock operation succeeds a Gaussian operation, the Fock operation must
+      not contribute to any measurements. For example, the following is allowed:
 
-          .. code-block:: python
+      .. code-block:: python
 
-              @qml.qnode(dev)
-              def circuit(weights):
-                  qml.Displacement(weights[0], weights[1], wires=0)
-                  qml.Beamsplitter(weights[2], weights[3], wires=[0, 1])
-                  qml.Kerr(np.array(0.654, requires_grad=False), wires=1)  # there is no measurement on wire 1
-                  return qml.expval(qml.NumberOperator(0))
+          @qml.qnode(dev)
+          def circuit(weights):
+              qml.Displacement(weights[0], weights[1], wires=0)
+              qml.Beamsplitter(weights[2], weights[3], wires=[0, 1])
+              qml.Kerr(np.array(0.654, requires_grad=False), wires=1)  # there is no measurement on wire 1
+              return qml.expval(qml.NumberOperator(0))
 
-        If any of the above constraints are not followed, the tape cannot be differentiated
-        via the CV parameter-shift rule. Please use numerical differentiation instead.
+    If any of the above constraints are not followed, the tape cannot be differentiated
+    via the CV parameter-shift rule. Please use numerical differentiation instead.
 
-        **Example**
+    **Example**
 
-        This transform can be registered directly as the quantum gradient transform
-        to use during autodifferentiation:
+    This transform can be registered directly as the quantum gradient transform
+    to use during autodifferentiation:
 
-        >>> dev = qml.device("default.gaussian", wires=2)
-    <<<<<<< HEAD
-        >>> @qml.qnode(dev)#, gradient_fn=qml.gradients.param_shift_cv)
-    =======
-        >>> @qml.qnode(dev, gradient_fn=qml.gradients.param_shift_cv)
-    >>>>>>> master
+    >>> dev = qml.device("default.gaussian", wires=2)
+    >>> @qml.qnode(dev, gradient_fn=qml.gradients.param_shift_cv)
+    ... def circuit(params):
+    ...     qml.Squeezing(params[0], params[1], wires=[0])
+    ...     qml.Squeezing(params[2], params[3], wires=[0])
+    ...     return qml.expval(qml.NumberOperator(0))
+    >>> params = np.array([0.1, 0.2, 0.3, 0.4], requires_grad=True)
+    >>> qml.jacobian(circuit)(params)
+    array([ 0.87516064,  0.01273285,  0.88334834, -0.01273285])
+
+    .. UsageDetails::
+
+        This gradient transform can be applied directly to :class:`~.QNode` objects:
+
+        >>> @qml.qnode(dev)
         ... def circuit(params):
         ...     qml.Squeezing(params[0], params[1], wires=[0])
         ...     qml.Squeezing(params[2], params[3], wires=[0])
         ...     return qml.expval(qml.NumberOperator(0))
         >>> params = np.array([0.1, 0.2, 0.3, 0.4], requires_grad=True)
-        >>> qml.jacobian(circuit)(params)
-        array([ 0.87516064,  0.01273285,  0.88334834, -0.01273285])
+        >>> qml.gradients.param_shift_cv(circuit, dev)(params)
+        tensor([[ 0.87516064,  0.01273285,  0.88334834, -0.01273285]], requires_grad=True)
 
-        .. UsageDetails::
+        This quantum gradient transform can also be applied to low-level
+        :class:`~.QuantumTape` objects. This will result in no implicit quantum
+        device evaluation. Instead, the processed tapes, and post-processing
+        function, which together define the gradient are directly returned:
 
-    <<<<<<< HEAD
-            This gradient transform can also be applied directly to :class:`~.QNode` objects:
-    =======
-            This gradient transform can be applied directly to :class:`~.QNode` objects:
-    >>>>>>> master
+        >>> r0, phi0, r1, phi1 = [0.4, -0.3, -0.7, 0.2]
+        >>> with qml.tape.JacobianTape() as tape:
+        ...     qml.Squeezing(r0, phi0, wires=[0])
+        ...     qml.Squeezing(r1, phi1, wires=[0])
+        ...     qml.expval(qml.NumberOperator(0))  # second-order
+        >>> gradient_tapes, fn = qml.gradients.param_shift_cv(tape, dev)
+        >>> gradient_tapes
+        [<JacobianTape: wires=[0], params=4>,
+         <JacobianTape: wires=[0], params=4>,
+         <JacobianTape: wires=[0], params=4>,
+         <JacobianTape: wires=[0], params=4>]
 
-            >>> @qml.qnode(dev)
-            ... def circuit(params):
-            ...     qml.Squeezing(params[0], params[1], wires=[0])
-            ...     qml.Squeezing(params[2], params[3], wires=[0])
-            ...     return qml.expval(qml.NumberOperator(0))
-            >>> params = np.array([0.1, 0.2, 0.3, 0.4], requires_grad=True)
-            >>> qml.gradients.param_shift_cv(circuit, dev)(params)
-            tensor([[ 0.87516064,  0.01273285,  0.88334834, -0.01273285]], requires_grad=True)
+        This can be useful if the underlying circuits representing the gradient
+        computation need to be analyzed.
 
-            This quantum gradient transform can also be applied to low-level
-            :class:`~.QuantumTape` objects. This will result in no implicit quantum
-            device evaluation. Instead, the processed tapes, and post-processing
-            function, which together define the gradient are directly returned:
+        The output tapes can then be evaluated and post-processed to retrieve
+        the gradient:
 
-            >>> r0, phi0, r1, phi1 = [0.4, -0.3, -0.7, 0.2]
-            >>> with qml.tape.JacobianTape() as tape:
-            ...     qml.Squeezing(r0, phi0, wires=[0])
-            ...     qml.Squeezing(r1, phi1, wires=[0])
-            ...     qml.expval(qml.NumberOperator(0))  # second-order
-            >>> gradient_tapes, fn = qml.gradients.param_shift_cv(tape, dev)
-            >>> gradient_tapes
-            [<JacobianTape: wires=[0], params=4>,
-             <JacobianTape: wires=[0], params=4>,
-             <JacobianTape: wires=[0], params=4>,
-             <JacobianTape: wires=[0], params=4>]
-
-            This can be useful if the underlying circuits representing the gradient
-            computation need to be analyzed.
-
-            The output tapes can then be evaluated and post-processed to retrieve
-            the gradient:
-
-            >>> dev = qml.device("default.gaussian", wires=2)
-            >>> from pennylane.interfaces.batch import execute
-            >>> fn(execute(gradient_tapes, dev, None))
-            array([[-0.32487113, -0.4054074 , -0.87049853,  0.4054074 ]])
+        >>> dev = qml.device("default.gaussian", wires=2)
+        >>> from pennylane.interfaces.batch import execute
+        >>> fn(execute(gradient_tapes, dev, None))
+        array([[-0.32487113, -0.4054074 , -0.87049853,  0.4054074 ]])
     """
 
     # perform gradient method validation
