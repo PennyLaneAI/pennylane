@@ -34,10 +34,12 @@ def cvxpy_support():
 
     return cvxpy_support
 
+
 @pytest.fixture()
 def skip_if_no_cvxpy_support(cvxpy_support):
     if not cvxpy_support:
         pytest.skip("Skipped, no cvxpy support")
+
 
 @qml.template
 def _simple_ansatz(x, params):

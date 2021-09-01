@@ -177,7 +177,7 @@ class TestEvalation:
     def test_eval_autograd(self, qnodes, parallel, interface, dask_support):
         """Test correct evaluation of the QNodeCollection using
         the Autograd interface"""
-                
+
         if (not dask_support) and (parallel):
             pytest.skip("Skipped, no dask support")
 

@@ -112,22 +112,25 @@ def gaussian_device_4modes():
 
 ############### Package Support ##########################
 
+
 @pytest.fixture(scope="session")
 def dask_support():
     """Boolean fixture for dask support"""
     try:
         import dask
-        
+
         dask_support = True
     except ImportError as e:
         dask_support = False
 
     return dask_support
 
+
 @pytest.fixture()
 def skip_if_no_dask_support(dask_support):
     if not dask_support:
         pytest.skip("Skipped, no dask support")
+
 
 @pytest.fixture(scope="session")
 def torch_support():
@@ -172,6 +175,7 @@ def skip_if_no_tf_support(tf_support):
 @pytest.fixture
 def skip_if_no_jax_support():
     pytest.importorskip("jax")
+
 
 #######################################################################
 
