@@ -31,7 +31,8 @@ CNOT01 = qml.CNOT(wires=[0, 1]).matrix
 CNOT10 = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
 SWAP = qml.SWAP(wires=[0, 1]).matrix
 
-LAST_COL_NEG = np.diag([1, 1, 1, -1]) # used to negate the last column of a matrix
+LAST_COL_NEG = np.diag([1, 1, 1, -1])  # used to negate the last column of a matrix
+
 
 def _convert_to_su4(U):
     r"""Check unitarity of a 4x4 matrix and convert it to :math:`SU(4)` if the determinant is not 1.
@@ -67,9 +68,9 @@ def _select_rotation_angles(U):
 
         \gamma(U) = (E^\dag U E) (E^\dag U E)^T.
     """
-
-    gammaU = qml.math.linalg.multi_dot([Edag, U, E, Et, qml.math.T(U), qml.math.T(Edag)])
-    evs = qml.math.linalg.eigvals(gammaU)
+    u = qml.math.dot(Edag, qml.math.dot(U, E))
+    gammaU = qml.math.dot(u, qml.math.T(u))
+    evs, _ = qml.math.linalg.eig(gammaU)
 
     # The rotation angles can be computed as follows (any three eigenvalues can be used)
     x, y, z = qml.math.angle(evs[0]), qml.math.angle(evs[1]), qml.math.angle(evs[2])
@@ -111,7 +112,7 @@ def _su2su2_to_tensor_products(U):
     # C1 C2^dag = a1 a2* I
     C12 = qml.math.dot(C1, qml.math.conj(qml.math.T(C2)))
 
-    if not qml.math.isclose(a1 * np.conj(a2), C12[0, 0]):
+    if not qml.math.allclose(a1 * np.conj(a2), C12[0, 0]):
         a2 *= -1
 
     # Construct A
@@ -119,12 +120,12 @@ def _su2su2_to_tensor_products(U):
 
     # Next, extract B. Can do from any of the C, just need to be careful in
     # case one of the elements of A is 0.
-    if not qml.math.isclose(A[0, 0], 0.0, atol=1e-8):
+    if not qml.math.allclose(A[0, 0], 0.0, atol=1e-8):
         B = C1 / A[0, 0]
     else:
         B = C2 / A[0, 1]
 
-    return A, B
+    return qml.math.convert_like(A, U), qml.math.convert_like(B, U)
 
 
 def _extract_su2su2_prefactors(U, V):
@@ -148,8 +149,8 @@ def _extract_su2su2_prefactors(U, V):
     # we can simultaneously diagonalize functions of U and V to ensure they are
     # in the same coset and recover the decomposition.
 
-    u = qml.math.linalg.multi_dot([Edag, U, E])
-    v = qml.math.linalg.multi_dot([Edag, V, E])
+    u = qml.math.dot(qml.math.cast_like(Edag, U), qml.math.dot(U, qml.math.cast_like(E, U)))
+    v = qml.math.dot(qml.math.cast_like(Edag, V), qml.math.dot(V, qml.math.cast_like(E, V)))
 
     uuT = qml.math.dot(u, qml.math.T(u))
     vvT = qml.math.dot(v, qml.math.T(v))
@@ -157,40 +158,37 @@ def _extract_su2su2_prefactors(U, V):
     # First, we find a matrix p (hopefully) in SO(4) s.t. p^T u u^T p is diagonal.
     # Since uuT is complex and symmetric, both its real / imag parts share a set
     # of real-valued eigenvectors.
-    _, p = qml.math.linalg.eig(qml.math.real(uuT))
+    ev_p, p = qml.math.linalg.eig(qml.math.real(uuT))
 
     # We also do this for v, i.e., find q (hopefully) in SO(4) s.t. q^T v v^T q is diagonal.
-    _, q = qml.math.linalg.eig(qml.math.real(vvT))
+    ev_q, q = qml.math.linalg.eig(qml.math.real(vvT))
 
     # If determinant of p is not 1, it is in O(4) but not SO(4), and has
     # determinant -1. We can transform it to SO(4) by simply negating one
     # of the columns.
-    if not qml.math.isclose(qml.math.linalg.det(p), 1.0):
-        p = qml.math.dot(p, LAST_COL_NEG)
+    if not qml.math.allclose(qml.math.linalg.det(p), 1.0):
+        p = qml.math.dot(p, qml.math.cast_like(LAST_COL_NEG, p))
 
     # Next, we are going to reorder the columns of q so that the order of the
     # eigenvalues matches those of p.
-    p_product = qml.math.linalg.multi_dot([qml.math.T(p), uuT, p])
-    q_product = qml.math.linalg.multi_dot([qml.math.T(q), vvT, q])
-
-    p_diag = qml.math.diag(p_product)
-    q_diag = qml.math.diag(q_product)
+    p_product = qml.math.dot(qml.math.T(p), qml.math.dot(uuT, p))
+    q_product = qml.math.dot(qml.math.T(q), qml.math.dot(vvT, q))
 
     new_q_order = []
 
-    for idx, eigval in enumerate(p_diag):
-        are_close = [qml.math.isclose(x, eigval) for x in q_diag]
+    for _, eigval in enumerate(ev_p):
+        are_close = [qml.math.allclose(x, eigval) for x in ev_q]
 
         if any(are_close):
             new_q_order.append(qml.math.argmax(are_close))
 
-    # Get the permutation matrix needed to reshuffle the columns
+    # Reshuffle the columns.
     q_perm = np.identity(4)[:, np.array(new_q_order)]
-    q = qml.math.dot(q, q_perm)
+    q = qml.math.dot(q, qml.math.cast_like(q_perm, q))
 
     # Depending on the sign of the permutation, it may be that q is in O(4) but
     # not SO(4). Again we can fix this by simply negating a column.
-    q_in_so4 = qml.math.isclose(qml.math.linalg.det(q), 1.0)
+    q_in_so4 = qml.math.allclose(qml.math.linalg.det(q), 1.0)
     if not q_in_so4:
         q = qml.math.dot(q, LAST_COL_NEG)
 
@@ -198,15 +196,15 @@ def _extract_su2su2_prefactors(U, V):
     # Then (v^\dag q p^T u)(v^\dag q p^T u)^T = I.
     # So we can set G = p q^T, H = v^\dag q p^T u to obtain G v H = u.
     G = qml.math.dot(p, qml.math.T(q))
-    H = qml.math.linalg.multi_dot([qml.math.conj(qml.math.T(v)), q, qml.math.T(p), u])
+    H = qml.math.dot(qml.math.conj(qml.math.T(v)), qml.math.dot(qml.math.T(G), u))
 
     # These are still in SO(4) though - we want to convert things into SU(2) x SU(2)
     # so use the entangler. Since u = E^\dagger U E and v = E^\dagger V E where U, V
     # are the target matrices, we can reshuffle as in the docstring above,
     #     U = (E G E^\dagger) V (E H E^\dagger) = (A \otimes B) V (C \otimes D)
     # where A, B, C, D are in SU(2) x SU(2).
-    AB = qml.math.linalg.multi_dot([E, G, Edag])
-    CD = qml.math.linalg.multi_dot([E, H, Edag])
+    AB = qml.math.dot(E, qml.math.dot(G, Edag))
+    CD = qml.math.dot(E, qml.math.dot(H, Edag))
 
     # Now, we just need to extract the constituent tensor products.
     A, B = _su2su2_to_tensor_products(AB)
@@ -246,8 +244,9 @@ def two_qubit_decomposition(U, wires):
     # so, we don't actually need to do a decomposition. To test this, we can
     # check if Edag U E is in SO(4) because of the isomorphism between SO(4) and
     # SU(2) x SU(2).
-    test_so4 = qml.math.linalg.multi_dot([Edag, U, E])
-    if qml.math.isclose(qml.math.linalg.det(test_so4), 1.0) and qml.math.allclose(
+    test_so4 = qml.math.dot(qml.math.cast_like(Edag, U), qml.math.dot(U, qml.math.cast_like(E, U)))
+
+    if qml.math.allclose(qml.math.linalg.det(test_so4), 1.0) and qml.math.allclose(
         qml.math.dot(test_so4, qml.math.T(test_so4)), qml.math.eye(4)
     ):
         A, B = _su2su2_to_tensor_products(U)
@@ -265,7 +264,7 @@ def two_qubit_decomposition(U, wires):
     # SWAP as per v1 of 0308033, which helps with some rearranging of gates in
     # the decomposition (it will cancel out the fact that we need to add a SWAP
     # to fix the determinant in another part later).
-    swap_U = np.exp(1j * np.pi / 4) * qml.math.dot(SWAP, _convert_to_su4(U))
+    swap_U = np.exp(1j * np.pi / 4) * qml.math.dot(qml.math.cast_like(SWAP, U), _convert_to_su4(U))
 
     # Next, we can choose the angles of the RZ / RY rotations. See the docstring
     # within the function used below. This is to ensure U and V somehow maintain
@@ -293,20 +292,23 @@ def two_qubit_decomposition(U, wires):
     # -V- = -X--RZ(d)--C---------X--SWAP-|
     # -V- = -C--RY(b)--X--RY(a)--C--SWAP-|
 
-    RZd = qml.RZ(delta, wires=0).matrix
+    RZd = qml.RZ(qml.math.cast_like(delta, 1j), wires=0).matrix
     RYb = qml.RY(beta, wires=0).matrix
     RYa = qml.RY(alpha, wires=0).matrix
 
-    V = qml.math.linalg.multi_dot(
-        [
-            SWAP,
-            CNOT10,
-            qml.math.kron(np.eye(2), RYa),
-            CNOT01,
-            qml.math.kron(RZd, RYb),
-            CNOT10,
-        ]
-    )
+    V_mats = [
+        SWAP,
+        CNOT10,
+        qml.math.kron(qml.math.eye(2), RYa),
+        CNOT01,
+        qml.math.kron(RZd, RYb),
+        CNOT10,
+    ]
+
+    V = qml.math.convert_like(qml.math.eye(4), U)
+
+    for mat in V_mats:
+        V = qml.math.dot(V, qml.math.cast_like(mat, U))
 
     # Now we need to find the four SU(2) operations A, B, C, D
     A, B, C, D = _extract_su2su2_prefactors(swap_U, V)

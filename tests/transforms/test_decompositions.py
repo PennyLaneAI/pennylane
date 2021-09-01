@@ -526,6 +526,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
         U = tf.Variable(U, dtype=tf.complex128)
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
+
         obtained_matrix = compute_matrix_from_ops_two_qubit(
             obtained_decomposition, wire_order=wires
         )
