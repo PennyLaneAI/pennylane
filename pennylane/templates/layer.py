@@ -16,6 +16,7 @@ Contains the ``layer`` template constructor.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.templates.decorator import template as temp
+from pennylane.math import shape
 
 
 def _preprocess(args, depth):
@@ -30,7 +31,7 @@ def _preprocess(args, depth):
 
     for arg in args:
 
-        if len(arg) != depth:
+        if shape(arg)[0] != depth:
             raise ValueError(
                 "Each positional argument must have length matching 'depth'; expected {} got {}".format(
                     depth, len(arg)
