@@ -14,27 +14,36 @@
 """
 Unit tests for functions needed to computing integrals over basis functions.
 """
+import pytest
 import numpy as np
 from pennylane.hf.integrals import primitive_norm, contracted_norm
 
 
-def test_gaussian_norm():
-    r"""Test that the normalization constant of a Gaussian function representing s orbitals
-    is :math:`(\frac {2 \alpha}{\pi})^{{3/4}}`.
-    """
-    l = (0, 0, 0)
-    alpha = np.array([3.425250914])
-    n = (2 * alpha / np.pi) ** (3 / 4)
-
+@pytest.mark.parametrize(
+    ("l", "alpha", "n"),
+    [
+        # normalization constant for an s orbital is :math:`(\frac {2 \alpha}{\pi})^{{3/4}}`.
+        ((0, 0, 0), np.array([3.425250914]), np.array([1.79444183])),
+    ],
+)
+def test_gaussian_norm(l, alpha, n):
+    r"""Test that the computed normalization constant of a Gaussian function is correct."""
     assert np.allclose(primitive_norm(l, alpha), n)
 
 
-def test_contraction_norm():
-    r"""Tests that the normalization constant of a linear combination of three  normalized
-    Gaussian functions is the trivial value of :math:`1/3`.
-    """
-    l = (0, 0, 0)
-    alpha = np.array([3.425250914, 3.425250914, 3.425250914])
-    c = np.array([1.79444183, 1.79444183, 1.79444183])
-
-    assert np.allclose(contracted_norm(l, alpha, c), 0.33333333)
+@pytest.mark.parametrize(
+    ("l", "alpha", "a", "n"),
+    [
+        # normalization constant for a contracted Gaussian function composed of three normalized
+        # s orbital is :math:`1/3`.
+        (
+            (0, 0, 0),
+            np.array([3.425250914, 3.425250914, 3.425250914]),
+            np.array([1.79444183, 1.79444183, 1.79444183]),
+            np.array([0.33333333]),
+        )
+    ],
+)
+def test_contraction_norm(l, alpha, a, n):
+    r"""Test that the computed normalization constant of a contracted Gaussian function is correct."""
+    assert np.allclose(contracted_norm(l, alpha, a), n)

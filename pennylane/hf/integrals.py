@@ -22,22 +22,27 @@ from scipy.special import factorial2 as fac2
 def primitive_norm(l, alpha):
     r"""Compute the normalization constant for a primitive Gaussian function.
 
-    The normalization constant is computed as
+    A Gaussian function is defined as
+
+    .. math::
+
+        G = x^l y^m z^n e^{-\alpha r^2},
+
+    where :math:`l = (l, m, n)` defines the angular momentum quantum numbers, :math:`\alpha`
+    is the exponent and :math:`r = (x, y, z)` determines the center of the function. The
+    normalization constant for this function is computed as
 
     .. math::
 
         N(l, \alpha) = (\frac{2\alpha}{\pi})^{3/4} \frac{(4 \alpha)^{(l_x + l_y + l_z)/2}}
-        {(2\l_x-1)!! (2\l_y-1)!! (2\l_z-1)!!)^{1/2}}
-
-    where :math:`l` and :math:`\alpha` are the angular momentum quantum numbers and the exponent of
-    the Gaussian function, respectively.
+        {(2\l_x-1)!! (2\l_y-1)!! (2\l_z-1)!!)^{1/2}}.
 
     Args:
         l (tuple[int]): angular momentum quantum numbers of the basis function
         alpha (array[float]): exponent of the primitive Gaussian function
 
     Returns:
-        n (float): normalization coefficient
+        n (array[float]): normalization coefficient
 
     **Example**
     >>> l = (0, 0, 0)
@@ -58,11 +63,18 @@ def primitive_norm(l, alpha):
 def contracted_norm(l, alpha, a):
     r"""Compute the normalization constant for a contracted Gaussian function.
 
-    The normalization constant is computed as
+    A contracted Gaussian function is defined as
 
     .. math::
 
-        N(l, \alpha, c) = [\frac{\pi^{3/2}(2\l_x-1)!! (2\l_y-1)!! (2\l_z-1)!!}{2^{l_x + l_y + l_z}}
+        \psi = a_1 G_1 + a_2 G_2 + a_3 G_3,
+
+    where :math:`a` denotes the contraction coefficients and :math:`G` is a Gaussian function. The
+    normalization constant for this function is computed as
+
+    .. math::
+
+        N(l, \alpha, a) = [\frac{\pi^{3/2}(2\l_x-1)!! (2\l_y-1)!! (2\l_z-1)!!}{2^{l_x + l_y + l_z}}
         \sum_{i,j} \frac{a_i a_j}{(\alpha_i + \alpha_j)^{{l_x + l_y + l_z+3/2}}}]^{-1/2}
 
     where :math:`l`, :math:`\alpha` and :math:`a` are the angular momentum quantum numbers, the
@@ -74,20 +86,20 @@ def contracted_norm(l, alpha, a):
         a (array[float]): coefficients of the contracted Gaussian functions
 
     Returns:
-        n (float): normalization coefficient
+        n (array[float]): normalization coefficient
 
     **Example**
     >>> l = (0, 0, 0)
     >>> alpha = np.array([3.425250914, 0.6239137298, 0.168855404])
     >>> a = np.array([1.79444183, 0.50032649, 0.18773546])
-    >>> n = contracted_norm(l, alpha, c)
+    >>> n = contracted_norm(l, alpha, a)
     >>> print(n)
     0.39969026908800853
     """
     lx, ly, lz = l
-    coeff = np.pi ** 1.5 / 2 ** sum(l) * fac2(2 * lx - 1) * fac2(2 * ly - 1) * fac2(2 * lz - 1)
+    c = np.pi ** 1.5 / 2 ** sum(l) * fac2(2 * lx - 1) * fac2(2 * ly - 1) * fac2(2 * lz - 1)
     s = (
         (a.reshape(len(a), 1) * a) / ((alpha.reshape(len(alpha), 1) + alpha) ** (sum(l) + 1.5))
     ).sum()
-    n = 1 / anp.sqrt(coeff * s)
+    n = 1 / anp.sqrt(c * s)
     return n
