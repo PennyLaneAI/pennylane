@@ -33,12 +33,12 @@ class Molecule:
         coordinates (array[float]): 1D array with the atomic positions in Cartesian coordinates. The
             coordinates must be given in atomic units and the size of the array should be ``3*N``
              where ``N`` is the number of atoms.
-        charge (int): Net charge of the molecule.
+        charge (int): net charge of the molecule
         mult (int): Spin multiplicity :math:`\mathrm{mult}=N_\mathrm{unpaired} + 1` for
             :math:`N_\mathrm{unpaired}` unpaired electrons occupying the HF orbitals. Possible
             values of ``mult`` are :math:`1, 2, 3, \ldots`.
-        basis_name (str): Atomic basis set used to represent the molecular orbitals.
-        l (tuple[int]): angular momentum quantum numbers of the basis function.
+        basis_name (str): atomic basis set used to represent the molecular orbitals
+        l (tuple[int]): angular momentum quantum numbers of the basis function
         alpha (array[float]): exponents of the primitive Gaussian functions
         coeff (array[float]): coefficients of the contracted Gaussian functions
         r (array[float]): positions of the Gaussian functions
