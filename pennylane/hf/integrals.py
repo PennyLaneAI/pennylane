@@ -24,7 +24,6 @@ def generate_params(params, args):
     """
     basis_params = []
     c = 0
-
     for i, p in enumerate(params):
         if p.requires_grad:
             basis_params.append(args[c])
@@ -37,16 +36,19 @@ def generate_params(params, args):
 def expansion(la, lb, ra, rb, alpha, beta, t):
     r"""Compute Hermite Gaussian expansion coefficients recursively for a set of Gaussian functions
     centered on the same position.
+
     Args:
         la (integer): angular momentum component for the first Gaussian function
         lb (integer): angular momentum component for the second Gaussian function
         ra (float): position component of the the first Gaussian function
         rb (float): position component of the the second Gaussian function
-        alpha (array(float)): exponent of the first Gaussian function
-        beta (array(float)): exponent of the second Gaussian function
+        alpha (array[float]): exponent of the first Gaussian function
+        beta (array[float]): exponent of the second Gaussian function
         t(integer): number of nodes in the Hermite Gaussian
+
     Returns:
-        array(float): expansion coefficients for each Gaussian combination
+        array[float]: expansion coefficients for each Gaussian combination
+
     **Example**
     >>> la, lb = 0, 0
     >>> ra, rb = 0.0, 0.0
@@ -86,15 +88,17 @@ def expansion(la, lb, ra, rb, alpha, beta, t):
 
 def gaussian_overlap(la, lb, ra, rb, alpha, beta):
     r"""Compute overlap integrals for two sets of Gaussian functions.
+
     Args:
         la (integer): angular momentum for the first Gaussian function
         lb (integer): angular momentum for the second Gaussian function
         ra (float): position vector of the the first Gaussian function
         rb (float): position vector of the the second Gaussian function
-        alpha (array(float)): exponent of the first Gaussian function
-        beta (array(float)): exponent of the second Gaussian function
+        alpha (array[float]): exponent of the first Gaussian function
+        beta (array[float]): exponent of the second Gaussian function
+
     Returns:
-        array(float): overlap integrals for each Gaussian combination
+        array[float]: overlap integrals for each Gaussian combination
     """
     p = alpha + beta
     s = 1.0
@@ -107,7 +111,6 @@ def generate_overlap(basis_a, basis_b):
     """Return a function that normalizes and computes the overlap integral for two contracted
     Gaussian orbitals.
     """
-
     def overlap_integral(*args):
 
         ra, ca, alpha = generate_params(basis_a.params, args[0])
