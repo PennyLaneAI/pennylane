@@ -59,6 +59,7 @@ class TestDecomposition:
 
     # fmt: off
     @pytest.mark.parametrize("state_vector,wires,target_state", [
+        ([1, 0], 0, [1, 0, 0, 0, 0, 0, 0, 0]),
         ([1, 0], [0], [1, 0, 0, 0, 0, 0, 0, 0]),
         ([1, 0], [1], [1, 0, 0, 0, 0, 0, 0, 0]),
         ([1, 0], [2], [1, 0, 0, 0, 0, 0, 0, 0]),
@@ -142,6 +143,7 @@ class TestDecomposition:
 
     # fmt: off
     @pytest.mark.parametrize("state_vector,wires,target_state", [
+        ([1, 0], 0, [1, 0, 0, 0, 0, 0, 0, 0]),
         ([1, 0], [0], [1, 0, 0, 0, 0, 0, 0, 0]),
         ([1, 0], [1], [1, 0, 0, 0, 0, 0, 0, 0]),
         ([1, 0], [2], [1, 0, 0, 0, 0, 0, 0, 0]),
