@@ -22,13 +22,13 @@ from .single_qubit_unitary import zyz_decomposition
 
 # This gate E is called the "magic basis". It can be used to convert between
 # SO(4) and SU(2) x SU(2). For A in SO(4), E A E^\dag is in SU(2) x SU(2).
-E = qml.math.array([[1, 1j, 0, 0], [0, 0, 1j, 1], [0, 0, 1j, -1], [1, -1j, 0, 0]]) / np.sqrt(2)
-Et = qml.math.T(E)
-Edag = qml.math.conj(Et)
+E = np.array([[1, 1j, 0, 0], [0, 0, 1j, 1], [0, 0, 1j, -1], [1, -1j, 0, 0]]) / np.sqrt(2)
+Et = E.T
+Edag = Et.conj()
 
 # Helpful to have static copies of these since they are needed in a few places.
 CNOT01 = qml.CNOT(wires=[0, 1]).matrix
-CNOT10 = qml.math.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
+CNOT10 = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
 SWAP = qml.SWAP(wires=[0, 1]).matrix
 
 
