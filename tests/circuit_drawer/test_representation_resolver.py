@@ -19,7 +19,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.circuit_drawer import RepresentationResolver
+from pennylane.circuit_drawer.representation_resolver import RepresentationResolver
 from pennylane.measure import state
 
 
