@@ -31,6 +31,7 @@ CNOT01 = qml.CNOT(wires=[0, 1]).matrix
 CNOT10 = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
 SWAP = qml.SWAP(wires=[0, 1]).matrix
 
+LAST_COL_NEG = np.diag([1, 1, 1, -1]) # used to negate the last column of a matrix
 
 def _convert_to_su4(U):
     r"""Check unitarity of a 4x4 matrix and convert it to :math:`SU(4)` if the determinant is not 1.
@@ -74,7 +75,7 @@ def _select_rotation_angles(U):
     x, y, z = qml.math.angle(evs[0]), qml.math.angle(evs[1]), qml.math.angle(evs[2])
 
     # Compute functions of the eigenvalues; there are different options in v1
-    # vs. v3 of the paper, I'm not entirely sure why.
+    # vs. v3 of the paper, I'm not entirely sure why. This is the version from v3.
     alpha = (x + y) / 2
     beta = (x + z) / 2
     delta = (z + y) / 2
@@ -165,7 +166,7 @@ def _extract_su2su2_prefactors(U, V):
     # determinant -1. We can transform it to SO(4) by simply negating one
     # of the columns.
     if not qml.math.isclose(qml.math.linalg.det(p), 1.0):
-        p[:, -1] = -p[:, -1]
+        p = qml.math.dot(p, LAST_COL_NEG)
 
     # Next, we are going to reorder the columns of q so that the order of the
     # eigenvalues matches those of p.
@@ -191,7 +192,7 @@ def _extract_su2su2_prefactors(U, V):
     # not SO(4). Again we can fix this by simply negating a column.
     q_in_so4 = qml.math.isclose(qml.math.linalg.det(q), 1.0)
     if not q_in_so4:
-        q[:, -1] = -q[:, -1]
+        q = qml.math.dot(q, LAST_COL_NEG)
 
     # Now, we should have p, q in SO(4) such that p^T u u^T p = q^T v v^T q.
     # Then (v^\dag q p^T u)(v^\dag q p^T u)^T = I.
