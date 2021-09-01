@@ -16,7 +16,7 @@ TThis module contains functions needed for computing integrals over basis functi
 """
 import numpy as np
 import autograd.numpy as anp
-from repo import *
+
 
 def generate_params(params, args):
     """Generate basis set parameters. The default values are used for the non-differentiable
@@ -32,6 +32,7 @@ def generate_params(params, args):
         else:
             basis_params.append(p)
     return tuple(basis_params)
+
 
 def expansion(la, lb, ra, rb, alpha, beta, t):
     r"""Compute Hermite Gaussian expansion coefficients recursively for a set of Gaussian functions
@@ -70,13 +71,18 @@ def expansion(la, lb, ra, rb, alpha, beta, t):
         return 0.0
 
     elif lb == 0:
-        return (1 / (2 * p)) * expansion(la - 1, lb, ra, rb, alpha, beta, t - 1) - \
-               (q * r / alpha) * expansion(la - 1, lb, ra, rb, alpha, beta, t) + \
-               (t + 1) * expansion(la - 1, lb, ra, rb, alpha, beta, t + 1)
+        return (
+            (1 / (2 * p)) * expansion(la - 1, lb, ra, rb, alpha, beta, t - 1)
+            - (q * r / alpha) * expansion(la - 1, lb, ra, rb, alpha, beta, t)
+            + (t + 1) * expansion(la - 1, lb, ra, rb, alpha, beta, t + 1)
+        )
     else:
-        return (1 / (2 * p)) * expansion(la, lb - 1, ra, rb, alpha, beta, t - 1) + \
-               (q * r / beta) * expansion(la, lb - 1, ra, rb, alpha, beta, t) + \
-               (t + 1) * expansion(la, lb - 1, ra, rb, alpha, beta, t + 1)
+        return (
+            (1 / (2 * p)) * expansion(la, lb - 1, ra, rb, alpha, beta, t - 1)
+            + (q * r / beta) * expansion(la, lb - 1, ra, rb, alpha, beta, t)
+            + (t + 1) * expansion(la, lb - 1, ra, rb, alpha, beta, t + 1)
+        )
+
 
 def gaussian_overlap(la, lb, ra, rb, alpha, beta):
     r"""Compute overlap integrals for two sets of Gaussian functions.
@@ -96,10 +102,12 @@ def gaussian_overlap(la, lb, ra, rb, alpha, beta):
         s = s * anp.sqrt(anp.pi / p) * expansion(la[i], lb[i], ra[i], rb[i], alpha, beta, 0)
     return s
 
+
 def generate_overlap(basis_a, basis_b):
     """Return a function that normalizes and computes the overlap integral for two contracted
     Gaussian orbitals.
     """
+
     def overlap_integral(*args):
 
         ra, ca, alpha = generate_params(basis_a.params, args[0])
@@ -111,5 +119,13 @@ def generate_overlap(basis_a, basis_b):
         na = contracted_norm(basis_a.L, alpha, ca)
         nb = contracted_norm(basis_b.L, beta, cb)
 
-        return na * nb * ((ca[:,anp.newaxis] * cb) * gaussian_overlap(basis_a.L, basis_b.L, ra, rb, alpha[:,anp.newaxis], beta)).sum()
+        return (
+            na
+            * nb
+            * (
+                (ca[:, anp.newaxis] * cb)
+                * gaussian_overlap(basis_a.L, basis_b.L, ra, rb, alpha[:, anp.newaxis], beta)
+            ).sum()
+        )
+
     return overlap_integral
