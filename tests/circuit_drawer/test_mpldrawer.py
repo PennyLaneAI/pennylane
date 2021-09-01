@@ -15,8 +15,9 @@
 Tests the MPLDrawer.
 """
 
-from numpy import recfromtxt
 import pytest
+
+plt = pytest.importorskip("matplotlib.pyplot")
 
 import matplotlib.pyplot as plt
 from matplotlib.colors import to_rgba
@@ -27,6 +28,8 @@ from pennylane.math import allclose
 
 
 class TestInitialization:
+    """Tests drawer creation"""
+
     @pytest.mark.parametrize("n_wires", [2, 3])
     @pytest.mark.parametrize("n_layers", [2, 3])
     def test_figsize_wires(self, n_wires, n_layers):
@@ -65,27 +68,58 @@ class TestInitialization:
         assert drawer._box_dx == 0.4
         assert drawer._circ_rad == 0.3
         assert drawer._ctrl_rad == 0.1
+        assert drawer._octrl_rad == 0.15
         assert drawer._swap_dx == 0.2
         plt.close()
 
+    def test_wires_formatting(self):
+        """Tests wires formatting with kwargs"""
 
-def test_labels():
-    """Tests labels are added"""
+        rgba_red = (1,0,0,1)
+        kwargs = {'linewidth': 3, 'color': rgba_red}
+        drawer = MPLDrawer(n_wires=2, n_layers=2, wire_kwargs=kwargs)
 
-    drawer = MPLDrawer(1, 3)
+        for wire in drawer.ax.lines:
+            assert wire.get_linewidth() == 3
+            assert wire.get_color() == rgba_red
 
-    labels = ("a", "b", "c")
-    drawer.label(labels)
+        plt.close()
 
-    drawn_labels = drawer.ax.texts
+class TestLabels:
 
-    for wire, expected_label, actual_label in zip(range(3), labels, drawn_labels):
+    def test_labels(self):
+        """Tests labels are added"""
 
-        assert actual_label.get_text() == expected_label
+        drawer = MPLDrawer(1, 3)
 
-        assert actual_label.get_position() == (-1.5, wire)
+        labels = ("a", "b", "c")
+        drawer.label(labels)
 
-    plt.close()
+        drawn_labels = drawer.ax.texts
+
+        for wire, expected_label, actual_label in zip(range(3), labels, drawn_labels):
+
+            assert actual_label.get_text() == expected_label
+
+            assert actual_label.get_position() == (-1.5, wire)
+
+        plt.close()
+
+    def test_labels_formatting(self):
+        """Test labels are formatted with text kwargs."""
+
+        drawer = MPLDrawer(1,3)
+
+        rgba_red = (1,0,0,1)
+        labels = (0, 1, 2)
+        kwargs = {'fontsize': 10, 'color': rgba_red}
+        drawer.label(labels, text_kwargs=kwargs)
+
+        for text in drawer.ax.texts:
+            assert text.get_fontsize() == 10
+            assert text.get_color() == rgba_red
+
+        plt.close()
 
 
 class TestBoxGate:
@@ -128,16 +162,6 @@ class TestBoxGate:
         assert text.get_position() == (0, 1.0)
         plt.close()
 
-    def test_box_color(self):
-        """Tests that color keyword changes rectangles color."""
-        drawer = MPLDrawer(1, 1)
-        rgba_red = (1, 0, 0, 1)
-        drawer.box_gate(0, 0, text="X", color=rgba_red)
-
-        rect = drawer.ax.patches[0]
-        assert rect.get_facecolor() == rgba_red
-        plt.close()
-
     def test_extra_width(self):
         """tests a box with added width."""
 
@@ -156,14 +180,31 @@ class TestBoxGate:
         assert text.get_position() == (0, 0)
         plt.close()
 
-    def test_rotate_text(self):
+    def test_box_formatting(self):
+        """Tests that box_kwargs influences the rectangle"""
+
+        drawer = MPLDrawer(1, 1)
+        rgba_red = (1, 0, 0, 1)
+        rgba_green = (0,1,0,1)
+        kwargs = {'facecolor': rgba_red, 'edgecolor': rgba_green}
+        drawer.box_gate(0, 0, text="X", box_kwargs = kwargs)
+
+        rect = drawer.ax.patches[0]
+        assert rect.get_facecolor() == rgba_red
+        assert rect.get_edgecolor() == rgba_green
+        plt.close()
+
+    def test_text_formatting(self):
         """Tests rotated text"""
 
         drawer = MPLDrawer(1, 1)
-        drawer.box_gate(0, 0, text="rotated text", rotate_text=True)
+        rgba_red = (1, 0, 0, 1)
+        kwargs = {'color': rgba_red, "rotation": "vertical"}
+        drawer.box_gate(0, 0, text="X", text_kwargs = kwargs)
 
         text = drawer.ax.texts[0]
         assert text.get_rotation() == 90.0
+        assert text.get_color() == rgba_red
         plt.close()
 
 
@@ -210,6 +251,32 @@ class TestCTRL:
             assert circle.center == (0, wire)
         plt.close()
 
+    def test_ctrl_on_zero(self):
+        """Tests a control on zero circle is open"""
+
+        drawer = MPLDrawer(1,1)
+
+        drawer.ctrl(0,0, control_values=False)
+
+        circ = drawer.ax.patches[0]
+
+        assert circ.get_facecolor() == to_rgba(plt.rcParams['axes.facecolor'])
+        assert circ.get_edgecolor() == to_rgba(plt.rcParams['lines.color'])
+        assert circ.get_linewidth() == plt.rcParams['lines.linewidth']
+
+        assert circ.center == (0,0)
+        assert circ.width == 0.3
+
+    def test_ctrl_control_values_error(self):
+        """Tests a ValueError is raised if different number of wires and control_values."""
+
+        drawer = MPLDrawer(1,2)
+
+        with pytest.raises(ValueError, match="`control_values` must be the same length"):
+            drawer.ctrl(0, (0,1), control_values=True)
+
+        plt.close()
+
     def test_ctrl_color(self):
         """Tests two control wires with no target."""
 
@@ -217,13 +284,17 @@ class TestCTRL:
 
         ctrl_wires = (0, 1)
         rgba_red = (1, 0, 0, 1)
-        drawer.ctrl(0, ctrl_wires, color=rgba_red)
+        drawer.ctrl(0, ctrl_wires, control_values=[1, 0], color=rgba_red)
 
         ctrl_line = drawer.ax.lines[3]
         assert ctrl_line.get_color() == rgba_red
 
-        for circle in drawer.ax.patches:
-            assert circle.get_facecolor() == rgba_red
+        closed_circ = drawer.ax.patches[0]
+        assert closed_circ.get_facecolor() == rgba_red
+
+        open_circ = drawer.ax.patches[1]
+        assert open_circ.get_edgecolor() == rgba_red
+        assert open_circ.get_facecolor() == to_rgba(plt.rcParams['axes.facecolor'])
 
         plt.close()
 
@@ -257,11 +328,14 @@ class TestCTRL:
         center_line = drawer.ax.lines[3]
         assert center_line.get_data() == ((0, 0), (-0.3, 0.3))
 
+        horizontal_line = drawer.ax.lines[4]
+        assert horizontal_line.get_data() == ((-0.3, 0.3), (0, 0))
+
         circle = drawer.ax.patches[0]
 
         assert circle.center == (0, 0)
         assert circle.width == 0.6
-        assert circle.fill == False
+        assert circle.get_facecolor() == to_rgba(plt.rcParams['axes.facecolor'])
         assert to_rgba(plt.rcParams["lines.color"]) == to_rgba(circle.get_edgecolor())
         plt.close()
 
@@ -275,8 +349,11 @@ class TestCTRL:
         center_line = drawer.ax.lines[3]
         assert center_line.get_color() == rgba_red
 
+        horizontal_line = drawer.ax.lines[4]
+        assert horizontal_line.get_color() == rgba_red
+
         circle = drawer.ax.patches[0]
-        assert circle.fill == False
+        assert circle.get_facecolor() == to_rgba(plt.rcParams['axes.facecolor'])
         assert circle.get_edgecolor() == rgba_red
 
         plt.close()
@@ -302,7 +379,7 @@ class TestCTRL:
 
         assert target_circle.center == (0, 1)
         assert target_circle.width == 0.6
-        assert target_circle.fill == False
+        assert target_circle.get_facecolor() == to_rgba(plt.rcParams['axes.facecolor'])
         assert to_rgba(plt.rcParams["lines.color"]) == to_rgba(target_circle.get_edgecolor())
         plt.close()
 
@@ -358,15 +435,17 @@ class TestSWAP:
         assert x_lines[3].get_data() == ((-0.2, 0.2), (2.2, 1.8))
         plt.close()
 
-    def test_SWAP_color(self):
+    def test_SWAP_kwargs(self):
         """Tests that SWAP can be colored."""
         
         drawer = MPLDrawer(1, 3)
         rgba_red = (1, 0, 0, 1)
-        drawer.SWAP(0, (0, 2), color=rgba_red)
+        kwargs = {'color': rgba_red, 'linewidth': 3}
+        drawer.SWAP(0, (0, 2), kwargs=kwargs)
 
         for line in drawer.ax.lines[3:]:
             assert line.get_color() == rgba_red
+            assert line.get_linewidth() == 3
 
         plt.close()
 
@@ -386,9 +465,9 @@ class TestMeasure:
         assert box.get_height() == 0.8
 
         arc = drawer.ax.patches[1]
-        assert arc.center == (0, -0.05)
-        assert arc.theta1 == 0
-        assert arc.theta2 == 180
+        assert arc.center == (0, 0.05)
+        assert arc.theta1 == 180
+        assert arc.theta2 == 0
         assert allclose(arc.height, 0.44)
         assert arc.width == 0.48
 
@@ -397,14 +476,26 @@ class TestMeasure:
 
         plt.close()
 
-    def test_measure_color(self):
+    def test_measure_formatted(self):
         """Tests you can color the measure box"""
 
         drawer = MPLDrawer(1, 1)
         rgba_red = (1.0, 0, 0, 1.0)
-        drawer.measure(0, 0, color=rgba_red)
+        rgba_green = (0, 1, 0, 1)
+        box_kwargs = {'facecolor': rgba_red, 'edgecolor': rgba_green}
+        lines_kwargs = {'color': rgba_green, 'linewidth': 0.5}
+        drawer.measure(0, 0, box_kwargs = box_kwargs, lines_kwargs=lines_kwargs)
 
         box = drawer.ax.patches[0]
         assert box.get_facecolor() == rgba_red
+        assert box.get_edgecolor() == rgba_green
+
+        arc = drawer.ax.patches[1]
+        assert arc.get_edgecolor() == rgba_green
+        assert arc.get_linewidth() == 0.5
+
+        arrow = drawer.ax.patches[2]
+        assert arrow.get_edgecolor() == rgba_green
+        assert arrow.get_linewidth() == 0.5
 
         plt.close()

@@ -362,7 +362,7 @@ class MPLDrawer:
         Keyword Args:
             wires_target=None (Union[Int, Iterable[Int]]): target wires. Used to determine min
                 and max wires for the vertical line
-            control_values=None (Iterable[Bool]): for each control wire, denotes whether to control
+            control_values=None (Union[Bool, Iterable[Bool]]): for each control wire, denotes whether to control
                 on ``False=0`` or ``True=1``.
             kwargs=None (dict): mpl line keywords
 
@@ -384,6 +384,8 @@ class MPLDrawer:
         """
         wires_ctrl = _to_tuple(wires)
         wires_target = _to_tuple(wires_target)
+        if control_values is not None:
+            control_values = _to_tuple(control_values)
 
         wires_all = wires_ctrl + wires_target
         min_wire = min(wires_all)
@@ -396,13 +398,13 @@ class MPLDrawer:
             for wire in wires_ctrl:
                 self._ctrl_circ(layer, wire, zorder=3, color=color)
         else:
-            if len(control_values) != len(wires):
-                raise ValueError("`control_values` must be the same length as `wire_ctrl`")
-            for wire, control_on in zip(wires, control_values):
+            if len(control_values) != len(wires_ctrl):
+                raise ValueError("`control_values` must be the same length as `wires`")
+            for wire, control_on in zip(wires_ctrl, control_values):
                 if control_on:
-                    self._ctrlo_circ(layer, wire, zorder=3, color=color)
-                else:
                     self._ctrl_circ(layer, wire, zorder=3, color=color)
+                else:
+                    self._ctrlo_circ(layer, wire, zorder=3, color=color)
 
     def _ctrl_circ(self, layer, wires, zorder=3, color=None):
         """Draw a solid circle that indicates control on one"""
