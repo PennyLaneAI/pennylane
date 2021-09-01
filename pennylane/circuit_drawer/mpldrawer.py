@@ -34,7 +34,7 @@ def _to_tuple(a):
         return tuple(a)
     return (a,)
 
-
+# pylint: disable=too-many-instance-attributes
 class MPLDrawer:
     r"""Allows easy creation of graphics representing circuits with matplotlib
 
@@ -219,7 +219,7 @@ class MPLDrawer:
         self.ax.invert_yaxis()
 
         if wire_kwargs is None:
-            wire_kwargs = dict()
+            wire_kwargs = {}
 
         # adding wire lines
         for wire in range(self.n_wires):
@@ -263,7 +263,7 @@ class MPLDrawer:
 
         """
         if text_kwargs is None:
-            text_kwargs = dict()
+            text_kwargs = {}
 
         for wire, ii_label in enumerate(labels):
             self.ax.text(-1.5, wire, ii_label, **text_kwargs)
@@ -320,9 +320,9 @@ class MPLDrawer:
 
         """
         if box_kwargs is None:
-            box_kwargs = dict()
+            box_kwargs = {}
         if text_kwargs is None:
-            text_kwargs = dict()
+            text_kwargs = {}
 
         wires = _to_tuple(wires)
 
@@ -533,7 +533,7 @@ class MPLDrawer:
 
         """
         if kwargs is None:
-            kwargs = dict()
+            kwargs = {}
 
         line = plt.Line2D((layer, layer), wires, zorder=2, **kwargs)
         self.ax.add_line(line)
@@ -553,7 +553,7 @@ class MPLDrawer:
 
         """
         if kwargs is None:
-            kwargs = dict()
+            kwargs = {}
 
         l1 = plt.Line2D(
             (layer - self._swap_dx, layer + self._swap_dx),
@@ -613,10 +613,10 @@ class MPLDrawer:
 
         """
         if box_kwargs is None:
-            box_kwargs = dict()
+            box_kwargs = {}
 
         if lines_kwargs is None:
-            lines_kwargs = dict()
+            lines_kwargs = {}
 
         box = plt.Rectangle(
             (layer - self._box_dx, wires - self._box_dx),
