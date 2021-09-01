@@ -16,8 +16,6 @@ This module contains functions for adding the Autograd interface
 to a PennyLane Device class.
 """
 # pylint: disable=too-many-arguments
-import inspect
-
 import autograd
 from autograd.numpy.numpy_boxes import ArrayBox
 

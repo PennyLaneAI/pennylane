@@ -188,7 +188,7 @@ class batch_transform:
             elif gradient_fn == "finite-diff":
                 gradient_fn = qml.gradients.finite_diff
 
-            res = execute(
+            res = qml.execute(
                 tapes,
                 device=qnode.device,
                 gradient_fn=gradient_fn,
