@@ -16,8 +16,14 @@ This module contains the MPLDrawer class for creating circuit diagrams with matp
 """
 from collections.abc import Iterable
 
-import matplotlib.pyplot as plt
-from matplotlib import patches
+try:
+    import matplotlib.pyplot as plt
+    from matplotlib import patches
+except (ModuleNotFoundError, ImportError) as e:
+    raise ImportError(
+        "Module matplotlib is required for ``MPLDrawer`` class. "
+        "You can install matplotlib via \n\n   pip install matplotlib"
+    ) from e
 
 
 def _to_tuple(a):
@@ -30,7 +36,7 @@ def _to_tuple(a):
 
 
 class MPLDrawer:
-    r"""Allows easy creation of graphics representing circuits with Matplotlib
+    r"""Allows easy creation of graphics representing circuits with matplotlib
 
     Args:
         n_layers (int): the number of layers
@@ -38,39 +44,35 @@ class MPLDrawer:
 
     Keyword Args:
         wire_kwargs=None (dict): matplotlib configuration options for drawing the wire lines
-        figsize=None (Iterable): Allows users to manually specify the size of the figure.  Defaults
+        figsize=None (Iterable): Allows users to specify the size of the figure manually.  Defaults
             to scale with the size of the circuit via ``n_layers`` and ``n_wires``.
 
     **Example**
 
     .. code-block:: python
 
-        def example():
+        drawer = MPLDrawer(n_wires=5,n_layers=5)
 
-            drawer = MPLDrawer(n_wires=5,n_layers=5)
+        drawer.label(["0","a",r"$|\Psi\rangle$",r"$|\theta\rangle$", "aux"])
 
-            drawer.label(["0","a",r"$|\Psi\rangle$",r"$|\theta\rangle$", "aux"])
+        drawer.box_gate(0, [0,1,2,3,4], "Entangling Layers", text_kwargs={'rotation':'vertical'})
+        drawer.box_gate(1, [0, 1], "U(θ)")
 
-            drawer.box_gate(0, [0,1,2,3,4], "Entangling Layers", text_kwargs={'rotation':'vertical'})
-            drawer.box_gate(1, [0, 1], "U(θ)")
+        drawer.box_gate(1, 4, "Z")
 
-            drawer.box_gate(1, 4, "Z")
+        drawer.SWAP(1, (2, 3))
+        drawer.CNOT(2, (0,2))
 
-            drawer.SWAP(1, (2, 3))
-            drawer.CNOT(2, (0,2))
+        drawer.ctrl(3, [1,3], control_values = [True, False])
+        drawer.box_gate(3, 2, "H", zorder=2)
 
-            drawer.ctrl(3, [1,3], control_values = [True, False])
-            drawer.box_gate(3, 2, "H", zorder=2)
+        drawer.ctrl(4, [1,2])
 
-            drawer.ctrl(4, [1,2])
+        drawer.measure(5, 0)
 
-            drawer.measure(5, 0)
+        drawer.fig.suptitle('My Circuit', fontsize='xx-large')
 
-            drawer.fig.suptitle('My Circuit', fontsize='xx-large')
-
-            return drawer
-
-        example()
+        return drawer
 
     .. figure:: ../../_static/drawer/example_basic.png
             :align: center
@@ -79,14 +81,93 @@ class MPLDrawer:
 
     .. UsageDetails::
 
-    This class uses matplotlib and pyplot.  The figure and axes objects can be accessed via ``drawer.fig``
-    and ``drawer.ax`` respectively for further configuration. For example, the above example circuit manipulates the
-    pyplot figure to set a title using ``drawer.fig.suptitle``. You can also save the images using ``plt.savefig``.
+    **Matplotlib Integration**
+
+    This class relies on matplotlib.  As such, users can extend this class via interacting with the figure
+    ``drawer.fig`` and axes ``drawer.ax`` objects manually.  For example, the example circuit manipulates the
+    figure to set a title using ``drawer.fig.suptitle``. Users can also save the image using ``plt.savefig``.
+    As descrived in the next section, the figure supports both global styling and individual styling of
+    elements with matplotlib styles, configuration, and keywords.
+
+    **Formatting**
+
+    You can globally control the style with
+    ` ``plt.rcParams``  and styles <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
+    If we customize ``plt.rcParams`` before executing our example function, we get a
+    different style:
+
+    .. code-block:: python
+
+        plt.rcParams['patch.facecolor'] = 'white'
+        plt.rcParams['patch.edgecolor'] = 'black'
+        plt.rcParams['patch.linewidth'] = 2
+        plt.rcParams['patch.force_edgecolor'] = True
+        plt.rcParams['lines.color'] = 'black'
+
+    .. figure:: ../../_static/drawer/example_rcParams.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
+    Instead of manually customizing everything, you can choose one of
+    the provided styles. You can see available styles with ``plt.style.available``.
+    We can set the ``'Solarize_Light2'`` style with the same graph as drawn above and instead get:
+
+    .. code-block:: python
+
+        plt.style.use('Solarize_light2')
+
+    .. figure:: ../../_static/drawer/example_Solarize_Light2.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
+    You can also manually control the styles of individual plot elements via the drawer class.
+    Any control-type method, ``ctrl``, ``CNOT``, ``_ctrl_circ``, ``_ctrlo_circ``, and ``_target_x``, only
+    accept a color keyword.  All other gates accept dictionaries of keyword-values pairs for matplotlib object
+    components.  Acceptable keywords differ based on what's being drawn. For example, you cannot pass ``"fontsize"``
+    to the dictionary controlling how to format a rectangle.
+
+    This example demonstrates the different ways you can format the individual elements:
+
+    .. code-block:: python
+
+        wire_kwargs = {"color": "indigo", "linewidth": 4}
+        drawer = MPLDrawer(n_wires=2,n_layers=4, wire_kwargs=wire_kwargs)
+
+        label_kwargs = {"fontsize": "x-large", 'color': 'indigo'}
+        drawer.label(["0","a"], text_kwargs=label_kwargs)
+
+        box_kwargs = {'facecolor':'lightcoral', 'edgecolor': 'maroon', 'linewidth': 5}
+        text_kwargs = {'fontsize': 'xx-large', 'color':'maroon'}
+        drawer.box_gate(layer=0, wires=0, text="Z", box_kwargs=box_kwargs, text_kwargs=text_kwargs)
+
+        swap_kwargs = {'linewidth': 4, 'color': 'darkgreen'}
+        drawer.SWAP(layer=1, wires=(0,1), kwargs=swap_kwargs)
+
+        drawer.CNOT(layer=2, wires=(0,1), color='teal')
+
+        drawer.ctrl(layer=3, wires=(0,1), color='black')
+
+
+        measure_box = {'facecolor': 'white', 'edgecolor': 'indigo'}
+        measure_lines = {'edgecolor': 'indigo', 'facecolor': 'plum', 'linewidth': 2}
+        for wire in range(2):
+            drawer.measure(layer=4, wires=wire, box_kwargs=measure_box, lines_kwargs=measure_lines)
+
+        drawer.fig.suptitle('My Circuit', fontsize='xx-large')
+
+    .. figure:: ../../_static/drawer/example_formatted.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
+    **Positioning**
 
     Each gate takes arguments in order of ``layer`` followed by ``wires``.  These translate to ``x`` and
     ``y`` coordinates in the graph. Layer number (``x``) increases as you go right, and wire number
-    (``y``) increases as you go down.  The y-axis is inverted.  This also means you can pass non-integer values to either keyword.
-    For example, if you have a long label, the gate can span multiple layers and have extra width:
+    (``y``) increases as you go down as the y-axis is inverted.  You can pass non-integer values to either keyword.
+    If you have a long label, the gate can span multiple layers and have extra width:
 
     .. code-block:: python
 
@@ -102,83 +183,8 @@ class MPLDrawer:
             :width: 60%
             :target: javascript:void(0);
 
-    You can globally control the style with ``plt.rcParams`` or
-    `styles <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
-    If we customize ``plt.rcParams`` before executing our example function, we get a
-    different style:
-
-    .. code-block:: python
-
-        plt.rcParams['patch.facecolor'] = 'white'
-        plt.rcParams['patch.edgecolor'] = 'black'
-        plt.rcParams['patch.linewidth'] = 2
-        plt.rcParams['patch.force_edgecolor'] = True
-        plt.rcParams['lines.color'] = 'black'
-
-        example()
-
-    .. figure:: ../../_static/drawer/rcParams.png
-            :align: center
-            :width: 60%
-            :target: javascript:void(0);
-
-    Instead of manually customizing everything for a different look, you can choose one of
-    the provided styles in pyplot. You can see available styles with ``plt.style.available``.
-    We can set the ``'Solarize_Light2'`` style with the same graph as drawn above and instead get:
-
-    .. code-block:: python
-
-        plt.style.use('Solarize_light2')
-        example()
-
-    .. figure:: ../../_static/drawer/example_Solarize_Light2.png
-            :align: center
-            :width: 60%
-            :target: javascript:void(0);
-
-    You can also manually control the styles of individual plot elements via the drawer class.
-    Any control-type method, ``ctrl``, ``_ctrl_circ``, ``_ctrlo_circ``, ``CNOT``, and ``_target_x``, only
-    accept a color keyword.  All other gates accept dictionaries of keyword-values pairs for matplotlib object
-    components.  Acceptable keywords differ based on what's being drawn. For example, you cannot pass ``"fontsize"``
-    to the dictionary controlling how to format a rectangle.  
-
-    This example demonstrates the different ways you can format the individual elements:
-
-    .. code-block:: python
-
-        wire_kwargs = {"color": "indigo", "linewidth": 4}
-        drawer = MPLDrawer(n_wires=2,n_layers=4, wire_kwargs=wire_kwargs)
-
-        label_kwargs = {"fontsize": "x-large", 'color': 'indigo'}
-        drawer.label(["0","a"],
-                    text_kwargs=label_kwargs)
-
-        box_kwargs = {'facecolor':'lightcoral', 'edgecolor': 'maroon', 'linewidth': 5}
-        text_kwargs = {'fontsize': 'xx-large', 'color':'maroon'}
-        drawer.box_gate(0, 0, "Z", box_kwargs = box_kwargs, text_kwargs=text_kwargs)
-
-        swap_kwargs = {'linewidth': 4, 'color': 'darkgreen'}
-        drawer.SWAP(1, (0,1), kwargs=swap_kwargs)
-
-        drawer.CNOT(2, (0,1), color='teal')
-
-        drawer.ctrl(3, (0,1), color='black')
-
-
-        measure_box = {'facecolor': 'white', 'edgecolor': 'indigo'}
-        measure_lines = {'edgecolor': 'indigo', 'facecolor': 'plum', 'linewidth': 2}
-        for wire in range(2):
-            drawer.measure(4, wire, box_kwargs=measure_box, lines_kwargs=measure_lines)
-
-        drawer.fig.suptitle('My Circuit', fontsize='xx-large')
-
-    .. figure:: ../../_static/drawer/example_formatted.png
-            :align: center
-            :width: 60%
-            :target: javascript:void(0);
-
-    Many methods accept a ``zorder`` keyword. Higher ``zorder`` objects are drawn 
-    on top of lower ``zorder`` objects. In the above example, we have to set a ``zorder``
+    Many methods accept a ``zorder`` keyword. Higher ``zorder`` objects are drawn
+    on top of lower ``zorder`` objects. In top example, we have to set a ``zorder``
     to a value of ``2`` in order to draw it *on top* of the control wires, instead of below them.
     """
 
@@ -209,7 +215,7 @@ class MPLDrawer:
             xticks=[],
             yticks=[],
         )
-        
+
         self.ax.invert_yaxis()
 
         if wire_kwargs is None:
@@ -241,8 +247,8 @@ class MPLDrawer:
             :width: 60%
             :target: javascript:void(0);
 
-        You can also pass any 
-        `Matplotlib Text keywords <https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.text.html>`_ 
+        You can also pass any
+        `Matplotlib Text keywords <https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.text.html>`_
         as a dictionary to the ``text_kwargs`` keyword:
 
         .. code-block:: python
@@ -263,15 +269,15 @@ class MPLDrawer:
             self.ax.text(-1.5, wire, ii_label, **text_kwargs)
 
     def box_gate(
-        self, layer, wires, text="", extra_width=0, zorder=0,
-        box_kwargs=None, text_kwargs=None
+        self, layer, wires, text="", extra_width=0, zorder=0, box_kwargs=None, text_kwargs=None
     ):
         """Draws a box and adds label text to its center.
 
         Args:
-            layer (Int)
-            wires (Union[Int, Iterable[Int]])
-            text (str)
+            layer (Int): x coordinate for the box center
+            wires (Union[Int, Iterable[Int]]): y locations to include inside the box.  Only min and max
+                of an Iterable affect the output
+            text (str): string to print at the box's center
 
         Kwargs:
             extra_width (float): Extra box width
@@ -304,7 +310,7 @@ class MPLDrawer:
 
             drawer = MPLDrawer(n_wires=2, n_layers=1)
 
-            drawer.box_gate(layer=0, wires=(0, 1), text="CY", 
+            drawer.box_gate(layer=0, wires=(0, 1), text="CY",
                 box_kwargs=box_kwargs, text_kwargs=text_kwargs)
 
         .. figure:: ../../_static/drawer/box_gates_formatted.png
@@ -330,7 +336,7 @@ class MPLDrawer:
             2 * self._box_dx + extra_width,
             (box_len + 2 * self._box_dx),
             zorder=2 + zorder,
-            **box_kwargs
+            **box_kwargs,
         )
         self.ax.add_patch(box)
 
@@ -342,19 +348,19 @@ class MPLDrawer:
             box_center,
             text,
             zorder=3 + zorder,
-            #rotation=rotation,
-            **default_text_kwargs
+            # rotation=rotation,
+            **default_text_kwargs,
         )
 
-    def ctrl(self, layer, wire_ctrl, wire_target=None, control_values=None, color=None):
+    def ctrl(self, layer, wires, wires_target=None, control_values=None, color=None):
         """Add an arbitrary number of control wires
 
         Args:
             layer (Int): the layer to draw the object in
-            wire_ctrl (Union[Int, Iterable[Int]]): set of wires to control on
+            wires (Union[Int, Iterable[Int]]): set of wires to control on
 
         Keyword Args:
-            wire_target=None (Union[Int, Iterable[Int]]): target wires. Used to determine min
+            wires_target=None (Union[Int, Iterable[Int]]): target wires. Used to determine min
                 and max wires for the vertical line
             control_values=None (Iterable[Bool]): for each control wire, denotes whether to control
                 on ``False=0`` or ``True=1``.
@@ -366,9 +372,9 @@ class MPLDrawer:
 
             drawer = MPLDrawer(n_wires=2, n_layers=3)
 
-            drawer.ctrl(layer=0, wire_ctrl=0, wire_target=1)
-            drawer.ctrl(layer=1, wire_ctrl=(0,1), control_values=[0,1])
-            drawer.ctrl(layer=2, wire_ctrl=(0,1), color="indigo")
+            drawer.ctrl(layer=0, wires=0, wires_target=1)
+            drawer.ctrl(layer=1, wires=(0,1), control_values=[0,1])
+            drawer.ctrl(layer=2, wires=(0,1), color="indigo")
 
         .. figure:: ../../_static/drawer/ctrl.png
             :align: center
@@ -376,10 +382,10 @@ class MPLDrawer:
             :target: javascript:void(0);
 
         """
-        wire_ctrl = _to_tuple(wire_ctrl)
-        wire_target = _to_tuple(wire_target)
+        wires_ctrl = _to_tuple(wires)
+        wires_target = _to_tuple(wires_target)
 
-        wires_all = wire_ctrl + wire_target
+        wires_all = wires_ctrl + wires_target
         min_wire = min(wires_all)
         max_wire = max(wires_all)
 
@@ -387,39 +393,40 @@ class MPLDrawer:
         self.ax.add_line(line)
 
         if control_values is None:
-            for wire in wire_ctrl:
+            for wire in wires_ctrl:
                 self._ctrl_circ(layer, wire, zorder=3, color=color)
         else:
-            if len(control_values) != len(wire_ctrl):
-                raise ValueError('`control_values` must be the same length as `wire_ctrl`')
-            for wire, control_on in zip(wire_ctrl, control_values):
+            if len(control_values) != len(wires):
+                raise ValueError("`control_values` must be the same length as `wire_ctrl`")
+            for wire, control_on in zip(wires, control_values):
                 if control_on:
                     self._ctrlo_circ(layer, wire, zorder=3, color=color)
                 else:
                     self._ctrl_circ(layer, wire, zorder=3, color=color)
 
-    def _ctrl_circ(self, layer, wire, zorder=3, color=None):
+    def _ctrl_circ(self, layer, wires, zorder=3, color=None):
         """Draw a solid circle that indicates control on one"""
-    
-        if color is None:
-            kwargs = {'facecolor': plt.rcParams['lines.color']}
-        else:
-            kwargs = {'color': color}
 
-        circ_ctrl= plt.Circle((layer, wire), radius=self._ctrl_rad, zorder=zorder, **kwargs)
+        if color is None:
+            kwargs = {"facecolor": plt.rcParams["lines.color"]}
+        else:
+            kwargs = {"color": color}
+
+        circ_ctrl = plt.Circle((layer, wires), radius=self._ctrl_rad, zorder=zorder, **kwargs)
         self.ax.add_patch(circ_ctrl)
 
-    def _ctrlo_circ(self, layer, wire, zorder=3, color=None):
+    def _ctrlo_circ(self, layer, wires, zorder=3, color=None):
         """Draw an open circle that indicates control on zero."""
+
         kwargs = {
-            'edgecolor': plt.rcParams['lines.color'],
-            'facecolor': plt.rcParams['axes.facecolor'],
-            'linewidth': plt.rcParams['lines.linewidth']
+            "edgecolor": plt.rcParams["lines.color"],
+            "facecolor": plt.rcParams["axes.facecolor"],
+            "linewidth": plt.rcParams["lines.linewidth"],
         }
         if color is not None:
-            kwargs['edgecolor'] = color
+            kwargs["edgecolor"] = color
 
-        circ_ctrlo = plt.Circle((layer, wire), radius=(self._octrl_rad), zorder=zorder, **kwargs)
+        circ_ctrlo = plt.Circle((layer, wires), radius=(self._octrl_rad), zorder=zorder, **kwargs)
 
         self.ax.add_patch(circ_ctrlo)
 
@@ -453,35 +460,31 @@ class MPLDrawer:
         self.ctrl(layer, *wires, color=color)
         self._target_x(layer, target, color=color)
 
-    def _target_x(self, layer, wire, color=None):
+    def _target_x(self, layer, wires, color=None):
         """Draws the circle used to represent a CNOT's target
 
         Args:
             layer (Int): layer to draw on
-            wire (Int): wire to draw on
+            wires (Int): wire to draw on
 
         Keyword Args:
             color=None: mpl compatible color designation
         """
-        default_kwargs = {
-            'edgecolor': plt.rcParams['lines.color'],
-            'linewidth': plt.rcParams['lines.linewidth'],
-            'facecolor': plt.rcParams['axes.facecolor']
-            }
-        if color is not None:
-            default_kwargs['edgecolor'] = color
 
-        target_circ = plt.Circle(
-            (layer, wire),
-            radius=self._circ_rad,
-            zorder=3,
-            **default_kwargs
-        )
+        default_kwargs = {
+            "edgecolor": plt.rcParams["lines.color"],
+            "linewidth": plt.rcParams["lines.linewidth"],
+            "facecolor": plt.rcParams["axes.facecolor"],
+        }
+        if color is not None:
+            default_kwargs["edgecolor"] = color
+
+        target_circ = plt.Circle((layer, wires), radius=self._circ_rad, zorder=3, **default_kwargs)
         target_v = plt.Line2D(
-            (layer, layer), (wire - self._circ_rad, wire + self._circ_rad), zorder=4, color=color
+            (layer, layer), (wires - self._circ_rad, wires + self._circ_rad), zorder=4, color=color
         )
         target_h = plt.Line2D(
-            (layer - self._circ_rad, layer + self._circ_rad), (wire, wire), zorder=4, color=color
+            (layer - self._circ_rad, layer + self._circ_rad), (wires, wires), zorder=4, color=color
         )
         self.ax.add_patch(target_circ)
         self.ax.add_line(target_v)
@@ -495,7 +498,7 @@ class MPLDrawer:
             wires (Int, Int): Two wires the SWAP acts on
 
         Keyword Args:
-            color=None: mpl compatible color designation
+            kwargs=None (dict): matplotlib keywords for ``Line2D`` objects
 
         **Example**
 
@@ -544,7 +547,7 @@ class MPLDrawer:
             wire (Int): the wire
 
         Keyword Args:
-            color=None: mpl compatible color designation
+            kwargs=None (dict): matplotlib keywords for ``Line2D`` objects
 
         """
         if kwargs is None:
@@ -560,18 +563,18 @@ class MPLDrawer:
             (layer - self._swap_dx, layer + self._swap_dx),
             (wire + self._swap_dx, wire - self._swap_dx),
             zorder=2,
-            **kwargs
+            **kwargs,
         )
 
         self.ax.add_line(l1)
         self.ax.add_line(l2)
 
-    def measure(self, layer, wire, zorder_base=0, box_kwargs=None, lines_kwargs=None):
+    def measure(self, layer, wires, zorder_base=0, box_kwargs=None, lines_kwargs=None):
         """Draw a Measurement graphic at designated layer, wire combination.
 
         Args:
             layer (Int): the layer
-            wire (Int): the wire
+            wires (Int): the wire
 
         Keyword Args:
             zorder_base=0 (Int): amount to shift in zorder from the default
@@ -614,30 +617,30 @@ class MPLDrawer:
             lines_kwargs = dict()
 
         box = plt.Rectangle(
-            (layer - self._box_dx, wire - self._box_dx),
+            (layer - self._box_dx, wires - self._box_dx),
             2 * self._box_dx,
             2 * self._box_dx,
             zorder=2 + zorder_base,
-            **box_kwargs
+            **box_kwargs,
         )
         self.ax.add_patch(box)
 
         arc = patches.Arc(
-            (layer, wire + self._box_dx / 8),
+            (layer, wires + self._box_dx / 8),
             1.2 * self._box_dx,
             1.1 * self._box_dx,
             theta1=180,
             theta2=0,
             zorder=3 + zorder_base,
-            **lines_kwargs
+            **lines_kwargs,
         )
         self.ax.add_patch(arc)
 
         # can experiment with the specific numbers to make it look decent
         arrow_start_x = layer - 0.33 * self._box_dx
-        arrow_start_y = wire + 0.5 * self._box_dx
+        arrow_start_y = wires + 0.5 * self._box_dx
         arrow_width = 0.6 * self._box_dx
-        arrow_height = - 1.0 * self._box_dx
+        arrow_height = -1.0 * self._box_dx
 
         arrow = plt.arrow(
             arrow_start_x,
@@ -646,6 +649,6 @@ class MPLDrawer:
             arrow_height,
             head_width=self._box_dx / 4,
             zorder=4 + zorder_base,
-            **lines_kwargs
+            **lines_kwargs,
         )
         self.ax.add_line(arrow)
