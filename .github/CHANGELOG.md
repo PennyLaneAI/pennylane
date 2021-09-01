@@ -398,6 +398,9 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 <h3>Bug fixes</h3>
 
+* `MottonenStatepreparation` can now be run with a single wire label not in a list.
+  [(#1620)](https://github.com/PennyLaneAI/pennylane/pull/1620)
+
 * Dask and CVXPY dependent tests are skipped if those packages are not installed.
 [(#1617)](https://github.com/PennyLaneAI/pennylane/pull/1617)
 
@@ -430,7 +433,7 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 This release contains contributions from (in alphabetical order):
 
-Vishnu Ajith, Akash Narayanan B, Thomas Bromley, Tanya Garg, Josh Izaac, Prateek Jain, Christina Lee,
+Vishnu Ajith, Akash Narayanan B, Thomas Bromley, Olivia Di Matteo, Tanya Garg, Josh Izaac, Prateek Jain, Christina Lee,
 Ankit Khandelwal, Johannes Jakob Meyer, Romain Moyard, Esteban Payares, Pratul Saini, Maria Schuld,
 Arshpreet Singh, Ingrid Strandberg, Slimane Thabet, David Wierichs, Vincent Wong.
 
