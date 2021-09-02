@@ -26,11 +26,10 @@ def primitive_norm(l, alpha):
 
     .. math::
 
-        G = x^l y^m z^n e^{-\alpha r^2},
+        G = x^l_x y^l_y z^l_z e^{-\alpha r^2},
 
-    where :math:`l = (l, m, n)` defines the angular momentum quantum numbers, and :math:`\alpha`
-    is the exponent. The
-    normalization constant for this function is computed as
+    where :math:`l = (l_x, l_y, l_z)` defines the angular momentum quantum numbers and
+    :math:`\alpha` is the exponent. The normalization constant for this function is computed as
 
     .. math::
 
@@ -53,7 +52,7 @@ def primitive_norm(l, alpha):
     """
     lx, ly, lz = l
     n = (
-        (2 * alpha / np.pi) ** 0.75
+        (2 * alpha / anp.pi) ** 0.75
         * (4 * alpha) ** (sum(l) / 2)
         / anp.sqrt(fac2(2 * lx - 1) * fac2(2 * ly - 1) * fac2(2 * lz - 1))
     )
@@ -97,7 +96,7 @@ def contracted_norm(l, alpha, a):
     0.39969026908800853
     """
     lx, ly, lz = l
-    c = np.pi ** 1.5 / 2 ** sum(l) * fac2(2 * lx - 1) * fac2(2 * ly - 1) * fac2(2 * lz - 1)
+    c = anp.pi ** 1.5 / 2 ** sum(l) * fac2(2 * lx - 1) * fac2(2 * ly - 1) * fac2(2 * lz - 1)
     s = (
         (a.reshape(len(a), 1) * a) / ((alpha.reshape(len(alpha), 1) + alpha) ** (sum(l) + 1.5))
     ).sum()
