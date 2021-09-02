@@ -99,7 +99,7 @@ def test_unwrap_autograd():
         params = tape.get_parameters(trainable_only=False)
         assert all(isinstance(i, float) for i in params)
         assert np.allclose(params, [0.1, 0.2, 0.5, 0.3])
-        assert tape.trainable_params == {0, 2, 3}
+        assert tape.trainable_params == {0, 3}
 
     # outside the context, the original parameters have been restored.
     assert tape.get_parameters(trainable_only=False) == p
