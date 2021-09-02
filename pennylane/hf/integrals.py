@@ -52,15 +52,12 @@ def expansion(la, lb, ra, rb, alpha, beta, t):
     **Example**
     >>> la, lb = 0, 0
     >>> ra, rb = 0.0, 0.0
-    >>> alpha = [[3.42525091], [0.62391373], [0.1688554 ]]
-    >>> beta = [3.42525091, 0.62391373, 0.1688554]
-    >>> alpha = np.array([3.425250914, 0.6239137298, 0.168855404])
+    >>> alpha = np.array([3.42525091])
+    >>> beta =  np.array([3.42525091])
     >>> t = 0
     >>> c = expansion(la, lb, ra, rb, alpha, beta, t)
-    >>> print(c)
-    [[1. 1. 1.]
-     [1. 1. 1.]
-     [1. 1. 1.]]
+    >>> c
+    array([1.])
     """
     p = alpha + beta
     q = alpha * beta / p

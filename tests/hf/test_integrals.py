@@ -18,7 +18,7 @@ Unit tests for functions needed to computing integrals over basis functions.
 import pytest
 import numpy as np
 from pennylane import numpy as pnp
-from pennylane.hf.integrals import generate_params
+from pennylane.hf.integrals import generate_params, expansion
 
 
 @pytest.mark.parametrize(
@@ -43,3 +43,45 @@ def test_generate_params(alpha, coeff, r):
     basis_params = generate_params(params, args)
 
     assert np.allclose(basis_params, (alpha, coeff, r))
+
+
+@pytest.mark.parametrize(
+    ("la", "lb", "ra", "rb", "alpha", "beta", "t", "c"),
+    [
+        (
+            0,
+            0,
+            pnp.array([1.2]),
+            pnp.array([1.2]),
+            pnp.array([3.42525091]),
+            pnp.array([3.42525091]),
+            0,
+            pnp.array([1.0]),
+        ),
+        (
+            1,
+            0,
+            pnp.array([0.0]),
+            pnp.array([0.0]),
+            pnp.array([3.42525091]),
+            pnp.array([3.42525091]),
+            0,
+            pnp.array([0.0]),
+        ),
+        (
+            1,
+            1,
+            pnp.array([0.0]),
+            pnp.array([10.0]),
+            pnp.array([3.42525091]),
+            pnp.array([3.42525091]),
+            0,
+            pnp.array([0.0]),
+        ),
+    ],
+)
+def test_expansion(la, lb, ra, rb, alpha, beta, t, c):
+    r"""Test that expansion function returns correct value."""
+    assert np.allclose(expansion(la, lb, ra, rb, alpha, beta, t), c)
+    assert np.allclose(expansion(la, lb, ra, rb, alpha, beta, -1), pnp.array([0.0]))
+    assert np.allclose(expansion(0, 1, ra, rb, alpha, beta, 2), pnp.array([0.0]))
