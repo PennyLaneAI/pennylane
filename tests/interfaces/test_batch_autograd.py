@@ -790,3 +790,87 @@ class TestHigherOrderDerivatives:
 
         expected = np.zeros([2, 2])
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
+class TestOverridingShots:
+    """Test overriding shots on execution"""
+
+    def test_changing_shots(self, mocker, tol):
+        """Test that changing shots works on execution"""
+        dev = qml.device("default.qubit", wires=2, shots=None)
+        a, b = np.array([0.543, -0.654], requires_grad=True)
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliY(1))
+
+        spy = mocker.spy(dev, "sample")
+
+        # execute with device default shots (None)
+        res = execute([tape], dev, gradient_fn=param_shift)
+        assert np.allclose(res, -np.cos(a) * np.sin(b), atol=tol, rtol=0)
+        spy.assert_not_called()
+
+        # execute with shots=100
+        res = execute([tape], dev, gradient_fn=param_shift, override_shots=100)
+        spy.assert_called()
+        assert spy.spy_return.shape == (100,)
+
+        # device state has been unaffected
+        assert dev.shots is None
+        spy = mocker.spy(dev, "sample")
+        res = execute([tape], dev, gradient_fn=param_shift)
+        assert np.allclose(res, -np.cos(a) * np.sin(b), atol=tol, rtol=0)
+        spy.assert_not_called()
+
+    def test_overriding_shots_with_same_value(self, mocker):
+        """Overriding shots with the same value as the device will have no effect"""
+        dev = qml.device("default.qubit", wires=2, shots=123)
+        a, b = np.array([0.543, -0.654], requires_grad=True)
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliY(1))
+
+        spy = mocker.Mock(wraps=qml.Device.shots.fset)
+        mock_property = qml.Device.shots.setter(spy)
+        mocker.patch.object(qml.Device, "shots", mock_property)
+
+        res = execute([tape], dev, gradient_fn=param_shift, override_shots=123)
+        # overriden shots is the same, no change
+        spy.assert_not_called()
+
+        res = execute([tape], dev, gradient_fn=param_shift, override_shots=100)
+        # overriden shots is the same, shots were changed
+        spy.assert_called()
+
+        # shots were temporarily set to the overriden value
+        assert spy.call_args_list[0][0] == (dev, 100)
+        # shots were then returned to the built-in value
+        assert spy.call_args_list[1][0] == (dev, 123)
+
+    def test_gradient_integration(self, tol):
+        """Test that temporarily setting the shots works
+        for gradient computations"""
+        dev = qml.device("default.qubit", wires=2, shots=None)
+        a, b = np.array([0.543, -0.654], requires_grad=True)
+
+        def cost_fn(a, b, shots):
+            with qml.tape.JacobianTape() as tape:
+                qml.RY(a, wires=0)
+                qml.RX(b, wires=1)
+                qml.CNOT(wires=[0, 1])
+                qml.expval(qml.PauliY(1))
+
+            return execute([tape], dev, gradient_fn=param_shift, override_shots=shots)[0]
+
+        res = qml.jacobian(cost_fn)(a, b, shots=[10000, 10000, 10000])
+        assert dev.shots is None
+        assert len(res) == 3
+
+        expected = [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
+        assert np.allclose(np.mean(res, axis=0), expected, atol=0.1, rtol=0)

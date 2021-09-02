@@ -100,7 +100,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
             else:
                 # Need to compute the Jacobians on the backward pass (accumulation="backward")
 
-                print(gradient_fn, isinstance(gradient_fn, qml.gradients.gradient_transform))
                 if isinstance(gradient_fn, qml.gradients.gradient_transform):
                     # Gradient function is a gradient transform.
 
