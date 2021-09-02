@@ -170,11 +170,7 @@ class QNode:
             return QNode._validate_device_method(device, interface)
 
         if diff_method == "parameter-shift":
-            return (
-                QNode._get_parameter_shift_function(device),
-                {},
-                device,
-            )
+            return QNode._validate_parameter_shift(device, interface)
 
         if diff_method == "finite-diff":
             return qml.gradients.finite_diff, {}, device
@@ -223,7 +219,7 @@ class QNode:
                 return QNode._validate_backprop_method(device, interface)
             except qml.QuantumFunctionError:
                 try:
-                    return QNode._get_parameter_shift_function(device), {}, device
+                    return QNode._validate_parameter_shift(device, interface)
                 except qml.QuantumFunctionError:
                     return qml.gradients.finite_diff, {}, device
 
@@ -310,14 +306,14 @@ class QNode:
         return "device", {}, device
 
     @staticmethod
-    def _get_parameter_shift_function(device):
+    def _validate_parameter_shift(device, interface):  # pylint: disable=unused-argument
         model = device.capabilities().get("model", None)
 
         if model == "qubit":
-            return qml.gradients.param_shift
+            return qml.gradients.param_shift, {}, device
 
         if model == "cv":
-            return qml.gradients.param_shift_cv
+            return qml.gradients.param_shift_cv, {"dev": device}, device
 
         raise qml.QuantumFunctionError(
             f"Device {device.short_name} uses an unknown model ('{model}') "
@@ -348,6 +344,9 @@ class QNode:
 
         with self.tape:
             self._qfunc_output = self.func(*args, **kwargs)
+
+        params = self.tape.get_parameters(trainable_only=False)
+        self.tape.trainable_params = qml.math.get_trainable_indices(params)
 
         if not isinstance(self._qfunc_output, Sequence):
             measurement_processes = (self._qfunc_output,)

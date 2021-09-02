@@ -151,6 +151,10 @@ class gradient_transform(qml.batch_transform):
 
         def jacobian_wrapper(*args, **kwargs):
             qjac = _wrapper(*args, **kwargs)
+
+            if not hybrid:
+                return qjac
+
             cjac = cjac_fn(*args, **kwargs)
 
             if any(m.return_type is qml.operation.Probability for m in qnode.qtape.measurements):
@@ -167,7 +171,7 @@ class gradient_transform(qml.batch_transform):
 
             is_square = cjac.shape == (1,) or (cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1])
 
-            if not hybrid or (is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0]))):
+            if is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
                 # Classical Jacobian is the identity. No classical processing
                 # is present inside the QNode.
                 return qjac
