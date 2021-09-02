@@ -135,13 +135,13 @@
 * The `RotosolveOptimizer` now can tackle general parametrized circuits, and is no longer
   restricted to single-qubit Pauli rotations.
   [(#1489)](https://github.com/PennyLaneAI/pennylane/pull/1489)
-  
+
   This includes:
-  
+
   - layers of gates controlled by the same parameter,
   - controlled variants of parametrized gates, and
   - Hamiltonian time evolution.
-  
+
   Note that the eigenvalue spectrum of the gate generator needs to be known to
   use `RotosolveOptimizer` for a general gate, and it
   is required to produce equidistant frequencies.
@@ -302,13 +302,13 @@
 
 <h3>Improvements</h3>
 
-* Hamiltonians are now natively supported on the `default.qubit` device if `shots=None`. 
+* Hamiltonians are now natively supported on the `default.qubit` device if `shots=None`.
   This makes VQE workflows a lot faster in some cases.
   [(#1551)](https://github.com/PennyLaneAI/pennylane/pull/1551)
   [(#1596)](https://github.com/PennyLaneAI/pennylane/pull/1596)
 
-* A gradient recipe for Hamiltonian coefficients has been added. This makes it possible 
-  to compute parameter-shift gradients of these coefficients on devices that natively 
+* A gradient recipe for Hamiltonian coefficients has been added. This makes it possible
+  to compute parameter-shift gradients of these coefficients on devices that natively
   support Hamiltonians.
   [(#1551)](https://github.com/PennyLaneAI/pennylane/pull/1551)
 
@@ -318,8 +318,8 @@
 * The `MultiControlledX` class now inherits from `Operation` instead of `ControlledQubitUnitary` which makes the `MultiControlledX` gate a non-parameterized gate.
   [(#1557)](https://github.com/PennyLaneAI/pennylane/pull/1557)
 
-* The `utils.sparse_hamiltonian` function can now deal with non-integer 
-  wire labels, and it throws an error for the edge case of observables that are 
+* The `utils.sparse_hamiltonian` function can now deal with non-integer
+  wire labels, and it throws an error for the edge case of observables that are
   created from multi-qubit operations.
   [(#1550)](https://github.com/PennyLaneAI/pennylane/pull/1550)
 
@@ -380,8 +380,8 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 * The QFT operation is moved to template
   [(#1548)](https://github.com/PennyLaneAI/pennylane/pull/1548)
-  
-* The `qml.ResetError` is now supported for `default.mixed` device. 
+
+* The `qml.ResetError` is now supported for `default.mixed` device.
   [(#1541)](https://github.com/PennyLaneAI/pennylane/pull/1541)
 
 * QNodes now support `diff_method=None`. This works the same as `interface=None`. Such QNodes accept
@@ -418,19 +418,22 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 * The `qml.Identity` operation is placed under the sections Qubit observables and CV observables.
   [(#1576)](https://github.com/PennyLaneAI/pennylane/pull/1576)
 
-* Updated the documentation of `qml.grouping`, `qml.kernels` and `qml.qaoa` modules to present 
+* Updated the documentation of `qml.grouping`, `qml.kernels` and `qml.qaoa` modules to present
   the list of functions first followed by the technical details of the module.
-  [(#1581)](https://github.com/PennyLaneAI/pennylane/pull/1581) 
+  [(#1581)](https://github.com/PennyLaneAI/pennylane/pull/1581)
 
 * Recategorized Qubit operations into new and existing categories so that code for each
   operation is easier to locate.
   [(#1566)](https://github.com/PennyLaneAI/pennylane/pull/1583)
 
+* Adds a link to https://pennylane.ai/qml/demonstrations.html in the navbar.
+  [(#1624)](https://github.com/PennyLaneAI/pennylane/pull/1624)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Vishnu Ajith, Akash Narayanan B, Thomas Bromley, Tanya Garg, Josh Izaac, Prateek Jain, Christina Lee,
+Vishnu Ajith, Akash Narayanan B, Thomas Bromley, Andrew Gardhouse, Tanya Garg, Josh Izaac, Prateek Jain, Christina Lee,
 Ankit Khandelwal, Johannes Jakob Meyer, Romain Moyard, Esteban Payares, Pratul Saini, Maria Schuld,
 Arshpreet Singh, Ingrid Strandberg, Slimane Thabet, David Wierichs, Vincent Wong.
 
