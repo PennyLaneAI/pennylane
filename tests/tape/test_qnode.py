@@ -440,7 +440,7 @@ class TestValidation:
     )
     def test_to_tf(self, method, mocker):
         """Test if interface change is working"""
-        tf = pytest.importorskip("tf")
+        tf = pytest.importorskip("tensorflow")
         dev = qml.device("default.qubit", wires=1)
 
         def func(x):
