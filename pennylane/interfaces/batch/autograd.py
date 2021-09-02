@@ -158,7 +158,7 @@ def vjp(
         """Returns the vector-Jacobian product with given
         parameter values and output gradient dy"""
 
-        dy = dy[0]
+        dy = [qml.math.T(d) for d in dy[0]]
         jacs = ans[1]
 
         if jacs:

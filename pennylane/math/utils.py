@@ -268,9 +268,7 @@ def requires_grad(tensor, interface=None):
         if isinstance(tensor, ArrayBox):
             return True
 
-        # Currently, in the Autograd interface, we assume
-        # that all objects are differentiable by default.
-        return getattr(tensor, "requires_grad", True)
+        return getattr(tensor, "requires_grad", False)
 
     if interface == "torch":
         return getattr(tensor, "requires_grad", False)

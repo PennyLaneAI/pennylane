@@ -634,13 +634,14 @@ class TestAutogradExecuteIntegration:
 
         expected = np.array(
             [
-                [[-np.sin(x) / 2, 0], [np.sin(x) / 2, 0]],
+                [[-np.sin(x) / 2, 0], [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2]],
                 [
-                    [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2],
+                    [np.sin(x) / 2, 0],
                     [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
                 ],
             ]
         )
+
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_ragged_differentiation(self, execute_kwargs, tol):
