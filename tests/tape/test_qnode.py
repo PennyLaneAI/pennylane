@@ -489,6 +489,7 @@ class TestValidation:
             "finite-diff",
             "reversible",
             "adjoint",
+            "backprop",
         ],
     )
     def test_to_torch(self, method, mocker):
