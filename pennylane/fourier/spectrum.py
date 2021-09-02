@@ -84,7 +84,37 @@ def _join_spectra(spec1, spec2):
     return sorted(set(sums))
 
 
-def spectrum(qnode, encoding_gates=None):
+def _get_and_validate_classical_jacobian(qnode, ids, *args, **kwargs):
+    ids = "with id" if ids is None else ids
+    jacs = []
+    try:
+        zeros_args = (np.zeros_like(arg) for arg in args)
+        jacs.append(qml.transforms.classical_jacobian(qnode, ids)(*zeros_args, **kwargs))
+        ones_args = (np.ones_like(arg) for arg in args)
+        jacs.append(qml.transforms.classical_jacobian(qnode, ids)(*ones_args, **kwargs))
+        frac_args = (np.ones_like(arg)*0.315 for arg in args)
+        jacs.append(qml.transforms.classical_jacobian(qnode, ids)(*frac_args, **kwargs))
+        jacs.append(qml.transforms.classical_jacobian(qnode, ids)(*args, **kwargs))
+    except:
+        raise ValueError()
+
+    if not all((np.allclose(jacs[0], jac) for jac in jacs[1:])):
+        raise ValueError(
+            "The classical preprocessing in the provided qnode is not constant; "
+            "only linear classical preprocessing is supported."
+        )
+    for j, jac_row in zip(qnode.qtape.trainable_params, jacs[0]):
+        if not len(np.where(jac_row)[0])<=1:
+            op = qnode.qtape._par_info[j]["op"]
+            raise ValueError(
+                f"Multiple parameters feed into the operation {op.name} in "
+                "the provided qnode; only operations controlled by a single parameter are "
+                "supported."
+            )
+    return jacs[0]
+
+
+def spectrum(qnode, encoding_gates="auto", decimals=5):
     r"""Compute the frequency spectrum of the Fourier representation of simple quantum circuits.
 
     The circuit must only use simple single-parameter gates of the form :math:`e^{-i x_j G}` as
@@ -241,18 +271,20 @@ def spectrum(qnode, encoding_gates=None):
     'x1': [-1.0, 0.0, 1.0]
 
     """
-
     @wraps(qnode)
     def wrapper(*args, **kwargs):
-        qnode.construct(args, kwargs)
-        tape = qnode.qtape
+        class_jac = _get_and_validate_classical_jacobian(qnode, encoding_gates, *args, **kwargs)
+        #qnode.construct(args, kwargs)
 
+        #if encoding_gates is "auto":
+            # todo
         if encoding_gates is None:
             freqs = {}
         else:
             freqs = {input_id: [] for input_id in encoding_gates}
 
-        for op in tape.operations:
+        encoding_idx = 0
+        for op in qnode.qtape.operations:
             id = op.id
 
             # if the operator has no specific ID, move to the next
@@ -272,6 +304,11 @@ def spectrum(qnode, encoding_gates=None):
                     )
 
                 spec = _get_spectrum(op)
+                jac_row = class_jac[encoding_idx]
+                jac_idx = np.where(jac_row)[0]
+                jac_entry = float(jac_row[jac_idx]) if len(jac_idx)>0 else 0.0
+                spec = [f*jac_entry for f in spec]
+                encoding_idx += 1
 
                 # if id has been seen before,
                 # join this spectrum to another one
@@ -279,6 +316,8 @@ def spectrum(qnode, encoding_gates=None):
                     spec = _join_spectra(freqs[id], spec)
 
                 freqs[id] = spec
+        if decimals is not None:
+            freqs = {id: np.round(spec, decimals) for id, spec in freqs.items()}
 
         return freqs
 

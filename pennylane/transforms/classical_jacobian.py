@@ -18,7 +18,7 @@ Contains the classical Jacobian transform
 import pennylane as qml
 
 
-def classical_jacobian(qnode):
+def classical_jacobian(qnode, ids=None):
     r"""Returns a function to extract the Jacobian
     matrix of the classical part of a QNode.
 
@@ -27,6 +27,9 @@ def classical_jacobian(qnode):
 
     Args:
         qnode (.QNode): QNode to compute the (classical) Jacobian of
+        ids (list[str] or str): list of gate ``id`` strings for which to compute 
+            the classical jacobian. If None, the full jacobian is returned,
+            if "with id" only the jacobian for gates that have an id is returned.
 
     Returns:
         function: Function which accepts the same arguments as the QNode.
@@ -75,30 +78,67 @@ def classical_jacobian(qnode):
         qnode.construct(args, kwargs)
         return qml.math.stack(qnode.qtape.get_parameters())
 
+    def _jacobian_indices(qnode, ids, *args, **kwargs):
+        qnode.construct(args, kwargs)
+        if ids is None:
+            return slice(0, None, None)
+        elif ids=="with id":
+            p_idx = 0
+            jac_indices = []
+            for op in qnode.qtape.operations:
+                p_num = len(op.data)
+                if op.id is not None:
+                    jac_indices.extend(range(p_idx, p_idx+p_num))
+                p_idx += p_num
+            return jac_indices
+        elif isinstance(ids, str):
+            ids = [ids]
+
+        ids = set(ids)
+        p_idx = 0
+        jac_indices = []
+        for op in qnode.qtape.operations:
+            p_num = len(op.data)
+            if op.id in ids:
+                jac_indices.extend(range(p_idx, p_idx+p_num))
+            p_idx += p_num
+        return jac_indices
+
     if qnode.interface == "autograd":
-        return qml.jacobian(classical_preprocessing)
+        def _jacobian(*args, **kwargs):
+            jac_indices = _jacobian_indices(qnode, ids, *args, **kwargs)
+            return qml.jacobian(classical_preprocessing)(*args, **kwargs)[jac_indices]
+
+        return _jacobian
 
     if qnode.interface == "torch":
         import torch
 
         def _jacobian(*args, **kwargs):  # pylint: disable=unused-argument
-            return torch.autograd.functional.jacobian(classical_preprocessing, args)
+            jac_indices = _jacobian_indices(qnode, ids, *args, **kwargs)
+            return torch.autograd.functional.jacobian(classical_preprocessing, args)[jac_indices]
 
         return _jacobian
 
     if qnode.interface == "jax":
         import jax
 
-        return jax.jacobian(classical_preprocessing)
+        def _jacobian(*args, **kwargs):
+            jac_indices = _jacobian_indices(qnode, ids, *args, **kwargs)
+            return jax.jacobian(classical_preprocessing)(*args, **kwargs)[jac_indices]
+
+        return _jacobian
 
     if qnode.interface == "tf":
         import tensorflow as tf
 
         def _jacobian(*args, **kwargs):
+            jac_indices = _jacobian_indices(qnode, ids, *args, **kwargs)
             with tf.GradientTape() as tape:
                 tape.watch(args)
                 gate_params = classical_preprocessing(*args, **kwargs)
 
-            return tape.jacobian(gate_params, args)
+            return tape.jacobian(gate_params, args)[jac_indices]
 
         return _jacobian
+

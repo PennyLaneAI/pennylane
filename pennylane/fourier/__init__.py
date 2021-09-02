@@ -14,4 +14,5 @@
 """This module contains functions to analyze the Fourier representation
 of quantum circuits."""
 from .coefficients import coefficients
+from .reconstruct import reconstruct
 from .spectrum import spectrum
