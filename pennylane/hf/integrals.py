@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-TThis module contains functions needed for computing integrals over basis functions.
+This module contains the functions needed for computing integrals over basis functions.
 """
 import numpy as np
 import autograd.numpy as anp
@@ -22,14 +22,14 @@ from scipy.special import factorial2 as fac2
 def primitive_norm(l, alpha):
     r"""Compute the normalization constant for a primitive Gaussian function.
 
-    A Gaussian function is defined as
+    A Gaussian function centred at the position :math:`r = (x, y, z)` is defined as
 
     .. math::
 
         G = x^l y^m z^n e^{-\alpha r^2},
 
-    where :math:`l = (l, m, n)` defines the angular momentum quantum numbers, :math:`\alpha`
-    is the exponent and :math:`r = (x, y, z)` determines the center of the function. The
+    where :math:`l = (l, m, n)` defines the angular momentum quantum numbers, and :math:`\alpha`
+    is the exponent. The
     normalization constant for this function is computed as
 
     .. math::
@@ -69,7 +69,7 @@ def contracted_norm(l, alpha, a):
 
         \psi = a_1 G_1 + a_2 G_2 + a_3 G_3,
 
-    where :math:`a` denotes the contraction coefficients and :math:`G` is a Gaussian function. The
+    where :math:`a` denotes the contraction coefficients and :math:`G` is a primitive Gaussian function. The
     normalization constant for this function is computed as
 
     .. math::
