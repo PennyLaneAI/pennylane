@@ -29,19 +29,30 @@ class Molecule:
     The molecule object can be passed to functions that perform a Hartree-Fock calculation.
 
     Args:
-        symbols (list[str]): symbols of the atomic species in the molecule
+        symbols (list[str]): Symbols of the atomic species in the molecule. Currently, atoms with
+            atomic numbers 1-10 are supported.
         coordinates (array[float]): 1D array with the atomic positions in Cartesian coordinates. The
             coordinates must be given in atomic units and the size of the array should be ``3*N``
-             where ``N`` is the number of atoms.
+            where ``N`` is the number of atoms.
         charge (int): net charge of the molecule
         mult (int): Spin multiplicity :math:`\mathrm{mult}=N_\mathrm{unpaired} + 1` for
             :math:`N_\mathrm{unpaired}` unpaired electrons occupying the HF orbitals. Possible
             values of ``mult`` are :math:`1, 2, 3, \ldots`.
-        basis_name (str): atomic basis set used to represent the molecular orbitals
+        basis_name (str): Atomic basis set used to represent the molecular orbitals. Currently, the
+            only supported basis set is 'sto-3g'.
         l (tuple[int]): angular momentum quantum numbers of the basis function
         alpha (array[float]): exponents of the primitive Gaussian functions
         coeff (array[float]): coefficients of the contracted Gaussian functions
         r (array[float]): positions of the Gaussian functions
+
+    **Example**
+
+    >>> symbols  = ['H', 'H']
+    >>> geometry = pnp.array([[0.0, 0.0, -0.694349],
+    >>>                       [0.0, 0.0,  0.694349]], requires_grad = True)
+    >>> mol = Molecule(symbols, geometry)
+    >>> print(mol.n_electrons)
+    2
     """
 
     def __init__(
