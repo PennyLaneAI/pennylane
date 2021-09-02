@@ -18,6 +18,7 @@ capabilities with different machine learning libraries.
 # pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches
 import contextlib
 from functools import wraps
+import itertools
 
 from cachetools import LRUCache
 import numpy as np
@@ -25,13 +26,15 @@ import numpy as np
 import pennylane as qml
 
 
-SUPPORTED_INTERFACES = {
+INTERFACE_NAMES = {
     "NumPy": (None,),
     "Autograd": ("autograd", "numpy"),  # for backwards compatibility
     "PyTorch": ("torch", "pytorch"),
     "TensorFlow": ("tf", "tensorflow"),
 }
 """dict[str, str]: maps allowed interface strings to the name of the interface"""
+
+SUPPORTED_INTERFACES = list(itertools.chain(*INTERFACE_NAMES.values()))
 
 
 @contextlib.contextmanager
@@ -287,7 +290,7 @@ def execute(
 
         return res
 
-    if gradient_fn == "backprop":
+    if gradient_fn == "backprop" or interface is None:
         return cache_execute(batch_execute, cache, return_tuple=False)(tapes)
 
     # the default execution function is batch_execute
@@ -321,20 +324,20 @@ def execute(
         raise ValueError("Gradient transforms cannot be used with mode='forward'")
 
     try:
-        if interface in SUPPORTED_INTERFACES["Autograd"]:
+        if interface in INTERFACE_NAMES["Autograd"]:
             from .autograd import execute as _execute
-        elif interface in SUPPORTED_INTERFACES["TensorFlow"]:
+        elif interface in INTERFACE_NAMES["TensorFlow"]:
             from .tensorflow import execute as _execute
-        elif interface in SUPPORTED_INTERFACES["PyTorch"]:
+        elif interface in INTERFACE_NAMES["PyTorch"]:
             from .torch import execute as _execute
         else:
             raise ValueError(
                 f"Unknown interface {interface}. Supported "
-                f"interfaces are {list(SUPPORTED_INTERFACES.values())}"
+                f"interfaces are {SUPPORTED_INTERFACES}"
             )
 
     except ImportError as e:
-        interface_name = [k for k, v in SUPPORTED_INTERFACES.items() if interface in v][0]
+        interface_name = [k for k, v in INTERFACE_NAMES.items() if interface in v][0]
 
         raise qml.QuantumFunctionError(
             f"{interface_name} not found. Please install the latest "
