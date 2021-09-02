@@ -839,12 +839,7 @@ class QNode:
 
         info["num_device_wires"] = self.device.num_wires
         info["device_name"] = self.device.short_name
-
-        # TODO: use self.diff_method when that value gets updated
-        if self.diff_method != "best":
-            info["diff_method"] = self.diff_method
-        else:
-            info["diff_method"] = self.qtape.jacobian_options["method"]
+        info["diff_method"] = self.diff_method
 
         # tapes do not accurately track parameters for backprop
         # TODO: calculate number of trainable parameters in backprop
