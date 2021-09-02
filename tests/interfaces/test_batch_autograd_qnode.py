@@ -30,7 +30,7 @@ qubit_device_and_diff_method = [
 
 @pytest.mark.parametrize("dev_name,diff_method,mode", qubit_device_and_diff_method)
 class TestQNode:
-    """Test that using the QNode with Autograd returns expected results"""
+    """Test that using the QNode with Autograd integrates with the PennyLane stack"""
 
     def test_nondiff_param_unwrapping(self, dev_name, diff_method, mode, mocker):
         """Test that non-differentiable parameters are correctly unwrapped
@@ -135,38 +135,6 @@ class TestQNode:
         grad = qml.grad(circuit)(a)
         assert isinstance(grad, float)
         assert grad.shape == tuple()
-
-    # def test_interface_swap(self, dev_name, diff_method, mode, tol):
-    #     """Test that the autograd interface can be applied to a QNode
-    #     with a pre-existing interface"""
-    #     torch = pytest.importorskip("torch")
-
-    #     if diff_method == "backprop":
-    #         pytest.skip("Test does not support backprop")
-
-    #     dev = qml.device(dev_name, wires=1)
-
-    #     @qnode(dev, interface="torch", diff_method=diff_method)
-    #     def circuit(a):
-    #         qml.RY(a, wires=0)
-    #         qml.RX(0.2, wires=0)
-    #         return qml.expval(qml.PauliZ(0))
-
-    #     a = torch.tensor(0.1, requires_grad=True)
-    #     res_torch = circuit(a)
-    #     res_torch.backward()
-    #     grad_torch = a.grad
-
-    #     # switch to autograd interface
-    #     circuit.interface = "autograd"
-
-    #     a = np.array(0.1, requires_grad=True)
-
-    #     res = circuit(a)
-    #     grad = qml.grad(circuit)(a)
-
-    #     assert np.allclose(res, res_torch.detach().numpy(), atol=tol, rtol=0)
-    #     assert np.allclose(grad, grad_torch.detach().numpy(), atol=tol, rtol=0)
 
     def test_jacobian(self, dev_name, diff_method, mode, mocker, tol):
         """Test jacobian calculation"""
@@ -470,6 +438,92 @@ class TestQNode:
             ]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
+class TestShotsIntegration:
+    """Test that the QNode correctly changes shot value, and
+    differentiates it."""
+
+    def test_changing_shots(self, mocker, tol):
+        """Test that changing shots works on execution"""
+        dev = qml.device("default.qubit", wires=2, shots=None)
+        a, b = np.array([0.543, -0.654], requires_grad=True)
+
+        @qnode(dev, diff_method=qml.gradients.param_shift)
+        def circuit(a, b):
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliY(1))
+
+        spy = mocker.spy(dev, "sample")
+
+        # execute with device default shots (None)
+        res = circuit(a, b)
+        assert np.allclose(res, -np.cos(a) * np.sin(b), atol=tol, rtol=0)
+        spy.assert_not_called()
+
+        # execute with shots=100
+        res = circuit(a, b, shots=100)
+        spy.assert_called()
+        assert spy.spy_return.shape == (100,)
+
+        # device state has been unaffected
+        assert dev.shots is None
+        spy = mocker.spy(dev, "sample")
+        res = circuit(a, b)
+        assert np.allclose(res, -np.cos(a) * np.sin(b), atol=tol, rtol=0)
+        spy.assert_not_called()
+
+    def test_gradient_integration(self, tol):
+        """Test that temporarily setting the shots works
+        for gradient computations"""
+        dev = qml.device("default.qubit", wires=2, shots=None)
+        a, b = np.array([0.543, -0.654], requires_grad=True)
+
+        @qnode(dev, diff_method=qml.gradients.param_shift)
+        def cost_fn(a, b):
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliY(1))
+
+        res = qml.jacobian(cost_fn)(a, b, shots=[10000, 10000, 10000])
+        assert dev.shots is None
+        assert len(res) == 3
+
+        expected = [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
+        assert np.allclose(np.mean(res, axis=0), expected, atol=0.1, rtol=0)
+
+    def test_update_diff_method(self, mocker, tol):
+        """Test that temporarily setting the shots updates the diff method"""
+        dev = qml.device("default.qubit", wires=2, shots=100)
+        a, b = np.array([0.543, -0.654], requires_grad=True)
+
+        spy = mocker.spy(qml, "execute")
+
+        @qnode(dev)
+        def cost_fn(a, b):
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliY(1))
+
+        # since we are using finite shots, parameter-shift will
+        # be chosen
+        assert cost_fn.gradient_fn is qml.gradients.param_shift
+
+        cost_fn(a, b)
+        assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
+
+        # if we set the shots to None, backprop can now be used
+        cost_fn(a, b, shots=None)
+        assert spy.call_args[1]["gradient_fn"] == "backprop"
+
+        # original QNode settings are unaffected
+        assert cost_fn.gradient_fn is qml.gradients.param_shift
+        cost_fn(a, b)
+        assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
 
 @pytest.mark.parametrize("dev_name,diff_method,mode", qubit_device_and_diff_method)

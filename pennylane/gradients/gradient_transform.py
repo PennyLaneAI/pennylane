@@ -152,13 +152,13 @@ class gradient_transform(qml.batch_transform):
         def jacobian_wrapper(*args, **kwargs):
             qjac = _wrapper(*args, **kwargs)
 
+            if any(m.return_type is qml.operation.Probability for m in qnode.qtape.measurements):
+                qjac = qml.math.squeeze(qjac)
+
             if not hybrid:
                 return qjac
 
             cjac = cjac_fn(*args, **kwargs)
-
-            if any(m.return_type is qml.operation.Probability for m in qnode.qtape.measurements):
-                qjac = qml.math.squeeze(qjac)
 
             if isinstance(cjac, tuple):
                 # Classical processing of multiple arguments is present. Return qjac @ cjac.
