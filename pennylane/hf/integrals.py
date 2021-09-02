@@ -84,7 +84,7 @@ def expansion(la, lb, ra, rb, alpha, beta, t):
 
 
 def gaussian_overlap(la, lb, ra, rb, alpha, beta):
-    r"""Compute overlap integrals for two sets of Gaussian functions.
+    r"""Compute overlap integral for two primitive Gaussian functions.
 
     Args:
         la (integer): angular momentum for the first Gaussian function
@@ -95,7 +95,7 @@ def gaussian_overlap(la, lb, ra, rb, alpha, beta):
         beta (array[float]): exponent of the second Gaussian function
 
     Returns:
-        array[float]: overlap integrals for each Gaussian combination
+        array[float]: overlap integral between primitive Gaussian functions
     """
     p = alpha + beta
     s = 1.0

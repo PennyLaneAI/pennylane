@@ -18,7 +18,7 @@ Unit tests for functions needed to computing integrals over basis functions.
 import pytest
 import numpy as np
 from pennylane import numpy as pnp
-from pennylane.hf.integrals import generate_params, expansion
+from pennylane.hf.integrals import generate_params, expansion, gaussian_overlap
 
 
 @pytest.mark.parametrize(
@@ -85,3 +85,41 @@ def test_expansion(la, lb, ra, rb, alpha, beta, t, c):
     assert np.allclose(expansion(la, lb, ra, rb, alpha, beta, t), c)
     assert np.allclose(expansion(la, lb, ra, rb, alpha, beta, -1), pnp.array([0.0]))
     assert np.allclose(expansion(0, 1, ra, rb, alpha, beta, 2), pnp.array([0.0]))
+
+
+@pytest.mark.parametrize(
+    ("la", "lb", "ra", "rb", "alpha", "beta", "o"),
+    [
+        # two normalized s orbitals
+        (
+            (0, 0, 0),
+            (0, 0, 0),
+            pnp.array([0.0, 0.0, 0.0]),
+            pnp.array([0.0, 0.0, 0.0]),
+            pnp.array([pnp.pi / 2]),
+            pnp.array([pnp.pi / 2]),
+            pnp.array([1.0]),
+        ),
+        (
+            (0, 0, 0),
+            (0, 0, 0),
+            pnp.array([0.0, 0.0, 0.0]),
+            pnp.array([20.0, 0.0, 0.0]),
+            pnp.array([3.42525091]),
+            pnp.array([3.42525091]),
+            pnp.array([0.0]),
+        ),
+        (
+            (1, 0, 0),
+            (0, 0, 1),
+            pnp.array([0.0, 0.0, 0.0]),
+            pnp.array([0.0, 0.0, 0.0]),
+            pnp.array([6.46480325]),
+            pnp.array([6.46480325]),
+            pnp.array([0.0]),
+        ),
+    ],
+)
+def test_gaussian_overlap(la, lb, ra, rb, alpha, beta, o):
+    r"""Test that expansion function returns correct value."""
+    assert np.allclose(gaussian_overlap(la, lb, ra, rb, alpha, beta), o)
