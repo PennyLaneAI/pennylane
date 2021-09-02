@@ -1630,7 +1630,6 @@ Nahum Sá, Maria Schuld, Jay Soni, Antal Száva, David Wierichs.
 
 * Fixed a bug where `qml.sum()` and `qml.dot()` do not support the JAX interface.
   [(#1380)](https://github.com/PennyLaneAI/pennylane/pull/1380)
-  
 
 <h3>Documentation</h3>
 
