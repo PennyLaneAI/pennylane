@@ -319,7 +319,7 @@ def var_param_shift(tape, argnum, shift=np.pi / 2, gradient_recipes=None, f0=Non
         # We need to expand the dimensions of the variance mask,
         # and convert it to be the same type as the results.
         res = results[0]
-        ragged = getattr(results[0], "dtype", None) == np.dtype("object")
+        ragged = getattr(results[0], "dtype", None) is np.dtype("object")
 
         mask = []
         for m, r in zip(var_mask, results[0]):
