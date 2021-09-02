@@ -14,6 +14,7 @@
 """
 This module contains the QNode class and qnode decorator.
 """
+# pylint: disable=too-many-instance-attributes,too-many-arguments,protected-access
 from collections.abc import Sequence
 import functools
 import inspect
@@ -26,6 +27,8 @@ from pennylane.operation import State
 
 
 class QNode:
+    """New QNode"""
+
     def __init__(
         self,
         func,
@@ -81,6 +84,8 @@ class QNode:
         self._qfunc_output = None
         self._gradient_kwargs = gradient_kwargs
         self._original_device = device
+        self.gradient_fn = None
+        self.gradient_kwargs = None
 
         self._update_gradient_fn()
         functools.update_wrapper(self, func)
@@ -97,6 +102,7 @@ class QNode:
 
     @property
     def interface(self):
+        """The interface used by the QNode"""
         return self._interface
 
     @interface.setter
@@ -265,7 +271,7 @@ class QNode:
         )
 
     @staticmethod
-    def _validate_adjoint_method(device, interface):
+    def _validate_adjoint_method(device, interface):  # pylint: disable=unused-argument
         # The conditions below provide a minimal set of requirements that we can likely improve upon in
         # future, or alternatively summarize within a single device capability. Moreover, we also
         # need to inspect the circuit measurements to ensure only expectation values are taken. This
@@ -291,7 +297,7 @@ class QNode:
         return "device", {"use_device_state": True, "method": "adjoint_jacobian"}, device
 
     @staticmethod
-    def _validate_device_method(device, interface):
+    def _validate_device_method(device, interface):  # pylint: disable=unused-argument
         # determine if the device provides its own jacobian method
         provides_jacobian = device.capabilities().get("provides_jacobian", False)
 
@@ -353,7 +359,10 @@ class QNode:
                 "or a nonempty sequence of measurements."
             )
 
-        state_returns = any([m.return_type is State for m in measurement_processes])
+        state_returns = any(m.return_type is State for m in measurement_processes)
+
+        # TODO: pass complex128 to Torch/TF if state is being returned. Move this to the
+        # execute() function.
 
         if not all(ret == m for ret, m in zip(measurement_processes, self.tape.measurements)):
             raise qml.QuantumFunctionError(
