@@ -14,6 +14,7 @@
 """Unit tests for the autograd interface"""
 import functools
 import importlib
+import sys
 
 import autograd
 import pytest
@@ -29,11 +30,14 @@ class TestAutogradExecuteUnitTests:
 
     def test_import_error(self, mocker):
         """Test that an exception is caught on import error"""
-        importlib.reload(qml.interfaces.batch)
-        importlib.reload(autograd.extend)
 
-        mock = mocker.patch("autograd.extend.defvjp")
+        mock = mocker.patch.object(autograd.extend, "defvjp")
         mock.side_effect = ImportError()
+
+        try:
+            del sys.modules["pennylane.interfaces.batch.autograd"]
+        except:
+            pass
 
         dev = qml.device("default.qubit", wires=2, shots=None)
 
