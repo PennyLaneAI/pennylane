@@ -16,7 +16,6 @@
 import functools
 
 import pennylane as qml
-from pennylane.new_qnode import QNode
 
 
 class batch_transform:
@@ -206,7 +205,7 @@ class batch_transform:
             # tapes, fn = some_transform(tape, *transform_args)
             return self.construct(qnode, *targs, **tkwargs)
 
-        if isinstance(qnode, (qml.QNode, QNode)):
+        if isinstance(qnode, qml.QNode):
             # Input is a QNode:
             # result = some_transform(qnode, *transform_args)(*qnode_args)
             wrapper = self.qnode_execution_wrapper(qnode, targs, tkwargs)
