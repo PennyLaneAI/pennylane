@@ -13,7 +13,9 @@
 # limitations under the License.
 """Unit tests for the autograd interface"""
 import functools
+import importlib
 
+import autograd
 import pytest
 from pennylane import numpy as np
 
@@ -27,6 +29,9 @@ class TestAutogradExecuteUnitTests:
 
     def test_import_error(self, mocker):
         """Test that an exception is caught on import error"""
+        importlib.reload(qml.interfaces.batch)
+        importlib.reload(autograd.extend)
+
         mock = mocker.patch("autograd.extend.defvjp")
         mock.side_effect = ImportError()
 
