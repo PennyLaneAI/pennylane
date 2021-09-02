@@ -224,5 +224,4 @@ def vjp(
     return grad_fn
 
 
-print("hello")
 autograd.extend.defvjp(_execute, vjp, argnums=[0])
