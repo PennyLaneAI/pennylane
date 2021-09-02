@@ -25,6 +25,23 @@ from pennylane.interfaces.batch import execute
 class TestAutogradExecuteUnitTests:
     """Unit tests for autograd execution"""
 
+    def test_import_error(self, mocker):
+        """Test that an exception is caught on import error"""
+        mock = mocker.patch("autograd.extend.defvjp")
+        mock.side_effect = ImportError()
+
+        dev = qml.device("default.qubit", wires=2, shots=None)
+
+        with qml.tape.JacobianTape() as tape:
+            qml.expval(qml.PauliY(1))
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="Autograd not found. Please install the latest version "
+            "of Autograd to enable the 'autograd' interface",
+        ):
+            qml.execute([tape], dev, gradient_fn=param_shift, interface="autograd")
+
     def test_jacobian_options(self, mocker, tol):
         """Test setting jacobian options"""
         spy = mocker.spy(qml.gradients, "param_shift")

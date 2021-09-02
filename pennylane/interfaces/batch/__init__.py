@@ -26,12 +26,10 @@ import pennylane as qml
 
 
 SUPPORTED_INTERFACES = {
-    None: "NumPy",
-    "numpy": "Autograd",  # for backwards compatibility
-    "autograd": "Autograd",
-    "torch": "PyTorch",
-    "tensorflow": "TensorFlow",
-    "tf": "TensorFlow",
+    "NumPy": (None,),
+    "Autograd": ("autograd", "numpy"),  # for backwards compatibility
+    "PyTorch": ("torch", "pytorch"),
+    "TensorFlow": ("tf", "tensorflow"),
 }
 """dict[str, str]: maps allowed interface strings to the name of the interface"""
 
@@ -323,16 +321,20 @@ def execute(
         raise ValueError("Gradient transforms cannot be used with mode='forward'")
 
     try:
-        if interface == "autograd":
+        if interface in SUPPORTED_INTERFACES["Autograd"]:
             from .autograd import execute as _execute
-        elif interface in ("tf", "tensorflow"):
+        elif interface in SUPPORTED_INTERFACES["TensorFlow"]:
             from .tensorflow import execute as _execute
-        elif interface in ("torch", "pytorch"):
+        elif interface in SUPPORTED_INTERFACES["PyTorch"]:
             from .torch import execute as _execute
         else:
-            raise ValueError(f"Unknown interface {interface}")
+            raise ValueError(
+                f"Unknown interface {interface}. Supported "
+                f"interfaces are {list(SUPPORTED_INTERFACES.values())}"
+            )
+
     except ImportError as e:
-        interface_name = SUPPORTED_INTERFACES[interface]
+        interface_name = [k for k, v in SUPPORTED_INTERFACES.items() if interface in v][0]
 
         raise qml.QuantumFunctionError(
             f"{interface_name} not found. Please install the latest "
