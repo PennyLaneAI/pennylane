@@ -108,6 +108,7 @@ def generate_overlap(basis_a, basis_b):
     """Return a function that normalizes and computes the overlap integral for two contracted
     Gaussian orbitals.
     """
+
     def overlap_integral(*args):
 
         ra, ca, alpha = generate_params(basis_a.params, args[0])
