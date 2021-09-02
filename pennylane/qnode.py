@@ -193,10 +193,15 @@ class QNode:
         self.qfunc_output = None
         # store the user-specified differentiation method
         self.diff_method = diff_method
+        self.diff_method_change = False
 
         self._tape, self.interface, self.device, tape_diff_options = self.get_tape(
             device, interface, diff_method
         )
+        # if diff_method is best, then set it to the actual diff method being used
+        if self.diff_method == "best":
+            self.diff_method_change = True
+            self.diff_method = self._get_best_diff_method(tape_diff_options)
 
         # The arguments to be passed to JacobianTape.jacobian
         self.diff_options = diff_options or {}
@@ -214,6 +219,19 @@ class QNode:
             self.interface,
             self.diff_method,
         )
+
+    @staticmethod
+    def _get_best_diff_method(tape_diff_options):
+        """Update diff_method to reflect which method has been selected"""
+        if tape_diff_options["method"] == "device":
+            method = "device"
+        elif tape_diff_options["method"] == "backprop":
+            method = "backprop"
+        elif tape_diff_options["method"] == "best":
+            method = "parameter-shift"
+        elif tape_diff_options["method"] == "numeric":
+            method = "finite-diff"
+        return method
 
     # pylint: disable=too-many-return-statements
     @staticmethod
@@ -634,6 +652,12 @@ class QNode:
         else:
             res = self.qtape.execute(device=self.device)
 
+        finite_diff = any(
+            getattr(x["op"], "grad_method", None) == "F" for x in self.qtape._par_info.values()
+        )
+        if finite_diff and self.diff_method_change:
+            self.diff_method = "finite-diff"
+
         # if shots was changed
         if original_shots != -1:
             # reinstate default on device
@@ -815,12 +839,7 @@ class QNode:
 
         info["num_device_wires"] = self.device.num_wires
         info["device_name"] = self.device.short_name
-
-        # TODO: use self.diff_method when that value gets updated
-        if self.diff_method != "best":
-            info["diff_method"] = self.diff_method
-        else:
-            info["diff_method"] = self.qtape.jacobian_options["method"]
+        info["diff_method"] = self.diff_method
 
         # tapes do not accurately track parameters for backprop
         # TODO: calculate number of trainable parameters in backprop
@@ -847,10 +866,16 @@ class QNode:
 
             if self.interface != "tf" and self.interface is not None:
                 # Since the interface is changing, need to re-validate the tape class.
+                # if method was changed from "best", set it back to best
+                if self.diff_method_change:
+                    diff_method = "best"
+                else:
+                    diff_method = self.diff_method
                 self._tape, interface, self.device, diff_options = self.get_tape(
-                    self._original_device, "tf", self.diff_method
+                    self._original_device, "tf", diff_method
                 )
-
+                if self.diff_method_change:
+                    self.diff_method = self._get_best_diff_method(diff_options)
                 self.interface = interface
                 self.diff_options.update(diff_options)
             else:
@@ -887,10 +912,16 @@ class QNode:
 
             if self.interface != "torch" and self.interface is not None:
                 # Since the interface is changing, need to re-validate the tape class.
+                # if method was changed from "best", set it back to best
+                if self.diff_method_change:
+                    diff_method = "best"
+                else:
+                    diff_method = self.diff_method
                 self._tape, interface, self.device, diff_options = self.get_tape(
-                    self._original_device, "torch", self.diff_method
+                    self._original_device, "torch", diff_method
                 )
-
+                if self.diff_method_change:
+                    self.diff_method = self._get_best_diff_method(diff_options)
                 self.interface = interface
                 self.diff_options.update(diff_options)
             else:
@@ -919,10 +950,16 @@ class QNode:
 
         if self.interface != "autograd" and self.interface is not None:
             # Since the interface is changing, need to re-validate the tape class.
+            # if method was changed from "best", set it back to best
+            if self.diff_method_change:
+                diff_method = "best"
+            else:
+                diff_method = self.diff_method
             self._tape, interface, self.device, diff_options = self.get_tape(
-                self._original_device, "autograd", self.diff_method
+                self._original_device, "autograd", diff_method
             )
-
+            if self.diff_method_change:
+                self.diff_method = self._get_best_diff_method(diff_options)
             self.interface = interface
             self.diff_options.update(diff_options)
         else:
@@ -947,10 +984,16 @@ class QNode:
 
             if self.interface != "jax" and self.interface is not None:
                 # Since the interface is changing, need to re-validate the tape class.
+                # if method was changed from "best", set it back to best
+                if self.diff_method_change:
+                    diff_method = "best"
+                else:
+                    diff_method = self.diff_method
                 self._tape, interface, self.device, diff_options = self.get_tape(
-                    self._original_device, "jax", self.diff_method
+                    self._original_device, "jax", diff_method
                 )
-
+                if self.diff_method_change:
+                    self.diff_method = self._get_best_diff_method(diff_options)
                 self.interface = interface
                 self.diff_options.update(diff_options)
             else:
