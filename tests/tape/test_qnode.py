@@ -468,7 +468,7 @@ class TestValidation:
     def test_to_autograd(self, method, mocker):
         """Test if interface change is working"""
         dev = qml.device("default.qubit", wires=1)
-        tf = pytest.importorskip("tf")
+        tf = pytest.importorskip("tensorflow")
 
         def func(x):
             qml.RX(x, wires=0)
