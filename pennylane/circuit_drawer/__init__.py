@@ -24,3 +24,4 @@ as circuit diagrams.
 """
 from .circuit_drawer import *
 from .charsets import *
+from .drawable_layers import drawable_layers

@@ -51,7 +51,7 @@ def drawable_layers(ops, wire_order=None):
     Returns:
         list[list[Operation]] : Each index is a set of operations 
             for the corresponding layer
-    """'
+    """
 
     if wire_order is None:
         wire_order = _default_wire_order(ops)
@@ -85,7 +85,7 @@ def drawable_layers(ops, wire_order=None):
         if op_layer > max_layer:
             max_layer += 1
             occupied_wires_per_layer.append([])
-            ops_per_layer.append(set())
+            ops_per_layer.append({})
 
         # Add to op_layer
         ops_per_layer[op_layer].append(op)
