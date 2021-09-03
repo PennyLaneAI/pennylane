@@ -128,7 +128,8 @@ class QNode:
 
         shift (float): the size of the shift for two-term parameter-shift gradient computations
 
-        adjoint_cache (bool): for TensorFlow and PyTorch interfaces and adjoint differentiation,
+        adjoint_cache (bool): For TensorFlow and PyTorch interfaces and adjoint differentiation,
+
             this indicates whether to save the device state after the forward pass.  Doing so saves a
             forward execution. Device state automatically reused with autograd and JAX interfaces.
 
@@ -138,7 +139,8 @@ class QNode:
             that this option is only applicable for the following differentiation methods:
             ``"parameter-shift"``, ``"finite-diff"`` and ``"reversible"``.
 
-        kwargs: is used to catch all unrecognized keyword arguments and provide a user warning
+        kwargs: used to catch all unrecognized keyword arguments and provide a user warning
+
             about them
 
     **Example**
@@ -200,7 +202,8 @@ class QNode:
         if kwargs:
             for key in kwargs:
                 warnings.warn(
-                    key + " is unrecognized, and will not be included in your computation. "
+                    f"'{key}' is unrecognized, and will not be included in your computation. "
+
                     "Please review the QNode class or qnode decorator for the list of available "
                     "keyword variables.",
                     UserWarning,
@@ -1145,7 +1148,8 @@ def qnode(
 
         shift (float): the size of the shift for two-term parameter-shift gradient computations
 
-        adjoint_cache (bool): for TensorFlow and PyTorch interfaces and adjoint differentiation,
+        adjoint_cache (bool): For TensorFlow and PyTorch interfaces and adjoint differentiation,
+
             this indicates whether to save the device state after the forward pass.  Doing so saves a
             forward execution. Device state automatically reused with autograd and JAX interfaces.
 
@@ -1155,7 +1159,8 @@ def qnode(
             that this option is only applicable for the following differentiation methods:
             ``"parameter-shift"``, ``"finite-diff"`` and ``"reversible"``.
 
-        kwargs: is used to catch all unrecognized keyword arguments and provide a user warning
+        kwargs: used to catch all unrecognized keyword arguments and provide a user warning
+
             about them
 
     **Example**

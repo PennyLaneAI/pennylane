@@ -586,8 +586,8 @@ class TestValidation:
         )
 
         expected_warnings = {
-            (UserWarning, unrecognized_one + warning_text),
-            (UserWarning, unrecognized_two + warning_text),
+            (UserWarning, f"'{unrecognized_one}'{warning_text}"),
+            (UserWarning, f"'{unrecognized_two}'{warning_text}"),
         }
 
         dev = qml.device("default.qubit", wires=1, shots=1)
