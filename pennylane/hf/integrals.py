@@ -105,6 +105,7 @@ def contracted_norm(l, alpha, a):
     n = 1 / anp.sqrt(c * s)
     return n
 
+
 def generate_params(params, args):
     """Generate basis set parameters. The default values are used for the non-differentiable
     parameters and the user-defined values are used for the differentiable ones.
@@ -196,9 +197,9 @@ def generate_overlap(basis_a, basis_b):
     r"""Return a function that normalizes and computes the overlap integral for two contracted
     Gaussian orbitals.
     """
+
     def overlap_integral(*args):
-        r"""Normalize and compute the overlap integral for two contracted Gaussian functions.
-        """
+        r"""Normalize and compute the overlap integral for two contracted Gaussian functions."""
         ra, ca, alpha = generate_params(basis_a.params, args[0])
         rb, cb, beta = generate_params(basis_b.params, args[1])
 

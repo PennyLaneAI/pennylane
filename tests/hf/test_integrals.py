@@ -17,8 +17,9 @@ Unit tests for functions needed to computing integrals over basis functions.
 import numpy as np
 import pytest
 from pennylane import numpy as pnp
-from pennylane.hf.integrals import contracted_norm, primitive_norm, generate_params, expansion,\
-     gaussian_overlap, generate_overlap
+from pennylane.hf.integrals import (contracted_norm, expansion,
+                                    gaussian_overlap, generate_overlap,
+                                    generate_params, primitive_norm)
 from pennylane.hf.molecule import Molecule
 
 
@@ -50,6 +51,7 @@ def test_gaussian_norm(l, alpha, n):
 def test_contraction_norm(l, alpha, a, n):
     r"""Test that the computed normalization constant of a contracted Gaussian function is correct."""
     assert np.allclose(contracted_norm(l, alpha, a), n)
+
 
 @pytest.mark.parametrize(
     ("alpha", "coeff", "r"),
