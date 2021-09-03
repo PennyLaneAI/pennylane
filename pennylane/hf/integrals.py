@@ -44,6 +44,7 @@ def primitive_norm(l, alpha):
         n (array[float]): normalization coefficient
 
     **Example**
+
     >>> l = (0, 0, 0)
     >>> alpha = np.array([3.425250914])
     >>> n = gaussian_norm(l, alpha)
@@ -88,6 +89,7 @@ def contracted_norm(l, alpha, a):
         n (array[float]): normalization coefficient
 
     **Example**
+
     >>> l = (0, 0, 0)
     >>> alpha = np.array([3.425250914, 0.6239137298, 0.168855404])
     >>> a = np.array([1.79444183, 0.50032649, 0.18773546])
