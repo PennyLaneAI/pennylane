@@ -203,7 +203,6 @@ class QNode:
             for key in kwargs:
                 warnings.warn(
                     f"'{key}' is unrecognized, and will not be included in your computation. "
-
                     "Please review the QNode class or qnode decorator for the list of available "
                     "keyword variables.",
                     UserWarning,
@@ -1047,6 +1046,7 @@ class QNode:
     }
 
 
+# pylint:disable=too-many-arguments
 def qnode(
     device,
     interface="autograd",
