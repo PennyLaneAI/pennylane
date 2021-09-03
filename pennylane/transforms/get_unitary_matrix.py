@@ -21,6 +21,59 @@ import numpy as np
 
 
 def get_unitary_matrix(fn, wire_order):
+
+    n_wires = len(wire_order)
+    wire_order = Wires(wire_order)
+
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        ######### NOTE BELOW
+        active_tape = get_active_tape()
+
+        if active_tape is not None:
+            with active_tape.stop_recording(), QuantumTape() as tape:
+                fn(*args, **kwargs)
+        else:
+            # Not within a queuing context
+            with QuantumTape() as tape:
+                fn(*args, **kwargs)
+
+        if not tape.operations:
+            # we called op.expand(): get the outputted tape
+            tape = fn(*args, **kwargs)
+            #### NOTE took the above from qml.adjoint. Appropriate here?
+
+        unitary_matrix = np.eye(2 ** n_wires)
+
+        for op in tape.operations:
+
+            op_wire_pos = wire_order.indices(op.wires)
+
+            I = np.reshape(np.eye(2 ** n_wires), [2] * n_wires * 2)
+
+            axes = (np.arange(len(op.wires), 2 * len(op.wires)), op_wire_pos)
+
+            U_op_reshaped = np.reshape(op.matrix, [2] * len(op.wires) * 2)
+
+            U_tensordot = np.tensordot(U_op_reshaped, I, axes=axes)
+
+            unused_idxs = [idx for idx in range(n_wires) if idx not in op_wire_pos]
+            perm = op_wire_pos + unused_idxs
+            inv_perm = np.argsort(perm)
+
+            print("PRINT", op, wire_order.indices(wire_order), axes, perm, op_wire_pos)
+
+            U = np.moveaxis(U_tensordot, wire_order.indices(wire_order), perm)
+
+            U = np.reshape(U, ((2 ** n_wires, 2 ** n_wires)))
+
+            unitary_matrix = np.dot(U, unitary_matrix)
+        return unitary_matrix
+
+    return wrapper
+
+
+def get_unitary_matrix1(fn, wire_order):
     """Given a quantum circuit and a list of wire ordering, construct the matrix representation"""
 
     wire_order = Wires(wire_order)
