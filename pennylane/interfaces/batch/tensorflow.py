@@ -92,6 +92,8 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
             """Returns the vector-Jacobian product with given
             parameter values and output gradient dy"""
 
+            dy = [qml.math.T(d) for d in dy]
+
             if jacs:
                 # Jacobians were computed on the forward pass (mode="forward")
                 # No additional quantum evaluations needed; simply compute the VJPs directly.
