@@ -14,8 +14,8 @@
 """
 This module contains the functions needed for computing integrals over basis functions.
 """
-import numpy as np
 import autograd.numpy as anp
+import numpy as np
 from scipy.special import factorial2 as fac2
 
 
@@ -28,8 +28,8 @@ def primitive_norm(l, alpha):
 
         G = x^{l_x} y^{l_y} z^{l_z} e^{-\alpha r^2},
 
-    where :math:`l = (l_x, l_y, l_z)` defines the angular momentum quantum numbers and
-    :math:`\alpha` is the exponent. The normalization constant for this function is computed as
+    where :math:`l = (l_x, l_y, l_z)` defines the angular momentum quantum number and :math:`\alpha`
+    is the Gaussian function exponent. The normalization constant for this function is computed as
 
     .. math::
 
@@ -37,11 +37,11 @@ def primitive_norm(l, alpha):
         {(2l_x-1)!! (2l_y-1)!! (2l_z-1)!!)^{1/2}}.
 
     Args:
-        l (tuple[int]): angular momentum quantum numbers of the basis function
+        l (tuple[int]): angular momentum quantum number of the basis function
         alpha (array[float]): exponent of the primitive Gaussian function
 
     Returns:
-        n (array[float]): normalization coefficient
+        array[float]: normalization coefficient
 
     **Example**
 
@@ -77,16 +77,16 @@ def contracted_norm(l, alpha, a):
         N(l, \alpha, a) = [\frac{\pi^{3/2}(2l_x-1)!! (2l_y-1)!! (2l_z-1)!!}{2^{l_x + l_y + l_z}}
         \sum_{i,j} \frac{a_i a_j}{(\alpha_i + \alpha_j)^{{l_x + l_y + l_z+3/2}}}]^{-1/2}
 
-    where :math:`l`, :math:`\alpha` and :math:`a` are the angular momentum quantum numbers, the
-    exponents of the Gaussian functions and the contraction coefficients, respectively.
+    where :math:`l` and :math:`\alpha` denote the angular momentum quantum number and the exponent
+    of the Gaussian function, respectively.
 
     Args:
-        l (tuple[int]): angular momentum quantum numbers of the basis function
+        l (tuple[int]): angular momentum quantum number of the primitive Gaussian functions
         alpha (array[float]): exponents of the primitive Gaussian functions
         a (array[float]): coefficients of the contracted Gaussian functions
 
     Returns:
-        n (array[float]): normalization coefficient
+        array[float]: normalization coefficient
 
     **Example**
 

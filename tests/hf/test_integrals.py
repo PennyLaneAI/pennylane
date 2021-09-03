@@ -14,9 +14,9 @@
 """
 Unit tests for functions needed to computing integrals over basis functions.
 """
-import pytest
 import numpy as np
-from pennylane.hf.integrals import primitive_norm, contracted_norm
+import pytest
+from pennylane.hf.integrals import contracted_norm, primitive_norm
 
 
 @pytest.mark.parametrize(
