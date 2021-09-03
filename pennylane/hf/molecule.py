@@ -15,9 +15,10 @@
 This module contains functions and classes to create a Molecule object. This object stores all
 the necessary information to perform a Hartree-Fock calculation for a given molecule.
 """
+import itertools
+
 # pylint: disable=too-few-public-methods, too-many-arguments, too-many-instance-attributes
 import numpy as np
-import itertools
 from pennylane import numpy as pnp
 from pennylane.hf.basis_data import atomic_numbers
 from pennylane.hf.basis_set import BasisFunction, mol_basis_data
