@@ -35,7 +35,7 @@ def _to_tuple(a):
     return (a,)
 
 
-# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-instance-attributes, too-many-arguments
 class MPLDrawer:
     r"""Allows easy creation of graphics representing circuits with matplotlib
 
@@ -56,20 +56,20 @@ class MPLDrawer:
 
         drawer.label(["0","a",r"$|\Psi\rangle$",r"$|\theta\rangle$", "aux"])
 
-        drawer.box_gate(0, [0,1,2,3,4], "Entangling Layers", text_kwargs={'rotation':'vertical'})
-        drawer.box_gate(1, [0, 1], "U(θ)")
+        drawer.box_gate(layer=0, wires=[0,1,2,3,4], text="Entangling Layers", text_kwargs={'rotation':'vertical'})
+        drawer.box_gate(layer=1, wires=[0, 1], text="U(θ)")
 
-        drawer.box_gate(1, 4, "Z")
+        drawer.box_gate(layer=1, wires=4, text="Z")
 
-        drawer.SWAP(1, (2, 3))
-        drawer.CNOT(2, (0,2))
+        drawer.SWAP(layer=1, wires=(2, 3))
+        drawer.CNOT(layer=2, wires=(0,2))
 
-        drawer.ctrl(3, [1,3], control_values = [True, False])
-        drawer.box_gate(3, 2, "H", zorder=2)
+        drawer.ctrl(layer=3, wires=[1,3], control_values = [True, False])
+        drawer.box_gate(layer=3, wires=2, text="H", zorder=2)
 
-        drawer.ctrl(4, [1,2])
+        drawer.ctrl(layer=4, wires=[1,2])
 
-        drawer.measure(5, 0)
+        drawer.measure(layer=5, wires=0)
 
         drawer.fig.suptitle('My Circuit', fontsize='xx-large')
 
