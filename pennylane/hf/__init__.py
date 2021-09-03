@@ -17,3 +17,4 @@ This subpackage provides the functionality to perform differentiable Hartree-Foc
 from .molecule import *
 from .basis_set import *
 from .basis_data import *
+from .integrals import primitive_norm, contracted_norm
