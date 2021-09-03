@@ -26,7 +26,7 @@ def primitive_norm(l, alpha):
 
     .. math::
 
-        G = x^l_x y^l_y z^l_z e^{-\alpha r^2},
+        G = x^{l_x} y^{l_y} z^{l_z} e^{-\alpha r^2},
 
     where :math:`l = (l_x, l_y, l_z)` defines the angular momentum quantum numbers and
     :math:`\alpha` is the exponent. The normalization constant for this function is computed as
@@ -34,7 +34,7 @@ def primitive_norm(l, alpha):
     .. math::
 
         N(l, \alpha) = (\frac{2\alpha}{\pi})^{3/4} \frac{(4 \alpha)^{(l_x + l_y + l_z)/2}}
-        {(2\l_x-1)!! (2\l_y-1)!! (2\l_z-1)!!)^{1/2}}.
+        {(2l_x-1)!! (2l_y-1)!! (2l_z-1)!!)^{1/2}}.
 
     Args:
         l (tuple[int]): angular momentum quantum numbers of the basis function
@@ -73,7 +73,7 @@ def contracted_norm(l, alpha, a):
 
     .. math::
 
-        N(l, \alpha, a) = [\frac{\pi^{3/2}(2\l_x-1)!! (2\l_y-1)!! (2\l_z-1)!!}{2^{l_x + l_y + l_z}}
+        N(l, \alpha, a) = [\frac{\pi^{3/2}(2l_x-1)!! (2l_y-1)!! (2l_z-1)!!}{2^{l_x + l_y + l_z}}
         \sum_{i,j} \frac{a_i a_j}{(\alpha_i + \alpha_j)^{{l_x + l_y + l_z+3/2}}}]^{-1/2}
 
     where :math:`l`, :math:`\alpha` and :math:`a` are the angular momentum quantum numbers, the
