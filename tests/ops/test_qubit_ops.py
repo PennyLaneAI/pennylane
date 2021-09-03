@@ -28,6 +28,8 @@ from pennylane import numpy as npp
 import pennylane as qml
 from pennylane.wires import Wires
 
+from pennylane.transforms.get_unitary_matrix import get_unitary_matrix
+
 from gate_data import (
     I,
     X,
@@ -1645,20 +1647,8 @@ class TestOperations:
             elif isinstance(i, qml.CNOT) and i.wires.tolist() == [0, 1]:
                 mats.append(np.kron(i.matrix, np.eye(2)))
             elif isinstance(i, qml.CNOT) and i.wires.tolist() == [0, 2]:
-                mats.append(
-                    np.array(
-                        [
-                            [1, 0, 0, 0, 0, 0, 0, 0],
-                            [0, 1, 0, 0, 0, 0, 0, 0],
-                            [0, 0, 1, 0, 0, 0, 0, 0],
-                            [0, 0, 0, 1, 0, 0, 0, 0],
-                            [0, 0, 0, 0, 0, 1, 0, 0],
-                            [0, 0, 0, 0, 1, 0, 0, 0],
-                            [0, 0, 0, 0, 0, 0, 0, 1],
-                            [0, 0, 0, 0, 0, 0, 1, 0],
-                        ]
-                    )
-                )
+                get_matrix = get_unitary_matrix(lambda: qml.CNOT(wires=[0, 2]), [0, 1, 2])
+                mats.append(get_matrix())
 
         decomposed_matrix = np.linalg.multi_dot(mats)
         lam = np.exp(1j * phi)
@@ -1694,15 +1684,8 @@ class TestOperations:
             elif i.wires.tolist() == [1]:
                 mats.append(np.kron(np.eye(2), i.matrix))
             elif i.wires.tolist() == [1, 0] and isinstance(i, qml.CRY):
-                new_mat = np.array(
-                    [
-                        [1, 0, 0, 0],
-                        [0, np.cos(phi / 2), 0, -np.sin(phi / 2)],
-                        [0, 0, 1, 0],
-                        [0, np.sin(phi / 2), 0, np.cos(phi / 2)],
-                    ]
-                )
-
+                get_matrix = get_unitary_matrix(lambda phi: qml.CRY(phi, wires=[1, 0]), [0, 1])
+                new_mat = get_matrix(phi)
                 mats.append(new_mat)
             else:
                 mats.append(i.matrix)
@@ -2045,23 +2028,10 @@ class TestDoubleExcitation:
         and CNOTs. For each term in the decomposition we need to construct the appropriate
         four-qubit tensor product matrix and then multiply them together.
         """
-        decomp = qml.DoubleExcitation.decomposition(phi, wires=[0, 1, 2, 3])
+        wires = [0, 1, 2, 3]
+        decomp = qml.DoubleExcitation.decomposition(phi, wires=wires)
 
         from functools import reduce
-
-        # To compute the matrix for CX on an arbitrary number of qubits, use the fact that
-        # CU  = |0><0| \otimes I + |1><1| \otimes U
-        def cnot_four_qubits(wires):
-            proj_0_term = [StateZeroProjector if idx == wires[0] else np.eye(2) for idx in range(4)]
-
-            proj_1_term = [np.eye(2) for idx in range(4)]
-            proj_1_term[wires[0]] = StateOneProjector
-            proj_1_term[wires[1]] = X
-
-            proj_0_kron = reduce(np.kron, proj_0_term)
-            proj_1_kron = reduce(np.kron, proj_1_term)
-
-            return proj_0_kron + proj_1_kron
 
         # Inserts a single-qubit matrix into a four-qubit matrix at the right place
         def single_mat_four_qubits(mat, wire):
@@ -2074,9 +2044,11 @@ class TestDoubleExcitation:
             if len(i.wires.tolist()) == 1:
                 mat = single_mat_four_qubits(i.matrix, i.wires.tolist()[0])
                 mats.append(mat)
-            # Two-qubit gate
+
+            # Two-qubit CNOT
             else:
-                mat = cnot_four_qubits(i.wires.tolist())
+                get_matrix = get_unitary_matrix(lambda: qml.CNOT(wires=i.wires.tolist()), wires)
+                mat = get_matrix()
                 mats.append(mat)
 
         decomposed_matrix = np.linalg.multi_dot(mats)
