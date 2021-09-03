@@ -55,7 +55,8 @@ def drawable_grid(ops, wire_map=None):
 
     if wire_map is None:
         wire_map = _default_wire_map(ops)
-    layers = drawable_layers(ops)
+
+    layers = drawable_layers(ops, wire_map=wire_map)
 
     n_wires = len(wire_map)
     n_layers = len(layers)
