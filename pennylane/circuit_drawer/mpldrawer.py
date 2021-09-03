@@ -92,8 +92,8 @@ class MPLDrawer:
 
     **Formatting**
 
-    You can globally control the style with
-    ` ``plt.rcParams``  and styles <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
+    You can globally control the style with ``plt.rcParams``  and styles, see the 
+    `matplotlib docs <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
     If we customize ``plt.rcParams`` before executing our example function, we get a
     different style:
 
