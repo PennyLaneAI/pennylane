@@ -19,10 +19,13 @@ to a PennyLane Device class.
 import jax
 import jax.numpy as jnp
 from jax.experimental import host_callback
+from pennylane import math
+import numpy as np
 
 import pennylane as qml
 
 dtype = jnp.float32
+
 
 
 def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2):
@@ -102,18 +105,58 @@ def _execute(
         # Generate and execute the required gradient tapes
         if _n == max_diff:
             with qml.tape.Unwrap(*tapes):
-                vjp_tapes, processing_fn = qml.gradients.batch_vjp(
-                    tapes,
-                    g,
-                    gradient_fn,
-                    reduction="append",
-                    gradient_kwargs=gradient_kwargs,
-                )
-            partial_res = execute_fn(vjp_tapes)[0]
-            vjps = [[jnp.asarray(s) for s in r] for r in processing_fn(partial_res)]
+
+                if any(["BatchTracer" in str(type(tracer)) for tracer in g]):
+
+                    # 1. step: extract only one of the batches
+                    # 2. step: batch_vjp
+                    # 3. step: execute, process
+                    # 4. step: batch back together
+                    # 5. step: return in the same shape as the output of the exec_fwd
+
+                    # Unpack batched traces
+                    final_vjps = []
+
+                    #TODO: no hardcode
+                    batch_size = 2
+                    # print("batch_size", batch_size)
+                    # print("G 0", g[0].val.shape, g[0].val)
+                    for i in range(batch_size):
+                        g_batch = [b.val[i,:] for b in g]
+                        print("G batch: ", g_batch)
+                        vjp_tapes, processing_fn = qml.gradients.batch_vjp(
+                            tapes,
+                            g_batch,
+                            gradient_fn,
+                            reduction="append",
+                            gradient_kwargs=gradient_kwargs,
+                        )
+                        vjp_tapes, processing_fn
+                        partial_res = execute_fn(vjp_tapes)[0]
+                        partial_vjps = [[jnp.asarray(s) for s in r] for r in processing_fn(partial_res)]
+                        final_vjps.append(partial_vjps)
+
+                    # vjps = []
+                    # for i,v enumerate(final_vjps):
+                    #     for a in v:
+                    #         vjps.append(jnp.sum([b for c, d in enumerate(b)]) for b in final_vjps]))
+
+                    #print("Final vjps: ", final_vjps)
+                    vjps = final_vjps[0]
+                else:
+                    vjp_tapes, processing_fn = qml.gradients.batch_vjp(
+                        tapes,
+                        g,
+                        gradient_fn,
+                        reduction="append",
+                        gradient_kwargs=gradient_kwargs,
+                    )
+                    partial_res = execute_fn(vjp_tapes)[0]
+                    vjps = [[jnp.asarray(s) for s in r] for r in processing_fn(partial_res)]
             vjps = (tuple(vjps),)
 
         else:
+            print("Type of g", type(g))
             vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                 tapes, g, gradient_fn, reduction="append", gradient_kwargs=gradient_kwargs
             )

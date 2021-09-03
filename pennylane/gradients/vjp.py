@@ -41,12 +41,7 @@ def compute_vjp(dy, jac):
     if not isinstance(dy_row, np.ndarray):
         jac = math.convert_like(jac, dy_row)
 
-    try:
-        jac = math.reshape(jac, [dy_row.shape[0], -1])
-    except:
-        print('in')
-        dy_row = dy_row[0].reshape(1)
-        jac = math.reshape(jac, [1, 1])
+    jac = math.reshape(jac, [dy_row.shape[0], -1])
 
     try:
         if math.allclose(dy, 0):
