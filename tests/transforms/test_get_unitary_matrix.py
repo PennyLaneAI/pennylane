@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""
+Unit tests for the get_unitary_matrix transform
+"""
 from functools import reduce
 import pytest
 import numpy as np
@@ -27,7 +29,7 @@ nonparam_1qubit_op_list = [qml.PauliX, qml.PauliY, qml.PauliZ, qml.Hadamard, qml
 @pytest.mark.parametrize("op", nonparam_1qubit_op_list)
 @pytest.mark.parametrize("wire", [0, 1, 2])
 def test_get_unitary_matrix_nonparam_1qubit_ops(op, wire):
-
+    """Check the matrices for different nonparametrized single-qubit gates, which are acting on different qubits in a space of three qubits."""
     wires = [0, 1, 2]
 
     def testcircuit(wire):
@@ -48,7 +50,7 @@ def test_get_unitary_matrix_nonparam_1qubit_ops(op, wire):
 
 # Test a circuit containing multiple gates
 def test_get_unitary_matrix_multiple_ops():
-
+    """Check the total matrix for a circuit containing multiple gates. Also checks that non-integer wires work"""
     wires = ["a", "b", "c"]
 
     def testcircuit():
@@ -66,7 +68,7 @@ def test_get_unitary_matrix_multiple_ops():
 
 
 def test_get_unitary_matrix_more_ops():
-    # Same circuit as test_single_qubit_fusion_multiple_qubits() in test_single_qubit_fusion.py
+    "Test some more operators. Same circuit as test_single_qubit_fusion_multiple_qubits() in test_single_qubit_fusion.py"
     wires = ["a", "b"]
 
     def testcircuit():
@@ -98,9 +100,9 @@ def test_get_unitary_matrix_more_ops():
     assert np.allclose(matrix, expected_matrix)
 
 
-# Test CNOT: 2-qubit gate with different target wires, some non-adjacent
 @pytest.mark.parametrize("target_wire", [0, 2, 3, 4])
 def test_get_unitary_matrix_CNOT(target_wire):
+    """Test CNOT: 2-qubit gate with different target wires, some non-adjacent."""
     wires = [0, 1, 2, 3, 4]
 
     def testcircuit():
@@ -109,7 +111,7 @@ def test_get_unitary_matrix_CNOT(target_wire):
     get_matrix = get_unitary_matrix(testcircuit, wires)
     matrix = get_matrix()
 
-    # test applying to state
+    # test the matrix operation on a state
     state0 = [1, 0]
     state1 = [0, 1]
     teststate = reduce(np.kron, [state1, state1, state1, state1, state1])
@@ -128,9 +130,8 @@ def test_get_unitary_matrix_CNOT(target_wire):
     assert np.allclose(obtained_state, expected_state)
 
 
-# TEST CRX with non-adjacent wire
 def test_get_unitary_matrix_CRX():
-
+    """Test controlled rotation with non-adjacent control- and target wires"""
     testangle = np.pi / 4
 
     wires = [0, 1, 2]
@@ -160,9 +161,8 @@ def test_get_unitary_matrix_CRX():
     assert np.allclose(obtained_state0, expected_state0)
 
 
-# Test Toffoli
 def test_get_unitary_matrix_Toffoli():
-
+    """Check the Toffoli matrix by its action on states"""
     wires = [0, "a", 2, "c", 4]
 
     def testcircuit():
@@ -190,7 +190,7 @@ def test_get_unitary_matrix_Toffoli():
 
 # Test MultiControlledX
 def test_get_unitary_matrix_MultiControlledX():
-
+    """Test with many control wires"""
     wires = [0, 1, 2, 3, 4, 5]
 
     def testcircuit():
