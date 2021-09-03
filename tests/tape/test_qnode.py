@@ -573,7 +573,8 @@ class TestValidation:
         # No differentiation required. No error raised.
         grad()
 
-    def test_unrecognized_keyword_arguments_validation(self):
+    @pytest.mark.parametrize("par", ["QNode", "decorator"])
+    def test_unrecognized_keyword_arguments_validation(self, par):
         """Tests that a UserWarning is raised when unrecognized keyword arguments are provided."""
 
         # use two unrecognized methods, to confirm that multiple warnings are raised
@@ -592,23 +593,17 @@ class TestValidation:
 
         dev = qml.device("default.qubit", wires=1, shots=1)
 
-        # test with QNode
+        # test with QNode (if par is QNode) or QNode decorator (if par is decorator)
         with pytest.warns(UserWarning) as warning_list:
-            QNode(dummyfunc, dev, test_method_one=1, test_method_two=2)
+            if par == "QNode":
+                QNode(dummyfunc, dev, test_method_one=1, test_method_two=2)
+            elif par == "decorator":
+
+                @qml.qnode(dev, test_method_one=1, test_method_two=2)
+                def circ():
+                    return qml.expval(qml.PauliZ(0))
 
         warnings = {(warning.category, warning.message.args[0]) for warning in warning_list}
-        assert warnings == expected_warnings
-
-        # test with QNode decorator
-        with pytest.warns(UserWarning) as decorator_warning_list:
-
-            @qml.qnode(dev, test_method_one=1, test_method_two=2)
-            def circ():
-                return qml.expval(qml.PauliZ(0))
-
-        warnings = {
-            (warning.category, warning.message.args[0]) for warning in decorator_warning_list
-        }
         assert warnings == expected_warnings
 
 
