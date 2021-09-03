@@ -15,7 +15,7 @@
 This module contains a helper function to sort operations into layers.
 """
 
-def _default_wire_order(ops):
+def _default_wire_map(ops):
     """This helper function may be moved elsewhere as integration of circuit
     drawing component progresses.
 
@@ -26,34 +26,70 @@ def _default_wire_order(ops):
         dict: map from wires to sequential positive integers
     """
 
-    wire_order  = dict()
+    wire_map  = dict()
     highest_number=0
     for op in ops:
         for wire in op.wires:
-            if wire not in wire_order.keys():
-                wire_order[wire] = highest_number
+            if wire not in wire_map.keys():
+                wire_map[wire] = highest_number
                 highest_number+=1
-    return wire_order
+    return wire_map
 
-def drawable_layers(ops, wire_order=None):
+def drawable_grid(ops, wire_map=None):
+    """Determine non-overlapping yet dense placement of operations for drawing.  Returns
+    structure compatible with ``qml.circuit_drawer.Grid``. 
+    
+    Args:
+        ops Iterable[~.Operator]: a list of operations
+
+    Keyword Args:
+        wire_map=None dict: dictionary mapping wire labels to sucessive positive integers.
+
+    Returns:
+        List[List[~.Operator]] : layers compatible with grid objects
+
+    """
+
+    if len(ops) == 0:
+        return [ [] for _ in range(len(wire_map))]
+
+    if wire_map is None:
+        wire_map = _default_wire_map(ops)
+    layers = drawable_layers(ops)
+
+    n_wires = len(wire_map)
+    n_layers = len(layers)
+
+    grid = [[None for _ in range(n_layers)] for _ in range(n_wires)]
+
+    for layer, ops in enumerate(layers):
+        for op in ops:
+            for wire in op.wires:
+                grid[wire_map[wire]][layer] = op
+    return grid
+
+def drawable_layers(ops, wire_map=None):
     """Determine non-overlapping yet dense placement of operations for drawing.
 
     Args:
-        ops Iterable[Operation]: a list of operations
+        ops Iterable[~.Operator]: a list of operations
+
+    Keyword Args:
+        wire_map=None dict: dictionary mapping wire labels to sucessive positive integers.
 
     Returns:
-        list[list[Operation]] : Each index is a set of operations 
+        list[set[~.Operator]] : Each index is a set of operations 
             for the corresponding layer
     """
 
-    if wire_order is None:
-        wire_order = _default_wire_order(ops)
+    if wire_map is None:
+        wire_map = _default_wire_map(ops)
 
     # initialize
     max_layer = 0
 
     occupied_wires_per_layer = [set()]
-    ops_per_layer = [[]]
+    ops_per_layer = [set()]
         
     def recursive_find_layer(checking_layer, op_occupied_wires):
         # function uses outer-scope `occupied_wires_per_layer`
@@ -69,7 +105,7 @@ def drawable_layers(ops, wire_order=None):
     
     # loop over operations
     for op in ops:
-        mapped_wires = {wire_order[wire] for wire in op.wires}
+        mapped_wires = {wire_map[wire] for wire in op.wires}
         op_occupied_wires = set( range(min(mapped_wires), max(mapped_wires)+1))
 
         op_layer = recursive_find_layer(max_layer, op_occupied_wires)
@@ -78,10 +114,10 @@ def drawable_layers(ops, wire_order=None):
         if op_layer > max_layer:
             max_layer += 1
             occupied_wires_per_layer.append(set())
-            ops_per_layer.append([])
+            ops_per_layer.append(set())
 
         # Add to op_layer
-        ops_per_layer[op_layer].append(op)
+        ops_per_layer[op_layer].add(op)
         occupied_wires_per_layer[op_layer].update(op_occupied_wires)
         
     return ops_per_layer
