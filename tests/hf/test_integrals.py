@@ -18,8 +18,8 @@ Unit tests for functions needed to computing integrals over basis functions.
 import pytest
 import numpy as np
 from pennylane import numpy as pnp
-from pennylane.hf.integrals import generate_params, expansion, gaussian_overlap
-
+from pennylane.hf.integrals import generate_params, expansion, gaussian_overlap, generate_overlap
+from pennylane.hf.molecule import Molecule
 
 @pytest.mark.parametrize(
     ("alpha", "coeff", "r"),
@@ -121,5 +121,25 @@ def test_expansion(la, lb, ra, rb, alpha, beta, t, c):
     ],
 )
 def test_gaussian_overlap(la, lb, ra, rb, alpha, beta, o):
-    r"""Test that expansion function returns correct value."""
+    r"""Test that gaussian overlap function returns a correct value."""
     assert np.allclose(gaussian_overlap(la, lb, ra, rb, alpha, beta), o)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "params", "o_ref"),
+    [
+        (
+            ["H", "H"],
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
+            pnp.array([1.0]),
+        ),
+    ],
+)
+def test_generate_overlap(symbols, geometry, params, o_ref):
+    r"""Test that generate overlap function returns a correct value."""
+    mol = Molecule(symbols, geometry)
+    basis_a = mol.basis_set[0]
+    basis_b = mol.basis_set[0]
+    o = generate_overlap(basis_a, basis_b)(*params)
+    assert np.allclose(o, o_ref)
