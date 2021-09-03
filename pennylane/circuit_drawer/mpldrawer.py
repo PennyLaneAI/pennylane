@@ -34,6 +34,7 @@ def _to_tuple(a):
         return tuple(a)
     return (a,)
 
+
 # pylint: disable=too-many-instance-attributes
 class MPLDrawer:
     r"""Allows easy creation of graphics representing circuits with matplotlib
