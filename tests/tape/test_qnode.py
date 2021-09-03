@@ -323,12 +323,217 @@ class TestValidation:
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        qn = qml.QNode(func, dev)
+        qn = qml.QNode(func, dev, diff_method="finite-diff")
 
         assert (
             qn.__repr__()
-            == "<QNode: wires=1, device='default.qubit.autograd', interface='autograd', diff_method='best'>"
+            == "<QNode: wires=1, device='default.qubit', interface='autograd', diff_method='finite-diff'>"
         )
+        assert qn.diff_method_change == False
+
+    def test_qnode_best_diff_method_backprop(self):
+        """Test that selected "best" diff_method is correctly set to 'backprop'."""
+        dev = qml.device("default.qubit", wires=1)
+
+        def func(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        qn = qml.QNode(func, dev)
+
+        assert qn.diff_method == "backprop"
+        assert qn.diff_method_change
+
+    def test_qnode_best_diff_method_parameter_shift(self):
+        """Test that selected "best" diff_method is correctly set to 'parameter-shift'."""
+        dev = qml.device("default.mixed", wires=1)
+
+        def func(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        qn = qml.QNode(func, dev)
+
+        assert qn.diff_method == "parameter-shift"
+        assert qn.diff_method_change
+
+    def test_qnode_best_diff_method_device(self, monkeypatch):
+        """Test that selected "best" diff_method is correctly set to 'device'."""
+        dev = qml.device("default.qubit", wires=1)
+
+        def func(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        # Force the "best" method to be "device"
+        monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
+        monkeypatch.setitem(dev._capabilities, "provides_jacobian", True)
+        qn = qml.QNode(func, dev)
+        assert qn.diff_method == "device"
+        assert qn.diff_method_change
+
+    def test_qnode_best_diff_method_finite_diff(self, monkeypatch):
+        """Test that selected "best" diff_method is correctly set to 'finite-diff'."""
+        dev = qml.device("default.qubit", wires=1)
+
+        def func(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        def capabilities(cls):
+            capabilities = cls._capabilities
+            capabilities.update(model="None")
+            return capabilities
+
+        # Force the "best" method to be "finite-diff"
+        monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
+        monkeypatch.setattr(qml.devices.DefaultQubit, "capabilities", capabilities)
+        qn = qml.QNode(func, dev)
+        assert qn.diff_method == "finite-diff"
+        assert qn.diff_method_change
+
+    def test_qnode_best_diff_method_finite_fallback(self):
+        """Test that selected "best" diff_method is correctly set to 'finite-diff'
+        in cases where other methods are not available."""
+
+        # Custom operation which has grad_method="finite_diff"
+        class MyRX(qml.operation.Operation):
+            num_params = 1
+            num_wires = 1
+            par_domain = "R"
+            is_composable_rotation = True
+            basis = "X"
+            grad_method = "F"
+
+            @classmethod
+            def _matrix(cls, *params):
+                return qml.RX._matrix(*params)
+
+        dev = qml.device("default.mixed", wires=3, shots=None)
+        dev.operations.add("MyRX")
+
+        def circuit(x):
+            MyRX(x, wires=1)
+            return qml.expval(qml.PauliZ(1))
+
+        qnode = qml.QNode(circuit, dev, diff_method="best")
+
+        # Before execution correctly show 'parameter-shift'
+        assert qnode.diff_method == "parameter-shift"
+
+        par = qml.numpy.array(0.3)
+        qml.grad(qnode)(par)
+
+        # After execution correctly show 'finite-diff'
+        assert qnode.diff_method == "finite-diff"
+
+    @pytest.mark.parametrize(
+        "method",
+        [
+            "best",
+            "parameter-shift",
+            "finite-diff",
+            "reversible",
+            "adjoint",
+            "backprop",
+        ],
+    )
+    def test_to_tf(self, method, mocker):
+        """Test if interface change is working"""
+        tf = pytest.importorskip("tensorflow")
+        dev = qml.device("default.qubit", wires=1)
+
+        def func(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        # Test if interface change works with different diff_methods
+        qn = qml.QNode(func, dev, interface="autograd", diff_method=method)
+        spy = mocker.spy(qn, "_get_best_diff_method")
+        qn.to_tf()
+        if method == "best":
+            spy.assert_called_once()
+
+    @pytest.mark.parametrize(
+        "method",
+        [
+            "best",
+            "parameter-shift",
+            "finite-diff",
+            "reversible",
+            "adjoint",
+            "backprop",
+        ],
+    )
+    def test_to_autograd(self, method, mocker):
+        """Test if interface change is working"""
+        dev = qml.device("default.qubit", wires=1)
+        tf = pytest.importorskip("tensorflow")
+
+        def func(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        # Test if interface change works with different diff_methods
+        qn = qml.QNode(func, dev, interface="tf", diff_method=method)
+        spy = mocker.spy(qn, "_get_best_diff_method")
+        qn.to_autograd()
+        if method == "best":
+            spy.assert_called_once()
+
+    @pytest.mark.parametrize(
+        "method",
+        [
+            "best",
+            "parameter-shift",
+            "finite-diff",
+            "reversible",
+            "adjoint",
+            "backprop",
+        ],
+    )
+    def test_to_torch(self, method, mocker):
+        """Test if interface change is working"""
+        dev = qml.device("default.qubit", wires=1)
+        torch = pytest.importorskip("torch")
+
+        def func(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        # Test if interface change works with different diff_methods
+        qn = qml.QNode(func, dev, interface="autograd", diff_method=method)
+        spy = mocker.spy(qn, "_get_best_diff_method")
+        qn.to_torch()
+        if method == "best":
+            spy.assert_called_once()
+
+    @pytest.mark.parametrize(
+        "method",
+        [
+            "best",
+            "parameter-shift",
+            "finite-diff",
+            "reversible",
+            "adjoint",
+            "backprop",
+        ],
+    )
+    def test_to_jax(self, method, mocker):
+        """Test if interface change is working"""
+        dev = qml.device("default.qubit", wires=1)
+        jax = pytest.importorskip("jax")
+
+        def func(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        # Test if interface change works with different diff_methods
+        qn = qml.QNode(func, dev, interface="autograd", diff_method=method)
+        spy = mocker.spy(qn, "_get_best_diff_method")
+        qn.to_jax()
+        if method == "best":
+            spy.assert_called_once()
 
     @pytest.mark.parametrize("par", [None, 1, 1.1, np.array(1.2)])
     def test_diff_method_none(self, par):
