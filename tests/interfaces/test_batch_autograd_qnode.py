@@ -669,9 +669,8 @@ class TestQubitIntegration:
 
     def test_sampling(self, dev_name, diff_method, mode):
         """Test sampling works as expected"""
-
-        if diff_method in ("backprop", "adjoint"):
-            pytest.skip("Sampling not possible with backprop differentiation.")
+        if mode == "forward":
+            pytest.skip("Sampling not possible with forward mode differentiation.")
 
         dev = qml.device(dev_name, wires=2, shots=10)
 
