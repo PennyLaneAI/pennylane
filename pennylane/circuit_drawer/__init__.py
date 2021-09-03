@@ -19,8 +19,6 @@ as circuit diagrams.
 .. autosummary::
     :toctree: api
 
-    circuit_drawer
-    charsets
     MPLDrawer
 """
 from .circuit_drawer import CircuitDrawer
