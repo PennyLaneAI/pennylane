@@ -13,13 +13,6 @@
 # limitations under the License.
 """
 This module contains a helper function to sort operations into layers.
-
-Currently, circuit drawing performs:
-* construction of circuit graph
-* construction of greedy layers
-* expansion of greedy layers to prevent collisions
-
-This function aims to replace those three steps with a single function.
 """
 
 def _default_wire_order(ops):
@@ -46,7 +39,7 @@ def drawable_layers(ops, wire_order=None):
     """Determine non-overlapping yet dense placement of operations for drawing.
 
     Args:
-        ops Iterable[Operation]
+        ops Iterable[Operation]: a list of operations
 
     Returns:
         list[list[Operation]] : Each index is a set of operations 
@@ -84,8 +77,8 @@ def drawable_layers(ops, wire_order=None):
         # see if need to add new layer
         if op_layer > max_layer:
             max_layer += 1
-            occupied_wires_per_layer.append([])
-            ops_per_layer.append({})
+            occupied_wires_per_layer.append(set())
+            ops_per_layer.append([])
 
         # Add to op_layer
         ops_per_layer[op_layer].append(op)
