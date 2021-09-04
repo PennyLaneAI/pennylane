@@ -685,7 +685,7 @@ class TestOptimizer:
         with pytest.warns(
             UserWarning,
             match="'update_stepsize' is deprecated. Stepsize value can be updated using "
-                  "the 'stepsize' attribute.",
+            "the 'stepsize' attribute.",
         ):
             opt.update_stepsize(eta)
 
@@ -699,8 +699,7 @@ class TestOptimizer:
         assert opt._stepsize == eta
 
         with pytest.warns(
-            UserWarning,
-            match="'_stepsize' is deprecated. Please use 'stepsize' instead.",
+            UserWarning, match="'_stepsize' is deprecated. Please use 'stepsize' instead."
         ):
             opt._stepsize
 
@@ -709,8 +708,7 @@ class TestOptimizer:
         assert opt.stepsize == eta2
 
         with pytest.warns(
-            UserWarning,
-            match="'_stepsize' is deprecated. Please use 'stepsize' instead.",
+            UserWarning, match="'_stepsize' is deprecated. Please use 'stepsize' instead."
         ):
             opt._stepsize = eta2
 
@@ -744,18 +742,7 @@ def opt(opt_name):
         return RotosolveOptimizer()
 
 
-@pytest.mark.parametrize(
-    "opt_name",
-    [
-        "gd",
-        "moment",
-        "nest",
-        "ada",
-        "rms",
-        "adam",
-        "roto",
-    ],
-)
+@pytest.mark.parametrize("opt_name", ["gd", "moment", "nest", "ada", "rms", "adam", "roto"])
 class TestOverOpts:
     """Tests keywords, multiple arguements, and non-training arguments in relevant optimizers"""
 
