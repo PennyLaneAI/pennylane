@@ -20,10 +20,10 @@ from pennylane.wires import Wires
 import pennylane as qml
 
 
-def get_unitary_matrix(fn, wire_order):
+def get_unitary_matrix(fn, wire_order=None):
     """Given a QNode, tape, or quantum function along with a list of the wire order, construct the matrix representation"""
-    n_wires = len(wire_order)
-    wire_order = Wires(wire_order)
+
+    wires = wire_order
 
     @wraps(fn)
     def wrapper(*args, **kwargs):
@@ -32,18 +32,31 @@ def get_unitary_matrix(fn, wire_order):
             # user passed a QNode, get the tape
             fn.construct(args, kwargs)
             tape = fn.qtape
+            if wires is None:  # if no wire ordering is specified, take wire list from tape
+                wire_order = tape.wires
+            else:
+                wire_order = Wires(wires)
 
         elif isinstance(fn, qml.tape.QuantumTape):
             # user passed a tape
             tape = fn
+            if wires is None:
+                wire_order = tape.wires
+            else:
+                wire_order = Wires(wires)
 
         elif callable(fn):
             # user passed something that is callable but not a tape or qnode.
             # we'll assume it is a qfunc!
             tape = qml.transforms.make_tape(fn)(*args, **kwargs)
+            if wires is None:
+                raise ValueError("Wire ordering list not specified")
+            wire_order = Wires(wires)
 
-        # else:
-        # raise some exception
+        else:
+            raise ValueError("Input must be a tape, QNode, or quantum function")
+
+        n_wires = len(wire_order)
 
         # initialize the unitary matrix
         unitary_matrix = np.eye(2 ** n_wires)
