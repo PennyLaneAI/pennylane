@@ -2042,7 +2042,8 @@ class TestDoubleExcitation:
         for i in reversed(decomp):
             # Single-qubit gate
             if len(i.wires.tolist()) == 1:
-                mat = single_mat_four_qubits(i.matrix, i.wires.tolist()[0])
+                get_matrix = get_unitary_matrix(lambda: qml.apply(i), wires)
+                mat = get_matrix()
                 mats.append(mat)
 
             # Two-qubit CNOT
