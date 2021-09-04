@@ -49,7 +49,7 @@ class GradientDescentOptimizer:
         )
 
         return self.stepsize
-    
+
     @_stepsize.setter
     def _stepsize(self, stepsize):
         warnings.warn(
