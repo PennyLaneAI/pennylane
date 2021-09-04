@@ -669,15 +669,50 @@ class TestOptimizer:
         assert res_new2 == pytest.approx(cost_fn(x_start, generators, shift=1.0), abs=tol)
 
     def test_update_stepsize(self):
-        """Tests that the stepsize correctly updates"""
+        """
+        Tests whether the stepsize value is updated correctly and whether a ``UserWarning`` 
+        is raised when the ``update_stepsize`` method is used.
+        """
 
+        eta = 0.5
+        opt = AdamOptimizer(eta)
+        assert opt.stepsize == eta
+
+        eta2 = 0.1
+        opt.update_stepsize(eta2)
+        assert opt.stepsize == eta2
+
+        with pytest.warns(
+            UserWarning,
+            match="'update_stepsize' is deprecated. Stepsize value can be updated using "
+                  "the 'stepsize' attribute.",
+        ):
+            opt.update_stepsize(eta)
+
+    def test_private_stepsize(self):
+        """
+        Tests whether it is possible to get and set ``stepsize`` using ``_stepsize`` 
+        and whether a ``UserWarning`` is raised while doing so.
+        """
         eta = 0.5
         opt = AdamOptimizer(eta)
         assert opt._stepsize == eta
 
+        with pytest.warns(
+            UserWarning,
+            match="'_stepsize' is deprecated. Please use 'stepsize' instead.",
+        ):
+            opt._stepsize
+
         eta2 = 0.1
-        opt.update_stepsize(eta2)
-        assert opt._stepsize == eta2
+        opt._stepsize = eta2
+        assert opt.stepsize == eta2
+
+        with pytest.warns(
+            UserWarning,
+            match="'_stepsize' is deprecated. Please use 'stepsize' instead.",
+        ):
+            opt._stepsize = eta2
 
 
 def reset(opt):
