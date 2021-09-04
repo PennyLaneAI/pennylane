@@ -450,10 +450,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             # iteration of the optimizer
             s = np.ceil(
                 (2 * self.lipschitz * self.stepsize * xi)
-                / (
-                    (2 - self.lipschitz * self.stepsize)
-                    * (chi ** 2 + self.b * (self.mu ** self.k))
-                )
+                / ((2 - self.lipschitz * self.stepsize) * (chi ** 2 + self.b * (self.mu ** self.k)))
             )
 
             # apply an upper and lower bound on the new shot distributions,
