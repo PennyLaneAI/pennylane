@@ -167,6 +167,20 @@ def test_gaussian_overlap(la, lb, ra, rb, alpha, beta, o):
     [
         (
             ["H", "H"],
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], requires_grad=False),
+            pnp.array(
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                requires_grad=False,
+            ),
+            pnp.array(
+                [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
+                requires_grad=True,
+            ),
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], requires_grad=True),
+            pnp.array([0.0]),
+        ),
+        (
+            ["H", "H"],
             pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], requires_grad=False),
             pnp.array(
                 [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
@@ -199,7 +213,7 @@ def test_generate_overlap(symbols, geometry, alpha, coef, r, o_ref):
     r"""Test that generate_overlap function returns a correct value for the overlap integral."""
     mol = Molecule(symbols, geometry)
     basis_a = mol.basis_set[0]
-    basis_b = mol.basis_set[0]
+    basis_b = mol.basis_set[1]
     args = [p for p in [alpha, coef, r] if p.requires_grad]
 
     o = generate_overlap(basis_a, basis_b)(*args)
