@@ -163,7 +163,7 @@ def test_gaussian_overlap(la, lb, ra, rb, alpha, beta, o):
 
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "alpha", "coeff", "r", "o_ref"),
+    ("symbols", "geometry", "alpha", "coef", "r", "o_ref"),
     [
         (
             ["H", "H"],
