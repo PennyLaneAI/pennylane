@@ -288,7 +288,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         """
         self.lipschitz = np.sum(np.abs(coeffs))
 
-        if self._stepsize > 2 / self.lipschitz:
+        if self.stepsize > 2 / self.lipschitz:
             raise ValueError(f"The learning rate must be less than {2 / self.lipschitz}")
 
     def _single_shot_expval_gradients(self, expval_cost, args, kwargs):
@@ -449,9 +449,9 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             # determine the new optimum shots distribution for the next
             # iteration of the optimizer
             s = np.ceil(
-                (2 * self.lipschitz * self._stepsize * xi)
+                (2 * self.lipschitz * self.stepsize * xi)
                 / (
-                    (2 - self.lipschitz * self._stepsize)
+                    (2 - self.lipschitz * self.stepsize)
                     * (chi ** 2 + self.b * (self.mu ** self.k))
                 )
             )
@@ -460,8 +460,8 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             # to avoid the number of shots reducing below min(2, min_shots),
             # or growing too significantly.
             gamma = (
-                (self._stepsize - self.lipschitz * self._stepsize ** 2 / 2) * chi ** 2
-                - xi * self.lipschitz * self._stepsize ** 2 / (2 * s)
+                (self.stepsize - self.lipschitz * self.stepsize ** 2 / 2) * chi ** 2
+                - xi * self.lipschitz * self.stepsize ** 2 / (2 * s)
             ) / s
 
             argmax_gamma = np.unravel_index(np.argmax(gamma), gamma.shape)
