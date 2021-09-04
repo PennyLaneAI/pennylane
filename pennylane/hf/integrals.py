@@ -112,13 +112,12 @@ def generate_params(params, args):
     """
     basis_params = []
     c = 0
-    for i, p in enumerate(params):
+    for p in params:
         if p.requires_grad:
             basis_params.append(args[c])
             c += 1
         else:
             basis_params.append(p)
-    print(basis_params)
     return tuple(basis_params)
 
 
@@ -200,8 +199,12 @@ def generate_overlap(basis_a, basis_b):
 
     def overlap_integral(*args):
         r"""Normalize and compute the overlap integral for two contracted Gaussian functions."""
-        ra, ca, alpha = generate_params(basis_a.params, args[0])
-        rb, cb, beta = generate_params(basis_b.params, args[1])
+
+        args_a = [i[0] for i in args]
+        args_b = [i[1] for i in args]
+
+        alpha, ca, ra = generate_params(basis_a.params, args_a)
+        beta, cb, rb = generate_params(basis_b.params, args_b)
 
         ca = ca * primitive_norm(basis_a.l, alpha)
         cb = cb * primitive_norm(basis_b.l, beta)

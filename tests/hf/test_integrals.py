@@ -17,9 +17,14 @@ Unit tests for functions needed to computing integrals over basis functions.
 import numpy as np
 import pytest
 from pennylane import numpy as pnp
-from pennylane.hf.integrals import (contracted_norm, expansion,
-                                    gaussian_overlap, generate_overlap,
-                                    generate_params, primitive_norm)
+from pennylane.hf.integrals import (
+    contracted_norm,
+    expansion,
+    gaussian_overlap,
+    generate_overlap,
+    generate_params,
+    primitive_norm,
+)
 from pennylane.hf.molecule import Molecule
 
 
@@ -158,20 +163,44 @@ def test_gaussian_overlap(la, lb, ra, rb, alpha, beta, o):
 
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "params", "o_ref"),
+    ("symbols", "geometry", "alpha", "coeff", "r", "o_ref"),
     [
         (
             ["H", "H"],
-            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
-            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], requires_grad=False),
+            pnp.array(
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                requires_grad=False,
+            ),
+            pnp.array(
+                [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
+                requires_grad=False,
+            ),
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], requires_grad=True),
+            pnp.array([1.0]),
+        ),
+        (
+            ["H", "H"],
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], requires_grad=True),
+            pnp.array(
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                requires_grad=True,
+            ),
+            pnp.array(
+                [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
+                requires_grad=True,
+            ),
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], requires_grad=True),
             pnp.array([1.0]),
         ),
     ],
 )
-def test_generate_overlap(symbols, geometry, params, o_ref):
-    r"""Test that generate overlap function returns a correct value."""
+def test_generate_overlap(symbols, geometry, alpha, coef, r, o_ref):
+    r"""Test that generate_overlap function returns a correct value for the overlap integral."""
     mol = Molecule(symbols, geometry)
     basis_a = mol.basis_set[0]
     basis_b = mol.basis_set[0]
-    o = generate_overlap(basis_a, basis_b)(*params)
+    args = [p for p in [alpha, coef, r] if p.requires_grad]
+
+    o = generate_overlap(basis_a, basis_b)(*args)
     assert np.allclose(o, o_ref)
