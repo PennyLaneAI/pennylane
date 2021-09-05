@@ -19,16 +19,17 @@ import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
 
+
 class QuantumNumberPreservingU2(Operation):
-    r""" Implements a local, expressive, and quantum-number-preserving ansatz using VQE circuit fabrics 
+    r"""Implements a local, expressive, and quantum-number-preserving ansatz using VQE circuit fabrics
     proposed by Anselmetti et al. in arXiv:2104.05692.
-    
-    This template prepares the :math:`2M` qubits trial state, where `M` is the number of spatial orbitals. 
-    It uses 4-local-nearest-neighbor-tessellation of alternating even and off spatial-orbitals-pair 2-parameter, 
-    4-qubit :math:`\hat{Q}(\varphi, \theta)` gates. Each :math:`\hat{Q}` gate consists of a 1-parameter, 4-qubit spatial rotation 
-    gate :math:`QuantumNumberPreserving_{OR}(\varphi)`, and  a 1-parameter, 4-qubit diagonal pair exchange gate :math:`DoubleExcitation(\theta)` 
+
+    This template prepares the :math:`2M` qubits trial state, where `M` is the number of spatial orbitals.
+    It uses 4-local-nearest-neighbor-tessellation of alternating even and off spatial-orbitals-pair 2-parameter,
+    4-qubit :math:`\hat{Q}(\varphi, \theta)` gates. Each :math:`\hat{Q}` gate consists of a 1-parameter, 4-qubit spatial rotation
+    gate :math:`QuantumNumberPreserving_{OR}(\varphi)`, and  a 1-parameter, 4-qubit diagonal pair exchange gate :math:`DoubleExcitation(\theta)`
     gate . In the :math:`\hat{Q}` gate we also allow inclusion of an optional constant :math:`\hat{\Pi}` gate,
-    with choices :math:`\hat{\Pi} \in \{\hat{I}, QuantumNumberPreserving_{OR}(\pi)\}`. 
+    with choices :math:`\hat{\Pi} \in \{\hat{I}, QuantumNumberPreserving_{OR}(\pi)\}`.
 
     The circuit implementing the gate fabric layer for `M = 4` is shown below:
 
@@ -40,9 +41,9 @@ class QuantumNumberPreservingU2(Operation):
         :target: javascript:void(0);
 
     |
-    
+
     The 2-parameter, 4-qubit :math:`\hat{Q}` gate is decomposed as follows:
-    
+
     |
 
     .. figure:: ../../_static/templates/layers/quantum_number_preserving_decompose.png
@@ -51,7 +52,7 @@ class QuantumNumberPreservingU2(Operation):
         :target: javascript:void(0);
 
     |
-    
+
     Args:
         weights (tensor_like): Array of weights of shape ``(L, D, 2)``.
             ``L`` is the number of gate fabric layers and :math:`D=M-1`
@@ -115,20 +116,34 @@ class QuantumNumberPreservingU2(Operation):
     num_params = 1
     num_wires = AnyWires
     par_domain = "A"
-    
-    def __init__(self, weights, wires=None, init_state=None, pi_gate_include=False, do_queue=True, id=None):
-        
+
+    def __init__(
+        self, weights, wires=None, init_state=None, pi_gate_include=False, do_queue=True, id=None
+    ):
+
         if len(wires) < 4:
-            raise ValueError("This template requires the number of qubits to be greater than four; got {}".format(len(wires)))
+            raise ValueError(
+                "This template requires the number of qubits to be greater than four; got {}".format(
+                    len(wires)
+                )
+            )
         elif len(wires) % 2:
-            raise ValueError("This template requires the number of qubits to be multiple of 2; got {}".format(len(wires)))
-            
-        self.M = len(wires)//2
-        
-        self.qwires = [wires[i:i+4] for i in range(0, len(wires), 4) if len(wires[i:i+4]) == 4]
+            raise ValueError(
+                "This template requires the number of qubits to be multiple of 2; got {}".format(
+                    len(wires)
+                )
+            )
+
+        self.M = len(wires) // 2
+
+        self.qwires = [
+            wires[i : i + 4] for i in range(0, len(wires), 4) if len(wires[i : i + 4]) == 4
+        ]
         if self.M > 2:
-            self.qwires += [wires[i:i+4] for i in range(2, len(wires), 4) if len(wires[i:i+4]) == 4]
-                
+            self.qwires += [
+                wires[i : i + 4] for i in range(2, len(wires), 4) if len(wires[i : i + 4]) == 4
+            ]
+
         shape = qml.math.shape(weights)
 
         if len(shape) != 3:
@@ -143,38 +158,36 @@ class QuantumNumberPreservingU2(Operation):
             raise ValueError(
                 f"Weights tensor must have third dimension of length 2; got {shape[2]}"
             )
-        
+
         self.n_layers = shape[0]
         # we can extract the numpy representation here
         # since init_state can never be differentiable
         if init_state is None:
-            raise ValueError(
-                f"Inital state should be provided; got {init_state}"
-            )
+            raise ValueError(f"Inital state should be provided; got {init_state}")
         self.init_state = qml.math.toarray(init_state)
-            
+
         self.pi_gate = pi_gate_include
-        
+
         super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
-    
+
     def expand(self):
-        
+
         with qml.tape.QuantumTape() as tape:
-            
+
             qml.templates.BasisEmbedding(self.init_state, wires=self.wires)
             weight = self.parameters[0]
-            
+
             for layer in range(self.n_layers):
                 for idx, wires in enumerate(self.qwires):
-                    
+
                     if self.pi_gate:
                         qml.QuantumNumberPreservingOR(np.pi, wires=wires)
-                        
+
                     qml.DoubleExcitation(weight[layer][idx][0], wires=wires)
                     qml.QuantumNumberPreservingOR(weight[layer][idx][1], wires=wires)
 
         return tape
-    
+
     @staticmethod
     def shape(n_layers, n_wires):
         r"""Returns the shape of the weight tensor required for this template.
@@ -188,8 +201,16 @@ class QuantumNumberPreservingU2(Operation):
         """
 
         if n_wires < 4:
-            raise ValueError("This template requires the number of qubits to be greater than four; got {}".format(n_wires))
+            raise ValueError(
+                "This template requires the number of qubits to be greater than four; got {}".format(
+                    n_wires
+                )
+            )
         elif n_wires % 2:
-            raise ValueError("This template requires the number of qubits to be multiple of 2; got {}".format(n_wires))
+            raise ValueError(
+                "This template requires the number of qubits to be multiple of 2; got {}".format(
+                    n_wires
+                )
+            )
 
-        return n_layers, n_wires//2 - 1, 2
+        return n_layers, n_wires // 2 - 1, 2

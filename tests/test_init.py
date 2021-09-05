@@ -514,7 +514,7 @@ class TestInit:
         n_wires = 4
 
         # check the shape
-        exp_shape = (n_layers, n_wires//2 - 1, 2)
+        exp_shape = (n_layers, n_wires // 2 - 1, 2)
         params = qml.init.quantum_number_preserving_u2_uniform(n_layers, n_wires)
         assert params.shape == exp_shape
 

@@ -457,7 +457,7 @@ PARAMETRIZED_OPERATIONS = [
     qml.DoubleExcitationPlus(0.123, wires=[0, 1, 2, 3]),
     qml.DoubleExcitationMinus(0.123, wires=[0, 1, 2, 3]),
     qml.QubitSum(wires=[0, 1, 2]),
-    qml.QuantumNumberPreservingOR(0.123, wires=[0,1,2,3])
+    qml.QuantumNumberPreservingOR(0.123, wires=[0, 1, 2, 3]),
 ]
 
 
@@ -3494,8 +3494,9 @@ class TestArithmetic:
         u = np.array([f(state) for state in np.eye(2 ** 3)]).T
         assert np.allclose(u, qml.QubitSum._matrix())
 
+
 class TestQuantumNumberPreservingOR:
-    """ Test QuantumNumberPreservingOR gate operation """
+    """Test QuantumNumberPreservingOR gate operation"""
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_quantum_number_preserving_or_matrix(self, phi):
@@ -3583,9 +3584,25 @@ class TestQuantumNumberPreservingOR:
 
         dev = qml.device("default.qubit.autograd", wires=4)
         state = np.array(
-             [0.+0.j,  0.+0.j,  0.+0.j, 0.50000002+0.j,  0.+0.j,  0.+0.j,
-             -0.5+0.j, 0.+0.j,  0.+0.j, -0.5+0.j, 0.+0.j,  0.+0.j,
-              0.49999998+0.j,  0.+0.j,  0.+0.j, 0.+0.j])
+            [
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.50000002 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                -0.5 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                -0.5 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.49999998 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+            ]
+        )
 
         @qml.qnode(dev)
         def circuit(phi):
@@ -3605,10 +3622,26 @@ class TestQuantumNumberPreservingOR:
 
         dev = qml.device("default.qubit.tf", wires=4)
         state = np.array(
-             [0.+0.j,  0.+0.j,  0.+0.j, 0.50000002+0.j,  0.+0.j,  0.+0.j,
-             -0.5+0.j, 0.+0.j,  0.+0.j, -0.5+0.j, 0.+0.j,  0.+0.j,
-              0.49999998+0.j,  0.+0.j,  0.+0.j, 0.+0.j])
-    
+            [
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.50000002 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                -0.5 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                -0.5 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.49999998 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+            ]
+        )
+
         @qml.qnode(dev)
         def circuit(phi):
             qml.PauliX(wires=0)
@@ -3627,9 +3660,25 @@ class TestQuantumNumberPreservingOR:
 
         dev = qml.device("default.qubit.jax", wires=4)
         state = np.array(
-             [0.+0.j,  0.+0.j,  0.+0.j, 0.50000002+0.j,  0.+0.j,  0.+0.j,
-             -0.5+0.j, 0.+0.j,  0.+0.j, -0.5+0.j, 0.+0.j,  0.+0.j,
-              0.49999998+0.j,  0.+0.j,  0.+0.j, 0.+0.j])
+            [
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.50000002 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                -0.5 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                -0.5 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.49999998 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+            ]
+        )
 
         @qml.qnode(dev)
         def circuit(phi):
@@ -3669,10 +3718,7 @@ class TestQuantumNumberPreservingOR:
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     @pytest.mark.parametrize(
         ("phi"),
-        [
-            (-0.1),
-            (0.1)
-        ],
+        [(-0.1), (0.1)],
     )
     def test_tf_grad(self, phi, diff_method):
         """Tests that gradients are computed correctly using the
@@ -3722,4 +3768,3 @@ class TestQuantumNumberPreservingOR:
             return qml.expval(qml.PauliZ(0))
 
         assert np.allclose(jax.grad(circuit)(phi), np.sin(phi))
-

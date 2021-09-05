@@ -1128,6 +1128,7 @@ def basic_entangler_layers_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=N
 
     return params
 
+
 def quantum_number_preserving_u2_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
     r"""Creates a parameter array for :func:`~.QuantumNumberPreservingU2`, drawn from a uniform
     distribution.
@@ -1152,7 +1153,7 @@ def quantum_number_preserving_u2_uniform(n_layers, n_wires, low=0, high=2 * pi, 
             "The number of qubits must be greater than four; got 'n_wires' = {}".format(n_wires)
         )
 
-    params = np.random.uniform(low=low, high=high, size=(n_layers, n_wires//2 - 1, 2))
+    params = np.random.uniform(low=low, high=high, size=(n_layers, n_wires // 2 - 1, 2))
     return params
 
 
@@ -1180,5 +1181,5 @@ def quantum_number_preserving_u2_normal(n_layers, n_wires, mean=0, std=0.1, seed
             "The number of qubits must be greater than four; got 'n_wires' = {}".format(n_wires)
         )
 
-    params = np.random.normal(loc=mean, scale=std, size=(n_layers, n_wires//2 - 1, 2))
+    params = np.random.normal(loc=mean, scale=std, size=(n_layers, n_wires // 2 - 1, 2))
     return params

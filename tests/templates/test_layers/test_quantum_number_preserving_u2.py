@@ -19,6 +19,7 @@ import numpy as np
 import pennylane as qml
 from pennylane import numpy as pnp
 
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
@@ -38,27 +39,33 @@ class TestDecomposition:
         and order, the wires each operation acts on and the correct use of parameters
         in the circuit."""
 
-        weights = np.random.normal(0, 2 * np.pi, (layers, qubits//2 - 1, 2))
+        weights = np.random.normal(0, 2 * np.pi, (layers, qubits // 2 - 1, 2))
 
         if not pi_gate_include:
             n_gates = 1 + (qubits - 2) * layers
             exp_gates = (
-                ([qml.DoubleExcitation] + [qml.QuantumNumberPreservingOR]) * (qubits//2 - 1)
-            ) * layers  
+                ([qml.DoubleExcitation] + [qml.QuantumNumberPreservingOR]) * (qubits // 2 - 1)
+            ) * layers
         else:
-            n_gates = 1 + 3 * (qubits//2 - 1) * layers
+            n_gates = 1 + 3 * (qubits // 2 - 1) * layers
             exp_gates = (
-                ([qml.QuantumNumberPreservingOR] + [qml.DoubleExcitation] + [qml.QuantumNumberPreservingOR]) * (qubits//2 - 1)
+                (
+                    [qml.QuantumNumberPreservingOR]
+                    + [qml.DoubleExcitation]
+                    + [qml.QuantumNumberPreservingOR]
+                )
+                * (qubits // 2 - 1)
             ) * layers
 
-        op = qml.templates.QuantumNumberPreservingU2(weights, wires=range(qubits), 
-                                                        init_state=init_state, pi_gate_include=pi_gate_include)
+        op = qml.templates.QuantumNumberPreservingU2(
+            weights, wires=range(qubits), init_state=init_state, pi_gate_include=pi_gate_include
+        )
         queue = op.expand().operations
         print(op, n_gates, queue)
-        
+
         # number of gates
         assert len(queue) == n_gates
-        
+
         # initialization
         assert isinstance(queue[0], qml.templates.BasisEmbedding)
 
@@ -70,17 +77,19 @@ class TestDecomposition:
         params = np.array(
             [queue[i].parameters for i in range(1, n_gates) if queue[i].parameters != []]
         )
-        
+
         if pi_gate_include:
-            weights = np.insert(weights, 0, [[np.pi]*(qubits//2 - 1)]*layers, axis=2)  
+            weights = np.insert(weights, 0, [[np.pi] * (qubits // 2 - 1)] * layers, axis=2)
 
         assert np.allclose(params.flatten(), weights.flatten())
 
         # gate wires
         wires = range(qubits)
-        qwires = [wires[i:i+4] for i in range(0, len(wires), 4) if len(wires[i:i+4]) == 4]
-        if len(wires)//2 > 2:
-            qwires += [wires[i:i+4] for i in range(2, len(wires), 4) if len(wires[i:i+4]) == 4]
+        qwires = [wires[i : i + 4] for i in range(0, len(wires), 4) if len(wires[i : i + 4]) == 4]
+        if len(wires) // 2 > 2:
+            qwires += [
+                wires[i : i + 4] for i in range(2, len(wires), 4) if len(wires[i : i + 4]) == 4
+            ]
 
         exp_wires = []
         for _ in range(layers):
@@ -89,80 +98,381 @@ class TestDecomposition:
                     exp_wires.append(list(wire))
                 exp_wires.append(list(wire))
                 exp_wires.append(list(wire))
-                
+
         res_wires = [queue[i].wires.tolist() for i in range(1, n_gates)]
         assert res_wires == exp_wires
 
     @pytest.mark.parametrize(
         ("init_state", "exp_state"),
         [
-            (np.array([0, 0, 0, 0]), 
-             np.array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j,
-                        0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])),
-            (np.array([0, 0, 0, 1]), np.array([0.        +0.j, 0.70710678+0.j, 0.        +0.j, 0.        +0.j,
-                                                0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.        +0.j,
-                                                0.        +0.j, 0.        +0.j, 0.        +0.j, 0.        +0.j,
-                                                0.        +0.j, 0.        +0.j, 0.        +0.j, 0.        +0.j])),
-            (np.array([0, 0, 1, 0]), np.array([0.        +0.j, 0.        +0.j, 0.70710678+0.j, 0.        +0.j,
-                                                0.        +0.j, 0.        +0.j, 0.        +0.j, 0.        +0.j,
-                                                0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.        +0.j,
-                                                0.        +0.j, 0.        +0.j, 0.        +0.j, 0.        +0.j])),
-            (np.array([0, 1, 0, 0]), np.array([ 0.        +0.j, -0.70710678+0.j,  0.        +0.j,
-                                                 0.        +0.j,  0.70710678+0.j,  0.        +0.j,
-                                                 0.        +0.j,  0.        +0.j,  0.        +0.j,
-                                                 0.        +0.j,  0.        +0.j,  0.        +0.j,
-                                                 0.        +0.j,  0.        +0.j,  0.        +0.j,
-                                                 0.        +0.j])),
-            (np.array([1, 0, 0, 0]), np.array([ 0.        +0.j,  0.        +0.j, -0.70710678+0.j,
-                                                 0.        +0.j,  0.        +0.j,  0.        +0.j,
-                                                 0.        +0.j,  0.        +0.j,  0.70710678+0.j,
-                                                 0.        +0.j,  0.        +0.j,  0.        +0.j,
-                                                 0.        +0.j,  0.        +0.j,  0.        +0.j,
-                                                 0.        +0.j])),
-            (np.array([0, 0, 1, 1]), np.array([0.        +0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j,
-                                                0.        +0.j, 0.        +0.j, 0.        +0.j, 0.        +0.j,
-                                                0.        +0.j, 0.        +0.j, 0.        +0.j, 0.        +0.j,
-                                                0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.        +0.j])),
-            (np.array([0, 1, 0, 1]), np.array([0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j,
-                                                0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])),
-            (np.array([1, 0, 0, 1]), np.array([ 0. +0.j,  0. +0.j,  0. +0.j, -0.5+0.j,  0. +0.j,  0. +0.j,
-                                                -0.5+0.j,  0. +0.j,  0. +0.j,  0.5+0.j,  0. +0.j,  0. +0.j,
-                                                 0.5+0.j,  0. +0.j,  0. +0.j,  0. +0.j])),
-            (np.array([1, 1, 0, 0]), np.array([ 0.        +0.j,  0.        +0.j,  0.        +0.j,
-                                                 0.        +0.j,  0.        +0.j,  0.        +0.j,
-                                                -0.70710678+0.j,  0.        +0.j,  0.        +0.j,
-                                                -0.70710678+0.j,  0.        +0.j,  0.        +0.j,
-                                                 0.        +0.j,  0.        +0.j,  0.        +0.j,
-                                                 0.        +0.j])),
-            (np.array([1, 0, 1, 0]), np.array([0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j,
-                                                0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])),
-            (np.array([0, 1, 1, 0]), np.array([ 0. +0.j,  0. +0.j,  0. +0.j, -0.5+0.j,  0. +0.j,  0. +0.j,
-                                                 0.5+0.j,  0. +0.j,  0. +0.j, -0.5+0.j,  0. +0.j,  0. +0.j,
-                                                 0.5+0.j,  0. +0.j,  0. +0.j,  0. +0.j])),
-            (np.array([1, 1, 1, 0]), np.array([ 0.        +0.j,  0.        +0.j,  0.        +0.j,
-                                                 0.        +0.j, -0.        +0.j,  0.        +0.j,
-                                                 0.        +0.j,  0.        +0.j,  0.        +0.j,
-                                                 0.        +0.j,  0.        +0.j, -0.70710678+0.j,
-                                                 0.        +0.j,  0.        +0.j,  0.70710678+0.j,
-                                                 0.        +0.j])),
-            (np.array([1, 0, 1, 1]), np.array([ 0.        +0.j, -0.        +0.j,  0.        +0.j,
-                                                 0.        +0.j,  0.        +0.j,  0.        +0.j,
-                                                 0.        +0.j,  0.        +0.j,  0.        +0.j,
-                                                 0.        +0.j,  0.        +0.j,  0.70710678+0.j,
-                                                 0.        +0.j,  0.        +0.j,  0.70710678+0.j,
-                                                 0.        +0.j])),
-            (np.array([0, 1, 1, 1]), np.array([0.        +0.j, 0.        +0.j, 0.        +0.j, 0.        +0.j,
-                                                0.        +0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j,
-                                                0.        +0.j, 0.        +0.j, 0.        +0.j, 0.        +0.j,
-                                                0.        +0.j, 0.70710678+0.j, 0.        +0.j, 0.        +0.j])),
-            (np.array([1, 1, 0, 1]), np.array([ 0.        +0.j,  0.        +0.j,  0.        +0.j,
-                                                 0.        +0.j,  0.        +0.j,  0.        +0.j,
-                                                 0.        +0.j, -0.70710678+0.j,  0.        +0.j,
-                                                 0.        +0.j,  0.        +0.j,  0.        +0.j,
-                                                 0.        +0.j,  0.70710678+0.j,  0.        +0.j,
-                                                 0.        +0.j])),
-            (np.array([1, 1, 1, 1]), np.array([0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j,
-                0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j]))
+            (
+                np.array([0, 0, 0, 0]),
+                np.array(
+                    [
+                        1.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                    ]
+                ),
+            ),
+            (
+                np.array([0, 0, 0, 1]),
+                np.array(
+                    [
+                        0.0 + 0.0j,
+                        0.70710678 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.70710678 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                    ]
+                ),
+            ),
+            (
+                np.array([0, 0, 1, 0]),
+                np.array(
+                    [
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.70710678 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.70710678 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                    ]
+                ),
+            ),
+            (
+                np.array([0, 1, 0, 0]),
+                np.array(
+                    [
+                        0.0 + 0.0j,
+                        -0.70710678 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.70710678 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                    ]
+                ),
+            ),
+            (
+                np.array([1, 0, 0, 0]),
+                np.array(
+                    [
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        -0.70710678 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.70710678 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                    ]
+                ),
+            ),
+            (
+                np.array([0, 0, 1, 1]),
+                np.array(
+                    [
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.70710678 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.70710678 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                    ]
+                ),
+            ),
+            (
+                np.array([0, 1, 0, 1]),
+                np.array(
+                    [
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        1.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                    ]
+                ),
+            ),
+            (
+                np.array([1, 0, 0, 1]),
+                np.array(
+                    [
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        -0.5 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        -0.5 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.5 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.5 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                    ]
+                ),
+            ),
+            (
+                np.array([1, 1, 0, 0]),
+                np.array(
+                    [
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        -0.70710678 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        -0.70710678 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                    ]
+                ),
+            ),
+            (
+                np.array([1, 0, 1, 0]),
+                np.array(
+                    [
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        1.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                    ]
+                ),
+            ),
+            (
+                np.array([0, 1, 1, 0]),
+                np.array(
+                    [
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        -0.5 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.5 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        -0.5 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.5 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                    ]
+                ),
+            ),
+            (
+                np.array([1, 1, 1, 0]),
+                np.array(
+                    [
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        -0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        -0.70710678 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.70710678 + 0.0j,
+                        0.0 + 0.0j,
+                    ]
+                ),
+            ),
+            (
+                np.array([1, 0, 1, 1]),
+                np.array(
+                    [
+                        0.0 + 0.0j,
+                        -0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.70710678 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.70710678 + 0.0j,
+                        0.0 + 0.0j,
+                    ]
+                ),
+            ),
+            (
+                np.array([0, 1, 1, 1]),
+                np.array(
+                    [
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.70710678 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.70710678 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                    ]
+                ),
+            ),
+            (
+                np.array([1, 1, 0, 1]),
+                np.array(
+                    [
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        -0.70710678 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.70710678 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                    ]
+                ),
+            ),
+            (
+                np.array([1, 1, 1, 1]),
+                np.array(
+                    [
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        1.0 + 0.0j,
+                    ]
+                ),
+            ),
         ],
     )
     def test_decomposition_q(self, init_state, exp_state, tol):
@@ -172,10 +482,11 @@ class TestDecomposition:
         N = 4
         wires = range(N)
 
-        weight = [[[np.pi/2, np.pi/2]]]
+        weight = [[[np.pi / 2, np.pi / 2]]]
 
         dev = qml.device("default.qubit", wires=N)
         print(init_state, exp_state)
+
         @qml.qnode(dev)
         def circuit(weight):
             qml.templates.layers.QuantumNumberPreservingU2(weight, wires, init_state=init_state)
@@ -210,6 +521,7 @@ class TestDecomposition:
 
         assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
 
+
 class TestInputs:
     """Test inputs and pre-processing."""
 
@@ -233,10 +545,12 @@ class TestInputs:
             ),
             (
                 np.array(
-                    [[
-                        [-0.080, 2.629, -0.710, 5.383, 0.646, -2.872],
-                        [-0.080, 2.629, -0.710, 5.383, 0.646, -2.872],
-                    ]]
+                    [
+                        [
+                            [-0.080, 2.629, -0.710, 5.383, 0.646, -2.872],
+                            [-0.080, 2.629, -0.710, 5.383, 0.646, -2.872],
+                        ]
+                    ]
                 ),
                 [0, 1, 2, 3],
                 "Weights tensor must",
@@ -245,6 +559,21 @@ class TestInputs:
                 np.array([-0.080, 2.629, -0.710, 5.383, 0.646, -2.872]),
                 [0, 1, 2, 3],
                 "Weights tensor must be 3-dimensional",
+            ),
+            (
+                np.array([[[-0.080, 2.629], [-0.710, 5.383]]]),
+                [0, 1, 2, 3],
+                "Weights tensor must have second dimension of length",
+            ),
+            (
+                np.array([[[-0.080]]]),
+                [0, 1, 2, 3],
+                "Weights tensor must have third dimension of length 2",
+            ),
+            (
+                np.array([[[-0.080, 2.629]]]),
+                [0, 1, 2, 3, 4],
+                "This template requires the number of qubits to be multiple of 2",
             ),
         ],
     )
@@ -276,6 +605,14 @@ class TestInputs:
         )
         assert template.id == "a"
 
+    def test_init_state_exception(self):
+        """Tests that the operation warns if initial state is not provided"""
+        with pytest.raises(ValueError, match="Inital state should be provided"):
+            qml.templates.QuantumNumberPreservingU2(
+                weights=np.random.random(size=(1, 1, 2)), wires=range(4)
+            )
+
+
 class TestAttributes:
     """Tests additional methods and attributes"""
 
@@ -296,23 +633,38 @@ class TestAttributes:
     def test_shape_exception_not_enough_qubits(self):
         """Test that the shape function warns if there are not enough qubits."""
 
-        with pytest.raises(ValueError, match="This template requires the number of qubits to be greater than four"):
+        with pytest.raises(
+            ValueError, match="This template requires the number of qubits to be greater than four"
+        ):
             qml.templates.QuantumNumberPreservingU2.shape(3, 1)
 
+    def test_shape_exception_not_even_qubits(self):
+        """Test that the shape function warns if there are not enough qubits."""
+
+        with pytest.raises(
+            ValueError, match="This template requires the number of qubits to be multiple of 2"
+        ):
+            qml.templates.QuantumNumberPreservingU2.shape(1, 5)
+
+
 def circuit_template(weights):
-    qml.templates.QuantumNumberPreservingU2(weights, range(4 + (weights.shape[1] - 1)*2), init_state=np.array([1, 1, 0, 0] + [0]*(weights.shape[1]-1)*2))
+    qml.templates.QuantumNumberPreservingU2(
+        weights,
+        range(4 + (weights.shape[1] - 1) * 2),
+        init_state=np.array([1, 1, 0, 0] + [0] * (weights.shape[1] - 1) * 2),
+    )
     return qml.expval(qml.PauliZ(0))
 
 
 def circuit_decomposed(weights):
-    
-    wires = range(4 + (weights.shape[1] - 1)*2)
 
-    qwires = [wires[i:i+4] for i in range(0, len(wires), 4) if len(wires[i:i+4]) == 4]
-    if len(wires)//2 > 2:
-        qwires += [wires[i:i+4] for i in range(2, len(wires), 4) if len(wires[i:i+4]) == 4]
+    wires = range(4 + (weights.shape[1] - 1) * 2)
 
-    qml.BasisState(np.array([1, 1, 0, 0] + [0]*(len(wires)-4)), wires=wires)
+    qwires = [wires[i : i + 4] for i in range(0, len(wires), 4) if len(wires[i : i + 4]) == 4]
+    if len(wires) // 2 > 2:
+        qwires += [wires[i : i + 4] for i in range(2, len(wires), 4) if len(wires[i : i + 4]) == 4]
+
+    qml.BasisState(np.array([1, 1, 0, 0] + [0] * (len(wires) - 4)), wires=wires)
 
     for layer in range(weights.shape[0]):
         for idx in range(weights.shape[1]):
@@ -329,7 +681,14 @@ class TestInterfaces:
     def test_list_and_tuples(self, tol):
         """Tests common iterables as inputs."""
 
-        weights = [[[0.1, -1.1,]]]
+        weights = [
+            [
+                [
+                    0.1,
+                    -1.1,
+                ]
+            ]
+        ]
 
         dev = qml.device("default.qubit", wires=4)
 
@@ -349,7 +708,7 @@ class TestInterfaces:
         """Tests the autograd interface."""
 
         weights = np.random.random(size=(1, 1, 2))
-        weights = pnp.array(weights, requires_grad=True)
+        weights = pnp.array(weights)
 
         dev = qml.device("default.qubit", wires=4)
 
@@ -424,7 +783,7 @@ class TestInterfaces:
 
         torch = pytest.importorskip("torch")
 
-        weights = torch.tensor(np.random.random(size=(1, 1, 2)), requires_grad=True)
+        weights = torch.tensor(np.random.random(size=(1, 1, 2)))
 
         dev = qml.device("default.qubit", wires=4)
 
@@ -444,5 +803,3 @@ class TestInterfaces:
         grads2 = [weights.grad]
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
-
-    
