@@ -464,3 +464,140 @@ class DoubleExcitationMinus(Operation):
     def adjoint(self):
         (theta,) = self.parameters
         return DoubleExcitationMinus(-theta, wires=self.wires)
+
+class QuantumNumberPreservingOR(Operation):
+    r"""QuantumNumberPreservingOR(varphi, wires)
+    1-parameter 4-qubit spatial orbital rotation gate :math:`QNP_{OR}(\varphi)`. It can be decomposed into 
+    sequence of sequence of `SingleExcitation(varphi, wires)` gates as follow:
+
+    |
+
+    .. figure:: ../../_static/ops/qchem/quantum_number_preserving_or.png
+        :align: center
+        :width: 50%
+        :target: javascript:void(0);
+
+    |
+    
+    The overall matrix representation for this gate is:
+    
+    .. math:: U(\phi) = \begin{bmatrix}
+                            1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
+                            0 & c & 0 & 0 & - s & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
+                            0 & 0 & c & 0 & 0 & 0 & 0 & 0 & - s & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
+                            0 & 0 & 0 & c^{2} & 0 & 0 & - c s & 0 & 0 & - c s & 0 & 0 & s^{2} & 0 & 0 & 0\\
+                            0 & s & 0 & 0 & c & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
+                            0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
+                            0 & 0 & 0 & c s & 0 & 0 & c^{2} & 0 & 0 & - s^{2} & 0 & 0 & - c s & 0 & 0 & 0\\
+                            0 & 0 & 0 & 0 & 0 & 0 & 0 & c & 0 & 0 & 0 & 0 & 0 & - s & 0 & 0\\
+                            0 & 0 & s & 0 & 0 & 0 & 0 & 0 & c & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
+                            0 & 0 & 0 & c s & 0 & 0 & - s^{2} & 0 & 0 & c^{2} & 0 & 0 & c s & 0 & 0 & 0\\
+                            0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0\\
+                            0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & c & 0 & 0 & - s & 0\\
+                            0 & 0 & 0 & s^{2} & 0 & 0 & c s & 0 & 0 & c s & 0 & 0 & c^{2} & 0 & 0 & 0\\
+                            0 & 0 & 0 & 0 & 0 & 0 & 0 & s & 0 & 0 & 0 & 0 & 0 & c & 0 & 0\\
+                            0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & s & 0 & 0 & c & 0\\
+                            0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1
+                        \end{bmatrix}.
+
+    This operation performs the spatial orbital Given rotation :math:`|\phi_{0}\rangle = c|\phi_{0}\rangle - s|\phi_{1}\rangle`
+    and :math:`|\phi_{1}\rangle = s|\phi_{0}\rangle + c|\phi_{1}\rangle`.
+    
+    **Details:**
+
+    * Number of wires: 4
+    * Number of parameters: 1
+    * Gradient recipe: The ``QuantumNumberPreservingOR`` operator satisfies a four-term parameter-shift rule
+      (see Appendix F, https://arxiv.org/abs/2104.05695)
+
+    Args:
+        varphi (float): rotation angle :math:`\varphi`
+        wires (Sequence[int]): the wires the operation acts on
+
+    **Example**
+
+    The following circuit performs the transformation :math:``:
+
+    .. code-block::
+
+        dev = qml.device('default.qubit', wires=4)
+
+        @qml.qnode(dev)
+        def circuit(varphi):
+            qml.QuantumNumberPreservingOR(varphi, wires=[0, 1, 2, 3])
+            return qml.state()
+
+        circuit(0.1)
+    """
+
+    num_params = 1
+    num_wires = 4
+    par_domain = "R"
+    grad_method = "A"
+    grad_recipe = four_term_grad_recipe
+    generator = [
+                    np.array([[0,      0,      0,      0,     0, 0,      0,      0,     0,      0, 0,      0,     0,     0,     0, 0],
+                              [0,      0,      0,      0,   -1j, 0,      0,      0,     0,      0, 0,      0,     0,     0,     0, 0],
+                              [0,      0,      0,      0,     0, 0,      0,      0,   -1j,      0, 0,      0,     0,     0,     0, 0],
+                              [0,      0,      0,      0,     0, 0,    -1j,      0,     0,    -1j, 0,      0,     0,     0,     0, 0],
+                              [0,     1j,      0,      0,     0, 0,      0,      0,     0,      0, 0,      0,     0,     0,     0, 0],
+                              [0,      0,      0,      0,     0, 0,      0,      0,     0,      0, 0,      0,     0,     0,     0, 0],
+                              [0,      0,      0,     1j,     0, 0,      0,      0,     0,      0, 0,      0,   -1j,     0,     0, 0],
+                              [0,      0,      0,      0,     0, 0,      0,      0,     0,      0, 0,      0,     0,   -1j,     0, 0],
+                              [0,      0,     1j,      0,     0, 0,      0,      0,     0,      0, 0,      0,     0,     0,     0, 0],
+                              [0,      0,      0,     1j,     0, 0,      0,      0,     0,      0, 0,      0,   -1j,     0,     0, 0],
+                              [0,      0,      0,      0,     0, 0,      0,      0,     0,      0, 0,      0,     0,     0,     0, 0],
+                              [0,      0,      0,      0,     0, 0,      0,      0,     0,      0, 0,      0,     0,     0,   -1j, 0],
+                              [0,      0,      0,      0,     0, 0,     1j,      0,     0,     1j, 0,      0,     0,     0,     0, 0],
+                              [0,      0,      0,      0,     0, 0,      0,     1j,     0,      0, 0,      0,     0,     0,     0, 0],
+                              [0,      0,      0,      0,     0, 0,      0,      0,     0,      0, 0,     1j,     0,     0,     0, 0],
+                              [0,      0,      0,      0,     0, 0,      0,      0,     0,      0, 0,      0,     0,     0,     0, 0]]),
+                    -1 / 2,
+                ]
+
+    @classmethod
+    def _matrix(cls, *params):
+        theta = params[0]
+        c = math.cos(theta / 2)
+        s = math.sin(theta / 2)
+
+        return np.array([[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+                         [0, c, 0, 0, -s, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+                         [0, 0, c, 0, 0, 0, 0, 0, -s, 0, 0, 0, 0, 0, 0, 0], 
+                         [0, 0, 0, c**2, 0, 0, -c*s, 0, 0, -c*s, 0, 0,  s**2, 0, 0, 0],
+                         [0, s, 0, 0, c, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+                         [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+                         [0, 0, 0, c*s, 0, 0, c**2, 0, 0, -s**2, 0, 0, -c*s, 0, 0, 0], 
+                         [0, 0, 0, 0, 0, 0, 0, c, 0, 0, 0, 0, 0, -s, 0, 0],
+                         [0, 0, s, 0, 0, 0, 0, 0, c, 0, 0, 0, 0, 0, 0, 0], 
+                         [0, 0, 0, c*s, 0, 0, -s**2, 0, 0, c**2, 0, 0, -c*s, 0, 0, 0], 
+                         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0], 
+                         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, c, 0, 0, -s, 0],
+                         [0, 0, 0, s**2, 0, 0, c*s, 0, 0, c*s, 0, 0, c**2, 0, 0, 0], 
+                         [0, 0, 0, 0, 0, 0, 0, s, 0, 0, 0, 0, 0, c, 0, 0], 
+                         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, s, 0, 0, c, 0], 
+                         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]])
+
+    @staticmethod
+    def decomposition(theta, wires):
+        # This decomposition is the "upside down" version of that on p18 of https://arxiv.org/abs/2104.05695
+        decomp_ops = [
+            qml.Hadamard(wires=wires[3]),
+            qml.Hadamard(wires=wires[2]),
+            qml.CNOT(wires=[wires[3], wires[1]]),
+            qml.CNOT(wires=[wires[2], wires[0]]),
+            qml.RY(theta/2, wires=wires[3]),
+            qml.RY(theta/2, wires=wires[2]),
+            qml.RY(theta/2, wires=wires[1]),
+            qml.RY(theta/2, wires=wires[0]),
+            qml.CNOT(wires=[wires[3], wires[1]]),
+            qml.CNOT(wires=[wires[2], wires[0]]),
+            qml.Hadamard(wires=wires[3]),
+            qml.Hadamard(wires=wires[2])
+        ]
+        return decomp_ops
+
+
+    def adjoint(self):
+        (theta,) = self.parameters
+        return QuantumNumberPreservingOR(-theta, wires=self.wires)
