@@ -586,8 +586,8 @@ class TestOptimizer:
         "generators", [list(tup) for tup in it.product([qml.RX, qml.RY, qml.RZ], repeat=2)]
     )
     def test_rotoselect_optimizer(self, x_start, generators, bunch, tol):
-        """Tests that rotoselect optimizer finds the optimal generators and parameters for the 
-        VQE circuit defined in `this rotoselect tutorial 
+        """Tests that rotoselect optimizer finds the optimal generators and parameters for the
+        VQE circuit defined in `this rotoselect tutorial
         <https://pennylane.ai/qml/demos/tutorial_rotoselect.html>`_."""
 
         # the optimal generators for the 2-qubit VQE circuit
@@ -671,7 +671,7 @@ class TestOptimizer:
 
     def test_update_stepsize(self):
         """
-        Tests whether the stepsize value is updated correctly and whether a ``UserWarning`` 
+        Tests whether the stepsize value is updated correctly and whether a ``UserWarning``
         is raised when the ``update_stepsize`` method is used.
         """
 
@@ -692,7 +692,7 @@ class TestOptimizer:
 
     def test_private_stepsize(self):
         """
-        Tests whether it is possible to get and set ``stepsize`` using ``_stepsize`` 
+        Tests whether it is possible to get and set ``stepsize`` using ``_stepsize``
         and whether a ``UserWarning`` is raised while doing so.
         """
         eta = 0.5
