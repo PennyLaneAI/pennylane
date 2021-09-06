@@ -3512,8 +3512,31 @@ class TestQuantumNumberPreservingOR:
         op = qml.QuantumNumberPreservingOR(phi, wires=[0, 1, 2, 3])
         decomp = op.decomposition(phi, wires=[0, 1, 2, 3])
 
-        mats = [m.matrix for m in decomp]
-        decomposed_matrix = mats[0] @ mats[1]
+        decomposed_matrix = np.eye(16)
+        oo = np.array([[0, 0], [0, 1]])
+        zz = np.array([[1, 0], [0, 0]])
+
+        for ops in decomp:
+            op_wire = ops.wires
+            moment = [qml.Identity(i).matrix for i in range(4)]
+
+            if len(op_wire) < 2:
+                moment[op_wire[0]] = ops.matrix
+            else:
+                moment[op_wire[0]] = zz
+            moment_matrix = moment[0]
+            for mat in moment[1:]:
+                moment_matrix = np.kron(moment_matrix, mat)
+
+            if len(op_wire) == 2:
+                moment[op_wire[0]] = oo
+                moment[op_wire[1]] = qml.PauliX(op_wire[1]).matrix
+                moment_matrix1 = moment[0]
+                for mat in moment[1:]:
+                    moment_matrix1 = np.kron(moment_matrix1, mat)
+                moment_matrix += moment_matrix1
+
+            decomposed_matrix = np.matmul(moment_matrix, decomposed_matrix)
         exp = QuantumNumberPreservingOR(phi)
 
         assert np.allclose(decomposed_matrix, exp)
@@ -3530,7 +3553,7 @@ class TestQuantumNumberPreservingOR:
         assert np.allclose(res, exp)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
-    def test_quantum_number_preserving_or_decomp(self, phi):
+    def test_quantum_number_preserving_or_full_decomp(self, phi):
         """Tests that the QuantumNumberPreservingOR operation calculates the correct decomposition.
 
         The decomposition has already been expressed in terms of single-qubit rotations

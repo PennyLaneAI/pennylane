@@ -85,10 +85,10 @@ class TestDecomposition:
 
         # gate wires
         wires = range(qubits)
-        qwires = [wires[i : i + 4] for i in range(0, len(wires), 4) if len(wires[i : i + 4]) == 4]
+        qwires = [wires[i:i+4] for i in range(0, len(wires), 4) if len(wires[i:i+4]) == 4]
         if len(wires) // 2 > 2:
             qwires += [
-                wires[i : i + 4] for i in range(2, len(wires), 4) if len(wires[i : i + 4]) == 4
+                wires[i:i+4] for i in range(2, len(wires), 4) if len(wires[i:i+4]) == 4
             ]
 
         exp_wires = []
@@ -660,9 +660,9 @@ def circuit_decomposed(weights):
 
     wires = range(4 + (weights.shape[1] - 1) * 2)
 
-    qwires = [wires[i : i + 4] for i in range(0, len(wires), 4) if len(wires[i : i + 4]) == 4]
+    qwires = [wires[i:i+4] for i in range(0, len(wires), 4) if len(wires[i:i+4]) == 4]
     if len(wires) // 2 > 2:
-        qwires += [wires[i : i + 4] for i in range(2, len(wires), 4) if len(wires[i : i + 4]) == 4]
+        qwires += [wires[i:i+4] for i in range(2, len(wires), 4) if len(wires[i:i+4]) == 4]
 
     qml.BasisState(np.array([1, 1, 0, 0] + [0] * (len(wires) - 4)), wires=wires)
 

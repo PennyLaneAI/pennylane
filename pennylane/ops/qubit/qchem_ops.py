@@ -468,7 +468,7 @@ class DoubleExcitationMinus(Operation):
 
 class QuantumNumberPreservingOR(Operation):
     r"""QuantumNumberPreservingOR(varphi, wires)
-    1-parameter 4-qubit spatial orbital rotation gate :math:`QNP_{OR}(\varphi)`. It can be decomposed into 
+    1-parameter 4-qubit spatial orbital rotation gate :math:`QNP_{OR}(\varphi)`. It can be decomposed into
     sequence of sequence of `SingleExcitation(varphi, wires)` gates as follow:
 
     |
@@ -479,9 +479,9 @@ class QuantumNumberPreservingOR(Operation):
         :target: javascript:void(0);
 
     |
-    
+
     The overall matrix representation for this gate is:
-    
+
     .. math:: U(\phi) = \begin{bmatrix}
                             1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
                             0 & c & 0 & 0 & - s & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
@@ -503,7 +503,7 @@ class QuantumNumberPreservingOR(Operation):
 
     This operation performs the spatial orbital Given rotation :math:`|\phi_{0}\rangle = c|\phi_{0}\rangle - s|\phi_{1}\rangle`
     and :math:`|\phi_{1}\rangle = s|\phi_{0}\rangle + c|\phi_{1}\rangle`.
-    
+
     **Details:**
 
     * Number of wires: 4

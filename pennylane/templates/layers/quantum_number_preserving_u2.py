@@ -127,7 +127,7 @@ class QuantumNumberPreservingU2(Operation):
                     len(wires)
                 )
             )
-        elif len(wires) % 2:
+        if len(wires) % 2:
             raise ValueError(
                 "This template requires the number of qubits to be multiple of 2; got {}".format(
                     len(wires)
@@ -137,11 +137,11 @@ class QuantumNumberPreservingU2(Operation):
         self.M = len(wires) // 2
 
         self.qwires = [
-            wires[i : i + 4] for i in range(0, len(wires), 4) if len(wires[i : i + 4]) == 4
+            wires[i:i+4] for i in range(0, len(wires), 4) if len(wires[i:i+4]) == 4
         ]
         if self.M > 2:
             self.qwires += [
-                wires[i : i + 4] for i in range(2, len(wires), 4) if len(wires[i : i + 4]) == 4
+                wires[i:i+4] for i in range(2, len(wires), 4) if len(wires[i:i+4]) == 4
             ]
 
         shape = qml.math.shape(weights)
@@ -206,7 +206,7 @@ class QuantumNumberPreservingU2(Operation):
                     n_wires
                 )
             )
-        elif n_wires % 2:
+        if n_wires % 2:
             raise ValueError(
                 "This template requires the number of qubits to be multiple of 2; got {}".format(
                     n_wires
