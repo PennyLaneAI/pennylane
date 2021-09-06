@@ -14,6 +14,7 @@
 """
 Unit tests for functions needed to computing integrals over basis functions.
 """
+import autograd
 import numpy as np
 import pytest
 from pennylane import numpy as pnp
@@ -218,3 +219,32 @@ def test_generate_overlap(symbols, geometry, alpha, coef, r, o_ref):
 
     o = generate_overlap(basis_a, basis_b)(*args)
     assert np.allclose(o, o_ref)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "alpha", "g_ref"),
+    [
+        # g_ref computed manually with finite diff
+        (
+            ["H", "H"],
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+            pnp.array(
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                requires_grad=True,
+            ),
+            np.array(
+                [[-0.00043783, -0.09917143, -0.11600198], [-0.00043783, -0.09917143, -0.11600198]]
+            ),
+        ),
+    ],
+)
+def test_gradient(symbols, geometry, alpha, g_ref):
+    r"""Test that the overlap gradient computed with respect to the basis parameters is correct."""
+    mol = Molecule(symbols, geometry, alpha=alpha)
+    basis_a = mol.basis_set[0]
+    basis_b = mol.basis_set[1]
+    args = [mol.alpha]
+
+    g = autograd.grad(generate_overlap(basis_a, basis_b))(*args)
+
+    assert np.allclose(g, g_ref)
