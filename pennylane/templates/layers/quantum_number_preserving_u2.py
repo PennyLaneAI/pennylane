@@ -137,11 +137,11 @@ class QuantumNumberPreservingU2(Operation):
         self.M = len(wires) // 2
 
         self.qwires = [
-            wires[i:i+4] for i in range(0, len(wires), 4) if len(wires[i:i+4]) == 4
+            wires[i : i + 4] for i in range(0, len(wires), 4) if len(wires[i : i + 4]) == 4
         ]
         if self.M > 2:
             self.qwires += [
-                wires[i:i+4] for i in range(2, len(wires), 4) if len(wires[i:i+4]) == 4
+                wires[i : i + 4] for i in range(2, len(wires), 4) if len(wires[i : i + 4]) == 4
             ]
 
         shape = qml.math.shape(weights)

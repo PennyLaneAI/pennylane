@@ -157,6 +157,7 @@ class DefaultQubitJax(DefaultQubit):
         "DoubleExcitation": jax_ops.DoubleExcitation,
         "DoubleExcitationPlus": jax_ops.DoubleExcitationPlus,
         "DoubleExcitationMinus": jax_ops.DoubleExcitationMinus,
+        "QuantumNumberPreservingOR": jax_ops.QuantumNumberPreservingOR,
     }
 
     _asarray = staticmethod(jnp.array)

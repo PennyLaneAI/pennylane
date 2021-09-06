@@ -153,6 +153,7 @@ class DefaultQubitTorch(DefaultQubit):
         "DoubleExcitation": torch_ops.DoubleExcitation,
         "DoubleExcitationPlus": torch_ops.DoubleExcitationPlus,
         "DoubleExcitationMinus": torch_ops.DoubleExcitationMinus,
+        "QuantumNumberPreservingOR": torch_ops.QuantumNumberPreservingOR,
     }
 
     C_DTYPE = torch.complex128

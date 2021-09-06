@@ -150,6 +150,7 @@ class DefaultQubitTF(DefaultQubit):
         "DoubleExcitation": tf_ops.DoubleExcitation,
         "DoubleExcitationPlus": tf_ops.DoubleExcitationPlus,
         "DoubleExcitationMinus": tf_ops.DoubleExcitationMinus,
+        "QuantumNumberPreservingOR": tf_ops.QuantumNumberPreservingOR,
     }
 
     C_DTYPE = tf.complex128

@@ -312,6 +312,7 @@ class TestGradients:
         qml.DoubleExcitation,
         qml.DoubleExcitationPlus,
         qml.DoubleExcitationMinus,
+        qml.QuantumNumberPreservingOR,
     }
 
     @pytest.mark.parametrize("obs", [qml.PauliX, qml.PauliY])

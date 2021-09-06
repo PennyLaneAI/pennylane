@@ -405,3 +405,38 @@ def DoubleExcitationMinus(phi):
     ]
 
     return tf.convert_to_tensor(U)
+
+
+def QuantumNumberPreservingOR(theta):
+    r"""Quantum number preserving four-qubit one-parameter gate.
+
+    Args:
+        theta (float): rotation angle
+
+    Returns:
+        tf.Tensor[complex]: rotation matrix
+    """
+    theta = tf.cast(theta, dtype=C_DTYPE)
+    c = tf.cos(theta / 2)
+    s = tf.sin(theta / 2)
+
+    U = [
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, c, 0, 0, -s, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, c, 0, 0, 0, 0, 0, -s, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, c ** 2, 0, 0, -c * s, 0, 0, -c * s, 0, 0, s ** 2, 0, 0, 0],
+        [0, s, 0, 0, c, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, c * s, 0, 0, c ** 2, 0, 0, -(s ** 2), 0, 0, -c * s, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, c, 0, 0, 0, 0, 0, -s, 0, 0],
+        [0, 0, s, 0, 0, 0, 0, 0, c, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, c * s, 0, 0, -(s ** 2), 0, 0, c ** 2, 0, 0, -c * s, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, c, 0, 0, -s, 0],
+        [0, 0, 0, s ** 2, 0, 0, c * s, 0, 0, c * s, 0, 0, c ** 2, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, s, 0, 0, 0, 0, 0, c, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, s, 0, 0, c, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    ]
+
+    return tf.convert_to_tensor(U)
