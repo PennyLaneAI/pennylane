@@ -222,7 +222,7 @@ def test_generate_overlap(symbols, geometry, alpha, coef, r, o_ref):
 
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "alpha", "g_ref"),
+    ("symbols", "geometry", "alpha", "coeff", "g_ref"),
     [
         # g_ref computed manually with finite diff
         (
@@ -232,19 +232,33 @@ def test_generate_overlap(symbols, geometry, alpha, coef, r, o_ref):
                 [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
                 requires_grad=True,
             ),
-            np.array(
-                [[-0.00043783, -0.09917143, -0.11600198], [-0.00043783, -0.09917143, -0.11600198]]
+            pnp.array(
+                [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
+                requires_grad=True,
             ),
+            [
+                np.array(
+                    [
+                        [-0.00043783, -0.09917143, -0.11600198],
+                        [-0.00043783, -0.09917143, -0.11600198],
+                    ]
+                ),
+                np.array(
+                    [[-0.15627636, -0.02812029, 0.08809831], [-0.15627636, -0.02812029, 0.08809831]]
+                ),
+            ],
         ),
     ],
 )
-def test_gradient(symbols, geometry, alpha, g_ref):
+def test_gradient(symbols, geometry, alpha, coeff, g_ref):
     r"""Test that the overlap gradient computed with respect to the basis parameters is correct."""
-    mol = Molecule(symbols, geometry, alpha=alpha)
+    mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
     basis_a = mol.basis_set[0]
     basis_b = mol.basis_set[1]
-    args = [mol.alpha]
+    args = [mol.alpha, mol.coeff]
 
-    g = autograd.grad(generate_overlap(basis_a, basis_b))(*args)
+    g_alpha = autograd.grad(generate_overlap(basis_a, basis_b), argnum=0)(*args)
+    g_coeff = autograd.grad(generate_overlap(basis_a, basis_b), argnum=1)(*args)
 
-    assert np.allclose(g, g_ref)
+    assert np.allclose(g_alpha, g_ref[0])
+    assert np.allclose(g_coeff, g_ref[1])
