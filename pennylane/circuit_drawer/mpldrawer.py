@@ -216,7 +216,7 @@ class MPLDrawer:
             xticks=[],
             yticks=[],
         )
-        self.ax.axis('off')
+        self.ax.axis("off")
 
         self.ax.invert_yaxis()
 
