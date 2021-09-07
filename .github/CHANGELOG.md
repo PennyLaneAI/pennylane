@@ -410,6 +410,9 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 * `MottonenStatepreparation` can now be run with a single wire label not in a list.
   [(#1620)](https://github.com/PennyLaneAI/pennylane/pull/1620)
 
+* Fixed the circuit representation of CY gates to align with CNOT and CZ gates when calling the circuit drawer.
+  [(#1504)](https://github.com/PennyLaneAI/pennylane/issues/1504)
+
 * Dask and CVXPY dependent tests are skipped if those packages are not installed.
 [(#1617)](https://github.com/PennyLaneAI/pennylane/pull/1617)
 
@@ -442,9 +445,9 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 This release contains contributions from (in alphabetical order):
 
-Vishnu Ajith, Akash Narayanan B, Thomas Bromley, Olivia Di Matteo, Tanya Garg, Josh Izaac, Prateek Jain,
-Ankit Khandelwal, Christina Lee, Johannes Jakob Meyer, Romain Moyard, Esteban Payares, Pratul Saini, Maria Schuld,
-Arshpreet Singh, Ingrid Strandberg, Slimane Thabet, David Wierichs, Vincent Wong.
+Vishnu Ajith, Akash Narayanan B, Thomas Bromley, Olivia Di Matteo, Sahaj Dhamija, Tanya Garg, Josh Izaac,
+Prateek Jain, Ankit Khandelwal, Christina Lee, Johannes Jakob Meyer, Romain Moyard, Esteban Payares, Pratul Saini,
+Maria Schuld, Arshpreet Singh, Ingrid Strandberg, Slimane Thabet, David Wierichs, Vincent Wong.
 
 # Release 0.17.0 (current release)
 
@@ -1001,7 +1004,7 @@ Arshpreet Singh, Ingrid Strandberg, Slimane Thabet, David Wierichs, Vincent Wong
 * Fixed a bug in the initialization of `QubitUnitary` where the size of
   the matrix was not checked against the number of wires.
   [(#1439)](https://github.com/PennyLaneAI/pennylane/pull/1439)
-
+  
 <h3>Documentation</h3>
 
 * Improved Contribution Guide and Pull Requests Guide.
