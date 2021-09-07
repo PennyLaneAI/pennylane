@@ -407,8 +407,8 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 <h3>Bug fixes</h3>
 
-* Fixed circuit representation of CY gates to align with CNOT and CZ gates when calling the circuit drawer.
-  [(#1443)](https://github.com/PennyLaneAI/pennylane/issues/1443)
+* Fixed the circuit representation of CY gates to align with CNOT and CZ gates when calling the circuit drawer.
+  [(#1504)](https://github.com/PennyLaneAI/pennylane/issues/1504)
 
 * Dask and CVXPY dependent tests are skipped if those packages are not installed.
 [(#1617)](https://github.com/PennyLaneAI/pennylane/pull/1617)
