@@ -441,10 +441,10 @@ def DoubleExcitationMinus(phi):
 
 
 def QuantumNumberPreservingOR(theta):
-    r"""Quantum number preserving four-gate one-parameter gate.
+    r"""Quantum number preserving four-qubit one-parameter gate.
 
     Args:
-        phi (float): rotation angle
+        theta (float): rotation angle
     Returns:
         array: the four-qubit matrix describing the operation
     """

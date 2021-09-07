@@ -1133,14 +1133,16 @@ def quantum_number_preserving_u2_uniform(n_layers, n_wires, low=0, high=2 * pi, 
     r"""Creates a parameter array for :func:`~.QuantumNumberPreservingU2`, drawn from a uniform
     distribution.
     Each parameter is drawn uniformly at random from the half-open interval [``low``, ``high``).
-    The parameters define the trainable angles entering the quantum number preserving gate :math:`Q_{\theta,\phi}`
-    implemented by the :func:`~.QuantumNumberPreserving_OR()` and :func:`~.DoubleDoubleExcitation()`.
+    The parameters define the trainable angles entering the quantum number preserving gate :math:`Q(\theta,\phi)`
+    implemented by the :func:`~.QuantumNumberPreserving_OR` and :func:`~.DoubleDoubleExcitation`.
+
     Args:
         n_layers (int): number of layers
         n_wires (int): number of qubits
         low (float): lower endpoint of the parameter interval
         high (float): upper endpoint of the parameter interval
         seed (int): seed used in sampling the parameters, makes function call deterministic
+
     Returns:
         array: parameter array
     """
@@ -1161,14 +1163,16 @@ def quantum_number_preserving_u2_normal(n_layers, n_wires, mean=0, std=0.1, seed
     r"""Creates a parameter array for :func:`~.QuantumNumberPreservingU2`, drawn from a normal
     distribution.
     Each parameter is drawn uniformly at random from the half-open interval [``low``, ``high``).
-    The parameters define the trainable angles entering the quantum number preserving gate :math:`Q_{\theta,\phi}`
-    implemented by the :func:`~.QuantumNumberPreserving_OR()` and :func:`~.DoubleDoubleExcitation()`.
+    The parameters define the trainable angles entering the quantum number preserving gate :math:`Q(\theta,\phi)`
+    implemented by the :func:`~.QuantumNumberPreserving_OR` and :func:`~.DoubleDoubleExcitation`.
+
     Args:
         n_layers (int): number of layers
         n_wires (int): number of qubits
         mean (float): mean of parameters
         std (float): standard deviation of parameters
         seed (int): seed used in sampling the parameters, makes function call deterministic
+
     Returns:
         array: parameter array
     """
