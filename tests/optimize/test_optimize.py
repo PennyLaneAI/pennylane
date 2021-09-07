@@ -586,8 +586,9 @@ class TestOptimizer:
         "generators", [list(tup) for tup in it.product([qml.RX, qml.RY, qml.RZ], repeat=2)]
     )
     def test_rotoselect_optimizer(self, x_start, generators, bunch, tol):
-        """Tests that rotoselect optimizer finds the optimal generators and parameters for the VQE circuit
-        defined in `this rotoselect tutorial <https://pennylane.ai/qml/demos/tutorial_rotoselect.html>`_."""
+        """Tests that rotoselect optimizer finds the optimal generators and parameters for the
+        VQE circuit defined in `this rotoselect tutorial
+        <https://pennylane.ai/qml/demos/tutorial_rotoselect.html>`_."""
 
         # the optimal generators for the 2-qubit VQE circuit
         # H = 0.5 * Y_2 + 0.8 * Z_1 - 0.2 * X_1
@@ -669,15 +670,48 @@ class TestOptimizer:
         assert res_new2 == pytest.approx(cost_fn(x_start, generators, shift=1.0), abs=tol)
 
     def test_update_stepsize(self):
-        """Tests that the stepsize correctly updates"""
+        """
+        Tests whether the stepsize value is updated correctly and whether a ``UserWarning``
+        is raised when the ``update_stepsize`` method is used.
+        """
 
+        eta = 0.5
+        opt = AdamOptimizer(eta)
+        assert opt.stepsize == eta
+
+        eta2 = 0.1
+        opt.update_stepsize(eta2)
+        assert opt.stepsize == eta2
+
+        with pytest.warns(
+            UserWarning,
+            match="'update_stepsize' is deprecated. Stepsize value can be updated using "
+            "the 'stepsize' attribute.",
+        ):
+            opt.update_stepsize(eta)
+
+    def test_private_stepsize(self):
+        """
+        Tests whether it is possible to get and set ``stepsize`` using ``_stepsize``
+        and whether a ``UserWarning`` is raised while doing so.
+        """
         eta = 0.5
         opt = AdamOptimizer(eta)
         assert opt._stepsize == eta
 
+        with pytest.warns(
+            UserWarning, match="'_stepsize' is deprecated. Please use 'stepsize' instead."
+        ):
+            opt._stepsize
+
         eta2 = 0.1
-        opt.update_stepsize(eta2)
-        assert opt._stepsize == eta2
+        opt._stepsize = eta2
+        assert opt.stepsize == eta2
+
+        with pytest.warns(
+            UserWarning, match="'_stepsize' is deprecated. Please use 'stepsize' instead."
+        ):
+            opt._stepsize = eta2
 
 
 def reset(opt):
@@ -709,18 +743,7 @@ def opt(opt_name):
         return RotosolveOptimizer()
 
 
-@pytest.mark.parametrize(
-    "opt_name",
-    [
-        "gd",
-        "moment",
-        "nest",
-        "ada",
-        "rms",
-        "adam",
-        "roto",
-    ],
-)
+@pytest.mark.parametrize("opt_name", ["gd", "moment", "nest", "ada", "rms", "adam", "roto"])
 class TestOverOpts:
     """Tests keywords, multiple arguements, and non-training arguments in relevant optimizers"""
 

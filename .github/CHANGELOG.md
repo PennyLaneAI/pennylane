@@ -399,6 +399,11 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
   after one release cycle.
   [(#1546)](https://github.com/PennyLaneAI/pennylane/pull/1546)
 
+*  All optimizers except for Rotosolve and Rotoselect now have a public attribute `stepsize`.
+  Temporary backward compatibility has been added to support the use of `_stepsize` for one
+  release cycle. `update_stepsize` method is deprecated.
+  [(#1625)](https://github.com/PennyLaneAI/pennylane/pull/1625)
+  
 
 <h3>Bug fixes</h3>
 
