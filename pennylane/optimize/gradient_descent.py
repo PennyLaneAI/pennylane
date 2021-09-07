@@ -13,6 +13,8 @@
 # limitations under the License.
 """Gradient descent optimizer"""
 
+import warnings
+
 from pennylane._grad import grad as get_gradient
 from pennylane.utils import _flatten, unflatten
 from pennylane.numpy import ndarray, tensor
@@ -36,7 +38,27 @@ class GradientDescentOptimizer:
     """
 
     def __init__(self, stepsize=0.01):
-        self._stepsize = stepsize
+        self.stepsize = stepsize
+
+    @property
+    def _stepsize(self):
+        warnings.warn(
+            "'_stepsize' is deprecated. Please use 'stepsize' instead.",
+            UserWarning,
+            stacklevel=2,
+        )
+
+        return self.stepsize
+
+    @_stepsize.setter
+    def _stepsize(self, stepsize):
+        warnings.warn(
+            "'_stepsize' is deprecated. Please use 'stepsize' instead.",
+            UserWarning,
+            stacklevel=2,
+        )
+
+        self.stepsize = stepsize
 
     def update_stepsize(self, stepsize):
         r"""Update the initialized stepsize value :math:`\eta`.
@@ -46,7 +68,14 @@ class GradientDescentOptimizer:
         Args:
             stepsize (float): the user-defined hyperparameter :math:`\eta`
         """
-        self._stepsize = stepsize
+        warnings.warn(
+            "'update_stepsize' is deprecated. Stepsize value can be updated using "
+            "the 'stepsize' attribute.",
+            UserWarning,
+            stacklevel=2,
+        )
+
+        self.stepsize = stepsize
 
     def step_and_cost(self, objective_fn, *args, grad_fn=None, **kwargs):
         """Update trainable arguments with one step of the optimizer and return the corresponding
@@ -160,7 +189,7 @@ class GradientDescentOptimizer:
                 grad_flat = _flatten(grad[trained_index])
                 trained_index += 1
 
-                x_new_flat = [e - self._stepsize * g for g, e in zip(grad_flat, x_flat)]
+                x_new_flat = [e - self.stepsize * g for g, e in zip(grad_flat, x_flat)]
 
                 args_new[index] = unflatten(x_new_flat, args[index])
 
