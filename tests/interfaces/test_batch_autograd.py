@@ -75,7 +75,7 @@ class TestAutogradExecuteUnitTests:
             assert args[1]["shift"] == np.pi / 4
 
     def test_incorrect_mode(self):
-        """Test that an error is raised if an gradient transform
+        """Test that an error is raised if a gradient transform
         is used with mode=forward"""
         a = np.array([0.1, 0.2], requires_grad=True)
 
@@ -871,7 +871,7 @@ class TestOverridingShots:
         spy.assert_not_called()
 
         res = execute([tape], dev, gradient_fn=param_shift, override_shots=100)
-        # overriden shots is the same, shots were changed
+        # overriden shots is not the same, shots were changed
         spy.assert_called()
 
         # shots were temporarily set to the overriden value
