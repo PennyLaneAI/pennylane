@@ -1034,7 +1034,7 @@ class TestHamiltonianWorkflows:
 
     @staticmethod
     def cost_fn_expected(weights, coeffs1, coeffs2):
-        """Analytic jacobian of cost_fn above"""
+        """Analytic value of cost_fn above"""
         a, b, c = coeffs1.detach().numpy()
         d = coeffs2.detach().numpy()[0]
         x, y = weights.detach().numpy()

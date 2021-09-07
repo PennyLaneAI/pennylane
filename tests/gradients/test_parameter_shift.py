@@ -1114,7 +1114,7 @@ class TestHamiltonianExpvalGradients:
         ]
 
     def test_autograd(self, tol):
-        """Test gradient of  multiple trainable Hamiltonian coefficients
+        """Test gradient of multiple trainable Hamiltonian coefficients
         using autograd"""
         coeffs1 = np.array([0.1, 0.2, 0.3], requires_grad=True)
         coeffs2 = np.array([0.7], requires_grad=True)
@@ -1131,7 +1131,7 @@ class TestHamiltonianExpvalGradients:
         assert np.allclose(res[2][:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
 
     def test_tf(self, tol):
-        """Test gradient of  multiple trainable Hamiltonian coefficients
+        """Test gradient of multiple trainable Hamiltonian coefficients
         using tf"""
         tf = pytest.importorskip("tensorflow")
 
@@ -1153,7 +1153,7 @@ class TestHamiltonianExpvalGradients:
         assert np.allclose(hess[1][:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
 
     def test_torch(self, tol):
-        """Test gradient of  multiple trainable Hamiltonian coefficients
+        """Test gradient of multiple trainable Hamiltonian coefficients
         using torch"""
         torch = pytest.importorskip("torch")
 
@@ -1177,7 +1177,7 @@ class TestHamiltonianExpvalGradients:
         assert np.allclose(hess[2][:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
 
     def test_jax(self, tol):
-        """Test gradient of  multiple trainable Hamiltonian coefficients
+        """Test gradient of multiple trainable Hamiltonian coefficients
         using JAX"""
         jax = pytest.importorskip("jax")
         jnp = jax.numpy

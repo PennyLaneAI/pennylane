@@ -739,7 +739,7 @@ class QuantumTape(AnnotatedQueue):
         self._trainable_params = param_indices
 
     def get_operation(self, idx):
-        """Returns the trainable operation, and the corresponding oepration argument
+        """Returns the trainable operation, and the corresponding operation argument
         index, for a specified trainable parameter index.
 
         Args:
