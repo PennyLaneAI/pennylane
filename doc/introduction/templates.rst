@@ -120,6 +120,11 @@ neural network. Note arbitrary templates or operations can also be layered using
     :description: ParticleConservingU1
     :figure: ../_static/templates/layers/particle_conserving_u1_thumbnail.png
 
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.layers.QuantumNumberPreservingU2.html
+    :description: QuantumNumberPreservingU2
+    :figure: ../_static/templates/layers/quantum_number_preserving_u2.png
+
 .. raw:: html
 
         <div style='clear:both'></div>

@@ -468,14 +468,14 @@ class DoubleExcitationMinus(Operation):
 
 class QuantumNumberPreservingOR(Operation):
     r"""QuantumNumberPreservingOR(varphi, wires)
-    1-parameter 4-qubit spatial orbital rotation gate :math:`QNP_{OR}(\varphi)`. It can be decomposed into
-    sequence of sequence of `SingleExcitation(varphi, wires)` gates as follow:
+    1-parameter 4-qubit spatial orbital rotation gate. It can be decomposed into sequence of ``SingleExcitation(varphi, wires)``\
+    gates :math:`G(\varphi)` as follow:
 
     |
 
-    .. figure:: ../../_static/ops/qchem/quantum_number_preserving_or.png
+    .. figure:: ../../_static/qchem/quantum_number_preserving_or.png
         :align: center
-        :width: 50%
+        :width: 100%
         :target: javascript:void(0);
 
     |
@@ -501,7 +501,7 @@ class QuantumNumberPreservingOR(Operation):
                             0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1
                         \end{bmatrix}.
 
-    This operation performs the spatial orbital Given rotation :math:`|\phi_{0}\rangle = c|\phi_{0}\rangle - s|\phi_{1}\rangle`
+    This operation performs the spatial orbital Givens rotation :math:`|\phi_{0}\rangle = c|\phi_{0}\rangle - s|\phi_{1}\rangle`
     and :math:`|\phi_{1}\rangle = s|\phi_{0}\rangle + c|\phi_{1}\rangle`.
 
     **Details:**
@@ -516,8 +516,6 @@ class QuantumNumberPreservingOR(Operation):
         wires (Sequence[int]): the wires the operation acts on
 
     **Example**
-
-    The following circuit performs the transformation :math:``:
 
     .. code-block::
 

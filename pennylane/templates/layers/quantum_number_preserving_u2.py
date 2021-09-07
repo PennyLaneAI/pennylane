@@ -22,22 +22,22 @@ from pennylane.operation import Operation, AnyWires
 
 class QuantumNumberPreservingU2(Operation):
     r"""Implements a local, expressive, and quantum-number-preserving ansatz using VQE circuit fabrics
-    proposed by Anselmetti et al. in arXiv:2104.05692.
+    proposed by Anselmetti *et al.* in `arXiv:2104.05692 <https://arxiv.org/abs/2104.05692>`_.
 
     This template prepares the :math:`2M` qubits trial state, where `M` is the number of spatial orbitals.
     It uses 4-local-nearest-neighbor-tessellation of alternating even and off spatial-orbitals-pair 2-parameter,
     4-qubit :math:`\hat{Q}(\varphi, \theta)` gates. Each :math:`\hat{Q}` gate consists of a 1-parameter, 4-qubit spatial rotation
-    gate :math:`QuantumNumberPreserving_{OR}(\varphi)`, and  a 1-parameter, 4-qubit diagonal pair exchange gate :math:`DoubleExcitation(\theta)`
-    gate . In the :math:`\hat{Q}` gate we also allow inclusion of an optional constant :math:`\hat{\Pi}` gate,
-    with choices :math:`\hat{\Pi} \in \{\hat{I}, QuantumNumberPreserving_{OR}(\pi)\}`.
+    gate :math:`\text{QuantumNumberPreserving}_{OR}(\varphi)`, and  a 1-parameter, 4-qubit diagonal pair exchange gate :math:`\text{DoubleExcitation}(\theta)`
+    gate. In the :math:`\hat{Q}` gate we also allow inclusion of an optional constant :math:`\hat{\Pi}` gate,
+    with choices :math:`\hat{\Pi} \in \{\hat{I}, \text{QuantumNumberPreserving}_{OR}(\pi)\}`.
 
     The circuit implementing the gate fabric layer for `M = 4` is shown below:
 
     |
 
-    .. figure:: ../../_static/templates/layers/quantum_number_preserving_u.png
+    .. figure:: ../../_static/templates/layers/quantum_number_preserving_u2.png
         :align: center
-        :width: 50%
+        :width: 25%
         :target: javascript:void(0);
 
     |
@@ -46,21 +46,21 @@ class QuantumNumberPreservingU2(Operation):
 
     |
 
-    .. figure:: ../../_static/templates/layers/quantum_number_preserving_decompose.png
+    .. figure:: ../../_static/templates/layers/quantum_number_preserving_decompos.png
         :align: center
-        :width: 50%
+        :width: 100%
         :target: javascript:void(0);
 
     |
 
     Args:
-        weights (tensor_like): Array of weights of shape ``(L, D, 2)``.
+        weights (tensor_like): Array of weights of shape ``(L, D, 2)``\.
             ``L`` is the number of gate fabric layers and :math:`D=M-1`
             is the number of :math:`\hat{Q}(\varphi, \theta)` gates per layer.
         wires (Iterable): wires that the template acts on
         init_state (tensor_like): iterable or shape ``(len(wires),)`` tensor representing the Hartree-Fock state
             used to initialize the wires
-        pi_gate_include (boolean): If `True`, sets the optional constant :math:`\Pi` to :math:`QNP_{OR}(\pi)`.
+        pi_gate_include (boolean): If `True`, sets the optional constant :math:`\Pi` to :math:`\text{QuantumNumberPreserving}_{OR}(\pi)`.
             Default value is :math:`\hat{I}`.
 
     .. UsageDetails::
