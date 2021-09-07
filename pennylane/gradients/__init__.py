@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-
 Quantum gradient transforms are strategies for computing the gradient of a quantum
 circuit that work by **transforming** the quantum circuit into one or more gradient circuits.
 These gradient circuits, once executed and post-processed, return the gradient
