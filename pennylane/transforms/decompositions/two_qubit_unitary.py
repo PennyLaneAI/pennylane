@@ -71,6 +71,9 @@ def _compute_num_cnots(U):
     gammaU = math.dot(u, math.T(u))
 
     trace = qml.math.trace(gammaU)
+
+    # For the case with 3 CNOTs, the trace is a non-zero complex number
+    # with both real and imaginary parts.
     num_cnots = 3
 
     # Case: 0 CNOTs (tensor product), the trace is +/- 4
@@ -84,31 +87,6 @@ def _compute_num_cnots(U):
         num_cnots = 2
 
     return num_cnots
-
-
-def _select_rotation_angles(U):
-    r"""Choose the rotation angles of RZ, RY in the two-qubit decomposition.
-    They are chosen as per Proposition V.1 in quant-ph/0308033 and are based
-    on the phases of the eigenvalues of :math:`E^\dagger \gamma(U) E`, where
-
-    .. math::
-
-        \gamma(U) = (E^\dag U E) (E^\dag U E)^T.
-    """
-    u = math.dot(Edag, math.dot(U, E))
-    gammaU = math.dot(u, math.T(u))
-    evs, _ = math.linalg.eig(gammaU)
-
-    # The rotation angles can be computed as follows (any three eigenvalues can be used)
-    x, y, z = math.angle(evs[0]), math.angle(evs[1]), math.angle(evs[2])
-
-    # Compute functions of the eigenvalues; there are different options in v1
-    # vs. v3 of the paper, I'm not entirely sure why. This is the version from v3.
-    alpha = (x + y) / 2
-    beta = (x + z) / 2
-    delta = (z + y) / 2
-
-    return alpha, beta, delta
 
 
 def _su2su2_to_tensor_products(U):
@@ -185,10 +163,10 @@ def _extract_su2su2_prefactors(U, V):
     # First, we find a matrix p (hopefully) in SO(4) s.t. p^T u u^T p is diagonal.
     # Since uuT is complex and symmetric, both its real / imag parts share a set
     # of real-valued eigenvectors.
-    ev_p, p = math.linalg.eig(math.real(uuT))
+    ev_p, p = math.linalg.eig(uuT)
 
     # We also do this for v, i.e., find q (hopefully) in SO(4) s.t. q^T v v^T q is diagonal.
-    ev_q, q = math.linalg.eig(math.real(vvT))
+    ev_q, q = math.linalg.eig(vvT)
 
     # If determinant of p is not 1, it is in O(4) but not SO(4), and has
     # determinant -1. We can transform it to SO(4) by simply negating one
@@ -235,64 +213,112 @@ def _extract_su2su2_prefactors(U, V):
     return A, B, C, D
 
 
-def two_qubit_decomposition(U, wires):
-    r"""Recover the decomposition of a two-qubit matrix :math:`U` in terms of
-    elementary operations.
-
-    The work of `Shende, Markov, and Bullock (2003)
-    <https://arxiv.org/abs/quant-ph/0308033>`__ presents a fixed-form
-    decomposition of :math:`U` in terms of single-qubit gates and
-    CNOTs. Multiple such decompositions are possible (by choosing two of
-    ``{RX, RY, RZ}``). Here we choose the ``RY``, ``RZ`` case (fig. 2 in
-    the above) to match with the default decomposition of the single-qubit
-    ``Rot`` operations as ``RZ RY RZ``. The form of the decomposition is:
-
-    .. figure:: ../../_static/two_qubit_decomposition.svg
-        :align: center
-        :width: 100%
-        :target: javascript:void(0);
-
-    where :math:`A, B, C, D` are :math:`SU(2)` gates.
-
-    Args:
-        U (tensor): A 4 x 4 unitary matrix.
-        wires (Union[Wires, Sequence[int] or int]): The wires on which to apply the operation.
-
-    Returns:
-        list[Operation]: A list of operations that represent the decomposition
-        of the matrix U.
+def _decomposition_0_cnots(U, wires):
+    r"""If there are no CNOTs, this is just a tensor product of two single-qubit gates.
+    We can perform that decomposition directly:
+     -U- = -A-
+     -U- = -B-
     """
-    # First, we note that this method works only for SU(4) gates, meaning that
-    # we need to rescale the matrix by its determinant.
-    U = _convert_to_su4(U)
+    A, B = _su2su2_to_tensor_products(U)
+    A_ops = zyz_decomposition(A, wires[0])
+    B_ops = zyz_decomposition(B, wires[1])
+    return A_ops + B_ops
 
-    # The next thing we will do is compute the number of CNOTs needed, as this affects
-    # the form of the decomposition.
-    num_cnots = _compute_num_cnots(U)
 
-    # If there are no CNOTs, this is just a tensor product of two single-qubit gates
-    # so we can perform that decomposition directly.
-    if num_cnots == 0:
-        A, B = _su2su2_to_tensor_products(U)
-        A_ops = zyz_decomposition(A, wires[0])
-        B_ops = zyz_decomposition(B, wires[1])
-        return A_ops + B_ops
+def _decomposition_1_cnot(U, wires):
+    r"""If 1 CNOT is required, we can write the circuit as
+     -U- = -A--C--C-
+     -U- = -B--X--D-
+    Note that the direction of the CNOT is irrelevant, because we could always
+    flip it by applying Hadamards on both qubits on each side, and then absorb
+    the Hadamards into A/B/C/D.
+    """
+    A, B = _su2su2_to_tensor_products(U)
+    A_ops = zyz_decomposition(A, wires[0])
+    B_ops = zyz_decomposition(B, wires[1])
+    return A_ops + B_ops
 
-    # Furthermore, we add a SWAP as per v1 of 0308033, which helps with some
+
+def _decomposition_2_cnots(U, wires):
+    r"""If 2 CNOTs are required, we can write the circuit as
+     -U- = -A--X--RZ(d)--X--C-
+     -U- = -B--C--RX(p)--C--D-
+    We need to find the angles for the Z and X rotations such that the inner
+    part has the same spectrum as U, and then we can recover A, B, C, D.
+    """
+    # Compute the rotation angles
+    u = math.dot(Edag, math.dot(U, E))
+    gammaU = math.dot(u, math.T(u))
+    evs, _ = math.linalg.eig(gammaU)
+
+    # These choices are based on Proposition 5.1 of
+    # https://web.eecs.umich.edu/~imarkov/pubs/conf/spie04-2qubits.pdf
+
+    # Need to find the angle that is not the conjugate of this one
+    x = math.angle(evs[0])
+    y = math.angle(evs[1])
+
+    # If it was the conjugate, grab a different eigenvalue.
+    if math.allclose(x, -y):
+        y = math.angle(evs[2])
+
+    delta = (x + y) / 2
+    phi = (x - y) / 2
+
+    # This is the "interior" part of the decomposition
+    interior_decomp = [
+        qml.CNOT(wires=[wires[1], wires[0]]),
+        qml.RZ(delta, wires=wires[0]),
+        qml.RX(phi, wires=wires[1]),
+        qml.CNOT(wires=[wires[1], wires[0]]),
+    ]
+
+    RZd = qml.RZ(delta, wires=0).matrix
+    RXp = qml.RX(phi, wires=0).matrix
+
+    # We need the matrix representation of this interior part, V, in order to
+    # decompose U = (A \otimes B) V (C \otimes D)
+    V = qml.math.dot(CNOT10, qml.math.dot(qml.math.kron(RZd, RXp), CNOT10))
+
+    # Now we find the A, B, C, D in SU(2), and return the decomposition
+    A, B, C, D = _extract_su2su2_prefactors(U, V)
+
+    A_ops = zyz_decomposition(A, wires[0])
+    B_ops = zyz_decomposition(B, wires[1])
+    C_ops = zyz_decomposition(C, wires[0])
+    D_ops = zyz_decomposition(D, wires[1])
+
+    return C_ops + D_ops + interior_decomp + A_ops + B_ops
+
+
+def _decomposition_3_cnots(U, wires):
+    r"""The most general form of this decomposition is U = (A \otimes B) V (C \otimes D),
+    where V is as depicted in the circuit below:
+     -U- = -C--X--RZ(d)--C---------X--A-
+     -U- = -D--C--RY(b)--X--RY(a)--C--B-
+    """
+
+    # First we add a SWAP as per v1 of 0308033, which helps with some
     # rearranging of gates in the decomposition (it will cancel out the fact
     # that we need to add a SWAP to fix the determinant in another part later).
-
-    # The final form of this decomposition is U = (A \otimes B) V (C \otimes D),
-    # as expressed in the circuit below.
-    # -U- = -C--X--RZ(d)--C---------X--A-|
-    # -U- = -D--C--RY(b)--X--RY(a)--C--B-|
-
     swap_U = np.exp(1j * np.pi / 4) * math.dot(math.cast_like(SWAP, U), U)
 
-    # Next, we can choose the angles of the RZ / RY rotations. See the docstring
-    # within the function used below. This is to ensure U and V somehow maintain
-    # a relationship between their spectra to ensure we can recover A, B, C, D.
-    alpha, beta, delta = _select_rotation_angles(swap_U)
+    # Choose the rotation angles of RZ, RY in the two-qubit decomposition.
+    # They are chosen as per Proposition V.1 in quant-ph/0308033 and are based
+    # on the phases of the eigenvalues of :math:`E^\dagger \gamma(U) E`, where
+    #    \gamma(U) = (E^\dag U E) (E^\dag U E)^T.
+    # The rotation angles can be computed as follows (any three eigenvalues can be used)
+    u = math.dot(Edag, math.dot(swap_U, E))
+    gammaU = math.dot(u, math.T(u))
+    evs, _ = math.linalg.eig(gammaU)
+
+    x, y, z = math.angle(evs[0]), math.angle(evs[1]), math.angle(evs[2])
+
+    # Compute functions of the eigenvalues; there are different options in v1
+    # vs. v3 of the paper, I'm not entirely sure why. This is the version from v3.
+    alpha = (x + y) / 2
+    beta = (x + z) / 2
+    delta = (z + y) / 2
 
     # This is the interior portion of the decomposition circuit
     interior_decomp = [
@@ -312,8 +338,8 @@ def two_qubit_decomposition(U, wires):
     # requires that both are in SU(4), so we add a SWAP after to V. We will see
     # how this gets fixed later.
     #
-    # -V- = -X--RZ(d)--C---------X--SWAP-|
-    # -V- = -C--RY(b)--X--RY(a)--C--SWAP-|
+    # -V- = -X--RZ(d)--C---------X--SWAP-
+    # -V- = -C--RY(b)--X--RY(a)--C--SWAP-
 
     RZd = qml.RZ(math.cast_like(delta, 1j), wires=0).matrix
     RYb = qml.RY(beta, wires=0).matrix
@@ -337,17 +363,17 @@ def two_qubit_decomposition(U, wires):
     A, B, C, D = _extract_su2su2_prefactors(swap_U, V)
 
     # At this point, we have the following:
-    # -U-SWAP- = --C--X-RZ(d)-C-------X-SWAP--A|
-    # -U-SWAP- = --D--C-RZ(b)-X-RY(a)-C-SWAP--B|
+    # -U-SWAP- = --C--X-RZ(d)-C-------X-SWAP--A
+    # -U-SWAP- = --D--C-RZ(b)-X-RY(a)-C-SWAP--B
     #
     # Using the relationship that SWAP(A \otimes B) SWAP = B \otimes A,
-    # -U-SWAP- = --C--X-RZ(d)-C-------X--B--SWAP-|
-    # -U-SWAP- = --D--C-RZ(b)-X-RY(a)-C--A--SWAP-|
+    # -U-SWAP- = --C--X-RZ(d)-C-------X--B--SWAP-
+    # -U-SWAP- = --D--C-RZ(b)-X-RY(a)-C--A--SWAP-
     #
     # Now the SWAPs cancel, giving us the desired decomposition
     # (up to a global phase).
-    # -U- = --C--X-RZ(d)-C-------X--B--|
-    # -U- = --D--C-RZ(b)-X-RY(a)-C--A--|
+    # -U- = --C--X-RZ(d)-C-------X--B--
+    # -U- = --D--C-RZ(b)-X-RY(a)-C--A--
 
     A_ops = zyz_decomposition(A, wires[1])
     B_ops = zyz_decomposition(B, wires[0])
@@ -356,3 +382,55 @@ def two_qubit_decomposition(U, wires):
 
     # Return the full decomposition
     return C_ops + D_ops + interior_decomp + A_ops + B_ops
+
+
+def two_qubit_decomposition(U, wires):
+    r"""Recover the decomposition of a two-qubit matrix :math:`U` in terms of
+    elementary operations.
+
+    The work of `Shende, Markov, and Bullock (2003)
+    <https://arxiv.org/abs/quant-ph/0308033>`__ presents a fixed-form
+    decomposition of :math:`U` in terms of single-qubit gates and
+    CNOTs. Multiple such decompositions are possible (by choosing two of ``{RX,
+    RY, RZ}``). Here we choose the ``RY``, ``RZ`` case (fig. 2 in the above) to
+    match with the default decomposition of the single-qubit ``Rot`` operations
+    as ``RZ RY RZ``. The most general form of the decomposition is:
+
+    .. figure:: ../../_static/two_qubit_decomposition.svg
+        :align: center
+        :width: 100%
+        :target: javascript:void(0);
+
+    where :math:`A, B, C, D` are :math:`SU(2)` gates.
+
+    However, it may also be the case that the circuit can be implemented using
+    fewer than 3 CNOT gates; this condition is checked for, and simpler decompositions
+    are applied where possible.
+
+    Args:
+        U (tensor): A 4 x 4 unitary matrix.
+        wires (Union[Wires, Sequence[int] or int]): The wires on which to apply the operation.
+
+    Returns:
+        list[Operation]: A list of operations that represent the decomposition
+        of the matrix U.
+
+    """
+    # First, we note that this method works only for SU(4) gates, meaning that
+    # we need to rescale the matrix by its determinant.
+    U = _convert_to_su4(U)
+
+    # The next thing we will do is compute the number of CNOTs needed, as this affects
+    # the form of the decomposition.
+    num_cnots = _compute_num_cnots(U)
+
+    if num_cnots == 0:
+        decomp = _decomposition_0_cnots(U, wires)
+    elif num_cnots == 1:
+        decomp = _decomposition_1_cnot(U, wires)
+    elif num_cnots == 2:
+        decomp = _decomposition_2_cnots(U, wires)
+    else:
+        decomp = _decomposition_3_cnots(U, wires)
+
+    return decomp
