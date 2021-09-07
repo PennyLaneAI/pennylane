@@ -472,7 +472,10 @@ class DefaultQubit(QubitDevice):
         if observable.name in ("Hamiltonian", "SparseHamiltonian"):
             assert self.shots is None, f"{observable.name} must be used with shots=None"
 
-            backprop_mode = not isinstance(self.state, np.ndarray)
+            backprop_mode = (
+                not isinstance(self.state, np.ndarray)
+                or any(not isinstance(d, (float, np.ndarray)) for d in observable.data)
+            ) and observable.name == "Hamiltonian"
 
             if backprop_mode:
                 # We must compute the expectation value assuming that the Hamiltonian
@@ -512,6 +515,9 @@ class DefaultQubit(QubitDevice):
                     coo_matrix(qml.math.conj(self.state)),
                     coo_matrix.dot(Hmat, coo_matrix(self.state.reshape(len(self.state), 1))),
                 ).toarray()[0]
+
+            if observable.name == "Hamiltonian":
+                res = qml.math.squeeze(res)
 
             return qml.math.real(res)
 
