@@ -122,7 +122,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
                                 gradient_kwargs=gradient_kwargs,
                             )
 
-                        vjps = processing_fn(execute_fn(vjp_tapes)[0])
+                            vjps = processing_fn(execute_fn(vjp_tapes)[0])
 
                     else:
                         vjp_tapes, processing_fn = qml.gradients.batch_vjp(
