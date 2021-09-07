@@ -164,13 +164,13 @@ class QNode:
             return QNode._validate_backprop_method(device, interface)
 
         if diff_method == "adjoint":
-            return QNode._validate_adjoint_method(device, interface)
+            return QNode._validate_adjoint_method(device)
 
         if diff_method == "device":
-            return QNode._validate_device_method(device, interface)
+            return QNode._validate_device_method(device)
 
         if diff_method == "parameter-shift":
-            return QNode._validate_parameter_shift(device, interface)
+            return QNode._validate_parameter_shift(device)
 
         if diff_method == "finite-diff":
             return qml.gradients.finite_diff, {}, device
@@ -213,13 +213,13 @@ class QNode:
             ``gradient_kwargs``, and the device to use when calling the execute function.
         """
         try:
-            return QNode._validate_device_method(device, interface)
+            return QNode._validate_device_method(device)
         except qml.QuantumFunctionError:
             try:
                 return QNode._validate_backprop_method(device, interface)
             except qml.QuantumFunctionError:
                 try:
-                    return QNode._validate_parameter_shift(device, interface)
+                    return QNode._validate_parameter_shift(device)
                 except qml.QuantumFunctionError:
                     return qml.gradients.finite_diff, {}, device
 
@@ -267,7 +267,7 @@ class QNode:
         )
 
     @staticmethod
-    def _validate_adjoint_method(device, interface):  # pylint: disable=unused-argument
+    def _validate_adjoint_method(device):
         # The conditions below provide a minimal set of requirements that we can likely improve upon in
         # future, or alternatively summarize within a single device capability. Moreover, we also
         # need to inspect the circuit measurements to ensure only expectation values are taken. This
@@ -293,7 +293,7 @@ class QNode:
         return "device", {"use_device_state": True, "method": "adjoint_jacobian"}, device
 
     @staticmethod
-    def _validate_device_method(device, interface):  # pylint: disable=unused-argument
+    def _validate_device_method(device):
         # determine if the device provides its own jacobian method
         provides_jacobian = device.capabilities().get("provides_jacobian", False)
 
@@ -306,7 +306,7 @@ class QNode:
         return "device", {}, device
 
     @staticmethod
-    def _validate_parameter_shift(device, interface):  # pylint: disable=unused-argument
+    def _validate_parameter_shift(device):
         model = device.capabilities().get("model", None)
 
         if model == "qubit":
