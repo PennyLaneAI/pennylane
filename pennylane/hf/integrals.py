@@ -122,8 +122,40 @@ def generate_params(params, args):
 
 
 def expansion(la, lb, ra, rb, alpha, beta, t):
-    r"""Compute Hermite Gaussian expansion coefficients recursively for a set of Gaussian functions
-    centered on the same position.
+    r"""Compute Hermite Gaussian expansion coefficients recursively for two Gaussian functions.
+
+    An overlap distribution, which defines the product of two Gaussians, can be written as a Hermite
+    expansion as [`Helgaker (1995) p798 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]
+
+    .. math::
+
+        \Omega_{ij} = \sum_{t=0}^{i+j} E_t^{ij} \Lambda_t,
+
+    where :math:`\Lambda` is a Hermite polynomial of degree t, :math:`E` denotes the expansion
+    coefficients, :math:`\Omega_{ij} = G_i G_j` and :math:`G` is a Gaussian function. The overalp
+    integral between two Gaussian functions can be simply computed by integrating over the overlap
+    distribution which requires obtaining the expansion coefficients. This can be done recursively
+    as [`Helgaker (1995) p799 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]
+
+    .. math::
+
+        E_t^{i+1,j} = \frac{1}{2p} E_{t-1}^{ij} - \frac{qr}{\alpha} E_{t}^{ij} + (t+1) E_{t+1}^{ij},
+
+    and
+
+    .. math::
+
+        E_t^{i,j+1} = \frac{1}{2p} E_{t-1}^{ij} + \frac{qr}{\beta} E_{t}^{ij} + (t+1) E_{t+1}^{ij},
+
+    where :math:`p = \alpha + \beta` and :math:`q = \alpha \beta / (\alpha + \beta)` are computed
+    from the Gaussian exponents :math:`\alpha, \beta` and the position :math:`r` is computed as
+    :math:`r = r_\alpha - r_\beta`. The starting coefficient has is
+
+    .. math::
+
+        E_0^{00} = e^{-qr^2},
+
+    and :math:`E_t^{ij} = 0` is :math:`t < 0` or :math:`t > (i+j)`.
 
     Args:
         la (integer): angular momentum component for the first Gaussian function
@@ -152,7 +184,7 @@ def expansion(la, lb, ra, rb, alpha, beta, t):
     r = ra - rb
 
     if la == lb == t == 0:
-        return anp.exp(-q * r * r)
+        return anp.exp(-q * r**2)
 
     elif t < 0 or t > (la + lb):
         return 0.0
@@ -173,6 +205,17 @@ def expansion(la, lb, ra, rb, alpha, beta, t):
 
 def gaussian_overlap(la, lb, ra, rb, alpha, beta):
     r"""Compute overlap integral for two primitive Gaussian functions.
+
+    The overlap integral between two Gaussian functions denoted by :math;`a` and :math;`b` can be
+    computed as [`Helgaker (1995) p803 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]:
+
+    .. math::
+
+        S_{ab} = E^{ij} E^{kl} E^{mn} (\frac{\pi}{p})^{3/2},
+
+    where :math;`E` is a coefficient that can be computed recursively, :math;`i-n` are the angular
+    momentum quantum numbers corresponding to different Cartesian components and :math;`p` is
+    computed from the exponents of the two Gaussian functions as :math;`p = \alpha + \beta`.
 
     Args:
         la (integer): angular momentum for the first Gaussian function
@@ -195,10 +238,24 @@ def gaussian_overlap(la, lb, ra, rb, alpha, beta):
 def generate_overlap(basis_a, basis_b):
     r"""Return a function that normalizes and computes the overlap integral for two contracted
     Gaussian orbitals.
+
+    Args:
+        basis_a (BasisFunction): first basis function
+        basis_b (BasisFunction): second basis function
+
+    Returns:
+        function: function that normalizes and computes the overlap integral
     """
 
     def overlap_integral(*args):
-        r"""Normalize and compute the overlap integral for two contracted Gaussian functions."""
+        r"""Normalize and compute the overlap integral for two contracted Gaussian functions.
+
+        Args:
+            args (array[float]): initial values of the differentiable parameters
+
+        Returns:
+            array[float]: the overlap integral between two contracted Gaussian orbitals
+        """
 
         args_a = [i[0] for i in args]
         args_b = [i[1] for i in args]
