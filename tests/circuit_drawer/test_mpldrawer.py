@@ -68,7 +68,7 @@ class TestInitialization:
         assert drawer._box_dx == 0.4
         assert drawer._circ_rad == 0.3
         assert drawer._ctrl_rad == 0.1
-        assert drawer._octrl_rad == 0.15
+        assert drawer._octrl_rad == 0.1
         assert drawer._swap_dx == 0.2
         plt.close()
 
@@ -265,7 +265,7 @@ class TestCTRL:
         assert circ.get_linewidth() == plt.rcParams["lines.linewidth"]
 
         assert circ.center == (0, 0)
-        assert circ.width == 0.3
+        assert circ.width == 0.2
 
     def test_ctrl_control_values_error(self):
         """Tests a ValueError is raised if different number of wires and control_values."""
