@@ -200,7 +200,7 @@ class MPLDrawer:
 
         self._circ_rad = 0.3
         self._ctrl_rad = 0.1
-        self._octrl_rad = 0.15
+        self._octrl_rad = 0.1
         self._swap_dx = 0.2
 
         ## Creating figure and ax
@@ -216,6 +216,7 @@ class MPLDrawer:
             xticks=[],
             yticks=[],
         )
+        self.ax.axis('off')
 
         self.ax.invert_yaxis()
 
