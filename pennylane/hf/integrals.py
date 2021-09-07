@@ -184,7 +184,7 @@ def expansion(la, lb, ra, rb, alpha, beta, t):
     r = ra - rb
 
     if la == lb == t == 0:
-        return anp.exp(-q * r**2)
+        return anp.exp(-q * r ** 2)
 
     elif t < 0 or t > (la + lb):
         return 0.0
