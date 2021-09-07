@@ -85,9 +85,9 @@ class MPLDrawer:
     **Matplotlib Integration**
 
     This class relies on matplotlib.  As such, users can extend this class via interacting with the figure
-    ``drawer.fig`` and axes ``drawer.ax`` objects manually.  For example, the example circuit manipulates the
+    ``drawer.fig`` and axes ``drawer.ax`` objects manually.  For instance, the example circuit manipulates the
     figure to set a title using ``drawer.fig.suptitle``. Users can also save the image using ``plt.savefig``.
-    As descrived in the next section, the figure supports both global styling and individual styling of
+    As described in the next section, the figure supports both global styling and individual styling of
     elements with matplotlib styles, configuration, and keywords.
 
     **Formatting**
@@ -280,7 +280,7 @@ class MPLDrawer:
                 of an Iterable affect the output
             text (str): string to print at the box's center
 
-        Kwargs:
+        Keyword Args:
             extra_width (float): Extra box width
             zorder_base=0 (Int): increase number to draw on top of other objects, like control wires
             box_kwargs=None (dict): Any matplotlib keywords for the Rectangle patch
