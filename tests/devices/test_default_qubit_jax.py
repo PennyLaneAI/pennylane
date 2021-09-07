@@ -186,8 +186,7 @@ class TestQNodeIntegration:
         assert not np.all(a == b)
 
     def test_sampling_analytic_mode(self):
-        """Test that when sampling with shots=None an error is raised.
-        """
+        """Test that when sampling with shots=None an error is raised."""
         dev = qml.device("default.qubit.jax", wires=1, shots=None)
 
         @qml.qnode(dev, interface="jax", diff_method="backprop")
@@ -195,8 +194,9 @@ class TestQNodeIntegration:
             return qml.sample(qml.PauliZ(wires=0))
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="The number of shots has to be explicitly set on the device "\
-                "when using sample-based measurements."
+            qml.QuantumFunctionError,
+            match="The number of shots has to be explicitly set on the device "
+            "when using sample-based measurements.",
         ):
             res = circuit()
 
