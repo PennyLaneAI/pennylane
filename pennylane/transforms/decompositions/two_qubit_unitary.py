@@ -59,6 +59,33 @@ def _convert_to_su4(U):
     return U
 
 
+def _compute_num_cnots(U):
+    r"""Compute the number of CNOTs required to implement U. This is based on
+    the trace of
+
+    .. math::
+
+        \gamma(U) = (E^\dag U E) (E^\dag U E)^T.
+    """
+    u = math.dot(Edag, math.dot(U, E))
+    gammaU = math.dot(u, math.T(u))
+
+    trace = qml.math.trace(gammaU)
+    num_cnots = 3
+
+    # Case: 0 CNOTs (tensor product), the trace is +/- 4
+    if qml.math.allclose(trace, 4) or qml.math.allclose(trace, -4):
+        num_cnots = 0
+    # Case: 1 CNOT, the trace is 0
+    elif qml.math.allclose(trace, 0.0):
+        num_cnots = 1
+    # Case: 2 CNOTs, the trace has only a real part
+    elif qml.math.allclose(qml.math.imag(trace), 0):
+        num_cnots = 2
+
+    return num_cnots
+
+
 def _select_rotation_angles(U):
     r"""Choose the rotation angles of RZ, RY in the two-qubit decomposition.
     They are chosen as per Proposition V.1 in quant-ph/0308033 and are based
@@ -235,31 +262,32 @@ def two_qubit_decomposition(U, wires):
         list[Operation]: A list of operations that represent the decomposition
         of the matrix U.
     """
-    # First, test if we have a tensor product of two single-qubit operations. If
-    # so, we don't actually need to do a decomposition. To test this, we can
-    # check if Edag U E is in SO(4) because of the isomorphism between SO(4) and
-    # SU(2) x SU(2).
-    test_so4 = math.dot(math.cast_like(Edag, U), math.dot(U, math.cast_like(E, U)))
+    # First, we note that this method works only for SU(4) gates, meaning that
+    # we need to rescale the matrix by its determinant.
+    U = _convert_to_su4(U)
 
-    if math.allclose(math.linalg.det(test_so4), 1.0) and math.allclose(
-        math.dot(test_so4, math.T(test_so4)), math.eye(4)
-    ):
+    # The next thing we will do is compute the number of CNOTs needed, as this affects
+    # the form of the decomposition.
+    num_cnots = _compute_num_cnots(U)
+
+    # If there are no CNOTs, this is just a tensor product of two single-qubit gates
+    # so we can perform that decomposition directly.
+    if num_cnots == 0:
         A, B = _su2su2_to_tensor_products(U)
         A_ops = zyz_decomposition(A, wires[0])
         B_ops = zyz_decomposition(B, wires[1])
         return A_ops + B_ops
+
+    # Furthermore, we add a SWAP as per v1 of 0308033, which helps with some
+    # rearranging of gates in the decomposition (it will cancel out the fact
+    # that we need to add a SWAP to fix the determinant in another part later).
 
     # The final form of this decomposition is U = (A \otimes B) V (C \otimes D),
     # as expressed in the circuit below.
     # -U- = -C--X--RZ(d)--C---------X--A-|
     # -U- = -D--C--RY(b)--X--RY(a)--C--B-|
 
-    # First, we note that this method works only for SU(4) gates, meaning that
-    # we need to rescale the matrix by its determinant. Furthermore, we add a
-    # SWAP as per v1 of 0308033, which helps with some rearranging of gates in
-    # the decomposition (it will cancel out the fact that we need to add a SWAP
-    # to fix the determinant in another part later).
-    swap_U = np.exp(1j * np.pi / 4) * math.dot(math.cast_like(SWAP, U), _convert_to_su4(U))
+    swap_U = np.exp(1j * np.pi / 4) * math.dot(math.cast_like(SWAP, U), U)
 
     # Next, we can choose the angles of the RZ / RY rotations. See the docstring
     # within the function used below. This is to ensure U and V somehow maintain
