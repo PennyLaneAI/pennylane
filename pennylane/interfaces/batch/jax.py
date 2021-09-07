@@ -141,7 +141,10 @@ def _execute(
                     #     for a in v:
                     #         vjps.append(jnp.sum([b for c, d in enumerate(b)]) for b in final_vjps]))
 
-                    #print("Final vjps: ", final_vjps)
+                    #TODO: investigate how a new dimension could be used correctly
+                    # for i in range(len(final_vjps[0])):
+                    #     final_vjps[0][i][0] = jnp.append(final_vjps[0][i][0], final_vjps[1][i][0])
+                    #     final_vjps[0][i][0] = jnp.expand_dims(final_vjps[0][i][0], 1)
                     vjps = final_vjps[0]
                 else:
                     vjp_tapes, processing_fn = qml.gradients.batch_vjp(
