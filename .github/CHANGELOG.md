@@ -395,6 +395,11 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 <h3>Breaking changes</h3>
 
+* Specifying `shots=None` with `qml.sample` was previously deprecated.
+  From this release onwards, setting `shots=None` when sampling will
+  raise an error also for `default.qubit.jax`.
+  [(#1629)](https://github.com/PennyLaneAI/pennylane/pull/1629)
+
 * The class `qml.Interferometer` is deprecated and will be renamed `qml.InterferometerUnitary`
   after one release cycle.
   [(#1546)](https://github.com/PennyLaneAI/pennylane/pull/1546)
@@ -444,7 +449,7 @@ This release contains contributions from (in alphabetical order):
 
 Vishnu Ajith, Akash Narayanan B, Thomas Bromley, Sahaj Dhamija, Tanya Garg, Josh Izaac, Prateek Jain,
 Ankit Khandelwal, Christina Lee, Johannes Jakob Meyer, Romain Moyard, Esteban Payares, Pratul Saini,
-Maria Schuld, Arshpreet Singh, Ingrid Strandberg, Slimane Thabet, David Wierichs, Vincent Wong.
+Maria Schuld, Arshpreet Singh, Ingrid Strandberg, Slimane Thabet, Antal Száva, David Wierichs, Vincent Wong.
 
 # Release 0.17.0 (current release)
 
