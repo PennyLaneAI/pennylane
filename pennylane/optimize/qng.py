@@ -257,5 +257,5 @@ class QNGOptimizer(GradientDescentOptimizer):
         """
         grad_flat = np.array(list(_flatten(grad)))
         x_flat = np.array(list(_flatten(args)))
-        x_new_flat = x_flat - self._stepsize * np.linalg.solve(self.metric_tensor, grad_flat)
+        x_new_flat = x_flat - self.stepsize * np.linalg.solve(self.metric_tensor, grad_flat)
         return unflatten(x_new_flat, args)

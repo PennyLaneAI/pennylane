@@ -59,7 +59,7 @@ class TestExceptions:
         # lipschitz constant is given by sum(|coeffs|)
         lipschitz = np.sum(np.abs(coeffs))
 
-        assert opt._stepsize > 2 / lipschitz
+        assert opt.stepsize > 2 / lipschitz
 
         with pytest.raises(
             ValueError, match=f"The learning rate must be less than {2 / lipschitz}"
