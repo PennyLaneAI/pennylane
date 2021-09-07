@@ -104,3 +104,167 @@ def contracted_norm(l, alpha, a):
     ).sum()
     n = 1 / anp.sqrt(c * s)
     return n
+
+
+def gaussian_kinetic(la, lb, ra, rb, alpha, beta):
+    r"""
+    """
+    l1, m1, n1 = la
+    l2, m2, n2 = lb
+
+    k1 = beta * (2 * (l2 + m2 + n2) + 3) * gaussian_overlap((l1, m1, n1), (l2, m2, n2), ra, rb, alpha, beta)
+
+    k2 = -2 * (beta ** 2) * \
+            (gaussian_overlap((l1, m1, n1), (l2 + 2, m2, n2), ra, rb, alpha, beta) +
+             gaussian_overlap((l1, m1, n1), (l2, m2 + 2, n2), ra, rb, alpha, beta) +
+             gaussian_overlap((l1, m1, n1), (l2, m2, n2 + 2), ra, rb, alpha, beta))
+
+    k3 = -0.5 * (l2 * (l2 - 1) * gaussian_overlap((l1, m1, n1), (l2 - 2, m2, n2), ra, rb, alpha, beta) +
+                 m2 * (m2 - 1) * gaussian_overlap((l1, m1, n1), (l2, m2 - 2, n2), ra, rb, alpha, beta) +
+                 n2 * (n2 - 1) * gaussian_overlap((l1, m1, n1), (l2, m2, n2 - 2), ra, rb, alpha, beta))
+
+    return k1 + k2 + k3
+
+def generate_kinetic(basis_a, basis_b):
+    r"""
+    """
+    def kinetic_integral(*args):
+
+        ra, ca, alpha = generate_params(basis_a.params, args[0])
+        rb, cb, beta = generate_params(basis_b.params, args[1])
+
+        ca = ca * gaussian_norm(basis_a.L, alpha)
+        cb = cb * gaussian_norm(basis_b.L, beta)
+
+        na = contracted_norm(basis_a.L, alpha, ca)
+        nb = contracted_norm(basis_b.L, beta, cb)
+
+        return na * nb * ((ca[:, anp.newaxis] * cb) * gaussian_kinetic(basis_a.L, basis_b.L, ra, rb,
+                                                                       alpha[:, anp.newaxis],
+                                                                       beta)).sum()
+    return kinetic_integral
+
+def nuclear_attraction(la, lb, ra, rb, alpha, beta, r):
+    """
+    Computes nuclear attraction between Gaussian primitives
+    Note that C is the coordinates of the nuclear centre
+    """
+    l1, m1, n1 = la
+    l2, m2, n2 = lb
+    p = alpha + beta
+    gp = gaussian_prod(alpha, beta, ra[:,anp.newaxis,anp.newaxis], rb[:,anp.newaxis,anp.newaxis])
+    dr = gp - anp.array(r)[:,anp.newaxis,anp.newaxis]
+
+    val = 0.0
+    for t in range(l1 + l2 + 1):
+        for u in range(m1 + m2 + 1):
+            for v in range(n1 + n2 + 1):
+                val = val + expansion(l1, l2, ra[0], rb[0], alpha, beta, t) * \
+                            expansion(m1, m2, ra[1], rb[1], alpha, beta, u) * \
+                            expansion(n1, n2, ra[2], rb[2], alpha, beta, v) * \
+                            hermite_coulomb(t, u, v, 0, p, dr)
+    val = val * 2 * anp.pi / p
+    return val
+
+def generate_attraction(basis_a, basis_b):
+    """
+    Computes the nuclear attraction integral
+    """
+    def attraction_integral(*args):
+
+        print(*args)
+        print()
+
+        r = args[0]
+        ra, ca, alpha = generate_params(basis_a.params, args[1])
+        rb, cb, beta = generate_params(basis_b.params, args[2])
+
+        ca = ca * gaussian_norm(basis_a.L, alpha)
+        cb = cb * gaussian_norm(basis_b.L, beta)
+
+
+        na = contracted_norm(basis_a.L, alpha, ca)
+        nb = contracted_norm(basis_b.L, beta, cb)
+
+        v = na * nb * ((ca * cb[:,anp.newaxis]) * nuclear_attraction(basis_a.L, basis_b.L, ra, rb, alpha, beta[:,anp.newaxis], r)).sum()
+        return v
+    return attraction_integral
+
+
+def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta):
+    """Electron repulsion between Gaussians"""
+    l1, m1, n1 = la
+    l2, m2, n2 = lb
+    l3, m3, n3 = lc
+    l4, m4, n4 = ld
+
+    p = alpha + beta
+    q = gamma + delta
+    quotient = (p * q)/(p + q)
+
+    p_ab = gaussian_prod(alpha, beta, ra[:,anp.newaxis,anp.newaxis,anp.newaxis,anp.newaxis],
+                      rb[:,anp.newaxis,anp.newaxis,anp.newaxis,anp.newaxis]) # A and B composite center
+    p_cd = gaussian_prod(gamma, delta, rc[:,anp.newaxis,anp.newaxis,anp.newaxis,anp.newaxis],
+                      rd[:,anp.newaxis,anp.newaxis,anp.newaxis,anp.newaxis]) # C and D composite center
+
+    e = 0.0
+    for t in range(l1+l2+1):
+        for u in range(m1+m2+1):
+            for v in range(n1+n2+1):
+                for tau in range(l3+l4+1):
+                    for nu in range(m3+m4+1):
+                        for phi in range(n3+n4+1):
+                            e = e + expansion(l1, l2, ra[0], rb[0], alpha, beta, t) * \
+                                    expansion(m1, m2, ra[1], rb[1], alpha, beta, u) * \
+                                    expansion(n1, n2, ra[2], rb[2], alpha, beta, v) * \
+                                    expansion(l3, l4, rc[0], rd[0], gamma, delta, tau) * \
+                                    expansion(m3, m4, rc[1], rd[1], gamma, delta, nu) * \
+                                    expansion(n3, n4, rc[2], rd[2], gamma, delta, phi) * \
+                                   ((-1) ** (tau + nu + phi)) * \
+                                    hermite_coulomb(t + tau, u + nu, v + phi, 0, quotient, p_ab - p_cd)
+
+    e = e * 2 * (anp.pi ** 2.5) / (p * q * anp.sqrt(p+q))
+    return e
+
+
+def generate_repulsion(basis_a, basis_b, basis_c, basis_d):
+    """
+    Computes the two electron repulsion integral
+    """
+    def repulsion_integral(*args):
+
+        ra, ca, alpha = generate_params(basis_a.params, args[0])
+        rb, cb, beta = generate_params(basis_b.params, args[1])
+        rc, cc, gamma = generate_params(basis_c.params, args[2])
+        rd, cd, delta = generate_params(basis_d.params, args[3])
+
+        ca = ca * gaussian_norm(basis_a.L, alpha)
+        cb = cb * gaussian_norm(basis_b.L, beta)
+        cc = cc * gaussian_norm(basis_c.L, gamma)
+        cd = cd * gaussian_norm(basis_d.L, delta)
+
+        n1 = contracted_norm(basis_a.L, alpha, ca)
+        n2 = contracted_norm(basis_b.L, beta, cb)
+        n3 = contracted_norm(basis_c.L, gamma, cc)
+        n4 = contracted_norm(basis_d.L, delta, cd)
+
+        e = n1 * n2 * n3 * n4 * (
+                (ca * cb[:,anp.newaxis] * cc[:,anp.newaxis,anp.newaxis] * cd[:,anp.newaxis,anp.newaxis,anp.newaxis]) *
+                electron_repulsion(basis_a.L, basis_b.L, basis_c.L, basis_d.L, ra, rb, rc, rd,
+                alpha, beta[:,anp.newaxis], gamma[:,anp.newaxis,anp.newaxis], delta[:,anp.newaxis,anp.newaxis,anp.newaxis])
+        ).sum()
+        return e
+    return repulsion_integral
+
+
+def boys(a, b):
+    r"""
+    """
+    f = anp.piecewise(b, [b == 0, b != 0], [lambda b : 1 / (2 * a + 1),
+    lambda b : sc.special.gamma(0.5 + a) * sc.special.gammainc(0.5 + a, b) / (2 * (b ** (0.5 + a)))])
+    return f
+
+
+def gaussian_prod(alpha, beta, ra, rb):
+    """Returns the Gaussian product center"""
+    return (alpha * anp.array(ra) + beta * anp.array(rb)) / (alpha + beta)
