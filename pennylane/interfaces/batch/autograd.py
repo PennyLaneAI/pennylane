@@ -109,7 +109,7 @@ def _execute(
     for i, r in enumerate(res):
         res[i] = np.tensor(r)
 
-        if r.dtype == np.dtype("object"):
+        if res[i].dtype == np.dtype("object"):
             # For backwards compatibility, we flatten ragged tape outputs
             res[i] = np.hstack(r)
 
@@ -190,7 +190,7 @@ def vjp(
                             gradient_kwargs=gradient_kwargs,
                         )
 
-                    vjps = processing_fn(execute_fn(vjp_tapes)[0])
+                        vjps = processing_fn(execute_fn(vjp_tapes)[0])
 
                 else:
                     vjp_tapes, processing_fn = qml.gradients.batch_vjp(

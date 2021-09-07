@@ -95,10 +95,12 @@ to help build custom QNode, quantum function, and tape transforms:
     :toctree: api
 
     ~single_tape_transform
+    ~batch_transform
     ~qfunc_transform
     ~transforms.make_tape
 """
 # Import the decorators first to prevent circular imports when used in other transforms
+from .batch_transform import batch_transform
 from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
 from .adjoint import adjoint
 from .classical_jacobian import classical_jacobian

@@ -25,7 +25,6 @@ from pennylane.queuing import apply, QueuingContext
 
 import pennylane.init
 import pennylane.fourier
-import pennylane.gradients
 import pennylane.kernels
 import pennylane.math
 import pennylane.operation
@@ -48,6 +47,7 @@ from pennylane.qnode import QNode, qnode
 from pennylane.templates import broadcast, layer, template
 from pennylane.transforms import (
     adjoint,
+    batch_transform,
     draw,
     ControlledOperation,
     compile,
@@ -66,6 +66,7 @@ from pennylane.vqe import ExpvalCost, VQECost
 # QueuingContext and collections needs to be imported after all other pennylane imports
 from .collections import QNodeCollection, dot, map, sum
 import pennylane.grouping  # pylint:disable=wrong-import-order
+import pennylane.gradients  # pylint:disable=wrong-import-order
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")

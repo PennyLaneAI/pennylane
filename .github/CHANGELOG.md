@@ -2,6 +2,133 @@
 
 <h3>New features since last release</h3>
 
+* Custom gradient transforms can now be created using the new
+  `@qml.gradients.gradient_transform` decorator on a batch-tape transform.
+  [(#1589)](https://github.com/PennyLaneAI/pennylane/pull/1589)
+
+  Quantum gradient transforms are a specific case of `qml.batch_transform`.
+  To create a quantum gradient transform, simply write a function that accepts a tape,
+  and returns a batch of tapes to be independently executed on a quantum device, alongside
+  a post-processing function that processes the tape results into the gradient.
+
+  Furthermore, a smart default expansion function is provided, which automatically expands tape
+  operations which are not differentiable prior to applying the quantum gradient.
+  All gradient transforms in `qml.gradients` are now decorated with this decorator.
+
+  Supported gradient transforms must be of the following form:
+
+  ```python
+  @qml.gradients.gradient_transform
+  def my_custom_gradient(tape, argnum=None, **kwargs):
+      ...
+      return gradient_tapes, processing_fn
+  ```
+
+  Various built-in quantum gradient transforms are provided within the
+  `qml.gradients` module, including `qml.gradients.param_shift`.
+  Once defined, quantum gradient transforms can be applied directly
+  to QNodes:
+
+  ```pycon
+  >>> @qml.qnode(dev)
+  ... def circuit(x):
+  ...     qml.RX(x, wires=0)
+  ...     qml.CNOT(wires=[0, 1])
+  ...     return qml.expval(qml.PauliZ(0))
+  >>> circuit(0.3)
+  tensor(0.95533649, requires_grad=True)
+  >>> qml.gradients.param_shift(circuit)(0.5)
+  array([[-0.47942554]])
+  ```
+
+  Quantum gradient transforms are fully differentiable, allowing higher order derivatives to be
+  accessed:
+
+  ```pycon
+  >>> qml.grad(qml.gradients.param_shift(circuit))(0.5)
+  tensor(-0.87758256, requires_grad=True)
+  ```
+
+* A new pytorch device, `qml.device('default.qubit.torch', wires=wires)`, supports
+  backpropogation with the torch interface.
+  [(#1225)](https://github.com/PennyLaneAI/pennylane/pull/1360)
+  [(#1598)](https://github.com/PennyLaneAI/pennylane/pull/1598)
+
+* The ability to define *batch* transforms has been added via the new
+  `@qml.batch_transform` decorator.
+  [(#1493)](https://github.com/PennyLaneAI/pennylane/pull/1493)
+
+  A batch transform is a transform that takes a single tape or QNode as input,
+  and executes multiple tapes or QNodes independently. The results may then be post-processed
+  before being returned.
+
+  For example, consider the following batch transform:
+
+  ```python
+  @qml.batch_transform
+  def my_transform(tape, a, b):
+      """Generates two tapes, one with all RX replaced with RY,
+      and the other with all RX replaced with RZ."""
+      tape1 = qml.tape.JacobianTape()
+      tape2 = qml.tape.JacobianTape()
+
+      # loop through all operations on the input tape
+      for op in tape.operations + tape.measurements:
+          if op.name == "RX":
+              with tape1:
+                  qml.RY(a * qml.math.abs(op.parameters[0]), wires=op.wires)
+              with tape2:
+                  qml.RZ(b * qml.math.abs(op.parameters[0]), wires=op.wires)
+          else:
+              for t in [tape1, tape2]:
+                  with t:
+                      qml.apply(op)
+
+      def processing_fn(results):
+          return qml.math.sum(qml.math.stack(results))
+
+      return [tape1, tape2], processing_fn
+  ```
+
+  We can transform a QNode directly using decorator syntax:
+
+  ```pycon
+  >>> @my_transform(0.65, 2.5)
+  ... @qml.qnode(dev)
+  ... def circuit(x):
+  ...     qml.Hadamard(wires=0)
+  ...     qml.RX(x, wires=0)
+  ...     return qml.expval(qml.PauliX(0))
+  >>> print(circuit(-0.5))
+  1.2629730888100839
+  ```
+
+  Batch tape transforms are fully differentiable:
+
+  ```pycon
+  >>> gradient = qml.grad(circuit)(-0.5)
+  >>> print(gradient)
+  2.5800122591960153
+  ```
+
+  Batch transforms can also be applied to existing QNodes,
+
+  ```pycon
+  >>> new_qnode = my_transform(existing_qnode, *transform_weights)
+  >>> new_qnode(weights)
+  ```
+
+  or to tapes (in which case, the processed tapes and classical post-processing
+  functions are returned):
+
+  ```pycon
+  >>> tapes, fn = my_transform(tape, 0.65, 2.5)
+  >>> from pennylane.interfaces.batch import execute
+  >>> dev = qml.device("default.qubit", wires=1)
+  >>> res = execute(tapes, dev, interface="autograd", gradient_fn=qml.gradients.param_shift)
+  1.2629730888100839
+  ```
+
 * Added a new `SISWAP` operation and a `SQISW` alias with support to the `default_qubit` device.
   [#1563](https://github.com/PennyLaneAI/pennylane/pull/1563)
 
@@ -142,6 +269,9 @@
   added, via the beta `pennylane.interfaces.batch` module.
   [(#1501)](https://github.com/PennyLaneAI/pennylane/pull/1501)
   [(#1508)](https://github.com/PennyLaneAI/pennylane/pull/1508)
+  [(#1542)](https://github.com/PennyLaneAI/pennylane/pull/1542)
+  [(#1549)](https://github.com/PennyLaneAI/pennylane/pull/1549)
+  [(#1608)](https://github.com/PennyLaneAI/pennylane/pull/1608)
 
   For example:
 
@@ -172,6 +302,19 @@
   ```
 
 <h3>Improvements</h3>
+
+* Hamiltonians are now natively supported on the `default.qubit` device if `shots=None`. 
+  This makes VQE workflows a lot faster in some cases.
+  [(#1551)](https://github.com/PennyLaneAI/pennylane/pull/1551)
+  [(#1596)](https://github.com/PennyLaneAI/pennylane/pull/1596)
+
+* A gradient recipe for Hamiltonian coefficients has been added. This makes it possible 
+  to compute parameter-shift gradients of these coefficients on devices that natively 
+  support Hamiltonians.
+  [(#1551)](https://github.com/PennyLaneAI/pennylane/pull/1551)
+
+* The device test suite has been expanded to cover more qubit operations and observables.
+  [(#1510)](https://github.com/PennyLaneAI/pennylane/pull/1510)
 
 * The `MultiControlledX` class now inherits from `Operation` instead of `ControlledQubitUnitary` which makes the `MultiControlledX` gate a non-parameterized gate.
   [(#1557)](https://github.com/PennyLaneAI/pennylane/pull/1557)
@@ -241,6 +384,13 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
   
 * The `qml.ResetError` is now supported for `default.mixed` device. 
   [(#1541)](https://github.com/PennyLaneAI/pennylane/pull/1541)
+  
+* `QNode.diff_method` will now reflect which method was selected from `diff_method="best"`.
+  [(#1568)](https://github.com/PennyLaneAI/pennylane/pull/1568)
+
+* QNodes now support `diff_method=None`. This works the same as `interface=None`. Such QNodes accept
+  floats, ints, lists and numpy arrays and return numpy output but can not be differentiated.
+  [(#1585)](https://github.com/PennyLaneAI/pennylane/pull/1585)
 
 
 <h3>Breaking changes</h3>
@@ -249,11 +399,25 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
   after one release cycle.
   [(#1546)](https://github.com/PennyLaneAI/pennylane/pull/1546)
 
+*  All optimizers except for Rotosolve and Rotoselect now have a public attribute `stepsize`.
+  Temporary backward compatibility has been added to support the use of `_stepsize` for one
+  release cycle. `update_stepsize` method is deprecated.
+  [(#1625)](https://github.com/PennyLaneAI/pennylane/pull/1625)
+  
 
 <h3>Bug fixes</h3>
 
 * Fixed circuit representation of CY gates to align with CNOT and CZ gates when calling the circuit drawer.
   [(#1443)](https://github.com/PennyLaneAI/pennylane/issues/1443)
+
+* Dask and CVXPY dependent tests are skipped if those packages are not installed.
+[(#1617)](https://github.com/PennyLaneAI/pennylane/pull/1617)
+
+* The `qml.layer` template now works with tensorflow variables.
+[(#1615)](https://github.com/PennyLaneAI/pennylane/pull/1615)
+
+* Remove `QFT` from possible operations in `default.qubit` and `default.mixed`.
+  [(#1600)](https://github.com/PennyLaneAI/pennylane/pull/1600)
 
 * Fix bug when computing expectations of Hamiltonians using TensorFlow.
   [(#1586)](https://github.com/PennyLaneAI/pennylane/pull/1586)
@@ -266,18 +430,21 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 * The `qml.Identity` operation is placed under the sections Qubit observables and CV observables.
   [(#1576)](https://github.com/PennyLaneAI/pennylane/pull/1576)
 
+* Updated the documentation of `qml.grouping`, `qml.kernels` and `qml.qaoa` modules to present 
+  the list of functions first followed by the technical details of the module.
+  [(#1581)](https://github.com/PennyLaneAI/pennylane/pull/1581) 
+
 * Recategorized Qubit operations into new and existing categories so that code for each
-operation is easier to locate.
+  operation is easier to locate.
   [(#1566)](https://github.com/PennyLaneAI/pennylane/pull/1583)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-
 Vishnu Ajith, Akash Narayanan B, Thomas Bromley, Sahaj Dhamija, Tanya Garg, Josh Izaac, Prateek Jain,
-Johannes Jakob Meyer, Pratul Saini, Maria Schuld, Ingrid Strandberg, David Wierichs, Vincent Wong.
-
+Ankit Khandelwal, Christina Lee, Johannes Jakob Meyer, Romain Moyard, Esteban Payares, Pratul Saini,
+Maria Schuld, Arshpreet Singh, Ingrid Strandberg, Slimane Thabet, David Wierichs, Vincent Wong.
 
 # Release 0.17.0 (current release)
 

@@ -247,7 +247,9 @@ ar.register_function("tensorflow", "scatter_element_add", _scatter_element_add_t
 
 ar.autoray._FUNC_ALIASES["torch", "unstack"] = "unbind"
 
-ar.register_function("torch", "asarray", lambda x: _i("torch").as_tensor(x))
+ar.register_function(
+    "torch", "asarray", lambda x, device=None: _i("torch").as_tensor(x, device=device)
+)
 ar.register_function("torch", "diag", lambda x, k=0: _i("torch").diag(x, diagonal=k))
 ar.register_function("torch", "expand_dims", lambda x, axis: _i("torch").unsqueeze(x, dim=axis))
 ar.register_function("torch", "shape", lambda x: tuple(x.shape))
