@@ -20,7 +20,7 @@ import pytest
 torch = pytest.importorskip("torch")
 
 import pennylane as qml
-from pennylane.gradients import param_shift
+from pennylane.gradients import finite_diff, param_shift
 from pennylane.interfaces.batch import execute
 
 
@@ -997,3 +997,101 @@ class TestHigherOrderDerivatives:
         res = torch.autograd.functional.hessian(cost_fn, params)
         expected = torch.zeros([2, 2], dtype=torch.float64)
         assert torch.allclose(res.to(torch_device), expected.to(torch_device), atol=tol, rtol=0)
+
+
+execute_kwargs = [
+    {"gradient_fn": param_shift, "interface": "torch"},
+    {"gradient_fn": finite_diff, "interface": "torch"},
+]
+
+
+@pytest.mark.parametrize("execute_kwargs", execute_kwargs)
+class TestHamiltonianWorkflows:
+    """Test that tapes ending with expectations
+    of Hamiltonians provide correct results and gradients"""
+
+    @pytest.fixture
+    def cost_fn(self, execute_kwargs):
+        """Cost function for gradient tests"""
+
+        def _cost_fn(weights, coeffs1, coeffs2, dev=None):
+            obs1 = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
+            H1 = qml.Hamiltonian(coeffs1, obs1)
+
+            obs2 = [qml.PauliZ(0)]
+            H2 = qml.Hamiltonian(coeffs2, obs2)
+
+            with qml.tape.JacobianTape() as tape:
+                qml.RX(weights[0], wires=0)
+                qml.RY(weights[1], wires=1)
+                qml.CNOT(wires=[0, 1])
+                qml.expval(H1)
+                qml.expval(H2)
+
+            return execute([tape], dev, **execute_kwargs)[0]
+
+        return _cost_fn
+
+    @staticmethod
+    def cost_fn_expected(weights, coeffs1, coeffs2):
+        """Analytic value of cost_fn above"""
+        a, b, c = coeffs1.detach().numpy()
+        d = coeffs2.detach().numpy()[0]
+        x, y = weights.detach().numpy()
+        return [-c * np.sin(x) * np.sin(y) + np.cos(x) * (a + b * np.sin(y)), d * np.cos(x)]
+
+    @staticmethod
+    def cost_fn_jacobian(weights, coeffs1, coeffs2):
+        """Analytic jacobian of cost_fn above"""
+        a, b, c = coeffs1.detach().numpy()
+        d = coeffs2.detach().numpy()[0]
+        x, y = weights.detach().numpy()
+        return np.array(
+            [
+                [
+                    -c * np.cos(x) * np.sin(y) - np.sin(x) * (a + b * np.sin(y)),
+                    b * np.cos(x) * np.cos(y) - c * np.cos(y) * np.sin(x),
+                    np.cos(x),
+                    np.cos(x) * np.sin(y),
+                    -(np.sin(x) * np.sin(y)),
+                    0,
+                ],
+                [-d * np.sin(x), 0, 0, 0, 0, np.cos(x)],
+            ]
+        )
+
+    def test_multiple_hamiltonians_not_trainable(self, cost_fn, execute_kwargs, tol):
+        coeffs1 = torch.tensor([0.1, 0.2, 0.3], requires_grad=False)
+        coeffs2 = torch.tensor([0.7], requires_grad=False)
+        weights = torch.tensor([0.4, 0.5], requires_grad=True)
+        dev = qml.device("default.qubit", wires=2)
+
+        res = cost_fn(weights, coeffs1, coeffs2, dev=dev)
+        expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
+        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+
+        res = torch.hstack(
+            torch.autograd.functional.jacobian(
+                lambda *x: cost_fn(*x, dev=dev), (weights, coeffs1, coeffs2)
+            )
+        )
+        expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)
+        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+
+    def test_multiple_hamiltonians_trainable(self, cost_fn, execute_kwargs, tol):
+        coeffs1 = torch.tensor([0.1, 0.2, 0.3], requires_grad=True)
+        coeffs2 = torch.tensor([0.7], requires_grad=True)
+        weights = torch.tensor([0.4, 0.5], requires_grad=True)
+        dev = qml.device("default.qubit", wires=2)
+
+        res = cost_fn(weights, coeffs1, coeffs2, dev=dev)
+        expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
+        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+
+        res = torch.hstack(
+            torch.autograd.functional.jacobian(
+                lambda *x: cost_fn(*x, dev=dev), (weights, coeffs1, coeffs2)
+            )
+        )
+        expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)
+        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
