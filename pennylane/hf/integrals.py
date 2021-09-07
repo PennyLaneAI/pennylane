@@ -149,7 +149,7 @@ def expansion(la, lb, ra, rb, alpha, beta, t):
 
     where :math:`p = \alpha + \beta` and :math:`q = \alpha \beta / (\alpha + \beta)` are computed
     from the Gaussian exponents :math:`\alpha, \beta` and the position :math:`r` is computed as
-    :math:`r = r_\alpha - r_\beta`. The starting coefficient has is
+    :math:`r = r_\alpha - r_\beta`. The starting coefficient is
 
     .. math::
 
@@ -170,6 +170,7 @@ def expansion(la, lb, ra, rb, alpha, beta, t):
         array[float]: expansion coefficients for each Gaussian combination
 
     **Example**
+
     >>> la, lb = 0, 0
     >>> ra, rb = 0.0, 0.0
     >>> alpha = np.array([3.42525091])
@@ -206,16 +207,16 @@ def expansion(la, lb, ra, rb, alpha, beta, t):
 def gaussian_overlap(la, lb, ra, rb, alpha, beta):
     r"""Compute overlap integral for two primitive Gaussian functions.
 
-    The overlap integral between two Gaussian functions denoted by :math;`a` and :math;`b` can be
+    The overlap integral between two Gaussian functions denoted by :math:`a` and :math:`b` can be
     computed as [`Helgaker (1995) p803 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]:
 
     .. math::
 
         S_{ab} = E^{ij} E^{kl} E^{mn} (\frac{\pi}{p})^{3/2},
 
-    where :math;`E` is a coefficient that can be computed recursively, :math;`i-n` are the angular
-    momentum quantum numbers corresponding to different Cartesian components and :math;`p` is
-    computed from the exponents of the two Gaussian functions as :math;`p = \alpha + \beta`.
+    where :math:`E` is a coefficient that can be computed recursively, :math:`i-n` are the angular
+    momentum quantum numbers corresponding to different Cartesian components and :math:`p` is
+    computed from the exponents of the two Gaussian functions as :math:`p = \alpha + \beta`.
 
     Args:
         la (integer): angular momentum for the first Gaussian function
