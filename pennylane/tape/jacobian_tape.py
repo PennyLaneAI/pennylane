@@ -776,7 +776,7 @@ class JacobianTape(QuantumTape):
             "SingleExcitationPlus",
             "DoubleExcitationMinus",
             "DoubleExcitationPlus",
-            "QuantumNumberPreservingOR",
+            "OrbitalRotation",
         )
 
         for idx, info in self._par_info.items():

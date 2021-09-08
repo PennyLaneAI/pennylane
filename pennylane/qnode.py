@@ -600,10 +600,9 @@ class QNode:
         # pylint: disable=protected-access
         obs_on_same_wire = len(self.qtape._obs_sharing_wires) > 0
         ops_not_supported = any(
-            isinstance(op, qml.tape.QuantumTape)  # nested tapes must be expanded
-            or not self.device.supports_operation(op.name)  # unsupported ops must be expanded
+            isinstance(op, qml.tape.QuantumTape) or not self.device.supports_operation(op.name)
             for op in self.qtape.operations
-        )
+        )  # nested tapes must be expanded  # unsupported ops must be expanded
 
         # expand out the tape, if nested tapes are present, any operations are not supported on the
         # device, or multiple observables are measured on the same wire

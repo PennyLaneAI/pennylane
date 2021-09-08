@@ -121,9 +121,9 @@ neural network. Note arbitrary templates or operations can also be layered using
     :figure: ../_static/templates/layers/particle_conserving_u1_thumbnail.png
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.layers.QuantumNumberPreservingU2.html
-    :description: QuantumNumberPreservingU2
-    :figure: ../_static/templates/layers/quantum_number_preserving_u2.png
+    :link: ../code/api/pennylane.templates.layers.GateFabric.html
+    :description: GateFabric
+    :figure: ../_static/templates/layers/gate_fabric.png
 
 .. raw:: html
 

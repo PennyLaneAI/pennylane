@@ -466,14 +466,19 @@ class DoubleExcitationMinus(Operation):
         return DoubleExcitationMinus(-theta, wires=self.wires)
 
 
-class QuantumNumberPreservingOR(Operation):
-    r"""QuantumNumberPreservingOR(varphi, wires)
-    1-parameter 4-qubit spatial orbital rotation gate. It can be decomposed into sequence of ``SingleExcitation(varphi, wires)``\
-    gates :math:`G(\varphi)` as follow:
+class OrbitalRotation(Operation):
+    r"""OrbitalRotation(varphi, wires)
+    1-parameter 4-qubit spin-adapted spatial orbital rotation gate. In Jordan-Wigner basis, this will perform Givens rotation between 
+    two orbital bases, and can be realized as a pair of parallel Givens rotation gates :math:`G(\varphi)`.
 
     |
 
-    .. figure:: ../../_static/qchem/quantum_number_preserving_or.png
+    .. figure:: ../../_static/qchem/orbital_rotation_decomposition_extended.png
+        :align: center
+        :width: 100%
+        :target: javascript:void(0);
+
+    .. figure:: ../../_static/qchem/givens_rotation_decomposition.png
         :align: center
         :width: 100%
         :target: javascript:void(0);
@@ -508,7 +513,7 @@ class QuantumNumberPreservingOR(Operation):
 
     * Number of wires: 4
     * Number of parameters: 1
-    * Gradient recipe: The ``QuantumNumberPreservingOR`` operator satisfies a four-term parameter-shift rule
+    * Gradient recipe: The ``OrbitalRotation`` operator satisfies a four-term parameter-shift rule
       (see Appendix F, https://arxiv.org/abs/2104.05695)
 
     Args:
@@ -519,14 +524,21 @@ class QuantumNumberPreservingOR(Operation):
 
     .. code-block::
 
-        dev = qml.device('default.qubit', wires=4)
+        >>> dev = qml.device('default.qubit', wires=4)
 
-        @qml.qnode(dev)
-        def circuit(varphi):
-            qml.QuantumNumberPreservingOR(varphi, wires=[0, 1, 2, 3])
-            return qml.state()
+        >>> @qml.qnode(dev)
+        ... def circuit(varphi):
+        ...     qml.BasisState([1, 1, 0, 0], wires=[0, 1, 2, 3])
+        ...     qml.OrbitalRotation(varphi, wires=[0, 1, 2, 3])
+        ...     return qml.state()
 
-        circuit(0.1)
+        >>> circuit(0.1)
+        array([ 0.        +0.j,  0.        +0.j,  0.        +0.j,
+                0.00249792+0.j,  0.        +0.j,  0.        +0.j,
+               -0.04991671+0.j,  0.        +0.j,  0.        +0.j,
+               -0.04991671+0.j,  0.        +0.j,  0.        +0.j,
+                0.99750208+0.j,  0.        +0.j,  0.        +0.j,
+                0.        +0.j])
     """
 
     num_params = 1
@@ -560,9 +572,11 @@ class QuantumNumberPreservingOR(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        theta = params[0]
-        c = math.cos(theta / 2)
-        s = math.sin(theta / 2)
+        # This matrix is the "sign flipped" version of that on p18 of https://arxiv.org/abs/2104.05695,
+        # There was a typo in the sign of a matrix element "s" at [2, 8], which is fixed here.
+        varphi = params[0]
+        c = math.cos(varphi / 2)
+        s = math.sin(varphi / 2)
 
         return np.array(
             [
@@ -586,17 +600,17 @@ class QuantumNumberPreservingOR(Operation):
         )
 
     @staticmethod
-    def decomposition(theta, wires):
+    def decomposition(varphi, wires):
         # This decomposition is the "upside down" version of that on p18 of https://arxiv.org/abs/2104.05695
         decomp_ops = [
             qml.Hadamard(wires=wires[3]),
             qml.Hadamard(wires=wires[2]),
             qml.CNOT(wires=[wires[3], wires[1]]),
             qml.CNOT(wires=[wires[2], wires[0]]),
-            qml.RY(theta / 2, wires=wires[3]),
-            qml.RY(theta / 2, wires=wires[2]),
-            qml.RY(theta / 2, wires=wires[1]),
-            qml.RY(theta / 2, wires=wires[0]),
+            qml.RY(varphi / 2, wires=wires[3]),
+            qml.RY(varphi / 2, wires=wires[2]),
+            qml.RY(varphi / 2, wires=wires[1]),
+            qml.RY(varphi / 2, wires=wires[0]),
             qml.CNOT(wires=[wires[3], wires[1]]),
             qml.CNOT(wires=[wires[2], wires[0]]),
             qml.Hadamard(wires=wires[3]),
@@ -605,5 +619,5 @@ class QuantumNumberPreservingOR(Operation):
         return decomp_ops
 
     def adjoint(self):
-        (theta,) = self.parameters
-        return QuantumNumberPreservingOR(-theta, wires=self.wires)
+        (varphi,) = self.parameters
+        return OrbitalRotation(-varphi, wires=self.wires)

@@ -434,8 +434,8 @@ class Hamiltonian(Observable):
         if isinstance(other, (Tensor, Observable)):
             self.simplify()
             return self._obs_data() == {
-                (1, frozenset(other._obs_data()))  # pylint: disable=protected-access
-            }
+                (1, frozenset(other._obs_data()))
+            }  # pylint: disable=protected-access
 
         raise ValueError("Can only compare a Hamiltonian, and a Hamiltonian/Observable/Tensor.")
 

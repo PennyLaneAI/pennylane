@@ -20,63 +20,87 @@ import pennylane as qml
 from pennylane.operation import Operation, AnyWires
 
 
-class QuantumNumberPreservingU2(Operation):
+class GateFabric(Operation):
     r"""Implements a local, expressive, and quantum-number-preserving ansatz using VQE circuit fabrics
-    proposed by Anselmetti *et al.* in `arXiv:2104.05692 <https://arxiv.org/abs/2104.05692>`_.
+    proposed by Anselmetti *et al.* in `arXiv:2104.05692 <https://arxiv.org/abs/2104.05695>`_.
 
-    This template prepares the :math:`2M` qubits trial state, where `M` is the number of spatial orbitals.
-    It uses 4-local-nearest-neighbor-tessellation of alternating even and off spatial-orbitals-pair 2-parameter,
-    4-qubit :math:`\hat{Q}(\varphi, \theta)` gates. Each :math:`\hat{Q}` gate consists of a 1-parameter, 4-qubit spatial rotation
-    gate :math:`\text{QuantumNumberPreserving}_{OR}(\varphi)`, and  a 1-parameter, 4-qubit diagonal pair exchange gate :math:`\text{DoubleExcitation}(\theta)`
-    gate. In the :math:`\hat{Q}` gate we also allow inclusion of an optional constant :math:`\hat{\Pi}` gate,
-    with choices :math:`\hat{\Pi} \in \{\hat{I}, \text{QuantumNumberPreserving}_{OR}(\pi)\}`.
+    This template prepares the :math:`N` qubits trial state by applying :math:`L` layers of the gate fabric, which is composed
+    of 2-parameter 4-qubit gate elements :math:`\hat{Q}(\theta, \varphi)`. Each of the :math:`\hat{Q}(\theta, \varphi)` gate is itself
+    composed of two 1-parameter 4-qubit gates. The first gate is a spin-adapted spatial orbital rotation gate, which is implemented by 
+    :math:`\text{OrbitalRotation}(\varphi)` gate. Whereas the second gate is a diagonal pair-exchange gate, which is implemented by the 
+    :math:`\text{DoubleExcitation}(\theta)` gate. In addition to these two gates, :math:`\hat{Q}(\theta, \varphi)` can also include an
+    optional gate :math:`\hat{\Pi} \in \{\hat{I}, \text{OrbitalRotation}(\pi)\}` gate, whose non-identity value could be advantageous in
+    gradient-based parameter optimization. Regardless, of the choice of :math:`\hat{\Pi}`, this gate fabric will exactly preserve the 
+    quantum numbers :math:`\hat{N}_{\alpha}`, :math:`\hat{N}_{\beta}` and :math:`\hat{S}^{2}`. 
 
-    The circuit implementing the gate fabric layer for `M = 4` is shown below:
+    The circuit implementing the gate fabric layer for `N = 8` is shown below:
 
     |
 
-    .. figure:: ../../_static/templates/layers/quantum_number_preserving_u2.png
+    .. figure:: ../../_static/templates/layers/gate_fabric_layer.png
         :align: center
-        :width: 25%
+        :width: 40%
         :target: javascript:void(0);
 
     |
 
-    The 2-parameter, 4-qubit :math:`\hat{Q}` gate is decomposed as follows:
+    The 2-parameter, 4-qubit :math:`\hat{Q}(\theta, \varphi)` gate is decomposed as follows:
 
     |
 
-    .. figure:: ../../_static/templates/layers/quantum_number_preserving_decompos.png
+    .. figure:: ../../_static/templates/layers/q_gate_decompositon.png
         :align: center
         :width: 100%
         :target: javascript:void(0);
 
     |
 
+    The individual :math:`\text{DoubleExcitation}(\theta)` and  :math:`\text{OrbitalRotation}(\varphi)` gates are decomposed using 
+    Givens rotation gate :math:`G(\phi)`, which is implemented in pennylane with :math:`\text{SingleExcitation}(phi)`.
+
+    |
+
+    .. figure:: ../../_static/templates/layers/double_excitation_decomposition.png
+        :align: center
+        :width: 80%
+        :target: javascript:void(0);
+
+    .. figure:: ../../_static/templates/layers/orbital_rotation_decomposition.png
+        :align: center
+        :width: 80%
+        :target: javascript:void(0);
+
+    .. figure:: ../../_static/templates/layers/givens_rotation_decomposition.png
+        :align: center
+        :width: 100%
+        :target: javascript:void(0);
+
+    |
+    
     Args:
-        weights (tensor_like): Array of weights of shape ``(L, D, 2)``\.
-            ``L`` is the number of gate fabric layers and :math:`D=M-1`
+        weights (tensor_like): Array of weights of shape ``(L, D, 2)``\,
+            where ``L`` is the number of gate fabric layers and ``D = N/2-1``\
             is the number of :math:`\hat{Q}(\varphi, \theta)` gates per layer.
         wires (Iterable): wires that the template acts on
-        init_state (tensor_like): iterable or shape ``(len(wires),)`` tensor representing the Hartree-Fock state
-            used to initialize the wires
-        pi_gate_include (boolean): If `True`, sets the optional constant :math:`\Pi` to :math:`\text{QuantumNumberPreserving}_{OR}(\pi)`.
+        init_state (tensor_like): iterable or shape ``(len(wires),)`` tensor representing the Hartree-Fock state in Jordan-Wigner basis,
+            used to initialize the wires.
+        include_pi (boolean): If ``include_pi = True``\, the optional constant :math:`\hat{\Pi}` gate  is set to :math:`\text{OrbitalRotation}(\pi)`.
             Default value is :math:`\hat{I}`.
 
     .. UsageDetails::
 
         #. The number of wires :math:`N` has to be equal to the number of
-           spin orbitals included in the active space.
+           spin orbitals included in the active space, and should be even.
 
         #. The number of trainable parameters scales linearly with the number of layers as
-           :math:`2D(N-1)`.
+           :math:`2L(N/2-1)`.
 
         An example of how to use this template is shown below:
 
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane.templates import ParticleConservingU1
+            from pennylane.templates import GateFabric
             from functools import partial
 
             # Build the electronic Hamiltonian from a local .xyz file
@@ -90,25 +114,25 @@ class QuantumNumberPreservingU2(Operation):
             dev = qml.device('default.qubit', wires=qubits)
 
             # Define the ansatz
-            ansatz = partial(QuantumNumberPreservingU2, init_state=ref_state, pi_gate_include=True)
+            ansatz = partial(GateFabric, init_state=ref_state, include_pi=True)
 
             # Define the cost function
             cost_fn = qml.ExpvalCost(ansatz, h, dev)
 
             # Compute the expectation value of 'h'
             layers = 2
-            params = qml.init.quantum_number_preserving_u2_normal(layers, qubits)
+            params = qml.init.gate_fabric_normal(layers, qubits)
             print(cost_fn(params))
 
         **Parameter shape**
 
         The shape of the weights argument can be computed by the static method
-        :meth:`~.QuantumNumberPreservingU2.shape` and used when creating randomly
+        :meth:`~.GateFabric.shape` and used when creating randomly
         initialised weight tensors:
 
         .. code-block:: python
 
-            shape = QuantumNumberPreservingU2.shape(n_layers=2, n_wires=2)
+            shape = GateFabric.shape(n_layers=2, n_wires=2)
             weights = np.random.random(size=shape)
 
 
@@ -117,9 +141,7 @@ class QuantumNumberPreservingU2(Operation):
     num_wires = AnyWires
     par_domain = "A"
 
-    def __init__(
-        self, weights, wires=None, init_state=None, pi_gate_include=False, do_queue=True, id=None
-    ):
+    def __init__(self, weights, wires, init_state, include_pi=False, do_queue=True, id=None):
 
         if len(wires) < 4:
             raise ValueError(
@@ -134,12 +156,10 @@ class QuantumNumberPreservingU2(Operation):
                 )
             )
 
-        self.M = len(wires) // 2
-
         self.qwires = [
             wires[i : i + 4] for i in range(0, len(wires), 4) if len(wires[i : i + 4]) == 4
         ]
-        if self.M > 2:
+        if len(wires) > 4:
             self.qwires += [
                 wires[i : i + 4] for i in range(2, len(wires), 4) if len(wires[i : i + 4]) == 4
             ]
@@ -160,13 +180,12 @@ class QuantumNumberPreservingU2(Operation):
             )
 
         self.n_layers = shape[0]
+
         # we can extract the numpy representation here
         # since init_state can never be differentiable
-        if init_state is None:
-            raise ValueError(f"Inital state should be provided; got {init_state}")
         self.init_state = qml.math.toarray(init_state)
 
-        self.pi_gate = pi_gate_include
+        self.include_pi = include_pi
 
         super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 
@@ -180,11 +199,11 @@ class QuantumNumberPreservingU2(Operation):
             for layer in range(self.n_layers):
                 for idx, wires in enumerate(self.qwires):
 
-                    if self.pi_gate:
-                        qml.QuantumNumberPreservingOR(np.pi, wires=wires)
+                    if self.include_pi:
+                        qml.OrbitalRotation(np.pi, wires=wires)
 
                     qml.DoubleExcitation(weight[layer][idx][0], wires=wires)
-                    qml.QuantumNumberPreservingOR(weight[layer][idx][1], wires=wires)
+                    qml.OrbitalRotation(weight[layer][idx][1], wires=wires)
 
         return tape
 

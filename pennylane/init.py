@@ -1129,8 +1129,8 @@ def basic_entangler_layers_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=N
     return params
 
 
-def quantum_number_preserving_u2_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
-    r"""Creates a parameter array for :func:`~.QuantumNumberPreservingU2`, drawn from a uniform
+def gate_fabric_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
+    r"""Creates a parameter array for :func:`~.GateFabric`, drawn from a uniform
     distribution.
     Each parameter is drawn uniformly at random from the half-open interval [``low``, ``high``).
     The parameters define the trainable angles entering the quantum number preserving gate :math:`Q(\theta,\phi)`
@@ -1159,8 +1159,8 @@ def quantum_number_preserving_u2_uniform(n_layers, n_wires, low=0, high=2 * pi, 
     return params
 
 
-def quantum_number_preserving_u2_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
-    r"""Creates a parameter array for :func:`~.QuantumNumberPreservingU2`, drawn from a normal
+def gate_fabric_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
+    r"""Creates a parameter array for :func:`~.GateFabric`, drawn from a normal
     distribution.
     Each parameter is drawn uniformly at random from the half-open interval [``low``, ``high``).
     The parameters define the trainable angles entering the quantum number preserving gate :math:`Q(\theta,\phi)`

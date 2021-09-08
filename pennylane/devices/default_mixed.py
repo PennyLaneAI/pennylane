@@ -101,7 +101,7 @@ class DefaultMixed(QubitDevice):
         "DoubleExcitationMinus",
         "QubitCarry",
         "QubitSum",
-        "QuantumNumberPreservingOR",
+        "OrbitalRotation",
     }
 
     def __init__(self, wires, *, shots=None, cache=0, analytic=None):

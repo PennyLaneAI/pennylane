@@ -121,7 +121,7 @@ Quantum Chemistry Ops
     ~pennylane.DoubleExcitation
     ~pennylane.DoubleExcitationPlus
     ~pennylane.DoubleExcitationMinus
-    ~pennylane.QuantumNumberPreservingOR
+    ~pennylane.OrbitalRotation
 
 :html:`</div>`
 

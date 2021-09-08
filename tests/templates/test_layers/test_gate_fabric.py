@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the QuantumNumberPreservingU2 template.
+Unit tests for the GateFabric template.
 """
 import pytest
 import numpy as np
@@ -24,7 +24,7 @@ class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
     @pytest.mark.parametrize(
-        "layers, qubits, init_state, pi_gate_include",
+        "layers, qubits, init_state, include_pi",
         [
             (1, 4, np.array([1, 1, 0, 0]), False),
             (2, 4, np.array([1, 1, 0, 0]), True),
@@ -34,31 +34,27 @@ class TestDecomposition:
             (2, 8, np.array([1, 1, 1, 1, 0, 0, 0, 0]), True),
         ],
     )
-    def test_operations(self, layers, qubits, init_state, pi_gate_include):
-        """Test the correctness of the QuantumNumberPreservingU2 template including the gate count
+    def test_operations(self, layers, qubits, init_state, include_pi):
+        """Test the correctness of the GateFabric template including the gate count
         and order, the wires each operation acts on and the correct use of parameters
         in the circuit."""
 
         weights = np.random.normal(0, 2 * np.pi, (layers, qubits // 2 - 1, 2))
 
-        if not pi_gate_include:
+        if not include_pi:
             n_gates = 1 + (qubits - 2) * layers
             exp_gates = (
-                ([qml.DoubleExcitation] + [qml.QuantumNumberPreservingOR]) * (qubits // 2 - 1)
+                ([qml.DoubleExcitation] + [qml.OrbitalRotation]) * (qubits // 2 - 1)
             ) * layers
         else:
             n_gates = 1 + 3 * (qubits // 2 - 1) * layers
             exp_gates = (
-                (
-                    [qml.QuantumNumberPreservingOR]
-                    + [qml.DoubleExcitation]
-                    + [qml.QuantumNumberPreservingOR]
-                )
+                ([qml.OrbitalRotation] + [qml.DoubleExcitation] + [qml.OrbitalRotation])
                 * (qubits // 2 - 1)
             ) * layers
 
-        op = qml.templates.QuantumNumberPreservingU2(
-            weights, wires=range(qubits), init_state=init_state, pi_gate_include=pi_gate_include
+        op = qml.templates.GateFabric(
+            weights, wires=range(qubits), init_state=init_state, include_pi=include_pi
         )
         queue = op.expand().operations
         print(op, n_gates, queue)
@@ -78,7 +74,7 @@ class TestDecomposition:
             [queue[i].parameters for i in range(1, n_gates) if queue[i].parameters != []]
         )
 
-        if pi_gate_include:
+        if include_pi:
             weights = np.insert(weights, 0, [[np.pi] * (qubits // 2 - 1)] * layers, axis=2)
 
         assert np.allclose(params.flatten(), weights.flatten())
@@ -94,7 +90,7 @@ class TestDecomposition:
         exp_wires = []
         for _ in range(layers):
             for wire in qwires:
-                if pi_gate_include:
+                if include_pi:
                     exp_wires.append(list(wire))
                 exp_wires.append(list(wire))
                 exp_wires.append(list(wire))
@@ -489,7 +485,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(weight):
-            qml.templates.layers.QuantumNumberPreservingU2(weight, wires, init_state=init_state)
+            qml.templates.layers.GateFabric(weight, wires, init_state=init_state)
             return qml.expval(qml.PauliZ(0))
 
         circuit(weight)
@@ -506,14 +502,12 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.QuantumNumberPreservingU2(weights, wires=range(4), init_state=init_state)
+            qml.templates.GateFabric(weights, wires=range(4), init_state=init_state)
             return qml.expval(qml.Identity(0))
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.QuantumNumberPreservingU2(
-                weights, wires=["z", "a", "k", "r"], init_state=init_state
-            )
+            qml.templates.GateFabric(weights, wires=["z", "a", "k", "r"], init_state=init_state)
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -587,7 +581,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.QuantumNumberPreservingU2(
+            qml.templates.GateFabric(
                 weights=weights,
                 wires=wires,
                 init_state=init_state,
@@ -600,17 +594,10 @@ class TestInputs:
     def test_id(self):
         """Tests that the id attribute can be set."""
         init_state = np.array([1, 1, 0, 0])
-        template = qml.templates.QuantumNumberPreservingU2(
+        template = qml.templates.GateFabric(
             weights=np.random.random(size=(1, 1, 2)), wires=range(4), init_state=init_state, id="a"
         )
         assert template.id == "a"
-
-    def test_init_state_exception(self):
-        """Tests that the operation warns if initial state is not provided"""
-        with pytest.raises(ValueError, match="Inital state should be provided"):
-            qml.templates.QuantumNumberPreservingU2(
-                weights=np.random.random(size=(1, 1, 2)), wires=range(4)
-            )
 
 
 class TestAttributes:
@@ -627,7 +614,7 @@ class TestAttributes:
     def test_shape(self, n_layers, n_wires, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""
 
-        shape = qml.templates.QuantumNumberPreservingU2.shape(n_layers, n_wires)
+        shape = qml.templates.GateFabric.shape(n_layers, n_wires)
         assert shape == expected_shape
 
     def test_shape_exception_not_enough_qubits(self):
@@ -636,7 +623,7 @@ class TestAttributes:
         with pytest.raises(
             ValueError, match="This template requires the number of qubits to be greater than four"
         ):
-            qml.templates.QuantumNumberPreservingU2.shape(3, 1)
+            qml.templates.GateFabric.shape(3, 1)
 
     def test_shape_exception_not_even_qubits(self):
         """Test that the shape function warns if there are not enough qubits."""
@@ -644,11 +631,11 @@ class TestAttributes:
         with pytest.raises(
             ValueError, match="This template requires the number of qubits to be multiple of 2"
         ):
-            qml.templates.QuantumNumberPreservingU2.shape(1, 5)
+            qml.templates.GateFabric.shape(1, 5)
 
 
 def circuit_template(weights):
-    qml.templates.QuantumNumberPreservingU2(
+    qml.templates.GateFabric(
         weights,
         range(4 + (weights.shape[1] - 1) * 2),
         init_state=np.array([1, 1, 0, 0] + [0] * (weights.shape[1] - 1) * 2),
@@ -669,7 +656,7 @@ def circuit_decomposed(weights):
     for layer in range(weights.shape[0]):
         for idx in range(weights.shape[1]):
             qml.DoubleExcitation(weights[layer][idx][0], wires=qwires[idx])
-            qml.QuantumNumberPreservingOR(weights[layer][idx][1], wires=qwires[idx])
+            qml.OrbitalRotation(weights[layer][idx][1], wires=qwires[idx])
 
     return qml.expval(qml.PauliZ(0))
 

@@ -436,10 +436,10 @@ class TestTemplateIntegration:
         res = circuit(weights)
         assert np.allclose(res, np.sinh(r) ** 2)
 
-    def test_qnp_preserving_or(self, fn):
+    def test_gate_fabric_preserving_or(self, fn):
         """Test that the adjoint correctly inverts the quantum number preserving gate fabric template"""
         dev = qml.device("default.qubit", wires=4)
-        template = qml.templates.QuantumNumberPreservingU2
+        template = qml.templates.GateFabric
 
         @qml.qnode(dev)
         def circuit(weights):

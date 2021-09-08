@@ -87,7 +87,7 @@ ops = {
     "DoubleExcitationMinus",
     "QubitCarry",
     "QubitSum",
-    "QuantumNumberPreservingOR",
+    "OrbitalRotation",
 }
 
 

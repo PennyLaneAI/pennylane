@@ -62,7 +62,7 @@ from gate_data import (
     DoubleExcitation,
     DoubleExcitationPlus,
     DoubleExcitationMinus,
-    QuantumNumberPreservingOR,
+    OrbitalRotation,
 )
 
 np.random.seed(42)
@@ -123,7 +123,7 @@ four_qubit_param = [
     (qml.DoubleExcitation, DoubleExcitation),
     (qml.DoubleExcitationPlus, DoubleExcitationPlus),
     (qml.DoubleExcitationMinus, DoubleExcitationMinus),
-    (qml.QuantumNumberPreservingOR, QuantumNumberPreservingOR),
+    (qml.OrbitalRotation, OrbitalRotation),
 ]
 
 

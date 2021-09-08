@@ -232,11 +232,8 @@ class TestComparison:
                     params = list(np.pi * np.random.rand(gate.num_params))
                     rnd_wires = np.random.choice(range(n_wires), size=gate.num_wires, replace=False)
                     gate(
-                        *params,
-                        wires=[
-                            int(w) for w in rnd_wires
-                        ]  # make sure we do not address wires as 0-d arrays
-                    )
+                        *params, wires=[int(w) for w in rnd_wires]
+                    )  # make sure we do not address wires as 0-d arrays
             return qml.expval(qml.PauliZ(0))
 
         qnode_def = qml.QNode(circuit, dev_def)

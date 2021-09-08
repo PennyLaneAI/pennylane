@@ -53,7 +53,7 @@ from gate_data import (
     DoubleExcitation,
     DoubleExcitationPlus,
     DoubleExcitationMinus,
-    QuantumNumberPreservingOR,
+    OrbitalRotation,
 )
 
 # Standard observables, their matrix representation, and eigenvalues
@@ -457,7 +457,7 @@ PARAMETRIZED_OPERATIONS = [
     qml.DoubleExcitationPlus(0.123, wires=[0, 1, 2, 3]),
     qml.DoubleExcitationMinus(0.123, wires=[0, 1, 2, 3]),
     qml.QubitSum(wires=[0, 1, 2]),
-    qml.QuantumNumberPreservingOR(0.123, wires=[0, 1, 2, 3]),
+    qml.OrbitalRotation(0.123, wires=[0, 1, 2, 3]),
 ]
 
 
@@ -3495,22 +3495,22 @@ class TestArithmetic:
         assert np.allclose(u, qml.QubitSum._matrix())
 
 
-class TestQuantumNumberPreservingOR:
-    """Test QuantumNumberPreservingOR gate operation"""
+class TestOrbitalRotation:
+    """Test OrbitalRotation gate operation"""
 
-    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
-    def test_quantum_number_preserving_or_matrix(self, phi):
-        """Tests that the QuantumNumberPreservingOR operation calculates the correct matrix"""
-        op = qml.QuantumNumberPreservingOR(phi, wires=[0, 1, 2, 3])
+    @pytest.mark.parametrize("varphi", [-0.1, 0.2, np.pi / 4])
+    def test_quantum_number_preserving_or_matrix(self, varphi):
+        """Tests that the OrbitalRotation operation calculates the correct matrix"""
+        op = qml.OrbitalRotation(varphi, wires=[0, 1, 2, 3])
         res = op.matrix
-        exp = QuantumNumberPreservingOR(phi)
+        exp = OrbitalRotation(varphi)
         assert np.allclose(res, exp)
 
-    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
-    def test_quantum_number_preserving_or_decomp(self, phi):
-        """Tests that the QuantumNumberPreservingOR operation calculates the correct decomposition"""
-        op = qml.QuantumNumberPreservingOR(phi, wires=[0, 1, 2, 3])
-        decomp = op.decomposition(phi, wires=[0, 1, 2, 3])
+    @pytest.mark.parametrize("varphi", [-0.1, 0.2, np.pi / 4])
+    def test_quantum_number_preserving_or_decomp(self, varphi):
+        """Tests that the OrbitalRotation operation calculates the correct decomposition"""
+        op = qml.OrbitalRotation(varphi, wires=[0, 1, 2, 3])
+        decomp = op.decomposition(varphi, wires=[0, 1, 2, 3])
 
         decomposed_matrix = np.eye(16)
         oo = np.array([[0, 0], [0, 1]])
@@ -3537,30 +3537,30 @@ class TestQuantumNumberPreservingOR:
                 moment_matrix += moment_matrix1
 
             decomposed_matrix = np.matmul(moment_matrix, decomposed_matrix)
-        exp = QuantumNumberPreservingOR(phi)
+        exp = OrbitalRotation(varphi)
 
         assert np.allclose(decomposed_matrix, exp)
 
-    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
-    def test_quantum_number_preserving_or_generator(self, phi):
-        """Tests that the QuantumNumberPreservingOR operation calculates the correct generator"""
-        op = qml.QuantumNumberPreservingOR(phi, wires=[0, 1, 2, 3])
+    @pytest.mark.parametrize("varphi", [-0.1, 0.2, np.pi / 4])
+    def test_quantum_number_preserving_or_generator(self, varphi):
+        """Tests that the OrbitalRotation operation calculates the correct generator"""
+        op = qml.OrbitalRotation(varphi, wires=[0, 1, 2, 3])
         g, a = op.generator
 
-        res = expm(1j * a * g * phi)
-        exp = QuantumNumberPreservingOR(phi)
+        res = expm(1j * a * g * varphi)
+        exp = OrbitalRotation(varphi)
 
         assert np.allclose(res, exp)
 
-    @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
-    def test_quantum_number_preserving_or_full_decomp(self, phi):
-        """Tests that the QuantumNumberPreservingOR operation calculates the correct decomposition.
+    @pytest.mark.parametrize("varphi", [-0.1, 0.2, 0.5])
+    def test_quantum_number_preserving_or_full_decomp(self, varphi):
+        """Tests that the OrbitalRotation operation calculates the correct decomposition.
 
         The decomposition has already been expressed in terms of single-qubit rotations
         and CNOTs. For each term in the decomposition we need to construct the appropriate
         four-qubit tensor product matrix and then multiply them together.
         """
-        decomp = qml.QuantumNumberPreservingOR.decomposition(phi, wires=[0, 1, 2, 3])
+        decomp = qml.OrbitalRotation.decomposition(varphi, wires=[0, 1, 2, 3])
 
         from functools import reduce
 
@@ -3595,7 +3595,7 @@ class TestQuantumNumberPreservingOR:
                 mats.append(mat)
 
         decomposed_matrix = np.linalg.multi_dot(mats)
-        exp = QuantumNumberPreservingOR(phi)
+        exp = OrbitalRotation(varphi)
 
         assert np.allclose(decomposed_matrix, exp)
 
@@ -3628,10 +3628,10 @@ class TestQuantumNumberPreservingOR:
         )
 
         @qml.qnode(dev)
-        def circuit(phi):
+        def circuit(varphi):
             qml.PauliX(wires=0)
             qml.PauliX(wires=1)
-            qml.QuantumNumberPreservingOR(phi, wires=[0, 1, 2, 3])
+            qml.OrbitalRotation(varphi, wires=[0, 1, 2, 3])
 
             return qml.state()
 
@@ -3666,10 +3666,10 @@ class TestQuantumNumberPreservingOR:
         )
 
         @qml.qnode(dev)
-        def circuit(phi):
+        def circuit(varphi):
             qml.PauliX(wires=0)
             qml.PauliX(wires=1)
-            qml.QuantumNumberPreservingOR(phi, wires=[0, 1, 2, 3])
+            qml.OrbitalRotation(varphi, wires=[0, 1, 2, 3])
 
             return qml.state()
 
@@ -3704,23 +3704,23 @@ class TestQuantumNumberPreservingOR:
         )
 
         @qml.qnode(dev)
-        def circuit(phi):
+        def circuit(varphi):
             qml.PauliX(wires=0)
             qml.PauliX(wires=1)
-            qml.QuantumNumberPreservingOR(phi, wires=[0, 1, 2, 3])
+            qml.OrbitalRotation(varphi, wires=[0, 1, 2, 3])
 
             return qml.state()
 
         assert np.allclose(state, circuit(np.pi / 2))
 
     @pytest.mark.parametrize(
-        ("phi"),
+        ("varphi"),
         [
             (-0.1),
             (0.1),
         ],
     )
-    def test_autograd_grad(self, phi):
+    def test_autograd_grad(self, varphi):
         """Tests that gradients are computed correctly using the
         autograd interface"""
 
@@ -3729,21 +3729,21 @@ class TestQuantumNumberPreservingOR:
         dev = qml.device("default.qubit.autograd", wires=4)
 
         @qml.qnode(dev)
-        def circuit(phi):
+        def circuit(varphi):
             qml.PauliX(wires=0)
             qml.PauliX(wires=1)
-            qml.QuantumNumberPreservingOR(phi, wires=[0, 1, 2, 3])
+            qml.OrbitalRotation(varphi, wires=[0, 1, 2, 3])
 
             return qml.expval(qml.PauliZ(0))
 
-        assert np.allclose(qml.grad(circuit)(phi), np.sin(phi))
+        assert np.allclose(qml.grad(circuit)(varphi), np.sin(varphi))
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     @pytest.mark.parametrize(
-        ("phi"),
+        ("varphi"),
         [(-0.1), (0.1)],
     )
-    def test_tf_grad(self, phi, diff_method):
+    def test_tf_grad(self, varphi, diff_method):
         """Tests that gradients are computed correctly using the
         tensorflow interface"""
 
@@ -3751,28 +3751,28 @@ class TestQuantumNumberPreservingOR:
         dev = qml.device("default.qubit.tf", wires=4)
 
         @qml.qnode(dev, interface="tf", diff_method=diff_method)
-        def circuit(phi):
+        def circuit(varphi):
             qml.PauliX(wires=0)
             qml.PauliX(wires=1)
-            qml.QuantumNumberPreservingOR(phi, wires=[0, 1, 2, 3])
+            qml.OrbitalRotation(varphi, wires=[0, 1, 2, 3])
             return qml.expval(qml.PauliZ(0))
 
-        phi_t = tf.Variable(phi, dtype=tf.float64)
+        varphi_t = tf.Variable(varphi, dtype=tf.float64)
         with tf.GradientTape() as tape:
-            res = circuit(phi_t)
+            res = circuit(varphi_t)
 
-        grad = tape.gradient(res, phi_t)
-        assert np.allclose(grad, np.sin(phi))
+        grad = tape.gradient(res, varphi_t)
+        assert np.allclose(grad, np.sin(varphi))
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     @pytest.mark.parametrize(
-        ("phi"),
+        ("varphi"),
         [
             (-0.1),
             (0.1),
         ],
     )
-    def test_jax_grad(self, phi, diff_method):
+    def test_jax_grad(self, varphi, diff_method):
         """Tests that gradients and operations are computed correctly using the
         jax interface"""
 
@@ -3784,10 +3784,10 @@ class TestQuantumNumberPreservingOR:
         dev = qml.device("default.qubit.jax", wires=4)
 
         @qml.qnode(dev, interface="jax", diff_method=diff_method)
-        def circuit(phi):
+        def circuit(varphi):
             qml.PauliX(wires=0)
             qml.PauliX(wires=1)
-            qml.QuantumNumberPreservingOR(phi, wires=[0, 1, 2, 3])
+            qml.OrbitalRotation(varphi, wires=[0, 1, 2, 3])
             return qml.expval(qml.PauliZ(0))
 
-        assert np.allclose(jax.grad(circuit)(phi), np.sin(phi))
+        assert np.allclose(jax.grad(circuit)(varphi), np.sin(varphi))
