@@ -47,14 +47,16 @@ def get_unitary_matrix(fn, wire_order=None):
 
         elif callable(fn):
             # user passed something that is callable but not a tape or qnode.
-            # we'll assume it is a qfunc!
             tape = qml.transforms.make_tape(fn)(*args, **kwargs)
+            # raise exception if it is not a quantum function
+            if len(tape.operations) == 0:
+                raise ValueError("Function contains no quantum operation")
             if wires is None:
                 raise ValueError("Wire ordering list not specified")
             wire_order = Wires(wires)
 
         else:
-            raise ValueError("Input must be a tape, QNode, or quantum function")
+            raise ValueError("Input is not a tape, QNode, or quantum function")
 
         n_wires = len(wire_order)
 

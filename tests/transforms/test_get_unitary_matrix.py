@@ -67,39 +67,6 @@ def test_get_unitary_matrix_multiple_ops():
     assert np.allclose(matrix, expected_matrix)
 
 
-def test_get_unitary_matrix_more_ops():
-    "Test some more operators. Same circuit as test_single_qubit_fusion_multiple_qubits() in test_single_qubit_fusion.py"
-    wires = ["a", "b"]
-
-    def testcircuit():
-        qml.RZ(0.3, wires="a")
-        qml.RY(0.5, wires="a")
-        qml.Rot(0.1, 0.2, 0.3, wires="b")
-        qml.RX(0.1, wires="a")
-        qml.CNOT(wires=["b", "a"])
-        qml.SX(wires="b")
-        qml.S(wires="b")
-        qml.PhaseShift(0.3, wires="b")
-
-    op1 = np.kron(qml.RZ(0.3, wires="a").matrix, I)
-    op2 = np.kron(qml.RY(0.5, wires="a").matrix, I)
-    op3 = np.kron(I, qml.Rot(0.1, 0.2, 0.3, wires="b").matrix)
-    op4 = np.kron(qml.RX(0.1, wires="a").matrix, I)
-    op5 = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
-    op6 = np.kron(I, qml.SX(wires="b").matrix)
-    op7 = np.kron(I, S)
-    op8 = np.kron(I, qml.PhaseShift(0.3, wires="b").matrix)
-
-    ops = [op8, op7, op6, op5, op4, op3, op2, op1]
-
-    expected_matrix = np.linalg.multi_dot(ops)
-
-    get_matrix = get_unitary_matrix(testcircuit, wires)
-    matrix = get_matrix()
-
-    assert np.allclose(matrix, expected_matrix)
-
-
 @pytest.mark.parametrize("target_wire", [0, 2, 3, 4])
 def test_get_unitary_matrix_CNOT(target_wire):
     """Test CNOT: 2-qubit gate with different target wires, some non-adjacent."""
@@ -234,43 +201,79 @@ def test_get_unitary_matrix_input_tape():
     assert np.allclose(matrix, expected_matrix)
 
 
-def test_get_unitary_matrix_input_QNode():
-    """Test with QNode as input"""
-    dev = qml.device("default.qubit", wires=2)
-
-    @qml.qnode(dev)
-    def my_quantum_function():
-        qml.PauliZ(wires=0)
+def test_get_unitary_matrix_input_tape_wireorder():
+    """Test with quantum tape as input, and nonstandard wire ordering"""
+    with qml.tape.QuantumTape() as tape:
+        qml.RX(0.432, wires=0)
+        qml.RY(0.543, wires=0)
         qml.CNOT(wires=[0, 1])
-        qml.PauliY(wires=1)
-        return qml.expval(qml.PauliZ(1))
+        qml.RX(0.133, wires=1)
 
-    get_matrix = get_unitary_matrix(my_quantum_function)
-
+    get_matrix = get_unitary_matrix(tape, wire_order=[1, 0])
     matrix = get_matrix()
 
-    expected_matrix = np.kron(I, Y) @ CNOT @ np.kron(Z, I)
+    # CNOT where the second wire is the control wire, as opposed to qml.CNOT.matrix
+    CNOT10 = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
+
+    part_expected_matrix = np.kron(I, qml.RY(0.543, wires=0).matrix @ qml.RX(0.432, wires=0).matrix)
+
+    expected_matrix = np.kron(qml.RX(0.133, wires=1).matrix, I) @ CNOT10 @ part_expected_matrix
 
     assert np.allclose(matrix, expected_matrix)
 
 
-def test_get_unitary_matrix_input_QNode_wires():
-    """Test with QNode as input, and nonstandard wire ordering"""
-    dev = qml.device("default.qubit", wires=2)
+def test_get_unitary_matrix_input_QNode():
+    """Test with QNode as input"""
+    dev = qml.device("default.qubit", wires=5)
 
     @qml.qnode(dev)
     def my_quantum_function():
         qml.PauliZ(wires=0)
         qml.CNOT(wires=[0, 1])
         qml.PauliY(wires=1)
+        qml.CRZ(0.2, wires=[2, 3])
+        qml.PauliX(wires=4)
         return qml.expval(qml.PauliZ(1))
 
-    get_matrix = get_unitary_matrix(my_quantum_function, wire_order=[1, 0])
+    get_matrix = get_unitary_matrix(my_quantum_function)  # default wire_order = [0, 1, 2, 3, 4]
+    matrix = get_matrix()
+
+    expected_matrix = (
+        reduce(np.kron, [I, I, I, I, X])
+        @ reduce(np.kron, [I, I, qml.CRZ(0.2, wires=[2, 3]).matrix, I])
+        @ reduce(np.kron, [I, Y, I, I, I])
+        @ reduce(np.kron, [CNOT, I, I, I])
+        @ reduce(np.kron, [Z, I, I, I, I])
+    )
+
+    assert np.allclose(matrix, expected_matrix)
+
+
+def test_get_unitary_matrix_input_QNode_wireorder():
+    """Test with QNode as input, and nonstandard wire ordering"""
+    dev = qml.device("default.qubit", wires=5)
+
+    @qml.qnode(dev)
+    def my_quantum_function():
+        qml.PauliZ(wires=0)
+        qml.CNOT(wires=[0, 1])
+        qml.PauliY(wires=1)
+        qml.CRZ(0.2, wires=[2, 3])
+        qml.PauliX(wires=4)
+        return qml.expval(qml.PauliZ(1))
+
+    get_matrix = get_unitary_matrix(my_quantum_function, wire_order=[1, 0, 4, 2, 3])
     matrix = get_matrix()
 
     CNOT10 = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
 
-    expected_matrix = np.kron(Y, I) @ CNOT10 @ np.kron(I, Z)
+    expected_matrix = (
+        reduce(np.kron, [I, I, X, I, I])
+        @ reduce(np.kron, [I, I, I, qml.CRZ(0.2, wires=[2, 3]).matrix])
+        @ reduce(np.kron, [Y, I, I, I, I])
+        @ reduce(np.kron, [CNOT10, I, I, I])
+        @ reduce(np.kron, [I, Z, I, I, I])
+    )
 
     assert np.allclose(matrix, expected_matrix)
 
@@ -288,9 +291,21 @@ def test_get_unitary_matrix_missing_wires():
 
 
 def test_get_unitary_matrix_invalid_argument():
-    """Assert error raised when input is neither  a tape, QNode, nor quantum function"""
+    """Assert error raised when input is neither a tape, QNode, nor quantum function"""
 
     get_matrix = get_unitary_matrix(qml.PauliZ(0))
 
-    with pytest.raises(ValueError, match="Input must be a tape, QNode, or quantum function"):
+    with pytest.raises(ValueError, match="Input is not a tape, QNode, or quantum function"):
         matrix = get_matrix()
+
+
+def test_get_unitary_matrix_wrong_function():
+    """Assert error raised when input function is not a quantum function"""
+
+    def testfunction(x):
+        return x
+
+    get_matrix = get_unitary_matrix(testfunction, [0])
+
+    with pytest.raises(ValueError, match="Function contains no quantum operation"):
+        matrix = get_matrix(1)
