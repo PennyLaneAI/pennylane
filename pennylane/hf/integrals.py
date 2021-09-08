@@ -15,7 +15,6 @@
 This module contains the functions needed for computing integrals over basis functions.
 """
 import autograd.numpy as anp
-import numpy as np
 from scipy.special import factorial2 as fac2
 
 

@@ -222,9 +222,8 @@ def test_generate_overlap(symbols, geometry, alpha, coef, r, o_ref):
 
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "alpha", "coeff", "g_ref"),
+    ("symbols", "geometry", "alpha", "coeff"),
     [
-        # g_ref computed manually with finite diff
         (
             ["H", "H"],
             pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
@@ -236,21 +235,10 @@ def test_generate_overlap(symbols, geometry, alpha, coef, r, o_ref):
                 [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
                 requires_grad=True,
             ),
-            [
-                np.array(
-                    [
-                        [-0.00043783, -0.09917143, -0.11600198],
-                        [-0.00043783, -0.09917143, -0.11600198],
-                    ]
-                ),
-                np.array(
-                    [[-0.15627636, -0.02812029, 0.08809831], [-0.15627636, -0.02812029, 0.08809831]]
-                ),
-            ],
         ),
     ],
 )
-def test_gradient(symbols, geometry, alpha, coeff, g_ref):
+def test_gradient(symbols, geometry, alpha, coeff):
     r"""Test that the overlap gradient computed with respect to the basis parameters is correct."""
     mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
     basis_a = mol.basis_set[0]
@@ -260,5 +248,29 @@ def test_gradient(symbols, geometry, alpha, coeff, g_ref):
     g_alpha = autograd.grad(generate_overlap(basis_a, basis_b), argnum=0)(*args)
     g_coeff = autograd.grad(generate_overlap(basis_a, basis_b), argnum=1)(*args)
 
-    assert np.allclose(g_alpha, g_ref[0])
-    assert np.allclose(g_coeff, g_ref[1])
+    # compute overlap gradients with respect to alpha and coeff using finite diff
+    delta = 0.0001
+    g_ref_alpha = np.zeros(6).reshape(alpha.shape)
+    g_ref_coeff = np.zeros(6).reshape(coeff.shape)
+
+    for i in range(len(alpha)):
+        for j in range(len(alpha[0])):
+
+            alpha_minus = alpha.copy()
+            alpha_plus  = alpha.copy()
+            alpha_minus[i][j] = alpha_minus[i][j] - delta
+            alpha_plus[i][j] = alpha_plus[i][j] + delta
+            o_minus = generate_overlap(basis_a, basis_b)(*[alpha_minus, coeff])
+            o_plus = generate_overlap(basis_a, basis_b)(*[alpha_plus, coeff])
+            g_ref_alpha[i][j] = (o_plus - o_minus) / (2 * delta)
+
+            coeff_minus = coeff.copy()
+            coeff_plus  = coeff.copy()
+            coeff_minus[i][j] = coeff_minus[i][j] - delta
+            coeff_plus[i][j] = coeff_plus[i][j] + delta
+            o_minus = generate_overlap(basis_a, basis_b)(*[alpha, coeff_minus])
+            o_plus = generate_overlap(basis_a, basis_b)(*[alpha, coeff_plus])
+            g_ref_coeff[i][j] = (o_plus - o_minus) / (2 * delta)
+
+    assert np.allclose(g_alpha, g_ref_alpha)
+    assert np.allclose(g_coeff, g_ref_coeff)
