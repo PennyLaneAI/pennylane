@@ -257,7 +257,7 @@ def test_gradient(symbols, geometry, alpha, coeff):
         for j in range(len(alpha[0])):
 
             alpha_minus = alpha.copy()
-            alpha_plus  = alpha.copy()
+            alpha_plus = alpha.copy()
             alpha_minus[i][j] = alpha_minus[i][j] - delta
             alpha_plus[i][j] = alpha_plus[i][j] + delta
             o_minus = generate_overlap(basis_a, basis_b)(*[alpha_minus, coeff])
@@ -265,7 +265,7 @@ def test_gradient(symbols, geometry, alpha, coeff):
             g_ref_alpha[i][j] = (o_plus - o_minus) / (2 * delta)
 
             coeff_minus = coeff.copy()
-            coeff_plus  = coeff.copy()
+            coeff_plus = coeff.copy()
             coeff_minus[i][j] = coeff_minus[i][j] - delta
             coeff_plus[i][j] = coeff_plus[i][j] + delta
             o_minus = generate_overlap(basis_a, basis_b)(*[alpha, coeff_minus])
