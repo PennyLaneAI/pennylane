@@ -309,7 +309,10 @@ class TestParameterShiftRule:
         """
         torch = pytest.importorskip("torch")
 
-        results = [torch.tensor([0.4342], dtype=torch.float64), torch.tensor([-0.4342], dtype=torch.float64)]
+        results = [
+            torch.tensor([0.4342], dtype=torch.float64),
+            torch.tensor([-0.4342], dtype=torch.float64),
+        ]
         theta = torch.tensor(0.543, dtype=torch.float64)
         phi = torch.tensor(-0.234, dtype=torch.float64)
 
