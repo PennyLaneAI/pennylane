@@ -89,25 +89,24 @@ def _reconstruct_equ(fun, num_frequency, fun_at_zero=None):
 
     return _reconstruction
 
-def reconstruct(qnode, spectra=None, order=1, shifts=None, nums_frequency=None, ids="auto", decimals=5):
+def reconstruct(qnode, _spectra=None, order=1, shifts=None, nums_frequency=None, ids="auto", decimals=5):
 
     @wraps(qnode)
     def wrapper(*args, **kwargs):
         # what about ids in the following?
         #print(args)
         #print(kwargs)
-        nonlocal spectra
         class_jac = qml.transforms.classical_jacobian(qnode, ids)(*args, **kwargs)
         if nums_frequency is None:
-            if spectra is None:
-                spectra = qml.fourier.spectrum(qnode, encoding_gates=ids, decimals=decimals)(*args, **kwargs)
+            if _spectra is None:
+                _spectra = qml.fourier.spectrum(qnode, encoding_gates=ids, decimals=decimals)(*args, **kwargs)
             #else:
                 #qnode.construct(args, kwargs)
             if shifts is None:
                 shifts = {}
             uses_fun_at_zero = {id: any(np.isclose(_shifts, 0.0)) for id, _shifts in shifts.items()}
-            for id in set(spectra.keys())-set(shifts.keys()):
-                R = len(spectra[id])
+            for id in set(_spectra.keys())-set(shifts.keys()):
+                R = len(_spectra[id])
                 shifts[id] = np.arange(-R, R+1)*2*np.pi/(2*R+1)
                 uses_fun_at_zero[id] = True
             if any(uses_fun_at_zero.values()):
@@ -119,7 +118,7 @@ def reconstruct(qnode, spectra=None, order=1, shifts=None, nums_frequency=None, 
                     'shifts': shifts[id],
                     'fun_at_zero': fun_at_zero if uses_fun_at_zero[id] else None,
                 }
-                for id, spectrum in spectra.items()
+                for id, spectrum in _spectra.items()
             }
 
         else:
