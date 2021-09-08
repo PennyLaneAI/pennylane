@@ -15,7 +15,6 @@
 This module contains the functions needed for computing integrals over basis functions.
 """
 import autograd.numpy as anp
-import numpy as np
 from scipy.special import factorial2 as fac2
 
 
@@ -47,7 +46,7 @@ def primitive_norm(l, alpha):
 
     >>> l = (0, 0, 0)
     >>> alpha = np.array([3.425250914])
-    >>> n = gaussian_norm(l, alpha)
+    >>> n = primitive_norm(l, alpha)
     >>> print(n)
     array([1.79444183])
     """
@@ -106,165 +105,250 @@ def contracted_norm(l, alpha, a):
     return n
 
 
-def gaussian_kinetic(la, lb, ra, rb, alpha, beta):
-    r"""
+def diff2(i, j, ri, rj, alpha, beta):
+    r"""Compute the second order differentiated integral needed for evaluating a kinetic integral.
+
+    The second order integral :math:`D_{ij}^2`, where :math:`i` and :math:`j` denote angular
+    momentum components of Gaussian functions is computed from overlap integrals :math:`S` and the
+    Gaussian exponent :math:`\beta` as
+    [`Helgaker (1995) p804 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]:
+
+    .. math::
+
+        D_{ij}^2 = j(j-1)S_{i,j-2}^0 - 2\beta(2j+1)S_{i,j}^0 + 4\beta^2 S_{i,j+2}^0.
+
+    Args:
+
+        i (integer): angular momentum component for the first Gaussian function
+        j (integer): angular momentum component for the second Gaussian function
+        ri (float): position component of the the first Gaussian function
+        ri (float): position component of the the second Gaussian function
+        alpha (array[float]): exponent of the first Gaussian function
+        beta (array[float]): exponent of the second Gaussian function
+
+    Returns:
+
+        array[float]: second order differentiated integral between two Gaussian functions
     """
-    l1, m1, n1 = la
-    l2, m2, n2 = lb
+    p = alpha + beta
 
-    k1 = beta * (2 * (l2 + m2 + n2) + 3) * gaussian_overlap((l1, m1, n1), (l2, m2, n2), ra, rb, alpha, beta)
+    d1 = j * (j - 1) * anp.sqrt(anp.pi / p) * expansion(i, j - 2, ri, rj, alpha, beta, 0)
+    d2 = -2 * beta * (2 * j + 1) * anp.sqrt(anp.pi / p) * expansion(i, j, ri, rj, alpha, beta, 0)
+    d3 = 4 * beta ** 2 * anp.sqrt(anp.pi / p) * expansion(i, j + 2, ri, rj, alpha, beta, 0)
 
-    k2 = -2 * (beta ** 2) * \
-            (gaussian_overlap((l1, m1, n1), (l2 + 2, m2, n2), ra, rb, alpha, beta) +
-             gaussian_overlap((l1, m1, n1), (l2, m2 + 2, n2), ra, rb, alpha, beta) +
-             gaussian_overlap((l1, m1, n1), (l2, m2, n2 + 2), ra, rb, alpha, beta))
+    return d1 + d2 + d3
 
-    k3 = -0.5 * (l2 * (l2 - 1) * gaussian_overlap((l1, m1, n1), (l2 - 2, m2, n2), ra, rb, alpha, beta) +
-                 m2 * (m2 - 1) * gaussian_overlap((l1, m1, n1), (l2, m2 - 2, n2), ra, rb, alpha, beta) +
-                 n2 * (n2 - 1) * gaussian_overlap((l1, m1, n1), (l2, m2, n2 - 2), ra, rb, alpha, beta))
 
-    return k1 + k2 + k3
+def gaussian_kinetic(la, lb, ra, rb, alpha, beta):
+    r"""Compute kinetic integral for two contracted Gaussian functions.
+
+    The kinetic integral between two Gaussian functions denoted by :math:`a` and :math:`b` is
+    computed as [`Helgaker (1995) p805 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]:
+
+    .. math::
+
+        T_{ab} = -\frac{1}{2} \left [ D_{ij}^2 D_{kl}^0 D_{mn}^0 + D_{ij}^0 D_{kl}^2 D_{mn}^0 + D_{ij}^0 D_{kl}^0 D_{mn}^2\right ],
+
+    where :math:`D_{ij}^0 = S_{ij}^0` is an overlap integral and :math:`D_{ij}^2` is computed from
+    overlap integrals :math:`S` and the Gaussian exponent :math:`\beta`
+
+    .. math::
+
+        D_{ij}^2 = j(j-1)S_{i,j-2}^0 - 2\beta(2j+1)S_{i,j}^0 + 4\beta^2 S_{i,j+2}^0.
+
+    Args:
+
+        la (integer): angular momentum for the first Gaussian function
+        lb (integer): angular momentum for the second Gaussian function
+        ra (float): position vector of the the first Gaussian function
+        rb (float): position vector of the the second Gaussian function
+        alpha (array[float]): exponent of the first Gaussian function
+        beta (array[float]): exponent of the second Gaussian function
+
+    Returns:
+
+        array[float]: kinetic integral between two Gaussian functions
+    """
+
+    p = alpha + beta
+
+    t1 = (
+        diff2(la[0], lb[0], ra[0], rb[0], alpha, beta)
+        * anp.sqrt(anp.pi / p)
+        * expansion(la[1], lb[1], ra[1], rb[1], alpha, beta, 0)
+        * anp.sqrt(anp.pi / p)
+        * expansion(la[2], lb[2], ra[2], rb[2], alpha, beta, 0)
+    )
+
+    t2 = (
+        anp.sqrt(anp.pi / p)
+        * expansion(la[0], lb[0], ra[0], rb[0], alpha, beta, 0)
+        * diff2(la[1], lb[1], ra[1], rb[1], alpha, beta)
+        * anp.sqrt(anp.pi / p)
+        * expansion(la[2], lb[2], ra[2], rb[2], alpha, beta, 0)
+    )
+
+    t3 = (
+        anp.sqrt(anp.pi / p)
+        * expansion(la[0], lb[0], ra[0], rb[0], alpha, beta, 0)
+        * anp.sqrt(anp.pi / p)
+        * expansion(la[1], lb[1], ra[1], rb[1], alpha, beta, 0)
+        * diff2(la[2], lb[2], ra[2], rb[2], alpha, beta)
+    )
+
+    return -0.5 * (t1 + t2 + t3)
+
 
 def generate_kinetic(basis_a, basis_b):
-    r"""
+    r"""Return a function that computes the kinetic integral for two contracted Gaussian orbitals.
+
+    Args:
+        basis_a (BasisFunction): first basis function
+        basis_b (BasisFunction): second basis function
+
+    Returns:
+        function: function that computes the kinetic integral
     """
+
     def kinetic_integral(*args):
+        r"""Compute the kinetic integral for two contracted Gaussian functions.
 
-        ra, ca, alpha = generate_params(basis_a.params, args[0])
-        rb, cb, beta = generate_params(basis_b.params, args[1])
+        Args:
+            args (array[float]): initial values of the differentiable parameters
 
-        ca = ca * gaussian_norm(basis_a.L, alpha)
-        cb = cb * gaussian_norm(basis_b.L, beta)
+        Returns:
+            array[float]: the kinetic integral between two contracted Gaussian orbitals
+        """
 
-        na = contracted_norm(basis_a.L, alpha, ca)
-        nb = contracted_norm(basis_b.L, beta, cb)
+        args_a = [i[0] for i in args]
+        args_b = [i[1] for i in args]
 
-        return na * nb * ((ca[:, anp.newaxis] * cb) * gaussian_kinetic(basis_a.L, basis_b.L, ra, rb,
-                                                                       alpha[:, anp.newaxis],
-                                                                       beta)).sum()
+        alpha, ca, ra = generate_params(basis_a.params, args_a)
+        beta, cb, rb = generate_params(basis_b.params, args_b)
+
+        ca = ca * primitive_norm(basis_a.l, alpha)
+        cb = cb * primitive_norm(basis_b.l, beta)
+
+        na = contracted_norm(basis_a.l, alpha, ca)
+        nb = contracted_norm(basis_b.l, beta, cb)
+
+        return (
+            na
+            * nb
+            * (
+                (ca[:, anp.newaxis] * cb)
+                * gaussian_kinetic(basis_a.l, basis_b.l, ra, rb, alpha[:, anp.newaxis], beta)
+            ).sum()
+        )
+
     return kinetic_integral
 
-def nuclear_attraction(la, lb, ra, rb, alpha, beta, r):
+
+# # --------------------------------
+#
+#
+def gaussian_overlap(la, lb, ra, rb, alpha, beta):
+    r"""Compute overlap integral for two primitive Gaussian functions.
+    The overlap integral between two Gaussian functions denoted by :math:`a` and :math:`b` can be
+    computed as [`Helgaker (1995) p803 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]:
+    .. math::
+        S_{ab} = E^{ij} E^{kl} E^{mn} \left (\frac{\pi}{p}  \right )^{3/2},
+    where :math:`E` is a coefficient that can be computed recursively, :math:`i-n` are the angular
+    momentum quantum numbers corresponding to different Cartesian components and :math:`p` is
+    computed from the exponents of the two Gaussian functions as :math:`p = \alpha + \beta`.
+    Args:
+        la (integer): angular momentum for the first Gaussian function
+        lb (integer): angular momentum for the second Gaussian function
+        ra (float): position vector of the the first Gaussian function
+        rb (float): position vector of the the second Gaussian function
+        alpha (array[float]): exponent of the first Gaussian function
+        beta (array[float]): exponent of the second Gaussian function
+    Returns:
+        array[float]: overlap integral between primitive Gaussian functions
     """
-    Computes nuclear attraction between Gaussian primitives
-    Note that C is the coordinates of the nuclear centre
-    """
-    l1, m1, n1 = la
-    l2, m2, n2 = lb
     p = alpha + beta
-    gp = gaussian_prod(alpha, beta, ra[:,anp.newaxis,anp.newaxis], rb[:,anp.newaxis,anp.newaxis])
-    dr = gp - anp.array(r)[:,anp.newaxis,anp.newaxis]
+    s = 1.0
+    for i in range(3):
+        s = s * anp.sqrt(anp.pi / p) * expansion(la[i], lb[i], ra[i], rb[i], alpha, beta, 0)
+    return s
 
-    val = 0.0
-    for t in range(l1 + l2 + 1):
-        for u in range(m1 + m2 + 1):
-            for v in range(n1 + n2 + 1):
-                val = val + expansion(l1, l2, ra[0], rb[0], alpha, beta, t) * \
-                            expansion(m1, m2, ra[1], rb[1], alpha, beta, u) * \
-                            expansion(n1, n2, ra[2], rb[2], alpha, beta, v) * \
-                            hermite_coulomb(t, u, v, 0, p, dr)
-    val = val * 2 * anp.pi / p
-    return val
 
-def generate_attraction(basis_a, basis_b):
+def generate_params(params, args):
+    """Generate basis set parameters. The default values are used for the non-differentiable
+    parameters and the user-defined values are used for the differentiable ones.
     """
-    Computes the nuclear attraction integral
+    basis_params = []
+    c = 0
+    for p in params:
+        if p.requires_grad:
+            basis_params.append(args[c])
+            c += 1
+        else:
+            basis_params.append(p)
+    return tuple(basis_params)
+
+
+def expansion(la, lb, ra, rb, alpha, beta, t):
+    r"""Compute Hermite Gaussian expansion coefficients recursively for two Gaussian functions.
+    An overlap distribution, which defines the product of two Gaussians, can be written as a Hermite
+    expansion as [`Helgaker (1995) p798 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]
+    .. math::
+        \Omega_{ij} = \sum_{t=0}^{i+j} E_t^{ij} \Lambda_t,
+    where :math:`\Lambda` is a Hermite polynomial of degree :math:`t`, :math:`E` denotes the expansion
+    coefficients, :math:`\Omega_{ij} = G_i G_j`, and :math:`G` is a Gaussian function. The overalp
+    integral between two Gaussian functions can be simply computed by integrating over the overlap
+    distribution which requires obtaining the expansion coefficients. This can be done recursively
+    as [`Helgaker (1995) p799 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]
+    .. math::
+        E_t^{i+1,j} = \frac{1}{2p} E_{t-1}^{ij} - \frac{qr}{\alpha} E_{t}^{ij} + (t+1) E_{t+1}^{ij},
+    and
+    .. math::
+        E_t^{i,j+1} = \frac{1}{2p} E_{t-1}^{ij} + \frac{qr}{\beta} E_{t}^{ij} + (t+1) E_{t+1}^{ij},
+    where :math:`p = \alpha + \beta` and :math:`q = \alpha \beta / (\alpha + \beta)` are computed
+    from the Gaussian exponents :math:`\alpha, \beta` and the position :math:`r` is computed as
+    :math:`r = r_\alpha - r_\beta`. The starting coefficient is
+    .. math::
+        E_0^{00} = e^{-qr^2},
+    and :math:`E_t^{ij} = 0` is :math:`t < 0` or :math:`t > (i+j)`.
+    Args:
+        la (integer): angular momentum component for the first Gaussian function
+        lb (integer): angular momentum component for the second Gaussian function
+        ra (float): position component of the the first Gaussian function
+        rb (float): position component of the the second Gaussian function
+        alpha (array[float]): exponent of the first Gaussian function
+        beta (array[float]): exponent of the second Gaussian function
+        t (integer): number of nodes in the Hermite Gaussian
+    Returns:
+        array[float]: expansion coefficients for each Gaussian combination
+    **Example**
+    >>> la, lb = 0, 0
+    >>> ra, rb = 0.0, 0.0
+    >>> alpha = np.array([3.42525091])
+    >>> beta =  np.array([3.42525091])
+    >>> t = 0
+    >>> c = expansion(la, lb, ra, rb, alpha, beta, t)
+    >>> c
+    array([1.])
     """
-    def attraction_integral(*args):
-
-        print(*args)
-        print()
-
-        r = args[0]
-        ra, ca, alpha = generate_params(basis_a.params, args[1])
-        rb, cb, beta = generate_params(basis_b.params, args[2])
-
-        ca = ca * gaussian_norm(basis_a.L, alpha)
-        cb = cb * gaussian_norm(basis_b.L, beta)
-
-
-        na = contracted_norm(basis_a.L, alpha, ca)
-        nb = contracted_norm(basis_b.L, beta, cb)
-
-        v = na * nb * ((ca * cb[:,anp.newaxis]) * nuclear_attraction(basis_a.L, basis_b.L, ra, rb, alpha, beta[:,anp.newaxis], r)).sum()
-        return v
-    return attraction_integral
-
-
-def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta):
-    """Electron repulsion between Gaussians"""
-    l1, m1, n1 = la
-    l2, m2, n2 = lb
-    l3, m3, n3 = lc
-    l4, m4, n4 = ld
-
     p = alpha + beta
-    q = gamma + delta
-    quotient = (p * q)/(p + q)
+    q = alpha * beta / p
+    r = ra - rb
 
-    p_ab = gaussian_prod(alpha, beta, ra[:,anp.newaxis,anp.newaxis,anp.newaxis,anp.newaxis],
-                      rb[:,anp.newaxis,anp.newaxis,anp.newaxis,anp.newaxis]) # A and B composite center
-    p_cd = gaussian_prod(gamma, delta, rc[:,anp.newaxis,anp.newaxis,anp.newaxis,anp.newaxis],
-                      rd[:,anp.newaxis,anp.newaxis,anp.newaxis,anp.newaxis]) # C and D composite center
+    if la == lb == t == 0:
+        return anp.exp(-q * r ** 2)
 
-    e = 0.0
-    for t in range(l1+l2+1):
-        for u in range(m1+m2+1):
-            for v in range(n1+n2+1):
-                for tau in range(l3+l4+1):
-                    for nu in range(m3+m4+1):
-                        for phi in range(n3+n4+1):
-                            e = e + expansion(l1, l2, ra[0], rb[0], alpha, beta, t) * \
-                                    expansion(m1, m2, ra[1], rb[1], alpha, beta, u) * \
-                                    expansion(n1, n2, ra[2], rb[2], alpha, beta, v) * \
-                                    expansion(l3, l4, rc[0], rd[0], gamma, delta, tau) * \
-                                    expansion(m3, m4, rc[1], rd[1], gamma, delta, nu) * \
-                                    expansion(n3, n4, rc[2], rd[2], gamma, delta, phi) * \
-                                   ((-1) ** (tau + nu + phi)) * \
-                                    hermite_coulomb(t + tau, u + nu, v + phi, 0, quotient, p_ab - p_cd)
+    if t < 0 or t > (la + lb):
+        return 0.0
 
-    e = e * 2 * (anp.pi ** 2.5) / (p * q * anp.sqrt(p+q))
-    return e
-
-
-def generate_repulsion(basis_a, basis_b, basis_c, basis_d):
-    """
-    Computes the two electron repulsion integral
-    """
-    def repulsion_integral(*args):
-
-        ra, ca, alpha = generate_params(basis_a.params, args[0])
-        rb, cb, beta = generate_params(basis_b.params, args[1])
-        rc, cc, gamma = generate_params(basis_c.params, args[2])
-        rd, cd, delta = generate_params(basis_d.params, args[3])
-
-        ca = ca * gaussian_norm(basis_a.L, alpha)
-        cb = cb * gaussian_norm(basis_b.L, beta)
-        cc = cc * gaussian_norm(basis_c.L, gamma)
-        cd = cd * gaussian_norm(basis_d.L, delta)
-
-        n1 = contracted_norm(basis_a.L, alpha, ca)
-        n2 = contracted_norm(basis_b.L, beta, cb)
-        n3 = contracted_norm(basis_c.L, gamma, cc)
-        n4 = contracted_norm(basis_d.L, delta, cd)
-
-        e = n1 * n2 * n3 * n4 * (
-                (ca * cb[:,anp.newaxis] * cc[:,anp.newaxis,anp.newaxis] * cd[:,anp.newaxis,anp.newaxis,anp.newaxis]) *
-                electron_repulsion(basis_a.L, basis_b.L, basis_c.L, basis_d.L, ra, rb, rc, rd,
-                alpha, beta[:,anp.newaxis], gamma[:,anp.newaxis,anp.newaxis], delta[:,anp.newaxis,anp.newaxis,anp.newaxis])
-        ).sum()
-        return e
-    return repulsion_integral
-
-
-def boys(a, b):
-    r"""
-    """
-    f = anp.piecewise(b, [b == 0, b != 0], [lambda b : 1 / (2 * a + 1),
-    lambda b : sc.special.gamma(0.5 + a) * sc.special.gammainc(0.5 + a, b) / (2 * (b ** (0.5 + a)))])
-    return f
-
-
-def gaussian_prod(alpha, beta, ra, rb):
-    """Returns the Gaussian product center"""
-    return (alpha * anp.array(ra) + beta * anp.array(rb)) / (alpha + beta)
+    elif lb == 0:
+        return (
+            (1 / (2 * p)) * expansion(la - 1, lb, ra, rb, alpha, beta, t - 1)
+            - (q * r / alpha) * expansion(la - 1, lb, ra, rb, alpha, beta, t)
+            + (t + 1) * expansion(la - 1, lb, ra, rb, alpha, beta, t + 1)
+        )
+    else:
+        return (
+            (1 / (2 * p)) * expansion(la, lb - 1, ra, rb, alpha, beta, t - 1)
+            + (q * r / beta) * expansion(la, lb - 1, ra, rb, alpha, beta, t)
+            + (t + 1) * expansion(la, lb - 1, ra, rb, alpha, beta, t + 1)
+        )
