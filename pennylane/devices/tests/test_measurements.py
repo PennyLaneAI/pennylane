@@ -17,6 +17,7 @@
 import numpy as np
 import pytest
 from flaky import flaky
+from scipy.sparse import coo_matrix
 
 import pennylane as qml
 
@@ -34,9 +35,23 @@ obs = {
     "PauliY": qml.PauliY(wires=[0]),
     "PauliZ": qml.PauliZ(wires=[0]),
     "Projector": qml.Projector(np.array([1]), wires=[0]),
+    "SparseHamiltonian": qml.SparseHamiltonian(coo_matrix(np.eye(8)), wires=[0, 1, 2]),
+    "Hamiltonian": qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliX(0)]),
 }
 
 all_obs = obs.keys()
+
+# All qubit observables should be available to test in the device test suite
+all_available_obs = qml.ops._qubit__obs__.copy()  # pylint: disable=protected-access
+# Note that the identity is not technically a qubit observable
+all_available_obs |= {"Identity"}
+
+if not set(all_obs) == all_available_obs:
+    raise ValueError(
+        "A qubit observable has been added that is not being tested in the "
+        "device test suite. Please add to the obs dictionary in "
+        "pennylane/devices/tests/test_measurements.py"
+    )
 
 # single qubit Hermitian observable
 A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
@@ -51,10 +66,15 @@ class TestSupportedObservables:
         device_kwargs["wires"] = 3
         dev = qml.device(**device_kwargs)
 
+        if device_kwargs["shots"] is not None and observable == "SparseHamiltonian":
+            pytest.skip("SparseHamiltonian only supported in analytic mode")
+
         assert hasattr(dev, "observables")
         if observable in dev.observables:
 
-            @qml.qnode(dev)
+            kwargs = {"diff_method": "parameter-shift"} if observable == "SparseHamiltonian" else {}
+
+            @qml.qnode(dev, **kwargs)
             def circuit():
                 return qml.expval(obs[observable])
 
@@ -77,6 +97,57 @@ class TestSupportedObservables:
             return qml.expval(qml.Identity(wires=0) @ qml.Identity(wires=1))
 
         assert isinstance(circuit(), (float, np.ndarray))
+
+
+# pylint: disable=too-few-public-methods
+@flaky(max_runs=10)
+class TestHamiltonianSupport:
+    """Separate test to ensure that the device can differentiate Hamiltonian observables."""
+
+    def test_hamiltonian_diff(self, device_kwargs, tol):
+        """Tests a simple VQE gradient using parameter-shift rules."""
+        device_kwargs["wires"] = 1
+        dev = qml.device(**device_kwargs)
+        coeffs = np.array([-0.05, 0.17])
+        param = np.array(1.7)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit(coeffs, param):
+            qml.RX(param, wires=0)
+            qml.RY(param, wires=0)
+            return qml.expval(
+                qml.Hamiltonian(
+                    coeffs,
+                    [qml.PauliX(0), qml.PauliZ(0)],
+                )
+            )
+
+        grad_fn = qml.grad(circuit)
+        grad = grad_fn(coeffs, param)
+
+        def circuit1(param):
+            """First Pauli subcircuit"""
+            qml.RX(param, wires=0)
+            qml.RY(param, wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        def circuit2(param):
+            """Second Pauli subcircuit"""
+            qml.RX(param, wires=0)
+            qml.RY(param, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        half1 = qml.QNode(circuit1, dev, diff_method="parameter-shift")
+        half2 = qml.QNode(circuit2, dev, diff_method="parameter-shift")
+
+        def combine(coeffs, param):
+            return coeffs[0] * half1(param) + coeffs[1] * half2(param)
+
+        grad_fn_expected = qml.grad(combine)
+        grad_expected = grad_fn_expected(coeffs, param)
+
+        assert np.allclose(grad[0], grad_expected[0], atol=tol(dev.shots))
+        assert np.allclose(grad[1], grad_expected[1], atol=tol(dev.shots))
 
 
 @flaky(max_runs=10)
@@ -423,6 +494,36 @@ class TestTensorExpval:
             np.cos(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)
         ) ** 2
         assert np.allclose(res, expected, atol=tol(dev.shots))
+
+    def test_sparse_hamiltonian_expval(self, device, tol):
+        """Test that expectation values of sparse Hamiltonians are properly calculated."""
+        n_wires = 4
+        dev = device(n_wires)
+
+        if "SparseHamiltonian" not in dev.observables:
+            pytest.skip("Skipped because device does not support the SparseHamiltonian observable.")
+        if dev.shots is not None:
+            pytest.skip("SparseHamiltonian only supported in analytic mode")
+
+        h_row = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15])
+        h_col = np.array([15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0])
+        h_data = np.array(
+            [-1, 1, 1, -1, -1, 1, 1, -1, -1, 1, 1, -1, -1, 1, 1, -1], dtype=np.complex128
+        )
+        h = coo_matrix((h_data, (h_row, h_col)), shape=(16, 16))  # XXYY
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def result():
+            qml.PauliX(0)
+            qml.PauliX(2)
+            qml.SingleExcitation(0.1, wires=[0, 1])
+            qml.SingleExcitation(0.2, wires=[2, 3])
+            qml.SingleExcitation(0.3, wires=[1, 2])
+            return qml.expval(qml.SparseHamiltonian(h, wires=[0, 1, 2, 3]))
+
+        res = result()
+        exp_res = 0.019833838076209875
+        assert np.allclose(res, exp_res, atol=tol(False))
 
 
 @flaky(max_runs=10)

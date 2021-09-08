@@ -274,6 +274,42 @@ class TestToQasmUnitTests:
 
         assert res == qasm2
 
+    def test_only_tape_measurements(self):
+        """Test that no computational basis measurements are added other
+        than those already in the tape when ``measure_all=False``."""
+        with qml.tape.QuantumTape() as circuit:
+            qml.RX(0.43, wires="a")
+            qml.RY(0.35, wires="b")
+            qml.RZ(0.35, wires=2)
+            qml.CNOT(wires=["a", "b"])
+            qml.Hadamard(wires=2)
+            qml.CNOT(wires=[2, "a"])
+            qml.PauliX(wires="b")
+            qml.expval(qml.PauliZ("a"))
+            qml.expval(qml.PauliZ(2))
+
+        res = circuit.to_openqasm(measure_all=False)
+
+        expected = dedent(
+            """\
+            OPENQASM 2.0;
+            include "qelib1.inc";
+            qreg q[3];
+            creg c[3];
+            rx(0.43) q[0];
+            ry(0.35) q[1];
+            rz(0.35) q[2];
+            cx q[0],q[1];
+            h q[2];
+            cx q[2],q[0];
+            x q[1];
+            measure q[0] -> c[0];
+            measure q[2] -> c[2];
+            """
+        )
+
+        assert res == expected
+
 
 class TestQNodeQasmIntegrationTests:
     """Test that the QASM serialization works correctly

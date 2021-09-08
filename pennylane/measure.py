@@ -202,6 +202,26 @@ class MeasurementProcess:
 
         return self
 
+    @property
+    def hash(self):
+        """int: returns an integer hash uniquely representing the measurement process"""
+        if self.obs is None:
+            fingerprint = (
+                str(self.name),
+                tuple(self.wires.tolist()),
+                str(self.data),
+                self.return_type,
+            )
+        else:
+            fingerprint = (
+                str(self.obs.name),
+                tuple(self.wires.tolist()),
+                str(self.obs.data),
+                self.return_type,
+            )
+
+        return hash(fingerprint)
+
 
 def expval(op):
     r"""Expectation value of the supplied observable.
@@ -232,7 +252,7 @@ def expval(op):
     """
     if not isinstance(op, (Observable, qml.Hamiltonian)):
         raise qml.QuantumFunctionError(
-            "{} is not an observable or Hamiltonian: cannot be used with expval".format(op.name)
+            "{} is not an observable: cannot be used with expval".format(op.name)
         )
 
     return MeasurementProcess(Expectation, obs=op)

@@ -357,7 +357,7 @@ op_2 = QubitOperator("Z0 Y1", 2.23e-10j)
 )
 def test_exception_convert_observable(qubit_op, tol):
     r"""Test that an error is raised if the QubitOperator contains complex coefficients.
-    Currently the vqe.Hamiltonian class does not support complex coefficients.
+    Currently the Hamiltonian class does not support complex coefficients.
     """
     with pytest.raises(TypeError, match="The coefficients entering the QubitOperator must be real"):
         qchem.convert_observable(qubit_op, tol=tol)

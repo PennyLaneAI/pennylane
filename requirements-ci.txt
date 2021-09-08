@@ -1,0 +1,13 @@
+numpy
+scipy
+cvxpy
+cvxopt
+networkx
+tensornetwork==0.3
+autograd
+toml
+appdirs
+semantic_version==2.6
+dask[delayed]
+autoray
+matplotlib

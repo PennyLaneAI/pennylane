@@ -15,4 +15,4 @@
 This package contains functionality for running Variational Quantum Eigensolver (VQE)
 computations using PennyLane.
 """
-from .vqe import Hamiltonian, ExpvalCost, VQECost
+from .vqe import ExpvalCost, VQECost

@@ -14,6 +14,9 @@
 """
 Contains the Grover Operation template.
 """
+import itertools
+import functools
+import numpy as np
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.ops import Hadamard, PauliZ, MultiControlledX
@@ -121,9 +124,30 @@ class GroverOperator(Operation):
                 wires=self.wires[-1],
                 work_wires=self.work_wires,
             )
+
             PauliZ(self.wires[-1])
 
             for wire in self.wires[:-1]:
                 Hadamard(wire)
 
         return tape
+
+    @property
+    def matrix(self):
+        # Redefine the property here to allow for a custom _matrix signature
+        mat = self._matrix(len(self.wires))
+        return mat
+
+    @classmethod
+    def _matrix(cls, *params):
+        num_wires = params[0]
+
+        # s1 = H|0>, Hadamard on a single qubit in the ground state
+        s1 = np.array([1, 1]) / np.sqrt(2)
+
+        # uniform superposition state |s>
+        s = functools.reduce(np.kron, list(itertools.repeat(s1, num_wires)))
+
+        # Grover diffusion operator
+        G = 2 * np.outer(s, s) - np.identity(2 ** num_wires)
+        return G

@@ -1,8 +1,28 @@
 qml.grouping
 ============
+
+Overview
+--------
+
 This subpackage defines functions and classes for generating and manipulating
 elements of the Pauli group. It also contains Pauli-word partitioning
 functionality used in measurement optimization.
+
+.. currentmodule:: pennylane.grouping
+
+.. automodapi:: pennylane.grouping
+    :no-heading:
+    :no-main-docstr:
+    :no-inheritance-diagram:
+    :no-inherited-members:
+
+Graph colouring
+---------------
+
+.. automodapi:: pennylane.grouping.graph_colouring
+    :no-heading:
+    :no-inheritance-diagram:
+    :no-inherited-members:
 
 
 Pauli group
@@ -94,15 +114,3 @@ the groups of observables:
  [PauliY(wires=[0]), PauliZ(wires=[1])]]
 >>> coeffs_groupings
 [[4.21], [1.43, 0.97]]
-
-.. currentmodule:: pennylane.grouping
-
-
-.. automodapi:: pennylane.grouping
-    :no-inheritance-diagram:
-    :no-inherited-members:
-
-
-.. automodapi:: pennylane.grouping.graph_colouring
-    :no-inheritance-diagram:
-    :no-inherited-members:

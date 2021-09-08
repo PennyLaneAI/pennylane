@@ -19,7 +19,16 @@ import pytest
 import pennylane as qml
 from pennylane import QubitStateVector, BasisState, DeviceError
 from pennylane.devices import DefaultMixed
-from pennylane.ops import PauliZ, CZ, PauliX, Hadamard, CNOT, AmplitudeDamping, DepolarizingChannel
+from pennylane.ops import (
+    PauliZ,
+    CZ,
+    PauliX,
+    Hadamard,
+    CNOT,
+    AmplitudeDamping,
+    DepolarizingChannel,
+    ResetError,
+)
 from pennylane.wires import Wires
 
 import numpy as np
@@ -99,11 +108,18 @@ class TestState:
 
         assert np.allclose(dev.state, current_state, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("op", [AmplitudeDamping, DepolarizingChannel])
+    @pytest.mark.parametrize(
+        "op",
+        [
+            AmplitudeDamping(0.5, wires=0),
+            DepolarizingChannel(0.5, wires=0),
+            ResetError(0.1, 0.5, wires=0),
+        ],
+    )
     def test_state_after_channel(self, nr_wires, op, tol):
         """Tests that state is correctly retrieved after applying a channel on the first wires"""
         dev = qml.device("default.mixed", wires=nr_wires)
-        dev.apply([op(0.5, wires=0)])
+        dev.apply([op])
         current_state = np.reshape(dev._state, (2 ** nr_wires, 2 ** nr_wires))
 
         assert np.allclose(dev.state, current_state, atol=tol, rtol=0)
@@ -139,12 +155,19 @@ class TestReset:
 
         assert np.allclose(dev._state, dev._create_basis_state(0), atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("op", [AmplitudeDamping, DepolarizingChannel])
+    @pytest.mark.parametrize(
+        "op",
+        [
+            AmplitudeDamping(0.5, wires=[0]),
+            DepolarizingChannel(0.5, wires=[0]),
+            ResetError(0.1, 0.5, wires=[0]),
+        ],
+    )
     def test_reset_after_channel(self, nr_wires, op, tol):
         """Tests that state is correctly reset after applying a channel on the first
         wires"""
         dev = qml.device("default.mixed", wires=nr_wires)
-        dev.apply([op(0.5, wires=[0])])
+        dev.apply([op])
         dev.reset()
 
         assert np.allclose(dev._state, dev._create_basis_state(0), atol=tol, rtol=0)
@@ -242,17 +265,32 @@ class TestKrausOps:
         assert np.allclose(dev._get_kraus(ops[0]), ops[1], atol=tol, rtol=0)
 
     p = 0.5
-    K0 = np.sqrt(1 - p) * np.eye(2)
-    K1 = np.sqrt(p / 3) * np.array([[0, 1], [1, 0]])
-    K2 = np.sqrt(p / 3) * np.array([[0, -1j], [1j, 0]])
-    K3 = np.sqrt(p / 3) * np.array([[1, 0], [0, -1]])
+    p_0, p_1 = 0.1, 0.5
 
     channel_ops = [
         (
             AmplitudeDamping(p, wires=0),
             [np.diag([1, np.sqrt(1 - p)]), np.sqrt(p) * np.array([[0, 1], [0, 0]])],
         ),
-        (DepolarizingChannel(p, wires=0), [K0, K1, K2, K3]),
+        (
+            DepolarizingChannel(p, wires=0),
+            [
+                np.sqrt(1 - p) * np.eye(2),
+                np.sqrt(p / 3) * np.array([[0, 1], [1, 0]]),
+                np.sqrt(p / 3) * np.array([[0, -1j], [1j, 0]]),
+                np.sqrt(p / 3) * np.array([[1, 0], [0, -1]]),
+            ],
+        ),
+        (
+            ResetError(p_0, p_1, wires=0),
+            [
+                np.sqrt(1 - p_0 - p_1) * np.eye(2),
+                np.sqrt(p_0) * np.array([[1, 0], [0, 0]]),
+                np.sqrt(p_0) * np.array([[0, 1], [0, 0]]),
+                np.sqrt(p_1) * np.array([[0, 0], [1, 0]]),
+                np.sqrt(p_1) * np.array([[0, 0], [0, 1]]),
+            ],
+        ),
     ]
 
     @pytest.mark.parametrize("ops", channel_ops)
@@ -276,6 +314,11 @@ class TestApplyChannel:
             DepolarizingChannel(0.5, wires=0),
             np.array([[2 / 3 + 0.0j, 0.0 + 0.0j], [0.0 + 0.0j, 1 / 3 + 0.0j]]),
         ],
+        [
+            1,
+            ResetError(0.1, 0.5, wires=0),
+            np.array([[0.5 + 0.0j, 0.0 + 0.0j], [0.0 + 0.0j, 0.5 + 0.0j]]),
+        ],
     ]
 
     @pytest.mark.parametrize("x", x_apply_channel_init)
@@ -289,7 +332,6 @@ class TestApplyChannel:
         if op == CNOT:
             dev._apply_channel(kraus, wires=Wires([0, 1]))
         else:
-            kraus = dev._get_kraus(op)
             dev._apply_channel(kraus, wires=Wires(0))
 
         assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
@@ -308,6 +350,11 @@ class TestApplyChannel:
             DepolarizingChannel(0.5, wires=0),
             np.array([[0.5 + 0.0j, 0.0 + 0.0j], [0.0 + 0.0j, 0.5 + 0.0j]]),
         ],
+        [
+            1,
+            ResetError(0.1, 0.5, wires=0),
+            np.array([[0.3 + 0.0j, 0.0 + 0.0j], [0.0 + 0.0j, 0.7 + 0.0j]]),
+        ],
     ]
 
     @pytest.mark.parametrize("x", x_apply_channel_mixed)
@@ -323,7 +370,6 @@ class TestApplyChannel:
         if op == CNOT:
             dev._apply_channel(kraus, wires=Wires([0, 1]))
         else:
-            kraus = dev._get_kraus(op)
             dev._apply_channel(kraus, wires=Wires(0))
 
         assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
@@ -353,6 +399,11 @@ class TestApplyChannel:
             DepolarizingChannel(0.5, wires=0),
             np.array([[0.5 + 0.0j, -1 / 6 + 0.0j], [-1 / 6 + 0.0j, 0.5 + 0.0j]]),
         ],
+        [
+            1,
+            ResetError(0.1, 0.5, wires=0),
+            np.array([[0.3 + 0.0j, -0.2 + 0.0j], [-0.2 + 0.0j, 0.7 + 0.0j]]),
+        ],
     ]
 
     @pytest.mark.parametrize("x", x_apply_channel_root)
@@ -368,7 +419,6 @@ class TestApplyChannel:
         if op == CNOT:
             dev._apply_channel(kraus, wires=Wires([0, 1]))
         else:
-            kraus = dev._get_kraus(op)
             dev._apply_channel(kraus, wires=Wires(0))
 
         assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
@@ -390,7 +440,6 @@ class TestApplyDiagonal:
         if op == CZ:
             dev._apply_channel(kraus, wires=Wires([0, 1]))
         else:
-            kraus = dev._get_kraus(op)
             dev._apply_channel(kraus, wires=Wires(0))
 
         assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
@@ -410,7 +459,6 @@ class TestApplyDiagonal:
         if op == CZ:
             dev._apply_channel(kraus, wires=Wires([0, 1]))
         else:
-            kraus = dev._get_kraus(op)
             dev._apply_channel(kraus, wires=Wires(0))
 
         assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
@@ -444,7 +492,6 @@ class TestApplyDiagonal:
         if op == CZ:
             dev._apply_channel(kraus, wires=Wires([0, 1]))
         else:
-            kraus = dev._get_kraus(op)
             dev._apply_channel(kraus, wires=Wires(0))
 
         assert np.allclose(dev._state, target_state, atol=tol, rtol=0)

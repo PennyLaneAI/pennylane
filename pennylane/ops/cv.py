@@ -35,6 +35,8 @@ quantum operations supported by PennyLane, as well as their conventions.
 # As the qubit based ``decomposition``, ``_matrix``, ``diagonalizing_gates``
 # abstract methods are not defined in the CV case, disabling the related check
 # pylint: disable=abstract-method
+import warnings
+
 import math
 import numpy as np
 from scipy.linalg import block_diag
@@ -585,6 +587,16 @@ class Interferometer(CVOperation):
         U (array): A shape ``(len(wires), len(wires))`` complex unitary matrix
         wires (Sequence[int] or int): the wires the operation acts on
     """
+
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            "'Interferometer' is deprecated and will be renamed 'InterferometerUnitary'",
+            UserWarning,
+            stacklevel=2,
+        )
+
+        super().__init__(*args, **kwargs)
+
     num_params = 1
     num_wires = AnyWires
     par_domain = "A"

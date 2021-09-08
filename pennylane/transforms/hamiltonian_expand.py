@@ -129,20 +129,26 @@ def hamiltonian_expand(tape, group=True):
             "Passed tape must end in `qml.expval(H)`, where H is of type `qml.Hamiltonian`"
         )
 
+    # note: for backward passes of some frameworks
+    # it is crucial to use the hamiltonian.data attribute,
+    # and not hamiltonian.coeffs when recombining the results
+
     if group or hamiltonian.grouping_indices is not None:
 
         if hamiltonian.grouping_indices is None:
+            # explicitly selected grouping, but indices not yet computed
             hamiltonian.compute_grouping()
 
-        # use groups of observables if available or explicitly requested
-        coeffs = [
-            qml.math.squeeze(qml.math.take(hamiltonian.coeffs, indices, axis=0))
+        coeff_groupings = [
+            qml.math.stack([hamiltonian.data[i] for i in indices])
             for indices in hamiltonian.grouping_indices
         ]
         obs_groupings = [
             [hamiltonian.ops[i] for i in indices] for indices in hamiltonian.grouping_indices
         ]
 
+        # make one tape per grouping, measuring the
+        # observables in that grouping
         tapes = []
         for obs in obs_groupings:
 
@@ -155,21 +161,30 @@ def hamiltonian_expand(tape, group=True):
 
             new_tape = new_tape.expand(stop_at=lambda obj: True)
             tapes.append(new_tape)
-    else:
-        coeffs = hamiltonian.coeffs
 
-        tapes = []
-        for o in hamiltonian.ops:
-            with tape.__class__() as new_tape:
-                for op in tape.operations:
-                    op.queue()
-                qml.expval(o)
+        def processing_fn(res_groupings):
+            dot_products = [
+                qml.math.dot(r_group, c_group)
+                for c_group, r_group in zip(coeff_groupings, res_groupings)
+            ]
+            return qml.math.sum(qml.math.stack(dot_products), axis=0)
 
-            tapes.append(new_tape)
+        return tapes, processing_fn
 
+    coeffs = hamiltonian.data
+
+    # make one tape per observable
+    tapes = []
+    for o in hamiltonian.ops:
+        with tape.__class__() as new_tape:
+            for op in tape.operations:
+                op.queue()
+            qml.expval(o)
+
+        tapes.append(new_tape)
+
+    # pylint: disable=function-redefined
     def processing_fn(res):
-        # note: res could have an extra dimension here if a shots_distribution
-        # is used for evaluation
         dot_products = [qml.math.dot(qml.math.squeeze(r), c) for c, r in zip(coeffs, res)]
         return qml.math.sum(qml.math.stack(dot_products), axis=0)
 

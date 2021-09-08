@@ -258,7 +258,7 @@ def test_no_control_defined():
     """Test a custom operation with no control transform defined."""
     # QFT has no control rule defined.
     with QuantumTape() as tape:
-        ctrl(qml.QFT, 2)(wires=[0, 1])
+        ctrl(qml.templates.QFT, 2)(wires=[0, 1])
     tape = expand_tape(tape)
     assert len(tape.operations) == 12
     # Check that all operations are updated to their controlled version.

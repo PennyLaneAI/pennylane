@@ -15,11 +15,12 @@
 This module contains functions for computing the parameter-shift gradient
 of a qubit-based quantum tape.
 """
-# pylint: disable=protected-access,too-many-arguments
+# pylint: disable=protected-access,too-many-arguments,too-many-statements
 import numpy as np
 
 import pennylane as qml
 
+from .gradient_transform import gradient_transform
 from .finite_difference import finite_diff, generate_shifted_tapes
 
 
@@ -65,19 +66,8 @@ def _get_operation_recipe(tape, t_idx, shift=np.pi / 2):
     If the corresponding operation has grad_recipe=None, then
     the default two-term parameter-shift rule is assumed.
     """
-    # get the index of the parameter in the tape
-    parameter_idx = list(tape.trainable_params)[t_idx]
-
-    # get the corresponding operation
-    op = tape._par_info[parameter_idx]["op"]
-
-    # get the corresponding operation parameter index
-    # (that is, index of the parameter within the operation)
-    op_p_idx = tape._par_info[parameter_idx]["p_idx"]
-
-    # return the parameter-shift gradient for that
-    # operation parameter.
-    return op.get_parameter_shift(op_p_idx, shift=shift)
+    op, p_idx = tape.get_operation(t_idx)
+    return op.get_parameter_shift(p_idx, shift=shift)
 
 
 def _process_gradient_recipe(gradient_recipe, tol=1e-10):
@@ -149,12 +139,32 @@ def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None
     shapes = []
     unshifted_coeffs = []
 
+    fns = []
+
     for idx, _ in enumerate(tape.trainable_params):
 
         if idx not in argnum:
             # parameter has zero gradient
             shapes.append(0)
             gradient_coeffs.append([])
+            fns.append(None)
+            continue
+
+        op, _ = tape.get_operation(idx)
+
+        if op.name == "Hamiltonian":
+            # operation is a Hamiltonian
+            if op.return_type is not qml.operation.Expectation:
+                raise ValueError(
+                    "Can only differentiate Hamiltonian "
+                    f"coefficients for expectations, not {op.return_type.value}"
+                )
+
+            g_tapes, h_fn = qml.gradients.hamiltonian_grad(tape, idx)
+            gradient_tapes.extend(g_tapes)
+            shapes.append(1)
+            gradient_coeffs.append(np.array([1.0]))
+            fns.append(h_fn)
             continue
 
         # get the gradient recipe for the trainable parameter
@@ -162,6 +172,7 @@ def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None
         recipe = recipe or _get_operation_recipe(tape, idx, shift=shift)
         recipe = _process_gradient_recipe(recipe)
         coeffs, multipliers, shifts = recipe
+        fns.append(None)
 
         if shifts[0] == 0 and multipliers[0] == 1:
             # Gradient recipe includes a term with zero shift.
@@ -188,7 +199,7 @@ def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None
         start = 1 if unshifted_coeffs and f0 is None else 0
         r0 = f0 or results[0]
 
-        for i, s in enumerate(shapes):
+        for i, (s, f) in enumerate(zip(shapes, fns)):
 
             if s == 0:
                 # parameter has zero gradient
@@ -199,9 +210,12 @@ def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None
             res = results[start : start + s]
             start = start + s
 
+            if f is not None:
+                res = f(res)
+
             # compute the linear combination of results and coefficients
             res = qml.math.stack(res)
-            g = sum([c * r for c, r in zip(gradient_coeffs[i], res)])
+            g = qml.math.tensordot(res, qml.math.convert_like(gradient_coeffs[i], res), [[0], [0]])
 
             if unshifted_coeffs:
                 # add on the unshifted term
@@ -349,15 +363,15 @@ def var_param_shift(tape, argnum, shift=np.pi / 2, gradient_recipes=None, f0=Non
     return gradient_tapes, processing_fn
 
 
+@gradient_transform
 def param_shift(
     tape, argnum=None, shift=np.pi / 2, gradient_recipes=None, fallback_fn=finite_diff, f0=None
 ):
-    r"""Generate the parameter-shift tapes and postprocessing methods required
-    to compute the gradient of a gate parameter with respect to an
-    expectation value.
+    r"""Transform a QNode to compute the parameter-shift gradient of all gate
+    parameters with respect to its inputs.
 
     Args:
-        tape (.QuantumTape): quantum tape to differentiate
+        qnode (.QNode or .QuantumTape): quantum tape or QNode to differentiate
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivative with respect to all
             trainable indices are returned.
@@ -386,9 +400,15 @@ def param_shift(
             saving a quantum evaluation.
 
     Returns:
-        tuple[list[QuantumTape], function]: A tuple containing a
-        list of generated tapes, in addition to a post-processing
-        function to be applied to the results of the evaluated tapes.
+        tensor_like or tuple[list[QuantumTape], function]:
+
+        - If the input is a QNode, a tensor
+          representing the output Jacobian matrix of size ``(number_outputs, number_gate_parameters)``
+          is returned.
+
+        - If the input is a tape, a tuple containing a list of generated tapes,
+          in addition to a post-processing function to be applied to the
+          evaluated tapes.
 
     For a variational evolution :math:`U(\mathbf{p}) \vert 0\rangle` with
     :math:`N` parameters :math:`\mathbf{p}`,
@@ -441,19 +461,66 @@ def param_shift(
 
     **Example**
 
-    >>> params = np.array([0.1, 0.2, 0.3])
-    >>> with qml.tape.JacobianTape() as tape:
+    This transform can be registered directly as the quantum gradient transform
+    to use during autodifferentiation:
+
+    >>> dev = qml.device("default.qubit", wires=2)
+    >>> @qml.qnode(dev, gradient_fn=qml.gradients.param_shift)
+    ... def circuit(params):
     ...     qml.RX(params[0], wires=0)
     ...     qml.RY(params[1], wires=0)
     ...     qml.RX(params[2], wires=0)
-    ...     qml.expval(qml.PauliZ(0))
-    ...     qml.var(qml.PauliZ(0))
-    >>> tape.trainable_params = {0, 1, 2}
-    >>> gradient_tapes, fn = qml.gradients.param_shift(tape)
-    >>> res = dev.batch_execute(gradient_tapes)
-    >>> fn(res)
-    [[-0.38751721 -0.18884787 -0.38355704]
-     [ 0.69916862  0.34072424  0.69202359]]
+    ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+    >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
+    >>> qml.jacobian(circuit)(params)
+    tensor([[-0.38751725, -0.18884792, -0.38355708],
+            [ 0.69916868,  0.34072432,  0.69202365]], requires_grad=True)
+
+    .. UsageDetails::
+
+        This gradient transform can be applied directly to :class:`~.QNode` objects:
+
+        >>> @qml.qnode(dev)
+        ... def circuit(params):
+        ...     qml.RX(params[0], wires=0)
+        ...     qml.RY(params[1], wires=0)
+        ...     qml.RX(params[2], wires=0)
+        ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+        >>> qml.gradients.param_shift(circuit)(params)
+        tensor([[-0.38751725, -0.18884792, -0.38355708],
+                [ 0.69916868,  0.34072432,  0.69202365]], requires_grad=True)
+
+        This quantum gradient transform can also be applied to low-level
+        :class:`~.QuantumTape` objects. This will result in no implicit quantum
+        device evaluation. Instead, the processed tapes, and post-processing
+        function, which together define the gradient are directly returned:
+
+        >>> with qml.tape.JacobianTape() as tape:
+        ...     qml.RX(params[0], wires=0)
+        ...     qml.RY(params[1], wires=0)
+        ...     qml.RX(params[2], wires=0)
+        ...     qml.expval(qml.PauliZ(0))
+        ...     qml.var(qml.PauliZ(0))
+        >>> gradient_tapes, fn = qml.gradients.param_shift.grad(tape)
+        >>> gradient_tapes
+        [<JacobianTape: wires=[0, 1], params=3>,
+         <JacobianTape: wires=[0, 1], params=3>,
+         <JacobianTape: wires=[0, 1], params=3>,
+         <JacobianTape: wires=[0, 1], params=3>,
+         <JacobianTape: wires=[0, 1], params=3>,
+         <JacobianTape: wires=[0, 1], params=3>]
+
+        This can be useful if the underlying circuits representing the gradient
+        computation need to be analyzed.
+
+        The output tapes can then be evaluated and post-processed to retrieve
+        the gradient:
+
+        >>> dev = qml.device("default.qubit", wires=2)
+        >>> from pennylane.interfaces.batch import execute
+        >>> fn(execute(gradient_tapes, dev, None))
+        [[-0.38751721 -0.18884787 -0.38355704]
+         [ 0.69916862  0.34072424  0.69202359]]
     """
 
     # perform gradient method validation
