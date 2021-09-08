@@ -83,9 +83,7 @@ def check_matrix_equivalence(matrix_expected, matrix_obtained, atol=1e-8):
     mat_product = qml.math.dot(qml.math.conj(qml.math.T(matrix_obtained)), matrix_expected)
     mat_product = mat_product / mat_product[0, 0]
 
-    return qml.math.allclose(
-        mat_product, qml.math.eye(matrix_expected.shape[0]), atol=atol
-    )
+    return qml.math.allclose(mat_product, qml.math.eye(matrix_expected.shape[0]), atol=atol)
 
 
 def compare_operation_lists(ops_obtained, names_expected, wires_expected):

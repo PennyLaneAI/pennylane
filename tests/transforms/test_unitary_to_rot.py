@@ -541,7 +541,7 @@ class TestTwoQubitUnitaryDifferentiability:
         # For 64bit values, need to slightly increase the tolerance threshold
         assert qml.math.allclose(original_grad, transformed_grad, atol=1e-7)
 
-    @pytest.mark.parametrize("diff_method", ['parameter-shift', 'backprop'])
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     def test_gradient_unitary_to_rot_two_qubit_jax(self, diff_method):
         """Tests differentiability in jax interface."""
         jax = pytest.importorskip("jax")
@@ -567,14 +567,16 @@ class TestTwoQubitUnitaryDifferentiability:
         y = jnp.array(0.2)
         z = jnp.array(0.3)
 
-        dev = qml.device('default.qubit', wires=3)
+        dev = qml.device("default.qubit", wires=3)
 
         original_qnode = qml.QNode(
             two_qubit_decomp_qnode, device=dev, interface="jax", diff_method=diff_method
         )
 
         transformed_qfunc = unitary_to_rot(two_qubit_decomp_qnode)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="jax", diff_method=diff_method)
+        transformed_qnode = qml.QNode(
+            transformed_qfunc, dev, interface="jax", diff_method=diff_method
+        )
 
         assert qml.math.allclose(original_qnode(x, y, z), transformed_qnode(x, y, z))
 
