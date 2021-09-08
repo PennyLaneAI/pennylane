@@ -16,8 +16,13 @@ Unit tests for functions needed to computing integrals over basis functions.
 """
 import numpy as np
 import pytest
-from pennylane.hf.integrals import (contracted_norm, primitive_norm, gaussian_kinetic,
-                                    generate_kinetic, diff2)
+from pennylane.hf.integrals import (
+    contracted_norm,
+    primitive_norm,
+    gaussian_kinetic,
+    generate_kinetic,
+    diff2,
+)
 from pennylane import numpy as pnp
 from pennylane.hf.molecule import Molecule
 import autograd
@@ -89,6 +94,7 @@ def test_diff2(i, j, ri, rj, alpha, beta, d):
 def test_gaussian_kinetic(la, lb, ra, rb, alpha, beta, t):
     r"""Test that gaussian_kinetic function returns a correct value."""
     assert np.allclose(gaussian_kinetic(la, lb, ra, rb, alpha, beta), t)
+
 
 @pytest.mark.parametrize(
     ("symbols", "geometry", "alpha", "coef", "r", "t_ref"),
