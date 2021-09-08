@@ -95,16 +95,14 @@ class ExecuteTapes(torch.autograd.Function):
                 break
 
         for i, r in enumerate(res):
-            if r.dtype == np.dtype("object"):
+            if r.dtype is np.dtype("object"):
                 # For backwards compatibility, we flatten ragged tape outputs
                 r = np.hstack(r)
 
-            res[i] = torch.as_tensor(torch.from_numpy(r), device=ctx.torch_device)
+            res[i] = torch.as_tensor(r, device=ctx.torch_device)
 
             if ctx.jacs:
-                ctx.jacs[i] = torch.as_tensor(
-                    torch.from_numpy(ctx.jacs[i]), device=ctx.torch_device
-                )
+                ctx.jacs[i] = torch.as_tensor(ctx.jacs[i], device=ctx.torch_device)
 
         return tuple(res)
 

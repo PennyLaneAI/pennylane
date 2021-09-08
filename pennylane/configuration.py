@@ -33,8 +33,8 @@ class Configuration:
 
     Args:
         name (str): filename of the configuration file.
-        This should be a valid TOML file. You may also pass an absolute
-        or a relative file path to the configuration file.
+            This should be a valid TOML file. You may also pass an absolute
+            or a relative file path to the configuration file.
     """
 
     def __init__(self, name):

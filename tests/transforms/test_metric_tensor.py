@@ -623,9 +623,6 @@ class TestDifferentiability:
 
     def test_torch(self, diff_method, tol):
         """Test metric tensor differentiability in the torch interface"""
-        if diff_method == "backprop":
-            pytest.skip("Does not support backprop")
-
         torch = pytest.importorskip("torch")
 
         dev = qml.device("default.qubit", wires=2)

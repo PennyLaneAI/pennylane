@@ -23,6 +23,24 @@ import math
 import sys
 
 
+@pytest.fixture()
+def cvxpy_support():
+    try:
+        import cvxpy
+
+        cvxpy_support = True
+    except:
+        cvxpy_support = False
+
+    return cvxpy_support
+
+
+@pytest.fixture()
+def skip_if_no_cvxpy_support(cvxpy_support):
+    if not cvxpy_support:
+        pytest.skip("Skipped, no cvxpy support")
+
+
 @qml.template
 def _simple_ansatz(x, params):
     """A simple quantum circuit ansatz."""
@@ -361,18 +379,13 @@ class TestRegularization:
             (np.array([[0, 1.000001], [1, 0]]), True, np.array([[1, 1], [1, 1]])),
         ],
     )
+    @pytest.mark.usefixtures("skip_if_no_cvxpy_support")
     def test_closest_psd_matrix(self, input, fix_diagonal, expected_output):
         """Test obtaining the closest positive semi-definite matrix using a semi-definite program."""
         try:
             import cvxpy as cp
 
             output = kern.closest_psd_matrix(input, fix_diagonal=fix_diagonal, feastol=1e-10)
-        except ModuleNotFoundError:
-            pytest.skip(
-                "cvxpy seems to not be installed on the system."
-                "It is required for qml.kernels.closest_psd_matrix"
-                " and can be installed via `pip install cvxpy`."
-            )
         except cp.error.SolverError:
             pytest.skip(
                 "The cvxopt solver seems to not be installed on the system."
@@ -402,6 +415,7 @@ class TestRegularization:
             (np.diag([1, -1]), "I am not a solver"),
         ],
     )
+    @pytest.mark.usefixtures("skip_if_no_cvxpy_support")
     def test_closest_psd_matrix_solve_error(self, input, solver):
         """Test verbose error raising if problem.solve crashes."""
         with pytest.raises(Exception) as solve_error:
