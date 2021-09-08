@@ -77,7 +77,7 @@ class RMSPropOptimizer(AdagradOptimizer):
                 self._update_accumulation(index, grad_flat)
 
                 x_new_flat = [
-                    e - (self._stepsize / math.sqrt(a + self.eps)) * g
+                    e - (self.stepsize / math.sqrt(a + self.eps)) * g
                     for a, g, e in zip(self.accumulation[index], grad_flat, x_flat)
                 ]
 
