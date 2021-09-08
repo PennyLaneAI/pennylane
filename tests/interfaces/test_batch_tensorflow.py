@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.gradients import param_shift
+from pennylane.gradients import finite_diff, param_shift
 from pennylane.interfaces.batch import execute
 
 
@@ -848,3 +848,101 @@ class TestHigherOrderDerivatives:
 
         hess = t2.jacobian(grad, params)
         assert hess is None
+
+
+execute_kwargs = [
+    {"gradient_fn": param_shift, "interface": "tensorflow"},
+    {"gradient_fn": finite_diff, "interface": "tensorflow"},
+]
+
+
+@pytest.mark.parametrize("execute_kwargs", execute_kwargs)
+class TestHamiltonianWorkflows:
+    """Test that tapes ending with expectations
+    of Hamiltonians provide correct results and gradients"""
+
+    @pytest.fixture
+    def cost_fn(self, execute_kwargs):
+        """Cost function for gradient tests"""
+
+        def _cost_fn(weights, coeffs1, coeffs2, dev=None):
+            obs1 = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
+            H1 = qml.Hamiltonian(coeffs1, obs1)
+
+            obs2 = [qml.PauliZ(0)]
+            H2 = qml.Hamiltonian(coeffs2, obs2)
+
+            with qml.tape.JacobianTape() as tape:
+                qml.RX(weights[0], wires=0)
+                qml.RY(weights[1], wires=1)
+                qml.CNOT(wires=[0, 1])
+                qml.expval(H1)
+                qml.expval(H2)
+
+            return execute([tape], dev, **execute_kwargs)[0]
+
+        return _cost_fn
+
+    @staticmethod
+    def cost_fn_expected(weights, coeffs1, coeffs2):
+        """Analytic value of cost_fn above"""
+        a, b, c = coeffs1.numpy()
+        d = coeffs2.numpy()[0]
+        x, y = weights.numpy()
+        return [-c * np.sin(x) * np.sin(y) + np.cos(x) * (a + b * np.sin(y)), d * np.cos(x)]
+
+    @staticmethod
+    def cost_fn_jacobian(weights, coeffs1, coeffs2):
+        """Analytic jacobian of cost_fn above"""
+        a, b, c = coeffs1.numpy()
+        d = coeffs2.numpy()[0]
+        x, y = weights.numpy()
+        return np.array(
+            [
+                [
+                    -c * np.cos(x) * np.sin(y) - np.sin(x) * (a + b * np.sin(y)),
+                    b * np.cos(x) * np.cos(y) - c * np.cos(y) * np.sin(x),
+                    np.cos(x),
+                    np.cos(x) * np.sin(y),
+                    -(np.sin(x) * np.sin(y)),
+                    0,
+                ],
+                [-d * np.sin(x), 0, 0, 0, 0, np.cos(x)],
+            ]
+        )
+
+    def test_multiple_hamiltonians_not_trainable(self, cost_fn, execute_kwargs, tol):
+        coeffs1 = tf.constant([0.1, 0.2, 0.3], dtype=tf.float64)
+        coeffs2 = tf.constant([0.7], dtype=tf.float64)
+        weights = tf.Variable([0.4, 0.5], tf.float64)
+        dev = qml.device("default.qubit", wires=2)
+
+        with tf.GradientTape() as tape:
+            res = cost_fn(weights, coeffs1, coeffs2, dev=dev)
+
+        expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        res = tape.jacobian(res, [weights, coeffs1, coeffs2])
+        expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)
+        assert np.allclose(res[0], expected[:, :2], atol=tol, rtol=0)
+        assert res[1] is None
+        assert res[2] is None
+
+    def test_multiple_hamiltonians_trainable(self, cost_fn, execute_kwargs, tol):
+        coeffs1 = tf.Variable([0.1, 0.2, 0.3], tf.float64)
+        coeffs2 = tf.Variable([0.7], tf.float64)
+        weights = tf.Variable([0.4, 0.5], tf.float64)
+        dev = qml.device("default.qubit", wires=2)
+
+        with tf.GradientTape() as tape:
+            res = cost_fn(weights, coeffs1, coeffs2, dev=dev)
+
+        expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        res = tape.jacobian(res, [weights, coeffs1, coeffs2])
+        expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)
+        assert np.allclose(res[0], expected[:, :2], atol=tol, rtol=0)
+        assert np.allclose(res[1], expected[:, 2:5], atol=tol, rtol=0)
+        assert np.allclose(res[2], expected[:, 5:], atol=tol, rtol=0)

@@ -135,7 +135,6 @@ def classical_jacobian(qnode, ids=None):
         def _jacobian(*args, **kwargs):
             jac_indices = _jacobian_indices(qnode, ids, *args, **kwargs)
             with tf.GradientTape() as tape:
-                tape.watch(args)
                 gate_params = classical_preprocessing(*args, **kwargs)
 
             return tape.jacobian(gate_params, args)[jac_indices]
