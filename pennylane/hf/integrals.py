@@ -131,8 +131,8 @@ def expansion(la, lb, ra, rb, alpha, beta, t):
 
         \Omega_{ij} = \sum_{t=0}^{i+j} E_t^{ij} \Lambda_t,
 
-    where :math:`\Lambda` is a Hermite polynomial of degree t, :math:`E` denotes the expansion
-    coefficients, :math:`\Omega_{ij} = G_i G_j` and :math:`G` is a Gaussian function. The overalp
+    where :math:`\Lambda` is a Hermite polynomial of degree :math:`t`, :math:`E` denotes the expansion
+    coefficients, :math:`\Omega_{ij} = G_i G_j`, and :math:`G` is a Gaussian function. The overalp
     integral between two Gaussian functions can be simply computed by integrating over the overlap
     distribution which requires obtaining the expansion coefficients. This can be done recursively
     as [`Helgaker (1995) p799 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]
@@ -164,7 +164,7 @@ def expansion(la, lb, ra, rb, alpha, beta, t):
         rb (float): position component of the the second Gaussian function
         alpha (array[float]): exponent of the first Gaussian function
         beta (array[float]): exponent of the second Gaussian function
-        t(integer): number of nodes in the Hermite Gaussian
+        t (integer): number of nodes in the Hermite Gaussian
 
     Returns:
         array[float]: expansion coefficients for each Gaussian combination
@@ -187,7 +187,7 @@ def expansion(la, lb, ra, rb, alpha, beta, t):
     if la == lb == t == 0:
         return anp.exp(-q * r ** 2)
 
-    elif t < 0 or t > (la + lb):
+    if t < 0 or t > (la + lb):
         return 0.0
 
     elif lb == 0:
