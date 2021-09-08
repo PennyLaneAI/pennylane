@@ -372,7 +372,7 @@ def sample(op=None, wires=None):
     return MeasurementProcess(Sample, obs=op)
 
 
-def probs(wires):
+def probs(wires=None, op=None):
     r"""Probability of each computational basis state.
 
     This measurement function accepts no observables, and instead
@@ -409,8 +409,15 @@ def probs(wires):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     # pylint: disable=protected-access
-    return MeasurementProcess(Probability, wires=qml.wires.Wires(wires))
 
+    if wires is not None:
+        if op is not None:
+            raise ValueError(
+                "Cannot specify the wires to get the proba if an observable is "
+                "provided. The wires to get the proba will be determined directly from the observable."
+            )
+        return MeasurementProcess(Probability, obs=op, wires=qml.wires.Wires(wires))
+    return MeasurementProcess(Probability, obs=op)
 
 def state():
     r"""Quantum state in the computational basis.

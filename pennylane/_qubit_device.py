@@ -189,7 +189,6 @@ class QubitDevice(Device):
                 return self._cache_execute[circuit_hash]
 
         self.check_validity(circuit.operations, circuit.observables)
-
         # apply all circuit operations
         self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
 
@@ -401,7 +400,7 @@ class QubitDevice(Device):
 
             elif obs.return_type is Probability:
                 results.append(
-                    self.probability(wires=obs.wires, shot_range=shot_range, bin_size=bin_size)
+                    self.probability(obs, wires=obs.wires, shot_range=shot_range, bin_size=bin_size)
                 )
 
             elif obs.return_type is State:
@@ -660,7 +659,7 @@ class QubitDevice(Device):
 
         return self._asarray(prob, dtype=self.R_DTYPE)
 
-    def probability(self, wires=None, shot_range=None, bin_size=None):
+    def probability(self, observable=None, wires=None, shot_range=None, bin_size=None):
         """Return either the analytic probability or estimated probability of
         each computational basis state.
 
