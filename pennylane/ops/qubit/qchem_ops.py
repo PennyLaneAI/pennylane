@@ -468,7 +468,7 @@ class DoubleExcitationMinus(Operation):
 
 class OrbitalRotation(Operation):
     r"""OrbitalRotation(varphi, wires)
-    1-parameter 4-qubit spin-adapted spatial orbital rotation gate. In Jordan-Wigner basis, this will perform Givens rotation between 
+    1-parameter 4-qubit spin-adapted spatial orbital rotation gate. In Jordan-Wigner basis, this will perform Givens rotation between
     two orbital bases, and can be realized as a pair of parallel Givens rotation gates :math:`G(\varphi)`.
 
     |

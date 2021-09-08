@@ -26,12 +26,12 @@ class GateFabric(Operation):
 
     This template prepares the :math:`N` qubits trial state by applying :math:`L` layers of the gate fabric, which is composed
     of 2-parameter 4-qubit gate elements :math:`\hat{Q}(\theta, \varphi)`. Each of the :math:`\hat{Q}(\theta, \varphi)` gate is itself
-    composed of two 1-parameter 4-qubit gates. The first gate is a spin-adapted spatial orbital rotation gate, which is implemented by 
-    :math:`\text{OrbitalRotation}(\varphi)` gate. Whereas the second gate is a diagonal pair-exchange gate, which is implemented by the 
+    composed of two 1-parameter 4-qubit gates. The first gate is a spin-adapted spatial orbital rotation gate, which is implemented by
+    :math:`\text{OrbitalRotation}(\varphi)` gate. Whereas the second gate is a diagonal pair-exchange gate, which is implemented by the
     :math:`\text{DoubleExcitation}(\theta)` gate. In addition to these two gates, :math:`\hat{Q}(\theta, \varphi)` can also include an
     optional gate :math:`\hat{\Pi} \in \{\hat{I}, \text{OrbitalRotation}(\pi)\}` gate, whose non-identity value could be advantageous in
-    gradient-based parameter optimization. Regardless, of the choice of :math:`\hat{\Pi}`, this gate fabric will exactly preserve the 
-    quantum numbers :math:`\hat{N}_{\alpha}`, :math:`\hat{N}_{\beta}` and :math:`\hat{S}^{2}`. 
+    gradient-based parameter optimization. Regardless, of the choice of :math:`\hat{\Pi}`, this gate fabric will exactly preserve the
+    quantum numbers :math:`\hat{N}_{\alpha}`, :math:`\hat{N}_{\beta}` and :math:`\hat{S}^{2}`.
 
     The circuit implementing the gate fabric layer for `N = 8` is shown below:
 
@@ -55,7 +55,7 @@ class GateFabric(Operation):
 
     |
 
-    The individual :math:`\text{DoubleExcitation}(\theta)` and  :math:`\text{OrbitalRotation}(\varphi)` gates are decomposed using 
+    The individual :math:`\text{DoubleExcitation}(\theta)` and  :math:`\text{OrbitalRotation}(\varphi)` gates are decomposed using
     Givens rotation gate :math:`G(\phi)`, which is implemented in pennylane with :math:`\text{SingleExcitation}(phi)`.
 
     |
@@ -76,7 +76,7 @@ class GateFabric(Operation):
         :target: javascript:void(0);
 
     |
-    
+
     Args:
         weights (tensor_like): Array of weights of shape ``(L, D, 2)``\,
             where ``L`` is the number of gate fabric layers and ``D = N/2-1``\
