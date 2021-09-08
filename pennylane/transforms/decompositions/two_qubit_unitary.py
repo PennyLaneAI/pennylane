@@ -329,7 +329,7 @@ def _decomposition_3_cnots(U, wires):
 
 
 def two_qubit_decomposition(U, wires):
-    r"""Recover the decomposition of a two-qubit matrix :math:`U` in terms of
+    r"""Recover the decomposition of a two-qubit unitary :math:`U` in terms of
     elementary operations.
 
     The work of `Shende, Markov, and Bullock (2003)
@@ -337,19 +337,29 @@ def two_qubit_decomposition(U, wires):
     decomposition of :math:`U` in terms of single-qubit gates and
     CNOTs. Multiple such decompositions are possible (by choosing two of ``{RX,
     RY, RZ}``). Here we choose the ``RY``, ``RZ`` case (fig. 2 in the above) to
-    match with the default decomposition of the single-qubit ``Rot`` operations
+    match with the default decomposition of the single-qubit :class:`~.Rot` operations
     as ``RZ RY RZ``. The most general form of the decomposition is:
 
     .. figure:: ../../_static/two_qubit_decomposition.svg
         :align: center
-        :width: 100%
+        :width: 70%
         :target: javascript:void(0);
+
 
     where :math:`A, B, C, D` are :math:`SU(2)` gates.
 
-    However, it may also be the case that the circuit can be implemented using
-    fewer than 3 CNOT gates; this condition is checked for, and simpler decompositions
-    are applied where possible.
+    .. note::
+
+        Currently, the decomposition is only implemented for two cases: when the
+        provided unitary can be expressed with no CNOTs (i.e., it is a tensor
+        product of two single-qubit operations), or when it can be expressed
+        using exactly 3, as in the graphic above. It generally works when the
+        provided unitary is sampled at random from :math:`U(4)`. The case of 1-
+        and 2-CNOTs will be implemented at a later time.
+
+    This decomposition can be applied automatically to all valid two-qubit
+    :class:`~.QubitUnitary` operations by applying the :func:`~pennylane.transforms.unitary_to_rot` 
+    transform.
 
     Args:
         U (tensor): A 4 x 4 unitary matrix.
@@ -358,6 +368,38 @@ def two_qubit_decomposition(U, wires):
     Returns:
         list[Operation]: A list of operations that represent the decomposition
         of the matrix U.
+
+    **Example**
+
+    Suppose we create a random element of :math:`U(4)`, and would like to decompose it 
+    into elementary gates in our circuit.
+
+    >>> from scipy.stats import unitary_group
+    >>> U = unitary_group.rvs(4)
+    >>> U
+    array([[-0.29113625+0.56393527j,  0.39546712-0.14193837j,
+             0.04637428+0.01311566j, -0.62006741+0.18403743j],
+           [-0.45479211+0.25978444j, -0.52737418-0.5549423j ,
+            -0.23429057+0.10728103j,  0.16061807-0.21769762j],
+           [-0.4501231 +0.04065613j, -0.25558662+0.38209554j,
+            -0.04143479-0.56598134j,  0.12983673+0.49548507j],
+           [ 0.23899902+0.24800931j,  0.03374589-0.15784319j,
+             0.24898226-0.73975147j,  0.0269508 -0.49534518j]])
+
+    We can compute its decompositon like so:
+
+    >>> decomp = qml.transforms.two_qubit_decomposition(np.array(U), wires=[0, 1])
+    >>> decomp
+    [Rot(tensor(-1.69488788, requires_grad=True), tensor(1.06701916, requires_grad=True), tensor(0.41190893, requires_grad=True), wires=[0]),
+     Rot(tensor(1.57705621, requires_grad=True), tensor(2.42621204, requires_grad=True), tensor(2.57842249, requires_grad=True), wires=[1]),
+     CNOT(wires=[1, 0]),
+     RZ(0.4503059654281863, wires=[0]),
+     RY(-0.8872497960867665, wires=[1]),
+     CNOT(wires=[0, 1]),
+     RY(-1.6472464849278514, wires=[1]),
+     CNOT(wires=[1, 0]),
+     Rot(tensor(2.93239686, requires_grad=True), tensor(1.8725019, requires_grad=True), tensor(0.0418203, requires_grad=True), wires=[1]),
+     Rot(tensor(-3.78673588, requires_grad=True), tensor(2.03936812, requires_grad=True), tensor(-2.46956972, requires_grad=True), wires=[0])]
 
     """
     # First, we note that this method works only for SU(4) gates, meaning that

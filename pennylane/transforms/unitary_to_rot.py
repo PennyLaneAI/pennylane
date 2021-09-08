@@ -21,12 +21,19 @@ from pennylane.transforms.decompositions import zyz_decomposition, two_qubit_dec
 
 @qfunc_transform
 def unitary_to_rot(tape):
-    """Quantum function transform to decomposes all instances of single- and two-qubit :class:`~.QubitUnitary`
-    operations to parametrized single-qubit operations.
+    """Quantum function transform to decomposes all instances of single-qubit and
+    select instances of two-qubit :class:`~.QubitUnitary` operations to
+    parametrized single-qubit operations.
 
-    Diagonal operations will be converted to a single :class:`.RZ` gate, while non-diagonal
-    operations will be converted to a :class:`.Rot` gate that implements the original operation
-    up to a global phase.
+    For single-qubit gates, diagonal operations will be converted to a single
+    :class:`.RZ` gate, while non-diagonal operations will be converted to a
+    :class:`.Rot` gate that implements the original operation up to a global
+    phase.
+
+    For two-qubit gates, those which are tensor products of two single-qubit operations
+    will be decomposed as such, as well as those can represented by 3 CNOTs as described in
+    the :func:`pennylane.transforms.two_qubit_decomposition`. (The 1- and 2-CNOT cases are left
+    as :class:`~.QubitUnitary` instances at present.)
 
     Args:
         qfunc (function): a quantum function
