@@ -358,7 +358,7 @@ def two_qubit_decomposition(U, wires):
         and 2-CNOTs will be implemented at a later time.
 
     This decomposition can be applied automatically to all valid two-qubit
-    :class:`~.QubitUnitary` operations by applying the :func:`~pennylane.transforms.unitary_to_rot` 
+    :class:`~.QubitUnitary` operations by applying the :func:`~pennylane.transforms.unitary_to_rot`
     transform.
 
     Args:
@@ -371,7 +371,7 @@ def two_qubit_decomposition(U, wires):
 
     **Example**
 
-    Suppose we create a random element of :math:`U(4)`, and would like to decompose it 
+    Suppose we create a random element of :math:`U(4)`, and would like to decompose it
     into elementary gates in our circuit.
 
     >>> from scipy.stats import unitary_group
