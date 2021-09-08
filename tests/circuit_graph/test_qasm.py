@@ -699,6 +699,7 @@ class TestQNodeQasmIntegrationTests:
 
         assert res == expected
 
+
 @pytest.mark.slow
 class TestQASMConformanceTests:
     """Conformance tests to ensure that the CircuitGraph
