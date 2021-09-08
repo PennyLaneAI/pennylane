@@ -127,15 +127,15 @@ def _su2su2_to_tensor_products(U):
 
     # Next, extract B. Can do from any of the C, just need to be careful in
     # case one of the elements of A is 0.
-    if not math.allclose(A[0, 0], 0.0, atol=1e-4):
-        B = C1 / A[0, 0]
+    if not math.allclose(A[0, 0], 0.0, atol=1e-6):
+        B = C1 / math.cast_like(A[0, 0], 1j)
     else:
-        B = C2 / A[0, 1]
+        B = C2 / math.cast_like(A[0, 1], 1j)
 
     return math.convert_like(A, U), math.convert_like(B, U)
 
 
-def _extract_su2su2_prefactors(U, V, use_eig_h=False):
+def _extract_su2su2_prefactors(U, V):
     r"""U, V are SU(4) matrices for which there exists A, B, C, D such that
     (A \otimes B) V (C \otimes D) = U. The problem is to find A, B, C, D in SU(2)
     in an analytic and fully differentiable manner.
@@ -165,14 +165,14 @@ def _extract_su2su2_prefactors(U, V, use_eig_h=False):
     # First, we find a matrix p (hopefully) in SO(4) s.t. p^T u u^T p is diagonal.
     # Since uuT is complex and symmetric, both its real / imag parts share a set
     # of real-valued eigenvectors.
-    if use_eig_h:
-        ev_p, p = math.linalg.eigh(qml.math.real(uuT))
+    if qml.math.get_interface(u) == "tensorflow":
+        ev_p, p = math.linalg.eig(qml.math.real(uuT))
     else:
         ev_p, p = math.linalg.eig(uuT)
 
     # We also do this for v, i.e., find q (hopefully) in SO(4) s.t. q^T v v^T q is diagonal.
-    if use_eig_h:
-        ev_q, q = math.linalg.eigh(qml.math.real(vvT))
+    if qml.math.get_interface(u) == "tensorflow":
+        ev_q, q = math.linalg.eig(qml.math.real(vvT))
     else:
         ev_q, q = math.linalg.eig(vvT)
 
@@ -203,7 +203,7 @@ def _extract_su2su2_prefactors(U, V, use_eig_h=False):
     # Now, we should have p, q in SO(4) such that p^T u u^T p = q^T v v^T q.
     # Then (v^\dag q p^T u)(v^\dag q p^T u)^T = I.
     # So we can set G = p q^T, H = v^\dag q p^T u to obtain G v H = u.
-    G = math.dot(math.cast_like(p, q), math.T(q))
+    G = math.dot(p, math.T(q))
     H = math.dot(math.conj(math.T(v)), math.dot(math.T(G), u))
 
     # These are still in SO(4) though - we want to convert things into SU(2) x SU(2)
@@ -214,13 +214,10 @@ def _extract_su2su2_prefactors(U, V, use_eig_h=False):
     AB = math.dot(math.cast_like(E, V), math.dot(G, math.cast_like(Edag, V)))
     CD = math.dot(math.cast_like(E, V), math.dot(H, math.cast_like(Edag, V)))
 
-    print(np.round(AB, decimals=4))
-    print(np.round(CD, decimals=4))
-    
     # Now, we just need to extract the constituent tensor products.
     A, B = _su2su2_to_tensor_products(AB)
     C, D = _su2su2_to_tensor_products(CD)
-    
+
     return A, B, C, D
 
 
@@ -234,101 +231,6 @@ def _decomposition_0_cnots(U, wires):
     A_ops = zyz_decomposition(A, wires[0])
     B_ops = zyz_decomposition(B, wires[1])
     return A_ops + B_ops
-
-
-def _decomposition_1_cnot(U, wires):
-    r"""If 1 CNOT is required, we can write the circuit as
-     -U- = -A--C--C-
-     -U- = -B--X--D-
-    Note that the direction of the CNOT is irrelevant, because we could always
-    flip it by applying Hadamards on both qubits on each side, and then absorb
-    the Hadamards into A/B/C/D.
-    """
-    swap_U = np.exp(1j * np.pi / 4) * math.dot(math.cast_like(SWAP, U), U)
-
-    delta = np.pi / 2
-    phi = np.pi / 2
-
-    # This is the "interior" part of the decomposition
-    interior_decomp = [
-        qml.CNOT(wires=[wires[1], wires[0]]),
-        qml.RZ(delta, wires=wires[0]),
-        qml.RX(phi, wires=wires[1]),
-        qml.CNOT(wires=[wires[1], wires[0]]),
-    ]
-
-    RZd = qml.RZ(delta, wires=0).matrix
-    RXp = qml.RX(phi, wires=0).matrix
-
-    # We need the matrix representation of this interior part, V, in order to
-    # decompose U = (A \otimes B) V (C \otimes D)
-    V = qml.math.dot(CNOT10, qml.math.dot(qml.math.kron(RZd, RXp), CNOT10))
-
-    # Now we find the A, B, C, D in SU(2), and return the decomposition
-    A, B, C, D = _extract_su2su2_prefactors(swap_U, V)
-
-    A_ops = zyz_decomposition(A, wires[0])
-    B_ops = zyz_decomposition(B, wires[1])
-    C_ops = zyz_decomposition(C, wires[0])
-    D_ops = zyz_decomposition(D, wires[1])
-
-    return C_ops + D_ops + interior_decomp + A_ops + B_ops
-
-
-def _decomposition_2_cnots(U, wires):
-    r"""If 2 CNOTs are required, we can write the circuit as
-     -U- = -A--X--RZ(d)--X--C-
-     -U- = -B--C--RX(p)--C--D-
-    We need to find the angles for the Z and X rotations such that the inner
-    part has the same spectrum as U, and then we can recover A, B, C, D.
-    """
-    # Compute the rotation angles
-    u = math.dot(Edag, math.dot(U, E))
-    gammaU = math.dot(u, math.T(u))
-    evs, _ = math.linalg.eig(gammaU)
-
-    # These choices are based on Proposition III.3 of
-    # https://arxiv.org/abs/quant-ph/0308045
-
-    # Need to find the angle that is not the conjugate of this one
-    x = math.angle(evs[0])
-    y = math.angle(evs[1])
-
-    # If it was the conjugate, grab a different eigenvalue.
-    if math.allclose(x, -y):
-        y = math.angle(evs[2])
-
-    delta = (x + y) / 2
-    phi = (x - y) / 2
-    
-    # This is the "interior" part of the decomposition
-    interior_decomp = [
-        qml.CNOT(wires=[wires[1], wires[0]]),
-        qml.RZ(delta, wires=wires[0]),
-        qml.RX(phi, wires=wires[1]),
-        qml.CNOT(wires=[wires[1], wires[0]]),
-    ]
-
-    RZd = qml.RZ(math.cast_like(delta, 1j), wires=0).matrix
-    RXp = qml.RX(phi, wires=0).matrix
-    RZdRXp = math.kron(RZd, RXp)
-
-    # We need the matrix representation of this interior part, V, in order to
-    # decompose U = (A \otimes B) V (C \otimes D)
-
-    V = math.dot(
-        math.cast_like(CNOT10, U), math.dot(math.cast_like(RZdRXp, U), math.cast_like(CNOT10, U))
-    )
-
-    # Now we find the A, B, C, D in SU(2), and return the decomposition
-    A, B, C, D = _extract_su2su2_prefactors(U, V, use_eig_h=False)
-     
-    A_ops = zyz_decomposition(A, wires[0])
-    B_ops = zyz_decomposition(B, wires[1])
-    C_ops = zyz_decomposition(C, wires[0])
-    D_ops = zyz_decomposition(D, wires[1])
-
-    return C_ops + D_ops + interior_decomp + A_ops + B_ops
 
 
 def _decomposition_3_cnots(U, wires):
@@ -352,7 +254,9 @@ def _decomposition_3_cnots(U, wires):
     gammaU = math.dot(u, math.T(u))
     evs, _ = math.linalg.eig(gammaU)
 
-    x, y, z = math.angle(evs[0]), math.angle(evs[1]), math.angle(evs[2])
+    # To get consistent results in all interfaces, sort the eigenvalues first
+    angles = qml.math.sort([math.angle(ev) for ev in evs])
+    x, y, z = angles[0], angles[1], angles[2]
 
     # Compute functions of the eigenvalues; there are different options in v1
     # vs. v3 of the paper, I'm not entirely sure why. This is the version from v3.
@@ -381,9 +285,9 @@ def _decomposition_3_cnots(U, wires):
     # -V- = -X--RZ(d)--C---------X--SWAP-
     # -V- = -C--RY(b)--X--RY(a)--C--SWAP-
 
-    RZd = qml.RZ(math.cast_like(delta, 1j), wires=0).matrix
-    RYb = qml.RY(beta, wires=0).matrix
-    RYa = qml.RY(alpha, wires=0).matrix
+    RZd = qml.RZ(math.cast_like(delta, 1j), wires=wires[0]).matrix
+    RYb = qml.RY(beta, wires=wires[0]).matrix
+    RYa = qml.RY(alpha, wires=wires[0]).matrix
 
     V_mats = [
         SWAP,
@@ -397,7 +301,7 @@ def _decomposition_3_cnots(U, wires):
     V = math.convert_like(math.eye(4), U)
 
     for mat in V_mats:
-        V = math.dot(V, math.cast_like(mat, U))
+        V = math.dot(math.cast_like(mat, U), V)
 
     # Now we need to find the four SU(2) operations A, B, C, D
     A, B, C, D = _extract_su2su2_prefactors(swap_U, V)
@@ -466,11 +370,11 @@ def two_qubit_decomposition(U, wires):
 
     if num_cnots == 0:
         decomp = _decomposition_0_cnots(U, wires)
-    elif num_cnots == 1:
-        decomp = _decomposition_1_cnot(U, wires)
-    elif num_cnots == 2:
-        decomp = _decomposition_2_cnots(U, wires)
-    else:
+    elif num_cnots == 3:
         decomp = _decomposition_3_cnots(U, wires)
+    else:
+        raise NotImplementedError(
+            "Decomposition for 2-qubit unitaries with 1 or 2 CNOTs is not available."
+        )
 
     return decomp
