@@ -115,8 +115,9 @@ class TestQubitUnitaryZYZDecomposition:
         )
 
 
-# Randomly generated set (scipy.unitary_group) of five SU(4) operations.
-test_u4_unitaries = [
+# Randomly generated set (scipy.unitary_group) of five U(4) operations.
+# These require 3 CNOTs each
+samples_u4 = [
     [
         [
             -0.07016275 - 0.11813399j,
@@ -249,141 +250,150 @@ test_u4_unitaries = [
     ],
 ]
 
-
-test_su4_unitaries = [
+# Randomly-generated U(4) elements that require 2 CNOTs
+samples_u4_2_cnots = [
+    # (U1 \otimes U2) CNOT01 (U3 \otimes U4) CNOT10
     [
         [
-            0.07765924 - 0.3053435j,
-            -0.00544346 + 0.17785393j,
-            -0.37819506 - 0.06769805j,
-            -0.75382791 - 0.39140988j,
+            0.21519064 + 0.03018591j,
+            -0.23207023 + 0.14092543j,
+            -0.53689353 - 0.2946668j,
+            0.51445261 + 0.489204j,
         ],
         [
-            0.45849817 - 0.20446929j,
-            0.40911688 - 0.66827471j,
-            -0.29633505 - 0.14611682j,
-            0.05442742 + 0.14790906j,
+            0.74139151 - 0.11264103j,
+            0.31749154 + 0.50217117j,
+            0.0925797 - 0.08233009j,
+            -0.26285568 + 0.01521574j,
         ],
         [
-            -0.36161974 + 0.09483265j,
-            0.15292432 - 0.52479805j,
-            0.59885223 - 0.05933094j,
-            -0.35549461 - 0.27003429j,
+            0.52541986 + 0.14967089j,
+            0.00882372 - 0.58434132j,
+            0.37824777 + 0.25806244j,
+            0.37103602 + 0.11253721j,
         ],
         [
-            -0.64499777 + 0.30483098j,
-            0.18721944 - 0.1432504j,
-            -0.59682685 - 0.15771633j,
-            0.17092981 - 0.1587149j,
+            0.30028938 + 0.04232397j,
+            -0.10120803 - 0.47067076j,
+            -0.63182808 - 0.02632943j,
+            -0.42481116 - 0.30967153j,
         ],
     ],
+    # (U1 \otimes U2) CNOT01 (U3 \otimes U4) CNOT01
     [
         [
-            -0.26266621 - 0.02053405j,
-            -0.07876123 - 0.66084098j,
-            -0.45369467 + 0.06028697j,
-            -0.29947378 + 0.43418056j,
+            -0.04472714 + 0.01919032j,
+            -0.57602746 + 0.70197946j,
+            -0.38567309 - 0.02769067j,
+            0.01695965 - 0.15248041j,
         ],
         [
-            -0.15519815 - 0.58508147j,
-            -0.10044503 + 0.27880786j,
-            0.24651271 - 0.33162726j,
-            0.03370782 + 0.61146448j,
+            0.88781894 - 0.06836099j,
+            -0.06641031 + 0.11848866j,
+            0.08169273 + 0.02798384j,
+            0.25129416 + 0.34358238j,
         ],
         [
-            0.60582544 + 0.25418538j,
-            0.37446127 - 0.25617924j,
-            0.07773588 - 0.18239669j,
-            0.37852024 + 0.42417838j,
+            0.35060107 + 0.21292471j,
+            -0.01047688 - 0.06841495j,
+            0.20642614 + 0.0491272j,
+            -0.01499298 - 0.88413888j,
         ],
         [
-            0.20461256 + 0.30112632j,
-            -0.48479767 + 0.16847851j,
-            -0.33212878 - 0.68568253j,
-            -0.146386 - 0.04630265j,
+            -0.18802799 + 0.03351033j,
+            -0.18365632 + 0.34416172j,
+            0.88848782 - 0.09271919j,
+            0.03261441 + 0.11079005j,
         ],
     ],
+    #  CNOT01 (U1 \otimes U2) CNOT01 (U3 \otimes U4)
     [
         [
-            -0.19357534 + 0.05415218j,
-            0.33159102 + 0.00393342j,
-            -0.08674344 - 0.48530026j,
-            0.77860264 - 0.01911054j,
+            0.27790456 - 0.52018253j,
+            0.05793464 + 0.38411653j,
+            -0.15069552 - 0.25864196j,
+            -0.58470268 - 0.26418787j,
         ],
         [
-            -0.03953123 - 0.55929504j,
-            -0.06065906 + 0.25475833j,
-            -0.72320791 - 0.19893665j,
-            -0.14649365 + 0.18160162j,
+            -0.33486277 + 0.08420967j,
+            -0.36088137 + 0.48971641j,
+            0.20761839 + 0.63264891j,
+            -0.21743312 - 0.14174246j,
         ],
         [
-            0.79678459 + 0.07820277j,
-            0.29286639 + 0.05133j,
-            -0.20355269 + 0.33959993j,
-            0.26188743 + 0.21275882j,
+            0.03505601 - 0.6247698j,
+            0.32838083 + 0.10638574j,
+            0.28089091 + 0.26934482j,
+            0.55756423 - 0.16418792j,
         ],
         [
-            0.00690914 - 0.06475621j,
-            0.62854762 + 0.58135445j,
-            0.18380884 - 0.06169495j,
-            -0.29156472 - 0.37431518j,
+            -0.04913217 + 0.37279303j,
+            0.53282896 + 0.27564823j,
+            -0.54177 + 0.14860717j,
+            0.1360818 - 0.40571624j,
         ],
     ],
+    #  (U1 \otimes U2) CNOT01 (U3 \otimes U4)  CNOT01 (U5 \otimes U6)
     [
         [
-            -0.74150838 - 0.31836676j,
-            -0.19824177 + 0.11411013j,
-            0.2105543 - 0.44404134j,
-            0.23175558 - 0.03564448j,
+            0.25652439 - 0.0462842j,
+            0.67390778 - 0.31620797j,
+            0.4650931 - 0.2908297j,
+            0.05553787 - 0.27191151j,
         ],
         [
-            0.14464037 + 0.01962981j,
-            -0.32534365 + 0.34440049j,
-            -0.0263518 - 0.38725266j,
-            -0.60030466 + 0.49316216j,
+            -0.40551672 + 0.66099793j,
+            0.0045791 - 0.48095684j,
+            0.24088629 + 0.22488846j,
+            -0.05822632 + 0.23517259j,
         ],
         [
-            -0.16758688 - 0.12435341j,
-            -0.17350706 - 0.74956269j,
-            -0.53983324 - 0.08065496j,
-            -0.11493267 + 0.2310136j,
+            0.55224042 - 0.03087806j,
+            0.15616954 - 0.1797145j,
+            -0.15345415 + 0.51479092j,
+            -0.5573751 + 0.19536115j,
         ],
         [
-            0.07028002 - 0.52821714j,
-            -0.07096366 + 0.35529443j,
-            -0.55262688 + 0.0671827j,
-            -0.18126627 - 0.49194507j,
+            0.14789508 + 0.05380565j,
+            0.34517639 - 0.19669112j,
+            -0.54821596 - 0.03750822j,
+            0.5720388 + 0.43384543j,
         ],
     ],
+    #  (U1 \otimes U2) CNOT10 (U3 \otimes U4)  CNOT01 (U5 \otimes U6)
     [
         [
-            -0.29171103 - 0.0636464j,
-            -0.48846467 - 0.36067209j,
-            -0.22793317 + 0.4548702j,
-            0.27088407 - 0.45818459j,
+            0.80915358 + 0.17873994j,
+            -0.01135281 + 0.27634758j,
+            -0.32600107 + 0.20030231j,
+            0.2127876 + 0.21248383j,
         ],
         [
-            -0.27108482 + 0.27382381j,
-            0.15501384 + 0.26807221j,
-            -0.69215901 - 0.30088389j,
-            -0.25574673 - 0.34730381j,
+            -0.14325396 + 0.23855296j,
+            0.78044867 + 0.10607667j,
+            -0.38158405 - 0.07363528j,
+            0.10640225 - 0.37398987j,
         ],
         [
-            0.16554448 - 0.21880187j,
-            -0.54233066 + 0.48166767j,
-            -0.39824354 + 0.06232072j,
-            0.13836446 + 0.46579821j,
+            -0.00320404 - 0.14542437j,
+            0.49548943 + 0.03676195j,
+            0.11351799 - 0.12191885j,
+            -0.35677139 + 0.75956824j,
         ],
         [
-            0.45296585 - 0.69421183j,
-            0.07965187 + 0.05436182j,
-            -0.08924185 + 0.03284008j,
-            -0.32488413 - 0.43474127j,
+            0.29664416 + 0.35600146j,
+            0.23301292 - 0.04465991j,
+            0.80142543 - 0.18038982j,
+            0.18367409 - 0.1428856j,
         ],
     ],
 ]
 
-test_su2_su2_pairs = [
+# samples_u4_2_cnots = []
+
+# Randomly-generated SU(2) x SU(2) matrices. These can be used to test
+# the 0-CNOT decomposition case
+samples_su2_su2 = [
     (
         [
             [0.21993927 - 0.1111822j, -0.27174921 - 0.93027824j],
@@ -432,7 +442,10 @@ test_su2_su2_pairs = [
         [[np.exp(-1j * np.pi / 3), 0], [0, np.exp(1j * np.pi / 3)]],
     ),
     (
-        [[0, -1j], [-1j, 0],],
+        [
+            [0, -1j],
+            [-1j, 0],
+        ],
         [
             [-0.05594177 - 0.02155518j, -0.83242096 - 0.55089131j],
             [0.83242096 - 0.55089131j, -0.05594177 + 0.02155518j],
@@ -443,7 +456,10 @@ test_su2_su2_pairs = [
             [0.90778489 + 0.27105877j, 0.17141891 - 0.27031333j],
             [-0.17141891 - 0.27031333j, 0.90778489 - 0.27105877j],
         ],
-        [[0, -1j], [-1j, 0],],
+        [
+            [0, -1j],
+            [-1j, 0],
+        ],
     ),
 ]
 
@@ -451,9 +467,9 @@ test_su2_su2_pairs = [
 class TestTwoQubitUnitaryDecomposition:
     """Test that two-qubit unitary operations are correctly decomposed."""
 
-    @pytest.mark.parametrize("U", test_u4_unitaries)
+    @pytest.mark.parametrize("U", samples_u4)
     def test_convert_to_su4(self, U):
-        """Test SU(2) x SU(2) can be correctly factored into tensor products."""
+        """Test a matrix in U(4) is correct converted to SU(4)."""
         U_su4 = _convert_to_su4(U)
 
         # Ensure the determinant is correct
@@ -463,7 +479,7 @@ class TestTwoQubitUnitaryDecomposition:
         up_to_id = qml.math.dot(U, qml.math.conj(qml.math.T(U_su4)))
         assert qml.math.allclose(qml.math.eye(4), up_to_id / up_to_id[0, 0])
 
-    @pytest.mark.parametrize("U_pair", test_su2_su2_pairs)
+    @pytest.mark.parametrize("U_pair", samples_su2_su2)
     def test_su2su2_to_tensor_products(self, U_pair):
         """Test SU(2) x SU(2) can be correctly factored into tensor products."""
         true_matrix = qml.math.kron(np.array(U_pair[0]), np.array(U_pair[1]))
@@ -473,12 +489,16 @@ class TestTwoQubitUnitaryDecomposition:
         assert check_matrix_equivalence(qml.math.kron(A, B), true_matrix)
 
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
-    @pytest.mark.parametrize("U", test_su4_unitaries + test_u4_unitaries)
+    @pytest.mark.parametrize("U", samples_u4_2_cnots + samples_u4)
     def test_two_qubit_decomposition(self, U, wires):
-        """Test that a one-qubit matrix in isolation is correctly decomposed."""
+        """Test that a two-qubit matrix in isolation is correctly decomposed."""
         U = np.array(U)
 
+        print(U)
+
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
+
+        print(obtained_decomposition)
 
         obtained_matrix = compute_matrix_from_ops_two_qubit(
             obtained_decomposition, wire_order=wires
@@ -489,7 +509,7 @@ class TestTwoQubitUnitaryDecomposition:
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
-    @pytest.mark.parametrize("U_pair", test_su2_su2_pairs)
+    @pytest.mark.parametrize("U_pair", samples_su2_su2)
     def test_two_qubit_decomposition_tensor_products(self, U_pair, wires):
         """Test that a one-qubit matrix in isolation is correctly decomposed."""
         U = qml.math.kron(np.array(U_pair[0]), np.array(U_pair[1]))
@@ -503,7 +523,7 @@ class TestTwoQubitUnitaryDecomposition:
 
 class TestTwoQubitUnitaryDecompositionInterfaces:
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
-    @pytest.mark.parametrize("U", test_su4_unitaries + test_u4_unitaries)
+    @pytest.mark.parametrize("U", samples_u4_2_cnots + samples_u4)
     def test_two_qubit_decomposition_torch(self, U, wires):
         """Test that a two-qubit operation in Torch is correctly decomposed."""
         torch = pytest.importorskip("torch")
@@ -517,24 +537,24 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
+    # @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
+    # @pytest.mark.parametrize("U", samples_u4_2_cnots + samples_u4)
+    # def test_two_qubit_decomposition_tf(self, U, wires):
+    #     """Test that a two-qubit operation in Tensorflow is correctly decomposed."""
+    #     tf = pytest.importorskip("tensorflow")
+
+    #     U = tf.Variable(U, dtype=tf.complex128)
+
+    #     obtained_decomposition = two_qubit_decomposition(U, wires=wires)
+
+    #     obtained_matrix = compute_matrix_from_ops_two_qubit(
+    #         obtained_decomposition, wire_order=wires
+    #     )
+
+    #     assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
+
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
-    @pytest.mark.parametrize("U", test_su4_unitaries + test_u4_unitaries)
-    def test_two_qubit_decomposition_tf(self, U, wires):
-        """Test that a two-qubit operation in Tensorflow is correctly decomposed."""
-        tf = pytest.importorskip("tensorflow")
-
-        U = tf.Variable(U, dtype=tf.complex128)
-
-        obtained_decomposition = two_qubit_decomposition(U, wires=wires)
-
-        obtained_matrix = compute_matrix_from_ops_two_qubit(
-            obtained_decomposition, wire_order=wires
-        )
-
-        assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
-
-    @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
-    @pytest.mark.parametrize("U", test_su4_unitaries + test_u4_unitaries)
+    @pytest.mark.parametrize("U", samples_u4_2_cnots + samples_u4)
     def test_two_qubit_decomposition_jax(self, U, wires):
         """Test that a two-qubit operation in JAX is correctly decomposed."""
         jax = pytest.importorskip("jax")

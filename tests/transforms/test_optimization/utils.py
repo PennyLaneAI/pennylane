@@ -84,7 +84,7 @@ def check_matrix_equivalence(matrix_expected, matrix_obtained, atol=1e-8):
     mat_product = mat_product / mat_product[0, 0]
 
     return qml.math.allclose(
-        mat_product / mat_product[0, 0], qml.math.eye(matrix_expected.shape[0]), atol=atol
+        mat_product, qml.math.eye(matrix_expected.shape[0]), atol=atol
     )
 
 
