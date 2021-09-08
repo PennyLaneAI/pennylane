@@ -212,7 +212,7 @@ def gaussian_overlap(la, lb, ra, rb, alpha, beta):
 
     .. math::
 
-        S_{ab} = E^{ij} E^{kl} E^{mn} (\frac{\pi}{p})^{3/2},
+        S_{ab} = E^{ij} E^{kl} E^{mn} \left (\frac{\pi}{p}  \right )^{3/2},
 
     where :math:`E` is a coefficient that can be computed recursively, :math:`i-n` are the angular
     momentum quantum numbers corresponding to different Cartesian components and :math:`p` is
