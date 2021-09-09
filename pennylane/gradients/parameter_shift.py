@@ -517,8 +517,7 @@ def param_shift(
         the gradient:
 
         >>> dev = qml.device("default.qubit", wires=2)
-        >>> from pennylane.interfaces.batch import execute
-        >>> fn(execute(gradient_tapes, dev, None))
+        >>> fn(qml.execute(gradient_tapes, dev, None))
         [[-0.38751721 -0.18884787 -0.38355704]
          [ 0.69916862  0.34072424  0.69202359]]
     """
