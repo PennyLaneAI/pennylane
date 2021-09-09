@@ -709,6 +709,7 @@ class TestCircuitDrawerIntegration:
 
         assert output == drawn_wide_cv_qnode
 
+    @pytest.mark.slow
     def test_cv_circuit_with_values(
         self, parameterized_cv_qnode, drawn_parameterized_cv_qnode_with_values
     ):
