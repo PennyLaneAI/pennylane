@@ -82,7 +82,6 @@ more tapes as well as a classical processing function.
     :toctree: api
 
     ~transforms.measurement_grouping
-    ~transforms.metric_tensor_tape
     ~transforms.hamiltonian_expand
 
 Decorators and utility functions

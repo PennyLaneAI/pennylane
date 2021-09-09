@@ -15,6 +15,7 @@
 # pylint: disable=too-few-public-methods
 import functools
 import types
+import warnings
 
 import pennylane as qml
 from pennylane.new_qnode import QNode
