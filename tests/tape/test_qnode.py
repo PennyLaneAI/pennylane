@@ -70,7 +70,7 @@ class TestValidation:
         assert interface == "interface"
         assert device is dev
 
-    @pytest.mark.parametrize("interface", ("autograd", "torch","tensorflow", "jax"))
+    @pytest.mark.parametrize("interface", ("autograd", "torch", "tensorflow", "jax"))
     def test_validate_backprop_method_finite_shots(self, interface):
         """Tests that an error is raised for backpropagation with finite shots."""
 
