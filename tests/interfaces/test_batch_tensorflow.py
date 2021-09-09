@@ -668,6 +668,7 @@ class TestTensorFlowExecuteIntegration:
 class TestHigherOrderDerivatives:
     """Test that the TensorFlow execute function can be differentiated"""
 
+    @pytest.mark.slow
     @pytest.mark.parametrize(
         "params",
         [
