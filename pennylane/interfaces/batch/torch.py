@@ -81,7 +81,7 @@ class ExecuteTapes(torch.autograd.Function):
         ctx.max_diff = kwargs["max_diff"]
         ctx._n = kwargs.get("_n", 1)
 
-        with qml.tape.Unwrap(*ctx.tapes):
+        with qml.tape.Unwrap(*ctx.tapes, set_trainable=False):
             res, ctx.jacs = ctx.execute_fn(ctx.tapes, **ctx.gradient_kwargs)
 
         # if any input tensor uses the GPU, the output should as well

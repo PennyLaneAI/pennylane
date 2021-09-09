@@ -14,6 +14,7 @@
 """Contains tools and decorators for registering batch transforms."""
 # pylint: disable=too-few-public-methods
 import functools
+import types
 
 import pennylane as qml
 from pennylane.new_qnode import QNode
@@ -161,6 +162,9 @@ class batch_transform:
         self.differentiable = differentiable
         functools.update_wrapper(self, transform_fn)
 
+    def custom_qnode_wrapper(self, fn):
+        self.qnode_execution_wrapper = types.MethodType(fn, self)
+
     def qnode_execution_wrapper(self, qnode, targs, tkwargs):
         """A wrapper method that takes a QNode and transform arguments,
         and returns a function that 'wraps' the QNode execution.
@@ -205,6 +209,15 @@ class batch_transform:
             # Input is a quantum tape.
             # tapes, fn = some_transform(tape, *transform_args)
             return self.construct(qnode, *targs, **tkwargs)
+
+        if isinstance(qnode, qml.ExpvalCost):
+            if qnode._multiple_devices:  # pylint: disable=protected-access
+                warnings.warn(
+                    "ExpvalCost was instantiated with multiple devices. Only the first device "
+                    "will be used to evaluate the metric tensor."
+                )
+
+            qnode = qnode.qnodes.qnodes[0]
 
         if isinstance(qnode, (qml.QNode, QNode)):
             # Input is a QNode:

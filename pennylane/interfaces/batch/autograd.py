@@ -101,7 +101,7 @@ def _execute(
     if the nth-order derivative is requested. Do not set this argument unless you
     understand the consequences!
     """
-    with qml.tape.Unwrap(*tapes):
+    with qml.tape.Unwrap(*tapes, set_trainable=False):
         res, jacs = execute_fn(tapes, **gradient_kwargs)
 
     for i, r in enumerate(res):
