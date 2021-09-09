@@ -551,10 +551,6 @@ class QNode:
         with self.qtape:
             self.qfunc_output = self.func(*args, **kwargs)
 
-        if self.diff_options["method"] == "backprop":
-            params = self.qtape.get_parameters(trainable_only=False)
-            self.qtape.trainable_params = qml.math.get_trainable_indices(params)
-
         if not isinstance(self.qfunc_output, Sequence):
             measurement_processes = (self.qfunc_output,)
         else:
@@ -620,6 +616,10 @@ class QNode:
 
         # provide the jacobian options
         self.qtape.jacobian_options = self.diff_options
+
+        if self.diff_options["method"] == "backprop":
+            params = self.qtape.get_parameters(trainable_only=False)
+            self.qtape.trainable_params = qml.math.get_trainable_indices(params)
 
     def __call__(self, *args, **kwargs):
 
