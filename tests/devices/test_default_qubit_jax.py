@@ -160,7 +160,7 @@ class TestQNodeIntegration:
         def circuit(key):
             dev = qml.device("default.qubit.jax", wires=1, shots=1000, prng_key=key)
 
-            @qml.qnode(dev, interface="jax", diff_method="best")
+            @qml.qnode(dev, interface="jax", diff_method=None)
             def inner_circuit():
                 qml.Hadamard(0)
                 return qml.sample(qml.PauliZ(wires=0))
@@ -173,12 +173,11 @@ class TestQNodeIntegration:
         np.testing.assert_array_equal(a, b)
         assert not np.all(a == c)
 
-    @pytest.mark.skip(reason="sampling doesnt work in backprop, fails with parameter-shift")
     def test_sampling_op_by_op(self):
         """Test that op-by-op sampling works as a new user would expect"""
         dev = qml.device("default.qubit.jax", wires=1, shots=1000)
 
-        @qml.qnode(dev, interface="jax", diff_method="best")
+        @qml.qnode(dev, interface="jax", diff_method=None)
         def circuit():
             qml.Hadamard(0)
             return qml.sample(qml.PauliZ(wires=0))
@@ -193,7 +192,7 @@ class TestQNodeIntegration:
         """
         dev = qml.device("default.qubit.jax", wires=1, shots=None)
 
-        @qml.qnode(dev, interface="jax", diff_method="best")
+        @qml.qnode(dev, interface="jax", diff_method=None)
         def circuit():
             return qml.sample(qml.PauliZ(wires=0))
 
@@ -204,12 +203,11 @@ class TestQNodeIntegration:
 
         assert len(res) == 1000
 
-    @pytest.mark.skip(reason="sampling doesnt work in backprop, fails with parameter-shift")
     def test_gates_dont_crash(self):
         """Test for gates that weren't covered by other tests."""
         dev = qml.device("default.qubit.jax", wires=2, shots=1000)
 
-        @qml.qnode(dev, interface="jax", diff_method="best")
+        @qml.qnode(dev, interface="jax", diff_method=None)
         def circuit():
             qml.CRZ(0.0, wires=[0, 1])
             qml.CRX(0.0, wires=[0, 1])
@@ -221,12 +219,11 @@ class TestQNodeIntegration:
 
         circuit()  # Just don't crash.
 
-    @pytest.mark.skip(reason="sampling doesnt work in backprop, fails with parameter-shift")
     def test_diagonal_doesnt_crash(self):
         """Test that diagonal gates can be used."""
         dev = qml.device("default.qubit.jax", wires=1, shots=1000)
 
-        @qml.qnode(dev, interface="jax", diff_method="best")
+        @qml.qnode(dev, interface="jax", diff_method=None)
         def circuit():
             qml.DiagonalQubitUnitary(np.array([1.0, 1.0]), wires=0)
             return qml.sample(qml.PauliZ(wires=0))
