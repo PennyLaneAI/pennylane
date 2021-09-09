@@ -23,7 +23,6 @@ import warnings
 import pennylane as qml
 from pennylane import Device
 from pennylane.interfaces.batch import set_shots, SUPPORTED_INTERFACES
-from pennylane.operation import State
 
 
 class QNode:
