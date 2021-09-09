@@ -18,6 +18,7 @@ import pennylane as qml
 from pennylane.transforms import qfunc_transform
 from pennylane.transforms.decompositions import zyz_decomposition, two_qubit_decomposition
 
+
 @qfunc_transform
 def unitary_to_rot(tape):
     """Quantum function transform to decomposes all instances of single-qubit and
@@ -37,7 +38,7 @@ def unitary_to_rot(tape):
 
         Two-qubit operations which are determined to require 1 or 2 CNOTs are
         currently left as :class:`~.QubitUnitary` instances at present, and not
-        decomposed. 
+        decomposed.
 
     Args:
         qfunc (function): a quantum function
@@ -80,7 +81,7 @@ def unitary_to_rot(tape):
      0: ──Rot(-1.35, 1.83, -0.606)──┤ ⟨Z⟩
 
     """
-    
+
     for op in tape.operations + tape.measurements:
         if isinstance(op, qml.QubitUnitary):
             # Single-qubit unitary operations
