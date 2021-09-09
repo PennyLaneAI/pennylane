@@ -187,19 +187,22 @@ class MPLDrawer:
     to a value of ``2`` in order to draw it *on top* of the control wires, instead of below them.
     """
 
+    fig = None
+    """`Matplotlib figure object <https://matplotlib.org/stable/api/figure_api.html?highlight=figure#module-matplotlib.figure>`_ """
+
+    ax = None
+    """`Matplotlib axes <https://matplotlib.org/stable/api/axes_api.html?highlight=axes#module-matplotlib.axes>`_ """
+
+    _box_dx = 0.4
+    _circ_rad = 0.3
+    _ctrl_rad = 0.1
+    _octrl_rad = 0.1
+    _swap_dx = 0.2
+
     def __init__(self, n_layers, n_wires, wire_options=None, figsize=None):
 
         self.n_layers = n_layers
         self.n_wires = n_wires
-
-        # half the width of a box
-        # is difference between center and edge
-        self._box_dx = 0.4
-
-        self._circ_rad = 0.3
-        self._ctrl_rad = 0.1
-        self._octrl_rad = 0.1
-        self._swap_dx = 0.2
 
         ## Creating figure and ax
 
