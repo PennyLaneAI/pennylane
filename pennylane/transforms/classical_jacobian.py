@@ -73,7 +73,6 @@ def classical_jacobian(qnode):
         """Returns the trainable gate parameters for
         a given QNode input"""
         qnode.construct(args, kwargs)
-        print(qnode.qtape.get_parameters())
         return qml.math.stack(qnode.qtape.get_parameters())
 
     if qnode.interface == "autograd":
