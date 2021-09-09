@@ -82,7 +82,6 @@ def _execute(
 
     @jax.custom_vjp
     def wrapped_exec(params):
-
         def wrapper(p):
             new_tapes = []
 
@@ -138,7 +137,9 @@ def _execute(
 
                 args = tuple(params) + (g,)
                 vjps = host_callback.call(
-                    non_diff_wrapper, args, result_shape=jax.ShapeDtypeStruct((total_params,), jnp.float32)
+                    non_diff_wrapper,
+                    args,
+                    result_shape=jax.ShapeDtypeStruct((total_params,), jnp.float32),
                 )
 
                 start = 0

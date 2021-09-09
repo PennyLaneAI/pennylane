@@ -43,7 +43,10 @@ class TestJaxExecuteUnitTests:
                 qml.expval(qml.PauliZ(0))
 
             return execute(
-                [tape], device, gradient_fn=param_shift, gradient_kwargs={"shift": np.pi / 4},
+                [tape],
+                device,
+                gradient_fn=param_shift,
+                gradient_kwargs={"shift": np.pi / 4},
                 interface="jax",
             )[0][0]
 
@@ -65,9 +68,9 @@ class TestJaxExecuteUnitTests:
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            return execute([tape], device, gradient_fn=lambda x: x,
-                interface="jax",
-                )[0][0]
+            return execute([tape], device, gradient_fn=lambda x: x, interface="jax",)[
+                0
+            ][0]
 
         with pytest.raises(ValueError, match="Unknown gradient function"):
             res = jax.grad(cost)(a, device=dev)
@@ -85,9 +88,13 @@ class TestJaxExecuteUnitTests:
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            return execute([tape], device, gradient_fn=param_shift, mode="forward",
+            return execute(
+                [tape],
+                device,
+                gradient_fn=param_shift,
+                mode="forward",
                 interface="jax",
-                )[0]
+            )[0]
 
         with pytest.raises(
             ValueError, match="Gradient transforms cannot be used with mode='forward'"
@@ -183,7 +190,9 @@ class TestCaching:
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            return execute([tape], dev, gradient_fn=param_shift, cachesize=cachesize, interface="jax")[0][0]
+            return execute(
+                [tape], dev, gradient_fn=param_shift, cachesize=cachesize, interface="jax"
+            )[0][0]
 
         params = jnp.array([0.1, 0.2])
         jax.grad(cost)(params, cachesize=2)
@@ -412,7 +421,7 @@ class TestJaxExecuteIntegration:
             return execute([tape], device, interface="jax", **execute_kwargs)[0][0]
 
         dev = qml.device("default.qubit", wires=2)
-        res = jax.grad(cost, argnums=(0,1,2))(a, b, c, device=dev)
+        res = jax.grad(cost, argnums=(0, 1, 2))(a, b, c, device=dev)
         assert len(res) == 3
 
     @pytest.mark.xfail
