@@ -1503,6 +1503,7 @@ class TestSamples:
         # expected = [torch.cos(a), torch.cos(a) * torch.cos(b)]
         # assert np.allclose(res, expected, atol=tol, rtol=0)
 
+
 class TestHighLevelIntegration:
     """Tests for integration with higher level components of PennyLane."""
 

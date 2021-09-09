@@ -1340,7 +1340,7 @@ class TestSamples:
         """Test that the probability of a subset of wires is accurately estimated."""
         dev = qml.device("default.qubit.tf", wires=2, shots=1000)
 
-        @qml.qnode(dev, diff_method="parameter-shift", interface="tf")
+        @qml.qnode(dev, diff_method=None, interface="tf")
         def circuit():
             qml.PauliX(0)
             return qml.probs(wires=[0])
@@ -1356,7 +1356,7 @@ class TestSamples:
         """Test that the probability of a subset of wires is accurately estimated."""
         dev = qml.device("default.qubit.tf", wires=2, shots=1000)
 
-        @qml.qnode(dev, diff_method="parameter-shift", interface="tf")
+        @qml.qnode(dev, diff_method=None, interface="tf")
         def circuit():
             qml.PauliX(0)
             qml.PauliX(1)
@@ -1374,7 +1374,7 @@ class TestSamples:
         of shots produces a numeric tensor"""
         dev = qml.device("default.qubit.tf", wires=3, shots=1000)
 
-        @qml.qnode(dev, diff_method="parameter-shift", interface="tf")
+        @qml.qnode(dev, diff_method=None, interface="tf")
         def circuit(a, b):
             qml.RX(a, wires=[0])
             qml.RX(b, wires=[1])
