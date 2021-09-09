@@ -34,13 +34,13 @@ def _reconstruct_gen(fun, spectrum, shifts=None, fun_at_zero=None):
         callable: Reconstructed Fourier series with :math:`R` frequencies in ``spectrum``,
         as ``qml.numpy`` based function and coinciding with ``fun`` on :math:`2R+1` points.
     """
-    spectrum = [f for f in spectrum if f>0.]
+    spectrum = [f for f in spectrum if f > 0.0]
     f_min = min(spectrum)
     # If no shifts are provided, choose equidistant ones
     if shifts is None:
-        R = len(spectrum) 
+        R = len(spectrum)
         shifts = np.arange(-R, R + 1) * 2 * np.pi / (f_min * (2 * R + 1))
-        close_to_zero = np.eye(2*R+1)[R]
+        close_to_zero = np.eye(2 * R + 1)[R]
     else:
         close_to_zero = np.isclose(shifts, 0.0)
     # Take care of shifts close to zero if fun_at_zero was provided
@@ -108,6 +108,7 @@ def _reconstruct_equ(fun, num_frequency, fun_at_zero=None):
 
     return _reconstruction
 
+
 def _interpret_id(_id):
     r"""Interpret how a given id is meant to access a container of spectrum-type.
     Args:
@@ -119,7 +120,7 @@ def _interpret_id(_id):
         where ``data`` is the spectrum-type container.
     """
     if isinstance(_id, tuple):
-        if len(_id)>1 and isinstance(_id[1], tuple):
+        if len(_id) > 1 and isinstance(_id[1], tuple):
             # Argument index and parameter index for dictionary of dictionaries
             return _id[0], _id[1]
         # Single tuple index: Outer dictionary expected to be unpacked
@@ -135,8 +136,7 @@ def _interpret_id(_id):
 
 
 def _getitem(_dict, arg_id, param_id, default):
-    r"""Access an entry of a spectrum-type container via two indices.
-    """
+    r"""Access an entry of a spectrum-type container via two indices."""
     try:
         sub_dict = _dict[arg_id] if arg_id is not None else _dict
         sub_dict = sub_dict[param_id] if param_id is not None else sub_dict
@@ -152,8 +152,7 @@ def _getitem(_dict, arg_id, param_id, default):
 
 
 def _setitem(_dict, arg_id, param_id, value):
-    r"""Set an entry of a spectrum-type container via two indices.
-    """
+    r"""Set an entry of a spectrum-type container via two indices."""
     if arg_id is not None:
         if param_id is None:
             _dict[arg_id] = value
@@ -177,7 +176,7 @@ def _get_ids_from_data(data):
         data (container): Container from which to get the ids
 
     Returns:
-        list[tuple]: Ids belonging to the keys of ``data``; each entry is one of 
+        list[tuple]: Ids belonging to the keys of ``data``; each entry is one of
         ``tuple[int, tuple[int]]`` or ``tuple[int]``.
     """
     if not isinstance(data, dict):
@@ -217,28 +216,25 @@ def _prepare_jobs(ids, spectra, shifts, nums_frequency):
                 need_fun_at_zero = True
             # Store job, spectrum and fun_at_zero missing in _kwargs
             _kwargs = {"shifts": _shifts}
-            jobs.append( (arg_id, param_id, _kwargs) )
+            jobs.append((arg_id, param_id, _kwargs))
     else:
         recon_fn = _reconstruct_equ
         for (arg_id, param_id) in ids:
             _num_frequency = _getitem(nums_frequency, arg_id, param_id, False)
-            _kwargs = {"num_frequency": _num_frequency} if _num_frequency>0 else None
+            _kwargs = {"num_frequency": _num_frequency} if _num_frequency > 0 else None
             # Store job, fun_at_zero missing in _kwargs
-            jobs.append( (arg_id, param_id, _kwargs) )
+            jobs.append((arg_id, param_id, _kwargs))
 
     return ids, recon_fn, jobs, need_fun_at_zero
 
-def reconstruct(
-    qnode, ids=None, spectra=None, shifts=None, nums_frequency=None, decimals=5
-):
-    r"""Reconstructs univariate restrictions of an expectation value QNode.
-    """
 
-    ids, recon_fn, jobs, need_fun_at_zero = _prepare_jobs(
-        ids, spectra, shifts, nums_frequency
-    )
+def reconstruct(qnode, ids=None, spectra=None, shifts=None, nums_frequency=None, decimals=5):
+    r"""Reconstructs univariate restrictions of an expectation value QNode."""
+
+    ids, recon_fn, jobs, need_fun_at_zero = _prepare_jobs(ids, spectra, shifts, nums_frequency)
 
     atol = 1e-8
+
     @wraps(qnode)
     def wrapper(*args, **kwargs):
         nonlocal spectra
@@ -257,10 +253,10 @@ def reconstruct(
             # Update reconstruction jobs with the spectra and fun_at_zero
             for i, job in enumerate(jobs):
                 _spectrum = _getitem(spectra, job[0], job[1], False)
-                if len(_spectrum)>1:
+                if len(_spectrum) > 1:
                     job[-1].update({"spectrum": _spectrum, "fun_at_zero": fun_at_zero})
                 else:
-                    jobs[i] = job[:-1]+(None,)
+                    jobs[i] = job[:-1] + (None,)
         else:
             # Update reconstruction jobs with fun_at_zero
             for job in jobs:
@@ -277,7 +273,7 @@ def reconstruct(
                 _recon = constant_fn
             else:
                 shift_vec = np.zeros_like(args[arg_id])
-                shift_vec[param_id] = 1.
+                shift_vec[param_id] = 1.0
 
                 def _univariate_fn(x):
                     new_arg = args[arg_id] + shift_vec * x
