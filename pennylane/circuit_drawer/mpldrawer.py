@@ -27,7 +27,7 @@ except (ModuleNotFoundError, ImportError) as e:
 
 
 def _to_tuple(a):
-    """converts int or iterable to always tuple"""
+    """Converts int or iterable to tuple"""
     if a is None:
         return tuple()
     if isinstance(a, Iterable):
@@ -45,7 +45,7 @@ class MPLDrawer:
 
     Keyword Args:
         wire_kwargs=None (dict): matplotlib configuration options for drawing the wire lines
-        figsize=None (Iterable): Allows users to specify the size of the figure manually.  Defaults
+        figsize=None (Iterable): Allows users to specify the size of the figure manually. Defaults
             to scale with the size of the circuit via ``n_layers`` and ``n_wires``.
 
     **Example**
@@ -73,8 +73,6 @@ class MPLDrawer:
 
         drawer.fig.suptitle('My Circuit', fontsize='xx-large')
 
-        return drawer
-
     .. figure:: ../../_static/drawer/example_basic.png
             :align: center
             :width: 60%
@@ -84,15 +82,15 @@ class MPLDrawer:
 
     **Matplotlib Integration**
 
-    This class relies on matplotlib.  As such, users can extend this class via interacting with the figure
-    ``drawer.fig`` and axes ``drawer.ax`` objects manually.  For instance, the example circuit manipulates the
+    This class relies on matplotlib. As such, users can extend this class via interacting with the figure
+    ``drawer.fig`` and axes ``drawer.ax`` objects manually. For instance, the example circuit manipulates the
     figure to set a title using ``drawer.fig.suptitle``. Users can also save the image using ``plt.savefig``.
     As described in the next section, the figure supports both global styling and individual styling of
     elements with matplotlib styles, configuration, and keywords.
 
     **Formatting**
 
-    You can globally control the style with ``plt.rcParams``  and styles, see the
+    You can globally control the style with ``plt.rcParams`` and styles, see the
     `matplotlib docs <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
     If we customize ``plt.rcParams`` before executing our example function, we get a
     different style:
@@ -124,7 +122,7 @@ class MPLDrawer:
             :target: javascript:void(0);
 
     You can also manually control the styles of individual plot elements via the drawer class.
-    Any control-type method, ``ctrl``, ``CNOT``, ``_ctrl_circ``, ``_ctrlo_circ``, and ``_target_x``, only
+    The control-type methods ``ctrl`` and ``CNOT`` only
     accept a color keyword.  All other gates accept dictionaries of keyword-values pairs for matplotlib object
     components.  Acceptable keywords differ based on what's being drawn. For example, you cannot pass ``"fontsize"``
     to the dictionary controlling how to format a rectangle.
@@ -232,10 +230,10 @@ class MPLDrawer:
         """Label each wire.
 
         Args:
-            labels [Iterable[str]]: Iterable of labels for the wires
+            labels (Iterable[str]): Iterable of labels for the wires
 
         Keyword Args:
-            text_kwargs (dict): any matplotlib keywords for a text object, such as font or size.
+            text_kwargs (dict): any matplotlib keywords for a text object, such as font or size
 
         **Example**
 
@@ -276,16 +274,16 @@ class MPLDrawer:
         """Draws a box and adds label text to its center.
 
         Args:
-            layer (Int): x coordinate for the box center
-            wires (Union[Int, Iterable[Int]]): y locations to include inside the box.  Only min and max
+            layer (int): x coordinate for the box center
+            wires (Union[int, Iterable[int]]): y locations to include inside the box. Only min and max
                 of an Iterable affect the output
             text (str): string to print at the box's center
 
         Keyword Args:
-            extra_width (float): Extra box width
-            zorder_base=0 (Int): increase number to draw on top of other objects, like control wires
-            box_kwargs=None (dict): Any matplotlib keywords for the Rectangle patch
-            text_kwargs=None (dict): Any matplotlib keywords for the text
+            extra_width (float): extra box width
+            zorder_base=0 (int): increase number to draw on top of other objects, like control wires
+            box_kwargs=None (dict): any matplotlib keywords for the ``plt.Rectangle`` patch
+            text_kwargs=None (dict): any matplotlib keywords for the text
 
         **Example**
 
@@ -300,7 +298,7 @@ class MPLDrawer:
             :width: 60%
             :target: javascript:void(0);
 
-        This method can accept two different sets of design keywords.  ``box_kwargs`` takes
+        This method can accept two different sets of design keywords. ``box_kwargs`` takes
         `Rectangle keywords <https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.Rectangle.html>`_
         , and ``text_kwargs`` accepts
         `Matplotlib Text keywords <https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.text.html>`_ .
@@ -350,7 +348,6 @@ class MPLDrawer:
             box_center,
             text,
             zorder=3 + zorder,
-            # rotation=rotation,
             **default_text_kwargs,
         )
 
@@ -358,13 +355,13 @@ class MPLDrawer:
         """Add an arbitrary number of control wires
 
         Args:
-            layer (Int): the layer to draw the object in
-            wires (Union[Int, Iterable[Int]]): set of wires to control on
+            layer (int): the layer to draw the object in
+            wires (Union[int, Iterable[int]]): set of wires to control on
 
         Keyword Args:
-            wires_target=None (Union[Int, Iterable[Int]]): target wires. Used to determine min
+            wires_target=None (Union[int, Iterable[int]]): target wires. Used to determine min
                 and max wires for the vertical line
-            control_values=None (Union[Bool, Iterable[Bool]]): for each control wire, denotes whether to control
+            control_values=None (Union[bool, Iterable[bool]]): for each control wire, denotes whether to control
                 on ``False=0`` or ``True=1``.
             kwargs=None (dict): mpl line keywords
 
@@ -438,11 +435,11 @@ class MPLDrawer:
         """Draws a CNOT gate.
 
         Args:
-            layer (Int): layer to draw in
-            wires (Int, Int): tuple of (control, target)
+            layer (int): layer to draw in
+            wires (int, int): tuple of (control, target)
 
         Keyword Args:
-            color (None or str): mpl compatible color designation
+            color : mpl compatible color designation
 
         **Example**
 
@@ -468,8 +465,8 @@ class MPLDrawer:
         """Draws the circle used to represent a CNOT's target
 
         Args:
-            layer (Int): layer to draw on
-            wires (Int): wire to draw on
+            layer (int): layer to draw on
+            wires (int): wire to draw on
 
         Keyword Args:
             color=None: mpl compatible color designation
@@ -498,8 +495,8 @@ class MPLDrawer:
         """Draws a SWAP gate
 
         Args:
-            layer (Int): layer to draw on
-            wires (Int, Int): Two wires the SWAP acts on
+            layer (int): layer to draw on
+            wires (Tuple[int, int]): two wires the SWAP acts on
 
         Keyword Args:
             kwargs=None (dict): matplotlib keywords for ``Line2D`` objects
@@ -547,8 +544,8 @@ class MPLDrawer:
         """Draw an x such as used in drawing a swap gate
 
         Args:
-            layer (Int): the layer
-            wire (Int): the wire
+            layer (int): layer to draw on
+            wires (int): wire to draw on
 
         Keyword Args:
             kwargs=None (dict): matplotlib keywords for ``Line2D`` objects
@@ -577,11 +574,11 @@ class MPLDrawer:
         """Draw a Measurement graphic at designated layer, wire combination.
 
         Args:
-            layer (Int): the layer
-            wires (Int): the wire
+            layer (int): layer to draw on
+            wires (int): wire to draw on
 
         Keyword Args:
-            zorder_base=0 (Int): amount to shift in zorder from the default
+            zorder_base=0 (int): amount to shift in zorder from the default
             box_kwargs=None (dict): dictionary to format a matplotlib rectangle
             lines_kwargs=None (dict): dictionary to format matplotlib arc and arrow
 
@@ -597,7 +594,7 @@ class MPLDrawer:
             :width: 60%
             :target: javascript:void(0);
 
-        This method accepts two different formatting dictionaries.  ``box_kwargs`` edits the rectangle
+        This method accepts two different formatting dictionaries. ``box_kwargs`` edits the rectangle
         while ``lines_kwargs`` edits the arc and arrow.
 
         .. code-block:: python
