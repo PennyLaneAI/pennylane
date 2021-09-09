@@ -67,6 +67,7 @@ from pennylane.vqe import ExpvalCost, VQECost
 from .collections import QNodeCollection, dot, map, sum
 import pennylane.grouping  # pylint:disable=wrong-import-order
 import pennylane.gradients  # pylint:disable=wrong-import-order
+from pennylane.interfaces.batch import execute  # pylint:disable=wrong-import-order
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
