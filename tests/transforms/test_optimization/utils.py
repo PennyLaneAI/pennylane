@@ -55,9 +55,9 @@ def compute_matrix_from_ops_two_qubit(ops, wire_order):
     for op in ops:
         op_wires = qml.wires.Wires(op.wires)
 
-        if op.name == "RZ":
+        if op.name == "RZ" and qml.math.get_interface(op.parameters[0]) == "tensorflow":
             op_mat = qml.math.unwrap(_RZ(op.parameters[0]))
-        elif op.name == "Rot":
+        elif op.name == "Rot" and qml.math.get_interface(op.parameters[0]) == "tensorflow":
             op_mat = qml.math.unwrap(_Rot(*op.parameters))
         else:
             op_mat = qml.math.unwrap(op.matrix)
