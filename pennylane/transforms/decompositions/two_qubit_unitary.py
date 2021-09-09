@@ -62,7 +62,7 @@ def _convert_to_su4(U):
 
 
 def _compute_num_cnots(U):
-    r"""Compute the number of CNOTs required to implement U. This is based on
+    r"""Compute the number of CNOTs required to implement a U in SU(4). This is based on
     the trace of
 
     .. math::
@@ -81,13 +81,15 @@ def _compute_num_cnots(U):
     num_cnots = 3
 
     # Case: 0 CNOTs (tensor product), the trace is +/- 4
-    if math.allclose(trace, 4) or math.allclose(trace, -4):
+    # We need a tolerance of around 1e-7 here in order to work with the case where U
+    # is specified with 8 decimal places.
+    if math.allclose(trace, 4, atol=1e-7) or math.allclose(trace, -4, atol=1e-7):
         num_cnots = 0
     # Case: 1 CNOT, the trace is 0
-    elif math.allclose(trace, 0.0):
+    elif math.allclose(trace, 0.0, atol=1e-7):
         num_cnots = 1
     # Case: 2 CNOTs, the trace has only a real part
-    elif math.allclose(math.imag(trace), 0):
+    elif math.allclose(math.imag(trace), 0, atol=1e-7):
         num_cnots = 2
 
     return num_cnots

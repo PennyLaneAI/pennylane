@@ -27,6 +27,7 @@ from pennylane.transforms.decompositions import two_qubit_decomposition
 from pennylane.transforms.decompositions.two_qubit_unitary import (
     _convert_to_su4,
     _su2su2_to_tensor_products,
+    _compute_num_cnots,
 )
 
 from test_optimization.utils import compute_matrix_from_ops_two_qubit, check_matrix_equivalence
@@ -352,7 +353,9 @@ class TestTwoQubitUnitaryDecomposition:
     @pytest.mark.parametrize("U", samples_u4)
     def test_two_qubit_decomposition(self, U, wires):
         """Test that a two-qubit matrix in isolation is correctly decomposed."""
-        U = np.array(U)
+        U = _convert_to_su4(np.array(U))
+
+        assert _compute_num_cnots(U) == 3
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
 
@@ -369,65 +372,71 @@ class TestTwoQubitUnitaryDecomposition:
         U = np.array(
             [
                 [
-                    -0.64405132 + 0.30150227j,
-                    0.02683268 - 0.00962926j,
-                    0.09120734 + 0.67567874j,
-                    0.01002492 - 0.16888017j,
+                    -0.19181728 + 0.25606864j,
+                    0.09762102 + 0.4497051j,
+                    0.49652778 + 0.48755497j,
+                    0.15873623 + 0.42002807j,
                 ],
                 [
-                    -0.12014117 + 0.02341067j,
-                    -0.64048164 + 0.41307781j,
-                    0.11692338 + 0.02794082j,
-                    0.26483411 + 0.56531332j,
+                    0.52181374 + 0.27640099j,
+                    -0.27938656 - 0.23445847j,
+                    0.18693845 - 0.17248837j,
+                    -0.42235315 + 0.52459974j,
                 ],
                 [
-                    0.36131771 - 0.07587477j,
-                    -0.44963433 + 0.39370427j,
-                    -0.12779152 + 0.28409004j,
-                    -0.31279184 - 0.55824895j,
+                    -0.2385081 - 0.48017874j,
+                    0.61525682 - 0.1409672j,
+                    0.04385795 - 0.11646395j,
+                    -0.360004 + 0.41114389j,
                 ],
                 [
-                    -0.57692843 - 0.100789j,
-                    -0.23280381 + 0.08345998j,
-                    0.21783231 - 0.61335059j,
-                    -0.18965888 - 0.36906858j,
+                    0.51084903 - 0.02287871j,
+                    0.36236135 - 0.3542448j,
+                    -0.21665205 + 0.62339925j,
+                    0.21473115 - 0.00636495j,
                 ],
             ]
         )
+
+        assert _compute_num_cnots(_convert_to_su4(U)) == 1
 
         with pytest.warns(UserWarning, match="1 or 2 CNOTs is not currently supported"):
             two_qubit_decomposition(U, wires=[0, 1])
 
     def test_two_qubit_decomposition_invalid_two_cnots(self):
         # Randomly-generated unitary of the form CNOT U1 \otimes U2) CNOT (U3 \otimes U4)
-        U = np.array(
-            [
+        U = _convert_to_su4(
+            np.array(
                 [
-                    0.0719019 - 0.62466729j,
-                    0.00192997 - 0.19885594j,
-                    -0.19729434 + 0.32488192j,
-                    -0.33064295 + 0.5579206j,
-                ],
-                [
-                    -0.02491486 + 0.44289821j,
-                    0.15234351 + 0.207362j,
-                    0.22965403 + 0.75914052j,
-                    -0.32815103 + 0.01716048j,
-                ],
-                [
-                    -0.03378986 + 0.18886409j,
-                    0.14327718 + 0.71255437j,
-                    -0.20881599 - 0.30621824j,
-                    -0.05188556 + 0.54301076j,
-                ],
-                [
-                    0.20577983 + 0.57331019j,
-                    -0.40124267 - 0.45275522j,
-                    -0.29851889 - 0.00203083j,
-                    0.09342042 + 0.40637678j,
-                ],
-            ]
+                    [
+                        -0.08737018 - 0.2335028j,
+                        -0.10041547 + 0.63791828j,
+                        -0.01502992 - 0.54660066j,
+                        0.04526445 - 0.46879937j,
+                    ],
+                    [
+                        -0.43062885 - 0.32278065j,
+                        -0.08235743 + 0.38761533j,
+                        0.42067305 + 0.36484914j,
+                        -0.38344969 + 0.31020747j,
+                    ],
+                    [
+                        -0.32496269 - 0.15387743j,
+                        -0.2081725 - 0.59008906j,
+                        0.14062425 - 0.50123501j,
+                        -0.44835313 - 0.08454499j,
+                    ],
+                    [
+                        0.71918496 + 0.04133173j,
+                        0.08993026 + 0.16223525j,
+                        0.20852686 - 0.27645241j,
+                        -0.47595359 + 0.31656869j,
+                    ],
+                ]
+            )
         )
+
+        assert _compute_num_cnots(U) == 2
 
         with pytest.warns(UserWarning, match="1 or 2 CNOTs is not currently supported"):
             two_qubit_decomposition(U, wires=[0, 1])
@@ -436,7 +445,9 @@ class TestTwoQubitUnitaryDecomposition:
     @pytest.mark.parametrize("U_pair", samples_su2_su2)
     def test_two_qubit_decomposition_tensor_products(self, U_pair, wires):
         """Test that a one-qubit matrix in isolation is correctly decomposed."""
-        U = qml.math.kron(np.array(U_pair[0]), np.array(U_pair[1]))
+        U = _convert_to_su4(qml.math.kron(np.array(U_pair[0]), np.array(U_pair[1])))
+
+        assert _compute_num_cnots(U) == 0
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
 
