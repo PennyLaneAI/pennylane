@@ -354,11 +354,7 @@ class TestTwoQubitUnitaryDecomposition:
         """Test that a two-qubit matrix in isolation is correctly decomposed."""
         U = np.array(U)
 
-        print(U)
-
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
-
-        print(obtained_decomposition)
 
         obtained_matrix = compute_matrix_from_ops_two_qubit(
             obtained_decomposition, wire_order=wires

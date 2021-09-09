@@ -67,7 +67,7 @@ def _compute_num_cnots(U):
 
         \gamma(U) = (E^\dag U E) (E^\dag U E)^T,
 
-    and follows the arguments of this paper: https://arxiv.org/abs/quant-ph/0308045
+    and follows the arguments of this paper: https://arxiv.org/abs/quant-ph/0308045.
     """
     u = math.dot(Edag, math.dot(U, E))
     gammaU = math.dot(u, math.T(u))
@@ -240,7 +240,7 @@ def _decomposition_3_cnots(U, wires):
      -U- = -D--C--RY(b)--X--RY(a)--C--B-
     """
 
-    # First we add a SWAP as per v1 of 0308033, which helps with some
+    # First we add a SWAP as per v1 of arXiv:0308033, which helps with some
     # rearranging of gates in the decomposition (it will cancel out the fact
     # that we need to add a SWAP to fix the determinant in another part later).
     swap_U = np.exp(1j * np.pi / 4) * math.dot(math.cast_like(SWAP, U), U)
