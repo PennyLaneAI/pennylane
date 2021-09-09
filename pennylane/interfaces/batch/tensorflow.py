@@ -16,8 +16,6 @@ This module contains functions for adding the TensorFlow interface
 to a PennyLane Device class.
 """
 # pylint: disable=too-many-arguments,too-many-branches
-import inspect
-
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.eager import context
@@ -102,13 +100,8 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
             else:
                 # Need to compute the Jacobians on the backward pass (accumulation="backward")
 
-                # Temporary: check if the gradient function is a differentiable transform.
-                # For the moment, simply check if it is part of the `qml.gradients` package.
-                # Longer term, we should have a way of checking this directly
-                # (e.g., isinstance(gradient_fn, GradientTransform))
-                module_name = getattr(inspect.getmodule(gradient_fn), "__name__", "")
-
-                if "pennylane.gradients" in module_name:
+                if isinstance(gradient_fn, qml.gradients.gradient_transform):
+                    # Gradient function is a gradient transform.
 
                     # Generate and execute the required gradient tapes
                     if _n == max_diff or not context.executing_eagerly():
@@ -148,12 +141,9 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
                             )
                         )
 
-                elif (
-                    hasattr(gradient_fn, "fn")
-                    and inspect.ismethod(gradient_fn.fn)
-                    and gradient_fn.fn.__self__ is device
-                ):
-                    # Gradient function is a device method.
+                else:
+                    # Gradient function is not a gradient transform
+                    # (e.g., it might be a device method).
                     # Note that unlike the previous branch:
                     #
                     # - there is no recursion here
@@ -162,9 +152,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
                     # so we cannot support higher-order derivatives.
                     with qml.tape.Unwrap(*tapes, params=params_unwrapped, set_trainable=False):
                         vjps = _compute_vjp(dy, gradient_fn(tapes, **gradient_kwargs))
-
-                else:
-                    raise ValueError("Unknown gradient function.")
 
             variables = tfkwargs.get("variables", None)
             return (vjps, variables) if variables is not None else vjps
