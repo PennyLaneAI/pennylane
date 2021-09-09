@@ -14,8 +14,6 @@
 """
 A transform for decomposing arbitrary single-qubit QubitUnitary gates into elementary gates.
 """
-import warnings
-
 import pennylane as qml
 from pennylane.transforms import qfunc_transform
 from pennylane.transforms.decompositions import zyz_decomposition, two_qubit_decomposition
