@@ -365,8 +365,6 @@ class QNode:
                 "or a nonempty sequence of measurements."
             )
 
-        state_returns = any(m.return_type is State for m in measurement_processes)
-
         if not all(ret == m for ret, m in zip(measurement_processes, self.tape.measurements)):
             raise qml.QuantumFunctionError(
                 "All measurements must be returned in the order they are measured."

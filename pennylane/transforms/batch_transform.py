@@ -178,7 +178,7 @@ class batch_transform:
             interface = qnode.interface
 
             # TODO: extract gradient_fn from QNode
-            gradient_fn = qnode.diff_method
+            gradient_fn = getattr(qnode, "gradient_fn", qnode.diff_method)
 
             if interface is None or not self.differentiable:
                 gradient_fn = None
