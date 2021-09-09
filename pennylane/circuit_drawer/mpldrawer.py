@@ -54,7 +54,7 @@ class MPLDrawer:
 
         drawer = MPLDrawer(n_wires=5,n_layers=5)
 
-        drawer.label(["0","a",r"$|\Psi\rangle$",r"$|\theta\rangle$", "aux"])
+        drawer.label(["0", "a", r"$|\Psi\rangle$", r"$|\theta\rangle$", "aux"])
 
         drawer.box_gate(layer=0, wires=[0,1,2,3,4], text="Entangling Layers", text_options={'rotation':'vertical'})
         drawer.box_gate(layer=1, wires=[0, 1], text="U(θ)")
@@ -114,7 +114,7 @@ class MPLDrawer:
 
     .. code-block:: python
 
-        plt.style.use('Solarize_light2')
+        plt.style.use('Solarize_Light2')
 
     .. figure:: ../../_static/drawer/example_Solarize_Light2.png
             :align: center
