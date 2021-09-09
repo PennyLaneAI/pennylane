@@ -84,7 +84,9 @@ class MPLDrawer:
 
     This class relies on matplotlib. As such, users can extend this class via interacting with the figure
     ``drawer.fig`` and axes ``drawer.ax`` objects manually. For instance, the example circuit manipulates the
-    figure to set a title using ``drawer.fig.suptitle``. Users can also save the image using ``plt.savefig``.
+    figure to set a title using ``drawer.fig.suptitle``. Users can save the image using ``plt.savefig`` or via
+    the figure method ``drawer.fig.savefig``.
+    
     As described in the next section, the figure supports both global styling and individual styling of
     elements with matplotlib styles, configuration, and keywords.
 
