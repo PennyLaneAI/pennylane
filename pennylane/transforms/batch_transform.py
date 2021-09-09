@@ -211,16 +211,7 @@ class batch_transform:
             # tapes, fn = some_transform(tape, *transform_args)
             return self.construct(qnode, *targs, **tkwargs)
 
-        if isinstance(qnode, qml.ExpvalCost):
-            if qnode._multiple_devices:  # pylint: disable=protected-access
-                warnings.warn(
-                    "ExpvalCost was instantiated with multiple devices. Only the first device "
-                    "will be used to evaluate the metric tensor."
-                )
-
-            qnode = qnode.qnodes.qnodes[0]
-
-        if isinstance(qnode, (qml.QNode, QNode)):
+        if isinstance(qnode, (qml.QNode, QNode, qml.ExpvalCost)):
             # Input is a QNode:
             # result = some_transform(qnode, *transform_args)(*qnode_args)
             wrapper = self.qnode_execution_wrapper(qnode, targs, tkwargs)
