@@ -96,6 +96,7 @@ def test_apply_controlled_v(n_wires):
 class TestApplyControlledQ:
     """Tests for the apply_controlled_Q function"""
 
+    @pytest.mark.slow
     @pytest.mark.parametrize("n_wires", range(2, 5))
     def test_apply(self, n_wires):
         """Test if the apply_controlled_Q performs the correct transformation by reconstructing the
@@ -137,6 +138,7 @@ class TestApplyControlledQ:
 class TestQuantumMonteCarlo:
     """Tests for the quantum_monte_carlo function"""
 
+    @pytest.mark.slow
     @pytest.mark.parametrize("n_wires", range(2, 4))
     def test_apply(self, n_wires):
         """Test if the quantum_monte_carlo performs the correct transformation by reconstructing the
@@ -181,6 +183,7 @@ class TestQuantumMonteCarlo:
                 lambda: None, wires=wires, target_wire=0, estimation_wires=estimation_wires
             )
 
+    @pytest.mark.slow
     def test_integration(self):
         """Test if quantum_monte_carlo generates the correct circuit by comparing it to the
         QuantumMonteCarlo template on the practical example specified in the usage details. Custom
