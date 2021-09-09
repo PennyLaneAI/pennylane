@@ -18,7 +18,7 @@ import pytest
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
-from pennylane import numpy as np
+import numpy as np
 
 import pennylane as qml
 from pennylane.gradients import param_shift
@@ -126,6 +126,7 @@ class TestJaxExecuteUnitTests:
                 [tape],
                 dev,
                 gradient_fn="device",
+                interface="jax",
                 gradient_kwargs={"method": "adjoint_jacobian", "use_device_state": True},
             )[0]
 
@@ -171,7 +172,6 @@ class TestJaxExecuteUnitTests:
 class TestCaching:
     """Test for caching behaviour"""
 
-    @pytest.mark.xfail
     def test_cache_maxsize(self, mocker):
         """Test the cachesize property of the cache"""
         dev = qml.device("default.qubit", wires=1)
@@ -181,19 +181,18 @@ class TestCaching:
             with qml.tape.JacobianTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
-                qml.probs(wires=0)
+                qml.expval(qml.PauliZ(0))
 
-            return execute([tape], dev, gradient_fn=param_shift, cachesize=cachesize)[0]
+            return execute([tape], dev, gradient_fn=param_shift, cachesize=cachesize, interface="jax")[0][0]
 
         params = jnp.array([0.1, 0.2])
-        qml.jacobian(cost)(params, cachesize=2)
+        jax.grad(cost)(params, cachesize=2)
         cache = spy.call_args[0][1]
 
         assert cache.maxsize == 2
         assert cache.currsize == 2
         assert len(cache) == 2
 
-    @pytest.mark.xfail
     def test_custom_cache(self, mocker):
         """Test the use of a custom cache object"""
         dev = qml.device("default.qubit", wires=1)
@@ -203,41 +202,40 @@ class TestCaching:
             with qml.tape.JacobianTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
-                qml.probs(wires=0)
+                qml.expval(qml.PauliZ(0))
 
-            return execute([tape], dev, gradient_fn=param_shift, cache=cache)[0]
+            return execute([tape], dev, gradient_fn=param_shift, cache=cache, interface="jax")[0][0]
 
         custom_cache = {}
         params = jnp.array([0.1, 0.2])
-        qml.jacobian(cost)(params, cache=custom_cache)
+        jax.grad(cost)(params, cache=custom_cache)
 
         cache = spy.call_args[0][1]
         assert cache is custom_cache
 
-    @pytest.mark.xfail
     def test_caching_param_shift(self, tol):
         """Test that, when using parameter-shift transform,
-        caching reduces the number of evaluations to their optimum."""
+        caching produces the optimum number of evaluations."""
         dev = qml.device("default.qubit", wires=1)
 
         def cost(a, cache):
             with qml.tape.JacobianTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
-                qml.probs(wires=0)
+                qml.expval(qml.PauliZ(0))
 
-            return execute([tape], dev, gradient_fn=param_shift, cache=cache)[0]
+            return execute([tape], dev, gradient_fn=param_shift, cache=cache, interface="jax")[0][0]
 
-        # Without caching, 9 evaluations are required to compute
+        # Without caching, 5 evaluations are required to compute
         # the Jacobian: 1 (forward pass) + 2 (backward pass) * (2 shifts * 2 params)
         params = jnp.array([0.1, 0.2])
-        qml.jacobian(cost)(params, cache=None)
-        assert dev.num_executions == 9
+        jax.grad(cost)(params, cache=None)
+        assert dev.num_executions == 5
 
         # With caching, 5 evaluations are required to compute
         # the Jacobian: 1 (forward pass) + (2 shifts * 2 params)
         dev._num_executions = 0
-        jac_fn = qml.jacobian(cost)
+        jac_fn = jax.grad(cost)
         grad1 = jac_fn(params, cache=True)
         assert dev.num_executions == 5
 
@@ -254,9 +252,8 @@ class TestCaching:
         assert dev.num_executions == 15
         assert not np.allclose(grad1, grad2, atol=tol, rtol=0)
 
-    @pytest.mark.xfail
     def test_caching_adjoint_backward(self):
-        """Test that caching reduces the number of adjoint evaluations
+        """Test that caching produces the optimum number of adjoint evaluations
         when mode=backward"""
         dev = qml.device("default.qubit", wires=2)
         params = jnp.array([0.1, 0.2, 0.3])
@@ -267,7 +264,6 @@ class TestCaching:
                 qml.RX(a[1], wires=0)
                 qml.RY(a[2], wires=0)
                 qml.expval(qml.PauliZ(0))
-                qml.expval(qml.PauliZ(1))
 
             return execute(
                 [tape],
@@ -275,16 +271,17 @@ class TestCaching:
                 gradient_fn="device",
                 cache=cache,
                 mode="backward",
+                interface="jax",
                 gradient_kwargs={"method": "adjoint_jacobian"},
-            )[0]
+            )[0][0]
 
-        # Without caching, 3 evaluations are required.
+        # Without caching, 2 evaluations are required.
         # 1 for the forward pass, and one per output dimension
         # on the backward pass.
         jax.grad(cost)(params, cache=None)
-        assert dev.num_executions == 3
+        assert dev.num_executions == 2
 
-        # With caching, only 2 evaluations are required. One
+        # With caching, also 2 evaluations are required. One
         # for the forward pass, and one for the backward pass.
         dev._num_executions = 0
         jac_fn = jax.grad(cost)
@@ -327,7 +324,7 @@ class TestJaxExecuteIntegration:
                 qml.RX(b, wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            return execute([tape1, tape2], dev, **execute_kwargs)
+            return execute([tape1, tape2], dev, interface="jax", **execute_kwargs)
 
         a = jnp.array(0.1)
         b = jnp.array(0.2)
@@ -363,32 +360,6 @@ class TestJaxExecuteIntegration:
         assert expected.shape == (1, 1)
         assert np.allclose(res, np.squeeze(expected), atol=tol, rtol=0)
 
-    def test_jacobian(self, execute_kwargs, tol):
-        """Test jacobian calculation"""
-        a = jnp.array(0.1)
-        b = jnp.array(0.2)
-
-        def cost(a, b, device):
-            with qml.tape.JacobianTape() as tape:
-                qml.RY(a, wires=0)
-                qml.RX(b, wires=1)
-                qml.CNOT(wires=[0, 1])
-                qml.expval(qml.PauliZ(0))
-                qml.expval(qml.PauliY(1))
-            return execute([tape], device, **execute_kwargs)[0]
-
-        dev = qml.device("default.qubit", wires=2)
-
-        res = cost(a, b, device=dev)
-        expected = [np.cos(a), -np.cos(a) * np.sin(b)]
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        res = qml.jacobian(cost)(a, b, device=dev)
-        assert res.shape == (2, 2)
-
-        expected = [[-np.sin(a), 0], [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]]
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
     def test_reusing_quantum_tape(self, execute_kwargs, tol):
         """Test re-using a quantum tape by passing new parameters"""
         a = jnp.array(0.1)
@@ -401,15 +372,14 @@ class TestJaxExecuteIntegration:
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
-            qml.expval(qml.PauliY(1))
 
         assert tape.trainable_params == {0, 1}
 
         def cost(a, b):
             tape.set_parameters([a, b])
-            return execute([tape], dev, **execute_kwargs)[0]
+            return execute([tape], dev, interface="jax", **execute_kwargs)[0][0]
 
-        jac_fn = qml.jacobian(cost)
+        jac_fn = jax.grad(cost)
         jac = jac_fn(a, b)
 
         a = jnp.array(0.54)
@@ -418,84 +388,55 @@ class TestJaxExecuteIntegration:
         # check that the cost function continues to depend on the
         # values of the parameters for subsequent calls
         res2 = cost(2 * a, b)
-        expected = [np.cos(2 * a), -np.cos(2 * a) * np.sin(b)]
+        expected = [np.cos(2 * a)]
         assert np.allclose(res2, expected, atol=tol, rtol=0)
 
-        jac_fn = qml.jacobian(lambda a, b: cost(2 * a, b))
+        jac_fn = jax.grad(lambda a, b: cost(2 * a, b))
         jac = jac_fn(a, b)
-        expected = [
-            [-2 * np.sin(2 * a), 0],
-            [2 * np.sin(2 * a) * np.sin(b), -np.cos(2 * a) * np.cos(b)],
-        ]
+        expected = -2 * np.sin(2 * a)
         assert np.allclose(jac, expected, atol=tol, rtol=0)
 
     def test_classical_processing(self, execute_kwargs, tol):
         """Test classical processing within the quantum tape"""
         a = jnp.array(0.1)
-        b = jnp.array(0.2, requires_grad=False)
+        b = jnp.array(0.2)
         c = jnp.array(0.3)
 
         def cost(a, b, c, device):
             with qml.tape.JacobianTape() as tape:
                 qml.RY(a * c, wires=0)
                 qml.RZ(b, wires=0)
-                qml.RX(c + c ** 2 + np.sin(a), wires=0)
+                qml.RX(c + c ** 2 + jnp.sin(a), wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            return execute([tape], device, **execute_kwargs)[0]
+            return execute([tape], device, interface="jax", **execute_kwargs)[0][0]
 
         dev = qml.device("default.qubit", wires=2)
-        res = jax.grad(cost)(a, b, c, device=dev)
-        assert res.shape == (1, 2)
+        res = jax.grad(cost, argnums=(0,1,2))(a, b, c, device=dev)
+        assert len(res) == 3
 
-    def test_no_trainable_parameters(self, execute_kwargs, tol):
-        """Test evaluation and Jacobian if there are no trainable parameters"""
-        a = jnp.array(0.1, requires_grad=False)
-        b = jnp.array(0.2, requires_grad=False)
-
-        def cost(a, b, device):
-            with qml.tape.JacobianTape() as tape:
-                qml.RY(a, wires=0)
-                qml.RX(b, wires=0)
-                qml.CNOT(wires=[0, 1])
-                qml.expval(qml.PauliZ(0))
-                qml.expval(qml.PauliZ(1))
-            return execute([tape], device, **execute_kwargs)[0]
-
-        dev = qml.device("default.qubit", wires=2)
-        res = cost(a, b, device=dev)
-        assert res.shape == (2,)
-
-        res = qml.jacobian(cost)(a, b, device=dev)
-        assert len(res) == 0
-
-        def loss(a, b):
-            return np.sum(cost(a, b, device=dev))
-
-        with pytest.warns(UserWarning, match="Output seems independent"):
-            res = qml.grad(loss)(a, b)
-
-        assert np.allclose(res, 0)
-
+    @pytest.mark.xfail
     def test_matrix_parameter(self, execute_kwargs, tol):
         """Test that the jax interface works correctly
         with a matrix parameter"""
-        U = jnp.array([[0, 1], [1, 0]], requires_grad=False)
         a = jnp.array(0.1)
+        U = qml.RY(a, wires=0).matrix
 
-        def cost(a, U, device):
+        def cost(U, device):
             with qml.tape.JacobianTape() as tape:
+                qml.PauliX(0)
                 qml.QubitUnitary(U, wires=0)
-                qml.RY(a, wires=0)
                 qml.expval(qml.PauliZ(0))
-            return execute([tape], device, **execute_kwargs)[0]
+
+            tape.trainable_params = {0}
+            return execute([tape], device, interface="jax", **execute_kwargs)[0][0]
 
         dev = qml.device("default.qubit", wires=2)
-        res = cost(a, U, device=dev)
+        res = cost(U, device=dev)
         assert np.allclose(res, -np.cos(a), atol=tol, rtol=0)
 
-        jac_fn = jax.grad(cost)
-        res = jac_fn(a, U, device=dev)
+        jac_fn = jax.grad(cost, argnums=(0))
+        res = jac_fn(U, device=dev)
         assert np.allclose(res, np.sin(a), atol=tol, rtol=0)
 
     def test_differentiable_expand(self, execute_kwargs, tol):
@@ -522,9 +463,9 @@ class TestJaxExecuteIntegration:
                 qml.expval(qml.PauliX(0))
 
             tape = tape.expand(stop_at=lambda obj: device.supports_operation(obj.name))
-            return execute([tape], device, **execute_kwargs)[0]
+            return execute([tape], device, interface="jax", **execute_kwargs)[0][0]
 
-        a = jnp.array(0.1, requires_grad=False)
+        a = jnp.array(0.1)
         p = jnp.array([0.1, 0.2, 0.3])
 
         dev = qml.device("default.qubit", wires=1)
@@ -534,7 +475,7 @@ class TestJaxExecuteIntegration:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        jac_fn = qml.jacobian(cost_fn)
+        jac_fn = jax.grad(cost_fn, argnums=(1))
         res = jac_fn(a, p, device=dev)
         expected = jnp.array(
             [
@@ -547,104 +488,3 @@ class TestJaxExecuteIntegration:
             ]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_probability_differentiation(self, execute_kwargs, tol):
-        """Tests correct output shape and evaluation for a tape
-        with prob outputs"""
-
-        if execute_kwargs["gradient_fn"] == "device":
-            pytest.skip("Adjoint differentiation does not yet support probabilities")
-
-        def cost(x, y, device):
-            with qml.tape.JacobianTape() as tape:
-                qml.RX(x, wires=[0])
-                qml.RY(y, wires=[1])
-                qml.CNOT(wires=[0, 1])
-                qml.probs(wires=[0])
-                qml.probs(wires=[1])
-
-            return execute([tape], device, **execute_kwargs)[0]
-
-        dev = qml.device("default.qubit", wires=2)
-        x = jnp.array(0.543)
-        y = jnp.array(-0.654)
-
-        res = cost(x, y, device=dev)
-        expected = jnp.array(
-            [
-                [np.cos(x / 2) ** 2, np.sin(x / 2) ** 2],
-                [(1 + np.cos(x) * np.cos(y)) / 2, (1 - np.cos(x) * np.cos(y)) / 2],
-            ]
-        )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        jac_fn = qml.jacobian(cost)
-        res = jac_fn(x, y, device=dev)
-        assert res.shape == (2, 2, 2)
-
-        expected = jnp.array(
-            [
-                [[-np.sin(x) / 2, 0], [np.sin(x) / 2, 0]],
-                [
-                    [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2],
-                    [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
-                ],
-            ]
-        )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_ragged_differentiation(self, execute_kwargs, tol):
-        """Tests correct output shape and evaluation for a tape
-        with prob and expval outputs"""
-        if execute_kwargs["gradient_fn"] == "device":
-            pytest.skip("Adjoint differentiation does not yet support probabilities")
-
-        def cost(x, y, device):
-            with qml.tape.JacobianTape() as tape:
-                qml.RX(x, wires=[0])
-                qml.RY(y, wires=[1])
-                qml.CNOT(wires=[0, 1])
-                qml.expval(qml.PauliZ(0))
-                qml.probs(wires=[1])
-
-            return execute([tape], device, **execute_kwargs)[0]
-
-        dev = qml.device("default.qubit", wires=2)
-        x = jnp.array(0.543)
-        y = jnp.array(-0.654)
-
-        res = cost(x, y, device=dev)
-        expected = jnp.array(
-            [np.cos(x), (1 + np.cos(x) * np.cos(y)) / 2, (1 - np.cos(x) * np.cos(y)) / 2]
-        )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        jac_fn = qml.jacobian(cost)
-        res = jac_fn(x, y, device=dev)
-        expected = jnp.array(
-            [
-                [-np.sin(x), 0],
-                [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2],
-                [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
-            ]
-        )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_sampling(self, execute_kwargs):
-        """Test sampling works as expected"""
-        if execute_kwargs["gradient_fn"] == "device" and execute_kwargs["mode"] == "forward":
-            pytest.skip("Adjoint differentiation does not support samples")
-
-        def cost(x, device):
-            with qml.tape.JacobianTape() as tape:
-                qml.Hadamard(wires=[0])
-                qml.CNOT(wires=[0, 1])
-                qml.sample(qml.PauliZ(0))
-                qml.sample(qml.PauliX(1))
-
-            return execute([tape], device, **execute_kwargs)[0]
-
-        dev = qml.device("default.qubit", wires=2, shots=10)
-        x = jnp.array(0.543)
-        res = cost(x, device=dev)
-        assert res.shape == (2, 10)
