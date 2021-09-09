@@ -10,6 +10,32 @@ on pen and paper, we provide circuits here.
     import pennylane as qml
     from pennylane import math
 
+Non-Parameterized
+-----------------
+
+GHZ state
+
+.. code-block:: python
+
+    qml.Hadamard(wires=0)
+    qml.CNOT(wires=(0,1))
+    qml.CNOT(wires=(1,2))
+
+State
+
+.. code-block:: python
+
+    state = math.zeros((8,))
+    state[0] = 1/math.sqrt(2)
+    state[-1] = 1/math.sqrt(2)
+
+================================================== ==========================
+Measurement                                              Value
+================================================== ==========================
+``qml.expval(qml.PauliZ(wire))``                       ``0``
+``qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))``          ``1``
+================================================== ==========================
+
 Basic circuit
 -------------
 
@@ -36,3 +62,7 @@ Measurement                                              Value
 ``qml.expval(qml.PauliX(1))``                       ``math.sin(y)``
 ``qml.expval(qml.PauliZ(0) @ qml.PauliX(1))``       ``math.cos(x)*math.sin(y)``
 ================================================== ==========================
+
+
+Gate Tests
+----------
