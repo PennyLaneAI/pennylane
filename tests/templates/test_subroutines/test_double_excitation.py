@@ -294,6 +294,7 @@ class TestInterfaces:
         # without error
         grad_fn(weight)
 
+    @pytest.mark.slow
     def test_jax(self):
         """Tests the jax interface."""
 

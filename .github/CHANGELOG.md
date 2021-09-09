@@ -304,6 +304,10 @@
 
 <h3>Improvements</h3>
 
+* The slowest tests, more than 1.5 seconds, now have the pytest mark `slow`, and can be
+  selected or deselected during local execution of tests.
+  [(#1633)](https://github.com/PennyLaneAI/pennylane/pull/1633)
+
 * Hamiltonians are now natively supported on the `default.qubit` device if `shots=None`. 
   This makes VQE workflows a lot faster in some cases.
   [(#1551)](https://github.com/PennyLaneAI/pennylane/pull/1551)
