@@ -105,6 +105,8 @@ def classical_jacobian(qnode, argnums=None):
         def _jacobian(*args, **kwargs):
             if argnums is None:
                 jac = qml.jacobian(classical_preprocessing)(*args, **kwargs)
+            elif np.isscalar(argnums):
+                jac = qml.jacobian(classical_preprocessing, argnum=argnums)(*args, **kwargs)
             else:
                 jac = tuple(
                     (
@@ -116,16 +118,17 @@ def classical_jacobian(qnode, argnums=None):
 
         return _jacobian
 
+    argnums = 0 if argnums is None else argnums
     if qnode.interface == "torch":
         import torch
-
-        if np.isscalar(argnums):
-            argnums = [argnums]
 
         def _jacobian(*args, **kwargs):  # pylint: disable=unused-argument
             jac = torch.autograd.functional.jacobian(classical_preprocessing, args)
             if argnums is not None:
-                jac = tuple((jac[idx] for idx in argnums))
+                if np.isscalar(argnums):
+                    jac = jac[argnums]
+                else:
+                    jac = tuple((jac[idx] for idx in argnums))
             return jac
 
         return _jacobian
@@ -134,8 +137,7 @@ def classical_jacobian(qnode, argnums=None):
         import jax
 
         def _jacobian(*args, **kwargs):
-            _argnums = 0 if argnums is None else argnums
-            return jax.jacobian(classical_preprocessing, argnums=_argnums)(*args, **kwargs)
+            return jax.jacobian(classical_preprocessing, argnums=argnums)(*args, **kwargs)
 
         return _jacobian
 
@@ -144,7 +146,7 @@ def classical_jacobian(qnode, argnums=None):
 
         def _jacobian(*args, **kwargs):
             if np.isscalar(argnums):
-                sub_args = (args[argnums],)
+                sub_args = args[argnums]
             else:
                 sub_args = tuple((args[i] for i in argnums))
 

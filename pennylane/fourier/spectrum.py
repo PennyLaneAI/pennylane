@@ -140,7 +140,7 @@ def _get_and_validate_classical_jacobians(qnode, argnums, args, kwargs):
     return jacs[0]
 
 
-def spectrum(qnode, encoding_idx=None, encoding_gates=None, decimals=5):
+def spectrum(qnode, encoding_args=None, encoding_gates=None, decimals=5):
     r"""Compute the frequency spectrum of the Fourier representation of quantum circuits.
 
     The circuit must only use single-parameter gates of the form :math:`e^{-i x_j G}` as
@@ -266,7 +266,7 @@ def spectrum(qnode, encoding_idx=None, encoding_gates=None, decimals=5):
         y = np.array([0.1, 0.3, 0.5])
         z = -1.8
         w = np.random.random((2, n_qubits, 3))
-        res = spectrum(circuit, encoding_idx=[0, 1, 2])(x, y, z, w)
+        res = spectrum(circuit, encoding_args=[0, 1, 2])(x, y, z, w)
 
     >>> print(qml.draw(circuit)(x, y, z, w))
     0: ──RX(0.5)──Rot(0.598, 0.949, 0.346)───RY(0.23)──Rot(0.693, 0.0738, 0.246)──RX(-1.8)──┤ ⟨Z⟩
@@ -291,7 +291,7 @@ def spectrum(qnode, encoding_idx=None, encoding_gates=None, decimals=5):
     We may also restrict the full analysis to a single QNode argument, again using
     ``encoding_args``:
 
-    >>> res = spectrum(circuit, encoding_idx=[0])(x, y, z, w)
+    >>> res = spectrum(circuit, encoding_args=[0])(x, y, z, w)
     >>> for inp, freqs in res.items():
     >>>     print(f"{inp}: {freqs}")
     (0,): [-0.5, 0.0, 0.5]
@@ -304,11 +304,11 @@ def spectrum(qnode, encoding_idx=None, encoding_gates=None, decimals=5):
     As you may have guessed, if we request the spectrum for a single scalar variable, it
     comes in an even simpler structure:
 
-    >>> res = spectrum(circuit, encoding_idx=[2])(x, y, z, w)
+    >>> res = spectrum(circuit, encoding_args=[2])(x, y, z, w)
     >>> print(res)
     [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0]
 
-    >>> res = spectrum(circuit, encoding_idx=[2])(x, y, z, w)
+    >>> res = spectrum(circuit, encoding_args=[2])(x, y, z, w)
     >>> for inp, freqs in res.items():
     >>>     print(f"{inp}: {freqs}")
 
@@ -347,11 +347,11 @@ def spectrum(qnode, encoding_idx=None, encoding_gates=None, decimals=5):
     (1,): [-3.141590118408203, 0.0, 3.141590118408203]
     """
 
-    if np.isscalar(encoding_idx):
-        encoding_idx = [encoding_idx]
+    if np.isscalar(encoding_args):
+        encoding_args = [encoding_args]
 
     if encoding_gates is not None:
-        if encoding_idx is not None:
+        if encoding_args is not None:
             warnings.warn(
                 "The argument encoding_gates is no longer valid and will be removed in"
                 f" future versions. Ignoring encoding_gates={encoding_gates}..."
@@ -359,14 +359,14 @@ def spectrum(qnode, encoding_idx=None, encoding_gates=None, decimals=5):
         else:
             warnings.warn(
                 "The argument encoding_gates is no longer valid and will be removed in"
-                f" future versions. Trying to call spectrum with encoding_idx={encoding_gates}..."
+                f" future versions. Trying to call spectrum with encoding_args={encoding_gates}..."
             )
             try:
-                encoding_idx = list(set(map(int, encoding_gates)))
+                encoding_args = list(set(map(int, encoding_gates)))
             except ValueError as e:
                 failing_id = " ".join(str(e).split(" ")[7:])
                 raise ValueError(
-                    "The provided encoding_gates could not be used as encoding_idx."
+                    "The provided encoding_gates could not be used as encoding_args."
                     f" Conversion to integers failed on {failing_id}."
                 )
 
@@ -374,16 +374,16 @@ def spectrum(qnode, encoding_idx=None, encoding_gates=None, decimals=5):
 
     @wraps(qnode)
     def wrapper(*args, **kwargs):
-        nonlocal encoding_idx
-        # If no encoding_idx are given, all QNode arguments are considered
-        if encoding_idx is None:
-            encoding_idx = list(range(len(args)))
+        nonlocal encoding_args
+        # If no encoding_args are given, all QNode arguments are considered
+        if encoding_args is None:
+            encoding_args = list(range(len(args)))
         # Compute classical Jacobian and assert preprocessing is linear
-        class_jacs = _get_and_validate_classical_jacobians(qnode, encoding_idx, args, kwargs)
+        class_jacs = _get_and_validate_classical_jacobians(qnode, encoding_args, args, kwargs)
         # A map between Jacobians (contiguous) and arg indices (may be discontiguous)
-        arg_idx_map = {i: arg_idx for i, arg_idx in enumerate(encoding_idx)}
+        arg_idx_map = {i: arg_idx for i, arg_idx in enumerate(encoding_args)}
         # Initialize spectra for all requested parameters
-        spectra = {arg_idx: {} for arg_idx in encoding_idx}
+        spectra = {arg_idx: {} for arg_idx in encoding_args}
 
         tape = qnode.qtape
 
@@ -437,8 +437,8 @@ def spectrum(qnode, encoding_idx=None, encoding_gates=None, decimals=5):
             spectra[arg_idx_map[jac_idx]] = _full_spectra
 
         # Unpack the outer dictionary if there only is one entry
-        if len(encoding_idx) == 1:
-            spectra = spectra[encoding_idx[0]]
+        if len(encoding_args) == 1:
+            spectra = spectra[encoding_args[0]]
 
         return spectra
 
