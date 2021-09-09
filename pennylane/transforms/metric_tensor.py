@@ -15,7 +15,6 @@
 Contains the metric tensor transform
 """
 import functools
-import types
 import warnings
 
 import numpy as np
