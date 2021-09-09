@@ -19,7 +19,7 @@ from pennylane import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.new_qnode import QNode, qnode
+from pennylane import QNode, qnode
 from gate_data import Y, Z
 
 
