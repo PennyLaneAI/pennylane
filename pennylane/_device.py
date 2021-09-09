@@ -527,7 +527,7 @@ class Device(abc.ABC):
             # Evaluations and gradients are paired, so that
             # devices can re-use the device state for the
             # gradient computation (if applicable).
-            res.append(circuit.execute(self))
+            res.append(self.batch_execute([circuit])[0])
             jacs.append(gradient_method(circuit, **kwargs))
 
         return res, jacs

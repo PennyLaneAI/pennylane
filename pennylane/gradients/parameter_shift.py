@@ -15,7 +15,7 @@
 This module contains functions for computing the parameter-shift gradient
 of a qubit-based quantum tape.
 """
-# pylint: disable=protected-access,too-many-arguments
+# pylint: disable=protected-access,too-many-arguments,too-many-statements
 import numpy as np
 
 import pennylane as qml
@@ -66,19 +66,8 @@ def _get_operation_recipe(tape, t_idx, shift=np.pi / 2):
     If the corresponding operation has grad_recipe=None, then
     the default two-term parameter-shift rule is assumed.
     """
-    # get the index of the parameter in the tape
-    parameter_idx = list(tape.trainable_params)[t_idx]
-
-    # get the corresponding operation
-    op = tape._par_info[parameter_idx]["op"]
-
-    # get the corresponding operation parameter index
-    # (that is, index of the parameter within the operation)
-    op_p_idx = tape._par_info[parameter_idx]["p_idx"]
-
-    # return the parameter-shift gradient for that
-    # operation parameter.
-    return op.get_parameter_shift(op_p_idx, shift=shift)
+    op, p_idx = tape.get_operation(t_idx)
+    return op.get_parameter_shift(p_idx, shift=shift)
 
 
 def _process_gradient_recipe(gradient_recipe, tol=1e-10):
@@ -150,12 +139,32 @@ def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None
     shapes = []
     unshifted_coeffs = []
 
+    fns = []
+
     for idx, _ in enumerate(tape.trainable_params):
 
         if idx not in argnum:
             # parameter has zero gradient
             shapes.append(0)
             gradient_coeffs.append([])
+            fns.append(None)
+            continue
+
+        op, _ = tape.get_operation(idx)
+
+        if op.name == "Hamiltonian":
+            # operation is a Hamiltonian
+            if op.return_type is not qml.operation.Expectation:
+                raise ValueError(
+                    "Can only differentiate Hamiltonian "
+                    f"coefficients for expectations, not {op.return_type.value}"
+                )
+
+            g_tapes, h_fn = qml.gradients.hamiltonian_grad(tape, idx)
+            gradient_tapes.extend(g_tapes)
+            shapes.append(1)
+            gradient_coeffs.append(np.array([1.0]))
+            fns.append(h_fn)
             continue
 
         # get the gradient recipe for the trainable parameter
@@ -163,6 +172,7 @@ def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None
         recipe = recipe or _get_operation_recipe(tape, idx, shift=shift)
         recipe = _process_gradient_recipe(recipe)
         coeffs, multipliers, shifts = recipe
+        fns.append(None)
 
         if shifts[0] == 0 and multipliers[0] == 1:
             # Gradient recipe includes a term with zero shift.
@@ -189,7 +199,7 @@ def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None
         start = 1 if unshifted_coeffs and f0 is None else 0
         r0 = f0 or results[0]
 
-        for i, s in enumerate(shapes):
+        for i, (s, f) in enumerate(zip(shapes, fns)):
 
             if s == 0:
                 # parameter has zero gradient
@@ -199,6 +209,9 @@ def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None
 
             res = results[start : start + s]
             start = start + s
+
+            if f is not None:
+                res = f(res)
 
             # compute the linear combination of results and coefficients
             res = qml.math.stack(res)
