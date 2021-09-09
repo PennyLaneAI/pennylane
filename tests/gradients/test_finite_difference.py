@@ -504,6 +504,7 @@ class TestFiniteDiffGradients:
         expected = np.array([-np.cos(x) * np.cos(y) / 2, np.sin(x) * np.sin(y) / 2])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.slow
     def test_tf(self, approx_order, strategy, tol):
         """Tests that the output of the finite-difference transform
         can be differentiated using TF, yielding second derivatives."""
