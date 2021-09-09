@@ -159,6 +159,11 @@ Subroutines are sequences of (possibly trainable) gates that do not fulfill the 
 of other templates.
 
 .. customgalleryitem::
+    :link: ../code/api/pennylane.templates.subroutines.GroverOperator.html
+    :description: Grover Diffusion Operator
+    :figure: ../_static/templates/subroutines/grover.svg
+
+.. customgalleryitem::
     :link: ../code/api/pennylane.templates.subroutines.Interferometer.html
     :description: Interferometer
     :figure: ../_static/templates/subroutines/interferometer.png
@@ -208,6 +213,11 @@ of other templates.
     :description: AllSinglesDoubles
     :figure: ../_static/templates/subroutines/all_singles_doubles.png
 
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.subroutines.QuantumFourierTransform.html
+    :description: QuantumFourierTransform
+    :figure: ../_static/templates/subroutines/qft.svg
+	
 .. raw:: html
 
         <div style='clear:both'></div>

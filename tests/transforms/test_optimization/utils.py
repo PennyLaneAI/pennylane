@@ -40,8 +40,10 @@ def compute_matrix_from_ops_two_qubit(ops, wire_order):
             else:
                 mat = qml.math.dot(qml.math.kron(I, op.matrix), mat)
         else:
-            mat = qml.math.dot(op.matrix, mat)
-
+            if op.wires == qml.wires.Wires(wire_order):
+                mat = qml.math.dot(op.matrix, mat)
+            else:
+                mat = qml.math.dot(qml.SWAP(wires=[0, 1]).matrix, qml.math.dot(op.matrix, mat))
     return mat
 
 

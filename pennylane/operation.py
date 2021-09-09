@@ -119,6 +119,7 @@ import copy
 import itertools
 import functools
 from enum import Enum, IntEnum
+from scipy.sparse import kron, eye, coo_matrix
 
 import numpy as np
 from numpy.linalg import multi_dot
@@ -233,6 +234,16 @@ def classproperty(func):
 # =============================================================================
 
 
+def _process_data(op):
+    if op.name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
+        return str([d % (2 * np.pi) for d in op.data])
+
+    if op.name in ("CRX", "CRY", "CRZ", "CRot"):
+        return str([d % (4 * np.pi) for d in op.data])
+
+    return str(op.data)
+
+
 class Operator(abc.ABC):
     r"""Base class for quantum operators supported by a device.
 
@@ -281,6 +292,11 @@ class Operator(abc.ABC):
                 # Deep copy everything else.
                 setattr(copied_op, attribute, copy.deepcopy(value, memo))
         return copied_op
+
+    @property
+    def hash(self):
+        """int: returns an integer hash uniquely representing the operator"""
+        return hash((str(self.name), tuple(self.wires.tolist()), _process_data(self)))
 
     @classmethod
     def _matrix(cls, *params):
@@ -581,6 +597,24 @@ class Operation(Operator):
     If set to ``None``, the operation will be ignored during compilation
     transforms that merge adjacent rotations.
     """
+
+    basis = None
+    """str or None: The basis of an operation, or for controlled gates, of the
+    target operation. If not ``None``, should take a value of ``"X"``, ``"Y"``,
+    or ``"Z"``.
+
+    For example, ``X`` and ``CNOT`` have ``basis = "X"``, whereas
+    ``ControlledPhaseShift`` and ``RZ`` have ``basis = "Z"``.
+    """
+
+    @property
+    def control_wires(self):  # pragma: no cover
+        r"""For operations that are controlled, returns the set of control wires.
+
+        Returns:
+            Wires: The set of control wires of the operation.
+        """
+        raise NotImplementedError
 
     @property
     def single_qubit_rot_angles(self):
@@ -1021,8 +1055,14 @@ class Observable(Operator):
     def __init__(self, *params, wires=None, do_queue=True, id=None):
         # extract the arguments
         if wires is None:
-            wires = params[-1]
-            params = params[:-1]
+            try:
+                wires = params[-1]
+                params = params[:-1]
+                # error if no arguments are given
+            except IndexError as err:
+                raise ValueError(
+                    f"Must specify the wires that {type(self).__name__} acts on"
+                ) from err
 
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
@@ -1098,10 +1138,10 @@ class Observable(Operator):
         >>> ob1.compare(ob2)
         False
         """
-        if isinstance(other, (Tensor, Observable)):
-            return other._obs_data() == self._obs_data()
         if isinstance(other, qml.Hamiltonian):
             return other.compare(self)
+        if isinstance(other, (Tensor, Observable)):
+            return other._obs_data() == self._obs_data()
 
         raise ValueError(
             "Can only compare an Observable/Tensor, and a Hamiltonian/Observable/Tensor."
@@ -1109,12 +1149,10 @@ class Observable(Operator):
 
     def __add__(self, other):
         r"""The addition operation between Observables/Tensors/qml.Hamiltonian objects."""
-        if isinstance(other, (Observable, Tensor)):
-            return qml.Hamiltonian([1, 1], [self, other], simplify=True)
-
         if isinstance(other, qml.Hamiltonian):
             return other + self
-
+        if isinstance(other, (Observable, Tensor)):
+            return qml.Hamiltonian([1, 1], [self, other], simplify=True)
         raise ValueError(f"Cannot add Observable and {type(other)}")
 
     def __mul__(self, a):
@@ -1426,6 +1464,69 @@ class Tensor(Observable):
         # over the defined wires.
         return functools.reduce(np.kron, U_list)
 
+    def sparse_matrix(self, wires=None):
+        r"""Computes a `scipy.sparse.coo_matrix` representation of this Tensor.
+
+        This is useful for larger qubit numbers, where the dense matrix becomes very large, while
+        consisting mostly of zero entries.
+
+        Args:
+            wires (Iterable): Wire labels that indicate the order of wires according to which the matrix
+                is constructed. If not provided, ``self.wires`` is used.
+
+        Returns:
+            :class:`scipy.sparse.coo_matrix`: sparse matrix representation
+
+        **Example**
+
+        Consider the following tensor:
+
+        >>> t = qml.PauliX(0) @ qml.PauliZ(1)
+
+        Without passing wires, the sparse representation is given by:
+
+        >>> print(t.sparse_matrix())
+        (0, 2)	1
+        (1, 3)	-1
+        (2, 0)	1
+        (3, 1)	-1
+
+        If we define a custom wire ordering, the matrix representation changes
+        accordingly:
+        >>> print(t.sparse_matrix(wires=[1, 0]))
+        (0, 1)	1
+        (1, 0)	1
+        (2, 3)	-1
+        (3, 2)	-1
+
+        We can also enforce implicit identities by passing wire labels that
+        are not present in the consituent operations:
+
+        >>> res = t.sparse_matrix(wires=[0, 1, 2])
+        >>> print(res.shape)
+        (8, 8)
+        """
+
+        if wires is None:
+            wires = self.wires
+        else:
+            wires = Wires(wires)
+
+        list_of_sparse_ops = [eye(2, format="coo")] * len(wires)
+
+        for o in self.obs:
+            if len(o.wires) > 1:
+                # todo: deal with multi-qubit operations that do not act on consecutive qubits
+                raise ValueError(
+                    "Can only compute sparse representation for tensors whose operations "
+                    "act on consecutive wires; got {}.".format(o)
+                )
+            # store the single-qubit ops according to the order of their wires
+            idx = wires.index(o.wires)
+            list_of_sparse_ops[idx] = coo_matrix(o.matrix)
+
+        return functools.reduce(lambda i, j: kron(i, j, format="coo"), list_of_sparse_ops)
+
     def prune(self):
         """Returns a pruned tensor product of observables by removing :class:`~.Identity` instances from
         the observables building up the :class:`~.Tensor`.
@@ -1674,7 +1775,7 @@ class CVOperation(CV, Operation):
         Returns:
             array[float]: :math:`\tilde{U}`, the Heisenberg picture representation of the linear transformation
         """
-        p = self.parameters
+        p = [qml.math.toarray(a) for a in self.parameters]
         if inverse:
             if self.par_domain == "A":
                 # TODO: expand this for the new par domain class, for non-unitary matrices.

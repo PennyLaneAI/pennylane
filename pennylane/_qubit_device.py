@@ -17,7 +17,7 @@ This module contains the :class:`QubitDevice` abstract base class.
 
 # For now, arguments may be different from the signatures provided in Device
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
-# pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches
+# pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches, arguments-renamed
 import abc
 from collections import OrderedDict
 import itertools
@@ -239,6 +239,10 @@ class QubitDevice(Device):
         # increment counter for number of executions of qubit device
         self._num_executions += 1
 
+        if self.tracker.active:
+            self.tracker.update(executions=1, shots=self._shots)
+            self.tracker.record()
+
         return results
 
     @property
@@ -273,6 +277,10 @@ class QubitDevice(Device):
 
             res = self.execute(circuit)
             results.append(res)
+
+        if self.tracker.active:
+            self.tracker.update(batches=1, batch_len=len(circuits))
+            self.tracker.record()
 
         return results
 
@@ -481,14 +489,13 @@ class QubitDevice(Device):
             array[int]: the sampled basis states
         """
         if self.shots is None:
-            warnings.warn(
+
+            raise qml.QuantumFunctionError(
                 "The number of shots has to be explicitly set on the device "
-                "when using sample-based measurements. Since no shots are specified, "
-                "a default of 1000 shots is used.",
-                UserWarning,
+                "when using sample-based measurements."
             )
 
-        shots = self.shots or 1000
+        shots = self.shots
 
         basis_states = np.arange(number_of_states)
         return np.random.choice(basis_states, shots, p=state_probability)
@@ -752,9 +759,15 @@ class QubitDevice(Device):
             )
             return probs[idx]
 
+        # exact expectation value
         if self.shots is None:
-            # exact expectation value
-            eigvals = self._asarray(observable.eigvals, dtype=self.R_DTYPE)
+            try:
+                eigvals = self._asarray(observable.eigvals, dtype=self.R_DTYPE)
+            except NotImplementedError as e:
+                raise ValueError(
+                    f"Cannot compute analytic expectations of {observable.name}."
+                ) from e
+
             prob = self.probability(wires=observable.wires)
             return self._dot(eigvals, prob)
 
@@ -772,9 +785,13 @@ class QubitDevice(Device):
             )
             return probs[idx] - probs[idx] ** 2
 
+        # exact variance value
         if self.shots is None:
-            # exact variance value
-            eigvals = self._asarray(observable.eigvals, dtype=self.R_DTYPE)
+            try:
+                eigvals = self._asarray(observable.eigvals, dtype=self.R_DTYPE)
+            except NotImplementedError as e:
+                # if observable has no info on eigenvalues, we cannot return this measurement
+                raise ValueError(f"Cannot compute analytic variance of {observable.name}.") from e
             prob = self.probability(wires=observable.wires)
             return self._dot((eigvals ** 2), prob) - self._dot(eigvals, prob) ** 2
 
@@ -804,6 +821,7 @@ class QubitDevice(Device):
                 samples = self._samples[sample_slice]
 
         else:
+
             # Replace the basis state in the computational basis with the correct eigenvalue.
             # Extract only the columns of the basis samples required based on ``wires``.
             samples = self._samples[
@@ -811,7 +829,11 @@ class QubitDevice(Device):
             ]  # Add np.array here for Jax support.
             powers_of_two = 2 ** np.arange(samples.shape[-1])[::-1]
             indices = samples @ powers_of_two
-            samples = observable.eigvals[indices]
+            try:
+                samples = observable.eigvals[indices]
+            except NotImplementedError as e:
+                # if observable has no info on eigenvalues, we cannot return this measurement
+                raise ValueError(f"Cannot compute samples of {observable.name}.") from e
 
         if bin_size is None:
             return samples
@@ -833,6 +855,8 @@ class QubitDevice(Device):
               used.
 
             * Only expectation values are supported as measurements.
+
+            * Does not work for Hamiltonian observables.
 
         Args:
             tape (.QuantumTape): circuit that the function takes the gradient of
@@ -861,6 +885,11 @@ class QubitDevice(Device):
                 raise qml.QuantumFunctionError(
                     "Adjoint differentiation method does not support"
                     f" measurement {m.return_type.value}"
+                )
+
+            if m.obs.name == "Hamiltonian":
+                raise qml.QuantumFunctionError(
+                    "Adjoint differentiation method does not support Hamiltonian observables."
                 )
 
             if not hasattr(m.obs, "base_name"):

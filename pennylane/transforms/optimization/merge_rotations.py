@@ -37,6 +37,9 @@ def merge_rotations(tape, atol=1e-8, include_gates=None):
             attribute set to ``True`` will be merged. Otherwise, only the operations whose
             names match those in the list will undergo merging.
 
+    Returns:
+        function: the transformed quantum function
+
     **Example**
 
     Consider the following quantum function.

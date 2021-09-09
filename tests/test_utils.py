@@ -140,11 +140,12 @@ class TestSparse:
     """Tests the sparse_hamiltonian function"""
 
     @pytest.mark.parametrize(
-        ("coeffs", "obs", "ref_matrix"),
+        ("coeffs", "obs", "wires", "ref_matrix"),
         [
             (
                 [1, -0.45],
                 [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1)],
+                None,
                 np.array(
                     [
                         [1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.45j, 0.0 + 0.0j],
@@ -155,12 +156,102 @@ class TestSparse:
                 ),
             ),
             (
+                [0.1],
+                [qml.PauliZ("b") @ qml.PauliX("a")],
+                ["a", "c", "b"],
+                np.array(
+                    [
+                        [
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.1 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                        ],
+                        [
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            -0.1 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                        ],
+                        [
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.1 + 0.0j,
+                            0.0 + 0.0j,
+                        ],
+                        [
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            -0.1 + 0.0j,
+                        ],
+                        [
+                            0.1 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                        ],
+                        [
+                            0.0 + 0.0j,
+                            -0.1 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                        ],
+                        [
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.1 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                        ],
+                        [
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            -0.1 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                        ],
+                    ]
+                ),
+            ),
+            (
                 [0.21, -0.78, 0.52],
                 [
                     qml.PauliZ(0) @ qml.PauliZ(1),
                     qml.PauliX(0) @ qml.PauliZ(1),
                     qml.PauliY(0) @ qml.PauliZ(1),
                 ],
+                None,
                 np.array(
                     [
                         [0.21 + 0.0j, 0.0 + 0.0j, -0.78 - 0.52j, 0.0 + 0.0j],
@@ -172,11 +263,11 @@ class TestSparse:
             ),
         ],
     )
-    def test_sparse_matrix(self, coeffs, obs, ref_matrix):
+    def test_sparse_matrix(self, coeffs, obs, wires, ref_matrix):
         """Tests that sparse_hamiltonian returns a correct sparse matrix"""
         H = qml.Hamiltonian(coeffs, obs)
 
-        sparse_matrix = qml.utils.sparse_hamiltonian(H)
+        sparse_matrix = qml.utils.sparse_hamiltonian(H, wires)
 
         assert np.allclose(sparse_matrix.toarray(), ref_matrix)
 
@@ -200,6 +291,15 @@ class TestSparse:
 
         with pytest.raises(TypeError, match="Passed Hamiltonian must be of type"):
             qml.utils.sparse_hamiltonian(np.eye(2))
+
+    def test_observable_error(self):
+        """Tests that an error is thrown if the observables are themselves constructed from multi-qubit
+        operations."""
+        with pytest.raises(ValueError, match="Can only sparsify Hamiltonians"):
+            H = qml.Hamiltonian(
+                [0.1], [qml.PauliZ("c") @ qml.Hermitian(np.eye(4), wires=["a", "b"])]
+            )
+            qml.utils.sparse_hamiltonian(H, wires=["a", "c", "b"])
 
 
 class TestFlatten:
@@ -918,28 +1018,3 @@ class TestInv:
             match=r"Use of qml\.inv\(\) is deprecated and should be replaced with qml\.adjoint\(\)\.",
         ):
             qml.inv(qml.Hadamard(wires=[0]))
-
-
-class TestFrobeniusInnerProduct:
-    @pytest.mark.parametrize(
-        "A,B,normalize,expected",
-        [
-            (np.eye(2), np.eye(2), False, 2.0),
-            (np.eye(2), np.zeros((2, 2)), False, 0.0),
-            (
-                np.array([[1.0, 2.3], [-1.3, 2.4]]),
-                np.array([[0.7, -7.3], [-1.0, -2.9]]),
-                False,
-                -21.75,
-            ),
-            (np.eye(2), np.eye(2), True, 1.0),
-            (
-                np.array([[1.0, 2.3], [-1.3, 2.4]]),
-                np.array([[0.7, -7.3], [-1.0, -2.9]]),
-                True,
-                -0.7381450594,
-            ),
-        ],
-    )
-    def test_frobenius_inner_product(self, A, B, normalize, expected):
-        assert expected == pytest.approx(pu.frobenius_inner_product(A, B, normalize=normalize))

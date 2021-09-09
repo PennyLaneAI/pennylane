@@ -173,5 +173,5 @@ class TestSparse:
 
         dev = qml.device("default.qubit", wires=1, shots=1)
 
-        with pytest.raises(DeviceError, match="SparseHamiltonian must be used with shots=None"):
+        with pytest.raises(AssertionError, match="SparseHamiltonian must be used with shots=None"):
             dev.expval(qml.SparseHamiltonian(hamiltonian, [0]))[0]

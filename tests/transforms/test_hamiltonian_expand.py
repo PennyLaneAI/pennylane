@@ -34,7 +34,6 @@ with pennylane.tape.QuantumTape() as tape2:
     qml.Hadamard(1)
     qml.PauliZ(1)
     qml.PauliX(2)
-
     H2 = qml.Hamiltonian(
         [1, 3, -2, 1, 1],
         [
@@ -88,6 +87,50 @@ class TestHamiltonianExpval:
 
         assert np.isclose(output, expval)
 
+    @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
+    def test_hamiltonians_no_grouping(self, tape, output):
+        """Tests that the hamiltonian_expand transform returns the correct value
+        if we switch grouping off"""
+
+        tapes, fn = qml.transforms.hamiltonian_expand(tape, group=False)
+        results = dev.batch_execute(tapes)
+        expval = fn(results)
+
+        assert np.isclose(output, expval)
+
+    def test_grouping_is_used(self):
+        """Test that the grouping in a Hamiltonian is used"""
+        H = qml.Hamiltonian(
+            [1.0, 2.0, 3.0], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)], grouping_type="qwc"
+        )
+        assert H.grouping_indices is not None
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=2)
+            qml.expval(H)
+
+        tapes, fn = qml.transforms.hamiltonian_expand(tape, group=False)
+        assert len(tapes) == 2
+
+    def test_number_of_tapes(self):
+        """Tests that the the correct number of tapes is produced"""
+
+        H = qml.Hamiltonian([1.0, 2.0, 3.0], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)])
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=2)
+            qml.expval(H)
+
+        tapes, fn = qml.transforms.hamiltonian_expand(tape, group=False)
+        assert len(tapes) == 3
+
+        tapes, fn = qml.transforms.hamiltonian_expand(tape, group=True)
+        assert len(tapes) == 2
+
     def test_hamiltonian_error(self):
 
         with pennylane.tape.QuantumTape() as tape:
@@ -96,13 +139,24 @@ class TestHamiltonianExpval:
         with pytest.raises(ValueError, match=r"Passed tape must end in"):
             tapes, fn = qml.transforms.hamiltonian_expand(tape)
 
-    def test_hamiltonian_dif_autograd(self):
+    def test_hamiltonian_dif_autograd(self, tol):
         """Tests that the hamiltonian_expand tape transform is differentiable with the Autograd interface"""
 
         H = qml.Hamiltonian(
             [-0.2, 0.5, 1], [qml.PauliX(1), qml.PauliZ(1) @ qml.PauliY(2), qml.PauliZ(0)]
         )
-        var = np.array([0.1, 0.67, 0.3, 0.4, -0.5, 0.7])
+
+        var = [
+            np.array(0.1),
+            np.array(0.67),
+            np.array(0.3),
+            np.array(0.4),
+            np.array(-0.5),
+            np.array(0.7),
+            np.array(-0.2),
+            np.array(0.5),
+            np.array(1.0),
+        ]
         output = 0.42294409781940356
         output2 = [
             9.68883500e-02,
@@ -111,6 +165,9 @@ class TestHamiltonianExpval:
             -1.94289029e-09,
             3.50307411e-01,
             -3.41123470e-01,
+            0.0,
+            -0.43657,
+            0.64123,
         ]
 
         with qml.tape.JacobianTape() as tape:
@@ -133,7 +190,9 @@ class TestHamiltonianExpval:
             return fn(res)
 
         assert np.isclose(cost(var), output)
-        assert np.allclose(qml.grad(cost)(var), output2)
+        grad = qml.grad(cost)(var)
+        for g, o in zip(grad, output2):
+            assert np.allclose(g, o, atol=tol)
 
     def test_hamiltonian_dif_tensorflow(self):
         """Tests that the hamiltonian_expand tape transform is differentiable with the Tensorflow interface"""

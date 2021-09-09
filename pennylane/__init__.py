@@ -28,7 +28,6 @@ import pennylane.fourier
 import pennylane.kernels
 import pennylane.math
 import pennylane.operation
-import pennylane.qaoa as qaoa
 import pennylane.qnn
 import pennylane.templates
 from pennylane._device import Device, DeviceError
@@ -38,16 +37,20 @@ from pennylane._version import __version__
 from pennylane.about import about
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.configuration import Configuration
+from pennylane.tracker import Tracker
 from pennylane.io import *
 from pennylane.measure import density_matrix, expval, probs, sample, state, var
 from pennylane.ops import *
 from pennylane.optimize import *
+from pennylane import qaoa
 from pennylane.qnode import QNode, qnode
 from pennylane.templates import broadcast, layer, template
 from pennylane.transforms import (
     adjoint,
+    batch_transform,
     draw,
     ControlledOperation,
+    compile,
     ctrl,
     measurement_grouping,
     metric_tensor,
@@ -58,11 +61,13 @@ from pennylane.transforms import (
     apply_controlled_Q,
 )
 from pennylane.utils import inv
-from pennylane.vqe import ExpvalCost, Hamiltonian, VQECost
+from pennylane.vqe import ExpvalCost, VQECost
 
 # QueuingContext and collections needs to be imported after all other pennylane imports
 from .collections import QNodeCollection, dot, map, sum
 import pennylane.grouping  # pylint:disable=wrong-import-order
+import pennylane.gradients  # pylint:disable=wrong-import-order
+from pennylane.interfaces.batch import execute  # pylint:disable=wrong-import-order
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")

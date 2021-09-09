@@ -1,74 +1,91 @@
 Submitting a pull request
 =========================
 
-Before submitting a pull request, please make sure the following is done:
 
-* **All new features must include a unit test.** If you've fixed a bug or added
-  code that should be tested, add a test to the ``tests`` directory.
+Creating a Pull Request
+-----------------------
 
-  PennyLane uses pytest for testing; common fixtures can be found in the ``tests/conftest.py``
-  file.
+When you are ready, go ahead and click on "New Pull Request" on the
+`pull request page <https://github.com/PennyLaneAI/pennylane/pulls>`_.  On the next page, you need
+to select your fork and branch to merge into the PennyLane `master` branch.
 
-* **All new functions and code must be clearly commented and documented.**
+On the page for creating a new pull request, you need to specify the name of the PR and write an
+introductory description. We have a PR template with a checklist that can help
+you determine what to say. Please be as detailed as possible, and assume the reader does not have extensive background knowledge of the issue at hand.
 
-  Have a look through the source code at some of the existing function docstrings---
-  the easiest approach is to simply copy an existing docstring and modify it as appropriate.
+If the PR is in response to an Issue, please
+`link the issue <https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue>`_ 
+with the relevant keywords. One simple way is adding a related sentence to the PR description, e.g.
+"Closes #ABCD" where ABCD is the number of the PR.
 
-  If you do make documentation changes, make sure that the docs build and render correctly by
-  running ``make docs``. See our :doc:`documentation guidelines <documentation>` for more details.
+You can make a "Work in Progress" PR with ``[WIP]`` in the title or with the "WIP" label. 
+That way, we can see your work and give feedback early.
 
-* **Ensure that the test suite passes**, by running ``make test``.
+Once you create the PR, you can also view the status of the *Continuous Integration* (CI) checks
+for things like tests, code quality, and documentation rendering.
 
-* **Make sure the modified code in the pull request conforms to the PEP8 coding standard.**
+Continuous Integration Checks
+-----------------------------
 
-  The PennyLane source code conforms to `PEP8 standards <https://www.python.org/dev/peps/pep-0008/>`_.
-  Before submitting the PR, you can autoformat your code changes using the
-  `Black <https://github.com/psf/black>`_ Python autoformatter, with max-line length set to 100:
+Once a PR is opened on the repository, GitHub runs a series of checks on the
+branch.  All tests need to pass (green check) for the PR to get approved and
+merged.
+
+* **Formatting check**: We use `black <https://black.readthedocs.io/en/stable/>`_ to autoformat our
+  code to `PEP8 <https://www.python.org/dev/peps/pep-0008/>`_ standards. You should run ``black``
+  locally on changed files, as the CI check determines whether ``black`` would change
+  anything. Black installs with ``pip``. We run black on both the source folder ``pennylane`` and
+  the ``tests`` folder. We format with a line length of 100. From the PennyLane's root folder, you
+  can run:
 
   .. code-block:: bash
 
-      black -l 100 pennylane/path/to/modified/file.py
+      black -l 100 pennylane tests
 
-  You should also apply Black to any tests you add:
+* **Code factor**:  `Code factor <https://www.codefactor.io/>`_ checks several common code quality
+  characteristics. 
 
-  .. code-block:: bash
+* **Tests**: Github Actions runs the core tests and device tests for a series of different Python
+  versions and interface installations.
 
-      black -l 100 tests/path/to/modified/test.py
+* **Code Coverage**: `codecov <https://app.codecov.io/gh/PennyLaneAI/pennylane/>`_ determines if
+  all lines are executed during the automated testing and tells you which ones are not. We want all
+  lines to be covered, but that is insufficient to determine if the testing is complete enough.
+  That takes thought and thinking through the test design to ensure that all edge cases are being
+  tested.
 
-  We check all of our code against `Pylint <https://www.pylint.org/>`_ for errors.
-  To lint modified files, simply ``pip install pylint``, and then from the source code
-  directory, run
+* **Documentation**: The "Documentation check" determines if there are any issues with the build,
+  but you also need to inspect the relevant pages in the website build visually. You can access the
+  temporary website by clicking on ``Details`` for ``docs/readthedocs.org:pennylane``, as shown in
+  the following image.
 
-  .. code-block:: bash
+.. image:: view_doc_build.jpeg
+    :width: 400px
+    :align: center
+    
+Using the "Search" toolbar on the top left of the generated website can help with navigating to new
+or updated pages. New functions or classes that are available for users should appear as
+search results.
 
-      pylint pennylane/path/to/modified/file.py
+Ready for review?
+-----------------
 
-Submitting to the PennyLane repository
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+A review-ready pull request (PR) includes the following:
 
-When ready, submit your fork as a `pull request <https://help.github.com/articles/about-pull-requests>`_
-to the PennyLane repository, filling out the pull request template. This template is added
-automatically to the comment box when you create a new issue.
+* **All new code is clearly commented and documented.**  See our :doc:`documentation guidelines
+  <documentation>` for more details.
 
-* When describing the pull request, please include as much detail as possible
-  regarding the changes made/new features added/performance improvements. If including any
-  bug fixes, mention the issue numbers associated with the bugs.
+* **All changes must include tests.** If you fix a bug, write a test that would fail before the
+  bugfix. See :doc:`Tests <tests>` for more information.
 
-* Once you have submitted the pull request, three things will automatically occur:
+* **Code conforms to PEP8 standards.** As mentioned in the section above, all code needs to be
+  formatted via `Black <https://black.readthedocs.io/en/stable/>`_ with a line length of 100.
 
-  - The **test suite** will automatically run on `GitHub Actions <https://github.com/PennyLaneAI/pennylane/actions>`_
-    to ensure that all tests continue to pass.
+* **Write a changelog entry for all Pull Requests.** The changelog entry should include a link back
+  to the PR. More significant user-facing changes should include a code example. In addition to the changelog entry itself, add your name to the alphabetical contributors' list at the bottom of
+  each release's section.
 
-  - Once the test suite is finished, a **code coverage report** will be generated on
-    `Codecov <https://codecov.io/gh/PennyLaneAI/pennylane>`_. This will calculate the percentage
-    of PennyLane covered by the test suite, to ensure that all new code additions
-    are adequately tested.
-
-  - Finally, the **code quality** is calculated by
-    `Codefactor <https://www.codefactor.io/repository/github/pennylaneai/pennylane>`_,
-    to ensure all new code additions adhere to our code quality standards.
-
-Based on these reports, we may ask you to make small changes to your branch before
-merging the pull request into the master branch. Alternatively, you can also
-`grant us permission to make changes to your pull request branch
-<https://help.github.com/articles/allowing-changes-to-a-pull-request-branch-created-from-a-fork/>`_.
+Please note that our review process can take some time and require a bit of back and forth. We try
+to enforce a high level of detail in reviews to reduce future bugs and prevent technical debt from
+accruing.  You can speed the review process by keeping pull requests small and fully explaining
+decisions in the pull request introduction.

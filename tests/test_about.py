@@ -27,6 +27,7 @@ import pytest
 import pennylane as qml
 
 
+@pytest.mark.slow
 def test_about():
     """
     about: Tests if the about string prints correct.

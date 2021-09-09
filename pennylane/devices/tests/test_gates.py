@@ -68,7 +68,7 @@ ops = {
     "T": qml.T(wires=[0]),
     "SX": qml.SX(wires=[0]),
     "Toffoli": qml.Toffoli(wires=[0, 1, 2]),
-    "QFT": qml.QFT(wires=[0, 1, 2]),
+    "QFT": qml.templates.QFT(wires=[0, 1, 2]),
     "IsingXX": qml.IsingXX(0, wires=[0, 1]),
     "IsingYY": qml.IsingYY(0, wires=[0, 1]),
     "IsingZZ": qml.IsingZZ(0, wires=[0, 1]),
@@ -79,10 +79,28 @@ ops = {
     "DoubleExcitationPlus": qml.DoubleExcitationPlus(0, wires=[0, 1, 2, 3]),
     "DoubleExcitationMinus": qml.DoubleExcitationMinus(0, wires=[0, 1, 2, 3]),
     "QubitCarry": qml.QubitCarry(wires=[0, 1, 2, 3]),
-    "QubitSum:": qml.QubitSum(wires=[0, 1, 2]),
+    "QubitSum": qml.QubitSum(wires=[0, 1, 2]),
+    "PauliRot": qml.PauliRot(0, "XXYY", wires=[0, 1, 2, 3]),
+    "U1": qml.U1(0, wires=0),
+    "U2": qml.U2(0, 0, wires=0),
+    "U3": qml.U3(0, 0, 0, wires=0),
+    "SISWAP": qml.SISWAP(wires=[0, 1]),
 }
 
 all_ops = ops.keys()
+
+# All qubit operations should be available to test in the device test suite
+all_available_ops = qml.ops._qubit__ops__.copy()  # pylint: disable=protected-access
+all_available_ops.remove("CPhase")  # CPhase is an alias of ControlledPhaseShift
+all_available_ops.remove("SQISW")  # SQISW is an alias of SISWAP
+all_available_ops.add("QFT")  # QFT was recently moved to being a template, but let's keep it here
+
+if not set(all_ops) == all_available_ops:
+    raise ValueError(
+        "A qubit operation has been added that is not being tested in the "
+        "device test suite. Please add to the ops dictionary in "
+        "pennylane/devices/tests/test_gates.py"
+    )
 
 # non-parametrized qubit gates
 I = np.identity(2)
@@ -219,12 +237,12 @@ phi = -0.1234
 U = np.array(
     [
         [
-            np.cos(theta / 2) * np.exp(np.complex(0, -phi / 2)),
-            -np.sin(theta / 2) * np.exp(np.complex(0, phi / 2)),
+            np.cos(theta / 2) * np.exp(np.complex128(-phi / 2j)),
+            -np.sin(theta / 2) * np.exp(np.complex128(phi / 2j)),
         ],
         [
-            np.sin(theta / 2) * np.exp(np.complex(0, -phi / 2)),
-            np.cos(theta / 2) * np.exp(np.complex(0, phi / 2)),
+            np.sin(theta / 2) * np.exp(np.complex128(-phi / 2j)),
+            np.cos(theta / 2) * np.exp(np.complex128(phi / 2j)),
         ],
     ]
 )

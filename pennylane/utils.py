@@ -106,12 +106,14 @@ def decompose_hamiltonian(H, hide_identity=False):
     return coeffs, obs
 
 
-def sparse_hamiltonian(H):
+def sparse_hamiltonian(H, wires=None):
     r"""Computes the sparse matrix representation a Hamiltonian in the computational basis.
 
     Args:
         H (~.Hamiltonian): Hamiltonian operator for which the matrix representation should be
          computed
+        wires (Iterable): Wire labels that indicate the order of wires according to which the matrix
+         is constructed. If not profided, ``H.wires`` is used.
 
     Returns:
         coo_matrix: a sparse matrix in scipy coordinate list (COO) format with dimension
@@ -140,18 +142,36 @@ def sparse_hamiltonian(H):
     if not isinstance(H, qml.Hamiltonian):
         raise TypeError("Passed Hamiltonian must be of type `qml.Hamiltonian`")
 
-    n = len(H.wires)
+    if wires is None:
+        wires = H.wires
+    else:
+        wires = qml.wires.Wires(wires)
+
+    n = len(wires)
     matrix = scipy.sparse.coo_matrix((2 ** n, 2 ** n), dtype="complex128")
 
-    for coeffs, ops in zip(H.coeffs, H.ops):
+    coeffs = qml.math.toarray(H.data)
 
-        obs = [scipy.sparse.coo_matrix(o.matrix) for o in qml.operation.Tensor(ops).obs]
+    for coeff, op in zip(coeffs, H.ops):
+
+        obs = []
+        for o in qml.operation.Tensor(op).obs:
+            if len(o.wires) > 1:
+                # todo: deal with operations created from multi-qubit operations such as Hermitian
+                raise ValueError(
+                    "Can only sparsify Hamiltonians whose constituent observables consist of "
+                    "(tensor products of) single-qubit operators; got {}.".format(op)
+                )
+            obs.append(scipy.sparse.coo_matrix(o.matrix))
+
         mat = [scipy.sparse.eye(2, format="coo")] * n
 
-        for i, j in enumerate(ops.wires):
-            mat[j] = obs[i]
+        for i, wire in enumerate(op.wires):
+            # find index of this wire in the ordering
+            idx = wires.index(wire)
+            mat[idx] = obs[i]
 
-        matrix += functools.reduce(lambda i, j: scipy.sparse.kron(i, j, format="coo"), mat) * coeffs
+        matrix += functools.reduce(lambda i, j: scipy.sparse.kron(i, j, format="coo"), mat) * coeff
 
     return matrix.tocoo()
 
@@ -505,37 +525,3 @@ def expand_vector(vector, original_wires, expanded_wires):
     expanded_tensor = np.moveaxis(expanded_tensor, original_indices, wire_indices)
 
     return expanded_tensor.reshape(2 ** M)
-
-
-def frobenius_inner_product(A, B, normalize=False):
-    r"""Frobenius inner product between two matrices.
-
-    .. math::
-
-        \langle A, B \rangle_F = \sum_{i,j=1}^n A_{ij} B_{ij} = \operatorname{tr} (A^T B)
-
-    The Frobenius inner product is equivalent to the Hilbert-Schmidt inner product for
-    matrices with real-valued entries.
-
-    Args:
-        A (array[float]): First matrix, assumed to be a square array.
-        B (array[float]): Second matrix, assumed to be a square array.
-        normalize (bool): If True, divide the inner_product by the Frobenius norms of A and B.
-            Defaults to False.
-
-    Returns:
-        float: Frobenius inner product of A and B
-
-    **Example**
-
-    >>> A = np.random.random((3,3))
-    >>> B = np.random.random((3,3))
-    >>> qml.utils.frobenius_inner_product(A, B)
-    3.091948202943376
-    """
-    inner_product = np.sum(A * B)
-
-    if normalize:
-        inner_product /= np.linalg.norm(A, "fro") * np.linalg.norm(B, "fro")
-
-    return inner_product

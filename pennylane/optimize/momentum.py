@@ -93,10 +93,10 @@ class MomentumOptimizer(GradientDescentOptimizer):
             grad_flat (list): flattened list form of gradient.
         """
         if self.accumulation[index] is None:
-            self.accumulation[index] = [self._stepsize * g for g in grad_flat]
+            self.accumulation[index] = [self.stepsize * g for g in grad_flat]
         else:
             self.accumulation[index] = [
-                self.momentum * a + self._stepsize * g
+                self.momentum * a + self.stepsize * g
                 for a, g in zip(self.accumulation[index], grad_flat)
             ]
 

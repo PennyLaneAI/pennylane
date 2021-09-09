@@ -40,6 +40,7 @@ ar.register_function("numpy", "coerce", lambda x: x)
 ar.register_function("numpy", "block_diag", lambda x: _scipy_block_diag(*x))
 ar.register_function("builtins", "block_diag", lambda x: _scipy_block_diag(*x))
 ar.register_function("numpy", "gather", lambda x, indices: x[np.array(indices)])
+ar.register_function("numpy", "unstack", list)
 
 
 def _scatter_element_add_numpy(tensor, index, value):
@@ -69,13 +70,26 @@ ar.register_function("autograd", "flatten", lambda x: x.flatten())
 ar.register_function("autograd", "coerce", lambda x: x)
 ar.register_function("autograd", "block_diag", lambda x: _scipy_block_diag(*x))
 ar.register_function("autograd", "gather", lambda x, indices: x[np.array(indices)])
+ar.register_function("autograd", "unstack", list)
 
 
-def _to_numpy_autograd(x):
+def _unwrap_arraybox(arraybox, max_depth=None, _n=0):
+    if max_depth is not None and _n == max_depth:
+        return arraybox
+
+    val = getattr(arraybox, "_value", arraybox)
+
+    if hasattr(val, "_value"):
+        return _unwrap_arraybox(val, max_depth=max_depth, _n=_n + 1)
+
+    return val
+
+
+def _to_numpy_autograd(x, max_depth=None, _n=0):
     if hasattr(x, "_value"):
         # Catches the edge case where the data is an Autograd arraybox,
         # which only occurs during backpropagation.
-        return x._value
+        return _unwrap_arraybox(x, max_depth=max_depth, _n=_n)
 
     return x.numpy()
 
@@ -119,6 +133,7 @@ ar.autoray._SUBMODULE_ALIASES["tensorflow", "arccos"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "arctan"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "arctan2"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "diag"] = "tensorflow.linalg"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "kron"] = "tensorflow.experimental.numpy"
 
 
 ar.autoray._FUNC_ALIASES["tensorflow", "arcsin"] = "asin"
@@ -230,8 +245,11 @@ ar.register_function("tensorflow", "scatter_element_add", _scatter_element_add_t
 
 # -------------------------------- Torch --------------------------------- #
 
+ar.autoray._FUNC_ALIASES["torch", "unstack"] = "unbind"
 
-ar.register_function("torch", "asarray", lambda x: _i("torch").as_tensor(x))
+ar.register_function(
+    "torch", "asarray", lambda x, device=None: _i("torch").as_tensor(x, device=device)
+)
 ar.register_function("torch", "diag", lambda x, k=0: _i("torch").diag(x, diagonal=k))
 ar.register_function("torch", "expand_dims", lambda x, axis: _i("torch").unsqueeze(x, dim=axis))
 ar.register_function("torch", "shape", lambda x: tuple(x.shape))
@@ -342,6 +360,17 @@ ar.register_function("torch", "scatter_element_add", _scatter_element_add_torch)
 # -------------------------------- JAX --------------------------------- #
 
 
+def _to_numpy_jax(x):
+    from jax.errors import TracerArrayConversionError
+
+    try:
+        return np.array(getattr(x, "val", x))
+    except TracerArrayConversionError as e:
+        raise ValueError(
+            "Converting a JAX array to a NumPy array not supported when using the JAX JIT."
+        ) from e
+
+
 ar.register_function("jax", "flatten", lambda x: x.flatten())
 ar.register_function(
     "jax",
@@ -349,7 +378,7 @@ ar.register_function(
     lambda x, indices, axis=None: _i("jax").numpy.take(x, indices, axis=axis, mode="wrap"),
 )
 ar.register_function("jax", "coerce", lambda x: x)
-ar.register_function("jax", "to_numpy", lambda x: x)
+ar.register_function("jax", "to_numpy", _to_numpy_jax)
 ar.register_function("jax", "block_diag", lambda x: _i("jax").scipy.linalg.block_diag(*x))
 ar.register_function("jax", "gather", lambda x, indices: x[np.array(indices)])
 ar.register_function(
@@ -357,3 +386,4 @@ ar.register_function(
     "scatter_element_add",
     lambda x, index, value: _i("jax").ops.index_add(x, tuple(index), value),
 )
+ar.register_function("jax", "unstack", list)

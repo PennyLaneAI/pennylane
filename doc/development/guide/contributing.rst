@@ -1,0 +1,1 @@
+.. mdinclude:: ../../../.github/CONTRIBUTING.md

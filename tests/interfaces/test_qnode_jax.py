@@ -53,7 +53,7 @@ def test_to_jax():
     assert "DeviceArray" in val.__repr__()
 
 
-def test_simple_jacobian():
+def test_simple_jacobian(tol):
     """Test the use of jax.jaxrev"""
     dev = qml.device("default.mixed", wires=2)  # A non-JAX device.
 
@@ -69,7 +69,7 @@ def test_simple_jacobian():
     # of a numpy array.
     assert "DeviceArray" in grads.__repr__()
     assert grads.shape == (2,)
-    np.testing.assert_allclose(grads, np.array([-0.09784342, -0.19767685]))
+    np.testing.assert_allclose(grads, np.array([-0.09784342, -0.19767685]), atol=tol, rtol=0)
 
 
 def test_simple_grad():

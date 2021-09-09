@@ -614,6 +614,7 @@ class TestQNodeCircuitHashDifferentHashIntegration:
 
         assert circuit_hash_1 != circuit_hash_2
 
+    @pytest.mark.usefixtures("skip_if_no_dask_support")
     def test_compiled_program_was_stored(self):
         """Test that QVM device stores the compiled program correctly"""
         dev = qml.device("default.qubit", wires=3)

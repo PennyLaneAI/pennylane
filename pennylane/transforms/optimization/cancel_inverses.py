@@ -28,6 +28,9 @@ def cancel_inverses(tape):
     Args:
         qfunc (function): A quantum function.
 
+    Returns:
+        function: the transformed quantum function
+
     **Example**
 
     Consider the following quantum function:
