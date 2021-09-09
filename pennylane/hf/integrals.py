@@ -189,18 +189,18 @@ def expansion(la, lb, ra, rb, alpha, beta, t):
     if t < 0 or t > (la + lb):
         return 0.0
 
-    elif lb == 0:
+    if lb == 0:
         return (
             (1 / (2 * p)) * expansion(la - 1, lb, ra, rb, alpha, beta, t - 1)
             - (q * r / alpha) * expansion(la - 1, lb, ra, rb, alpha, beta, t)
             + (t + 1) * expansion(la - 1, lb, ra, rb, alpha, beta, t + 1)
         )
-    else:
-        return (
-            (1 / (2 * p)) * expansion(la, lb - 1, ra, rb, alpha, beta, t - 1)
-            + (q * r / beta) * expansion(la, lb - 1, ra, rb, alpha, beta, t)
-            + (t + 1) * expansion(la, lb - 1, ra, rb, alpha, beta, t + 1)
-        )
+
+    return (
+        (1 / (2 * p)) * expansion(la, lb - 1, ra, rb, alpha, beta, t - 1)
+        + (q * r / beta) * expansion(la, lb - 1, ra, rb, alpha, beta, t)
+        + (t + 1) * expansion(la, lb - 1, ra, rb, alpha, beta, t + 1)
+    )
 
 
 def gaussian_overlap(la, lb, ra, rb, alpha, beta):
