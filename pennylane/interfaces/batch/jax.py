@@ -28,7 +28,7 @@ dtype = jnp.float32
 
 
 def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2):
-    """Execute a batch of tapes with Autograd parameters on a device.
+    """Execute a batch of tapes with JAX parameters on a device.
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
