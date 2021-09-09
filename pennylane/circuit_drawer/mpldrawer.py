@@ -48,10 +48,6 @@ class MPLDrawer:
         figsize=None (Iterable): Allows users to specify the size of the figure manually. Defaults
             to scale with the size of the circuit via ``n_layers`` and ``n_wires``.
 
-    Attributes:
-        fig (matplotlib.figure.Figure): figure object for the graphic
-        ax (matplotlib.axes._axes.Axes): axes object for the graphic
-
     **Example**
 
     .. code-block:: python
@@ -207,17 +203,17 @@ class MPLDrawer:
         if figsize is None:
             figsize = (self.n_layers + 3, self.n_wires + 1)
 
-        self.fig = plt.figure(figsize=figsize)
-        self.ax = self.fig.add_axes(
+        self._fig = plt.figure(figsize=figsize)
+        self._ax = self._fig.add_axes(
             [0, 0, 1, 1],
             xlim=(-2, self.n_layers + 1),
             ylim=(-1, self.n_wires),
             xticks=[],
             yticks=[],
         )
-        self.ax.axis("off")
+        self._ax.axis("off")
 
-        self.ax.invert_yaxis()
+        self._ax.invert_yaxis()
 
         if wire_options is None:
             wire_options = {}
@@ -225,7 +221,17 @@ class MPLDrawer:
         # adding wire lines
         for wire in range(self.n_wires):
             line = plt.Line2D((-1, self.n_layers), (wire, wire), zorder=1, **wire_options)
-            self.ax.add_line(line)
+            self._ax.add_line(line)
+
+    @property
+    def fig(self):
+        """Matplotlib figure"""
+        return self._fig
+
+    @property
+    def ax(self):
+        """Matplotlib axes"""
+        return self._ax
 
     def label(self, labels, text_options=None):
         """Label each wire.
@@ -267,7 +273,7 @@ class MPLDrawer:
             text_options = {}
 
         for wire, ii_label in enumerate(labels):
-            self.ax.text(-1.5, wire, ii_label, **text_options)
+            self._ax.text(-1.5, wire, ii_label, **text_options)
 
     def box_gate(
         self, layer, wires, text="", extra_width=0, zorder=0, box_options=None, text_options=None
@@ -339,12 +345,12 @@ class MPLDrawer:
             zorder=2 + zorder,
             **box_options,
         )
-        self.ax.add_patch(box)
+        self._ax.add_patch(box)
 
         default_text_options = {"ha": "center", "va": "center", "fontsize": "x-large"}
         default_text_options.update(text_options)
 
-        self.ax.text(
+        self._ax.text(
             layer,
             box_center,
             text,
@@ -392,7 +398,7 @@ class MPLDrawer:
         max_wire = max(wires_all)
 
         line = plt.Line2D((layer, layer), (min_wire, max_wire), zorder=2, color=color)
-        self.ax.add_line(line)
+        self._ax.add_line(line)
 
         if control_values is None:
             for wire in wires_ctrl:
@@ -415,7 +421,7 @@ class MPLDrawer:
             options = {"color": color}
 
         circ_ctrl = plt.Circle((layer, wires), radius=self._ctrl_rad, zorder=zorder, **options)
-        self.ax.add_patch(circ_ctrl)
+        self._ax.add_patch(circ_ctrl)
 
     def _ctrlo_circ(self, layer, wires, zorder=3, color=None):
         """Draw an open circle that indicates control on zero."""
@@ -430,7 +436,7 @@ class MPLDrawer:
 
         circ_ctrlo = plt.Circle((layer, wires), radius=(self._octrl_rad), zorder=zorder, **options)
 
-        self.ax.add_patch(circ_ctrlo)
+        self._ax.add_patch(circ_ctrlo)
 
     def CNOT(self, layer, wires, color=None):
         """Draws a CNOT gate.
@@ -488,9 +494,9 @@ class MPLDrawer:
         target_h = plt.Line2D(
             (layer - self._circ_rad, layer + self._circ_rad), (wires, wires), zorder=4, color=color
         )
-        self.ax.add_patch(target_circ)
-        self.ax.add_line(target_v)
-        self.ax.add_line(target_h)
+        self._ax.add_patch(target_circ)
+        self._ax.add_line(target_v)
+        self._ax.add_line(target_h)
 
     def SWAP(self, layer, wires, options=None):
         """Draws a SWAP gate
@@ -536,7 +542,7 @@ class MPLDrawer:
             options = {}
 
         line = plt.Line2D((layer, layer), wires, zorder=2, **options)
-        self.ax.add_line(line)
+        self._ax.add_line(line)
 
         for wire in wires:
             self._swap_x(layer, wire, options)
@@ -568,8 +574,8 @@ class MPLDrawer:
             **options,
         )
 
-        self.ax.add_line(l1)
-        self.ax.add_line(l2)
+        self._ax.add_line(l1)
+        self._ax.add_line(l2)
 
     def measure(self, layer, wires, zorder_base=0, box_options=None, lines_options=None):
         """Draw a Measurement graphic at designated layer, wire combination.
@@ -625,7 +631,7 @@ class MPLDrawer:
             zorder=2 + zorder_base,
             **box_options,
         )
-        self.ax.add_patch(box)
+        self._ax.add_patch(box)
 
         arc = patches.Arc(
             (layer, wires + self._box_dx / 8),
@@ -636,7 +642,7 @@ class MPLDrawer:
             zorder=3 + zorder_base,
             **lines_options,
         )
-        self.ax.add_patch(arc)
+        self._ax.add_patch(arc)
 
         # can experiment with the specific numbers to make it look decent
         arrow_start_x = layer - 0.33 * self._box_dx
@@ -653,4 +659,4 @@ class MPLDrawer:
             zorder=4 + zorder_base,
             **lines_options,
         )
-        self.ax.add_line(arrow)
+        self._ax.add_line(arrow)
