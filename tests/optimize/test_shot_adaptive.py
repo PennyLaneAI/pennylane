@@ -526,6 +526,7 @@ class TestOptimization:
         assert np.allclose(circuit(params), -1, atol=0.1, rtol=0.2)
         assert opt.shots_used > min_shots
 
+    @pytest.mark.slow
     def test_vqe_optimization(self):
         """Test that a simple VQE circuit can be optimized"""
         dev = qml.device("default.qubit", wires=2, shots=100)
@@ -576,7 +577,7 @@ class TestStepAndCost:
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
 
-        for i in range(100):
+        for i in range(200):
             params, res = opt.step_and_cost(circuit, params)
 
         assert np.allclose(res, -1, atol=tol, rtol=0)

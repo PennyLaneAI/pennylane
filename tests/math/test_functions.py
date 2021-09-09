@@ -675,6 +675,7 @@ class TestRequiresGrad:
         """Vanilla NumPy arrays, sequences, and lists will always return False"""
         assert not fn.requires_grad(t)
 
+    @pytest.mark.slow
     def test_jax(self):
         """JAX DeviceArrays differentiability depends on the argnums argument"""
         res = None
@@ -1368,6 +1369,7 @@ class TestCovMatrix:
         expected = self.expected_grad(weights)
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
+    @pytest.mark.slow
     def test_jax(self, tol):
         """Test that the covariance matrix computes the correct
         result, and is differentiable, using the JAX interface"""
