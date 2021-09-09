@@ -48,6 +48,10 @@ class MPLDrawer:
         figsize=None (Iterable): Allows users to specify the size of the figure manually. Defaults
             to scale with the size of the circuit via ``n_layers`` and ``n_wires``.
 
+    Attributes:
+        fig (matplotlib.figure.Figure): figure object for the graphic
+        ax (matplotlib.axes._axes.Axes): axes object for the graphic
+
     **Example**
 
     .. code-block:: python
@@ -186,12 +190,6 @@ class MPLDrawer:
     on top of lower ``zorder`` objects. In top example, we have to set a ``zorder``
     to a value of ``2`` in order to draw it *on top* of the control wires, instead of below them.
     """
-
-    fig = None
-    """`Matplotlib figure object <https://matplotlib.org/stable/api/figure_api.html?highlight=figure#module-matplotlib.figure>`_ """
-
-    ax = None
-    """`Matplotlib axes <https://matplotlib.org/stable/api/axes_api.html?highlight=axes#module-matplotlib.axes>`_ """
 
     _box_dx = 0.4
     _circ_rad = 0.3
