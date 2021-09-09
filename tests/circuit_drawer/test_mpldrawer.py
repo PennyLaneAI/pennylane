@@ -73,11 +73,11 @@ class TestInitialization:
         plt.close()
 
     def test_wires_formatting(self):
-        """Tests wires formatting with kwargs"""
+        """Tests wires formatting with options"""
 
         rgba_red = (1, 0, 0, 1)
-        kwargs = {"linewidth": 3, "color": rgba_red}
-        drawer = MPLDrawer(n_wires=2, n_layers=2, wire_kwargs=kwargs)
+        options = {"linewidth": 3, "color": rgba_red}
+        drawer = MPLDrawer(n_wires=2, n_layers=2, wire_options=options)
 
         for wire in drawer.ax.lines:
             assert wire.get_linewidth() == 3
@@ -106,14 +106,14 @@ class TestLabels:
         plt.close()
 
     def test_labels_formatting(self):
-        """Test labels are formatted with text kwargs."""
+        """Test labels are formatted with text options."""
 
         drawer = MPLDrawer(1, 3)
 
         rgba_red = (1, 0, 0, 1)
         labels = (0, 1, 2)
-        kwargs = {"fontsize": 10, "color": rgba_red}
-        drawer.label(labels, text_kwargs=kwargs)
+        options = {"fontsize": 10, "color": rgba_red}
+        drawer.label(labels, text_options=options)
 
         for text in drawer.ax.texts:
             assert text.get_fontsize() == 10
@@ -181,13 +181,13 @@ class TestBoxGate:
         plt.close()
 
     def test_box_formatting(self):
-        """Tests that box_kwargs influences the rectangle"""
+        """Tests that box_options influences the rectangle"""
 
         drawer = MPLDrawer(1, 1)
         rgba_red = (1, 0, 0, 1)
         rgba_green = (0, 1, 0, 1)
-        kwargs = {"facecolor": rgba_red, "edgecolor": rgba_green}
-        drawer.box_gate(0, 0, text="X", box_kwargs=kwargs)
+        options = {"facecolor": rgba_red, "edgecolor": rgba_green}
+        drawer.box_gate(0, 0, text="X", box_options=options)
 
         rect = drawer.ax.patches[0]
         assert rect.get_facecolor() == rgba_red
@@ -199,8 +199,8 @@ class TestBoxGate:
 
         drawer = MPLDrawer(1, 1)
         rgba_red = (1, 0, 0, 1)
-        kwargs = {"color": rgba_red, "rotation": "vertical"}
-        drawer.box_gate(0, 0, text="X", text_kwargs=kwargs)
+        options = {"color": rgba_red, "rotation": "vertical"}
+        drawer.box_gate(0, 0, text="X", text_options=options)
 
         text = drawer.ax.texts[0]
         assert text.get_rotation() == 90.0
@@ -435,13 +435,13 @@ class TestSWAP:
         assert x_lines[3].get_data() == ((-0.2, 0.2), (2.2, 1.8))
         plt.close()
 
-    def test_SWAP_kwargs(self):
+    def test_SWAP_options(self):
         """Tests that SWAP can be colored."""
 
         drawer = MPLDrawer(1, 3)
         rgba_red = (1, 0, 0, 1)
-        kwargs = {"color": rgba_red, "linewidth": 3}
-        drawer.SWAP(0, (0, 2), kwargs=kwargs)
+        options = {"color": rgba_red, "linewidth": 3}
+        drawer.SWAP(0, (0, 2), options=options)
 
         for line in drawer.ax.lines[3:]:
             assert line.get_color() == rgba_red
@@ -482,9 +482,9 @@ class TestMeasure:
         drawer = MPLDrawer(1, 1)
         rgba_red = (1.0, 0, 0, 1.0)
         rgba_green = (0, 1, 0, 1)
-        box_kwargs = {"facecolor": rgba_red, "edgecolor": rgba_green}
-        lines_kwargs = {"color": rgba_green, "linewidth": 0.5}
-        drawer.measure(0, 0, box_kwargs=box_kwargs, lines_kwargs=lines_kwargs)
+        box_options = {"facecolor": rgba_red, "edgecolor": rgba_green}
+        lines_options = {"color": rgba_green, "linewidth": 0.5}
+        drawer.measure(0, 0, box_options=box_options, lines_options=lines_options)
 
         box = drawer.ax.patches[0]
         assert box.get_facecolor() == rgba_red

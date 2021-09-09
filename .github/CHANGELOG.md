@@ -14,7 +14,7 @@
 
   drawer.label(["0","a",r"$|\Psi\rangle$",r"$|\theta\rangle$", "aux"])
 
-  drawer.box_gate(layer=0, wires=[0, 1, 2, 3, 4], text="Entangling Layers", text_kwargs={'rotation': 'vertical'})
+  drawer.box_gate(layer=0, wires=[0, 1, 2, 3, 4], text="Entangling Layers", text_options={'rotation': 'vertical'})
   drawer.box_gate(layer=1, wires=[0, 1], text="U(θ)")
 
   drawer.box_gate(layer=1, wires=4, text="Z")
