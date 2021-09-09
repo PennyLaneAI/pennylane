@@ -72,20 +72,20 @@ def _compute_num_cnots(U):
     u = math.dot(Edag, math.dot(U, E))
     gammaU = math.dot(u, math.T(u))
 
-    trace = qml.math.trace(gammaU)
+    trace = math.trace(gammaU)
 
     # For the case with 3 CNOTs, the trace is a non-zero complex number
     # with both real and imaginary parts.
     num_cnots = 3
 
     # Case: 0 CNOTs (tensor product), the trace is +/- 4
-    if qml.math.allclose(trace, 4) or qml.math.allclose(trace, -4):
+    if math.allclose(trace, 4) or math.allclose(trace, -4):
         num_cnots = 0
     # Case: 1 CNOT, the trace is 0
-    elif qml.math.allclose(trace, 0.0):
+    elif math.allclose(trace, 0.0):
         num_cnots = 1
     # Case: 2 CNOTs, the trace has only a real part
-    elif qml.math.allclose(qml.math.imag(trace), 0):
+    elif math.allclose(math.imag(trace), 0):
         num_cnots = 2
 
     return num_cnots
@@ -165,14 +165,14 @@ def _extract_su2su2_prefactors(U, V):
     # First, we find a matrix p (hopefully) in SO(4) s.t. p^T u u^T p is diagonal.
     # Since uuT is complex and symmetric, both its real / imag parts share a set
     # of real-valued eigenvectors.
-    if qml.math.get_interface(u) == "tensorflow":
-        ev_p, p = math.linalg.eig(qml.math.real(uuT))
+    if math.get_interface(u) == "tensorflow":
+        ev_p, p = math.linalg.eig(math.real(uuT))
     else:
         ev_p, p = math.linalg.eig(uuT)
 
     # We also do this for v, i.e., find q (hopefully) in SO(4) s.t. q^T v v^T q is diagonal.
-    if qml.math.get_interface(u) == "tensorflow":
-        ev_q, q = math.linalg.eig(qml.math.real(vvT))
+    if math.get_interface(u) == "tensorflow":
+        ev_q, q = math.linalg.eig(math.real(vvT))
     else:
         ev_q, q = math.linalg.eig(vvT)
 
@@ -409,7 +409,9 @@ def two_qubit_decomposition(U, wires):
         decomp = _decomposition_3_cnots(U, wires)
     else:
         raise NotImplementedError(
-            "Decomposition for 2-qubit unitaries with 1 or 2 CNOTs is not available."
+            "Decomposition for numerically-supplied 2-qubit unitaries requiring "
+            "1 or 2 CNOTs is not currently supported. Your unitary matrix\n"
+            f"U = {U}\nwhich requires {num_cnots} CNOT(s) will not be decomposed."
         )
 
     return decomp

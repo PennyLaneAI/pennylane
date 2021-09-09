@@ -395,7 +395,7 @@ class TestTwoQubitUnitaryDecomposition:
             ]
         )
 
-        with pytest.raises(NotImplementedError, match="1 or 2 CNOTs is not available"):
+        with pytest.raises(NotImplementedError, match="1 or 2 CNOTs is not currently supported"):
             two_qubit_decomposition(U, wires=[0, 1])
 
     def test_two_qubit_decomposition_invalid_two_cnots(self):
@@ -429,7 +429,7 @@ class TestTwoQubitUnitaryDecomposition:
             ]
         )
 
-        with pytest.raises(NotImplementedError, match="1 or 2 CNOTs is not available"):
+        with pytest.raises(NotImplementedError, match="1 or 2 CNOTs is not currently supported"):
             two_qubit_decomposition(U, wires=[0, 1])
 
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
