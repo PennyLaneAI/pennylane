@@ -222,11 +222,11 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
     # to take into account that classical processing may be present
     # inside the QNode.
     hybrid = tkwargs.pop("hybrid", True)
-    _wrapper = batch_transform.qnode_execution_wrapper(self, qnode, targs, tkwargs)
+    mt_fn = batch_transform.qnode_execution_wrapper(self, qnode, targs, tkwargs)
     cjac_fn = qml.transforms.classical_jacobian(qnode)
 
     def wrapper(*args, **kwargs):
-        mt = _wrapper(*args, **kwargs)
+        mt = mt_fn(*args, **kwargs)
 
         if not hybrid:
             return mt
