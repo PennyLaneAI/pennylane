@@ -14,10 +14,11 @@
 """
 A transform for decomposing arbitrary single-qubit QubitUnitary gates into elementary gates.
 """
+import warnings
+
 import pennylane as qml
 from pennylane.transforms import qfunc_transform
 from pennylane.transforms.decompositions import zyz_decomposition, two_qubit_decomposition
-
 
 @qfunc_transform
 def unitary_to_rot(tape):
@@ -30,10 +31,15 @@ def unitary_to_rot(tape):
     :class:`.Rot` gate that implements the original operation up to a global
     phase.
 
-    For two-qubit gates, those which are tensor products of two single-qubit operations
-    will be decomposed as such, as well as those can represented by 3 CNOTs as described in
-    the :func:`pennylane.transforms.two_qubit_decomposition`. (The 1- and 2-CNOT cases are left
-    as :class:`~.QubitUnitary` instances at present.)
+    For two-qubit gates, those which are tensor products of two single-qubit
+    operations will be decomposed as such, as well as those can represented by 3
+    CNOTs as described in :func:`pennylane.transforms.two_qubit_decomposition`.
+
+    .. warning::
+
+        Two-qubit operations which are determined to require 1 or 2 CNOTs are
+        currently left as :class:`~.QubitUnitary` instances at present, and not
+        decomposed. 
 
     Args:
         qfunc (function): a quantum function
@@ -49,10 +55,8 @@ def unitary_to_rot(tape):
             [ 0.25053735+0.75164238j,  0.60700543-0.06171855j]
         ])
 
-    The ``unitary_to_rot`` transform enables us to decompose
-    such numerical operations (as well as unitaries that may be defined by parameters
-    within the QNode, and instantiated therein), while preserving differentiability.
-
+    The ``unitary_to_rot`` transform enables us to decompose such numerical
+    operations while preserving differentiability.
 
     .. code-block:: python3
 
@@ -78,6 +82,7 @@ def unitary_to_rot(tape):
      0: ──Rot(-1.35, 1.83, -0.606)──┤ ⟨Z⟩
 
     """
+    
     for op in tape.operations + tape.measurements:
         if isinstance(op, qml.QubitUnitary):
             # Single-qubit unitary operations
@@ -85,14 +90,9 @@ def unitary_to_rot(tape):
                 zyz_decomposition(op.parameters[0], op.wires[0])
             # Two-qubit unitary operations
             elif qml.math.shape(op.parameters[0]) == (4, 4):
-                # Can only decompose if they require no CNOTs, or 3 CNOTs currently
-                try:
-                    decomp = qml.transforms.invisible(two_qubit_decomposition)(
-                        op.parameters[0], op.wires
-                    )
-                except NotImplementedError:
-                    # Keep the operation as-is
-                    decomp = [op]
+                decomp = qml.transforms.invisible(two_qubit_decomposition)(
+                    op.parameters[0], op.wires
+                )
 
                 for decomp_op in decomp:
                     qml.apply(decomp_op)

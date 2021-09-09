@@ -14,6 +14,8 @@
 """Contains transforms and helpers functions for decomposing arbitrary two-qubit
 unitary operations into elementary gates.
 """
+import warnings
+
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import math
@@ -408,10 +410,13 @@ def two_qubit_decomposition(U, wires):
     elif num_cnots == 3:
         decomp = _decomposition_3_cnots(U, wires)
     else:
-        raise NotImplementedError(
+        decomp = [qml.QubitUnitary(U, wires=wires)]
+
+        warnings.warn(
             "Decomposition for numerically-supplied 2-qubit unitaries requiring "
             "1 or 2 CNOTs is not currently supported. Your unitary matrix\n"
-            f"U = {U}\nwhich requires {num_cnots} CNOT(s) will not be decomposed."
+            f"U = {U}\nwhich requires {num_cnots} CNOT(s) will not be decomposed.",
+            UserWarning,
         )
 
     return decomp

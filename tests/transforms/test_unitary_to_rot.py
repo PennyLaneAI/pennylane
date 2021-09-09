@@ -555,17 +555,13 @@ class TestTwoQubitUnitaryDifferentiability:
         U0 = jnp.array(test_two_qubit_unitaries[0], dtype=jnp.complex128)
         U1 = jnp.array(test_two_qubit_unitaries[1], dtype=jnp.complex128)
 
-        def two_qubit_decomp_qnode(x, y, z):
+        def two_qubit_decomp_qnode(x):
             qml.RX(x, wires=0)
-            qml.RY(y, wires=1)
             qml.QubitUnitary(U0, wires=[0, 1])
-            qml.RZ(z, wires=2)
             qml.QubitUnitary(U1, wires=[1, 2])
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
 
-        x = jnp.array(0.1)
-        y = jnp.array(0.2)
-        z = jnp.array(0.3)
+        x = jnp.array(0.1, dtype=jnp.float64)
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -578,12 +574,12 @@ class TestTwoQubitUnitaryDifferentiability:
             transformed_qfunc, dev, interface="jax", diff_method=diff_method
         )
 
-        assert qml.math.allclose(original_qnode(x, y, z), transformed_qnode(x, y, z))
+        assert qml.math.allclose(original_qnode(x), transformed_qnode(x))
 
         # 3 normal operations + 10 for the first decomp and 2 for the second
-        assert len(transformed_qnode.qtape.operations) == 15
+        assert len(transformed_qnode.qtape.operations) == 13
 
-        original_grad = jax.grad(original_qnode)(x, y, z)
-        transformed_grad = jax.grad(transformed_qnode)(x, y, z)
+        original_grad = jax.grad(original_qnode, argnums=(0))(x)
+        transformed_grad = jax.grad(transformed_qnode, argnums=(0))(x)
 
         assert qml.math.allclose(original_grad, transformed_grad, atol=1e-6)
