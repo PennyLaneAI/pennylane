@@ -116,6 +116,12 @@ class QNode:
         self._update_gradient_fn()
 
     def _update_gradient_fn(self):
+        if self.diff_method is None:
+            self._interface = None
+            self.gradient_fn = None
+            self.gradient_kwargs = {}
+            return
+
         self.gradient_fn, self.gradient_kwargs, self.device = self.get_gradient_fn(
             self._original_device, self.interface, self.diff_method
         )
@@ -360,9 +366,6 @@ class QNode:
             )
 
         state_returns = any(m.return_type is State for m in measurement_processes)
-
-        # TODO: pass complex128 to Torch/TF if state is being returned. Move this to the
-        # execute() function.
 
         if not all(ret == m for ret, m in zip(measurement_processes, self.tape.measurements)):
             raise qml.QuantumFunctionError(
