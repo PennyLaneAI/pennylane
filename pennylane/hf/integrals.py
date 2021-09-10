@@ -357,7 +357,6 @@ def hermite_coulomb(t, u, v, n, p, dr):
         for term in T.flatten():
             f.append(boys(n, term))
         val = val + ((-2 * p) ** n) * anp.array(f).reshape(T.shape)
-
     elif t == u == 0:
         if v > 1:
             val = val + (v - 1) * hermite_coulomb(t, u, v - 2, n + 1, p, dr)
@@ -370,6 +369,7 @@ def hermite_coulomb(t, u, v, n, p, dr):
         if t > 1:
             val = val + (t - 1) * hermite_coulomb(t - 2, u, v, n + 1, p, dr)
         val = val + x * hermite_coulomb(t - 1, u, v, n + 1, p, dr)
+
     return val
 
 
@@ -378,11 +378,10 @@ def nuclear_attraction(la, lb, ra, rb, alpha, beta, r):
     l1, m1, n1 = la
     l2, m2, n2 = lb
     p = alpha + beta
-    gp = (alpha * ra[:, anp.newaxis, anp.newaxis] + beta * rb[:, anp.newaxis, anp.newaxis]) / (
+    rgp = (alpha * ra[:, anp.newaxis, anp.newaxis] + beta * rb[:, anp.newaxis, anp.newaxis]) / (
         alpha + beta
     )
-    dr = gp - anp.array(r)[:, anp.newaxis, anp.newaxis]
-
+    dr = rgp - anp.array(r)[:, anp.newaxis, anp.newaxis]
     a = 0.0
     for t in range(l1 + l2 + 1):
         for u in range(m1 + m2 + 1):
@@ -432,3 +431,110 @@ def generate_attraction(r, basis_a, basis_b):
         return v
 
     return attraction_integral
+
+
+def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta):
+    """Electron repulsion between Gaussians"""
+    l1, m1, n1 = la
+    l2, m2, n2 = lb
+    l3, m3, n3 = lc
+    l4, m4, n4 = ld
+
+    p = alpha + beta
+    q = gamma + delta
+    quotient = (p * q) / (p + q)
+
+    p_ab = (
+        alpha * ra[:, anp.newaxis, anp.newaxis, anp.newaxis, anp.newaxis]
+        + beta * rb[:, anp.newaxis, anp.newaxis, anp.newaxis, anp.newaxis]
+    ) / (alpha + beta)
+
+    p_cd = (
+        gamma * rc[:, anp.newaxis, anp.newaxis, anp.newaxis, anp.newaxis]
+        + delta * rd[:, anp.newaxis, anp.newaxis, anp.newaxis, anp.newaxis]
+    ) / (gamma + delta)
+
+    e = 0.0
+    for t in range(l1 + l2 + 1):
+        for u in range(m1 + m2 + 1):
+            for v in range(n1 + n2 + 1):
+                for tau in range(l3 + l4 + 1):
+                    for nu in range(m3 + m4 + 1):
+                        for phi in range(n3 + n4 + 1):
+                            e = e + expansion(l1, l2, ra[0], rb[0], alpha, beta, t) * expansion(
+                                m1, m2, ra[1], rb[1], alpha, beta, u
+                            ) * expansion(n1, n2, ra[2], rb[2], alpha, beta, v) * expansion(
+                                l3, l4, rc[0], rd[0], gamma, delta, tau
+                            ) * expansion(
+                                m3, m4, rc[1], rd[1], gamma, delta, nu
+                            ) * expansion(
+                                n3, n4, rc[2], rd[2], gamma, delta, phi
+                            ) * (
+                                (-1) ** (tau + nu + phi)
+                            ) * hermite_coulomb(
+                                t + tau, u + nu, v + phi, 0, quotient, p_ab - p_cd
+                            )
+
+    e = e * 2 * (anp.pi ** 2.5) / (p * q * anp.sqrt(p + q))
+
+    return e
+
+
+def generate_repulsion(basis_a, basis_b, basis_c, basis_d):
+    """
+    Computes the two electron repulsion integral
+    """
+
+    def repulsion_integral(*args):
+
+        args_a = [i[0] for i in args]
+        args_b = [i[1] for i in args]
+        args_c = [i[2] for i in args]
+        args_d = [i[3] for i in args]
+
+        alpha, ca, ra = _generate_params(basis_a.params, args_a)
+        beta, cb, rb = _generate_params(basis_b.params, args_b)
+        gamma, cc, rc = _generate_params(basis_c.params, args_c)
+        delta, cd, rd = _generate_params(basis_d.params, args_d)
+
+        ca = ca * primitive_norm(basis_a.l, alpha)
+        cb = cb * primitive_norm(basis_b.l, beta)
+        cc = cc * primitive_norm(basis_c.l, gamma)
+        cd = cd * primitive_norm(basis_d.l, delta)
+
+        n1 = contracted_norm(basis_a.l, alpha, ca)
+        n2 = contracted_norm(basis_b.l, beta, cb)
+        n3 = contracted_norm(basis_c.l, gamma, cc)
+        n4 = contracted_norm(basis_d.l, delta, cd)
+
+        e = (
+            n1
+            * n2
+            * n3
+            * n4
+            * (
+                (
+                    ca
+                    * cb[:, anp.newaxis]
+                    * cc[:, anp.newaxis, anp.newaxis]
+                    * cd[:, anp.newaxis, anp.newaxis, anp.newaxis]
+                )
+                * electron_repulsion(
+                    basis_a.l,
+                    basis_b.l,
+                    basis_c.l,
+                    basis_d.l,
+                    ra,
+                    rb,
+                    rc,
+                    rd,
+                    alpha,
+                    beta[:, anp.newaxis],
+                    gamma[:, anp.newaxis, anp.newaxis],
+                    delta[:, anp.newaxis, anp.newaxis, anp.newaxis],
+                )
+            ).sum()
+        )
+        return e
+
+    return repulsion_integral
