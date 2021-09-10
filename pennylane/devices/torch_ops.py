@@ -521,19 +521,19 @@ def DoubleExcitationMinus(phi, device):
     return e * I4(device) + c * UCos(device) + s * USin(device)
 
 
-def OrbitalRotation(varphi, device):
+def OrbitalRotation(phi, device):
     r"""Quantum number preserving four-qubit one-parameter gate.
 
     Args:
-        varphi (float): rotation angle
+        phi (float): rotation angle
         device: torch device on which the computation is made 'cpu' or 'cuda'
 
     Returns:
         torch.Tensor[complex]: rotation matrix
     """
-    varphi = torch.as_tensor(varphi, dtype=C_DTYPE, device=device)
-    c = torch.cos(varphi / 2)
-    s = torch.sin(varphi / 2)
+    phi = torch.as_tensor(phi, dtype=C_DTYPE, device=device)
+    c = torch.cos(phi / 2)
+    s = torch.sin(phi / 2)
 
     # This implements a matrix which is the "sign flipped" version of that on p18 of https://arxiv.org/abs/2104.05695,
     # There was a typo in the sign of a matrix element "s" at [2, 8] in arXiv:2104.05695, which is fixed here.

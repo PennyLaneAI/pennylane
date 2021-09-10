@@ -467,9 +467,10 @@ class DoubleExcitationMinus(Operation):
 
 
 class OrbitalRotation(Operation):
-    r"""OrbitalRotation(varphi, wires)
+    r"""OrbitalRotation(phi, wires)
     1-parameter 4-qubit spin-adapted spatial orbital rotation gate. In Jordan-Wigner basis, this will perform Givens rotation between
-    two orbital bases, and can be realized as a pair of parallel Givens rotation gates :math:`G(\varphi)`.
+    two orbital bases and can be realized as a pair of parallel Givens rotation gates :math:`G(\phi)`, which are equivalent to
+    :class:`~.SingleExcitation()`.
 
     |
 
@@ -485,9 +486,9 @@ class OrbitalRotation(Operation):
 
     |
 
-    The overall matrix representation for this gate is:
+    The overall matrix representation for this operation is the following, where :math:`c=cos(\phi/2)` and :math:`s=sin(\phi/2)`:
 
-    .. math:: U(\phi) = \begin{bmatrix}
+    .. math:: \text{OrbitalRotation}(\phi) := \begin{bmatrix}
                             1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
                             0 & c & 0 & 0 & - s & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
                             0 & 0 & c & 0 & 0 & 0 & 0 & 0 & - s & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
@@ -503,11 +504,12 @@ class OrbitalRotation(Operation):
                             0 & 0 & 0 & s^{2} & 0 & 0 & c s & 0 & 0 & c s & 0 & 0 & c^{2} & 0 & 0 & 0\\
                             0 & 0 & 0 & 0 & 0 & 0 & 0 & s & 0 & 0 & 0 & 0 & 0 & c & 0 & 0\\
                             0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & s & 0 & 0 & c & 0\\
-                            0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1
-                        \end{bmatrix}.
+                            0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1\\
+                        \end{bmatrix}
 
-    This operation performs the spatial orbital Givens rotation :math:`|\phi_{0}\rangle = c|\phi_{0}\rangle - s|\phi_{1}\rangle`
-    and :math:`|\phi_{1}\rangle = s|\phi_{0}\rangle + c|\phi_{1}\rangle`.
+    This operation performs the spatial orbital Givens rotation :math:`|\Phi_{0}\rangle = cos(\phi/2)|\Phi_{0}\rangle - sin(\phi/2)|\Phi_{1}\rangle`
+    and :math:`|\Phi_{1}\rangle = sin(\phi/2)|\Phi_{0}\rangle + cos(\phi/2)|\Phi_{1}\rangle`, with the same orbital operation applied in the :math:`\alpha`
+    and :math:`\beta` spin orbitals.
 
     **Details:**
 
@@ -517,7 +519,7 @@ class OrbitalRotation(Operation):
       (see Appendix F, https://arxiv.org/abs/2104.05695)
 
     Args:
-        varphi (float): rotation angle :math:`\varphi`
+        phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
 
     **Example**
@@ -527,9 +529,9 @@ class OrbitalRotation(Operation):
         >>> dev = qml.device('default.qubit', wires=4)
 
         >>> @qml.qnode(dev)
-        ... def circuit(varphi):
+        ... def circuit(phi):
         ...     qml.BasisState([1, 1, 0, 0], wires=[0, 1, 2, 3])
-        ...     qml.OrbitalRotation(varphi, wires=[0, 1, 2, 3])
+        ...     qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
         ...     return qml.state()
 
         >>> circuit(0.1)
@@ -573,10 +575,12 @@ class OrbitalRotation(Operation):
     @classmethod
     def _matrix(cls, *params):
         # This matrix is the "sign flipped" version of that on p18 of https://arxiv.org/abs/2104.05695,
-        # There was a typo in the sign of a matrix element "s" at [2, 8], which is fixed here.
-        varphi = params[0]
-        c = math.cos(varphi / 2)
-        s = math.sin(varphi / 2)
+        # where the sign flip is to adjust for the opposite convention used by authors for naming wires.
+        # Additionally, there was a typo in the sign of a matrix element "s" at [2, 8], which is fixed here.
+
+        phi = params[0]
+        c = math.cos(phi / 2)
+        s = math.sin(phi / 2)
 
         return np.array(
             [
@@ -600,17 +604,17 @@ class OrbitalRotation(Operation):
         )
 
     @staticmethod
-    def decomposition(varphi, wires):
+    def decomposition(phi, wires):
         # This decomposition is the "upside down" version of that on p18 of https://arxiv.org/abs/2104.05695
         decomp_ops = [
             qml.Hadamard(wires=wires[3]),
             qml.Hadamard(wires=wires[2]),
             qml.CNOT(wires=[wires[3], wires[1]]),
             qml.CNOT(wires=[wires[2], wires[0]]),
-            qml.RY(varphi / 2, wires=wires[3]),
-            qml.RY(varphi / 2, wires=wires[2]),
-            qml.RY(varphi / 2, wires=wires[1]),
-            qml.RY(varphi / 2, wires=wires[0]),
+            qml.RY(phi / 2, wires=wires[3]),
+            qml.RY(phi / 2, wires=wires[2]),
+            qml.RY(phi / 2, wires=wires[1]),
+            qml.RY(phi / 2, wires=wires[0]),
             qml.CNOT(wires=[wires[3], wires[1]]),
             qml.CNOT(wires=[wires[2], wires[0]]),
             qml.Hadamard(wires=wires[3]),
@@ -619,5 +623,5 @@ class OrbitalRotation(Operation):
         return decomp_ops
 
     def adjoint(self):
-        (varphi,) = self.parameters
-        return OrbitalRotation(-varphi, wires=self.wires)
+        (phi,) = self.parameters
+        return OrbitalRotation(-phi, wires=self.wires)

@@ -388,19 +388,20 @@ def DoubleExcitationMinus(phi):
     return np.array(U)
 
 
-def OrbitalRotation(varphi):
+def OrbitalRotation(phi):
     r"""Quantum number preserving four-qubit one-parameter gate.
 
     Args:
-        varphi (float): rotation angle
+        phi (float): rotation angle
     Returns:
         array[complex]: rotation matrix
     """
-    c = np.cos(varphi / 2)
-    s = np.sin(varphi / 2)
+    c = np.cos(phi / 2)
+    s = np.sin(phi / 2)
 
     # This matrix is the "sign flipped" version of that on p18 of https://arxiv.org/abs/2104.05695,
-    # There was a typo in the sign of a matrix element "s" at [2, 8] in arXiv:2104.05695, which is fixed here.
+    # where the sign flip is to adjust for the opposite convention used by authors for naming wires.
+    # Additionally, there was a typo in the sign of a matrix element "s" at [2, 8], which is fixed here.
     return np.array(
         [
             [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],

@@ -440,17 +440,17 @@ def DoubleExcitationMinus(phi):
     return U
 
 
-def OrbitalRotation(varphi):
+def OrbitalRotation(phi):
     r"""Quantum number preserving four-qubit one-parameter gate.
 
     Args:
-        varphi (float): rotation angle
+        phi (float): rotation angle
     Returns:
         array: the four-qubit matrix describing the operation
     """
 
-    c = math.cos(varphi / 2)
-    s = math.sin(varphi / 2)
+    c = math.cos(phi / 2)
+    s = math.sin(phi / 2)
 
     return np.array(
         [

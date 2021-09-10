@@ -25,10 +25,10 @@ class GateFabric(Operation):
     proposed by Anselmetti *et al.* in `arXiv:2104.05692 <https://arxiv.org/abs/2104.05695>`_.
 
     This template prepares the :math:`N` qubits trial state by applying :math:`L` layers of the gate fabric, which is composed
-    of 2-parameter 4-qubit gate elements :math:`\hat{Q}(\theta, \varphi)`. Each of the :math:`\hat{Q}(\theta, \varphi)` gate is itself
+    of 2-parameter 4-qubit gate elements :math:`\hat{Q}(\theta, \phi)`. Each of the :math:`\hat{Q}(\theta, \phi)` gate is itself
     composed of two 1-parameter 4-qubit gates. The first gate is a spin-adapted spatial orbital rotation gate, which is implemented by
-    :math:`\text{OrbitalRotation}(\varphi)` gate. Whereas the second gate is a diagonal pair-exchange gate, which is implemented by the
-    :math:`\text{DoubleExcitation}(\theta)` gate. In addition to these two gates, :math:`\hat{Q}(\theta, \varphi)` can also include an
+    :class:`~.OrbitalRotation()` gate. Whereas the second gate is a diagonal pair-exchange gate, which is equivalent to the
+    :class:`~.DoubleExcitation()` gate. In addition to these two gates, :math:`\hat{Q}(\theta, \phi)` can also include an
     optional gate :math:`\hat{\Pi} \in \{\hat{I}, \text{OrbitalRotation}(\pi)\}` gate, whose non-identity value could be advantageous in
     gradient-based parameter optimization. Regardless, of the choice of :math:`\hat{\Pi}`, this gate fabric will exactly preserve the
     quantum numbers :math:`\hat{N}_{\alpha}`, :math:`\hat{N}_{\beta}` and :math:`\hat{S}^{2}`.
@@ -39,12 +39,12 @@ class GateFabric(Operation):
 
     .. figure:: ../../_static/templates/layers/gate_fabric_layer.png
         :align: center
-        :width: 40%
+        :width: 35%
         :target: javascript:void(0);
 
     |
 
-    The 2-parameter, 4-qubit :math:`\hat{Q}(\theta, \varphi)` gate is decomposed as follows:
+    The 2-parameter, 4-qubit :math:`\hat{Q}(\theta, \phi)` gate is decomposed as follows:
 
     |
 
@@ -55,35 +55,17 @@ class GateFabric(Operation):
 
     |
 
-    The individual :math:`\text{DoubleExcitation}(\theta)` and  :math:`\text{OrbitalRotation}(\varphi)` gates are decomposed using
-    Givens rotation gate :math:`G(\phi)`, which is implemented in pennylane with :math:`\text{SingleExcitation}(phi)`.
-
-    |
-
-    .. figure:: ../../_static/templates/layers/double_excitation_decomposition.png
-        :align: center
-        :width: 80%
-        :target: javascript:void(0);
-
-    .. figure:: ../../_static/templates/layers/orbital_rotation_decomposition.png
-        :align: center
-        :width: 80%
-        :target: javascript:void(0);
-
-    .. figure:: ../../_static/templates/layers/givens_rotation_decomposition.png
-        :align: center
-        :width: 100%
-        :target: javascript:void(0);
-
-    |
+    The individual four qubit :class:`~.DoubleExcitation()` and  :class:`~.OrbitalRotation()` gates given here are equivalent to the
+    :math:`\text{QNP}_{PX}(\theta)` and :math:`\text{QNP}_{OR}(\phi)` gates presented in `arXiv:2104.05692 <https://arxiv.org/abs/2104.05695>`_
+    respectively.
 
     Args:
         weights (tensor_like): Array of weights of shape ``(L, D, 2)``\,
-            where ``L`` is the number of gate fabric layers and ``D = N/2-1``\
-            is the number of :math:`\hat{Q}(\varphi, \theta)` gates per layer.
+            where ``L`` is the number of gate fabric layers and ``D = N/2-1``
+            is the number of :math:`\hat{Q}(\theta, \phi)` gates per layer.
         wires (Iterable): wires that the template acts on
-        init_state (tensor_like): iterable or shape ``(len(wires),)`` tensor representing the Hartree-Fock state in Jordan-Wigner basis,
-            used to initialize the wires.
+        init_state (tensor_like): iterable of shape ``(len(wires),)``\, representing the Hartree-Fock state in Jordan-Wigner basis
+            that is used to initialize the wires.
         include_pi (boolean): If ``include_pi = True``\, the optional constant :math:`\hat{\Pi}` gate  is set to :math:`\text{OrbitalRotation}(\pi)`.
             Default value is :math:`\hat{I}`.
 
