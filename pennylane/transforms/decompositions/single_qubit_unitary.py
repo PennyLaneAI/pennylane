@@ -87,16 +87,16 @@ def zyz_decomposition(U, wire):
         omega = 2 * math.angle(U[1, 1])
         return [qml.RZ(omega, wires=wire)]
 
-    # Now check if the matrix is off-diagonal and the real part of elements
-    # differ by a sign. This means we can express it in terms of a single Z
-    # rotation and a Y rotation of -pi We use -pi to get the matrix elements to
-    # be equal when we construct the matrices using op.matrix in PennyLane
+    # Check if the matrix is off-diagonal. This means we can express it in terms
+    # of a single Z rotation and a Y rotation of -pi.
     if math.allclose(U[0, 0], [0.0]):
         # If the elements are the same, this is just an X rotation with a global phase
         if math.allclose(U[0, 1], U[1, 0]):
             return [qml.Rot(0, np.pi, np.pi, wires=wire)]
 
-        # Otherwise, we need to find the angle of the RZ
+        # Otherwise, we need to find the angle of the RZ. Note that we use -pi
+        # as the rotation angle for RY. This ensures the matrices constructed in
+        # PennyLane will match the original.
         theta = -np.pi
         phi = 2 * math.angle(U[0, 1])
         return [qml.Rot(phi, theta, 0.0, wires=wire)]
