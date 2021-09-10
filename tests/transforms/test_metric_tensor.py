@@ -15,10 +15,11 @@
 Unit tests for the metric tensor transform.
 """
 import pytest
-import numpy as np
+from pennylane import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qml
+from pennylane import QNode, qnode
 from gate_data import Y, Z
 
 
@@ -29,14 +30,13 @@ class TestMetricTensor:
     def test_rot_decomposition(self, diff_method):
         """Test that the rotation gate is correctly decomposed"""
         dev = qml.device("default.qubit", wires=1)
+        params = np.array([1.0, 2.0, 3.0], requires_grad=True)
 
-        def circuit(weights):
-            qml.Rot(weights[0], weights[1], weights[2], wires=0)
-            return qml.expval(qml.PauliX(0))
+        with qml.tape.QuantumTape() as circuit:
+            qml.Rot(params[0], params[1], params[2], wires=0)
+            qml.expval(qml.PauliX(0))
 
-        circuit = qml.QNode(circuit, dev, diff_method=diff_method)
-        params = np.array([1.0, 2.0, 3.0])
-        tapes = qml.metric_tensor(circuit, only_construct=True)(params)
+        tapes, _ = qml.metric_tensor(circuit)
         assert len(tapes) == 3
 
         # first parameter subcircuit
@@ -58,9 +58,6 @@ class TestMetricTensor:
         assert tapes[2].operations[0].data == [1]
         assert tapes[2].operations[1].data == [2]
 
-        result = qml.metric_tensor(circuit)(params)
-        assert result.shape == (3, 3)
-
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     def test_multirz_decomposition(self, diff_method):
         """Test that the MultiRZ gate is correctly decomposed"""
@@ -71,7 +68,7 @@ class TestMetricTensor:
             qml.MultiRZ(b, wires=[0, 1, 2])
             return qml.expval(qml.PauliX(0))
 
-        circuit = qml.QNode(circuit, dev, diff_method=diff_method)
+        circuit = QNode(circuit, dev, diff_method=diff_method)
         params = [0.1, 0.2]
         result = qml.metric_tensor(circuit)(*params)
         assert result.shape == (2, 2)
@@ -90,41 +87,36 @@ class TestMetricTensor:
             qml.RX(a, wires=0)
             return qml.expval(qml.PauliX(0))
 
-        circuit = qml.QNode(circuit, dev, diff_method=diff_method)
+        circuit = QNode(circuit, dev, diff_method=diff_method)
         params = [0.1]
-        result = qml.metric_tensor(circuit)(*params)
+        result = qml.metric_tensor(circuit, hybrid=False)(*params)
         assert result.shape == (2, 2)
 
     def test_generator_no_expval(self, monkeypatch):
         """Test exception is raised if subcircuit contains an
         operation with generator object that is not an observable"""
-        dev = qml.device("default.qubit", wires=1)
-
-        def circuit(a):
-            qml.RX(a, wires=0)
-            return qml.expval(qml.PauliX(0))
-
-        circuit = qml.QNode(circuit, dev)
-
         with monkeypatch.context() as m:
             m.setattr("pennylane.RX.generator", [qml.RX, 1])
 
+            with qml.tape.QuantumTape() as tape:
+                qml.RX(np.array(0.5, requires_grad=True), wires=0)
+                qml.expval(qml.PauliX(0))
+
             with pytest.raises(qml.QuantumFunctionError, match="no corresponding observable"):
-                circuit.metric_tensor(1.0, only_construct=True)
+                qml.metric_tensor(tape)
 
     def test_construct_subcircuit(self):
         """Test correct subcircuits constructed"""
         dev = qml.device("default.qubit", wires=2)
 
-        def circuit(a, b, c):
-            qml.RX(a, wires=0)
-            qml.RY(b, wires=0)
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(np.array(1.0, requires_grad=True), wires=0)
+            qml.RY(np.array(1.0, requires_grad=True), wires=0)
             qml.CNOT(wires=[0, 1])
-            qml.PhaseShift(c, wires=1)
+            qml.PhaseShift(np.array(1.0, requires_grad=True), wires=1)
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
 
-        circuit = qml.QNode(circuit, dev)
-        tapes = circuit.metric_tensor(1.0, 1.0, 1.0, only_construct=True)
+        tapes, _ = qml.metric_tensor(tape)
         assert len(tapes) == 3
 
         # first parameter subcircuit
@@ -151,8 +143,9 @@ class TestMetricTensor:
         """Test correct subcircuits constructed
         when a layer structure exists"""
         dev = qml.device("default.qubit", wires=3)
+        params = np.ones([8])
 
-        def circuit(params):
+        with qml.tape.QuantumTape() as tape:
             # section 1
             qml.RX(params[0], wires=0)
             # section 2
@@ -173,10 +166,7 @@ class TestMetricTensor:
             qml.CNOT(wires=[1, 2])
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1)), qml.expval(qml.PauliX(2))
 
-        circuit = qml.QNode(circuit, dev)
-
-        params = np.ones([8])
-        tapes = circuit.metric_tensor(params, only_construct=True)
+        tapes, _ = qml.metric_tensor(tape)
 
         # this circuit should split into 4 independent
         # sections or layers when constructing subcircuits
@@ -236,14 +226,14 @@ class TestMetricTensor:
             qml.PhaseShift(c, wires=1)
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
 
-        circuit = qml.QNode(circuit, dev)
+        circuit = QNode(circuit, dev)
 
         a = 0.432
         b = 0.12
         c = -0.432
 
         # evaluate metric tensor
-        g = circuit.metric_tensor(a, b, c)
+        g = qml.metric_tensor(circuit)(a, b, c)
 
         # check that the metric tensor is correct
         expected = (
@@ -287,7 +277,7 @@ class TestMetricTensor:
             qml.RX(h, wires=1)
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1)), qml.expval(qml.PauliX(2))
 
-        final = qml.QNode(final, dev, diff_method=request.param)
+        final = QNode(final, dev, diff_method=request.param)
 
         return dev, final, non_parametrized_layer, a, b, c
 
@@ -300,7 +290,7 @@ class TestMetricTensor:
         params = [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272]
         x, y, z, h, g, f = params
 
-        G = circuit.metric_tensor(*params)
+        G = qml.metric_tensor(circuit)(*params)
 
         # ============================================
         # Test block diag metric tensor of first layer is correct.
@@ -366,7 +356,7 @@ class TestMetricTensor:
             non_parametrized_layer(a, b, c)
             return qml.var(qml.PauliZ(2)), qml.var(qml.PauliY(1))
 
-        layer2_diag = qml.QNode(layer2_diag, dev)
+        layer2_diag = QNode(layer2_diag, dev)
 
         def layer2_off_diag_first_order(x, y, z, h, g, f):
             non_parametrized_layer(a, b, c)
@@ -376,7 +366,7 @@ class TestMetricTensor:
             non_parametrized_layer(a, b, c)
             return qml.expval(qml.PauliZ(2)), qml.expval(qml.PauliY(1))
 
-        layer2_off_diag_first_order = qml.QNode(layer2_off_diag_first_order, dev)
+        layer2_off_diag_first_order = QNode(layer2_off_diag_first_order, dev)
 
         def layer2_off_diag_second_order(x, y, z, h, g, f):
             non_parametrized_layer(a, b, c)
@@ -386,7 +376,7 @@ class TestMetricTensor:
             non_parametrized_layer(a, b, c)
             return qml.expval(qml.Hermitian(np.kron(Z, Y), wires=[2, 1]))
 
-        layer2_off_diag_second_order = qml.QNode(layer2_off_diag_second_order, dev)
+        layer2_off_diag_second_order = QNode(layer2_off_diag_second_order, dev)
 
         # calculate the diagonal terms
         varK0, varK1 = layer2_diag(x, y, z, h, g, f)
@@ -425,7 +415,7 @@ class TestMetricTensor:
             qml.RY(f, wires=2)
             return qml.var(qml.PauliX(1))
 
-        layer3_diag = qml.QNode(layer3_diag, dev)
+        layer3_diag = QNode(layer3_diag, dev)
         G3 = layer3_diag(x, y, z, h, g, f) / 4
         assert np.allclose(G[3:4, 3:4], G3, atol=tol, rtol=0)
 
@@ -443,7 +433,7 @@ class TestMetricTensor:
         params = [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272]
         x, y, z, h, g, f = params
 
-        G = circuit.metric_tensor(*params, diag_approx=True)
+        G = qml.metric_tensor(circuit, diag_approx=True)(*params)
 
         # ============================================
         # Test block diag metric tensor of first layer is correct.
@@ -490,7 +480,7 @@ class TestMetricTensor:
             non_parametrized_layer(a, b, c)
             return qml.var(qml.PauliZ(2)), qml.var(qml.PauliY(1))
 
-        layer2_diag = qml.QNode(layer2_diag, dev)
+        layer2_diag = QNode(layer2_diag, dev)
 
         # calculate the diagonal terms
         varK0, varK1 = layer2_diag(x, y, z, h, g, f)
@@ -522,7 +512,7 @@ class TestMetricTensor:
             qml.RY(f, wires=2)
             return qml.var(qml.PauliX(1))
 
-        layer3_diag = qml.QNode(layer3_diag, dev)
+        layer3_diag = QNode(layer3_diag, dev)
         G3 = layer3_diag(x, y, z, h, g, f) / 4
         assert np.allclose(G[3:4, 3:4], G3, atol=tol, rtol=0)
 
@@ -542,7 +532,7 @@ class TestDifferentiability:
         """Test metric tensor differentiability in the autograd interface"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="autograd", diff_method=diff_method)
+        @qnode(dev, interface="autograd", diff_method=diff_method)
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
@@ -553,7 +543,7 @@ class TestDifferentiability:
         def cost(weights):
             return qml.metric_tensor(circuit)(weights)[2, 2]
 
-        weights = np.array([0.432, 0.12, -0.432])
+        weights = np.array([0.432, 0.12, -0.432], requires_grad=True)
         a, b, c = weights
 
         grad = qml.grad(cost)(weights)
@@ -562,6 +552,7 @@ class TestDifferentiability:
         )
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
+    @pytest.mark.xfail
     def test_jax(self, diff_method, tol):
         """Test metric tensor differentiability in the JAX interface"""
         if diff_method == "parameter-shift":
@@ -572,7 +563,7 @@ class TestDifferentiability:
 
         dev = qml.device("default.qubit.jax", wires=2)
 
-        @qml.qnode(dev, interface="jax", diff_method="backprop")
+        @qnode(dev, interface="jax", diff_method="backprop")
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
@@ -600,7 +591,7 @@ class TestDifferentiability:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="tf", diff_method=diff_method)
+        @qnode(dev, interface="tf", diff_method=diff_method)
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
@@ -627,7 +618,7 @@ class TestDifferentiability:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="torch", diff_method=diff_method)
+        @qnode(dev, interface="torch", diff_method=diff_method)
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
