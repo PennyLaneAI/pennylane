@@ -410,6 +410,11 @@ def probs(wires=None, op=None):
     """
     # pylint: disable=protected-access
 
+    if not isinstance(op, Observable) and op is not None:  # None type is also allowed for op
+        raise qml.QuantumFunctionError(
+            "{} is not an observable: cannot be used with probability".format(op.name)
+        )
+
     if wires is not None:
         if op is not None:
             raise ValueError(
