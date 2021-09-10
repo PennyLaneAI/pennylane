@@ -39,7 +39,7 @@ def expand_fn(tape):
 
 
 @functools.partial(batch_transform, expand_fn=expand_fn)
-def metric_tensor(tape, diag_approx=False, argnum=None):
+def metric_tensor(tape, diag_approx=False):
     """Returns a function that computes the block-diagonal approximation of the metric tensor
     of a given QNode.
 
@@ -52,9 +52,6 @@ def metric_tensor(tape, diag_approx=False, argnum=None):
     Args:
         qnode (.QNode or .QuantumTape): quantum tape or QNode to find the metric tensor of
         diag_approx (bool): iff True, use the diagonal approximation
-        argnum (int or list[int] or None): Trainable parameter indices to differentiate
-            with respect to. If not provided, the derivative with respect to all
-            trainable indices are returned.
         hybrid (bool): Specifies whether classical processing inside a QNode
             should be taken into account when transforming a QNode.
 
@@ -147,10 +144,6 @@ def metric_tensor(tape, diag_approx=False, argnum=None):
                [0.        , 0.00415023, 0.        ],
                [0.        , 0.        , 0.24878844]])
     """
-
-    if argnum is not None:
-        tape.trainable_params = set(argnum)
-
     # get the circuit graph
     graph = tape.graph
 
@@ -255,7 +248,7 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
                         _mt = qml.math.tensordot(c, _mt, [[0], [0]])
                         metric_tensors.append(_mt)
 
-                return metric_tensors
+                return tuple(metric_tensors)
 
         is_square = cjac.shape == (1,) or (cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1])
 

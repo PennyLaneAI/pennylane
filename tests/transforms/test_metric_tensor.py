@@ -244,6 +244,37 @@ class TestMetricTensor:
         )
         assert np.allclose(g, np.diag(expected), atol=tol, rtol=0)
 
+    def test_evaluate_diag_metric_tensor_classical_processing(self, tol):
+        """Test that a diagonal metric tensor evaluates correctly
+        when the QNode includes classical processing."""
+        dev = qml.device("default.qubit", wires=2)
+
+        def circuit(a, b):
+            qml.RX(a[1], wires=0)
+            qml.RY(a[0], wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PhaseShift(b, wires=1)
+            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
+
+        circuit = QNode(circuit, dev)
+
+        a = np.array([0.432, 0.1])
+        b = 0.12
+
+        # evaluate metric tensor
+        g = qml.metric_tensor(circuit)(a, b)
+        assert isinstance(g, tuple)
+        assert len(g) == 2
+        assert g[0].shape == (len(a), len(a))
+        assert g[1].shape == tuple()
+
+        # check that the metric tensor is correct
+        expected = np.array([np.cos(a[1]) ** 2, 1]) / 4
+        assert np.allclose(g[0], np.diag(expected), atol=tol, rtol=0)
+
+        expected = (3 - 2 * np.cos(a[1]) ** 2 * np.cos(2 * a[0]) - np.cos(2 * a[1])) / 16
+        assert np.allclose(g[1], expected, atol=tol, rtol=0)
+
     @pytest.fixture(params=["parameter-shift", "backprop"])
     def sample_circuit(self, request):
         """Sample variational circuit fixture used in the
