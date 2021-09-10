@@ -139,7 +139,7 @@ def expansion(la, lb, ra, rb, alpha, beta, t):
         \Omega_{ij} = \sum_{t=0}^{i+j} E_t^{ij} \Lambda_t,
 
     where :math:`\Lambda` is a Hermite polynomial of degree :math:`t`, :math:`E` denotes the expansion
-    coefficients, :math:`\Omega_{ij} = G_i G_j`, and :math:`G` is a Gaussian function. The overalp
+    coefficients, :math:`\Omega_{ij} = G_i G_j`, and :math:`G` is a Gaussian function. The overlap
     integral between two Gaussian functions can be simply computed by integrating over the overlap
     distribution which requires obtaining the expansion coefficients. This can be done recursively
     as [`Helgaker (1995) p799 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]
