@@ -64,7 +64,7 @@ class CircuitDrawer:
         self.active_wires = self.extract_active_wires(raw_operation_grid, raw_observable_grid)
 
         if charset is None:
-            self.charset = CHARSETS['unicode']()
+            self.charset = CHARSETS["unicode"]()
         elif isinstance(charset, type) and issubclass(charset, CharSet):
             self.charset = charset()
         else:
