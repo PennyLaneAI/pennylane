@@ -18,7 +18,6 @@ This module contains a helper function to sort operations into layers.
 def _default_wire_map(ops):
     """This helper function may be moved elsewhere as integration of circuit
     drawing component progresses.
-
     Args:
         ops Iterable[Operation]
     
@@ -35,34 +34,13 @@ def _default_wire_map(ops):
                 highest_number+=1
     return wire_map
 
-def _recursive_find_layer(checking_layer, op_occupied_wires, stop_wires):
-    if stop_wires[checking_layer] & op_occupied_wires:
-        # this layer is occupied, use higher one
-        return checking_layer+1
-    elif checking_layer == 0:
-        # reached first layer, so stop
-        return 0
-    else:
-        return _recursive_find_layer(checking_layer-1, op_occupied_wires, stop_wires)
 
-
-def _increase_if_blocked(layer, op_blocked_wires, blocked_wires_per_layer):
-
-    if op_blocked_wires & blocked_wires_per_layer[layer]:
-        return _increase_if_blocked(layer+1, op_blocked_wires, blocked_wires_per_layer)
-    return layer
-
-
-def drawable_layers(ops, greedy=False, wire_map=None):
+def drawable_layers(ops, wire_map=None):
     """Determine non-overlapping yet dense placement of operations for drawing.
-
     Args:
         ops Iterable[~.Operator]: a list of operations
-
     Keyword Args:
-        greedy=False (bool): whether to push gates between wires in the same multi-qubit gate
-        wire_map=None (dict): dictionary mapping wire labels to sucessive positive integers.
-
+        wire_map=None dict: dictionary mapping wire labels to sucessive positive integers.
     Returns:
         list[set[~.Operator]] : Each index is a set of operations 
             for the corresponding layer
@@ -74,50 +52,52 @@ def drawable_layers(ops, greedy=False, wire_map=None):
     # initialize
     max_layer = 0
 
-    blocked_wires_per_layer = [set()]
-    used_wires_per_layer = [set()]
+    occupied_wires_per_layer = [set()]
     ops_per_layer = [set()]
+        
+    def recursive_find_layer(checking_layer, op_occupied_wires):
+        # function uses outer-scope `occupied_wires_per_layer`
 
+        if occupied_wires_per_layer[checking_layer] & op_occupied_wires:
+            # this layer is occupied, use higher one
+            return checking_layer+1
+        elif checking_layer == 0:
+            # reached first layer, so stop
+            return 0
+        else:
+            return recursive_find_layer(checking_layer-1, op_occupied_wires)
+    
     # loop over operations
     for op in ops:
         mapped_wires = {wire_map[wire] for wire in op.wires}
-        op_blocked_wires = set( range(min(mapped_wires), max(mapped_wires)+1))
+        op_occupied_wires = set( range(min(mapped_wires), max(mapped_wires)+1))
 
-        if greedy:
-            op_layer = _recursive_find_layer(max_layer, mapped_wires, used_wires_per_layer)
-            op_layer = _increase_if_blocked(op_layer, op_blocked_wires, blocked_wires_per_layer)
-        else:
-            op_layer = _recursive_find_layer(max_layer, op_blocked_wires, blocked_wires_per_layer)
+        op_layer = recursive_find_layer(max_layer, op_occupied_wires)
 
         # see if need to add new layer
         if op_layer > max_layer:
             max_layer += 1
-            used_wires_per_layer.append(set())
-            blocked_wires_per_layer.append(set())
+            occupied_wires_per_layer.append(set())
             ops_per_layer.append(set())
 
         # Add to op_layer
         ops_per_layer[op_layer].add(op)
-        used_wires_per_layer[op_layer].update(mapped_wires)
-        blocked_wires_per_layer[op_layer].update(op_blocked_wires)
+        occupied_wires_per_layer[op_layer].update(op_occupied_wires)
         
     return ops_per_layer
 
 
 
-def drawable_grid(ops, wire_map=None, greedy=False):
+def drawable_grid(ops, wire_map=None):
     """Determine non-overlapping yet dense placement of operations for drawing.  Returns
     structure compatible with ``qml.circuit_drawer.Grid``. 
     
     Args:
         ops Iterable[~.Operator]: a list of operations
-
     Keyword Args:
         wire_map=None dict: dictionary mapping wire labels to sucessive positive integers.
-
     Returns:
         List[List[~.Operator]] : layers compatible with grid objects
-
     """
 
     if len(ops) == 0:
@@ -126,7 +106,7 @@ def drawable_grid(ops, wire_map=None, greedy=False):
     if wire_map is None:
         wire_map = _default_wire_map(ops)
 
-    layers = drawable_layers(ops, wire_map=wire_map, greedy=greedy)
+    layers = drawable_layers(ops, wire_map=wire_map)
 
     n_wires = len(wire_map)
     n_layers = len(layers)
