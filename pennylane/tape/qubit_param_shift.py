@@ -176,7 +176,7 @@ class QubitParamShiftTape(JacobianTape):
                 array[float]: 1-dimensional array of length determined by the tape output
                 measurement statistics
             """
-            results = np.squeeze([toarray(res) for res in results])
+            results = np.squeeze(list(map(toarray, results)))
 
             if results.dtype is np.dtype("O"):
                 # The evaluated quantum results are a ragged array.
