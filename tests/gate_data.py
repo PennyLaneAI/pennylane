@@ -8,12 +8,17 @@ import numpy as np
 # ========================================================
 
 I = np.eye(2)
+
 # Pauli matrices
 X = np.array([[0, 1], [1, 0]])  #: Pauli-X matrix
 Y = np.array([[0, -1j], [1j, 0]])  #: Pauli-Y matrix
 Z = np.array([[1, 0], [0, -1]])  #: Pauli-Z matrix
 
 H = np.array([[1, 1], [1, -1]]) / math.sqrt(2)  #: Hadamard gate
+
+II = np.eye(4, dtype=np.complex128)
+XX = np.array(np.kron(X, X), dtype=np.complex128)
+YY = np.array(np.kron(Y, Y), dtype=np.complex128)
 
 # Single-qubit projectors
 StateZeroProjector = np.array([[1, 0], [0, 0]])
@@ -239,6 +244,62 @@ def MultiRZ2(theta):
             [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, np.exp(-1j * theta / 2)],
         ]
     )
+
+
+def IsingXX(phi):
+    r"""Ising XX coupling gate
+
+    .. math:: XX(\phi) = \begin{bmatrix}
+        \cos(\phi / 2) & 0 & 0 & -i \sin(\phi / 2) \\
+        0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
+        0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
+        -i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
+        \end{bmatrix}.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+    Returns:
+        array[complex]: unitary 4x4 rotation matrix
+    """
+    return np.cos(phi / 2) * II - 1j * np.sin(phi / 2) * XX
+
+
+def IsingYY(phi):
+    r"""Ising YY coupling gate.
+
+    .. math:: YY(\phi) = \begin{bmatrix}
+        \cos(\phi / 2) & 0 & 0 & i \sin(\phi / 2) \\
+        0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
+        0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
+        i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
+        \end{bmatrix}.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+    Returns:
+        array[complex]: unitary 4x4 rotation matrix
+    """
+    return np.cos(phi / 2) * II - 1j * np.sin(phi / 2) * YY
+
+
+def IsingZZ(phi):
+    r"""Ising ZZ coupling gate
+
+    .. math:: ZZ(\phi) = \begin{bmatrix}
+        e^{-i \phi / 2} & 0 & 0 & 0 \\
+        0 & e^{i \phi / 2} & 0 & 0 \\
+        0 & 0 & e^{i \phi / 2} & 0 \\
+        0 & 0 & 0 & e^{-i \phi / 2}
+        \end{bmatrix}.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+    Returns:
+        array[complex]: unitary 4x4 rotation matrix
+    """
+    e_m = np.exp(-1j * phi / 2)
+    e = np.exp(1j * phi / 2)
+    return np.array([[e_m, 0, 0, 0], [0, e, 0, 0], [0, 0, e, 0], [0, 0, 0, e_m]])
 
 
 def ControlledPhaseShift(phi):

@@ -705,7 +705,8 @@ class TestExpectationQuantumGradients:
             [
                 [0.51310276 + 0.81702166j, 0.13649626 + 0.22487759j],
                 [0.26300233 + 0.00556194j, -0.96414101 - 0.03508489j],
-            ]
+            ],
+            requires_grad=False,
         )
 
         with qml.tape.JacobianTape() as tape:

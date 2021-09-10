@@ -259,6 +259,7 @@ class TestVJPGradients:
         exp = qml.jacobian(lambda x: expected(x)[0])(params.detach().numpy())
         assert np.allclose(params.grad, exp, atol=tol, rtol=0)
 
+    @pytest.mark.slow
     def test_tf(self, tol):
         """Tests that the output of the VJP transform
         can be differentiated using TF."""
@@ -282,6 +283,7 @@ class TestVJPGradients:
         res = t.jacobian(vjp, params)
         assert np.allclose(res, qml.jacobian(expected)(params.numpy()), atol=tol, rtol=0)
 
+    @pytest.mark.slow
     def test_jax(self, tol):
         """Tests that the output of the VJP transform
         can be differentiated using JAX."""

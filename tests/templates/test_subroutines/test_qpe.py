@@ -62,7 +62,8 @@ class TestDecomposition:
                 )
                 qml.probs(estimation_wires)
 
-            tape = tape.expand()
+            tape = tape.expand(depth=2, stop_at=lambda obj: obj.name in dev.operations)
+
             res = tape.execute(dev).flatten()
             initial_estimate = np.argmax(res) / 2 ** (wires - 1)
 
@@ -110,7 +111,7 @@ class TestDecomposition:
                 )
                 qml.probs(estimation_wires)
 
-            tape = tape.expand(stop_at=lambda obj: obj.name in dev.operations)
+            tape = tape.expand(depth=2, stop_at=lambda obj: obj.name in dev.operations)
             res = tape.execute(dev).flatten()
 
             if phase < 0:
