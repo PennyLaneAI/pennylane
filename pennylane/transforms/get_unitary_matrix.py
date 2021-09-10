@@ -24,33 +24,34 @@ def get_unitary_matrix(fn, wire_order=None):
     """Construct the matrix representation of a quantum circuit.
 
     Args:
-        fn (Union[.QNode, .QuantumTape, Callable]): A quantum node, tape, or quantum function that applies quantum operations.
+        fn (.QNode, .QuantumTape, or Callable): A quantum node, tape, or function that applies quantum operations.
         wire_order (Sequence[Any]): Order of the wires in the quantum circuit. Optional if ``fn`` is a QNode or tape.
 
     Returns:
-         function: Function which accepts the same arguments as the QNode or quantum function. When called, this function will return the unitary matrix.
+         function: Function which accepts the same arguments as the QNode or quantum function.
+         When called, this function will return the unitary matrix.
 
-    ***Example***
+    **Example**
 
-    Consider the following quantum function:
+    Consider the following function:
 
     .. code-block:: python3
-
-        wires = [0, 1]
 
         def circuit(theta):
             qml.RX(theta, wires=0)
             qml.PauliZ(wires=1)
 
-    We can use the ``get_unitary_matrix`` function to generate a new function that returns the unitary matrix corresponding to the quantum function ``circuit``:
+    Choosing a wire order, we can use the ``get_unitary_matrix`` function to generate a new function
+    that returns the unitary matrix corresponding to the function ``circuit``:
 
-    >> get_matrix = get_unitary_matrix(circuit, wires)
-    >> theta = np.pi/4
-    >> get_matrix(theta)
-    array([[ 0.92387953+0.j        ,  0.        +0.j        ,  0.        -0.38268343j,  0.        +0.j        ],
-    [ 0.        +0.j        , -0.92387953+0.j        ,  0.        +0.j        ,  0.        +0.38268343j],
-    [ 0.        -0.38268343j,  0.        +0.j        ,  0.92387953+0.j        ,  0.        +0.j        ],
-    [ 0.        +0.j        ,  0.        +0.38268343j,  0.        +0.j        , -0.92387953+0.j        ]])
+    >>> wires = [0, 1]
+    >>> get_matrix = get_unitary_matrix(circuit, wires)
+    >>> theta = np.pi/4
+    >>> get_matrix(theta)
+    array([[ 0.92387953+0.j,    0.+0.j,    0.-0.38268343j,    0.+0.j],
+    [0.+0.j,    -0.92387953+0.j,    0.+0.j,    0.+0.38268343j],
+    [0.-0.38268343j,    0.+0.j,    0.92387953+0.j,    0.+0.j],
+    [0.+0.j,    0.+0.38268343j,    0.+0.j,    -0.92387953+0.j]])
     """
 
     wires = wire_order

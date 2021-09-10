@@ -71,6 +71,8 @@ both transforms, and decompositions within the larger PennyLane codebase.
     :toctree: api
 
     ~transforms.zyz_decomposition
+    ~transforms.get_unitary_matrix
+
 
 Transforms that act on tapes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -121,3 +123,4 @@ from .optimization import (
 from .specs import specs
 from .qmc import apply_controlled_Q, quantum_monte_carlo
 from .unitary_to_rot import unitary_to_rot
+from .get_unitary_matrix import get_unitary_matrix
