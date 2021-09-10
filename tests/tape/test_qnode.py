@@ -70,6 +70,15 @@ class TestValidation:
         assert interface == "interface"
         assert device is dev
 
+    @pytest.mark.parametrize("interface", ("autograd", "torch", "tensorflow", "jax"))
+    def test_validate_backprop_method_finite_shots(self, interface):
+        """Tests that an error is raised for backpropagation with finite shots."""
+
+        dev = qml.device("default.qubit", wires=1, shots=3)
+
+        with pytest.raises(qml.QuantumFunctionError, match="Devices with finite shots"):
+            QNode._validate_backprop_method(dev, interface)
+
     def test_validate_backprop_method_invalid_device(self):
         """Test that the method for validating the backprop diff method
         tape raises an exception if the device does not support backprop."""
@@ -572,6 +581,60 @@ class TestValidation:
 
         # No differentiation required. No error raised.
         grad()
+
+    def test_unrecognized_keyword_arguments_validation(self):
+        """Tests that a UserWarning is raised when unrecognized keyword arguments are provided."""
+
+        # use two unrecognized methods, to confirm that multiple warnings are raised
+        unrecognized_one = "test_method_one"
+        unrecognized_two = "test_method_two"
+        warning_text = (
+            " is unrecognized, and will not be included in your computation. "
+            "Please review the QNode class or qnode decorator for the list of available "
+            "keyword variables."
+        )
+
+        expected_warnings = {
+            (UserWarning, f"'{unrecognized_one}'{warning_text}"),
+            (UserWarning, f"'{unrecognized_two}'{warning_text}"),
+        }
+
+        dev = qml.device("default.qubit", wires=1, shots=1)
+
+        with pytest.warns(UserWarning) as warning_list:
+
+            QNode(dummyfunc, dev, test_method_one=1, test_method_two=2)
+
+        warnings = {(warning.category, warning.message.args[0]) for warning in warning_list}
+        assert warnings == expected_warnings
+
+    def test_unrecognized_keyword_arguments_validation_decorator(self):
+        """Tests that a UserWarning is raised when unrecognized keyword arguments are provided."""
+
+        # use two unrecognized methods, to confirm that multiple warnings are raised
+        unrecognized_one = "test_method_one"
+        unrecognized_two = "test_method_two"
+        warning_text = (
+            " is unrecognized, and will not be included in your computation. "
+            "Please review the QNode class or qnode decorator for the list of available "
+            "keyword variables."
+        )
+
+        expected_warnings = {
+            (UserWarning, f"'{unrecognized_one}'{warning_text}"),
+            (UserWarning, f"'{unrecognized_two}'{warning_text}"),
+        }
+
+        dev = qml.device("default.qubit", wires=1, shots=1)
+
+        with pytest.warns(UserWarning) as warning_list:
+
+            @qml.qnode(dev, test_method_one=1, test_method_two=2)
+            def circ():
+                return qml.expval(qml.PauliZ(0))
+
+        warnings = {(warning.category, warning.message.args[0]) for warning in warning_list}
+        assert warnings == expected_warnings
 
 
 class TestTapeConstruction:
