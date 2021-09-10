@@ -331,8 +331,22 @@ def var_param_shift(tape, argnum, shift=np.pi / 2, gradient_recipes=None, f0=Non
     def processing_fn(results):
         # We need to expand the dimensions of the variance mask,
         # and convert it to be the same type as the results.
-        mask = qml.math.convert_like(qml.math.reshape(var_mask, [-1, 1]), results[0])
-        f0 = qml.math.expand_dims(results[0], -1)
+        res = results[0]
+        ragged = getattr(results[0], "dtype", None) is np.dtype("object")
+
+        mask = []
+        for m, r in zip(var_mask, results[0]):
+            array_func = np.ones if m else np.zeros
+            shape = qml.math.shape(r)
+            shape = (1,) if shape == tuple() else shape
+            mask.append(array_func(shape, dtype=bool))
+
+        if ragged:
+            res = qml.math.hstack(res)
+            mask = qml.math.hstack(mask)
+
+        mask = qml.math.convert_like(qml.math.reshape(mask, [-1, 1]), res)
+        f0 = qml.math.expand_dims(res, -1)
 
         pdA = pdA_fn(results[1:tape_boundary])
         pdA2 = 0
