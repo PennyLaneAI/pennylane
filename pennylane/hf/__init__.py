@@ -21,7 +21,6 @@ from .integrals import (
     expansion,
     gaussian_overlap,
     generate_overlap,
-    _generate_params,
     primitive_norm,
 )
 from .molecule import *
