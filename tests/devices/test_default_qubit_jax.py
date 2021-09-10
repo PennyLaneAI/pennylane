@@ -152,7 +152,6 @@ class TestQNodeIntegration:
         expected = jnp.array([amplitude, 0, jnp.conj(amplitude), 0])
         assert jnp.allclose(state, expected, atol=tol, rtol=0)
 
-    @pytest.mark.skip(reason="sampling doesnt work in backprop, fails with parameter-shift")
     def test_sampling_with_jit(self):
         """Test that sampling works with a jax.jit"""
 
