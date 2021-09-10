@@ -169,6 +169,7 @@ class TestTFQuantumTape:
             assert args[1]["order"] == 2
             assert args[1]["h"] == 1e-8
 
+    @pytest.mark.slow
     def test_reusing_quantum_tape(self, tol):
         """Test re-using a quantum tape by passing new parameters"""
         a = tf.Variable(0.1, dtype=tf.float64)
@@ -518,6 +519,7 @@ class TestTFPassthru:
 
         spy.assert_not_called()
 
+    @pytest.mark.slow
     def test_reusing_quantum_tape(self, mocker, tol):
         """Test re-using a quantum tape by passing new parameters"""
         spy = mocker.spy(JacobianTape, "jacobian")
