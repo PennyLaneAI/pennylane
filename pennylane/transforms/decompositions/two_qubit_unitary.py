@@ -237,6 +237,76 @@ def _decomposition_0_cnots(U, wires):
     return A_ops + B_ops
 
 
+def _decomposition_1_cnot(U, wires):
+    r"""If there is just one CNOT, we can write the circuit in the form.
+     -U- = -C--C--A- 
+     -U- = -D--X--B-
+
+    We want to find G, H, in SO(4) such that U = G V H, where V is CNOT01.
+    Then we can transform G, H into SU(2) x SU(2).
+
+    As in the 3-CNOT case, we will actually find a decomposition for the followin:
+     -U-SWAP- = -C--C-SWAP-B- 
+     -U-SWAP- = -D--X-SWAP-A-
+    so that the internal part of the decomposition has determinant 1.
+    """
+    # First we apply a SWAP to U and fix the determinant to +1 
+    swap_U = np.exp(1j * np.pi / 4) * math.dot(math.cast_like(SWAP, U), U)
+    
+    # For this case, our V = SWAP CNOT01 is constant. Thus, we can compute v,
+    # vvT, and its eigenvalues and eigenvectors directly. We store them here as
+    # constants.
+    v = np.array([
+        [  0.5,   0.5j,  0.5j, -0.5],
+        [ -0.5j,  0.5,  -0.5,  -0.5j],
+        [ -0.5j, -0.5,   0.5,  -0.5j],
+        [  0.5,  -0.5j, -0.5j, -0.5]
+    ])
+    
+    ev_q = np.array([-1., -1.,  1.,  1.])
+
+    # This q is properly in SO(4)
+    q = (1 / np.sqrt(2)) * np.array([
+        [-1, 0, -1, 0],
+        [0, 1, 0, 1],
+        [0, 1, 0, -1],
+        [1, 0, -1, 0]
+    ])
+
+    # Now let's compute u. For the one-CNOT case, u is always real. 
+    u = math.dot(math.cast_like(Edag, U), math.dot(swap_U, math.cast_like(E, U)))
+    uuT = math.dot(u, math.T(u))
+
+    # Since u is real, we can use eigh of its real part. eigh also orders the
+    # eigenvalues in ascending order, which matches the eigenvectors / values of q
+    ev_p, p = math.linalg.eigh(qml.math.real(uuT))
+
+    # Fix the determinant if necessary
+    if math.linalg.det(p) < 0:
+        p = math.dot(p, math.cast_like(LAST_COL_NEG, p))
+
+    # Compute G and H in SO(4) such that U = G V H
+    G = math.dot(p, q.T)    
+    H = math.dot(math.conj(math.T(v)), math.dot(math.T(G), u))    
+
+    # We now use the magic basis to convert G, H to SU(2) x SU(2)
+    AB = math.dot(E, math.dot(G, Edag))
+    CD = math.dot(E, math.dot(H, Edag))
+
+    # Now extract the tensor products to SU(2) x SU(2)
+    A, B = _su2su2_to_tensor_products(AB)
+    C, D = _su2su2_to_tensor_products(CD)
+
+    # Recover the operators in the decomposition; note that because of the
+    # initial SWAP, we exchange the order of A and B
+    A_ops = zyz_decomposition(A, wires[1])
+    B_ops = zyz_decomposition(B, wires[0])
+    C_ops = zyz_decomposition(C, wires[0])
+    D_ops = zyz_decomposition(D, wires[1])    
+
+    return C_ops + D_ops + [qml.CNOT(wires=[wires[0], wires[1]])] + A_ops + B_ops
+
+
 def _decomposition_3_cnots(U, wires):
     r"""The most general form of this decomposition is U = (A \otimes B) V (C \otimes D),
     where V is as depicted in the circuit below:
@@ -409,6 +479,8 @@ def two_qubit_decomposition(U, wires):
 
     if num_cnots == 0:
         decomp = _decomposition_0_cnots(U, wires)
+    elif num_cnots == 1:
+        decomp = _decomposition_1_cnot(U, wires)
     elif num_cnots == 3:
         decomp = _decomposition_3_cnots(U, wires)
     else:
