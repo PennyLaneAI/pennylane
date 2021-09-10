@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-
 Quantum gradient transforms are strategies for computing the gradient of a quantum
 circuit that work by **transforming** the quantum circuit into one or more gradient circuits.
 These gradient circuits, once executed and post-processed, return the gradient
@@ -248,8 +247,7 @@ The output tapes can then be evaluated and post-processed to retrieve
 the gradient:
 
 >>> dev = qml.device("default.qubit", wires=2)
->>> from pennylane.interfaces.batch import execute
->>> fn(execute(gradient_tapes, dev, None))
+>>> fn(qml.execute(gradient_tapes, dev, None))
 [[-0.09347337 -0.18884787 -0.28818254]]
 
 Note that the post-processing function ``fn`` returned by the

@@ -79,7 +79,7 @@ class AdamOptimizer(GradientDescentOptimizer):
 
         # Update step size (instead of correcting for bias)
         new_stepsize = (
-            self._stepsize * math.sqrt(1 - self.beta2 ** self.t) / (1 - self.beta1 ** self.t)
+            self.stepsize * math.sqrt(1 - self.beta2 ** self.t) / (1 - self.beta1 ** self.t)
         )
 
         if self.fm is None:
