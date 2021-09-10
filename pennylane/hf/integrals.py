@@ -306,7 +306,6 @@ def generate_overlap(basis_a, basis_b):
         )
 
     return overlap_integral
-<<<<<<< HEAD
 
 
 def boys(n, t):
@@ -417,5 +416,3 @@ def generate_attraction(r, basis_a, basis_b):
         v = na * nb * ((ca * cb[:,anp.newaxis]) * nuclear_attraction(basis_a.l, basis_b.l, ra, rb, alpha, beta[:,anp.newaxis], coor)).sum()
         return v
     return attraction_integral
-=======
->>>>>>> qchem_hf

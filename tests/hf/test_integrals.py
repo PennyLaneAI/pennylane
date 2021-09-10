@@ -23,6 +23,7 @@ from pennylane.hf.integrals import (
     expansion,
     gaussian_overlap,
     generate_overlap,
+    generate_attraction,
     _generate_params,
     primitive_norm,
 )
@@ -274,3 +275,32 @@ def test_gradient(symbols, geometry, alpha, coeff):
 
     assert np.allclose(g_alpha, g_ref_alpha)
     assert np.allclose(g_coeff, g_ref_coeff)
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "alpha", "coef", "r", "a_ref"),
+    [
+        (
+            ["H", "H"],
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], requires_grad=False),
+            pnp.array(
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                requires_grad=False,
+            ),
+            pnp.array(
+                [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
+                requires_grad=True,
+            ),
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], requires_grad=True),
+            pnp.array([0.0]),
+        ),
+    ],
+)
+def test_generate_attraction(symbols, geometry, alpha, coef, r, a_ref):
+    r"""Test that generate_kinetic function returns a correct value for the kinetic integral."""
+    mol = Molecule(symbols, geometry)
+    basis_a = mol.basis_set[0]
+    basis_b = mol.basis_set[1]
+    args = [p for p in [alpha, coef, r] if p.requires_grad]
+
+    a = generate_attraction(geometry[0], basis_a, basis_b)(*args)
+    assert np.allclose(a, a_ref)
