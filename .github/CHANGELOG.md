@@ -304,6 +304,8 @@
 
 <h3>Improvements</h3>
 
+* ``qml.circuit_drawer.CircuitDrawer`` can accept a string for the ``charset`` keyword, instead of a ``CharSet`` object.
+
 * The slowest tests, more than 1.5 seconds, now have the pytest mark `slow`, and can be
   selected or deselected during local execution of tests.
   [(#1633)](https://github.com/PennyLaneAI/pennylane/pull/1633)
