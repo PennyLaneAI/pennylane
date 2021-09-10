@@ -1127,6 +1127,7 @@ class TestDefaultQubitIntegration:
             "supports_inverse_operations": True,
             "supports_analytic_computation": True,
             "passthru_devices": {
+                "torch": "default.qubit.torch",
                 "tf": "default.qubit.tf",
                 "autograd": "default.qubit.autograd",
                 "jax": "default.qubit.jax",
@@ -2396,6 +2397,25 @@ class TestHamiltonianSupport:
         H = qml.Hamiltonian(tf.Variable([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
 
         @qml.qnode(dev, diff_method="backprop", interface="tf")
+        def circuit():
+            return qml.expval(H)
+
+        spy = mocker.spy(dev, "expval")
+
+        circuit()
+        # evaluated one expval altogether
+        assert spy.call_count == 1
+
+    def test_do_not_split_analytic_torch(self, mocker):
+        """Tests that the Hamiltonian is not split for shots=None using the Torch device."""
+        torch = pytest.importorskip("torch")
+
+        dev = qml.device("default.qubit.torch", wires=2)
+        H = qml.Hamiltonian(
+            torch.tensor([0.1, 0.2], requires_grad=True), [qml.PauliX(0), qml.PauliZ(1)]
+        )
+
+        @qml.qnode(dev, diff_method="backprop", interface="torch")
         def circuit():
             return qml.expval(H)
 

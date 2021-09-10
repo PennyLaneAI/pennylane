@@ -304,9 +304,6 @@ class TestBatchTransformGradients:
     def test_differentiable_tf(self, diff_method):
         """Test that a batch transform is differentiable when using
         TensorFlow"""
-        if diff_method in ("parameter-shift", "finite-diff"):
-            pytest.skip("Does not support parameter-shift mode")
-
         tf = pytest.importorskip("tensorflow")
         dev = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method)
@@ -326,9 +323,6 @@ class TestBatchTransformGradients:
     def test_differentiable_torch(self, diff_method):
         """Test that a batch transform is differentiable when using
         PyTorch"""
-        if diff_method == "backprop":
-            pytest.skip("Does not support backprop mode")
-
         torch = pytest.importorskip("torch")
         dev = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)

@@ -59,7 +59,7 @@ class TestExceptions:
         # lipschitz constant is given by sum(|coeffs|)
         lipschitz = np.sum(np.abs(coeffs))
 
-        assert opt._stepsize > 2 / lipschitz
+        assert opt.stepsize > 2 / lipschitz
 
         with pytest.raises(
             ValueError, match=f"The learning rate must be less than {2 / lipschitz}"
@@ -526,6 +526,7 @@ class TestOptimization:
         assert np.allclose(circuit(params), -1, atol=0.1, rtol=0.2)
         assert opt.shots_used > min_shots
 
+    @pytest.mark.slow
     def test_vqe_optimization(self):
         """Test that a simple VQE circuit can be optimized"""
         dev = qml.device("default.qubit", wires=2, shots=100)
