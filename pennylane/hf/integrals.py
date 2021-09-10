@@ -17,7 +17,7 @@ This module contains the functions needed for computing integrals over basis fun
 # pylint: disable= unbalanced-tuple-unpacking, too-many-arguments
 import autograd.numpy as anp
 from scipy.special import factorial2 as fac2
-from autograd import scipy as asp
+import autograd.scipy as asp
 
 
 def primitive_norm(l, alpha):
@@ -338,9 +338,11 @@ def boys(n, t):
         float: magnitude of the Boys function
 
     """
-    if t == 0:
+    if t == 0.0:
         return 1 / (2 * n + 1)
-    return asp.special.gamma(0.5 + n) * asp.special.gammainc(0.5 + n, t) / (2 * t**(0.5 + n))
+
+    return asp.special.gammainc(n+0.5, t) * asp.special.gamma(n+0.5) / (2 * t**(n + 0.5))
+
 
 def hermite_coulomb(t, u, v, n, p, dr):
     """Generates Hermite-Coulomb overlaps for nuclear attraction integral"""
@@ -348,9 +350,15 @@ def hermite_coulomb(t, u, v, n, p, dr):
     x, y, z = dr[0], dr[1], dr[2]
 
     T = p * (dr ** 2).sum(axis=0)
+
     val = 0
     if t == u == v == 0:
-        val = val + ((-2 * p) ** n) * boys(n, T)
+        # val = val + ((-2 * p) ** n) * boys(n, T)
+        f = []
+        for term in T.flatten():
+            f.append(boys(n, term))
+        val = val + ((-2 * p) ** n) * anp.array(f).reshape(T.shape)
+
     elif t == u == 0:
         if v > 1:
             val = val + (v - 1) * hermite_coulomb(t, u, v - 2, n + 1, p, dr)
@@ -367,32 +375,32 @@ def hermite_coulomb(t, u, v, n, p, dr):
 
 
 def nuclear_attraction(la, lb, ra, rb, alpha, beta, r):
-    """
-    Computes nuclear attraction between Gaussian primitives
-    Note that C is the coordinates of the nuclear centre
+    """Compute nuclear attraction integral between primitive Gaussian functions.
     """
     l1, m1, n1 = la
     l2, m2, n2 = lb
     p = alpha + beta
-    gp = (alpha * ra[:,anp.newaxis,anp.newaxis] + beta * rb[:,anp.newaxis,anp.newaxis]) / (alpha + beta)
-    dr = gp - anp.array(r)[:,anp.newaxis,anp.newaxis]
-
-    print(ra)
+    gp = (alpha * ra[:, anp.newaxis, anp.newaxis] + beta * rb[:, anp.newaxis, anp.newaxis]) / (
+        alpha + beta
+    )
+    dr = gp - anp.array(r)[:, anp.newaxis, anp.newaxis]
 
     a = 0.0
     for t in range(l1 + l2 + 1):
         for u in range(m1 + m2 + 1):
             for v in range(n1 + n2 + 1):
-                a = a + expansion(l1, l2, ra[0], rb[0], alpha, beta, t) * \
-                        expansion(m1, m2, ra[1], rb[1], alpha, beta, u) * \
-                        expansion(n1, n2, ra[2], rb[2], alpha, beta, v) * \
-                        hermite_coulomb(t, u, v, 0, p, dr)
+                a = a + expansion(l1, l2, ra[0], rb[0], alpha, beta, t) * expansion(
+                    m1, m2, ra[1], rb[1], alpha, beta, u
+                ) * expansion(n1, n2, ra[2], rb[2], alpha, beta, v) * hermite_coulomb(
+                    t, u, v, 0, p, dr
+                )
     a = a * 2 * anp.pi / p
     return a
 
+
 def generate_attraction(r, basis_a, basis_b):
-    r"""Compute the nuclear attraction integral.
-    """
+    r"""Compute the nuclear attraction integral."""
+
     def attraction_integral(*args):
 
         if r.requires_grad:
@@ -413,6 +421,16 @@ def generate_attraction(r, basis_a, basis_b):
         na = contracted_norm(basis_a.l, alpha, ca)
         nb = contracted_norm(basis_b.l, beta, cb)
 
-        v = na * nb * ((ca * cb[:,anp.newaxis]) * nuclear_attraction(basis_a.l, basis_b.l, ra, rb, alpha, beta[:,anp.newaxis], coor)).sum()
+        v = (
+            na
+            * nb
+            * (
+                (ca * cb[:, anp.newaxis])
+                * nuclear_attraction(
+                    basis_a.l, basis_b.l, ra, rb, alpha, beta[:, anp.newaxis], coor
+                )
+            ).sum()
+        )
         return v
+
     return attraction_integral

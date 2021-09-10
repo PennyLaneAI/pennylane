@@ -26,6 +26,7 @@ from pennylane.hf.integrals import (
     generate_attraction,
     _generate_params,
     primitive_norm,
+    boys,
 )
 from pennylane.hf.molecule import Molecule
 
@@ -276,6 +277,17 @@ def test_gradient(symbols, geometry, alpha, coeff):
     assert np.allclose(g_alpha, g_ref_alpha)
     assert np.allclose(g_coeff, g_ref_coeff)
 
+
+@pytest.mark.parametrize(
+    ("n", "t", "f_ref"),
+    [(1.25, 0.00, 0.2857142857142857), (2.75, 1.23, 0.061750771828252976)],
+)
+def test_boys(n, t, f_ref):
+    r"""Test that the Boys function is evaluated correctly."""
+    f = boys(n, t)
+    assert np.allclose(f, f_ref)
+
+
 @pytest.mark.parametrize(
     ("symbols", "geometry", "alpha", "coef", "r", "a_ref"),
     [
@@ -304,3 +316,59 @@ def test_generate_attraction(symbols, geometry, alpha, coef, r, a_ref):
 
     a = generate_attraction(geometry[0], basis_a, basis_b)(*args)
     assert np.allclose(a, a_ref)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "alpha", "coeff"),
+    [
+        (
+            ["H", "H"],
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+            pnp.array(
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                requires_grad=True,
+            ),
+            pnp.array(
+                [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
+                requires_grad=True,
+            ),
+        ),
+    ],
+)
+def test_gradient_attraction(symbols, geometry, alpha, coeff):
+    r"""Test that the attraction gradient computed with respect to the basis parameters is correct."""
+    mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+    basis_a = mol.basis_set[0]
+    basis_b = mol.basis_set[1]
+    args = [mol.alpha, mol.coeff]
+    r = geometry[0]
+
+    g_alpha = autograd.grad(generate_attraction(r, basis_a, basis_b), argnum=0)(*args)
+    g_coeff = autograd.grad(generate_attraction(r, basis_a, basis_b), argnum=1)(*args)
+
+    # compute attraction gradients with respect to alpha and coeff using finite diff
+    delta = 0.0001
+    g_ref_alpha = np.zeros(6).reshape(alpha.shape)
+    g_ref_coeff = np.zeros(6).reshape(coeff.shape)
+
+    for i in range(len(alpha)):
+        for j in range(len(alpha[0])):
+
+            alpha_minus = alpha.copy()
+            alpha_plus = alpha.copy()
+            alpha_minus[i][j] = alpha_minus[i][j] - delta
+            alpha_plus[i][j] = alpha_plus[i][j] + delta
+            a_minus = generate_attraction(r, basis_a, basis_b)(*[alpha_minus, coeff])
+            a_plus = generate_attraction(r, basis_a, basis_b)(*[alpha_plus, coeff])
+            g_ref_alpha[i][j] = (a_plus - a_minus) / (2 * delta)
+
+            coeff_minus = coeff.copy()
+            coeff_plus = coeff.copy()
+            coeff_minus[i][j] = coeff_minus[i][j] - delta
+            coeff_plus[i][j] = coeff_plus[i][j] + delta
+            a_minus = generate_attraction(r, basis_a, basis_b)(*[alpha, coeff_minus])
+            a_plus = generate_attraction(r, basis_a, basis_b)(*[alpha, coeff_plus])
+            g_ref_coeff[i][j] = (a_plus - a_minus) / (2 * delta)
+
+    assert np.allclose(g_alpha, g_ref_alpha)
+    assert np.allclose(g_coeff, g_ref_coeff)
