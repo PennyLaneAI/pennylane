@@ -17,8 +17,6 @@ import functools
 
 import pennylane as qml
 
-from pennylane.interfaces.batch import execute
-
 
 class batch_transform:
     r"""Class for registering a tape transform that takes a tape, and outputs
@@ -110,9 +108,8 @@ class batch_transform:
 
     We can execute these tapes manually:
 
-    >>> from pennylane.interfaces.batch import execute
     >>> dev = qml.device("default.qubit", wires=1)
-    >>> res = execute(tapes, dev, interface="autograd", gradient_fn=qml.gradients.param_shift)
+    >>> res = qml.execute(tapes, dev, interface="autograd", gradient_fn=qml.gradients.param_shift)
     >>> print(res)
     [tensor([0.94765073], requires_grad=True), tensor([0.31532236], requires_grad=True)]
 
@@ -191,7 +188,7 @@ class batch_transform:
             elif gradient_fn == "finite-diff":
                 gradient_fn = qml.gradients.finite_diff
 
-            res = execute(
+            res = qml.execute(
                 tapes,
                 device=qnode.device,
                 gradient_fn=gradient_fn,
