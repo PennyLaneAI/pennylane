@@ -12,351 +12,106 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the CircuitDrawer class which is used to draw CircuitGraph instances.
+This module contains a helper function to sort operations into layers.
 """
-from collections import OrderedDict
 
-import pennylane as qml
-from pennylane.wires import Wires
-from .charsets import UnicodeCharSet
-from .representation_resolver import RepresentationResolver
-from .grid import Grid
-
-# pylint: disable=too-many-branches,too-many-arguments,too-many-return-statements,too-many-statements,consider-using-enumerate,too-many-instance-attributes
-
-
-def _remove_duplicates(input_list):
-    """Remove duplicate entries from a list.
-
-    This operation preserves the order of the list's elements.
-
+def _default_wire_map(ops):
+    """This helper function may be moved elsewhere as integration of circuit
+    drawing component progresses.
     Args:
-        input_list (list[Hashable]): The list whose duplicate entries shall be removed
-
+        ops Iterable[Operation]
+    
     Returns:
-        list[Hashable]: The input list without duplicate entries
+        dict: map from wires to sequential positive integers
     """
-    return list(OrderedDict.fromkeys(input_list))
 
+    wire_map  = dict()
+    highest_number=0
+    for op in ops:
+        for wire in op.wires:
+            if wire not in wire_map.keys():
+                wire_map[wire] = highest_number
+                highest_number+=1
+    return wire_map
 
-class CircuitDrawer:
-    """Creates a circuit diagram from the operators of a CircuitGraph in grid form.
-
+def drawable_grid(ops, wire_map=None):
+    """Determine non-overlapping yet dense placement of operations for drawing.  Returns
+    structure compatible with ``qml.circuit_drawer.Grid``. 
+    
     Args:
-        raw_operation_grid (list[list[~.Operation]]): The CircuitGraph's operations
-        raw_observable_grid (list[list[qml.operation.Observable]]): The CircuitGraph's observables
-        wires (Wires): all wires on the device for which the circuit is drawn
-        charset (pennylane.circuit_drawer.CharSet, optional): The CharSet that shall be used for drawing.
-        show_all_wires (bool): If True, all wires, including empty wires, are printed.
+        ops Iterable[~.Operator]: a list of operations
+    Keyword Args:
+        wire_map=None dict: dictionary mapping wire labels to sucessive positive integers.
+    Returns:
+        List[List[~.Operator]] : layers compatible with grid objects
     """
 
-    def __init__(
-        self,
-        raw_operation_grid,
-        raw_observable_grid,
-        wires,
-        charset=UnicodeCharSet,
-        show_all_wires=False,
-    ):
-        self.operation_grid = Grid(raw_operation_grid)
-        self.observable_grid = Grid(raw_observable_grid)
-        self.wires = wires
-        self.active_wires = self.extract_active_wires(raw_operation_grid, raw_observable_grid)
-        self.charset = charset
-
-        if show_all_wires:
-            # if the provided wires include empty wires, make sure they are included
-            # as active wires
-            self.active_wires = wires.all_wires([wires, self.active_wires])
-
-        self.representation_resolver = RepresentationResolver(charset)
-        self.operation_representation_grid = Grid()
-        self.observable_representation_grid = Grid()
-        self.operation_decoration_indices = []
-        self.observable_decoration_indices = []
-
-        self.move_multi_wire_gates(self.operation_grid)
-
-        # Resolve operator names
-        self.resolve_representation(self.operation_grid, self.operation_representation_grid)
-        self.resolve_representation(self.observable_grid, self.observable_representation_grid)
-
-        # Add multi-wire gate lines
-        self.operation_decoration_indices = self.resolve_decorations(
-            self.operation_grid, self.operation_representation_grid
-        )
-        self.observable_decoration_indices = self.resolve_decorations(
-            self.observable_grid, self.observable_representation_grid
-        )
-
-        CircuitDrawer.pad_representation(
-            self.operation_representation_grid,
-            charset.WIRE,
-            "",
-            2 * charset.WIRE,
-            self.operation_decoration_indices,
-        )
-
-        CircuitDrawer.pad_representation(
-            self.operation_representation_grid,
-            charset.WIRE,
-            "",
-            "",
-            set(range(self.operation_grid.num_layers)) - set(self.operation_decoration_indices),
-        )
-
-        CircuitDrawer.pad_representation(
-            self.observable_representation_grid,
-            " ",
-            charset.MEASUREMENT + " ",
-            " ",
-            self.observable_decoration_indices,
-        )
-
-        CircuitDrawer.pad_representation(
-            self.observable_representation_grid,
-            charset.WIRE,
-            "",
-            "",
-            set(range(self.observable_grid.num_layers)) - set(self.observable_decoration_indices),
-        )
-
-        self.full_representation_grid = self.operation_representation_grid.copy()
-        self.full_representation_grid.append_grid_by_layers(self.observable_representation_grid)
-
-    def extract_active_wires(self, raw_operation_grid, raw_observable_grid):
-        """Get the subset of wires on the device that are used in the circuit.
-
-        Args:
-            raw_operation_grid (Iterable[~.Operator]): The raw grid of operations
-            raw_observable_grid (Iterable[~.Operator]): The raw  grid of observables
-
-        Return:
-            Wires: active wires on the device
-        """
-        # pylint: disable=protected-access
-        all_operators = list(qml.utils._flatten(raw_operation_grid)) + list(
-            qml.utils._flatten(raw_observable_grid)
-        )
-        all_wires_with_duplicates = [op.wires for op in all_operators if op is not None]
-        # make Wires object containing all used wires
-        all_wires = Wires.all_wires(all_wires_with_duplicates)
-        # shared wires will observe the ordering of the device's wires
-        shared_wires = Wires.shared_wires([self.wires, all_wires])
-        return shared_wires
-
-    def resolve_representation(self, grid, representation_grid):
-        """Resolve the string representation of the given Grid.
-
-        Args:
-            grid (pennylane.circuit_drawer.Grid): Grid that holds the circuit information
-            representation_grid (pennylane.circuit_drawer.Grid): Grid that is used to store the string representations
-        """
-        for i in range(grid.num_layers):
-            representation_layer = [""] * grid.num_wires
-
-            for wire_indices, operator in enumerate(grid.layer(i)):
-                wire = self.active_wires[wire_indices]
-                representation_layer[
-                    wire_indices
-                ] = self.representation_resolver.element_representation(operator, wire)
-
-            representation_grid.append_layer(representation_layer)
-
-    def add_multi_wire_connectors_to_layer(self, wire_indices, decoration_layer):
-        """Add multi wire connectors for the given wires to a layer.
-
-        Args:
-            wire_indices (list[int]): The indices of wires that are to be connected
-            decoration_layer (list[str]): The decoration layer to which the wires will be added
-        """
-        min_wire = min(wire_indices)
-        max_wire = max(wire_indices)
-
-        decoration_layer[min_wire] = self.charset.TOP_MULTI_LINE_GATE_CONNECTOR
-
-        for k in range(min_wire + 1, max_wire):
-            if k in wire_indices:
-                decoration_layer[k] = self.charset.MIDDLE_MULTI_LINE_GATE_CONNECTOR
-            else:
-                decoration_layer[k] = self.charset.EMPTY_MULTI_LINE_GATE_CONNECTOR
-
-        decoration_layer[max_wire] = self.charset.BOTTOM_MULTI_LINE_GATE_CONNECTOR
-
-    def resolve_decorations(self, grid, representation_grid):
-        """Resolve the decorations of the given Grid.
-
-        If decorations are in conflict, they are automatically spread over multiple layers.
-
-        Args:
-            grid (pennylane.circuit_drawer.Grid): Grid that holds the circuit information
-            representation_grid (pennylane.circuit_drawer.Grid): Grid that holds the string representations and into
-                which the decorations will be inserted
-
-        Returns:
-            list[int]: List with indices of inserted decoration layers
-        """
-        j = 0
-        inserted_indices = []
-
-        for i in range(grid.num_layers):
-            layer_operators = _remove_duplicates(grid.layer(i))
-
-            decoration_layer = [""] * grid.num_wires
-
-            for op in layer_operators:
-                if op is None:
-                    continue
-
-                wires = op.wires
-                wire_indices = self.active_wires.indices(wires)
-
-                if len(wire_indices) > 1:
-                    min_wire = min(wire_indices)
-                    max_wire = max(wire_indices)
-
-                    # If there is a conflict between decorations, we start a new decoration_layer
-                    if any(
-                        [decoration_layer[wire] != "" for wire in range(min_wire, max_wire + 1)]
-                    ):
-                        representation_grid.insert_layer(i + j, decoration_layer)
-                        inserted_indices.append(i + j)
-                        j += 1
-
-                        decoration_layer = [""] * grid.num_wires
-
-                    self.add_multi_wire_connectors_to_layer(wire_indices, decoration_layer)
-
-            representation_grid.insert_layer(i + j, decoration_layer)
-            inserted_indices.append(i + j)
-            j += 1
-
-        return inserted_indices
-
-    @staticmethod
-    def pad_representation(representation_grid, pad_str, prepend_str, suffix_str, skip_indices):
-        """Pads the given representation so that width inside layers is constant.
-
-        Args:
-            representation_grid (pennylane.circuit_drawer.Grid): Grid that holds the string representations that will be padded
-            pad_str (str): String that shall be used for padding
-            prepend_str (str): String that is prepended to all representations that are not skipped
-            suffix_str (str): String that is appended to all representations
-            skip_indices (list[int]): Indices of layers that should be skipped
-        """
-        for i in range(representation_grid.num_layers):
-            layer = representation_grid.layer(i)
-            max_width = max(map(len, layer))
-
-            if i in skip_indices:
-                continue
-
-            # Take the current layer and pad it with the pad_str
-            # and also prepend with prepend_str and append the suffix_str
-            # pylint: disable=cell-var-from-loop
-            representation_grid.replace_layer(
-                i,
-                list(
-                    map(
-                        lambda x: prepend_str + str.ljust(x, max_width, pad_str) + suffix_str, layer
-                    )
-                ),
-            )
-
-    def move_multi_wire_gates(self, operator_grid):
-        """Move multi-wire gates so that there are no interlocking multi-wire gates in the same layer.
-
-        Args:
-            operator_grid (pennylane.circuit_drawer.Grid): Grid that holds the circuit information and that will be edited.
-        """
-        n = operator_grid.num_layers
-        i = -1
-        while i < n - 1:
-            i += 1
-
-            this_layer = operator_grid.layer(i)
-            layer_ops = _remove_duplicates(this_layer)
-            other_layer = [None] * operator_grid.num_wires
-
-            for j in range(len(layer_ops)):
-                op = layer_ops[j]
-
-                if op is None:
-                    continue
-
-                # translate wires to their indices on the device
-                wire_indices = self.active_wires.indices(op.wires)
-
-                if len(op.wires) > 1:
-
-                    sorted_wires = wire_indices.copy()
-                    sorted_wires.sort()
-
-                    blocked_wires = list(range(sorted_wires[0], sorted_wires[-1] + 1))
-
-                    for k in range(j + 1, len(layer_ops)):
-                        other_op = layer_ops[k]
-
-                        if other_op is None:
-                            continue
-
-                        # translate wires to their indices on the device
-                        other_wire_indices = self.active_wires.indices(other_op.wires)
-                        other_sorted_wire_indices = other_wire_indices.copy()
-                        other_sorted_wire_indices.sort()
-                        other_blocked_wires = list(
-                            range(other_sorted_wire_indices[0], other_sorted_wire_indices[-1] + 1)
-                        )
-
-                        if not set(other_blocked_wires).isdisjoint(set(blocked_wires)):
-                            op_indices = [
-                                idx for idx, layer_op in enumerate(this_layer) if layer_op == op
-                            ]
-
-                            for l in op_indices:
-                                other_layer[l] = op
-                                this_layer[l] = None
-
-                            break
-
-            if not all([item is None for item in other_layer]):
-                operator_grid.insert_layer(i + 1, other_layer)
-                n += 1
-
-    def draw(self):
-        """Draw the circuit diagram.
-
-        Returns:
-            str: The circuit diagram
-        """
-        rendered_string = ""
-
-        # extract the wire labels as strings and get their maximum length
-        wire_names = []
-        padding = 0
-        for i in range(self.full_representation_grid.num_wires):
-            wire_name = str(self.active_wires.labels[i])
-            padding = max(padding, len(wire_name))
-            wire_names.append(wire_name)
-
-        for i in range(self.full_representation_grid.num_wires):
-            # format wire name nicely
-            wire = self.full_representation_grid.wire(i)
-            s = " {:>" + str(padding) + "}: {}"
-
-            rendered_string += s.format(wire_names[i], 2 * self.charset.WIRE)
-
-            for s in wire:
-                rendered_string += s
-
-            rendered_string += "\n"
-
-        for symbol, cache in [
-            ("U", self.representation_resolver.unitary_matrix_cache),
-            ("H", self.representation_resolver.hermitian_matrix_cache),
-            ("M", self.representation_resolver.matrix_cache),
-        ]:
-            for idx, matrix in enumerate(cache):
-                rendered_string += "{}{} =\n{}\n".format(symbol, idx, matrix)
-
-        return rendered_string
+    if len(ops) == 0:
+        return [ [] for _ in range(len(wire_map))]
+
+    if wire_map is None:
+        wire_map = _default_wire_map(ops)
+
+    layers = drawable_layers(ops, wire_map=wire_map)
+
+    n_wires = len(wire_map)
+    n_layers = len(layers)
+
+    grid = [[None for _ in range(n_layers)] for _ in range(n_wires)]
+
+    for layer, ops in enumerate(layers):
+        for op in ops:
+            for wire in op.wires:
+                grid[wire_map[wire]][layer] = op
+    return grid
+
+def drawable_layers(ops, wire_map=None):
+    """Determine non-overlapping yet dense placement of operations for drawing.
+    Args:
+        ops Iterable[~.Operator]: a list of operations
+    Keyword Args:
+        wire_map=None dict: dictionary mapping wire labels to sucessive positive integers.
+    Returns:
+        list[set[~.Operator]] : Each index is a set of operations 
+            for the corresponding layer
+    """
+
+    if wire_map is None:
+        wire_map = _default_wire_map(ops)
+
+    # initialize
+    max_layer = 0
+
+    occupied_wires_per_layer = [set()]
+    ops_per_layer = [set()]
+        
+    def recursive_find_layer(checking_layer, op_occupied_wires):
+        # function uses outer-scope `occupied_wires_per_layer`
+
+        if occupied_wires_per_layer[checking_layer] & op_occupied_wires:
+            # this layer is occupied, use higher one
+            return checking_layer+1
+        elif checking_layer == 0:
+            # reached first layer, so stop
+            return 0
+        else:
+            return recursive_find_layer(checking_layer-1, op_occupied_wires)
+    
+    # loop over operations
+    for op in ops:
+        mapped_wires = {wire_map[wire] for wire in op.wires}
+        op_occupied_wires = set( range(min(mapped_wires), max(mapped_wires)+1))
+
+        op_layer = recursive_find_layer(max_layer, op_occupied_wires)
+
+        # see if need to add new layer
+        if op_layer > max_layer:
+            max_layer += 1
+            occupied_wires_per_layer.append(set())
+            ops_per_layer.append(set())
+
+        # Add to op_layer
+        ops_per_layer[op_layer].add(op)
+        occupied_wires_per_layer[op_layer].update(op_occupied_wires)
+        
+    return ops_per_layer
