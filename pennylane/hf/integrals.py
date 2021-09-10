@@ -341,7 +341,7 @@ def boys(n, t):
     if t == 0.0:
         return 1 / (2 * n + 1)
 
-    return asp.special.gammainc(n+0.5, t) * asp.special.gamma(n+0.5) / (2 * t**(n + 0.5))
+    return asp.special.gammainc(n + 0.5, t) * asp.special.gamma(n + 0.5) / (2 * t ** (n + 0.5))
 
 
 def hermite_coulomb(t, u, v, n, p, dr):
@@ -353,7 +353,6 @@ def hermite_coulomb(t, u, v, n, p, dr):
 
     val = 0
     if t == u == v == 0:
-        # val = val + ((-2 * p) ** n) * boys(n, T)
         f = []
         for term in T.flatten():
             f.append(boys(n, term))
@@ -375,8 +374,7 @@ def hermite_coulomb(t, u, v, n, p, dr):
 
 
 def nuclear_attraction(la, lb, ra, rb, alpha, beta, r):
-    """Compute nuclear attraction integral between primitive Gaussian functions.
-    """
+    """Compute nuclear attraction integral between primitive Gaussian functions."""
     l1, m1, n1 = la
     l2, m2, n2 = lb
     p = alpha + beta
