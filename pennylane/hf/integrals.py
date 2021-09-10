@@ -246,9 +246,19 @@ def generate_kinetic(basis_a, basis_b):
 
 # #---------------------------------
 
-def gaussian_prod(alpha, beta, ra, rb):
-    """Returns the Gaussian product center."""
-    return (alpha * ra + beta * rb) / (alpha + beta)
+# def gaussian_prod(alpha, beta, ra, rb):
+#     """Returns the Gaussian product center.
+#
+#      Args:
+#         alpha (array[float]): exponent of the first Gaussian function
+#         beta (array[float]): exponent of the second Gaussian function
+#         ra (float): position vector of the the first Gaussian function
+#         rb (float): position vector of the the second Gaussian function
+#
+#     Returns:
+#         array[float]: center of the Gaussian product function
+#     """
+#     return (alpha * ra + beta * rb) / (alpha + beta)
 
 def boys(a, b):
     r"""
@@ -288,7 +298,8 @@ def nuclear_attraction(la, lb, ra, rb, alpha, beta, r):
     l1, m1, n1 = la
     l2, m2, n2 = lb
     p = alpha + beta
-    gp = gaussian_prod(alpha, beta, ra[:,anp.newaxis,anp.newaxis], rb[:,anp.newaxis,anp.newaxis])
+    gp = (alpha * ra[:,anp.newaxis,anp.newaxis] + beta * rb[:,anp.newaxis,anp.newaxis]) / (alpha + beta)
+    # gp = gaussian_prod(alpha, beta, ra[:,anp.newaxis,anp.newaxis], rb[:,anp.newaxis,anp.newaxis])
     dr = gp - anp.array(r)[:,anp.newaxis,anp.newaxis]
 
     print(ra)
