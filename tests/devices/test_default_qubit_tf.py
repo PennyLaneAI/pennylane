@@ -1324,18 +1324,6 @@ class TestSamples:
         assert res.shape == (shots,)
         assert set(res.numpy()) == {-1, 1}
 
-    def test_sample_observables_non_differentiable(self):
-        """Test that sampled observables cannot be differentiated."""
-        shots = 100
-        dev = qml.device("default.qubit.tf", wires=2, shots=shots)
-
-        with pytest.raises(qml.QuantumFunctionError, match="Devices with finite shots"):
-
-            @qml.qnode(dev, diff_method="backprop", interface="tf")
-            def circuit(a):
-                qml.RX(a, wires=0)
-                return qml.sample(qml.PauliZ(0))
-
     def test_estimating_marginal_probability(self, tol):
         """Test that the probability of a subset of wires is accurately estimated."""
         dev = qml.device("default.qubit.tf", wires=2, shots=1000)
