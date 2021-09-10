@@ -125,7 +125,7 @@ def _interpret_id(_id):
             return _id[0], _id[1]
         # Single tuple index: Outer dictionary expected to be unpacked
         return None, _id
-    elif np.issubdtype(type(_id), np.int):
+    elif np.issubdtype(type(_id), int):
         # Single integer index: Inner dictionary was unpacked
         return _id, None
     elif id is None:
