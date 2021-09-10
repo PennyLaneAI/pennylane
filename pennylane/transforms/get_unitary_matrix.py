@@ -20,12 +20,12 @@ from pennylane.wires import Wires
 import pennylane as qml
 
 
-def get_unitary_matrix(fn, wire_order=None):
+def get_unitary_matrix(circuit, wire_order=None):
     """Construct the matrix representation of a quantum circuit.
 
     Args:
-        fn (.QNode, .QuantumTape, or Callable): A quantum node, tape, or function that applies quantum operations.
-        wire_order (Sequence[Any]): Order of the wires in the quantum circuit. Optional if ``fn`` is a QNode or tape.
+        circuit (.QNode, .QuantumTape, or Callable): A quantum node, tape, or function that applies quantum operations.
+        wire_order (Sequence[Any]): Order of the wires in the quantum circuit. Optional if ``circuit`` is a QNode or tape.
 
     Returns:
          function: Function which accepts the same arguments as the QNode or quantum function.
@@ -41,7 +41,7 @@ def get_unitary_matrix(fn, wire_order=None):
             qml.RX(theta, wires=0)
             qml.PauliZ(wires=1)
 
-    Choosing a wire order, we can use the ``get_unitary_matrix`` function to generate a new function
+    Choosing a wire order, we can use ``get_unitary_matrix`` to generate a new function
     that returns the unitary matrix corresponding to the function ``circuit``:
 
     >>> wires = [0, 1]
@@ -56,29 +56,29 @@ def get_unitary_matrix(fn, wire_order=None):
 
     wires = wire_order
 
-    @wraps(fn)
+    @wraps(circuit)
     def wrapper(*args, **kwargs):
 
-        if isinstance(fn, qml.QNode):
+        if isinstance(circuit, qml.QNode):
             # user passed a QNode, get the tape
-            fn.construct(args, kwargs)
-            tape = fn.qtape
+            circuit.construct(args, kwargs)
+            tape = circuit.qtape
             if wires is None:  # if no wire ordering is specified, take wire list from tape
                 wire_order = tape.wires
             else:
                 wire_order = Wires(wires)
 
-        elif isinstance(fn, qml.tape.QuantumTape):
+        elif isinstance(circuit, qml.tape.QuantumTape):
             # user passed a tape
-            tape = fn
+            tape = circuit
             if wires is None:
                 wire_order = tape.wires
             else:
                 wire_order = Wires(wires)
 
-        elif callable(fn):
+        elif callable(circuit):
             # user passed something that is callable but not a tape or qnode.
-            tape = qml.transforms.make_tape(fn)(*args, **kwargs)
+            tape = qml.transforms.make_tape(circuit)(*args, **kwargs)
             # raise exception if it is not a quantum function
             if len(tape.operations) == 0:
                 raise ValueError("Function contains no quantum operation")
