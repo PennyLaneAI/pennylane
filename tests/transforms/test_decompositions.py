@@ -33,6 +33,12 @@ single_qubit_decomps = [
     (T, qml.RZ, [np.pi / 4]),
     (qml.RZ(0.3, wires=0).matrix, qml.RZ, [0.3]),
     (qml.RZ(-0.5, wires=0).matrix, qml.RZ, [-0.5]),
+    # This is an off-diagonal gate that gets converted to Rot, but one RZ angle is 0
+    (
+        np.array([[0, -0.98310193 + 0.18305901j], [0.98310193 + 0.18305901j, 0]]),
+        qml.Rot,
+        [5.914991017809059, -np.pi, 0],
+    ),
     # Next set of gates are non-diagonal and decomposed as Rots
     (H, qml.Rot, [np.pi, np.pi / 2, 0.0]),
     (X, qml.Rot, [0.0, np.pi, np.pi]),
@@ -72,9 +78,7 @@ class TestQubitUnitaryZYZDecomposition:
         assert len(obtained_gates) == 1
         assert isinstance(obtained_gates[0], expected_gate)
         assert obtained_gates[0].wires == Wires("a")
-        assert qml.math.allclose(
-            [x.detach() for x in obtained_gates[0].parameters], expected_params
-        )
+        assert qml.math.allclose(qml.math.unwrap(obtained_gates[0].parameters), expected_params)
 
     @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
     def test_zyz_decomposition_tf(self, U, expected_gate, expected_params):
@@ -88,12 +92,18 @@ class TestQubitUnitaryZYZDecomposition:
         assert len(obtained_gates) == 1
         assert isinstance(obtained_gates[0], expected_gate)
         assert obtained_gates[0].wires == Wires("a")
-        assert qml.math.allclose([x.numpy() for x in obtained_gates[0].parameters], expected_params)
+        assert qml.math.allclose(qml.math.unwrap(obtained_gates[0].parameters), expected_params)
 
     @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
     def test_zyz_decomposition_jax(self, U, expected_gate, expected_params):
         """Test that a one-qubit operation in JAX is correctly decomposed."""
         jax = pytest.importorskip("jax")
+
+        # Enable float64 support
+        from jax.config import config
+
+        remember = config.read("jax_enable_x64")
+        config.update("jax_enable_x64", True)
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex64)
 
@@ -102,6 +112,4 @@ class TestQubitUnitaryZYZDecomposition:
         assert len(obtained_gates) == 1
         assert isinstance(obtained_gates[0], expected_gate)
         assert obtained_gates[0].wires == Wires("a")
-        assert qml.math.allclose(
-            [jax.numpy.asarray(x) for x in obtained_gates[0].parameters], expected_params
-        )
+        assert qml.math.allclose(qml.math.unwrap(obtained_gates[0].parameters), expected_params)

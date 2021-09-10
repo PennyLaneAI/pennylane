@@ -89,7 +89,7 @@ class TestDecomposeSingleQubitUnitaryTransform:
 
         assert isinstance(ops[1], expected_gate)
         assert ops[1].wires == Wires("a")
-        assert qml.math.allclose([x.detach() for x in ops[1].parameters], expected_params)
+        assert qml.math.allclose(qml.math.unwrap(ops[1].parameters), expected_params)
 
         assert isinstance(ops[2], qml.CNOT)
         assert ops[2].wires == Wires(["b", "a"])
@@ -112,7 +112,7 @@ class TestDecomposeSingleQubitUnitaryTransform:
 
         assert isinstance(ops[1], expected_gate)
         assert ops[1].wires == Wires("a")
-        assert qml.math.allclose([x.numpy() for x in ops[1].parameters], expected_params)
+        assert qml.math.allclose(qml.math.unwrap(ops[1].parameters), expected_params)
 
         assert isinstance(ops[2], qml.CNOT)
         assert ops[2].wires == Wires(["b", "a"])
@@ -121,6 +121,12 @@ class TestDecomposeSingleQubitUnitaryTransform:
     def test_unitary_to_rot_jax(self, U, expected_gate, expected_params):
         """Test that the transform works in the JAX interface."""
         jax = pytest.importorskip("jax")
+
+        # Enable float64 support
+        from jax.config import config
+
+        remember = config.read("jax_enable_x64")
+        config.update("jax_enable_x64", True)
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex64)
 
@@ -298,6 +304,12 @@ class TestQubitUnitaryDifferentiability:
         """Tests differentiability in jax interface."""
         jax = pytest.importorskip("jax")
         from jax import numpy as jnp
+
+        # Enable float64 support
+        from jax.config import config
+
+        remember = config.read("jax_enable_x64")
+        config.update("jax_enable_x64", True)
 
         def qfunc_with_qubit_unitary(angles):
             z = angles[0]

@@ -16,6 +16,7 @@ operations into elementary gates.
 """
 import pennylane as qml
 from pennylane import math
+from pennylane import numpy as np
 
 
 def _convert_to_su2(U):
@@ -86,11 +87,25 @@ def zyz_decomposition(U, wire):
         omega = 2 * math.angle(U[1, 1])
         return [qml.RZ(omega, wires=wire)]
 
-    # If not diagonal, compute the angle of the RY
+    # Now check if the matrix is off-diagonal and the real part of elements
+    # differ by a sign. This means we can express it in terms of a single Z
+    # rotation and a Y rotation of -pi We use -pi to get the matrix elements to
+    # be equal when we construct the matrices using op.matrix in PennyLane
+    if math.allclose(U[0, 0], [0.0]):
+        # If the elements are the same, this is just an X rotation with a global phase
+        if math.allclose(U[0, 1], U[1, 0]):
+            return [qml.Rot(0, np.pi, np.pi, wires=wire)]
+
+        # Otherwise, we need to find the angle of the RZ
+        theta = -np.pi
+        phi = 2 * math.angle(U[0, 1])
+        return [qml.Rot(phi, theta, 0.0, wires=wire)]
+
+    # If not diagonal or off-diagonal with RZ/RY(pi), compute the angle of the RY
     cos2_theta_over_2 = math.abs(U[0, 0] * U[1, 1])
     theta = 2 * math.arccos(math.sqrt(cos2_theta_over_2))
 
-    # If the top left element is 0, can only use the off-diagonal elements We
+    # If the top left element is 0, can only use the off-diagonal elements. We
     # have to be very careful with the math here to ensure things that get
     # multiplied together are of the correct type in the different interfaces.
     if math.allclose(U[0, 0], [0.0]):
