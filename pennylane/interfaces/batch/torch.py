@@ -16,8 +16,6 @@ This module contains functions for adding the PyTorch interface
 to a PennyLane Device class.
 """
 # pylint: disable=too-many-arguments,protected-access
-import inspect
-
 import numpy as np
 import torch
 
@@ -119,13 +117,8 @@ class ExecuteTapes(torch.autograd.Function):
         else:
             # Need to compute the Jacobians on the backward pass (accumulation="backward")
 
-            # Temporary: check if the gradient function is a differentiable transform.
-            # For the moment, simply check if it is part of the `qml.gradients` package.
-            # Longer term, we should have a way of checking this directly
-            # (e.g., isinstance(gradient_fn, GradientTransform))
-            module_name = getattr(inspect.getmodule(ctx.gradient_fn), "__name__", "")
-
-            if "pennylane.gradients" in module_name:
+            if isinstance(ctx.gradient_fn, qml.gradients.gradient_transform):
+                # Gradient function is a gradient transform.
 
                 # Generate and execute the required gradient tapes
                 if ctx._n < ctx.max_diff:
@@ -172,12 +165,9 @@ class ExecuteTapes(torch.autograd.Function):
 
                     vjps = processing_fn(ctx.execute_fn(vjp_tapes)[0])
 
-            elif (
-                hasattr(ctx.gradient_fn, "fn")
-                and inspect.ismethod(ctx.gradient_fn.fn)
-                and ctx.gradient_fn.fn.__self__ is ctx.device
-            ):
-                # Gradient function is a device method.
+            else:
+                # Gradient function is not a gradient transform
+                # (e.g., it might be a device method).
                 # Note that unlike the previous branch:
                 #
                 # - there is no recursion here
@@ -189,9 +179,6 @@ class ExecuteTapes(torch.autograd.Function):
                     jacs = ctx.gradient_fn(ctx.tapes, **ctx.gradient_kwargs)
 
                 vjps = _compute_vjp(dy, jacs, device=ctx.torch_device)
-
-            else:
-                raise ValueError("Unknown gradient function.")
 
         # The output of backward must match the input of forward.
         # Therefore, we return `None` for the gradient of `kwargs`.
