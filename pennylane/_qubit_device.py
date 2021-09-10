@@ -400,7 +400,7 @@ class QubitDevice(Device):
 
             elif obs.return_type is Probability:
                 results.append(
-                    self.probability(obs, wires=obs.wires, shot_range=shot_range, bin_size=bin_size)
+                    self.probability(wires=obs.wires, shot_range=shot_range, bin_size=bin_size)
                 )
 
             elif obs.return_type is State:
