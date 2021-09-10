@@ -67,7 +67,7 @@ class TestOptimize:
         step2 = opt.step(circuit, var)
 
         expected = circuit(var)
-        expected_step = var - opt._stepsize * 4 * qml.grad(circuit)(var)
+        expected_step = var - opt.stepsize * 4 * qml.grad(circuit)(var)
         assert np.all(res == expected)
         assert np.allclose(step1, expected_step)
         assert np.allclose(step2, expected_step)
@@ -96,7 +96,7 @@ class TestOptimize:
         grad_fn = lambda param: np.array(qml.grad(circuit)(param))
         step3, cost2 = opt.step_and_cost(circuit, var, grad_fn=grad_fn)
         step4 = opt.step(circuit, var, grad_fn=grad_fn)
-        expected_step = var - opt._stepsize * 4 * grad_fn(var)
+        expected_step = var - opt.stepsize * 4 * grad_fn(var)
         expected_cost = circuit(var)
 
         for step in [step1, step2, step3, step3]:
@@ -128,7 +128,7 @@ class TestOptimize:
         grad_fn = lambda params_0, params_1: np.array(qml.grad(circuit)(params_0, params_1))
         step3, cost2 = opt.step_and_cost(circuit, *var, grad_fn=grad_fn)
         step4 = opt.step(circuit, *var, grad_fn=grad_fn)
-        expected_step = var - opt._stepsize * 4 * grad_fn(*var)
+        expected_step = var - opt.stepsize * 4 * grad_fn(*var)
         expected_cost = circuit(*var)
 
         for step in [step1, step2, step3, step3]:

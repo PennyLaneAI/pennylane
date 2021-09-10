@@ -275,6 +275,8 @@
   [(#1508)](https://github.com/PennyLaneAI/pennylane/pull/1508)
   [(#1542)](https://github.com/PennyLaneAI/pennylane/pull/1542)
   [(#1549)](https://github.com/PennyLaneAI/pennylane/pull/1549)
+  [(#1608)](https://github.com/PennyLaneAI/pennylane/pull/1608)
+  [(#1618)](https://github.com/PennyLaneAI/pennylane/pull/1618)
 
   For example:
 
@@ -305,6 +307,10 @@
   ```
 
 <h3>Improvements</h3>
+
+* The slowest tests, more than 1.5 seconds, now have the pytest mark `slow`, and can be
+  selected or deselected during local execution of tests.
+  [(#1633)](https://github.com/PennyLaneAI/pennylane/pull/1633)
 
 * Hamiltonians are now natively supported on the `default.qubit` device if `shots=None`. 
   This makes VQE workflows a lot faster in some cases.
@@ -395,15 +401,32 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
   floats, ints, lists and numpy arrays and return numpy output but can not be differentiated.
   [(#1585)](https://github.com/PennyLaneAI/pennylane/pull/1585)
 
+* QNodes now include validation to warn users if a supplied keyword argument is not one of the
+  recognized arguments. [(#1496)](https://github.com/PennyLaneAI/pennylane/pull/1591)
 
 <h3>Breaking changes</h3>
+
+* An error is raised during QNode creation when a user requests backpropagation on
+  a device with finite-shots.
+  [(#1588)](https://github.com/PennyLaneAI/pennylane/pull/1588)
 
 * The class `qml.Interferometer` is deprecated and will be renamed `qml.InterferometerUnitary`
   after one release cycle.
   [(#1546)](https://github.com/PennyLaneAI/pennylane/pull/1546)
 
+*  All optimizers except for Rotosolve and Rotoselect now have a public attribute `stepsize`.
+  Temporary backward compatibility has been added to support the use of `_stepsize` for one
+  release cycle. `update_stepsize` method is deprecated.
+  [(#1625)](https://github.com/PennyLaneAI/pennylane/pull/1625)
+  
 
 <h3>Bug fixes</h3>
+
+* `MottonenStatepreparation` can now be run with a single wire label not in a list.
+  [(#1620)](https://github.com/PennyLaneAI/pennylane/pull/1620)
+
+* Fixed the circuit representation of CY gates to align with CNOT and CZ gates when calling the circuit drawer.
+  [(#1504)](https://github.com/PennyLaneAI/pennylane/issues/1504)
 
 * Dask and CVXPY dependent tests are skipped if those packages are not installed.
 [(#1617)](https://github.com/PennyLaneAI/pennylane/pull/1617)
@@ -437,9 +460,9 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 This release contains contributions from (in alphabetical order):
 
-Vishnu Ajith, Akash Narayanan B, Thomas Bromley, Tanya Garg, Josh Izaac, Prateek Jain, Ankit Khandelwal,
-Christina Lee, Johannes Jakob Meyer, Romain Moyard, Esteban Payares, Pratul Saini, Maria Schuld,
-Arshpreet Singh, Ingrid Strandberg, Slimane Thabet, David Wierichs, Vincent Wong.
+Vishnu Ajith, Akash Narayanan B, Thomas Bromley, Olivia Di Matteo, Sahaj Dhamija, Tanya Garg, Josh Izaac,
+Prateek Jain, Ankit Khandelwal, Christina Lee, Ian McLean, Johannes Jakob Meyer, Romain Moyard, Esteban Payares,
+Pratul Saini, Maria Schuld, Arshpreet Singh, Ingrid Strandberg, Slimane Thabet, David Wierichs, Vincent Wong.
 
 # Release 0.17.0 (current release)
 
@@ -996,7 +1019,7 @@ Arshpreet Singh, Ingrid Strandberg, Slimane Thabet, David Wierichs, Vincent Wong
 * Fixed a bug in the initialization of `QubitUnitary` where the size of
   the matrix was not checked against the number of wires.
   [(#1439)](https://github.com/PennyLaneAI/pennylane/pull/1439)
-
+  
 <h3>Documentation</h3>
 
 * Improved Contribution Guide and Pull Requests Guide.
