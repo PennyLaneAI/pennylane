@@ -593,12 +593,12 @@ class TestValidation:
         dev = qml.device("default.qubit", wires=1, shots=1)
 
         with pytest.warns(UserWarning) as warning_list:
-            
+
             QNode(dummyfunc, dev, test_method_one=1, test_method_two=2)
 
         warnings = {(warning.category, warning.message.args[0]) for warning in warning_list}
         assert warnings == expected_warnings
-        
+
     def test_unrecognized_keyword_arguments_validation_decorator(self):
         """Tests that a UserWarning is raised when unrecognized keyword arguments are provided."""
 
