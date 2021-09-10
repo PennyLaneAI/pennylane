@@ -15,10 +15,8 @@
 # pylint: disable=too-few-public-methods
 import functools
 import types
-import warnings
 
 import pennylane as qml
-from pennylane.new_qnode import QNode
 
 
 class batch_transform:
@@ -161,12 +159,59 @@ class batch_transform:
         self.transform_fn = transform_fn
         self.expand_fn = expand_fn
         self.differentiable = differentiable
+        self.qnode_wrapper = self.default_qnode_wrapper
         functools.update_wrapper(self, transform_fn)
 
     def custom_qnode_wrapper(self, fn):
-        self.qnode_execution_wrapper = types.MethodType(fn, self)
+        """Register a custom QNode execution wrapper function
+        for the batch transform.
 
-    def qnode_execution_wrapper(self, qnode, targs, tkwargs):
+        **Example**
+
+        .. code-block:: python
+
+            def my_transform(tape, *targs, **tkwargs):
+                ...
+                return tapes, processing_fn
+
+            @my_transform.custom_qnode_wrapper
+            def my_custom_qnode_wrapper(self, qnode, targs, tkwargs):
+                def wrapper_fn(*args, **kwargs):
+                    # construct QNode
+                    qnode.construct(args, kwargs)
+                    # apply transform to QNode's tapes
+                    tapes, processing_fn = self.construct(qnode.qtape, *targs, **tkwargs)
+                    # execute tapes and return processed result
+                    ...
+                    return processing_fn(results)
+                return wrapper_fn
+
+        The custom QNode execution wrapper must have arguments
+        ``self`` (the batch transform object), ``qnode`` (the input QNode
+        to transform and execute), ``targs`` and ``tkwargs`` (the transform
+        arguments and keyword arguments respectively).
+
+        It should return a callable object that accepts the *same* arguments
+        as the QNode, and returns the transformed numerical result.
+
+        The default :meth:`~.default_qnode_wrapper` method may be called
+        if only post-processing is required:
+
+        .. code-block:: python
+
+            @my_transform.custom_qnode_wrapper
+            def my_custom_qnode_wrapper(self, qnode, targs, tkwargs):
+                transformed_qnode = self.default_qnode_wrapper(qnode)
+
+                def wrapper_fn(*args, **kwargs):
+                    res = transformed_qnode(*args, **kwargs)
+                    ...
+                    return ...
+                return wrapper_fn
+        """
+        self.qnode_wrapper = types.MethodType(fn, self)
+
+    def default_qnode_wrapper(self, qnode, targs, tkwargs):
         """A wrapper method that takes a QNode and transform arguments,
         and returns a function that 'wraps' the QNode execution.
 
@@ -211,10 +256,10 @@ class batch_transform:
             # tapes, fn = some_transform(tape, *transform_args)
             return self.construct(qnode, *targs, **tkwargs)
 
-        if isinstance(qnode, (qml.QNode, QNode, qml.ExpvalCost)):
+        if isinstance(qnode, (qml.QNode, qml.ExpvalCost)):
             # Input is a QNode:
             # result = some_transform(qnode, *transform_args)(*qnode_args)
-            wrapper = self.qnode_execution_wrapper(qnode, targs, tkwargs)
+            wrapper = self.qnode_wrapper(qnode, targs, tkwargs)
             wrapper = functools.wraps(qnode)(wrapper)
 
         else:
@@ -236,7 +281,7 @@ class batch_transform:
             targs = (qnode,) + targs
 
             def wrapper(qnode):
-                _wrapper = self.qnode_execution_wrapper(qnode, targs, tkwargs)
+                _wrapper = self.qnode_wrapper(qnode, targs, tkwargs)
                 _wrapper = functools.wraps(qnode)(_wrapper)
                 return _wrapper
 
