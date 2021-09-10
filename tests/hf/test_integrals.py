@@ -274,4 +274,3 @@ def test_gradient(symbols, geometry, alpha, coeff):
 
     assert np.allclose(g_alpha, g_ref_alpha)
     assert np.allclose(g_coeff, g_ref_coeff)
-

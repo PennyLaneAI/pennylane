@@ -14,7 +14,13 @@
 """
 This subpackage provides the functionality to perform differentiable Hartree-Fock calculations.
 """
-from .molecule import *
-from .basis_set import *
 from .basis_data import *
-from .integrals import primitive_norm, contracted_norm
+from .basis_set import *
+from .integrals import (
+    contracted_norm,
+    expansion,
+    gaussian_overlap,
+    generate_overlap,
+    primitive_norm,
+)
+from .molecule import *

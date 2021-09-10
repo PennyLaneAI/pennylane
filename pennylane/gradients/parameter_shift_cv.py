@@ -630,8 +630,7 @@ def param_shift_cv(
         the gradient:
 
         >>> dev = qml.device("default.gaussian", wires=2)
-        >>> from pennylane.interfaces.batch import execute
-        >>> fn(execute(gradient_tapes, dev, None))
+        >>> fn(qml.execute(gradient_tapes, dev, None))
         array([[-0.32487113, -0.4054074 , -0.87049853,  0.4054074 ]])
     """
 
