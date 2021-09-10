@@ -1103,7 +1103,7 @@ class QuantumTape(AnnotatedQueue):
         obs_grid = qml.circuit_drawer.drawable_grid(self.observables, wire_map=wire_map)
 
         drawer = qml.circuit_drawer.CircuitDrawer(ops_grid, obs_grid, wires=wire_order or self.wires,
-            show_all_wires=show_all_wires)
+            charset=charset, show_all_wires=show_all_wires)
 
         return drawer.draw()
 
