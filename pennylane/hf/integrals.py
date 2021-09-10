@@ -260,12 +260,40 @@ def generate_kinetic(basis_a, basis_b):
 #     """
 #     return (alpha * ra + beta * rb) / (alpha + beta)
 
-def boys(a, b):
-    r"""
+
+def boys(n, t):
+    r"""Evaluate Boys function.
+
+    The :math:`n`-th order Boys function is [https://arxiv.org/abs/2107.01488]
+
+    .. math::
+
+        F_n(t) = \int_{0}^{1}x^{2n} e^{-tx^2}dx.
+
+    The Boys function is related to the lower incomplete Gamma function, :math:`\gamma`, as
+
+
+    .. math::
+
+    F_n(t) = \frac{1}{2t^{n + 0.5}} \gamma(n + 0.5, t),
+
+    where
+
+    .. math::
+
+    \gamma(m, t) = \int_{0}^{t} x^{m-1} e^{-x} dx.
+
+    Args:
+        n (float): rank of the Boys function
+        t (float): exponent of the Boys function
+
+    Returns:
+        float: magnitude of the Boys function
+
     """
-    f = anp.piecewise(b, [b == 0, b != 0], [lambda b : 1 / (2 * a + 1),
-    lambda b : asc.special.gamma(0.5 + a) * asc.special.gammainc(0.5 + a, b) / (2 * (b ** (0.5 + a)))])
-    return f
+    if t == 0:
+        return 1 / (2 * n + 1)
+    return asc.special.gamma(0.5 + n) * asc.special.gammainc(0.5 + n, t) / (2 * t**(0.5 + n))
 
 def hermite_coulomb(t, u, v, n, p, dr):
     """Generates Hermite-Coulomb overlaps for nuclear attraction integral"""
