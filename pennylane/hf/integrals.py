@@ -14,7 +14,7 @@
 """
 This module contains the functions needed for computing integrals over basis functions.
 """
-# pylint: disable=unbalanced-tuple-unpacking, too-many-arguments
+# pylint: disable= unbalanced-tuple-unpacking, too-many-arguments
 import autograd.numpy as anp
 from scipy.special import factorial2 as fac2
 
@@ -125,7 +125,7 @@ def _generate_params(params, args):
             c += 1
         else:
             basis_params.append(p)
-    return tuple(basis_params)
+    return basis_params
 
 
 def expansion(la, lb, ra, rb, alpha, beta, t):
