@@ -121,19 +121,27 @@ class QNode:
             supported, and results in a gate decomposition. If any operations in the decomposition
             remain unsupported by the device, another expansion occurs.
 
-    Keyword Args:
-        h=1e-7 (float): step size for the finite difference method
-        order=1 (int): The order of the finite difference method to use. ``1`` corresponds
+        h (float): step size for the finite difference method
+
+        order (int): The order of the finite difference method to use. ``1`` corresponds
             to forward finite differences, ``2`` to centered finite differences.
-        shift=pi/2 (float): the size of the shift for two-term parameter-shift gradient computations
-        adjoint_cache=True (bool): for TensorFlow and PyTorch interfaces and adjoint differentiation,
+
+        shift (float): the size of the shift for two-term parameter-shift gradient computations
+
+        adjoint_cache (bool): For TensorFlow and PyTorch interfaces and adjoint differentiation,
+
             this indicates whether to save the device state after the forward pass.  Doing so saves a
             forward execution. Device state automatically reused with autograd and JAX interfaces.
-        argnum=None (int, list(int), None): Which argument(s) to compute the Jacobian
+
+        argnum (int, list(int), None): Which argument(s) to compute the Jacobian
             with respect to. When there are fewer parameters specified than the
             total number of trainable parameters, the jacobian is being estimated. Note
             that this option is only applicable for the following differentiation methods:
             ``"parameter-shift"``, ``"finite-diff"`` and ``"reversible"``.
+
+        kwargs: used to catch all unrecognized keyword arguments and provide a user warning
+
+            about them
 
     **Example**
 
@@ -154,7 +162,12 @@ class QNode:
         diff_method="best",
         mutable=True,
         max_expansion=10,
-        **diff_options,
+        h=1e-7,
+        order=1,
+        shift=np.pi / 2,
+        adjoint_cache=True,
+        argnum=None,
+        **kwargs,
     ):
 
         if diff_method is None:
@@ -186,6 +199,23 @@ class QNode:
         else:
             self._qfunc_uses_shots_arg = False
 
+        if kwargs:
+            for key in kwargs:
+                warnings.warn(
+                    f"'{key}' is unrecognized, and will not be included in your computation. "
+                    "Please review the QNode class or qnode decorator for the list of available "
+                    "keyword variables.",
+                    UserWarning,
+                )
+
+        diff_options = {
+            "h": h,
+            "order": order,
+            "shift": shift,
+            "adjoint_cache": adjoint_cache,
+            "argnum": argnum,
+        }
+
         self.mutable = mutable
         self.func = func
         self._original_device = device
@@ -204,7 +234,7 @@ class QNode:
             self.diff_method = self._get_best_diff_method(tape_diff_options)
 
         # The arguments to be passed to JacobianTape.jacobian
-        self.diff_options = diff_options or {}
+        self.diff_options = diff_options
         self.diff_options.update(tape_diff_options)
 
         self.dtype = np.float64
@@ -1016,13 +1046,19 @@ class QNode:
     }
 
 
+# pylint:disable=too-many-arguments
 def qnode(
     device,
     interface="autograd",
     diff_method="best",
     mutable=True,
     max_expansion=10,
-    **diff_options,
+    h=1e-7,
+    order=1,
+    shift=np.pi / 2,
+    adjoint_cache=True,
+    argnum=None,
+    **kwargs,
 ):
     """Decorator for creating QNodes.
 
@@ -1105,18 +1141,27 @@ def qnode(
             supported, and results in a gate decomposition. If any operations in the decomposition
             remain unsupported by the device, another expansion occurs.
 
-    Keyword Args:
-        h=1e-7 (float): Step size for the finite difference method.
-        order=1 (int): The order of the finite difference method to use. ``1`` corresponds
+        h (float): step size for the finite difference method
+
+        order (int): The order of the finite difference method to use. ``1`` corresponds
             to forward finite differences, ``2`` to centered finite differences.
-        adjoint_cache=True (bool): for TensorFlow and PyTorch interfaces and adjoint differentiation,
+
+        shift (float): the size of the shift for two-term parameter-shift gradient computations
+
+        adjoint_cache (bool): For TensorFlow and PyTorch interfaces and adjoint differentiation,
+
             this indicates whether to save the device state after the forward pass.  Doing so saves a
             forward execution. Device state automatically reused with autograd and JAX interfaces.
-        argnum=None (int, list(int), None): Which argument(s) to compute the Jacobian
+
+        argnum (int, list(int), None): Which argument(s) to compute the Jacobian
             with respect to. When there are fewer parameters specified than the
             total number of trainable parameters, the jacobian is being estimated. Note
             that this option is only applicable for the following differentiation methods:
             ``"parameter-shift"``, ``"finite-diff"`` and ``"reversible"``.
+
+        kwargs: used to catch all unrecognized keyword arguments and provide a user warning
+
+            about them
 
     **Example**
 
@@ -1137,7 +1182,12 @@ def qnode(
             diff_method=diff_method,
             mutable=mutable,
             max_expansion=max_expansion,
-            **diff_options,
+            h=h,
+            order=order,
+            shift=shift,
+            adjoint_cache=adjoint_cache,
+            argnum=argnum,
+            **kwargs,
         )
         return update_wrapper(qn, func)
 
