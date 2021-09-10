@@ -64,19 +64,17 @@ class CircuitDrawer:
         self.active_wires = self.extract_active_wires(raw_operation_grid, raw_observable_grid)
 
         if charset is None:
-            self.charset = CHARSETS['unicode']
-        elif isinstance(charset, CharSet):
-            self.charset = charset
+            self.charset = CHARSETS['unicode']()
+        elif isinstance(charset, type) and issubclass(charset, CharSet):
+            self.charset = charset()
         else:
-            print("is string assigning charset now")
             if charset not in CHARSETS:
                 raise ValueError(
                     "Charset {} is not supported. Supported charsets: {}.".format(
                         charset, ", ".join(CHARSETS.keys())
                     )
                 )
-            self.charset = CHARSETS[charset]
-            print(self.charset, charset)
+            self.charset = CHARSETS[charset]()
 
         if show_all_wires:
             # if the provided wires include empty wires, make sure they are included
