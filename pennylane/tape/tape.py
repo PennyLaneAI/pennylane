@@ -1125,8 +1125,19 @@ class QuantumTape(AnnotatedQueue):
         ops_grid = qml.circuit_drawer.drawable_grid(self.operations, wire_map=wire_map)
         obs_grid = qml.circuit_drawer.drawable_grid(self.observables, wire_map=wire_map)
 
+        if charset not in qml.circuit_drawer.CHARSETS:
+            raise ValueError(
+                "Charset {} is not supported. Supported charsets: {}.".format(
+                    charset, ", ".join(qml.circuit_drawer.CHARSETS.keys())
+                )
+            )
+        charset_class = qml.circuit_drawer.CHARSETS[charset]
+
+        print(ops_grid)
+        print(obs_grid)
+
         drawer = qml.circuit_drawer.CircuitDrawer(ops_grid, obs_grid, wires=wire_order or self.wires,
-            charset=charset, show_all_wires=show_all_wires)
+            charset=charset_class, show_all_wires=show_all_wires)
 
         return drawer.draw()
 

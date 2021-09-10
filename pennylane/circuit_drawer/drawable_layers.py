@@ -26,7 +26,7 @@ def _default_wire_map(ops):
         dict: map from wires to sequential positive integers
     """
 
-    wire_map = dict()
+    wire_map = {}
     highest_number = 0
     for op in ops:
         for wire in op.wires:
@@ -81,8 +81,14 @@ def drawable_layers(ops, wire_map=None):
 
     # loop over operations
     for op in ops:
-        mapped_wires = {wire_map[wire] for wire in op.wires}
-        op_occupied_wires = set(range(min(mapped_wires), max(mapped_wires) + 1))
+        if len(op.wires) == 0:
+            # if no wires, then it acts of all wires
+            # for example, state and sample
+            mapped_wires = set(wire_map.values())
+            op_occupied_wires = mapped_wires
+        else:
+            mapped_wires = {wire_map[wire] for wire in op.wires}
+            op_occupied_wires = set(range(min(mapped_wires), max(mapped_wires) + 1))
 
         op_layer = _recursive_find_layer(max_layer, op_occupied_wires, occupied_wires_per_layer)
 
@@ -126,6 +132,11 @@ def drawable_grid(ops, wire_map=None):
 
     for layer, layer_ops in enumerate(ops_per_layer):
         for op in layer_ops:
+            if len(op.wires) == 0:
+                #apply to all wires, like state and sample
+                for wire in range(n_wires):
+                    grid[wire][layer] = op
+            
             for wire in op.wires:
                 grid[wire_map[wire]][layer] = op
     return grid
