@@ -254,15 +254,14 @@ def gaussian_overlap(la, lb, ra, rb, alpha, beta):
 
 
 def generate_overlap(basis_a, basis_b):
-    r"""Return a function that normalizes and computes the overlap integral for two contracted
-    Gaussian orbitals.
+    r"""Return a function that computes the overlap integral for two contracted Gaussian orbitals.
 
     Args:
         basis_a (BasisFunction): first basis function
         basis_b (BasisFunction): second basis function
 
     Returns:
-        function: function that normalizes and computes the overlap integral
+        function: function that computes the overlap integral
 
     **Example**
 
