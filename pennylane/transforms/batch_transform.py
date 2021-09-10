@@ -14,8 +14,11 @@
 """Contains tools and decorators for registering batch transforms."""
 # pylint: disable=too-few-public-methods
 import functools
+import types
+import warnings
 
 import pennylane as qml
+from pennylane.new_qnode import QNode
 
 
 class batch_transform:
@@ -160,6 +163,9 @@ class batch_transform:
         self.differentiable = differentiable
         functools.update_wrapper(self, transform_fn)
 
+    def custom_qnode_wrapper(self, fn):
+        self.qnode_execution_wrapper = types.MethodType(fn, self)
+
     def qnode_execution_wrapper(self, qnode, targs, tkwargs):
         """A wrapper method that takes a QNode and transform arguments,
         and returns a function that 'wraps' the QNode execution.
@@ -177,7 +183,7 @@ class batch_transform:
             interface = qnode.interface
 
             # TODO: extract gradient_fn from QNode
-            gradient_fn = qnode.diff_method
+            gradient_fn = getattr(qnode, "gradient_fn", qnode.diff_method)
 
             if interface is None or not self.differentiable:
                 gradient_fn = None
@@ -205,7 +211,7 @@ class batch_transform:
             # tapes, fn = some_transform(tape, *transform_args)
             return self.construct(qnode, *targs, **tkwargs)
 
-        if isinstance(qnode, qml.QNode):
+        if isinstance(qnode, (qml.QNode, QNode, qml.ExpvalCost)):
             # Input is a QNode:
             # result = some_transform(qnode, *transform_args)(*qnode_args)
             wrapper = self.qnode_execution_wrapper(qnode, targs, tkwargs)
