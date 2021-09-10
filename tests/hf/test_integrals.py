@@ -23,7 +23,7 @@ from pennylane.hf.integrals import (
     expansion,
     gaussian_overlap,
     generate_overlap,
-    generate_params,
+    _generate_params,
     primitive_norm,
 )
 from pennylane.hf.molecule import Molecule
@@ -78,7 +78,7 @@ def test_generate_params(alpha, coeff, r):
     r"""Test that test_generate_params returns correct basis set parameters."""
     params = [alpha, coeff, r]
     args = [p for p in [alpha, coeff, r] if p.requires_grad]
-    basis_params = generate_params(params, args)
+    basis_params = _generate_params(params, args)
 
     assert np.allclose(basis_params, (alpha, coeff, r))
 

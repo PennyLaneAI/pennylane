@@ -106,9 +106,16 @@ def contracted_norm(l, alpha, a):
     return n
 
 
-def generate_params(params, args):
+def _generate_params(params, args):
     """Generate basis set parameters. The default values are used for the non-differentiable
     parameters and the user-defined values are used for the differentiable ones.
+
+    Args:
+        params (list(array[float])): default values of the basis set parameters
+        args (list(array[float])): initial values of the differentiable basis set parameters
+
+    Returns:
+        list(array[float]): basis set parameters
     """
     basis_params = []
     c = 0
@@ -228,6 +235,16 @@ def gaussian_overlap(la, lb, ra, rb, alpha, beta):
 
     Returns:
         array[float]: overlap integral between primitive Gaussian functions
+
+    **Example**
+
+    >>> la, lb = (0, 0, 0), (0, 0, 0)
+    >>> ra, rb = np.array(([0., 0., 0.]), np.array(([0., 0., 0.])
+    >>> alpha = np.array([np.pi/2])
+    >>> beta = np.array([np.pi/2])
+    >>> o = gaussian_overlap(la, lb, ra, rb, alpha, beta)
+    >>> o
+    array([1.])
     """
     p = alpha + beta
     s = 1.0
@@ -246,6 +263,15 @@ def generate_overlap(basis_a, basis_b):
 
     Returns:
         function: function that normalizes and computes the overlap integral
+
+    **Example**
+
+    >>> symbols  = ['H', 'H']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
+    >>> mol = Molecule(symbols, geometry)
+    >>> args = []
+    >>> generate_overlap(mol.basis_set[0], mol.basis_set[0])(*args)
+    1.0
     """
 
     def overlap_integral(*args):
@@ -261,8 +287,8 @@ def generate_overlap(basis_a, basis_b):
         args_a = [i[0] for i in args]
         args_b = [i[1] for i in args]
 
-        alpha, ca, ra = generate_params(basis_a.params, args_a)
-        beta, cb, rb = generate_params(basis_b.params, args_b)
+        alpha, ca, ra = _generate_params(basis_a.params, args_a)
+        beta, cb, rb = _generate_params(basis_b.params, args_b)
 
         ca = ca * primitive_norm(basis_a.l, alpha)
         cb = cb * primitive_norm(basis_b.l, beta)
