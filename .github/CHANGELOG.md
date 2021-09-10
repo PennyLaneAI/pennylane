@@ -402,6 +402,10 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 <h3>Breaking changes</h3>
 
+* An error is raised during QNode creation when a user requests backpropagation on
+  a device with finite-shots.
+  [(#1588)](https://github.com/PennyLaneAI/pennylane/pull/1588)
+
 * The class `qml.Interferometer` is deprecated and will be renamed `qml.InterferometerUnitary`
   after one release cycle.
   [(#1546)](https://github.com/PennyLaneAI/pennylane/pull/1546)
