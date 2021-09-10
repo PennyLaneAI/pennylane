@@ -195,7 +195,7 @@ class batch_transform:
         as the QNode, and returns the transformed numerical result.
 
         The default :meth:`~.default_qnode_wrapper` method may be called
-        if only post-processing is required:
+        if only pre- or post-processing dependent on QNode arguments is required:
 
         .. code-block:: python
 
@@ -204,6 +204,7 @@ class batch_transform:
                 transformed_qnode = self.default_qnode_wrapper(qnode)
 
                 def wrapper_fn(*args, **kwargs):
+                    args, kwargs = pre_process(args, kwargs)
                     res = transformed_qnode(*args, **kwargs)
                     ...
                     return ...
