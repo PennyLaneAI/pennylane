@@ -582,7 +582,6 @@ class TestDifferentiability:
         )
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
-    @pytest.mark.xfail
     def test_jax(self, diff_method, tol):
         """Test metric tensor differentiability in the JAX interface"""
         if diff_method == "parameter-shift":
