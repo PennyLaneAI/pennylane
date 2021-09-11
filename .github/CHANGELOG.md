@@ -5,7 +5,7 @@
 * The transform for the Jacobian of the classical preprocessing within a QNode,
   `qml.transforms.classical_jacobian`, now takes a keyword argument `argnums` to specify
   the QNode argument indices w.r.t which the Jacobian is computed.
-  [(#15xx)](https://github.com/PennyLaneAI/pennylane/pull/15xx)
+  [(#1645)](https://github.com/PennyLaneAI/pennylane/pull/1645)
 
   The output behaviour with `argnums=None` differs slightly for different interfaces,
   following the respective output shape of the native `jacobian` equivalent:
@@ -46,6 +46,9 @@
 
   The returned arrays are the derivatives of the three parametrized gates in the circuit
   with respect to `y` and `z` respectively.
+
+  There also are explicit tests for `classical_jacobian` now, which previously was tested
+  implicitly via its use in the `metric_tensor` transform.
 
 
 * Custom gradient transforms can now be created using the new
