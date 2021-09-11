@@ -125,17 +125,18 @@ expected_outputs_without_argnums = {
 @pytest.mark.parametrize("interface", interfaces)
 def test_without_argnums(i, circuit_args, interface):
     circuit, args = circuit_args
-    dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface=interface)
     if interface == "tf":
-        import tensorflow as tf
-
+        tf = pytest.importorskip("tensorflow")
         args = tuple((tf.constant(arg, dtype=tf.double) for arg in args))
     elif interface == "torch":
-        import torch
-
+        torch = pytest.importorskip("torch")
         args = tuple((torch.tensor(arg) for arg in args))
+    elif interface=='jax':
+        # Do not need the package but skip if JAX device not available
+        pytest.importorskip("jax")
 
+    dev = qml.device("default.qubit", wires=2)
+    qnode = qml.QNode(circuit, dev, interface=interface)
     jac = classical_jacobian(qnode)(*args)
     expected_jac = expected_outputs_without_argnums[interface][i]
     if interface == "autograd" and all((np.isscalar(arg) for arg in args)):
