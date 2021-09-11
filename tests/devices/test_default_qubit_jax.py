@@ -186,21 +186,19 @@ class TestQNodeIntegration:
         assert not np.all(a == b)
 
     def test_sampling_analytic_mode(self):
-        """Test that when sampling with shots=None, dev uses 1000 shots and
-        raises deprecation warning.
-        """
+        """Test that when sampling with shots=None an error is raised."""
         dev = qml.device("default.qubit.jax", wires=1, shots=None)
 
         @qml.qnode(dev, interface="jax", diff_method=None)
         def circuit():
             return qml.sample(qml.PauliZ(wires=0))
 
-        with pytest.warns(
-            UserWarning, match="The number of shots has to be explicitly set on the jax device"
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="The number of shots has to be explicitly set on the device "
+            "when using sample-based measurements.",
         ):
             res = circuit()
-
-        assert len(res) == 1000
 
     def test_gates_dont_crash(self):
         """Test for gates that weren't covered by other tests."""
