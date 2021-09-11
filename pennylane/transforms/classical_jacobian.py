@@ -86,7 +86,7 @@ def classical_jacobian(qnode, argnums=None):
     The output for ``argnums=None`` depends on the backend:
 
     .. list-table:: Output format of ``classical_jacobian``
-       :widths: 25 25 50
+       :widths: 25 25 25 25
        :header-rows: 1
 
        * - Interface
