@@ -247,8 +247,7 @@ The output tapes can then be evaluated and post-processed to retrieve
 the gradient:
 
 >>> dev = qml.device("default.qubit", wires=2)
->>> from pennylane.interfaces.batch import execute
->>> fn(execute(gradient_tapes, dev, None))
+>>> fn(qml.execute(gradient_tapes, dev, None))
 [[-0.09347337 -0.18884787 -0.28818254]]
 
 Note that the post-processing function ``fn`` returned by the

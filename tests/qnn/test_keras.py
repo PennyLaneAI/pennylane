@@ -404,6 +404,7 @@ class TestKerasLayer:
         assert layer_out.shape == (batch_size, output_dim)
         assert np.allclose(layer_out[0], c(x[0], *weights))
 
+    @pytest.mark.slow
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
     @pytest.mark.parametrize("batch_size", [2, 4, 6])
     @pytest.mark.parametrize("middle_dim", [2, 5, 8])

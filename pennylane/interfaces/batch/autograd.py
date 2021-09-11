@@ -16,8 +16,6 @@ This module contains functions for adding the Autograd interface
 to a PennyLane Device class.
 """
 # pylint: disable=too-many-arguments
-import inspect
-
 import autograd
 from autograd.numpy.numpy_boxes import ArrayBox
 
@@ -171,13 +169,8 @@ def vjp(
         else:
             # Need to compute the Jacobians on the backward pass (accumulation="backward")
 
-            # Temporary: check if the gradient function is a differentiable transform.
-            # For the moment, simply check if it is part of the `qml.gradients` package.
-            # Longer term, we should have a way of checking this directly
-            # (e.g., isinstance(gradient_fn, GradientTransform))
-            module_name = getattr(inspect.getmodule(gradient_fn), "__name__", "")
-
-            if "pennylane.gradients" in module_name:
+            if isinstance(gradient_fn, qml.gradients.gradient_transform):
+                # Gradient function is a gradient transform.
 
                 # Generate and execute the required gradient tapes
                 if _n == max_diff:
@@ -212,26 +205,19 @@ def vjp(
                         )
                     )
 
-            elif (
-                hasattr(gradient_fn, "fn")
-                and inspect.ismethod(gradient_fn.fn)
-                and gradient_fn.fn.__self__ is device
-            ):
-                # Gradient function is a device method.
+            else:
+                # Gradient function is not a gradient transform
+                # (e.g., it might be a device method).
                 # Note that unlike the previous branch:
                 #
                 # - there is no recursion here
                 # - gradient_fn is not differentiable
                 #
                 # so we cannot support higher-order derivatives.
-
                 with qml.tape.Unwrap(*tapes):
                     jacs = gradient_fn(tapes, **gradient_kwargs)
 
                 vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(dy, jacs)]
-
-            else:
-                raise ValueError("Unknown gradient function.")
 
         return [qml.math.to_numpy(v, max_depth=_n) if isinstance(v, ArrayBox) else v for v in vjps]
 
