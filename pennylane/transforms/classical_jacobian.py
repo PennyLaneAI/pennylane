@@ -90,7 +90,7 @@ def classical_jacobian(qnode, argnums=None):
 
     - ``argnums=Sequence[int]``: Tuple of arrays for the derivatives of the chosen arguments.
 
-    - ``argnums=int``: For a single int, the derivative w.r.t the chosen argument is output 
+    - ``argnums=int``: For a single int, the derivative w.r.t the chosen argument is output
       as a single array.
     """
 
@@ -135,6 +135,7 @@ def classical_jacobian(qnode, argnums=None):
         import jax
 
         argnums = 0 if argnums is None else argnums
+
         def _jacobian(*args, **kwargs):
             return jax.jacobian(classical_preprocessing, argnums=argnums)(*args, **kwargs)
 
