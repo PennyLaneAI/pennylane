@@ -131,7 +131,7 @@ def test_without_argnums(i, circuit_args, interface):
     elif interface == "torch":
         torch = pytest.importorskip("torch")
         args = tuple((torch.tensor(arg) for arg in args))
-    elif interface=='jax':
+    elif interface == "jax":
         # Do not need the package but skip if JAX device not available
         pytest.importorskip("jax")
 
