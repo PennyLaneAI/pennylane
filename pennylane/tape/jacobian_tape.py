@@ -360,7 +360,7 @@ class JacobianTape(QuantumTape):
 
         # TODO: modify devices that have device Jacobian methods to
         # accept the quantum tape as an argument
-        jac = jacobian_method(self, **options.get("device_pd_options", dict()))
+        jac = jacobian_method(self, **options.get("device_pd_options", {}))
 
         # restore original parameters
         self.set_parameters(saved_parameters)
@@ -542,6 +542,7 @@ class JacobianTape(QuantumTape):
         >>> tape.jacobian(dev)
         array([], shape=(4, 0), dtype=float64)
         """
+        # pylint: disable=too-many-statements
         if any(m.return_type is State for m in self.measurements):
             raise ValueError("The jacobian method does not support circuits that return the state")
 
