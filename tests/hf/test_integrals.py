@@ -290,14 +290,28 @@ def test_boys(n, t, f_ref):
 
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "alpha", "coef", "r", "a_ref"),
+    ("symbols", "geometry", "alpha", "coeff", "r", "a_ref"),
     [
         (
             ["H", "H"],
             pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], requires_grad=False),
             pnp.array(
                 [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-                requires_grad=False,
+                requires_grad=True,
+            ),
+            pnp.array(
+                [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
+                requires_grad=True,
+            ),
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], requires_grad=True),
+            pnp.array([0.0]),
+        ),
+        (
+            ["H", "H"],
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], requires_grad=True),
+            pnp.array(
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                requires_grad=True,
             ),
             pnp.array(
                 [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
@@ -308,12 +322,15 @@ def test_boys(n, t, f_ref):
         ),
     ],
 )
-def test_generate_attraction(symbols, geometry, alpha, coef, r, a_ref):
+def test_generate_attraction(symbols, geometry, alpha, coeff, r, a_ref):
     r"""Test that generate_kinetic function returns a correct value for the kinetic integral."""
-    mol = Molecule(symbols, geometry)
+    mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff, r=r)
     basis_a = mol.basis_set[0]
     basis_b = mol.basis_set[1]
-    args = [p for p in [alpha, coef, r] if p.requires_grad]
+    args = [p for p in [alpha, coeff, r] if p.requires_grad]
+
+    if geometry.requires_grad:
+        args = [geometry[0]] + args
 
     a = generate_attraction(geometry[0], basis_a, basis_b)(*args)
     assert np.allclose(a, a_ref)
@@ -376,7 +393,7 @@ def test_gradient_attraction(symbols, geometry, alpha, coeff):
 
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "alpha", "coef", "e_ref"),
+    ("symbols", "geometry", "alpha", "coeff", "e_ref"),
     [
         (
             ["H", "H"],
@@ -403,12 +420,12 @@ def test_gradient_attraction(symbols, geometry, alpha, coeff):
         ),
     ],
 )
-def test_generate_repulsion(symbols, geometry, alpha, coef, e_ref):
+def test_generate_repulsion(symbols, geometry, alpha, coeff, e_ref):
     r"""Test that generate_kinetic function returns a correct value for the kinetic integral."""
-    mol = Molecule(symbols, geometry)
+    mol = Molecule(symbols, geometry, coeff=coeff)
     basis_a = mol.basis_set[0]
     basis_b = mol.basis_set[1]
-    args = [p for p in [alpha, coef] if p.requires_grad]
+    args = [p for p in [alpha, coeff] if p.requires_grad]
 
     a = generate_repulsion(basis_a, basis_b, basis_a, basis_b)(*args)
 

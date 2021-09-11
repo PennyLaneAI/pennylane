@@ -412,6 +412,8 @@ def generate_attraction(r, basis_a, basis_b):
         alpha, ca, ra = _generate_params(basis_a.params, args_a)
         beta, cb, rb = _generate_params(basis_b.params, args_b)
 
+        # print(basis_a.params, args_a)
+
         ca = ca * primitive_norm(basis_a.l, alpha)
         cb = cb * primitive_norm(basis_b.l, beta)
 
