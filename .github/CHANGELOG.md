@@ -18,7 +18,7 @@
   | `'torch'`    | `tuple(arrays)`    | `array`               | `tuple(array)`            |
 
   \* If all QNode argument are scalars, the tuple is unpacked and the one-dimensional Jacobian
-  arrays are stacked into one `array`. This is due to the behaviour of `qml.jacobian`.
+     arrays are stacked into one `array`. This is due to the behaviour of `qml.jacobian`.
 
   An example for the usage of `argnums` is
 
@@ -39,9 +39,9 @@
   to the transformed QNode, even if only a subset of the Jacobians is computed.
 
   ```pycon
-  x, y, z = np.array([0.1, -2.5, 0.71])
-  jac_fn(x, y, z)
-  >>> (array([-0., -5., -0.]), array([-0.        , -0.        , -1.98373339]))
+  >>> x, y, z = np.array([0.1, -2.5, 0.71])
+  >>> jac_fn(x, y, z)
+  (array([-0., -5., -0.]), array([-0.        , -0.        , -1.98373339]))
   ```
 
   The returned arrays are the derivatives of the three parametrized gates in the circuit

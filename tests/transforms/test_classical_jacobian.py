@@ -162,17 +162,18 @@ expected_outputs_with_scalar_argnums = {
 @pytest.mark.parametrize("interface", interfaces)
 def test_with_scalar_argnums(i, circuit_args_argnums, interface):
     circuit, args, argnums = circuit_args_argnums
-    dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface=interface)
     if interface == "tf":
-        import tensorflow as tf
-
+        tf = pytest.importorskip("tensorflow")
         args = tuple((tf.constant(arg, dtype=tf.double) for arg in args))
     elif interface == "torch":
-        import torch
-
+        torch = pytest.importorskip("torch")
         args = tuple((torch.tensor(arg) for arg in args))
+    elif interface == "jax":
+        # Do not need the package but skip if JAX device not available
+        pytest.importorskip("jax")
 
+    dev = qml.device("default.qubit", wires=2)
+    qnode = qml.QNode(circuit, dev, interface=interface)
     jac = classical_jacobian(qnode, argnums=argnums)(*args)
     expected_jac = expected_outputs_with_scalar_argnums[interface][i]
     # NOTE: For Autograd we use stacking to replicate qml.jacobian behaviour for scalar-only inputs
@@ -201,17 +202,18 @@ expected_outputs_with_single_list_argnums = {
 @pytest.mark.parametrize("interface", interfaces)
 def test_with_single_list_argnums(i, circuit_args_argnums, interface):
     circuit, args, argnums = circuit_args_argnums
-    dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface=interface)
     if interface == "tf":
-        import tensorflow as tf
-
+        tf = pytest.importorskip("tensorflow")
         args = tuple((tf.constant(arg, dtype=tf.double) for arg in args))
     elif interface == "torch":
-        import torch
-
+        torch = pytest.importorskip("torch")
         args = tuple((torch.tensor(arg) for arg in args))
+    elif interface == "jax":
+        # Do not need the package but skip if JAX device not available
+        pytest.importorskip("jax")
 
+    dev = qml.device("default.qubit", wires=2)
+    qnode = qml.QNode(circuit, dev, interface=interface)
     jac = classical_jacobian(qnode, argnums=argnums)(*args)
     expected_jac = expected_outputs_with_single_list_argnums[interface][i]
     # NOTE: Here we skip the stacking part for Autograd as a tuple is expected if argnums is an iterable
@@ -244,17 +246,18 @@ expected_outputs_with_list_argnums = {
 @pytest.mark.parametrize("interface", interfaces)
 def test_with_list_argnums(i, circuit_args_argnums, interface):
     circuit, args, argnums = circuit_args_argnums
-    dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface=interface)
     if interface == "tf":
-        import tensorflow as tf
-
+        tf = pytest.importorskip("tensorflow")
         args = tuple((tf.constant(arg, dtype=tf.double) for arg in args))
     elif interface == "torch":
-        import torch
-
+        torch = pytest.importorskip("torch")
         args = tuple((torch.tensor(arg) for arg in args))
+    elif interface == "jax":
+        # Do not need the package but skip if JAX device not available
+        pytest.importorskip("jax")
 
+    dev = qml.device("default.qubit", wires=2)
+    qnode = qml.QNode(circuit, dev, interface=interface)
     jac = classical_jacobian(qnode, argnums=argnums)(*args)
     expected_jac = expected_outputs_with_list_argnums[interface][i]
     # NOTE: Here we skip the stacking part for Autograd as a tuple is expected if argnums is an iterable
