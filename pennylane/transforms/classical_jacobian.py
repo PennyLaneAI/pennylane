@@ -43,8 +43,8 @@ def classical_jacobian(qnode, argnums=None):
     >>> @qml.qnode(dev)
     ... def circuit(weights):
     ...     qml.RX(weights[0], wires=0)
-    ...     qml.RY(2.5, wires=0)
     ...     qml.RY(0.2 * weights[0], wires=1)
+    ...     qml.RY(2.5, wires=0)
     ...     qml.RZ(weights[1] ** 2, wires=1)
     ...     qml.RX(weights[2], wires=1)
     ...     return qml.expval(qml.PauliZ(0)@qml.PauliZ(1))
@@ -81,17 +81,52 @@ def classical_jacobian(qnode, argnums=None):
 
         The QNode is constructed during this operation.
 
-    For a QNode with multiple QNode arguments, the output follows the rules of the Jacobian
-    implementation *of the used backend*. This includes the handling of ``argnums``.
-    For example, for the JAX backend and two QNode arguments, we have the following output
-    formats:
+    For a QNode with multiple QNode arguments, the arguments with respect to which the
+    Jacobian is computed can be controlled with the ``argnums`` keyword argument.
+    The output for ``argnums=None`` depends on the backend:
 
-    - ``argnums=None``: Single ``array`` output for the derivative w.r.t the first argument.
+    .. list-table:: Output format of ``classical_jacobian``
+       :widths: 25 25 50
+       :header-rows: 1
 
-    - ``argnums=Sequence[int]``: Tuple of arrays for the derivatives of the chosen arguments.
+       * - Interface
+         - `argnums=None`
+         - `type(argnums)=int`
+         - argnums=Sequence[int]`
+       * - `'autograd'`
+         - `tuple(arrays)`\*
+         - `array`
+         - `tuple(array)`
+       * - `'jax'`
+         - `array`
+         - `array`
+         - `tuple(array)`
+       * - `'tf'`
+         - `tuple(arrays)`
+         - `array`
+         - `tuple(array)`
+       * - `'torch'`
+         - `tuple(arrays)`
+         - `array`
+         - `tuple(array)`
 
-    - ``argnums=int``: For a single int, the derivative w.r.t the chosen argument is output
-      as a single array.
+    **Example with ``argnums``**
+
+    >>> @qml.qnode(dev)
+    ... def circuit(x, y, z):
+    ...     qml.RX(qml.math.sin(x), wires=0)
+    ...     qml.CNOT(wires=[0, 1])
+    ...     qml.RY(y ** 2, wires=1)
+    ...     qml.RZ(1 / z, wires=1)
+    ...     return qml.expval(qml.PauliZ(0)@qml.PauliZ(1))
+    >>> jac_fn = qml.transforms.classical_jacobian(circuit, argnums=[1, 2])
+    >>> x, y, z = np.array([0.1, -2.5, 0.71])
+    >>> jac_fn(x, y, z)
+    (array([-0., -5., -0.]), array([-0.        , -0.        , -1.98373339]))
+
+    Only the Jacobians with respect to the arguments ``x`` and ``y`` were computed, and
+    returned as a tuple of ``arrays``.
+
     """
 
     def classical_preprocessing(*args, **kwargs):
