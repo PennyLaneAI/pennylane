@@ -1,4 +1,23 @@
-# Release 0.18.0-dev (development release)
+# Release 0.19.0-dev (development release)
+
+<h3>New features since last release</h3>
+
+<h3>Improvements</h3>
+
+* ``qml.circuit_drawer.CircuitDrawer`` can accept a string for the ``charset`` keyword, instead of a ``CharSet`` object.
+  [(#1640)](https://github.com/PennyLaneAI/pennylane/pull/1640)
+
+<h3>Breaking changes</h3>
+
+<h3>Bug fixes</h3>
+
+<h3>Documentation</h3>
+
+<h3>Contributors</h3>
+
+This release contains contributions from (in alphabetical order):
+
+# Release 0.18.0 (Current release)
 
 <h3>New features since last release</h3>
 
@@ -520,7 +539,7 @@ Prateek Jain, Ankit Khandelwal, Christina Lee, Ian McLean, Johannes Jakob Meyer,
 Pratul Saini, Maria Schuld, Arshpreet Singh, Ingrid Strandberg, Slimane Thabet, Antal Száva, David Wierichs,
 Vincent Wong.
 
-# Release 0.17.0 (current release)
+# Release 0.17.0
 
 <h3>New features since the last release</h3>
 
