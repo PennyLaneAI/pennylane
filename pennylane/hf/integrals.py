@@ -345,14 +345,30 @@ def _boys(n, t):
 
 
 def _hermite_coulomb(t, u, v, n, p, dr):
-    """Evaluate Hermite integrals needed to compute the nuclear attraction and electron repulsion
+    """Evaluate Hermite integral needed to compute the nuclear attraction and electron repulsion
     integrals.
 
     These integrals are computed recursively starting from the Boys function as
 
     .. math::
 
-    R_{000}^n = \frac{1}{2t^{n + 0.5}} \gamma(n + 0.5, t),
+    R_{000}^n = (-2p)^n F_n(pR_{CP}^2),
+
+    where :math:`F_n` is the Boys function, :math:`p` is computed from the exponents of the two
+    Gaussian functions as :math:`p = \alpha + \beta`, and :math:`R_{CP}` is the distance between the
+    center of the composite Gaussian centered at :math:`P` and the electrostatic potential at
+    :math:`C`.
+
+    Args:
+        t (integer): order of Hermite derivative in x
+        u (integer): order of Hermite derivative in y
+        v (float): order of Hermite derivative in z
+        n (integer): rank of the Boys function
+        p (float): sum of the Gaussian exponents
+        dr (array[float]): distance between the center of the composite Gaussian and nucleus
+
+    Returns:
+        array[float]: value of the Hermite integral
 
     """
 
