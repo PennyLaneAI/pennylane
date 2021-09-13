@@ -308,10 +308,10 @@ def generate_overlap(basis_a, basis_b):
     return overlap_integral
 
 
-def boys(n, t):
+def _boys(n, t):
     r"""Evaluate Boys function.
 
-    The :math:`n`-th order Boys function is [https://arxiv.org/abs/2107.01488]
+    The :math:`n`-th order Boys function is defined as [https://arxiv.org/abs/2107.01488]
 
     .. math::
 
@@ -344,8 +344,10 @@ def boys(n, t):
     return asp.special.gammainc(n + 0.5, t) * asp.special.gamma(n + 0.5) / (2 * t ** (n + 0.5))
 
 
-def hermite_coulomb(t, u, v, n, p, dr):
-    """Generates Hermite-Coulomb overlaps for nuclear attraction integral"""
+def _hermite_coulomb(t, u, v, n, p, dr):
+    """Compute Hermite-Coulomb integral.
+
+    """
 
     x, y, z = dr[0], dr[1], dr[2]
 
@@ -355,26 +357,53 @@ def hermite_coulomb(t, u, v, n, p, dr):
     if t == u == v == 0:
         f = []
         for term in T.flatten():
-            f.append(boys(n, term))
+            f.append(_boys(n, term))
         val = val + ((-2 * p) ** n) * anp.array(f).reshape(T.shape)
     elif t == u == 0:
         if v > 1:
-            val = val + (v - 1) * hermite_coulomb(t, u, v - 2, n + 1, p, dr)
-        val = val + z * hermite_coulomb(t, u, v - 1, n + 1, p, dr)
+            val = val + (v - 1) * _hermite_coulomb(t, u, v - 2, n + 1, p, dr)
+        val = val + z * _hermite_coulomb(t, u, v - 1, n + 1, p, dr)
     elif t == 0:
         if u > 1:
-            val = val + (u - 1) * hermite_coulomb(t, u - 2, v, n + 1, p, dr)
-        val = val + y * hermite_coulomb(t, u - 1, v, n + 1, p, dr)
+            val = val + (u - 1) * _hermite_coulomb(t, u - 2, v, n + 1, p, dr)
+        val = val + y * _hermite_coulomb(t, u - 1, v, n + 1, p, dr)
     else:
         if t > 1:
-            val = val + (t - 1) * hermite_coulomb(t - 2, u, v, n + 1, p, dr)
-        val = val + x * hermite_coulomb(t - 1, u, v, n + 1, p, dr)
+            val = val + (t - 1) * _hermite_coulomb(t - 2, u, v, n + 1, p, dr)
+        val = val + x * _hermite_coulomb(t - 1, u, v, n + 1, p, dr)
 
     return val
 
 
 def nuclear_attraction(la, lb, ra, rb, alpha, beta, r):
-    """Compute nuclear attraction integral between primitive Gaussian functions."""
+    r"""Compute nuclear attraction integral between primitive Gaussian functions.
+
+     The nuclear attraction integral between two Gaussian functions denoted by :math:`a` and
+     :math:`b` can be computed as
+     [`Helgaker (1995) p820 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]:
+
+    .. math::
+
+        V_{ab} = \frac{2\pi}{p} \sum_{tuv} E_t^{ij} E_u^{kl} E_v^{mn} R_{tuv},
+
+    where :math:`E` and :math:`R` represent the expansion coefficient the Hermite Gaussian expansion
+    coefficient and the Hermite Coulomb integral, respectively. The sum goes over :math:`i + j + 1`,
+    :math:`k + l + 1` and :math:`m + m + 1` for :math:`t`, :math:`u` and :math:`v`, respectively and
+    :math:`p` is computed from the exponents of the two Gaussian functions as
+    :math:`p = \alpha + \beta`.
+
+    Args:
+        la (integer): angular momentum for the first Gaussian function
+        lb (integer): angular momentum for the second Gaussian function
+        ra (float): position vector of the the first Gaussian function
+        rb (float): position vector of the the second Gaussian function
+        alpha (array[float]): exponent of the first Gaussian function
+        beta (array[float]): exponent of the second Gaussian function
+        r (array[float]): position vector of nucleus
+
+    Returns:
+        array[float]: nuclear attraction integral between two Gaussian functions
+    """
     l1, m1, n1 = la
     l2, m2, n2 = lb
     p = alpha + beta
@@ -383,24 +412,49 @@ def nuclear_attraction(la, lb, ra, rb, alpha, beta, r):
     )
     dr = rgp - anp.array(r)[:, anp.newaxis, anp.newaxis]
 
-    e1 = anp.array([expansion(l1, l2, ra[0], rb[0], alpha, beta, t) for t in range(l1 + l2 + 1)])
-    e2 = anp.array([expansion(m1, m2, ra[1], rb[1], alpha, beta, u) for u in range(m1 + m2 + 1)])
-    e3 = anp.array([expansion(n1, n2, ra[2], rb[2], alpha, beta, v) for v in range(n1 + n2 + 1)])
-
     a = 0.0
     for t in range(l1 + l2 + 1):
         for u in range(m1 + m2 + 1):
             for v in range(n1 + n2 + 1):
-                a = a + e1[t] * e2[u] * e3[v] * hermite_coulomb(t, u, v, 0, p, dr)
+                a = a + expansion(l1, l2, ra[0], rb[0], alpha, beta, t) * expansion(
+                    m1, m2, ra[1], rb[1], alpha, beta, u
+                ) * expansion(n1, n2, ra[2], rb[2], alpha, beta, v) * _hermite_coulomb(
+                    t, u, v, 0, p, dr
+                )
     a = a * 2 * anp.pi / p
     return a
 
 
 def generate_attraction(r, basis_a, basis_b):
-    r"""Compute the nuclear attraction integral."""
+    r"""Return a function that computes the nuclear attraction integral for two contracted Gaussian
+    functions.
+
+    Args:
+        r (array[float]): position vector of nucleus
+        basis_a (BasisFunction): first basis function
+        basis_b (BasisFunction): second basis function
+    Returns:
+        function: function that computes the nuclear attraction integral
+
+    **Example**
+
+    >>> symbols  = ['H', 'H']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
+    >>> mol = Molecule(symbols, geometry)
+    >>> args = []
+    >>> generate_attraction(geometry[0], mol.basis_set[0], mol.basis_set[1])(*args)
+    0.801208332328965
+    """
 
     def attraction_integral(*args):
+        r"""Compute the nuclear attraction integral for two contracted Gaussian functions.
 
+        Args:
+            args (array[float]): initial values of the differentiable parameters
+
+        Returns:
+            array[float]: the nuclear attraction integral between two contracted Gaussian orbitals
+        """
         if r.requires_grad:
             coor = args[0]
             args_a = [i[0] for i in args[1:]]
@@ -472,7 +526,7 @@ def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta
                                 n3, n4, rc[2], rd[2], gamma, delta, phi
                             ) * (
                                 (-1) ** (tau + nu + phi)
-                            ) * hermite_coulomb(
+                            ) * _hermite_coulomb(
                                 t + tau, u + nu, v + phi, 0, quotient, p_ab - p_cd
                             )
 
@@ -482,12 +536,36 @@ def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta
 
 
 def generate_repulsion(basis_a, basis_b, basis_c, basis_d):
-    """
-    Computes the two electron repulsion integral
+    r"""Return a function that computes the electron repulsion integral for four contracted Gaussian
+    functions.
+
+    Args:
+        basis_a (BasisFunction): first basis function
+        basis_b (BasisFunction): second basis function
+        basis_c (BasisFunction): third basis function
+        basis_d (BasisFunction): fourth basis function
+    Returns:
+        function: function that computes the electron repulsion integral
+
+    **Example**
+
+    >>> symbols  = ['H', 'H']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
+    >>> mol = Molecule(symbols, geometry)
+    >>> args = []
+    >>> generate_repulsion(mol.basis_set[0], mol.basis_set[1], mol.basis_set[0], mol.basis_set[1])(*args)
+    0.45590152106593573
     """
 
     def repulsion_integral(*args):
+        r"""Compute the electron repulsion integral for four contracted Gaussian functions.
 
+        Args:
+            args (array[float]): initial values of the differentiable parameters
+
+        Returns:
+            array[float]: the electron repulsion integral between four contracted Gaussian functions
+        """
         args_a = [i[0] for i in args]
         args_b = [i[1] for i in args]
         args_c = [i[2] for i in args]

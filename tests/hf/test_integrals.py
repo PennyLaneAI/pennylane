@@ -20,7 +20,7 @@ import pytest
 from pennylane import numpy as pnp
 from pennylane.hf.integrals import (
     _generate_params,
-    boys,
+    _boys,
     contracted_norm,
     expansion,
     gaussian_overlap,
@@ -285,7 +285,7 @@ def test_gradient(symbols, geometry, alpha, coeff):
 )
 def test_boys(n, t, f_ref):
     r"""Test that the Boys function is evaluated correctly."""
-    f = boys(n, t)
+    f = _boys(n, t)
     assert np.allclose(f, f_ref)
 
 
