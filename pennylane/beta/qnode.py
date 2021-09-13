@@ -117,9 +117,8 @@ class QNode:
 
     Keyword Args:
         **kwargs: Any additional keyword arguments provided are passed to the differentiation
-        method. Please refer to the :mod:`qml.gradients <.gradients>` module for details
-        on supported options for your chosen gradient transform.
-
+            method. Please refer to the :mod:`qml.gradients <.gradients>` module for details
+            on supported options for your chosen gradient transform.
 
     **Example**
 
@@ -537,4 +536,5 @@ class QNode:
 
 
 qnode = lambda dev, **kwargs: functools.partial(QNode, device=dev, **kwargs)
-qnode = functools.update_wrapper(qnode, QNode)
+qnode.__doc__ = QNode.__doc__
+qnode.__signature__ = inspect.signature(QNode)
