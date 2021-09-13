@@ -65,7 +65,8 @@ class MPLDrawer:
         drawer.CNOT(layer=2, wires=(0, 2))
 
         drawer.ctrl(layer=3, wires=[1, 3], control_values = [True, False])
-        drawer.box_gate(layer=3, wires=2, text="H", zorder=2)
+        drawer.box_gate(layer=3, wires=2, text="H", box_options={'zorder': 4},
+            text_options={'zorder': 5})
 
         drawer.ctrl(layer=4, wires=[1, 2])
 
@@ -183,10 +184,6 @@ class MPLDrawer:
             :align: center
             :width: 60%
             :target: javascript:void(0);
-
-    Many methods accept a ``zorder`` keyword. Higher ``zorder`` objects are drawn
-    on top of lower ``zorder`` objects. In top example, we have to set a ``zorder``
-    to a value of ``2`` in order to draw it *on top* of the control wires, instead of below them.
     """
 
     _box_dx = 0.4
@@ -278,7 +275,7 @@ class MPLDrawer:
             self._ax.text(-1.5, wire, ii_label, **text_options)
 
     def box_gate(
-        self, layer, wires, text="", extra_width=0, zorder=0, box_options=None, text_options=None
+        self, layer, wires, text="", extra_width=0, box_options=None, text_options=None
     ):
         """Draws a box and adds label text to its center.
 
@@ -290,7 +287,6 @@ class MPLDrawer:
 
         Keyword Args:
             extra_width (float): extra box width
-            zorder_base=0 (int): increase number to draw on top of other objects, like control wires
             box_options=None (dict): any matplotlib keywords for the ``plt.Rectangle`` patch
             text_options=None (dict): any matplotlib keywords for the text
 
@@ -330,8 +326,12 @@ class MPLDrawer:
         """
         if box_options is None:
             box_options = {}
-        if text_options is None:
-            text_options = {}
+        if 'zorder' not in box_options:
+            box_options['zorder'] = 2
+
+        new_text_options = {"zorder": 3, "ha": "center", "va": "center", "fontsize": "x-large"}
+        if text_options is not None:
+            new_text_options.update(text_options)
 
         wires = _to_tuple(wires)
 
@@ -344,20 +344,15 @@ class MPLDrawer:
             (layer - self._box_dx - extra_width / 2, box_min - self._box_dx),
             2 * self._box_dx + extra_width,
             (box_len + 2 * self._box_dx),
-            zorder=2 + zorder,
             **box_options,
         )
         self._ax.add_patch(box)
-
-        default_text_options = {"ha": "center", "va": "center", "fontsize": "x-large"}
-        default_text_options.update(text_options)
 
         self._ax.text(
             layer,
             box_center,
             text,
-            zorder=3 + zorder,
-            **default_text_options,
+            **new_text_options,
         )
 
     def ctrl(self, layer, wires, wires_target=None, control_values=None, options=None):
@@ -430,10 +425,10 @@ class MPLDrawer:
         """
         if options is None:
             options = {}
-        if 'color' not in options:
-            options['facecolor'] = plt.rcParams["lines.color"]
-        if 'zorder' not in options:
-            options['zorder'] = 3
+        if "color" not in options:
+            options["facecolor"] = plt.rcParams["lines.color"]
+        if "zorder" not in options:
+            options["zorder"] = 3
 
         circ_ctrl = plt.Circle((layer, wires), radius=self._ctrl_rad, **options)
         self._ax.add_patch(circ_ctrl)
@@ -445,23 +440,23 @@ class MPLDrawer:
 
         new_options = options.copy()
         if "color" in new_options:
-            new_options['facecolor'] = plt.rcParams['axes.facecolor']
-            new_options['edgecolor'] = options['color']
-            new_options['color'] = None
+            new_options["facecolor"] = plt.rcParams["axes.facecolor"]
+            new_options["edgecolor"] = options["color"]
+            new_options["color"] = None
         else:
-            new_options['edgecolor'] = plt.rcParams["lines.color"]
-            new_options['facecolor'] = plt.rcParams['axes.facecolor']
+            new_options["edgecolor"] = plt.rcParams["lines.color"]
+            new_options["facecolor"] = plt.rcParams["axes.facecolor"]
 
-        if 'linewidth' not in new_options:
-            new_options['linewidth'] = plt.rcParams['lines.linewidth']
-        if 'zorder' not in new_options:
-            new_options['zorder'] = 3
+        if "linewidth" not in new_options:
+            new_options["linewidth"] = plt.rcParams["lines.linewidth"]
+        if "zorder" not in new_options:
+            new_options["zorder"] = 3
 
         return new_options
 
     def _ctrlo_circ(self, layer, wires, options=None):
         """Draw an open circle that indicates control on zero.
-        
+
         Acceptable keys in options dictionary:
           * zorder
           * color
@@ -519,16 +514,16 @@ class MPLDrawer:
         if options is None:
             options = {}
         new_options = self._open_circ_options_process(options)
+        options['zorder'] = new_options['zorder'] + 1
 
         target_circ = plt.Circle((layer, wires), radius=self._circ_rad, **new_options)
-    
+
         target_v = plt.Line2D(
             (layer, layer), (wires - self._circ_rad, wires + self._circ_rad), **options
         )
         target_h = plt.Line2D(
             (layer - self._circ_rad, layer + self._circ_rad), (wires, wires), **options
         )
-
 
         self._ax.add_patch(target_circ)
         self._ax.add_line(target_v)
@@ -592,21 +587,20 @@ class MPLDrawer:
 
         Keyword Args:
             options=None (dict): matplotlib keywords for ``Line2D`` objects
-
         """
         if options is None:
             options = {}
+        if 'zorder' not in options:
+            options['zorder'] = 2
 
         l1 = plt.Line2D(
             (layer - self._swap_dx, layer + self._swap_dx),
             (wire - self._swap_dx, wire + self._swap_dx),
-            zorder=2,
             **options,
         )
         l2 = plt.Line2D(
             (layer - self._swap_dx, layer + self._swap_dx),
             (wire + self._swap_dx, wire - self._swap_dx),
-            zorder=2,
             **options,
         )
 
@@ -655,15 +649,18 @@ class MPLDrawer:
         """
         if box_options is None:
             box_options = {}
+        if 'zorder' not in box_options:
+            box_options['zorder'] = 2
 
         if lines_options is None:
             lines_options = {}
+        if 'zorder' not in lines_options:
+            lines_options['zorder'] = 3
 
         box = plt.Rectangle(
             (layer - self._box_dx, wires - self._box_dx),
             2 * self._box_dx,
             2 * self._box_dx,
-            zorder=2,
             **box_options,
         )
         self._ax.add_patch(box)
@@ -674,7 +671,6 @@ class MPLDrawer:
             1.1 * self._box_dx,
             theta1=180,
             theta2=0,
-            zorder=3,
             **lines_options,
         )
         self._ax.add_patch(arc)
@@ -685,13 +681,13 @@ class MPLDrawer:
         arrow_width = 0.6 * self._box_dx
         arrow_height = -1.0 * self._box_dx
 
+        lines_options['zorder'] += 1
         arrow = plt.arrow(
             arrow_start_x,
             arrow_start_y,
             arrow_width,
             arrow_height,
             head_width=self._box_dx / 4,
-            zorder=4,
             **lines_options,
         )
         self._ax.add_line(arrow)
