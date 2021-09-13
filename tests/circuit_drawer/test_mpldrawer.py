@@ -284,7 +284,7 @@ class TestCTRL:
 
         ctrl_wires = (0, 1)
         rgba_red = (1, 0, 0, 1)
-        drawer.ctrl(0, ctrl_wires, control_values=[1, 0], color=rgba_red)
+        drawer.ctrl(0, ctrl_wires, control_values=[1, 0], options={"color": rgba_red})
 
         ctrl_line = drawer.ax.lines[3]
         assert ctrl_line.get_color() == rgba_red
@@ -344,7 +344,7 @@ class TestCTRL:
         drawer = MPLDrawer(1, 3)
 
         rgba_red = (1, 0, 0, 1)
-        drawer._target_x(0, 0, color=rgba_red)
+        drawer._target_x(0, 0, options={"color": rgba_red})
 
         center_line = drawer.ax.lines[3]
         assert center_line.get_color() == rgba_red
@@ -386,7 +386,7 @@ class TestCTRL:
     def test_CNOT_color(self):
         drawer = MPLDrawer(1, 3)
         rgba_red = (1, 0, 0, 1)
-        drawer.CNOT(0, (0, 1), color=rgba_red)
+        drawer.CNOT(0, (0, 1), options={"color": rgba_red})
 
         ctrl_line = drawer.ax.lines[3]
         assert ctrl_line.get_color() == rgba_red
