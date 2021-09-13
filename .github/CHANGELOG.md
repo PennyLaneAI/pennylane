@@ -273,6 +273,7 @@
   [(#1549)](https://github.com/PennyLaneAI/pennylane/pull/1549)
   [(#1608)](https://github.com/PennyLaneAI/pennylane/pull/1608)
   [(#1618)](https://github.com/PennyLaneAI/pennylane/pull/1618)
+  [(#1637)](https://github.com/PennyLaneAI/pennylane/pull/1637)
 
   For example:
 
@@ -402,6 +403,11 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 <h3>Breaking changes</h3>
 
+* Specifying `shots=None` with `qml.sample` was previously deprecated.
+  From this release onwards, setting `shots=None` when sampling will
+  raise an error also for `default.qubit.jax`.
+  [(#1629)](https://github.com/PennyLaneAI/pennylane/pull/1629)
+
 * An error is raised during QNode creation when a user requests backpropagation on
   a device with finite-shots.
   [(#1588)](https://github.com/PennyLaneAI/pennylane/pull/1588)
@@ -458,7 +464,8 @@ This release contains contributions from (in alphabetical order):
 
 Vishnu Ajith, Akash Narayanan B, Thomas Bromley, Olivia Di Matteo, Sahaj Dhamija, Tanya Garg, Josh Izaac,
 Prateek Jain, Ankit Khandelwal, Christina Lee, Ian McLean, Johannes Jakob Meyer, Romain Moyard, Esteban Payares,
-Pratul Saini, Maria Schuld, Arshpreet Singh, Ingrid Strandberg, Slimane Thabet, David Wierichs, Vincent Wong.
+Pratul Saini, Maria Schuld, Arshpreet Singh, Ingrid Strandberg, Slimane Thabet, Antal Száva, David Wierichs,
+Vincent Wong.
 
 # Release 0.17.0 (current release)
 
