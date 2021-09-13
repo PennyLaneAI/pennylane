@@ -23,7 +23,8 @@
   drawer.CNOT(layer=2, wires=(0, 2))
 
   drawer.ctrl(layer=3, wires=[1, 3], control_values = [True, False])
-  drawer.box_gate(layer=3, wires=2, text="H", zorder=2)
+  drawer.box_gate(layer=3, wires=2, text="H", box_options={'zorder': 4},
+    text_options={'zorder': 5})
 
   drawer.ctrl(layer=4, wires=[1, 2])
 
