@@ -24,7 +24,7 @@ import pennylane as qml
 import numpy as np
 
 from pennylane.wires import Wires
-from .circuit_drawer import CHARSETS, CircuitDrawer
+from .circuit_drawer import CircuitDrawer
 
 
 def _by_idx(x):
@@ -604,18 +604,11 @@ class CircuitGraph:
 
         grid, obs = self.greedy_layers(wire_order=wire_order, show_all_wires=show_all_wires)
 
-        if charset not in CHARSETS:
-            raise ValueError(
-                "Charset {} is not supported. Supported charsets: {}.".format(
-                    charset, ", ".join(CHARSETS.keys())
-                )
-            )
-
         drawer = CircuitDrawer(
             grid,
             obs,
             wires=wire_order or self.wires,
-            charset=CHARSETS[charset],
+            charset=charset,
             show_all_wires=show_all_wires,
         )
 
