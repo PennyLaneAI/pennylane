@@ -4,6 +4,9 @@
 
 <h3>Improvements</h3>
 
+* ``qml.circuit_drawer.CircuitDrawer`` can accept a string for the ``charset`` keyword, instead of a ``CharSet`` object.
+  [(#1640)](https://github.com/PennyLaneAI/pennylane/pull/1640)
+
 <h3>Breaking changes</h3>
 
 <h3>Bug fixes</h3>
