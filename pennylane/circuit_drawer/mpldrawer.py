@@ -146,9 +146,9 @@ class MPLDrawer:
         swap_options = {'linewidth': 4, 'color': 'darkgreen'}
         drawer.SWAP(layer=1, wires=(0, 1), options=swap_options)
 
-        drawer.CNOT(layer=2, wires=(0, 1), color='teal')
-
-        drawer.ctrl(layer=3, wires=(0, 1), color='black')
+        ctrl_options = {'linewidth': 4, 'color': 'teal'}
+        drawer.CNOT(layer=2, wires=(0, 1), options=ctrl_options)
+        drawer.ctrl(layer=3, wires=(0, 1), options=ctrl_options)
 
 
         measure_box = {'facecolor': 'white', 'edgecolor': 'indigo'}
@@ -360,7 +360,7 @@ class MPLDrawer:
             **default_text_options,
         )
 
-    def ctrl(self, layer, wires, wires_target=None, control_values=None, color=None):
+    def ctrl(self, layer, wires, wires_target=None, control_values=None, options=None):
         """Add an arbitrary number of control wires
 
         Args:
@@ -372,7 +372,8 @@ class MPLDrawer:
                 and max wires for the vertical line
             control_values=None (Union[bool, Iterable[bool]]): for each control wire, denotes whether to control
                 on ``False=0`` or ``True=1``
-            options=None (dict): mpl line keywords
+            options=None (dict): dictionary of options.  The only supported keys are ``'color'``, ``'linewidth'``,
+                and ``'zorder'``.
 
         **Example**
 
@@ -382,7 +383,9 @@ class MPLDrawer:
 
             drawer.ctrl(layer=0, wires=0, wires_target=1)
             drawer.ctrl(layer=1, wires=(0, 1), control_values=[0, 1])
-            drawer.ctrl(layer=2, wires=(0, 1), color="indigo")
+
+            options = {'color': "indigo", 'linewidth': 4}
+            drawer.ctrl(layer=2, wires=(0, 1), control_values=[1, 0], options=options)
 
         .. figure:: ../../_static/drawer/ctrl.png
             :align: center
@@ -390,6 +393,9 @@ class MPLDrawer:
             :target: javascript:void(0);
 
         """
+        if options is None:
+            options = {}
+
         wires_ctrl = _to_tuple(wires)
         wires_target = _to_tuple(wires_target)
         if control_values is not None:
@@ -399,56 +405,84 @@ class MPLDrawer:
         min_wire = min(wires_all)
         max_wire = max(wires_all)
 
-        line = plt.Line2D((layer, layer), (min_wire, max_wire), zorder=2, color=color)
+        line = plt.Line2D((layer, layer), (min_wire, max_wire), **options)
         self._ax.add_line(line)
 
         if control_values is None:
             for wire in wires_ctrl:
-                self._ctrl_circ(layer, wire, zorder=3, color=color)
+                self._ctrl_circ(layer, wire, options=options)
         else:
             if len(control_values) != len(wires_ctrl):
                 raise ValueError("`control_values` must be the same length as `wires`")
             for wire, control_on in zip(wires_ctrl, control_values):
                 if control_on:
-                    self._ctrl_circ(layer, wire, zorder=3, color=color)
+                    self._ctrl_circ(layer, wire, options=options)
                 else:
-                    self._ctrlo_circ(layer, wire, zorder=3, color=color)
+                    self._ctrlo_circ(layer, wire, options=options)
 
-    def _ctrl_circ(self, layer, wires, zorder=3, color=None):
-        """Draw a solid circle that indicates control on one"""
+    def _ctrl_circ(self, layer, wires, options=None):
+        """Draw a solid circle that indicates control on one.
 
-        if color is None:
-            options = {"facecolor": plt.rcParams["lines.color"]}
-        else:
-            options = {"color": color}
+        Acceptable keys in options dictionary:
+          * zorder
+          * color
+          * linewidth
+        """
+        if options is None:
+            options = {}
+        if 'color' not in options:
+            options['facecolor'] = plt.rcParams["lines.color"]
+        if 'zorder' not in options:
+            options['zorder'] = 3
 
-        circ_ctrl = plt.Circle((layer, wires), radius=self._ctrl_rad, zorder=zorder, **options)
+        circ_ctrl = plt.Circle((layer, wires), radius=self._ctrl_rad, **options)
         self._ax.add_patch(circ_ctrl)
 
-    def _ctrlo_circ(self, layer, wires, zorder=3, color=None):
-        """Draw an open circle that indicates control on zero."""
+    def _open_circ_options_process(self, options):
+        """For use in both ``_ctrlo_circ`` and ``_target_x``."""
+        if options is None:
+            options = {}
 
-        options = {
-            "edgecolor": plt.rcParams["lines.color"],
-            "facecolor": plt.rcParams["axes.facecolor"],
-            "linewidth": plt.rcParams["lines.linewidth"],
-        }
-        if color is not None:
-            options["edgecolor"] = color
+        new_options = options.copy()
+        if "color" in new_options:
+            new_options['facecolor'] = plt.rcParams['axes.facecolor']
+            new_options['edgecolor'] = options['color']
+            new_options['color'] = None
+        else:
+            new_options['edgecolor'] = plt.rcParams["lines.color"]
+            new_options['facecolor'] = plt.rcParams['axes.facecolor']
 
-        circ_ctrlo = plt.Circle((layer, wires), radius=(self._octrl_rad), zorder=zorder, **options)
+        if 'linewidth' not in new_options:
+            new_options['linewidth'] = plt.rcParams['lines.linewidth']
+        if 'zorder' not in new_options:
+            new_options['zorder'] = 3
+
+        return new_options
+
+    def _ctrlo_circ(self, layer, wires, options=None):
+        """Draw an open circle that indicates control on zero.
+        
+        Acceptable keys in options dictionary:
+          * zorder
+          * color
+          * linewidth
+        """
+        new_options = self._open_circ_options_process(options)
+
+        circ_ctrlo = plt.Circle((layer, wires), radius=(self._octrl_rad), **new_options)
 
         self._ax.add_patch(circ_ctrlo)
 
-    def CNOT(self, layer, wires, color=None):
+    def CNOT(self, layer, wires, options=None):
         """Draws a CNOT gate.
 
         Args:
             layer (int): layer to draw in
-            wires (int, int): tuple of (control, target)
+            wires (Union[int, Iterable[int]]): wires to use.  Last wire is the target.
 
         Keyword Args:
-            color=None: mpl compatible color designation
+            options=None: dictionary of options.  The only supported keys are ``'color'``, ``'linewidth'``,
+                and ``'zorder'``.
 
         **Example**
 
@@ -457,7 +491,9 @@ class MPLDrawer:
             drawer = MPLDrawer(n_wires=2, n_layers=2)
 
             drawer.CNOT(0, (0, 1))
-            drawer.CNOT(1, (1, 0), color='indigo')
+
+            options = {'color': 'indigo', 'linewidth': 4}
+            drawer.CNOT(1, (1, 0), options=options)
 
         .. figure:: ../../_static/drawer/cnot.png
             :align: center
@@ -465,12 +501,11 @@ class MPLDrawer:
             :target: javascript:void(0);
 
         """
-        target = wires[1]
 
-        self.ctrl(layer, *wires, color=color)
-        self._target_x(layer, target, color=color)
+        self.ctrl(layer, wires[:-1], wires[-1], options=options)
+        self._target_x(layer, wires[-1], options=options)
 
-    def _target_x(self, layer, wires, color=None):
+    def _target_x(self, layer, wires, options=None):
         """Draws the circle used to represent a CNOT's target
 
         Args:
@@ -478,24 +513,23 @@ class MPLDrawer:
             wires (int): wire to draw on
 
         Keyword Args:
-            color=None: mpl compatible color designation
+            options=None (dict): dictionary of options.  The only supported keys are ``'color'``, ``'linewidth'``,
+                and ``'zorder'``.
         """
+        if options is None:
+            options = {}
+        new_options = self._open_circ_options_process(options)
 
-        default_options = {
-            "edgecolor": plt.rcParams["lines.color"],
-            "linewidth": plt.rcParams["lines.linewidth"],
-            "facecolor": plt.rcParams["axes.facecolor"],
-        }
-        if color is not None:
-            default_options["edgecolor"] = color
-
-        target_circ = plt.Circle((layer, wires), radius=self._circ_rad, zorder=3, **default_options)
+        target_circ = plt.Circle((layer, wires), radius=self._circ_rad, **new_options)
+    
         target_v = plt.Line2D(
-            (layer, layer), (wires - self._circ_rad, wires + self._circ_rad), zorder=4, color=color
+            (layer, layer), (wires - self._circ_rad, wires + self._circ_rad), **options
         )
         target_h = plt.Line2D(
-            (layer - self._circ_rad, layer + self._circ_rad), (wires, wires), zorder=4, color=color
+            (layer - self._circ_rad, layer + self._circ_rad), (wires, wires), **options
         )
+
+
         self._ax.add_patch(target_circ)
         self._ax.add_line(target_v)
         self._ax.add_line(target_h)
@@ -543,7 +577,7 @@ class MPLDrawer:
         if options is None:
             options = {}
 
-        line = plt.Line2D((layer, layer), wires, zorder=2, **options)
+        line = plt.Line2D((layer, layer), wires, **options)
         self._ax.add_line(line)
 
         for wire in wires:
@@ -579,7 +613,7 @@ class MPLDrawer:
         self._ax.add_line(l1)
         self._ax.add_line(l2)
 
-    def measure(self, layer, wires, zorder_base=0, box_options=None, lines_options=None):
+    def measure(self, layer, wires, box_options=None, lines_options=None):
         """Draw a Measurement graphic at designated layer, wire combination.
 
         Args:
@@ -587,7 +621,6 @@ class MPLDrawer:
             wires (int): wire to draw on
 
         Keyword Args:
-            zorder_base=0 (int): amount to shift in zorder from the default
             box_options=None (dict): dictionary to format a matplotlib rectangle
             lines_options=None (dict): dictionary to format matplotlib arc and arrow
 
@@ -630,7 +663,7 @@ class MPLDrawer:
             (layer - self._box_dx, wires - self._box_dx),
             2 * self._box_dx,
             2 * self._box_dx,
-            zorder=2 + zorder_base,
+            zorder=2,
             **box_options,
         )
         self._ax.add_patch(box)
@@ -641,7 +674,7 @@ class MPLDrawer:
             1.1 * self._box_dx,
             theta1=180,
             theta2=0,
-            zorder=3 + zorder_base,
+            zorder=3,
             **lines_options,
         )
         self._ax.add_patch(arc)
@@ -658,7 +691,7 @@ class MPLDrawer:
             arrow_width,
             arrow_height,
             head_width=self._box_dx / 4,
-            zorder=4 + zorder_base,
+            zorder=4,
             **lines_options,
         )
         self._ax.add_line(arrow)
