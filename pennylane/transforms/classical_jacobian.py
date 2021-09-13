@@ -26,7 +26,7 @@ def classical_jacobian(qnode):
     arguments and the quantum gate arguments to be extracted.
 
     Args:
-        qnode (.QNode): QNode to compute the (classical) Jacobian of
+        qnode (pennylane.QNode): QNode to compute the (classical) Jacobian of
 
     Returns:
         function: Function which accepts the same arguments as the QNode.
