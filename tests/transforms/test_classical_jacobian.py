@@ -120,17 +120,18 @@ def test_autograd_without_argnums(circuit, args, expected_jac):
     dev = qml.device("default.qubit", wires=2)
     qnode = qml.QNode(circuit, dev, interface='autograd')
     jac = classical_jacobian(qnode)(*args)
+
     # NOTE: We use stacking to replicate qml.jacobian behaviour for scalar-only inputs
     if all((np.isscalar(arg) for arg in args)):
         expected_jac = qml.math.stack(expected_jac).T
-
-    if isinstance(jac, tuple):
+        assert np.allclose(jac, expected_jac)
+    else:
+        # For a single argument, the Jacobian is unpacked
+        if len(args)==1:
+            expected_jac = expected_jac[0]
         assert len(jac)==len(expected_jac)
         for _jac, _expected_jac in zip(jac, expected_jac):
             assert np.allclose(_jac, _expected_jac)
-    else:
-        assert np.allclose(jac, expected_jac)
-        assert False
 
 @pytest.mark.parametrize("circuit, args, expected_jac", zip(circuits, args, class_jacs))
 def test_jax_without_argnums(circuit, args, expected_jac):
@@ -143,9 +144,7 @@ def test_jax_without_argnums(circuit, args, expected_jac):
     qnode = qml.QNode(circuit, dev, interface='jax')
     jac = classical_jacobian(qnode)(*args)
 
-    print(jac, expected_jac)
     assert np.allclose(jac, expected_jac)
-    assert False
 
 @pytest.mark.parametrize("circuit, args, expected_jac", zip(circuits, args, class_jacs))
 def test_tf_without_argnums(circuit, args, expected_jac):
@@ -156,13 +155,9 @@ def test_tf_without_argnums(circuit, args, expected_jac):
     qnode = qml.QNode(circuit, dev, interface='tf')
     jac = classical_jacobian(qnode)(*args)
 
-    if isinstance(jac, tuple):
-        assert len(jac)==len(expected_jac)
-        for _jac, _expected_jac in zip(jac, expected_jac):
-            assert np.allclose(_jac, _expected_jac)
-    else:
-        assert np.allclose(jac, expected_jac)
-        assert False
+    assert len(jac)==len(expected_jac)
+    for _jac, _expected_jac in zip(jac, expected_jac):
+        assert np.allclose(_jac, _expected_jac)
 
 @pytest.mark.parametrize("circuit, args, expected_jac", zip(circuits, args, class_jacs))
 def test_torch_without_argnums(circuit, args, expected_jac):
@@ -173,13 +168,9 @@ def test_torch_without_argnums(circuit, args, expected_jac):
     qnode = qml.QNode(circuit, dev, interface='torch')
     jac = classical_jacobian(qnode)(*args)
 
-    if isinstance(jac, tuple):
-        assert len(jac)==len(expected_jac)
-        for _jac, _expected_jac in zip(jac, expected_jac):
-            assert np.allclose(_jac, _expected_jac)
-    else:
-        assert np.allclose(jac, expected_jac)
-        assert False
+    assert len(jac)==len(expected_jac)
+    for _jac, _expected_jac in zip(jac, expected_jac):
+        assert np.allclose(_jac, _expected_jac)
 
 
 scalar_argnums = [0, 1, 0, 1, 0, 1]
