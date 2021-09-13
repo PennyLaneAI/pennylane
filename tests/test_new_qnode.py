@@ -61,6 +61,24 @@ class TestValidation:
         with pytest.raises(qml.QuantumFunctionError, match=expected_error):
             circuit.interface = test_interface
 
+    def test_valid_interface(self):
+        """Test that changing to a valid interface works as expected, and the
+        diff method is updated as required."""
+        torch = pytest.importorskip("torch")
+        dev = qml.device("default.qubit", wires=1)
+
+        @qnode(dev, interface="autograd", diff_method="best")
+        def circuit(x):
+            qml.RX(wires=0)
+            return qml.probs(wires=0)
+
+        assert circuit.device.short_name == "default.qubit.autograd"
+        assert circuit.gradient_fn == "backprop"
+
+        circuit.interface = "torch"
+        assert circuit.device.short_name == "default.qubit.torch"
+        assert circuit.gradient_fn == "backprop"
+
     def test_invalid_device(self):
         """Test that an exception is raised for an invalid device"""
         with pytest.raises(qml.QuantumFunctionError, match="Invalid device"):
@@ -243,6 +261,21 @@ class TestValidation:
 
         # check that get_best_method was only ever called once
         mock_best.assert_called_once()
+
+    def test_gradient_transform(self, mocker):
+        """Test passing a gradient transform directly to a QNode"""
+        dev = qml.device("default.qubit", wires=1)
+        spy = mocker.spy(qml.gradients.finite_difference, "finite_diff_coeffs")
+
+        @qnode(dev, diff_method=qml.gradients.finite_diff)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        assert circuit.gradient_fn is qml.gradients.finite_diff
+
+        qml.grad(circuit)(0.5)
+        spy.assert_called()
 
     def test_unknown_diff_method_string(self):
         """Test that an exception is raised for an unknown differentiation method string"""
