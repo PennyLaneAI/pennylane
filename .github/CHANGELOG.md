@@ -3,27 +3,27 @@
 <h3>New features since last release</h3>
 
 * The transform for the Jacobian of the classical preprocessing within a QNode,
-  `qml.transforms.classical_jacobian`, now takes a keyword argument `argnums` to specify
+  `qml.transforms.classical_jacobian`, now takes a keyword argument `argnum` to specify
   the QNode argument indices with respect to which the Jacobian is computed.
   [(#1645)](https://github.com/PennyLaneAI/pennylane/pull/1645)
 
-  The output behaviour with `argnums=None` differs slightly for different interfaces,
+  The output behaviour with `argnum=None` differs slightly for different interfaces,
   following the respective output shape of the native `jacobian` equivalent:
 
-  ==============  =====================  =====================  =========================
-  Interface       ``argnums=None``       ``type(argnums)=int``  ``argnums=Sequence[int]``
-  ==============  =====================  =====================  =========================
+  ==============  =====================  ====================  ========================
+  Interface       ``argnum=None``        ``type(argnum)=int``  ``argnum=Sequence[int]``
+  ==============  =====================  ====================  ========================
   ``'autograd'``  ``tuple(arrays)`` [1]  ``array``              ``tuple(array)``
   ``'jax'``       ``array``              ``array``              ``tuple(array)``
   ``'tf'``        ``tuple(arrays)``      ``array``              ``tuple(array)``
   ``'torch'``     ``tuple(arrays)``      ``array``              ``tuple(array)``
-  ==============  =====================  =====================  =========================
+  ==============  =====================  ====================  ========================
 
   [1] If all QNode argument are scalars, the tuple is unpacked and the one-dimensional Jacobian
   arrays are stacked into one ``array``. If there only is one QNode argument, the tuple is 
   unpacked as well. Both is due to the behaviour of ``qml.jacobian``.
 
-  An example for the usage of ``argnums`` is
+  An example for the usage of ``argnum`` is
 
   ```python
   @qml.qnode(dev)
@@ -34,7 +34,7 @@
       qml.RZ(1 / z, wires=1)
       return qml.expval(qml.PauliZ(0))
 
-  jac_fn = qml.transforms.classical_jacobian(circuit, argnums=[1, 2])
+  jac_fn = qml.transforms.classical_jacobian(circuit, argnum=[1, 2])
   ```
 
   The Jacobian can then be computed at specified parameters.
