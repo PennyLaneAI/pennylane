@@ -32,6 +32,10 @@ def _stopping_critera(obj):
 
 
 def expand_fn(tape):
+    """Expands the tape to contain only operations
+    supported by the ``metric_tensor`` transform (specified
+    by ``SUPPORTED_OPS``).
+    """
     new_tape = tape.expand(depth=2, stop_at=_stopping_critera)
     params = new_tape.get_parameters(trainable_only=False)
     new_tape.trainable_params = qml.math.get_trainable_indices(params)
@@ -210,9 +214,9 @@ def metric_tensor(tape, diag_approx=False):
 
 @metric_tensor.custom_qnode_wrapper
 def qnode_execution_wrapper(self, qnode, targs, tkwargs):
-    # Here, we overwrite the QNode execution wrapper in order
-    # to take into account that classical processing may be present
-    # inside the QNode.
+    """Here, we overwrite the QNode execution wrapper in order
+    to take into account that classical processing may be present
+    inside the QNode."""
     hybrid = tkwargs.pop("hybrid", True)
 
     if isinstance(qnode, qml.ExpvalCost):
