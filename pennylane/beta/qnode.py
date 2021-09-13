@@ -536,4 +536,5 @@ class QNode:
 
 
 qnode = lambda dev, **kwargs: functools.partial(QNode, device=dev, **kwargs)
-qnode = functools.update_wrapper(qnode, QNode)
+qnode.__doc__ = QNode.__doc__
+qnode.__signature__ = inspect.signature(QNode)
