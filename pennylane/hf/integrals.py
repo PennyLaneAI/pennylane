@@ -345,7 +345,14 @@ def _boys(n, t):
 
 
 def _hermite_coulomb(t, u, v, n, p, dr):
-    """Compute Hermite-Coulomb integral.
+    """Evaluate Hermite integrals needed to compute the nuclear attraction and electron repulsion
+    integrals.
+
+    These integrals are computed recursively starting from the Boys function as
+
+    .. math::
+
+    R_{000}^n = \frac{1}{2t^{n + 0.5}} \gamma(n + 0.5, t),
 
     """
 

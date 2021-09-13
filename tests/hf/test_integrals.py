@@ -325,7 +325,7 @@ def test_boys(n, t, f_ref):
     ],
 )
 def test_generate_attraction(symbols, geometry, alpha, coeff, r, a_ref):
-    r"""Test that generate_kinetic function returns a correct value for the kinetic integral."""
+    r"""Test that generate_attraction function returns a correct value for the kinetic integral."""
     mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff, r=r)
     basis_a = mol.basis_set[0]
     basis_b = mol.basis_set[1]
@@ -448,7 +448,7 @@ def test_gradient_attraction(symbols, geometry, alpha, coeff):
     ],
 )
 def test_generate_repulsion(symbols, geometry, alpha, coeff, e_ref):
-    r"""Test that generate_kinetic function returns a correct value for the kinetic integral."""
+    r"""Test that generate_repulsion function returns a correct value for the kinetic integral."""
     mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
     basis_a = mol.basis_set[0]
     basis_b = mol.basis_set[1]
