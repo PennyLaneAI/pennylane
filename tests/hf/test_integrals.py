@@ -292,6 +292,7 @@ def test_boys(n, t, f_ref):
 @pytest.mark.parametrize(
     ("symbols", "geometry", "alpha", "coeff", "r", "a_ref"),
     [
+        # trivial case
         (
             ["H", "H"],
             pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], requires_grad=False),
@@ -306,9 +307,10 @@ def test_boys(n, t, f_ref):
             pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], requires_grad=True),
             pnp.array([0.0]),
         ),
+        # nuclear attraction integral obtained from pyscf using mol.intor('int1e_nuc')
         (
             ["H", "H"],
-            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], requires_grad=True),
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
             pnp.array(
                 [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
                 requires_grad=True,
@@ -317,8 +319,8 @@ def test_boys(n, t, f_ref):
                 [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
                 requires_grad=True,
             ),
-            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], requires_grad=True),
-            pnp.array([0.0]),
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
+            pnp.array([0.80120855]),
         ),
     ],
 )
@@ -331,6 +333,8 @@ def test_generate_attraction(symbols, geometry, alpha, coeff, r, a_ref):
 
     if geometry.requires_grad:
         args = [geometry[0]] + args
+
+    print(args)
 
     a = generate_attraction(geometry[0], basis_a, basis_b)(*args)
     assert np.allclose(a, a_ref)
@@ -418,11 +422,34 @@ def test_gradient_attraction(symbols, geometry, alpha, coeff):
             ),
             pnp.array([0.0]),
         ),
+        (
+                ["H", "H"],
+                pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+                pnp.array(
+                    [
+                        [3.42525091, 0.62391373, 0.1688554],
+                        [3.42525091, 0.62391373, 0.1688554],
+                        [3.42525091, 0.62391373, 0.1688554],
+                        [3.42525091, 0.62391373, 0.1688554],
+                    ],
+                    requires_grad=False,
+                ),
+                pnp.array(
+                    [
+                        [0.15432897, 0.53532814, 0.44463454],
+                        [0.15432897, 0.53532814, 0.44463454],
+                        [0.15432897, 0.53532814, 0.44463454],
+                        [0.15432897, 0.53532814, 0.44463454],
+                    ],
+                    requires_grad=True,
+                ),
+                pnp.array([0.45590169]),
+        ),
     ],
 )
 def test_generate_repulsion(symbols, geometry, alpha, coeff, e_ref):
     r"""Test that generate_kinetic function returns a correct value for the kinetic integral."""
-    mol = Molecule(symbols, geometry, coeff=coeff)
+    mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
     basis_a = mol.basis_set[0]
     basis_b = mol.basis_set[1]
     args = [p for p in [alpha, coeff] if p.requires_grad]

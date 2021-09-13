@@ -382,15 +382,16 @@ def nuclear_attraction(la, lb, ra, rb, alpha, beta, r):
         alpha + beta
     )
     dr = rgp - anp.array(r)[:, anp.newaxis, anp.newaxis]
+
+    e1 = anp.array([expansion(l1, l2, ra[0], rb[0], alpha, beta, t) for t in range(l1 + l2 + 1)])
+    e2 = anp.array([expansion(m1, m2, ra[1], rb[1], alpha, beta, u) for u in range(m1 + m2 + 1)])
+    e3 = anp.array([expansion(n1, n2, ra[2], rb[2], alpha, beta, v) for v in range(n1 + n2 + 1)])
+
     a = 0.0
     for t in range(l1 + l2 + 1):
         for u in range(m1 + m2 + 1):
             for v in range(n1 + n2 + 1):
-                a = a + expansion(l1, l2, ra[0], rb[0], alpha, beta, t) * expansion(
-                    m1, m2, ra[1], rb[1], alpha, beta, u
-                ) * expansion(n1, n2, ra[2], rb[2], alpha, beta, v) * hermite_coulomb(
-                    t, u, v, 0, p, dr
-                )
+                a = a + e1[t] * e2[u] * e3[v] * hermite_coulomb(t, u, v, 0, p, dr)
     a = a * 2 * anp.pi / p
     return a
 
@@ -411,8 +412,6 @@ def generate_attraction(r, basis_a, basis_b):
 
         alpha, ca, ra = _generate_params(basis_a.params, args_a)
         beta, cb, rb = _generate_params(basis_b.params, args_b)
-
-        # print(basis_a.params, args_a)
 
         ca = ca * primitive_norm(basis_a.l, alpha)
         cb = cb * primitive_norm(basis_b.l, beta)
