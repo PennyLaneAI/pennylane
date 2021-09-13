@@ -4,6 +4,9 @@
 
 <h3>Improvements</h3>
 
+* ``qml.circuit_drawer.CircuitDrawer`` can accept a string for the ``charset`` keyword, instead of a ``CharSet`` object.
+  [(#1640)](https://github.com/PennyLaneAI/pennylane/pull/1640)
+
 <h3>Breaking changes</h3>
 
 <h3>Bug fixes</h3>
@@ -17,39 +20,6 @@ This release contains contributions from (in alphabetical order):
 # Release 0.18.0 (Current release)
 
 <h3>New features since last release</h3>
-
-* The `qml.circuit_drawer.MPLDrawer` class provides manual circuit drawing
-  functionality using Matplotlib. While not yet integrated with automatic circuit
-  drawing, this class provides customization and control.
-  [(#1484)](https://github.com/PennyLaneAI/pennylane/pull/1484)
-
-  ```python
-  from pennylane.circuit_drawer import MPLDrawer
-
-  drawer = MPLDrawer(n_wires=5, n_layers=5)
-
-  drawer.label(["0", "a", r"$|\Psi\rangle$", r"$|\theta\rangle$", "aux"])
-
-  drawer.box_gate(layer=0, wires=[0, 1, 2, 3, 4], text="Entangling Layers", text_options={'rotation': 'vertical'})
-  drawer.box_gate(layer=1, wires=[0, 1], text="U(θ)")
-
-  drawer.box_gate(layer=1, wires=4, text="Z")
-
-  drawer.SWAP(layer=1, wires=(2, 3))
-  drawer.CNOT(layer=2, wires=(0, 2))
-
-  drawer.ctrl(layer=3, wires=[1, 3], control_values = [True, False])
-  drawer.box_gate(layer=3, wires=2, text="H", box_options={'zorder': 4},
-    text_options={'zorder': 5})
-
-  drawer.ctrl(layer=4, wires=[1, 2])
-
-  drawer.measure(layer=5, wires=0)
-
-  drawer.fig.suptitle('My Circuit', fontsize='xx-large')
-  ```
-
-  <img src="https://pennylane.readthedocs.io/en/latest/_static/drawer/example_basic.png" width=70%/>
 
 * Custom gradient transforms can now be created using the new
   `@qml.gradients.gradient_transform` decorator on a batch-tape transform.
