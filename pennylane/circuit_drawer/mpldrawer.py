@@ -34,6 +34,7 @@ def _to_tuple(a):
         return tuple(a)
     return (a,)
 
+
 def _open_circ_options_process(options):
     """For use in both ``_ctrlo_circ`` and ``_target_x``."""
     if options is None:
@@ -54,6 +55,7 @@ def _open_circ_options_process(options):
         new_options["zorder"] = 3
 
     return new_options
+
 
 # pylint: disable=too-many-instance-attributes, too-many-arguments
 class MPLDrawer:
@@ -294,9 +296,7 @@ class MPLDrawer:
         for wire, ii_label in enumerate(labels):
             self._ax.text(-1.5, wire, ii_label, **text_options)
 
-    def box_gate(
-        self, layer, wires, text="", extra_width=0, box_options=None, text_options=None
-    ):
+    def box_gate(self, layer, wires, text="", extra_width=0, box_options=None, text_options=None):
         """Draws a box and adds label text to its center.
 
         Args:
@@ -346,8 +346,8 @@ class MPLDrawer:
         """
         if box_options is None:
             box_options = {}
-        if 'zorder' not in box_options:
-            box_options['zorder'] = 2
+        if "zorder" not in box_options:
+            box_options["zorder"] = 2
 
         new_text_options = {"zorder": 3, "ha": "center", "va": "center", "fontsize": "x-large"}
         if text_options is not None:
@@ -453,8 +453,6 @@ class MPLDrawer:
         circ_ctrl = plt.Circle((layer, wires), radius=self._ctrl_rad, **options)
         self._ax.add_patch(circ_ctrl)
 
-
-
     def _ctrlo_circ(self, layer, wires, options=None):
         """Draw an open circle that indicates control on zero.
 
@@ -515,7 +513,7 @@ class MPLDrawer:
         if options is None:
             options = {}
         new_options = _open_circ_options_process(options)
-        options['zorder'] = new_options['zorder'] + 1
+        options["zorder"] = new_options["zorder"] + 1
 
         target_circ = plt.Circle((layer, wires), radius=self._circ_rad, **new_options)
 
@@ -591,8 +589,8 @@ class MPLDrawer:
         """
         if options is None:
             options = {}
-        if 'zorder' not in options:
-            options['zorder'] = 2
+        if "zorder" not in options:
+            options["zorder"] = 2
 
         l1 = plt.Line2D(
             (layer - self._swap_dx, layer + self._swap_dx),
@@ -650,13 +648,13 @@ class MPLDrawer:
         """
         if box_options is None:
             box_options = {}
-        if 'zorder' not in box_options:
-            box_options['zorder'] = 2
+        if "zorder" not in box_options:
+            box_options["zorder"] = 2
 
         if lines_options is None:
             lines_options = {}
-        if 'zorder' not in lines_options:
-            lines_options['zorder'] = 3
+        if "zorder" not in lines_options:
+            lines_options["zorder"] = 3
 
         box = plt.Rectangle(
             (layer - self._box_dx, wires - self._box_dx),
@@ -682,7 +680,7 @@ class MPLDrawer:
         arrow_width = 0.6 * self._box_dx
         arrow_height = -1.0 * self._box_dx
 
-        lines_options['zorder'] += 1
+        lines_options["zorder"] += 1
         arrow = plt.arrow(
             arrow_start_x,
             arrow_start_y,
