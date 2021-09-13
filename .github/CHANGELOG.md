@@ -4,7 +4,7 @@
 
 * The transform for the Jacobian of the classical preprocessing within a QNode,
   `qml.transforms.classical_jacobian`, now takes a keyword argument `argnums` to specify
-  the QNode argument indices w.r.t which the Jacobian is computed.
+  the QNode argument indices with respect to which the Jacobian is computed.
   [(#1645)](https://github.com/PennyLaneAI/pennylane/pull/1645)
 
   The output behaviour with `argnums=None` differs slightly for different interfaces,
@@ -18,7 +18,7 @@
   | `'torch'`    | `tuple(arrays)`    | `array`               | `tuple(array)`            |
 
   \* If all QNode argument are scalars, the tuple is unpacked and the one-dimensional Jacobian
-     arrays are stacked into one `array`. This is due to the behaviour of `qml.jacobian`.
+  arrays are stacked into one `array`. This is due to the behaviour of `qml.jacobian`.
 
   An example for the usage of `argnums` is
 
@@ -35,7 +35,7 @@
   ```
 
   The Jacobian can then be computed at specified parameters.
-  Note that unlike the behaviour in `tensorflow`, _all_ QNode arguments have to be provided
+  Note that unlike the behaviour in `tensorflow`, *all* QNode arguments have to be provided
   to the transformed QNode, even if only a subset of the Jacobians is computed.
 
   ```pycon
