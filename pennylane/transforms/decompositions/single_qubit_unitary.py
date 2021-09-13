@@ -16,7 +16,7 @@ operations into elementary gates.
 """
 import pennylane as qml
 from pennylane import math
-from pennylane import numpy as np
+import numpy as np
 
 
 def _convert_to_su2(U):
@@ -87,31 +87,18 @@ def zyz_decomposition(U, wire):
         omega = 2 * math.angle(U[1, 1])
         return [qml.RZ(omega, wires=wire)]
 
-    # Check if the matrix is off-diagonal. This means we can express it in terms
-    # of a single Z rotation and a Y rotation of -pi.
-    if math.allclose(U[0, 0], [0.0]):
-        # If the elements are the same, this is just an X rotation with a global phase
-        if math.allclose(U[0, 1], U[1, 0]):
-            return [qml.Rot(0, np.pi, np.pi, wires=wire)]
-
-        # Otherwise, we need to find the angle of the RZ. Note that we use -pi
-        # as the rotation angle for RY. This ensures the matrices constructed in
-        # PennyLane will match the original.
-        theta = -np.pi
-        phi = 2 * math.angle(U[0, 1])
-        return [qml.Rot(phi, theta, 0.0, wires=wire)]
-
-    # If not diagonal or off-diagonal with RZ/RY(pi), compute the angle of the RY
-    cos2_theta_over_2 = math.abs(U[0, 0] * U[1, 1])
-    theta = 2 * math.arccos(math.sqrt(cos2_theta_over_2))
-
     # If the top left element is 0, can only use the off-diagonal elements. We
     # have to be very careful with the math here to ensure things that get
     # multiplied together are of the correct type in the different interfaces.
     if math.allclose(U[0, 0], [0.0]):
-        phi = 1j * math.log(U[0, 1] / U[1, 0])
-        omega = -phi - math.cast_like(2 * math.angle(U[1, 0]), phi)
+        phi = 0.0
+        theta = -np.pi
+        omega = 1j * math.log(U[0, 1] / U[1, 0]) - np.pi
     else:
+        # If not diagonal, compute the angle of the RY
+        cos2_theta_over_2 = math.abs(U[0, 0] * U[1, 1])
+        theta = 2 * math.arccos(math.sqrt(cos2_theta_over_2))
+
         el_division = U[0, 0] / U[1, 0]
         tan_part = math.cast_like(math.tan(theta / 2), el_division)
         omega = 1j * math.log(tan_part * el_division)
