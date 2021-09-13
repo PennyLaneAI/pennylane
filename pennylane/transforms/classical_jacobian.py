@@ -94,7 +94,7 @@ def classical_jacobian(qnode, argnums=None):
          - ``type(argnums)=int``
          - ``argnums=Sequence[int]``
        * - ``'autograd'``
-         - ``tuple(arrays)``\*
+         - ``tuple(arrays)``
          - ``array``
          - ``tuple(array)``
        * - ``'jax'``
@@ -110,8 +110,8 @@ def classical_jacobian(qnode, argnums=None):
          - ``array``
          - ``tuple(array)``
 
-    * If all QNode argument are scalars, the tuple is unpacked and the one-dimensional Jacobian
-      arrays are stacked into one `array`. This is due to the behaviour of `qml.jacobian`.
+    If all QNode argument are scalars, the tuple is unpacked and the one-dimensional Jacobian
+    arrays are stacked into one `array`. This is due to the behaviour of `qml.jacobian`.
 
     **Example with ``argnums``**
 
