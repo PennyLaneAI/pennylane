@@ -26,7 +26,109 @@ from pennylane.interfaces.batch import set_shots, SUPPORTED_INTERFACES
 
 
 class QNode:
-    """New QNode"""
+    """Represents a quantum node in the hybrid computational graph.
+
+    A *quantum node* contains a :ref:`quantum function <intro_vcirc_qfunc>`
+    (corresponding to a :ref:`variational circuit <glossary_variational_circuit>`)
+    and the computational device it is executed on.
+
+    The QNode calls the quantum function to construct a :class:`~.QuantumTape` instance representing
+    the quantum circuit.
+
+    Args:
+        func (callable): a quantum function
+        device (~.Device): a PennyLane-compatible device
+        interface (str): The interface that will be used for classical backpropagation.
+            This affects the types of objects that can be passed to/returned from the QNode:
+
+            * ``"autograd"``: Allows autograd to backpropagate
+              through the QNode. The QNode accepts default Python types
+              (floats, ints, lists) as well as NumPy array arguments,
+              and returns NumPy arrays.
+
+            * ``"torch"``: Allows PyTorch to backpropogate
+              through the QNode. The QNode accepts and returns Torch tensors.
+
+            * ``"tf"``: Allows TensorFlow in eager mode to backpropogate
+              through the QNode. The QNode accepts and returns
+              TensorFlow ``tf.Variable`` and ``tf.tensor`` objects.
+
+            * ``"jax"``: Allows JAX to backpropogate
+              through the QNode. The QNode accepts and returns
+              JAX ``DeviceArray`` objects.
+
+            * ``None``: The QNode accepts default Python types
+              (floats, ints, lists) as well as NumPy array arguments,
+              and returns NumPy arrays. It does not connect to any
+              machine learning library automatically for backpropagation.
+
+        diff_method (str or .gradient_transform): The method of differentiation to use in the created QNode.
+            Can either be a :class:`~.gradient_transform`, which includes all quantum gradient
+            transforms in the :mod:`qml.gradients <.gradients>` module, or a string. The following
+            strings are allowed:
+
+            * ``"best"``: Best available method. Uses classical backpropagation or the
+              device directly to compute the gradient if supported, otherwise will use
+              the analytic parameter-shift rule where possible with finite-difference as a fallback.
+
+            * ``"device"``: Queries the device directly for the gradient.
+              Only allowed on devices that provide their own gradient computation.
+
+            * ``"backprop"``: Use classical backpropagation. Only allowed on simulator
+              devices that are classically end-to-end differentiable, for example
+              :class:`default.tensor.tf <~.DefaultTensorTF>`. Note that the returned
+              QNode can only be used with the machine-learning framework supported
+              by the device.
+
+            * ``"adjoint"``: Uses an `adjoint method <https://arxiv.org/abs/2009.02823>`__ that
+              reverses through the circuit after a forward pass by iteratively applying the inverse
+              (adjoint) gate. Only allowed on supported simulator devices such as
+              :class:`default.qubit <~.DefaultQubit>`.
+
+            * ``"parameter-shift"``: Use the analytic parameter-shift
+              rule for all supported quantum operation arguments, with finite-difference
+              as a fallback.
+
+            * ``"finite-diff"``: Uses numerical finite-differences for all quantum operation
+              arguments.
+
+            * ``None``: QNode cannot be differentiated. Works the same as ``interface=None``.
+
+        max_expansion (int): The number of times the internal circuit should be expanded when
+            executed on a device. Expansion occurs when an operation or measurement is not
+            supported, and results in a gate decomposition. If any operations in the decomposition
+            remain unsupported by the device, another expansion occurs.
+        mode (str): Whether the gradients should be computed on the forward
+            pass (``forward``) or the backward pass (``backward``). Only applies
+            if the device is queried for the gradient; gradient transform
+            functions available in ``qml.gradients`` are only supported on the backward
+            pass.
+        cache (bool or dict or Cache): Whether to cache evaluations. This can result in
+            a significant reduction in quantum evaluations during gradient computations.
+            If ``True``, a cache with corresponding ``cachesize`` is created for each batch
+            execution. If ``False``, no caching is used. You may also pass your own cache
+            to be used; this can be any object that implements the special methods
+            ``__getitem__()``, ``__setitem__()``, and ``__delitem__()``, such as a dictionary.
+        cachesize (int): The size of any auto-created caches. Only applies when ``cache=True``.
+        max_diff (int): If ``diff_method`` is a gradient transform, this option specifies
+            the maximum number of derivatives to support. Increasing this value allows
+            for higher order derivatives to be extracted, at the cost of additional
+            (classical) computational overhead during the backwards pass.
+
+    Keyword Args:
+        Any additional keyword arguments provided are passed to the differentiation
+        method. Please refer to the :mod:`qml.gradients <.gradients>` module for details
+        on supported options for your chosen gradient transform.
+
+
+    **Example**
+
+    >>> def circuit(x):
+    ...     qml.RX(x, wires=0)
+    ...     return expval(qml.PauliZ(0))
+    >>> dev = qml.device("default.qubit", wires=1)
+    >>> qnode = qml.QNode(circuit, dev)
+    """
 
     def __init__(
         self,

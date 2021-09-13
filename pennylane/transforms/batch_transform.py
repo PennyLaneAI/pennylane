@@ -17,7 +17,7 @@ import functools
 import types
 
 import pennylane as qml
-from pennylane.new_qnode import QNode
+from pennylane.beta import QNode
 
 
 class batch_transform:
