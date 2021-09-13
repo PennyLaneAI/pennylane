@@ -90,25 +90,28 @@ def classical_jacobian(qnode, argnums=None):
        :header-rows: 1
 
        * - Interface
-         - `argnums=None`
-         - `type(argnums)=int`
-         - argnums=Sequence[int]`
-       * - `'autograd'`
-         - `tuple(arrays)`\*
-         - `array`
-         - `tuple(array)`
-       * - `'jax'`
-         - `array`
-         - `array`
-         - `tuple(array)`
-       * - `'tf'`
-         - `tuple(arrays)`
-         - `array`
-         - `tuple(array)`
-       * - `'torch'`
-         - `tuple(arrays)`
-         - `array`
-         - `tuple(array)`
+         - ``argnums=None``
+         - ``type(argnums)=int``
+         - ``argnums=Sequence[int]``
+       * - ``'autograd'``
+         - ``tuple(arrays)``\*
+         - ``array``
+         - ``tuple(array)``
+       * - ``'jax'``
+         - ``array``
+         - ``array``
+         - ``tuple(array)``
+       * - ``'tf'``
+         - ``tuple(arrays)``
+         - ``array``
+         - ``tuple(array)``
+       * - ``'torch'``
+         - ``tuple(arrays)``
+         - ``array``
+         - ``tuple(array)``
+
+    * If all QNode argument are scalars, the tuple is unpacked and the one-dimensional Jacobian
+    arrays are stacked into one `array`. This is due to the behaviour of `qml.jacobian`.
 
     **Example with ``argnums``**
 
