@@ -47,7 +47,7 @@ def circuit_2(x):
 def circuit_3(x, y):
     [qml.RX(x[i], wires=0) for i in range(3)]
     for i in range(2):
-        [qml.RY(y[i,j], wires=1) for j in range(2)]
+        [qml.RY(y[i, j], wires=1) for j in range(2)]
     return qml.expval(qml.PauliZ(0))
 
 
