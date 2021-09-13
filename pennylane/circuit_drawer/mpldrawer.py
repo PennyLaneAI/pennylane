@@ -34,6 +34,26 @@ def _to_tuple(a):
         return tuple(a)
     return (a,)
 
+def _open_circ_options_process(options):
+    """For use in both ``_ctrlo_circ`` and ``_target_x``."""
+    if options is None:
+        options = {}
+
+    new_options = options.copy()
+    if "color" in new_options:
+        new_options["facecolor"] = plt.rcParams["axes.facecolor"]
+        new_options["edgecolor"] = options["color"]
+        new_options["color"] = None
+    else:
+        new_options["edgecolor"] = plt.rcParams["lines.color"]
+        new_options["facecolor"] = plt.rcParams["axes.facecolor"]
+
+    if "linewidth" not in new_options:
+        new_options["linewidth"] = plt.rcParams["lines.linewidth"]
+    if "zorder" not in new_options:
+        new_options["zorder"] = 3
+
+    return new_options
 
 # pylint: disable=too-many-instance-attributes, too-many-arguments
 class MPLDrawer:
@@ -433,26 +453,7 @@ class MPLDrawer:
         circ_ctrl = plt.Circle((layer, wires), radius=self._ctrl_rad, **options)
         self._ax.add_patch(circ_ctrl)
 
-    def _open_circ_options_process(self, options):
-        """For use in both ``_ctrlo_circ`` and ``_target_x``."""
-        if options is None:
-            options = {}
 
-        new_options = options.copy()
-        if "color" in new_options:
-            new_options["facecolor"] = plt.rcParams["axes.facecolor"]
-            new_options["edgecolor"] = options["color"]
-            new_options["color"] = None
-        else:
-            new_options["edgecolor"] = plt.rcParams["lines.color"]
-            new_options["facecolor"] = plt.rcParams["axes.facecolor"]
-
-        if "linewidth" not in new_options:
-            new_options["linewidth"] = plt.rcParams["lines.linewidth"]
-        if "zorder" not in new_options:
-            new_options["zorder"] = 3
-
-        return new_options
 
     def _ctrlo_circ(self, layer, wires, options=None):
         """Draw an open circle that indicates control on zero.
@@ -462,7 +463,7 @@ class MPLDrawer:
           * color
           * linewidth
         """
-        new_options = self._open_circ_options_process(options)
+        new_options = _open_circ_options_process(options)
 
         circ_ctrlo = plt.Circle((layer, wires), radius=(self._octrl_rad), **new_options)
 
@@ -513,7 +514,7 @@ class MPLDrawer:
         """
         if options is None:
             options = {}
-        new_options = self._open_circ_options_process(options)
+        new_options = _open_circ_options_process(options)
         options['zorder'] = new_options['zorder'] + 1
 
         target_circ = plt.Circle((layer, wires), radius=self._circ_rad, **new_options)
