@@ -237,7 +237,7 @@ def finite_diff(tape, argnum=None, h=1e-7, approx_order=1, n=1, strategy="forwar
 
     .. UsageDetails::
 
-        This gradient transform can also be applied directly to :class:`~.QNode` objects:
+        This gradient transform can also be applied directly to :class:`QNode <pennylane.QNode>` objects:
 
         >>> @qml.qnode(dev)
         ... def circuit(params):
