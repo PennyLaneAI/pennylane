@@ -117,9 +117,8 @@ class QNode:
 
     Keyword Args:
         **kwargs: Any additional keyword arguments provided are passed to the differentiation
-        method. Please refer to the :mod:`qml.gradients <.gradients>` module for details
-        on supported options for your chosen gradient transform.
-
+            method. Please refer to the :mod:`qml.gradients <.gradients>` module for details
+            on supported options for your chosen gradient transform.
 
     **Example**
 
