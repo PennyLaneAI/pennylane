@@ -18,7 +18,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.new_qnode import qnode, QNode
+from pennylane.beta import qnode, QNode
 from pennylane.transforms import draw
 from pennylane.tape import JacobianTape
 
@@ -228,13 +228,13 @@ class TestValidation:
         diff method."""
         dev = qml.device("default.qubit", wires=1)
 
-        mock_best = mocker.patch("pennylane.new_qnode.QNode.get_best_method")
+        mock_best = mocker.patch("pennylane.beta.QNode.get_best_method")
         mock_best.return_value = ("best", {}, dev)
 
-        mock_backprop = mocker.patch("pennylane.new_qnode.QNode._validate_backprop_method")
+        mock_backprop = mocker.patch("pennylane.beta.QNode._validate_backprop_method")
         mock_backprop.return_value = ("backprop", {}, dev)
 
-        mock_device = mocker.patch("pennylane.new_qnode.QNode._validate_device_method")
+        mock_device = mocker.patch("pennylane.beta.QNode._validate_device_method")
         mock_device.return_value = ("device", {}, dev)
 
         qn = QNode(dummyfunc, dev, diff_method="best")
