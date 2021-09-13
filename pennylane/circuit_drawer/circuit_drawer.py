@@ -70,7 +70,7 @@ class CircuitDrawer:
         else:
             if charset not in CHARSETS:
                 raise ValueError(
-                    "Charset {} is not supported. Supported charsets: {}.".format(
+                    "Charset '{}' is not supported. Supported charsets: {}.".format(
                         charset, ", ".join(CHARSETS.keys())
                     )
                 )

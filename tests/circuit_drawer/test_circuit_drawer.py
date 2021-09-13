@@ -95,7 +95,7 @@ class TestInitialization:
 
     def test_charset_error(self):
 
-        with pytest.raises(ValueError, match=r"Charset nope is not supported."):
+        with pytest.raises(ValueError, match=r"Charset 'nope' is not supported."):
             CircuitDrawer(
                 dummy_raw_operation_grid, dummy_raw_observable_grid, Wires(range(6)), charset="nope"
             )
