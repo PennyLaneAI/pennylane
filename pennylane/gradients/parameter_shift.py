@@ -492,7 +492,7 @@ def param_shift(
 
     .. UsageDetails::
 
-        This gradient transform can be applied directly to :class:`~.QNode` objects:
+        This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects:
 
         >>> @qml.qnode(dev)
         ... def circuit(params):

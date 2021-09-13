@@ -116,18 +116,28 @@ class QNode:
             (classical) computational overhead during the backwards pass.
 
     Keyword Args:
-        Any additional keyword arguments provided are passed to the differentiation
+        **kwargs: Any additional keyword arguments provided are passed to the differentiation
         method. Please refer to the :mod:`qml.gradients <.gradients>` module for details
         on supported options for your chosen gradient transform.
 
 
     **Example**
 
+    QNodes can be created by decorating a quantum function:
+
+    >>> dev = qml.device("default.qubit", wires=1)
+    ... @qml.beta.qnode(dev)
+    ... def circuit(x):
+    ...     qml.RX(x, wires=0)
+    ...     return expval(qml.PauliZ(0))
+
+    or by instantiating the class directly:
+
     >>> def circuit(x):
     ...     qml.RX(x, wires=0)
     ...     return expval(qml.PauliZ(0))
     >>> dev = qml.device("default.qubit", wires=1)
-    >>> qnode = qml.QNode(circuit, dev)
+    >>> qnode = qml.beta.QNode(circuit, dev)
     """
 
     def __init__(
