@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the classical Jacobian transform
+Contains the classical Jacobian transform.
 """
 # pylint: disable=import-outside-toplevel
 import pennylane as qml
@@ -191,7 +191,6 @@ def classical_jacobian(qnode, argnums=None):
                 sub_args = tuple((args[i] for i in argnums))
 
             with tf.GradientTape() as tape:
-                tape.watch(args)
                 gate_params = classical_preprocessing(*args, **kwargs)
 
             jac = tape.jacobian(gate_params, sub_args)

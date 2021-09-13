@@ -40,16 +40,14 @@ def circuit_1(a, b):
 
 
 def circuit_2(x):
-    for _x in x:
-        qml.RX(_x, wires=0)
+    [qml.RX(x[i], wires=0) for i in range(3)]
     return qml.expval(qml.PauliZ(0))
 
 
 def circuit_3(x, y):
-    for _x in x:
-        qml.RX(_x, wires=0)
-    for i in range(len(y)):
-        [qml.RY(_y, wires=1) for _y in y[i]]
+    [qml.RX(x[i], wires=0) for i in range(3)]
+    for i in range(2):
+        [qml.RY(y[i,j], wires=1) for j in range(2)]
     return qml.expval(qml.PauliZ(0))
 
 
@@ -65,8 +63,7 @@ def circuit_4(x, y):
 
 
 def circuit_5(x, y, z):
-    for _x in x:
-        qml.RX(_x, wires=0)
+    [qml.RX(x[i], wires=0) for i in range(3)]
     qml.RZ(y[0, 1] * y[1, 0], wires=1)
     qml.RY(z[0] + 0.2 * z[1] ** 2, wires=1)
     return qml.expval(qml.PauliZ(0))
@@ -152,7 +149,7 @@ def test_jax_without_argnums(circuit, args, expected_jac):
 def test_tf_without_argnums(circuit, args, expected_jac):
     r"""Test ``classical_jacobian`` with ``argnums=None`` and Tensorflow."""
     tf = pytest.importorskip("tensorflow")
-    args = tuple((tf.constant(arg, dtype=tf.double) for arg in args))
+    args = tuple((tf.Variable(arg, dtype=tf.double) for arg in args))
     dev = qml.device("default.qubit", wires=2)
     qnode = qml.QNode(circuit, dev, interface="tf")
     jac = classical_jacobian(qnode)(*args)
@@ -211,7 +208,7 @@ def test_jax_with_scalar_argnums(circuit, args, expected_jac, argnums):
 def test_tf_with_scalar_argnums(circuit, args, expected_jac, argnums):
     r"""Test ``classical_jacobian`` with ``argnums=<int>`` and TensorFlow."""
     tf = pytest.importorskip("tensorflow")
-    args = tuple((tf.constant(arg, dtype=tf.double) for arg in args))
+    args = tuple((tf.Variable(arg, dtype=tf.double) for arg in args))
     dev = qml.device("default.qubit", wires=2)
     qnode = qml.QNode(circuit, dev, interface="tf")
     jac = classical_jacobian(qnode, argnums=argnums)(*args)
@@ -270,7 +267,7 @@ def test_jax_with_single_list_argnums(circuit, args, expected_jac, argnums):
 def test_tf_with_single_list_argnums(circuit, args, expected_jac, argnums):
     r"""Test ``classical_jacobian`` with ``argnums=Sequence[int]`` of length 1 and TensorFlow."""
     tf = pytest.importorskip("tensorflow")
-    args = tuple((tf.constant(arg, dtype=tf.double) for arg in args))
+    args = tuple((tf.Variable(arg, dtype=tf.double) for arg in args))
     dev = qml.device("default.qubit", wires=2)
     qnode = qml.QNode(circuit, dev, interface="tf")
     jac = classical_jacobian(qnode, argnums=argnums)(*args)
@@ -333,7 +330,7 @@ def test_jax_with_sequence_argnums(circuit, args, expected_jac, argnums):
 def test_tf_with_sequence_argnums(circuit, args, expected_jac, argnums):
     r"""Test ``classical_jacobian`` with ``argnums=Sequence[int]`` and TensorFlow."""
     tf = pytest.importorskip("tensorflow")
-    args = tuple((tf.constant(arg, dtype=tf.double) for arg in args))
+    args = tuple((tf.Variable(arg, dtype=tf.double) for arg in args))
     dev = qml.device("default.qubit", wires=2)
     qnode = qml.QNode(circuit, dev, interface="tf")
     jac = classical_jacobian(qnode, argnums=argnums)(*args)
