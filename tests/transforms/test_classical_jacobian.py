@@ -241,7 +241,7 @@ single_list_argnums = [[0], [1], [0], [1], [0], [2]]
     "circuit, args, expected_jac, argnums", zip(circuits, args, class_jacs, single_list_argnums)
 )
 def test_autograd_with_single_list_argnums(circuit, args, expected_jac, argnums):
-    r"""Test ``classical_jacobian`` with ``argnums=[<int>]`` and Autograd."""
+    r"""Test ``classical_jacobian`` with ``argnums=Sequence[int]`` of length 1 and Autograd."""
     dev = qml.device("default.qubit", wires=2)
     qnode = qml.QNode(circuit, dev, interface='autograd')
     jac = classical_jacobian(qnode, argnums=argnums)(*args)
@@ -253,7 +253,7 @@ def test_autograd_with_single_list_argnums(circuit, args, expected_jac, argnums)
     "circuit, args, expected_jac, argnums", zip(circuits, args, class_jacs, single_list_argnums)
 )
 def test_jax_with_single_list_argnums(circuit, args, expected_jac, argnums):
-    r"""Test ``classical_jacobian`` with ``argnums=[<int>]`` and JAX."""
+    r"""Test ``classical_jacobian`` with ``argnums=Sequence[int]`` of length 1 and JAX."""
     # Do not need the package but skip if JAX device not available
     pytest.importorskip("jax")
     dev = qml.device("default.qubit", wires=2)
@@ -267,7 +267,7 @@ def test_jax_with_single_list_argnums(circuit, args, expected_jac, argnums):
     "circuit, args, expected_jac, argnums", zip(circuits, args, class_jacs, single_list_argnums)
 )
 def test_tf_with_single_list_argnums(circuit, args, expected_jac, argnums):
-    r"""Test ``classical_jacobian`` with ``argnums=[<int>]`` and TensorFlow."""
+    r"""Test ``classical_jacobian`` with ``argnums=Sequence[int]`` of length 1 and TensorFlow."""
     tf = pytest.importorskip("tensorflow")
     args = tuple((tf.constant(arg, dtype=tf.double) for arg in args))
     dev = qml.device("default.qubit", wires=2)
@@ -281,7 +281,7 @@ def test_tf_with_single_list_argnums(circuit, args, expected_jac, argnums):
     "circuit, args, expected_jac, argnums", zip(circuits, args, class_jacs, single_list_argnums)
 )
 def test_torch_with_single_list_argnums(circuit, args, expected_jac, argnums):
-    r"""Test ``classical_jacobian`` with ``argnums=[<int>]`` and Torch."""
+    r"""Test ``classical_jacobian`` with ``argnums=Sequence[int]`` of length 1 and Torch."""
     torch = pytest.importorskip("torch")
     args = tuple((torch.tensor(arg) for arg in args))
     dev = qml.device("default.qubit", wires=2)
