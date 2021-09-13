@@ -60,19 +60,32 @@ def _recursive_find_layer(checking_layer, op_occupied_wires, occupied_wires_per_
     return _recursive_find_layer(checking_layer - 1, op_occupied_wires, occupied_wires_per_layer)
 
 
-def drawable_layers(ops, wire_map=None):
+def _convert_wire_order(ops, wire_order, show_all_wires=False):
+    if wire_order is None:
+        return _default_wire_map(ops)
+    if not show_all_wires:
+        used_wires = {wire for op in ops for wire in op.wires}
+        wire_order = [wire for wire in wire_order if wire in used_wires]
+    return dict(zip(wire_order, range(len(wire_order))))
+
+
+def drawable_layers(ops, wire_order=None, show_all_wires=False):
     """Determine non-overlapping yet dense placement of operations for drawing.
+
     Args:
         ops Iterable[~.Operator]: a list of operations
+
+
     Keyword Args:
-        wire_map=None dict: dictionary mapping wire labels to sucessive positive integers.
+        wire_order (Sequence[Any], dict): the order (from top to bottom) to print the wires of the circuit
+        show_all_wires (bool): If True, all wires, including empty wires, are printed.
+
     Returns:
         list[set[~.Operator]] : Each index is a set of operations
             for the corresponding layer
     """
 
-    if wire_map is None:
-        wire_map = _default_wire_map(ops)
+    wire_map = _convert_wire_order(ops, wire_order, show_all_wires)
 
     # initialize
     max_layer = 0
@@ -105,27 +118,29 @@ def drawable_layers(ops, wire_map=None):
     return ops_per_layer
 
 
-def drawable_grid(ops, wire_map=None):
+def drawable_grid(ops, wire_order=None, show_all_wires=False):
     """Determine non-overlapping yet dense placement of operations for drawing.  Returns
     structure compatible with ``qml.circuit_drawer.Grid``.
 
     Args:
         ops Iterable[~.Operator]: a list of operations
     Keyword Args:
-        wire_map=None dict: dictionary mapping wire labels to sucessive positive integers.
+        wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
+        show_all_wires (bool): If True, all wires, including empty wires, are printed.
+
     Returns:
         List[List[~.Operator]] : layers compatible with grid objects
     """
 
     if len(ops) == 0:
-        return [[] for _ in range(len(wire_map))]
+        return [[] for _ in range(len(wire_order))]
 
-    if wire_map is None:
-        wire_map = _default_wire_map(ops)
+    ops_per_layer = drawable_layers(ops, wire_order=wire_order, show_all_wires=show_all_wires)
 
-    ops_per_layer = drawable_layers(ops, wire_map=wire_map)
-
-    n_wires = len(wire_map)
+    if show_all_wires:
+        n_wires = len(wire_order)
+    else:
+        n_wires = len({wire for op in ops for wire in op.wires})
     n_layers = len(ops_per_layer)
 
     grid = [[None for _ in range(n_layers)] for _ in range(n_wires)]

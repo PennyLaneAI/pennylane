@@ -52,12 +52,14 @@ class CircuitDrawer:
 
     def __init__(
         self,
-        raw_operation_grid,
-        raw_observable_grid,
-        wires,
+        operations,
+        observables,
+        wire_order,
         charset=UnicodeCharSet,
         show_all_wires=False,
     ):
+
+    
         self.operation_grid = Grid(raw_operation_grid)
         self.observable_grid = Grid(raw_observable_grid)
         self.wires = wires

@@ -1116,14 +1116,8 @@ class QuantumTape(AnnotatedQueue):
             str: the circuit representation of the tape
         """
 
-        if wire_order is not None:
-            wire_order = qml.wires.Wires.all_wires([wire_order, self.wires])
-        else:
-            wire_order = self.wires
-        wire_map = dict(zip(wire_order, range(len(wire_order))))
-
-        ops_grid = qml.circuit_drawer.drawable_grid(self.operations, wire_map=wire_map)
-        obs_grid = qml.circuit_drawer.drawable_grid(self.observables, wire_map=wire_map)
+        ops_grid = qml.circuit_drawer.drawable_grid(self.operations, wire_order=wire_order)
+        obs_grid = qml.circuit_drawer.drawable_grid(self.observables, wire_order=wire_order)
 
         if charset not in qml.circuit_drawer.CHARSETS:
             raise ValueError(
