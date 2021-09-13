@@ -294,7 +294,7 @@ def test_gradient(symbols, geometry, alpha, coeff):
     ],
 )
 def test_diff2(i, j, ri, rj, alpha, beta, d):
-    r"""Test that diff2 function returns a correct value."""
+    r"""Test that _diff2 function returns a correct value."""
     assert np.allclose(_diff2(i, j, ri, rj, alpha, beta), d)
 
 
@@ -318,8 +318,9 @@ def test_gaussian_kinetic(la, lb, ra, rb, alpha, beta, t):
 
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "alpha", "coef", "r", "t_ref"),
+    ("symbols", "geometry", "alpha", "coeff", "r", "t_ref"),
     [
+        # trivial case
         (
             ["H", "H"],
             pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], requires_grad=False),
@@ -334,14 +335,29 @@ def test_gaussian_kinetic(la, lb, ra, rb, alpha, beta, t):
             pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], requires_grad=True),
             pnp.array([0.0]),
         ),
+        # kinetic integral obtained from pyscf using mol.intor('int1e_kin')
+        (
+            ["H", "H"],
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+            pnp.array(
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                requires_grad=False,
+            ),
+            pnp.array(
+                [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
+                requires_grad=True,
+            ),
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
+            pnp.array([0.38325384]),
+        ),
     ],
 )
-def test_generate_kinetic(symbols, geometry, alpha, coef, r, t_ref):
+def test_generate_kinetic(symbols, geometry, alpha, coeff, r, t_ref):
     r"""Test that generate_kinetic function returns a correct value for the kinetic integral."""
-    mol = Molecule(symbols, geometry)
+    mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff, r=r)
     basis_a = mol.basis_set[0]
     basis_b = mol.basis_set[1]
-    args = [p for p in [alpha, coef, r] if p.requires_grad]
+    args = [p for p in [alpha, coeff, r] if p.requires_grad]
 
     t = generate_kinetic(basis_a, basis_b)(*args)
     assert np.allclose(t, t_ref)
