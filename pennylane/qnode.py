@@ -115,32 +115,23 @@ class QNode:
             quantum structure will only be constructed on the *first* evaluation of the QNode,
             and is stored and re-used for further quantum evaluations. Only set this to False
             if it is known that the underlying quantum structure is **independent of QNode input**.
-
         max_expansion (int): The number of times the internal circuit should be expanded when
             executed on a device. Expansion occurs when an operation or measurement is not
             supported, and results in a gate decomposition. If any operations in the decomposition
             remain unsupported by the device, another expansion occurs.
-
         h (float): step size for the finite difference method
-
         order (int): The order of the finite difference method to use. ``1`` corresponds
             to forward finite differences, ``2`` to centered finite differences.
-
         shift (float): the size of the shift for two-term parameter-shift gradient computations
-
         adjoint_cache (bool): For TensorFlow and PyTorch interfaces and adjoint differentiation,
-
             this indicates whether to save the device state after the forward pass.  Doing so saves a
             forward execution. Device state automatically reused with autograd and JAX interfaces.
-
         argnum (int, list(int), None): Which argument(s) to compute the Jacobian
             with respect to. When there are fewer parameters specified than the
             total number of trainable parameters, the jacobian is being estimated. Note
             that this option is only applicable for the following differentiation methods:
             ``"parameter-shift"``, ``"finite-diff"`` and ``"reversible"``.
-
         kwargs: used to catch all unrecognized keyword arguments and provide a user warning
-
             about them
 
     **Example**
@@ -1141,32 +1132,23 @@ def qnode(
             quantum structure will only be constructed on the *first* evaluation of the QNode,
             and is stored and re-used for further quantum evaluations. Only set this to False
             if it is known that the underlying quantum structure is **independent of QNode input**.
-
         max_expansion (int): The number of times the internal circuit should be expanded when
             executed on a device. Expansion occurs when an operation or measurement is not
             supported, and results in a gate decomposition. If any operations in the decomposition
             remain unsupported by the device, another expansion occurs.
-
         h (float): step size for the finite difference method
-
         order (int): The order of the finite difference method to use. ``1`` corresponds
             to forward finite differences, ``2`` to centered finite differences.
-
         shift (float): the size of the shift for two-term parameter-shift gradient computations
-
         adjoint_cache (bool): For TensorFlow and PyTorch interfaces and adjoint differentiation,
-
             this indicates whether to save the device state after the forward pass.  Doing so saves a
             forward execution. Device state automatically reused with autograd and JAX interfaces.
-
         argnum (int, list(int), None): Which argument(s) to compute the Jacobian
             with respect to. When there are fewer parameters specified than the
             total number of trainable parameters, the jacobian is being estimated. Note
             that this option is only applicable for the following differentiation methods:
             ``"parameter-shift"``, ``"finite-diff"`` and ``"reversible"``.
-
         kwargs: used to catch all unrecognized keyword arguments and provide a user warning
-
             about them
 
     **Example**
