@@ -667,3 +667,60 @@ class TestDifferentiability:
             [np.cos(a) * np.cos(b) ** 2 * np.sin(a) / 2, np.cos(a) ** 2 * np.sin(2 * b) / 4, 0]
         )
         assert np.allclose(grad, expected, atol=tol, rtol=0)
+
+
+class TestDeprecatedQNodeMethod:
+    """The QNode.metric_tensor method has been deprecated.
+    These tests ensure it still works, but raises a deprecation
+    warning. These tests can be deleted when the method is removed."""
+
+    def test_warning(self, tol):
+        """Test that a warning is emitted"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(a, b, c):
+            qml.RX(a, wires=0)
+            qml.RY(b, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PhaseShift(c, wires=1)
+            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
+
+        a = 0.432
+        b = 0.12
+        c = -0.432
+
+        # evaluate metric tensor
+        with pytest.warns(UserWarning, match="has been deprecated"):
+            g = circuit.metric_tensor(a, b, c)
+
+        # check that the metric tensor is correct
+        expected = (
+            np.array(
+                [1, np.cos(a) ** 2, (3 - 2 * np.cos(a) ** 2 * np.cos(2 * b) - np.cos(2 * a)) / 4]
+            )
+            / 4
+        )
+        assert np.allclose(g, np.diag(expected), atol=tol, rtol=0)
+
+    def test_tapes_returned(self, tol):
+        """Test that a warning is emitted"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(a, b, c):
+            qml.RX(a, wires=0)
+            qml.RY(b, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PhaseShift(c, wires=1)
+            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
+
+        a = 0.432
+        b = 0.12
+        c = -0.432
+
+        # evaluate metric tensor
+        with pytest.warns(UserWarning, match="has been deprecated"):
+            tapes, fn = circuit.metric_tensor(a, b, c, only_construct=True)
+
+        assert len(tapes) == 3
