@@ -2,6 +2,39 @@
 
 <h3>New features since last release</h3>
 
+* The `qml.circuit_drawer.MPLDrawer` class provides manual circuit drawing
+  functionality using Matplotlib. While not yet integrated with automatic circuit
+  drawing, this class provides customization and control.
+  [(#1484)](https://github.com/PennyLaneAI/pennylane/pull/1484)
+
+  ```python
+  from pennylane.circuit_drawer import MPLDrawer
+
+  drawer = MPLDrawer(n_wires=5, n_layers=5)
+
+  drawer.label(["0", "a", r"$|\Psi\rangle$", r"$|\theta\rangle$", "aux"])
+
+  drawer.box_gate(layer=0, wires=[0, 1, 2, 3, 4], text="Entangling Layers", text_options={'rotation': 'vertical'})
+  drawer.box_gate(layer=1, wires=[0, 1], text="U(θ)")
+
+  drawer.box_gate(layer=1, wires=4, text="Z")
+
+  drawer.SWAP(layer=1, wires=(2, 3))
+  drawer.CNOT(layer=2, wires=(0, 2))
+
+  drawer.ctrl(layer=3, wires=[1, 3], control_values = [True, False])
+  drawer.box_gate(layer=3, wires=2, text="H", box_options={'zorder': 4},
+    text_options={'zorder': 5})
+
+  drawer.ctrl(layer=4, wires=[1, 2])
+
+  drawer.measure(layer=5, wires=0)
+
+  drawer.fig.suptitle('My Circuit', fontsize='xx-large')
+  ```
+
+  <img src="https://pennylane.readthedocs.io/en/latest/_static/drawer/example_basic.png" width=70%/>
+
 * Custom gradient transforms can now be created using the new
   `@qml.gradients.gradient_transform` decorator on a batch-tape transform.
   [(#1589)](https://github.com/PennyLaneAI/pennylane/pull/1589)
@@ -273,6 +306,7 @@
   [(#1549)](https://github.com/PennyLaneAI/pennylane/pull/1549)
   [(#1608)](https://github.com/PennyLaneAI/pennylane/pull/1608)
   [(#1618)](https://github.com/PennyLaneAI/pennylane/pull/1618)
+  [(#1637)](https://github.com/PennyLaneAI/pennylane/pull/1637)
 
   For example:
 
@@ -400,8 +434,19 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
   floats, ints, lists and numpy arrays and return numpy output but can not be differentiated.
   [(#1585)](https://github.com/PennyLaneAI/pennylane/pull/1585)
 
+* QNodes now include validation to warn users if a supplied keyword argument is not one of the
+  recognized arguments. [(#1496)](https://github.com/PennyLaneAI/pennylane/pull/1591)
 
 <h3>Breaking changes</h3>
+
+* Specifying `shots=None` with `qml.sample` was previously deprecated.
+  From this release onwards, setting `shots=None` when sampling will
+  raise an error also for `default.qubit.jax`.
+  [(#1629)](https://github.com/PennyLaneAI/pennylane/pull/1629)
+
+* An error is raised during QNode creation when a user requests backpropagation on
+  a device with finite-shots.
+  [(#1588)](https://github.com/PennyLaneAI/pennylane/pull/1588)
 
 * The class `qml.Interferometer` is deprecated and will be renamed `qml.InterferometerUnitary`
   after one release cycle.
@@ -454,8 +499,9 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 This release contains contributions from (in alphabetical order):
 
 Vishnu Ajith, Akash Narayanan B, Thomas Bromley, Olivia Di Matteo, Sahaj Dhamija, Tanya Garg, Josh Izaac,
-Prateek Jain, Ankit Khandelwal, Christina Lee, Johannes Jakob Meyer, Romain Moyard, Esteban Payares, Pratul Saini,
-Maria Schuld, Arshpreet Singh, Ingrid Strandberg, Slimane Thabet, David Wierichs, Vincent Wong.
+Prateek Jain, Ankit Khandelwal, Christina Lee, Ian McLean, Johannes Jakob Meyer, Romain Moyard, Esteban Payares,
+Pratul Saini, Maria Schuld, Arshpreet Singh, Ingrid Strandberg, Slimane Thabet, Antal Száva, David Wierichs,
+Vincent Wong.
 
 # Release 0.17.0 (current release)
 
