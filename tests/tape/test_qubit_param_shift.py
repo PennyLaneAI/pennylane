@@ -300,6 +300,33 @@ class TestParameterShiftRule:
         assert np.allclose(grad_A, grad_F1, atol=tol, rtol=0)
         assert np.allclose(grad_A, grad_F2, atol=tol, rtol=0)
 
+    def test_processing_function_torch(self, mocker, tol):
+        """Tests the processing function that is created when using the
+        parameter_shift method returns a numpy array.
+
+        This is a unit test specifically aimed at checking an edge case
+        discovered related to default.qubit.torch.
+        """
+        torch = pytest.importorskip("torch")
+
+        results = [
+            torch.tensor([0.4342], dtype=torch.float64),
+            torch.tensor([-0.4342], dtype=torch.float64),
+        ]
+        theta = torch.tensor(0.543, dtype=torch.float64)
+        phi = torch.tensor(-0.234, dtype=torch.float64)
+
+        pars = torch.tensor([theta, phi], dtype=torch.float64)
+
+        with qml.tape.QubitParamShiftTape() as tape:
+            qml.RY(pars[0], wires=[0])
+            qml.RX(pars[1], wires=[0])
+            qml.expval(qml.PauliZ(0))
+
+        tapes, func = tape.parameter_shift(0, pars)
+
+        assert type(func(results)) == np.ndarray
+
 
 class TestJacobianIntegration:
     """Tests for general Jacobian integration"""
