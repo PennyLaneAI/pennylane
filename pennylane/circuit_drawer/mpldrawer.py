@@ -52,22 +52,22 @@ class MPLDrawer:
 
     .. code-block:: python
 
-        drawer = MPLDrawer(n_wires=5,n_layers=5)
+        drawer = MPLDrawer(n_wires=5, n_layers=5)
 
         drawer.label(["0", "a", r"$|\Psi\rangle$", r"$|\theta\rangle$", "aux"])
 
-        drawer.box_gate(layer=0, wires=[0,1,2,3,4], text="Entangling Layers", text_options={'rotation':'vertical'})
+        drawer.box_gate(layer=0, wires=[0, 1, 2, 3, 4], text="Entangling Layers", text_options={'rotation': 'vertical'})
         drawer.box_gate(layer=1, wires=[0, 1], text="U(θ)")
 
         drawer.box_gate(layer=1, wires=4, text="Z")
 
         drawer.SWAP(layer=1, wires=(2, 3))
-        drawer.CNOT(layer=2, wires=(0,2))
+        drawer.CNOT(layer=2, wires=(0, 2))
 
-        drawer.ctrl(layer=3, wires=[1,3], control_values = [True, False])
+        drawer.ctrl(layer=3, wires=[1, 3], control_values = [True, False])
         drawer.box_gate(layer=3, wires=2, text="H", zorder=2)
 
-        drawer.ctrl(layer=4, wires=[1,2])
+        drawer.ctrl(layer=4, wires=[1, 2])
 
         drawer.measure(layer=5, wires=0)
 
@@ -125,8 +125,8 @@ class MPLDrawer:
 
     You can also manually control the styles of individual plot elements via the drawer class.
     The control-type methods ``ctrl`` and ``CNOT`` only
-    accept a color keyword.  All other gates accept dictionaries of keyword-values pairs for matplotlib object
-    components.  Acceptable keywords differ based on what's being drawn. For example, you cannot pass ``"fontsize"``
+    accept a color keyword. All other gates accept dictionaries of keyword-values pairs for matplotlib object
+    components. Acceptable keywords differ based on what's being drawn. For example, you cannot pass ``"fontsize"``
     to the dictionary controlling how to format a rectangle.
 
     This example demonstrates the different ways you can format the individual elements:
@@ -134,21 +134,21 @@ class MPLDrawer:
     .. code-block:: python
 
         wire_options = {"color": "indigo", "linewidth": 4}
-        drawer = MPLDrawer(n_wires=2,n_layers=4, wire_options=wire_options)
+        drawer = MPLDrawer(n_wires=2, n_layers=4, wire_options=wire_options)
 
         label_options = {"fontsize": "x-large", 'color': 'indigo'}
-        drawer.label(["0","a"], text_options=label_options)
+        drawer.label(["0", "a"], text_options=label_options)
 
-        box_options = {'facecolor':'lightcoral', 'edgecolor': 'maroon', 'linewidth': 5}
-        text_options = {'fontsize': 'xx-large', 'color':'maroon'}
+        box_options = {'facecolor': 'lightcoral', 'edgecolor': 'maroon', 'linewidth': 5}
+        text_options = {'fontsize': 'xx-large', 'color': 'maroon'}
         drawer.box_gate(layer=0, wires=0, text="Z", box_options=box_options, text_options=text_options)
 
         swap_options = {'linewidth': 4, 'color': 'darkgreen'}
-        drawer.SWAP(layer=1, wires=(0,1), options=swap_options)
+        drawer.SWAP(layer=1, wires=(0, 1), options=swap_options)
 
-        drawer.CNOT(layer=2, wires=(0,1), color='teal')
+        drawer.CNOT(layer=2, wires=(0, 1), color='teal')
 
-        drawer.ctrl(layer=3, wires=(0,1), color='black')
+        drawer.ctrl(layer=3, wires=(0, 1), color='black')
 
 
         measure_box = {'facecolor': 'white', 'edgecolor': 'indigo'}
@@ -165,14 +165,14 @@ class MPLDrawer:
 
     **Positioning**
 
-    Each gate takes arguments in order of ``layer`` followed by ``wires``.  These translate to ``x`` and
+    Each gate takes arguments in order of ``layer`` followed by ``wires``. These translate to ``x`` and
     ``y`` coordinates in the graph. Layer number (``x``) increases as you go right, and wire number
-    (``y``) increases as you go down as the y-axis is inverted.  You can pass non-integer values to either keyword.
+    (``y``) increases as you go down as the y-axis is inverted. You can pass non-integer values to either keyword.
     If you have a long label, the gate can span multiple layers and have extra width:
 
     .. code-block:: python
 
-        drawer = MPLDrawer(2,2)
+        drawer = MPLDrawer(2, 2)
         drawer.box_gate(layer=0, wires=1, text="X")
         drawer.box_gate(layer=1, wires=1, text="Y")
 
@@ -314,7 +314,7 @@ class MPLDrawer:
 
         .. code-block:: python
 
-            box_options = {'facecolor':'lightcoral', 'edgecolor': 'maroon', 'linewidth': 5}
+            box_options = {'facecolor': 'lightcoral', 'edgecolor': 'maroon', 'linewidth': 5}
             text_options = {'fontsize': 'xx-large', 'color':'maroon'}
 
             drawer = MPLDrawer(n_wires=2, n_layers=1)
@@ -371,7 +371,7 @@ class MPLDrawer:
             wires_target=None (Union[int, Iterable[int]]): target wires. Used to determine min
                 and max wires for the vertical line
             control_values=None (Union[bool, Iterable[bool]]): for each control wire, denotes whether to control
-                on ``False=0`` or ``True=1``.
+                on ``False=0`` or ``True=1``
             options=None (dict): mpl line keywords
 
         **Example**
@@ -381,8 +381,8 @@ class MPLDrawer:
             drawer = MPLDrawer(n_wires=2, n_layers=3)
 
             drawer.ctrl(layer=0, wires=0, wires_target=1)
-            drawer.ctrl(layer=1, wires=(0,1), control_values=[0,1])
-            drawer.ctrl(layer=2, wires=(0,1), color="indigo")
+            drawer.ctrl(layer=1, wires=(0, 1), control_values=[0, 1])
+            drawer.ctrl(layer=2, wires=(0, 1), color="indigo")
 
         .. figure:: ../../_static/drawer/ctrl.png
             :align: center
@@ -448,7 +448,7 @@ class MPLDrawer:
             wires (int, int): tuple of (control, target)
 
         Keyword Args:
-            color : mpl compatible color designation
+            color=None: mpl compatible color designation
 
         **Example**
 
@@ -456,8 +456,8 @@ class MPLDrawer:
 
             drawer = MPLDrawer(n_wires=2, n_layers=2)
 
-            drawer.CNOT(0, (0,1))
-            drawer.CNOT(1, (1,0), color='indigo')
+            drawer.CNOT(0, (0, 1))
+            drawer.CNOT(1, (1, 0), color='indigo')
 
         .. figure:: ../../_static/drawer/cnot.png
             :align: center
@@ -516,7 +516,7 @@ class MPLDrawer:
 
             drawer = MPLDrawer(n_wires=2, n_layers=1)
 
-            drawer.SWAP(0, (0,1))
+            drawer.SWAP(0, (0, 1))
 
         .. figure:: ../../_static/drawer/SWAP.png
             :align: center
@@ -531,7 +531,7 @@ class MPLDrawer:
 
             drawer = MPLDrawer(n_wires=2, n_layers=1)
 
-            swap_options = {"linewidth":2, "color":"indigo"}
+            swap_options = {"linewidth": 2, "color": "indigo"}
             drawer.SWAP(0, (0, 1), options=swap_options)
 
         .. figure:: ../../_static/drawer/SWAP_formatted.png

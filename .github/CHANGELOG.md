@@ -3,7 +3,7 @@
 <h3>New features since last release</h3>
 
 * The `qml.circuit_drawer.MPLDrawer` class provides manual circuit drawing
-  functionality using Matplotlib.  While not yet integrated with automatic circuit
+  functionality using Matplotlib. While not yet integrated with automatic circuit
   drawing, this class provides customization and control.
   [(#1484)](https://github.com/PennyLaneAI/pennylane/pull/1484)
 
@@ -20,12 +20,12 @@
   drawer.box_gate(layer=1, wires=4, text="Z")
 
   drawer.SWAP(layer=1, wires=(2, 3))
-  drawer.CNOT(layer=2, wires=(0,2))
+  drawer.CNOT(layer=2, wires=(0, 2))
 
-  drawer.ctrl(layer=3, wires=[1,3], control_values = [True, False])
+  drawer.ctrl(layer=3, wires=[1, 3], control_values = [True, False])
   drawer.box_gate(layer=3, wires=2, text="H", zorder=2)
 
-  drawer.ctrl(layer=4, wires=[1,2])
+  drawer.ctrl(layer=4, wires=[1, 2])
 
   drawer.measure(layer=5, wires=0)
 

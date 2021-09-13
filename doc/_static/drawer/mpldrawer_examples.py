@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This file automatically generates and saves a series of example pictures for the 
-circuit drawer.  This will be useful during early stages when the project is still
+This file automatically generates and saves a series of example pictures for the
+circuit drawer. This will be useful during early stages when the project is still
 undergoing cosmetic changes.
 """
 
