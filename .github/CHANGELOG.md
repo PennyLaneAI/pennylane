@@ -424,6 +424,9 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 <h3>Bug fixes</h3>
 
+* Fix bug with norm and Jax tracers (jit) when using `QubiStateVector`.
+  [(#1649)](https://github.com/PennyLaneAI/pennylane/pull/1649)
+  
 * `MottonenStatepreparation` can now be run with a single wire label not in a list.
   [(#1620)](https://github.com/PennyLaneAI/pennylane/pull/1620)
 
