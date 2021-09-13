@@ -118,7 +118,7 @@ class_jacs = [
 def test_autograd_without_argnums(circuit, args, expected_jac):
     r"""Test ``classical_jacobian`` with ``argnums=None`` and Autograd."""
     dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface='autograd')
+    qnode = qml.QNode(circuit, dev, interface="autograd")
     jac = classical_jacobian(qnode)(*args)
 
     # NOTE: We use stacking to replicate qml.jacobian behaviour for scalar-only inputs
@@ -127,11 +127,12 @@ def test_autograd_without_argnums(circuit, args, expected_jac):
         assert np.allclose(jac, expected_jac)
     else:
         # For a single argument, the Jacobian is unpacked
-        if len(args)==1:
+        if len(args) == 1:
             expected_jac = expected_jac[0]
-        assert len(jac)==len(expected_jac)
+        assert len(jac) == len(expected_jac)
         for _jac, _expected_jac in zip(jac, expected_jac):
             assert np.allclose(_jac, _expected_jac)
+
 
 @pytest.mark.parametrize("circuit, args, expected_jac", zip(circuits, args, class_jacs))
 def test_jax_without_argnums(circuit, args, expected_jac):
@@ -141,10 +142,11 @@ def test_jax_without_argnums(circuit, args, expected_jac):
     # JAX behaviour: argnums=None yields only the Jacobian with respect to the first arg.
     expected_jac = expected_jac[0]
     dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface='jax')
+    qnode = qml.QNode(circuit, dev, interface="jax")
     jac = classical_jacobian(qnode)(*args)
 
     assert np.allclose(jac, expected_jac)
+
 
 @pytest.mark.parametrize("circuit, args, expected_jac", zip(circuits, args, class_jacs))
 def test_tf_without_argnums(circuit, args, expected_jac):
@@ -152,12 +154,13 @@ def test_tf_without_argnums(circuit, args, expected_jac):
     tf = pytest.importorskip("tensorflow")
     args = tuple((tf.constant(arg, dtype=tf.double) for arg in args))
     dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface='tf')
+    qnode = qml.QNode(circuit, dev, interface="tf")
     jac = classical_jacobian(qnode)(*args)
 
-    assert len(jac)==len(expected_jac)
+    assert len(jac) == len(expected_jac)
     for _jac, _expected_jac in zip(jac, expected_jac):
         assert np.allclose(_jac, _expected_jac)
+
 
 @pytest.mark.parametrize("circuit, args, expected_jac", zip(circuits, args, class_jacs))
 def test_torch_without_argnums(circuit, args, expected_jac):
@@ -165,15 +168,16 @@ def test_torch_without_argnums(circuit, args, expected_jac):
     torch = pytest.importorskip("torch")
     args = tuple((torch.tensor(arg) for arg in args))
     dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface='torch')
+    qnode = qml.QNode(circuit, dev, interface="torch")
     jac = classical_jacobian(qnode)(*args)
 
-    assert len(jac)==len(expected_jac)
+    assert len(jac) == len(expected_jac)
     for _jac, _expected_jac in zip(jac, expected_jac):
         assert np.allclose(_jac, _expected_jac)
 
 
 scalar_argnums = [0, 1, 0, 1, 0, 1]
+
 
 @pytest.mark.parametrize(
     "circuit, args, expected_jac, argnums", zip(circuits, args, class_jacs, scalar_argnums)
@@ -181,10 +185,11 @@ scalar_argnums = [0, 1, 0, 1, 0, 1]
 def test_autograd_with_scalar_argnums(circuit, args, expected_jac, argnums):
     r"""Test ``classical_jacobian`` with ``argnums=<int>`` and Autograd."""
     dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface='autograd')
+    qnode = qml.QNode(circuit, dev, interface="autograd")
     jac = classical_jacobian(qnode, argnums=argnums)(*args)
     expected_jac = expected_jac[argnums]
     assert np.allclose(jac, expected_jac)
+
 
 @pytest.mark.parametrize(
     "circuit, args, expected_jac, argnums", zip(circuits, args, class_jacs, scalar_argnums)
@@ -194,10 +199,11 @@ def test_jax_with_scalar_argnums(circuit, args, expected_jac, argnums):
     # Do not need the package but skip if JAX device not available
     pytest.importorskip("jax")
     dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface='jax')
+    qnode = qml.QNode(circuit, dev, interface="jax")
     jac = classical_jacobian(qnode, argnums=argnums)(*args)
     expected_jac = expected_jac[argnums]
     assert np.allclose(jac, expected_jac)
+
 
 @pytest.mark.parametrize(
     "circuit, args, expected_jac, argnums", zip(circuits, args, class_jacs, scalar_argnums)
@@ -207,10 +213,11 @@ def test_tf_with_scalar_argnums(circuit, args, expected_jac, argnums):
     tf = pytest.importorskip("tensorflow")
     args = tuple((tf.constant(arg, dtype=tf.double) for arg in args))
     dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface='tf')
+    qnode = qml.QNode(circuit, dev, interface="tf")
     jac = classical_jacobian(qnode, argnums=argnums)(*args)
     expected_jac = expected_jac[argnums]
     assert np.allclose(jac, expected_jac)
+
 
 @pytest.mark.parametrize(
     "circuit, args, expected_jac, argnums", zip(circuits, args, class_jacs, scalar_argnums)
@@ -220,7 +227,7 @@ def test_torch_with_scalar_argnums(circuit, args, expected_jac, argnums):
     torch = pytest.importorskip("torch")
     args = tuple((torch.tensor(arg) for arg in args))
     dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface='torch')
+    qnode = qml.QNode(circuit, dev, interface="torch")
     jac = classical_jacobian(qnode, argnums=argnums)(*args)
     expected_jac = expected_jac[argnums]
     assert np.allclose(jac, expected_jac)
@@ -228,17 +235,19 @@ def test_torch_with_scalar_argnums(circuit, args, expected_jac, argnums):
 
 single_list_argnums = [[0], [1], [0], [1], [0], [2]]
 
+
 @pytest.mark.parametrize(
     "circuit, args, expected_jac, argnums", zip(circuits, args, class_jacs, single_list_argnums)
 )
 def test_autograd_with_single_list_argnums(circuit, args, expected_jac, argnums):
     r"""Test ``classical_jacobian`` with ``argnums=Sequence[int]`` of length 1 and Autograd."""
     dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface='autograd')
+    qnode = qml.QNode(circuit, dev, interface="autograd")
     jac = classical_jacobian(qnode, argnums=argnums)(*args)
     expected_jac = (expected_jac[argnums[0]],)
-    assert len(jac)==1
+    assert len(jac) == 1
     assert np.allclose(jac[0], expected_jac[0])
+
 
 @pytest.mark.parametrize(
     "circuit, args, expected_jac, argnums", zip(circuits, args, class_jacs, single_list_argnums)
@@ -248,11 +257,12 @@ def test_jax_with_single_list_argnums(circuit, args, expected_jac, argnums):
     # Do not need the package but skip if JAX device not available
     pytest.importorskip("jax")
     dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface='jax')
+    qnode = qml.QNode(circuit, dev, interface="jax")
     jac = classical_jacobian(qnode, argnums=argnums)(*args)
     expected_jac = (expected_jac[argnums[0]],)
-    assert len(jac)==1
+    assert len(jac) == 1
     assert np.allclose(jac[0], expected_jac[0])
+
 
 @pytest.mark.parametrize(
     "circuit, args, expected_jac, argnums", zip(circuits, args, class_jacs, single_list_argnums)
@@ -262,11 +272,12 @@ def test_tf_with_single_list_argnums(circuit, args, expected_jac, argnums):
     tf = pytest.importorskip("tensorflow")
     args = tuple((tf.constant(arg, dtype=tf.double) for arg in args))
     dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface='tf')
+    qnode = qml.QNode(circuit, dev, interface="tf")
     jac = classical_jacobian(qnode, argnums=argnums)(*args)
     expected_jac = (expected_jac[argnums[0]],)
-    assert len(jac)==1
+    assert len(jac) == 1
     assert np.allclose(jac[0], expected_jac[0])
+
 
 @pytest.mark.parametrize(
     "circuit, args, expected_jac, argnums", zip(circuits, args, class_jacs, single_list_argnums)
@@ -276,14 +287,15 @@ def test_torch_with_single_list_argnums(circuit, args, expected_jac, argnums):
     torch = pytest.importorskip("torch")
     args = tuple((torch.tensor(arg) for arg in args))
     dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface='torch')
+    qnode = qml.QNode(circuit, dev, interface="torch")
     jac = classical_jacobian(qnode, argnums=argnums)(*args)
     expected_jac = (expected_jac[argnums[0]],)
-    assert len(jac)==1
+    assert len(jac) == 1
     assert np.allclose(jac[0], expected_jac[0])
 
 
 sequence_argnums = [[0], [0, 1], (0,), [0, 1], (0, 1), {0, 2}]
+
 
 @pytest.mark.parametrize(
     "circuit, args, expected_jac, argnums", zip(circuits, args, class_jacs, sequence_argnums)
@@ -291,12 +303,13 @@ sequence_argnums = [[0], [0, 1], (0,), [0, 1], (0, 1), {0, 2}]
 def test_autograd_with_sequence_argnums(circuit, args, expected_jac, argnums):
     r"""Test ``classical_jacobian`` with ``argnums=Sequence[int]`` and Autograd."""
     dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface='autograd')
+    qnode = qml.QNode(circuit, dev, interface="autograd")
     jac = classical_jacobian(qnode, argnums=argnums)(*args)
     expected_jac = tuple((expected_jac[num] for num in argnums))
-    assert len(jac)==len(expected_jac)
+    assert len(jac) == len(expected_jac)
     for _jac, _expected_jac in zip(jac, expected_jac):
         assert np.allclose(_jac, _expected_jac)
+
 
 @pytest.mark.parametrize(
     "circuit, args, expected_jac, argnums", zip(circuits, args, class_jacs, sequence_argnums)
@@ -306,12 +319,13 @@ def test_jax_with_sequence_argnums(circuit, args, expected_jac, argnums):
     # Do not need the package but skip if JAX device not available
     pytest.importorskip("jax")
     dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface='jax')
+    qnode = qml.QNode(circuit, dev, interface="jax")
     jac = classical_jacobian(qnode, argnums=argnums)(*args)
     expected_jac = tuple((expected_jac[num] for num in argnums))
-    assert len(jac)==len(expected_jac)
+    assert len(jac) == len(expected_jac)
     for _jac, _expected_jac in zip(jac, expected_jac):
         assert np.allclose(_jac, _expected_jac)
+
 
 @pytest.mark.parametrize(
     "circuit, args, expected_jac, argnums", zip(circuits, args, class_jacs, sequence_argnums)
@@ -321,12 +335,13 @@ def test_tf_with_sequence_argnums(circuit, args, expected_jac, argnums):
     tf = pytest.importorskip("tensorflow")
     args = tuple((tf.constant(arg, dtype=tf.double) for arg in args))
     dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface='tf')
+    qnode = qml.QNode(circuit, dev, interface="tf")
     jac = classical_jacobian(qnode, argnums=argnums)(*args)
     expected_jac = tuple((expected_jac[num] for num in argnums))
-    assert len(jac)==len(expected_jac)
+    assert len(jac) == len(expected_jac)
     for _jac, _expected_jac in zip(jac, expected_jac):
         assert np.allclose(_jac, _expected_jac)
+
 
 @pytest.mark.parametrize(
     "circuit, args, expected_jac, argnums", zip(circuits, args, class_jacs, sequence_argnums)
@@ -336,9 +351,9 @@ def test_torch_with_sequence_argnums(circuit, args, expected_jac, argnums):
     torch = pytest.importorskip("torch")
     args = tuple((torch.tensor(arg) for arg in args))
     dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface='torch')
+    qnode = qml.QNode(circuit, dev, interface="torch")
     jac = classical_jacobian(qnode, argnums=argnums)(*args)
     expected_jac = tuple((expected_jac[num] for num in argnums))
-    assert len(jac)==len(expected_jac)
+    assert len(jac) == len(expected_jac)
     for _jac, _expected_jac in zip(jac, expected_jac):
         assert np.allclose(_jac, _expected_jac)
