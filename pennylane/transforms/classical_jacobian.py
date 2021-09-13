@@ -176,7 +176,7 @@ def classical_jacobian(qnode, argnum=None):
         argnum = 0 if argnum is None else argnum
 
         def _jacobian(*args, **kwargs):
-            return jax.jacobian(classical_preprocessing, argnum=argnum)(*args, **kwargs)
+            return jax.jacobian(classical_preprocessing, argnums=argnum)(*args, **kwargs)
 
         return _jacobian
 
