@@ -22,14 +22,6 @@ supported_op = lambda op: op.grad_method is not None
 trainable_op = lambda op: any(qml.math.requires_grad(p) for p in op.parameters)
 
 
-# Define the stopping condition for the expansion
-def stop_cond(obj):
-    if isinstance(obj, qml.measure.MeasurementProcess):
-        return True
-
-    return (supported_op(obj) and trainable_op(obj)) or not trainable_op(obj)
-
-
 def gradient_expand(tape, depth=10):
     """Expand out a tape so that it supports differentiation
     of requested operations.
@@ -46,17 +38,16 @@ def gradient_expand(tape, depth=10):
     Returns:
         .QuantumTape: the expanded tape
     """
-    requires_expansion = False
 
     # check if the tape contains unsupported trainable operations
-    for idx in range(tape.num_params):
-        op = tape.get_operation(idx)[0]
-        requires_expansion = unsupported_op(op)
+    if any(unsupported_op(op) and trainable_op(op) for op in tape.operations):
 
-        if requires_expansion:
-            break
+        # Define the stopping condition for the expansion
+        stop_cond = lambda obj: (
+            not isinstance(obj, qml.measure.MeasurementProcess)
+            and ((supported_op(obj) and trainable_op(obj)) or not trainable_op(obj))
+        )
 
-    if requires_expansion:
         new_tape = tape.expand(depth=depth, stop_at=stop_cond)
         params = new_tape.get_parameters(trainable_only=False)
         new_tape.trainable_params = qml.math.get_trainable_indices(params)
@@ -174,8 +165,6 @@ class gradient_transform(qml.batch_transform):
 
             if isinstance(cjac, tuple):
                 # Classical processing of multiple arguments is present. Return qjac @ cjac.
-                print(cjac[0].shape, cjac[1].shape)
-                print(qjac.shape)
                 jacs = [
                     qml.math.squeeze(qml.math.tensordot(c, qjac, [[0], [-1]]))
                     for c in cjac
