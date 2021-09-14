@@ -577,7 +577,9 @@ class Device(abc.ABC):
             .QuantumTape: The expanded/decomposed circuit, such that the device
             will support native
         """
-        obs_on_same_wire = len(circuit._obs_sharing_wires) > 0
+        obs_on_same_wire = len(circuit._obs_sharing_wires) > 0 and not self.supports_observable(
+            "Hamiltonian"
+        )
         ops_not_supported = any(
             isinstance(op, qml.tape.QuantumTape)  # nested tapes must be expanded
             or not self.supports_operation(op.name)  # unsupported ops must be expanded
