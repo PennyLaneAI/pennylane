@@ -174,6 +174,8 @@ class gradient_transform(qml.batch_transform):
 
             if isinstance(cjac, tuple):
                 # Classical processing of multiple arguments is present. Return qjac @ cjac.
+                print(cjac[0].shape, cjac[1].shape)
+                print(qjac.shape)
                 jacs = [
                     qml.math.squeeze(qml.math.tensordot(c, qjac, [[0], [-1]]))
                     for c in cjac

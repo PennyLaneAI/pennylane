@@ -1346,11 +1346,6 @@ class TestTapeExpansion:
 
         tape = spy.call_args[0][0][0]
 
-        # no expansion is done on the forward pass!
-        assert len(tape.operations) == 2
-        assert tape.operations[1].name == "PhaseShift"
-        assert tape.operations[1].grad_method is None
-
         spy = mocker.spy(circuit.gradient_fn, "transform_fn")
         res = qml.grad(circuit)(x)
 
@@ -1367,12 +1362,12 @@ class TestTapeExpansion:
         assert len(shifted_tape2.operations) == 2
         assert shifted_tape2.operations[1].name == "RY"
 
-        assert np.allclose(res, -np.sin(3 * x))
+        assert np.allclose(res, -3 * np.sin(3 * x))
 
         if diff_method == "parameter-shift":
             # test second order derivatives
             res = qml.grad(qml.grad(circuit))(x)
-            assert np.allclose(res, -3 * np.cos(3 * x))
+            assert np.allclose(res, -9 * np.cos(3 * x))
 
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_gradient_expansion_trainable_only(self, dev_name, diff_method, mode, max_diff, mocker):
@@ -1403,15 +1398,6 @@ class TestTapeExpansion:
         y = np.array(0.7, requires_grad=False)
         circuit(x, y)
 
-        # no expansion is done on the forward pass!
-        tape = spy.call_args[0][0][0]
-        assert len(tape.operations) == 3
-        assert tape.operations[1].name == "PhaseShift"
-        assert tape.operations[1].grad_method is None
-        assert tape.operations[2].name == "PhaseShift"
-        assert tape.operations[2].grad_method is None
-
-        # Expansion of only the first phase shift is done on the gradient pass
         spy = mocker.spy(circuit.gradient_fn, "transform_fn")
         res = qml.grad(circuit)(x, y)
 
@@ -1419,5 +1405,5 @@ class TestTapeExpansion:
         assert len(input_tape.operations) == 3
         assert input_tape.operations[1].name == "RY"
         assert input_tape.operations[1].data[0] == 3 * x
-        assert tape.operations[2].name == "PhaseShift"
-        assert tape.operations[2].grad_method is None
+        assert input_tape.operations[2].name == "PhaseShift"
+        assert input_tape.operations[2].grad_method is None

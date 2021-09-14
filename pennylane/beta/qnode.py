@@ -489,6 +489,9 @@ class QNode:
                         "Operator {} must act on all wires".format(obj.name)
                     )
 
+        if isinstance(self.gradient_fn, qml.gradients.gradient_transform):
+            self._tape = self.gradient_fn.expand_fn(self._tape)
+
     def __call__(self, *args, **kwargs):
         override_shots = False
 
