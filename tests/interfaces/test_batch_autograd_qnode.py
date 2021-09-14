@@ -1242,12 +1242,9 @@ class TestTapeExpansion:
             num_params = 1
             par_domain = "R"
 
-            grad_method = "A"
-            grad_recipe = ([[1, 1, 0.5]],)
-
             def expand(self):
                 with qml.tape.QuantumTape() as tape:
-                    qml.RX(self.data[0] ** 2, wires=self.wires)
+                    qml.RX(3 * self.data[0], wires=self.wires)
                 return tape
 
         @qnode(dev, diff_method=diff_method, mode=mode)
@@ -1260,14 +1257,119 @@ class TestTapeExpansion:
         else:
             spy = mocker.spy(circuit.device, "batch_execute")
 
-        x = np.array(0.6, requires_grad=True)
+        x = np.array(0.5, requires_grad=True)
         circuit(x)
 
         tape = spy.call_args[0][0][0]
         assert len(tape.operations) == 1
         assert tape.operations[0].name == "RX"
-        assert np.allclose(tape.operations[0].parameters, x ** 2)
+        assert np.allclose(tape.operations[0].parameters, 3 * x)
 
+    def test_no_gradient_expansion(self, dev_name, diff_method, mode, mocker):
+        """Test that an unsupported operation with defined gradient recipe is
+        not expanded for both parameter-shift and finite-differences"""
+        dev = qml.device(dev_name, wires=1)
+
+        class UnsupportedOp(qml.operation.Operation):
+            num_wires = 1
+            num_params = 1
+            par_domain = "R"
+
+            grad_method = "A"
+            grad_recipe = ([[3 / 2, 1, np.pi / 6], [-3 / 2, 1, -np.pi / 6]],)
+
+            def expand(self):
+                with qml.tape.QuantumTape() as tape:
+                    qml.RX(3 * self.data[0], wires=self.wires)
+                return tape
+
+        @qnode(dev, diff_method=diff_method, mode=mode, max_diff=2)
+        def circuit(x):
+            UnsupportedOp(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        x = np.array(0.5, requires_grad=True)
+
+        if isinstance(circuit.gradient_fn, qml.gradients.gradient_transform):
+            # check that the gradient recipe was applied *prior* to
+            # device expansion
+            spy = mocker.spy(circuit.gradient_fn, "transform_fn")
+            res = qml.grad(circuit)(x)
+
+            input_tape = spy.call_args[0][0]
+            assert len(input_tape.operations) == 1
+            assert input_tape.operations[0].name == "UnsupportedOp"
+            assert input_tape.operations[0].data[0] == x
+
+            shifted_tape1, shifted_tape2 = spy.spy_return[0]
+
+            assert len(shifted_tape1.operations) == 1
+            assert shifted_tape1.operations[0].name == "UnsupportedOp"
+
+            assert len(shifted_tape2.operations) == 1
+            assert shifted_tape2.operations[0].name == "UnsupportedOp"
+
+        else:
+            res = qml.grad(circuit)(x)
+
+        assert np.allclose(res, -3 * np.sin(3 * x))
+
+        if diff_method in ("backprop", "parameter-shift"):
+            # check that second derivatives work
+            assert np.allclose(qml.grad(qml.grad(circuit))(x), -9 * np.cos(3 * x))
+
+    def test_gradient_expansion(self, dev_name, diff_method, mode, mocker):
+        """Test that a *supported* operation with no gradient recipe is
+        expanded for both parameter-shift and finite-differences, but not for execution."""
+        if diff_method not in ("parameter-shift", "finite-diff"):
+            pytest.skip("Only supports gradient transforms")
+
+        dev = qml.device(dev_name, wires=1)
+
+        class PhaseShift(qml.PhaseShift):
+            grad_method = None
+
+            def expand(self):
+                with qml.tape.QuantumTape() as tape:
+                    qml.RY(3 * self.data[0], wires=self.wires)
+                return tape
+
+        @qnode(dev, diff_method=diff_method, mode=mode, max_diff=2)
+        def circuit(x):
+            qml.Hadamard(wires=0)
+            PhaseShift(x, wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        spy = mocker.spy(circuit.device, "batch_execute")
+        x = np.array(0.5, requires_grad=True)
+        circuit(x)
+
+        tape = spy.call_args[0][0][0]
+
+        # no expansion is done on the forward pass!
+        assert len(tape.operations) == 2
+        assert tape.operations[1].name == "PhaseShift"
+        assert tape.operations[1].grad_method is None
+
+        spy = mocker.spy(circuit.gradient_fn, "transform_fn")
         res = qml.grad(circuit)(x)
-        print(res)
-        assert False
+
+        input_tape = spy.call_args[0][0]
+        assert len(input_tape.operations) == 2
+        assert input_tape.operations[1].name == "RY"
+        assert input_tape.operations[1].data[0] == 3 * x
+
+        shifted_tape1, shifted_tape2 = spy.spy_return[0]
+
+        assert len(shifted_tape1.operations) == 2
+        assert shifted_tape1.operations[1].name == "RY"
+
+        assert len(shifted_tape2.operations) == 2
+        assert shifted_tape2.operations[1].name == "RY"
+
+        assert np.allclose(res, -np.sin(3 * x))
+
+        if diff_method == "parameter-shift":
+            # test second order derivatives
+            res = qml.grad(qml.grad(circuit))(x)
+            assert np.allclose(res, -3 * np.cos(3 * x))
