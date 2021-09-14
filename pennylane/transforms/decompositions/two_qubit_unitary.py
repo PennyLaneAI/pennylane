@@ -14,8 +14,6 @@
 """Contains transforms and helpers functions for decomposing arbitrary two-qubit
 unitary operations into elementary gates.
 """
-import warnings
-
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import math

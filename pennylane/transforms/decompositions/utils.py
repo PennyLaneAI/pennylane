@@ -13,7 +13,7 @@
 # limitations under the License.
 """Utility functions required for decomposing two-qubit operations."""
 
-from pennylane import  math
+from pennylane import math
 from pennylane import numpy as np
 
 # This gate E is called the "magic basis". It can be used to convert between
