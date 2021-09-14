@@ -417,17 +417,16 @@ def nuclear_attraction(la, lb, ra, rb, alpha, beta, r):
 
      The nuclear attraction integral between two Gaussian functions denoted by :math:`a` and
      :math:`b` can be computed as
-     [`Helgaker (1995) p820 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]:
+     [`Helgaker (1995) p820 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]
 
     .. math::
 
         V_{ab} = \frac{2\pi}{p} \sum_{tuv} E_t^{ij} E_u^{kl} E_v^{mn} R_{tuv},
 
-    where :math:`E` and :math:`R` represent the expansion coefficient the Hermite Gaussian expansion
-    coefficient and the Hermite Coulomb integral, respectively. The sum goes over :math:`i + j + 1`,
-    :math:`k + l + 1` and :math:`m + m + 1` for :math:`t`, :math:`u` and :math:`v`, respectively and
-    :math:`p` is computed from the exponents of the two Gaussian functions as
-    :math:`p = \alpha + \beta`.
+    where :math:`E` and :math:`R` represent the Hermite Gaussian expansion coefficient and the
+    Hermite Coulomb integral, respectively. The sum goes over :math:`i + j + 1`, :math:`k + l + 1`
+    and :math:`m + m + 1` for :math:`t`, :math:`u` and :math:`v`, respectively and :math:`p` is
+    computed from the exponents of the two Gaussian functions as :math:`p = \alpha + \beta`.
 
     Args:
         la (integer): angular momentum for the first Gaussian function
@@ -526,7 +525,39 @@ def generate_attraction(r, basis_a, basis_b):
 
 
 def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta):
-    """Electron repulsion between Gaussians"""
+    r"""Compute electron repulsion integral between four primitive Gaussian functions.
+
+     The electron repulsion integral between four Gaussian functions denoted by :math:`a`, :math:`b`
+     , :math:`c` and :math:`d` can be computed as
+     [`Helgaker (1995) p820 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]
+
+    .. math::
+
+        g_{abcd} = \frac{2\pi^{5/2}}{pq\sqrt{p+q}} \sum_{tuv} E_t^{l_a l_b} E_u^{m_a m_b} E_v^{n_a n_b} \sum_{rsw} (-1)^{r+s+w} E_r^{l_c l_d} E_s^{m_c m_d} E_w^{n_c n_d} R_{t+r, u+s, v+w},
+
+    where :math:`E` and :math:`R` represent the Hermite Gaussian expansion coefficient and the
+    Hermite Coulomb integral, respectively. The sums go over the angular momentum quantum numbers
+    :math:`l_i + l_j + 1`, :math:`m_i + m_j + 1` and :math:`n_i + n_j + 1` for :math:`t, u, v` and
+    :math:`r, s, w`. The exponents of the Gaussian functions are used to compute :math:`p` and
+    :math:`q` as :math:`p = \alpha + \beta` and :math:`q = \gamma + \delta`.
+
+    Args:
+        la (integer): angular momentum for the first Gaussian function
+        lb (integer): angular momentum for the second Gaussian function
+        lc (integer): angular momentum for the third Gaussian function
+        ld (integer): angular momentum for the forth Gaussian function
+        ra (float): position vector of the the first Gaussian function
+        rb (float): position vector of the the second Gaussian function
+        rc (float): position vector of the the third Gaussian function
+        rd (float): position vector of the the forth Gaussian function
+        alpha (array[float]): exponent of the first Gaussian function
+        beta (array[float]): exponent of the second Gaussian function
+        gamma (array[float]): exponent of the third Gaussian function
+        delta (array[float]): exponent of the forth Gaussian function
+
+    Returns:
+        array[float]: electron repulsion integral between four Gaussian functions
+    """
     l1, m1, n1 = la
     l2, m2, n2 = lb
     l3, m3, n3 = lc
@@ -534,7 +565,6 @@ def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta
 
     p = alpha + beta
     q = gamma + delta
-    quotient = (p * q) / (p + q)
 
     p_ab = (
         alpha * ra[:, anp.newaxis, anp.newaxis, anp.newaxis, anp.newaxis]
@@ -546,30 +576,30 @@ def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta
         + delta * rd[:, anp.newaxis, anp.newaxis, anp.newaxis, anp.newaxis]
     ) / (gamma + delta)
 
-    e = 0.0
+    g = 0.0
     for t in range(l1 + l2 + 1):
         for u in range(m1 + m2 + 1):
             for v in range(n1 + n2 + 1):
-                for tau in range(l3 + l4 + 1):
-                    for nu in range(m3 + m4 + 1):
-                        for phi in range(n3 + n4 + 1):
-                            e = e + expansion(l1, l2, ra[0], rb[0], alpha, beta, t) * expansion(
+                for r in range(l3 + l4 + 1):
+                    for s in range(m3 + m4 + 1):
+                        for w in range(n3 + n4 + 1):
+                            g = g + expansion(l1, l2, ra[0], rb[0], alpha, beta, t) * expansion(
                                 m1, m2, ra[1], rb[1], alpha, beta, u
                             ) * expansion(n1, n2, ra[2], rb[2], alpha, beta, v) * expansion(
-                                l3, l4, rc[0], rd[0], gamma, delta, tau
+                                l3, l4, rc[0], rd[0], gamma, delta, r
                             ) * expansion(
-                                m3, m4, rc[1], rd[1], gamma, delta, nu
+                                m3, m4, rc[1], rd[1], gamma, delta, s
                             ) * expansion(
-                                n3, n4, rc[2], rd[2], gamma, delta, phi
+                                n3, n4, rc[2], rd[2], gamma, delta, w
                             ) * (
-                                (-1) ** (tau + nu + phi)
+                                (-1) ** (r + s + w)
                             ) * _hermite_coulomb(
-                                t + tau, u + nu, v + phi, 0, quotient, p_ab - p_cd
+                                t + r, u + s, v + w, 0, (p * q) / (p + q), p_ab - p_cd
                             )
 
-    e = e * 2 * (anp.pi ** 2.5) / (p * q * anp.sqrt(p + q))
+    g = g * 2 * (anp.pi ** 2.5) / (p * q * anp.sqrt(p + q))
 
-    return e
+    return g
 
 
 def generate_repulsion(basis_a, basis_b, basis_c, basis_d):
@@ -588,9 +618,15 @@ def generate_repulsion(basis_a, basis_b, basis_c, basis_d):
 
     >>> symbols  = ['H', 'H']
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
-    >>> mol = Molecule(symbols, geometry)
-    >>> args = []
-    >>> generate_repulsion(mol.basis_set[0], mol.basis_set[1], mol.basis_set[0], mol.basis_set[1])(*args)
+    >>> alpha = pnp.array([[3.425250914, 0.6239137298, 0.168855404],
+    >>>                    [3.425250914, 0.6239137298, 0.168855404],
+    >>>                    [3.425250914, 0.6239137298, 0.168855404],
+    >>>                    [3.425250914, 0.6239137298, 0.168855404]], requires_grad = True)
+    >>> mol = hf.Molecule(symbols, geometry, alpha=alpha)
+    >>> basis_a = mol.basis_set[0]
+    >>> basis_b = mol.basis_set[1]
+    >>> args = [mol.alpha]
+    >>> generate_repulsion(basis_a, basis_b, basis_a, basis_b)(*args)
     0.45590152106593573
     """
 
