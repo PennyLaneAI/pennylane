@@ -310,7 +310,7 @@ def generate_overlap(basis_a, basis_b):
 def _diff2(i, j, ri, rj, alpha, beta):
     r"""Compute the second order differentiated integral needed for evaluating a kinetic integral.
 
-    The second order integral :math:`D_{ij}^2`, where :math:`i` and :math:`j` denote angular
+    The second-order integral :math:`D_{ij}^2`, where :math:`i` and :math:`j` denote angular
     momentum components of Gaussian functions, is computed from overlap integrals :math:`S` and the
     Gaussian exponent :math:`\beta` as
     [`Helgaker (1995) p804 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]:
@@ -323,12 +323,12 @@ def _diff2(i, j, ri, rj, alpha, beta):
         i (integer): angular momentum component for the first Gaussian function
         j (integer): angular momentum component for the second Gaussian function
         ri (float): position component of the the first Gaussian function
-        ri (float): position component of the the second Gaussian function
+        rj (float): position component of the the second Gaussian function
         alpha (array[float]): exponent of the first Gaussian function
         beta (array[float]): exponent of the second Gaussian function
 
     Returns:
-        array[float]: second order differentiated integral between two Gaussian functions
+        array[float]: second-order differentiated integral between two Gaussian functions
     """
     p = alpha + beta
 
@@ -340,7 +340,7 @@ def _diff2(i, j, ri, rj, alpha, beta):
 
 
 def gaussian_kinetic(la, lb, ra, rb, alpha, beta):
-    r"""Compute kinetic integral for two primitive Gaussian functions.
+    r"""Compute the kinetic integral for two primitive Gaussian functions.
 
     The kinetic integral between two Gaussian functions denoted by :math:`a` and :math:`b` is
     computed as
