@@ -273,6 +273,7 @@
   [(#1549)](https://github.com/PennyLaneAI/pennylane/pull/1549)
   [(#1608)](https://github.com/PennyLaneAI/pennylane/pull/1608)
   [(#1618)](https://github.com/PennyLaneAI/pennylane/pull/1618)
+  [(#1637)](https://github.com/PennyLaneAI/pennylane/pull/1637)
 
   For example:
 
