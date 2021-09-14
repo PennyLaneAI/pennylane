@@ -32,7 +32,6 @@ def _interpret_key(key, single_arg):
         return None, key
     if isinstance(key, tuple):
         if len(key) == 2:
-            #if isinstance(key[1], tuple) or key[1] is None:
             return key
         if len(key) == 0:
             return None, None
@@ -49,7 +48,7 @@ class ArgMap(dict):
 
     Args:
         data (list[tuple] or dict or object): Data to store in the ArgMap.
-            If not a dict and ``single_object=False``, ``data`` must be possible 
+            If not a dict and ``single_object=False``, ``data`` must be possible
             to be parsed via ``dict(data)``.
         single_arg (bool): Whether the ``ArgMap`` stores objects for a single argument.
         single_object (bool): Whether the ``ArgMap`` stores only a single object.
@@ -78,7 +77,7 @@ class ArgMap(dict):
     Suppose we have the following ``QNode`` instance:
 
     .. code-block:: python
-        
+
         dev = qml.device('default.qubit', wires=2)
         @qml.qnode(dev)
         def circuit(arg1, arg2, arg3):
@@ -93,19 +92,20 @@ class ArgMap(dict):
     .. code-block:: python
 
         generators = qml.ArgMap({
-            (0, 0): qml.PauliZ(0), 
-            (0, 1): qml.PauliY(0), 
-            (0, 2): qml.PauliZ(0), 
-            1: qml.PauliX(0), 
-            (1, 0): qml.PauliZ(1), 
-            (1, 1): qml.PauliY(1), 
-            (1, 2): qml.PauliZ(1), 
+            (0, 0): qml.PauliZ(0),
+            (0, 1): qml.PauliY(0),
+            (0, 2): qml.PauliZ(0),
+            1: qml.PauliX(0),
+            (1, 0): qml.PauliZ(1),
+            (1, 1): qml.PauliY(1),
+            (1, 2): qml.PauliZ(1),
         })
 
     Then the generators can be accessed by using the tuples ``(arg_index, par_index)`` as key
     with ``par_index=None`` for the ``PauliX(0)`` generator. The latter may alternatively
     be accessed directly via ``generators[1]``.
     """
+
     def __init__(self, data, single_arg=False, single_object=False):
         self.single_arg = single_arg
         self.single_object = single_object
@@ -152,11 +152,16 @@ class ArgMap(dict):
             # Check for scalar variables
             if key[0] in scalar_variables:
                 if key[1] is not None:
-                    raise ArgMapError(f"Inconsistent keys in ArgMap for argument with index {key[0]}")
+                    raise ArgMapError(
+                        f"Inconsistent keys in ArgMap for argument with index {key[0]}"
+                    )
             else:
                 _type = int if np.issubdtype(type(key[1]), int) else len(key[1])
-                if shapes.setdefault(key[0], _type)!=_type:
-                    raise ArgMapError(f"Inconsistent keys in ArgMap for argument with index {key[0]}")
+                if shapes.setdefault(key[0], _type) != _type:
+                    raise ArgMapError(
+                        f"Inconsistent keys in ArgMap for argument with index {key[0]}"
+                    )
+
 
 # Todo: figure out behaviour for keys = {(0, 1), (2, 3), (1, 2)}
 #       - with single_arg=True -> single array-valued argument
