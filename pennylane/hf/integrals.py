@@ -426,10 +426,10 @@ def nuclear_attraction(la, lb, ra, rb, alpha, beta, r):
     computed from the exponents of the two Gaussian functions as :math:`p = \alpha + \beta`.
 
     Args:
-        la (integer): angular momentum for the first Gaussian function
-        lb (integer): angular momentum for the second Gaussian function
-        ra (float): position vector of the the first Gaussian function
-        rb (float): position vector of the the second Gaussian function
+        la (tuple[int]): angular momentum for the first Gaussian function
+        lb (tuple[int]): angular momentum for the second Gaussian function
+        ra (array[float]): position vector of the the first Gaussian function
+        rb (array[float]): position vector of the the second Gaussian function
         alpha (array[float]): exponent of the first Gaussian function
         beta (array[float]): exponent of the second Gaussian function
         r (array[float]): position vector of nucleus
@@ -540,14 +540,14 @@ def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta
     :math:`q` as :math:`p = \alpha + \beta` and :math:`q = \gamma + \delta`.
 
     Args:
-        la (integer): angular momentum for the first Gaussian function
-        lb (integer): angular momentum for the second Gaussian function
-        lc (integer): angular momentum for the third Gaussian function
-        ld (integer): angular momentum for the forth Gaussian function
-        ra (float): position vector of the the first Gaussian function
-        rb (float): position vector of the the second Gaussian function
-        rc (float): position vector of the the third Gaussian function
-        rd (float): position vector of the the forth Gaussian function
+        la (tuple[int]): angular momentum for the first Gaussian function
+        lb (tuple[int]): angular momentum for the second Gaussian function
+        lc (tuple[int]): angular momentum for the third Gaussian function
+        ld (tuple[int]): angular momentum for the forth Gaussian function
+        ra (array[float]): position vector of the the first Gaussian function
+        rb (array[float]): position vector of the the second Gaussian function
+        rc (array[float]): position vector of the the third Gaussian function
+        rd (array[float]): position vector of the the forth Gaussian function
         alpha (array[float]): exponent of the first Gaussian function
         beta (array[float]): exponent of the second Gaussian function
         gamma (array[float]): exponent of the third Gaussian function
