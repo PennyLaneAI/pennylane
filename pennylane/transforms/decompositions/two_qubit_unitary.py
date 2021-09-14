@@ -173,6 +173,8 @@ def _extract_su2su2_prefactors(U, V):
 
     new_q_order = []
 
+    # There are two cases here: one is when there are no repeated eigenvalues
+    # The other is when there *are* 
     for _, eigval in enumerate(ev_p):
         are_close = [math.allclose(x, eigval) for x in ev_q]
 
@@ -228,17 +230,30 @@ def _decomposition_2_cnots(U, wires):
     # -U- = -A--C--X--C-
     # -U- = -B--X--C--D-
     #
-    # What happens here is that the set of evs is -1j, -1j, 1j, 1j and we can write
+    # What happens here is that the set of evs is -1, -1, 1, 1 and we can write
     # -U- = -A--X-SZ-X--C-
     # -U- = -B--C-SX-C--D-
     # where SZ and SX are square roots of Z and X respectively. For some reason this
     # case is not caught naturally with the algorithm below, so we treat it separately.
 
-    if math.allclose(math.sort(evs), [-1j, -1j, 1j, 1j]):
-        delta = np.pi / 2
-        phi = np.pi / 2
+    if math.allclose(math.sort(evs), [-1, -1, 1, 1]):
+        interior_decomp = [
+            qml.CNOT(wires=[wires[1], wires[0]]),
+            qml.S(wires=wires[0]),
+            qml.SX(wires=wires[1]),
+            qml.CNOT(wires=[wires[1], wires[0]]),
+        ]
+
+        # S \otimes SX
+        inner_matrix = np.array(
+            [[ 0.5+0.5j,  0.5-0.5j,  0. +0.j ,  0. +0.j ],
+             [ 0.5-0.5j,  0.5+0.5j,  0. +0.j ,  0. +0.j ],
+             [ 0. +0.j ,  0. +0.j , -0.5+0.5j,  0.5+0.5j],
+             [ 0. +0.j ,  0. +0.j ,  0.5+0.5j, -0.5+0.5j]
+        ])
     else:
-        # Need to find the angle that is not the conjugate of this one
+        # For the 2-CNOT case, eigenvalues come in conjugate pairs.
+        # Weneed to find two non-conjugate eigenvalues to extract the angles.
         x = math.angle(evs[0])
         y = math.angle(evs[1])
 
@@ -249,24 +264,21 @@ def _decomposition_2_cnots(U, wires):
         delta = (x + y) / 2
         phi = (x - y) / 2
 
-    # This is the "interior" part of the decomposition
-    # Note that we don't need to add any SWAPs, because the determinant obtained
-    # with two CNOTs is already +1, unlike the 1- or 3-CNOT case where it is -1.
-    interior_decomp = [
-        qml.CNOT(wires=[wires[1], wires[0]]),
-        qml.RZ(delta, wires=wires[0]),
-        qml.RX(phi, wires=wires[1]),
-        qml.CNOT(wires=[wires[1], wires[0]]),
-    ]
+        interior_decomp = [
+            qml.CNOT(wires=[wires[1], wires[0]]),
+            qml.RZ(delta, wires=wires[0]),
+            qml.RX(phi, wires=wires[1]),
+            qml.CNOT(wires=[wires[1], wires[0]]),
+        ]
 
-    RZd = qml.RZ(math.cast_like(delta, 1j), wires=0).matrix
-    RXp = qml.RX(phi, wires=0).matrix
-    RZdRXp = math.kron(RZd, RXp)
+        RZd = qml.RZ(math.cast_like(delta, 1j), wires=0).matrix
+        RXp = qml.RX(phi, wires=0).matrix
+        inner_matrix = math.kron(RZd, RXp)
 
     # We need the matrix representation of this interior part, V, in order to
     # decompose U = (A \otimes B) V (C \otimes D)
     V = math.dot(
-        math.cast_like(CNOT10, U), math.dot(math.cast_like(RZdRXp, U), math.cast_like(CNOT10, U))
+        math.cast_like(CNOT10, U), math.dot(inner_matrix, math.cast_like(CNOT10, U))
     )
 
     # Now we find the A, B, C, D in SU(2), and return the decomposition

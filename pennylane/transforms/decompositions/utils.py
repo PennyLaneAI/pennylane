@@ -13,7 +13,7 @@
 # limitations under the License.
 """Utility functions required for decomposing two-qubit operations."""
 
-import pennylane.math as math
+from pennylane import  math
 from pennylane import numpy as np
 
 # This gate E is called the "magic basis". It can be used to convert between
@@ -61,6 +61,7 @@ def _compute_num_cnots(U):
     gammaU = math.dot(u, math.T(u))
 
     trace = math.trace(gammaU)
+    evs = math.linalg.eigvals(gammaU)
 
     # For the case with 3 CNOTs, the trace is a non-zero complex number
     # with both real and imaginary parts.
@@ -71,10 +72,14 @@ def _compute_num_cnots(U):
     # is specified with 8 decimal places.
     if math.allclose(trace, 4, atol=1e-7) or math.allclose(trace, -4, atol=1e-7):
         num_cnots = 0
-    # Case: 1 CNOT, the trace is 0
-    elif math.allclose(trace, 0.0, atol=1e-7):
+    # Case: 1 CNOT, the trace is 0, and the eigenvalues of gammaU are [-1j, -1j, 1j, 1j]
+    # Checking the eigenvalues is needed because of some special 2-CNOT cases that yield
+    # a trace 0.
+    elif math.allclose(trace, 0.0, atol=1e-7) and math.allclose(
+        math.sort(math.imag(evs)), [-1, -1, 1, 1]
+    ):
         num_cnots = 1
-    # Case: 2 CNOTs, the trace has only a real part
+    # Case: 2 CNOTs, the trace has only a real part (or is 0)
     elif math.allclose(math.imag(trace), 0, atol=1e-7):
         num_cnots = 2
 
