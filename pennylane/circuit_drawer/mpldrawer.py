@@ -332,7 +332,7 @@ class MPLDrawer:
         .. code-block:: python
 
             box_options = {'facecolor': 'lightcoral', 'edgecolor': 'maroon', 'linewidth': 5}
-            text_options = {'fontsize': 'xx-large', 'color':'maroon'}
+            text_options = {'fontsize': 'xx-large', 'color': 'maroon'}
 
             drawer = MPLDrawer(n_wires=2, n_layers=1)
 
@@ -388,7 +388,7 @@ class MPLDrawer:
                 and max wires for the vertical line
             control_values=None (Union[bool, Iterable[bool]]): for each control wire, denotes whether to control
                 on ``False=0`` or ``True=1``
-            options=None (dict): dictionary of options.  The only supported keys are ``'color'``, ``'linewidth'``,
+            options=None (dict): Matplotlib keywords. The only supported keys are ``'color'``, ``'linewidth'``,
                 and ``'zorder'``.
 
         **Example**
@@ -473,10 +473,10 @@ class MPLDrawer:
 
         Args:
             layer (int): layer to draw in
-            wires (Union[int, Iterable[int]]): wires to use.  Last wire is the target.
+            wires (Union[int, Iterable[int]]): wires to use. Last wire is the target.
 
         Keyword Args:
-            options=None: dictionary of options.  The only supported keys are ``'color'``, ``'linewidth'``,
+            options=None: Matplotlib options. The only supported keys are ``'color'``, ``'linewidth'``,
                 and ``'zorder'``.
 
         **Example**
@@ -508,7 +508,7 @@ class MPLDrawer:
             wires (int): wire to draw on
 
         Keyword Args:
-            options=None (dict): dictionary of options.  The only supported keys are ``'color'``, ``'linewidth'``,
+            options=None (dict): Matplotlib keywords. The only supported keys are ``'color'``, ``'linewidth'``,
                 and ``'zorder'``.
         """
         if options is None:
