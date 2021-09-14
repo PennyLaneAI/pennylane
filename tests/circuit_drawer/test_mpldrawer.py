@@ -284,7 +284,7 @@ class TestCTRL:
 
         ctrl_wires = (0, 1)
         rgba_red = (1, 0, 0, 1)
-        options={"color": rgba_red, "linewidth": 4}
+        options = {"color": rgba_red, "linewidth": 4}
         drawer.ctrl(0, ctrl_wires, control_values=[1, 0], options=options)
 
         ctrl_line = drawer.ax.lines[3]
@@ -304,8 +304,8 @@ class TestCTRL:
     def test_ctrl_circ(self):
         """Test only the ``_ctrl_circ`` private method."""
 
-        drawer = MPLDrawer(1,1)
-        drawer._ctrl_circ(0,0)
+        drawer = MPLDrawer(1, 1)
+        drawer._ctrl_circ(0, 0)
         circ = drawer.ax.patches[0]
 
         assert circ.get_facecolor() == to_rgba(plt.rcParams["lines.color"])
@@ -318,8 +318,8 @@ class TestCTRL:
     def test_ctrlo_circ(self):
         """Test only the ``ctrlo_circ`` private method."""
 
-        drawer = MPLDrawer(1,1)
-        drawer._ctrlo_circ(0,0)
+        drawer = MPLDrawer(1, 1)
+        drawer._ctrlo_circ(0, 0)
         circ = drawer.ax.patches[0]
 
         assert circ.get_facecolor() == to_rgba(plt.rcParams["axes.facecolor"])
