@@ -496,6 +496,9 @@ class QuantumTape(AnnotatedQueue):
         """Set the trainable parameters"""
         self._trainable_params = set(self._par_info)
 
+        for idx in range(self.num_params):
+            self.get_operation(idx)[0].trainable = True
+
     def _update(self):
         """Update all internal tape metadata regarding processed operations and observables"""
         self._graph = None

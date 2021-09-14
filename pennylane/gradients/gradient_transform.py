@@ -19,7 +19,17 @@ import pennylane as qml
 
 unsupported_op = lambda op: op.grad_method is None
 supported_op = lambda op: op.grad_method is not None
-trainable_op = lambda op: any(qml.math.requires_grad(p) for p in op.parameters)
+trainable_op = lambda op: any(qml.math.requires_grad(p) for p in op.parameters) or getattr(
+    op, "trainable", False
+)
+
+
+# Define the stopping condition for the expansion
+def stop_cond(obj):
+    if isinstance(obj, qml.measure.MeasurementProcess):
+        return True
+
+    return (supported_op(obj) and trainable_op(obj)) or not trainable_op(obj)
 
 
 def gradient_expand(tape, depth=10):
@@ -38,16 +48,14 @@ def gradient_expand(tape, depth=10):
     Returns:
         .QuantumTape: the expanded tape
     """
+    requires_expansion = False
 
     # check if the tape contains unsupported trainable operations
-    if any(unsupported_op(op) and trainable_op(op) for op in tape.operations):
+    for idx in range(tape.num_params):
+        op = tape.get_operation(idx)[0]
+        requires_expansion = unsupported_op(op)
 
-        # Define the stopping condition for the expansion
-        stop_cond = lambda obj: (
-            not isinstance(obj, qml.measure.MeasurementProcess)
-            and ((supported_op(obj) and trainable_op(obj)) or not trainable_op(obj))
-        )
-
+    if requires_expansion:
         return tape.expand(depth=depth, stop_at=stop_cond)
 
     return tape

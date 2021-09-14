@@ -487,6 +487,8 @@ class Device(abc.ABC):
             # not start the next computation in the zero state
             self.reset()
 
+            circuit = self.expand_fn(circuit)
+
             res = self.execute(circuit.operations, circuit.observables)
             results.append(res)
 
@@ -527,6 +529,7 @@ class Device(abc.ABC):
             # Evaluations and gradients are paired, so that
             # devices can re-use the device state for the
             # gradient computation (if applicable).
+            circuit = self.expand_fn(circuit)
             res.append(self.batch_execute([circuit])[0])
             jacs.append(gradient_method(circuit, **kwargs))
 
@@ -552,7 +555,95 @@ class Device(abc.ABC):
             shape ``(output_shape, num_params)``.
         """
         gradient_method = getattr(self, method)
-        return [gradient_method(circuit, **kwargs) for circuit in circuits]
+        return [gradient_method(self.expand_fn(circuit), **kwargs) for circuit in circuits]
+
+    def expand_fn(self, circuit, max_expansion=10):
+        """Method for expanding or decomposing an input circuit.
+        This method should be overwritten if custom expansion logic is
+        required.
+
+        By default, this method expands the tape if:
+
+        - nested tapes are present,
+        - any operations are not supported on the device, or
+        - multiple observables are measured on the same wire.
+
+        Args:
+            circuit (.QuantumTape): the circuit to expand.
+            max_expansion (int): The number of times the circuit should be
+                expanded. Expansion occurs when an operation or measurement is not
+                supported, and results in a gate decomposition. If any operations
+                in the decomposition remain unsupported by the device, another
+                expansion occurs.
+
+        Returns:
+            .QuantumTape: The expanded/decomposed circuit, such that the device
+            will support native
+        """
+        obs_on_same_wire = len(circuit._obs_sharing_wires) > 0
+        ops_not_supported = any(
+            isinstance(op, qml.tape.QuantumTape)  # nested tapes must be expanded
+            or not self.supports_operation(op.name)  # unsupported ops must be expanded
+            for op in circuit.operations
+        )
+
+        if ops_not_supported or obs_on_same_wire:
+            circuit = circuit.expand(
+                depth=max_expansion,
+                stop_at=lambda obj: not isinstance(obj, qml.tape.QuantumTape)
+                and self.supports_operation(obj.name),
+            )
+
+        return circuit
+
+    def batch_transform(self, circuit):
+        """Apply a differentiable batch transform for preprocessing a circuit
+        prior to execution. This method is called directly by the QNode, and
+        should be overwritten if the device requires a transform that
+        generates multiple circuits prior to execution.
+
+        By default, this method contains logic for generating multiple
+        circuits, one per term, of a circuit that terminates in ``expval(H)``,
+        if the underlying device does not support Hamiltonian expectation values,
+        or if the device requires finite-shots.
+
+        .. warning::
+
+            This method will be tracked by autodifferentiation libraries,
+            such as Autograd, JAX, TensorFlow, and Torch. Please make sure
+            to use ``qml.math`` for autodiff-agnostic tensor processing
+            if required.
+
+        Args:
+            circuit (.QuantumTape): the circuit to preprocess
+
+        Returns:
+            tuple[Sequence[.QuantumTape], callable]: Returns a tuple containing
+            the sequence of circuits to be executed, and a post-processing function
+            to be applied to the list of evaluated circuit results.
+        """
+
+        # If the observable contains a Hamiltonian and the device does not
+        # support Hamiltonians, or if the simulation uses finite shots,
+        # split tape into multiple tapes of diagonalizable known observables.
+        # In future, this logic should be moved to the device
+        # to allow for more efficient batch execution.
+        supports_hamiltonian = self.supports_observable("Hamiltonian")
+        finite_shots = self.shots is not None
+
+        hamiltonian_in_obs = "Hamiltonian" in [obs.name for obs in circuit.observables]
+
+        if hamiltonian_in_obs and (not supports_hamiltonian or finite_shots):
+            try:
+                return qml.transforms.hamiltonian_expand(circuit, group=False)
+
+            except ValueError as e:
+                raise ValueError(
+                    "Can only return the expectation of a single Hamiltonian observable"
+                ) from e
+
+        # otherwise, return an identity transform
+        return [circuit], lambda res: res[0]
 
     @property
     def op_queue(self):

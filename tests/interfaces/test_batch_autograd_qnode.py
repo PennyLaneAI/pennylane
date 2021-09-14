@@ -377,7 +377,6 @@ class TestQNode:
         with pytest.raises(qml.numpy.NonDifferentiableError, match="is non-differentiable"):
             grad_fn(data1)
 
-    @pytest.mark.xfail
     def test_differentiable_expand(self, dev_name, diff_method, mode, tol):
         """Test that operation and nested tapes expansion
         is differentiable"""
@@ -404,22 +403,6 @@ class TestQNode:
             return qml.expval(qml.PauliX(0))
 
         res = circuit(a, p)
-
-        if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == {1, 2, 3, 4}
-        elif diff_method == "backprop":
-            # For a backprop device, no interface wrapping is performed, and JacobianTape.jacobian()
-            # is never called. As a result, JacobianTape.trainable_params is never set --- the ML
-            # framework uses its own backprop logic and its own bookkeeping re: trainable parameters.
-            assert circuit.qtape.trainable_params == {0, 1, 2, 3, 4}
-
-        assert [i.name for i in circuit.qtape.operations] == ["RX", "Rot", "PhaseShift"]
-
-        if diff_method == "finite-diff":
-            assert np.all(circuit.qtape.get_parameters() == [p[2], p[0], -p[2], p[1] + p[2]])
-        elif diff_method == "backprop":
-            # In backprop mode, all parameters are returned.
-            assert np.all(circuit.qtape.get_parameters() == [a, p[2], p[0], -p[2], p[1] + p[2]])
 
         expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
             np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
@@ -685,20 +668,25 @@ class TestQubitIntegration:
         assert res.shape == (2, 10)
         assert isinstance(res, np.ndarray)
 
-    @pytest.mark.xfail
     def test_chained_qnodes(self, dev_name, diff_method, mode):
         """Test that the gradient of chained QNodes works without error"""
         dev = qml.device(dev_name, wires=2)
 
+        class Template(qml.templates.StronglyEntanglingLayers):
+            def expand(self):
+                with qml.tape.QuantumTape() as tape:
+                    qml.templates.StronglyEntanglingLayers(*self.parameters, self.wires)
+                return tape
+
         @qnode(dev, interface="autograd", diff_method=diff_method)
         def circuit1(weights):
-            qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
+            Template(weights, wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
         @qnode(dev, interface="autograd", diff_method=diff_method)
         def circuit2(data, weights):
             qml.templates.AngleEmbedding(data, wires=[0, 1])
-            qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
+            Template(weights, wires=[0, 1])
             return qml.expval(qml.PauliX(0))
 
         def cost(weights):
@@ -707,10 +695,13 @@ class TestQubitIntegration:
             c2 = circuit2(c1, w2)
             return np.sum(c2) ** 2
 
-        w1 = qml.init.strong_ent_layers_normal(n_wires=2, n_layers=3)
-        w2 = qml.init.strong_ent_layers_normal(n_wires=2, n_layers=4)
+        w1 = qml.templates.StronglyEntanglingLayers.shape(n_wires=2, n_layers=3)
+        w2 = qml.templates.StronglyEntanglingLayers.shape(n_wires=2, n_layers=4)
 
-        weights = [w1, w2]
+        weights = [
+            np.random.random(w1),
+            np.random.random(w2),
+        ]
 
         grad_fn = qml.grad(cost)
         res = grad_fn(weights)

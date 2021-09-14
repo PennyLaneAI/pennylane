@@ -511,15 +511,20 @@ class QNode:
         # construct the tape
         self.construct(args, kwargs)
 
+        # preprocess the tapes by applying any device-specific transforms
+        tapes, processing_fn = self.device.batch_transform(self.tape)
+
         res = qml.execute(
-            [self.tape],
+            tapes,
             device=self.device,
             gradient_fn=self.gradient_fn,
             interface=self.interface,
             gradient_kwargs=self.gradient_kwargs,
             override_shots=override_shots,
             **self.execute_kwargs,
-        )[0]
+        )
+
+        res = processing_fn(res)
 
         if override_shots is not False:
             # restore the initialization gradient function
