@@ -348,7 +348,7 @@ def gaussian_kinetic(la, lb, ra, rb, alpha, beta):
 
     .. math::
 
-        T_{ab} = -\frac{1}{2} \left [ D_{ij}^2 D_{kl}^0 D_{mn}^0 + D_{ij}^0 D_{kl}^2 D_{mn}^0 + D_{ij}^0 D_{kl}^0 D_{mn}^2\right ],
+        T_{ab} = -\frac{1}{2} \left ( D_{ij}^2 D_{kl}^0 D_{mn}^0 + D_{ij}^0 D_{kl}^2 D_{mn}^0 + D_{ij}^0 D_{kl}^0 D_{mn}^2\right ),
 
     where :math:`D_{ij}^0 = S_{ij}^0` is an overlap integral and :math:`D_{ij}^2` is computed from
     overlap integrals :math:`S` and the Gaussian exponent :math:`\beta` as
@@ -358,10 +358,10 @@ def gaussian_kinetic(la, lb, ra, rb, alpha, beta):
         D_{ij}^2 = j(j-1)S_{i,j-2}^0 - 2\beta(2j+1)S_{i,j}^0 + 4\beta^2 S_{i,j+2}^0.
 
     Args:
-        la (integer): angular momentum for the first Gaussian function
-        lb (integer): angular momentum for the second Gaussian function
-        ra (float): position vector of the the first Gaussian function
-        rb (float): position vector of the the second Gaussian function
+        la (tuple[int]): angular momentum for the first Gaussian function
+        lb (tuple[int]): angular momentum for the second Gaussian function
+        ra (array[float]): position vector of the the first Gaussian function
+        rb (array[float]): position vector of the the second Gaussian function
         alpha (array[float]): exponent of the first Gaussian function
         beta (array[float]): exponent of the second Gaussian function
 
