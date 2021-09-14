@@ -1227,3 +1227,47 @@ def test_adjoint_reuse_device_state(mocker):
     assert circ.device.num_executions == 1
 
     spy.assert_called_with(mocker.ANY, use_device_state=True)
+
+
+@pytest.mark.parametrize("dev_name,diff_method,mode", qubit_device_and_diff_method)
+class TestTapeExpansion:
+    """Test that tape expansion within the QNode works correctly"""
+
+    def test_device_expansion(self, dev_name, diff_method, mode, mocker):
+        """Test expansion of an unsupported operation on the device"""
+        dev = qml.device(dev_name, wires=1)
+
+        class UnsupportedOp(qml.operation.Operation):
+            num_wires = 1
+            num_params = 1
+            par_domain = "R"
+
+            grad_method = "A"
+            grad_recipe = ([[1, 1, 0.5]],)
+
+            def expand(self):
+                with qml.tape.QuantumTape() as tape:
+                    qml.RX(self.data[0] ** 2, wires=self.wires)
+                return tape
+
+        @qnode(dev, diff_method=diff_method, mode=mode)
+        def circuit(x):
+            UnsupportedOp(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        if diff_method == "adjoint" and mode == "forward":
+            spy = mocker.spy(circuit.device, "execute_and_gradients")
+        else:
+            spy = mocker.spy(circuit.device, "batch_execute")
+
+        x = np.array(0.6, requires_grad=True)
+        circuit(x)
+
+        tape = spy.call_args[0][0][0]
+        assert len(tape.operations) == 1
+        assert tape.operations[0].name == "RX"
+        assert np.allclose(tape.operations[0].parameters, x ** 2)
+
+        res = qml.grad(circuit)(x)
+        print(res)
+        assert False

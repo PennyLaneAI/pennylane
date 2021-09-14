@@ -274,6 +274,7 @@ class QubitDevice(Device):
             # we need to reset the device here, else it will
             # not start the next computation in the zero state
             self.reset()
+
             res = self.execute(circuit)
             results.append(res)
 
