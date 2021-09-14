@@ -2,6 +2,42 @@
 
 <h3>New features since last release</h3>
 
+* The transform for the Jacobian of the classical preprocessing within a QNode,
+  `qml.transforms.classical_jacobian`, now takes a keyword argument `argnum` to specify
+  the QNode argument indices with respect to which the Jacobian is computed.
+  [(#1645)](https://github.com/PennyLaneAI/pennylane/pull/1645)
+
+  An example for the usage of ``argnum`` is
+
+  ```python
+  @qml.qnode(dev)
+  def circuit(x, y, z):
+      qml.RX(qml.math.sin(x), wires=0)
+      qml.CNOT(wires=[0, 1])
+      qml.RY(y ** 2, wires=1)
+      qml.RZ(1 / z, wires=1)
+      return qml.expval(qml.PauliZ(0))
+
+  jac_fn = qml.transforms.classical_jacobian(circuit, argnum=[1, 2])
+  ```
+
+  The Jacobian can then be computed at specified parameters.
+
+  ```pycon
+  >>> x, y, z = np.array([0.1, -2.5, 0.71])
+  >>> jac_fn(x, y, z)
+  (array([-0., -5., -0.]), array([-0.        , -0.        , -1.98373339]))
+  ```
+
+  The returned arrays are the derivatives of the three parametrized gates in the circuit
+  with respect to `y` and `z` respectively.
+
+  There also are explicit tests for `classical_jacobian` now, which previously was tested
+  implicitly via its use in the `metric_tensor` transform.
+
+  For more usage details, please see the
+  [classical Jacobian docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.transforms.classical_jacobian.html).
+
 <h3>Improvements</h3>
 
 * The `qml.metric_tensor` transform has been improved with regards to
@@ -50,13 +86,16 @@
 
 <h3>Bug fixes</h3>
 
+* The device suite tests can now execute successfully if no shots configuration variable is given.
+  [(#1641)](https://github.com/PennyLaneAI/pennylane/pull/1641)
+
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Josh Izaac, Christina Lee.
+Josh Izaac, Christina Lee, David Wierichs.
 
 # Release 0.18.0 (Current release)
 
@@ -113,6 +152,7 @@ Josh Izaac, Christina Lee.
   backpropogation with the torch interface.
   [(#1225)](https://github.com/PennyLaneAI/pennylane/pull/1360)
   [(#1598)](https://github.com/PennyLaneAI/pennylane/pull/1598)
+
 
 * The ability to define *batch* transforms has been added via the new
   `@qml.batch_transform` decorator.
@@ -483,6 +523,10 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 
 <h3>Bug fixes</h3>
+
+* Fix bug in edge case of single-qubit `zyz_decomposition` when only
+  off-diagonal elements are present.
+  [(#1643)](https://github.com/PennyLaneAI/pennylane/pull/1643)
 
 * `MottonenStatepreparation` can now be run with a single wire label not in a list.
   [(#1620)](https://github.com/PennyLaneAI/pennylane/pull/1620)
