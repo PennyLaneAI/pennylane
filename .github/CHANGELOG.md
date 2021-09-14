@@ -4,6 +4,45 @@
 
 <h3>Improvements</h3>
 
+* The `qml.metric_tensor` transform has been improved with regards to
+  both function and performance.
+  [(#1638)](https://github.com/PennyLaneAI/pennylane/pull/1638)
+
+  - If the underlying device supports batch execution of circuits, the quantum circuits required to
+    compute the metric tensor elements will be automatically submitted as a batched job. This can
+    lead to significant performance improvements for devices with a non-trivial job submission
+    overhead.
+
+  - Previously, the transform would only return the metric tensor with respect to gate arguments,
+    and ignore any classical processing inside the QNode, even very trivial classical processing
+    such as parameter permutation. The metric tensor now takes into account classical processing,
+    and returns the metric tensor with respect to QNode arguments, not simply gate arguments:
+
+    ```pycon
+    >>> @qml.qnode(dev)
+    ... def circuit(x):
+    ...     qml.Hadamard(wires=1)
+    ...     qml.RX(x[0], wires=0)
+    ...     qml.CNOT(wires=[0, 1])
+    ...     qml.RY(x[1] ** 2, wires=1)
+    ...     qml.RY(x[1], wires=0)
+    ...     return qml.expval(qml.PauliZ(0))
+    >>> x = np.array([0.1, 0.2], requires_grad=True)
+    >>> qml.metric_tensor(circuit)(x)
+    array([[0.25      , 0.        ],
+           [0.        , 0.28750832]])
+    ```
+
+    To revert to the previous behaviour of returning the metric tensor with respect to gate
+    arguments, `qml.metric_tensor(qnode, hybrid=False)` can be passed.
+
+    ```
+    >>> qml.metric_tensor(circuit, hybrid=False)(x)
+    array([[0.25      , 0.        , 0.        ],
+           [0.        , 0.25      , 0.        ],
+           [0.        , 0.        , 0.24750832]])
+    ```
+
 * ``qml.circuit_drawer.CircuitDrawer`` can accept a string for the ``charset`` keyword, instead of a ``CharSet`` object.
   [(#1640)](https://github.com/PennyLaneAI/pennylane/pull/1640)
 
@@ -16,6 +55,8 @@
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
+
+Josh Izaac, Christina Lee.
 
 # Release 0.18.0 (Current release)
 
