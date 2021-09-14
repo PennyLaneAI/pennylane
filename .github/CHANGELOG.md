@@ -2,45 +2,10 @@
 
 <h3>New features since last release</h3>
 
-<h3>Improvements</h3>
-
-* ``qml.circuit_drawer.CircuitDrawer`` can accept a string for the ``charset`` keyword, instead of a ``CharSet`` object.
-  [(#1640)](https://github.com/PennyLaneAI/pennylane/pull/1640)
-
-<h3>Breaking changes</h3>
-
-<h3>Bug fixes</h3>
-
-<h3>Documentation</h3>
-
-<h3>Contributors</h3>
-
-This release contains contributions from (in alphabetical order):
-
-# Release 0.18.0 (Current release)
-
-<h3>New features since last release</h3>
-
 * The transform for the Jacobian of the classical preprocessing within a QNode,
   `qml.transforms.classical_jacobian`, now takes a keyword argument `argnum` to specify
   the QNode argument indices with respect to which the Jacobian is computed.
   [(#1645)](https://github.com/PennyLaneAI/pennylane/pull/1645)
-
-  The output behaviour with `argnum=None` differs slightly for different interfaces,
-  following the respective output shape of the native `jacobian` equivalent:
-
-  ==============  =====================  ====================  ========================
-  Interface       ``argnum=None``        ``type(argnum)=int``  ``argnum=Sequence[int]``
-  ==============  =====================  ====================  ========================
-  ``'autograd'``  ``tuple(arrays)`` [1]  ``array``              ``tuple(array)``
-  ``'jax'``       ``array``              ``array``              ``tuple(array)``
-  ``'tf'``        ``tuple(arrays)``      ``array``              ``tuple(array)``
-  ``'torch'``     ``tuple(arrays)``      ``array``              ``tuple(array)``
-  ==============  =====================  ====================  ========================
-
-  [1] If all QNode argument are scalars, the tuple is unpacked and the one-dimensional Jacobian
-  arrays are stacked into one ``array``. If there only is one QNode argument, the tuple is 
-  unpacked as well. Both is due to the behaviour of ``qml.jacobian``.
 
   An example for the usage of ``argnum`` is
 
@@ -57,8 +22,6 @@ This release contains contributions from (in alphabetical order):
   ```
 
   The Jacobian can then be computed at specified parameters.
-  Note that unlike the behaviour in `tensorflow`, *all* QNode arguments have to be provided
-  to the transformed QNode, even if only a subset of the Jacobians is computed.
 
   ```pycon
   >>> x, y, z = np.array([0.1, -2.5, 0.71])
@@ -72,6 +35,29 @@ This release contains contributions from (in alphabetical order):
   There also are explicit tests for `classical_jacobian` now, which previously was tested
   implicitly via its use in the `metric_tensor` transform.
 
+  For more usage details, please see the
+  [classical Jacobian docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.transforms.classical_jacobian.html).
+
+<h3>Improvements</h3>
+
+* ``qml.circuit_drawer.CircuitDrawer`` can accept a string for the ``charset`` keyword, instead of a ``CharSet`` object.
+  [(#1640)](https://github.com/PennyLaneAI/pennylane/pull/1640)
+
+<h3>Breaking changes</h3>
+
+<h3>Bug fixes</h3>
+
+<h3>Documentation</h3>
+
+<h3>Contributors</h3>
+
+This release contains contributions from (in alphabetical order):
+
+Christina Lee, David Wierichs
+
+# Release 0.18.0 (Current release)
+
+<h3>New features since last release</h3>
 
 * Custom gradient transforms can now be created using the new
   `@qml.gradients.gradient_transform` decorator on a batch-tape transform.
