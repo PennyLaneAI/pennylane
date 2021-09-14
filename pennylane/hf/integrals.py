@@ -412,9 +412,9 @@ def _hermite_coulomb(t, u, v, n, p, dr):
 def nuclear_attraction(la, lb, ra, rb, alpha, beta, r):
     r"""Compute nuclear attraction integral between primitive Gaussian functions.
 
-     The nuclear attraction integral between two Gaussian functions denoted by :math:`a` and
-     :math:`b` can be computed as
-     [`Helgaker (1995) p820 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]
+    The nuclear attraction integral between two Gaussian functions denoted by :math:`a` and
+    :math:`b` can be computed as
+    [`Helgaker (1995) p820 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]
 
     .. math::
 
@@ -525,9 +525,9 @@ def generate_attraction(r, basis_a, basis_b):
 def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta):
     r"""Compute electron repulsion integral between four primitive Gaussian functions.
 
-     The electron repulsion integral between four Gaussian functions denoted by :math:`a`, :math:`b`
-     , :math:`c` and :math:`d` can be computed as
-     [`Helgaker (1995) p820 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]
+    The electron repulsion integral between four Gaussian functions denoted by :math:`a`, :math:`b`
+    , :math:`c` and :math:`d` can be computed as
+    [`Helgaker (1995) p820 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]
 
     .. math::
 
