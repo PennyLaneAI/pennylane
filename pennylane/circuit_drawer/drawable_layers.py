@@ -16,26 +16,6 @@ This module contains a helper function to sort operations into layers.
 """
 
 
-def _default_wire_map(ops):
-    """This helper function may be moved elsewhere as integration of circuit
-    drawing component progresses.
-    Args:
-        ops Iterable[Operation]
-
-    Returns:
-        dict: map from wires to sequential positive integers
-    """
-
-    wire_map = {}
-    highest_number = 0
-    for op in ops:
-        for wire in op.wires:
-            if wire not in wire_map.keys():
-                wire_map[wire] = highest_number
-                highest_number += 1
-    return wire_map
-
-
 def _recursive_find_layer(checking_layer, op_occupied_wires, occupied_wires_per_layer):
     """Determine correct layer for operation with ``op_occupied_wires``
 
@@ -60,32 +40,22 @@ def _recursive_find_layer(checking_layer, op_occupied_wires, occupied_wires_per_
     return _recursive_find_layer(checking_layer - 1, op_occupied_wires, occupied_wires_per_layer)
 
 
-def _convert_wire_order(ops, wire_order, show_all_wires=False):
-    if wire_order is None:
-        return _default_wire_map(ops)
-    if not show_all_wires:
-        used_wires = {wire for op in ops for wire in op.wires}
-        wire_order = [wire for wire in wire_order if wire in used_wires]
-    return dict(zip(wire_order, range(len(wire_order))))
-
-
-def drawable_layers(ops, wire_order=None, show_all_wires=False):
+def drawable_layers(ops, wire_map=None):
     """Determine non-overlapping yet dense placement of operations for drawing.
 
     Args:
         ops Iterable[~.Operator]: a list of operations
 
-
     Keyword Args:
-        wire_order (Sequence[Any], dict): the order (from top to bottom) to print the wires of the circuit
-        show_all_wires (bool): If True, all wires, including empty wires, are printed.
+        wire_map=None (dict): a map from wire label to non-negative integers
 
     Returns:
         list[set[~.Operator]] : Each index is a set of operations
             for the corresponding layer
     """
 
-    wire_map = _convert_wire_order(ops, wire_order, show_all_wires)
+    if wire_map is None:
+        wire_map = default_wire_map(ops)
 
     # initialize
     max_layer = 0
@@ -118,15 +88,15 @@ def drawable_layers(ops, wire_order=None, show_all_wires=False):
     return ops_per_layer
 
 
-def drawable_grid(ops, wire_order=None, show_all_wires=False):
+def drawable_grid(ops, wire_map=None):
     """Determine non-overlapping yet dense placement of operations for drawing.  Returns
     structure compatible with ``qml.circuit_drawer.Grid``.
 
     Args:
         ops Iterable[~.Operator]: a list of operations
+
     Keyword Args:
-        wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
-        show_all_wires (bool): If True, all wires, including empty wires, are printed.
+        wire_map=None (dict): a map from wire label to non-negative integers
 
     Returns:
         List[List[~.Operator]] : layers compatible with grid objects
@@ -135,7 +105,9 @@ def drawable_grid(ops, wire_order=None, show_all_wires=False):
     if len(ops) == 0:
         return [[] for _ in range(len(wire_order))]
 
-    ops_per_layer = drawable_layers(ops, wire_order=wire_order, show_all_wires=show_all_wires)
+    wire_map = _convert_wire_order(ops, wire_order, show_all_wires)
+
+    ops_per_layer = drawable_layers(ops, wire_order=wire_map, show_all_wires=show_all_wires)
 
     if show_all_wires:
         n_wires = len(wire_order)

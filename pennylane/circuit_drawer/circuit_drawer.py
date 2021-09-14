@@ -58,8 +58,6 @@ class CircuitDrawer:
         charset=None,
         show_all_wires=False,
     ):
-
-    
         self.operation_grid = Grid(raw_operation_grid)
         self.observable_grid = Grid(raw_observable_grid)
         self.wires = wires

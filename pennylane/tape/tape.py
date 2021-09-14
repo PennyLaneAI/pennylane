@@ -1115,25 +1115,11 @@ class QuantumTape(AnnotatedQueue):
         Returns:
             str: the circuit representation of the tape
         """
-
-        ops_grid = qml.circuit_drawer.drawable_grid(self.operations, wire_order=wire_order)
-        obs_grid = qml.circuit_drawer.drawable_grid(self.observables, wire_order=wire_order)
-
-        if charset not in qml.circuit_drawer.CHARSETS:
-            raise ValueError(
-                "Charset {} is not supported. Supported charsets: {}.".format(
-                    charset, ", ".join(qml.circuit_drawer.CHARSETS.keys())
-                )
-            )
-        charset_class = qml.circuit_drawer.CHARSETS[charset]
-
-        print(ops_grid)
-        print(obs_grid)
-
-        drawer = qml.circuit_drawer.CircuitDrawer(ops_grid, obs_grid, wires=wire_order or self.wires,
-            charset=charset_class, show_all_wires=show_all_wires)
-
-        return drawer.draw()
+        return self.graph.draw(
+            charset=charset,
+            wire_order=wire_order,
+            show_all_wires=show_all_wires,
+        )
 
     def to_openqasm(self, wires=None, rotations=True, measure_all=True):
         """Serialize the circuit as an OpenQASM 2.0 program.
