@@ -17,19 +17,21 @@ This module contains the :class:`ArgMap` class, which is a flexible-access conta
 from functools import lru_cache
 from pennylane import numpy as np
 
+
 class ArgMapError(Exception):
     r"""Exception raised by an :class:`~.pennylane.argmap.ArgMap` instance
     when it is unable to access or write a requested item."""
 
+
 @lru_cache(maxsize=None)
 def _interpret_key(key, single_arg=False):
     if isinstance(key, tuple):
-        if len(key)==2:
+        if len(key) == 2:
             if isinstance(key[1], tuple):
                 return key
             if key[1] is None:
                 return key
-        if len(key)==0:
+        if len(key) == 0:
             return None, None
         return None, key
     if np.issubdtype(type(key), int):
@@ -40,17 +42,16 @@ def _interpret_key(key, single_arg=False):
         return None, None
     raise ArgMapError(f"Could not interpret key {key}.")
 
-class ArgMap(dict):
 
+class ArgMap(dict):
     def __init__(self, data, single_arg=False, single_object=False):
         self.single_arg = single_arg
         _data = self._preprocess_data(data, single_object)
         super().__init__(_data)
 
-
     def _preprocess_data(self, data, single_object):
         if single_object:
-            return {(None, None): data} 
+            return {(None, None): data}
 
         if not isinstance(data, dict):
             try:
@@ -69,4 +70,3 @@ class ArgMap(dict):
     def get(self, key, default=None):
         key = _interpret_key(key, self.single_arg)
         return super().get(key, default)
-        
