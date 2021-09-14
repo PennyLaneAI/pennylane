@@ -69,7 +69,7 @@ def set_shots(device, shots):
             device.shots = original_shots
 
 
-def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True):
+def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True, expand_fn=None):
     """Decorator that adds caching to a function that executes
     multiple tapes on a device.
 
@@ -106,6 +106,12 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True):
         function: a wrapped version of the execution function ``fn`` with caching
         support
     """
+    if expand_fn is not None:
+        original_fn = fn
+
+        def fn(tapes, **kwargs):
+            tapes = [expand_fn(tape) for tape in tapes]
+            return original_fn(tapes, **kwargs)
 
     @wraps(fn)
     def wrapper(tapes, **kwargs):
@@ -286,19 +292,27 @@ def execute(
 
     if gradient_fn is None:
         with qml.tape.Unwrap(*tapes):
-            res = cache_execute(batch_execute, cache, return_tuple=False)(tapes)
+            res = cache_execute(
+                batch_execute, cache, return_tuple=False, expand_fn=device.expand_fn
+            )(tapes)
 
         return res
 
     if gradient_fn == "backprop" or interface is None:
-        return cache_execute(batch_execute, cache, return_tuple=False)(tapes)
+        return cache_execute(batch_execute, cache, return_tuple=False, expand_fn=device.expand_fn)(
+            tapes
+        )
 
     # the default execution function is batch_execute
-    execute_fn = cache_execute(batch_execute, cache)
+    execute_fn = cache_execute(batch_execute, cache, expand_fn=device.expand_fn)
 
     if gradient_fn == "device":
         # gradient function is a device method
 
+        # Expand all tapes as per the device's expand function here.
+        # We must do this now, prior to the interface, to ensure that
+        # decompositions with parameter processing is tracked by the
+        # autodiff frameworks.
         for i, tape in enumerate(tapes):
             tapes[i] = device.expand_fn(tape)
 

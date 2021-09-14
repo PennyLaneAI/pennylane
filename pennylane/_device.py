@@ -486,9 +486,6 @@ class Device(abc.ABC):
             # we need to reset the device here, else it will
             # not start the next computation in the zero state
             self.reset()
-
-            circuit = self.expand_fn(circuit)
-
             res = self.execute(circuit.operations, circuit.observables)
             results.append(res)
 
