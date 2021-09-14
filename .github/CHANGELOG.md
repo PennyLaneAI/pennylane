@@ -1,4 +1,61 @@
-# Release 0.18.0-dev (development release)
+# Release 0.19.0-dev (development release)
+
+<h3>New features since last release</h3>
+
+* The transform for the Jacobian of the classical preprocessing within a QNode,
+  `qml.transforms.classical_jacobian`, now takes a keyword argument `argnum` to specify
+  the QNode argument indices with respect to which the Jacobian is computed.
+  [(#1645)](https://github.com/PennyLaneAI/pennylane/pull/1645)
+
+  An example for the usage of ``argnum`` is
+
+  ```python
+  @qml.qnode(dev)
+  def circuit(x, y, z):
+      qml.RX(qml.math.sin(x), wires=0)
+      qml.CNOT(wires=[0, 1])
+      qml.RY(y ** 2, wires=1)
+      qml.RZ(1 / z, wires=1)
+      return qml.expval(qml.PauliZ(0))
+
+  jac_fn = qml.transforms.classical_jacobian(circuit, argnum=[1, 2])
+  ```
+
+  The Jacobian can then be computed at specified parameters.
+
+  ```pycon
+  >>> x, y, z = np.array([0.1, -2.5, 0.71])
+  >>> jac_fn(x, y, z)
+  (array([-0., -5., -0.]), array([-0.        , -0.        , -1.98373339]))
+  ```
+
+  The returned arrays are the derivatives of the three parametrized gates in the circuit
+  with respect to `y` and `z` respectively.
+
+  There also are explicit tests for `classical_jacobian` now, which previously was tested
+  implicitly via its use in the `metric_tensor` transform.
+
+  For more usage details, please see the
+  [classical Jacobian docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.transforms.classical_jacobian.html).
+
+<h3>Improvements</h3>
+
+* ``qml.circuit_drawer.CircuitDrawer`` can accept a string for the ``charset`` keyword, instead of a ``CharSet`` object.
+  [(#1640)](https://github.com/PennyLaneAI/pennylane/pull/1640)
+
+<h3>Breaking changes</h3>
+
+<h3>Bug fixes</h3>
+
+<h3>Documentation</h3>
+
+<h3>Contributors</h3>
+
+This release contains contributions from (in alphabetical order):
+
+Christina Lee, David Wierichs
+
+# Release 0.18.0 (Current release)
 
 <h3>New features since last release</h3>
 
@@ -53,6 +110,7 @@
   backpropogation with the torch interface.
   [(#1225)](https://github.com/PennyLaneAI/pennylane/pull/1360)
   [(#1598)](https://github.com/PennyLaneAI/pennylane/pull/1598)
+
 
 * The ability to define *batch* transforms has been added via the new
   `@qml.batch_transform` decorator.
@@ -135,13 +193,13 @@
 * The `RotosolveOptimizer` now can tackle general parametrized circuits, and is no longer
   restricted to single-qubit Pauli rotations.
   [(#1489)](https://github.com/PennyLaneAI/pennylane/pull/1489)
-  
+
   This includes:
-  
+
   - layers of gates controlled by the same parameter,
   - controlled variants of parametrized gates, and
   - Hamiltonian time evolution.
-  
+
   Note that the eigenvalue spectrum of the gate generator needs to be known to
   use `RotosolveOptimizer` for a general gate, and it
   is required to produce equidistant frequencies.
@@ -273,6 +331,7 @@
   [(#1549)](https://github.com/PennyLaneAI/pennylane/pull/1549)
   [(#1608)](https://github.com/PennyLaneAI/pennylane/pull/1608)
   [(#1618)](https://github.com/PennyLaneAI/pennylane/pull/1618)
+  [(#1637)](https://github.com/PennyLaneAI/pennylane/pull/1637)
 
   For example:
 
@@ -308,13 +367,13 @@
   selected or deselected during local execution of tests.
   [(#1633)](https://github.com/PennyLaneAI/pennylane/pull/1633)
 
-* Hamiltonians are now natively supported on the `default.qubit` device if `shots=None`. 
+* Hamiltonians are now natively supported on the `default.qubit` device if `shots=None`.
   This makes VQE workflows a lot faster in some cases.
   [(#1551)](https://github.com/PennyLaneAI/pennylane/pull/1551)
   [(#1596)](https://github.com/PennyLaneAI/pennylane/pull/1596)
 
-* A gradient recipe for Hamiltonian coefficients has been added. This makes it possible 
-  to compute parameter-shift gradients of these coefficients on devices that natively 
+* A gradient recipe for Hamiltonian coefficients has been added. This makes it possible
+  to compute parameter-shift gradients of these coefficients on devices that natively
   support Hamiltonians.
   [(#1551)](https://github.com/PennyLaneAI/pennylane/pull/1551)
 
@@ -324,8 +383,8 @@
 * The `MultiControlledX` class now inherits from `Operation` instead of `ControlledQubitUnitary` which makes the `MultiControlledX` gate a non-parameterized gate.
   [(#1557)](https://github.com/PennyLaneAI/pennylane/pull/1557)
 
-* The `utils.sparse_hamiltonian` function can now deal with non-integer 
-  wire labels, and it throws an error for the edge case of observables that are 
+* The `utils.sparse_hamiltonian` function can now deal with non-integer
+  wire labels, and it throws an error for the edge case of observables that are
   created from multi-qubit operations.
   [(#1550)](https://github.com/PennyLaneAI/pennylane/pull/1550)
 
@@ -386,10 +445,10 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 * The QFT operation is moved to template
   [(#1548)](https://github.com/PennyLaneAI/pennylane/pull/1548)
-  
-* The `qml.ResetError` is now supported for `default.mixed` device. 
+
+* The `qml.ResetError` is now supported for `default.mixed` device.
   [(#1541)](https://github.com/PennyLaneAI/pennylane/pull/1541)
-  
+
 * `QNode.diff_method` will now reflect which method was selected from `diff_method="best"`.
   [(#1568)](https://github.com/PennyLaneAI/pennylane/pull/1568)
 
@@ -397,8 +456,19 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
   floats, ints, lists and numpy arrays and return numpy output but can not be differentiated.
   [(#1585)](https://github.com/PennyLaneAI/pennylane/pull/1585)
 
+* QNodes now include validation to warn users if a supplied keyword argument is not one of the
+  recognized arguments. [(#1496)](https://github.com/PennyLaneAI/pennylane/pull/1591)
 
 <h3>Breaking changes</h3>
+
+* Specifying `shots=None` with `qml.sample` was previously deprecated.
+  From this release onwards, setting `shots=None` when sampling will
+  raise an error also for `default.qubit.jax`.
+  [(#1629)](https://github.com/PennyLaneAI/pennylane/pull/1629)
+
+* An error is raised during QNode creation when a user requests backpropagation on
+  a device with finite-shots.
+  [(#1588)](https://github.com/PennyLaneAI/pennylane/pull/1588)
 
 * The class `qml.Interferometer` is deprecated and will be renamed `qml.InterferometerUnitary`
   after one release cycle.
@@ -408,7 +478,7 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
   Temporary backward compatibility has been added to support the use of `_stepsize` for one
   release cycle. `update_stepsize` method is deprecated.
   [(#1625)](https://github.com/PennyLaneAI/pennylane/pull/1625)
-  
+
 
 <h3>Bug fixes</h3>
 
@@ -438,9 +508,9 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 * The `qml.Identity` operation is placed under the sections Qubit observables and CV observables.
   [(#1576)](https://github.com/PennyLaneAI/pennylane/pull/1576)
 
-* Updated the documentation of `qml.grouping`, `qml.kernels` and `qml.qaoa` modules to present 
+* Updated the documentation of `qml.grouping`, `qml.kernels` and `qml.qaoa` modules to present
   the list of functions first followed by the technical details of the module.
-  [(#1581)](https://github.com/PennyLaneAI/pennylane/pull/1581) 
+  [(#1581)](https://github.com/PennyLaneAI/pennylane/pull/1581)
 
 * Recategorized Qubit operations into new and existing categories so that code for each
   operation is easier to locate.
@@ -451,10 +521,11 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 This release contains contributions from (in alphabetical order):
 
 Vishnu Ajith, Akash Narayanan B, Thomas Bromley, Olivia Di Matteo, Sahaj Dhamija, Tanya Garg, Josh Izaac,
-Prateek Jain, Ankit Khandelwal, Christina Lee, Johannes Jakob Meyer, Romain Moyard, Esteban Payares, Pratul Saini,
-Maria Schuld, Arshpreet Singh, Ingrid Strandberg, Slimane Thabet, David Wierichs, Vincent Wong.
+Prateek Jain, Ankit Khandelwal, Christina Lee, Ian McLean, Johannes Jakob Meyer, Romain Moyard, Esteban Payares,
+Pratul Saini, Maria Schuld, Arshpreet Singh, Ingrid Strandberg, Slimane Thabet, Antal Száva, David Wierichs,
+Vincent Wong.
 
-# Release 0.17.0 (current release)
+# Release 0.17.0
 
 <h3>New features since the last release</h3>
 
@@ -1009,7 +1080,7 @@ Maria Schuld, Arshpreet Singh, Ingrid Strandberg, Slimane Thabet, David Wierichs
 * Fixed a bug in the initialization of `QubitUnitary` where the size of
   the matrix was not checked against the number of wires.
   [(#1439)](https://github.com/PennyLaneAI/pennylane/pull/1439)
-  
+
 <h3>Documentation</h3>
 
 * Improved Contribution Guide and Pull Requests Guide.
