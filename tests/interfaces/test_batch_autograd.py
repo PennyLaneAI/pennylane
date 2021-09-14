@@ -439,6 +439,38 @@ class TestAutogradExecuteIntegration:
         expected = [[-np.sin(a), 0], [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    def test_tape_no_parameters(self, execute_kwargs, tol):
+        """Test that a tape with no parameters is correctly
+        ignored during the gradient computation"""
+        dev = qml.device("default.qubit", wires=1)
+
+        def cost(params):
+            with qml.tape.JacobianTape() as tape1:
+                qml.Hadamard(0)
+                qml.expval(qml.PauliX(0))
+
+            with qml.tape.JacobianTape() as tape2:
+                qml.RY(np.array(0.5, requires_grad=False), wires=0)
+                qml.expval(qml.PauliZ(0))
+
+            with qml.tape.JacobianTape() as tape3:
+                qml.RY(params[0], wires=0)
+                qml.RX(params[1], wires=0)
+                qml.expval(qml.PauliZ(0))
+
+            return sum(execute([tape1, tape2, tape3], dev, **execute_kwargs))
+
+        params = np.array([0.1, 0.2], requires_grad=True)
+        x, y = params
+
+        res = cost(params)
+        expected = 1 + np.cos(0.5) + np.cos(x) * np.cos(y)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        grad = qml.grad(cost)(params)
+        expected = [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)]
+        assert np.allclose(grad, expected, atol=tol, rtol=0)
+
     def test_reusing_quantum_tape(self, execute_kwargs, tol):
         """Test re-using a quantum tape by passing new parameters"""
         a = np.array(0.1, requires_grad=True)
@@ -634,13 +666,14 @@ class TestAutogradExecuteIntegration:
 
         expected = np.array(
             [
-                [[-np.sin(x) / 2, 0], [np.sin(x) / 2, 0]],
+                [[-np.sin(x) / 2, 0], [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2]],
                 [
-                    [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2],
+                    [np.sin(x) / 2, 0],
                     [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
                 ],
             ]
         )
+
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_ragged_differentiation(self, execute_kwargs, tol):

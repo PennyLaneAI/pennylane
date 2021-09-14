@@ -318,7 +318,8 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None)
             vjp_ = processing_fns[t_idx](res_t)
 
             if vjp_ is None:
-                vjps.append(None)
+                if reduction == "append":
+                    vjps.append(None)
                 continue
 
             if isinstance(reduction, str):
