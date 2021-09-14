@@ -1435,7 +1435,7 @@ class TestSamples:
         shots = 100
         dev = qml.device("default.qubit.torch", wires=2, shots=shots)
 
-        @qml.qnode(dev, diff_method="backprop", interface="torch")
+        @qml.qnode(dev, diff_method=None, interface="torch")
         def circuit(a):
             qml.RX(a, wires=0)
             return qml.sample(qml.PauliZ(0))
@@ -1451,7 +1451,7 @@ class TestSamples:
         """Test that the probability of a subset of wires is accurately estimated."""
         dev = qml.device("default.qubit.torch", wires=2, shots=1000)
 
-        @qml.qnode(dev, diff_method="backprop", interface="torch")
+        @qml.qnode(dev, diff_method=None, interface="torch")
         def circuit():
             qml.PauliX(0)
             return qml.probs(wires=[0])
@@ -1467,7 +1467,7 @@ class TestSamples:
         """Test that the probability of a subset of wires is accurately estimated."""
         dev = qml.device("default.qubit.torch", wires=2, shots=1000)
 
-        @qml.qnode(dev, diff_method="backprop", interface="torch")
+        @qml.qnode(dev, diff_method=None, interface="torch")
         def circuit():
             qml.PauliX(0)
             qml.PauliX(1)
@@ -1485,7 +1485,7 @@ class TestSamples:
         of shots produces a numeric tensor"""
         dev = qml.device("default.qubit.torch", wires=3, shots=1000)
 
-        @qml.qnode(dev, diff_method="backprop", interface="torch")
+        @qml.qnode(dev, diff_method=None, interface="torch")
         def circuit(a, b):
             qml.RX(a, wires=[0])
             qml.RX(b, wires=[1])
@@ -1502,26 +1502,6 @@ class TestSamples:
         # leave it here for completeness.
         # expected = [torch.cos(a), torch.cos(a) * torch.cos(b)]
         # assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_estimating_expectation_values_not_differentiable(self, tol):
-        """Test that finite shots results in non-differentiable QNodes"""
-
-        dev = qml.device("default.qubit.torch", wires=3, shots=1000)
-
-        @qml.qnode(dev, diff_method="backprop", interface="torch")
-        def circuit(a, b):
-            qml.RX(a, wires=[0])
-            qml.RX(b, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
-
-        a = torch.tensor(0.543)
-        b = torch.tensor(0.43)
-
-        res = circuit(a, b)
-
-        with pytest.raises(RuntimeError):
-            res.backward()
 
 
 class TestHighLevelIntegration:
