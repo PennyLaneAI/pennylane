@@ -36,7 +36,7 @@
     To revert to the previous behaviour of returning the metric tensor with respect to gate
     arguments, `qml.metric_tensor(qnode, hybrid=False)` can be passed.
 
-    ```
+    ```pycon
     >>> qml.metric_tensor(circuit, hybrid=False)(x)
     array([[0.25      , 0.        , 0.        ],
            [0.        , 0.25      , 0.        ],

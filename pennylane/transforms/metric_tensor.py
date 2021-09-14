@@ -45,7 +45,7 @@ def expand_fn(tape):
 @functools.partial(batch_transform, expand_fn=expand_fn)
 def metric_tensor(tape, diag_approx=False):
     """Returns a function that computes the block-diagonal approximation of the metric tensor
-    of a given QNode.
+    of a given QNode or quantum tape.
 
     .. note::
 
@@ -55,12 +55,11 @@ def metric_tensor(tape, diag_approx=False):
 
     Args:
         qnode (.QNode or .QuantumTape): quantum tape or QNode to find the metric tensor of
-        diag_approx (bool): iff True, use the diagonal approximation
+        diag_approx (bool): if True, use the diagonal approximation
         hybrid (bool): Specifies whether classical processing inside a QNode
             should be taken into account when transforming a QNode.
 
-            - If ``True``, and classical processing is detected and this
-              option is set to ``True``, the Jacobian of the classical
+            - If ``True``, and classical processing is detected, the Jacobian of the classical
               processing will be computed and included. When evaluated, the
               returned metric tensor will be with respect to the QNode arguments.
 
@@ -97,7 +96,7 @@ def metric_tensor(tape, diag_approx=False):
             qml.CNOT(wires=[1, 2])
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)), qml.expval(qml.PauliY(2))
 
-    We can use the ``metric_tensor`` function to generate a new function, that returns the
+    We can use the ``metric_tensor`` transform to generate a new function that returns the
     metric tensor of this QNode:
 
     >>> met_fn = qml.metric_tensor(circuit)
@@ -108,7 +107,7 @@ def metric_tensor(tape, diag_approx=False):
             [0.    , 0.    , 0.0025, 0.0024],
             [0.    , 0.    , 0.0024, 0.0123]], requires_grad=True)
 
-    The returned metric tensor is also fully differentiable, in all interfaces.
+    The returned metric tensor is also fully differentiable in all interfaces.
     For example, differentiating the ``(3, 2)`` element:
 
     >>> grad_fn = qml.grad(lambda x: met_fn(x)[3, 2])
@@ -121,7 +120,7 @@ def metric_tensor(tape, diag_approx=False):
         This transform can also be applied to low-level
         :class:`~.QuantumTape` objects. This will result in no implicit quantum
         device evaluation. Instead, the processed tapes, and post-processing
-        function, which together define the gradient are directly returned:
+        function, which together define the metric tensor are directly returned:
 
         >>> params = np.array([1.7, 1.0, 0.5], requires_grad=True)
         >>> with qml.tape.QuantumTape() as tape:
@@ -136,11 +135,11 @@ def metric_tensor(tape, diag_approx=False):
          <QuantumTape: wires=[0, 1], params=1>,
          <QuantumTape: wires=[0, 1], params=3>]
 
-        This can be useful if the underlying circuits representing the gradient
+        This can be useful if the underlying circuits representing the metric tensor
         computation need to be analyzed.
 
         The output tapes can then be evaluated and post-processed to retrieve
-        the gradient:
+        the metric tensor:
 
         >>> dev = qml.device("default.qubit", wires=2)
         >>> fn(qml.execute(tapes, dev, None))
