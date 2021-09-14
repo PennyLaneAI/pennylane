@@ -17,16 +17,16 @@ This subpackage provides the functionality to perform differentiable Hartree-Foc
 from .basis_data import *
 from .basis_set import *
 from .integrals import (
-    contracted_norm,
-    expansion,
-    gaussian_overlap,
-    generate_overlap,
-    primitive_norm,
     _boys,
     _hermite_coulomb,
-    nuclear_attraction,
-    generate_attraction,
+    contracted_norm,
     electron_repulsion,
-    generate_repulsion
+    expansion,
+    gaussian_overlap,
+    generate_attraction,
+    generate_overlap,
+    generate_repulsion,
+    nuclear_attraction,
+    primitive_norm,
 )
 from .molecule import *
