@@ -529,7 +529,6 @@ class Device(abc.ABC):
             # Evaluations and gradients are paired, so that
             # devices can re-use the device state for the
             # gradient computation (if applicable).
-            circuit = self.expand_fn(circuit)
             res.append(self.batch_execute([circuit])[0])
             jacs.append(gradient_method(circuit, **kwargs))
 
@@ -555,7 +554,7 @@ class Device(abc.ABC):
             shape ``(output_shape, num_params)``.
         """
         gradient_method = getattr(self, method)
-        return [gradient_method(self.expand_fn(circuit), **kwargs) for circuit in circuits]
+        return [gradient_method(circuit, **kwargs) for circuit in circuits]
 
     def expand_fn(self, circuit, max_expansion=10):
         """Method for expanding or decomposing an input circuit.

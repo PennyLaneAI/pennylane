@@ -55,6 +55,9 @@ def gradient_expand(tape, depth=10):
         op = tape.get_operation(idx)[0]
         requires_expansion = unsupported_op(op)
 
+        if requires_expansion:
+            break
+
     if requires_expansion:
         return tape.expand(depth=depth, stop_at=stop_cond)
 

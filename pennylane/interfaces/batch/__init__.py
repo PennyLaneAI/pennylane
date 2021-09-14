@@ -299,6 +299,9 @@ def execute(
     if gradient_fn == "device":
         # gradient function is a device method
 
+        for i, tape in enumerate(tapes):
+            tapes[i] = device.expand_fn(tape)
+
         if mode in ("forward", "best"):
             # replace the forward execution function to return
             # both results and gradients
