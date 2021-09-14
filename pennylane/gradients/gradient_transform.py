@@ -19,9 +19,7 @@ import pennylane as qml
 
 unsupported_op = lambda op: op.grad_method is None
 supported_op = lambda op: op.grad_method is not None
-trainable_op = lambda op: any(qml.math.requires_grad(p) for p in op.parameters) or getattr(
-    op, "trainable", False
-)
+trainable_op = lambda op: any(qml.math.requires_grad(p) for p in op.parameters)
 
 
 # Define the stopping condition for the expansion
@@ -59,7 +57,10 @@ def gradient_expand(tape, depth=10):
             break
 
     if requires_expansion:
-        return tape.expand(depth=depth, stop_at=stop_cond)
+        new_tape = tape.expand(depth=depth, stop_at=stop_cond)
+        params = new_tape.get_parameters(trainable_only=False)
+        new_tape.trainable_params = qml.math.get_trainable_indices(params)
+        return new_tape
 
     return tape
 
