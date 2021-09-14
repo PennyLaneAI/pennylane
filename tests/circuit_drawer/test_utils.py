@@ -34,7 +34,7 @@ class TestDefaultWireMap:
         ops = [qml.PauliX(0), qml.PauliX(2), qml.PauliX(1)]
 
         wire_map = default_wire_map(ops)
-        assert wire_map == {0:0, 2:1, 1:2}
+        assert wire_map == {0: 0, 2: 1, 1: 2}
 
     def test_string_wires(self):
         """Test wire map works with string labelled wires."""
@@ -43,6 +43,7 @@ class TestDefaultWireMap:
 
         wire_map = default_wire_map(ops)
         assert wire_map == {"a": 0, "b": 1, "c": 2}
+
 
 class TestConvertWireOrder:
     """Tests the ``convert_wire_order`` utility function."""
@@ -54,16 +55,16 @@ class TestConvertWireOrder:
 
         wire_map = convert_wire_order(ops)
 
-        assert wire_map == {0:0, 2:1, 1:2}
+        assert wire_map == {0: 0, 2: 1, 1: 2}
 
     def test_wire_order_ints(self):
         """Tests works with integer wires."""
 
         ops = [qml.PauliX(0), qml.PauliX(2), qml.PauliX(1)]
-        wire_order = [2,1,0]
+        wire_order = [2, 1, 0]
 
         wire_map = convert_wire_order(ops, wire_order)
-        assert wire_map == {2:0, 1:1, 0:2}
+        assert wire_map == {2: 0, 1: 1, 0: 2}
 
     def test_wire_order_str(self):
         """Test works with string wires."""

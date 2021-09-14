@@ -15,6 +15,7 @@
 This module contains some useful utility functions for circuit drawing.
 """
 
+
 def default_wire_map(ops):
     """Create a dictionary mapping used wire labels to non-negative integers
 
@@ -26,12 +27,13 @@ def default_wire_map(ops):
     """
 
     # Use dictionary to preserve ordering, sets break order
-    used_wires = {wire:None for op in ops for wire in op.wires}
-    return dict(zip(used_wires, range(len(used_wires)) ))
+    used_wires = {wire: None for op in ops for wire in op.wires}
+    return dict(zip(used_wires, range(len(used_wires))))
+
 
 def convert_wire_order(ops, wire_order=None, show_all_wires=False):
     """Creates the mapping between wire labels and place in order.
-    
+
     Args:
         ops Iterable[~.Operator]: a list of operations
         wire_order Sequence[Any]: the order (from top to bottom) to print the wires
@@ -50,5 +52,4 @@ def convert_wire_order(ops, wire_order=None, show_all_wires=False):
         used_wires = {wire for op in ops for wire in op.wires}
         wire_order = [wire for wire in wire_order if wire in used_wires]
 
-    return dict(zip(wire_order, range(len(wire_order)) ))
-
+    return dict(zip(wire_order, range(len(wire_order))))

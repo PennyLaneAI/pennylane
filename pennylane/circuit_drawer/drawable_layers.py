@@ -17,6 +17,7 @@ This module contains a helper function to sort operations into layers.
 
 from .utils import default_wire_map
 
+
 def _recursive_find_layer(checking_layer, op_occupied_wires, occupied_wires_per_layer):
     """Determine correct layer for operation with ``op_occupied_wires``
 
@@ -120,10 +121,10 @@ def drawable_grid(ops, wire_map=None):
     for layer, layer_ops in enumerate(ops_per_layer):
         for op in layer_ops:
             if len(op.wires) == 0:
-                #apply to all wires, like state and sample
+                # apply to all wires, like state and sample
                 for wire in range(n_wires):
                     grid[wire][layer] = op
-            
+
             for wire in op.wires:
                 grid[wire_map[wire]][layer] = op
     return grid
