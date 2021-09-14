@@ -68,7 +68,7 @@ def _decomposition_1_cnot(U, wires):
     # -U-SWAP- = -D--X-SWAP-A-
     # This ensures that the internal part of the decomposition has determinant 1.
     swap_U = np.exp(1j * np.pi / 4) * math.dot(math.cast_like(SWAP, U), U)
-    
+
     # First let's compute gamma(u). For the one-CNOT case, uuT is always real.
     u = math.dot(math.cast_like(Edag, U), math.dot(swap_U, math.cast_like(E, U)))
     uuT = math.dot(u, math.T(u))
@@ -76,11 +76,11 @@ def _decomposition_1_cnot(U, wires):
     # If uuT is not perfectly real, then this is actually a 2-CNOT gate
     if qml.math.allclose(qml.math.real(uuT), qml.math.zeros_like(uuT)):
         return _decomposition_2_cnots(U, wires)
-    
+
     # Since uuT is real, we can use eigh of its real part. eigh also orders the
     # eigenvalues in ascending order.
     ev_p, p = math.linalg.eigh(qml.math.real(uuT))
-        
+
     # Fix the determinant if necessary so that p is in SO(4)
     if math.linalg.det(p) < 0:
         p = math.dot(p, math.cast_like(LAST_COL_NEG, p))
@@ -120,7 +120,7 @@ def _decomposition_1_cnot(U, wires):
     B_ops = zyz_decomposition(B, wires[0])
     C_ops = zyz_decomposition(C, wires[0])
     D_ops = zyz_decomposition(D, wires[1])
-        
+
     return C_ops + D_ops + [qml.CNOT(wires=[wires[0], wires[1]])] + A_ops + B_ops
 
 
@@ -248,7 +248,7 @@ def _decomposition_2_cnots(U, wires):
 
         delta = (x + y) / 2
         phi = (x - y) / 2
-    
+
     # This is the "interior" part of the decomposition
     # Note that we don't need to add any SWAPs, because the determinant obtained
     # with two CNOTs is already +1, unlike the 1- or 3-CNOT case where it is -1.
@@ -271,7 +271,7 @@ def _decomposition_2_cnots(U, wires):
 
     # Now we find the A, B, C, D in SU(2), and return the decomposition
     A, B, C, D = _extract_su2su2_prefactors(U, V)
-     
+
     A_ops = zyz_decomposition(A, wires[0])
     B_ops = zyz_decomposition(B, wires[1])
     C_ops = zyz_decomposition(C, wires[0])
