@@ -535,9 +535,9 @@ def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta
 
     where :math:`E` and :math:`R` represent the Hermite Gaussian expansion coefficient and the
     Hermite Coulomb integral, respectively. The sums go over the angular momentum quantum numbers
-    :math:`l_i + l_j + 1`, :math:`m_i + m_j + 1` and :math:`n_i + n_j + 1` for :math:`t, u, v` and
-    :math:`r, s, w`. The exponents of the Gaussian functions are used to compute :math:`p` and
-    :math:`q` as :math:`p = \alpha + \beta` and :math:`q = \gamma + \delta`.
+    :math:`l_i + l_j + 1`, :math:`m_i + m_j + 1` and :math:`n_i + n_j + 1` respectively for
+    :math:`t, u, v` and :math:`r, s, w`. The exponents of the Gaussian functions are used to compute
+    :math:`p` and :math:`q` as :math:`p = \alpha + \beta` and :math:`q = \gamma + \delta`.
 
     Args:
         la (tuple[int]): angular momentum for the first Gaussian function

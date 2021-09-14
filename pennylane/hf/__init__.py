@@ -17,8 +17,6 @@ This subpackage provides the functionality to perform differentiable Hartree-Foc
 from .basis_data import *
 from .basis_set import *
 from .integrals import (
-    _boys,
-    _hermite_coulomb,
     contracted_norm,
     electron_repulsion,
     expansion,
