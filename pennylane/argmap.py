@@ -143,10 +143,11 @@ class ArgMap(dict):
         return super().get(key, default)
 
     def consistency_check(self, check_values=False):
+        r"""Check the stored keys and optionally values for consistency."""
         scalar_variables = {key[0] for key in self if key[1] is None}
         _single_arg_by_key = (key[0] is None for key in self)
         if any(_single_arg_by_key) and not all(_single_arg_by_key):
-            raise ArgMapError(f"Inconsistent keys in ArgMap for single argument with index.")
+            raise ArgMapError("Inconsistent keys in ArgMap for single argument with index.")
         shapes = {}
         for key in self:
             # Check for scalar variables
@@ -161,6 +162,17 @@ class ArgMap(dict):
                     raise ArgMapError(
                         f"Inconsistent keys in ArgMap for argument with index {key[0]}"
                     )
+        if check_values:
+            types = [(key, type(val)) for key, val in self.items()]
+            if not all((_type[1] == types[0][1] for _type in types)):
+                raise ArgMapError(
+                    "\n".join(
+                        (
+                            ["Inconsistent value types in ArgMap"]
+                            + [f"{_type[0]}: {_type[1]}" for _type in types]
+                        )
+                    )
+                )
 
 
 # Todo: figure out behaviour for keys = {(0, 1), (2, 3), (1, 2)}
