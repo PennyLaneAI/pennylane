@@ -47,6 +47,9 @@
 
 <h3>Bug fixes</h3>
 
+* The device suite tests can now execute successfully if no shots configuration variable is given.
+  [(#1641)](https://github.com/PennyLaneAI/pennylane/pull/1641)
+
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
@@ -481,9 +484,6 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 
 <h3>Bug fixes</h3>
-
-* The device suite tests can now execute successfully if no shots configuration variable is given.
-  [(#1641)](https://github.com/PennyLaneAI/pennylane/pull/1641)
 
 * `MottonenStatepreparation` can now be run with a single wire label not in a list.
   [(#1620)](https://github.com/PennyLaneAI/pennylane/pull/1620)
