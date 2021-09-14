@@ -102,18 +102,17 @@ def drawable_grid(ops, wire_map=None):
     Returns:
         List[List[~.Operator]] : layers compatible with grid objects
     """
+    if wire_map is None:
+        wire_map = default_wire_map(ops)
 
     if len(ops) == 0:
-        return [[] for _ in range(len(wire_order))]
+        if len(wire_map) == 0:
+            return [[]]
+        return [[] for _ in range(len(wire_map))]
 
-    wire_map = _convert_wire_order(ops, wire_order, show_all_wires)
+    ops_per_layer = drawable_layers(ops, wire_map=wire_map)
 
-    ops_per_layer = drawable_layers(ops, wire_order=wire_map, show_all_wires=show_all_wires)
-
-    if show_all_wires:
-        n_wires = len(wire_order)
-    else:
-        n_wires = len({wire for op in ops for wire in op.wires})
+    n_wires = len(wire_map)
     n_layers = len(ops_per_layer)
 
     grid = [[None for _ in range(n_layers)] for _ in range(n_wires)]
