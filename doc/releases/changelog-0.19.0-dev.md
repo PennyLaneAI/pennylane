@@ -1,5 +1,3 @@
-Let's leave this here momentarily
-
 # Release 0.19.0-dev (development release)
 
 <h3>New features since last release</h3>
@@ -53,7 +51,6 @@ Let's leave this here momentarily
 
 <h3>Contributors</h3>
 
-This release contains contributions from (in alphabetical order, one name per line):
+This release contains contributions from (in alphabetical order):
 
-* Christina Lee
-* David Wierichs
+Christina Lee, David Wierichs
