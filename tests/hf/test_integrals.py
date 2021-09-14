@@ -28,6 +28,7 @@ from pennylane.hf.integrals import (
     generate_overlap,
     generate_repulsion,
     primitive_norm,
+    _hermite_coulomb,
 )
 from pennylane.hf.molecule import Molecule
 
@@ -280,16 +281,6 @@ def test_gradient(symbols, geometry, alpha, coeff):
 
 
 @pytest.mark.parametrize(
-    ("n", "t", "f_ref"),
-    [(1.25, 0.00, 0.2857142857142857), (2.75, 1.23, 0.061750771828252976)],
-)
-def test_boys(n, t, f_ref):
-    r"""Test that the Boys function is evaluated correctly."""
-    f = _boys(n, t)
-    assert np.allclose(f, f_ref)
-
-
-@pytest.mark.parametrize(
     ("symbols", "geometry", "alpha", "coeff", "r", "a_ref"),
     [
         # trivial case
@@ -522,3 +513,31 @@ def test_gradient_repulsion(symbols, geometry, alpha, coeff):
 
     assert np.allclose(g_alpha, g_ref_alpha)
     assert np.allclose(g_coeff, g_ref_coeff)
+
+
+@pytest.mark.parametrize(
+    ("n", "t", "f_ref"),
+    [(1.25, 0.00, 0.2857142857142857), (2.75, 1.23, 0.061750771828252976)],
+)
+def test_boys(n, t, f_ref):
+    r"""Test that the Boys function is evaluated correctly."""
+    f = _boys(n, t)
+    assert np.allclose(f, f_ref)
+
+
+@pytest.mark.parametrize(
+    ("t", "u", "v", "n", "p", "dr", "h_ref"),
+    [
+        (0, 0, 0, 0, 6.85050183, np.array([0.0, 0.0, 0.0]), 1.0),
+        (0, 0, 1, 0, 6.85050183, np.array([0.0, 0.0, 0.0]), 0.0),
+        (0, 0, 2, 0, 6.85050183, np.array([0.0, 0.0, 0.0]), -4.56700122),
+        (0, 2, 0, 0, 6.85050183, np.array([0.0, 0.0, 0.0]), -4.56700122),
+        (0, 1, 0, 0, 6.85050183, np.array([0.0, 0.0, 0.0]), 0.0),
+        (2, 1, 0, 0, 6.85050183, np.array([0.0, 0.0, 0.0]), 0.0),
+        (1, 1, 0, 0, 6.85050183, np.array([0.0, 0.0, 0.0]), 0.0)
+    ],
+)
+def test_hermite_coulomb(t, u, v, n, p, dr, h_ref):
+    r"""Test that the _hermite_coulomb function returns a correct value."""
+    h = _hermite_coulomb(t, u, v, n, p, dr)
+    assert np.allclose(h, h_ref)
