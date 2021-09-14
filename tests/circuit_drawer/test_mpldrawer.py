@@ -277,17 +277,19 @@ class TestCTRL:
 
         plt.close()
 
-    def test_ctrl_color(self):
+    def test_ctrl_formatting(self):
         """Tests two control wires with no target."""
 
         drawer = MPLDrawer(1, 3)
 
         ctrl_wires = (0, 1)
         rgba_red = (1, 0, 0, 1)
-        drawer.ctrl(0, ctrl_wires, control_values=[1, 0], options={"color": rgba_red})
+        options={"color": rgba_red, "linewidth": 4}
+        drawer.ctrl(0, ctrl_wires, control_values=[1, 0], options=options)
 
         ctrl_line = drawer.ax.lines[3]
         assert ctrl_line.get_color() == rgba_red
+        assert ctrl_line.get_linewidth() == 4
 
         closed_circ = drawer.ax.patches[0]
         assert closed_circ.get_facecolor() == rgba_red
@@ -295,8 +297,34 @@ class TestCTRL:
         open_circ = drawer.ax.patches[1]
         assert open_circ.get_edgecolor() == rgba_red
         assert open_circ.get_facecolor() == to_rgba(plt.rcParams["axes.facecolor"])
+        assert open_circ.get_linewidth() == 4
 
         plt.close()
+
+    def test_ctrl_circ(self):
+        """Test only the ``_ctrl_circ`` private method."""
+
+        drawer = MPLDrawer(1,1)
+        drawer._ctrl_circ(0,0)
+        circ = drawer.ax.patches[0]
+
+        assert circ.get_facecolor() == to_rgba(plt.rcParams["lines.color"])
+
+        assert circ.center == (0, 0)
+        assert circ.width == 0.2
+
+        plt.close()
+
+    def test_ctrlo_circ(self):
+        """Test only the ``ctrlo_circ`` private method."""
+
+        drawer = MPLDrawer(1,1)
+        drawer._ctrlo_circ(0,0)
+        circ = drawer.ax.patches[0]
+
+        assert circ.get_facecolor() == to_rgba(plt.rcParams["axes.facecolor"])
+        assert circ.get_edgecolor() == to_rgba(plt.rcParams["lines.color"])
+        assert circ.get_linewidth() == plt.rcParams["lines.linewidth"]
 
     def test_ctrl_target(self):
         """Tests target impacts line extent"""
