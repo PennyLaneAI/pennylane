@@ -147,10 +147,11 @@ class MPLDrawer:
             :target: javascript:void(0);
 
     You can also manually control the styles of individual plot elements via the drawer class.
-    The control-type methods ``ctrl`` and ``CNOT`` only
-    accept a color keyword. All other gates accept dictionaries of keyword-values pairs for matplotlib object
+    All accept dictionaries of keyword-values pairs for matplotlib object
     components. Acceptable keywords differ based on what's being drawn. For example, you cannot pass ``"fontsize"``
-    to the dictionary controlling how to format a rectangle.
+    to the dictionary controlling how to format a rectangle. For the control-type gates ``CNOT`` and
+    ``ctrl`` the options dictionary can only contain ``'linewidth'``, ``'color'``, or ``'zorder'`` keys.
+
 
     This example demonstrates the different ways you can format the individual elements:
 
@@ -190,7 +191,7 @@ class MPLDrawer:
 
     Each gate takes arguments in order of ``layer`` followed by ``wires``. These translate to ``x`` and
     ``y`` coordinates in the graph. Layer number (``x``) increases as you go right, and wire number
-    (``y``) increases as you go down as the y-axis is inverted. You can pass non-integer values to either keyword.
+    (``y``) increases as you go down; the y-axis is inverted. You can pass non-integer values to either keyword.
     If you have a long label, the gate can span multiple layers and have extra width:
 
     .. code-block:: python
