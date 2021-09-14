@@ -319,16 +319,15 @@ def _boys(n, t):
 
     The Boys function is related to the lower incomplete Gamma function, :math:`\gamma`, as
 
-
     .. math::
 
-    F_n(t) = \frac{1}{2t^{n + 0.5}} \gamma(n + 0.5, t),
+        F_n(t) = \frac{1}{2t^{n + 0.5}} \gamma(n + 0.5, t),
 
     where
 
     .. math::
 
-    \gamma(m, t) = \int_{0}^{t} x^{m-1} e^{-x} dx.
+        \gamma(m, t) = \int_{0}^{t} x^{m-1} e^{-x} dx.
 
     Args:
         n (float): order of the Boys function
@@ -336,7 +335,6 @@ def _boys(n, t):
 
     Returns:
         float: magnitude of the Boys function
-
     """
     if t == 0.0:
         return 1 / (2 * n + 1)
@@ -354,7 +352,7 @@ def _hermite_coulomb(t, u, v, n, p, dr):
 
     .. math::
 
-    R_{000}^n = (-2p)^n F_n(pR_{CP}^2),
+        R_{000}^n = (-2p)^n F_n(pR_{CP}^2),
 
     where :math:`F_n` is the Boys function, :math:`p` is computed from the exponents of the two
     Gaussian functions as :math:`p = \alpha + \beta`, and :math:`R_{CP}` is the distance between the
@@ -364,11 +362,11 @@ def _hermite_coulomb(t, u, v, n, p, dr):
 
     .. math::
 
-    R_{t+1, u, v}^n = t R_{t-1, u, v}^{n+1} + x R_{t, u, v}^{n+1}
+        R_{t+1, u, v}^n = t R_{t-1, u, v}^{n+1} + x R_{t, u, v}^{n+1}
 
-    R_{t, u+1, v}^n = u R_{t, u-1, v}^{n+1} + y R_{t, u, v}^{n+1}
+        R_{t, u+1, v}^n = u R_{t, u-1, v}^{n+1} + y R_{t, u, v}^{n+1}
 
-    R_{t, u, v+1}^n = v R_{t, u, v-1}^{n+1} + z R_{t, u, v}^{n+1}
+        R_{t, u, v+1}^n = v R_{t, u, v-1}^{n+1} + z R_{t, u, v}^{n+1}
 
     where :math:`x`, :math:`y` and :math:`z` are the Cartesian components of :math:`R_{CP}`.
 
@@ -382,7 +380,6 @@ def _hermite_coulomb(t, u, v, n, p, dr):
 
     Returns:
         array[float]: value of the Hermite integral
-
     """
     x, y, z = dr[0], dr[1], dr[2]
     T = p * (dr ** 2).sum(axis=0)
@@ -469,6 +466,7 @@ def generate_attraction(r, basis_a, basis_b):
         r (array[float]): position vector of nucleus
         basis_a (BasisFunction): first basis function
         basis_b (BasisFunction): second basis function
+
     Returns:
         function: function that computes the nuclear attraction integral
 
