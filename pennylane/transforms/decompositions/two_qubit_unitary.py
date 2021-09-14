@@ -125,15 +125,22 @@ def _decomposition_1_cnot(U, wires):
 
 
 def _extract_su2su2_prefactors(U, V):
-    r"""U, V are SU(4) matrices for which there exists A, B, C, D such that
+    r"""This function is used for the case of 2 CNOTs and 3 CNOTs. It does something
+    similar as the 1-CNOT case, but there is no special form for one of the
+    SO(4) operations.
+
+    Suppose U, V are SU(4) matrices for which there exists A, B, C, D such that
     (A \otimes B) V (C \otimes D) = U. The problem is to find A, B, C, D in SU(2)
     in an analytic and fully differentiable manner.
 
     This decomposition is possible when U and V are in the same double coset of
     SU(4), meaning there exists G, H in SO(4) s.t. G (Edag V E) H = (Edag U
-    E). This is guaranteed here by how V was constructed using the
-    _select_rotation_angles method. Then, we can use the fact that E SO(4) Edag
-    gives us something in SU(2) x SU(2) to give A, B, C, D.
+    E). This is guaranteed here by how V was constructed in both the
+    _decomposition_2_cnots and _decomposition_3_cnots methods.
+
+    Then, we can use the fact that E SO(4) Edag gives us something in SU(2) x
+    SU(2) to give A, B, C, D.
+
     """
 
     # A lot of the work here happens in the magic basis. Essentially, we
@@ -152,18 +159,32 @@ def _extract_su2su2_prefactors(U, V):
     vvT = math.dot(v, math.T(v))
 
     # First, we find a matrix p (hopefully) in SO(4) s.t. p^T u u^T p is diagonal.
-    # Since uuT is complex and symmetric, both its real / imag parts share a set
-    # of real-valued eigenvectors.
-    if math.get_interface(u) == "tensorflow":
-        ev_p, p = math.linalg.eig(math.real(uuT))
+    # Note that if uuT or vvT is purely real, we can use eigh which will automatically
+    # order the eigensystem for us.
+    if math.allclose(math.imag(uuT), math.zeros_like(u)):
+        ev_p, p = math.linalg.eigh(math.real(uuT))
     else:
         ev_p, p = math.linalg.eig(uuT)
 
     # We also do this for v, i.e., find q (hopefully) in SO(4) s.t. q^T v v^T q is diagonal.
-    if math.get_interface(u) == "tensorflow":
-        ev_q, q = math.linalg.eig(math.real(vvT))
+    if math.allclose(math.imag(vvT), math.zeros_like(v)):
+        ev_q, q = math.linalg.eigh(math.real(vvT))
     else:
         ev_q, q = math.linalg.eig(vvT)
+
+    # Now we must sort the eigenvalues into the same order if this is not
+    # a special case where it is already done.
+    if not math.allclose(ev_p, ev_q):
+        new_q_order = []
+        for _, eigval in enumerate(ev_p):
+            are_close = [math.allclose(x, eigval) for x in ev_q]
+
+            if any(are_close):
+                new_q_order.append(math.argmax(are_close))
+
+        # Reshuffle the columns.
+        q_perm = np.identity(4)[:, np.array(new_q_order)]
+        q = math.dot(q, math.cast_like(q_perm, q))
 
     # If determinant of p is not 1, it is in O(4) but not SO(4), and has
     # determinant -1. We can transform it to SO(4) by simply negating one
@@ -171,24 +192,9 @@ def _extract_su2su2_prefactors(U, V):
     if not math.allclose(math.linalg.det(p), 1.0):
         p = math.dot(p, math.cast_like(LAST_COL_NEG, p))
 
-    new_q_order = []
-
-    # There are two cases here: one is when there are no repeated eigenvalues
-    # The other is when there *are* 
-    for _, eigval in enumerate(ev_p):
-        are_close = [math.allclose(x, eigval) for x in ev_q]
-
-        if any(are_close):
-            new_q_order.append(math.argmax(are_close))
-
-    # Reshuffle the columns.
-    q_perm = np.identity(4)[:, np.array(new_q_order)]
-    q = math.dot(q, math.cast_like(q_perm, q))
-
     # Depending on the sign of the permutation, it may be that q is in O(4) but
     # not SO(4). Again we can fix this by simply negating a column.
-    q_in_so4 = math.allclose(math.linalg.det(q), 1.0)
-    if not q_in_so4:
+    if not math.allclose(math.linalg.det(q), 1.0):
         q = math.dot(q, math.cast_like(LAST_COL_NEG, q))
 
     # Now, we should have p, q in SO(4) such that p^T u u^T p = q^T v v^T q.
@@ -230,11 +236,13 @@ def _decomposition_2_cnots(U, wires):
     # -U- = -A--C--X--C-
     # -U- = -B--X--C--D-
     #
+    # or some variant of this, where the two CNOTs are adjacent.
+    #
     # What happens here is that the set of evs is -1, -1, 1, 1 and we can write
     # -U- = -A--X-SZ-X--C-
     # -U- = -B--C-SX-C--D-
     # where SZ and SX are square roots of Z and X respectively. For some reason this
-    # case is not caught naturally with the algorithm below, so we treat it separately.
+    # case is not handled properly with the full algorithm, so we treat it separately.
 
     if math.allclose(math.sort(evs), [-1, -1, 1, 1]):
         interior_decomp = [
@@ -246,14 +254,16 @@ def _decomposition_2_cnots(U, wires):
 
         # S \otimes SX
         inner_matrix = np.array(
-            [[ 0.5+0.5j,  0.5-0.5j,  0. +0.j ,  0. +0.j ],
-             [ 0.5-0.5j,  0.5+0.5j,  0. +0.j ,  0. +0.j ],
-             [ 0. +0.j ,  0. +0.j , -0.5+0.5j,  0.5+0.5j],
-             [ 0. +0.j ,  0. +0.j ,  0.5+0.5j, -0.5+0.5j]
-        ])
+            [
+                [0.5 + 0.5j, 0.5 - 0.5j, 0.0 + 0.0j, 0.0 + 0.0j],
+                [0.5 - 0.5j, 0.5 + 0.5j, 0.0 + 0.0j, 0.0 + 0.0j],
+                [0.0 + 0.0j, 0.0 + 0.0j, -0.5 + 0.5j, 0.5 + 0.5j],
+                [0.0 + 0.0j, 0.0 + 0.0j, 0.5 + 0.5j, -0.5 + 0.5j],
+            ]
+        )
     else:
-        # For the 2-CNOT case, eigenvalues come in conjugate pairs.
-        # Weneed to find two non-conjugate eigenvalues to extract the angles.
+        # For the non-special case, the eigenvalues come in conjugate pairs.
+        # We need to find two non-conjugate eigenvalues to extract the angles.
         x = math.angle(evs[0])
         y = math.angle(evs[1])
 
@@ -277,9 +287,7 @@ def _decomposition_2_cnots(U, wires):
 
     # We need the matrix representation of this interior part, V, in order to
     # decompose U = (A \otimes B) V (C \otimes D)
-    V = math.dot(
-        math.cast_like(CNOT10, U), math.dot(inner_matrix, math.cast_like(CNOT10, U))
-    )
+    V = math.dot(math.cast_like(CNOT10, U), math.dot(inner_matrix, math.cast_like(CNOT10, U)))
 
     # Now we find the A, B, C, D in SU(2), and return the decomposition
     A, B, C, D = _extract_su2su2_prefactors(U, V)
