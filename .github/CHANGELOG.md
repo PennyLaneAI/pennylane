@@ -456,7 +456,9 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
   floats, ints, lists and numpy arrays and return numpy output but can not be differentiated.
   [(#1585)](https://github.com/PennyLaneAI/pennylane/pull/1585)
 
-
+* QNodes now include validation to warn users if a supplied keyword argument is not one of the	
+  recognized arguments. [(#1496)](https://github.com/PennyLaneAI/pennylane/pull/1591)
+	
 <h3>Breaking changes</h3>
 
 * Specifying `shots=None` with `qml.sample` was previously deprecated.
