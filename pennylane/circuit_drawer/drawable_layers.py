@@ -15,6 +15,7 @@
 This module contains a helper function to sort operations into layers.
 """
 
+from .utils import default_wire_map
 
 def _recursive_find_layer(checking_layer, op_occupied_wires, occupied_wires_per_layer):
     """Determine correct layer for operation with ``op_occupied_wires``

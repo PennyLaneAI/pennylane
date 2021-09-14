@@ -25,10 +25,11 @@ def default_wire_map(ops):
         dict: map from wires to sequential positive integers
     """
 
-    used_wires = {wire for op in ops for wire in op.wires}
+    # Use dictionary to preserve ordering, sets break order
+    used_wires = {wire:None for op in ops for wire in op.wires}
     return dict(zip(used_wires, range(len(used_wires)) ))
 
-def convert_wire_order(ops, wire_order, show_all_wires=False):
+def convert_wire_order(ops, wire_order=None, show_all_wires=False):
     """Creates the mapping between wire labels and place in order.
     
     Args:

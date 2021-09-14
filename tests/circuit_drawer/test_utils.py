@@ -43,3 +43,51 @@ class TestDefaultWireMap:
 
         wire_map = default_wire_map(ops)
         assert wire_map == {"a": 0, "b": 1, "c": 2}
+
+class TestConvertWireOrder:
+    """Tests the ``convert_wire_order`` utility function."""
+
+    def test_no_wire_order(self):
+        """Test works if no wire order passed."""
+
+        ops = [qml.PauliX(0), qml.PauliX(2), qml.PauliX(1)]
+
+        wire_map = convert_wire_order(ops)
+
+        assert wire_map == {0:0, 2:1, 1:2}
+
+    def test_wire_order_ints(self):
+        """Tests works with integer wires."""
+
+        ops = [qml.PauliX(0), qml.PauliX(2), qml.PauliX(1)]
+        wire_order = [2,1,0]
+
+        wire_map = convert_wire_order(ops, wire_order)
+        assert wire_map == {2:0, 1:1, 0:2}
+
+    def test_wire_order_str(self):
+        """Test works with string wires."""
+
+        ops = [qml.CNOT(wires=("a", "b")), qml.PauliX("c")]
+        wire_order = ("c", "b", "a")
+
+        wire_map = convert_wire_order(ops, wire_order)
+        assert wire_map == {"c": 0, "b": 1, "a": 2}
+
+    def test_show_all_wires_false(self):
+        """Test works when `show_all_wires` is set to `False`."""
+
+        ops = [qml.PauliX("a"), qml.PauliY("c")]
+        wire_order = ["a", "b", "c", "d"]
+
+        wire_map = convert_wire_order(ops, wire_order, show_all_wires=False)
+        assert wire_map == {"a": 0, "c": 1}
+
+    def test_show_all_wires_true(self):
+        """Test works when `show_all_wires` is set to `True`."""
+
+        ops = [qml.PauliX("a"), qml.PauliY("c")]
+        wire_order = ["a", "b", "c", "d"]
+
+        wire_map = convert_wire_order(ops, wire_order, show_all_wires=True)
+        assert wire_map == {"a": 0, "b": 1, "c": 2, "d": 3}
