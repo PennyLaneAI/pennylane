@@ -22,5 +22,11 @@ from .integrals import (
     gaussian_overlap,
     generate_overlap,
     primitive_norm,
+    _boys,
+    _hermite_coulomb,
+    nuclear_attraction,
+    generate_attraction,
+    electron_repulsion,
+    generate_repulsion
 )
 from .molecule import *
