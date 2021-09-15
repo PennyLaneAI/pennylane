@@ -88,7 +88,7 @@ class TestQNode:
 
         from pennylane import numpy as anp
 
-        a = anp.array(0.1, dtype=tf.float64)
+        a = anp.array(0.1, requires_grad=True)
 
         res1 = circuit(a)
         grad_fn = qml.grad(circuit)
