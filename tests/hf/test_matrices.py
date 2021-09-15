@@ -33,8 +33,8 @@ from pennylane.hf.molecule import Molecule
         ),
     ],
 )
-def test_density_matrix(n_electron, c, p_ref):
-    r"""Test that overlap_matrix returns the correct matrix."""
+def test_molecular_density_matrix(n_electron, c, p_ref):
+    r"""Test that molecular_density_matrix returns the correct matrix."""
     p = molecular_density_matrix(n_electron, c)
     assert np.allclose(p, p_ref)
 
@@ -54,7 +54,7 @@ def test_density_matrix(n_electron, c, p_ref):
     ],
 )
 def test_overlap_matrix(symbols, geometry, alpha, s_ref):
-    r""" """
+    r"""Test that overlap_matrix returns the correct matrix."""
     mol = Molecule(symbols, geometry, alpha=alpha)
     args = [alpha]
     s = overlap_matrix(mol.basis_set)(*args)
@@ -72,7 +72,8 @@ def test_overlap_matrix(symbols, geometry, alpha, s_ref):
     ],
 )
 def test_overlap_matrix_nodiff(symbols, geometry, s_ref):
-    r""" """
+    r"""Test that overlap_matrix returns the correct matrix when no differentiable parameter is
+    used."""
     mol = Molecule(symbols, geometry)
     s = overlap_matrix(mol.basis_set)()
     assert np.allclose(s, s_ref)
@@ -110,7 +111,7 @@ def test_overlap_matrix_nodiff(symbols, geometry, s_ref):
     ],
 )
 def test_gradient_overlap_matrix(symbols, geometry, alpha, g_ref):
-    r""" """
+    r"""Test that the overlap gradients are correct."""
     mol = Molecule(symbols, geometry, alpha=alpha)
     args = [alpha]
     g = autograd.jacobian(overlap_matrix(mol.basis_set), argnum=0)(*args)

@@ -20,7 +20,7 @@ from pennylane.hf.integrals import generate_overlap
 
 
 def molecular_density_matrix(n_electron, c):
-    """Construct the density matrix.
+    r"""Construct the density matrix.
 
     The density matrix, :math:`P`, is computed from the molecular orbital coefficients :math:`C` as
 
