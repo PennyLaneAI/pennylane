@@ -80,13 +80,17 @@ def test_overlap_matrix_nodiff(symbols, geometry, s_ref):
 
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "alpha", "g_ref"),
+    ("symbols", "geometry", "alpha", "coeff", "g_alpha_ref", "g_coeff_ref"),
     [
         (
             ["H", "H"],
             pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
             pnp.array(
                 [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                requires_grad=True,
+            ),
+            pnp.array(
+                [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
                 requires_grad=True,
             ),
             np.array(
@@ -107,13 +111,32 @@ def test_overlap_matrix_nodiff(symbols, geometry, s_ref):
                     ],
                 ]
             ),
+            np.array(
+                [
+                    [
+                        [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
+                        [
+                            [-0.15627637, -0.02812029,  0.08809831],
+                            [-0.15627637, -0.02812029,  0.08809831],
+                        ],
+                    ],
+                    [
+                        [
+                            [-0.15627637, -0.02812029,  0.08809831],
+                            [-0.15627637, -0.02812029,  0.08809831],
+                        ],
+                        [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
+                    ],
+                ]
+            ),
         )
     ],
 )
-def test_gradient_overlap_matrix(symbols, geometry, alpha, g_ref):
+def test_gradient_overlap_matrix(symbols, geometry, alpha, coeff, g_alpha_ref, g_coeff_ref):
     r"""Test that the overlap gradients are correct."""
-    mol = Molecule(symbols, geometry, alpha=alpha)
-    args = [alpha]
-    g = autograd.jacobian(overlap_matrix(mol.basis_set), argnum=0)(*args)
-    print(g)
-    assert np.allclose(g, g_ref)
+    mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+    args = [mol.alpha, mol.coeff]
+    g_alpha = autograd.jacobian(overlap_matrix(mol.basis_set), argnum=0)(*args)
+    g_coeff = autograd.jacobian(overlap_matrix(mol.basis_set), argnum=1)(*args)
+    assert np.allclose(g_alpha, g_alpha_ref)
+    assert np.allclose(g_coeff, g_coeff_ref)

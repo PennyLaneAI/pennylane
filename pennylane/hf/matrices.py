@@ -79,7 +79,10 @@ def overlap_matrix(basis_functions):
             for j, b in enumerate(basis_functions):
                 if i < j:
                     if args:
-                        overlap_integral = generate_overlap(a, b)([args[0][i], args[0][j]])
+                        args_ab = []
+                        for l in range(len(args)):
+                            args_ab.append(args[l][[i, j]])
+                        overlap_integral = generate_overlap(a, b)(*args_ab)
                     else:
                         overlap_integral = generate_overlap(a, b)()
                     o = anp.zeros((n, n))
