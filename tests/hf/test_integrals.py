@@ -332,7 +332,7 @@ def test_generate_attraction(symbols, geometry, alpha, coeff, r, a_ref):
 
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "alpha", "coeff"),
+    ("symbols", "geometry", "alpha", "coeff", "r"),
     [
         (
             ["H", "H"],
@@ -345,24 +345,27 @@ def test_generate_attraction(symbols, geometry, alpha, coeff, r, a_ref):
                 [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
                 requires_grad=True,
             ),
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
         ),
     ],
 )
-def test_gradient_attraction(symbols, geometry, alpha, coeff):
+def test_gradient_attraction(symbols, geometry, alpha, coeff, r):
     r"""Test that the attraction gradient computed with respect to the basis parameters is correct."""
-    mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+    mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff, r=r)
     basis_a = mol.basis_set[0]
     basis_b = mol.basis_set[1]
-    args = [mol.alpha, mol.coeff]
-    r = geometry[0]
+    args = [mol.alpha, mol.coeff, mol.r]
+    r_nuc = geometry[0]
 
-    g_alpha = autograd.grad(generate_attraction(r, basis_a, basis_b), argnum=0)(*args)
-    g_coeff = autograd.grad(generate_attraction(r, basis_a, basis_b), argnum=1)(*args)
+    g_alpha = autograd.grad(generate_attraction(r_nuc, basis_a, basis_b), argnum=0)(*args)
+    g_coeff = autograd.grad(generate_attraction(r_nuc, basis_a, basis_b), argnum=1)(*args)
+    g_r = autograd.grad(generate_attraction(r_nuc, basis_a, basis_b), argnum=2)(*args)
 
     # compute attraction gradients with respect to alpha and coeff using finite diff
     delta = 0.0001
     g_ref_alpha = np.zeros(6).reshape(alpha.shape)
     g_ref_coeff = np.zeros(6).reshape(coeff.shape)
+    g_ref_r = np.zeros(6).reshape(r.shape)
 
     for i in range(len(alpha)):
         for j in range(len(alpha[0])):
@@ -371,20 +374,29 @@ def test_gradient_attraction(symbols, geometry, alpha, coeff):
             alpha_plus = alpha.copy()
             alpha_minus[i][j] = alpha_minus[i][j] - delta
             alpha_plus[i][j] = alpha_plus[i][j] + delta
-            a_minus = generate_attraction(r, basis_a, basis_b)(*[alpha_minus, coeff])
-            a_plus = generate_attraction(r, basis_a, basis_b)(*[alpha_plus, coeff])
+            a_minus = generate_attraction(r_nuc, basis_a, basis_b)(*[alpha_minus, coeff, r])
+            a_plus = generate_attraction(r_nuc, basis_a, basis_b)(*[alpha_plus, coeff, r])
             g_ref_alpha[i][j] = (a_plus - a_minus) / (2 * delta)
 
             coeff_minus = coeff.copy()
             coeff_plus = coeff.copy()
             coeff_minus[i][j] = coeff_minus[i][j] - delta
             coeff_plus[i][j] = coeff_plus[i][j] + delta
-            a_minus = generate_attraction(r, basis_a, basis_b)(*[alpha, coeff_minus])
-            a_plus = generate_attraction(r, basis_a, basis_b)(*[alpha, coeff_plus])
+            a_minus = generate_attraction(r_nuc, basis_a, basis_b)(*[alpha, coeff_minus, r])
+            a_plus = generate_attraction(r_nuc, basis_a, basis_b)(*[alpha, coeff_plus, r])
             g_ref_coeff[i][j] = (a_plus - a_minus) / (2 * delta)
+
+            r_minus = r.copy()
+            r_plus = r.copy()
+            r_minus[i][j] = r_minus[i][j] - delta
+            r_plus[i][j] = r_plus[i][j] + delta
+            a_minus = generate_attraction(r_nuc, basis_a, basis_b)(*[alpha, coeff, r_minus])
+            a_plus = generate_attraction(r_nuc, basis_a, basis_b)(*[alpha, coeff, r_plus])
+            g_ref_r[i][j] = (a_plus - a_minus) / (2 * delta)
 
     assert np.allclose(g_alpha, g_ref_alpha)
     assert np.allclose(g_coeff, g_ref_coeff)
+    assert np.allclose(g_r, g_ref_r)
 
 
 @pytest.mark.parametrize(
@@ -451,7 +463,7 @@ def test_generate_repulsion(symbols, geometry, alpha, coeff, e_ref):
 
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "alpha", "coeff"),
+    ("symbols", "geometry", "alpha", "coeff", "r"),
     [
         (
             ["H", "H"],
@@ -474,23 +486,29 @@ def test_generate_repulsion(symbols, geometry, alpha, coeff, e_ref):
                 ],
                 requires_grad=True,
             ),
+            pnp.array(
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 0.0], [0.0, 0.0, 1.0]],
+                requires_grad=True,
+            ),
         ),
     ],
 )
-def test_gradient_repulsion(symbols, geometry, alpha, coeff):
+def test_gradient_repulsion(symbols, geometry, alpha, coeff, r):
     r"""Test that the repulsion gradient computed with respect to the basis parameters is correct."""
-    mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+    mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff, r=r)
     basis_a = mol.basis_set[0]
     basis_b = mol.basis_set[1]
-    args = [mol.alpha, mol.coeff]
+    args = [mol.alpha, mol.coeff, mol.r]
 
     g_alpha = autograd.grad(generate_repulsion(basis_a, basis_b, basis_a, basis_b), argnum=0)(*args)
     g_coeff = autograd.grad(generate_repulsion(basis_a, basis_b, basis_a, basis_b), argnum=1)(*args)
+    g_r = autograd.grad(generate_repulsion(basis_a, basis_b, basis_a, basis_b), argnum=2)(*args)
 
     # compute repulsion gradients with respect to alpha and coeff using finite diff
     delta = 0.0001
     g_ref_alpha = np.zeros(12).reshape(alpha.shape)
     g_ref_coeff = np.zeros(12).reshape(coeff.shape)
+    g_ref_r = np.zeros(12).reshape(r.shape)
 
     for i in range(len(alpha)):
         for j in range(len(alpha[0])):
@@ -499,20 +517,35 @@ def test_gradient_repulsion(symbols, geometry, alpha, coeff):
             alpha_plus = alpha.copy()
             alpha_minus[i][j] = alpha_minus[i][j] - delta
             alpha_plus[i][j] = alpha_plus[i][j] + delta
-            e_minus = generate_repulsion(basis_a, basis_b, basis_a, basis_b)(*[alpha_minus, coeff])
-            e_plus = generate_repulsion(basis_a, basis_b, basis_a, basis_b)(*[alpha_plus, coeff])
+            e_minus = generate_repulsion(basis_a, basis_b, basis_a, basis_b)(
+                *[alpha_minus, coeff, r]
+            )
+            e_plus = generate_repulsion(basis_a, basis_b, basis_a, basis_b)(*[alpha_plus, coeff, r])
             g_ref_alpha[i][j] = (e_plus - e_minus) / (2 * delta)
 
             coeff_minus = coeff.copy()
             coeff_plus = coeff.copy()
             coeff_minus[i][j] = coeff_minus[i][j] - delta
             coeff_plus[i][j] = coeff_plus[i][j] + delta
-            e_minus = generate_repulsion(basis_a, basis_b, basis_a, basis_b)(*[alpha, coeff_minus])
-            e_plus = generate_repulsion(basis_a, basis_b, basis_a, basis_b)(*[alpha, coeff_plus])
+            e_minus = generate_repulsion(basis_a, basis_b, basis_a, basis_b)(
+                *[alpha, coeff_minus, r]
+            )
+            e_plus = generate_repulsion(basis_a, basis_b, basis_a, basis_b)(*[alpha, coeff_plus], r)
             g_ref_coeff[i][j] = (e_plus - e_minus) / (2 * delta)
+
+            r_minus = r.copy()
+            r_plus = r.copy()
+            r_minus[i][j] = r_minus[i][j] - delta
+            r_plus[i][j] = r_plus[i][j] + delta
+            e_minus = generate_repulsion(basis_a, basis_b, basis_a, basis_b)(
+                *[alpha, coeff, r_minus]
+            )
+            e_plus = generate_repulsion(basis_a, basis_b, basis_a, basis_b)(*[alpha, coeff, r_plus])
+            g_ref_r[i][j] = (e_plus - e_minus) / (2 * delta)
 
     assert np.allclose(g_alpha, g_ref_alpha)
     assert np.allclose(g_coeff, g_ref_coeff)
+    assert np.allclose(g_r, g_ref_r)
 
 
 @pytest.mark.parametrize(
