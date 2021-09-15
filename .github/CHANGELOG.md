@@ -1,4 +1,113 @@
-# Release 0.18.0-dev (development release)
+# Release 0.19.0-dev (development release)
+
+<h3>New features since last release</h3>
+
+* The transform for the Jacobian of the classical preprocessing within a QNode,
+  `qml.transforms.classical_jacobian`, now takes a keyword argument `argnum` to specify
+  the QNode argument indices with respect to which the Jacobian is computed.
+  [(#1645)](https://github.com/PennyLaneAI/pennylane/pull/1645)
+
+  An example for the usage of ``argnum`` is
+
+  ```python
+  @qml.qnode(dev)
+  def circuit(x, y, z):
+      qml.RX(qml.math.sin(x), wires=0)
+      qml.CNOT(wires=[0, 1])
+      qml.RY(y ** 2, wires=1)
+      qml.RZ(1 / z, wires=1)
+      return qml.expval(qml.PauliZ(0))
+
+  jac_fn = qml.transforms.classical_jacobian(circuit, argnum=[1, 2])
+  ```
+
+  The Jacobian can then be computed at specified parameters.
+
+  ```pycon
+  >>> x, y, z = np.array([0.1, -2.5, 0.71])
+  >>> jac_fn(x, y, z)
+  (array([-0., -5., -0.]), array([-0.        , -0.        , -1.98373339]))
+  ```
+
+  The returned arrays are the derivatives of the three parametrized gates in the circuit
+  with respect to `y` and `z` respectively.
+
+  There also are explicit tests for `classical_jacobian` now, which previously was tested
+  implicitly via its use in the `metric_tensor` transform.
+
+  For more usage details, please see the
+  [classical Jacobian docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.transforms.classical_jacobian.html).
+
+<h3>Improvements</h3>
+
+* The `qml.metric_tensor` transform has been improved with regards to
+  both function and performance.
+  [(#1638)](https://github.com/PennyLaneAI/pennylane/pull/1638)
+
+  - If the underlying device supports batch execution of circuits, the quantum circuits required to
+    compute the metric tensor elements will be automatically submitted as a batched job. This can
+    lead to significant performance improvements for devices with a non-trivial job submission
+    overhead.
+
+  - Previously, the transform would only return the metric tensor with respect to gate arguments,
+    and ignore any classical processing inside the QNode, even very trivial classical processing
+    such as parameter permutation. The metric tensor now takes into account classical processing,
+    and returns the metric tensor with respect to QNode arguments, not simply gate arguments:
+
+    ```pycon
+    >>> @qml.qnode(dev)
+    ... def circuit(x):
+    ...     qml.Hadamard(wires=1)
+    ...     qml.RX(x[0], wires=0)
+    ...     qml.CNOT(wires=[0, 1])
+    ...     qml.RY(x[1] ** 2, wires=1)
+    ...     qml.RY(x[1], wires=0)
+    ...     return qml.expval(qml.PauliZ(0))
+    >>> x = np.array([0.1, 0.2], requires_grad=True)
+    >>> qml.metric_tensor(circuit)(x)
+    array([[0.25      , 0.        ],
+           [0.        , 0.28750832]])
+    ```
+
+    To revert to the previous behaviour of returning the metric tensor with respect to gate
+    arguments, `qml.metric_tensor(qnode, hybrid=False)` can be passed.
+
+    ```pycon
+    >>> qml.metric_tensor(circuit, hybrid=False)(x)
+    array([[0.25      , 0.        , 0.        ],
+           [0.        , 0.25      , 0.        ],
+           [0.        , 0.        , 0.24750832]])
+    ```
+
+* ``qml.circuit_drawer.CircuitDrawer`` can accept a string for the ``charset`` keyword, instead of a ``CharSet`` object.
+  [(#1640)](https://github.com/PennyLaneAI/pennylane/pull/1640)
+
+<h3>Breaking changes</h3>
+
+- The `QNode.metric_tensor` method has been deprecated, and will be removed in an upcoming release.
+  Please use the `qml.metric_tensor` transform instead.
+  [(#1638)](https://github.com/PennyLaneAI/pennylane/pull/1638)
+
+- The utility function `qml.math.requires_grad` now returns `True` when using Autograd
+  if and only if the `requires_grad=True` attribute is set on the NumPy array. Previously,
+  this function would return `True` for *all* NumPy arrays and Python floats, unless
+  `requires_grad=False` was explicitly set.
+  [(#1638)](https://github.com/PennyLaneAI/pennylane/pull/1638)
+
+<h3>Bug fixes</h3>
+
+* The device suite tests can now execute successfully if no shots configuration variable is given.
+  [(#1641)](https://github.com/PennyLaneAI/pennylane/pull/1641)
+
+<h3>Documentation</h3>
+
+<h3>Contributors</h3>
+
+This release contains contributions from (in alphabetical order):
+
+Josh Izaac, Christina Lee, David Wierichs.
+
+# Release 0.18.0 (Current release)
 
 <h3>New features since last release</h3>
 
@@ -53,6 +162,7 @@
   backpropogation with the torch interface.
   [(#1225)](https://github.com/PennyLaneAI/pennylane/pull/1360)
   [(#1598)](https://github.com/PennyLaneAI/pennylane/pull/1598)
+
 
 * The ability to define *batch* transforms has been added via the new
   `@qml.batch_transform` decorator.
@@ -135,13 +245,13 @@
 * The `RotosolveOptimizer` now can tackle general parametrized circuits, and is no longer
   restricted to single-qubit Pauli rotations.
   [(#1489)](https://github.com/PennyLaneAI/pennylane/pull/1489)
-  
+
   This includes:
-  
+
   - layers of gates controlled by the same parameter,
   - controlled variants of parametrized gates, and
   - Hamiltonian time evolution.
-  
+
   Note that the eigenvalue spectrum of the gate generator needs to be known to
   use `RotosolveOptimizer` for a general gate, and it
   is required to produce equidistant frequencies.
@@ -309,13 +419,13 @@
   selected or deselected during local execution of tests.
   [(#1633)](https://github.com/PennyLaneAI/pennylane/pull/1633)
 
-* Hamiltonians are now natively supported on the `default.qubit` device if `shots=None`. 
+* Hamiltonians are now natively supported on the `default.qubit` device if `shots=None`.
   This makes VQE workflows a lot faster in some cases.
   [(#1551)](https://github.com/PennyLaneAI/pennylane/pull/1551)
   [(#1596)](https://github.com/PennyLaneAI/pennylane/pull/1596)
 
-* A gradient recipe for Hamiltonian coefficients has been added. This makes it possible 
-  to compute parameter-shift gradients of these coefficients on devices that natively 
+* A gradient recipe for Hamiltonian coefficients has been added. This makes it possible
+  to compute parameter-shift gradients of these coefficients on devices that natively
   support Hamiltonians.
   [(#1551)](https://github.com/PennyLaneAI/pennylane/pull/1551)
 
@@ -325,8 +435,8 @@
 * The `MultiControlledX` class now inherits from `Operation` instead of `ControlledQubitUnitary` which makes the `MultiControlledX` gate a non-parameterized gate.
   [(#1557)](https://github.com/PennyLaneAI/pennylane/pull/1557)
 
-* The `utils.sparse_hamiltonian` function can now deal with non-integer 
-  wire labels, and it throws an error for the edge case of observables that are 
+* The `utils.sparse_hamiltonian` function can now deal with non-integer
+  wire labels, and it throws an error for the edge case of observables that are
   created from multi-qubit operations.
   [(#1550)](https://github.com/PennyLaneAI/pennylane/pull/1550)
 
@@ -387,10 +497,10 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 * The QFT operation is moved to template
   [(#1548)](https://github.com/PennyLaneAI/pennylane/pull/1548)
-  
-* The `qml.ResetError` is now supported for `default.mixed` device. 
+
+* The `qml.ResetError` is now supported for `default.mixed` device.
   [(#1541)](https://github.com/PennyLaneAI/pennylane/pull/1541)
-  
+
 * `QNode.diff_method` will now reflect which method was selected from `diff_method="best"`.
   [(#1568)](https://github.com/PennyLaneAI/pennylane/pull/1568)
 
@@ -420,9 +530,16 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
   Temporary backward compatibility has been added to support the use of `_stepsize` for one
   release cycle. `update_stepsize` method is deprecated.
   [(#1625)](https://github.com/PennyLaneAI/pennylane/pull/1625)
-  
+
 
 <h3>Bug fixes</h3>
+
+* Fix bug with norm and Jax tracers (jit) when using `QubiStateVector`.
+  [(#1649)](https://github.com/PennyLaneAI/pennylane/pull/1649)
+  
+* Fix bug in edge case of single-qubit `zyz_decomposition` when only
+  off-diagonal elements are present.
+  [(#1643)](https://github.com/PennyLaneAI/pennylane/pull/1643)
 
 * `MottonenStatepreparation` can now be run with a single wire label not in a list.
   [(#1620)](https://github.com/PennyLaneAI/pennylane/pull/1620)
@@ -450,9 +567,9 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 * The `qml.Identity` operation is placed under the sections Qubit observables and CV observables.
   [(#1576)](https://github.com/PennyLaneAI/pennylane/pull/1576)
 
-* Updated the documentation of `qml.grouping`, `qml.kernels` and `qml.qaoa` modules to present 
+* Updated the documentation of `qml.grouping`, `qml.kernels` and `qml.qaoa` modules to present
   the list of functions first followed by the technical details of the module.
-  [(#1581)](https://github.com/PennyLaneAI/pennylane/pull/1581) 
+  [(#1581)](https://github.com/PennyLaneAI/pennylane/pull/1581)
 
 * Recategorized Qubit operations into new and existing categories so that code for each
   operation is easier to locate.
@@ -467,7 +584,7 @@ Prateek Jain, Ankit Khandelwal, Christina Lee, Ian McLean, Johannes Jakob Meyer,
 Pratul Saini, Maria Schuld, Arshpreet Singh, Ingrid Strandberg, Slimane Thabet, Antal Száva, David Wierichs,
 Vincent Wong.
 
-# Release 0.17.0 (current release)
+# Release 0.17.0
 
 <h3>New features since the last release</h3>
 
@@ -1022,7 +1139,7 @@ Vincent Wong.
 * Fixed a bug in the initialization of `QubitUnitary` where the size of
   the matrix was not checked against the number of wires.
   [(#1439)](https://github.com/PennyLaneAI/pennylane/pull/1439)
-  
+
 <h3>Documentation</h3>
 
 * Improved Contribution Guide and Pull Requests Guide.

@@ -2820,8 +2820,13 @@ class TestQubitUnitary:
             (qml.RZ(0.3, wires=0).matrix, qml.RZ, [0.3]),
             (qml.RZ(-0.5, wires=0).matrix, qml.RZ, [-0.5]),
             # Next set of gates are non-diagonal and decomposed as Rots
+            (
+                np.array([[0, -0.98310193 + 0.18305901j], [0.98310193 + 0.18305901j, 0]]),
+                qml.Rot,
+                [0, -np.pi, -5.914991017809059],
+            ),
             (H, qml.Rot, [np.pi, np.pi / 2, 0]),
-            (X, qml.Rot, [0.0, np.pi, np.pi]),
+            (X, qml.Rot, [0.0, -np.pi, -np.pi]),
             (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix, qml.Rot, [0.2, 0.5, -0.3]),
             (np.exp(1j * 0.02) * qml.Rot(-1, 2, -3, wires=0).matrix, qml.Rot, [-1, 2, -3]),
         ],
