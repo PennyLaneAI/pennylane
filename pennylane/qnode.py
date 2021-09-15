@@ -129,6 +129,7 @@ class QNode:
         shift (float): the size of the shift for two-term parameter-shift gradient computations
 
         adjoint_cache (bool): For TensorFlow and PyTorch interfaces and adjoint differentiation,
+
             this indicates whether to save the device state after the forward pass.  Doing so saves a
             forward execution. Device state automatically reused with autograd and JAX interfaces.
 
