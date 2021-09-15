@@ -2,6 +2,17 @@
 
 <h3>New features since last release</h3>
 
+<h4>New PyTorch native device</h4>
+
+* A new pytorch device, `qml.device('default.qubit.torch', wires=wires)`, supports
+  backpropogation with the torch interface.
+  [(#1225)](https://github.com/PennyLaneAI/pennylane/pull/1360)
+  [(#1598)](https://github.com/PennyLaneAI/pennylane/pull/1598)
+
+  # TODO: add example
+
+<h4>Batch gradient transforms</h4>
+
 * Custom gradient transforms can now be created using the new
   `@qml.gradients.gradient_transform` decorator on a batch-tape transform.
   [(#1589)](https://github.com/PennyLaneAI/pennylane/pull/1589)
@@ -48,11 +59,6 @@
   >>> qml.grad(qml.gradients.param_shift(circuit))(0.5)
   tensor(-0.87758256, requires_grad=True)
   ```
-
-* A new pytorch device, `qml.device('default.qubit.torch', wires=wires)`, supports
-  backpropogation with the torch interface.
-  [(#1225)](https://github.com/PennyLaneAI/pennylane/pull/1360)
-  [(#1598)](https://github.com/PennyLaneAI/pennylane/pull/1598)
 
 * The ability to define *batch* transforms has been added via the new
   `@qml.batch_transform` decorator.
@@ -129,8 +135,53 @@
   1.2629730888100839
   ```
 
-* Added a new `SISWAP` operation and a `SQISW` alias with support to the `default_qubit` device.
-  [#1563](https://github.com/PennyLaneAI/pennylane/pull/1563)
+* Vector-Jacobian product transforms have been added to the `qml.gradients` package.
+  [(#1494)](https://github.com/PennyLaneAI/pennylane/pull/1494)
+
+  The new transforms include:
+
+  - `qml.gradients.vjp`
+  - `qml.gradients.batch_vjp`
+
+* Support for differentiable execution of batches of circuits has been
+  added, via the beta `pennylane.interfaces.batch` module.
+  [(#1501)](https://github.com/PennyLaneAI/pennylane/pull/1501)
+  [(#1508)](https://github.com/PennyLaneAI/pennylane/pull/1508)
+  [(#1542)](https://github.com/PennyLaneAI/pennylane/pull/1542)
+  [(#1549)](https://github.com/PennyLaneAI/pennylane/pull/1549)
+  [(#1608)](https://github.com/PennyLaneAI/pennylane/pull/1608)
+  [(#1618)](https://github.com/PennyLaneAI/pennylane/pull/1618)
+  [(#1637)](https://github.com/PennyLaneAI/pennylane/pull/1637)
+
+  For example:
+
+  ```python
+  from pennylane.interfaces.batch import execute
+
+  def cost_fn(x):
+      with qml.tape.JacobianTape() as tape1:
+          qml.RX(x[0], wires=[0])
+          qml.RY(x[1], wires=[1])
+          qml.CNOT(wires=[0, 1])
+          qml.var(qml.PauliZ(0) @ qml.PauliX(1))
+
+      with qml.tape.JacobianTape() as tape2:
+          qml.RX(x[0], wires=0)
+          qml.RY(x[0], wires=1)
+          qml.CNOT(wires=[0, 1])
+          qml.probs(wires=1)
+
+      result = execute(
+          [tape1, tape2], dev,
+          gradient_fn=qml.gradients.param_shift,
+          interface="autograd"
+      )
+      return result[0] + result[1][0, 0]
+
+  res = qml.grad(cost_fn)(params)
+  ```
+
+<h4>RotosolveOptimizer for general parametrized circuits</h4>
 
 * The `RotosolveOptimizer` now can tackle general parametrized circuits, and is no longer
   restricted to single-qubit Pauli rotations.
@@ -211,17 +262,7 @@
 
   For usage details please consider the docstring.
 
-* The `frobenius_inner_product` function has been moved to the `qml.math`
-  module, and is now differentiable using all autodiff frameworks.
-  [(#1388)](https://github.com/PennyLaneAI/pennylane/pull/1388)
-
-* Vector-Jacobian product transforms have been added to the `qml.gradients` package.
-  [(#1494)](https://github.com/PennyLaneAI/pennylane/pull/1494)
-
-  The new transforms include:
-
-  - `qml.gradients.vjp`
-  - `qml.gradients.batch_vjp`
+<h4>Fastened and improved Hamiltonian computations</h4>
 
 * The Hamiltonian can now store grouping information, which can be accessed by a device to
   speed up computations of the expectation value of a Hamiltonian.
@@ -265,45 +306,17 @@
   (array([-0.12777055,  0.0166009 ]), array(0.0917819))
   ```
 
-* Support for differentiable execution of batches of circuits has been
-  added, via the beta `pennylane.interfaces.batch` module.
-  [(#1501)](https://github.com/PennyLaneAI/pennylane/pull/1501)
-  [(#1508)](https://github.com/PennyLaneAI/pennylane/pull/1508)
-  [(#1542)](https://github.com/PennyLaneAI/pennylane/pull/1542)
-  [(#1549)](https://github.com/PennyLaneAI/pennylane/pull/1549)
-  [(#1608)](https://github.com/PennyLaneAI/pennylane/pull/1608)
-  [(#1618)](https://github.com/PennyLaneAI/pennylane/pull/1618)
-  [(#1637)](https://github.com/PennyLaneAI/pennylane/pull/1637)
+<h4>New operation</h4>
 
-  For example:
+* Added a new `SISWAP` operation and a `SQISW` alias with support to the `default_qubit` device.
+  [#1563](https://github.com/PennyLaneAI/pennylane/pull/1563)
 
-  ```python
-  from pennylane.interfaces.batch import execute
-
-  def cost_fn(x):
-      with qml.tape.JacobianTape() as tape1:
-          qml.RX(x[0], wires=[0])
-          qml.RY(x[1], wires=[1])
-          qml.CNOT(wires=[0, 1])
-          qml.var(qml.PauliZ(0) @ qml.PauliX(1))
-
-      with qml.tape.JacobianTape() as tape2:
-          qml.RX(x[0], wires=0)
-          qml.RY(x[0], wires=1)
-          qml.CNOT(wires=[0, 1])
-          qml.probs(wires=1)
-
-      result = execute(
-          [tape1, tape2], dev,
-          gradient_fn=qml.gradients.param_shift,
-          interface="autograd"
-      )
-      return result[0] + result[1][0, 0]
-
-  res = qml.grad(cost_fn)(params)
-  ```
 
 <h3>Improvements</h3>
+
+* The `frobenius_inner_product` function has been moved to the `qml.math`
+  module, and is now differentiable using all autodiff frameworks.
+  [(#1388)](https://github.com/PennyLaneAI/pennylane/pull/1388)
 
 * The slowest tests, more than 1.5 seconds, now have the pytest mark `slow`, and can be
   selected or deselected during local execution of tests.
