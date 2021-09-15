@@ -62,6 +62,23 @@ def test_overlap_matrix(symbols, geometry, alpha, s_ref):
 
 
 @pytest.mark.parametrize(
+    ("symbols", "geometry", "s_ref"),
+    [
+        (
+            ["H", "H"],
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+            np.array([[1.0, 0.7965883009074122], [0.7965883009074122, 1.0]]),
+        )
+    ],
+)
+def test_overlap_matrix_nodiff(symbols, geometry, s_ref):
+    r""" """
+    mol = Molecule(symbols, geometry)
+    s = overlap_matrix(mol.basis_set)()
+    assert np.allclose(s, s_ref)
+
+
+@pytest.mark.parametrize(
     ("symbols", "geometry", "alpha", "g_ref"),
     [
         (
