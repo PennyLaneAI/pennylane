@@ -18,7 +18,7 @@ from collections import OrderedDict
 
 import pennylane as qml
 from pennylane.wires import Wires
-from .charsets import UnicodeCharSet
+from .charsets import CHARSETS, CharSet
 from .representation_resolver import RepresentationResolver
 from .grid import Grid
 
@@ -46,7 +46,7 @@ class CircuitDrawer:
         raw_operation_grid (list[list[~.Operation]]): The CircuitGraph's operations
         raw_observable_grid (list[list[qml.operation.Observable]]): The CircuitGraph's observables
         wires (Wires): all wires on the device for which the circuit is drawn
-        charset (pennylane.circuit_drawer.CharSet, optional): The CharSet that shall be used for drawing.
+        charset (str, pennylane.circuit_drawer.CharSet, optional): The CharSet that shall be used for drawing.
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
     """
 
@@ -55,21 +55,33 @@ class CircuitDrawer:
         raw_operation_grid,
         raw_observable_grid,
         wires,
-        charset=UnicodeCharSet,
+        charset=None,
         show_all_wires=False,
     ):
         self.operation_grid = Grid(raw_operation_grid)
         self.observable_grid = Grid(raw_observable_grid)
         self.wires = wires
         self.active_wires = self.extract_active_wires(raw_operation_grid, raw_observable_grid)
-        self.charset = charset
+
+        if charset is None:
+            self.charset = CHARSETS["unicode"]()
+        elif isinstance(charset, type) and issubclass(charset, CharSet):
+            self.charset = charset()
+        else:
+            if charset not in CHARSETS:
+                raise ValueError(
+                    "Charset '{}' is not supported. Supported charsets: {}.".format(
+                        charset, ", ".join(CHARSETS.keys())
+                    )
+                )
+            self.charset = CHARSETS[charset]()
 
         if show_all_wires:
             # if the provided wires include empty wires, make sure they are included
             # as active wires
             self.active_wires = wires.all_wires([wires, self.active_wires])
 
-        self.representation_resolver = RepresentationResolver(charset)
+        self.representation_resolver = RepresentationResolver(self.charset)
         self.operation_representation_grid = Grid()
         self.observable_representation_grid = Grid()
         self.operation_decoration_indices = []
@@ -91,15 +103,15 @@ class CircuitDrawer:
 
         CircuitDrawer.pad_representation(
             self.operation_representation_grid,
-            charset.WIRE,
+            self.charset.WIRE,
             "",
-            2 * charset.WIRE,
+            2 * self.charset.WIRE,
             self.operation_decoration_indices,
         )
 
         CircuitDrawer.pad_representation(
             self.operation_representation_grid,
-            charset.WIRE,
+            self.charset.WIRE,
             "",
             "",
             set(range(self.operation_grid.num_layers)) - set(self.operation_decoration_indices),
@@ -108,14 +120,14 @@ class CircuitDrawer:
         CircuitDrawer.pad_representation(
             self.observable_representation_grid,
             " ",
-            charset.MEASUREMENT + " ",
+            self.charset.MEASUREMENT + " ",
             " ",
             self.observable_decoration_indices,
         )
 
         CircuitDrawer.pad_representation(
             self.observable_representation_grid,
-            charset.WIRE,
+            self.charset.WIRE,
             "",
             "",
             set(range(self.observable_grid.num_layers)) - set(self.observable_decoration_indices),
