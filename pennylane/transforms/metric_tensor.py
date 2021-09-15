@@ -32,6 +32,10 @@ def _stopping_critera(obj):
 
 
 def expand_fn(tape):
+    """Expands the tape to contain only operations
+    supported by the ``metric_tensor`` transform (specified
+    by ``SUPPORTED_OPS``).
+    """
     new_tape = tape.expand(depth=2, stop_at=_stopping_critera)
     params = new_tape.get_parameters(trainable_only=False)
     new_tape.trainable_params = qml.math.get_trainable_indices(params)
@@ -41,7 +45,7 @@ def expand_fn(tape):
 @functools.partial(batch_transform, expand_fn=expand_fn)
 def metric_tensor(tape, diag_approx=False):
     """Returns a function that computes the block-diagonal approximation of the metric tensor
-    of a given QNode.
+    of a given QNode or quantum tape.
 
     .. note::
 
@@ -50,13 +54,13 @@ def metric_tensor(tape, diag_approx=False):
         All other parametrized gates will be decomposed if possible.
 
     Args:
-        qnode (.QNode or .QuantumTape): quantum tape or QNode to find the metric tensor of
-        diag_approx (bool): iff True, use the diagonal approximation
+        qnode (pennylane.QNode or .QuantumTape): quantum tape or QNode to find the metric tensor of
+        diag_approx (bool): if True, use the diagonal approximation. If ``False``, a
+        block diagonal approximation of the metric tensor is computed.
         hybrid (bool): Specifies whether classical processing inside a QNode
             should be taken into account when transforming a QNode.
 
-            - If ``True``, and classical processing is detected and this
-              option is set to ``True``, the Jacobian of the classical
+            - If ``True``, and classical processing is detected, the Jacobian of the classical
               processing will be computed and included. When evaluated, the
               returned metric tensor will be with respect to the QNode arguments.
 
@@ -79,33 +83,34 @@ def metric_tensor(tape, diag_approx=False):
         @qml.qnode(dev, interface="autograd")
         def circuit(weights):
             # layer 1
-            qml.RX(weights[0, 0], wires=0)
-            qml.RX(weights[0, 1], wires=1)
+            qml.RX(weights[0], wires=0)
+            qml.RX(weights[1], wires=1)
 
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
 
             # layer 2
-            qml.RZ(weights[1, 0], wires=0)
-            qml.RZ(weights[1, 1], wires=2)
+            qml.RZ(weights[2], wires=0)
+            qml.RZ(weights[3], wires=2)
 
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)), qml.expval(qml.PauliY(2))
 
-    We can use the ``metric_tensor`` function to generate a new function, that returns the
+    We can use the ``metric_tensor`` transform to generate a new function that returns the
     metric tensor of this QNode:
 
     >>> met_fn = qml.metric_tensor(circuit)
-    >>> weights = np.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]], requires_grad=True)
+    >>> weights = np.array([0.1, 0.2, 0.4, 0.5], requires_grad=True)
     >>> met_fn(weights)
     tensor([[0.25  , 0.    , 0.    , 0.    ],
             [0.    , 0.25  , 0.    , 0.    ],
             [0.    , 0.    , 0.0025, 0.0024],
             [0.    , 0.    , 0.0024, 0.0123]], requires_grad=True)
 
-    The returned metric tensor is also fully differentiable, in all interfaces.
-    For example, differentiating the ``(3, 2)`` element:
+    The returned metric tensor is also fully differentiable in all interfaces.
+    For example, we can compute the gradient of the ``(3, 2)`` element
+    with respect to the QNode ``weights``:
 
     >>> grad_fn = qml.grad(lambda x: met_fn(x)[3, 2])
     >>> grad_fn(weights)
@@ -117,7 +122,7 @@ def metric_tensor(tape, diag_approx=False):
         This transform can also be applied to low-level
         :class:`~.QuantumTape` objects. This will result in no implicit quantum
         device evaluation. Instead, the processed tapes, and post-processing
-        function, which together define the gradient are directly returned:
+        function, which together define the metric tensor are directly returned:
 
         >>> params = np.array([1.7, 1.0, 0.5], requires_grad=True)
         >>> with qml.tape.QuantumTape() as tape:
@@ -132,11 +137,11 @@ def metric_tensor(tape, diag_approx=False):
          <QuantumTape: wires=[0, 1], params=1>,
          <QuantumTape: wires=[0, 1], params=3>]
 
-        This can be useful if the underlying circuits representing the gradient
+        This can be useful if the underlying circuits representing the metric tensor
         computation need to be analyzed.
 
         The output tapes can then be evaluated and post-processed to retrieve
-        the gradient:
+        the metric tensor:
 
         >>> dev = qml.device("default.qubit", wires=2)
         >>> fn(qml.execute(tapes, dev, None))
@@ -210,9 +215,9 @@ def metric_tensor(tape, diag_approx=False):
 
 @metric_tensor.custom_qnode_wrapper
 def qnode_execution_wrapper(self, qnode, targs, tkwargs):
-    # Here, we overwrite the QNode execution wrapper in order
-    # to take into account that classical processing may be present
-    # inside the QNode.
+    """Here, we overwrite the QNode execution wrapper in order
+    to take into account that classical processing may be present
+    inside the QNode."""
     hybrid = tkwargs.pop("hybrid", True)
 
     if isinstance(qnode, qml.ExpvalCost):
