@@ -18,13 +18,6 @@
   [(#1589)](https://github.com/PennyLaneAI/pennylane/pull/1589)
 
   Quantum gradient transforms are a specific case of `qml.batch_transform`.
-  To create a quantum gradient transform, simply write a function that accepts a tape,
-  and returns a batch of tapes to be independently executed on a quantum device, alongside
-  a post-processing function that processes the tape results into the gradient.
-
-  Furthermore, a smart default expansion function is provided, which automatically expands tape
-  operations which are not differentiable prior to applying the quantum gradient.
-  All gradient transforms in `qml.gradients` are now decorated with this decorator.
 
   Supported gradient transforms must be of the following form:
 
@@ -59,6 +52,9 @@
   >>> qml.grad(qml.gradients.param_shift(circuit))(0.5)
   tensor(-0.87758256, requires_grad=True)
   ```
+
+  Refer to the page of [quantum gradient transforms](https://pennylane.readthedocs.io/en/stable/code/qml_gradients.html)
+  for more details.
 
 * The ability to define *batch* transforms has been added via the new
   `@qml.batch_transform` decorator.
@@ -201,6 +197,7 @@
 
   Consider a circuit with a mixture of Pauli rotation gates, controlled Pauli rotations, and
   single-parameter layers of Pauli rotations:
+
   ```python
   dev = qml.device('default.qubit', wires=3, shots=None)
 
@@ -215,6 +212,7 @@
 
       return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
   ```
+
   This cost function has one frequency for each of the first `RX` rotation angles,
   three frequencies for the layer of `RX` gates that depend on `layer_par`, and two
   frequencies for each of the `CRY` gate parameters. Rotosolve can then be used to minimize
@@ -260,9 +258,9 @@
   Minimization substeps: [-1. -1. -1. -1. -1. -1. -1.]
   ```
 
-  For usage details please consider the docstring.
+  For usage details please consider the [docstring of the optimizer](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.RotosolveOptimizer.html?highlight=rotosolveoptimizer#pennylane.RotosolveOptimizer).
 
-<h4>Fastened and improved Hamiltonian computations</h4>
+<h4>Faster and improved Hamiltonian computations</h4>
 
 * The Hamiltonian can now store grouping information, which can be accessed by a device to
   speed up computations of the expectation value of a Hamiltonian.
@@ -308,7 +306,8 @@
 
 <h4>New operation</h4>
 
-* Added a new `SISWAP` operation and a `SQISW` alias with support to the `default_qubit` device.
+* Added a new `SISWAP` operation and a `SQISW` alias with support to the
+  `default_qubit` device.
   [#1563](https://github.com/PennyLaneAI/pennylane/pull/1563)
 
 
