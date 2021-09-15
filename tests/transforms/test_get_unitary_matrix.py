@@ -16,7 +16,7 @@ Unit tests for the get_unitary_matrix transform
 """
 from functools import reduce
 import pytest
-import numpy as np
+from pennylane import numpy as np
 from gate_data import I, X, Y, Z, H, S, CNOT
 import pennylane as qml
 
@@ -182,6 +182,22 @@ def test_get_unitary_matrix_MultiControlledX():
     assert np.allclose(obtained_state2, expected_state2)
 
 
+def test_get_unitary_matrix_default_wireorder():
+    """Test without specified wire order"""
+
+    def testcircuit():
+        qml.PauliX(wires=0)
+        qml.PauliY(wires=1)
+        qml.PauliZ(wires=2)
+
+    get_matrix = get_unitary_matrix(testcircuit)
+
+    matrix = get_matrix()
+    expected_matrix = np.kron(X, np.kron(Y, Z))
+
+    assert np.allclose(matrix, expected_matrix)
+
+
 def test_get_unitary_matrix_input_tape():
     """Test with quantum tape as input"""
     with qml.tape.QuantumTape() as tape:
@@ -278,18 +294,6 @@ def test_get_unitary_matrix_input_QNode_wireorder():
     assert np.allclose(matrix, expected_matrix)
 
 
-def test_get_unitary_matrix_missing_wires():
-    """When a quantum function is input, assert error raised when no wire ordering is specified"""
-
-    def testcircuit():
-        qml.PauliZ(0)
-
-    get_matrix = get_unitary_matrix(testcircuit)
-
-    with pytest.raises(ValueError, match="Wire ordering list not specified"):
-        matrix = get_matrix()
-
-
 def test_get_unitary_matrix_invalid_argument():
     """Assert error raised when input is neither a tape, QNode, nor quantum function"""
 
@@ -309,3 +313,91 @@ def test_get_unitary_matrix_wrong_function():
 
     with pytest.raises(ValueError, match="Function contains no quantum operation"):
         matrix = get_matrix(1)
+
+
+def test_get_unitary_matrix_interface_tf():
+    """Test with tensorflow interface"""
+
+    tf = pytest.importorskip("tensorflow")
+
+    dev = qml.device("default.qubit", wires=3)
+
+    def circuit(beta, theta):
+        qml.RZ(beta, wires=0)
+        qml.RZ(theta[0], wires=1)
+        qml.CRY(theta[1], wires=[1, 2])
+        return qml.expval(qml.PauliZ(1))
+
+    qnode_tensorflow = qml.QNode(circuit, dev, interface="tf")
+
+    get_matrix = get_unitary_matrix(qnode_tensorflow)
+
+    beta = 0.1
+    theta = tf.Variable([0.2, 0.3])
+
+    matrix = get_matrix(beta, theta)
+
+    theta_np = theta.numpy()
+    matrix1 = np.kron(qml.RZ(beta, wires=0).matrix, np.kron(qml.RZ(theta_np[0], wires=1).matrix, I))
+    matrix2 = np.kron(I, qml.CRY(theta_np[1], wires=[1, 2]).matrix)
+    expected_matrix = matrix2 @ matrix1
+
+    assert np.allclose(matrix, expected_matrix)
+
+
+def test_get_unitary_matrix_interface_torch():
+    """Test torch interface"""
+
+    torch = pytest.importorskip("torch", minversion="1.8")
+
+    dev = qml.device("default.qubit", wires=3)
+
+    def circuit(theta):
+        qml.RZ(theta[0], wires=0)
+        qml.RZ(theta[1], wires=1)
+        qml.CRY(theta[2], wires=[1, 2])
+        return qml.expval(qml.PauliZ(1))
+
+    qnode_torch = qml.QNode(circuit, dev, interface="torch")
+
+    get_matrix = get_unitary_matrix(qnode_torch)
+
+    theta = torch.tensor([0.1, 0.2, 0.3])
+
+    matrix = get_matrix(theta)
+
+    matrix1 = np.kron(
+        qml.RZ(theta[0], wires=0).matrix, np.kron(qml.RZ(theta[1], wires=1).matrix, I)
+    )
+    matrix2 = np.kron(I, qml.CRY(theta[2], wires=[1, 2]).matrix)
+    expected_matrix = matrix2 @ matrix1
+
+    assert np.allclose(matrix, expected_matrix)
+
+
+def test_get_unitary_matrix_interface_reg():
+    """Test autograd interface"""
+
+    dev = qml.device("default.qubit", wires=3)
+
+    def circuit(theta):
+        qml.RZ(theta[0], wires=0)
+        qml.RZ(theta[1], wires=1)
+        qml.CRY(theta[2], wires=[1, 2])
+        return qml.expval(qml.PauliZ(1))
+
+    qnode = qml.QNode(circuit, dev, interface="autograd")
+
+    get_matrix = get_unitary_matrix(qnode)
+
+    theta = np.array([0.1, 0.2, 0.3], requires_grad=True)
+
+    matrix = get_matrix(theta)
+
+    matrix1 = np.kron(
+        qml.RZ(theta[0], wires=0).matrix, np.kron(qml.RZ(theta[1], wires=1).matrix, I)
+    )
+    matrix2 = np.kron(I, qml.CRY(theta[2], wires=[1, 2]).matrix)
+    expected_matrix = matrix2 @ matrix1
+
+    assert np.allclose(matrix, expected_matrix)

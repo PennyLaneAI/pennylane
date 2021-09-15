@@ -18,6 +18,7 @@ from functools import wraps
 import numpy as np
 from pennylane.wires import Wires
 import pennylane as qml
+from pennylane.math.utils import get_interface
 
 
 def get_unitary_matrix(circuit, wire_order=None):
@@ -25,7 +26,7 @@ def get_unitary_matrix(circuit, wire_order=None):
 
     Args:
         circuit (.QNode, .QuantumTape, or Callable): A quantum node, tape, or function that applies quantum operations.
-        wire_order (Sequence[Any]): Order of the wires in the quantum circuit. Optional if ``circuit`` is a QNode or tape.
+        wire_order (Sequence[Any], optional): Order of the wires in the quantum circuit. Will default to ``[0, 1, 2, ...]`` when not specified.
 
     Returns:
          function: Function which accepts the same arguments as the QNode or quantum function.
@@ -61,8 +62,16 @@ def get_unitary_matrix(circuit, wire_order=None):
 
         if isinstance(circuit, qml.QNode):
             # user passed a QNode, get the tape
-            circuit.construct(args, kwargs)
+            # first, recast arguments to numpy if they are tf variables
+            recast_args = []
+            for arg in args:
+                if get_interface(arg) == "tensorflow":
+                    arg = arg.numpy()
+                recast_args.append(arg)
+
+            circuit.construct(recast_args, kwargs)
             tape = circuit.qtape
+
             if wires is None:  # if no wire ordering is specified, take wire list from tape
                 wire_order = tape.wires
             else:
@@ -83,8 +92,9 @@ def get_unitary_matrix(circuit, wire_order=None):
             if len(tape.operations) == 0:
                 raise ValueError("Function contains no quantum operation")
             if wires is None:
-                raise ValueError("Wire ordering list not specified")
-            wire_order = Wires(wires)
+                wire_order = tape.wires
+            else:
+                wire_order = Wires(wires)
 
         else:
             raise ValueError("Input is not a tape, QNode, or quantum function")
@@ -95,13 +105,13 @@ def get_unitary_matrix(circuit, wire_order=None):
         unitary_matrix = np.eye(2 ** n_wires)
 
         for op in tape.operations:
-
             # operator wire position relative to wire ordering
             op_wire_pos = wire_order.indices(op.wires)
 
             I = np.reshape(np.eye(2 ** n_wires), [2] * n_wires * 2)
             axes = (np.arange(len(op.wires), 2 * len(op.wires)), op_wire_pos)
             # reshape op.matrix
+
             U_op_reshaped = np.reshape(op.matrix, [2] * len(op.wires) * 2)
             U_tensordot = np.tensordot(U_op_reshaped, I, axes=axes)
 
