@@ -84,6 +84,16 @@
 
 <h3>Breaking changes</h3>
 
+- The `QNode.metric_tensor` method has been deprecated, and will be removed in an upcoming release.
+  Please use the `qml.metric_tensor` transform instead.
+  [(#1638)](https://github.com/PennyLaneAI/pennylane/pull/1638)
+
+- The utility function `qml.math.requires_grad` now returns `True` when using Autograd
+  if and only if the `requires_grad=True` attribute is set on the NumPy array. Previously,
+  this function would return `True` for *all* NumPy arrays and Python floats, unless
+  `requires_grad=False` was explicitly set.
+  [(#1638)](https://github.com/PennyLaneAI/pennylane/pull/1638)
+
 <h3>Bug fixes</h3>
 
 * The device suite tests can now execute successfully if no shots configuration variable is given.

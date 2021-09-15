@@ -249,6 +249,10 @@ class TestMetricTensor:
         dev = qml.device("default.qubit", wires=2)
 
         def circuit(a, b):
+            # The classical processing function is
+            #     f: ([a0, a1], b) -> (a1, a0, b)
+            # So the classical Jacobians will be a permutation matrix and an identity matrix:
+            #     classical_jacobian(circuit)(a, b) == ([[0, 1], [1, 0]], [[1]])
             qml.RX(a[1], wires=0)
             qml.RY(a[0], wires=0)
             qml.CNOT(wires=[0, 1])

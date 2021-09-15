@@ -83,15 +83,15 @@ def metric_tensor(tape, diag_approx=False):
         @qml.qnode(dev, interface="autograd")
         def circuit(weights):
             # layer 1
-            qml.RX(weights[0, 0], wires=0)
-            qml.RX(weights[0, 1], wires=1)
+            qml.RX(weights[0], wires=0)
+            qml.RX(weights[1], wires=1)
 
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
 
             # layer 2
-            qml.RZ(weights[1, 0], wires=0)
-            qml.RZ(weights[1, 1], wires=2)
+            qml.RZ(weights[2], wires=0)
+            qml.RZ(weights[3], wires=2)
 
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
@@ -101,7 +101,7 @@ def metric_tensor(tape, diag_approx=False):
     metric tensor of this QNode:
 
     >>> met_fn = qml.metric_tensor(circuit)
-    >>> weights = np.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]], requires_grad=True)
+    >>> weights = np.array([0.1, 0.2, 0.4, 0.5], requires_grad=True)
     >>> met_fn(weights)
     tensor([[0.25  , 0.    , 0.    , 0.    ],
             [0.    , 0.25  , 0.    , 0.    ],
@@ -109,7 +109,8 @@ def metric_tensor(tape, diag_approx=False):
             [0.    , 0.    , 0.0024, 0.0123]], requires_grad=True)
 
     The returned metric tensor is also fully differentiable in all interfaces.
-    For example, differentiating the ``(3, 2)`` element:
+    For example, we can compute the gradient of the ``(3, 2)`` element
+    with respect to the QNode ``weights``:
 
     >>> grad_fn = qml.grad(lambda x: met_fn(x)[3, 2])
     >>> grad_fn(weights)
