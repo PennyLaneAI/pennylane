@@ -592,7 +592,11 @@ class QNode:
         state_returns = any([m.return_type is State for m in measurement_processes])
 
         # apply the interface (if any)
-        if self.diff_options["method"] != "backprop" and self.interface is not None:
+
+        explicit_backprop = self.diff_options["method"] == "backprop"
+        best_and_passthru = self.diff_options["method"] == "best" and "passthru_interface" in self.device.capabilities()
+        not_backprop_diff = not explicit_backprop and not best_and_passthru
+        if not_backprop_diff and self.interface is not None:
             # pylint: disable=protected-access
             if state_returns and self.interface in ["torch", "tf"]:
                 # The state is complex and we need to indicate this in the to_torch or to_tf
