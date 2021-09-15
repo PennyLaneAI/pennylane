@@ -92,8 +92,7 @@ class QubitUnitary(Operation):
             return decomp_ops
 
         raise NotImplementedError(
-            "Decompositions only supported for single-qubit unitaries and "
-            "select two-qubit unitaries."
+            "Decompositions only supported for single- and two-qubit unitaries."
         )
 
     def adjoint(self):
