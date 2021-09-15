@@ -19,15 +19,21 @@ from pennylane import numpy as np
 from pennylane import math
 
 from .single_qubit_unitary import zyz_decomposition
-from .utils import _convert_to_su4, _compute_num_cnots, _su2su2_to_tensor_products, E, Edag
+from .utils import (
+    _convert_to_su4,
+    _compute_num_cnots,
+    _su2su2_to_tensor_products,
+    _extract_su2su2_prefactors,
+    E,
+    Edag,
+    LAST_COL_NEG,
+)
 
 
 # Helpful to have static copies of these since they are needed in a few places.
 CNOT01 = qml.CNOT(wires=[0, 1]).matrix
 CNOT10 = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
 SWAP = qml.SWAP(wires=[0, 1]).matrix
-
-LAST_COL_NEG = np.diag([1, 1, 1, -1])  # used to negate the last column of a matrix
 
 # Any two-qubit operation can be decomposed into single-qubit operations and
 # at most 3 CNOTs. The number of CNOTs needed affects the form of the decomposition,
@@ -70,10 +76,6 @@ def _decomposition_1_cnot(U, wires):
     # First let's compute gamma(u). For the one-CNOT case, uuT is always real.
     u = math.dot(math.cast_like(Edag, U), math.dot(swap_U, math.cast_like(E, U)))
     uuT = math.dot(u, math.T(u))
-
-    # If uuT is not perfectly real, then this is actually a 2-CNOT gate
-    if qml.math.allclose(qml.math.real(uuT), qml.math.zeros_like(uuT)):
-        return _decomposition_2_cnots(U, wires)
 
     # Since uuT is real, we can use eigh of its real part. eigh also orders the
     # eigenvalues in ascending order.
@@ -122,100 +124,6 @@ def _decomposition_1_cnot(U, wires):
     return C_ops + D_ops + [qml.CNOT(wires=[wires[0], wires[1]])] + A_ops + B_ops
 
 
-def _extract_su2su2_prefactors(U, V):
-    r"""This function is used for the case of 2 CNOTs and 3 CNOTs. It does something
-    similar as the 1-CNOT case, but there is no special form for one of the
-    SO(4) operations.
-
-    Suppose U, V are SU(4) matrices for which there exists A, B, C, D such that
-    (A \otimes B) V (C \otimes D) = U. The problem is to find A, B, C, D in SU(2)
-    in an analytic and fully differentiable manner.
-
-    This decomposition is possible when U and V are in the same double coset of
-    SU(4), meaning there exists G, H in SO(4) s.t. G (Edag V E) H = (Edag U
-    E). This is guaranteed here by how V was constructed in both the
-    _decomposition_2_cnots and _decomposition_3_cnots methods.
-
-    Then, we can use the fact that E SO(4) Edag gives us something in SU(2) x
-    SU(2) to give A, B, C, D.
-
-    """
-
-    # A lot of the work here happens in the magic basis. Essentially, we
-    # don't look explicitly at some U = G V H, but rather at
-    #     E^\dagger U E = G E^\dagger V E H
-    # so that we can recover
-    #     U = (E G E^\dagger) V (E H E^\dagger) = (A \otimes B) V (C \otimes D).
-    # There is some math in the paper explaining how when we define U in this way,
-    # we can simultaneously diagonalize functions of U and V to ensure they are
-    # in the same coset and recover the decomposition.
-
-    u = math.dot(math.cast_like(Edag, V), math.dot(U, math.cast_like(E, V)))
-    v = math.dot(math.cast_like(Edag, V), math.dot(V, math.cast_like(E, V)))
-
-    uuT = math.dot(u, math.T(u))
-    vvT = math.dot(v, math.T(v))
-
-    # First, we find a matrix p (hopefully) in SO(4) s.t. p^T u u^T p is diagonal.
-    # Note that if uuT or vvT is purely real, we can use eigh which will automatically
-    # order the eigensystem for us.
-    if math.allclose(math.imag(uuT), math.zeros_like(u)):
-        ev_p, p = math.linalg.eigh(math.real(uuT))
-    else:
-        ev_p, p = math.linalg.eig(uuT)
-
-    # We also do this for v, i.e., find q (hopefully) in SO(4) s.t. q^T v v^T q is diagonal.
-    if math.allclose(math.imag(vvT), math.zeros_like(v)):
-        ev_q, q = math.linalg.eigh(math.real(vvT))
-    else:
-        ev_q, q = math.linalg.eig(vvT)
-
-    # Now we must sort the eigenvalues into the same order if this is not
-    # a special case where it is already done.
-    if not math.allclose(ev_p, ev_q):
-        new_q_order = []
-        for _, eigval in enumerate(ev_p):
-            are_close = [math.allclose(x, eigval) for x in ev_q]
-
-            if any(are_close):
-                new_q_order.append(math.argmax(are_close))
-
-        # Reshuffle the columns.
-        q_perm = np.identity(4)[:, np.array(new_q_order)]
-        q = math.dot(q, math.cast_like(q_perm, q))
-
-    # If determinant of p is not 1, it is in O(4) but not SO(4), and has
-    # determinant -1. We can transform it to SO(4) by simply negating one
-    # of the columns.
-    if not math.allclose(math.linalg.det(p), 1.0):
-        p = math.dot(p, math.cast_like(LAST_COL_NEG, p))
-
-    # Depending on the sign of the permutation, it may be that q is in O(4) but
-    # not SO(4). Again we can fix this by simply negating a column.
-    if not math.allclose(math.linalg.det(q), 1.0):
-        q = math.dot(q, math.cast_like(LAST_COL_NEG, q))
-
-    # Now, we should have p, q in SO(4) such that p^T u u^T p = q^T v v^T q.
-    # Then (v^\dag q p^T u)(v^\dag q p^T u)^T = I.
-    # So we can set G = p q^T, H = v^\dag q p^T u to obtain G v H = u.
-    G = math.dot(p, math.T(q))
-    H = math.dot(math.conj(math.T(v)), math.dot(math.T(G), u))
-
-    # These are still in SO(4) though - we want to convert things into SU(2) x SU(2)
-    # so use the entangler. Since u = E^\dagger U E and v = E^\dagger V E where U, V
-    # are the target matrices, we can reshuffle as in the docstring above,
-    #     U = (E G E^\dagger) V (E H E^\dagger) = (A \otimes B) V (C \otimes D)
-    # where A, B, C, D are in SU(2) x SU(2).
-    AB = math.dot(math.cast_like(E, V), math.dot(G, math.cast_like(Edag, V)))
-    CD = math.dot(math.cast_like(E, V), math.dot(H, math.cast_like(Edag, V)))
-
-    # Now, we just need to extract the constituent tensor products.
-    A, B = _su2su2_to_tensor_products(AB)
-    C, D = _su2su2_to_tensor_products(CD)
-
-    return A, B, C, D
-
-
 def _decomposition_2_cnots(U, wires):
     r"""If 2 CNOTs are required, we can write the circuit as
      -U- = -A--X--RZ(d)--X--C-
@@ -242,7 +150,13 @@ def _decomposition_2_cnots(U, wires):
     # where SZ and SX are square roots of Z and X respectively. For some reason this
     # case is not handled properly with the full algorithm, so we treat it separately.
 
-    if math.allclose(math.sort(evs), [-1, -1, 1, 1]):
+    if math.get_interface(u) == "torch":
+        # Torch's sort function returns both the sorted values and the new order
+        sorted_evs, _ = math.sort(math.real(evs))
+    else:
+        sorted_evs = math.sort(math.real(evs))
+
+    if math.allclose(sorted_evs, [-1, -1, 1, 1]):
         interior_decomp = [
             qml.CNOT(wires=[wires[1], wires[0]]),
             qml.S(wires=wires[0]),
@@ -319,8 +233,9 @@ def _decomposition_3_cnots(U, wires):
     gammaU = math.dot(u, math.T(u))
     evs, _ = math.linalg.eig(gammaU)
 
-    # To get consistent results in all interfaces, sort the eigenvalues first
-    angles = qml.math.sort([math.angle(ev) for ev in evs])
+    # We will sort the angles so that results are consistent across interfaces.
+    angles = math.sort([math.angle(ev) for ev in evs])
+
     x, y, z = angles[0], angles[1], angles[2]
 
     # Compute functions of the eigenvalues; there are different options in v1

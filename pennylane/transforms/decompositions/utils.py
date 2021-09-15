@@ -21,6 +21,7 @@ from pennylane import numpy as np
 E = np.array([[1, 1j, 0, 0], [0, 0, 1j, 1], [0, 0, 1j, -1], [1, -1j, 0, 0]]) / np.sqrt(2)
 Edag = E.conj().T
 
+LAST_COL_NEG = np.diag([1, 1, 1, -1])  # used to negate the last column of a matrix
 
 def _convert_to_su4(U):
     r"""Check unitarity of a 4x4 matrix and convert it to :math:`SU(4)` if the determinant is not 1.
@@ -67,6 +68,12 @@ def _compute_num_cnots(U):
     # with both real and imaginary parts.
     num_cnots = 3
 
+    # At one point, to distinguish between 1/2 CNOT cases, we need to look at the eigenvalues
+    if math.get_interface(u) == "torch":
+        sorted_evs, _ = math.sort(math.imag(evs))
+    else:
+        sorted_evs = math.sort(math.imag(evs))
+
     # Case: 0 CNOTs (tensor product), the trace is +/- 4
     # We need a tolerance of around 1e-7 here in order to work with the case where U
     # is specified with 8 decimal places.
@@ -75,12 +82,10 @@ def _compute_num_cnots(U):
     # Case: 1 CNOT, the trace is 0, and the eigenvalues of gammaU are [-1j, -1j, 1j, 1j]
     # Checking the eigenvalues is needed because of some special 2-CNOT cases that yield
     # a trace 0.
-    elif math.allclose(trace, 0.0, atol=1e-7) and math.allclose(
-        math.sort(math.imag(evs)), [-1, -1, 1, 1]
-    ):
+    elif math.allclose(trace, 0j, atol=1e-7) and math.allclose(sorted_evs, [-1, -1, 1, 1]):
         num_cnots = 1
     # Case: 2 CNOTs, the trace has only a real part (or is 0)
-    elif math.allclose(math.imag(trace), 0, atol=1e-7):
+    elif math.allclose(math.imag(trace), 0.0, atol=1e-7):
         num_cnots = 2
 
     return num_cnots
@@ -128,3 +133,117 @@ def _su2su2_to_tensor_products(U):
         B = C2 / math.cast_like(A[0, 1], 1j)
 
     return math.convert_like(A, U), math.convert_like(B, U)
+
+
+def _extract_so4_eigensystem(uuT):
+    r"""Given a complex, symmetric matrix uuT, find a matrix p in SO(4) that
+    diagonalizes it.
+
+    The way we will do this is by noting that, since uuT is complex and
+    symmetric, both its real and imaginary parts share a set of real-valued
+    eigenvectors, which are also eigenvectors of uuT itself. So we will find
+    those vectors, and then extract the corresponding eigenvalues.
+    """
+    # First we get a set of real eigenvectors 
+    _, p = math.linalg.eigh(math.real(uuT) + math.imag(uuT))
+
+    # Next, we will extract the eigenvalues by doing np.dot(uuT, p) / p, and
+    # taking the values from the columns. However, to account that there might
+    # be 0 values in p, we go column by column and extract the eigenvalues from
+    # the non-zero elements only.
+    ev_p = []
+
+    uuT_p = math.dot(uuT, math.cast_like(p, 1j))
+
+    for col_idx in range(4):
+        non_zero_index = np.nonzero(np.logical_not(np.isclose(p[:, col_idx], np.zeros(4))))
+        non_zero_uuT_p = math.take(uuT_p[:, col_idx], non_zero_index)[0, 0]
+        non_zero_p = math.take(p[:, col_idx], non_zero_index)[0, 0]
+        ev_p.append(non_zero_uuT_p / math.cast_like(non_zero_p, 1j))
+
+    ev_p = math.cast_like(math.convert_like(ev_p, uuT), 1j)
+
+    return ev_p, p
+
+def _extract_su2su2_prefactors(U, V):
+    r"""This function is used for the case of 2 CNOTs and 3 CNOTs. It does something
+    similar as the 1-CNOT case, but there is no special form for one of the
+    SO(4) operations.
+
+    Suppose U, V are SU(4) matrices for which there exists A, B, C, D such that
+    (A \otimes B) V (C \otimes D) = U. The problem is to find A, B, C, D in SU(2)
+    in an analytic and fully differentiable manner.
+
+    This decomposition is possible when U and V are in the same double coset of
+    SU(4), meaning there exists G, H in SO(4) s.t. G (Edag V E) H = (Edag U
+    E). This is guaranteed here by how V was constructed in both the
+    _decomposition_2_cnots and _decomposition_3_cnots methods.
+
+    Then, we can use the fact that E SO(4) Edag gives us something in SU(2) x
+    SU(2) to give A, B, C, D.
+    """
+
+    # A lot of the work here happens in the magic basis. Essentially, we
+    # don't look explicitly at some U = G V H, but rather at
+    #     E^\dagger U E = G E^\dagger V E H
+    # so that we can recover
+    #     U = (E G E^\dagger) V (E H E^\dagger) = (A \otimes B) V (C \otimes D).
+    # There is some math in the paper explaining how when we define U in this way,
+    # we can simultaneously diagonalize functions of U and V to ensure they are
+    # in the same coset and recover the decomposition.
+
+    u = math.dot(math.cast_like(Edag, V), math.dot(U, math.cast_like(E, V)))
+    v = math.dot(math.cast_like(Edag, V), math.dot(V, math.cast_like(E, V)))
+
+    uuT = math.dot(u, math.T(u))
+    vvT = math.dot(v, math.T(v))
+
+    # Get the p and q in SO(4) that diagonalize uuT and vvT respectively (and
+    # their eigenvalues)
+    ev_p, p = _extract_so4_eigensystem(uuT)
+    ev_q, q = _extract_so4_eigensystem(vvT)
+    
+    # Now we must sort the eigenvalues into the same order if this is not
+    # a special case where it is already done.
+    if not math.allclose(ev_p, ev_q):
+        new_q_order = []
+        for _, eigval in enumerate(ev_p):
+            are_close = [math.allclose(x, eigval) for x in ev_q]
+
+            if any(are_close):
+                new_q_order.append(math.argmax(are_close))
+
+        # Reshuffle the columns.
+        q_perm = np.identity(4)[:, np.array(new_q_order)]
+        q = math.dot(q, math.cast_like(q_perm, q))
+
+    # If determinant of p is not 1, it is in O(4) but not SO(4), and has
+    # determinant -1. We can transform it to SO(4) by simply negating one
+    # of the columns.
+    if not math.allclose(math.linalg.det(p), 1.0):
+        p = math.dot(p, math.cast_like(LAST_COL_NEG, p))
+
+    # Depending on the sign of the permutation, it may be that q is in O(4) but
+    # not SO(4). Again we can fix this by simply negating a column.
+    if not math.allclose(math.linalg.det(q), 1.0):
+        q = math.dot(q, math.cast_like(LAST_COL_NEG, q))
+
+    # Now, we should have p, q in SO(4) such that p^T u u^T p = q^T v v^T q.
+    # Then (v^\dag q p^T u)(v^\dag q p^T u)^T = I.
+    # So we can set G = p q^T, H = v^\dag q p^T u to obtain G v H = u.
+    G = math.dot(math.cast_like(p, 1j), math.T(q))
+    H = math.dot(math.conj(math.T(v)), math.dot(math.T(G), u))
+
+    # These are still in SO(4) though - we want to convert things into SU(2) x SU(2)
+    # so use the entangler. Since u = E^\dagger U E and v = E^\dagger V E where U, V
+    # are the target matrices, we can reshuffle as in the docstring above,
+    #     U = (E G E^\dagger) V (E H E^\dagger) = (A \otimes B) V (C \otimes D)
+    # where A, B, C, D are in SU(2) x SU(2).
+    AB = math.dot(math.cast_like(E, G), math.dot(G, math.cast_like(Edag, G)))
+    CD = math.dot(math.cast_like(E, H), math.dot(H, math.cast_like(Edag, H)))
+
+    # Now, we just need to extract the constituent tensor products.
+    A, B = _su2su2_to_tensor_products(AB)
+    C, D = _su2su2_to_tensor_products(CD)
+
+    return A, B, C, D

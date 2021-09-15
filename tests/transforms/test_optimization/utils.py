@@ -14,25 +14,8 @@
 """Convenient utility functions for testing optimization transforms."""
 
 import pennylane as qml
-
+from pennylane import numpy as np
 from gate_data import I, SWAP
-
-
-def _RZ(theta):
-    return qml.math.array(
-        [
-            [qml.math.exp(-1j * qml.math.cast_like(theta, 1j) / 2), 0],
-            [0, qml.math.exp(1j * qml.math.cast_like(theta, 1j) / 2)],
-        ]
-    )
-
-
-def _Rot(theta, phi, omega):
-    RZ1 = _RZ(theta)
-    RY = qml.RY(phi, wires=0).matrix
-    RZ2 = _RZ(omega)
-
-    return qml.math.dot(RZ2, qml.math.dot(qml.math.cast_like(RY, RZ1), RZ1))
 
 
 def compute_matrix_from_ops_one_qubit(ops):
@@ -48,30 +31,34 @@ def compute_matrix_from_ops_one_qubit(ops):
 def compute_matrix_from_ops_two_qubit(ops, wire_order):
     """Given a list of two-qubit operations, construct its matrix representation."""
 
-    mat = qml.math.eye(4)
+    mat = np.eye(4)
 
     wire_order = qml.wires.Wires(wire_order)
 
     for op in ops:
         op_wires = qml.wires.Wires(op.wires)
 
-        if op.name == "RZ" and qml.math.get_interface(op.parameters[0]) == "tensorflow":
-            op_mat = qml.math.unwrap(_RZ(op.parameters[0]))
-        elif op.name == "Rot" and qml.math.get_interface(op.parameters[0]) == "tensorflow":
-            op_mat = qml.math.unwrap(_Rot(*op.parameters))
-        else:
-            op_mat = qml.math.unwrap(op.matrix)
-
         if len(op_wires) == 1:
-            if op_wires[0] == wire_order[0]:
-                mat = qml.math.dot(qml.math.kron(op_mat, I), mat)
+            # These first two cases are to cover tensorflow quirks
+            if op.name == "RZ":
+                op_mat = qml.RZ(*qml.math.unwrap(op.parameters), wires=0).matrix
+            elif op.name == "Rot":
+                op_mat = qml.Rot(*qml.math.unwrap(op.parameters), wires=0).matrix
             else:
-                mat = qml.math.dot(qml.math.kron(I, op_mat), mat)
+                op_mat = qml.math.unwrap(op.matrix)
+
+            if op_wires[0] == wire_order[0]:
+                tensor_prod = np.kron(op_mat, I)
+            else:
+                tensor_prod = np.kron(I, op_mat)
+
+            mat = np.dot(tensor_prod, mat)
+
         else:
             if op_wires == wire_order:
-                mat = qml.math.dot(op_mat, mat)
+                mat = np.dot(op.matrix, mat)
             else:
-                mat = qml.math.linalg.multi_dot([SWAP, op_mat, SWAP, mat])
+                mat = np.linalg.multi_dot([SWAP, op.matrix, SWAP, mat])
 
     return mat
 
