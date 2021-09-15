@@ -375,7 +375,7 @@ def test_get_unitary_matrix_interface_torch():
     assert np.allclose(matrix, expected_matrix)
 
 
-def test_get_unitary_matrix_interface_reg():
+def test_get_unitary_matrix_interface_autograd():
     """Test autograd interface"""
 
     dev = qml.device("default.qubit", wires=3)
