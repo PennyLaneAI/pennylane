@@ -307,7 +307,7 @@
 
 * A warning is raised to inform the user that specifying a list of shots is
   only supported for `QubitDevice` based devices.
-  [(#XXX)](https://github.com/PennyLaneAI/pennylane/pull/XXX)
+  [(#1659)](https://github.com/PennyLaneAI/pennylane/pull/1659)
 
 * The `qml.circuit_drawer.MPLDrawer` class provides manual circuit drawing
   functionality using Matplotlib. While not yet integrated with automatic circuit
