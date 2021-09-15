@@ -111,11 +111,12 @@ class_jacs = [
 ]
 
 
+@pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
 @pytest.mark.parametrize("circuit, args, expected_jac", zip(circuits, args, class_jacs))
-def test_autograd_without_argnum(circuit, args, expected_jac):
+def test_autograd_without_argnum(circuit, args, expected_jac, diff_method):
     r"""Test ``classical_jacobian`` with ``argnum=None`` and Autograd."""
     dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface="autograd")
+    qnode = qml.QNode(circuit, dev, interface="autograd", diff_method=diff_method)
     jac = classical_jacobian(qnode)(*args)
 
     # NOTE: We use stacking to replicate qml.jacobian behaviour for scalar-only inputs
@@ -131,27 +132,28 @@ def test_autograd_without_argnum(circuit, args, expected_jac):
             assert np.allclose(_jac, _expected_jac)
 
 
+@pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
 @pytest.mark.parametrize("circuit, args, expected_jac", zip(circuits, args, class_jacs))
-def test_jax_without_argnum(circuit, args, expected_jac):
+def test_jax_without_argnum(circuit, args, expected_jac, diff_method):
     r"""Test ``classical_jacobian`` with ``argnum=None`` and JAX."""
     # Do not need the package but skip if JAX device not available
     pytest.importorskip("jax")
     # JAX behaviour: argnum=None yields only the Jacobian with respect to the first arg.
     expected_jac = expected_jac[0]
     dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface="jax")
+    qnode = qml.QNode(circuit, dev, interface="jax", diff_method=diff_method)
     jac = classical_jacobian(qnode)(*args)
-
     assert np.allclose(jac, expected_jac)
 
 
+@pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
 @pytest.mark.parametrize("circuit, args, expected_jac", zip(circuits, args, class_jacs))
-def test_tf_without_argnum(circuit, args, expected_jac):
+def test_tf_without_argnum(circuit, args, expected_jac, diff_method):
     r"""Test ``classical_jacobian`` with ``argnum=None`` and Tensorflow."""
     tf = pytest.importorskip("tensorflow")
     args = tuple((tf.Variable(arg, dtype=tf.double) for arg in args))
     dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface="tf")
+    qnode = qml.QNode(circuit, dev, interface="tf", diff_method=diff_method)
     jac = classical_jacobian(qnode)(*args)
 
     assert len(jac) == len(expected_jac)
@@ -159,13 +161,14 @@ def test_tf_without_argnum(circuit, args, expected_jac):
         assert np.allclose(_jac, _expected_jac)
 
 
+@pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
 @pytest.mark.parametrize("circuit, args, expected_jac", zip(circuits, args, class_jacs))
-def test_torch_without_argnum(circuit, args, expected_jac):
+def test_torch_without_argnum(circuit, args, expected_jac, diff_method):
     r"""Test ``classical_jacobian`` with ``argnum=None`` and Torch."""
     torch = pytest.importorskip("torch")
     args = tuple((torch.tensor(arg) for arg in args))
     dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface="torch")
+    qnode = qml.QNode(circuit, dev, interface="torch", diff_method=diff_method)
     jac = classical_jacobian(qnode)(*args)
 
     assert len(jac) == len(expected_jac)
@@ -176,55 +179,59 @@ def test_torch_without_argnum(circuit, args, expected_jac):
 scalar_argnum = [0, 1, 0, 1, 0, 1]
 
 
+@pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
 @pytest.mark.parametrize(
     "circuit, args, expected_jac, argnum", zip(circuits, args, class_jacs, scalar_argnum)
 )
-def test_autograd_with_scalar_argnum(circuit, args, expected_jac, argnum):
+def test_autograd_with_scalar_argnum(circuit, args, expected_jac, argnum, diff_method):
     r"""Test ``classical_jacobian`` with ``argnum=<int>`` and Autograd."""
     dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface="autograd")
+    qnode = qml.QNode(circuit, dev, interface="autograd", diff_method=diff_method)
     jac = classical_jacobian(qnode, argnum=argnum)(*args)
     expected_jac = expected_jac[argnum]
     assert np.allclose(jac, expected_jac)
 
 
+@pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
 @pytest.mark.parametrize(
     "circuit, args, expected_jac, argnum", zip(circuits, args, class_jacs, scalar_argnum)
 )
-def test_jax_with_scalar_argnum(circuit, args, expected_jac, argnum):
+def test_jax_with_scalar_argnum(circuit, args, expected_jac, argnum, diff_method):
     r"""Test ``classical_jacobian`` with ``argnum=<int>`` and JAX."""
     # Do not need the package but skip if JAX device not available
     pytest.importorskip("jax")
     dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface="jax")
+    qnode = qml.QNode(circuit, dev, interface="jax", diff_method=diff_method)
     jac = classical_jacobian(qnode, argnum=argnum)(*args)
     expected_jac = expected_jac[argnum]
     assert np.allclose(jac, expected_jac)
 
 
+@pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
 @pytest.mark.parametrize(
     "circuit, args, expected_jac, argnum", zip(circuits, args, class_jacs, scalar_argnum)
 )
-def test_tf_with_scalar_argnum(circuit, args, expected_jac, argnum):
+def test_tf_with_scalar_argnum(circuit, args, expected_jac, argnum, diff_method):
     r"""Test ``classical_jacobian`` with ``argnum=<int>`` and TensorFlow."""
     tf = pytest.importorskip("tensorflow")
     args = tuple((tf.Variable(arg, dtype=tf.double) for arg in args))
     dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface="tf")
+    qnode = qml.QNode(circuit, dev, interface="tf", diff_method=diff_method)
     jac = classical_jacobian(qnode, argnum=argnum)(*args)
     expected_jac = expected_jac[argnum]
     assert np.allclose(jac, expected_jac)
 
 
+@pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
 @pytest.mark.parametrize(
     "circuit, args, expected_jac, argnum", zip(circuits, args, class_jacs, scalar_argnum)
 )
-def test_torch_with_scalar_argnum(circuit, args, expected_jac, argnum):
+def test_torch_with_scalar_argnum(circuit, args, expected_jac, argnum, diff_method):
     r"""Test ``classical_jacobian`` with ``argnum=<int>`` and Torch."""
     torch = pytest.importorskip("torch")
     args = tuple((torch.tensor(arg) for arg in args))
     dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface="torch")
+    qnode = qml.QNode(circuit, dev, interface="torch", diff_method=diff_method)
     jac = classical_jacobian(qnode, argnum=argnum)(*args)
     expected_jac = expected_jac[argnum]
     assert np.allclose(jac, expected_jac)
@@ -233,58 +240,62 @@ def test_torch_with_scalar_argnum(circuit, args, expected_jac, argnum):
 single_list_argnum = [[0], [1], [0], [1], [0], [2]]
 
 
+@pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
 @pytest.mark.parametrize(
     "circuit, args, expected_jac, argnum", zip(circuits, args, class_jacs, single_list_argnum)
 )
-def test_autograd_with_single_list_argnum(circuit, args, expected_jac, argnum):
+def test_autograd_with_single_list_argnum(circuit, args, expected_jac, argnum, diff_method):
     r"""Test ``classical_jacobian`` with ``argnum=Sequence[int]`` of length 1 and Autograd."""
     dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface="autograd")
+    qnode = qml.QNode(circuit, dev, interface="autograd", diff_method=diff_method)
     jac = classical_jacobian(qnode, argnum=argnum)(*args)
     expected_jac = (expected_jac[argnum[0]],)
     assert len(jac) == 1
     assert np.allclose(jac[0], expected_jac[0])
 
 
+@pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
 @pytest.mark.parametrize(
     "circuit, args, expected_jac, argnum", zip(circuits, args, class_jacs, single_list_argnum)
 )
-def test_jax_with_single_list_argnum(circuit, args, expected_jac, argnum):
+def test_jax_with_single_list_argnum(circuit, args, expected_jac, argnum, diff_method):
     r"""Test ``classical_jacobian`` with ``argnum=Sequence[int]`` of length 1 and JAX."""
     # Do not need the package but skip if JAX device not available
     pytest.importorskip("jax")
     dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface="jax")
+    qnode = qml.QNode(circuit, dev, interface="jax", diff_method=diff_method)
     jac = classical_jacobian(qnode, argnum=argnum)(*args)
     expected_jac = (expected_jac[argnum[0]],)
     assert len(jac) == 1
     assert np.allclose(jac[0], expected_jac[0])
 
 
+@pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
 @pytest.mark.parametrize(
     "circuit, args, expected_jac, argnum", zip(circuits, args, class_jacs, single_list_argnum)
 )
-def test_tf_with_single_list_argnum(circuit, args, expected_jac, argnum):
+def test_tf_with_single_list_argnum(circuit, args, expected_jac, argnum, diff_method):
     r"""Test ``classical_jacobian`` with ``argnum=Sequence[int]`` of length 1 and TensorFlow."""
     tf = pytest.importorskip("tensorflow")
     args = tuple((tf.Variable(arg, dtype=tf.double) for arg in args))
     dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface="tf")
+    qnode = qml.QNode(circuit, dev, interface="tf", diff_method=diff_method)
     jac = classical_jacobian(qnode, argnum=argnum)(*args)
     expected_jac = (expected_jac[argnum[0]],)
     assert len(jac) == 1
     assert np.allclose(jac[0], expected_jac[0])
 
 
+@pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
 @pytest.mark.parametrize(
     "circuit, args, expected_jac, argnum", zip(circuits, args, class_jacs, single_list_argnum)
 )
-def test_torch_with_single_list_argnum(circuit, args, expected_jac, argnum):
+def test_torch_with_single_list_argnum(circuit, args, expected_jac, argnum, diff_method):
     r"""Test ``classical_jacobian`` with ``argnum=Sequence[int]`` of length 1 and Torch."""
     torch = pytest.importorskip("torch")
     args = tuple((torch.tensor(arg) for arg in args))
     dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface="torch")
+    qnode = qml.QNode(circuit, dev, interface="torch", diff_method=diff_method)
     jac = classical_jacobian(qnode, argnum=argnum)(*args)
     expected_jac = (expected_jac[argnum[0]],)
     assert len(jac) == 1
@@ -294,13 +305,14 @@ def test_torch_with_single_list_argnum(circuit, args, expected_jac, argnum):
 sequence_argnum = [[0], [0, 1], (0,), [0, 1], (0, 1), {0, 2}]
 
 
+@pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
 @pytest.mark.parametrize(
     "circuit, args, expected_jac, argnum", zip(circuits, args, class_jacs, sequence_argnum)
 )
-def test_autograd_with_sequence_argnum(circuit, args, expected_jac, argnum):
+def test_autograd_with_sequence_argnum(circuit, args, expected_jac, argnum, diff_method):
     r"""Test ``classical_jacobian`` with ``argnum=Sequence[int]`` and Autograd."""
     dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface="autograd")
+    qnode = qml.QNode(circuit, dev, interface="autograd", diff_method=diff_method)
     jac = classical_jacobian(qnode, argnum=argnum)(*args)
     expected_jac = tuple((expected_jac[num] for num in argnum))
     assert len(jac) == len(expected_jac)
@@ -308,15 +320,16 @@ def test_autograd_with_sequence_argnum(circuit, args, expected_jac, argnum):
         assert np.allclose(_jac, _expected_jac)
 
 
+@pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
 @pytest.mark.parametrize(
     "circuit, args, expected_jac, argnum", zip(circuits, args, class_jacs, sequence_argnum)
 )
-def test_jax_with_sequence_argnum(circuit, args, expected_jac, argnum):
+def test_jax_with_sequence_argnum(circuit, args, expected_jac, argnum, diff_method):
     r"""Test ``classical_jacobian`` with ``argnum=Sequence[int]`` and JAX."""
     # Do not need the package but skip if JAX device not available
     pytest.importorskip("jax")
     dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface="jax")
+    qnode = qml.QNode(circuit, dev, interface="jax", diff_method=diff_method)
     jac = classical_jacobian(qnode, argnum=argnum)(*args)
     expected_jac = tuple((expected_jac[num] for num in argnum))
     assert len(jac) == len(expected_jac)
@@ -324,15 +337,16 @@ def test_jax_with_sequence_argnum(circuit, args, expected_jac, argnum):
         assert np.allclose(_jac, _expected_jac)
 
 
+@pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
 @pytest.mark.parametrize(
     "circuit, args, expected_jac, argnum", zip(circuits, args, class_jacs, sequence_argnum)
 )
-def test_tf_with_sequence_argnum(circuit, args, expected_jac, argnum):
+def test_tf_with_sequence_argnum(circuit, args, expected_jac, argnum, diff_method):
     r"""Test ``classical_jacobian`` with ``argnum=Sequence[int]`` and TensorFlow."""
     tf = pytest.importorskip("tensorflow")
     args = tuple((tf.Variable(arg, dtype=tf.double) for arg in args))
     dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface="tf")
+    qnode = qml.QNode(circuit, dev, interface="tf", diff_method=diff_method)
     jac = classical_jacobian(qnode, argnum=argnum)(*args)
     expected_jac = tuple((expected_jac[num] for num in argnum))
     assert len(jac) == len(expected_jac)
@@ -340,15 +354,16 @@ def test_tf_with_sequence_argnum(circuit, args, expected_jac, argnum):
         assert np.allclose(_jac, _expected_jac)
 
 
+@pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
 @pytest.mark.parametrize(
     "circuit, args, expected_jac, argnum", zip(circuits, args, class_jacs, sequence_argnum)
 )
-def test_torch_with_sequence_argnum(circuit, args, expected_jac, argnum):
+def test_torch_with_sequence_argnum(circuit, args, expected_jac, argnum, diff_method):
     r"""Test ``classical_jacobian`` with ``argnum=Sequence[int]`` and Torch."""
     torch = pytest.importorskip("torch")
     args = tuple((torch.tensor(arg) for arg in args))
     dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface="torch")
+    qnode = qml.QNode(circuit, dev, interface="torch", diff_method=diff_method)
     jac = classical_jacobian(qnode, argnum=argnum)(*args)
     expected_jac = tuple((expected_jac[num] for num in argnum))
     assert len(jac) == len(expected_jac)
