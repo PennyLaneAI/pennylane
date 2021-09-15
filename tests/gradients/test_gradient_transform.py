@@ -270,7 +270,7 @@ class TestGradientTransformIntegration:
 
         res = qml.gradients.param_shift(circuit)(d, w)
         classical_jac = spy.spy_return(d, w)
-        assert np.allclose(classical_jac, np.array([[0, 2 * w[0], 0], [0, 0, 1]]).T)
+        assert np.allclose(classical_jac, np.array([[2 * w[0], 0], [0, 1]]).T)
 
         expected = np.array([-2 * x * np.cos(np.cos(d)) * np.sin(x ** 2), 0])
         assert np.allclose(res, expected, atol=tol, rtol=0)
