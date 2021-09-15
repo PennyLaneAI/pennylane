@@ -16,7 +16,7 @@ This module contains the functions needed for computing matrices.
 """
 
 import autograd.numpy as anp
-from pennylane.hf.integrals import *
+from pennylane.hf.integrals import generate_overlap
 
 
 def density_matrix(n_electron, c):
