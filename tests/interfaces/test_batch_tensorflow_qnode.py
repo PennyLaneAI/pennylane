@@ -88,7 +88,7 @@ class TestQNode:
 
         from pennylane import numpy as anp
 
-        a = anp.array(0.1, requires_grad=True)
+        a = anp.array(0.1, dtype=tf.float64)
 
         res1 = circuit(a)
         grad_fn = qml.grad(circuit)
@@ -1041,3 +1041,219 @@ class TestCV:
         grad = tape.gradient(res, [n, a])
         expected = [2 * a ** 2 + 2 * n + 1, 2 * a * (2 * n + 1)]
         assert np.allclose(grad, expected, atol=tol, rtol=0)
+
+
+@pytest.mark.parametrize("dev_name,diff_method,mode", qubit_device_and_diff_method)
+class TestTapeExpansion:
+    """Test that tape expansion within the QNode integrates correctly
+    with the TF interface"""
+
+    def test_gradient_expansion(self, dev_name, diff_method, mode, mocker):
+        """Test that a *supported* operation with no gradient recipe is
+        expanded for both parameter-shift and finite-differences, but not for execution."""
+        if diff_method not in ("parameter-shift", "finite-diff"):
+            pytest.skip("Only supports gradient transforms")
+
+        dev = qml.device(dev_name, wires=1)
+
+        class PhaseShift(qml.PhaseShift):
+            grad_method = None
+
+            def expand(self):
+                with qml.tape.QuantumTape() as tape:
+                    qml.RY(3 * self.data[0], wires=self.wires)
+                return tape
+
+        @qnode(dev, diff_method=diff_method, mode=mode, max_diff=2, interface="tf")
+        def circuit(x):
+            qml.Hadamard(wires=0)
+            PhaseShift(x, wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        spy = mocker.spy(circuit.device, "batch_execute")
+        x = tf.Variable(0.5, dtype=tf.float64)
+
+        with tf.GradientTape() as t2:
+            with tf.GradientTape() as t1:
+                loss = circuit(x)
+
+            tape = spy.call_args[0][0][0]
+
+            spy = mocker.spy(circuit.gradient_fn, "transform_fn")
+            res = t1.gradient(loss, x)
+
+        input_tape = spy.call_args[0][0]
+        assert len(input_tape.operations) == 2
+        assert input_tape.operations[1].name == "RY"
+        assert input_tape.operations[1].data[0] == 3 * x
+
+        shifted_tape1, shifted_tape2 = spy.spy_return[0]
+
+        assert len(shifted_tape1.operations) == 2
+        assert shifted_tape1.operations[1].name == "RY"
+
+        assert len(shifted_tape2.operations) == 2
+        assert shifted_tape2.operations[1].name == "RY"
+
+        assert np.allclose(res, -3 * np.sin(3 * x))
+
+        if diff_method == "parameter-shift":
+            # test second order derivatives
+            res = t2.gradient(res, x)
+            assert np.allclose(res, -9 * np.cos(3 * x))
+
+    @pytest.mark.parametrize("max_diff", [1, 2])
+    def test_gradient_expansion_trainable_only(self, dev_name, diff_method, mode, max_diff, mocker):
+        """Test that a *supported* operation with no gradient recipe is only
+        expanded for parameter-shift and finite-differences when it is trainable."""
+        if diff_method not in ("parameter-shift", "finite-diff"):
+            pytest.skip("Only supports gradient transforms")
+
+        dev = qml.device(dev_name, wires=1)
+
+        class PhaseShift(qml.PhaseShift):
+            grad_method = None
+
+            def expand(self):
+                with qml.tape.QuantumTape() as tape:
+                    qml.RY(3 * self.data[0], wires=self.wires)
+                return tape
+
+        @qnode(dev, diff_method=diff_method, mode=mode, max_diff=max_diff, interface="tf")
+        def circuit(x, y):
+            qml.Hadamard(wires=0)
+            PhaseShift(x, wires=0)
+            PhaseShift(2 * y, wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        spy = mocker.spy(circuit.device, "batch_execute")
+        x = tf.Variable(0.5, dtype=tf.float64)
+        y = tf.constant(0.7, dtype=tf.float64)
+
+        with tf.GradientTape() as t:
+            res = circuit(x, y)
+
+        spy = mocker.spy(circuit.gradient_fn, "transform_fn")
+        res = t.gradient(res, [x, y])
+
+        input_tape = spy.call_args[0][0]
+        assert len(input_tape.operations) == 3
+        assert input_tape.operations[1].name == "RY"
+        assert input_tape.operations[1].data[0] == 3 * x
+        assert input_tape.operations[2].name == "PhaseShift"
+        assert input_tape.operations[2].grad_method is None
+
+    @pytest.mark.parametrize("max_diff", [1, 2])
+    def test_hamiltonian_expansion_analytic(self, dev_name, diff_method, mode, max_diff, mocker):
+        """Test that the Hamiltonian is not expanded if there
+        are non-commuting groups and the number of shots is None"""
+        if diff_method == "adjoint":
+            pytest.skip("The adjoint method does not yet support Hamiltonians")
+
+        dev = qml.device(dev_name, wires=3, shots=None)
+        spy = mocker.spy(qml.transforms, "hamiltonian_expand")
+        obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
+
+        @qnode(dev, diff_method=diff_method, mode=mode, max_diff=max_diff, interface="tf")
+        def circuit(data, weights, coeffs):
+            weights = tf.reshape(weights, [1, -1])
+            qml.templates.AngleEmbedding(data, wires=[0, 1])
+            qml.templates.BasicEntanglerLayers(weights, wires=[0, 1])
+            return qml.expval(qml.Hamiltonian(coeffs, obs))
+
+        d = tf.constant([0.1, 0.2], dtype=tf.float64)
+        w = tf.Variable([0.654, -0.734], dtype=tf.float64)
+        c = tf.Variable([-0.6543, 0.24, 0.54], dtype=tf.float64)
+
+        # test output
+        with tf.GradientTape(persistent=True) as t2:
+            with tf.GradientTape() as t1:
+                res = circuit(d, w, c)
+
+            expected = c[2] * np.cos(d[1] + w[1]) - c[1] * np.sin(d[0] + w[0]) * np.sin(d[1] + w[1])
+            assert np.allclose(res, expected)
+            spy.assert_not_called()
+
+            # test gradients
+            grad = t1.gradient(res, [d, w, c])
+
+        expected_w = [
+            -c[1] * np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]),
+            -c[1] * np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]) - c[2] * np.sin(d[1] + w[1]),
+        ]
+        expected_c = [0, -np.sin(d[0] + w[0]) * np.sin(d[1] + w[1]), np.cos(d[1] + w[1])]
+        assert np.allclose(grad[1], expected_w)
+        assert np.allclose(grad[2], expected_c)
+
+        # test second-order derivatives
+        if diff_method in ("parameter-shift", "backprop") and max_diff == 2:
+
+            grad2_c = t2.jacobian(grad[2], c)
+            assert grad2_c is None or np.allclose(grad2_c, 0)
+
+            grad2_w_c = t2.jacobian(grad[1], c)
+            expected = [0, -np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]), 0], [
+                0,
+                -np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]),
+                -np.sin(d[1] + w[1]),
+            ]
+            assert np.allclose(grad2_w_c, expected)
+
+    @pytest.mark.parametrize("max_diff", [1, 2])
+    def test_hamiltonian_expansion_finite_shots(
+        self, dev_name, diff_method, mode, max_diff, mocker
+    ):
+        """Test that the Hamiltonian is expanded if there
+        are non-commuting groups and the number of shots is finite"""
+        if diff_method in ("adjoint", "backprop", "finite-diff"):
+            pytest.skip("The adjoint and backprop methods do not yet support sampling")
+
+        dev = qml.device(dev_name, wires=3, shots=50000)
+        spy = mocker.spy(qml.transforms, "hamiltonian_expand")
+        obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
+
+        @qnode(dev, diff_method=diff_method, mode=mode, max_diff=max_diff, interface="tf")
+        def circuit(data, weights, coeffs):
+            weights = tf.reshape(weights, [1, -1])
+            qml.templates.AngleEmbedding(data, wires=[0, 1])
+            qml.templates.BasicEntanglerLayers(weights, wires=[0, 1])
+            H = qml.Hamiltonian(coeffs, obs)
+            H.compute_grouping()
+            return qml.expval(H)
+
+        d = tf.constant([0.1, 0.2], dtype=tf.float64)
+        w = tf.Variable([0.654, -0.734], dtype=tf.float64)
+        c = tf.Variable([-0.6543, 0.24, 0.54], dtype=tf.float64)
+
+        # # test output
+        with tf.GradientTape(persistent=True) as t2:
+            with tf.GradientTape() as t1:
+                res = circuit(d, w, c)
+
+            expected = c[2] * np.cos(d[1] + w[1]) - c[1] * np.sin(d[0] + w[0]) * np.sin(d[1] + w[1])
+            assert np.allclose(res, expected, atol=0.1)
+            spy.assert_called()
+
+            # test gradients
+            grad = t1.gradient(res, [d, w, c])
+
+        expected_w = [
+            -c[1] * np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]),
+            -c[1] * np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]) - c[2] * np.sin(d[1] + w[1]),
+        ]
+        expected_c = [0, -np.sin(d[0] + w[0]) * np.sin(d[1] + w[1]), np.cos(d[1] + w[1])]
+        assert np.allclose(grad[1], expected_w, atol=0.1)
+        assert np.allclose(grad[2], expected_c, atol=0.1)
+
+        # test second-order derivatives
+        if diff_method == "parameter-shift" and max_diff == 2:
+            grad2_c = t2.jacobian(grad[2], c)
+            assert grad2_c is None
+
+            grad2_w_c = t2.jacobian(grad[1], c)
+            expected = [0, -np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]), 0], [
+                0,
+                -np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]),
+                -np.sin(d[1] + w[1]),
+            ]
+            assert np.allclose(grad2_w_c, expected, atol=0.1)
