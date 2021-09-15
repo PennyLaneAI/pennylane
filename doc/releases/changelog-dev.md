@@ -1,3 +1,5 @@
+:orphan:
+
 # Release 0.19.0-dev (development release)
 
 <h3>New features since last release</h3>
@@ -46,6 +48,9 @@
 <h3>Breaking changes</h3>
 
 <h3>Bug fixes</h3>
+
+* The device suite tests can now execute successfully if no shots configuration variable is given.
+  [(#1641)](https://github.com/PennyLaneAI/pennylane/pull/1641)
 
 <h3>Documentation</h3>
 
