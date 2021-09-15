@@ -19,7 +19,7 @@ import autograd.numpy as anp
 from pennylane.hf.integrals import generate_overlap
 
 
-def density_matrix(n_electron, c):
+def molecular_density_matrix(n_electron, c):
     """Construct the density matrix.
 
     The density matrix, :math:`P`, is computed from the molecular orbital coefficients :math:`C` as

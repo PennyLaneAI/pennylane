@@ -23,5 +23,5 @@ from .integrals import (
     generate_overlap,
     primitive_norm,
 )
-from .matrices import density_matrix, overlap_matrix
+from .matrices import molecular_density_matrix, overlap_matrix
 from .molecule import *
