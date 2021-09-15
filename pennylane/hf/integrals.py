@@ -311,13 +311,14 @@ def generate_overlap(basis_a, basis_b):
 def _boys(n, t):
     r"""Evaluate Boys function.
 
-    The :math:`n`-th order Boys function is defined as [https://arxiv.org/abs/2107.01488]
+    The :math:`n`-th order `Boys function <https://arxiv.org/abs/2107.01488>`_ is defined as
 
     .. math::
 
         F_n(t) = \int_{0}^{1}x^{2n} e^{-tx^2}dx.
 
-    The Boys function is related to the lower incomplete Gamma function, :math:`\gamma`, as
+    The Boys function is related to the lower incomplete Gamma
+    `function <https://en.wikipedia.org/wiki/Incomplete_gamma_function>`_, :math:`\gamma`, as
 
     .. math::
 
@@ -473,9 +474,13 @@ def generate_attraction(r, basis_a, basis_b):
     **Example**
 
     >>> symbols  = ['H', 'H']
-    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
-    >>> mol = Molecule(symbols, geometry)
-    >>> args = []
+    >>> geometry = pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
+    >>> alpha = pnp.array([[3.425250914, 0.6239137298, 0.168855404],
+    >>>                    [3.425250914, 0.6239137298, 0.168855404]], requires_grad = True)
+    >>> mol = Molecule(symbols, geometry, alpha=alpha)
+    >>> basis_a = mol.basis_set[0]
+    >>> basis_b = mol.basis_set[1]
+    >>> args = [mol.alpha]
     >>> generate_attraction(geometry[0], mol.basis_set[0], mol.basis_set[1])(*args)
     0.801208332328965
     """
@@ -531,11 +536,13 @@ def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta
 
     .. math::
 
-        g_{abcd} = \frac{2\pi^{5/2}}{pq\sqrt{p+q}} \sum_{tuv} E_t^{l_a l_b} E_u^{m_a m_b} E_v^{n_a n_b} \sum_{rsw} (-1)^{r+s+w} E_r^{l_c l_d} E_s^{m_c m_d} E_w^{n_c n_d} R_{t+r, u+s, v+w},
+        g_{abcd} = \frac{2\pi^{5/2}}{pq\sqrt{p+q}} \sum_{tuv} E_t^{o_a o_b} E_u^{m_a m_b}
+        E_v^{n_a n_b} \sum_{rsw} (-1)^{r+s+w} E_r^{o_c o_d} E_s^{m_c m_d} E_w^{n_c n_d}
+        R_{t+r, u+s, v+w},
 
     where :math:`E` and :math:`R` represent the Hermite Gaussian expansion coefficient and the
     Hermite Coulomb integral, respectively. The sums go over the angular momentum quantum numbers
-    :math:`l_i + l_j + 1`, :math:`m_i + m_j + 1` and :math:`n_i + n_j + 1` respectively for
+    :math:`o_i + o_j + 1`, :math:`m_i + m_j + 1` and :math:`n_i + n_j + 1` respectively for
     :math:`t, u, v` and :math:`r, s, w`. The exponents of the Gaussian functions are used to compute
     :math:`p` and :math:`q` as :math:`p = \alpha + \beta` and :math:`q = \gamma + \delta`.
 
@@ -615,12 +622,12 @@ def generate_repulsion(basis_a, basis_b, basis_c, basis_d):
     **Example**
 
     >>> symbols  = ['H', 'H']
-    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
+    >>> geometry = pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = pnp.array([[3.425250914, 0.6239137298, 0.168855404],
     >>>                    [3.425250914, 0.6239137298, 0.168855404],
     >>>                    [3.425250914, 0.6239137298, 0.168855404],
     >>>                    [3.425250914, 0.6239137298, 0.168855404]], requires_grad = True)
-    >>> mol = hf.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = Molecule(symbols, geometry, alpha=alpha)
     >>> basis_a = mol.basis_set[0]
     >>> basis_b = mol.basis_set[1]
     >>> args = [mol.alpha]
