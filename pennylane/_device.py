@@ -16,6 +16,7 @@ This module contains the :class:`Device` abstract base class.
 """
 # pylint: disable=too-many-format-args, use-maxsplit-arg
 import abc
+import warnings
 from collections.abc import Iterable, Sequence
 from collections import OrderedDict, namedtuple
 from functools import lru_cache
@@ -406,6 +407,9 @@ class Device(abc.ABC):
         self._parameters.update(parameters)
 
         results = []
+        if self._shot_vector is not None:
+            warnings.warn("Specifying a list of shots is only supported for"\
+                          "QubitDevice based devices. Falling back to executions using all shots in the shot list.")
 
         with self.execution_context():
             self.pre_apply()
