@@ -594,7 +594,10 @@ class QNode:
         # apply the interface (if any)
 
         explicit_backprop = self.diff_options["method"] == "backprop"
-        best_and_passthru = self.diff_options["method"] == "best" and "passthru_interface" in self.device.capabilities()
+        best_and_passthru = (
+            self.diff_options["method"] == "best"
+            and "passthru_interface" in self.device.capabilities()
+        )
         not_backprop_diff = not explicit_backprop and not best_and_passthru
         if not_backprop_diff and self.interface is not None:
             # pylint: disable=protected-access

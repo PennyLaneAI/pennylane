@@ -319,7 +319,6 @@ class TestPassthruIntegration:
         expected = jnp.sin(a)
         assert jnp.allclose(grad, expected, atol=tol, rtol=0)
 
-
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, np.pi, 7))
     def test_CRot_gradient(self, theta, tol):
         """Tests that the automatic gradient of a arbitrary controlled Euler-angle-parameterized
@@ -472,6 +471,7 @@ class TestPassthruIntegration:
 
         qnode = qml.qnode(dev, diff_method="backprop", interface="jax")(circuit)
         assert jnp.allclose(qnode(), jnp.array([1, 0]))
+
 
 class TestHighLevelIntegration:
     """Tests for integration with higher level components of PennyLane."""
