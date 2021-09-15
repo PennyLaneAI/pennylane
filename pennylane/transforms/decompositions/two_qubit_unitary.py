@@ -79,7 +79,7 @@ def _decomposition_1_cnot(U, wires):
 
     # Since uuT is real, we can use eigh of its real part. eigh also orders the
     # eigenvalues in ascending order.
-    ev_p, p = math.linalg.eigh(qml.math.real(uuT))
+    _, p = math.linalg.eigh(qml.math.real(uuT))
 
     # Fix the determinant if necessary so that p is in SO(4)
     if math.linalg.det(p) < 0:
@@ -305,34 +305,40 @@ def two_qubit_decomposition(U, wires):
     r"""Recover the decomposition of a two-qubit unitary :math:`U` in terms of
     elementary operations.
 
-    The work of `Shende, Markov, and Bullock (2003)
-    <https://arxiv.org/abs/quant-ph/0308033>`__ presents a fixed-form
-    decomposition of :math:`U` in terms of single-qubit gates and
-    CNOTs. Multiple such decompositions are possible (by choosing two of ``{RX,
-    RY, RZ}``). Here we choose the ``RY``, ``RZ`` case (fig. 2 in the above) to
-    match with the default decomposition of the single-qubit :class:`~.Rot` operations
-    as ``RZ RY RZ``. The most general form of the decomposition is:
+    It is known that an arbitrary two-qubit operation can be implemented using a
+    maximum of 3 CNOTs. This transform first determines the required number of
+    CNOTs, then decomposes the operator into a circuit with a fixed form.  These
+    decompositions are based a number of works by Shende, Markov, and Bullock
+    `[1] <https://arxiv.org/abs/quant-ph/0308033>`__, `[2]
+    <https://arxiv.org/abs/quant-ph/0308045v3>`__, `[3]
+    <https://web.eecs.umich.edu/~imarkov/pubs/conf/spie04-2qubits.pdf>`__,
+    though many such decompositions are possible.
 
-    .. figure:: ../../_static/two_qubit_decomposition.svg
+    For the 3-CNOT case, we recover the following circuit, which is Figure 2 in
+    reference [1] above:
+
+    .. figure:: ../../_static/two_qubit_decomposition_3_cnots.svg
         :align: center
         :width: 70%
         :target: javascript:void(0);
 
+    where :math:`A, B, C, D` are :math:`SU(2)` operations, and the rotation angles are
+    computed based on features of the input unitary :math:`U`.
 
-    where :math:`A, B, C, D` are :math:`SU(2)` gates.
+    For the 2-CNOT case, the decomposition is
 
-    .. note::
+    .. figure:: ../../_static/two_qubit_decomposition_2_cnots.svg
+        :align: center
+        :width: 60%
+        :target: javascript:void(0);
 
-        Currently, the decomposition is only implemented for two cases: when the
-        provided unitary can be expressed with no CNOTs (i.e., it is a tensor
-        product of two single-qubit operations), or when it can be expressed
-        using exactly 3, as in the graphic above. It generally works when the
-        provided unitary is sampled at random from :math:`U(4)`. The case of 1-
-        and 2-CNOTs will be implemented at a later time.
+    For 1 CNOT, we simply have a CNOT surrounded by one `SU(2)` per wire on each
+    side.  The special case of no CNOTs simply returns a tensor product of two
+    `SU(2)` operations.
 
     This decomposition can be applied automatically to all valid two-qubit
-    :class:`~.QubitUnitary` operations by applying the :func:`~pennylane.transforms.unitary_to_rot`
-    transform.
+    :class:`~.QubitUnitary` operations by applying the
+    :func:`~pennylane.transforms.unitary_to_rot` transform.
 
     Args:
         U (tensor): A 4 x 4 unitary matrix.

@@ -23,6 +23,7 @@ Edag = E.conj().T
 
 LAST_COL_NEG = np.diag([1, 1, 1, -1])  # used to negate the last column of a matrix
 
+
 def _convert_to_su4(U):
     r"""Check unitarity of a 4x4 matrix and convert it to :math:`SU(4)` if the determinant is not 1.
 
@@ -144,7 +145,7 @@ def _extract_so4_eigensystem(uuT):
     eigenvectors, which are also eigenvectors of uuT itself. So we will find
     those vectors, and then extract the corresponding eigenvalues.
     """
-    # First we get a set of real eigenvectors 
+    # First we get a set of real eigenvectors
     _, p = math.linalg.eigh(math.real(uuT) + math.imag(uuT))
 
     # Next, we will extract the eigenvalues by doing np.dot(uuT, p) / p, and
@@ -164,6 +165,7 @@ def _extract_so4_eigensystem(uuT):
     ev_p = math.cast_like(math.convert_like(ev_p, uuT), 1j)
 
     return ev_p, p
+
 
 def _extract_su2su2_prefactors(U, V):
     r"""This function is used for the case of 2 CNOTs and 3 CNOTs. It does something
@@ -202,7 +204,7 @@ def _extract_su2su2_prefactors(U, V):
     # their eigenvalues)
     ev_p, p = _extract_so4_eigensystem(uuT)
     ev_q, q = _extract_so4_eigensystem(vvT)
-    
+
     # Now we must sort the eigenvalues into the same order if this is not
     # a special case where it is already done.
     if not math.allclose(ev_p, ev_q):
