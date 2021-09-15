@@ -485,6 +485,9 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 <h3>Bug fixes</h3>
 
+* Fix bug with norm and Jax tracers (jit) when using `QubiStateVector`.
+  [(#1649)](https://github.com/PennyLaneAI/pennylane/pull/1649)
+  
 * Fix bug in edge case of single-qubit `zyz_decomposition` when only
   off-diagonal elements are present.
   [(#1643)](https://github.com/PennyLaneAI/pennylane/pull/1643)
