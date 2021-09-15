@@ -72,7 +72,14 @@ def overlap_matrix(basis_functions):
     """
 
     def overlap(*args):
-        r"""Construct the overlap matrix for a given set of basis functions."""
+        r"""Construct the overlap matrix for a given set of basis functions.
+
+        Args:
+            args (array[float]): initial values of the differentiable parameters
+
+        Returns:
+            array[float]: the overlap matrix
+        """
         n = len(basis_functions)
         s = anp.eye(len(basis_functions))
         for i, a in enumerate(basis_functions):
