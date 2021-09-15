@@ -410,7 +410,7 @@ class Device(abc.ABC):
         if self._shot_vector is not None:
             # The following warning assumes that QubitDevice.execute is stand-alone
             warnings.warn(
-                "Specifying a list of shots is only supported for"
+                "Specifying a list of shots is only supported for "
                 "QubitDevice based devices. Falling back to executions using all shots in the shot list."
             )
 
