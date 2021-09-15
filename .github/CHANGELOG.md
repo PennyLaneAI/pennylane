@@ -1,4 +1,4 @@
-# Release 0.18.0-dev (development release)
+# Release 0.18.0 (current release)
 
 <h3>New features since last release</h3>
 
@@ -474,7 +474,7 @@ Prateek Jain, Ankit Khandelwal, Christina Lee, Ian McLean, Johannes Jakob Meyer,
 Pratul Saini, Maria Schuld, Arshpreet Singh, Ingrid Strandberg, Slimane Thabet, Antal Száva, David Wierichs,
 Vincent Wong.
 
-# Release 0.17.0 (current release)
+# Release 0.17.0
 
 <h3>New features since the last release</h3>
 
