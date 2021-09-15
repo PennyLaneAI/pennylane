@@ -55,7 +55,7 @@ def metric_tensor(tape, diag_approx=False):
 
     Args:
         qnode (.QNode or .QuantumTape): quantum tape or QNode to find the metric tensor of
-        diag_approx (bool): if True, use the diagonal approximation. If ``False``, a 
+        diag_approx (bool): if True, use the diagonal approximation. If ``False``, a
         block diagonal approximation of the metric tensor is computed.
         hybrid (bool): Specifies whether classical processing inside a QNode
             should be taken into account when transforming a QNode.
