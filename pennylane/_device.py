@@ -408,8 +408,10 @@ class Device(abc.ABC):
 
         results = []
         if self._shot_vector is not None:
-            warnings.warn("Specifying a list of shots is only supported for"\
-                          "QubitDevice based devices. Falling back to executions using all shots in the shot list.")
+            warnings.warn(
+                "Specifying a list of shots is only supported for"
+                "QubitDevice based devices. Falling back to executions using all shots in the shot list."
+            )
 
         with self.execution_context():
             self.pre_apply()

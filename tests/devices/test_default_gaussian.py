@@ -766,7 +766,8 @@ class TestDefaultGaussianIntegration:
             return qml.sample(qml.X(0))
 
         with pytest.warns(
-            UserWarning, match="Specifying a list of shots is only supported forQubitDevice based devices."
+            UserWarning,
+            match="Specifying a list of shots is only supported forQubitDevice based devices.",
         ):
             circuit()
         assert dev.shots == sum(shots)
