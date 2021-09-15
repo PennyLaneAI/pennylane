@@ -82,7 +82,6 @@ more tapes as well as a classical processing function.
     :toctree: api
 
     ~transforms.measurement_grouping
-    ~transforms.metric_tensor_tape
     ~transforms.hamiltonian_expand
 
 Decorators and utility functions
@@ -111,7 +110,7 @@ from .draw import draw
 from .hamiltonian_expand import hamiltonian_expand
 from .invisible import invisible
 from .measurement_grouping import measurement_grouping
-from .metric_tensor import metric_tensor, metric_tensor_tape
+from .metric_tensor import metric_tensor
 from .optimization import (
     cancel_inverses,
     commute_controlled,
