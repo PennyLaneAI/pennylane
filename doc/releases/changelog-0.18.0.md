@@ -1,3 +1,5 @@
+:orphan:
+
 # Release 0.18.0 (Current release)
 
 <h3>New features since last release</h3>

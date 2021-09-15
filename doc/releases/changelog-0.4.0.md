@@ -1,3 +1,5 @@
+:orphan:
+
 # Release 0.4.0
 
 <h3>New features since last release</h3>

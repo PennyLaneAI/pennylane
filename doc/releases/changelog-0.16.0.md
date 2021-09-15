@@ -1,3 +1,5 @@
+:orphan:
+
 # Release 0.16.0
 
 <h4>First class support for quantum kernels</h4>
