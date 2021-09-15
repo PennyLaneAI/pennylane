@@ -1407,3 +1407,115 @@ class TestTapeExpansion:
         assert input_tape.operations[1].data[0] == 3 * x
         assert input_tape.operations[2].name == "PhaseShift"
         assert input_tape.operations[2].grad_method is None
+
+    @pytest.mark.parametrize("max_diff", [1, 2])
+    def test_hamiltonian_expansion_analytic(self, dev_name, diff_method, mode, max_diff, mocker):
+        """Test that the Hamiltonian is not expanded if there
+        are non-commuting groups and the number of shots is None"""
+        if diff_method == "adjoint":
+            pytest.skip("The adjoint method does not yet support Hamiltonians")
+
+        dev = qml.device(dev_name, wires=3, shots=None)
+        spy = mocker.spy(qml.transforms, "hamiltonian_expand")
+        obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
+
+        @qnode(dev, diff_method=diff_method, mode=mode, max_diff=max_diff)
+        def circuit(data, weights, coeffs):
+            weights = weights.reshape(1, -1)
+            qml.templates.AngleEmbedding(data, wires=[0, 1])
+            qml.templates.BasicEntanglerLayers(weights, wires=[0, 1])
+            return qml.expval(qml.Hamiltonian(coeffs, obs))
+
+        d = np.array([0.1, 0.2], requires_grad=False)
+        w = np.array([0.654, -0.734], requires_grad=True)
+        c = np.array([-0.6543, 0.24, 0.54], requires_grad=True)
+
+        # test output
+        res = circuit(d, w, c)
+        expected = c[2] * np.cos(d[1] + w[1]) - c[1] * np.sin(d[0] + w[0]) * np.sin(d[1] + w[1])
+        assert np.allclose(res, expected)
+        spy.assert_not_called()
+
+        # test gradients
+        grad = qml.grad(circuit)(d, w, c)
+        expected_w = [
+            -c[1] * np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]),
+            -c[1] * np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]) - c[2] * np.sin(d[1] + w[1]),
+        ]
+        expected_c = [0, -np.sin(d[0] + w[0]) * np.sin(d[1] + w[1]), np.cos(d[1] + w[1])]
+        assert np.allclose(grad[0], expected_w)
+        assert np.allclose(grad[1], expected_c)
+
+        # test second-order derivatives
+        if diff_method in ("parameter-shift", "backprop") and max_diff == 2:
+
+            grad2_c = qml.jacobian(qml.grad(circuit, argnum=2), argnum=2)(d, w, c)
+            assert np.allclose(grad2_c, 0)
+
+            grad2_w_c = qml.jacobian(qml.grad(circuit, argnum=1), argnum=2)(d, w, c)
+            expected = [0, -np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]), 0], [
+                0,
+                -np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]),
+                -np.sin(d[1] + w[1]),
+            ]
+            assert np.allclose(grad2_w_c, expected)
+
+    @pytest.mark.parametrize("max_diff", [1, 2])
+    def test_hamiltonian_expansion_finite_shots(
+        self, dev_name, diff_method, mode, max_diff, mocker
+    ):
+        """Test that the Hamiltonian is expanded if there
+        are non-commuting groups and the number of shots is finite"""
+        if diff_method in ("adjoint", "backprop", "finite-diff"):
+            pytest.skip("The adjoint and backprop methods do not yet support sampling")
+
+        dev = qml.device(dev_name, wires=3, shots=50000)
+        spy = mocker.spy(qml.transforms, "hamiltonian_expand")
+        obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
+
+        @qnode(dev, diff_method=diff_method, mode=mode, max_diff=max_diff)
+        def circuit(data, weights, coeffs):
+            # weights = weights.reshape(1, -1)
+            qml.templates.AngleEmbedding(data, wires=[0, 1])
+            qml.RX(weights[0], wires=0)
+            qml.RX(weights[1], wires=1)
+            qml.CNOT(wires=[0, 1])
+
+            # qml.templates.BasicEntanglerLayers(weights, wires=[0, 1])
+            H = qml.Hamiltonian(coeffs, obs)
+            H.compute_grouping()
+            return qml.expval(H)
+
+        d = np.array([0.1, 0.2], requires_grad=False)
+        w = np.array([0.654, -0.734], requires_grad=True)
+        c = np.array([-0.6543, 0.24, 0.54], requires_grad=True)
+
+        # # test output
+        res = circuit(d, w, c)
+        expected = c[2] * np.cos(d[1] + w[1]) - c[1] * np.sin(d[0] + w[0]) * np.sin(d[1] + w[1])
+        assert np.allclose(res, expected, atol=0.1)
+        spy.assert_called()
+
+        # test gradients
+        grad = qml.grad(circuit)(d, w, c)
+        expected_w = [
+            -c[1] * np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]),
+            -c[1] * np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]) - c[2] * np.sin(d[1] + w[1]),
+        ]
+        expected_c = [0, -np.sin(d[0] + w[0]) * np.sin(d[1] + w[1]), np.cos(d[1] + w[1])]
+        assert np.allclose(grad[0], expected_w, atol=0.1)
+        assert np.allclose(grad[1], expected_c, atol=0.1)
+
+        # test second-order derivatives
+        if diff_method == "parameter-shift" and max_diff == 2:
+
+            grad2_c = qml.jacobian(qml.grad(circuit, argnum=2), argnum=2)(d, w, c)
+            assert np.allclose(grad2_c, 0, atol=0.1)
+
+            grad2_w_c = qml.jacobian(qml.grad(circuit, argnum=1), argnum=2)(d, w, c)
+            expected = [0, -np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]), 0], [
+                0,
+                -np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]),
+                -np.sin(d[1] + w[1]),
+            ]
+            assert np.allclose(grad2_w_c, expected, atol=0.1)
