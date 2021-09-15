@@ -767,7 +767,7 @@ class TestDefaultGaussianIntegration:
 
         with pytest.warns(
             UserWarning,
-            match="Specifying a list of shots is only supported forQubitDevice based devices.",
+            match="Specifying a list of shots is only supported for QubitDevice based devices.",
         ):
             circuit()
         assert dev.shots == sum(shots)
