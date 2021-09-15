@@ -141,7 +141,6 @@ def test_jax_without_argnum(circuit, args, expected_jac):
     dev = qml.device("default.qubit", wires=2)
     qnode = qml.QNode(circuit, dev, interface="jax")
     jac = classical_jacobian(qnode)(*args)
-
     assert np.allclose(jac, expected_jac)
 
 
