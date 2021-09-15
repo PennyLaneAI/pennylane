@@ -18,7 +18,7 @@ import autograd
 import numpy as np
 import pytest
 from pennylane import numpy as pnp
-from pennylane.hf.matrices import density_matrix, overlap_matrix
+from pennylane.hf.matrices import molecular_density_matrix, overlap_matrix
 from pennylane.hf.molecule import Molecule
 
 
@@ -35,7 +35,7 @@ from pennylane.hf.molecule import Molecule
 )
 def test_density_matrix(n_electron, c, p_ref):
     r"""Test that overlap_matrix returns the correct matrix."""
-    p = density_matrix(n_electron, c)
+    p = molecular_density_matrix(n_electron, c)
     assert np.allclose(p, p_ref)
 
 
