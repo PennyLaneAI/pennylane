@@ -28,17 +28,16 @@ def unitary_to_rot(tape):
     For single-qubit gates, diagonal operations will be converted to a single
     :class:`.RZ` gate, while non-diagonal operations will be converted to a
     :class:`.Rot` gate that implements the original operation up to a global
-    phase.
-
-    For two-qubit gates, those which are tensor products of two single-qubit
-    operations will be decomposed as such, as well as those can represented by 3
-    CNOTs as described in :func:`pennylane.transforms.two_qubit_decomposition`.
+    phase. Two-qubit gates will be decomposed according to the
+    :func:`pennylane.transforms.two_qubit_decomposition` function.
 
     .. warning::
 
-        Two-qubit operations which are determined to require 1 or 2 CNOTs are
-        currently left as :class:`~.QubitUnitary` instances at present, and not
-        decomposed.
+        It is possible to differentiate with respect to the parameters of a
+        single-qubit gate. However, due to the nature of the decomposition, it
+        is not possible to differentiate with respect to distinct elements of
+        a two-qubit unitary. Still, one can differentiate with respect to other
+        QNode/gate arguments through such unitaries, if their value is constant.
 
     Args:
         qfunc (function): a quantum function

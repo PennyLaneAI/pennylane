@@ -302,20 +302,19 @@ def _decomposition_3_cnots(U, wires):
 
 
 def two_qubit_decomposition(U, wires):
-    r"""Recover the decomposition of a two-qubit unitary :math:`U` in terms of
-    elementary operations.
+    r"""Decompose a two-qubit unitary :math:`U` in terms of elementary operations.
 
     It is known that an arbitrary two-qubit operation can be implemented using a
     maximum of 3 CNOTs. This transform first determines the required number of
     CNOTs, then decomposes the operator into a circuit with a fixed form.  These
     decompositions are based a number of works by Shende, Markov, and Bullock
-    `[1] <https://arxiv.org/abs/quant-ph/0308033>`__, `[2]
-    <https://arxiv.org/abs/quant-ph/0308045v3>`__, `[3]
+    `(1) <https://arxiv.org/abs/quant-ph/0308033>`__, `(2)
+    <https://arxiv.org/abs/quant-ph/0308045v3>`__, `(3)
     <https://web.eecs.umich.edu/~imarkov/pubs/conf/spie04-2qubits.pdf>`__,
-    though many such decompositions are possible.
+    though we note that many alternative decompositions are possible.
 
     For the 3-CNOT case, we recover the following circuit, which is Figure 2 in
-    reference [1] above:
+    reference (1) above:
 
     .. figure:: ../../_static/two_qubit_decomposition_3_cnots.svg
         :align: center
@@ -329,12 +328,12 @@ def two_qubit_decomposition(U, wires):
 
     .. figure:: ../../_static/two_qubit_decomposition_2_cnots.svg
         :align: center
-        :width: 60%
+        :width: 50%
         :target: javascript:void(0);
 
-    For 1 CNOT, we simply have a CNOT surrounded by one `SU(2)` per wire on each
+    For 1 CNOT, we simply have a CNOT surrounded by one :math:`SU(2)` per wire on each
     side.  The special case of no CNOTs simply returns a tensor product of two
-    `SU(2)` operations.
+    :math:`SU(2)` operations.
 
     This decomposition can be applied automatically to all valid two-qubit
     :class:`~.QubitUnitary` operations by applying the
