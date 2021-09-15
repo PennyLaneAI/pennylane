@@ -16,93 +16,70 @@ This module contains the functions needed for computing matrices.
 """
 
 import autograd.numpy as anp
-import numpy as np
-from integrals import *
+from pennylane.hf.integrals import *
+
 
 def density_matrix(n_electron, c):
     """Construct the density matrix.
+
+    The density matrix, :math:`P`, is computed from the molecular orbital coefficients :math:`C` as
+
+    .. math::
+
+        P_{\mu \nu} = \sum_{i=1}^{N} C_{\mu i} C_{\nu i},
+
+    where :math:`N = N_{electrons} / 2` is the number of occupied orbitals. Note that the total
+    density matrix is the sum of the :math:`\sigma` and :math:`\betta` dennsity
+    matrices, :math:`P = P^{\sigma} + P^{\betta}`.
+
+    Args:
+        n_electron (integer): number of electrons
+        c (array[float]): molecular orbital coefficients
+
+    Returns:
+        array[float]: total density matrix
+
+    **Example**
+
+    >>> c = np.array([[-0.54828771,  1.21848441], [-0.54828771, -1.21848441]])
+    >>> n_electron = 2
+    >>> density_matrix(n_electron, c)
+    array([[0.30061941, 0.30061941], [0.30061941, 0.30061941]])
     """
-    p = anp.dot(c[:,:n_electron//2], anp.conjugate(c[:,:n_electron//2]).T)
+    p = anp.dot(c[:, : n_electron // 2], anp.conjugate(c[:, : n_electron // 2]).T)
     return p
 
 
-def overlap_matrix(basis_set):
-    r"""Construct the the overlap matrix for a given set of basis functions.
-    The diagonal elements of the matrix are set to one.
+def overlap_matrix(basis_functions):
+    r"""Return a function that constructs the overlap matrix for a given set of basis functions.
+
+    Args:
+        basis_functions (list[BasisFunction]): basis functions
+
+    Returns:
+        function: function that constructs the overlap matrix
+
+    **Example**
+
+    >>> symbols  = ['H', 'H']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
+    >>> mol = Molecule(symbols, geometry)
     """
+
     def overlap(*args):
-        s = anp.eye(len(basis_set))
-        for i, a in enumerate(basis_set):
-            for j, b in enumerate(basis_set):
+        r"""Construct the overlap matrix for a given set of basis functions."""
+        n = len(basis_functions)
+        s = anp.eye(len(basis_functions))
+        for i, a in enumerate(basis_functions):
+            for j, b in enumerate(basis_functions):
                 if i < j:
-                    s[i, j] = s [j, i] = generate_overlap(a, b)(args[i], args[j])
+                    if args:
+                        overlap_integral = generate_overlap(a, b)([args[0][i], args[0][j]])
+                    else:
+                        overlap_integral = generate_overlap(a, b)()
+                    o = anp.zeros((n, n))
+                    o[i, j] = o[j, i] = 1.0
+                    s = s + overlap_integral * o
         return s
+
     return overlap
-
-
-def kinetic_matrix(basis_set):
-    r"""Construct the the kinetic energy matrix for a given set of basis functions.
-    """
-    def kinetic(*args):
-        k = anp.zeros((len(basis_set), len(basis_set)))
-        for i, a in enumerate(basis_set):
-            for j, b in enumerate(basis_set):
-                if i == j:
-                    k[i, j] = generate_kinetic(a, b)(args[i], args[j])
-                if i < j:
-                    k[i, j] = k[j, i] = generate_kinetic(a, b)(args[i], args[j])
-        return k
-    return kinetic
-
-
-def attraction_matrix(basis_set, charges):
-    r"""Construct the electron-nucleus attraction matrix for a given set of basis functions.
-    """
-    def attraction(r, *args):
-
-        v = anp.zeros((len(basis_set), len(basis_set)))
-
-        for i, a in enumerate(basis_set):
-            for j, b in enumerate(basis_set):
-                nuclear_attraction = 0
-                if i == j:
-                    for k, c in enumerate(r):
-                        nuclear_attraction = nuclear_attraction + charges[k] * generate_attraction(a, b)(c, args[i], args[j])
-                    v[i, j] = nuclear_attraction
-                if i < j:
-                    for k, c in enumerate(r):
-                        nuclear_attraction = nuclear_attraction + charges[k] * generate_attraction(a, b)(c, args[i], args[j])
-                    v[i, j] = v[j, i] = nuclear_attraction
-        return v
-
-    return attraction
-
-
-def core_matrix(basis_set, charges):
-    r"""Construct the core matrix for a given set of basis functions.
-    """
-    def core(r, *args):
-        return -1 * attraction_matrix(basis_set, charges)(r, *args) + kinetic_matrix(basis_set)(*args)
-    return core
-
-
-def repulsion_tensor(basis_set):
-    """Construct the electron repulsion tensor for a given set of basis functions.
-    """
-    def repulsion(*args):
-
-        n = len(basis_set)
-        e = anp.full((n, n, n, n), anp.inf)
-
-        for i, a in enumerate(basis_set):
-            for j, b in enumerate(basis_set):
-                for k, c in enumerate(basis_set):
-                    for l, d in enumerate(basis_set):
-
-                        if e[i, j, k, l] == anp.inf:
-
-                            electron_repulsion = generate_repulsion(a, b, c, d)(args[i], args[j], args[k], args[l])
-                            e[i, j, k, l] = e[k, l, i, j] = e[j, i, l, k] = e[l, k, j, i] = electron_repulsion
-                            e[j, i, k, l] = e[l, k, i, j] = e[i, j, l, k] = e[k, l, j, i] = electron_repulsion
-        return e
-    return repulsion
