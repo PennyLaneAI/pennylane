@@ -20,24 +20,24 @@ from pennylane.hf.integrals import generate_overlap
 
 
 def molecular_density_matrix(n_electron, c):
-    r"""Construct the density matrix.
+    r"""Compute the molecular density matrix.
 
-    The density matrix, :math:`P`, is computed from the molecular orbital coefficients :math:`C` as
+    The density matrix :math:`P` is computed from the molecular orbital coefficients :math:`C` as
 
     .. math::
 
         P_{\mu \nu} = \sum_{i=1}^{N} C_{\mu i} C_{\nu i},
 
     where :math:`N = N_{electrons} / 2` is the number of occupied orbitals. Note that the total
-    density matrix is the sum of the :math:`\sigma` and :math:`\betta` dennsity
-    matrices, :math:`P = P^{\sigma} + P^{\betta}`.
+    density matrix is the sum of the :math:`\sigma` and :math:`\beta` dennsity
+    matrices, :math:`P = P^{\sigma} + P^{\beta}`.
 
     Args:
         n_electron (integer): number of electrons
         c (array[float]): molecular orbital coefficients
 
     Returns:
-        array[float]: total density matrix
+        array[float]: density matrix
 
     **Example**
 
@@ -51,19 +51,24 @@ def molecular_density_matrix(n_electron, c):
 
 
 def overlap_matrix(basis_functions):
-    r"""Return a function that constructs the overlap matrix for a given set of basis functions.
+    r"""Return a function that computes the overlap matrix for a given set of basis functions.
 
     Args:
         basis_functions (list[BasisFunction]): basis functions
 
     Returns:
-        function: function that constructs the overlap matrix
+        function: function that computes the overlap matrix
 
     **Example**
 
     >>> symbols  = ['H', 'H']
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
-    >>> mol = Molecule(symbols, geometry)
+    >>> alpha = pnp.array([[3.42525091, 0.62391373, 0.1688554],
+    >>>                    [3.42525091, 0.62391373, 0.1688554]], requires_grad=True),
+    >>> mol = Molecule(symbols, geometry, alpha=alpha)
+    >>> args = [alpha]
+    >>> overlap_matrix(mol.basis_set)(*args)
+    array([[1.0, 0.7965883009074122], [0.7965883009074122, 1.0]])
     """
 
     def overlap(*args):
