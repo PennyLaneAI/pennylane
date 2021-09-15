@@ -51,7 +51,7 @@ def check_matrix_equivalence(matrix_expected, matrix_obtained):
     """Takes two matrices and checks if multiplying one by the conjugate
     transpose of the other gives the identity."""
 
-    mat_product = qml.math.dot(qml.math.conj(matrix_obtained.T), matrix_expected)
+    mat_product = qml.math.dot(qml.math.conj(qml.math.T(matrix_obtained)), matrix_expected)
     mat_product /= mat_product[0, 0]
     return qml.math.allclose(mat_product, qml.math.eye(matrix_expected.shape[0]))
 
