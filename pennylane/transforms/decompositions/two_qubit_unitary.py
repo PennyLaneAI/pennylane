@@ -196,37 +196,6 @@ def _su2su2_to_tensor_products(U):
     return math.convert_like(A, U), math.convert_like(B, U)
 
 
-def _extract_so4_eigensystem(uuT):
-    r"""Given a complex, symmetric matrix uuT, find a matrix p in SO(4) that
-    diagonalizes it.
-
-    The way we will do this is by noting that, since uuT is complex and
-    symmetric, both its real and imaginary parts share a set of real-valued
-    eigenvectors, which are also eigenvectors of uuT itself. So we will find
-    those vectors, and then extract the corresponding eigenvalues.
-    """
-    # First we get a set of real eigenvectors
-    _, p = math.linalg.eigh(math.real(uuT) + math.imag(uuT))
-
-    # Next, we will extract the eigenvalues by doing np.dot(uuT, p) / p, and
-    # taking the values from the columns. However, to account that there might
-    # be 0 values in p, we go column by column and extract the eigenvalues from
-    # the non-zero elements only.
-    ev_p = []
-
-    uuT_p = math.dot(uuT, math.cast_like(p, 1j))
-
-    for col_idx in range(4):
-        non_zero_index = np.nonzero(np.logical_not(np.isclose(p[:, col_idx], np.zeros(4))))
-        non_zero_uuT_p = math.take(uuT_p[:, col_idx], non_zero_index)[0, 0]
-        non_zero_p = math.take(p[:, col_idx], non_zero_index)[0, 0]
-        ev_p.append(non_zero_uuT_p / math.cast_like(non_zero_p, 1j))
-
-    ev_p = math.cast_like(math.convert_like(ev_p, uuT), 1j)
-
-    return ev_p, p
-
-
 def _extract_su2su2_prefactors(U, V):
     r"""This function is used for the case of 2 CNOTs and 3 CNOTs. It does something
     similar as the 1-CNOT case, but there is no special form for one of the
@@ -253,7 +222,6 @@ def _extract_su2su2_prefactors(U, V):
     # There is some math in the paper explaining how when we define U in this way,
     # we can simultaneously diagonalize functions of U and V to ensure they are
     # in the same coset and recover the decomposition.
-
     u = math.dot(math.cast_like(Edag, V), math.dot(U, math.cast_like(E, V)))
     v = math.dot(math.cast_like(Edag, V), math.dot(V, math.cast_like(E, V)))
 
@@ -261,26 +229,18 @@ def _extract_su2su2_prefactors(U, V):
     vvT = math.dot(v, math.T(v))
 
     # Get the p and q in SO(4) that diagonalize uuT and vvT respectively (and
-    # their eigenvalues)
-    ev_p, p = _extract_so4_eigensystem(uuT)
-    ev_q, q = _extract_so4_eigensystem(vvT)
+    # their eigenvalues). We are looking for a simultaneous diagonalization,
+    # which we know exists because of how U and V were constructed. Furthermore,
+    # The way we will do this is by noting that, since uuT/vvT are complex and
+    # symmetric, so both their real and imaginary parts share a set of
+    # real-valued eigenvectors, which are also eigenvectors of uuT/vvT
+    # themselves. So we can use eigh, which orders the eigenvectors, and so we
+    # are guaranteed that the p and q returned will be "in the same order".
+    _, p = math.linalg.eigh(math.real(uuT) + math.imag(uuT))
+    _, q = math.linalg.eigh(math.real(vvT) + math.imag(vvT))
 
-    # Now we must sort the eigenvalues into the same order if this is not
-    # a special case where it is already done.
-    if not math.allclose(ev_p, ev_q):
-        new_q_order = []
-        for _, eigval in enumerate(ev_p):
-            are_close = [math.allclose(x, eigval) for x in ev_q]
-
-            if any(are_close):
-                new_q_order.append(math.argmax(are_close))
-
-        # Reshuffle the columns.
-        q = q[:, np.array(new_q_order)]
-
-    # If determinant of p/q is not 1, it is in O(4) but not SO(4), and has
-    # determinant -1. We can transform it to SO(4) by simply negating one
-    # of the columns.
+    # If determinant of p/q is not 1, it is in O(4) but not SO(4), and has determinant
+    # We can transform it to SO(4) by simply negating one of the columns.
     p = math.dot(p, math.diag([1, 1, 1, math.sign(math.linalg.det(p))]))
     q = math.dot(q, math.diag([1, 1, 1, math.sign(math.linalg.det(q))]))
 
