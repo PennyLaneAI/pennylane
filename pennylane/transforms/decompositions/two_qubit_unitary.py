@@ -34,9 +34,26 @@ CNOT01 = qml.CNOT(wires=[0, 1]).matrix
 CNOT10 = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
 SWAP = qml.SWAP(wires=[0, 1]).matrix
 
+
 # Any two-qubit operation can be decomposed into single-qubit operations and
 # at most 3 CNOTs. The number of CNOTs needed affects the form of the decomposition,
 # so we separate the code into four cases.
+
+
+# This constant matrix is used in the 1-CNOT decomposition
+v_one_cnot = np.array(
+    [
+        [0.5, 0.5j, 0.5j, -0.5],
+        [-0.5j, 0.5, -0.5, -0.5j],
+        [-0.5j, -0.5, 0.5, -0.5j],
+        [0.5, -0.5j, -0.5j, -0.5],
+    ]
+)
+
+# This q is properly in SO(4) and is used in the 1-CNOT decomposition
+q_one_cnot = (1 / np.sqrt(2)) * np.array(
+    [[-1, 0, -1, 0], [0, 1, 0, 1], [0, 1, 0, -1], [1, 0, -1, 0]]
+)
 
 
 def _convert_to_su4(U):
@@ -315,22 +332,11 @@ def _decomposition_1_cnot(U, wires):
     # For this case, our V = SWAP CNOT01 is constant. Thus, we can compute v,
     # vvT, and its eigenvalues and eigenvectors directly. We store them here as
     # constants.
-    v = np.array(
-        [
-            [0.5, 0.5j, 0.5j, -0.5],
-            [-0.5j, 0.5, -0.5, -0.5j],
-            [-0.5j, -0.5, 0.5, -0.5j],
-            [0.5, -0.5j, -0.5j, -0.5],
-        ]
-    )
-
-    # This q is properly in SO(4)
-    q = (1 / np.sqrt(2)) * np.array([[-1, 0, -1, 0], [0, 1, 0, 1], [0, 1, 0, -1], [1, 0, -1, 0]])
 
     # Once we have p and q properly in SO(4), we compute G and H in SO(4) such
     # that U = G V H
-    G = math.dot(p, q.T)
-    H = math.dot(math.conj(math.T(v)), math.dot(math.T(G), u))
+    G = math.dot(p, q_one_cnot.T)
+    H = math.dot(math.conj(math.T(v_one_cnot)), math.dot(math.T(G), u))
 
     # We now use the magic basis to convert G, H to SU(2) x SU(2)
     AB = math.dot(E, math.dot(G, Edag))
@@ -478,7 +484,7 @@ def _decomposition_3_cnots(U, wires):
         qml.CNOT(wires=[wires[1], wires[0]]),
         qml.RZ(delta, wires=wires[0]),
         qml.RY(beta, wires=wires[1]),
-        qml.CNOT(wires=[wires[0], wires[1]]),
+        qml.CNOT(wires=wires),
         qml.RY(alpha, wires=wires[1]),
         qml.CNOT(wires=[wires[1], wires[0]]),
     ]
