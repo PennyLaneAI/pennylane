@@ -5,7 +5,7 @@
 <h3>New features since last release</h3>
 
 * Arbitrary two-qubit unitaries can now be decomposed into elementary gates. This
-  functionality has been incorporated into the `unitary_to_rot` transform, and is
+  functionality has been incorporated into the `qml.transforms.unitary_to_rot` transform, and is
   available separately as `qml.transforms.two_qubit_decomposition`.
   [(#1552)](https://github.com/PennyLaneAI/pennylane/pull/1552)
 

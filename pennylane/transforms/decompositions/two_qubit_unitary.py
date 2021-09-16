@@ -402,7 +402,7 @@ def _decomposition_2_cnots(U, wires):
     # -╰U- = -B--╰C--SX--╰C--D-
     # where SZ and SX are square roots of Z and X respectively. (This
     # decomposition comes from using Hadamards to flip the direction of the
-    # first CNOT, and then decomposing them and merging single-qubit gates. For
+    # first CNOT, and then decomposing them and merging single-qubit gates.) For
     # some reason this case is not handled properly with the full algorithm, so
     # we treat it separately.
 
