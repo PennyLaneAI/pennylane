@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-<h4>New PyTorch native device</h4>
+<h4>Support for native backpropagation using PyTorch</h4>
 
 * A new pytorch device, `qml.device('default.qubit.torch', wires=wires)`, supports
   backpropogation with the torch interface.
