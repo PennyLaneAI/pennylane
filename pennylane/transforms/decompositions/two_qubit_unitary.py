@@ -17,6 +17,7 @@ unitary operations into elementary gates.
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import math
+from pennylane.tape import get_active_tape
 
 from .single_qubit_unitary import zyz_decomposition
 
@@ -646,12 +647,20 @@ def two_qubit_decomposition(U, wires):
     num_cnots = _compute_num_cnots(U)
 
     if num_cnots == 0:
-        decomp = _decomposition_0_cnots(U, wires)
+        decomp = qml.transforms.invisible(_decomposition_0_cnots)(U, wires)
     elif num_cnots == 1:
-        decomp = _decomposition_1_cnot(U, wires)
+        decomp = qml.transforms.invisible(_decomposition_1_cnot)(U, wires)
     elif num_cnots == 2:
-        decomp = _decomposition_2_cnots(U, wires)
+        decomp = qml.transforms.invisible(_decomposition_2_cnots)(U, wires)
     else:
-        decomp = _decomposition_3_cnots(U, wires)
+        decomp = qml.transforms.invisible(_decomposition_3_cnots)(U, wires)
+
+    # If there is an active tape, queue the decomposition so that expand works
+    current_tape = qml.tape.get_active_tape()
+
+    if current_tape:
+        with current_tape:
+            for op in decomp:
+                qml.apply(op)
 
     return decomp

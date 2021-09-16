@@ -88,15 +88,7 @@ class QubitUnitary(Operation):
 
         if qml.math.shape(U) == (4, 4):
             wires = Wires(wires)
-
-            decomp_ops = qml.transforms.invisible(qml.transforms.two_qubit_decomposition)(U, wires)
-
-            current_tape = qml.tape.get_active_tape()
-
-            if current_tape:
-                for op in decomp_ops:
-                    qml.apply(op)
-
+            decomp_ops = qml.transforms.two_qubit_decomposition(U, wires)
             return decomp_ops
 
         raise NotImplementedError(
