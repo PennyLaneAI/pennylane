@@ -322,8 +322,8 @@ def _diff2(i, j, ri, rj, alpha, beta):
     Args:
         i (integer): angular momentum component for the first Gaussian function
         j (integer): angular momentum component for the second Gaussian function
-        ri (float): position component of the the first Gaussian function
-        rj (float): position component of the the second Gaussian function
+        ri (array[float]): position component of the the first Gaussian function
+        rj (array[float]): position component of the the second Gaussian function
         alpha (array[float]): exponent of the first Gaussian function
         beta (array[float]): exponent of the second Gaussian function
 

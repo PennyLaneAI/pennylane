@@ -292,6 +292,16 @@ def test_gradient(symbols, geometry, alpha, coeff):
             pnp.array([3.42525091]),
             pnp.array([0.0]),
         ),
+        # computed manually
+        (
+            0,
+            0,
+            pnp.array([0.0]),
+            pnp.array([1.0]),
+            pnp.array([3.42525091]),
+            pnp.array([3.42525091]),
+            pnp.array([1.01479665]),
+        ),
     ],
 )
 def test_diff2(i, j, ri, rj, alpha, beta, d):
