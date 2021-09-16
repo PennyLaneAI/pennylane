@@ -15,9 +15,8 @@
 Unit tests for functions needed to computing integrals over basis functions.
 """
 import autograd
-import numpy as np
 import pytest
-from pennylane import numpy as pnp
+from pennylane import numpy as np
 from pennylane.hf.integrals import (
     _boys,
     _diff2,
@@ -70,14 +69,14 @@ def test_contraction_norm(l, alpha, a, n):
     ("alpha", "coeff", "r"),
     [
         (
-            pnp.array([3.42525091, 0.62391373, 0.1688554], requires_grad=True),
-            pnp.array([0.15432897, 0.53532814, 0.44463454], requires_grad=True),
-            pnp.array([0.0, 0.0, 0.0], requires_grad=False),
+            np.array([3.42525091, 0.62391373, 0.1688554], requires_grad=True),
+            np.array([0.15432897, 0.53532814, 0.44463454], requires_grad=True),
+            np.array([0.0, 0.0, 0.0], requires_grad=False),
         ),
         (
-            pnp.array([3.42525091, 0.62391373, 0.1688554], requires_grad=False),
-            pnp.array([0.15432897, 0.53532814, 0.44463454], requires_grad=False),
-            pnp.array([0.0, 0.0, 0.0], requires_grad=True),
+            np.array([3.42525091, 0.62391373, 0.1688554], requires_grad=False),
+            np.array([0.15432897, 0.53532814, 0.44463454], requires_grad=False),
+            np.array([0.0, 0.0, 0.0], requires_grad=True),
         ),
     ],
 )
@@ -96,40 +95,40 @@ def test_generate_params(alpha, coeff, r):
         (
             0,
             0,
-            pnp.array([1.2]),
-            pnp.array([1.2]),
-            pnp.array([3.42525091]),
-            pnp.array([3.42525091]),
+            np.array([1.2]),
+            np.array([1.2]),
+            np.array([3.42525091]),
+            np.array([3.42525091]),
             0,
-            pnp.array([1.0]),
+            np.array([1.0]),
         ),
         (
             1,
             0,
-            pnp.array([0.0]),
-            pnp.array([0.0]),
-            pnp.array([3.42525091]),
-            pnp.array([3.42525091]),
+            np.array([0.0]),
+            np.array([0.0]),
+            np.array([3.42525091]),
+            np.array([3.42525091]),
             0,
-            pnp.array([0.0]),
+            np.array([0.0]),
         ),
         (
             1,
             1,
-            pnp.array([0.0]),
-            pnp.array([10.0]),
-            pnp.array([3.42525091]),
-            pnp.array([3.42525091]),
+            np.array([0.0]),
+            np.array([10.0]),
+            np.array([3.42525091]),
+            np.array([3.42525091]),
             0,
-            pnp.array([0.0]),
+            np.array([0.0]),
         ),
     ],
 )
 def test_expansion(la, lb, ra, rb, alpha, beta, t, c):
     r"""Test that expansion function returns correct value."""
     assert np.allclose(expansion(la, lb, ra, rb, alpha, beta, t), c)
-    assert np.allclose(expansion(la, lb, ra, rb, alpha, beta, -1), pnp.array([0.0]))
-    assert np.allclose(expansion(0, 1, ra, rb, alpha, beta, 2), pnp.array([0.0]))
+    assert np.allclose(expansion(la, lb, ra, rb, alpha, beta, -1), np.array([0.0]))
+    assert np.allclose(expansion(0, 1, ra, rb, alpha, beta, 2), np.array([0.0]))
 
 
 @pytest.mark.parametrize(
@@ -139,29 +138,29 @@ def test_expansion(la, lb, ra, rb, alpha, beta, t, c):
         (
             (0, 0, 0),
             (0, 0, 0),
-            pnp.array([0.0, 0.0, 0.0]),
-            pnp.array([0.0, 0.0, 0.0]),
-            pnp.array([pnp.pi / 2]),
-            pnp.array([pnp.pi / 2]),
-            pnp.array([1.0]),
+            np.array([0.0, 0.0, 0.0]),
+            np.array([0.0, 0.0, 0.0]),
+            np.array([np.pi / 2]),
+            np.array([np.pi / 2]),
+            np.array([1.0]),
         ),
         (
             (0, 0, 0),
             (0, 0, 0),
-            pnp.array([0.0, 0.0, 0.0]),
-            pnp.array([20.0, 0.0, 0.0]),
-            pnp.array([3.42525091]),
-            pnp.array([3.42525091]),
-            pnp.array([0.0]),
+            np.array([0.0, 0.0, 0.0]),
+            np.array([20.0, 0.0, 0.0]),
+            np.array([3.42525091]),
+            np.array([3.42525091]),
+            np.array([0.0]),
         ),
         (
             (1, 0, 0),
             (0, 0, 1),
-            pnp.array([0.0, 0.0, 0.0]),
-            pnp.array([0.0, 0.0, 0.0]),
-            pnp.array([6.46480325]),
-            pnp.array([6.46480325]),
-            pnp.array([0.0]),
+            np.array([0.0, 0.0, 0.0]),
+            np.array([0.0, 0.0, 0.0]),
+            np.array([6.46480325]),
+            np.array([6.46480325]),
+            np.array([0.0]),
         ),
     ],
 )
@@ -175,45 +174,45 @@ def test_gaussian_overlap(la, lb, ra, rb, alpha, beta, o):
     [
         (
             ["H", "H"],
-            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], requires_grad=False),
-            pnp.array(
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], requires_grad=False),
+            np.array(
                 [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
                 requires_grad=False,
             ),
-            pnp.array(
+            np.array(
                 [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
                 requires_grad=True,
             ),
-            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], requires_grad=True),
-            pnp.array([0.0]),
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], requires_grad=True),
+            np.array([0.0]),
         ),
         (
             ["H", "H"],
-            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], requires_grad=False),
-            pnp.array(
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], requires_grad=False),
+            np.array(
                 [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
                 requires_grad=False,
             ),
-            pnp.array(
+            np.array(
                 [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
                 requires_grad=False,
             ),
-            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], requires_grad=True),
-            pnp.array([1.0]),
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], requires_grad=True),
+            np.array([1.0]),
         ),
         (
             ["H", "H"],
-            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], requires_grad=True),
-            pnp.array(
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], requires_grad=True),
+            np.array(
                 [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
                 requires_grad=True,
             ),
-            pnp.array(
+            np.array(
                 [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
                 requires_grad=True,
             ),
-            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], requires_grad=True),
-            pnp.array([1.0]),
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], requires_grad=True),
+            np.array([1.0]),
         ),
     ],
 )
@@ -233,12 +232,12 @@ def test_generate_overlap(symbols, geometry, alpha, coef, r, o_ref):
     [
         (
             ["H", "H"],
-            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
-            pnp.array(
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+            np.array(
                 [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
                 requires_grad=True,
             ),
-            pnp.array(
+            np.array(
                 [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
                 requires_grad=True,
             ),
@@ -290,21 +289,21 @@ def test_gradient(symbols, geometry, alpha, coeff):
         (
             0,
             1,
-            pnp.array([0.0]),
-            pnp.array([20.0]),
-            pnp.array([3.42525091]),
-            pnp.array([3.42525091]),
-            pnp.array([0.0]),
+            np.array([0.0]),
+            np.array([20.0]),
+            np.array([3.42525091]),
+            np.array([3.42525091]),
+            np.array([0.0]),
         ),
         # computed manually
         (
             0,
             0,
-            pnp.array([0.0]),
-            pnp.array([1.0]),
-            pnp.array([3.42525091]),
-            pnp.array([3.42525091]),
-            pnp.array([1.01479665]),
+            np.array([0.0]),
+            np.array([1.0]),
+            np.array([3.42525091]),
+            np.array([3.42525091]),
+            np.array([1.01479665]),
         ),
     ],
 )
@@ -320,11 +319,11 @@ def test_diff2(i, j, ri, rj, alpha, beta, d):
         (
             (0, 0, 0),
             (0, 0, 0),
-            pnp.array([0.0, 0.0, 0.0]),
-            pnp.array([20.0, 0.0, 0.0]),
-            pnp.array([3.42525091]),
-            pnp.array([3.42525091]),
-            pnp.array([0.0]),
+            np.array([0.0, 0.0, 0.0]),
+            np.array([20.0, 0.0, 0.0]),
+            np.array([3.42525091]),
+            np.array([3.42525091]),
+            np.array([0.0]),
         ),
     ],
 )
@@ -339,32 +338,32 @@ def test_gaussian_kinetic(la, lb, ra, rb, alpha, beta, t):
         # generate_kinetic must return 0.0 for two Gaussians centered far apart
         (
             ["H", "H"],
-            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], requires_grad=False),
-            pnp.array(
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], requires_grad=False),
+            np.array(
                 [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
                 requires_grad=False,
             ),
-            pnp.array(
+            np.array(
                 [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
                 requires_grad=True,
             ),
-            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], requires_grad=True),
-            pnp.array([0.0]),
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], requires_grad=True),
+            np.array([0.0]),
         ),
         # kinetic integral obtained from pyscf using mol.intor('int1e_kin')
         (
             ["H", "H"],
-            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
-            pnp.array(
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+            np.array(
                 [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
                 requires_grad=False,
             ),
-            pnp.array(
+            np.array(
                 [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
                 requires_grad=True,
             ),
-            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
-            pnp.array([0.38325384]),
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
+            np.array([0.38325384]),
         ),
     ],
 )
@@ -384,16 +383,16 @@ def test_generate_kinetic(symbols, geometry, alpha, coeff, r, t_ref):
     [
         (
             ["H", "H"],
-            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
-            pnp.array(
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+            np.array(
                 [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
                 requires_grad=True,
             ),
-            pnp.array(
+            np.array(
                 [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
                 requires_grad=True,
             ),
-            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
         ),
     ],
 )
@@ -452,32 +451,32 @@ def test_gradient_kinetic(symbols, geometry, alpha, coeff, r):
         # trivial case
         (
             ["H", "H"],
-            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], requires_grad=False),
-            pnp.array(
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], requires_grad=False),
+            np.array(
                 [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
                 requires_grad=True,
             ),
-            pnp.array(
+            np.array(
                 [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
                 requires_grad=True,
             ),
-            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], requires_grad=True),
-            pnp.array([0.0]),
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], requires_grad=True),
+            np.array([0.0]),
         ),
         # nuclear attraction integral obtained from pyscf using mol.intor('int1e_nuc')
         (
             ["H", "H"],
-            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
-            pnp.array(
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
+            np.array(
                 [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
                 requires_grad=True,
             ),
-            pnp.array(
+            np.array(
                 [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
                 requires_grad=True,
             ),
-            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
-            pnp.array([0.80120855]),
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
+            np.array([0.80120855]),
         ),
     ],
 )
@@ -502,16 +501,16 @@ def test_generate_attraction(symbols, geometry, alpha, coeff, r, a_ref):
     [
         (
             ["H", "H"],
-            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
-            pnp.array(
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+            np.array(
                 [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
                 requires_grad=True,
             ),
-            pnp.array(
+            np.array(
                 [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
                 requires_grad=True,
             ),
-            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
         ),
     ],
 )
@@ -570,8 +569,8 @@ def test_gradient_attraction(symbols, geometry, alpha, coeff, r):
     [
         (
             ["H", "H"],
-            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], requires_grad=False),
-            pnp.array(
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], requires_grad=False),
+            np.array(
                 [
                     [3.42525091, 0.62391373, 0.1688554],
                     [3.42525091, 0.62391373, 0.1688554],
@@ -580,7 +579,7 @@ def test_gradient_attraction(symbols, geometry, alpha, coeff, r):
                 ],
                 requires_grad=False,
             ),
-            pnp.array(
+            np.array(
                 [
                     [0.15432897, 0.53532814, 0.44463454],
                     [0.15432897, 0.53532814, 0.44463454],
@@ -589,12 +588,12 @@ def test_gradient_attraction(symbols, geometry, alpha, coeff, r):
                 ],
                 requires_grad=True,
             ),
-            pnp.array([0.0]),
+            np.array([0.0]),
         ),
         (
             ["H", "H"],
-            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
-            pnp.array(
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+            np.array(
                 [
                     [3.42525091, 0.62391373, 0.1688554],
                     [3.42525091, 0.62391373, 0.1688554],
@@ -603,7 +602,7 @@ def test_gradient_attraction(symbols, geometry, alpha, coeff, r):
                 ],
                 requires_grad=False,
             ),
-            pnp.array(
+            np.array(
                 [
                     [0.15432897, 0.53532814, 0.44463454],
                     [0.15432897, 0.53532814, 0.44463454],
@@ -612,7 +611,7 @@ def test_gradient_attraction(symbols, geometry, alpha, coeff, r):
                 ],
                 requires_grad=True,
             ),
-            pnp.array([0.45590169]),
+            np.array([0.45590169]),
         ),
     ],
 )
@@ -633,8 +632,8 @@ def test_generate_repulsion(symbols, geometry, alpha, coeff, e_ref):
     [
         (
             ["H", "H"],
-            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
-            pnp.array(
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+            np.array(
                 [
                     [3.42525091, 0.62391373, 0.1688554],
                     [3.42525091, 0.62391373, 0.1688554],
@@ -643,7 +642,7 @@ def test_generate_repulsion(symbols, geometry, alpha, coeff, e_ref):
                 ],
                 requires_grad=True,
             ),
-            pnp.array(
+            np.array(
                 [
                     [0.15432897, 0.53532814, 0.44463454],
                     [0.15432897, 0.53532814, 0.44463454],
@@ -652,7 +651,7 @@ def test_generate_repulsion(symbols, geometry, alpha, coeff, e_ref):
                 ],
                 requires_grad=True,
             ),
-            pnp.array(
+            np.array(
                 [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 0.0], [0.0, 0.0, 1.0]],
                 requires_grad=True,
             ),

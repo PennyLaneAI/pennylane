@@ -423,8 +423,8 @@ def generate_kinetic(basis_a, basis_b):
 
     >>> symbols  = ['H', 'H']
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
-    >>> alpha = pnp.array([[3.425250914, 0.6239137298, 0.168855404],
-    >>>                    [3.425250914, 0.6239137298, 0.168855404]], requires_grad = True)
+    >>> alpha = np.array([[3.425250914, 0.6239137298, 0.168855404],
+    >>>                   [3.425250914, 0.6239137298, 0.168855404]], requires_grad = True)
     >>> mol = hf.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [mol.alpha]
     >>> generate_kinetic(mol.basis_set[0], mol.basis_set[1])(*args)
@@ -630,9 +630,9 @@ def generate_attraction(r, basis_a, basis_b):
     **Example**
 
     >>> symbols  = ['H', 'H']
-    >>> geometry = pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
-    >>> alpha = pnp.array([[3.425250914, 0.6239137298, 0.168855404],
-    >>>                    [3.425250914, 0.6239137298, 0.168855404]], requires_grad = True)
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
+    >>> alpha = np.array([[3.425250914, 0.6239137298, 0.168855404],
+    >>>                   [3.425250914, 0.6239137298, 0.168855404]], requires_grad = True)
     >>> mol = Molecule(symbols, geometry, alpha=alpha)
     >>> basis_a = mol.basis_set[0]
     >>> basis_b = mol.basis_set[1]
@@ -778,11 +778,11 @@ def generate_repulsion(basis_a, basis_b, basis_c, basis_d):
     **Example**
 
     >>> symbols  = ['H', 'H']
-    >>> geometry = pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
-    >>> alpha = pnp.array([[3.425250914, 0.6239137298, 0.168855404],
-    >>>                    [3.425250914, 0.6239137298, 0.168855404],
-    >>>                    [3.425250914, 0.6239137298, 0.168855404],
-    >>>                    [3.425250914, 0.6239137298, 0.168855404]], requires_grad = True)
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
+    >>> alpha = np.array([[3.425250914, 0.6239137298, 0.168855404],
+    >>>                   [3.425250914, 0.6239137298, 0.168855404],
+    >>>                   [3.425250914, 0.6239137298, 0.168855404],
+    >>>                   [3.425250914, 0.6239137298, 0.168855404]], requires_grad = True)
     >>> mol = Molecule(symbols, geometry, alpha=alpha)
     >>> basis_a = mol.basis_set[0]
     >>> basis_b = mol.basis_set[1]
