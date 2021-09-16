@@ -660,6 +660,7 @@ class TestTwoQubitUnitaryDecomposition:
         assert _compute_num_cnots(U) == 3
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
+        assert len(obtained_decomposition) == 10
 
         obtained_matrix = compute_matrix_from_ops_two_qubit(
             obtained_decomposition, wire_order=wires
@@ -678,6 +679,7 @@ class TestTwoQubitUnitaryDecomposition:
         assert _compute_num_cnots(U) == 2
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
+        assert len(obtained_decomposition) == 8
 
         obtained_matrix = compute_matrix_from_ops_two_qubit(
             obtained_decomposition, wire_order=wires
@@ -694,6 +696,7 @@ class TestTwoQubitUnitaryDecomposition:
         assert _compute_num_cnots(U) == 1
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
+        assert len(obtained_decomposition) == 5
 
         obtained_matrix = compute_matrix_from_ops_two_qubit(
             obtained_decomposition, wire_order=wires
@@ -710,6 +713,7 @@ class TestTwoQubitUnitaryDecomposition:
         assert _compute_num_cnots(U) == 0
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
+        assert len(obtained_decomposition) == 2
 
         obtained_matrix = compute_matrix_from_ops_two_qubit(obtained_decomposition, wires)
 
