@@ -462,8 +462,9 @@
   an owner of the pruned tensor and its constituent observables, but leaves the
   original tensor in the queue without an owner.
 
-* Create a separate requirements file for the CI issue , to have a separate requirements.txt (pinned)
-and requirements-ci.txt (unpinned). This latter would be used by the CI.
+* Create a separate requirements file for the CI issue, to have a separate
+  requirements.txt (pinned) and requirements-ci.txt (unpinned). This latter
+  would be used by the CI.
   [(#1535)](https://github.com/PennyLaneAI/pennylane/pull/1535)
 
 * The QFT operation is moved to template
