@@ -36,6 +36,7 @@ raw_and_interpreted_keys_single_arg = [
     ((), (None, None)),
 ]
 uninterpretable_keys = ["Hi", (None, 0, 1), (None, None, None), 1.4]
+uninterpretable_keys_single_arg = ["Hi", 1.4]
 raw_keys_error = [
     (None, 0),
     (None, (0, 1)),
@@ -60,6 +61,12 @@ def test_interpret_key_uninterpretable(raw):
     ``qml.argmap._interpret_key`` for unreasonable keys."""
     with pytest.raises(ArgMapError, match="Could not interpret key"):
         _interpret_key(raw, single_arg=False)
+
+
+@pytest.mark.parametrize("raw", uninterpretable_keys_single_arg)
+def test_interpret_key_uninterpretable_single_arg(raw):
+    r"""Test exception of the helper functionality
+    ``qml.argmap._interpret_key`` for unreasonable keys with ``single_arg=True``"""
     with pytest.raises(ArgMapError, match="Could not interpret key"):
         _interpret_key(raw, single_arg=True)
 
@@ -100,6 +107,12 @@ data_inconsistent_keys = [
     [((0, (0, 4, 1)), "a"), ((0, (1,)), "b")],
 ]
 
+data_inconsistent_keys_single_arg = [
+    [((None, (1,)), "a"), ((None, (3, 4)), "b")],
+    [((None, (1,)), "a"), ((3, 4), "b")],
+    [((2, 6, 1), "a"), ((3, 4), "b")],
+]
+
 data_inconsistent_values = [
     [((0, 0), "a"), ((1, 1), "b"), ((2, 2), 1.0)],
     [((0, 0), [1, 3]), ((0, 1), "b")],
@@ -107,7 +120,7 @@ data_inconsistent_values = [
     [((0, (0, 4)), lambda x: x), ((0, (1, 0)), "b")],
 ]
 
-data_lists_consistent_values = [
+data_consistent_values = [
     [(i, i ** 2) for i in range(4)],
     [(i, str(i)) for i in range(4)],
     [((0, 2), ("a",)), ((1, 4), (3,)), ((0, 2), (1, 2))],
@@ -252,9 +265,13 @@ class TestArgMap:
         argmap = ArgMap(data)
         argmap.consistency_check()
 
-    @pytest.mark.parametrize("data", data_lists_consistent_values)
+    @pytest.mark.parametrize("data", data_consistent_values)
     def test_consistency_check_True_values(self, data):
         argmap = ArgMap(data)
+        argmap.consistency_check(check_values=True)
+
+    def test_consistency_check_True_values_single_object(self):
+        argmap = ArgMap([(None, "single item")], single_object=True)
         argmap.consistency_check(check_values=True)
 
     @pytest.mark.parametrize("data", data_invalid_arg_index)
@@ -266,6 +283,15 @@ class TestArgMap:
     def test_consistency_check_inconsistent(self, data):
         with pytest.raises(ArgMapError, match="Inconsistent keys"):
             argmap = ArgMap(data)
+
+    @pytest.mark.parametrize("data", data_inconsistent_keys_single_arg)
+    def test_consistency_check_inconsistent_single_arg(self, data):
+        with pytest.raises(ArgMapError, match="Inconsistent keys .* only argument index\."):
+            argmap = ArgMap(data, single_arg=True)
+
+    def test_consistency_check_None_key_wo_single_object(self):
+        with pytest.raises(ArgMapError, match="The key \(None, None\) indicates"):
+            argmap = ArgMap([(None, "single object")])
 
     @pytest.mark.parametrize("data", data_inconsistent_values)
     def test_consistency_check_False_values(self, data):
@@ -302,3 +328,27 @@ class TestArgMap:
     def test_error_garbage_data(self, data):
         with pytest.raises(ArgMapError):
             ArgMap(data)
+
+    def test_error_single_object_multiple(self):
+        argmap = ArgMap([(None, "a")], single_object=True)
+        argmap.__setitem__(1, "b")
+        with pytest.raises(ArgMapError, match="ArgMap.single_object=True but len"):
+            argmap.consistency_check()
+
+    def test_error_single_object_wrong_key(self):
+        argmap = ArgMap({1: "b"})
+        argmap.single_object = True
+        with pytest.raises(ArgMapError, match="ArgMap.single_object=True but key="):
+            argmap.consistency_check()
+
+    def test_error_single_arg_wrong_key(self):
+        argmap = ArgMap({1: "b"})
+        argmap.single_arg = True
+        with pytest.raises(ArgMapError, match="Invalid key \(1, None\)"):
+            argmap.consistency_check()
+
+    def test_error_wrong_param_key(self):
+        with pytest.raises(ArgMapError, match="Invalid key \(1, 'not a tuple'\)"):
+            argmap = ArgMap({(1, "not a tuple"): "b"})
+        with pytest.raises(ArgMapError, match="Invalid entries in parameter index"):
+            argmap = ArgMap({(1, (4, "not an int", 7)): "b"})

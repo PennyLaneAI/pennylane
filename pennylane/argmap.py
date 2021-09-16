@@ -32,7 +32,7 @@ def _interpret_key(key, single_arg):
         # Only param_key given and param_key is int
         if np.issubdtype(type(key), int):
             return None, key
-        if isinstance(key, tuple) and len(key) == 2:
+        if isinstance(key, tuple):
             # Only param_key given and param_key is tuple OR (None, param_key) given
             sub_key = key[1] if key[0] is None else key
             return None, sub_key
