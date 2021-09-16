@@ -9,7 +9,28 @@
   [(#1225)](https://github.com/PennyLaneAI/pennylane/pull/1360)
   [(#1598)](https://github.com/PennyLaneAI/pennylane/pull/1598)
 
-  # TODO: add example
+  ```python
+  x = torch.tensor(0.43316321, dtype=torch.float64, requires_grad=True)
+  y = torch.tensor(0.2162158, dtype=torch.float64, requires_grad=True)
+  z = torch.tensor(0.75110998, dtype=torch.float64, requires_grad=True)
+
+  p = torch.tensor([x, y, z], requires_grad=True)
+  dev = qml.device("default.qubit.torch", wires=1)
+
+  @qml.qnode(dev, interface="torch", diff_method="backprop")
+  def circuit(x):
+      qml.Rot(x[0], x[1], x[2], wires=0)
+      return qml.expval(qml.PauliZ(0))
+
+  res = circuit(p)
+  res.backward()
+  ```
+  ```pycon
+  >>> res = circuit(p)
+  >>> res.backward()
+  >>> print(p.grad)
+  tensor([-9.1798e-17, -2.1454e-01, -1.0511e-16], dtype=torch.float64)
+  ```
 
 <h4>Batch gradient transforms</h4>
 
@@ -182,13 +203,13 @@
 * The `RotosolveOptimizer` now can tackle general parametrized circuits, and is no longer
   restricted to single-qubit Pauli rotations.
   [(#1489)](https://github.com/PennyLaneAI/pennylane/pull/1489)
-  
+
   This includes:
-  
+
   - layers of gates controlled by the same parameter,
   - controlled variants of parametrized gates, and
   - Hamiltonian time evolution.
-  
+
   Note that the eigenvalue spectrum of the gate generator needs to be known to
   use `RotosolveOptimizer` for a general gate, and it
   is required to produce equidistant frequencies.
@@ -321,13 +342,13 @@
   selected or deselected during local execution of tests.
   [(#1633)](https://github.com/PennyLaneAI/pennylane/pull/1633)
 
-* Hamiltonians are now natively supported on the `default.qubit` device if `shots=None`. 
+* Hamiltonians are now natively supported on the `default.qubit` device if `shots=None`.
   This makes VQE workflows a lot faster in some cases.
   [(#1551)](https://github.com/PennyLaneAI/pennylane/pull/1551)
   [(#1596)](https://github.com/PennyLaneAI/pennylane/pull/1596)
 
-* A gradient recipe for Hamiltonian coefficients has been added. This makes it possible 
-  to compute parameter-shift gradients of these coefficients on devices that natively 
+* A gradient recipe for Hamiltonian coefficients has been added. This makes it possible
+  to compute parameter-shift gradients of these coefficients on devices that natively
   support Hamiltonians.
   [(#1551)](https://github.com/PennyLaneAI/pennylane/pull/1551)
 
@@ -337,8 +358,8 @@
 * The `MultiControlledX` class now inherits from `Operation` instead of `ControlledQubitUnitary` which makes the `MultiControlledX` gate a non-parameterized gate.
   [(#1557)](https://github.com/PennyLaneAI/pennylane/pull/1557)
 
-* The `utils.sparse_hamiltonian` function can now deal with non-integer 
-  wire labels, and it throws an error for the edge case of observables that are 
+* The `utils.sparse_hamiltonian` function can now deal with non-integer
+  wire labels, and it throws an error for the edge case of observables that are
   created from multi-qubit operations.
   [(#1550)](https://github.com/PennyLaneAI/pennylane/pull/1550)
 
@@ -399,10 +420,10 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 * The QFT operation is moved to template
   [(#1548)](https://github.com/PennyLaneAI/pennylane/pull/1548)
-  
-* The `qml.ResetError` is now supported for `default.mixed` device. 
+
+* The `qml.ResetError` is now supported for `default.mixed` device.
   [(#1541)](https://github.com/PennyLaneAI/pennylane/pull/1541)
-  
+
 * `QNode.diff_method` will now reflect which method was selected from `diff_method="best"`.
   [(#1568)](https://github.com/PennyLaneAI/pennylane/pull/1568)
 
@@ -432,13 +453,13 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
   Temporary backward compatibility has been added to support the use of `_stepsize` for one
   release cycle. `update_stepsize` method is deprecated.
   [(#1625)](https://github.com/PennyLaneAI/pennylane/pull/1625)
-  
+
 
 <h3>Bug fixes</h3>
 
 * Fix bug with norm and Jax tracers (jit) when using `QubiStateVector`.
   [(#1649)](https://github.com/PennyLaneAI/pennylane/pull/1649)
-  
+
 * Fix bug in edge case of single-qubit `zyz_decomposition` when only
   off-diagonal elements are present.
   [(#1643)](https://github.com/PennyLaneAI/pennylane/pull/1643)
@@ -469,9 +490,9 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 * The `qml.Identity` operation is placed under the sections Qubit observables and CV observables.
   [(#1576)](https://github.com/PennyLaneAI/pennylane/pull/1576)
 
-* Updated the documentation of `qml.grouping`, `qml.kernels` and `qml.qaoa` modules to present 
+* Updated the documentation of `qml.grouping`, `qml.kernels` and `qml.qaoa` modules to present
   the list of functions first followed by the technical details of the module.
-  [(#1581)](https://github.com/PennyLaneAI/pennylane/pull/1581) 
+  [(#1581)](https://github.com/PennyLaneAI/pennylane/pull/1581)
 
 * Recategorized Qubit operations into new and existing categories so that code for each
   operation is easier to locate.
@@ -1041,7 +1062,7 @@ Vincent Wong.
 * Fixed a bug in the initialization of `QubitUnitary` where the size of
   the matrix was not checked against the number of wires.
   [(#1439)](https://github.com/PennyLaneAI/pennylane/pull/1439)
-  
+
 <h3>Documentation</h3>
 
 * Improved Contribution Guide and Pull Requests Guide.
