@@ -481,7 +481,7 @@
   [(#1585)](https://github.com/PennyLaneAI/pennylane/pull/1585)
 
 * QNodes now include validation to warn users if a supplied keyword argument is not one of the
-  recognized arguments. [(#1496)](https://github.com/PennyLaneAI/pennylane/pull/1591)
+  recognized arguments. [(#1591)](https://github.com/PennyLaneAI/pennylane/pull/1591)
 
 <h3>Breaking changes</h3>
 
