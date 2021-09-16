@@ -65,9 +65,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         list[list[tf.Tensor]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
-    with qml.tape.Unwrap(*tapes):
-        # Forward pass: execute the tapes
-        res, jacs = execute_fn(tapes, **gradient_kwargs)
 
     parameters = []
     params_unwrapped = []
@@ -75,6 +72,8 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     for i, tape in enumerate(tapes):
         # store the trainable parameters
         params = tape.get_parameters(trainable_only=False)
+        tape.trainable_params = qml.math.get_trainable_indices(params)
+
         parameters += [p for i, p in enumerate(params) if i in tape.trainable_params]
 
         # store all unwrapped parameters
@@ -82,6 +81,11 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
             [i.numpy() if isinstance(i, (tf.Variable, tf.Tensor)) else i for i in params]
         )
 
+    with qml.tape.Unwrap(*tapes, set_trainable=False):
+        # Forward pass: execute the tapes
+        res, jacs = execute_fn(tapes, **gradient_kwargs)
+
+    for i, tape in enumerate(tapes):
         # convert output to TensorFlow tensors
         r = np.hstack(res[i]) if res[i].dtype == np.dtype("object") else res[i]
         res[i] = tf.convert_to_tensor(r)
@@ -91,6 +95,8 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         def grad_fn(*dy, **tfkwargs):
             """Returns the vector-Jacobian product with given
             parameter values and output gradient dy"""
+
+            dy = [qml.math.T(d) for d in dy]
 
             if jacs:
                 # Jacobians were computed on the forward pass (mode="forward")

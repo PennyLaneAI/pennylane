@@ -22,6 +22,7 @@ import pennylane as qml
 from pennylane.circuit_drawer import CircuitDrawer
 from pennylane.circuit_drawer.circuit_drawer import _remove_duplicates
 from pennylane.circuit_drawer.grid import Grid, _transpose
+from pennylane.circuit_drawer.charsets import CHARSETS, UnicodeCharSet, AsciiCharSet
 from pennylane.wires import Wires
 
 from pennylane.measure import state
@@ -63,6 +64,41 @@ dummy_raw_observable_grid = [
     [qml.expval(qml.PauliY(wires=[2]))],
     [qml.var(qml.Hadamard(wires=[3]))],
 ]
+
+
+class TestInitialization:
+    def test_charset_default(self):
+
+        drawer_None = CircuitDrawer(
+            dummy_raw_operation_grid, dummy_raw_observable_grid, Wires(range(6)), charset=None
+        )
+
+        assert isinstance(drawer_None.charset, UnicodeCharSet)
+
+    @pytest.mark.parametrize("charset", ("unicode", "ascii"))
+    def test_charset_string(self, charset):
+
+        drawer_str = CircuitDrawer(
+            dummy_raw_operation_grid, dummy_raw_observable_grid, Wires(range(6)), charset=charset
+        )
+
+        assert isinstance(drawer_str.charset, CHARSETS[charset])
+
+    @pytest.mark.parametrize("charset", (UnicodeCharSet, AsciiCharSet))
+    def test_charset_class(self, charset):
+
+        drawer_class = CircuitDrawer(
+            dummy_raw_operation_grid, dummy_raw_observable_grid, Wires(range(6)), charset=charset
+        )
+
+        assert isinstance(drawer_class.charset, charset)
+
+    def test_charset_error(self):
+
+        with pytest.raises(ValueError, match=r"Charset 'nope' is not supported."):
+            CircuitDrawer(
+                dummy_raw_operation_grid, dummy_raw_observable_grid, Wires(range(6)), charset="nope"
+            )
 
 
 @pytest.fixture
