@@ -6,7 +6,7 @@
 
 * The built-in PennyLane simulator `default.qubit` now supports
   backpropogation with PyTorch.
-  [(#1225)](https://github.com/PennyLaneAI/pennylane/pull/1360)
+  [(#1360)](https://github.com/PennyLaneAI/pennylane/pull/1360)
   [(#1598)](https://github.com/PennyLaneAI/pennylane/pull/1598)
 
   ```python
