@@ -465,7 +465,7 @@ def generate_kinetic(basis_a, basis_b):
 
 
 def _boys(n, t):
-    r"""Evaluate Boys function.
+    r"""Evaluate the Boys function.
 
     The :math:`n`-th order `Boys function <https://arxiv.org/abs/2107.01488>`_ is defined as
 
@@ -491,7 +491,7 @@ def _boys(n, t):
         t (float): exponent of the Boys function
 
     Returns:
-        float: magnitude of the Boys function
+        float: value of the Boys function
     """
     if t == 0.0:
         return 1 / (2 * n + 1)
@@ -500,7 +500,7 @@ def _boys(n, t):
 
 
 def _hermite_coulomb(t, u, v, n, p, dr):
-    """Evaluate Hermite integral needed to compute the nuclear attraction and electron repulsion
+    """Evaluate the Hermite integral needed to compute the nuclear attraction and electron repulsion
     integrals.
 
     These integrals are computed recursively starting from the Boys function
@@ -514,16 +514,16 @@ def _hermite_coulomb(t, u, v, n, p, dr):
     where :math:`F_n` is the Boys function, :math:`p` is computed from the exponents of the two
     Gaussian functions as :math:`p = \alpha + \beta`, and :math:`R_{CP}` is the distance between the
     center of the composite Gaussian centered at :math:`P` and the electrostatic potential at
-    :math:`C`. The following recursive equations are used to compute the evaluate the higher order
+    :math:`C`. The following recursive equations are used to compute the higher-order
     Hermite integrals
 
     .. math::
 
-        R_{t+1, u, v}^n = t R_{t-1, u, v}^{n+1} + x R_{t, u, v}^{n+1}
+        R_{t+1, u, v}^n = t R_{t-1, u, v}^{n+1} + x R_{t, u, v}^{n+1},
 
-        R_{t, u+1, v}^n = u R_{t, u-1, v}^{n+1} + y R_{t, u, v}^{n+1}
+        R_{t, u+1, v}^n = u R_{t, u-1, v}^{n+1} + y R_{t, u, v}^{n+1},
 
-        R_{t, u, v+1}^n = v R_{t, u, v-1}^{n+1} + z R_{t, u, v}^{n+1}
+        R_{t, u, v+1}^n = v R_{t, u, v-1}^{n+1} + z R_{t, u, v}^{n+1},
 
     where :math:`x`, :math:`y` and :math:`z` are the Cartesian components of :math:`R_{CP}`.
 
@@ -579,7 +579,7 @@ def nuclear_attraction(la, lb, ra, rb, alpha, beta, r):
 
     where :math:`E` and :math:`R` represent the Hermite Gaussian expansion coefficient and the
     Hermite Coulomb integral, respectively. The sum goes over :math:`i + j + 1`, :math:`k + l + 1`
-    and :math:`m + m + 1` for :math:`t`, :math:`u` and :math:`v`, respectively and :math:`p` is
+    and :math:`m + m + 1` for :math:`t`, :math:`u` and :math:`v`, respectively, and :math:`p` is
     computed from the exponents of the two Gaussian functions as :math:`p = \alpha + \beta`.
 
     Args:
@@ -684,7 +684,7 @@ def generate_attraction(r, basis_a, basis_b):
 
 
 def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta):
-    r"""Compute electron repulsion integral between four primitive Gaussian functions.
+    r"""Compute the electron repulsion integral between four primitive Gaussian functions.
 
     The electron repulsion integral between four Gaussian functions denoted by :math:`a`, :math:`b`
     , :math:`c` and :math:`d` can be computed as
