@@ -2,6 +2,35 @@
 
 <h3>New features since last release</h3>
 
+<h4>PennyLane-Lightning is now available by default</h4>
+
+* The C++-based [PennyLane-Lightning](https://pennylane-lightning.readthedocs.io/en/latest/) device
+  is now available to users by default. This device is a fast state-vector simulator equipped with
+  the efficient [adjoint method](https://arxiv.org/abs/2009.02823>) for differentiating quantum
+  circuits. The device can be accessed using the `"lightning.qubit"` name:
+  
+  ```python
+  import pennylane as qml
+
+  wires = 5
+  layers = 4
+  dev = qml.device("lightning.qubit", wires=wires)
+
+  @qml.qnode(dev)
+  def circuit(weights):
+      qml.templates.StronglyEntanglingLayers(weights, wires=range(wires))
+      return qml.expval(qml.PauliZ(0))
+
+  weights = qml.init.strong_ent_layers_normal(layers, wires, seed=1967)
+  ```
+  
+  Evaluating circuits and their gradients on the device can be achieved using the standard approach:
+  
+  ```pycon
+  >>> print(f"Circuit evaluated: {circuit(weights)}")
+  >>> print(f"Circuit gradient:\n{qml.grad(circuit)(weights)}")
+  ```
+
 * Custom gradient transforms can now be created using the new
   `@qml.gradients.gradient_transform` decorator on a batch-tape transform.
   [(#1589)](https://github.com/PennyLaneAI/pennylane/pull/1589)
