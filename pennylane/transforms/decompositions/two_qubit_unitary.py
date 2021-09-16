@@ -34,6 +34,15 @@ CNOT01 = qml.CNOT(wires=[0, 1]).matrix
 CNOT10 = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
 SWAP = qml.SWAP(wires=[0, 1]).matrix
 
+# S \otimes SX
+S_SX = np.array(
+    [
+        [0.5 + 0.5j, 0.5 - 0.5j, 0.0 + 0.0j, 0.0 + 0.0j],
+        [0.5 - 0.5j, 0.5 + 0.5j, 0.0 + 0.0j, 0.0 + 0.0j],
+        [0.0 + 0.0j, 0.0 + 0.0j, -0.5 + 0.5j, 0.5 + 0.5j],
+        [0.0 + 0.0j, 0.0 + 0.0j, 0.5 + 0.5j, -0.5 + 0.5j],
+    ]
+)
 
 # Any two-qubit operation can be decomposed into single-qubit operations and
 # at most 3 CNOTs. The number of CNOTs needed affects the form of the decomposition,
@@ -93,35 +102,35 @@ def _compute_num_cnots(U):
     """
     u = math.dot(Edag, math.dot(U, E))
     gammaU = math.dot(u, math.T(u))
-
     trace = math.trace(gammaU)
-    evs = math.linalg.eigvals(gammaU)
-
-    # For the case with 3 CNOTs, the trace is a non-zero complex number
-    # with both real and imaginary parts.
-    num_cnots = 3
-
-    # At one point, to distinguish between 1/2 CNOT cases, we need to look at the eigenvalues
-    if math.get_interface(u) == "torch":
-        sorted_evs, _ = math.sort(math.imag(evs))
-    else:
-        sorted_evs = math.sort(math.imag(evs))
 
     # Case: 0 CNOTs (tensor product), the trace is +/- 4
     # We need a tolerance of around 1e-7 here in order to work with the case where U
     # is specified with 8 decimal places.
     if math.allclose(trace, 4, atol=1e-7) or math.allclose(trace, -4, atol=1e-7):
-        num_cnots = 0
+        return 0
+
+    # To distinguish between 1/2 CNOT cases, we need to look at the eigenvalues
+    evs = math.linalg.eigvals(gammaU)
+
+    if math.get_interface(u) == "torch":
+        sorted_evs, _ = math.sort(math.imag(evs))
+    else:
+        sorted_evs = math.sort(math.imag(evs))
+
     # Case: 1 CNOT, the trace is 0, and the eigenvalues of gammaU are [-1j, -1j, 1j, 1j]
     # Checking the eigenvalues is needed because of some special 2-CNOT cases that yield
     # a trace 0.
-    elif math.allclose(trace, 0j, atol=1e-7) and math.allclose(sorted_evs, [-1, -1, 1, 1]):
-        num_cnots = 1
-    # Case: 2 CNOTs, the trace has only a real part (or is 0)
-    elif math.allclose(math.imag(trace), 0.0, atol=1e-7):
-        num_cnots = 2
+    if math.allclose(trace, 0j, atol=1e-7) and math.allclose(sorted_evs, [-1, -1, 1, 1]):
+        return 1
 
-    return num_cnots
+    # Case: 2 CNOTs, the trace has only a real part (or is 0)
+    if math.allclose(math.imag(trace), 0.0, atol=1e-7):
+        return 2
+
+    # For the case with 3 CNOTs, the trace is a non-zero complex number
+    # with both real and imaginary parts.
+    return 3
 
 
 def _su2su2_to_tensor_products(U):
@@ -248,8 +257,7 @@ def _extract_su2su2_prefactors(U, V):
                 new_q_order.append(math.argmax(are_close))
 
         # Reshuffle the columns.
-        q_perm = np.identity(4)[:, np.array(new_q_order)]
-        q = math.dot(q, math.cast_like(q_perm, q))
+        q = q[:, np.array(new_q_order)]
 
     # If determinant of p is not 1, it is in O(4) but not SO(4), and has
     # determinant -1. We can transform it to SO(4) by simply negating one
@@ -400,14 +408,7 @@ def _decomposition_2_cnots(U, wires):
         ]
 
         # S \otimes SX
-        inner_matrix = np.array(
-            [
-                [0.5 + 0.5j, 0.5 - 0.5j, 0.0 + 0.0j, 0.0 + 0.0j],
-                [0.5 - 0.5j, 0.5 + 0.5j, 0.0 + 0.0j, 0.0 + 0.0j],
-                [0.0 + 0.0j, 0.0 + 0.0j, -0.5 + 0.5j, 0.5 + 0.5j],
-                [0.0 + 0.0j, 0.0 + 0.0j, 0.5 + 0.5j, -0.5 + 0.5j],
-            ]
-        )
+        inner_matrix = S_SX
     else:
         # For the non-special case, the eigenvalues come in conjugate pairs.
         # We need to find two non-conjugate eigenvalues to extract the angles.
