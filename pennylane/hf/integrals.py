@@ -307,6 +307,160 @@ def generate_overlap(basis_a, basis_b):
 
     return overlap_integral
 
+def _diff2(i, j, ri, rj, alpha, beta):
+    r"""Compute the second order differentiated integral needed for evaluating a kinetic integral.
+
+    The second-order integral :math:`D_{ij}^2`, where :math:`i` and :math:`j` denote angular
+    momentum components of Gaussian functions, is computed from overlap integrals :math:`S` and the
+    Gaussian exponent :math:`\beta` as
+    [`Helgaker (1995) p804 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]:
+
+    .. math::
+
+        D_{ij}^2 = j(j-1)S_{i,j-2}^0 - 2\beta(2j+1)S_{i,j}^0 + 4\beta^2 S_{i,j+2}^0.
+
+    Args:
+        i (integer): angular momentum component for the first Gaussian function
+        j (integer): angular momentum component for the second Gaussian function
+        ri (array[float]): position component of the the first Gaussian function
+        rj (array[float]): position component of the the second Gaussian function
+        alpha (array[float]): exponent of the first Gaussian function
+        beta (array[float]): exponent of the second Gaussian function
+
+    Returns:
+        array[float]: second-order differentiated integral between two Gaussian functions
+    """
+    p = alpha + beta
+
+    d1 = j * (j - 1) * anp.sqrt(anp.pi / p) * expansion(i, j - 2, ri, rj, alpha, beta, 0)
+    d2 = -2 * beta * (2 * j + 1) * anp.sqrt(anp.pi / p) * expansion(i, j, ri, rj, alpha, beta, 0)
+    d3 = 4 * beta ** 2 * anp.sqrt(anp.pi / p) * expansion(i, j + 2, ri, rj, alpha, beta, 0)
+
+    return d1 + d2 + d3
+
+
+def gaussian_kinetic(la, lb, ra, rb, alpha, beta):
+    r"""Compute the kinetic integral for two primitive Gaussian functions.
+
+    The kinetic integral between two Gaussian functions denoted by :math:`a` and :math:`b` is
+    computed as
+    [`Helgaker (1995) p805 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]:
+
+    .. math::
+
+        T_{ab} = -\frac{1}{2} \left ( D_{ij}^2 D_{kl}^0 D_{mn}^0 + D_{ij}^0 D_{kl}^2 D_{mn}^0 + D_{ij}^0 D_{kl}^0 D_{mn}^2\right ),
+
+    where :math:`D_{ij}^0 = S_{ij}^0` is an overlap integral and :math:`D_{ij}^2` is computed from
+    overlap integrals :math:`S` and the Gaussian exponent :math:`\beta` as
+
+    .. math::
+
+        D_{ij}^2 = j(j-1)S_{i,j-2}^0 - 2\beta(2j+1)S_{i,j}^0 + 4\beta^2 S_{i,j+2}^0.
+
+    Args:
+        la (tuple[int]): angular momentum for the first Gaussian function
+        lb (tuple[int]): angular momentum for the second Gaussian function
+        ra (array[float]): position vector of the the first Gaussian function
+        rb (array[float]): position vector of the the second Gaussian function
+        alpha (array[float]): exponent of the first Gaussian function
+        beta (array[float]): exponent of the second Gaussian function
+
+    Returns:
+        array[float]: kinetic integral between two Gaussian functions
+
+    **Example**
+
+    >>> la, lb = (0, 0, 0), (0, 0, 0)
+    >>> ra, rb = np.array(([0., 0., 0.]), np.array(([0., 0., 0.])
+    >>> alpha = np.array([np.pi/2])
+    >>> beta = np.array([np.pi/2])
+    >>> t = gaussian_kinetic(la, lb, ra, rb, alpha, beta)
+    >>> t
+    array([2.35619449])
+    """
+
+    p = alpha + beta
+
+    t1 = (
+        _diff2(la[0], lb[0], ra[0], rb[0], alpha, beta)
+        * anp.sqrt(anp.pi / p)
+        * expansion(la[1], lb[1], ra[1], rb[1], alpha, beta, 0)
+        * anp.sqrt(anp.pi / p)
+        * expansion(la[2], lb[2], ra[2], rb[2], alpha, beta, 0)
+    )
+
+    t2 = (
+        anp.sqrt(anp.pi / p)
+        * expansion(la[0], lb[0], ra[0], rb[0], alpha, beta, 0)
+        * _diff2(la[1], lb[1], ra[1], rb[1], alpha, beta)
+        * anp.sqrt(anp.pi / p)
+        * expansion(la[2], lb[2], ra[2], rb[2], alpha, beta, 0)
+    )
+
+    t3 = (
+        anp.sqrt(anp.pi / p)
+        * expansion(la[0], lb[0], ra[0], rb[0], alpha, beta, 0)
+        * anp.sqrt(anp.pi / p)
+        * expansion(la[1], lb[1], ra[1], rb[1], alpha, beta, 0)
+        * _diff2(la[2], lb[2], ra[2], rb[2], alpha, beta)
+    )
+
+    return -0.5 * (t1 + t2 + t3)
+
+
+def generate_kinetic(basis_a, basis_b):
+    r"""Return a function that computes the kinetic integral for two contracted Gaussian functions.
+
+    Args:
+        basis_a (BasisFunction): first basis function
+        basis_b (BasisFunction): second basis function
+
+    Returns:
+        function: function that computes the kinetic integral
+
+    **Example**
+
+    >>> symbols  = ['H', 'H']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
+    >>> alpha = pnp.array([[3.425250914, 0.6239137298, 0.168855404],
+    >>>                    [3.425250914, 0.6239137298, 0.168855404]], requires_grad = True)
+    >>> mol = hf.Molecule(symbols, geometry, alpha=alpha)
+    >>> args = [mol.alpha]
+    >>> generate_kinetic(mol.basis_set[0], mol.basis_set[1])(*args)
+    0.38325367405312843
+    """
+
+    def kinetic_integral(*args):
+        r"""Compute the kinetic integral for two contracted Gaussian functions.
+
+        Args:
+            args (array[float]): initial values of the differentiable parameters
+
+        Returns:
+            array[float]: the kinetic integral between two contracted Gaussian orbitals
+        """
+        args_a = [i[0] for i in args]
+        args_b = [i[1] for i in args]
+
+        alpha, ca, ra = _generate_params(basis_a.params, args_a)
+        beta, cb, rb = _generate_params(basis_b.params, args_b)
+
+        ca = ca * primitive_norm(basis_a.l, alpha)
+        cb = cb * primitive_norm(basis_b.l, beta)
+
+        na = contracted_norm(basis_a.l, alpha, ca)
+        nb = contracted_norm(basis_b.l, beta, cb)
+
+        return (
+            na
+            * nb
+            * (
+                (ca[:, anp.newaxis] * cb)
+                * gaussian_kinetic(basis_a.l, basis_b.l, ra, rb, alpha[:, anp.newaxis], beta)
+            ).sum()
+        )
+
+    return kinetic_integral
 
 def _boys(n, t):
     r"""Evaluate Boys function.
