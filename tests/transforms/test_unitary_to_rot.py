@@ -76,6 +76,28 @@ class TestDecomposeSingleQubitUnitaryTransform:
         assert isinstance(ops[2], qml.CNOT)
         assert ops[2].wires == Wires(["b", "a"])
 
+    def test_unitary_to_rot_too_big_unitary(self):
+        """Test that the transform ignores QubitUnitary instances that are too big
+        to decompose."""
+
+        tof = qml.Toffoli(wires=[0, 1, 2]).matrix
+
+        def qfunc():
+            qml.QubitUnitary(H, wires="a")
+            qml.QubitUnitary(tof, wires=["a", "b", "c"])
+
+        transformed_qfunc = unitary_to_rot(qfunc)
+
+        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+
+        assert len(ops) == 2
+
+        assert ops[0].name == "Rot"
+        assert ops[0].wires == Wires("a")
+
+        assert ops[1].name == "QubitUnitary"
+        assert ops[1].wires == Wires(["a", "b", "c"])
+
     @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
     def test_unitary_to_rot_torch(self, U, expected_gate, expected_params):
         """Test that the transform works in the torch interface."""
