@@ -26,7 +26,8 @@ requirements = [
     "appdirs",
     "semantic_version==2.6",
     "autoray",
-    "cachetools"
+    "cachetools",
+    "pennylane-lightning @ git+ssh://git@github.com/PennyLaneAI/pennylane-lightning.git#egg=pennylane-lightning",
 ]
 
 info = {
