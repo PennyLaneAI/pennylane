@@ -24,7 +24,7 @@ from pennylane.wires import Wires
 
 from pennylane.transforms.decompositions import zyz_decomposition
 from pennylane.transforms.decompositions import two_qubit_decomposition
-from pennylane.transforms.decompositions.utils import (
+from pennylane.transforms.decompositions.two_qubit_unitary import (
     _convert_to_su4,
     _su2su2_to_tensor_products,
     _compute_num_cnots,
