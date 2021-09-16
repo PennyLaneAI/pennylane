@@ -6,7 +6,7 @@
 
 * The C++-based [PennyLane-Lightning](https://pennylane-lightning.readthedocs.io/en/latest/) device
   is now available to users by default. This device is a fast state-vector simulator equipped with
-  the efficient [adjoint method](https://arxiv.org/abs/2009.02823>) for differentiating quantum
+  the efficient [adjoint method](https://arxiv.org/abs/2009.02823) for differentiating quantum
   circuits. The device can be accessed using the `"lightning.qubit"` name:
   
   ```python
