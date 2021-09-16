@@ -351,8 +351,8 @@ def _decomposition_1_cnot(U, wires):
 
     # Now, we must find q such that p uu^T p^T = q vv^T q^T.
     # For this case, our V = SWAP CNOT01 is constant. Thus, we can compute v,
-    # vvT, and its eigenvalues and eigenvectors directly. We store them here as
-    # constants.
+    # vvT, and its eigenvalues and eigenvectors directly. These matrices are stored
+    # above as the constants v_one_cnot and q_one_cnot.
 
     # Once we have p and q properly in SO(4), we compute G and H in SO(4) such
     # that U = G V H
@@ -402,7 +402,7 @@ def _decomposition_2_cnots(U, wires):
     # -╰U- = -B--╰C--SX--╰C--D-
     # where SZ and SX are square roots of Z and X respectively. (This
     # decomposition comes from using Hadamards to flip the direction of the
-    # first CNOT, and then decomposing them and merging single-qubit gates.For
+    # first CNOT, and then decomposing them and merging single-qubit gates. For
     # some reason this case is not handled properly with the full algorithm, so
     # we treat it separately.
 
