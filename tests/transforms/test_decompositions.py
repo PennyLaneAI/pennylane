@@ -642,6 +642,13 @@ class TestTwoQubitUnitaryDecomposition:
         assert qml.math.isclose(qml.math.linalg.det(U_su4), 1.0)
         assert check_matrix_equivalence(np.array(U), U_su4)
 
+    def test_convert_to_su4_invalid(self):
+        """Test a matrix in U(4) is correct converted to SU(4)."""
+        U = np.ones((4, 4))
+
+        with pytest.raises(ValueError, match="Operator must be unitary"):
+            _convert_to_su4(U)
+
     @pytest.mark.parametrize("U_pair", samples_su2_su2)
     def test_su2su2_to_tensor_products(self, U_pair):
         """Test SU(2) x SU(2) can be correctly factored into tensor products."""
