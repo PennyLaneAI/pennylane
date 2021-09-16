@@ -12,8 +12,8 @@
   ```python
   import pennylane as qml
 
-  wires = 5
-  layers = 4
+  wires = 3
+  layers = 2
   dev = qml.device("lightning.qubit", wires=wires)
 
   @qml.qnode(dev)
@@ -28,7 +28,16 @@
   
   ```pycon
   >>> print(f"Circuit evaluated: {circuit(weights)}")
+  Circuit evaluated: 0.9801286266677633
   >>> print(f"Circuit gradient:\n{qml.grad(circuit)(weights)}")
+  Circuit gradient:
+  [[[-1.11022302e-16 -1.63051504e-01 -4.14810501e-04]
+    [ 1.11022302e-16 -1.50136528e-04 -1.77922957e-04]
+    [ 0.00000000e+00 -3.92874550e-02  8.14523075e-05]]
+
+   [[-1.14472273e-04  3.85963953e-02  0.00000000e+00]
+    [-5.76791765e-05 -9.78478343e-02  0.00000000e+00]
+    [-5.55111512e-17  0.00000000e+00 -1.11022302e-16]]]  
   ```
 
 * Custom gradient transforms can now be created using the new
