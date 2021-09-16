@@ -27,9 +27,9 @@ from pennylane.hf.integrals import (
     gaussian_kinetic,
     gaussian_overlap,
     generate_attraction,
+    generate_repulsion,
     generate_kinetic,
     generate_overlap,
-    generate_repulsion,
     primitive_norm,
     _hermite_coulomb,
 )
@@ -281,6 +281,7 @@ def test_gradient(symbols, geometry, alpha, coeff):
 
     assert np.allclose(g_alpha, g_ref_alpha)
     assert np.allclose(g_coeff, g_ref_coeff)
+
 
 @pytest.mark.parametrize(
     ("i", "j", "ri", "rj", "alpha", "beta", "d"),

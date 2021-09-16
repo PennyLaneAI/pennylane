@@ -235,6 +235,40 @@ class TestBatchTransform:
         expected = fn(dev.batch_execute(tapes))
         assert res == expected
 
+    def test_custom_qnode_wrapper(self, capsys):
+        """Test that the QNode execution wrapper can be overridden
+        if required."""
+        a = 0.654
+        x = 0.543
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.batch_transform
+        def my_transform(tape, a):
+            tape1 = tape.copy()
+            tape2 = tape.copy()
+            return [tape1, tape2], lambda res: a * qml.math.sum(res)
+
+        @my_transform.custom_qnode_wrapper
+        def qnode_wrapper(self, qnode, targs, tkwargs):
+            wrapper = self.default_qnode_wrapper(qnode, targs, tkwargs)
+            assert targs == (a,)
+            assert tkwargs == {}
+            print("custom wrapper called")
+            return wrapper
+
+        @my_transform(a)
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.Hadamard(wires=0)
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        circuit(x)
+
+        captured = capsys.readouterr()
+        assert captured.out == "custom wrapper called\n"
+
 
 @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop", "finite-diff"])
 class TestBatchTransformGradients:

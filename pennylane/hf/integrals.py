@@ -255,7 +255,7 @@ def gaussian_overlap(la, lb, ra, rb, alpha, beta):
 
 
 def generate_overlap(basis_a, basis_b):
-    r"""Return a function that computes the overlap integral for two contracted Gaussian orbitals.
+    r"""Return a function that computes the overlap integral for two contracted Gaussian functions.
 
     Args:
         basis_a (BasisFunction): first basis function
@@ -306,6 +306,7 @@ def generate_overlap(basis_a, basis_b):
         )
 
     return overlap_integral
+
 
 def _diff2(i, j, ri, rj, alpha, beta):
     r"""Compute the second order differentiated integral needed for evaluating a kinetic integral.

@@ -15,7 +15,7 @@
 Unit tests for the metric tensor transform.
 """
 import pytest
-import numpy as np
+from pennylane import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qml
@@ -29,14 +29,13 @@ class TestMetricTensor:
     def test_rot_decomposition(self, diff_method):
         """Test that the rotation gate is correctly decomposed"""
         dev = qml.device("default.qubit", wires=1)
+        params = np.array([1.0, 2.0, 3.0], requires_grad=True)
 
-        def circuit(weights):
-            qml.Rot(weights[0], weights[1], weights[2], wires=0)
-            return qml.expval(qml.PauliX(0))
+        with qml.tape.QuantumTape() as circuit:
+            qml.Rot(params[0], params[1], params[2], wires=0)
+            qml.expval(qml.PauliX(0))
 
-        circuit = qml.QNode(circuit, dev, diff_method=diff_method)
-        params = np.array([1.0, 2.0, 3.0])
-        tapes = qml.metric_tensor(circuit, only_construct=True)(params)
+        tapes, _ = qml.metric_tensor(circuit)
         assert len(tapes) == 3
 
         # first parameter subcircuit
@@ -57,9 +56,6 @@ class TestMetricTensor:
         assert isinstance(tapes[2].operations[1], qml.RY)
         assert tapes[2].operations[0].data == [1]
         assert tapes[2].operations[1].data == [2]
-
-        result = qml.metric_tensor(circuit)(params)
-        assert result.shape == (3, 3)
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     def test_multirz_decomposition(self, diff_method):
@@ -92,39 +88,34 @@ class TestMetricTensor:
 
         circuit = qml.QNode(circuit, dev, diff_method=diff_method)
         params = [0.1]
-        result = qml.metric_tensor(circuit)(*params)
+        result = qml.metric_tensor(circuit, hybrid=False)(*params)
         assert result.shape == (2, 2)
 
     def test_generator_no_expval(self, monkeypatch):
         """Test exception is raised if subcircuit contains an
         operation with generator object that is not an observable"""
-        dev = qml.device("default.qubit", wires=1)
-
-        def circuit(a):
-            qml.RX(a, wires=0)
-            return qml.expval(qml.PauliX(0))
-
-        circuit = qml.QNode(circuit, dev)
-
         with monkeypatch.context() as m:
             m.setattr("pennylane.RX.generator", [qml.RX, 1])
 
+            with qml.tape.QuantumTape() as tape:
+                qml.RX(np.array(0.5, requires_grad=True), wires=0)
+                qml.expval(qml.PauliX(0))
+
             with pytest.raises(qml.QuantumFunctionError, match="no corresponding observable"):
-                circuit.metric_tensor(1.0, only_construct=True)
+                qml.metric_tensor(tape)
 
     def test_construct_subcircuit(self):
         """Test correct subcircuits constructed"""
         dev = qml.device("default.qubit", wires=2)
 
-        def circuit(a, b, c):
-            qml.RX(a, wires=0)
-            qml.RY(b, wires=0)
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(np.array(1.0, requires_grad=True), wires=0)
+            qml.RY(np.array(1.0, requires_grad=True), wires=0)
             qml.CNOT(wires=[0, 1])
-            qml.PhaseShift(c, wires=1)
+            qml.PhaseShift(np.array(1.0, requires_grad=True), wires=1)
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
 
-        circuit = qml.QNode(circuit, dev)
-        tapes = circuit.metric_tensor(1.0, 1.0, 1.0, only_construct=True)
+        tapes, _ = qml.metric_tensor(tape)
         assert len(tapes) == 3
 
         # first parameter subcircuit
@@ -151,8 +142,9 @@ class TestMetricTensor:
         """Test correct subcircuits constructed
         when a layer structure exists"""
         dev = qml.device("default.qubit", wires=3)
+        params = np.ones([8])
 
-        def circuit(params):
+        with qml.tape.QuantumTape() as tape:
             # section 1
             qml.RX(params[0], wires=0)
             # section 2
@@ -173,10 +165,7 @@ class TestMetricTensor:
             qml.CNOT(wires=[1, 2])
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1)), qml.expval(qml.PauliX(2))
 
-        circuit = qml.QNode(circuit, dev)
-
-        params = np.ones([8])
-        tapes = circuit.metric_tensor(params, only_construct=True)
+        tapes, _ = qml.metric_tensor(tape)
 
         # this circuit should split into 4 independent
         # sections or layers when constructing subcircuits
@@ -243,7 +232,7 @@ class TestMetricTensor:
         c = -0.432
 
         # evaluate metric tensor
-        g = circuit.metric_tensor(a, b, c)
+        g = qml.metric_tensor(circuit)(a, b, c)
 
         # check that the metric tensor is correct
         expected = (
@@ -253,6 +242,41 @@ class TestMetricTensor:
             / 4
         )
         assert np.allclose(g, np.diag(expected), atol=tol, rtol=0)
+
+    def test_evaluate_diag_metric_tensor_classical_processing(self, tol):
+        """Test that a diagonal metric tensor evaluates correctly
+        when the QNode includes classical processing."""
+        dev = qml.device("default.qubit", wires=2)
+
+        def circuit(a, b):
+            # The classical processing function is
+            #     f: ([a0, a1], b) -> (a1, a0, b)
+            # So the classical Jacobians will be a permutation matrix and an identity matrix:
+            #     classical_jacobian(circuit)(a, b) == ([[0, 1], [1, 0]], [[1]])
+            qml.RX(a[1], wires=0)
+            qml.RY(a[0], wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PhaseShift(b, wires=1)
+            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
+
+        circuit = qml.QNode(circuit, dev)
+
+        a = np.array([0.432, 0.1])
+        b = 0.12
+
+        # evaluate metric tensor
+        g = qml.metric_tensor(circuit)(a, b)
+        assert isinstance(g, tuple)
+        assert len(g) == 2
+        assert g[0].shape == (len(a), len(a))
+        assert g[1].shape == tuple()
+
+        # check that the metric tensor is correct
+        expected = np.array([np.cos(a[1]) ** 2, 1]) / 4
+        assert np.allclose(g[0], np.diag(expected), atol=tol, rtol=0)
+
+        expected = (3 - 2 * np.cos(a[1]) ** 2 * np.cos(2 * a[0]) - np.cos(2 * a[1])) / 16
+        assert np.allclose(g[1], expected, atol=tol, rtol=0)
 
     @pytest.fixture(params=["parameter-shift", "backprop"])
     def sample_circuit(self, request):
@@ -300,7 +324,7 @@ class TestMetricTensor:
         params = [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272]
         x, y, z, h, g, f = params
 
-        G = circuit.metric_tensor(*params)
+        G = qml.metric_tensor(circuit)(*params)
 
         # ============================================
         # Test block diag metric tensor of first layer is correct.
@@ -443,7 +467,7 @@ class TestMetricTensor:
         params = [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272]
         x, y, z, h, g, f = params
 
-        G = circuit.metric_tensor(*params, diag_approx=True)
+        G = qml.metric_tensor(circuit, diag_approx=True)(*params)
 
         # ============================================
         # Test block diag metric tensor of first layer is correct.
@@ -553,7 +577,7 @@ class TestDifferentiability:
         def cost(weights):
             return qml.metric_tensor(circuit)(weights)[2, 2]
 
-        weights = np.array([0.432, 0.12, -0.432])
+        weights = np.array([0.432, 0.12, -0.432], requires_grad=True)
         a, b, c = weights
 
         grad = qml.grad(cost)(weights)
@@ -647,3 +671,60 @@ class TestDifferentiability:
             [np.cos(a) * np.cos(b) ** 2 * np.sin(a) / 2, np.cos(a) ** 2 * np.sin(2 * b) / 4, 0]
         )
         assert np.allclose(grad, expected, atol=tol, rtol=0)
+
+
+class TestDeprecatedQNodeMethod:
+    """The QNode.metric_tensor method has been deprecated.
+    These tests ensure it still works, but raises a deprecation
+    warning. These tests can be deleted when the method is removed."""
+
+    def test_warning(self, tol):
+        """Test that a warning is emitted"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(a, b, c):
+            qml.RX(a, wires=0)
+            qml.RY(b, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PhaseShift(c, wires=1)
+            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
+
+        a = 0.432
+        b = 0.12
+        c = -0.432
+
+        # evaluate metric tensor
+        with pytest.warns(UserWarning, match="has been deprecated"):
+            g = circuit.metric_tensor(a, b, c)
+
+        # check that the metric tensor is correct
+        expected = (
+            np.array(
+                [1, np.cos(a) ** 2, (3 - 2 * np.cos(a) ** 2 * np.cos(2 * b) - np.cos(2 * a)) / 4]
+            )
+            / 4
+        )
+        assert np.allclose(g, np.diag(expected), atol=tol, rtol=0)
+
+    def test_tapes_returned(self, tol):
+        """Test that a warning is emitted"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(a, b, c):
+            qml.RX(a, wires=0)
+            qml.RY(b, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PhaseShift(c, wires=1)
+            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
+
+        a = 0.432
+        b = 0.12
+        c = -0.432
+
+        # evaluate metric tensor
+        with pytest.warns(UserWarning, match="has been deprecated"):
+            tapes, fn = circuit.metric_tensor(a, b, c, only_construct=True)
+
+        assert len(tapes) == 3
