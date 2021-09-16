@@ -580,12 +580,12 @@ def two_qubit_decomposition(U, wires):
         :width: 50%
         :target: javascript:void(0);
 
-    For 1 CNOT, we simply have a CNOT surrounded by one :math:`SU(2)` per wire on each
+    For 1 CNOT, we have a CNOT surrounded by one :math:`SU(2)` per wire on each
     side.  The special case of no CNOTs simply returns a tensor product of two
     :math:`SU(2)` operations.
 
-    This decomposition can be applied automatically to all valid two-qubit
-    :class:`~.QubitUnitary` operations by applying the
+    This decomposition can be applied automatically to all two-qubit
+    :class:`~.QubitUnitary` operations using the
     :func:`~pennylane.transforms.unitary_to_rot` transform.
 
     .. warning::
