@@ -340,6 +340,7 @@ class TestInterfaces:
 
         assert np.allclose(grads, grads2, atol=tol, rtol=0)
 
+    @pytest.mark.slow
     def test_jax(self, tol):
         """Tests the jax interface."""
 

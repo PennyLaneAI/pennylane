@@ -16,12 +16,57 @@ This subpackage defines functions for interfacing devices' batch execution
 capabilities with different machine learning libraries.
 """
 # pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches
+import contextlib
 from functools import wraps
+import itertools
 
 from cachetools import LRUCache
 import numpy as np
 
 import pennylane as qml
+
+
+INTERFACE_NAMES = {
+    "NumPy": (None,),
+    "Autograd": ("autograd", "numpy"),  # for backwards compatibility
+    "PyTorch": ("torch", "pytorch"),
+    "TensorFlow": ("tf", "tensorflow"),
+}
+"""dict[str, str]: maps allowed interface strings to the name of the interface"""
+
+SUPPORTED_INTERFACES = list(itertools.chain(*INTERFACE_NAMES.values()))
+
+
+@contextlib.contextmanager
+def set_shots(device, shots):
+    """Context manager to temporarily change the shots
+    of a device.
+
+    This context manager can be used in two ways.
+
+    As a standard context manager:
+
+    >>> dev = qml.device("default.qubit", wires=2, shots=None)
+    >>> with set_shots(dev, shots=100):
+    ...     print(dev.shots)
+    100
+    >>> print(dev.shots)
+    None
+
+    Or as a decorator that acts on a function that uses the device:
+
+    >>> set_shots(dev, shots=100)(lambda: dev.shots)()
+    100
+    """
+    original_shots = device.shots
+
+    try:
+        if shots is not False and device.shots != shots:
+            device.shots = shots
+        yield
+    finally:
+        if device.shots != original_shots:
+            device.shots = original_shots
 
 
 def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True):
@@ -143,6 +188,7 @@ def execute(
     cache=True,
     cachesize=10000,
     max_diff=2,
+    override_shots=False,
 ):
     """Execute a batch of tapes on a device in an autodifferentiable-compatible manner.
 
@@ -236,17 +282,19 @@ def execute(
         # cache=True: create a LRUCache object
         cache = LRUCache(maxsize=cachesize, getsizeof=lambda x: qml.math.shape(x)[0])
 
+    batch_execute = set_shots(device, override_shots)(device.batch_execute)
+
     if gradient_fn is None:
         with qml.tape.Unwrap(*tapes):
-            res = cache_execute(device.batch_execute, cache, return_tuple=False)(tapes)
+            res = cache_execute(batch_execute, cache, return_tuple=False)(tapes)
 
         return res
 
-    if gradient_fn == "backprop":
-        return cache_execute(device.batch_execute, cache, return_tuple=False)(tapes)
+    if gradient_fn == "backprop" or interface is None:
+        return cache_execute(batch_execute, cache, return_tuple=False)(tapes)
 
-    # the default execution function is device.batch_execute
-    execute_fn = cache_execute(device.batch_execute, cache)
+    # the default execution function is batch_execute
+    execute_fn = cache_execute(batch_execute, cache)
 
     if gradient_fn == "device":
         # gradient function is a device method
@@ -254,16 +302,19 @@ def execute(
         if mode in ("forward", "best"):
             # replace the forward execution function to return
             # both results and gradients
-            execute_fn = device.execute_and_gradients
+            execute_fn = set_shots(device, override_shots)(device.execute_and_gradients)
             gradient_fn = None
 
         elif mode == "backward":
             # disable caching on the forward pass
-            execute_fn = cache_execute(device.batch_execute, cache=None)
+            execute_fn = cache_execute(batch_execute, cache=None)
 
             # replace the backward gradient computation
             gradient_fn = cache_execute(
-                device.gradients, cache, pass_kwargs=True, return_tuple=False
+                set_shots(device, override_shots)(device.gradients),
+                cache,
+                pass_kwargs=True,
+                return_tuple=False,
             )
 
     elif mode == "forward":
@@ -272,14 +323,26 @@ def execute(
         # in this case would have ambiguous behaviour.
         raise ValueError("Gradient transforms cannot be used with mode='forward'")
 
-    if interface == "autograd":
-        from .autograd import execute as _execute
-    elif interface in ("tf", "tensorflow"):
-        from .tensorflow import execute as _execute
-    elif interface in ("torch", "pytorch"):
-        from .torch import execute as _execute
-    else:
-        raise ValueError(f"Unknown interface {interface}")
+    try:
+        if interface in INTERFACE_NAMES["Autograd"]:
+            from .autograd import execute as _execute
+        elif interface in INTERFACE_NAMES["TensorFlow"]:
+            from .tensorflow import execute as _execute
+        elif interface in INTERFACE_NAMES["PyTorch"]:
+            from .torch import execute as _execute
+        else:
+            raise ValueError(
+                f"Unknown interface {interface}. Supported "
+                f"interfaces are {SUPPORTED_INTERFACES}"
+            )
+
+    except ImportError as e:
+        interface_name = [k for k, v in INTERFACE_NAMES.items() if interface in v][0]
+
+        raise qml.QuantumFunctionError(
+            f"{interface_name} not found. Please install the latest "
+            f"version of {interface_name} to enable the '{interface}' interface."
+        ) from e
 
     res = _execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff)
 
