@@ -449,7 +449,7 @@ def test_gradient_kinetic(symbols, geometry, alpha, coeff, r):
 @pytest.mark.parametrize(
     ("symbols", "geometry", "alpha", "coeff", "r", "a_ref"),
     [
-        # trivial case
+        # trivial case: integral should be zero since atoms are located very far apart
         (
             ["H", "H"],
             pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], requires_grad=False),
@@ -617,7 +617,7 @@ def test_gradient_attraction(symbols, geometry, alpha, coeff, r):
     ],
 )
 def test_generate_repulsion(symbols, geometry, alpha, coeff, e_ref):
-    r"""Test that generate_repulsion function returns a correct value for the kinetic integral."""
+    r"""Test that generate_repulsion function returns a correct value for the repulsion integral."""
     mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
     basis_a = mol.basis_set[0]
     basis_b = mol.basis_set[1]
