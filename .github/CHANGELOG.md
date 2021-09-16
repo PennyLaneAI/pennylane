@@ -209,7 +209,7 @@
   res = qml.grad(cost_fn)(params)
   ```
 
-<h4>RotosolveOptimizer for general parametrized circuits</h4>
+<h4>Improved quantum optimization methods</h4>
 
 * The `RotosolveOptimizer` now can tackle general parametrized circuits, and is no longer
   restricted to single-qubit Pauli rotations.
