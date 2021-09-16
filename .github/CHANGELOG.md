@@ -292,7 +292,7 @@
 
   For usage details please consider the [docstring of the optimizer](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.RotosolveOptimizer.html?highlight=rotosolveoptimizer#pennylane.RotosolveOptimizer).
 
-<h4>Faster and improved Hamiltonian computations</h4>
+<h4>Faster, trainable, Hamiltonian simulations</h4>
 
 * The Hamiltonian can now store grouping information, which can be accessed by a device to
   speed up computations of the expectation value of a Hamiltonian.
