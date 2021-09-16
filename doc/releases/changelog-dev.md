@@ -143,4 +143,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Josh Izaac, Christina Lee, David Wierichs.
+Olivia Di Matteo, Josh Izaac, Christina Lee, David Wierichs.
