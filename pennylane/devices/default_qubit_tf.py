@@ -105,7 +105,7 @@ class DefaultQubitTF(DefaultQubit):
 
     * Only exact expectation values, variances, and probabilities are differentiable.
       When instantiating the device with ``analytic=False``, differentiating QNode
-      outputs will result in ``None``.
+      outputs will result in an error.
 
 
     If you wish to use a different machine-learning interface, or prefer to calculate quantum
