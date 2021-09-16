@@ -25,7 +25,7 @@
   z = torch.tensor(0.75110998, dtype=torch.float64, requires_grad=True)
 
   p = torch.tensor([x, y, z], requires_grad=True)
-  dev = qml.device("default.qubit.torch", wires=1)
+  dev = qml.device("default.qubit", wires=1)
 
   @qml.qnode(dev, interface="torch", diff_method="backprop")
   def circuit(x):
