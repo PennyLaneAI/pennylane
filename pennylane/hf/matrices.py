@@ -16,7 +16,7 @@ This module contains the functions needed for computing matrices.
 """
 
 import autograd.numpy as anp
-from pennylane.hf.integrals import generate_overlap
+from pennylane.hf.integrals import generate_kinetic, generate_overlap
 
 
 def molecular_density_matrix(n_electron, c):
@@ -63,8 +63,8 @@ def overlap_matrix(basis_functions):
 
     >>> symbols  = ['H', 'H']
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
-    >>> alpha = pnp.array([[3.42525091, 0.62391373, 0.1688554],
-    >>>                    [3.42525091, 0.62391373, 0.1688554]], requires_grad=True),
+    >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
+    >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True),
     >>> mol = Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> overlap_matrix(mol.basis_set)(*args)
@@ -98,3 +98,53 @@ def overlap_matrix(basis_functions):
         return s
 
     return overlap
+
+
+def kinetic_matrix(basis_functions):
+    r"""Return a function that computes the kinetic matrix for a given set of basis functions.
+
+    Args:
+        basis_functions (list[BasisFunction]): basis functions
+
+    Returns:
+        function: function that computes the kinetic matrix
+
+    **Example**
+
+    >>> symbols  = ['H', 'H']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
+    >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
+    >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True),
+    >>> mol = Molecule(symbols, geometry, alpha=alpha)
+    >>> args = [alpha]
+    >>> kinetic_matrix(mol.basis_set)(*args)
+
+    """
+
+    def kinetic(*args):
+        r"""Construct the kinetic matrix for a given set of basis functions.
+
+        Args:
+            args (array[float]): initial values of the differentiable parameters
+
+        Returns:
+            array[float]: the kinetic matrix
+        """
+        n = len(basis_functions)
+        k = anp.zeros((n, n))
+        for i, a in enumerate(basis_functions):
+            for j, b in enumerate(basis_functions):
+                if i <= j:
+                    if args:
+                        args_ab = []
+                        for l in range(len(args)):
+                            args_ab.append(args[l][[i, j]])
+                        kinetic_integral = generate_kinetic(a, b)(*args_ab)
+                    else:
+                        kinetic_integral = generate_kinetic(a, b)()
+                    o = anp.zeros((n, n))
+                    o[i, j] = o[j, i] = 1.0
+                    k = k + kinetic_integral * o
+        return k
+
+    return kinetic
