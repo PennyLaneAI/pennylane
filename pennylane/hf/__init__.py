@@ -19,7 +19,9 @@ from .basis_set import *
 from .integrals import (
     contracted_norm,
     expansion,
+    gaussian_kinetic,
     gaussian_overlap,
+    generate_kinetic,
     generate_overlap,
     primitive_norm,
 )
