@@ -8,6 +8,16 @@
   backpropogation with PyTorch.
   [(#1360)](https://github.com/PennyLaneAI/pennylane/pull/1360)
   [(#1598)](https://github.com/PennyLaneAI/pennylane/pull/1598)
+  
+  As a result, `default.qubit` can now use end-to-end classical backpropagation as
+  a means to compute gradients. End-to-end backpropagation can be faster than
+  the parameter-shift rule for computing quantum gradients when the number of
+  parameters to be optimized is large. This is now the default differentiation method when
+  using `default.qubit` with PyTorch.
+
+  Using this method, the created QNode is a 'white-box' that is
+  tightly integrated with your PyTorch computation, including
+  TorchScript and GPU support.
 
   ```python
   x = torch.tensor(0.43316321, dtype=torch.float64, requires_grad=True)
