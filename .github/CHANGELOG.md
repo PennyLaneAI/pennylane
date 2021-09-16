@@ -4,8 +4,8 @@
 
 <h4>Support for native backpropagation using PyTorch</h4>
 
-* A new pytorch device, `qml.device('default.qubit.torch', wires=wires)`, supports
-  backpropogation with the torch interface.
+* The built-in PennyLane simulator `default.qubit` now supports
+  backpropogation with PyTorch.
   [(#1225)](https://github.com/PennyLaneAI/pennylane/pull/1360)
   [(#1598)](https://github.com/PennyLaneAI/pennylane/pull/1598)
 
