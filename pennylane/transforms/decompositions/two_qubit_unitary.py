@@ -17,7 +17,6 @@ unitary operations into elementary gates.
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import math
-from pennylane.tape import get_active_tape
 
 from .single_qubit_unitary import zyz_decomposition
 
