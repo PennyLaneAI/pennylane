@@ -85,6 +85,7 @@ ops = {
     "U2": qml.U2(0, 0, wires=0),
     "U3": qml.U3(0, 0, 0, wires=0),
     "SISWAP": qml.SISWAP(wires=[0, 1]),
+    "OrbitalRotation": qml.OrbitalRotation(0, wires=[0, 1, 2, 3]),
 }
 
 all_ops = ops.keys()

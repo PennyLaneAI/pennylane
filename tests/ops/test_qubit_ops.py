@@ -1,3 +1,4 @@
+# pylint: disable=no-self-use
 # Copyright 2018-2020 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -53,6 +54,7 @@ from gate_data import (
     DoubleExcitation,
     DoubleExcitationPlus,
     DoubleExcitationMinus,
+    OrbitalRotation,
 )
 
 # Standard observables, their matrix representation, and eigenvalues
@@ -456,6 +458,7 @@ PARAMETRIZED_OPERATIONS = [
     qml.DoubleExcitationPlus(0.123, wires=[0, 1, 2, 3]),
     qml.DoubleExcitationMinus(0.123, wires=[0, 1, 2, 3]),
     qml.QubitSum(wires=[0, 1, 2]),
+    qml.OrbitalRotation(0.123, wires=[0, 1, 2, 3]),
 ]
 
 
@@ -3496,3 +3499,268 @@ class TestArithmetic:
 
         u = np.array([f(state) for state in np.eye(2 ** 3)]).T
         assert np.allclose(u, qml.QubitSum._matrix())
+
+
+class TestOrbitalRotation:
+    """Test OrbitalRotation gate operation"""
+
+    @pytest.mark.parametrize("varphi", [-0.1, 0.2, np.pi / 4])
+    def test_orbital_rotation_matrix(self, varphi):
+        """Tests that the OrbitalRotation operation calculates the correct matrix"""
+        op = qml.OrbitalRotation(varphi, wires=[0, 1, 2, 3])
+        res = op.matrix
+        exp = OrbitalRotation(varphi)
+
+        assert np.allclose(res, exp)
+
+    @pytest.mark.parametrize("varphi", [-0.1, 0.2, np.pi / 4])
+    def test_orbital_rotation_generator(self, varphi):
+        """Tests that the OrbitalRotation operation calculates the correct generator"""
+        op = qml.OrbitalRotation(varphi, wires=[0, 1, 2, 3])
+        g, a = op.generator
+
+        res = expm(1j * a * g * varphi)
+        exp = OrbitalRotation(varphi)
+
+        assert np.allclose(res, exp)
+
+    @pytest.mark.parametrize("varphi", [-0.1, 0.2, 0.5])
+    def test_orbital_rotation_decomp(self, varphi):
+        """Tests that the OrbitalRotation operation calculates the correct decomposition.
+
+        The decomposition has already been expressed in terms of single-qubit rotations
+        and CNOTs. For each term in the decomposition we need to construct the appropriate
+        four-qubit tensor product matrix and then multiply them together.
+        """
+        decomp = qml.OrbitalRotation.decomposition(varphi, wires=[0, 1, 2, 3])
+
+        from functools import reduce
+
+        # To compute the matrix for CX on an arbitrary number of qubits, use the fact that
+        # CU  = |0><0| \otimes I + |1><1| \otimes U
+        def cnot_four_qubits(wires):
+            proj_0_term = [StateZeroProjector if idx == wires[0] else np.eye(2) for idx in range(4)]
+
+            proj_1_term = [np.eye(2) for idx in range(4)]
+            proj_1_term[wires[0]] = StateOneProjector
+            proj_1_term[wires[1]] = X
+
+            proj_0_kron = reduce(np.kron, proj_0_term)
+            proj_1_kron = reduce(np.kron, proj_1_term)
+
+            return proj_0_kron + proj_1_kron
+
+        # Inserts a single-qubit matrix into a four-qubit matrix at the right place
+        def single_mat_four_qubits(mat, wire):
+            individual_mats = [mat if idx == wire else np.eye(2) for idx in range(4)]
+            return reduce(np.kron, individual_mats)
+
+        mats = []
+        for i in reversed(decomp):
+            # Single-qubit gate
+            if len(i.wires.tolist()) == 1:
+                mat = single_mat_four_qubits(i.matrix, i.wires.tolist()[0])
+                mats.append(mat)
+            # Two-qubit gate
+            else:
+                mat = cnot_four_qubits(i.wires.tolist())
+                mats.append(mat)
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+        exp = OrbitalRotation(varphi)
+
+        assert np.allclose(decomposed_matrix, exp)
+
+    def test_autograd(self):
+        """Tests that operations are computed correctly using the
+        autograd interface"""
+
+        pytest.importorskip("autograd")
+
+        dev = qml.device("default.qubit.autograd", wires=4)
+        state = np.array(
+            [
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.50000002 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                -0.5 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                -0.5 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.49999998 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+            ]
+        )
+
+        @qml.qnode(dev)
+        def circuit(varphi):
+            qml.PauliX(wires=0)
+            qml.PauliX(wires=1)
+            qml.OrbitalRotation(varphi, wires=[0, 1, 2, 3])
+
+            return qml.state()
+
+        assert np.allclose(state, circuit(np.pi / 2))
+
+    def test_tf(self):
+        """Tests that operations are computed correctly using the
+        tensorflow interface"""
+
+        pytest.importorskip("tensorflow")
+
+        dev = qml.device("default.qubit.tf", wires=4)
+        state = np.array(
+            [
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.50000002 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                -0.5 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                -0.5 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.49999998 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+            ]
+        )
+
+        @qml.qnode(dev)
+        def circuit(varphi):
+            qml.PauliX(wires=0)
+            qml.PauliX(wires=1)
+            qml.OrbitalRotation(varphi, wires=[0, 1, 2, 3])
+
+            return qml.state()
+
+        assert np.allclose(state, circuit(np.pi / 2))
+
+    def test_jax(self):
+        """Tests that operations are computed correctly using the
+        jax interface"""
+
+        pytest.importorskip("jax")
+
+        dev = qml.device("default.qubit.jax", wires=4)
+        state = np.array(
+            [
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.50000002 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                -0.5 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                -0.5 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.49999998 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+            ]
+        )
+
+        @qml.qnode(dev)
+        def circuit(varphi):
+            qml.PauliX(wires=0)
+            qml.PauliX(wires=1)
+            qml.OrbitalRotation(varphi, wires=[0, 1, 2, 3])
+
+            return qml.state()
+
+        assert np.allclose(state, circuit(np.pi / 2))
+
+    @pytest.mark.parametrize(
+        ("varphi"),
+        [
+            (-0.1),
+            (0.1),
+        ],
+    )
+    def test_autograd_grad(self, varphi):
+        """Tests that gradients are computed correctly using the
+        autograd interface"""
+
+        pytest.importorskip("autograd")
+
+        dev = qml.device("default.qubit.autograd", wires=4)
+
+        @qml.qnode(dev)
+        def circuit(varphi):
+            qml.PauliX(wires=0)
+            qml.PauliX(wires=1)
+            qml.OrbitalRotation(varphi, wires=[0, 1, 2, 3])
+
+            return qml.expval(qml.PauliZ(0))
+
+        assert np.allclose(qml.grad(circuit)(varphi), np.sin(varphi))
+
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
+    @pytest.mark.parametrize(
+        ("varphi"),
+        [(-0.1), (0.1)],
+    )
+    def test_tf_grad(self, varphi, diff_method):
+        """Tests that gradients are computed correctly using the
+        tensorflow interface"""
+
+        tf = pytest.importorskip("tensorflow")
+        dev = qml.device("default.qubit.tf", wires=4)
+
+        @qml.qnode(dev, interface="tf", diff_method=diff_method)
+        def circuit(varphi):
+            qml.PauliX(wires=0)
+            qml.PauliX(wires=1)
+            qml.OrbitalRotation(varphi, wires=[0, 1, 2, 3])
+            return qml.expval(qml.PauliZ(0))
+
+        varphi_t = tf.Variable(varphi, dtype=tf.float64)
+        with tf.GradientTape() as tape:
+            res = circuit(varphi_t)
+
+        grad = tape.gradient(res, varphi_t)
+
+        assert np.allclose(grad, np.sin(varphi))
+
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
+    @pytest.mark.parametrize(
+        ("varphi"),
+        [
+            (-0.1),
+            (0.1),
+        ],
+    )
+    def test_jax_grad(self, varphi, diff_method):
+        """Tests that gradients and operations are computed correctly using the
+        jax interface"""
+
+        if diff_method == "parameter-shift":
+            pytest.skip("JAX support for the parameter-shift method is still TBD")
+
+        jax = pytest.importorskip("jax")
+
+        dev = qml.device("default.qubit.jax", wires=4)
+
+        @qml.qnode(dev, interface="jax", diff_method=diff_method)
+        def circuit(varphi):
+            qml.PauliX(wires=0)
+            qml.PauliX(wires=1)
+            qml.OrbitalRotation(varphi, wires=[0, 1, 2, 3])
+            return qml.expval(qml.PauliZ(0))
+
+        assert np.allclose(jax.grad(circuit)(varphi), np.sin(varphi))
