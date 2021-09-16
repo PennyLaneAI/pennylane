@@ -53,7 +53,7 @@ def _decomposition_0_cnots(U, wires):
 
 
 def _decomposition_1_cnot(U, wires):
-    r"""If there is just one CNOT, we can write the circuit in the form.
+    r"""If there is just one CNOT, we can write the circuit in the form
      -U- = -C--C--A-
      -U- = -D--X--B-
 
@@ -121,7 +121,7 @@ def _decomposition_1_cnot(U, wires):
     C_ops = zyz_decomposition(C, wires[0])
     D_ops = zyz_decomposition(D, wires[1])
 
-    return C_ops + D_ops + [qml.CNOT(wires=[wires[0], wires[1]])] + A_ops + B_ops
+    return C_ops + D_ops + [qml.CNOT(wires=wires)] + A_ops + B_ops
 
 
 def _decomposition_2_cnots(U, wires):
@@ -340,7 +340,7 @@ def two_qubit_decomposition(U, wires):
     :func:`~pennylane.transforms.unitary_to_rot` transform.
 
     Args:
-        U (tensor): A 4 x 4 unitary matrix.
+        U (tensor): A :math:`4 \times 4` unitary matrix.
         wires (Union[Wires, Sequence[int] or int]): The wires on which to apply the operation.
 
     Returns:
