@@ -22,6 +22,7 @@ class ArgMapError(Exception):
     r"""Exception raised by an :class:`~.pennylane.argmap.ArgMap` instance
     when it is unable to create an instance, or access or write a requested item."""
 
+
 """
 @lru_cache(maxsize=None)
 def _interpret_key(key, single_arg):
@@ -57,6 +58,7 @@ def _interpret_key(key, single_arg):
     raise ArgMapError(f"Could not interpret key {key}.")
 """
 
+
 @lru_cache(maxsize=None)
 def _interpret_key(key, single_arg):
     r"""Interpret ArgMap key into argument and parameter index."""
@@ -66,7 +68,7 @@ def _interpret_key(key, single_arg):
         # Only param_key given and param_key is int
         if np.issubdtype(type(key), int):
             return None, key
-        if isinstance(key, tuple) and len(key)==2:
+        if isinstance(key, tuple) and len(key) == 2:
             # Only param_key given and param_key is tuple OR (None, param_key) given
             sub_key = key[1] if key[0] is None else key
             return None, sub_key
@@ -75,7 +77,7 @@ def _interpret_key(key, single_arg):
         if np.issubdtype(type(key), int):
             return key, None
         # (arg_key, param_key) given
-        if isinstance(key, tuple) and len(key)==2:
+        if isinstance(key, tuple) and len(key) == 2:
             return key
     raise ArgMapError(f"Could not interpret key {key}.")
 
@@ -183,28 +185,26 @@ class ArgMap(dict):
     def consistency_check(self, check_values=False):
         r"""Check the stored keys and optionally values for consistency."""
         if self.single_object:
-            if not len(self)==1:
-                raise ArgMapError(
-                    f"ArgMap.single_object=True but len(ArgMap)={len(self)}."
-                )
+            if not len(self) == 1:
+                raise ArgMapError(f"ArgMap.single_object=True but len(ArgMap)={len(self)}.")
             key = list(self)[0]
-            if key!=(None, None):
+            if key != (None, None):
                 raise ArgMapError(
                     f"ArgMap.single_object=True but key={key}; expected (None, None)."
                 )
             if check_values:
                 self._check_values()
             return
-        if any((key==(None, None) for key in self)):
+        if any((key == (None, None) for key in self)):
             raise ArgMapError(
                 f"The key (None, None) indicates single object but ArgMap.single_object=False."
             )
         if self.single_arg:
             # The following _cant_ be triggered.
-            #if not all((key[0] is None for key in self)):
-                #raise ArgMapError(
-                    #f"ArgMap.single_arg=True but at least one key has an argument index."
-                #)
+            # if not all((key[0] is None for key in self)):
+            # raise ArgMapError(
+            # f"ArgMap.single_arg=True but at least one key has an argument index."
+            # )
             shapes = {}
             for key in self:
                 if np.issubdtype(type(key[1]), int):
@@ -221,9 +221,7 @@ class ArgMap(dict):
                         )
                     par_key_type = len(key[1])
                 if shapes.setdefault(None, par_key_type) != par_key_type:
-                    raise ArgMapError(
-                        f"Inconsistent keys in ArgMap for the only argument index."
-                    )
+                    raise ArgMapError(f"Inconsistent keys in ArgMap for the only argument index.")
         else:
             shapes = {}
             for key in self:
@@ -262,7 +260,6 @@ class ArgMap(dict):
                     )
                 )
             )
-
 
 
 # Todo: figure out behaviour for keys = {(0, 1), (2, 3), (1, 2)}
