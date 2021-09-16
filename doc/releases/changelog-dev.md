@@ -37,7 +37,8 @@
   tensor(-0.70520073, requires_grad=True)
   >>> print(qml.draw(circuit)(0.3, 0.4))
   0: ──RX(0.3)─────────────────Rot(-3.5, 0.242, 0.86)──╭X──RZ(0.176)───╭C─────────────╭X──Rot(5.56, 0.321, -2.09)───RY(0.4)──┤ ⟨Z⟩ 
-  1: ──Rot(-1.64, 2.69, 1.58)──────────────────────────╰C──RY(-0.883)──╰X──RY(-1.47)──╰C──Rot(-1.46, 0.337, 0.587)───────────┤     
+  1: ──Rot(-1.64, 2.69, 1.58)──────────────────────────╰C──RY(-0.883)──╰X──RY(-1.47)──╰C──Rot(-1.46, 0.337, 0.587)───────────┤
+  ```
 
 * The transform for the Jacobian of the classical preprocessing within a QNode,
   `qml.transforms.classical_jacobian`, now takes a keyword argument `argnum` to specify
