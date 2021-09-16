@@ -158,7 +158,7 @@ def _su2su2_to_tensor_products(U):
     # C1 C2^dag = a1 a2* I
     C12 = math.dot(C1, math.conj(math.T(C2)))
 
-    if not math.allclose(a1 * np.conj(a2), C12[0, 0]):
+    if not math.allclose(a1 * math.conj(a2), C12[0, 0]):
         a2 *= -1
 
     # Construct A
