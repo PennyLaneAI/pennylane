@@ -12,3 +12,4 @@ dask[delayed]
 autoray
 matplotlib
 git+git://github.com/PennyLaneAI/pennylane-lightning.git#egg=pennylane-lightning
+pybind11
