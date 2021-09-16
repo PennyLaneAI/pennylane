@@ -21,7 +21,7 @@ from pennylane.transforms.decompositions import zyz_decomposition, two_qubit_dec
 
 @qfunc_transform
 def unitary_to_rot(tape):
-    """Quantum function transform to decomposes all instances of single-qubit and
+    r"""Quantum function transform to decomposes all instances of single-qubit and
     select instances of two-qubit :class:`~.QubitUnitary` operations to
     parametrized single-qubit operations.
 
