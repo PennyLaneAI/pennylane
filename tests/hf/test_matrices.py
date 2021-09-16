@@ -17,7 +17,12 @@ Unit tests for functions needed for computing matrices.
 import autograd
 import pytest
 from pennylane import numpy as np
-from pennylane.hf.matrices import kinetic_matrix, molecular_density_matrix, overlap_matrix
+from pennylane.hf.matrices import (
+    attraction_matrix,
+    kinetic_matrix,
+    molecular_density_matrix,
+    overlap_matrix,
+)
 from pennylane.hf.molecule import Molecule
 
 
@@ -143,6 +148,56 @@ def test_gradient_overlap_matrix(symbols, geometry, alpha, coeff, g_alpha_ref, g
 
 
 @pytest.mark.parametrize(
+    ("symbols", "geometry", "alpha", "t_ref"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+            np.array(
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                requires_grad=True,
+            ),
+            np.array(
+                [
+                    [0.7600318862777408, 0.38325367405372557],
+                    [0.38325367405372557, 0.7600318862777408],
+                ]
+            ),
+        )
+    ],
+)
+def test_kinetic_matrix(symbols, geometry, alpha, t_ref):
+    r"""Test that kinetic_matrix returns the correct matrix."""
+    mol = Molecule(symbols, geometry, alpha=alpha)
+    args = [alpha]
+    t = kinetic_matrix(mol.basis_set)(*args)
+    assert np.allclose(t, t_ref)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "t_ref"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+            np.array(
+                [
+                    [0.7600318862777408, 0.38325367405372557],
+                    [0.38325367405372557, 0.7600318862777408],
+                ]
+            ),
+        )
+    ],
+)
+def test_kinetic_matrix_nodiff(symbols, geometry, t_ref):
+    r"""Test that kinetic_matrix returns the correct matrix when no differentiable parameter is
+    used."""
+    mol = Molecule(symbols, geometry)
+    t = kinetic_matrix(mol.basis_set)()
+    assert np.allclose(t, t_ref)
+
+
+@pytest.mark.parametrize(
     ("symbols", "geometry", "alpha", "coeff", "g_alpha_ref", "g_coeff_ref"),
     [
         (
@@ -156,7 +211,7 @@ def test_gradient_overlap_matrix(symbols, geometry, alpha, coeff, g_alpha_ref, g
                 [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
                 requires_grad=True,
             ),
-            # Jacobian matrix contains gradient of K11, K12, K21, K22 wrt arg_1, arg_2.
+            # Jacobian matrix contains gradient of T11, T12, T21, T22 wrt arg_1, arg_2.
             np.array(
                 [
                     [
@@ -204,3 +259,130 @@ def test_gradient_kinetic_matrix(symbols, geometry, alpha, coeff, g_alpha_ref, g
     g_coeff = autograd.jacobian(kinetic_matrix(mol.basis_set), argnum=1)(*args)
     assert np.allclose(g_alpha, g_alpha_ref)
     assert np.allclose(g_coeff, g_coeff_ref)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "alpha", "v_ref"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+            np.array(
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                requires_grad=True,
+            ),
+            # attraction matrix obtained from pyscf using mol.intor('int1e_nuc')
+            np.array(
+                [
+                    [-2.03852075, -1.6024171],
+                    [-1.6024171, -2.03852075],
+                ]
+            ),
+        )
+    ],
+)
+def test_attraction_matrix(symbols, geometry, alpha, v_ref):
+    r"""Test that attraction_matrix returns the correct matrix."""
+    mol = Molecule(symbols, geometry, alpha=alpha)
+    args = [mol.alpha]
+    v = attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
+    assert np.allclose(v, v_ref)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "alpha", "v_ref"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
+            np.array(
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                requires_grad=True,
+            ),
+            # attraction matrix obtained from pyscf using mol.intor('int1e_nuc')
+            np.array(
+                [
+                    [-2.03852075, -1.6024171],
+                    [-1.6024171, -2.03852075],
+                ]
+            ),
+        )
+    ],
+)
+def test_attraction_matrix_diffR(symbols, geometry, alpha, v_ref):
+    r"""Test that attraction_matrix returns the correct matrix."""
+    mol = Molecule(symbols, geometry, alpha=alpha, r=geometry)
+    args = [mol.coordinates, mol.alpha, mol.r]
+    v = attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
+    assert np.allclose(v, v_ref)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "v_ref"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+            # attraction matrix obtained from pyscf using mol.intor('int1e_nuc')
+            np.array(
+                [
+                    [-2.03852075, -1.6024171],
+                    [-1.6024171, -2.03852075],
+                ]
+            ),
+        )
+    ],
+)
+def test_attraction_matrix_nodiff(symbols, geometry, v_ref):
+    r"""Test that attraction_matrix returns the correct matrix."""
+    mol = Molecule(symbols, geometry)
+    v = attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)()
+    assert np.allclose(v, v_ref)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "alpha", "coeff", "g_r_ref"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
+            np.array(
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                requires_grad=True,
+            ),
+            np.array(
+                [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
+                requires_grad=True,
+            ),
+            #
+            np.array(
+                [
+                    [
+                        [[0.0, 0.0, 0.0], [0.0, 0.0, 0.44900112]],
+                        [
+                            [0.0, 0.0, -0.26468668],
+                            [0.0, 0.0, 0.26468668],
+                        ],
+                    ],
+                    [
+                        [
+                            [0.0, 0.0, -0.26468668],
+                            [0.0, 0.0, 0.26468668],
+                        ],
+                        [[0.0, 0.0, -0.44900112], [0.0, 0.0, 0.0]],
+                    ],
+                ]
+            ),
+        )
+    ],
+)
+def test_gradient_attraction_matrix(symbols, geometry, alpha, coeff, g_r_ref):
+    r"""Test that the attraction gradients are correct."""
+    mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff, r=geometry)
+    args = [mol.coordinates, mol.alpha, mol.coeff, mol.r]
+
+    g_r = autograd.jacobian(
+        attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates), argnum=0
+    )(*args)
+    print(g_r)
+    assert np.allclose(g_r, g_r_ref)

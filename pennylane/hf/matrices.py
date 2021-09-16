@@ -16,7 +16,7 @@ This module contains the functions needed for computing matrices.
 """
 
 import autograd.numpy as anp
-from pennylane.hf.integrals import generate_kinetic, generate_overlap
+from pennylane.hf.integrals import generate_attraction, generate_kinetic, generate_overlap
 
 
 def molecular_density_matrix(n_electron, c):
@@ -148,3 +148,37 @@ def kinetic_matrix(basis_functions):
         return k
 
     return kinetic
+
+
+def attraction_matrix(basis_functions, charges, r):
+    r""" """
+
+    def attraction(*args):
+        n = len(basis_functions)
+        v = anp.zeros((n, n))
+        for i, a in enumerate(basis_functions):
+            for j, b in enumerate(basis_functions):
+                attraction_integral = 0
+                if i <= j:
+                    if args:
+                        args_ab = []
+                        for l in range(len(args)):
+                            args_ab.append(args[l][[i, j]])
+                        for k, c in enumerate(r):
+                            if c.requires_grad:
+                                args_ab = [args[0][k]] + args_ab[1:]
+                            attraction_integral = attraction_integral - charges[
+                                k
+                            ] * generate_attraction(c, a, b)(*args_ab)
+                    else:
+                        for k, c in enumerate(r):
+                            attraction_integral = (
+                                attraction_integral - charges[k] * generate_attraction(c, a, b)()
+                            )
+
+                    o = anp.zeros((n, n))
+                    o[i, j] = o[j, i] = 1.0
+                    v = v + attraction_integral * o
+        return v
+
+    return attraction
