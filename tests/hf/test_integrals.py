@@ -19,19 +19,19 @@ import numpy as np
 import pytest
 from pennylane import numpy as pnp
 from pennylane.hf.integrals import (
+    _boys,
     _diff2,
     _generate_params,
-    _boys,
+    _hermite_coulomb,
     contracted_norm,
     expansion,
     gaussian_kinetic,
     gaussian_overlap,
     generate_attraction,
-    generate_repulsion,
     generate_kinetic,
     generate_overlap,
+    generate_repulsion,
     primitive_norm,
-    _hermite_coulomb,
 )
 from pennylane.hf.molecule import Molecule
 
@@ -444,6 +444,7 @@ def test_gradient_kinetic(symbols, geometry, alpha, coeff, r):
     assert np.allclose(g_alpha, g_ref_alpha)
     assert np.allclose(g_coeff, g_ref_coeff)
     assert np.allclose(g_r, g_ref_r)
+
 
 @pytest.mark.parametrize(
     ("symbols", "geometry", "alpha", "coeff", "r", "a_ref"),

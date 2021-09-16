@@ -16,8 +16,8 @@ This module contains the functions needed for computing integrals over basis fun
 """
 # pylint: disable= unbalanced-tuple-unpacking, too-many-arguments
 import autograd.numpy as anp
-from scipy.special import factorial2 as fac2
 import autograd.scipy as asp
+from scipy.special import factorial2 as fac2
 
 
 def primitive_norm(l, alpha):
@@ -462,6 +462,7 @@ def generate_kinetic(basis_a, basis_b):
         )
 
     return kinetic_integral
+
 
 def _boys(n, t):
     r"""Evaluate Boys function.
