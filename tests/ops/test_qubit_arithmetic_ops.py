@@ -12,48 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the available built-in discrete-variable quantum operations.
+Unit tests for the the arithmetic qubit operations
 """
-import itertools
-import re
 import pytest
-import functools
-import copy
 import numpy as np
-from numpy.linalg import multi_dot
-from scipy.stats import unitary_group
-from scipy.linalg import expm
-from pennylane import numpy as npp
 
 import pennylane as qml
-from pennylane.wires import Wires
-
-from gate_data import (
-    I,
-    X,
-    Y,
-    Z,
-    H,
-    StateZeroProjector,
-    StateOneProjector,
-    CNOT,
-    SWAP,
-    ISWAP,
-    SISWAP,
-    CZ,
-    S,
-    T,
-    CSWAP,
-    Toffoli,
-    QFT,
-    ControlledPhaseShift,
-    SingleExcitation,
-    SingleExcitationPlus,
-    SingleExcitationMinus,
-    DoubleExcitation,
-    DoubleExcitationPlus,
-    DoubleExcitationMinus,
-)
 
 
 class TestOperations:

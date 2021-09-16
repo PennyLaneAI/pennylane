@@ -16,7 +16,6 @@ import functools
 import pytest
 import pennylane as qml
 import numpy as np
-from numpy.linalg import multi_dot
 
 from gate_data import (
     I,
@@ -24,20 +23,6 @@ from gate_data import (
     Y,
     Z,
     H,
-    StateZeroProjector,
-    StateOneProjector,
-    SWAP,
-    CZ,
-    S,
-    T,
-    QFT,
-    ControlledPhaseShift,
-    SingleExcitation,
-    SingleExcitationPlus,
-    SingleExcitationMinus,
-    DoubleExcitation,
-    DoubleExcitationPlus,
-    DoubleExcitationMinus,
 )
 
 
@@ -104,7 +89,7 @@ class TestObservables:
             # E.g. for PauliY: [PauliZ(wires=self.wires), S(wires=self.wires), Hadamard(wires=self.wires)]
             # becomes Hadamard @ S @ PauliZ, where @ stands for matrix multiplication
             mats = mats[::-1]
-            U = multi_dot([np.eye(2)] + mats)
+            U = np.linalg.multi_dot([np.eye(2)] + mats)
 
         res = U @ A @ U.conj().T
         expected = np.diag(eigs)

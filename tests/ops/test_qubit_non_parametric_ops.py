@@ -17,25 +17,18 @@ Unit tests for the available built-in discrete-variable quantum operations.
 import itertools
 import re
 import pytest
-import functools
 import copy
 import numpy as np
-from numpy.linalg import multi_dot
 from scipy.stats import unitary_group
-from scipy.linalg import expm
-from pennylane import numpy as npp
 
 import pennylane as qml
 from pennylane.wires import Wires
 
 from gate_data import (
-    I,
     X,
     Y,
     Z,
     H,
-    StateZeroProjector,
-    StateOneProjector,
     CNOT,
     SWAP,
     ISWAP,
@@ -45,14 +38,6 @@ from gate_data import (
     T,
     CSWAP,
     Toffoli,
-    QFT,
-    ControlledPhaseShift,
-    SingleExcitation,
-    SingleExcitationPlus,
-    SingleExcitationMinus,
-    DoubleExcitation,
-    DoubleExcitationPlus,
-    DoubleExcitationMinus,
 )
 
 
@@ -100,15 +85,15 @@ class TestDecompositions:
 
         assert res[0].name == "PhaseShift"
 
-        assert res[0].wires == qml.wires.Wires([0])
+        assert res[0].wires == Wires([0])
         assert res[0].data[0] == np.pi / 2
 
         assert res[1].name == "RX"
-        assert res[1].wires == qml.wires.Wires([0])
+        assert res[1].wires == Wires([0])
         assert res[1].data[0] == np.pi
 
         assert res[2].name == "PhaseShift"
-        assert res[2].wires == qml.wires.Wires([0])
+        assert res[2].wires == Wires([0])
         assert res[2].data[0] == np.pi / 2
 
         decomposed_matrix = np.linalg.multi_dot([i.matrix for i in reversed(res)])
