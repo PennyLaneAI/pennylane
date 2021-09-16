@@ -26,9 +26,6 @@ from .single_qubit_unitary import zyz_decomposition
 E = np.array([[1, 1j, 0, 0], [0, 0, 1j, 1], [0, 0, 1j, -1], [1, -1j, 0, 0]]) / np.sqrt(2)
 Edag = E.conj().T
 
-LAST_COL_NEG = np.diag([1, 1, 1, -1])  # used to negate the last column of a matrix
-
-
 # Helpful to have static copies of these since they are needed in a few places.
 CNOT01 = qml.CNOT(wires=[0, 1]).matrix
 CNOT10 = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
