@@ -259,16 +259,11 @@ def _extract_su2su2_prefactors(U, V):
         # Reshuffle the columns.
         q = q[:, np.array(new_q_order)]
 
-    # If determinant of p is not 1, it is in O(4) but not SO(4), and has
+    # If determinant of p/q is not 1, it is in O(4) but not SO(4), and has
     # determinant -1. We can transform it to SO(4) by simply negating one
     # of the columns.
-    if not math.allclose(math.linalg.det(p), 1.0):
-        p = math.dot(p, math.cast_like(LAST_COL_NEG, p))
-
-    # Depending on the sign of the permutation, it may be that q is in O(4) but
-    # not SO(4). Again we can fix this by simply negating a column.
-    if not math.allclose(math.linalg.det(q), 1.0):
-        q = math.dot(q, math.cast_like(LAST_COL_NEG, q))
+    p = math.dot(p, math.diag([1, 1, 1, math.sign(math.linalg.det(p))]))
+    q = math.dot(q, math.diag([1, 1, 1, math.sign(math.linalg.det(q))]))
 
     # Now, we should have p, q in SO(4) such that p^T u u^T p = q^T v v^T q.
     # Then (v^\dag q p^T u)(v^\dag q p^T u)^T = I.
@@ -333,8 +328,7 @@ def _decomposition_1_cnot(U, wires):
     _, p = math.linalg.eigh(qml.math.real(uuT))
 
     # Fix the determinant if necessary so that p is in SO(4)
-    if math.linalg.det(p) < 0:
-        p = math.dot(p, math.cast_like(LAST_COL_NEG, p))
+    p = math.dot(p, math.diag([1, 1, 1, math.sign(math.linalg.det(p))]))
 
     # Now, we must find q such that p uu^T p^T = q vv^T q^T.
     # For this case, our V = SWAP CNOT01 is constant. Thus, we can compute v,
