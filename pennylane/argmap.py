@@ -181,9 +181,7 @@ class ArgMap(dict):
             raise ArgMapError(f"ArgMap.single_object=True but len(ArgMap)={len(self)}.")
         key = list(self)[0]
         if key != (None, None):
-            raise ArgMapError(
-                f"ArgMap.single_object=True but key={key}; expected (None, None)."
-            )
+            raise ArgMapError(f"ArgMap.single_object=True but key={key}; expected (None, None).")
 
     def _check_single_arg(self):
         shapes = {}
@@ -192,9 +190,7 @@ class ArgMap(dict):
                 par_key_type = int
             else:
                 if not isinstance(key[1], tuple):
-                    raise ArgMapError(
-                        f"Invalid key {key} in ArgMap; expected (None, tuple[int])."
-                    )
+                    raise ArgMapError(f"Invalid key {key} in ArgMap; expected (None, tuple[int]).")
                 if not all((np.issubdtype(type(k), int) for k in key[1])):
                     raise ArgMapError(
                         f"Invalid entries in parameter index in ArgMap: {key[1]}; "
@@ -215,9 +211,7 @@ class ArgMap(dict):
                 par_key_type = None
             else:
                 if not isinstance(key[1], tuple):
-                    raise ArgMapError(
-                        f"Invalid key {key} in ArgMap; expected (int, tuple[int])."
-                    )
+                    raise ArgMapError(f"Invalid key {key} in ArgMap; expected (int, tuple[int]).")
                 if not all((np.issubdtype(type(k), int) for k in key[1])):
                     raise ArgMapError(
                         f"Invalid entries in parameter index in ArgMap: {key[1]}; "
@@ -225,9 +219,8 @@ class ArgMap(dict):
                     )
                 par_key_type = len(key[1])
             if shapes.setdefault(key[0], par_key_type) != par_key_type:
-                raise ArgMapError(
-                    f"Inconsistent keys in ArgMap for argument with index {key[0]}"
-                )
+                raise ArgMapError(f"Inconsistent keys in ArgMap for argument with index {key[0]}")
+
 
 # Todo: figure out behaviour for keys = {(0, 1), (2, 3), (1, 2)}
 #       - with single_arg=True -> single array-valued argument
