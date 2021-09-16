@@ -180,6 +180,7 @@
   [(#1618)](https://github.com/PennyLaneAI/pennylane/pull/1618)
   [(#1637)](https://github.com/PennyLaneAI/pennylane/pull/1637)
 
+  For now, this is a low-level feature, and will be integrated into the QNode in a future release.
   For example:
 
   ```python
