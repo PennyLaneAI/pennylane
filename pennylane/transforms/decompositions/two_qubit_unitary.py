@@ -269,8 +269,8 @@ def _extract_su2su2_prefactors(U, V):
 def _decomposition_0_cnots(U, wires):
     r"""If there are no CNOTs, this is just a tensor product of two single-qubit gates.
     We can perform that decomposition directly:
-     -U- = -A-
-     -U- = -B-
+     -╭U- = -A-
+     -╰U- = -B-
     """
     A, B = _su2su2_to_tensor_products(U)
     A_ops = zyz_decomposition(A, wires[0])
@@ -280,8 +280,8 @@ def _decomposition_0_cnots(U, wires):
 
 def _decomposition_1_cnot(U, wires):
     r"""If there is just one CNOT, we can write the circuit in the form
-     -U- = -C--C--A-
-     -U- = -D--X--B-
+     -╭U- = -C--╭C--A-
+     -╰U- = -D--╰X--B-
 
     To do this decomposition, first we find G, H in SO(4) such that
         G (Edag V E) H = (Edag U E)
@@ -294,8 +294,8 @@ def _decomposition_1_cnot(U, wires):
     """
     # We will actually find a decomposition for the following circuit instead
     # of the original U
-    # -U-SWAP- = -C--C-SWAP-B-
-    # -U-SWAP- = -D--X-SWAP-A-
+    # -╭U-╭SWAP- = -C--╭C-╭SWAP--B-
+    # -╰U-╰SWAP- = -D--╰X-╰SWAP--A-
     # This ensures that the internal part of the decomposition has determinant 1.
     swap_U = np.exp(1j * np.pi / 4) * math.dot(math.cast_like(SWAP, U), U)
 
@@ -352,8 +352,8 @@ def _decomposition_1_cnot(U, wires):
 
 def _decomposition_2_cnots(U, wires):
     r"""If 2 CNOTs are required, we can write the circuit as
-     -U- = -A--X--RZ(d)--X--C-
-     -U- = -B--C--RX(p)--C--D-
+     -╭U- = -A--╭X--RZ(d)--╭X--C-
+     -╰U- = -B--╰C--RX(p)--╰C--D-
     We need to find the angles for the Z and X rotations such that the inner
     part has the same spectrum as U, and then we can recover A, B, C, D.
     """
@@ -365,16 +365,19 @@ def _decomposition_2_cnots(U, wires):
     # These choices are based on Proposition III.3 of
     # https://arxiv.org/abs/quant-ph/0308045
     # There is, however, a special case where the circuit has the form
-    # -U- = -A--C--X--C-
-    # -U- = -B--X--C--D-
+    # -╭U- = -A--╭C--╭X--C-
+    # -╰U- = -B--╰X--╰C--D-
     #
     # or some variant of this, where the two CNOTs are adjacent.
     #
     # What happens here is that the set of evs is -1, -1, 1, 1 and we can write
-    # -U- = -A--X-SZ-X--C-
-    # -U- = -B--C-SX-C--D-
-    # where SZ and SX are square roots of Z and X respectively. For some reason this
-    # case is not handled properly with the full algorithm, so we treat it separately.
+    # -╭U- = -A--╭X--SZ--╭X--C-
+    # -╰U- = -B--╰C--SX--╰C--D-
+    # where SZ and SX are square roots of Z and X respectively. (This
+    # decomposition comes from using Hadamards to flip the direction of the
+    # first CNOT, and then decomposing them and merging single-qubit gates.For
+    # some reason this case is not handled properly with the full algorithm, so
+    # we treat it separately.
 
     if math.get_interface(u) == "torch":
         # Torch's sort function returns both the sorted values and the new order
@@ -441,8 +444,8 @@ def _decomposition_2_cnots(U, wires):
 def _decomposition_3_cnots(U, wires):
     r"""The most general form of this decomposition is U = (A \otimes B) V (C \otimes D),
     where V is as depicted in the circuit below:
-     -U- = -C--X--RZ(d)--C---------X--A-
-     -U- = -D--C--RY(b)--X--RY(a)--C--B-
+     -╭U- = -C--╭X--RZ(d)--╭C---------╭X--A-
+     -╰U- = -D--╰C--RY(b)--╰X--RY(a)--╰C--B-
     """
 
     # First we add a SWAP as per v1 of arXiv:0308033, which helps with some
@@ -488,8 +491,8 @@ def _decomposition_3_cnots(U, wires):
     # requires that both are in SU(4), so we add a SWAP after to V. We will see
     # how this gets fixed later.
     #
-    # -V- = -X--RZ(d)--C---------X--SWAP-
-    # -V- = -C--RY(b)--X--RY(a)--C--SWAP-
+    # -╭V- = -╭X--RZ(d)--╭C---------╭X--╭SWAP-
+    # -╰V- = -╰C--RY(b)--╰X--RY(a)--╰C--╰SWAP-
 
     RZd = qml.RZ(math.cast_like(delta, 1j), wires=wires[0]).matrix
     RYb = qml.RY(beta, wires=wires[0]).matrix
@@ -506,17 +509,17 @@ def _decomposition_3_cnots(U, wires):
     A, B, C, D = _extract_su2su2_prefactors(swap_U, V)
 
     # At this point, we have the following:
-    # -U-SWAP- = --C--X-RZ(d)-C-------X-SWAP--A
-    # -U-SWAP- = --D--C-RZ(b)-X-RY(a)-C-SWAP--B
+    # -╭U-╭SWAP- = --C--╭X-RZ(d)-╭C-------╭X-╭SWAP--A
+    # -╰U-╰SWAP- = --D--╰C-RZ(b)-╰X-RY(a)-╰C-╰SWAP--B
     #
     # Using the relationship that SWAP(A \otimes B) SWAP = B \otimes A,
-    # -U-SWAP- = --C--X-RZ(d)-C-------X--B--SWAP-
-    # -U-SWAP- = --D--C-RZ(b)-X-RY(a)-C--A--SWAP-
+    # -╭U-╭SWAP- = --C--╭X-RZ(d)-╭C-------╭X--B--╭SWAP-
+    # -╰U-╰SWAP- = --D--╰C-RZ(b)-╰X-RY(a)-╰C--A--╰SWAP-
     #
     # Now the SWAPs cancel, giving us the desired decomposition
     # (up to a global phase).
-    # -U- = --C--X-RZ(d)-C-------X--B--
-    # -U- = --D--C-RZ(b)-X-RY(a)-C--A--
+    # -╭U- = --C--╭X-RZ(d)-╭C-------╭X--B--
+    # -╰U- = --D--╰C-RZ(b)-╰X-RY(a)-╰C--A--
 
     A_ops = zyz_decomposition(A, wires[1])
     B_ops = zyz_decomposition(B, wires[0])
