@@ -21,6 +21,28 @@ from pennylane import math
 from .single_qubit_unitary import zyz_decomposition
 
 
+###################################################################################
+# Developer notes:
+#
+# I was not able to get this transform to be fully differentiable for unitary
+# matrices that were constructed within a QNode, based on the QNode's input
+# arguments. I would argue this is a fairly limited use case, but it would still
+# be nice to have this eventually. Each interface fails for different reasons.
+#
+# - In Autograd, we obtain the AttributeError
+#       'ArrayBox' object has no attribute 'conjugate'
+#   for the 0-CNOT case when the zyz_decomposition function is called. In the
+#   other cases, it cannot autodifferentiate through the linalg.eigvals function.
+# - In Torch, it is not currently possible to autodiff through linalg.det for
+#   complex values.
+# - In Tensorflow, it sometimes works in limited cases (0, sometimes 1 CNOT), but
+#   for others it fails without output making it hard to pinpoint the cause.
+# - In JAX, we receive the TypeError:
+#       Can't differentiate w.r.t. type <class 'jaxlib.xla_extension.DeviceArray'>
+#
+###################################################################################
+
+
 # This gate E is called the "magic basis". It can be used to convert between
 # SO(4) and SU(2) x SU(2). For A in SO(4), E A E^\dag is in SU(2) x SU(2).
 E = np.array([[1, 1j, 0, 0], [0, 0, 1j, 1], [0, 0, 1j, -1], [1, -1j, 0, 0]]) / np.sqrt(2)
@@ -565,6 +587,14 @@ def two_qubit_decomposition(U, wires):
     This decomposition can be applied automatically to all valid two-qubit
     :class:`~.QubitUnitary` operations by applying the
     :func:`~pennylane.transforms.unitary_to_rot` transform.
+
+    .. warning::
+
+        This decomposition will not be differentiable in the ``unitary_to_rot``
+        transform if the matrix being decomposed depends on parameters with
+        respect to which we would like to take the gradient.  See the
+        documentation of :func:`~pennylane.transforms.unitary_to_rot` for
+        explicit examples of the differentiable and non-differentiable cases.
 
     Args:
         U (tensor): A :math:`4 \times 4` unitary matrix.

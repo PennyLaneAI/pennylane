@@ -33,11 +33,8 @@ def unitary_to_rot(tape):
 
     .. warning::
 
-        It is possible to differentiate with respect to the parameters of a
-        single-qubit gate. However, due to the nature of the decomposition, it
-        is not possible to differentiate with respect to distinct elements of
-        a two-qubit unitary. Still, one can differentiate with respect to other
-        QNode/gate arguments through such unitaries, if their value is constant.
+        This transform is not fully differentiable for 2-qubit ``QubitUnitary``
+        operations. See usage details below.
 
     Args:
         qfunc (function): a quantum function
@@ -79,6 +76,56 @@ def unitary_to_rot(tape):
     >>> print(qml.draw(transformed_qnode)())
      0: ──Rot(-1.35, 1.83, -0.606)──┤ ⟨Z⟩
 
+
+    .. UsageDetails::
+
+        This decomposition is not fully differentiable. We **can** differentiate
+        with respect to input QNode parameters when they are not used to
+        explicitly construct a :math:`4 \times 4` unitary matrix being
+        decomposed. So for example, the following will work:
+
+        .. code-block:: python3
+
+            U = scipy.stats.unitary_group.rvs(4)
+
+            def circuit(angles):
+                qml.QubitUnitary(U, wires=["a", "b"])
+                qml.RX(angles[0], wires="a")
+                qml.RY(angles[1], wires="b")
+                qml.CNOT(wires=["b", "a"])
+                return qml.expval(qml.PauliZ(wires="a"))
+
+            dev = qml.device('default.qubit', wires=["a", "b"])
+            transformed_qfunc = qml.transforms.unitary_to_rot(circuit)
+            transformed_qnode = qml.QNode(transformed_qfunc, dev)
+
+        >>> g = qml.grad(transformed_qnode)
+        >>> g([0.2, 0.3])
+        [array(-0.24454992), array(-0.23913254)]
+
+        However, the following example will **not** be differentiable:
+
+        .. code-block:: python3
+
+            def circuit(angles):
+                z = angles[0]
+                x = angles[1]
+
+                Z_mat = np.array([[np.exp(-1j * z / 2), 0.0], [0.0, np.exp(1j * z / 2)]])
+
+                c = np.cos(x / 2)
+                s = np.sin(x / 2) * 1j
+                X_mat = np.array([[c, -s], [-s, c]])
+
+                U = np.kron(Z_mat, X_mat)
+
+                qml.Hadamard(wires="a")
+
+                # U depends on the input parameters
+                qml.QubitUnitary(U, wires=["a", "b"])
+
+                qml.CNOT(wires=["b", "a"])
+                return qml.expval(qml.PauliX(wires="a"))
     """
 
     for op in tape.operations + tape.measurements:
