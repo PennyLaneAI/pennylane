@@ -44,7 +44,7 @@ class TestValidation:
 
     def test_changing_invalid_interface(self):
         """Test that an exception is raised for an invalid interface
-        on a pre-existing"""
+        on a pre-existing QNode"""
         dev = qml.device("default.qubit", wires=1)
         test_interface = "something"
 

@@ -28,6 +28,32 @@ from pennylane.interfaces.batch import set_shots, SUPPORTED_INTERFACES
 class QNode:
     """Represents a quantum node in the hybrid computational graph.
 
+    .. warning::
+    
+        This QNode is a beta feature. It differs from the standard :class:`~.pennylane.QNode`
+        in several ways:
+        
+        - Custom gradient transforms can be specified as the differentiation method.
+
+        - Arbitrary :math:`n`-th order derivatives are supported on hardware using
+          gradient transforms such as the parameter-shift rule.
+
+        - Internally, if multiple circuits are generated for execution simultaneasouly, they
+          will be packaged into a single job for execution on the device. This can lead to
+          significant performance improvement when executing the QNode on remote
+          quantum hardware.
+          
+        In an upcoming release, this QNode will replace the existing one. If you come across any
+        bugs while using this QNode, please let us know via a `bug report
+        <https://github.com/PennyLaneAI/pennylane/issues/new?assignees=&labels=bug+%3Abug%3A&template=bug_report.yml&title=%5BBUG%5D`__ on our GitHub bug tracker.
+        
+        Currently, this beta QNode does not support the following features:
+        
+        - Circuit decompositions
+        - Non-mutabability via the `mutable` keyword argument
+        - Viewing specifications with `qml.specs`
+        
+        It is also not tested with the :mod:`~.qnn` module.
     A *quantum node* contains a :ref:`quantum function <intro_vcirc_qfunc>`
     (corresponding to a :ref:`variational circuit <glossary_variational_circuit>`)
     and the computational device it is executed on.
@@ -125,7 +151,7 @@ class QNode:
     QNodes can be created by decorating a quantum function:
 
     >>> dev = qml.device("default.qubit", wires=1)
-    ... @qml.beta.qnode(dev)
+    >>> @qml.beta.qnode(dev)
     ... def circuit(x):
     ...     qml.RX(x, wires=0)
     ...     return expval(qml.PauliZ(0))
@@ -219,7 +245,7 @@ class QNode:
     def interface(self, value):
         if value not in SUPPORTED_INTERFACES:
             raise qml.QuantumFunctionError(
-                f"Unknown interface {value}. Interface must be " f"one of {SUPPORTED_INTERFACES}."
+                f"Unknown interface {value}. Interface must be one of {SUPPORTED_INTERFACES}."
             )
 
         self._interface = value
@@ -447,7 +473,7 @@ class QNode:
         """Call the quantum function with a tape context, ensuring the operations get queued."""
 
         if self.interface == "autograd":
-            # HOTFIX: to maintain compatibility with core, here we treat
+            # HOTFIX: to maintain backwards compatibility existing PennyLane code and demos, here we treat
             # all inputs that do not explicitly specify `requires_grad=False`
             # as trainable. This should be removed at some point, forcing users
             # to specify `requires_grad=True` for trainable parameters.
