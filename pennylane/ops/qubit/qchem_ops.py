@@ -482,10 +482,8 @@ class OrbitalRotation(Operation):
 
     |
 
-    This operation performs a Givens rotation between the orbital bases in the Jordan-Wigner basis using a pair
-    of parallel Givens gates :math:`G(\phi)`, which are equivalent to :class:`~.SingleExcitation()` operation.
-    More precisely, for two neighbouring spatial orbitals :math:`\{|\Phi_{0}\rangle, |\Phi_{1}\rangle\}`,
-    it performs the following transformation
+    For two neighbouring spatial orbitals :math:`\{|\Phi_{0}\rangle, |\Phi_{1}\rangle\}`, this operation
+    performs the following transformation
 
     .. math::
         &|\Phi_{0}\rangle = \cos(\phi/2)|\Phi_{0}\rangle - \sin(\phi/2)|\Phi_{1}\rangle\\
@@ -497,7 +495,7 @@ class OrbitalRotation(Operation):
 
     * Number of wires: 4
     * Number of parameters: 1
-    * Gradient recipe: The ``OrbitalRotation`` operator satisfies a four-term parameter-shift rule
+    * Gradient recipe: The ``OrbitalRotation`` operator satisfies the four-term parameter-shift rule
       (see Appendix F, https://arxiv.org/abs/2104.05695)
 
     Args:
