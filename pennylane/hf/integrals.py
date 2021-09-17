@@ -463,9 +463,10 @@ def generate_kinetic(basis_a, basis_b):
     return kinetic_integral
 
 
-#-------------------------
+# -------------------------
 
 import autograd.scipy as asp
+
 
 def _boys(n, t):
     r"""Evaluate the Boys function.
