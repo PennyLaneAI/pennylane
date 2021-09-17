@@ -859,7 +859,7 @@ class TestSpecs:
         "diff_method, len_info", [("backprop", 10), ("parameter-shift", 12), ("adjoint", 11)]
     )
     def test_specs(self, diff_method, len_info):
-        """Tests the specs property with backprop, parameter-shift and adjoint diff_method""
+        """Tests the specs property with backprop, parameter-shift and adjoint diff_method"""
 
         dev = qml.device("default.qubit", wires=4)
 
