@@ -20,7 +20,7 @@ import numpy as np
 
 def test_integration():
     """Test that the execution of lightning.qubit is possible and agrees with default.qubit"""
-    wires = 3
+    wires = 2
     layers = 2
     dev_l = qml.device("lightning.qubit", wires=wires)
     dev_d = qml.device("default.qubit", wires=wires)
@@ -31,7 +31,7 @@ def test_integration():
 
     weights = qml.init.strong_ent_layers_normal(layers, wires, seed=1967)
 
-    qn_l = qml.QNode(circuit, dev_l, diff_method="adjoint")
+    qn_l = qml.QNode(circuit, dev_l)
     qn_d = qml.QNode(circuit, dev_d)
 
     assert np.allclose(qn_l(weights), qn_d(weights))
