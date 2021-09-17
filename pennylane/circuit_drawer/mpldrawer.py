@@ -16,14 +16,13 @@ This module contains the MPLDrawer class for creating circuit diagrams with matp
 """
 from collections.abc import Iterable
 
+has_mpl=True
 try:
     import matplotlib.pyplot as plt
     from matplotlib import patches
 except (ModuleNotFoundError, ImportError) as e:
-    raise ImportError(
-        "Module matplotlib is required for ``MPLDrawer`` class. "
-        "You can install matplotlib via \n\n   pip install matplotlib"
-    ) from e
+    has_mpl = False
+
 
 
 def _to_tuple(a):
@@ -216,6 +215,12 @@ class MPLDrawer:
     _swap_dx = 0.2
 
     def __init__(self, n_layers, n_wires, wire_options=None, figsize=None):
+
+        if not has_mpl:
+            raise ImportError(
+            "Module matplotlib is required for ``MPLDrawer`` class. "
+            "You can install matplotlib via \n\n   pip install matplotlib"
+            )
 
         self.n_layers = n_layers
         self.n_wires = n_wires
