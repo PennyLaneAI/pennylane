@@ -123,7 +123,7 @@ def kinetic_matrix(basis_functions):
     >>> mol = Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> kinetic_matrix(mol.basis_set)(*args)
-
+    array([[0.76003189, 0.38325367], [0.38325367, 0.76003189]])
     """
 
     def kinetic(*args):
@@ -156,7 +156,27 @@ def kinetic_matrix(basis_functions):
 
 
 def attraction_matrix(basis_functions, charges, r):
-    r""" """
+    r"""Return a function that computes the attraction matrix for a given set of basis functions.
+
+    Args:
+        basis_functions (list[BasisFunction]): basis functions
+
+    Returns:
+        basis_functions (list[BasisFunction]): basis functions
+        charges (list[int]): nuclear charges
+        r (array[float]): nuclear positions
+
+    **Example**
+
+    >>> symbols  = ['H', 'H']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
+    >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
+    >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True),
+    >>> mol = Molecule(symbols, geometry, alpha=alpha)
+    >>> args = [alpha]
+    >>> attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
+    array([[-2.03852057, -1.60241667], [-1.60241667, -2.03852057]])
+    """
 
     def attraction(*args):
         r"""Construct the attraction matrix for a given set of basis functions.
@@ -198,7 +218,28 @@ def attraction_matrix(basis_functions, charges, r):
 
 
 def repulsion_tensor(basis_functions):
-    r""" """
+    r"""Return a function that computes the repulsion tensor for a given set of basis functions.
+
+    Args:
+        basis_functions (list[BasisFunction]): basis functions
+
+    Returns:
+        function: function that computes the repulsion tensor
+
+    **Example**
+
+    >>> symbols  = ['H', 'H']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
+    >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
+    >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True),
+    >>> mol = Molecule(symbols, geometry, alpha=alpha)
+    >>> args = [alpha]
+    >>> repulsion_tensor(mol.basis_set)(*args)
+    array([[[[0.77460595, 0.56886144], [0.56886144, 0.65017747]],
+            [[0.56886144, 0.45590152], [0.45590152, 0.56886144]]],
+           [[[0.56886144, 0.45590152], [0.45590152, 0.56886144]],
+            [[0.65017747, 0.56886144],[0.56886144, 0.77460595]]]])
+    """
 
     def repulsion(*args):
         r"""Construct the repulsion tensor for a given set of basis functions.
@@ -248,7 +289,29 @@ def repulsion_tensor(basis_functions):
 
 
 def core_matrix(basis_functions, charges, r):
-    r"""Construct the core matrix for a given set of basis functions."""
+    r"""Return a function that computes the core matrix for a given set of basis functions.
+
+    The core matrix is computed as a sum of kinetic and attraction matrices.
+
+    Args:
+        basis_functions (list[BasisFunction]): basis functions
+        charges (list[int]): nuclear charges
+        r (array[float]): nuclear positions
+
+    Returns:
+        function: function that computes the core matrix
+
+    **Example**
+
+    >>> symbols  = ['H', 'H']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
+    >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
+    >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True),
+    >>> mol = Molecule(symbols, geometry, alpha=alpha)
+    >>> args = [alpha]
+    >>> core_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
+    array([[-1.27848869, -1.21916299], [-1.21916299, -1.27848869]])
+    """
 
     def core(*args):
         r"""Construct the core matrix for a given set of basis functions.

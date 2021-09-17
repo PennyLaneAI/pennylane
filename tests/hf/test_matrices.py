@@ -19,11 +19,11 @@ import pytest
 from pennylane import numpy as np
 from pennylane.hf.matrices import (
     attraction_matrix,
+    core_matrix,
     kinetic_matrix,
     molecular_density_matrix,
     overlap_matrix,
     repulsion_tensor,
-    core_matrix,
 )
 from pennylane.hf.molecule import Molecule
 
