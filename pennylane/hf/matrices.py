@@ -159,6 +159,14 @@ def attraction_matrix(basis_functions, charges, r):
     r""" """
 
     def attraction(*args):
+        r"""Construct the attraction matrix for a given set of basis functions.
+
+        Args:
+            args (array[float]): initial values of the differentiable parameters
+
+        Returns:
+            array[float]: the attraction matrix
+        """
         n = len(basis_functions)
         v = anp.zeros((n, n))
         for i, a in enumerate(basis_functions):
@@ -193,7 +201,14 @@ def repulsion_tensor(basis_functions):
     r""" """
 
     def repulsion(*args):
+        r"""Construct the repulsion tensor for a given set of basis functions.
 
+        Args:
+            args (array[float]): initial values of the differentiable parameters
+
+        Returns:
+            array[float]: the repulsion tensor
+        """
         n = len(basis_functions)
         e = anp.zeros((n, n, n, n))
         e_calc = []
@@ -230,3 +245,26 @@ def repulsion_tensor(basis_functions):
         return e
 
     return repulsion
+
+
+def core_matrix(basis_functions, charges, r):
+    r"""Construct the core matrix for a given set of basis functions."""
+
+    def core(*args):
+        r"""Construct the core matrix for a given set of basis functions.
+
+        Args:
+            args (array[float]): initial values of the differentiable parameters
+
+        Returns:
+            array[float]: the core matrix
+        """
+        if r.requires_grad:
+            t = kinetic_matrix(basis_functions)(*args[1:])
+        else:
+            t = kinetic_matrix(basis_functions)(*args)
+
+        a = attraction_matrix(basis_functions, charges, r)(*args)
+        return t + a
+
+    return core

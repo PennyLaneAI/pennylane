@@ -23,6 +23,7 @@ from pennylane.hf.matrices import (
     molecular_density_matrix,
     overlap_matrix,
     repulsion_tensor,
+    core_matrix,
 )
 from pennylane.hf.molecule import Molecule
 
@@ -451,3 +452,82 @@ def test_repulsion_tensor_nodiff(symbols, geometry, e_ref):
     mol = Molecule(symbols, geometry)
     e = repulsion_tensor(mol.basis_set)()
     assert np.allclose(e, e_ref)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "c_ref"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+            # core matrix obtained from pyscf using scf.RHF(mol).get_hcore()
+            np.array(
+                [
+                    [-1.27848886, -1.21916326],
+                    [-1.21916326, -1.27848886],
+                ]
+            ),
+        )
+    ],
+)
+def test_core_matrix_nodiff(symbols, geometry, c_ref):
+    r"""Test that attraction_matrix returns the correct matrix."""
+    mol = Molecule(symbols, geometry)
+    c = core_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)()
+    assert np.allclose(c, c_ref)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "alpha", "c_ref"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+            np.array(
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                requires_grad=True,
+            ),
+            # core matrix obtained from pyscf using scf.RHF(mol).get_hcore()
+            np.array(
+                [
+                    [-1.27848886, -1.21916326],
+                    [-1.21916326, -1.27848886],
+                ]
+            ),
+        )
+    ],
+)
+def test_core_matrix(symbols, geometry, alpha, c_ref):
+    r"""Test that core_matrix returns the correct matrix."""
+    mol = Molecule(symbols, geometry, alpha=alpha)
+    args = [mol.alpha]
+    c = core_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
+    assert np.allclose(c, c_ref)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "alpha", "c_ref"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
+            np.array(
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                requires_grad=True,
+            ),
+            # core matrix obtained from pyscf using scf.RHF(mol).get_hcore()
+            np.array(
+                [
+                    [-1.27848886, -1.21916326],
+                    [-1.21916326, -1.27848886],
+                ]
+            ),
+        )
+    ],
+)
+def test_core_matrix_diffR(symbols, geometry, alpha, c_ref):
+    r"""Test that core_matrix returns the correct matrix."""
+    mol = Molecule(symbols, geometry, alpha=alpha, r=geometry)
+    args = [mol.coordinates, mol.alpha, mol.r]
+    c = core_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
+    assert np.allclose(c, c_ref)
