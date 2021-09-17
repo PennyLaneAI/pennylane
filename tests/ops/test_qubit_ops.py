@@ -3685,6 +3685,7 @@ class TestOrbitalRotation:
 
         assert np.allclose(state, circuit(np.pi / 2))
 
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     @pytest.mark.parametrize(
         ("phi"),
         [
@@ -3692,7 +3693,7 @@ class TestOrbitalRotation:
             (0.1),
         ],
     )
-    def test_autograd_grad(self, phi):
+    def test_autograd_grad(self, phi, diff_method):
         """Tests that gradients are computed correctly using the
         autograd interface"""
 
@@ -3700,7 +3701,7 @@ class TestOrbitalRotation:
 
         dev = qml.device("default.qubit.autograd", wires=4)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="autograd", diff_method=diff_method)
         def circuit(phi):
             qml.PauliX(wires=0)
             qml.PauliX(wires=1)

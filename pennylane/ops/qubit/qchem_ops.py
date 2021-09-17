@@ -510,7 +510,7 @@ class OrbitalRotation(Operation):
 
         >>> @qml.qnode(dev)
         ... def circuit(phi):
-        ...     qml.BasisState([1, 1, 0, 0], wires=[0, 1, 2, 3])
+        ...     qml.BasisState(np.array([1, 1, 0, 0]), wires=[0, 1, 2, 3])
         ...     qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
         ...     return qml.state()
 
