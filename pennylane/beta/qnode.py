@@ -36,7 +36,9 @@ class QNode:
         - Custom gradient transforms can be specified as the differentiation method.
 
         - Arbitrary :math:`n`-th order derivatives are supported on hardware using
-          gradient transforms such as the parameter-shift rule.
+          gradient transforms such as the parameter-shift rule. To specify that an :math:`n`-th
+          order derivative of a QNode will be computed, the ``max_diff`` argument should be set.
+          By default, this is set to 1 (first-order derivatives only).
 
         - Internally, if multiple circuits are generated for execution simultaneasouly, they
           will be packaged into a single job for execution on the device. This can lead to
