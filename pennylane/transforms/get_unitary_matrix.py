@@ -18,7 +18,6 @@ from functools import wraps
 import numpy as np
 from pennylane.wires import Wires
 import pennylane as qml
-from pennylane.math.utils import get_interface
 
 
 def get_unitary_matrix(circuit, wire_order=None):
