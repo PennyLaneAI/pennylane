@@ -156,7 +156,7 @@ class RZ(DiagonalOperation):
 
     @classmethod
     def _matrix(cls, *params):
-        theta = qml.math.unwrap(params)[0]
+        theta = params[0]
         p = cmath.exp(-0.5j * theta)
 
         return np.array([[p, 0], [0, p.conjugate()]])
@@ -335,7 +335,7 @@ class Rot(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        phi, theta, omega = qml.math.unwrap(params)
+        phi, theta, omega = params
         c = math.cos(theta / 2)
         s = math.sin(theta / 2)
 

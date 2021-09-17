@@ -76,14 +76,7 @@ def get_unitary_matrix(circuit, wire_order=None):
 
         if isinstance(circuit, qml.QNode):
             # user passed a QNode, get the tape
-            # first, recast arguments to numpy if they are tf variables
-            recast_args = []
-            for arg in args:
-                if get_interface(arg) == "tensorflow":
-                    arg = arg.numpy()
-                recast_args.append(arg)
-
-            circuit.construct(recast_args, kwargs)
+            circuit.construct(args, kwargs)
             tape = circuit.qtape
 
             if wires is None:  # if no wire ordering is specified, take wire list from tape
@@ -122,26 +115,28 @@ def get_unitary_matrix(circuit, wire_order=None):
         # initialize the unitary matrix
         unitary_matrix = np.eye(2 ** n_wires)
 
-        for op in tape.operations:
-            # operator wire position relative to wire ordering
-            op_wire_pos = wire_order.indices(op.wires)
+        with qml.tape.Unwrap(tape):
+            for op in tape.operations:
+                # operator wire position relative to wire ordering
+                op_wire_pos = wire_order.indices(op.wires)
 
-            I = np.reshape(np.eye(2 ** n_wires), [2] * n_wires * 2)
-            axes = (np.arange(len(op.wires), 2 * len(op.wires)), op_wire_pos)
-            # reshape op.matrix
+                I = np.reshape(np.eye(2 ** n_wires), [2] * n_wires * 2)
+                axes = (np.arange(len(op.wires), 2 * len(op.wires)), op_wire_pos)
+                # reshape op.matrix
 
-            U_op_reshaped = np.reshape(op.matrix, [2] * len(op.wires) * 2)
-            U_tensordot = np.tensordot(U_op_reshaped, I, axes=axes)
+                U_op_reshaped = np.reshape(op.matrix, [2] * len(op.wires) * 2)
+                U_tensordot = np.tensordot(U_op_reshaped, I, axes=axes)
 
-            unused_idxs = [idx for idx in range(n_wires) if idx not in op_wire_pos]
-            # permute matrix axes to match wire ordering
-            perm = op_wire_pos + unused_idxs
-            U = np.moveaxis(U_tensordot, wire_order.indices(wire_order), perm)
+                unused_idxs = [idx for idx in range(n_wires) if idx not in op_wire_pos]
+                # permute matrix axes to match wire ordering
+                perm = op_wire_pos + unused_idxs
+                U = np.moveaxis(U_tensordot, wire_order.indices(wire_order), perm)
 
-            U = np.reshape(U, ((2 ** n_wires, 2 ** n_wires)))
+                U = np.reshape(U, ((2 ** n_wires, 2 ** n_wires)))
 
-            # add to total matrix if there are multiple ops
-            unitary_matrix = np.dot(U, unitary_matrix)
+                # add to total matrix if there are multiple ops
+                unitary_matrix = np.dot(U, unitary_matrix)
+
         return unitary_matrix
 
     return wrapper
