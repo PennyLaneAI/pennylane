@@ -401,3 +401,20 @@ def test_get_unitary_matrix_interface_autograd():
     expected_matrix = matrix2 @ matrix1
 
     assert np.allclose(matrix, expected_matrix)
+
+
+def test_get_unitary_matrix_wronglabel():
+    """Assert error raised when wire labels in wire_order and circuit are inconsistent"""
+
+    def circuit():
+        qml.PauliX(wires=1)
+        qml.PauliZ(wires=0)
+
+    wires = [0, "b"]
+
+    get_matrix = get_unitary_matrix(circuit, wires)
+
+    with pytest.raises(
+        ValueError, match="Wires in circuit are inconsistent with those in wire_order"
+    ):
+        matrix = get_matrix()

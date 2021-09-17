@@ -26,7 +26,7 @@ def get_unitary_matrix(circuit, wire_order=None):
 
     Args:
         circuit (.QNode, .QuantumTape, or Callable): A quantum node, tape, or function that applies quantum operations.
-        wire_order (Sequence[Any], optional): Order of the wires in the quantum circuit. Will default to ``[0, 1, 2, ...]`` when not specified.
+        wire_order (Sequence[Any], optional): Order of the wires in the quantum circuit. Defaults to the order in which the wires appear in the quantum function.
 
     Returns:
          function: Function which accepts the same arguments as the QNode or quantum function.
@@ -34,25 +34,33 @@ def get_unitary_matrix(circuit, wire_order=None):
 
     **Example**
 
-    Consider the following function:
+    Consider the following function (the same applies for a QNode or tape):
 
     .. code-block:: python3
 
         def circuit(theta):
-            qml.RX(theta, wires=0)
-            qml.PauliZ(wires=1)
+            qml.RX(theta, wires=1)
+            qml.PauliZ(wires=0)
 
-    Choosing a wire order, we can use ``get_unitary_matrix`` to generate a new function
+
+    We can use ``get_unitary_matrix`` to generate a new function
     that returns the unitary matrix corresponding to the function ``circuit``:
 
-    >>> wires = [0, 1]
-    >>> get_matrix = get_unitary_matrix(circuit, wires)
+
+    >>> get_matrix = get_unitary_matrix(circuit)
     >>> theta = np.pi/4
     >>> get_matrix(theta)
-    array([[ 0.92387953+0.j,    0.+0.j,    0.-0.38268343j,    0.+0.j],
-    [0.+0.j,    -0.92387953+0.j,    0.+0.j,    0.+0.38268343j],
-    [0.-0.38268343j,    0.+0.j,    0.92387953+0.j,    0.+0.j],
-    [0.+0.j,    0.+0.38268343j,    0.+0.j,    -0.92387953+0.j]])
+    array([[ 0.92387953+0.j,  0.+0.j ,  0.-0.38268343j,  0.+0.j],
+       [ 0.+0.j,  -0.92387953+0.j,  0.+0.j,  0. +0.38268343j],
+       [ 0. -0.38268343j,  0.+0.j,  0.92387953+0.j,  0.+0.j],
+       [ 0.+0.j,  0.+0.38268343j,  0.+0.j,  -0.92387953+0.j]])
+
+
+    Note that since ``wire_order`` was not specified, the default order ``[1, 0]`` for ``circuit`` was used, and the unitary matrix corresponds to the operation :math:`Z\otimes R_X(\\theta)`. To obtain the matrix for :math:`R_X(\\theta)\otimes Z`, specify ``wire_order=[0, 1`` in the function call:
+
+    >>> get_matrix = get_unitary_matrix(circuit, wire_order=[0, 1])
+
+    You can also get the unitary matrix for operations on a subspace of a larger Hilbert space. For example, with the same function ``circuit`` and ``wire_order=["a", 0, "b", 1]`` you obtain the :math:`16\\times 16` matrix for the operation :math:`I\otimes Z\otimes I\otimes  R_X(\\theta)`.
     """
 
     wires = wire_order
@@ -100,6 +108,10 @@ def get_unitary_matrix(circuit, wire_order=None):
             raise ValueError("Input is not a tape, QNode, or quantum function")
 
         n_wires = len(wire_order)
+
+        # check that all wire labels in the circuit are contained in the wire_order
+        if not set(tape.wires).issubset(wire_order):
+            raise ValueError("Wires in circuit are inconsistent with those in wire_order")
 
         # initialize the unitary matrix
         unitary_matrix = np.eye(2 ** n_wires)
