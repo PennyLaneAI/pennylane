@@ -89,7 +89,7 @@ def _process_shot_sequence(shot_list):
     else:
         raise ValueError(f"Unknown shot sequence format {shot_list}")
 
-    total_shots = np.sum(np.prod(shot_vector, axis=1))
+    total_shots = int(np.sum(np.prod(shot_vector, axis=1)))
     return total_shots, shot_vector
 
 
