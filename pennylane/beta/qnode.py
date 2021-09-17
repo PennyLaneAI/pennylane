@@ -264,7 +264,7 @@ class QNode:
             device (.Device): PennyLane device
             interface (str): name of the requested interface
             diff_method (str or .gradient_transform): The requested method of differentiation.
-                If a string, one of ``"best"``, ``"backprop"``, ``"adjoint"``, ``"device"``,
+                If a string, allowed options are ``"best"``, ``"backprop"``, ``"adjoint"``, ``"device"``,
                 ``"parameter-shift"``, or ``"finite-diff"``. A gradient transform may
                 also be passed here.
 
