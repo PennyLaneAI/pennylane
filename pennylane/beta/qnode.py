@@ -94,6 +94,19 @@ class QNode:
 
             * ``None``: QNode cannot be differentiated. Works the same as ``interface=None``.
 
+        expansion_strategy (str): The strategy to use when circuit expansions or decompositions
+            are required.
+
+            - ``gradient``: The QNode will attempt to decompose
+              the internal circuit such that all circuit operations are supported by the gradient
+              method. Further decompositions required for device execution are performed by the
+              device prior to circuit execution.
+
+            - ``device``: The QNode will attempt to decompose the internal circuit
+              such that all circuit operations are natively supported by the device.
+
+            The ``gradient`` strategy typically results in a reduction in quantum device evaluations
+            required during optimization, at the expense of an increase in classical pre-processing.
         max_expansion (int): The number of times the internal circuit should be expanded when
             executed on a device. Expansion occurs when an operation or measurement is not
             supported, and results in a gate decomposition. If any operations in the decomposition
@@ -145,6 +158,7 @@ class QNode:
         device,
         interface="autograd",
         diff_method="best",
+        expansion_strategy="gradient",
         max_expansion=10,
         mode="best",
         cache=True,
@@ -179,6 +193,7 @@ class QNode:
         self.device = device
         self._interface = interface
         self.diff_method = diff_method
+        self.expansion_strategy = expansion_strategy
         self.max_expansion = max_expansion
 
         # execution keyword arguments
@@ -187,7 +202,11 @@ class QNode:
             "cache": cache,
             "cachesize": cachesize,
             "max_diff": max_diff,
+            "max_expansion": max_expansion,
         }
+
+        if self.expansion_strategy == "device":
+            self.execute_kwargs["expand_fn"] = None
 
         # internal data attributes
         self._tape = None
@@ -488,6 +507,9 @@ class QNode:
                     raise qml.QuantumFunctionError(
                         "Operator {} must act on all wires".format(obj.name)
                     )
+
+        if self.expansion_strategy == "device":
+            self._tape = self.device.expand_fn(self.tape, max_expansion=max_expansion)
 
         # If the gradient function is a transform, expand the tape so that
         # all operations are supported by the transform.

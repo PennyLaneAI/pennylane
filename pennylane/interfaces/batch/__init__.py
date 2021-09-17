@@ -195,6 +195,8 @@ def execute(
     cachesize=10000,
     max_diff=2,
     override_shots=False,
+    expand_fn="device",
+    max_expansion=10,
 ):
     """Execute a batch of tapes on a device in an autodifferentiable-compatible manner.
 
@@ -223,6 +225,14 @@ def execute(
             the maximum number of derivatives to support. Increasing this value allows
             for higher order derivatives to be extracted, at the cost of additional
             (classical) computational overhead during the backwards pass.
+        expand_fn (function): Tape expansion function to be called prior to device execution.
+            Must have signature of the form ``expand_fn(tape, max_expansion)``, and return a
+            single :class:`~.QuantumTape`. If not provided, by default :meth:`Device.expand_fn`
+            is called.
+        max_expansion (int): The number of times the internal circuit should be expanded when
+            executed on a device. Expansion occurs when an operation or measurement is not
+            supported, and results in a gate decomposition. If any operations in the decomposition
+            remain unsupported by the device, another expansion occurs.
 
     Returns:
         list[list[float]]: A nested list of tape results. Each element in
@@ -290,21 +300,22 @@ def execute(
 
     batch_execute = set_shots(device, override_shots)(device.batch_execute)
 
+    if expand_fn == "device":
+        expand_fn = lambda tape: device.expand_fn(tape, max_expansion=max_expansion)
+
     if gradient_fn is None:
         with qml.tape.Unwrap(*tapes):
-            res = cache_execute(
-                batch_execute, cache, return_tuple=False, expand_fn=device.expand_fn
-            )(tapes)
+            res = cache_execute(batch_execute, cache, return_tuple=False, expand_fn=expand_fn)(
+                tapes
+            )
 
         return res
 
     if gradient_fn == "backprop" or interface is None:
-        return cache_execute(batch_execute, cache, return_tuple=False, expand_fn=device.expand_fn)(
-            tapes
-        )
+        return cache_execute(batch_execute, cache, return_tuple=False, expand_fn=expand_fn)(tapes)
 
     # the default execution function is batch_execute
-    execute_fn = cache_execute(batch_execute, cache, expand_fn=device.expand_fn)
+    execute_fn = cache_execute(batch_execute, cache, expand_fn=expand_fn)
 
     if gradient_fn == "device":
         # gradient function is a device method
@@ -314,7 +325,7 @@ def execute(
         # decompositions with parameter processing is tracked by the
         # autodiff frameworks.
         for i, tape in enumerate(tapes):
-            tapes[i] = device.expand_fn(tape)
+            tapes[i] = expand_fn(tape)
 
         if mode in ("forward", "best"):
             # replace the forward execution function to return
