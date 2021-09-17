@@ -2,12 +2,13 @@
 
 <h3>New features since last release</h3>
 
-<h4>PennyLane-Lightning is now available by default</h4>
+<h4>PennyLane now comes packaged with PennyLane-Lightning</h4>
 
 * The C++-based [PennyLane-Lightning](https://pennylane-lightning.readthedocs.io/en/latest/) device
-  is now available to users by default. This device is a fast state-vector simulator equipped with
-  the efficient [adjoint method](https://arxiv.org/abs/2009.02823) for differentiating quantum
-  circuits. The device can be accessed using the `"lightning.qubit"` name:
+  is now included with installations of PennyLane. The PennyLane-Lightning device is a fast
+  state-vector simulator equipped with the efficient
+  [adjoint method](https://arxiv.org/abs/2009.02823) for differentiating quantum circuits. The
+  device can be accessed using the `"lightning.qubit"` name:
   
   ```python
   import pennylane as qml
@@ -31,13 +32,13 @@
   Circuit evaluated: 0.9801286266677633
   >>> print(f"Circuit gradient:\n{qml.grad(circuit)(weights)}")
   Circuit gradient:
-  [[[-1.11022302e-16 -1.63051504e-01 -4.14810501e-04]
-    [ 1.11022302e-16 -1.50136528e-04 -1.77922957e-04]
-    [ 0.00000000e+00 -3.92874550e-02  8.14523075e-05]]
+  [[[-9.35301749e-17 -1.63051504e-01 -4.14810501e-04]
+    [-7.88816484e-17 -1.50136528e-04 -1.77922957e-04]
+    [-5.20670796e-17 -3.92874550e-02  8.14523075e-05]]
 
-   [[-1.14472273e-04  3.85963953e-02  0.00000000e+00]
+   [[-1.14472273e-04  3.85963953e-02 -9.39190132e-18]
     [-5.76791765e-05 -9.78478343e-02  0.00000000e+00]
-    [-5.55111512e-17  0.00000000e+00 -1.11022302e-16]]]  
+    [ 0.00000000e+00  0.00000000e+00  0.00000000e+00]]] 
   ```
 
 * Custom gradient transforms can now be created using the new
