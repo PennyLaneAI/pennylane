@@ -33,6 +33,7 @@ that compute the desired quantity.
     ~draw
     ~metric_tensor
     ~specs
+    ~transforms.get_unitary_matrix
 
 Transforms that act on quantum functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -71,7 +72,6 @@ both transforms, and decompositions within the larger PennyLane codebase.
     :toctree: api
 
     ~transforms.zyz_decomposition
-    ~transforms.get_unitary_matrix
 
 
 Transforms that act on tapes
