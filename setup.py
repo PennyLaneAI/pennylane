@@ -27,8 +27,7 @@ requirements = [
     "semantic_version==2.6",
     "autoray",
     "cachetools",
-    "pennylane-lightning @ https://github.com/PennyLaneAI/pennylane-lightning/archive/refs/heads/master.zip",
-    "pybind11",
+    "pennylane-lightning",
 ]
 
 info = {
