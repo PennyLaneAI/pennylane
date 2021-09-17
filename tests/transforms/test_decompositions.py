@@ -716,7 +716,6 @@ class TestTwoQubitUnitaryDecomposition:
 
         obtained_matrix = get_unitary_matrix(tape, wire_order=wires)()
 
-
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
