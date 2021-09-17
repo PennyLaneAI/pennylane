@@ -168,7 +168,6 @@ class TestValidation:
         dev = qml.device("default.qubit", wires=1)
         gradient_fn = QNode._validate_parameter_shift(dev)
         assert gradient_fn[0] is qml.gradients.param_shift
-        assert gradient_fn[1] == {"dev": dev}
 
     def test_parameter_shift_cv_device(self):
         """Test that the _validate_parameter_shift method
