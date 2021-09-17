@@ -180,6 +180,24 @@ def test_shot_vector_property():
     assert shot_vector[3].copies == 1
 
 
+def test_process_shot_sequence():
+
+    shot_list = [1,1, 3]
+    total_shots, shot_vector = qml._device._process_shot_sequence(shot_list)
+
+    assert total_shots == 5
+    assert isinstance(total_shots, int)
+
+    assert len(shot_vector) == 2
+
+    for tup in shot_vector:
+        assert isinstance(tup, qml._device.ShotTuple)
+    
+    assert shot_vector[0].shots == 1
+    assert shot_vector[0].copies == 2
+    assert shot_vector[1].shots == 3
+    assert shot_vector[1].copies == 1
+
 class TestDeviceSupportedLogic:
     """Test the logic associated with the supported operations and observables"""
 
