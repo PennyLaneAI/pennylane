@@ -22,7 +22,7 @@ from pennylane.math.utils import get_interface
 
 
 def get_unitary_matrix(circuit, wire_order=None):
-    """Construct the matrix representation of a quantum circuit.
+    r"""Construct the matrix representation of a quantum circuit.
 
     Args:
         circuit (.QNode, .QuantumTape, or Callable): A quantum node, tape, or function that applies quantum operations.
