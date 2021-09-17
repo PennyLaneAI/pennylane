@@ -29,10 +29,10 @@ class QNode:
     """Represents a quantum node in the hybrid computational graph.
 
     .. warning::
-    
+
         This QNode is a beta feature. It differs from the standard :class:`~.pennylane.QNode`
         in several ways:
-        
+
         - Custom gradient transforms can be specified as the differentiation method.
 
         - Arbitrary :math:`n`-th order derivatives are supported on hardware using
@@ -44,17 +44,17 @@ class QNode:
           will be packaged into a single job for execution on the device. This can lead to
           significant performance improvement when executing the QNode on remote
           quantum hardware.
-          
+
         In an upcoming release, this QNode will replace the existing one. If you come across any
         bugs while using this QNode, please let us know via a `bug report
         <https://github.com/PennyLaneAI/pennylane/issues/new?assignees=&labels=bug+%3Abug%3A&template=bug_report.yml&title=%5BBUG%5D`__ on our GitHub bug tracker.
-        
+
         Currently, this beta QNode does not support the following features:
-        
+
         - Circuit decompositions
         - Non-mutabability via the `mutable` keyword argument
         - Viewing specifications with `qml.specs`
-        
+
         It is also not tested with the :mod:`~.qnn` module.
     A *quantum node* contains a :ref:`quantum function <intro_vcirc_qfunc>`
     (corresponding to a :ref:`variational circuit <glossary_variational_circuit>`)
