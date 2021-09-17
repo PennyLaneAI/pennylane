@@ -461,6 +461,9 @@ and requirements-ci.txt (unpinned). This latter would be used by the CI.
 
 <h3>Bug fixes</h3>
 
+* Fix bug with shot vectors and `Device` base class.
+  [(#1666)](https://github.com/PennyLaneAI/pennylane/pull/1666)
+
 * Fix bug with norm and Jax tracers (jit) when using `QubiStateVector`.
   [(#1649)](https://github.com/PennyLaneAI/pennylane/pull/1649)
   
