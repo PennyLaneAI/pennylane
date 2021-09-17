@@ -22,6 +22,7 @@ from pennylane.hf.matrices import (
     kinetic_matrix,
     molecular_density_matrix,
     overlap_matrix,
+    repulsion_tensor,
 )
 from pennylane.hf.molecule import Molecule
 
@@ -386,3 +387,67 @@ def test_gradient_attraction_matrix(symbols, geometry, alpha, coeff, g_r_ref):
     )(*args)
     print(g_r)
     assert np.allclose(g_r, g_r_ref)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "alpha", "e_ref"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+            np.array(
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                requires_grad=True,
+            ),
+            # electron repulsion tensor obtained from pyscf with mol.intor('int2e')
+            np.array(
+                [
+                    [
+                        [[0.77460594, 0.56886157], [0.56886157, 0.65017755]],
+                        [[0.56886157, 0.45590169], [0.45590169, 0.56886157]],
+                    ],
+                    [
+                        [[0.56886157, 0.45590169], [0.45590169, 0.56886157]],
+                        [[0.65017755, 0.56886157], [0.56886157, 0.77460594]],
+                    ],
+                ]
+            ),
+        )
+    ],
+)
+def test_repulsion_tensor(symbols, geometry, alpha, e_ref):
+    r"""Test that repulsion_tensor returns the correct matrix."""
+    mol = Molecule(symbols, geometry, alpha=alpha)
+    args = [mol.alpha]
+    e = repulsion_tensor(mol.basis_set)(*args)
+    assert np.allclose(e, e_ref)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "e_ref"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+            # electron repulsion tensor obtained from pyscf with mol.intor('int2e')
+            np.array(
+                [
+                    [
+                        [[0.77460594, 0.56886157], [0.56886157, 0.65017755]],
+                        [[0.56886157, 0.45590169], [0.45590169, 0.56886157]],
+                    ],
+                    [
+                        [[0.56886157, 0.45590169], [0.45590169, 0.56886157]],
+                        [[0.65017755, 0.56886157], [0.56886157, 0.77460594]],
+                    ],
+                ]
+            ),
+        )
+    ],
+)
+def test_repulsion_tensor_nodiff(symbols, geometry, e_ref):
+    r"""Test that repulsion_tensor returns the correct matrix when no differentiable parameter is
+    used."""
+    mol = Molecule(symbols, geometry)
+    e = repulsion_tensor(mol.basis_set)()
+    assert np.allclose(e, e_ref)

@@ -16,7 +16,8 @@ This module contains the functions needed for computing matrices.
 """
 
 import autograd.numpy as anp
-from pennylane.hf.integrals import generate_attraction, generate_kinetic, generate_overlap
+from pennylane.hf.integrals import (generate_attraction, generate_kinetic, generate_overlap,
+                                    generate_repulsion)
 
 
 def molecular_density_matrix(n_electron, c):
@@ -182,3 +183,37 @@ def attraction_matrix(basis_functions, charges, r):
         return v
 
     return attraction
+
+
+def repulsion_tensor(basis_functions):
+    r"""
+    """
+    def repulsion(*args):
+
+        n = len(basis_functions)
+        e = anp.zeros((n, n, n, n))
+        e_calc = []
+
+        for i, a in enumerate(basis_functions):
+            for j, b in enumerate(basis_functions):
+                for k, c in enumerate(basis_functions):
+                    for l, d in enumerate(basis_functions):
+
+                        if [i, j, k, l] not in e_calc:
+                            if args:
+                                args_abcd = []
+                                for m in range(len(args)):
+                                    args_abcd.append(args[m][[i, j, k, l]])
+                                repulsion_integral = generate_repulsion(a, b, c, d)(*args_abcd)
+                            else:
+                                repulsion_integral = generate_repulsion(a, b, c, d)()
+
+                            o = anp.zeros((n, n, n, n))
+                            o[i, j, k, l] = o[k, l, i, j] = o[j, i, l, k] = o[l, k, j, i] = 1.0
+                            o[j, i, k, l] = o[l, k, i, j] = o[i, j, l, k] = o[k, l, j, i] = 1.0
+                            e = e + repulsion_integral * o
+                            e_calc = e_calc + [[i, j, k, l], [k, l, i, j], [j, i, l, k], [l, k, j, i],
+                                               [j, i, k, l], [l, k, i, j], [i, j, l, k], [k, l, j, i]]
+
+        return e
+    return repulsion
