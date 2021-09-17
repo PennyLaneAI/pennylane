@@ -468,9 +468,7 @@ class DoubleExcitationMinus(Operation):
 
 class OrbitalRotation(Operation):
     r"""OrbitalRotation(phi, wires)
-    Spin-adapted spatial orbital rotation gate
-
-    |
+    Spin-adapted spatial orbital rotation
 
     .. figure:: ../../_static/qchem/orbital_rotation_decomposition_extended.png
         :align: center
@@ -484,9 +482,10 @@ class OrbitalRotation(Operation):
 
     |
 
-    This operation performs Givens rotation between two adjacent spatial orbitals in the Jordan-Wigner basis.
-    More precisely, for two orbital bases :math:`|\Phi_{0}\rangle` and :math:`|\Phi_{1}\rangle`, it performs
-    the following transformation
+    This operation performs a Givens rotation between the orbital bases in the Jordan-Wigner basis using a pair
+    of parallel Givens gates :math:`G(\phi)`, which are equivalent to :class:`~.SingleExcitation()` operation.
+    More precisely, for two neighbouring spatial orbitals :math:`|\Phi_{0}\rangle` and :math:`|\Phi_{1}\rangle`,
+    it performs the following transformation
 
     .. math::
         &|\Phi_{0}\rangle = \cos(\phi/2)|\Phi_{0}\rangle - \sin(\phi/2)|\Phi_{1}\rangle\\
