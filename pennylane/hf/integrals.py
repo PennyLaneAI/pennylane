@@ -513,9 +513,9 @@ def _hermite_coulomb(t, u, v, n, p, dr):
 
     where :math:`F_n` is the Boys function, :math:`p` is computed from the exponents of the two
     Gaussian functions as :math:`p = \alpha + \beta`, and :math:`R_{CP}` is the distance between the
-    center of the composite Gaussian centered at :math:`P` and the electrostatic potential at
-    :math:`C`. The following recursive equations are used to compute the higher-order
-    Hermite integrals
+    center of the composite Gaussian centered at :math:`P` and the electrostatic potential generated
+    by a nucleus at :math:`C`. The following recursive equations are used to compute the
+    higher-order Hermite integrals
 
     .. math::
 
@@ -577,9 +577,9 @@ def nuclear_attraction(la, lb, ra, rb, alpha, beta, r):
 
         V_{ab} = \frac{2\pi}{p} \sum_{tuv} E_t^{ij} E_u^{kl} E_v^{mn} R_{tuv},
 
-    where :math:`E` and :math:`R` represent the Hermite Gaussian expansion coefficient and the
+    where :math:`E` and :math:`R` represent the Hermite Gaussian expansion coefficients and the
     Hermite Coulomb integral, respectively. The sum goes over :math:`i + j + 1`, :math:`k + l + 1`
-    and :math:`m + m + 1` for :math:`t`, :math:`u` and :math:`v`, respectively, and :math:`p` is
+    and :math:`m + n + 1` for :math:`t`, :math:`u` and :math:`v`, respectively, and :math:`p` is
     computed from the exponents of the two Gaussian functions as :math:`p = \alpha + \beta`.
 
     Args:
@@ -625,7 +625,7 @@ def generate_attraction(r, basis_a, basis_b):
         basis_b (BasisFunction): second basis function
 
     Returns:
-        function: function that computes the nuclear attraction integral
+        function: function that computes the electron-nuclear attraction integral
 
     **Example**
 
@@ -637,18 +637,18 @@ def generate_attraction(r, basis_a, basis_b):
     >>> basis_a = mol.basis_set[0]
     >>> basis_b = mol.basis_set[1]
     >>> args = [mol.alpha]
-    >>> generate_attraction(geometry[0], mol.basis_set[0], mol.basis_set[1])(*args)
+    >>> generate_attraction(geometry[0], basis_a, basis_b)(*args)
     0.801208332328965
     """
 
     def attraction_integral(*args):
-        r"""Compute the nuclear attraction integral for two contracted Gaussian functions.
+        r"""Compute the electron-nuclear attraction integral for two contracted Gaussian functions.
 
         Args:
             args (array[float]): initial values of the differentiable parameters
 
         Returns:
-            array[float]: the nuclear attraction integral between two contracted Gaussian orbitals
+            array[float]: the electron-nuclear attraction integral
         """
         if r.requires_grad:
             coor = args[0]
@@ -684,7 +684,7 @@ def generate_attraction(r, basis_a, basis_b):
 
 
 def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta):
-    r"""Compute the electron repulsion integral between four primitive Gaussian functions.
+    r"""Compute the electron-electron repulsion integral between four primitive Gaussian functions.
 
     The electron repulsion integral between four Gaussian functions denoted by :math:`a`, :math:`b`
     , :math:`c` and :math:`d` can be computed as
@@ -696,7 +696,7 @@ def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta
         E_v^{n_a n_b} \sum_{rsw} (-1)^{r+s+w} E_r^{o_c o_d} E_s^{m_c m_d} E_w^{n_c n_d}
         R_{t+r, u+s, v+w},
 
-    where :math:`E` and :math:`R` represent the Hermite Gaussian expansion coefficient and the
+    where :math:`E` and :math:`R` are the Hermite Gaussian expansion coefficients and the
     Hermite Coulomb integral, respectively. The sums go over the angular momentum quantum numbers
     :math:`o_i + o_j + 1`, :math:`m_i + m_j + 1` and :math:`n_i + n_j + 1` respectively for
     :math:`t, u, v` and :math:`r, s, w`. The exponents of the Gaussian functions are used to compute
@@ -717,7 +717,7 @@ def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta
         delta (array[float]): exponent of the forth Gaussian function
 
     Returns:
-        array[float]: electron repulsion integral between four Gaussian functions
+        array[float]: electron-electron repulsion integral between four Gaussian functions
     """
     l1, m1, n1 = la
     l2, m2, n2 = lb
@@ -764,8 +764,8 @@ def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta
 
 
 def generate_repulsion(basis_a, basis_b, basis_c, basis_d):
-    r"""Return a function that computes the electron repulsion integral for four contracted Gaussian
-    functions.
+    r"""Return a function that computes the electron-electron repulsion integral for four contracted
+    Gaussian functions.
 
     Args:
         basis_a (BasisFunction): first basis function
@@ -792,7 +792,7 @@ def generate_repulsion(basis_a, basis_b, basis_c, basis_d):
     """
 
     def repulsion_integral(*args):
-        r"""Compute the electron repulsion integral for four contracted Gaussian functions.
+        r"""Compute the electron-electron repulsion integral for four contracted Gaussian functions.
 
         Args:
             args (array[float]): initial values of the differentiable parameters
