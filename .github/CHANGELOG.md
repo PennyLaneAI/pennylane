@@ -16,7 +16,7 @@
   layers = 2
   dev = qml.device("lightning.qubit", wires=wires)
 
-  @qml.qnode(dev)
+  @qml.qnode(dev, diff_method="adjoint")
   def circuit(weights):
       qml.templates.StronglyEntanglingLayers(weights, wires=range(wires))
       return qml.expval(qml.PauliZ(0))
