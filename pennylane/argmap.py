@@ -42,6 +42,8 @@ def _interpret_key(key, single_arg):
             return key, None
         # (arg_key, param_key) given
         if isinstance(key, tuple) and len(key) == 2:
+            if key[1]==():
+                key = (key[0], None)
             return key
     raise ArgMapError(f"Could not interpret key {key}.")
 
@@ -109,7 +111,11 @@ class ArgMap(dict):
     be accessed directly via ``generators[1]``.
     """
 
-    def __init__(self, data, single_arg=False, single_object=False):
+    def __init__(self, data=None, single_arg=False, single_object=False, like=None):
+        if like is not None:
+            if not isinstance(like, ArgMap):
+                raise ArgMapError("Trying to inherit properties from non-ArgMap object.")
+            single_arg, single_object = like.single_arg, like.single_object
         self.single_arg = single_arg
         self.single_object = single_object
         _data = self._preprocess_data(data)
@@ -117,6 +123,8 @@ class ArgMap(dict):
         self.consistency_check()
 
     def _preprocess_data(self, data):
+        if data is None:
+            data = {}
         if self.single_object:
             return {(None, None): data}
 
@@ -141,6 +149,22 @@ class ArgMap(dict):
     def setdefault(self, key, default=None):
         key = _interpret_key(key, self.single_arg)
         return super().setdefault(key, default)
+
+    def __eq__(self, other):
+        if isinstance(other, ArgMap):
+            if (self.single_arg+other.single_arg)%2:
+                return False
+            if (self.single_object+other.single_object)%2:
+                return False
+        return super().__eq__(other)
+
+    def __ne__(self, other):
+        if isinstance(other, ArgMap):
+            if (self.single_arg+other.single_arg)%2:
+                return True
+            if (self.single_object+other.single_object)%2:
+                return True
+        return super().__ne__(other)
 
     def get(self, key, default=None):
         key = _interpret_key(key, self.single_arg)
