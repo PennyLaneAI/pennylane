@@ -56,6 +56,7 @@ class QNode:
         - Viewing specifications with `qml.specs`
 
         It is also not tested with the :mod:`~.qnn` module.
+
     A *quantum node* contains a :ref:`quantum function <intro_vcirc_qfunc>`
     (corresponding to a :ref:`variational circuit <glossary_variational_circuit>`)
     and the computational device it is executed on.
