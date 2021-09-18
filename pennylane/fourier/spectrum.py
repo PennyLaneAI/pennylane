@@ -13,24 +13,30 @@
 # limitations under the License.
 """Contains a transform that computes the frequency spectrum of a quantum
 circuit."""
-from itertools import chain, combinations
+from itertools import product, combinations
 from functools import wraps
+import warnings
 import numpy as np
 import pennylane as qml
 
+from pennylane.argmap import ArgMap
 
-def _get_spectrum(op):
+
+def _get_spectrum(op, decimals=8):
     r"""Extract the frequencies contributed by an input-encoding gate to the
     overall Fourier representation of a quantum circuit.
 
     If :math:`G` is the generator of the input-encoding gate :math:`\exp(-i x G)`,
     the frequencies are the differences between any two of :math:`G`'s eigenvalues.
+    We only compute non-negative frequencies in this subroutine.
 
     Args:
-        op (~pennylane.operation.Operation): an instance of the `Operation` class
+        op (~pennylane.operation.Operation): :class:`~.pennylane.Operation` to extract 
+            the frequencies for
+        decimals (int): Number of decimal places to round the frequencies to
 
     Returns:
-        list: frequencies contributed by this input-encoding gate
+        set[float]: non-negative frequencies contributed by this input-encoding gate
     """
     no_generator = False
     if hasattr(op, "generator"):
@@ -49,79 +55,154 @@ def _get_spectrum(op):
         raise ValueError(f"Generator of operation {op} is not defined.")
 
     matrix = coeff * matrix
-    # eigenvalues of hermitian ops are guaranteed to be real
     # todo: use qml.math.linalg once it is tested properly
-    evals = qml.math.real(np.linalg.eigvals(matrix))
+    evals = np.linalg.eigvalsh(matrix)
 
-    # compute all differences of eigenvalues
-    unique_frequencies = set(
-        chain.from_iterable(
-            np.round((x[1] - x[0], x[0] - x[1]), decimals=8) for x in combinations(evals, 2)
-        )
+    # compute all unique positive differences of eigenvalues, then add 0
+    _spectrum = set(
+        np.round(np.abs([x[1] - x[0] for x in combinations(evals, 2)]), decimals=decimals)
     )
-    unique_frequencies = unique_frequencies.union({0})
-    return sorted(unique_frequencies)
+    _spectrum |= {0}
+
+    return _spectrum
 
 
 def _join_spectra(spec1, spec2):
     r"""Join two sets of frequencies that belong to the same input.
 
-    Since :math:`\exp(i a x)\exp(i b x) = \exp(i (a+b) x)`, frequency sets of two gates
-    encoding the same :math:`x` are joined by computing the set of sums of their elements.
+    Since :math:`\exp(i a x)\exp(i b x) = \exp(i (a+b) x)`, the spectra of two gates
+    encoding the same :math:`x` are joined by computing the set of sums and absolute
+    values of differences of their elements.
+    We only compute non-negative frequencies in this subroutine and assume the inputs
+    to be non-negative frequencies as well.
 
     Args:
-        spec1 (list[float]): first spectrum
-        spec2 (list[float]): second spectrum
+        spec1 (set[float]): first spectrum
+        spec2 (set[float]): second spectrum
     Returns:
-        list[float]: joined spectrum
+        set[float]: joined spectrum
     """
-    if spec1 == []:
-        return sorted(set(spec2))
-    if spec2 == []:
-        return sorted(set(spec1))
+    if spec1 == {0}:
+        return spec2
+    if spec2 == {0}:
+        return spec1
 
-    sums = [s1 + s2 for s1 in spec1 for s2 in spec2]
-    return sorted(set(sums))
+    sums = {s1 + s2 for s1 in spec1 for s2 in spec2}
+    diffs = {np.abs(s1 - s2) for s1 in spec1 for s2 in spec2}
+
+    return sums.union(diffs)
 
 
-def spectrum(qnode, encoding_gates=None):
-    r"""Compute the frequency spectrum of the Fourier representation of simple quantum circuits.
+def _get_and_validate_classical_jacobians(qnode, argnum, args, kwargs):
+    r"""Check classical preprocessing of a QNode to be linear and return its Jacobian.
 
-    The circuit must only use simple single-parameter gates of the form :math:`e^{-i x_j G}` as
+    Args:
+        qnode (pennylane.QNode): a quantum node of which to validate the preprocessing
+        argnum (list[int]): the indices of the arguments with respect to which the Jacobian
+            is computed; passed to `~pennylane.transforms.classical_jacobian`
+        args (tuple): QNode arguments; the input parameters are one of four positions at which
+            the Jacobian is computed, and the QNode arguments are left at these values
+        kwargs (dict): QNode keyword arguments
+
+    Returns:
+        (tuple[array]): Jacobian of the classical preprocessing (at QNode arguments args).
+
+    The output of the `~pennylane.QNode` is only a Fourier series in the encoded :math:`x_i`
+    if the processing of the QNode parameters into gate parameters is linear.
+    This method asserts this linearity by computing the Jacobian of the processing at
+    multiple positions and checking that it is constant.
+    """
+    if qnode.interface == "tf":
+        import tensorflow as like_module
+    elif qnode.interface == "torch":
+        import torch as like_module
+    else:
+        like_module = np
+    try:
+        # Evaluate the classical Jacobian at multiple (shape-adapted) input args.
+        zeros_args = (like_module.zeros_like(arg) for arg in args)
+        ones_args = (like_module.ones_like(arg) for arg in args)
+        frac_args = (like_module.ones_like(arg) * 0.315 for arg in args)
+        jacs = [
+            qml.transforms.classical_jacobian(qnode, argnum=argnum)(*_args, **kwargs)
+            for _args in [zeros_args, ones_args, frac_args, args]
+        ]
+    except Exception as e:
+        raise ValueError("Unable to compute Jacobian of the classical preprocessing.") from e
+
+    # Check that the Jacobian is constant
+    if not all(
+        (all((np.allclose(jacs[0][i], jac[i]) for jac in jacs[1:])) for i in range(len(jacs[0])))
+    ):
+        raise ValueError(
+            "The Jacobian of the classical preprocessing in the provided QNode is not constant; "
+            "only linear classical preprocessing is supported."
+        )
+
+    # Note that jacs is a list of tuples of arrays
+    return jacs[0]
+
+
+def spectrum(qnode, argnum=None, encoding_gates=None, decimals=5):
+    r"""Compute the frequency spectrum of the Fourier representation of quantum circuits.
+
+    The circuit must only use single-parameter gates of the form :math:`e^{-i x_j G}` as
     input-encoding gates, which allows the computation of the spectrum by inspecting the gates'
     generators :math:`G`. The most important example of such gates are Pauli rotations.
 
     .. note::
 
-        More precisely, the spectrum function relies on the gate to define a ``generator``, and will
-        fail if gates marked as inputs do not have this attribute.
+        More precisely, the spectrum function relies on the gate to define a ``generator``,
+        and will fail if gates marked controlled by marked parameters do not have this attribute.
 
-    Gates are marked as input-encoding gates in the quantum function by giving them an ``id``.
-    If two gates have the same ``id``, they are considered
-    to be used to encode the same input :math:`x_j`. The ``encoding_gates`` argument can be used
-    to indicate that only gates with a specific ``id`` should be interpreted as input-encoding gates.
-    Otherwise, all gates with an explicit ``id`` are considered to be input-encoding gates.
+    The argument ``argnum`` controls which QNode arguments are considered as encoded
+    inputs and the spectrum is computed only for these arguments.
+    The input-encoding *gates* are those that are controlled by input-encoding QNode arguments.
+    If no ``argnum`` are given, all QNode arguments are considered to be input-encoding
+    arguments.
 
     .. note::
-        If no input-encoding gates are found, an empty dictionary is returned.
+
+        Arguments or parameters in an argument that do not contribute to the Fourier series
+        of the QNode with a frequency are considered as contributing with a constant term.
+        That is, a parameter that does not control any gate has the spectrum ``[0]``.
+
+    The returned spectrum is an ``~.pennylane.argmap.ArgMap`` with the frequency spectra as
+    values. See the 
+    `ArgMap documentation <https://pennylane.readthedocs.io/en/stable/code/api/pennylane.argmap.ArgMap.html>`_
+    for details on its structure.
+
+    .. warning::
+
+        The argument ``encoding_gates`` is deprecated and will be removed in a future version.
+        In the current version, an attempt will be made to interpret ``encoding_gates`` as alias
+        for ``argnum``.
 
     Args:
         qnode (pennylane.QNode): a quantum node representing a circuit in which
             input-encoding gates are marked by their ``id`` attribute
+        argnum (list[int]): list of QNode argument indices, describing for which QNode
+            arguments the spectrum is computed
         encoding_gates (list[str]): list of input-encoding gate ``id`` strings
             for which to compute the frequency spectra
+        decimals (int): number of decimals to which to round frequencies.
+
+        .. deprecated:: 0.18
+            Use ``argnum`` instead.
 
     Returns:
-        (dict[str, list[float]]): Dictionary with the input-encoding gate ``id`` as keys and
-            their frequency spectra as values.
+        function: Function which accepts the same arguments as the QNode.
+            When called, this function will return a :class:`~.pennylane.argmap.ArgMap`
+            containing the frequency spectra per QNode parameter.
 
 
     **Details**
 
-    A circuit that returns an expectation value which depends on
+    A circuit that returns an expectation value of a Hermitian observable which depends on
     :math:`N` scalar inputs :math:`x_j` can be interpreted as a function
-    :math:`f: \mathbb{R}^N \rightarrow \mathbb{R}`. This function can always be
-    expressed by a Fourier-type sum
+    :math:`f: \mathbb{R}^N \rightarrow \mathbb{R}` (as the observable is Hermitian,
+    the expectation value is real-valued).
+    This function can always be expressed by a Fourier-type sum
 
     .. math::
 
@@ -130,61 +211,74 @@ def spectrum(qnode, encoding_gates=None):
 
     over the *frequency spectra* :math:`\Omega_j \subseteq \mathbb{R},`
     :math:`j=1,\dots,N`. Each spectrum has the property that
-    :math:`0 \in \Omega_j`, and the spectrum is
-    symmetric (for every :math:`\omega \in \Omega_j` we have that :math:`-\omega \in
-    \Omega_j`). If all frequencies are integer-valued, the Fourier sum becomes a
-    *Fourier series*.
+    :math:`0 \in \Omega_j`, and the spectrum is symmetric
+    (i.e., for every :math:`\omega \in \Omega_j` we have that :math:`-\omega \in\Omega_j`).
+    If all frequencies are integer-valued, the Fourier sum becomes a *Fourier series*.
 
-    As shown in `Vidal and Theis (2019)
-    <https://arxiv.org/abs/1901.11434>`_ and `Schuld, Sweke and Meyer (2020)
-    <https://arxiv.org/abs/2008.08605>`_, if an input :math:`x_j, j = 1 \dots N`,
-    only enters into single-parameter gates of the form :math:`e^{-i x_j G}` (where :math:`G` is a Hermitian generator),
+    As shown in `Vidal and Theis (2019) <https://arxiv.org/abs/1901.11434>`_ and
+    `Schuld, Sweke and Meyer (2020) <https://arxiv.org/abs/2008.08605>`_,
+    if an input :math:`x_j, j = 1 \dots N`,
+    only enters into single-parameter gates of the form :math:`e^{-i x_j G}`
+    (where :math:`G` is a Hermitian generator),
     the frequency spectrum :math:`\Omega_j` is fully determined by the eigenvalues
-    of :math:`G`. In many situations, the spectra are limited
+    of the generators :math:`G`. In many situations, the spectra are limited
     to a few frequencies only, which in turn limits the function class that the circuit
     can express.
 
     The ``spectrum`` function computes all frequencies that will potentially appear in the
     sets :math:`\Omega_1` to :math:`\Omega_N`.
 
+    .. note::
+
+        In more detail, the ``spectrum`` function also allows for preprocessing of the
+        QNode arguments before they are fed into the gates, as long as this processing
+        is *linear*. In particular, constant prefactors of the encoding arguments are
+        allowed.
+
     **Example**
 
-    Consider the following example, which uses non-trainable inputs ``x`` and
-    trainable parameters ``w`` as arguments to the qnode.
+    Consider the following example, which uses non-trainable inputs ``x``, ``y`` and ``z``
+    as well as trainable parameters ``w`` as arguments to the QNode.
 
     .. code-block:: python
 
         import pennylane as qml
         import numpy as np
-        from pennylane.fourier import spectrum
+        from spectrum import spectrum
 
-        n_layers = 2
         n_qubits = 3
         dev = qml.device("default.qubit", wires=n_qubits)
 
         @qml.qnode(dev)
-        def circuit(x, w):
-            for l in range(n_layers):
-                for i in range(n_qubits):
-                    qml.RX(x[i], wires=0, id="x"+str(i))
-                    qml.Rot(w[l,i,0], w[l,i,1], w[l,i,2], wires=0)
-            qml.RZ(x[0], wires=0, id="x0")
+        def circuit(x, y, z, w):
+            for i in range(n_qubits):
+                qml.RX(0.5*x[i], wires=i)
+                qml.Rot(w[0,i,0], w[0,i,1], w[0,i,2], wires=i)
+                qml.RY(2.3*y[i], wires=i)
+                qml.Rot(w[1,i,0], w[1,i,1], w[1,i,2], wires=i)
+                qml.RX(z, wires=i)
             return qml.expval(qml.PauliZ(wires=0))
 
-        x = np.array([1, 2, 3])
-        w = np.random.random((n_layers, n_qubits, 3))
-        res = spectrum(circuit)(x, w)
+        x = np.array([1., 2., 3.])
+        y = np.array([0.1, 0.3, 0.5])
+        z = -1.8
+        w = np.random.random((2, n_qubits, 3))
+        res = spectrum(circuit, argnum=[0, 1, 2])(x, y, z, w)
 
-    >>> print(qml.draw(circuit)(x, w))
-    0: ──RX(1)──Rot(0.863, 0.611, 0.281)───RX(1)──Rot(0.47, 0.158, 0.648)───RZ(1)──┤ ⟨Z⟩
-    1: ──RX(2)──Rot(0.0781, 0.971, 0.457)──RX(2)──Rot(0.896, 0.224, 0.731)─────────┤
-    2: ──RX(3)──Rot(0.462, 0.286, 0.929)───RX(3)──Rot(0.879, 0.399, 0.215)─────────┤
+    >>> print(qml.draw(circuit)(x, y, z, w))
+    0: ──RX(0.5)──Rot(0.598, 0.949, 0.346)───RY(0.23)──Rot(0.693, 0.0738, 0.246)──RX(-1.8)──┤ ⟨Z⟩
+    1: ──RX(1)────Rot(0.0711, 0.701, 0.445)──RY(0.69)──Rot(0.32, 0.0482, 0.437)───RX(-1.8)──┤
+    2: ──RX(1.5)──Rot(0.401, 0.0795, 0.731)──RY(1.15)──Rot(0.756, 0.38, 0.38)─────RX(-1.8)──┤
 
     >>> for inp, freqs in res.items():
     >>>     print(f"{inp}: {freqs}")
-    'x0': [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0]
-    'x1': [-2.0, -1.0, 0.0, 1.0, 2.0]
-    'x2': [-2.0, -1.0, 0.0, 1.0, 2.0]
+    (0, 0): [-0.5, 0.0, 0.5]
+    (0, 1): [-0.5, 0.0, 0.5]
+    (0, 2): [-0.5, 0.0, 0.5]
+    (1, 0): [-2.3, 0.0, 2.3]
+    (1, 1): [-2.3, 0.0, 2.3]
+    (1, 2): [-2.3, 0.0, 2.3]
+    (2, None): [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0]
 
     .. note::
         While the Fourier spectrum usually does not depend
@@ -192,31 +286,32 @@ def spectrum(qnode, encoding_gates=None):
         it may still change based on inputs to the QNode that alter the architecture
         of the circuit.
 
-    The input-encoding gates to consider can also be explicitly selected by using the
-    ``encoding_gates`` keyword argument:
+    Above, we selected all input-encoding parameters for the spectrum computation, using
+    the ``argnum`` keyword argument. We may also restrict the full analysis to a single 
+    QNode argument, again using ``argnum``:
 
-    .. code-block:: python
-
-        dev = qml.device("default.qubit", wires=1)
-
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x[0], wires=0, id="x0")
-            qml.PhaseShift(x[0], wires=0, id="x0")
-            qml.RX(x[1], wires=0, id="x1")
-            return qml.expval(qml.PauliZ(wires=0))
-
-        x = np.array([1, 2])
-        res = spectrum(circuit, encoding_gates=["x0"])(x)
-
+    >>> res = spectrum(circuit, argnum=[0])(x, y, z, w)
     >>> for inp, freqs in res.items():
     >>>     print(f"{inp}: {freqs}")
-    'x0': [-2.0, -1.0, 0.0, 1.0, 2.0]
+    (0, 0): [-0.5, 0.0, 0.5]
+    (0, 1): [-0.5, 0.0, 0.5]
+    (0, 2): [-0.5, 0.0, 0.5]
 
-    .. note::
+    We even may request the spectrum for a single scalar argument:
+
+    >>> res = spectrum(circuit, argnum=[2])(x, y, z, w)
+    >>> print(res)
+    {(2, None): [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0]}
+
+    .. warning::
         The ``spectrum`` function does not check if the result of the
-        circuit is an expectation, or if gates with the same ``id``
-        take the same value in a given call of the function.
+        circuit is an expectation value. It checks whether the classical preprocessing between
+        QNode and gate arguments is linear by computing the Jacobian of the processing
+        at multiple points. This makes it very unlikely -- *but not impossible* -- that
+        non-linear functions go undetected.
+        Furthermore, the QNode arguments *not* marked in ``argnum`` will not be
+        considered in this test and if they resemble encoded inputs, the entire
+        spectrum might be incorrect or the expectation value might not even admit one.
 
     The ``spectrum`` function works in all interfaces:
 
@@ -228,58 +323,97 @@ def spectrum(qnode, encoding_gates=None):
 
         @qml.qnode(dev, interface='tf')
         def circuit(x):
-            qml.RX(x[0], wires=0, id="x0")
-            qml.PhaseShift(x[1], wires=0, id="x1")
+            qml.RX(0.4*x[0], wires=0)
+            qml.PhaseShift(x[1]*np.pi, wires=0)
             return qml.expval(qml.PauliZ(wires=0))
 
-        x = tf.constant([1, 2])
+        x = tf.constant([1., 2.])
         res = spectrum(circuit)(x)
 
     >>> for inp, freqs in res.items():
     >>>     print(f"{inp}: {freqs}")
-    'x0': [-1.0, 0.0, 1.0]
-    'x1': [-1.0, 0.0, 1.0]
-
+    (0, 0): [-0.4, 0.0, 0.4]
+    (0, 1): [-3.14159, 0.0, 3.14159]
     """
+
+    if np.isscalar(argnum):
+        argnum = [argnum]
+
+    if encoding_gates is not None:
+        if argnum is not None:
+            warnings.warn(
+                "The argument encoding_gates is no longer valid and will be removed in"
+                f" future versions. Ignoring encoding_gates={encoding_gates}..."
+            )
+        else:
+            warnings.warn(
+                "The argument encoding_gates is no longer valid and will be removed in"
+                f" future versions. Trying to call spectrum with argnum={encoding_gates}..."
+            )
+            try:
+                argnum = list(set(map(int, encoding_gates)))
+            except ValueError as e:
+                failing_id = " ".join(str(e).split(" ")[7:])
+                raise ValueError(
+                    "The provided encoding_gates could not be used as argnum."
+                    f" Conversion to integers failed on {failing_id}."
+                )
+
+    atol = 10 ** (-decimals) if decimals is not None else 1e-10
 
     @wraps(qnode)
     def wrapper(*args, **kwargs):
-        qnode.construct(args, kwargs)
+        nonlocal argnum
+        # If no argnum are given, all QNode arguments are considered
+        if argnum is None:
+            argnum = list(range(len(args)))
+        # Compute classical Jacobian and assert preprocessing is linear
+        class_jacs = _get_and_validate_classical_jacobians(qnode, argnum, args, kwargs)
+        # A map between Jacobians (contiguous) and arg indices (may be discontiguous)
+        arg_idx_map = {i: arg_idx for i, arg_idx in enumerate(argnum)}
+
+        spectra = ArgMap()
         tape = qnode.qtape
-
-        if encoding_gates is None:
-            freqs = {}
-        else:
-            freqs = {input_id: [] for input_id in encoding_gates}
-
-        for op in tape.operations:
-            id = op.id
-
-            # if the operator has no specific ID, move to the next
-            if id is None:
-                continue
-
-            # if user has not specified encoding_gate id's,
-            # consider any id
-            is_encoding_gate = encoding_gates is None or id in encoding_gates
-
-            if is_encoding_gate:
-
+        for jac_idx, class_jac in enumerate(class_jacs):
+            arg_idx = arg_idx_map[jac_idx]
+            for par_idx in product(*(range(sh) for sh in class_jac.shape[1:])):
+                spectra[(arg_idx, par_idx)] = {0}
+            unpack_inner_dict = len(class_jac.shape) == 1
+            for op_idx, jac_of_op in enumerate(np.round(class_jac, decimals=decimals)):
+                # Find the operation that belongs to the current op_idx
+                op = tape._par_info[op_idx]["op"]
+                # Find parameters feeding into the operation and if there are none, continue
+                par_ids = np.where(jac_of_op)
+                if len(par_ids[0]) == 0:
+                    continue
+                # Multi-parameter gates are not supported
                 if len(op.parameters) != 1:
                     raise ValueError(
                         "Can only consider one-parameter gates as data-encoding gates; "
                         f"got {op.name}."
                     )
+                # Get the spectrum of the current operation
+                spec = _get_spectrum(op, decimals=decimals)
+                if len(class_jac.shape)==1:
+                    jac_of_op = {None: jac_of_op}
+                    par_ids = [None]
+                else:
+                    par_ids = tuple((tuple(map(int, _ids)) for _ids in par_ids))
+                    par_ids = zip(*par_ids)
+                for par_idx in par_ids:
+                    scale = float(jac_of_op[par_idx])
+                    # Rescale the operation spectrum
+                    scaled_spec = [scale * f for f in spec]
+                    # Join the new spectrum with the previously known spectrum for the parameter
+                    spectra[(arg_idx, par_idx)] = _join_spectra(
+                        spectra[(arg_idx, par_idx)], scaled_spec
+                    )
 
-                spec = _get_spectrum(op)
+        # Construct the full spectrum also containing negative frequencies and sort them
+        for idx, spec in spectra.items():
+            spec = sorted(spec)
+            spectra[idx] = [-freq for freq in spec[:0:-1]] + spec
 
-                # if id has been seen before,
-                # join this spectrum to another one
-                if id in freqs:
-                    spec = _join_spectra(freqs[id], spec)
-
-                freqs[id] = spec
-
-        return freqs
+        return spectra
 
     return wrapper
