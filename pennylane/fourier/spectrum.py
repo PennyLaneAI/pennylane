@@ -31,7 +31,7 @@ def _get_spectrum(op, decimals=8):
     We only compute non-negative frequencies in this subroutine.
 
     Args:
-        op (~pennylane.operation.Operation): :class:`~.pennylane.Operation` to extract 
+        op (~pennylane.operation.Operation): :class:`~.pennylane.Operation` to extract
             the frequencies for
         decimals (int): Number of decimal places to round the frequencies to
 
@@ -168,7 +168,7 @@ def spectrum(qnode, argnum=None, encoding_gates=None, decimals=5):
         That is, a parameter that does not control any gate has the spectrum ``[0]``.
 
     The returned spectrum is an ``~.pennylane.argmap.ArgMap`` with the frequency spectra as
-    values. See the 
+    values. See the
     `ArgMap documentation <https://pennylane.readthedocs.io/en/stable/code/api/pennylane.argmap.ArgMap.html>`_
     for details on its structure.
 
@@ -287,7 +287,7 @@ def spectrum(qnode, argnum=None, encoding_gates=None, decimals=5):
         of the circuit.
 
     Above, we selected all input-encoding parameters for the spectrum computation, using
-    the ``argnum`` keyword argument. We may also restrict the full analysis to a single 
+    the ``argnum`` keyword argument. We may also restrict the full analysis to a single
     QNode argument, again using ``argnum``:
 
     >>> res = spectrum(circuit, argnum=[0])(x, y, z, w)
@@ -394,7 +394,7 @@ def spectrum(qnode, argnum=None, encoding_gates=None, decimals=5):
                     )
                 # Get the spectrum of the current operation
                 spec = _get_spectrum(op, decimals=decimals)
-                if len(class_jac.shape)==1:
+                if len(class_jac.shape) == 1:
                     jac_of_op = {None: jac_of_op}
                     par_ids = [None]
                 else:
