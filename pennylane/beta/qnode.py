@@ -46,8 +46,8 @@ class QNode:
           quantum hardware.
 
         In an upcoming release, this QNode will replace the existing one. If you come across any
-        bugs while using this QNode, please let us know via a `bug report
-        <https://github.com/PennyLaneAI/pennylane/issues/new?assignees=&labels=bug+%3Abug%3A&template=bug_report.yml&title=%5BBUG%5D`__ on our GitHub bug tracker.
+        bugs while using this QNode, please let us know via a `bug report <https://github.com/PennyLaneAI/pennylane/issues/new?assignees=&labels=bug+%3Abug%3A&template=bug_report.yml&title=%5BBUG%5D>`__
+        on our GitHub bug tracker.
 
         Currently, this beta QNode does not support the following features:
 
