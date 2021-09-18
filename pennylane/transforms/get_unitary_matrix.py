@@ -78,18 +78,9 @@ def get_unitary_matrix(circuit, wire_order=None):
             circuit.construct(args, kwargs)
             tape = circuit.qtape
 
-            if wires is None:  # if no wire ordering is specified, take wire list from tape
-                wire_order = tape.wires
-            else:
-                wire_order = Wires(wires)
-
         elif isinstance(circuit, qml.tape.QuantumTape):
             # user passed a tape
             tape = circuit
-            if wires is None:
-                wire_order = tape.wires
-            else:
-                wire_order = Wires(wires)
 
         elif callable(circuit):
             # user passed something that is callable but not a tape or qnode.
@@ -97,13 +88,12 @@ def get_unitary_matrix(circuit, wire_order=None):
             # raise exception if it is not a quantum function
             if len(tape.operations) == 0:
                 raise ValueError("Function contains no quantum operation")
-            if wires is None:
-                wire_order = tape.wires
-            else:
-                wire_order = Wires(wires)
 
         else:
             raise ValueError("Input is not a tape, QNode, or quantum function")
+
+        # if no wire ordering is specified, take wire list from tape
+        wire_order = tape.wires if wires is None else Wires(wires)
 
         n_wires = len(wire_order)
 
