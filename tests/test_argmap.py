@@ -283,7 +283,7 @@ class TestArgMap:
         argmap.consistency_check(check_values=True)
 
     def test_consistency_check_True_values_single_object(self):
-        """Test that `consistency_check` is successful for ``single_object=True`` 
+        """Test that `consistency_check` is successful for ``single_object=True``
         if it should, with usage of ``check_values=True``."""
         argmap = ArgMap([(None, "single item")], single_object=True)
         argmap.consistency_check(check_values=True)
@@ -361,7 +361,7 @@ class TestArgMap:
             ArgMap(data)
 
     def test_error_single_object_multiple(self):
-        """Test that instantiating an ``ArgMap`` and adding items raises an 
+        """Test that instantiating an ``ArgMap`` and adding items raises an
         ``ArgMapError`` in the ``consistency_check`` if ``single_object=True``."""
         argmap = ArgMap([(None, "a")], single_object=True)
         argmap.__setitem__(1, "b")
@@ -420,23 +420,23 @@ class TestArgMap:
         data = [((1, (2,)), "a"), ((3, None), "b")]
         argmap1 = ArgMap(data)
         argmap2 = ArgMap(data)
-        assert argmap1==argmap2 and argmap2==argmap1
-        assert not argmap1!=argmap2 and not argmap2!=argmap1
+        assert argmap1 == argmap2 and argmap2 == argmap1
+        assert not argmap1 != argmap2 and not argmap2 != argmap1
         data = {(0, 3): "a", (4, 2): "b"}
         argmaps = [ArgMap(data)]
-        for single_arg, single_object in product([False, True ], repeat=2):
+        for single_arg, single_object in product([False, True], repeat=2):
             argmaps.append(ArgMap(data, single_arg=single_arg, single_object=single_object))
             argmaps[-1].consistency_check()
-        assert argmaps[0]==argmaps[1] and argmaps[1]==argmaps[0]
-        assert not argmaps[0]!=argmaps[1] and not argmaps[1]!=argmaps[0]
+        assert argmaps[0] == argmaps[1] and argmaps[1] == argmaps[0]
+        assert not argmaps[0] != argmaps[1] and not argmaps[1] != argmaps[0]
         for am1, am2 in combinations(argmaps[1:], r=2):
-            assert am1!=am2 and am2!=am1
-            assert not am1==am2 and not am2==am1
+            assert am1 != am2 and am2 != am1
+            assert not am1 == am2 and not am2 == am1
 
     def test_comparison_to_dict(self):
         """Test the comparison operations __eq__ and __neq__
         between an ArgMaps and a ``dict``."""
         data = {(1, (2,)): "a", (3, None): "b"}
         argmap = ArgMap(data)
-        assert data==argmap and argmap==data
-        assert not data!=argmap and not argmap!=data
+        assert data == argmap and argmap == data
+        assert not data != argmap and not argmap != data

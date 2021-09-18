@@ -42,7 +42,7 @@ def _interpret_key(key, single_arg):
             return key, None
         # (arg_key, param_key) given
         if isinstance(key, tuple) and len(key) == 2:
-            if key[1]==():
+            if key[1] == ():
                 key = (key[0], None)
             return key
     raise ArgMapError(f"Could not interpret key {key}.")
@@ -152,17 +152,17 @@ class ArgMap(dict):
 
     def __eq__(self, other):
         if isinstance(other, ArgMap):
-            if (self.single_arg+other.single_arg)%2:
+            if (self.single_arg + other.single_arg) % 2:
                 return False
-            if (self.single_object+other.single_object)%2:
+            if (self.single_object + other.single_object) % 2:
                 return False
         return super().__eq__(other)
 
     def __ne__(self, other):
         if isinstance(other, ArgMap):
-            if (self.single_arg+other.single_arg)%2:
+            if (self.single_arg + other.single_arg) % 2:
                 return True
-            if (self.single_object+other.single_object)%2:
+            if (self.single_object + other.single_object) % 2:
                 return True
         return super().__ne__(other)
 
