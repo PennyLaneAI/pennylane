@@ -92,6 +92,7 @@ data_garbage = [
 ]
 
 data_objects = [
+    None,
     "A string",
     ("A", "tuple", "of", "strings"),
     lambda x: x,
@@ -153,6 +154,11 @@ existing_single_items = [
 
 class TestArgMap:
     r"""Tests for the ``ArgMap`` class."""
+
+    def test_creation_without_input(self):
+        """Test creation without any data input."""
+        argmap = ArgMap()
+        assert argmap == {}
 
     @pytest.mark.parametrize(
         "data",
@@ -229,9 +235,12 @@ class TestArgMap:
     def test_creation_from_object_with_single_object(self, data):
         r"""Test creation from a single object, using ``single_object``."""
         argmap = ArgMap(data, single_object=True)
-        # the only element of the argmap can be retrieved by both
-        # ``(None, None)`` and ``()``
+        if data is None:
+            data = {}
+        # the only element of the argmap can be retrieved by
+        # ``(None, None)``, ``None``, and ``()``
         assert argmap[(None, None)] == data
+        assert argmap[None] == data
         assert argmap[()] == data
 
     @pytest.mark.parametrize("data", data_lists)
@@ -414,6 +423,12 @@ class TestArgMap:
         argmap = ArgMap(data, single_object=True, single_arg=True)
         argmap_like = ArgMap(data, like=argmap)
         assert argmap_like.single_arg and argmap_like.single_object
+
+    def test_creation_like_error_non_argmap(self):
+        """Test that inheriting single_arg and single_object from non ArgMap object fails."""
+        data = {(0, 3): "a", (4, 2): "b"}
+        with pytest.raises(ArgMapError, match="Trying to inherit properties"):
+            argmap_like = ArgMap(data, like="Not an ArgMap")
 
     def test_comparison_argmaps(self):
         """Test the comparison operations __eq__ and __neq__ between two ArgMaps."""
