@@ -4,7 +4,7 @@
 
 <h4>PennyLane now comes packaged with <code>lightning.qubit</code></h4>
 
-* The C++-based [`lightning.qubit`](https://pennylane-lightning.readthedocs.io/en/stable/) device
+* The C++-based [lightning.qubit](https://pennylane-lightning.readthedocs.io/en/stable/) device
   is now included with installations of PennyLane. The `lightning.qubit` device is a fast
   state-vector simulator equipped with the efficient
   [adjoint method](https://arxiv.org/abs/2009.02823) for differentiating quantum circuits,
