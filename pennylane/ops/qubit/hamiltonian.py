@@ -368,8 +368,8 @@ class Hamiltonian(Observable):
 
         >>> H = qml.Hamiltonian([1, 1], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0)])
         >>> print(H._obs_data())
-        {(1, frozenset({('PauliZ', <Wires = [1]>, ())})),
-        (1, frozenset({('PauliX', <Wires = [1]>, ()), ('PauliX', <Wires = [0]>, ())}))}
+        {(1, frozenset({('PauliX', <Wires = [1]>, ()), ('PauliX', <Wires = [0]>, ())})),
+         (1, frozenset({('PauliZ', <Wires = [0]>, ())}))}
         """
         data = set()
 

@@ -371,7 +371,7 @@ def param_shift(
     parameters with respect to its inputs.
 
     Args:
-        qnode (.QNode or .QuantumTape): quantum tape or QNode to differentiate
+        qnode (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivative with respect to all
             trainable indices are returned.
@@ -478,7 +478,7 @@ def param_shift(
 
     .. UsageDetails::
 
-        This gradient transform can be applied directly to :class:`~.QNode` objects:
+        This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects:
 
         >>> @qml.qnode(dev)
         ... def circuit(params):
