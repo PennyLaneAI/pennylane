@@ -88,5 +88,6 @@ __all__ = [
     "cov_matrix",
     "marginal_prob",
     "unwrap",
+    "frobenius_inner_product",
     "get_trainable_indices",
 ]
