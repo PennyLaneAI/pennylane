@@ -644,6 +644,10 @@ class QNode:
         # provide the jacobian options
         self.qtape.jacobian_options = self.diff_options
 
+        if self.diff_options["method"] == "backprop":
+            params = self.qtape.get_parameters(trainable_only=False)
+            self.qtape.trainable_params = qml.math.get_trainable_indices(params)
+
     def __call__(self, *args, **kwargs):
 
         # If shots specified in call but not in qfunc signature,
@@ -725,9 +729,18 @@ class QNode:
         Returns:
             array[float]: metric tensor
         """
-        return qml.metric_tensor(self, diag_approx=diag_approx, only_construct=only_construct)(
-            *args, **kwargs
+        warnings.warn(
+            "The QNode.metric_tensor method has been deprecated. "
+            "Please use the qml.metric_tensor transform instead.",
+            UserWarning,
         )
+
+        if only_construct:
+            self.construct(args, kwargs)
+            tape = qml.metric_tensor.expand_fn(self.qtape)
+            return qml.metric_tensor.construct(tape, diag_approx=diag_approx)
+
+        return qml.metric_tensor(self, diag_approx=diag_approx)(*args, **kwargs)
 
     def draw(
         self, charset="unicode", wire_order=None, show_all_wires=False
