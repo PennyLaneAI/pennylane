@@ -153,6 +153,7 @@ class ArgMap(dict):
     interpretation. However, when creating an ``ArgMap``, the keys are checked for these
     invalid entries via ``ArgMap.consistency_check``.
     """
+
     def __init__(self, data=None, single_arg=False, single_entry=False, like=None):
         if like is not None:
             if not isinstance(like, ArgMap):
@@ -224,7 +225,7 @@ class ArgMap(dict):
         like ``(0, ("a", "string", "tuple!"))``, and for consistency between the keys.
         Which keys are accepted as consistent depends on the properties ``single_arg``
         and ``single_entry``.
-        As an example, the keys ``{(0, (3, 2)), (2, 1)}`` would be valid for 
+        As an example, the keys ``{(0, (3, 2)), (2, 1)}`` would be valid for
         ``single_arg=False`` but not for ``single_arg=True``, as they explicitly specify
         the argument index, which does not make sense for a single argument.
         The keys ``{(None, (2, 3)), (None, (4, 1))}`` on the other hand only are valid
@@ -264,7 +265,7 @@ class ArgMap(dict):
         but the second does not:
 
         .. code-block:: python
-            
+
             argmap = ArgMap({(0, (3, 2)): "first value", (2, 1): "second value"})
             argmap.consistency_check(check_values=True) # Passes
             ArgMap({(0, (3, 2)): "a string", (2, 1): ["a", "list"]})
