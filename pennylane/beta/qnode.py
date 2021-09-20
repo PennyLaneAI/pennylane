@@ -221,7 +221,7 @@ class QNode:
         # internal data attributes
         self._tape = None
         self._qfunc_output = None
-        self._gradient_kwargs = gradient_kwargs
+        self._user_gradient_kwargs = gradient_kwargs
         self._original_device = device
         self.gradient_fn = None
         self.gradient_kwargs = None
@@ -264,7 +264,7 @@ class QNode:
         self.gradient_fn, self.gradient_kwargs, self.device = self.get_gradient_fn(
             self._original_device, self.interface, self.diff_method
         )
-        self.gradient_kwargs.update(self._gradient_kwargs or {})
+        self.gradient_kwargs.update(self._user_gradient_kwargs or {})
 
     def _update_original_device(self):
         # FIX: If the qnode swapped the device, increase the num_execution value on the original device.
