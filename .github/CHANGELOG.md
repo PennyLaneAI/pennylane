@@ -551,7 +551,7 @@
 * Fix bug with shot vectors and `Device` base class.
   [(#1666)](https://github.com/PennyLaneAI/pennylane/pull/1666)
 
-* Fix bug with norm and Jax tracers (jit) when using `QubiStateVector`.
+* Fixed a bug where `@jax.jit` would fail on a QNode that used `qml.QubitStateVector`.
   [(#1649)](https://github.com/PennyLaneAI/pennylane/pull/1649)
 
 * Fix bug in edge case of single-qubit `zyz_decomposition` when only
