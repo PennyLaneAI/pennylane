@@ -497,7 +497,7 @@
   [(#1568)](https://github.com/PennyLaneAI/pennylane/pull/1568)
 
 * QNodes now support `diff_method=None`. This works the same as `interface=None`. Such QNodes accept
-  floats, ints, lists and numpy arrays and return numpy output but can not be differentiated.
+  floats, ints, lists and NumPy arrays and return NumPy output but can not be differentiated.
   [(#1585)](https://github.com/PennyLaneAI/pennylane/pull/1585)
 
 * QNodes now include validation to warn users if a supplied keyword argument is
@@ -1115,7 +1115,7 @@ Wierichs, Vincent Wong.
   [(#1495)](https://github.com/PennyLaneAI/pennylane/pull/1495)
 
 * Fixed an example in the documentation's
-  [introduction to numpy gradients](https://pennylane.readthedocs.io/en/stable/introduction/interfaces/numpy.html), where
+  [introduction to NumPy gradients](https://pennylane.readthedocs.io/en/stable/introduction/interfaces/numpy.html), where
   the wires were a non-differentiable argument to the QNode.
   [(#1499)](https://github.com/PennyLaneAI/pennylane/pull/1499)
 
