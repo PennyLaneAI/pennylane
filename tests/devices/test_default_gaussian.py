@@ -753,6 +753,25 @@ class TestDefaultGaussianIntegration:
 
         assert np.mean(runs) == pytest.approx(p * np.sqrt(2 * hbar), abs=tol_stochastic)
 
+    def test_shot_list_warns(self):
+        """Test that specifying a list of shots is unsupported for
+        default.gaussian and emits a warning"""
+
+        shots = [10, 10, 10]
+        dev = qml.device("default.gaussian", wires=1, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit():
+            """Test quantum function"""
+            return qml.sample(qml.X(0))
+
+        with pytest.warns(
+            UserWarning,
+            match="Specifying a list of shots is only supported for QubitDevice based devices.",
+        ):
+            circuit()
+        assert dev.shots == sum(shots)
+
     @pytest.mark.parametrize("g, qop", set(DefaultGaussian._operation_map.items()))
     def test_supported_gates(self, g, qop, gaussian_dev):
         """Test that all supported gates work correctly"""

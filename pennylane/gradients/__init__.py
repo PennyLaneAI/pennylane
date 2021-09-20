@@ -31,7 +31,7 @@ These quantum gradient transforms can be used in two ways:
 
 - Transforming quantum circuits directly
 - Registering a quantum gradient strategy for use when performing autodifferentiation
-  with a :class:`~.QNode`.
+  with a :class:`QNode <pennylane.QNode>`.
 
 Overview
 --------
@@ -71,7 +71,7 @@ Registering autodifferentiation gradients
 -----------------------------------------
 
 All PennyLane QNodes are automatically differentiable, and can be included
-seamlessly within an autodiff pipeline. When creating a :class:`~.QNode`, the
+seamlessly within an autodiff pipeline. When creating a :class:`QNode <pennylane.QNode>`, the
 strategy for determining the optimal differentiation strategy is *automated*,
 and takes into account the circuit, device, autodiff framework, and metadata
 (such as whether a finite number of shots are used).
