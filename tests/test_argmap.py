@@ -390,13 +390,13 @@ class TestArgMap:
         raises an ``ArgMapError`` in the ``consistency_check`` if ``single_arg=True``."""
         argmap = ArgMap({1: "b"})
         argmap.single_arg = True
-        with pytest.raises(ArgMapError, match="Invalid key \(1, None\)"):
+        with pytest.raises(ArgMapError, match="Invalid key ParIndex\(arg_id=1, par_id=None\)"):
             argmap.consistency_check()
 
     def test_error_wrong_param_key(self):
         """Test that creating an ``ArgMap`` with an invalid param_idx
         raises an ``ArgMapError``."""
-        with pytest.raises(ArgMapError, match="Invalid key \(1, 'not a tuple'\)"):
+        with pytest.raises(ArgMapError, match="Invalid key ParIndex\(arg_id=1, par_id='not a tuple'\)"):
             argmap = ArgMap({(1, "not a tuple"): "b"})
         with pytest.raises(ArgMapError, match="Invalid entries in parameter index"):
             argmap = ArgMap({(1, (4, "not an int", 7)): "b"})

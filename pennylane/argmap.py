@@ -16,7 +16,9 @@ This module contains the :class:`ArgMap` class, which is a flexible-access conta
 """
 from functools import lru_cache
 from pennylane import numpy as np
+from collections import namedtuple
 
+ParIndex = namedtuple("ParIndex", ["arg_id", "par_id"], defaults=[None, None], module='pennylane.argmap')
 
 class ArgMapError(Exception):
     r"""Exception raised by an :class:`~.pennylane.argmap.ArgMap` instance
@@ -26,24 +28,26 @@ class ArgMapError(Exception):
 @lru_cache(maxsize=None)
 def _interpret_key(key, single_arg):
     r"""Interpret ArgMap key into argument and parameter index."""
+    if isinstance(key, ParIndex):
+        return key
     if key in (None, (None, None), ()):
-        return None, None
+        return ParIndex()
     if single_arg:
         # Only single argument, so only param_key is given
         if np.issubdtype(type(key), int):
-            return None, key
+            return ParIndex(par_id=key)
         if isinstance(key, tuple):
             sub_key = key[1] if key[0] is None else key
-            return None, sub_key
+            return ParIndex(par_id=sub_key)
     else:
         # Only arg_key given
         if np.issubdtype(type(key), int):
-            return key, None
+            return ParIndex(arg_id=key)
         # (arg_key, param_key) given
         if isinstance(key, tuple) and len(key) == 2:
             if key[1] == ():
-                key = (key[0], None)
-            return key
+                return ParIndex(arg_id=key[0])
+            return ParIndex(*key)
     raise ArgMapError(f"Could not interpret key {key}.")
 
 
@@ -62,8 +66,8 @@ class ArgMap(dict):
     a given ``QNode``. Each key takes the form ``tuple[int, tuple[int] or int]``.
     The first ``int`` in the tuple describes the argument index of the ``QNode``,
     while the second entry describes the index within that argument.
-    That is ``(2, (0, 3))`` describes the element in the ``0``th row and ``3``rd
-    column of the ``2``nd argument of a QNode. The second entry of the tuple may be an
+    That is ``(2, (0, 3))`` describes the element in the ``0``\ th row and ``3``\ rd
+    column of the ``2``\ nd argument of a QNode. The second entry of the tuple may be an
     ``int`` instead, indexing a one-dimensional array.
 
     If the argument index (first entry) of a key is ``None``, this indicates that there is
@@ -79,6 +83,7 @@ class ArgMap(dict):
     argument index or only a parameter index if this uniquely describes the parameter.
 
     **Example**
+
     Suppose we have the following ``QNode`` instance:
 
     .. code-block:: python
@@ -110,7 +115,8 @@ class ArgMap(dict):
     with ``par_index=None`` for the ``PauliX(0)`` generator. The latter may alternatively
     be accessed directly via ``generators[1]``.
 
-    **Interpretation table**
+    **Interpretation of keys**
+
     The key interpretation has some subtleties, in particular for keys that have a different
     meaning for activated and deactivated ``single_arg``. This is how the interpretation
     maps input keys:
@@ -220,6 +226,7 @@ class ArgMap(dict):
                 for consistency.
 
         **Details**
+
         The ArgMap is checked for invalid entries that do not contain valid indices in the keys
         like ``(0, ("a", "string", "tuple!"))``, and for consistency between the keys.
         Which keys are accepted as consistent depends on the properties ``single_arg``
@@ -233,7 +240,8 @@ class ArgMap(dict):
         For ``check_values=True``, the types of the values in the ArgMap are checked
         to be identical.
 
-        **Valid examples**
+        **Examples**
+
         Some examples that would pass the ``consistency_check`` are
 
         .. code-block:: python

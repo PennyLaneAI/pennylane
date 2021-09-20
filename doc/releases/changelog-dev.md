@@ -18,7 +18,7 @@
   reading or writing entries: if they are uniquely describing a parameter, incomplete
   keys may be passed to the ``ArgMap``.
 
-  For example, the usage as dictionary works as usual:
+  ``ArgMap`` is a dictionary subclass, and can be used as a dictionary:
 
   ```pycon
   >>> argmap = qml.ArgMap({
