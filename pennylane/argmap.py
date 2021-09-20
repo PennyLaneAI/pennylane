@@ -123,7 +123,6 @@ class ArgMap(dict):
          - default
          - ``single_arg=True``
          - ``single_entry=True``
-         - ``argnum=Sequence[int]``
        * - ``(int, tuple[int] or None)``
          - unchanged
          - *invalid*
