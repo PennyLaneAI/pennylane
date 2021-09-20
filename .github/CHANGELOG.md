@@ -42,7 +42,7 @@
   tensor([-9.1798e-17, -2.1454e-01, -1.0511e-16], dtype=torch.float64)
   ```
 
-<h4>Batch gradient transforms</h4>
+<h4>Create multi-circuit quantum transforms and custom gradient rules</h4>
 
 * Custom gradient transforms can now be created using the new
   `@qml.gradients.gradient_transform` decorator on a batch-tape transform.
