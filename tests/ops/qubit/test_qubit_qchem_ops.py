@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the available built-in discrete-variable quantum operations.
+Unit tests for the available qubit operations for quantum chemistry purposes.
 """
 import pytest
 import numpy as np

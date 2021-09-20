@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the available built-in discrete-variable quantum operations.
+Unit tests for the available built-in discrete-variable quantum operations. Only tests over multiple
+types of operations should exist in this file. Type-specific tests should go in the more specific file.
 """
 import pytest
 import pennylane as qml
