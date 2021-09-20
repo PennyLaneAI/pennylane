@@ -52,8 +52,8 @@ class QNode:
         Currently, this beta QNode does not support the following features:
 
         - Circuit decompositions
-        - Non-mutability via the `mutable` keyword argument
-        - Viewing specifications with `qml.specs`
+        - Non-mutability via the ``mutable`` keyword argument
+        - Viewing specifications with ``qml.specs``
 
         It is also not tested with the :mod:`~.qnn` module.
 
