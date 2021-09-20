@@ -178,7 +178,7 @@ class TestQubitUnitary:
 
     def test_qubit_unitary_decomposition_multiqubit_invalid(self):
         """Test that QubitUnitary is not decomposed for more than two qubits."""
-        U = qml.Toffoli(0.3, wires=[0, 1]).matrix
+        U = qml.Toffoli(wires=[0, 1, 2]).matrix
 
         with pytest.raises(NotImplementedError, match="only supported for single- and two-qubit"):
             qml.QubitUnitary.decomposition(U, wires=[0, 1])
