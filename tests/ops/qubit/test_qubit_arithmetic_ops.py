@@ -20,7 +20,6 @@ import numpy as np
 import pennylane as qml
 
 
-
 @pytest.mark.parametrize(
     "op_builder",
     [
@@ -35,6 +34,7 @@ def test_adjoint_with_decomposition(op_builder):
         qml.adjoint(op_builder)()
     for a, b in zip(decomposed_ops, reversed(adjoint_tape.operations)):
         np.testing.assert_allclose(a.matrix, np.conj(b.matrix).T)
+
 
 class TestArithmetic:
     """Tests the arithmetic operations."""
