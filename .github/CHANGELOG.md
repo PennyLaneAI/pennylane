@@ -449,11 +449,9 @@
   just those specified by the tape.
   [(#1559)](https://github.com/PennyLaneAI/pennylane/pull/1559)
 
-* An error is raised when no arguments are passed to a `qml.operation.Observable` to inform the user about specifying wires.
+* An error is now raised when no arguments are passed to an observable, to
+  inform that wires have not been supplied.
   [(#1547)](https://github.com/PennyLaneAI/pennylane/pull/1547)
-
-* The Hamiltonian class was moved to the `ops/qubit` folder from the `vqe` module, since it is now an observable.
-  [(#1534)](https://github.com/PennyLaneAI/pennylane/pull/1534)
 
 * The `group_observables` transform is now differentiable.
   [(#1483)](https://github.com/PennyLaneAI/pennylane/pull/1483)
@@ -502,8 +500,9 @@
   floats, ints, lists and numpy arrays and return numpy output but can not be differentiated.
   [(#1585)](https://github.com/PennyLaneAI/pennylane/pull/1585)
 
-* QNodes now include validation to warn users if a supplied keyword argument is not one of the
-  recognized arguments. [(#1591)](https://github.com/PennyLaneAI/pennylane/pull/1591)
+* QNodes now include validation to warn users if a supplied keyword argument is
+  not one of the recognized arguments.
+  [(#1591)](https://github.com/PennyLaneAI/pennylane/pull/1591)
 
 <h3>Breaking changes</h3>
 
