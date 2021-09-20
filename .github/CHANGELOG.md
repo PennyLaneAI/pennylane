@@ -492,7 +492,7 @@
   an owner of the pruned tensor and its constituent observables, but leaves the
   original tensor in the queue without an owner.
 
-* The QFT operation is moved to template
+* The `QFT` operation has been moved, and is now accessible via `pennylane.templates.QFT`.
   [(#1548)](https://github.com/PennyLaneAI/pennylane/pull/1548)
 
 * The `qml.ResetError` is now supported for `default.mixed` device.
