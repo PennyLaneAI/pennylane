@@ -224,7 +224,7 @@ class TestValidation:
         assert res == (qml.gradients.finite_diff, {}, dev)
 
     def test_diff_method(self, mocker):
-        """Test that a user-supplied diff-method correctly returns the right
+        """Test that a user-supplied diff method correctly returns the right
         diff method."""
         dev = qml.device("default.qubit", wires=1)
 

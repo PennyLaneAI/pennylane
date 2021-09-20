@@ -40,7 +40,7 @@ class QNode:
           order derivative of a QNode will be computed, the ``max_diff`` argument should be set.
           By default, this is set to 1 (first-order derivatives only).
 
-        - Internally, if multiple circuits are generated for execution simultaneasouly, they
+        - Internally, if multiple circuits are generated for execution simultaneously, they
           will be packaged into a single job for execution on the device. This can lead to
           significant performance improvement when executing the QNode on remote
           quantum hardware.
@@ -52,7 +52,7 @@ class QNode:
         Currently, this beta QNode does not support the following features:
 
         - Circuit decompositions
-        - Non-mutabability via the `mutable` keyword argument
+        - Non-mutability via the `mutable` keyword argument
         - Viewing specifications with `qml.specs`
 
         It is also not tested with the :mod:`~.qnn` module.
