@@ -86,9 +86,9 @@ class ArgMap(dict):
         dev = qml.device('default.qubit', wires=2)
         @qml.qnode(dev)
         def circuit(arg1, arg2, arg3):
-            qml.Rot(arg1, wires=0)
+            qml.Rot(*arg1, wires=0)
             qml.RX(arg2, wires=0)
-            qml.Rot(arg3, wires=1)
+            qml.Rot(*arg3, wires=1)
             return qml.expval(qml.PauliY(0) @ qml.PauliY(1))
 
     Then we might want to set up an ``ArgMap`` to store the generators of the rotations in

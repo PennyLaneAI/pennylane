@@ -15,7 +15,7 @@
   tuple may be an ``int`` instead, indexing a one-dimensional array.
 
   The main feature of ``ArgMap`` is its interpretation of keys handed to it when
-  reading or writing entries: If they are uniquely describing a parameter, incomplete
+  reading or writing entries: if they are uniquely describing a parameter, incomplete
   keys may be passed to the ``ArgMap``.
 
   For example, the usage as dictionary works as usual:
