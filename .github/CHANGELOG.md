@@ -492,9 +492,6 @@
   an owner of the pruned tensor and its constituent observables, but leaves the
   original tensor in the queue without an owner.
 
-* The `QFT` operation has been moved, and is now accessible via `pennylane.templates.QFT`.
-  [(#1548)](https://github.com/PennyLaneAI/pennylane/pull/1548)
-
 * The `qml.ResetError` is now supported for `default.mixed` device.
   [(#1541)](https://github.com/PennyLaneAI/pennylane/pull/1541)
 
@@ -509,6 +506,10 @@
   recognized arguments. [(#1591)](https://github.com/PennyLaneAI/pennylane/pull/1591)
 
 <h3>Breaking changes</h3>
+
+* The `QFT` operation has been moved, and is now accessible via
+  `pennylane.templates.QFT`.
+  [(#1548)](https://github.com/PennyLaneAI/pennylane/pull/1548)
 
 * Specifying `shots=None` with `qml.sample` was previously deprecated.
   From this release onwards, setting `shots=None` when sampling will
