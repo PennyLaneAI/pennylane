@@ -335,7 +335,46 @@
 
   res = qml.grad(cost_fn)(params)
   ```
+  
+  <h4>PennyLane now comes packaged with <code>lightning.qubit</code></h4>
 
+* The C++-based [lightning.qubit](https://pennylane-lightning.readthedocs.io/en/stable/) device
+  is now included with installations of PennyLane. The `lightning.qubit` device is a fast
+  state-vector simulator equipped with the efficient
+  [adjoint method](https://arxiv.org/abs/2009.02823) for differentiating quantum circuits,
+  check out the plugin
+  [release notes](https://github.com/PennyLaneAI/pennylane-lightning/blob/v0.18.0/.github/CHANGELOG.md#new-features-since-last-release) for more details! The device can be accessed in the following way:
+  
+  ```python
+  import pennylane as qml
+
+  wires = 3
+  layers = 2
+  dev = qml.device("lightning.qubit", wires=wires)
+
+  @qml.qnode(dev, diff_method="adjoint")
+  def circuit(weights):
+      qml.templates.StronglyEntanglingLayers(weights, wires=range(wires))
+      return qml.expval(qml.PauliZ(0))
+
+  weights = qml.init.strong_ent_layers_normal(layers, wires, seed=1967)
+  ```
+  
+  Evaluating circuits and their gradients on the device can be achieved using the standard approach:
+  
+  ```pycon
+  >>> print(f"Circuit evaluated: {circuit(weights)}")
+  Circuit evaluated: 0.9801286266677633
+  >>> print(f"Circuit gradient:\n{qml.grad(circuit)(weights)}")
+  Circuit gradient:
+  [[[-9.35301749e-17 -1.63051504e-01 -4.14810501e-04]
+    [-7.88816484e-17 -1.50136528e-04 -1.77922957e-04]
+    [-5.20670796e-17 -3.92874550e-02  8.14523075e-05]]
+
+   [[-1.14472273e-04  3.85963953e-02 -9.39190132e-18]
+    [-5.76791765e-05 -9.78478343e-02  0.00000000e+00]
+    [ 0.00000000e+00  0.00000000e+00  0.00000000e+00]]] 
+  ```
 
 <h4>New operation</h4>
 
@@ -507,7 +546,10 @@
 
 <h3>Bug fixes</h3>
 
-* Fixed a bug where `@jax.jit` would fail on a QNode that used `qml.QubiStateVector`.
+* Fix bug with shot vectors and `Device` base class.
+  [(#1666)](https://github.com/PennyLaneAI/pennylane/pull/1666)
+
+* Fix bug with norm and Jax tracers (jit) when using `QubiStateVector`.
   [(#1649)](https://github.com/PennyLaneAI/pennylane/pull/1649)
 
 * Fix bug in edge case of single-qubit `zyz_decomposition` when only
