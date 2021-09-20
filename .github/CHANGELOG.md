@@ -337,14 +337,11 @@
   ```
 
 
-<h4>New operation</h4>
+<h3>Improvements</h3>
 
 * Added a new `SISWAP` operation with support to the
   `default_qubit` device.
   [#1563](https://github.com/PennyLaneAI/pennylane/pull/1563)
-
-
-<h3>Improvements</h3>
 
 * The `frobenius_inner_product` function has been moved to the `qml.math`
   module, and is now differentiable using all autodiff frameworks.
