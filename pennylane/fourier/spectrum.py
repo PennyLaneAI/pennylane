@@ -82,9 +82,9 @@ def _join_spectra(spec1, spec2):
     Returns:
         set[float]: joined spectrum
     """
-    if spec1 == {0}:
+    if spec1 in ({0}, {}):
         return spec2
-    if spec2 == {0}:
+    if spec2 in ({0}, {}):
         return spec1
 
     sums = {s1 + s2 for s1 in spec1 for s2 in spec2}
@@ -93,7 +93,7 @@ def _join_spectra(spec1, spec2):
     return sums.union(diffs)
 
 
-def _get_and_validate_classical_jacobians(qnode, argnum, args, kwargs):
+def _get_and_validate_classical_jacobian(qnode, argnum, args, kwargs):
     r"""Check classical preprocessing of a QNode to be linear and return its Jacobian.
 
     Args:
@@ -119,16 +119,20 @@ def _get_and_validate_classical_jacobians(qnode, argnum, args, kwargs):
     else:
         like_module = np
     try:
-        # Evaluate the classical Jacobian at multiple (shape-adapted) input args.
+        # Evaluate the classical Jacobian at multiple input args.
         zeros_args = (like_module.zeros_like(arg) for arg in args)
         ones_args = (like_module.ones_like(arg) for arg in args)
         frac_args = (like_module.ones_like(arg) * 0.315 for arg in args)
+        if qnode.interface=="tf":
+            zeros_args = (like_module.Variable(z_arg) if isinstance(arg, like_module.Variable) else z_arg for z_arg, arg in zip(zeros_args, args))
+            ones_args = (like_module.Variable(o_arg) if isinstance(arg, like_module.Variable) else o_arg for o_arg, arg in zip(ones_args, args))
+            frac_args = (like_module.Variable(f_arg) if isinstance(arg, like_module.Variable) else f_arg for f_arg, arg in zip(frac_args, args))
         jacs = [
             qml.transforms.classical_jacobian(qnode, argnum=argnum)(*_args, **kwargs)
             for _args in [zeros_args, ones_args, frac_args, args]
         ]
     except Exception as e:
-        raise ValueError("Unable to compute Jacobian of the classical preprocessing.") from e
+        raise ValueError("Could not compute Jacobian of the classical preprocessing.") from e
 
     # Check that the Jacobian is constant
     if not all(
@@ -368,7 +372,7 @@ def spectrum(qnode, argnum=None, encoding_gates=None, decimals=5):
         if argnum is None:
             argnum = list(range(len(args)))
         # Compute classical Jacobian and assert preprocessing is linear
-        class_jacs = _get_and_validate_classical_jacobians(qnode, argnum, args, kwargs)
+        class_jacs = _get_and_validate_classical_jacobian(qnode, argnum, args, kwargs)
         # A map between Jacobians (contiguous) and arg indices (may be discontiguous)
         arg_idx_map = {i: arg_idx for i, arg_idx in enumerate(argnum)}
 

@@ -192,6 +192,7 @@ def classical_jacobian(qnode, argnum=None):
                 sub_args = args
             else:
                 sub_args = tuple((args[i] for i in argnum))
+            print(sub_args)
 
             with tf.GradientTape() as tape:
                 gate_params = classical_preprocessing(*args, **kwargs)
