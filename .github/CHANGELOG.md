@@ -400,7 +400,7 @@
   ```python
   from pennylane.circuit_drawer import MPLDrawer
 
-  drawer = MPLDrawer(n_wires=3, n_layers=5)
+  drawer = MPLDrawer(n_wires=3, n_layers=3)
 
   drawer.label([r"$|\Psi\rangle$", r"$|\theta\rangle$", "aux"])
 
@@ -408,8 +408,7 @@
   drawer.box_gate(layer=1, wires=[0, 1], text="U(θ)")
 
   drawer.CNOT(layer=2, wires=[1, 2])
-
-  drawer.measure(layer=5, wires=0)
+  drawer.measure(layer=3, wires=2)
 
   drawer.fig.suptitle('My Circuit', fontsize='xx-large')
   ```
