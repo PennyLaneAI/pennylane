@@ -339,7 +339,7 @@
 
 <h4>New operation</h4>
 
-* Added a new `SISWAP` operation and a `SQISW` alias with support to the
+* Added a new `SISWAP` operation with support to the
   `default_qubit` device.
   [#1563](https://github.com/PennyLaneAI/pennylane/pull/1563)
 
