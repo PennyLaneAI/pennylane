@@ -8,7 +8,7 @@
   backpropogation with PyTorch.
   [(#1360)](https://github.com/PennyLaneAI/pennylane/pull/1360)
   [(#1598)](https://github.com/PennyLaneAI/pennylane/pull/1598)
-  
+
   As a result, `default.qubit` can now use end-to-end classical backpropagation as
   a means to compute gradients. End-to-end backpropagation can be faster than
   the parameter-shift rule for computing quantum gradients when the number of
@@ -335,18 +335,18 @@
 
   res = qml.grad(cost_fn)(params)
   ```
-  
+
   <h4>PennyLane now comes packaged with <code>lightning.qubit</code></h4>
 
 * The C++-based [lightning.qubit](https://pennylane-lightning.readthedocs.io/en/stable/) device
   is now included with installations of PennyLane.
   [(#1663)](https://github.com/PennyLaneAI/pennylane/pull/1663)
-  
+
   The `lightning.qubit` device is a fast state-vector simulator equipped with the efficient
   [adjoint method](https://arxiv.org/abs/2009.02823) for differentiating quantum circuits,
   check out the plugin
   [release notes](https://github.com/PennyLaneAI/pennylane-lightning/blob/v0.18.0/.github/CHANGELOG.md#new-features-since-last-release) for more details! The device can be accessed in the following way:
-  
+
   ```python
   import pennylane as qml
 
@@ -361,9 +361,9 @@
 
   weights = qml.init.strong_ent_layers_normal(layers, wires, seed=1967)
   ```
-  
+
   Evaluating circuits and their gradients on the device can be achieved using the standard approach:
-  
+
   ```pycon
   >>> print(f"Circuit evaluated: {circuit(weights)}")
   Circuit evaluated: 0.9801286266677633
@@ -375,7 +375,7 @@
 
    [[-1.14472273e-04  3.85963953e-02 -9.39190132e-18]
     [-5.76791765e-05 -9.78478343e-02  0.00000000e+00]
-    [ 0.00000000e+00  0.00000000e+00  0.00000000e+00]]] 
+    [ 0.00000000e+00  0.00000000e+00  0.00000000e+00]]]
   ```
 
 <h3>Improvements</h3>
@@ -400,30 +400,21 @@
   ```python
   from pennylane.circuit_drawer import MPLDrawer
 
-  drawer = MPLDrawer(n_wires=5, n_layers=5)
+  drawer = MPLDrawer(n_wires=3, n_layers=5)
 
-  drawer.label(["0", "a", r"$|\Psi\rangle$", r"$|\theta\rangle$", "aux"])
+  drawer.label([r"$|\Psi\rangle$", r"$|\theta\rangle$", "aux"])
 
-  drawer.box_gate(layer=0, wires=[0, 1, 2, 3, 4], text="Entangling Layers", text_options={'rotation': 'vertical'})
+  drawer.box_gate(layer=0, wires=[0, 1, 2], text="Entangling Layers", text_options={'rotation': 'vertical'})
   drawer.box_gate(layer=1, wires=[0, 1], text="U(θ)")
 
-  drawer.box_gate(layer=1, wires=4, text="Z")
-
-  drawer.SWAP(layer=1, wires=(2, 3))
-  drawer.CNOT(layer=2, wires=(0, 2))
-
-  drawer.ctrl(layer=3, wires=[1, 3], control_values = [True, False])
-  drawer.box_gate(layer=3, wires=2, text="H", box_options={'zorder': 4},
-    text_options={'zorder': 5})
-
-  drawer.ctrl(layer=4, wires=[1, 2])
+  drawer.CNOT(layer=2, wires=[1, 2])
 
   drawer.measure(layer=5, wires=0)
 
   drawer.fig.suptitle('My Circuit', fontsize='xx-large')
   ```
 
-  <img src="https://pennylane.readthedocs.io/en/latest/_static/drawer/example_basic.png" width=70%/>
+  <img src="https://pennylane.readthedocs.io/en/latest/_static/drawer/example_release_notes.png" width=70%/>
 
 * The slowest tests, more than 1.5 seconds, now have the pytest mark `slow`, and can be
   selected or deselected during local execution of tests.
