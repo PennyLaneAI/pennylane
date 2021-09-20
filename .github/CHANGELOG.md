@@ -42,6 +42,133 @@
   tensor([-9.1798e-17, -2.1454e-01, -1.0511e-16], dtype=torch.float64)
   ```
 
+<h4>Improved quantum optimization methods</h4>
+
+* The `RotosolveOptimizer` now can tackle general parametrized circuits, and is no longer
+  restricted to single-qubit Pauli rotations.
+  [(#1489)](https://github.com/PennyLaneAI/pennylane/pull/1489)
+
+  This includes:
+
+  - layers of gates controlled by the same parameter,
+  - controlled variants of parametrized gates, and
+  - Hamiltonian time evolution.
+
+  Note that the eigenvalue spectrum of the gate generator needs to be known to
+  use `RotosolveOptimizer` for a general gate, and it
+  is required to produce equidistant frequencies.
+  For details see [Vidal and Theis, 2018](https://arxiv.org/abs/1812.06323)
+  and [Wierichs, Izaac, Wang, Lin 2021](https://arxiv.org/abs/2107.12390).
+
+  Consider a circuit with a mixture of Pauli rotation gates, controlled Pauli rotations, and
+  single-parameter layers of Pauli rotations:
+
+  ```python
+  dev = qml.device('default.qubit', wires=3, shots=None)
+
+  @qml.qnode(dev)
+  def cost_function(rot_param, layer_par, crot_param):
+      for i, par in enumerate(rot_param):
+          qml.RX(par, wires=i)
+      for w in dev.wires:
+          qml.RX(layer_par, wires=w)
+      for i, par in enumerate(crot_param):
+          qml.CRY(par, wires=[i, (i+1) % 3])
+
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+  ```
+
+  This cost function has one frequency for each of the first `RX` rotation angles,
+  three frequencies for the layer of `RX` gates that depend on `layer_par`, and two
+  frequencies for each of the `CRY` gate parameters. Rotosolve can then be used to minimize
+  the `cost_function`:
+
+  ```python
+  # Initial parameters
+  init_param = [
+      np.array([0.3, 0.2, 0.67], requires_grad=True),
+      np.array(1.1, requires_grad=True),
+      np.array([-0.2, 0.1, -2.5], requires_grad=True),
+  ]
+  # Numbers of frequencies per parameter
+  num_freqs = [[1, 1, 1], 3, [2, 2, 2]]
+
+  opt = qml.RotosolveOptimizer()
+  param = init_param.copy()
+  ```
+
+  In addition, the optimization technique for the Rotosolve substeps can be chosen via the
+  `optimizer` and `optimizer_kwargs` keyword arguments and the minimized cost of the
+  intermediate univariate reconstructions can be read out via `full_output`, including the
+  cost _after_ the full Rotosolve step:
+
+  ```python
+  for step in range(3):
+      param, cost, sub_cost = opt.step_and_cost(
+          cost_function,
+          *param,
+          num_freqs=num_freqs,
+          full_output=True,
+          optimizer="brute",
+      )
+      print(f"Cost before step: {cost}")
+      print(f"Minimization substeps: {np.round(sub_cost, 6)}")
+  ```
+  ``` pycon
+  Cost before step: 0.042008210392535605
+  Minimization substeps: [-0.230905 -0.863336 -0.980072 -0.980072 -1.       -1.       -1.      ]
+  Cost before step: -0.999999999068121
+  Minimization substeps: [-1. -1. -1. -1. -1. -1. -1.]
+  Cost before step: -1.0
+  Minimization substeps: [-1. -1. -1. -1. -1. -1. -1.]
+  ```
+
+  For usage details please consider the [docstring of the optimizer](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.RotosolveOptimizer.html?highlight=rotosolveoptimizer#pennylane.RotosolveOptimizer).
+
+<h4>Faster, trainable, Hamiltonian simulations</h4>
+
+* The Hamiltonian can now store grouping information, which can be accessed by a device to
+  speed up computations of the expectation value of a Hamiltonian.
+  [(#1515)](https://github.com/PennyLaneAI/pennylane/pull/1515)
+
+  ```python
+  obs = [qml.PauliX(0), qml.PauliX(1), qml.PauliZ(0)]
+  coeffs = np.array([1., 2., 3.])
+  H = qml.Hamiltonian(coeffs, obs, grouping_type='qwc')
+  ```
+
+  Initialization with a ``grouping_type`` other than ``None`` stores the indices
+  required to make groups of commuting observables and their coefficients.
+
+  ``` pycon
+  >>> H.grouping_indices
+  [[0, 1], [2]]
+  ```
+
+* Hamiltonians are now trainable with respect to their coefficients.
+  [(#1483)](https://github.com/PennyLaneAI/pennylane/pull/1483)
+
+  ``` python
+  from pennylane import numpy as np
+
+  dev = qml.device("default.qubit", wires=2)
+  @qml.qnode(dev)
+  def circuit(coeffs, param):
+      qml.RX(param, wires=0)
+      qml.RY(param, wires=0)
+      return qml.expval(
+          qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=True)
+      )
+
+  coeffs = np.array([-0.05, 0.17])
+  param = np.array(1.7)
+  grad_fn = qml.grad(circuit)
+  ```
+  ``` pycon
+  >>> grad_fn(coeffs, param)
+  (array([-0.12777055,  0.0166009 ]), array(0.0917819))
+  ```
+
 <h4>Create multi-circuit quantum transforms and custom gradient rules</h4>
 
 * Custom gradient transforms can now be created using the new
@@ -209,132 +336,6 @@
   res = qml.grad(cost_fn)(params)
   ```
 
-<h4>Improved quantum optimization methods</h4>
-
-* The `RotosolveOptimizer` now can tackle general parametrized circuits, and is no longer
-  restricted to single-qubit Pauli rotations.
-  [(#1489)](https://github.com/PennyLaneAI/pennylane/pull/1489)
-
-  This includes:
-
-  - layers of gates controlled by the same parameter,
-  - controlled variants of parametrized gates, and
-  - Hamiltonian time evolution.
-
-  Note that the eigenvalue spectrum of the gate generator needs to be known to
-  use `RotosolveOptimizer` for a general gate, and it
-  is required to produce equidistant frequencies.
-  For details see [Vidal and Theis, 2018](https://arxiv.org/abs/1812.06323)
-  and [Wierichs, Izaac, Wang, Lin 2021](https://arxiv.org/abs/2107.12390).
-
-  Consider a circuit with a mixture of Pauli rotation gates, controlled Pauli rotations, and
-  single-parameter layers of Pauli rotations:
-
-  ```python
-  dev = qml.device('default.qubit', wires=3, shots=None)
-
-  @qml.qnode(dev)
-  def cost_function(rot_param, layer_par, crot_param):
-      for i, par in enumerate(rot_param):
-          qml.RX(par, wires=i)
-      for w in dev.wires:
-          qml.RX(layer_par, wires=w)
-      for i, par in enumerate(crot_param):
-          qml.CRY(par, wires=[i, (i+1) % 3])
-
-      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
-  ```
-
-  This cost function has one frequency for each of the first `RX` rotation angles,
-  three frequencies for the layer of `RX` gates that depend on `layer_par`, and two
-  frequencies for each of the `CRY` gate parameters. Rotosolve can then be used to minimize
-  the `cost_function`:
-
-  ```python
-  # Initial parameters
-  init_param = [
-      np.array([0.3, 0.2, 0.67], requires_grad=True),
-      np.array(1.1, requires_grad=True),
-      np.array([-0.2, 0.1, -2.5], requires_grad=True),
-  ]
-  # Numbers of frequencies per parameter
-  num_freqs = [[1, 1, 1], 3, [2, 2, 2]]
-
-  opt = qml.RotosolveOptimizer()
-  param = init_param.copy()
-  ```
-
-  In addition, the optimization technique for the Rotosolve substeps can be chosen via the
-  `optimizer` and `optimizer_kwargs` keyword arguments and the minimized cost of the
-  intermediate univariate reconstructions can be read out via `full_output`, including the
-  cost _after_ the full Rotosolve step:
-
-  ```python
-  for step in range(3):
-      param, cost, sub_cost = opt.step_and_cost(
-          cost_function,
-          *param,
-          num_freqs=num_freqs,
-          full_output=True,
-          optimizer="brute",
-      )
-      print(f"Cost before step: {cost}")
-      print(f"Minimization substeps: {np.round(sub_cost, 6)}")
-  ```
-  ``` pycon
-  Cost before step: 0.042008210392535605
-  Minimization substeps: [-0.230905 -0.863336 -0.980072 -0.980072 -1.       -1.       -1.      ]
-  Cost before step: -0.999999999068121
-  Minimization substeps: [-1. -1. -1. -1. -1. -1. -1.]
-  Cost before step: -1.0
-  Minimization substeps: [-1. -1. -1. -1. -1. -1. -1.]
-  ```
-
-  For usage details please consider the [docstring of the optimizer](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.RotosolveOptimizer.html?highlight=rotosolveoptimizer#pennylane.RotosolveOptimizer).
-
-<h4>Faster, trainable, Hamiltonian simulations</h4>
-
-* The Hamiltonian can now store grouping information, which can be accessed by a device to
-  speed up computations of the expectation value of a Hamiltonian.
-  [(#1515)](https://github.com/PennyLaneAI/pennylane/pull/1515)
-
-  ```python
-  obs = [qml.PauliX(0), qml.PauliX(1), qml.PauliZ(0)]
-  coeffs = np.array([1., 2., 3.])
-  H = qml.Hamiltonian(coeffs, obs, grouping_type='qwc')
-  ```
-
-  Initialization with a ``grouping_type`` other than ``None`` stores the indices
-  required to make groups of commuting observables and their coefficients.
-
-  ``` pycon
-  >>> H.grouping_indices
-  [[0, 1], [2]]
-  ```
-
-* Hamiltonians are now trainable with respect to their coefficients.
-  [(#1483)](https://github.com/PennyLaneAI/pennylane/pull/1483)
-
-  ``` python
-  from pennylane import numpy as np
-
-  dev = qml.device("default.qubit", wires=2)
-  @qml.qnode(dev)
-  def circuit(coeffs, param):
-      qml.RX(param, wires=0)
-      qml.RY(param, wires=0)
-      return qml.expval(
-          qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=True)
-      )
-
-  coeffs = np.array([-0.05, 0.17])
-  param = np.array(1.7)
-  grad_fn = qml.grad(circuit)
-  ```
-  ``` pycon
-  >>> grad_fn(coeffs, param)
-  (array([-0.12777055,  0.0166009 ]), array(0.0917819))
-  ```
 
 <h4>New operation</h4>
 
