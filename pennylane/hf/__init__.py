@@ -18,11 +18,15 @@ from .basis_data import *
 from .basis_set import *
 from .integrals import (
     contracted_norm,
+    electron_repulsion,
     expansion,
     gaussian_kinetic,
     gaussian_overlap,
+    generate_attraction,
     generate_kinetic,
     generate_overlap,
+    generate_repulsion,
+    nuclear_attraction,
     primitive_norm,
 )
 from .molecule import *
