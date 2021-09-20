@@ -598,8 +598,8 @@ class QNode:
             self.diff_options["method"] == "best"
             and "passthru_interface" in self.device.capabilities()
         )
-        not_backprop_diff = not explicit_backprop and not best_and_passthru
-        if not_backprop_diff and self.interface is not None:
+        backprop_diff = explicit_backprop or best_and_passthru
+        if not backprop_diff and self.interface is not None:
             # pylint: disable=protected-access
             if state_returns and self.interface in ["torch", "tf"]:
                 # The state is complex and we need to indicate this in the to_torch or to_tf
