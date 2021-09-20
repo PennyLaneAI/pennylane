@@ -14,8 +14,8 @@
 """Convenient utility functions for testing optimization transforms."""
 
 import pennylane as qml
-from pennylane import numpy as np
-from gate_data import I, SWAP
+
+from gate_data import I
 
 
 def compute_matrix_from_ops_one_qubit(ops):
@@ -31,39 +31,23 @@ def compute_matrix_from_ops_one_qubit(ops):
 def compute_matrix_from_ops_two_qubit(ops, wire_order):
     """Given a list of two-qubit operations, construct its matrix representation."""
 
-    mat = np.eye(4)
-
-    wire_order = qml.wires.Wires(wire_order)
+    mat = qml.math.kron(I, I)
 
     for op in ops:
-        op_wires = qml.wires.Wires(op.wires)
-
-        if len(op_wires) == 1:
-            # These first two cases are to cover tensorflow quirks
-            if op.name == "RZ":
-                op_mat = qml.RZ(*qml.math.unwrap(op.parameters), wires=0).matrix
-            elif op.name == "Rot":
-                op_mat = qml.Rot(*qml.math.unwrap(op.parameters), wires=0).matrix
+        if len(op.wires) == 1:
+            if op.wires == qml.wires.Wires(wire_order[0]):
+                mat = qml.math.dot(qml.math.kron(op.matrix, I), mat)
             else:
-                op_mat = qml.math.unwrap(op.matrix)
-
-            if op_wires[0] == wire_order[0]:
-                tensor_prod = np.kron(op_mat, I)
-            else:
-                tensor_prod = np.kron(I, op_mat)
-
-            mat = np.dot(tensor_prod, mat)
-
+                mat = qml.math.dot(qml.math.kron(I, op.matrix), mat)
         else:
-            if op_wires == wire_order:
-                mat = np.dot(op.matrix, mat)
+            if op.wires == qml.wires.Wires(wire_order):
+                mat = qml.math.dot(op.matrix, mat)
             else:
-                mat = np.linalg.multi_dot([SWAP, op.matrix, SWAP, mat])
-
+                mat = qml.math.dot(qml.SWAP(wires=[0, 1]).matrix, qml.math.dot(op.matrix, mat))
     return mat
 
 
-def check_matrix_equivalence(matrix_expected, matrix_obtained, atol=1e-8):
+def check_matrix_equivalence(matrix_expected, matrix_obtained):
     """Takes two matrices and checks if multiplying one by the conjugate
     transpose of the other gives the identity."""
 
