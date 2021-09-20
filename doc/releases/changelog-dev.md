@@ -10,7 +10,7 @@
   It acts as a dictionary with a restricted type of keys in the context of a given ``QNode``.
   Each key takes the form ``tuple[int, tuple[int] or int]``. The first ``int`` in the
   tuple describes the argument index of the ``QNode``, while the second entry describes the
-  index within that argument. That is ``(2, (0, 3))`` describes the parameter in the
+  index within that argument. That is ``(2, (0, 3))`` describes the element in the
   ``0``th row and ``3``rd column of the ``2``nd argument of a QNode. The second entry of the
   tuple may be an ``int`` instead, indexing a one-dimensional array.
 
@@ -22,13 +22,13 @@
 
   ```pycon
   >>> argmap = qml.ArgMap({
-  ...     (0, 0): "First parameter in first argument",
-  ...     (0, 1): "Second parameter in first argument",
+  ...     (0, 0): "First element in first argument",
+  ...     (0, 1): "Second element in first argument",
   ...     (1, None): "Scalar second argument",
-  ...     (2, (0, 4, 2)): "Selected parameter in 3D array in third argument",
+  ...     (2, (0, 4, 2)): "Selected element in 3D array in third argument",
   ... })
   >>> argmap[(0, 0)]
-  'First parameter in first argument'
+  'First element in first argument'
   ```
 
   However, as the second argument is a scalar, it is sufficient to pass the corresponding single
@@ -44,13 +44,13 @@
   ```pycon
   >>> argmap = qml.ArgMap(
   ...     {
-  ...          (None, 0): "First parameter in only argument",
-  ...          (None, 1): "Second parameter in only argument",
+  ...          (None, 0): "First element in only argument",
+  ...          (None, 1): "Second element in only argument",
   ...     },
   ...     single_arg=True
   ... )
   >>> argmap[0]
-  'First parameter in only argument'
+  'First element in only argument'
   ```
   For more usage details, please see the
   [ArgMap docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.argmap.html).

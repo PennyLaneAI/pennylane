@@ -170,7 +170,7 @@ class TestArgMap:
         treated as scalars."""
         argmap = ArgMap(data)
         # keys should take the form (arg_key, None)
-        assert all(((key[0] is not None and key[1] is None) for key in argmap.keys()))
+        assert all((key[0] is not None and key[1] is None) for key in argmap.keys())
         # Values should not be altered
         assert set(argmap.values()) == set(data.values())
 
@@ -189,7 +189,7 @@ class TestArgMap:
         data = {(0, (0,)): "a", (0, (1,)): 3, (3, (2, 4, 1)): (1, 2)}
         argmap = ArgMap(data)
         # keys should take the form (None, param_key)
-        assert all(((key[0] is not None and key[1] is not None) for key in argmap.keys()))
+        assert all((key[0] is not None and key[1] is not None) for key in argmap.keys())
         # Values should not be altered
         assert set(argmap.values()) == set(data.values())
 
@@ -232,9 +232,9 @@ class TestArgMap:
         assert dict(argmap) == {(None, (i, i + 1)): str(i) for i in range(100)}
 
     @pytest.mark.parametrize("data", data_objects)
-    def test_creation_from_object_with_single_object(self, data):
-        r"""Test creation from a single object, using ``single_object``."""
-        argmap = ArgMap(data, single_object=True)
+    def test_creation_from_object_with_single_entry(self, data):
+        r"""Test creation from a single object, using ``single_entry``."""
+        argmap = ArgMap(data, single_entry=True)
         if data is None:
             data = {}
         # the only element of the argmap can be retrieved by
@@ -291,10 +291,10 @@ class TestArgMap:
         argmap = ArgMap(data)
         argmap.consistency_check(check_values=True)
 
-    def test_consistency_check_True_values_single_object(self):
-        """Test that `consistency_check` is successful for ``single_object=True``
+    def test_consistency_check_True_values_single_entry(self):
+        """Test that `consistency_check` is successful for ``single_entry=True``
         if it should, with usage of ``check_values=True``."""
-        argmap = ArgMap([(None, "single item")], single_object=True)
+        argmap = ArgMap([(None, "single item")], single_entry=True)
         argmap.consistency_check(check_values=True)
 
     @pytest.mark.parametrize("data", data_invalid_arg_index)
@@ -315,9 +315,9 @@ class TestArgMap:
         with pytest.raises(ArgMapError, match="Inconsistent keys .* only argument index\."):
             argmap = ArgMap(data, single_arg=True)
 
-    def test_consistency_check_None_key_wo_single_object(self):
+    def test_consistency_check_None_key_wo_single_entry(self):
         """Test that `consistency_check` fails for ``None`` as key in an ArgMap
-        with ``single_object=False``."""
+        with ``single_entry=False``."""
         with pytest.raises(ArgMapError, match="The key \(None, None\) indicates"):
             argmap = ArgMap([(None, "single object")])
 
@@ -365,24 +365,24 @@ class TestArgMap:
     @pytest.mark.parametrize("data", data_garbage)
     def test_error_garbage_data(self, data):
         """Test that instantiating an ``ArgMap`` with unreasonable objects as data
-        raises an ``ArgMapError`` if ``single_object=False``."""
+        raises an ``ArgMapError`` if ``single_entry=False``."""
         with pytest.raises(ArgMapError):
             ArgMap(data)
 
-    def test_error_single_object_multiple(self):
+    def test_error_single_entry_multiple(self):
         """Test that instantiating an ``ArgMap`` and adding items raises an
-        ``ArgMapError`` in the ``consistency_check`` if ``single_object=True``."""
-        argmap = ArgMap([(None, "a")], single_object=True)
+        ``ArgMapError`` in the ``consistency_check`` if ``single_entry=True``."""
+        argmap = ArgMap([(None, "a")], single_entry=True)
         argmap.__setitem__(1, "b")
-        with pytest.raises(ArgMapError, match="ArgMap.single_object=True but len"):
+        with pytest.raises(ArgMapError, match="ArgMap.single_entry=True but len"):
             argmap.consistency_check()
 
-    def test_error_single_object_wrong_key(self):
+    def test_error_single_entry_wrong_key(self):
         """Test that accessing an item in an ``ArgMap`` with the wrong key
-        raises an ``ArgMapError`` in the ``consistency_check`` if ``single_object=True``."""
+        raises an ``ArgMapError`` in the ``consistency_check`` if ``single_entry=True``."""
         argmap = ArgMap({1: "b"})
-        argmap.single_object = True
-        with pytest.raises(ArgMapError, match="ArgMap.single_object=True but key="):
+        argmap.single_entry = True
+        with pytest.raises(ArgMapError, match="ArgMap.single_entry=True but key="):
             argmap.consistency_check()
 
     def test_error_single_arg_wrong_key(self):
@@ -402,30 +402,30 @@ class TestArgMap:
             argmap = ArgMap({(1, (4, "not an int", 7)): "b"})
 
     def test_creation_like(self):
-        """Test the usage of inheriting single_arg and single_object
+        """Test the usage of inheriting single_arg and single_entry
         via the keyword argument ``like``."""
         data = {(0, 3): "a", (4, 2): "b"}
         argmap = ArgMap(data)
         argmap_like = ArgMap(data, like=argmap)
-        assert not argmap_like.single_arg and not argmap_like.single_object
+        assert not argmap_like.single_arg and not argmap_like.single_entry
 
         data = {(0, 3): "a", (4, 2): "b"}
         argmap = ArgMap(data, single_arg=True)
         argmap_like = ArgMap(data, like=argmap)
-        assert argmap_like.single_arg and not argmap_like.single_object
+        assert argmap_like.single_arg and not argmap_like.single_entry
 
         data = [1, 2, 3]
-        argmap = ArgMap(data, single_object=True)
+        argmap = ArgMap(data, single_entry=True)
         argmap_like = ArgMap(data, like=argmap)
-        assert not argmap_like.single_arg and argmap_like.single_object
+        assert not argmap_like.single_arg and argmap_like.single_entry
 
         data = [1, 2, 3]
-        argmap = ArgMap(data, single_object=True, single_arg=True)
+        argmap = ArgMap(data, single_entry=True, single_arg=True)
         argmap_like = ArgMap(data, like=argmap)
-        assert argmap_like.single_arg and argmap_like.single_object
+        assert argmap_like.single_arg and argmap_like.single_entry
 
     def test_creation_like_error_non_argmap(self):
-        """Test that inheriting single_arg and single_object from non ArgMap object fails."""
+        """Test that inheriting single_arg and single_entry from non ArgMap instance fails."""
         data = {(0, 3): "a", (4, 2): "b"}
         with pytest.raises(ArgMapError, match="Trying to inherit properties"):
             argmap_like = ArgMap(data, like="Not an ArgMap")
@@ -439,8 +439,8 @@ class TestArgMap:
         assert not argmap1 != argmap2 and not argmap2 != argmap1
         data = {(0, 3): "a", (4, 2): "b"}
         argmaps = [ArgMap(data)]
-        for single_arg, single_object in product([False, True], repeat=2):
-            argmaps.append(ArgMap(data, single_arg=single_arg, single_object=single_object))
+        for single_arg, single_entry in product([False, True], repeat=2):
+            argmaps.append(ArgMap(data, single_arg=single_arg, single_entry=single_entry))
             argmaps[-1].consistency_check()
         assert argmaps[0] == argmaps[1] and argmaps[1] == argmaps[0]
         assert not argmaps[0] != argmaps[1] and not argmaps[1] != argmaps[0]
