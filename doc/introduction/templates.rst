@@ -14,7 +14,7 @@ literature, such architectures are commonly known as an *ansatz*.
 
     Templates are constructed out of **structured combinations** of the quantum operations
     provided by PennyLane. This means that **template functions can only be used within a
-    valid** :class:`~.QNode`.
+    valid** :class:`QNode <pennylane.QNode>`.
 
 PennyLane conceptually distinguishes different types of templates, such as :ref:`Embeddings <intro_ref_temp_emb>`,
 :ref:`Layers <intro_ref_temp_lay>`, :ref:`State preparations <intro_ref_temp_stateprep>` and
