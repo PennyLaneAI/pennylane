@@ -470,18 +470,6 @@ class OrbitalRotation(Operation):
     r"""OrbitalRotation(phi, wires)
     Spin-adapted spatial orbital rotation.
 
-    .. figure:: ../../_static/qchem/orbital_rotation_decomposition_extended.png
-        :align: center
-        :width: 100%
-        :target: javascript:void(0);
-
-    .. figure:: ../../_static/qchem/givens_rotation_decomposition.png
-        :align: center
-        :width: 85%
-        :target: javascript:void(0);
-
-    |
-
     For two neighbouring spatial orbitals :math:`\{|\Phi_{0}\rangle, |\Phi_{1}\rangle\}`, this operation
     performs the following transformation
 
@@ -490,6 +478,14 @@ class OrbitalRotation(Operation):
         &|\Phi_{1}\rangle = \cos(\phi/2)|\Phi_{0}\rangle + \sin(\phi/2)|\Phi_{1}\rangle,
 
     with the same orbital operation applied in the :math:`\alpha` and :math:`\beta` spin orbitals.
+
+    .. figure:: ../../_static/qchem/orbital_rotation_decomposition_extended.png
+        :align: center
+        :width: 100%
+        :target: javascript:void(0);
+
+    Here, :math:`G(\phi)` represents a single-excitation Givens rotation, implemented in PennyLane
+    as the :class:`~.SingleExcitation` operation.
 
     **Details:**
 
@@ -507,13 +503,11 @@ class OrbitalRotation(Operation):
     .. code-block::
 
         >>> dev = qml.device('default.qubit', wires=4)
-
         >>> @qml.qnode(dev)
         ... def circuit(phi):
         ...     qml.BasisState(np.array([1, 1, 0, 0]), wires=[0, 1, 2, 3])
         ...     qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
         ...     return qml.state()
-
         >>> circuit(0.1)
         array([ 0.        +0.j,  0.        +0.j,  0.        +0.j,
                 0.00249792+0.j,  0.        +0.j,  0.        +0.j,
@@ -557,31 +551,92 @@ class OrbitalRotation(Operation):
         # This matrix is the "sign flipped" version of that on p18 of https://arxiv.org/abs/2104.05695,
         # where the sign flip is to adjust for the opposite convention used by authors for naming wires.
         # Additionally, there was a typo in the sign of a matrix element "s" at [2, 8], which is fixed here.
+        # matrix = qml.math.array(
+        #     [
+        #         [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        #         [0, c, 0, 0, -s, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        #         [0, 0, c, 0, 0, 0, 0, 0, -s, 0, 0, 0, 0, 0, 0, 0],
+        #         [0, 0, 0, c ** 2, 0, 0, -c * s, 0, 0, -c * s, 0, 0, s ** 2, 0, 0, 0],
+        #         [0, s, 0, 0, c, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        #         [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        #         [0, 0, 0, c * s, 0, 0, c ** 2, 0, 0, -(s ** 2), 0, 0, -c * s, 0, 0, 0],
+        #         [0, 0, 0, 0, 0, 0, 0, c, 0, 0, 0, 0, 0, -s, 0, 0],
+        #         [0, 0, s, 0, 0, 0, 0, 0, c, 0, 0, 0, 0, 0, 0, 0],
+        #         [0, 0, 0, c * s, 0, 0, -(s ** 2), 0, 0, c ** 2, 0, 0, -c * s, 0, 0, 0],
+        #         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        #         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, c, 0, 0, -s, 0],
+        #         [0, 0, 0, s ** 2, 0, 0, c * s, 0, 0, c * s, 0, 0, c ** 2, 0, 0, 0],
+        #         [0, 0, 0, 0, 0, 0, 0, s, 0, 0, 0, 0, 0, c, 0, 0],
+        #         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, s, 0, 0, c, 0],
+        #         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        #     ]
+        # )
+
+        # Determines the correct framework
+        interface = qml.math._multi_dispatch(params)
 
         phi = params[0]
-        c = qml.math.cos(phi / 2)
-        s = qml.math.sin(phi / 2)
-        return qml.math.array(
-            [
-                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, c, 0, 0, -s, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, c, 0, 0, 0, 0, 0, -s, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, c ** 2, 0, 0, -c * s, 0, 0, -c * s, 0, 0, s ** 2, 0, 0, 0],
-                [0, s, 0, 0, c, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, c * s, 0, 0, c ** 2, 0, 0, -(s ** 2), 0, 0, -c * s, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, c, 0, 0, 0, 0, 0, -s, 0, 0],
-                [0, 0, s, 0, 0, 0, 0, 0, c, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, c * s, 0, 0, -(s ** 2), 0, 0, c ** 2, 0, 0, -c * s, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, c, 0, 0, -s, 0],
-                [0, 0, 0, s ** 2, 0, 0, c * s, 0, 0, c * s, 0, 0, c ** 2, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, s, 0, 0, 0, 0, 0, c, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, s, 0, 0, c, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            ],
-            like=qml.math._multi_dispatch(params),
+        c = qml.math.cos(phi / 2, like=interface)
+        s = qml.math.sin(phi / 2, like=interface)
+
+        # Determines the data type for casting other tensor-like objects
+        dtype = c.dtype
+
+        # Generate matrix with non-zero elements at indices where value is 1
+        or_I4 = qml.math.array(
+            qml.math.diag([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]),
+            dtype=dtype,
+            like=interface,
         )
+
+        # Generate matrix with non-zero elements at indices where value is c
+        or_cos = qml.math.array(
+            qml.math.diag([0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0]),
+            dtype=dtype,
+            like=interface,
+        )
+
+        # Generate matrix with non-zero elements at indices where value is c**2
+        or_cos_2 = qml.math.array(
+            qml.math.diag([0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0]),
+            dtype=dtype,
+            like=interface,
+        )
+
+        # Generate matrix with non-zero elements at indices where value is s
+        or_sin_array = qml.math.zeros((16, 16))
+        rows, cols = [1, 2, 4, 7, 8, 11, 13, 14], [4, 8, 1, 13, 2, 14, 7, 11]
+        for row, col in zip(rows, cols):
+            or_sin_array[row, col] = qml.math.sign(row - col)  # if row < col: -1 else 1
+        or_sin = qml.math.array(or_sin_array, dtype=dtype, like=interface)
+
+        # Generate matrix with non-zero elements at indices where value is s**2
+        or_sin_2 = qml.math.array(
+            qml.math.fliplr(
+                qml.math.diag([0, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, 1, 0, 0, 0])
+            ).copy(), # copy is necessary to remove negative stride introduced by fliplr
+            dtype=s.dtype,
+            like=interface,
+        )
+
+        # Generate matrix with non-zero elements at indices where value is c*s
+        or_cos_sin_array = qml.math.zeros((16, 16))
+        rows, cols = [3, 3, 6, 6, 9, 9, 12, 12], [6, 9, 3, 12, 3, 12, 6, 9]
+        for row, col in zip(rows, cols):
+            or_cos_sin_array[row, col] = qml.math.sign(row - col)  # if row < col: -1 else 1
+        or_cos_sin = qml.math.array(or_cos_sin_array, dtype=dtype, like=interface)
+
+        # Generate the complete gate matrix
+        matrix = (
+            or_I4
+            + c * or_cos
+            + (c ** 2) * or_cos_2
+            + s * or_sin
+            + (s ** 2) * or_sin_2
+            + c * s * or_cos_sin
+        )
+
+        return matrix
 
     @staticmethod
     def decomposition(phi, wires):

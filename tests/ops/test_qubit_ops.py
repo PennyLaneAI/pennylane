@@ -3685,6 +3685,44 @@ class TestOrbitalRotation:
 
         assert np.allclose(state, circuit(np.pi / 2))
 
+    def test_torch(self):
+        """Tests that operations are computed correctly using the
+        torch interface"""
+
+        pytest.importorskip("torch")
+
+        dev = qml.device("default.qubit.torch", wires=4)
+        state = np.array(
+            [
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.5 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                -0.5 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                -0.5 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.5 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+            ]
+        )
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.PauliX(wires=0)
+            qml.PauliX(wires=1)
+            qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
+
+            return qml.state()
+
+        assert np.allclose(state, circuit(np.pi / 2))
+
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     @pytest.mark.parametrize(
         ("phi"),
@@ -3765,3 +3803,33 @@ class TestOrbitalRotation:
             return qml.expval(qml.PauliZ(0))
 
         assert np.allclose(jax.grad(circuit)(phi), np.sin(phi))
+
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
+    @pytest.mark.parametrize(
+        ("phi"),
+        [
+            (-0.1),
+            (0.1),
+        ],
+    )
+    def test_torch_grad(self, phi, diff_method):
+        """Tests that gradients and operations are computed correctly using the
+        torch interface"""
+
+        torch = pytest.importorskip("torch")
+
+        dev = qml.device("default.qubit.torch", wires=4)
+
+        @qml.qnode(dev, interface="torch", diff_method=diff_method)
+        def circuit(phi):
+            qml.PauliX(wires=0)
+            qml.PauliX(wires=1)
+            qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
+            return qml.expval(qml.PauliZ(0))
+
+        phi_t = torch.tensor(phi, dtype=torch.float64, requires_grad=True)
+
+        result = circuit(phi_t)
+        result.backward()
+
+        assert np.allclose(phi_t.grad, np.sin(phi))
