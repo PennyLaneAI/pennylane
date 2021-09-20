@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* The unitary matrix corresponding to a quantum circuit can now be created using the new
+  `get_unitary_matrix()` transform.
+  [(#1609)](https://github.com/PennyLaneAI/pennylane/pull/1609)
+
 * Arbitrary two-qubit unitaries can now be decomposed into elementary gates. This
   functionality has been incorporated into the `qml.transforms.unitary_to_rot` transform, and is
   available separately as `qml.transforms.two_qubit_decomposition`.
@@ -185,4 +189,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Christina Lee, David Wierichs.
+Olivia Di Matteo, Josh Izaac, Christina Lee, Ingrid Strandberg, David Wierichs.
