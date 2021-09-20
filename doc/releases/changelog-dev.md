@@ -4,6 +4,42 @@
 
 <h3>New features since last release</h3>
 
+* Arbitrary two-qubit unitaries can now be decomposed into elementary gates. This
+  functionality has been incorporated into the `qml.transforms.unitary_to_rot` transform, and is
+  available separately as `qml.transforms.two_qubit_decomposition`.
+  [(#1552)](https://github.com/PennyLaneAI/pennylane/pull/1552)
+
+  As an example, consider the following randomly-generated matrix and circuit that uses it:
+
+  ```python
+  U = np.array([
+      [-0.03053706-0.03662692j,  0.01313778+0.38162226j, 0.4101526 -0.81893687j, -0.03864617+0.10743148j],
+      [-0.17171136-0.24851809j,  0.06046239+0.1929145j, -0.04813084-0.01748555j, -0.29544883-0.88202604j],
+      [ 0.39634931-0.78959795j, -0.25521689-0.17045233j, -0.1391033 -0.09670952j, -0.25043606+0.18393466j],
+      [ 0.29599198-0.19573188j,  0.55605806+0.64025769j, 0.06140516+0.35499559j,  0.02674726+0.1563311j ]
+  ])
+
+  dev = qml.device('default.qubit', wires=2)
+
+  @qml.qnode(dev)
+  @qml.transforms.unitary_to_rot
+  def circuit(x, y):
+      qml.RX(x, wires=0)
+      qml.QubitUnitary(U, wires=[0, 1])
+      qml.RY(y, wires=0)
+      return qml.expval(qml.PauliZ(wires=0))
+  ```
+
+  If we run the circuit, we can see the new decomposition:
+
+  ```pycon
+  >>> circuit(0.3, 0.4)
+  tensor(-0.70520073, requires_grad=True)
+  >>> print(qml.draw(circuit)(0.3, 0.4))
+  0: ──RX(0.3)─────────────────Rot(-3.5, 0.242, 0.86)──╭X──RZ(0.176)───╭C─────────────╭X──Rot(5.56, 0.321, -2.09)───RY(0.4)──┤ ⟨Z⟩ 
+  1: ──Rot(-1.64, 2.69, 1.58)──────────────────────────╰C──RY(-0.883)──╰X──RY(-1.47)──╰C──Rot(-1.46, 0.337, 0.587)───────────┤
+  ```
+
 * The transform for the Jacobian of the classical preprocessing within a QNode,
   `qml.transforms.classical_jacobian`, now takes a keyword argument `argnum` to specify
   the QNode argument indices with respect to which the Jacobian is computed.
@@ -107,4 +143,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Josh Izaac, Christina Lee, David Wierichs.
+Olivia Di Matteo, Josh Izaac, Christina Lee, David Wierichs.
