@@ -16,6 +16,7 @@ This module contains the :class:`Device` abstract base class.
 """
 # pylint: disable=too-many-format-args, use-maxsplit-arg
 import abc
+import warnings
 from collections.abc import Iterable, Sequence
 from collections import OrderedDict, namedtuple
 from functools import lru_cache
@@ -88,7 +89,7 @@ def _process_shot_sequence(shot_list):
     else:
         raise ValueError(f"Unknown shot sequence format {shot_list}")
 
-    total_shots = np.sum(np.prod(shot_vector, axis=1))
+    total_shots = int(np.sum(np.prod(shot_vector, axis=1)))
     return total_shots, shot_vector
 
 
@@ -406,6 +407,12 @@ class Device(abc.ABC):
         self._parameters.update(parameters)
 
         results = []
+        if self._shot_vector is not None:
+            # The following warning assumes that QubitDevice.execute is stand-alone
+            warnings.warn(
+                "Specifying a list of shots is only supported for "
+                "QubitDevice based devices. Falling back to executions using all shots in the shot list."
+            )
 
         with self.execution_context():
             self.pre_apply()
