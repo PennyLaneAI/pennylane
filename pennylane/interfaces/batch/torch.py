@@ -81,7 +81,7 @@ class ExecuteTapes(torch.autograd.Function):
         ctx.max_diff = kwargs["max_diff"]
         ctx._n = kwargs.get("_n", 1)
 
-        with qml.tape.Unwrap(*ctx.tapes):
+        with qml.tape.Unwrap(*ctx.tapes, set_trainable=False):
             res, ctx.jacs = ctx.execute_fn(ctx.tapes, **ctx.gradient_kwargs)
 
         # if any input tensor uses the GPU, the output should as well
@@ -93,11 +93,17 @@ class ExecuteTapes(torch.autograd.Function):
                 break
 
         for i, r in enumerate(res):
-            if r.dtype is np.dtype("object"):
+            if isinstance(r, np.ndarray) and r.dtype is np.dtype("object"):
                 # For backwards compatibility, we flatten ragged tape outputs
                 r = np.hstack(r)
 
-            res[i] = torch.as_tensor(r, device=ctx.torch_device)
+            if isinstance(r, (list, tuple)):
+                res[i] = [torch.as_tensor(t) for t in r]
+
+                if isinstance(r, tuple):
+                    res[i] = tuple(res[i])
+            else:
+                res[i] = torch.as_tensor(r, device=ctx.torch_device)
 
             if ctx.jacs:
                 ctx.jacs[i] = torch.as_tensor(ctx.jacs[i], device=ctx.torch_device)

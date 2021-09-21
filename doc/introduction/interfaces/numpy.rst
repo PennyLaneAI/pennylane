@@ -3,7 +3,7 @@
 NumPy interface
 ===============
 
-.. note:: This interface is the default interface supported by PennyLane's :class:`~.QNode`.
+.. note:: This interface is the default interface supported by PennyLane's :class:`QNode <pennylane.QNode>`.
 
 
 Using the NumPy interface
