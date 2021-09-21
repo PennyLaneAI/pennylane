@@ -26,10 +26,10 @@ from pennylane.hf.molecule import Molecule
         (
             ["H", "H"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
-            np.array([-0.67578019,  0.94181155]),
-            np.array([[-0.52754647, -1.56782303], [-0.52754647,  1.56782303]]),
+            np.array([-0.67578019, 0.94181155]),
+            np.array([[-0.52754647, -1.56782303], [-0.52754647, 1.56782303]]),
             np.array([[-0.51126165, -0.70283714], [-0.70283714, -0.51126165]]),
-            np.array([[-1.27848869, -1.21916299], [-1.21916299, -1.27848869]])
+            np.array([[-1.27848869, -1.21916299], [-1.21916299, -1.27848869]]),
         )
     ],
 )
@@ -58,7 +58,7 @@ def test_hartree_fock(symbols, geometry, v_fock, coeffs, fock_matrix, h_core):
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
             # HF energy computed with pyscf using scf.hf.SCF(mol).kernel(numpy.eye(mol.nao_nr()))
             np.array([-97.8884541671664]),
-        )
+        ),
     ],
 )
 def test_hf_energy(symbols, geometry, e_ref):
@@ -82,11 +82,11 @@ def test_hf_energy(symbols, geometry, e_ref):
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]], requires_grad=True),
             np.array([4.5]),
         ),
-            (
+        (
             ["H", "O", "H"],
             np.array([[0.0, 1.2, 0.0], [0.0, 0.0, 0.0], [1.0, -0.2, 0.0]], requires_grad=True),
             np.array([15.09255]),
-        )
+        ),
     ],
 )
 def test_nuclear_energy(symbols, geometry, e_ref):

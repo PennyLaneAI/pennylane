@@ -16,8 +16,13 @@ This module contains the functions needed for computing matrices.
 """
 
 import autograd.numpy as anp
-from pennylane.hf.matrices import (core_matrix, repulsion_tensor, overlap_matrix,
-                                   molecular_density_matrix)
+from pennylane.hf.matrices import (
+    core_matrix,
+    repulsion_tensor,
+    overlap_matrix,
+    molecular_density_matrix,
+)
+
 
 def generate_hartree_fock(mol, n_steps=50, tol=1e-8):
     r"""Return a function that performs the self-consistent-field iterations."""
@@ -72,6 +77,7 @@ def nuclear_energy(charges, r):
     """
     Generates the repulsion between nuclei of the atoms in a molecule
     """
+
     def nuclear(*args):
         if r.requires_grad:
             coor = args[0]
@@ -83,6 +89,7 @@ def nuclear_energy(charges, r):
                 if i > j:
                     e = e + (charges[i] * charges[j] / anp.sqrt(((r1 - r2) ** 2).sum()))
         return e
+
     return nuclear
 
 
@@ -92,6 +99,9 @@ def hf_energy(mol):
     def energy(*args):
         v_fock, coeffs, fock_matrix, h_core = generate_hartree_fock(mol)(*args)
         e_rep = nuclear_energy(mol.nuclear_charges, mol.coordinates)(*args)
-        e_elec = anp.einsum('pq,qp', fock_matrix + h_core, molecular_density_matrix(mol.n_electrons, coeffs))
+        e_elec = anp.einsum(
+            "pq,qp", fock_matrix + h_core, molecular_density_matrix(mol.n_electrons, coeffs)
+        )
         return e_elec + e_rep
+
     return energy
