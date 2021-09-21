@@ -103,9 +103,10 @@ class DefaultQubitTF(DefaultQubit):
     * You must use the ``"tf"`` interface for classical backpropagation, as TensorFlow is
       used as the device backend.
 
-    * Only exact expectation values, variances, and probabilities are differentiable.
-      When instantiating the device with ``analytic=False``, differentiating QNode
-      outputs will result in ``None``.
+    * Only exact expectation values, variances, and probabilities are
+      differentiable. Creation of a backpropagation QNode with finite shots
+      raises an error. If you do try and take a derivative with finite shots on
+      this device, the gradient will be ``None``.
 
 
     If you wish to use a different machine-learning interface, or prefer to calculate quantum
