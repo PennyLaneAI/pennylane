@@ -188,7 +188,7 @@ def execute(
     gradient_kwargs=None,
     cache=True,
     cachesize=10000,
-    max_diff=2,
+    max_diff=None,
     override_shots=False,
 ):
     """Execute a batch of tapes on a device in an autodifferentiable-compatible manner.
@@ -333,11 +333,19 @@ def execute(
             from .torch import execute as _execute
         elif interface in INTERFACE_NAMES["JAX"]:
             from .jax import execute as _execute
+
+            # Only support first order derivatives for JAX
+            if max_diff is None:
+                max_diff = 1
         else:
             raise ValueError(
                 f"Unknown interface {interface}. Supported "
                 f"interfaces are {SUPPORTED_INTERFACES}"
             )
+
+        # 2nd order derivatives are the max by default for non-JAX
+        if max_diff is None:
+            max_diff = 2
 
     except ImportError as e:
         interface_name = [k for k, v in INTERFACE_NAMES.items() if interface in v][0]

@@ -27,7 +27,7 @@ import pennylane as qml
 dtype = jnp.float32
 
 
-def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2):
+def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1):
     """Execute a batch of tapes with JAX parameters on a device.
 
     Args:
@@ -44,11 +44,18 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         gradient_fn (callable): the gradient function to use to compute quantum gradients
         _n (int): a positive integer used to track nesting of derivatives, for example
             if the nth-order derivative is requested.
+        max_diff (int): If ``gradient_fn`` is a gradient transform, this option specifies
+            the maximum order of derivatives to support. Increasing this value allows
+            for higher order derivatives to be extracted, at the cost of additional
+            (classical) computational overhead during the backwards pass.
 
     Returns:
         list[list[float]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
+    if max_diff > 1:
+        raise ValueError("The JAX interface only supports first order derivatives.")
+
     for tape in tapes:
         # set the trainable parameters
         params = tape.get_parameters(trainable_only=False)
