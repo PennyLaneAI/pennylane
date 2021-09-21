@@ -34,7 +34,7 @@ def molecular_density_matrix(n_electron, c):
         P_{\mu \nu} = \sum_{i=1}^{N} C_{\mu i} C_{\nu i},
 
     where :math:`N = N_{electrons} / 2` is the number of occupied orbitals. Note that the total
-    density matrix is the sum of the :math:`\sigma` and :math:`\beta` dennsity
+    density matrix is the sum of the :math:`\sigma` and :math:`\beta` density
     matrices, :math:`P = P^{\sigma} + P^{\beta}`.
 
     Args:
@@ -299,7 +299,7 @@ def repulsion_tensor(basis_functions):
 def core_matrix(basis_functions, charges, r):
     r"""Return a function that computes the core matrix for a given set of basis functions.
 
-    The core matrix is computed as a sum of kinetic and attraction matrices.
+    The core matrix is computed as a sum of the kinetic and attraction matrices.
 
     Args:
         basis_functions (list[BasisFunction]): basis functions
