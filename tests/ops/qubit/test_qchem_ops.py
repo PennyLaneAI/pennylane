@@ -641,9 +641,10 @@ class TestOrbitalRotation:
         def circuit(phi):
             qml.PauliX(wires=0)
             qml.PauliX(wires=1)
-            qml.OrbitalRotation(phi, wires=[0, 1, 2, 3]).adjoint()
-            qml.PauliX(wires=1)
+            qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
+            qml.adjoint(qml.OrbitalRotation)(phi, wires=[0, 1, 2, 3])
             qml.PauliX(wires=0)
+            qml.PauliX(wires=1)
             return qml.state()
 
         res = circuit(0.1)
