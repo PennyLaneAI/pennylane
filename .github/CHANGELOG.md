@@ -531,14 +531,14 @@
 
 <h3>Bug fixes</h3>
 
-* Fix bug with shot vectors and `Device` base class.
+* Fixed a bug with shot vectors and `Device` base class.
   [(#1666)](https://github.com/PennyLaneAI/pennylane/pull/1666)
 
 * Fixed a bug where `@jax.jit` would fail on a QNode that used `qml.QubitStateVector`.
   [(#1649)](https://github.com/PennyLaneAI/pennylane/pull/1649)
 
-* Fix bug in edge case of single-qubit `zyz_decomposition` when only
-  off-diagonal elements are present.
+* Fixed a bug related to an edge case of single-qubit `zyz_decomposition` when
+  only off-diagonal elements are present.
   [(#1643)](https://github.com/PennyLaneAI/pennylane/pull/1643)
 
 * `MottonenStatepreparation` can now be run with a single wire label not in a list.
@@ -556,10 +556,11 @@
 * Remove `QFT` from possible operations in `default.qubit` and `default.mixed`.
   [(#1600)](https://github.com/PennyLaneAI/pennylane/pull/1600)
 
-* Fix bug when computing expectations of Hamiltonians using TensorFlow.
+* Fixed a bug when computing expectations of Hamiltonians using TensorFlow.
   [(#1586)](https://github.com/PennyLaneAI/pennylane/pull/1586)
 
-* Fix bug when computing the specs of a circuit with a Hamiltonian observable.
+* Fixed a bug when computing the specs of a circuit with a Hamiltonian
+  observable.
   [(#1533)](https://github.com/PennyLaneAI/pennylane/pull/1533)
 
 <h3>Documentation</h3>
