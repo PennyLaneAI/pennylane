@@ -81,7 +81,7 @@
   `qml.beta.QNode`, and `@qml.beta.qnode`.
   [(#1642)](https://github.com/PennyLaneAI/pennylane/pull/1642)
   [(#1646)](https://github.com/PennyLaneAI/pennylane/pull/1646)
-  [(#1674)](https://github.com/PennyLaneAI/pennylane/pull/1674)
+  [(#1651)](https://github.com/PennyLaneAI/pennylane/pull/1651)
 
   It differs from the standard QNode in several ways:
 
@@ -131,7 +131,7 @@
 
 * Two new methods were added to the Device API, allowing PennyLane devices
   increased control over circuit decompositions.
-  [(#1674)](https://github.com/PennyLaneAI/pennylane/pull/1674)
+  [(#1651)](https://github.com/PennyLaneAI/pennylane/pull/1651)
 
   - `Device.expand_fn(tape) -> tape`: expands a tape such that it is supported by the device. By
     default, performs the standard device-specific gate set decomposition done in the default

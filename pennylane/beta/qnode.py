@@ -168,7 +168,6 @@ class QNode:
     QNodes can be created by decorating a quantum function:
 
     >>> dev = qml.device("default.qubit", wires=1)
-
     >>> @qml.beta.qnode(dev)
     ... def circuit(x):
     ...     qml.RX(x, wires=0)
