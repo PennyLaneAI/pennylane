@@ -260,7 +260,7 @@ def finite_diff(tape, argnum=None, h=1e-7, approx_order=1, n=1, strategy="forwar
         ...     qml.RX(params[2], wires=0)
         ...     qml.expval(qml.PauliZ(0))
         ...     qml.var(qml.PauliZ(0))
-        >>> gradient_tapes, fn = qml.gradients.finite_diff.grad(tape)
+        >>> gradient_tapes, fn = qml.gradients.finite_diff(tape)
         >>> gradient_tapes
         [<JacobianTape: wires=[0, 1], params=3>,
          <JacobianTape: wires=[0, 1], params=3>,
