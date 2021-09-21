@@ -211,7 +211,7 @@
   [(#1551)](https://github.com/PennyLaneAI/pennylane/pull/1551)
   [(#1596)](https://github.com/PennyLaneAI/pennylane/pull/1596)
 
-  <img src="https://pennylane.readthedocs.io/en/latest/_static/hamiltonian_expval_h_plot.png" width=70%/>
+  <img src="https://pennylane.readthedocs.io/en/latest/_static/hamiltonian_expval_h_plot.png" width=45%/>
 
 * The Hamiltonian can now store grouping information, which can be accessed by a device to
   speed up computations of the expectation value of a Hamiltonian.
