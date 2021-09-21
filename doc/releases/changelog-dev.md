@@ -80,6 +80,7 @@
   custom quantum gradient support, and arbitrary order derivatives. This QNode is available via
   `qml.beta.QNode`, and `@qml.beta.qnode`.
   [(#1642)](https://github.com/PennyLaneAI/pennylane/pull/1642)
+  [(#1646)](https://github.com/PennyLaneAI/pennylane/pull/1646)
 
   It differs from the standard QNode in several ways:
 
@@ -115,6 +116,8 @@
   - Circuit decompositions
   - Non-mutability via the `mutable` keyword argument
   - Viewing specifications with `qml.specs`
+  - The `reversible` QNode differentiation method
+  - The ability to specify a `dtype` when using PyTorch and TensorFlow.
 
   It is also not tested with the `qml.qnn` module.
 
@@ -178,6 +181,10 @@
 
 * The device suite tests can now execute successfully if no shots configuration variable is given.
   [(#1641)](https://github.com/PennyLaneAI/pennylane/pull/1641)
+
+* Fixes a bug where the `qml.gradients.param_shift` transform would raise an error while attempting
+  to compute the variance of a QNode with ragged output.
+  [(#1646)](https://github.com/PennyLaneAI/pennylane/pull/1646)
 
 <h3>Documentation</h3>
 
