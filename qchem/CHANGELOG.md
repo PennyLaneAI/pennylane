@@ -1,4 +1,4 @@
-# Release 0.18.0-dev
+# Release 0.19.0-dev
 
 <h3>New features</h3>
 
@@ -75,7 +75,7 @@ Antal Száva.
   a 1D array with the position of the atoms in atomic units.
 
   - The `read_structure` function returns a list with the symbols of the atoms and
-    the array with the atomic positions. 
+    the array with the atomic positions.
 
   - The `meanfield` and `molecular_hamiltonian` functions take separately the
     list of atomic symbols and the array with the atomic coordinates.
@@ -246,7 +246,7 @@ Juan Miguel Arrazola, Thomas Bromley, Alain Delgado, Josh Izaac, Soran Jahangiri
   a Hartree-Fock state and mapping them to the wires that the Unitary
   Coupled-Cluster (UCCSD) ansatz act on have been improved, with a more
   consistent naming convention and improved docstrings.
-  [(#742)](https://github.com/PennyLaneAI/pennylane/pull/742)  
+  [(#742)](https://github.com/PennyLaneAI/pennylane/pull/742)
 
   The changes include:
 
@@ -288,7 +288,7 @@ Juan Miguel Arrazola, Thomas Bromley, Alain Delgado, Josh Izaac, Soran Jahangiri
 * The total-spin projection observable S_z can be built straightforwardly using the
   function `spin_z` as implemented in the `obs` module.
   [(#711)](https://github.com/XanaduAI/pennylane/pull/711)
-  
+
 <h3>Breaking changes</h3>
 
 <h3>Documentation</h3>

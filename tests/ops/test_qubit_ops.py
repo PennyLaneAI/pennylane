@@ -2820,8 +2820,13 @@ class TestQubitUnitary:
             (qml.RZ(0.3, wires=0).matrix, qml.RZ, [0.3]),
             (qml.RZ(-0.5, wires=0).matrix, qml.RZ, [-0.5]),
             # Next set of gates are non-diagonal and decomposed as Rots
+            (
+                np.array([[0, -0.98310193 + 0.18305901j], [0.98310193 + 0.18305901j, 0]]),
+                qml.Rot,
+                [0, -np.pi, -5.914991017809059],
+            ),
             (H, qml.Rot, [np.pi, np.pi / 2, 0]),
-            (X, qml.Rot, [0.0, np.pi, np.pi]),
+            (X, qml.Rot, [0.0, -np.pi, -np.pi]),
             (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix, qml.Rot, [0.2, 0.5, -0.3]),
             (np.exp(1j * 0.02) * qml.Rot(-1, 2, -3, wires=0).matrix, qml.Rot, [-1, 2, -3]),
         ],
@@ -2835,10 +2840,10 @@ class TestQubitUnitary:
         assert np.allclose(decomp[0].parameters, expected_params)
 
     def test_qubit_unitary_decomposition_multiqubit_invalid(self):
-        """Test that QubitUnitary is not decomposed for more than a single qubit."""
-        U = qml.CRZ(0.3, wires=[0, 1]).matrix
+        """Test that QubitUnitary is not decomposed for more than two qubits."""
+        U = qml.Toffoli(wires=[0, 1, 2]).matrix
 
-        with pytest.raises(NotImplementedError, match="only supported for single-qubit"):
+        with pytest.raises(NotImplementedError, match="only supported for single- and two-qubit"):
             qml.QubitUnitary.decomposition(U, wires=[0, 1])
 
 

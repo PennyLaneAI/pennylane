@@ -22,6 +22,7 @@ import pennylane as qml
 from pennylane.circuit_drawer import CircuitDrawer
 from pennylane.circuit_drawer.circuit_drawer import _remove_duplicates
 from pennylane.circuit_drawer.grid import Grid, _transpose
+from pennylane.circuit_drawer.charsets import CHARSETS, UnicodeCharSet, AsciiCharSet
 from pennylane.wires import Wires
 
 from pennylane.measure import state
@@ -63,6 +64,41 @@ dummy_raw_observable_grid = [
     [qml.expval(qml.PauliY(wires=[2]))],
     [qml.var(qml.Hadamard(wires=[3]))],
 ]
+
+
+class TestInitialization:
+    def test_charset_default(self):
+
+        drawer_None = CircuitDrawer(
+            dummy_raw_operation_grid, dummy_raw_observable_grid, Wires(range(6)), charset=None
+        )
+
+        assert isinstance(drawer_None.charset, UnicodeCharSet)
+
+    @pytest.mark.parametrize("charset", ("unicode", "ascii"))
+    def test_charset_string(self, charset):
+
+        drawer_str = CircuitDrawer(
+            dummy_raw_operation_grid, dummy_raw_observable_grid, Wires(range(6)), charset=charset
+        )
+
+        assert isinstance(drawer_str.charset, CHARSETS[charset])
+
+    @pytest.mark.parametrize("charset", (UnicodeCharSet, AsciiCharSet))
+    def test_charset_class(self, charset):
+
+        drawer_class = CircuitDrawer(
+            dummy_raw_operation_grid, dummy_raw_observable_grid, Wires(range(6)), charset=charset
+        )
+
+        assert isinstance(drawer_class.charset, charset)
+
+    def test_charset_error(self):
+
+        with pytest.raises(ValueError, match=r"Charset 'nope' is not supported."):
+            CircuitDrawer(
+                dummy_raw_operation_grid, dummy_raw_observable_grid, Wires(range(6)), charset="nope"
+            )
 
 
 @pytest.fixture
@@ -321,26 +357,6 @@ def parameterized_qubit_qnode():
     qnode(0.1, 0.2, 0.3, np.array([0.4, 0.5, 0.6]))
 
     return qnode
-
-
-@pytest.fixture
-def drawn_parameterized_qubit_circuit_with_variable_names():
-    """The rendered circuit representation of the above qubit circuit with variable names."""
-    return (
-        " 0: ──RX(a)────────────────────────╭C─────RX(angles[0])──────────────────────────────────────────────╭C─────╭C───────╭C──╭C────────╭Y⁻¹──────────╭C──╭SWAP⁻¹──╭SWAP───┤ ⟨Y⟩       \n"
-        + " 1: ──RX(b)───────Z────────────────╰X⁻¹──╭RY(b)──────────RX(4*angles[1])──╭RY(0.359)⁻¹──╭SWAP⁻¹──────├X──Z──│───Z⁻¹──╰Z──│─────╭C──│─────╭X──╭C──│───│────────├SWAP───┤ Var[H]    \n"
-        + " 2: ──Rϕ(1.89*c)──RX(angles[2])⁻¹────────│────────────────────────────────│─────────────├SWAP⁻¹──U0──╰C─────╰X───────────╰Z⁻¹──╰Y──╰C────╰C──│───╰X──╰SWAP⁻¹──│───────┤ Sample[X] \n"
-        + " 3: ─────────────────────────────────────╰C──────────────RZ(b)────────────╰C────────────│────────────────────────────────────────────────────╰X───────RZ(b)───│──────╭┤ ⟨H0⟩      \n"
-        + " 4: ────────────────────────────────────────────────────────────────────────────────────╰C────────────────────────────────────────────────────────────────────╰C─────╰┤ ⟨H0⟩      \n"
-        + "U0 =\n"
-        + "[[1. 0.]\n"
-        + " [0. 1.]]\n"
-        + "H0 =\n"
-        + "[[1. 0. 0. 0.]\n"
-        + " [0. 1. 0. 0.]\n"
-        + " [0. 0. 1. 0.]\n"
-        + " [0. 0. 0. 1.]]\n"
-    )
 
 
 @pytest.fixture
@@ -709,6 +725,7 @@ class TestCircuitDrawerIntegration:
 
         assert output == drawn_wide_cv_qnode
 
+    @pytest.mark.slow
     def test_cv_circuit_with_values(
         self, parameterized_cv_qnode, drawn_parameterized_cv_qnode_with_values
     ):

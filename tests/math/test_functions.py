@@ -675,6 +675,7 @@ class TestRequiresGrad:
         """Vanilla NumPy arrays, sequences, and lists will always return False"""
         assert not fn.requires_grad(t)
 
+    @pytest.mark.slow
     def test_jax(self):
         """JAX DeviceArrays differentiability depends on the argnums argument"""
         res = None
@@ -1368,6 +1369,7 @@ class TestCovMatrix:
         expected = self.expected_grad(weights)
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
+    @pytest.mark.slow
     def test_jax(self, tol):
         """Test that the covariance matrix computes the correct
         result, and is differentiable, using the JAX interface"""
@@ -1608,8 +1610,7 @@ class TestGetTrainable:
         values = [[0.1, 0.2], np.tensor(0.1, requires_grad=True), np.tensor([0.5, 0.2])]
         cost_fn(values)
 
-        # Currently, we assume *all* objects are trainable by default in Autograd
-        assert res == {0, 1, 2}
+        assert res == {1, 2}
 
     def test_autograd_unwrapping_backward(self):
         """Test that the trainability indices of a sequence of Autograd arrays
