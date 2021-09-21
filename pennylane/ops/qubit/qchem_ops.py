@@ -551,7 +551,7 @@ class OrbitalRotation(Operation):
         # This matrix is the "sign flipped" version of that on p18 of https://arxiv.org/abs/2104.05695,
         # where the sign flip is to adjust for the opposite convention used by authors for naming wires.
         # Additionally, there was a typo in the sign of a matrix element "s" at [2, 8], which is fixed here.
-        # matrix = qml.math.array(
+        # U = qml.math.array(
         #     [
         #         [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         #         [0, c, 0, 0, -s, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -572,14 +572,14 @@ class OrbitalRotation(Operation):
         #     ]
         # )
 
-        # Determines the correct framework
+        # Determines the correct framework for converting tensor-like objects
         interface = qml.math._multi_dispatch(params)
 
         phi = params[0]
         c = qml.math.cos(phi / 2, like=interface)
         s = qml.math.sin(phi / 2, like=interface)
 
-        # Determines the data type for casting other tensor-like objects
+        # Determines the data type for casting tensor-like objects
         dtype = c.dtype
 
         # Generate matrix with non-zero elements at indices where value is 1
@@ -614,8 +614,8 @@ class OrbitalRotation(Operation):
         or_sin_2 = qml.math.array(
             qml.math.fliplr(
                 qml.math.diag([0, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, 1, 0, 0, 0])
-            ).copy(), # copy is necessary to remove negative stride introduced by fliplr
-            dtype=s.dtype,
+            ).copy(),  # copy is necessary to remove the negative stride introduced by fliplr
+            dtype=dtype,
             like=interface,
         )
 
@@ -626,8 +626,8 @@ class OrbitalRotation(Operation):
             or_cos_sin_array[row, col] = qml.math.sign(row - col)  # if row < col: -1 else 1
         or_cos_sin = qml.math.array(or_cos_sin_array, dtype=dtype, like=interface)
 
-        # Generate the complete gate matrix
-        matrix = (
+        # Generate the complete gate unitary
+        U = (
             or_I4
             + c * or_cos
             + (c ** 2) * or_cos_2
@@ -636,7 +636,7 @@ class OrbitalRotation(Operation):
             + c * s * or_cos_sin
         )
 
-        return matrix
+        return U
 
     @staticmethod
     def decomposition(phi, wires):
