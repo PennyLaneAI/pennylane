@@ -26,7 +26,8 @@ requirements = [
     "appdirs",
     "semantic_version==2.6",
     "autoray",
-    "cachetools"
+    "cachetools",
+    "pennylane-lightning>=0.18",
 ]
 
 info = {
