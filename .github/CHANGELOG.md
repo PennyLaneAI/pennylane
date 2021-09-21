@@ -584,8 +584,8 @@ Vishnu Ajith, Akash Narayanan B, Thomas Bromley, Olivia Di Matteo, Sahaj
 Dhamija, Tanya Garg, Anthony Hayes, Theodor Isacsson, Josh Izaac, Prateek Jain,
 Ankit Khandelwal, Nathan Killoran, Christina Lee, Ian McLean, Johannes Jakob
 Meyer, Romain Moyard, Lee James O'Riordan, Esteban Payares, Pratul Saini, Maria
-Schuld, Arshpreet Singh, Ingrid Strandberg, Antal Száva, Slimane Thabet, David
-Wierichs, Vincent Wong.
+Schuld, Arshpreet Singh, Jay Soni, Ingrid Strandberg, Antal Száva, Slimane
+Thabet, David Wierichs, Vincent Wong.
 
 # Release 0.17.0
 
