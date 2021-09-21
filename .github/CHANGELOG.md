@@ -44,6 +44,14 @@
     [ 0.00000000e+00  0.00000000e+00  0.00000000e+00]]]
   ```
 
+  The adjoint method operates after a forward pass by iteratively applying
+  inverse gates to scan backwards through the circuit. The method is already
+  available in PennyLane's `default.qubit` device, but the version provided by
+  `lightning.qubit` integrates with the C++ backend and is more performant, as
+  shown in the plot below:
+
+  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane-lightning/master/doc/_static/lightning_adjoint.png" width=70%/>
+
 <h4>Support for native backpropagation using PyTorch</h4>
 
 * The built-in PennyLane simulator `default.qubit` now supports
