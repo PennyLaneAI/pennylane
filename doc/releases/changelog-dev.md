@@ -162,6 +162,22 @@
 * ``qml.circuit_drawer.CircuitDrawer`` can accept a string for the ``charset`` keyword, instead of a ``CharSet`` object.
   [(#1640)](https://github.com/PennyLaneAI/pennylane/pull/1640)
 
+* Operations can now have gradient recipes that depend on the state of the operation.
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+
+  For example, this allows for gradient recipes that are parameter dependent:
+
+  ```python
+  class RX(qml.RX):
+
+      @property
+      def grad_recipe(self):
+          # The gradient is given by [f(x) - f(0)] / (2 sin(x)), by subsituting
+          # shift = x into the two term parameter-shift rule.
+          x = self.data[0]
+          return ([[0.5 / np.sin(x), 1.0, x], [0.5 / np.sin(x), 0.0, 0]],)
+  ```
+
 <h3>Breaking changes</h3>
 
 - The `QNode.metric_tensor` method has been deprecated, and will be removed in an upcoming release.
