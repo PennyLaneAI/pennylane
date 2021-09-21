@@ -68,17 +68,21 @@ def generate_hartree_fock(mol, n_steps=50, tol=1e-8):
     return hartree_fock
 
 
-def nuclear_energy(charges):
+def nuclear_energy(charges, r):
     """
     Generates the repulsion between nuclei of the atoms in a molecule
     """
-    def nuclear(r):
-        s = 0
-        for i, r1 in enumerate(r):
-            for j, r2 in enumerate(r):
+    def nuclear(*args):
+        if r.requires_grad:
+            coor = args[0]
+        else:
+            coor = r
+        e = 0
+        for i, r1 in enumerate(coor):
+            for j, r2 in enumerate(coor):
                 if i > j:
-                    s = s + (charges[i] * charges[j] / anp.sqrt(((r1 - r2) ** 2).sum()))
-        return s
+                    e = e + (charges[i] * charges[j] / anp.sqrt(((r1 - r2) ** 2).sum()))
+        return e
     return nuclear
 
 
@@ -87,7 +91,7 @@ def hf_energy(mol):
 
     def energy(*args):
         v_fock, coeffs, fock_matrix, h_core = generate_hartree_fock(mol)(*args)
-        e_rep = nuclear_energy(mol.nuclear_charges)(mol.coordinates)
+        e_rep = nuclear_energy(mol.nuclear_charges, mol.coordinates)(*args)
         e_elec = anp.einsum('pq,qp', fock_matrix + h_core, molecular_density_matrix(mol.n_electrons, coeffs))
         return e_elec + e_rep
     return energy
