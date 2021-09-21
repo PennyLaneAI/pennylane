@@ -169,7 +169,7 @@
   [(#1640)](https://github.com/PennyLaneAI/pennylane/pull/1640)
 
 * Operations can now have gradient recipes that depend on the state of the operation.
-  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+  [(#1674)](https://github.com/PennyLaneAI/pennylane/pull/1674)
 
   For example, this allows for gradient recipes that are parameter dependent:
 
