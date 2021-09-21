@@ -66,7 +66,7 @@ class TestSupportedObservables:
         device_kwargs["wires"] = 3
         dev = qml.device(**device_kwargs)
 
-        if device_kwargs["shots"] is not None and observable == "SparseHamiltonian":
+        if device_kwargs.get("shots", None) is not None and observable == "SparseHamiltonian":
             pytest.skip("SparseHamiltonian only supported in analytic mode")
 
         assert hasattr(dev, "observables")

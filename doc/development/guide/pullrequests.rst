@@ -83,7 +83,7 @@ A review-ready pull request (PR) includes the following:
 
 * **Write a changelog entry for all Pull Requests.** The changelog entry should include a link back
   to the PR. More significant user-facing changes should include a code example. In addition to the changelog entry itself, add your name to the alphabetical contributors' list at the bottom of
-  each release's section.
+  each release's section. The changelog is located at `doc/releases/changelog-dev.md`.
 
 Please note that our review process can take some time and require a bit of back and forth. We try
 to enforce a high level of detail in reviews to reduce future bugs and prevent technical debt from

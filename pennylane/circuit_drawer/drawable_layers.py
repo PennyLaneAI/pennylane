@@ -73,8 +73,8 @@ def drawable_layers(ops, wire_map=None):
     # loop over operations
     for op in ops:
         if len(op.wires) == 0:
-            # if no wires, then it acts of all wires
-            # for example, state and sample
+            # if no wires, then it acts on all wires
+            # for example, qml.state and qml.sample
             mapped_wires = set(wire_map.values())
             op_occupied_wires = mapped_wires
         else:
@@ -133,7 +133,7 @@ def drawable_grid(ops, wire_map=None):
     for layer, layer_ops in enumerate(ops_in_layer):
         for op in layer_ops:
             if len(op.wires) == 0:
-                # apply to all wires, like state and sample
+                # apply to all wires, like qml.state and qml.sample
                 for wire in range(n_wires):
                     grid[wire][layer] = op
 
