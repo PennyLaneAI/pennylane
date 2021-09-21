@@ -123,6 +123,9 @@
 
 <h3>Improvements</h3>
 
+* The tests for qubit operations are split into multiple files.
+  [(#1661)](https://github.com/PennyLaneAI/pennylane/pull/1661)
+
 * The `qml.metric_tensor` transform has been improved with regards to
   both function and performance.
   [(#1638)](https://github.com/PennyLaneAI/pennylane/pull/1638)
