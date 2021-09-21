@@ -378,7 +378,7 @@ class TestQNode:
             grad_fn(data1)
 
     def test_differentiable_expand(self, dev_name, diff_method, mode, tol):
-        """Test that operation and nested tapes expansion
+        """Test that operation and nested tape expansion
         is differentiable"""
 
         class U3(qml.U3):
@@ -403,7 +403,6 @@ class TestQNode:
             return qml.expval(qml.PauliX(0))
 
         res = circuit(a, p)
-
         expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
             np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
         )
@@ -425,7 +424,7 @@ class TestQNode:
 
 class TestShotsIntegration:
     """Test that the QNode correctly changes shot value, and
-    differentiates it."""
+    remains differentiable."""
 
     def test_changing_shots(self, mocker, tol):
         """Test that changing shots works on execution"""

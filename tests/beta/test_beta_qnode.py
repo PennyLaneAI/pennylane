@@ -44,7 +44,7 @@ class TestValidation:
 
     def test_changing_invalid_interface(self):
         """Test that an exception is raised for an invalid interface
-        on a pre-existing"""
+        on a pre-existing QNode"""
         dev = qml.device("default.qubit", wires=1)
         test_interface = "something"
 
@@ -178,7 +178,7 @@ class TestValidation:
         assert gradient_fn[1] == {"dev": dev}
 
     def test_parameter_shift_tape_unknown_model(self, monkeypatch):
-        """test that an unknown model raises an exception"""
+        """Test that an unknown model raises an exception"""
 
         def capabilities(cls):
             capabilities = cls._capabilities
@@ -224,7 +224,7 @@ class TestValidation:
         assert res == (qml.gradients.finite_diff, {}, dev)
 
     def test_diff_method(self, mocker):
-        """Test that a user-supplied diff-method correctly returns the right
+        """Test that a user-supplied diff method correctly returns the right
         diff method."""
         dev = qml.device("default.qubit", wires=1)
 
@@ -472,7 +472,7 @@ class TestTapeConstruction:
             qn(5, 1)
 
     def test_consistent_measurement_order(self):
-        """Test evaluation exceeds as expected if measurements are returned in the
+        """Test evaluation proceeds as expected if measurements are returned in the
         same order to how they were queued on the tape"""
         dev = qml.device("default.qubit", wires=2)
 
@@ -548,7 +548,7 @@ class TestTapeConstruction:
         assert np.allclose(res, res_2)
 
     def test_operator_all_wires(self, monkeypatch, tol):
-        """Test that a operator that must act on all wires
+        """Test that an operator that must act on all wires
         does, or raises an error."""
         monkeypatch.setattr(qml.RX, "num_wires", qml.operation.AllWires)
 
@@ -568,7 +568,7 @@ class TestTapeConstruction:
 
 
 class TestDecorator:
-    """Unittests for the decorator"""
+    """Unit tests for the decorator"""
 
     def test_decorator(self, tol):
         """Test that the decorator correctly creates a QNode."""
@@ -723,7 +723,7 @@ class TestIntegration:
 
 
 class TestShots:
-    """Unittests for specifying shots per call."""
+    """Unit tests for specifying shots per call."""
 
     def test_specify_shots_per_call_sample(self):
         """Tests that shots can be set per call for a sample return type."""
@@ -858,7 +858,7 @@ class TestSpecs:
         "diff_method, len_info", [("backprop", 10), ("parameter-shift", 12), ("adjoint", 11)]
     )
     def test_specs(self, diff_method, len_info):
-        """Tests the specs property with backprop"""
+        """Tests the specs property with backprop, parameter-shift and adjoint diff_method"""
 
         dev = qml.device("default.qubit", wires=4)
 
