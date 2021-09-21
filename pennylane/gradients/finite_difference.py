@@ -187,7 +187,7 @@ def finite_diff(tape, argnum=None, h=1e-7, approx_order=1, n=1, strategy="forwar
     parameters with respect to its inputs.
 
     Args:
-        qnode (.QNode or .QuantumTape): quantum tape or QNode to differentiate
+        qnode (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned.
@@ -237,7 +237,7 @@ def finite_diff(tape, argnum=None, h=1e-7, approx_order=1, n=1, strategy="forwar
 
     .. UsageDetails::
 
-        This gradient transform can also be applied directly to :class:`~.QNode` objects:
+        This gradient transform can also be applied directly to :class:`QNode <pennylane.QNode>` objects:
 
         >>> @qml.qnode(dev)
         ... def circuit(params):
@@ -260,7 +260,7 @@ def finite_diff(tape, argnum=None, h=1e-7, approx_order=1, n=1, strategy="forwar
         ...     qml.RX(params[2], wires=0)
         ...     qml.expval(qml.PauliZ(0))
         ...     qml.var(qml.PauliZ(0))
-        >>> gradient_tapes, fn = qml.gradients.finite_diff.grad(tape)
+        >>> gradient_tapes, fn = qml.gradients.finite_diff(tape)
         >>> gradient_tapes
         [<JacobianTape: wires=[0, 1], params=3>,
          <JacobianTape: wires=[0, 1], params=3>,

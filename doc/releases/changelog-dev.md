@@ -76,6 +76,48 @@
   For more usage details, please see the
   [classical Jacobian docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.transforms.classical_jacobian.html).
 
+* A new, experimental QNode has been added, that adds support for batch execution of circuits,
+  custom quantum gradient support, and arbitrary order derivatives. This QNode is available via
+  `qml.beta.QNode`, and `@qml.beta.qnode`.
+  [(#1642)](https://github.com/PennyLaneAI/pennylane/pull/1642)
+
+  It differs from the standard QNode in several ways:
+
+  - Custom gradient transforms can be specified as the differentiation method:
+  
+    ```python
+    @qml.gradients.gradient_transform
+    def my_gradient_transform(tape):
+        ...
+        return tapes, processing_fn
+
+    @qml.beta.qnode(dev, diff_method=my_gradient_transform)
+    def circuit():
+    ```
+
+  - Arbitrary :math:`n`-th order derivatives are supported on hardware using
+    gradient transforms such as the parameter-shift rule. To specify that an :math:`n`-th
+    order derivative of a QNode will be computed, the `max_diff` argument should be set.
+    By default, this is set to 1 (first-order derivatives only).
+
+  - Internally, if multiple circuits are generated for execution simultaneously, they
+    will be packaged into a single job for execution on the device. This can lead to
+    significant performance improvement when executing the QNode on remote
+    quantum hardware.
+
+  In an upcoming release, this QNode will replace the existing one. If you come across any bugs
+  while using this QNode, please let us know via a [bug
+  report](https://github.com/PennyLaneAI/pennylane/issues/new?assignees=&labels=bug+%3Abug%3A&template=bug_report.yml&title=%5BBUG%5D)
+  on our GitHub bug tracker.
+
+  Currently, this beta QNode does not support the following features:
+
+  - Circuit decompositions
+  - Non-mutability via the `mutable` keyword argument
+  - Viewing specifications with `qml.specs`
+
+  It is also not tested with the `qml.qnn` module.
+
 <h3>Improvements</h3>
 
 * The `qml.metric_tensor` transform has been improved with regards to

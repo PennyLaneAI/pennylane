@@ -100,7 +100,7 @@ Currently, there are four built-in interfaces: :doc:`NumPy <interfaces/numpy>`, 
 interfaces make each of these libraries quantum-aware, allowing quantum circuits to be treated just
 like any other operation.
 
-In PennyLane, an interface is declared when creating a :class:`~.QNode`, e.g.,
+In PennyLane, an interface is declared when creating a :class:`QNode <pennylane.QNode>`, e.g.,
 
 .. code-block:: python
 

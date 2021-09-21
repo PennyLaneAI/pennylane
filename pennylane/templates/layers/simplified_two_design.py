@@ -60,7 +60,7 @@ class SimplifiedTwoDesign(Operation):
 
     .. UsageDetails::
 
-        template - here shown for two layers - is used inside a :class:`~.QNode`:
+        template - here shown for two layers - is used inside a :class:`QNode <pennylane.QNode>`:
 
         .. code-block:: python
 

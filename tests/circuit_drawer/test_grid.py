@@ -17,7 +17,7 @@ Unit tests for the :mod:`pennylane.circuit_drawer.grid` module.
 import pytest
 import numpy as np
 
-from pennylane.circuit_drawer import Grid
+from pennylane.circuit_drawer.grid import Grid
 from pennylane.circuit_drawer.grid import _transpose
 
 
