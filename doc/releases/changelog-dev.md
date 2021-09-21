@@ -198,4 +198,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Christina Lee, David Wierichs, Andrew Gardhouse.
+Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee, David Wierichs.
