@@ -576,7 +576,7 @@ class OrbitalRotation(Operation):
         ]
 
         # first stack each row and then stack all the rows
-        U = qml.math.stack([qml.math.stack([x for x in row]) for row in matrix], axis=0)
+        U = qml.math.stack([qml.math.stack([*row]) for row in matrix], axis=0)
 
         return U
 
