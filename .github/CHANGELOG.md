@@ -193,6 +193,13 @@
   (array([-0.12777055,  0.0166009 ]), array(0.0917819))
   ```
 
+* Hamiltonians are now natively supported on the `default.qubit` device if `shots=None`.
+  This makes VQE workflows a lot faster in some cases.
+  [(#1551)](https://github.com/PennyLaneAI/pennylane/pull/1551)
+  [(#1596)](https://github.com/PennyLaneAI/pennylane/pull/1596)
+
+  <img src="https://pennylane.readthedocs.io/en/latest/_static/hamiltonian_expval_h_plot.png" width=70%/>
+
 * The Hamiltonian can now store grouping information, which can be accessed by a device to
   speed up computations of the expectation value of a Hamiltonian.
   [(#1515)](https://github.com/PennyLaneAI/pennylane/pull/1515)
@@ -417,11 +424,6 @@
 * The slowest tests, more than 1.5 seconds, now have the pytest mark `slow`, and can be
   selected or deselected during local execution of tests.
   [(#1633)](https://github.com/PennyLaneAI/pennylane/pull/1633)
-
-* Hamiltonians are now natively supported on the `default.qubit` device if `shots=None`.
-  This makes VQE workflows a lot faster in some cases.
-  [(#1551)](https://github.com/PennyLaneAI/pennylane/pull/1551)
-  [(#1596)](https://github.com/PennyLaneAI/pennylane/pull/1596)
 
 * A gradient recipe for Hamiltonian coefficients has been added. This makes it possible
   to compute parameter-shift gradients of these coefficients on devices that natively
