@@ -29,5 +29,12 @@ from .integrals import (
     nuclear_attraction,
     primitive_norm,
 )
-from .matrices import molecular_density_matrix, overlap_matrix
+from .matrices import (
+    attraction_matrix,
+    core_matrix,
+    kinetic_matrix,
+    molecular_density_matrix,
+    overlap_matrix,
+    repulsion_tensor,
+)
 from .molecule import *
