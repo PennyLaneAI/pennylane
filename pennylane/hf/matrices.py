@@ -195,14 +195,22 @@ def attraction_matrix(basis_functions, charges, r):
                 if i <= j:
                     if args:
                         args_ab = []
-                        for l in range(len(args)):
-                            args_ab.append(args[l][[i, j]])
+
+                        if r.requires_grad:
+                            for l in range(len(args) - 1):
+                                args_ab.append(args[l + 1][[i, j]])
+                        else:
+                            for l in range(len(args)):
+                                args_ab.append(args[l][[i, j]])
+
                         for k, c in enumerate(r):
                             if c.requires_grad:
-                                args_ab = [args[0][k]] + args_ab[1:]
+                                args_ab = [args[0][k]] + args_ab
                             attraction_integral = attraction_integral - charges[
                                 k
                             ] * generate_attraction(c, a, b)(*args_ab)
+                            if c.requires_grad:
+                                args_ab = args_ab[1:]
                     else:
                         for k, c in enumerate(r):
                             attraction_integral = (
