@@ -25,6 +25,9 @@ from matplotlib.patches import FancyArrow
 
 from pennylane.circuit_drawer import MPLDrawer
 from pennylane.math import allclose
+import pennylane
+import sys
+from importlib import reload
 
 
 class TestInitialization:
@@ -527,3 +530,13 @@ class TestMeasure:
         assert arrow.get_linewidth() == 0.5
 
         plt.close()
+
+    def test_matplotlib_import_error(self, monkeypatch):
+        """Test that an error is raised if the MPLDrawer would be used without
+        an installed version of matplotlib."""
+        with monkeypatch.context() as m:
+            m.setitem(sys.modules, "matplotlib", None)
+            reload(sys.modules["pennylane.circuit_drawer.mpldrawer"])
+            assert not pennylane.circuit_drawer.mpldrawer.has_mpl
+            with pytest.raises(ImportError, match="Module matplotlib is required for"):
+                MPLDrawer(1, 1)
