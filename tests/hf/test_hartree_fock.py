@@ -84,8 +84,8 @@ def test_hf_energy(symbols, geometry, e_ref):
         ),
         (
             ["H", "O", "H"],
-            np.array([[0.0, 1.2, 0.0], [0.0, 0.0, 0.0], [1.0, -0.2, 0.0]], requires_grad=True),
-            np.array([15.09255]),
+            np.array([[0.0, 1.0, 0.0], [0.0, 0.0, 0.0], [1.0, 0.0, 0.0]], requires_grad=True),
+            np.array([16.707106781186546]),
         ),
     ],
 )
@@ -94,5 +94,4 @@ def test_nuclear_energy(symbols, geometry, e_ref):
     mol = Molecule(symbols, geometry)
     args = [mol.coordinates]
     e = nuclear_energy(mol.nuclear_charges, mol.coordinates)(*args)
-    print(e)
     assert np.allclose(e, e_ref)
