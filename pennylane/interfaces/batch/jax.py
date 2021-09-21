@@ -62,6 +62,15 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         tape.trainable_params = qml.math.get_trainable_indices(params)
 
     parameters = tuple(list(t.get_parameters()) for t in tapes)
+    if gradient_fn is None:
+        return _execute_with_fwd(
+            parameters,
+            tapes=tapes,
+            device=device,
+            execute_fn=execute_fn,
+            gradient_kwargs=gradient_kwargs,
+            _n=_n,
+        )
 
     return _execute(
         parameters,
@@ -111,80 +120,127 @@ def _execute(
 
     def wrapped_exec_bwd(params, g):
 
-        # TODO: forward mode
-        if False:
-            return []
-        else:
-            module_name = getattr(inspect.getmodule(gradient_fn), "__name__", "")
-            if "pennylane.gradients" in module_name:
+        module_name = getattr(inspect.getmodule(gradient_fn), "__name__", "")
+        if "pennylane.gradients" in module_name:
 
-                def non_diff_wrapper(args):
-                    """The derivative order is at the maximum. Compute the VJP
-                    in a non-differentiable manner to reduce overhead."""
-                    new_tapes = []
-                    p = args[:-1]
-                    dy = args[-1]
+            def non_diff_wrapper(args):
+                """The derivative order is at the maximum. Compute the VJP
+                in a non-differentiable manner to reduce overhead."""
+                new_tapes = []
+                p = args[:-1]
+                dy = args[-1]
 
-                    for t, a in zip(tapes, p):
-                        new_tapes.append(t.copy(copy_operations=True))
-                        new_tapes[-1].set_parameters(a)
-                        new_tapes[-1].trainable_params = t.trainable_params
+                for t, a in zip(tapes, p):
+                    new_tapes.append(t.copy(copy_operations=True))
+                    new_tapes[-1].set_parameters(a)
+                    new_tapes[-1].trainable_params = t.trainable_params
 
-                    vjp_tapes, processing_fn = qml.gradients.batch_vjp(
-                        new_tapes,
-                        dy,
-                        gradient_fn,
-                        reduction="append",
-                        gradient_kwargs=gradient_kwargs,
-                    )
-
-                    partial_res = execute_fn(vjp_tapes)[0]
-                    res = processing_fn(partial_res)
-                    return np.concatenate(res)
-
-                args = tuple(params) + (g,)
-                vjps = host_callback.call(
-                    non_diff_wrapper,
-                    args,
-                    result_shape=jax.ShapeDtypeStruct((total_params,), jnp.float32),
+                vjp_tapes, processing_fn = qml.gradients.batch_vjp(
+                    new_tapes,
+                    dy,
+                    gradient_fn,
+                    reduction="append",
+                    gradient_kwargs=gradient_kwargs,
                 )
 
-                start = 0
-                res = []
+                partial_res = execute_fn(vjp_tapes)[0]
+                res = processing_fn(partial_res)
+                return np.concatenate(res)
 
-                for p in params:
-                    res.append(vjps[start : start + len(p)])
-                    start += len(p)
-                    if len(p) == 1:
-                        res[-1] = res[-1][0]
+            args = tuple(params) + (g,)
+            vjps = host_callback.call(
+                non_diff_wrapper,
+                args,
+                result_shape=jax.ShapeDtypeStruct((total_params,), jnp.float32),
+            )
 
-                if res[0].ndim != 0:
-                    res = [[jnp.array(p) for p in res[0]]]
-                return (tuple(res),)
+            start = 0
+            res = []
 
-            elif (
-                hasattr(gradient_fn, "fn")
-                and inspect.ismethod(gradient_fn.fn)
-                and gradient_fn.fn.__self__ is device
-            ):
-                # Gradient function is a device method.
-                # Note that unlike the previous branch:
-                #
-                # - there is no recursion here
-                # - gradient_fn is not differentiable
-                #
-                # so we cannot support higher-order derivatives.
+            for p in params:
+                res.append(vjps[start : start + len(p)])
+                start += len(p)
+                if len(p) == 1:
+                    res[-1] = res[-1][0]
 
-                with qml.tape.Unwrap(*tapes):
-                    jacs = gradient_fn(tapes, **gradient_kwargs)
+            if res[0].ndim != 0:
+                res = [[jnp.array(p) for p in res[0]]]
+            return (tuple(res),)
 
-                vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(g, jacs)]
-                res = [[jnp.array(p) for p in vjps[0]]]
-                return (tuple(res),)
+        elif (
+            hasattr(gradient_fn, "fn")
+            and inspect.ismethod(gradient_fn.fn)
+            and gradient_fn.fn.__self__ is device
+        ):
+            # Gradient function is a device method.
+            # Note that unlike the previous branch:
+            #
+            # - there is no recursion here
+            # - gradient_fn is not differentiable
+            #
+            # so we cannot support higher-order derivatives.
 
-            else:
+            with qml.tape.Unwrap(*tapes):
+                jacs = gradient_fn(tapes, **gradient_kwargs)
 
-                raise ValueError("Unknown gradient function.")
+            vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(g, jacs)]
+            res = [[jnp.array(p) for p in vjps[0]]]
+            return (tuple(res),)
+
+        else:
+
+            raise ValueError("Unknown gradient function.")
+
+    wrapped_exec.defvjp(wrapped_exec_fwd, wrapped_exec_bwd)
+    return wrapped_exec(params)
+
+def _execute_with_fwd(
+    params,
+    tapes=None,
+    device=None,
+    execute_fn=None,
+    gradient_kwargs=None,
+    _n=1,
+):  # pylint: disable=dangerous-default-value,unused-argument
+    jacs = None
+    total_size = np.sum([t.output_dim for t in tapes])
+    total_params = np.sum([len(p) for p in params])
+
+    @jax.custom_vjp
+    def wrapped_exec(params):
+        def wrapper(p):
+            new_tapes = []
+
+            for t, a in zip(tapes, p):
+                new_tapes.append(t.copy(copy_operations=True))
+                new_tapes[-1].set_parameters(a)
+
+            res, jacs = execute_fn(new_tapes, **gradient_kwargs)
+
+            return np.stack(res), jacs
+
+        jacobian_shape = [jax.ShapeDtypeStruct((1, len(p)), jnp.float32) for p in params]
+        res, jacs = host_callback.call(
+            wrapper, params, result_shape=tuple([
+                                            jax.ShapeDtypeStruct((total_size, 1), jnp.float32),
+                                            jacobian_shape
+                                               ])
+        )
+        return res, jacs
+
+    def wrapped_exec_fwd(params):
+        res, jacs = wrapped_exec(params)
+        return res, tuple([jacs, params])
+
+    def wrapped_exec_bwd(params, g):
+        jacs, params = params
+        res_jacs = []
+        for j in jacs:
+            this_j = []
+            for i in range(j.shape[1]):
+                this_j.append(j[0, i])
+            res_jacs.append(this_j)
+        return tuple([tuple(res_jacs)])
 
     wrapped_exec.defvjp(wrapped_exec_fwd, wrapped_exec_bwd)
     return wrapped_exec(params)
