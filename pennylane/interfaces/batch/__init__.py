@@ -109,7 +109,7 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True, expand_fn=Non
     if expand_fn is not None:
         original_fn = fn
 
-        def fn(tapes, **kwargs):
+        def fn(tapes, **kwargs):  # pylint: disable=function-redefined
             tapes = [expand_fn(tape) for tape in tapes]
             return original_fn(tapes, **kwargs)
 

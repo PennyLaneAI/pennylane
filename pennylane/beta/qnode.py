@@ -541,7 +541,7 @@ class QNode:
                     )
 
         if self.expansion_strategy == "device":
-            self._tape = self.device.expand_fn(self.tape, max_expansion=max_expansion)
+            self._tape = self.device.expand_fn(self.tape, max_expansion=self.max_expansion)
 
         # If the gradient function is a transform, expand the tape so that
         # all operations are supported by the transform.

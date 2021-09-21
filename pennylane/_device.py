@@ -586,7 +586,7 @@ class Device(abc.ABC):
         """
         obs_on_same_wire = len(circuit._obs_sharing_wires) > 0 and not self.supports_observable(
             "Hamiltonian"
-        )
+        )  # pylint: disable=protected-access
         ops_not_supported = any(
             isinstance(op, qml.tape.QuantumTape)  # nested tapes must be expanded
             or not self.supports_operation(op.name)  # unsupported ops must be expanded
