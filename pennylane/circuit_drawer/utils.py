@@ -52,4 +52,4 @@ def convert_wire_order(ops, wire_order=None, show_all_wires=False):
         used_wires = {wire for op in ops for wire in op.wires}
         wire_order = [wire for wire in wire_order if wire in used_wires]
 
-    return dict(zip(wire_order, range(len(wire_order))))
+    return {wire: ind for ind, wire in enumerate(wire_order)}
