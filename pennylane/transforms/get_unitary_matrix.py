@@ -24,7 +24,7 @@ def get_unitary_matrix(circuit, wire_order=None):
     r"""Construct the matrix representation of a quantum circuit.
 
     Args:
-        circuit (.QNode, .QuantumTape, or Callable): A quantum node, tape, or function that applies quantum operations.
+        circuit (pennylane.QNode, .QuantumTape, or Callable): A quantum node, tape, or function that applies quantum operations.
         wire_order (Sequence[Any], optional): Order of the wires in the quantum circuit. Defaults to the order in which the wires appear in the quantum function.
 
     Returns:
