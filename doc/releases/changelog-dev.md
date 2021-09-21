@@ -81,6 +81,7 @@
   `qml.beta.QNode`, and `@qml.beta.qnode`.
   [(#1642)](https://github.com/PennyLaneAI/pennylane/pull/1642)
   [(#1646)](https://github.com/PennyLaneAI/pennylane/pull/1646)
+  [(#1674)](https://github.com/PennyLaneAI/pennylane/pull/1674)
 
   It differs from the standard QNode in several ways:
 
@@ -113,7 +114,6 @@
 
   Currently, this beta QNode does not support the following features:
 
-  - Circuit decompositions
   - Non-mutability via the `mutable` keyword argument
   - Viewing specifications with `qml.specs`
   - The `reversible` QNode differentiation method

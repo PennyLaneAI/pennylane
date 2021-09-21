@@ -51,9 +51,10 @@ class QNode:
 
         Currently, this beta QNode does not support the following features:
 
-        - Circuit decompositions
         - Non-mutability via the ``mutable`` keyword argument
         - Viewing specifications with ``qml.specs``
+        - The ``reversible`` QNode differentiation method
+        - The ability to specify a ``dtype`` when using PyTorch and TensorFlow.
 
         It is also not tested with the :mod:`~.qnn` module.
 
