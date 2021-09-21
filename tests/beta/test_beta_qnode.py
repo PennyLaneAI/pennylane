@@ -1098,3 +1098,29 @@ class TestTapeExpansion:
             ValueError, match="Can only return the expectation of a single Hamiltonian"
         ):
             circuit()
+
+    def test_device_expansion_strategy(self, mocker):
+        """Test that the device expansion strategy performs the device
+        decomposition at construction time, and not at execution time"""
+        dev = qml.device("default.qubit", wires=2)
+        x = np.array(0.5)
+
+        @qnode(dev, diff_method="parameter-shift", expansion_strategy="device")
+        def circuit(x):
+            qml.SingleExcitation(x, wires=[0, 1])
+            return qml.expval(qml.PauliX(0))
+
+        assert circuit.expansion_strategy == "device"
+        assert circuit.execute_kwargs["expand_fn"] is None
+
+        spy_expand = mocker.spy(circuit.device, "expand_fn")
+
+        circuit.construct([x], {})
+        assert len(circuit.tape.operations) > 0
+        spy_expand.assert_called_once()
+
+        circuit(x)
+        assert len(spy_expand.call_args_list) == 2
+
+        qml.grad(circuit)(x)
+        assert len(spy_expand.call_args_list) == 3
