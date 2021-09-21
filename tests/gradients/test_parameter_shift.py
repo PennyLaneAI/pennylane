@@ -271,8 +271,11 @@ class TestParamShift:
         class RX(qml.RX):
             @property
             def grad_recipe(self):
+                # The gradient is given by [f(2x) - f(0)] / (2 sin(x)), by subsituting
+                # shift = x into the two term parameter-shift rule.
                 x = self.data[0]
-                return ([[0.5 / np.sin(x), 1.0, x], [0.5 / np.sin(x), 0.0, 0]],)
+                c = 0.5 / np.sin(x)
+                return ([[c, 0.0, 2 * x], [-c, 0.0, 0.0]],)
 
         x = np.array(0.654, requires_grad=True)
         dev = qml.device("default.qubit", wires=2)
@@ -281,11 +284,14 @@ class TestParamShift:
             RX(x, wires=0)
             qml.expval(qml.PauliZ(0))
 
-        tapes, _ = qml.gradients.param_shift(tape)
+        tapes, fn = qml.gradients.param_shift(tape)
 
         assert len(tapes) == 2
         assert tapes[0].operations[0].data[0] == 0
         assert tapes[1].operations[0].data[0] == 2 * x
+
+        grad = fn(dev.batch_execute(tapes))
+        assert np.allclose(grad, -np.sin(x))
 
 
 class TestParameterShiftRule:

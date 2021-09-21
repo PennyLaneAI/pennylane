@@ -172,10 +172,11 @@
 
       @property
       def grad_recipe(self):
-          # The gradient is given by [f(x) - f(0)] / (2 sin(x)), by subsituting
+          # The gradient is given by [f(2x) - f(0)] / (2 sin(x)), by subsituting
           # shift = x into the two term parameter-shift rule.
           x = self.data[0]
-          return ([[0.5 / np.sin(x), 1.0, x], [0.5 / np.sin(x), 0.0, 0]],)
+          c = 0.5 / np.sin(x)
+          return ([[c, 0.0, 2 * x], [-c, 0.0, 0.0]],)
   ```
 
 <h3>Breaking changes</h3>
