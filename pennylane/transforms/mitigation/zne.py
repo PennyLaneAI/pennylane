@@ -13,11 +13,13 @@
 # limitations under the License.
 
 """Tools for zero-noise extrapolation."""
+from functools import partial
 
 from numpy.polynomial.polynomial import Polynomial
 
+from pennylane import math
 from pennylane.tape import get_active_tape
-from pennylane.math import stack, arange
+from pennylane.transforms import batch_transform
 
 
 def _fit_zne(x_values, energies, degree=1):
@@ -33,11 +35,14 @@ def _fit_zne(x_values, energies, degree=1):
     Returns:
         A polynomial of the specified degree that is the best fit to the data.
     """
-    return Polynomial.fit(x_values, energies, degree, full=True)
+
+    unwrapped_energies = math.stack(energies).reshape(len(energies))
+
+    return Polynomial.fit(x_values, unwrapped_energies, degree, full=True)[0](0)
 
 
 def _generate_transformed_tapes(tape, transform, max_arg_val):
-    """ Given a tape, transform, and max value of the transform argument,
+    """Given a tape, transform, and max value of the transform argument,
     construct and return the set of tapes that need to be executed.
 
     """
@@ -52,20 +57,21 @@ def _generate_transformed_tapes(tape, transform, max_arg_val):
     return tapes
 
 
-def zne(qnode, mitigation_transform, max_arg_val):
+@batch_transform
+def zne(tape, mitigation_transform, max_arg_val):
     """Given a tape and a mitigation transform, return the zero-extrapolated
     value computed according to the functionality of the provided transform.
 
     Args:
-        qnode (.QNode): a QNode
+        qnode (pennylane.QNode or .QuantumTape): quantum tape or QNode
         mitigation_transform (function): A quantum function transform
             with which to perform multiple experiments to extrapolate over.
         max_arg_val (int): The maximum value of the argument accepted by the
             transform.
 
     Returns:
-        float, array: The linearly extrapolated value of the function at 0,
-            and the data produced by evaluating the QNode for each point.
+        func: Function which accepts the same arguments as the QNode. When called, this
+        function will return the extrapolated expectation value.
 
     **Example**
 
@@ -91,44 +97,84 @@ def zne(qnode, mitigation_transform, max_arg_val):
 
     .. code-block:: python3
 
+        @zne(qml.transforms.cnot_pair_insertion, 8)
+        @qml.qnode(dev)
         def circuit(x, y, z):
-        qml.RX(x, wires=0)
-        qml.CNOT(wires=[0, 1])
-        qml.RY(y, wires=1)
-        qml.CNOT(wires=[1, 2])
-        qml.RZ(z, wires=2)
-        qml.CNOT(wires=[2, 0])
-        return qml.expval(qml.PauliZ(0))
+            qml.RX(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RY(y, wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.RZ(z, wires=2)
+            qml.CNOT(wires=[2, 0])
+            return qml.expval(qml.PauliZ(0))
 
     We can estimate the noiseless value by performing CNOT pair insertion,
     for an increasing number of pairs, and then linearly extrapolate back
     down to 0 pairs. The ``zne_func`` transforms returns a function that
-    will perform such extrapolation automatically.
+    will perform such extrapolation automatically. Note that the transform
+    returns the full polynomial of best fit.
 
-    >>> qnode = qml.QNode(circuit, dev)
-    >>> zne_func = qml.transforms.zne(qnode, qml.transforms.cnot_pair_insertion, 6)
-    >>> extrap_val, data = zne_func(0.5, 0.1, -0.2)
-    >>> extrap_val
-    0.8390400000000006
-    >>> data
-    tensor([0.8302, 0.8176, 0.8144, 0.7962, 0.7942, 0.781], requires_grad=True)
+    >>> circuit(0.3, 0.4, 0.5)
+    0.7760857142857142
+
+    We can also apply this directly to tapes, which will help us see more clearly
+    what is happening in the transform internally. For example,
+
+    .. code-block:: python3
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.3, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RY(0.4, wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.expval(qml.PauliZ(0))
+
+    >>> tapes, processing_fn = zne(tape, qml.transforms.cnot_pair_insertion, 10)
+
+    We can inspect each tape and see how the CNOT pair insertion has changed
+    the list of operations.
+
+    >>> tapes[0].operations
+    [RX(0.3, wires=[0]),
+     CNOT(wires=[0, 1]),
+     CNOT(wires=[0, 1]),
+     CNOT(wires=[0, 1]),
+     RY(0.4, wires=[1]),
+     CNOT(wires=[1, 2]),
+     CNOT(wires=[1, 2]),
+     CNOT(wires=[1, 2]),
+     RZ(0.5, wires=[2]),
+     CNOT(wires=[2, 0]),
+     CNOT(wires=[2, 0]),
+     CNOT(wires=[2, 0])]
+
+    We can then execute all the tapes to see the list of expectation values
+    obtained when using an increasing number of CNOTs.
+
+    >>> res = qml.execute(tapes, dev, gradient_fn=qml.gradients.param_shift)
+    >>> res
+    [tensor([0.7608], requires_grad=True),
+     tensor([0.7442], requires_grad=True),
+     tensor([0.7632], requires_grad=True),
+     tensor([0.731], requires_grad=True),
+     tensor([0.7464], requires_grad=True),
+     tensor([0.728], requires_grad=True),
+     tensor([0.7288], requires_grad=True),
+     tensor([0.7056], requires_grad=True)]
+
+    Finally, we can retrive the extrapolated value using the processing function:
+
+    >>> processing_fn(res)
+    0.7681571428571428
     """
 
-    def _zne_function(*args, **kwargs):
-        qnode.construct(args, kwargs)
-        original_tape = qnode.qtape
+    # Generate all the transformed tapes
+    transformed_tapes = _generate_transformed_tapes(tape, mitigation_transform, max_arg_val)
 
-        transformed_tapes = _generate_transformed_tapes(
-            original_tape, mitigation_transform, max_arg_val
-        )
+    # The processing function should only accept the results of the executed
+    # tapes. Since we also need a set of "x values" for the fit, we use a
+    # partial function with those values already populated.
+    arg_range = math.arange(1, max_arg_val + 1)
+    processing_fn = partial(_fit_zne, arg_range)
 
-        res = stack([t.execute(device=qnode.device) for t in transformed_tapes]).reshape(
-            len(transformed_tapes)
-        )
-
-        poly_results = _fit_zne(arange(1, max_arg_val + 1), res)
-
-        # Return the value of the extrapolated function at 0
-        return poly_results[0](0), res
-
-    return _zne_function
+    return transformed_tapes, processing_fn
