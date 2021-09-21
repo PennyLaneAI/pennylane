@@ -379,7 +379,7 @@ class TestQNode:
 
     @pytest.mark.xfail
     def test_differentiable_expand(self, dev_name, diff_method, mode, tol):
-        """Test that operation and nested tapes expansion
+        """Test that operation and nested tape expansion
         is differentiable"""
 
         class U3(qml.U3):
@@ -442,7 +442,7 @@ class TestQNode:
 
 class TestShotsIntegration:
     """Test that the QNode correctly changes shot value, and
-    differentiates it."""
+    remains differentiable."""
 
     def test_changing_shots(self, mocker, tol):
         """Test that changing shots works on execution"""

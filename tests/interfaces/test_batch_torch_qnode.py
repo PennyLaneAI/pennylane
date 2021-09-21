@@ -656,6 +656,7 @@ class TestQubitIntegration:
 
         if diff_method == "backprop":
             # TODO: check why this differs from other interfaces
+            # https://github.com/PennyLaneAI/pennylane/issues/1607
             expected = expected.flatten()
 
         assert np.allclose(res.detach().numpy(), expected, atol=tol, rtol=0)
