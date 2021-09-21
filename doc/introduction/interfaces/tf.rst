@@ -30,7 +30,7 @@ Construction via keyword
 ------------------------
 
 The :ref:`QNode decorator <intro_vcirc_decorator>` is the recommended way for creating
-:class:`~.QNode` objects in PennyLane. The only change required to construct a TensorFlow-capable
+:class:`QNode <pennylane.QNode>` objects in PennyLane. The only change required to construct a TensorFlow-capable
 QNode is to specify the ``interface='tf'`` keyword argument:
 
 .. code-block:: python
