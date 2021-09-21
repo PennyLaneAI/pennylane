@@ -472,7 +472,10 @@ class DefaultQubit(QubitDevice):
         if observable.name in ("Hamiltonian", "SparseHamiltonian"):
             assert self.shots is None, f"{observable.name} must be used with shots=None"
 
-            backprop_mode = not isinstance(self.state, np.ndarray)
+            backprop_mode = (
+                not isinstance(self.state, np.ndarray)
+                or any(not isinstance(d, (float, np.ndarray)) for d in observable.data)
+            ) and observable.name == "Hamiltonian"
 
             if backprop_mode:
                 # We must compute the expectation value assuming that the Hamiltonian
@@ -512,6 +515,9 @@ class DefaultQubit(QubitDevice):
                     coo_matrix(qml.math.conj(self.state)),
                     coo_matrix.dot(Hmat, coo_matrix(self.state.reshape(len(self.state), 1))),
                 ).toarray()[0]
+
+            if observable.name == "Hamiltonian":
+                res = qml.math.squeeze(res)
 
             return qml.math.real(res)
 
@@ -618,8 +624,13 @@ class DefaultQubit(QubitDevice):
         if state.ndim != 1 or n_state_vector != 2 ** len(device_wires):
             raise ValueError("State vector must be of length 2**wires.")
 
-        if not qml.math.allclose(qml.math.linalg.norm(state, ord=2), 1.0, atol=tolerance):
-            raise ValueError("Sum of amplitudes-squared does not equal one.")
+        norm_error_message = "Sum of amplitudes-squared does not equal one."
+        if qml.math.get_interface(state) == "torch":
+            if not qml.math.allclose(qml.math.linalg.norm(state, ord=2), 1.0, atol=tolerance):
+                raise ValueError(norm_error_message)
+        else:
+            if not np.allclose(np.linalg.norm(state, ord=2), 1.0, atol=tolerance):
+                raise ValueError(norm_error_message)
 
         if len(device_wires) == self.num_wires and sorted(device_wires) == device_wires:
             # Initialize the entire wires with the state

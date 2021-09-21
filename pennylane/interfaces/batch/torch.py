@@ -16,8 +16,6 @@ This module contains functions for adding the PyTorch interface
 to a PennyLane Device class.
 """
 # pylint: disable=too-many-arguments,protected-access
-import inspect
-
 import numpy as np
 import torch
 
@@ -83,7 +81,7 @@ class ExecuteTapes(torch.autograd.Function):
         ctx.max_diff = kwargs["max_diff"]
         ctx._n = kwargs.get("_n", 1)
 
-        with qml.tape.Unwrap(*ctx.tapes):
+        with qml.tape.Unwrap(*ctx.tapes, set_trainable=False):
             res, ctx.jacs = ctx.execute_fn(ctx.tapes, **ctx.gradient_kwargs)
 
         # if any input tensor uses the GPU, the output should as well
@@ -95,11 +93,17 @@ class ExecuteTapes(torch.autograd.Function):
                 break
 
         for i, r in enumerate(res):
-            if r.dtype is np.dtype("object"):
+            if isinstance(r, np.ndarray) and r.dtype is np.dtype("object"):
                 # For backwards compatibility, we flatten ragged tape outputs
                 r = np.hstack(r)
 
-            res[i] = torch.as_tensor(r, device=ctx.torch_device)
+            if isinstance(r, (list, tuple)):
+                res[i] = [torch.as_tensor(t) for t in r]
+
+                if isinstance(r, tuple):
+                    res[i] = tuple(res[i])
+            else:
+                res[i] = torch.as_tensor(r, device=ctx.torch_device)
 
             if ctx.jacs:
                 ctx.jacs[i] = torch.as_tensor(ctx.jacs[i], device=ctx.torch_device)
@@ -119,13 +123,8 @@ class ExecuteTapes(torch.autograd.Function):
         else:
             # Need to compute the Jacobians on the backward pass (accumulation="backward")
 
-            # Temporary: check if the gradient function is a differentiable transform.
-            # For the moment, simply check if it is part of the `qml.gradients` package.
-            # Longer term, we should have a way of checking this directly
-            # (e.g., isinstance(gradient_fn, GradientTransform))
-            module_name = getattr(inspect.getmodule(ctx.gradient_fn), "__name__", "")
-
-            if "pennylane.gradients" in module_name:
+            if isinstance(ctx.gradient_fn, qml.gradients.gradient_transform):
+                # Gradient function is a gradient transform.
 
                 # Generate and execute the required gradient tapes
                 if ctx._n < ctx.max_diff:
@@ -172,12 +171,9 @@ class ExecuteTapes(torch.autograd.Function):
 
                     vjps = processing_fn(ctx.execute_fn(vjp_tapes)[0])
 
-            elif (
-                hasattr(ctx.gradient_fn, "fn")
-                and inspect.ismethod(ctx.gradient_fn.fn)
-                and ctx.gradient_fn.fn.__self__ is ctx.device
-            ):
-                # Gradient function is a device method.
+            else:
+                # Gradient function is not a gradient transform
+                # (e.g., it might be a device method).
                 # Note that unlike the previous branch:
                 #
                 # - there is no recursion here
@@ -189,9 +185,6 @@ class ExecuteTapes(torch.autograd.Function):
                     jacs = ctx.gradient_fn(ctx.tapes, **ctx.gradient_kwargs)
 
                 vjps = _compute_vjp(dy, jacs, device=ctx.torch_device)
-
-            else:
-                raise ValueError("Unknown gradient function.")
 
         # The output of backward must match the input of forward.
         # Therefore, we return `None` for the gradient of `kwargs`.

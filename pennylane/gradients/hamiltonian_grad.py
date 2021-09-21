@@ -25,18 +25,32 @@ def hamiltonian_grad(tape, idx, params=None):
         idx (int): index of parameter that we differentiate with respect to
         params (array): explicit parameters to set
     """
+    op, p_idx = tape.get_operation(idx)
+    new_tape = tape.copy(copy_operations=True)
 
-    t_idx = list(tape.trainable_params)[idx]
-    op = tape._par_info[t_idx]["op"]
-    p_idx = tape._par_info[t_idx]["p_idx"]
-
-    new_tape = tape.copy(copy_operations=True, tape_cls=qml.tape.QuantumTape)
     if params is not None:
         new_tape.set_parameters(params=params)
 
-    new_tape._measurements = [qml.expval(op.ops[p_idx])]
+    # get position in queue
+
+    queue_position = tape.observables.index(op)
+    new_tape._measurements[queue_position] = qml.expval(op.ops[p_idx])
 
     new_tape._par_info = {}
     new_tape._update()
 
-    return [new_tape], lambda x: qml.math.squeeze(x)
+    if len(tape.measurements) > 1:
+
+        def processing_fn(results):
+            res = results[0][queue_position]
+            zeros = qml.math.zeros_like(res)
+
+            final = []
+            for i, _ in enumerate(tape.measurements):
+                final.append(res if i == queue_position else zeros)
+
+            return qml.math.expand_dims(qml.math.stack(final), 0)
+
+        return [new_tape], processing_fn
+
+    return [new_tape], lambda x: x

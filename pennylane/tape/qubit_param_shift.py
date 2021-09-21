@@ -24,6 +24,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.measure import MeasurementProcess
 from pennylane.tape import QuantumTape
+from pennylane.math import toarray
 
 from .jacobian_tape import JacobianTape
 
@@ -175,7 +176,7 @@ class QubitParamShiftTape(JacobianTape):
                 array[float]: 1-dimensional array of length determined by the tape output
                 measurement statistics
             """
-            results = np.squeeze(results)
+            results = np.squeeze(list(map(toarray, results)))
 
             if results.dtype is np.dtype("O"):
                 # The evaluated quantum results are a ragged array.

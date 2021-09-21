@@ -20,7 +20,7 @@ import pytest
 torch = pytest.importorskip("torch")
 
 import pennylane as qml
-from pennylane.gradients import param_shift
+from pennylane.gradients import finite_diff, param_shift
 from pennylane.interfaces.batch import execute
 
 
@@ -52,23 +52,6 @@ class TestTorchExecuteUnitTests:
 
         for args in spy.call_args_list:
             assert args[1]["shift"] == np.pi / 4
-
-    def test_unknown_gradient_fn_error(self):
-        """Test that an error is raised if an unknown gradient function
-        is passed"""
-        a = torch.tensor([0.1, 0.2], requires_grad=True)
-
-        dev = qml.device("default.qubit", wires=1)
-
-        with qml.tape.JacobianTape() as tape:
-            qml.RY(a[0], wires=0)
-            qml.RX(a[1], wires=0)
-            qml.expval(qml.PauliZ(0))
-
-        res = execute([tape], dev, gradient_fn=lambda x: x, interface="torch")[0]
-
-        with pytest.raises(ValueError, match="Unknown gradient function"):
-            res.backward()
 
     def test_incorrect_mode(self):
         """Test that an error is raised if a gradient transform
@@ -456,6 +439,35 @@ class TestTorchExecuteIntegration:
         assert torch.allclose(a.grad, expected[0], atol=tol, rtol=0)
         assert torch.allclose(b.grad, expected[1], atol=tol, rtol=0)
 
+    def test_tape_no_parameters(self, torch_device, execute_kwargs, tol):
+        """Test that a tape with no parameters is correctly
+        ignored during the gradient computation"""
+        dev = qml.device("default.qubit", wires=1)
+        params = torch.tensor([0.1, 0.2], requires_grad=True, device=torch_device)
+        x, y = params.detach()
+
+        with qml.tape.JacobianTape() as tape1:
+            qml.Hadamard(0)
+            qml.expval(qml.PauliX(0))
+
+        with qml.tape.JacobianTape() as tape2:
+            qml.RY(0.5, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        with qml.tape.JacobianTape() as tape3:
+            qml.RY(params[0], wires=0)
+            qml.RX(params[1], wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        res = sum(execute([tape1, tape2, tape3], dev, **execute_kwargs))
+        expected = 1 + np.cos(0.5) + np.cos(x) * np.cos(y)
+        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+
+        res.backward()
+        grad = params.grad.detach()
+        expected = [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)]
+        assert np.allclose(grad, expected, atol=tol, rtol=0)
+
     def test_reusing_quantum_tape(self, torch_device, execute_kwargs, tol):
         """Test re-using a quantum tape by passing new parameters"""
         a = torch.tensor(0.1, requires_grad=True, device=torch_device)
@@ -777,6 +789,27 @@ class TestTorchExecuteIntegration:
         assert res.shape == (2, 10)
         assert isinstance(res, torch.Tensor)
 
+    def test_sampling_expval(self, torch_device, execute_kwargs):
+        """Test sampling works as expected if combined with expectation values"""
+        if execute_kwargs["gradient_fn"] == "device" and execute_kwargs["mode"] == "forward":
+            pytest.skip("Adjoint differentiation does not support samples")
+
+        dev = qml.device("default.qubit", wires=2, shots=10)
+
+        with qml.tape.JacobianTape() as tape:
+            qml.Hadamard(wires=[0])
+            qml.CNOT(wires=[0, 1])
+            qml.sample(qml.PauliZ(0))
+            qml.expval(qml.PauliX(1))
+
+        res = execute([tape], dev, **execute_kwargs)[0]
+
+        assert len(res) == 2
+        assert isinstance(res, tuple)
+        assert res[0].shape == (10,)
+        assert isinstance(res[0], torch.Tensor)
+        assert isinstance(res[1], torch.Tensor)
+
     def test_sampling_gradient_error(self, torch_device, execute_kwargs):
         """Test differentiating a tape with sampling results in an error"""
         if execute_kwargs["gradient_fn"] == "device" and execute_kwargs["mode"] == "forward":
@@ -997,3 +1030,101 @@ class TestHigherOrderDerivatives:
         res = torch.autograd.functional.hessian(cost_fn, params)
         expected = torch.zeros([2, 2], dtype=torch.float64)
         assert torch.allclose(res.to(torch_device), expected.to(torch_device), atol=tol, rtol=0)
+
+
+execute_kwargs = [
+    {"gradient_fn": param_shift, "interface": "torch"},
+    {"gradient_fn": finite_diff, "interface": "torch"},
+]
+
+
+@pytest.mark.parametrize("execute_kwargs", execute_kwargs)
+class TestHamiltonianWorkflows:
+    """Test that tapes ending with expectations
+    of Hamiltonians provide correct results and gradients"""
+
+    @pytest.fixture
+    def cost_fn(self, execute_kwargs):
+        """Cost function for gradient tests"""
+
+        def _cost_fn(weights, coeffs1, coeffs2, dev=None):
+            obs1 = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
+            H1 = qml.Hamiltonian(coeffs1, obs1)
+
+            obs2 = [qml.PauliZ(0)]
+            H2 = qml.Hamiltonian(coeffs2, obs2)
+
+            with qml.tape.JacobianTape() as tape:
+                qml.RX(weights[0], wires=0)
+                qml.RY(weights[1], wires=1)
+                qml.CNOT(wires=[0, 1])
+                qml.expval(H1)
+                qml.expval(H2)
+
+            return execute([tape], dev, **execute_kwargs)[0]
+
+        return _cost_fn
+
+    @staticmethod
+    def cost_fn_expected(weights, coeffs1, coeffs2):
+        """Analytic value of cost_fn above"""
+        a, b, c = coeffs1.detach().numpy()
+        d = coeffs2.detach().numpy()[0]
+        x, y = weights.detach().numpy()
+        return [-c * np.sin(x) * np.sin(y) + np.cos(x) * (a + b * np.sin(y)), d * np.cos(x)]
+
+    @staticmethod
+    def cost_fn_jacobian(weights, coeffs1, coeffs2):
+        """Analytic jacobian of cost_fn above"""
+        a, b, c = coeffs1.detach().numpy()
+        d = coeffs2.detach().numpy()[0]
+        x, y = weights.detach().numpy()
+        return np.array(
+            [
+                [
+                    -c * np.cos(x) * np.sin(y) - np.sin(x) * (a + b * np.sin(y)),
+                    b * np.cos(x) * np.cos(y) - c * np.cos(y) * np.sin(x),
+                    np.cos(x),
+                    np.cos(x) * np.sin(y),
+                    -(np.sin(x) * np.sin(y)),
+                    0,
+                ],
+                [-d * np.sin(x), 0, 0, 0, 0, np.cos(x)],
+            ]
+        )
+
+    def test_multiple_hamiltonians_not_trainable(self, cost_fn, execute_kwargs, tol):
+        coeffs1 = torch.tensor([0.1, 0.2, 0.3], requires_grad=False)
+        coeffs2 = torch.tensor([0.7], requires_grad=False)
+        weights = torch.tensor([0.4, 0.5], requires_grad=True)
+        dev = qml.device("default.qubit", wires=2)
+
+        res = cost_fn(weights, coeffs1, coeffs2, dev=dev)
+        expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
+        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+
+        res = torch.hstack(
+            torch.autograd.functional.jacobian(
+                lambda *x: cost_fn(*x, dev=dev), (weights, coeffs1, coeffs2)
+            )
+        )
+        expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)
+        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+
+    def test_multiple_hamiltonians_trainable(self, cost_fn, execute_kwargs, tol):
+        coeffs1 = torch.tensor([0.1, 0.2, 0.3], requires_grad=True)
+        coeffs2 = torch.tensor([0.7], requires_grad=True)
+        weights = torch.tensor([0.4, 0.5], requires_grad=True)
+        dev = qml.device("default.qubit", wires=2)
+
+        res = cost_fn(weights, coeffs1, coeffs2, dev=dev)
+        expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
+        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+
+        res = torch.hstack(
+            torch.autograd.functional.jacobian(
+                lambda *x: cost_fn(*x, dev=dev), (weights, coeffs1, coeffs2)
+            )
+        )
+        expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)
+        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
