@@ -28,7 +28,7 @@ def default_wire_map(ops):
 
     # Use dictionary to preserve ordering, sets break order
     used_wires = {wire: None for op in ops for wire in op.wires}
-    return dict(zip(used_wires, range(len(used_wires))))
+    return {wire: ind for ind, wire in enumerate(used_wires)}
 
 
 def convert_wire_order(ops, wire_order=None, show_all_wires=False):
