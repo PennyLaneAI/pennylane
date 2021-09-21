@@ -221,4 +221,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Christina Lee, David Wierichs, Utkarsh.
+Olivia Di Matteo, Josh Izaac, Christina Lee, David Wierichs, Utkarsh Azad.
