@@ -67,6 +67,12 @@ dependencies, can be done using pip:
 python -m pip install pennylane
 ```
 
+## Docker support
+
+**Docker** support exists for building using **CPU** and **GPU** (Nvidia CUDA
+11.1+) images. [See a more detailed description
+here](https://pennylane.readthedocs.io/en/stable/development/guide/installation.html#installation).
+
 ## Getting started
 
 For an introduction to quantum machine learning, guides and resources are available on

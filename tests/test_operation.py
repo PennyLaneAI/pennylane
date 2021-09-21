@@ -128,6 +128,9 @@ class TestOperation:
         if test_class == qml.QubitUnitary:
             pytest.skip("QubitUnitary can act on any number of wires.")
 
+        if test_class == qml.Hamiltonian:
+            pytest.skip("Hamiltonian has a different initialization signature.")
+
         if test_class in (qml.ControlledQubitUnitary, qml.MultiControlledX):
             pytest.skip("ControlledQubitUnitary alters the input params and wires in its __init__")
 
@@ -488,6 +491,19 @@ class TestObservableConstruction:
 
         op = DummyObserv(1.0, wires=0, id="test")
         assert op.id == "test"
+
+
+class TestObservableInstatiation:
+    """Test that wires are specified when a qml.operation.Observable is instantiated"""
+
+    def test_wire_is_given_in_argument(self):
+        class DummyObservable(qml.operation.Observable):
+            num_wires = 1
+            num_params = 0
+            par_domain = None
+
+        with pytest.raises(Exception, match="Must specify the wires *"):
+            DummyObservable()
 
 
 class TestOperatorIntegration:
@@ -908,6 +924,111 @@ class TestTensor:
         assert type(O_pruned) == type(expected)
         assert O_pruned.wires == expected.wires
 
+    def test_prune_while_queueing_return_tensor(self):
+        """Tests that pruning a tensor to a tensor in a tape context registers
+        the pruned tensor as owned by the measurement,
+        and turns the original tensor into an orphan without an owner."""
+
+        with qml.tape.QuantumTape() as tape:
+            # we assign operations to variables here so we can compare them below
+            a = qml.PauliX(wires=0)
+            b = qml.PauliY(wires=1)
+            c = qml.Identity(wires=2)
+            T = qml.operation.Tensor(a, b, c)
+            T_pruned = T.prune()
+            m = qml.expval(T_pruned)
+
+        ann_queue = tape._queue
+
+        # the pruned tensor became the owner of Paulis
+        assert ann_queue[a]["owner"] == T_pruned
+        assert ann_queue[b]["owner"] == T_pruned
+
+        # the Identity is still owned by the original Tensor
+        assert ann_queue[c]["owner"] == T
+        # the original tensor still owns all three observables
+        # but is not owned by a measurement
+        assert ann_queue[T]["owns"] == (a, b, c)
+        assert not hasattr(ann_queue[T], "owner")
+
+        # the pruned tensor is owned by the measurement
+        # and owns the two Paulis
+        assert ann_queue[T_pruned]["owner"] == m
+        assert ann_queue[T_pruned]["owns"] == (a, b)
+        assert ann_queue[m]["owns"] == T_pruned
+
+    def test_prune_while_queueing_return_obs(self):
+        """Tests that pruning a tensor to an observable in a tape context registers
+        the pruned observable as owned by the measurement,
+        and turns the original tensor into an orphan without an owner."""
+
+        with qml.tape.QuantumTape() as tape:
+            a = qml.PauliX(wires=0)
+            c = qml.Identity(wires=2)
+            T = qml.operation.Tensor(a, c)
+            T_pruned = T.prune()
+            m = qml.expval(T_pruned)
+
+        ann_queue = tape._queue
+
+        # the pruned tensor is the Pauli observable
+        assert T_pruned == a
+        # pruned tensor/Pauli is owned by the measurement
+        # since the entry in the dictionary got updated
+        # when the pruned tensor's owner was memorized
+        assert ann_queue[a]["owner"] == m
+        # the Identity is still owned by the original Tensor
+        assert ann_queue[c]["owner"] == T
+
+        # the original tensor still owns both observables
+        # but is not owned by a measurement
+        assert ann_queue[T]["owns"] == (a, c)
+        assert not hasattr(ann_queue[T], "owner")
+
+        # the measurement owns the Pauli/pruned tensor
+        assert ann_queue[m]["owns"] == T_pruned
+
+    def test_sparse_matrix_no_wires(self):
+        """Tests that the correct sparse matrix representation is used."""
+
+        t = qml.PauliX(0) @ qml.PauliZ(1)
+        s = t.sparse_matrix()
+
+        assert np.allclose(s.row, [0, 1, 2, 3])
+        assert np.allclose(s.col, [2, 3, 0, 1])
+        assert np.allclose(s.data, [1, -1, 1, -1])
+
+    def test_sparse_matrix_swapped_wires(self):
+        """Tests that the correct sparse matrix representation is used
+        when the custom wires swap the order."""
+
+        t = qml.PauliX(0) @ qml.PauliZ(1)
+        s = t.sparse_matrix(wires=[1, 0])
+
+        assert np.allclose(s.row, [0, 1, 2, 3])
+        assert np.allclose(s.col, [1, 0, 3, 2])
+        assert np.allclose(s.data, [1, 1, -1, -1])
+
+    def test_sparse_matrix_extra_wire(self):
+        """Tests that the correct sparse matrix representation is used
+        when the custom wires add an extra wire with an implied identity operation."""
+
+        t = qml.PauliX(0) @ qml.PauliZ(1)
+        s = t.sparse_matrix(wires=[0, 1, 2])
+
+        assert s.shape == (8, 8)
+        assert np.allclose(s.row, [0, 1, 2, 3, 4, 5, 6, 7])
+        assert np.allclose(s.col, [4, 5, 6, 7, 0, 1, 2, 3])
+        assert np.allclose(s.data, [1, 1, -1, -1, 1, 1, -1, -1])
+
+    def test_sparse_matrix_error(self):
+        """Tests that an error is raised if the sparse matrix is computed for
+        a tensor whose constituent operations are not all single-qubit gates."""
+
+        t = qml.PauliX(0) @ qml.Hermitian(np.eye(4), wires=[1, 2])
+        with pytest.raises(ValueError, match="Can only compute"):
+            t.sparse_matrix()
+
 
 equal_obs = [
     (qml.PauliZ(0), qml.PauliZ(0), True),
@@ -1271,7 +1392,9 @@ class TestDecomposition:
 
         # We have to patch BasisStatePreparation where it is loaded
         monkeypatch.setattr(
-            qml.ops.qubit, "BasisStatePreparation", lambda *args: call_args.append(args)
+            qml.ops.qubit.state_preparation,
+            "BasisStatePreparation",
+            lambda *args: call_args.append(args),
         )
         qml.BasisState.decomposition(n, wires=wires)
 
@@ -1288,7 +1411,9 @@ class TestDecomposition:
 
         # We have to patch MottonenStatePreparation where it is loaded
         monkeypatch.setattr(
-            qml.ops.qubit, "MottonenStatePreparation", lambda *args: call_args.append(args)
+            qml.ops.qubit.state_preparation,
+            "MottonenStatePreparation",
+            lambda *args: call_args.append(args),
         )
         qml.QubitStateVector.decomposition(state, wires=wires)
 

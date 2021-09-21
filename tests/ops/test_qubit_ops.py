@@ -39,6 +39,7 @@ from gate_data import (
     CNOT,
     SWAP,
     ISWAP,
+    SISWAP,
     CZ,
     S,
     T,
@@ -400,6 +401,7 @@ NON_PARAMETRIZED_OPERATIONS = [
     (qml.CNOT, CNOT),
     (qml.SWAP, SWAP),
     (qml.ISWAP, ISWAP),
+    (qml.SISWAP, SISWAP),
     (qml.CZ, CZ),
     (qml.S, S),
     (qml.T, T),
@@ -419,6 +421,8 @@ PARAMETRIZED_OPERATIONS = [
     qml.CY(wires=[0, 1]),
     qml.SWAP(wires=[0, 1]),
     qml.ISWAP(wires=[0, 1]),
+    qml.SISWAP(wires=[0, 1]),
+    qml.SQISW(wires=[0, 1]),
     qml.CSWAP(wires=[0, 1, 2]),
     qml.PauliRot(0.123, "Y", wires=0),
     qml.IsingXX(0.123, wires=[0, 1]),
@@ -518,72 +522,8 @@ class TestOperations:
         ],
     )
     def test_adjoint_error_exception(self, op, tol):
-        with pytest.raises(qml.ops.qubit.AdjointError):
+        with pytest.raises(qml.ops.AdjointError):
             op.adjoint()
-
-    @pytest.mark.parametrize("inverse", [True, False])
-    def test_QFT(self, inverse):
-        """Test if the QFT matrix is equal to a manually-calculated version for 3 qubits"""
-        op = qml.QFT(wires=range(3)).inv() if inverse else qml.QFT(wires=range(3))
-        res = op.matrix
-        exp = QFT.conj().T if inverse else QFT
-        assert np.allclose(res, exp)
-
-    @pytest.mark.parametrize("n_qubits", range(2, 6))
-    def test_QFT_decomposition(self, n_qubits):
-        """Test if the QFT operation is correctly decomposed"""
-        op = qml.QFT(wires=range(n_qubits))
-        decomp = op.decomposition(wires=range(n_qubits))
-
-        dev = qml.device("default.qubit", wires=n_qubits)
-
-        out_states = []
-        for state in np.eye(2 ** n_qubits):
-            dev.reset()
-            ops = [qml.QubitStateVector(state, wires=range(n_qubits))] + decomp
-            dev.apply(ops)
-            out_states.append(dev.state)
-
-        reconstructed_unitary = np.array(out_states).T
-        expected_unitary = qml.QFT(wires=range(n_qubits)).matrix
-
-        assert np.allclose(reconstructed_unitary, expected_unitary)
-
-    @pytest.mark.parametrize("n_qubits", range(2, 6))
-    def test_QFT_adjoint_identity(self, n_qubits, tol):
-        """Test if the QFT adjoint operation is the inverse of QFT."""
-
-        dev = qml.device("default.qubit", wires=n_qubits)
-
-        @qml.qnode(dev)
-        def circ(n_qubits):
-            qml.adjoint(qml.QFT)(wires=range(n_qubits))
-            qml.QFT(wires=range(n_qubits))
-            return qml.state()
-
-        assert np.allclose(1, circ(n_qubits)[0], tol)
-
-        for i in range(1, n_qubits):
-            assert np.allclose(0, circ(n_qubits)[i], tol)
-
-    @pytest.mark.parametrize("n_qubits", range(2, 6))
-    def test_QFT_adjoint_decomposition(self, n_qubits, tol):
-        """Test if the QFT adjoint operation has the right decomposition"""
-
-        # QFT adjoint has right decompositions
-        qft = qml.QFT(wires=range(n_qubits))
-        qft_dec = qft.expand().operations
-
-        expected_op = [x.adjoint() for x in qft_dec]
-        expected_op.reverse()
-
-        adj = qml.QFT(wires=range(n_qubits)).adjoint()
-        op = adj.expand().operations
-
-        for j in range(0, len(op)):
-            assert op[j].name == expected_op[j].name
-            assert op[j].wires == expected_op[j].wires
-            assert op[j].parameters == expected_op[j].parameters
 
     def test_x_decomposition(self, tol):
         """Tests that the decomposition of the PauliX is correct"""
@@ -820,6 +760,55 @@ class TestOperations:
         assert res[3].name == "CNOT"
         assert res[4].name == "CNOT"
         assert res[5].name == "Hadamard"
+
+        mats = []
+        for i in reversed(res):
+            if i.wires == Wires([1]):
+                mats.append(np.kron(np.eye(2), i.matrix))
+            elif i.wires == Wires([0]):
+                mats.append(np.kron(i.matrix, np.eye(2)))
+            elif i.wires == Wires([1, 0]) and i.name == "CNOT":
+                mats.append(np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]]))
+            else:
+                mats.append(i.matrix)
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+
+        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("siswap_op", [qml.SISWAP, qml.SQISW])
+    def test_SISWAP_decomposition(self, siswap_op, tol):
+        """Tests that the decomposition of the SISWAP gate and its SQISW alias gate is correct"""
+        op = siswap_op(wires=[0, 1])
+        res = op.decomposition(op.wires)
+
+        assert len(res) == 12
+
+        assert res[0].wires == Wires([0])
+        assert res[1].wires == Wires([0])
+        assert res[2].wires == Wires([0, 1])
+        assert res[3].wires == Wires([0])
+        assert res[4].wires == Wires([0])
+        assert res[5].wires == Wires([0])
+        assert res[6].wires == Wires([0])
+        assert res[7].wires == Wires([1])
+        assert res[8].wires == Wires([1])
+        assert res[9].wires == Wires([0, 1])
+        assert res[10].wires == Wires([0])
+        assert res[11].wires == Wires([1])
+
+        assert res[0].name == "SX"
+        assert res[1].name == "RZ"
+        assert res[2].name == "CNOT"
+        assert res[3].name == "SX"
+        assert res[4].name == "RZ"
+        assert res[5].name == "SX"
+        assert res[6].name == "RZ"
+        assert res[7].name == "SX"
+        assert res[8].name == "RZ"
+        assert res[9].name == "CNOT"
+        assert res[10].name == "SX"
+        assert res[11].name == "SX"
 
         mats = []
         for i in reversed(res):
@@ -1596,6 +1585,14 @@ class TestOperations:
     def test_iswap_eigenval(self):
         """Tests that the ISWAP eigenvalue matches the numpy eigenvalues of the ISWAP matrix"""
         op = qml.ISWAP(wires=[0, 1])
+        exp = np.linalg.eigvals(op.matrix)
+        res = op.eigvals
+        assert np.allclose(res, exp)
+
+    @pytest.mark.parametrize("siswap_op", [qml.SISWAP, qml.SQISW])
+    def test_siswap_eigenval(self, siswap_op):
+        """Tests that the ISWAP eigenvalue matches the numpy eigenvalues of the ISWAP matrix"""
+        op = siswap_op(wires=[0, 1])
         exp = np.linalg.eigvals(op.matrix)
         res = op.eigvals
         assert np.allclose(res, exp)
@@ -2823,8 +2820,13 @@ class TestQubitUnitary:
             (qml.RZ(0.3, wires=0).matrix, qml.RZ, [0.3]),
             (qml.RZ(-0.5, wires=0).matrix, qml.RZ, [-0.5]),
             # Next set of gates are non-diagonal and decomposed as Rots
+            (
+                np.array([[0, -0.98310193 + 0.18305901j], [0.98310193 + 0.18305901j, 0]]),
+                qml.Rot,
+                [0, -np.pi, -5.914991017809059],
+            ),
             (H, qml.Rot, [np.pi, np.pi / 2, 0]),
-            (X, qml.Rot, [0.0, np.pi, np.pi]),
+            (X, qml.Rot, [0.0, -np.pi, -np.pi]),
             (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix, qml.Rot, [0.2, 0.5, -0.3]),
             (np.exp(1j * 0.02) * qml.Rot(-1, 2, -3, wires=0).matrix, qml.Rot, [-1, 2, -3]),
         ],
@@ -2838,10 +2840,10 @@ class TestQubitUnitary:
         assert np.allclose(decomp[0].parameters, expected_params)
 
     def test_qubit_unitary_decomposition_multiqubit_invalid(self):
-        """Test that QubitUnitary is not decomposed for more than a single qubit."""
-        U = qml.CRZ(0.3, wires=[0, 1]).matrix
+        """Test that QubitUnitary is not decomposed for more than two qubits."""
+        U = qml.Toffoli(wires=[0, 1, 2]).matrix
 
-        with pytest.raises(NotImplementedError, match="only supported for single-qubit"):
+        with pytest.raises(NotImplementedError, match="only supported for single- and two-qubit"):
             qml.QubitUnitary.decomposition(U, wires=[0, 1])
 
 
@@ -3233,7 +3235,9 @@ class TestMultiControlledX:
         control_wires = range(3)
         target_wire = 4
         work_wires = range(2)
-        with pytest.raises(ValueError, match="The work wires must be different from the control"):
+        with pytest.raises(
+            ValueError, match="The work wires must be different from the control and target wires"
+        ):
             qml.MultiControlledX(
                 control_wires=control_wires, wires=target_wire, work_wires=work_wires
             )

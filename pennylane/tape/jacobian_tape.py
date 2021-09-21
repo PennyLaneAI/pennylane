@@ -360,7 +360,7 @@ class JacobianTape(QuantumTape):
 
         # TODO: modify devices that have device Jacobian methods to
         # accept the quantum tape as an argument
-        jac = jacobian_method(self, **options.get("device_pd_options", dict()))
+        jac = jacobian_method(self, **options.get("device_pd_options", {}))
 
         # restore original parameters
         self.set_parameters(saved_parameters)
@@ -399,7 +399,8 @@ class JacobianTape(QuantumTape):
         """
         raise NotImplementedError
 
-    def _choose_params_with_methods(self, diff_methods, argnum):
+    @staticmethod
+    def _choose_params_with_methods(diff_methods, argnum):
         """Chooses the trainable parameters to use for computing the Jacobian
         by returning a map of their indices and differentiation methods.
 
@@ -422,11 +423,6 @@ class JacobianTape(QuantumTape):
 
         if isinstance(argnum, int):
             argnum = [argnum]
-
-        if not all(ind in self.trainable_params for ind in argnum):
-            raise ValueError(
-                "Incorrect trainable parameters were specified for the argnum argument."
-            )
 
         num_params = len(argnum)
 
@@ -546,6 +542,7 @@ class JacobianTape(QuantumTape):
         >>> tape.jacobian(dev)
         array([], shape=(4, 0), dtype=float64)
         """
+        # pylint: disable=too-many-statements
         if any(m.return_type is State for m in self.measurements):
             raise ValueError("The jacobian method does not support circuits that return the state")
 
@@ -609,7 +606,16 @@ class JacobianTape(QuantumTape):
 
             nonzero_grad_idx.append(trainable_idx)
 
-            if (method == "best" and param_method[0] == "F") or (method == "numeric"):
+            t_idx = list(self.trainable_params)[trainable_idx]
+            op = self._par_info[t_idx]["op"]
+
+            if op.name == "Hamiltonian":
+                # divert Hamiltonian differentiation to special recipe
+                tapes, processing_fn = qml.gradients.hamiltonian_grad(
+                    self, trainable_idx, params=params
+                )
+
+            elif (method == "best" and param_method[0] == "F") or (method == "numeric"):
                 # numeric method
                 tapes, processing_fn = self.numeric_pd(trainable_idx, params=params, **options)
 

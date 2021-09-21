@@ -273,7 +273,7 @@ class TestSample:
 
     def test_providing_no_observable_and_no_wires(self):
         """Test that we can provide no observable and no wires to sample function"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=2, shots=1000)
 
         @qml.qnode(dev)
         def circuit():
@@ -289,7 +289,7 @@ class TestSample:
         """Test that we can provide no observable but specify wires to the sample function"""
         wires = [0, 2]
         wires_obj = qml.wires.Wires(wires)
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit", wires=3, shots=1000)
 
         @qml.qnode(dev)
         def circuit():

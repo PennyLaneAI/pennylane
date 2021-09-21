@@ -216,7 +216,7 @@ def test_grad_components(idx, tmpdir):
 
     for i, _deriv in enumerate(deriv):
         if i in idx:
-            assert isinstance(_deriv, qml.vqe.Hamiltonian)
+            assert isinstance(_deriv, qml.Hamiltonian)
         else:
             assert _deriv == 0
 

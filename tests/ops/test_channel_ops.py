@@ -279,6 +279,40 @@ class TestResetError:
         with pytest.raises(ValueError, match="must be between"):
             channel.ResetError(1.0, 1.0, wires=0).kraus_matrices
 
+    @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
+    def test_grad_reset_error(self, angle, tol):
+        """Test that gradient is computed correctly for different states. Channel
+        grad recipes are independent of channel parameter"""
+
+        dev = qml.device("default.mixed", wires=1)
+        p_0, p_1 = 0.0, 0.5
+
+        @qml.qnode(dev)
+        def circuit(p_0, p_1):
+            qml.RX(angle, wires=0)
+            qml.ResetError(p_0, p_1, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        gradient = np.squeeze(qml.grad(circuit)(p_0, p_1))
+        assert np.allclose(
+            gradient,
+            np.array(
+                [
+                    (1 / 0.1) * (circuit(0.1, p_1) - circuit(0.0, p_1)),
+                    (1 / 0.1) * (circuit(p_0, 0.1) - circuit(p_0, 0.0)),
+                ]
+            ),
+        )
+        assert np.allclose(
+            gradient,
+            np.array(
+                [
+                    (2 * np.sin(angle / 2) * np.sin(angle / 2)),
+                    (-2 * np.cos(angle / 2) * np.cos(angle / 2)),
+                ]
+            ),
+        )
+
 
 class TestQubitChannel:
     """Tests for the quantum channel QubitChannel"""

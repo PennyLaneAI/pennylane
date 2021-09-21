@@ -14,6 +14,12 @@ of PennyLane, plugins, and devices.
     :description: Installation and dependencies of the PennyLane source code using development mode.
     :link: guide/installation.html
 
+
+.. titlecard::
+    :name: Contribution guide
+    :description: How to get involved in the PennyLane community and help improve PennyLane.
+    :link: guide/contributing.html
+
 .. titlecard::
     :name: Software tests
     :description: Installing dependencies, running the PennyLane test suite and measuring coverage.
@@ -53,6 +59,7 @@ of PennyLane, plugins, and devices.
     :hidden:
 
     guide/installation
+    guide/contributing
     guide/tests
     guide/documentation
     guide/pullrequests

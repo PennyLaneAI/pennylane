@@ -13,6 +13,8 @@
 # limitations under the License.
 """Gradient descent optimizer"""
 
+import warnings
+
 from pennylane._grad import grad as get_gradient
 from pennylane.utils import _flatten, unflatten
 from pennylane.numpy import ndarray, tensor
@@ -36,7 +38,27 @@ class GradientDescentOptimizer:
     """
 
     def __init__(self, stepsize=0.01):
-        self._stepsize = stepsize
+        self.stepsize = stepsize
+
+    @property
+    def _stepsize(self):
+        warnings.warn(
+            "'_stepsize' is deprecated. Please use 'stepsize' instead.",
+            UserWarning,
+            stacklevel=2,
+        )
+
+        return self.stepsize
+
+    @_stepsize.setter
+    def _stepsize(self, stepsize):
+        warnings.warn(
+            "'_stepsize' is deprecated. Please use 'stepsize' instead.",
+            UserWarning,
+            stacklevel=2,
+        )
+
+        self.stepsize = stepsize
 
     def update_stepsize(self, stepsize):
         r"""Update the initialized stepsize value :math:`\eta`.
@@ -46,7 +68,14 @@ class GradientDescentOptimizer:
         Args:
             stepsize (float): the user-defined hyperparameter :math:`\eta`
         """
-        self._stepsize = stepsize
+        warnings.warn(
+            "'update_stepsize' is deprecated. Stepsize value can be updated using "
+            "the 'stepsize' attribute.",
+            UserWarning,
+            stacklevel=2,
+        )
+
+        self.stepsize = stepsize
 
     def step_and_cost(self, objective_fn, *args, grad_fn=None, **kwargs):
         """Update trainable arguments with one step of the optimizer and return the corresponding
@@ -58,7 +87,8 @@ class GradientDescentOptimizer:
             grad_fn (function): optional gradient function of the
                 objective function with respect to the variables ``*args``.
                 If ``None``, the gradient function is computed automatically.
-                Must return the same shape of tuple [array] as the autograd derivative.
+                Must return a ``tuple[array]`` with the same number of elements as ``*args``.
+                Each array of the tuple should have the same shape as the corresponding argument.
             **kwargs : variable length of keyword arguments for the objective function
 
         Returns:
@@ -87,7 +117,8 @@ class GradientDescentOptimizer:
             grad_fn (function): optional gradient function of the
                 objective function with respect to the variables ``x``.
                 If ``None``, the gradient function is computed automatically.
-                Must return the same shape of tuple [array] as the autograd derivative.
+                Must return a ``tuple[array]`` with the same number of elements as ``*args``.
+                Each array of the tuple should have the same shape as the corresponding argument.
             **kwargs : variable length of keyword arguments for the objective function
 
         Returns:
@@ -127,7 +158,12 @@ class GradientDescentOptimizer:
         grad = g(*args, **kwargs)
         forward = getattr(g, "forward", None)
 
-        if len(args) == 1:
+        num_trainable_args = 0
+        for arg in args:
+            if getattr(arg, "requires_grad", True):
+                num_trainable_args += 1
+
+        if num_trainable_args == 1:
             grad = (grad,)
 
         return grad, forward
@@ -153,7 +189,7 @@ class GradientDescentOptimizer:
                 grad_flat = _flatten(grad[trained_index])
                 trained_index += 1
 
-                x_new_flat = [e - self._stepsize * g for g, e in zip(grad_flat, x_flat)]
+                x_new_flat = [e - self.stepsize * g for g, e in zip(grad_flat, x_flat)]
 
                 args_new[index] = unflatten(x_new_flat, args[index])
 

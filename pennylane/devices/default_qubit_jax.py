@@ -14,9 +14,7 @@
 """This module contains an jax implementation of the :class:`~.DefaultQubit`
 reference plugin.
 """
-
-import warnings
-
+import pennylane as qml
 from pennylane.operation import DiagonalOperation
 from pennylane.devices import DefaultQubit
 from pennylane.devices import jax_ops
@@ -26,6 +24,7 @@ import numpy as np
 try:
     import jax.numpy as jnp
     import jax
+    from jax.config import config as jax_config
 
 except ImportError as e:  # pragma: no cover
     raise ImportError("default.qubit.jax device requires installing jax>0.2.0") from e
@@ -158,8 +157,6 @@ class DefaultQubitJax(DefaultQubit):
         "DoubleExcitationMinus": jax_ops.DoubleExcitationMinus,
     }
 
-    C_DTYPE = jnp.complex64
-    R_DTYPE = jnp.float32
     _asarray = staticmethod(jnp.array)
     _dot = staticmethod(jnp.dot)
     _abs = staticmethod(jnp.abs)
@@ -181,6 +178,12 @@ class DefaultQubitJax(DefaultQubit):
     _stack = staticmethod(jnp.stack)
 
     def __init__(self, wires, *, shots=None, prng_key=None, analytic=None):
+        if jax_config.read("jax_enable_x64"):
+            self.C_DTYPE = jnp.complex128
+            self.R_DTYPE = jnp.float64
+        else:
+            self.C_DTYPE = jnp.complex64
+            self.R_DTYPE = jnp.float32
         super().__init__(wires, shots=shots, cache=0, analytic=analytic)
 
         # prevent using special apply methods for these gates due to slowdown in jax
@@ -247,15 +250,13 @@ class DefaultQubitJax(DefaultQubit):
             List[int]: the sampled basis states
         """
         if self.shots is None:
-            warnings.warn(
-                "The number of shots has to be explicitly set on the jax device "
-                "when using sample-based measurements. Since no shots are specified, "
-                "a default of 1000 shots is used.\n"
-                "This warning will be replaced with an error in a future release.",
-                UserWarning,
+
+            raise qml.QuantumFunctionError(
+                "The number of shots has to be explicitly set on the device "
+                "when using sample-based measurements."
             )
 
-        shots = self.shots or 1000
+        shots = self.shots
 
         if self._prng_key is None:
             # Assuming op-by-op, so we'll just make one.

@@ -8,7 +8,7 @@ on:
 
 env:
   TF_VERSION: 2.4
-  TORCH_VERSION: 1.7
+  TORCH_VERSION: 1.9.0+cpu
   COVERAGE_FLAGS: "--cov=pennylane --cov-report=term-missing --cov-report=xml --no-flaky-report -p no:warnings --tb=native"
 
 
@@ -42,7 +42,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements-ci.txt
           pip install wheel pytest pytest-cov pytest-mock flaky --upgrade
 
       - name: Conditionally install PyTorch
@@ -61,7 +61,7 @@ jobs:
 
       - name: Install PennyLane
         run: |
-          pip install -r requirements.txt
+          pip install -r requirements-ci.txt
           python setup.py bdist_wheel
           pip install dist/PennyLane*.whl
 
@@ -107,7 +107,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements-ci.txt
           pip install wheel pytest pytest-cov pytest-mock flaky --upgrade
 
       - name: Conditionally install PyTorch
@@ -124,7 +124,7 @@ jobs:
 
       - name: Install PennyLane
         run: |
-          pip install -r requirements.txt
+          pip install -r requirements-ci.txt
           python setup.py bdist_wheel
           pip install dist/PennyLane*.whl
 
@@ -168,11 +168,12 @@ jobs:
         run: |
           sudo apt-get install -y openbabel
           conda install psi4 psi4-rt python=3.7 -c psi4
-          pip install pytest pytest-cov pytest-mock flaky
+          pip uninstall h5py -y
+          pip install pytest pytest-cov pytest-mock flaky h5py==3.2.1
 
       - name: Install QChem
         run: |
-          pip install -r requirements.txt
+          pip install -r requirements-ci.txt
           python setup.py bdist_wheel
           pip install dist/PennyLane*.whl
           cd qchem && python setup.py bdist_wheel && cd ../

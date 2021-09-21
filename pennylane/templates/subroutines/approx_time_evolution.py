@@ -103,7 +103,7 @@ class ApproxTimeEvolution(Operation):
 
     def __init__(self, hamiltonian, time, n, do_queue=True, id=None):
 
-        if not isinstance(hamiltonian, qml.vqe.vqe.Hamiltonian):
+        if not isinstance(hamiltonian, qml.Hamiltonian):
             raise ValueError(
                 "hamiltonian must be of type pennylane.Hamiltonian, got {}".format(
                     type(hamiltonian).__name__
