@@ -50,7 +50,7 @@
   `lightning.qubit` integrates with the C++ backend and is more performant, as
   shown in the plot below:
 
-  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane-lightning/master/doc/_static/lightning_adjoint.png" width=70%/>
+  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane-lightning/master/doc/_static/lightning_adjoint.png" align="middle" width=70%/>
 
 <h4>Support for native backpropagation using PyTorch</h4>
 
