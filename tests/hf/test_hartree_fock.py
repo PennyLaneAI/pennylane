@@ -21,6 +21,30 @@ from pennylane.hf.molecule import Molecule
 
 
 @pytest.mark.parametrize(
+    ("symbols", "geometry", "v_fock", "coeffs", "fock_matrix", "h_core"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+            np.array([-0.67578019,  0.94181155]),
+            np.array([[-0.52754647, -1.56782303], [-0.52754647,  1.56782303]]),
+            np.array([[-0.51126165, -0.70283714], [-0.70283714, -0.51126165]]),
+            np.array([[-1.27848869, -1.21916299], [-1.21916299, -1.27848869]])
+        )
+    ],
+)
+def test_hartree_fock(symbols, geometry, v_fock, coeffs, fock_matrix, h_core):
+    r"""Test that generate_hartree_fock returns the correct values."""
+    mol = Molecule(symbols, geometry)
+    v, c, f, h = generate_hartree_fock(mol)()
+
+    assert np.allclose(v, v_fock)
+    assert np.allclose(c, coeffs)
+    assert np.allclose(f, fock_matrix)
+    assert np.allclose(h, h_core)
+
+
+@pytest.mark.parametrize(
     ("symbols", "geometry", "e_ref"),
     [
         (
@@ -37,9 +61,8 @@ from pennylane.hf.molecule import Molecule
         )
     ],
 )
-def test_hartree_fock(symbols, geometry, e_ref):
-    r"""Test that overlap_matrix returns the correct matrix."""
+def test_hf_energy(symbols, geometry, e_ref):
+    r"""Test that hf_energy returns the correct energy."""
     mol = Molecule(symbols, geometry)
     e = hf_energy(mol)()
-    print(e)
     assert np.allclose(e, e_ref)

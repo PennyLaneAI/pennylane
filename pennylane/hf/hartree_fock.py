@@ -20,10 +20,10 @@ from pennylane.hf.matrices import (core_matrix, repulsion_tensor, overlap_matrix
                                    molecular_density_matrix)
 
 def generate_hartree_fock(mol, n_steps=50, tol=1e-8):
-    r"""Performs Hartree-Fock calculation."""
+    r"""Return a function that performs the self-consistent-field iterations."""
 
     def hartree_fock(*args):
-
+        r"""Perform the self-consistent-field iterations."""
         basis_functions = mol.basis_set
         charges = mol.nuclear_charges
         r = mol.coordinates
@@ -50,9 +50,9 @@ def generate_hartree_fock(mol, n_steps=50, tol=1e-8):
             j = anp.einsum("pqrs,rs->pq", e_repulsion, p)
             k = anp.einsum("psqr,rs->pq", e_repulsion, p)
 
-            fock = h_core + 2 * j - k
+            fock_matrix = h_core + 2 * j - k
 
-            v_fock, w_fock = anp.linalg.eigh(x.T @ fock @ x)
+            v_fock, w_fock = anp.linalg.eigh(x.T @ fock_matrix @ x)
 
             coeffs = x @ w_fock
 
@@ -63,7 +63,7 @@ def generate_hartree_fock(mol, n_steps=50, tol=1e-8):
 
             p = p_update
 
-        return v_fock, coeffs, fock, h_core, e_repulsion
+        return v_fock, coeffs, fock_matrix, h_core
 
     return hartree_fock
 
@@ -86,8 +86,8 @@ def hf_energy(mol):
     """ """
 
     def energy(*args):
-        v_fock, w_fock, fock, h_core, eri_tensor = generate_hartree_fock(mol)(*args)
+        v_fock, coeffs, fock_matrix, h_core = generate_hartree_fock(mol)(*args)
         e_rep = nuclear_energy(mol.nuclear_charges)(mol.coordinates)
-        e_elec = anp.einsum('pq,qp', fock + h_core, molecular_density_matrix(mol.n_electrons, w_fock))
+        e_elec = anp.einsum('pq,qp', fock_matrix + h_core, molecular_density_matrix(mol.n_electrons, coeffs))
         return e_elec + e_rep
     return energy
