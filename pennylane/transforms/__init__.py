@@ -31,9 +31,9 @@ that compute the desired quantity.
 
     ~transforms.classical_jacobian
     ~draw
+    ~transforms.get_unitary_matrix
     ~metric_tensor
     ~specs
-    ~transforms.get_unitary_matrix
 
 Transforms that act on quantum functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
