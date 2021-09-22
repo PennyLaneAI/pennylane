@@ -1146,7 +1146,8 @@ class TestTapeExpansion:
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_hamiltonian_expansion_analytic(self, dev_name, diff_method, mode, max_diff, mocker):
         """Test that the Hamiltonian is not expanded if there
-        are non-commuting groups and the number of shots is None"""
+        are non-commuting groups and the number of shots is None
+        and the first and second order gradients are correctly evaluated"""
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not yet support Hamiltonians")
 
@@ -1204,7 +1205,8 @@ class TestTapeExpansion:
         self, dev_name, diff_method, mode, max_diff, mocker
     ):
         """Test that the Hamiltonian is expanded if there
-        are non-commuting groups and the number of shots is finite"""
+        are non-commuting groups and the number of shots is finite
+        and the first and second order gradients are correctly evaluated"""
         if diff_method in ("adjoint", "backprop", "finite-diff"):
             pytest.skip("The adjoint and backprop methods do not yet support sampling")
 
@@ -1225,7 +1227,7 @@ class TestTapeExpansion:
         w = tf.Variable([0.654, -0.734], dtype=tf.float64)
         c = tf.Variable([-0.6543, 0.24, 0.54], dtype=tf.float64)
 
-        # # test output
+        # test output
         with tf.GradientTape(persistent=True) as t2:
             with tf.GradientTape() as t1:
                 res = circuit(d, w, c)
