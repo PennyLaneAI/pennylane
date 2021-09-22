@@ -30,7 +30,7 @@ Construction via keyword
 ------------------------
 
 The :ref:`QNode decorator <intro_vcirc_decorator>` is the recommended way for creating
-:class:`~.QNode` objects in PennyLane. The only change required to construct a PyTorch-capable
+:class:`QNode <pennylane.QNode>` objects in PennyLane. The only change required to construct a PyTorch-capable
 QNode is to specify the ``interface='torch'`` keyword argument:
 
 .. code-block:: python
