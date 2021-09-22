@@ -266,7 +266,9 @@ class TestCaching:
                 qml.RX(b, wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            res = execute([tape1, tape2], dev, gradient_fn=param_shift, cache=cache, interface="jax")
+            res = execute(
+                [tape1, tape2], dev, gradient_fn=param_shift, cache=cache, interface="jax"
+            )
             return res[0][0]
 
         custom_cache = {}

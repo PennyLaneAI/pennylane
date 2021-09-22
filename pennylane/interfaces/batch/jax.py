@@ -221,9 +221,7 @@ def _execute_with_fwd(
         res, jacs = host_callback.call(
             wrapper,
             params,
-            result_shape=tuple(
-                [jax.ShapeDtypeStruct((total_size, 1), dtype), jacobian_shape]
-            ),
+            result_shape=tuple([jax.ShapeDtypeStruct((total_size, 1), dtype), jacobian_shape]),
         )
         return res, jacs
 
