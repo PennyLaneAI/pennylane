@@ -156,7 +156,6 @@ def test_get_unitary_matrix_Toffoli():
     assert np.allclose(obtained_state2, expected_state2)
 
 
-# Test MultiControlledX
 def test_get_unitary_matrix_MultiControlledX():
     """Test with many control wires"""
     wires = [0, 1, 2, 3, 4, 5]
