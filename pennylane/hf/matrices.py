@@ -156,7 +156,7 @@ def kinetic_matrix(basis_functions):
 
 
 def attraction_matrix(basis_functions, charges, r):
-    r"""Return a function that computes the attraction matrix for a given set of basis functions.
+    r"""Return a function that computes the nuclear attraction matrix for a given set of basis functions.
 
     Args:
         basis_functions (list[BasisFunction]): basis functions
@@ -226,7 +226,7 @@ def attraction_matrix(basis_functions, charges, r):
 
 
 def repulsion_tensor(basis_functions):
-    r"""Return a function that computes the repulsion tensor for a given set of basis functions.
+    r"""Return a function that computes the electron repulsion tensor for a given set of basis functions.
 
     Args:
         basis_functions (list[BasisFunction]): basis functions
