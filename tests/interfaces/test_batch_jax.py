@@ -183,13 +183,22 @@ class TestJaxExecuteUnitTests:
 
         dev = qml.device("default.qubit", wires=1)
 
-        with pytest.raises(ValueError, match="The JAX interface only supports first order derivatives."):
+        with pytest.raises(
+            ValueError, match="The JAX interface only supports first order derivatives."
+        ):
             with qml.tape.JacobianTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            execute([tape], dev, gradient_fn=param_shift, gradient_kwargs={"shift": np.pi / 4}, interface="jax", max_diff = 2)
+            execute(
+                [tape],
+                dev,
+                gradient_fn=param_shift,
+                gradient_kwargs={"shift": np.pi / 4},
+                interface="jax",
+                max_diff=2,
+            )
 
 
 class TestCaching:
@@ -443,7 +452,7 @@ class TestJaxExecuteIntegration:
     def test_classical_processing_multiple_tapes(self, execute_kwargs, tol):
         """Test classical processing within the quantum tape for multiple
         tapes"""
-        dev = qml.device('default.qubit', wires=2)
+        dev = qml.device("default.qubit", wires=2)
         params = jax.numpy.array([0.3, 0.2])
 
         def cost_fn(x):
@@ -459,9 +468,7 @@ class TestJaxExecuteIntegration:
                 qml.RX(2 * x[1], wires=[1])
                 qml.expval(qml.PauliZ(0))
 
-            result = execute(tapes=[tape1, tape2], device=dev, interface="jax",
-                              **execute_kwargs
-                            )
+            result = execute(tapes=[tape1, tape2], device=dev, interface="jax", **execute_kwargs)
             return result[0][0] + result[1][0] - 7 * result[1][1]
 
         res = jax.grad(cost_fn)(params)

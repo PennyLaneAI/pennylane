@@ -186,6 +186,7 @@ def _execute(
     wrapped_exec.defvjp(wrapped_exec_fwd, wrapped_exec_bwd)
     return wrapped_exec(params)
 
+
 def _execute_with_fwd(
     params,
     tapes=None,
@@ -213,10 +214,11 @@ def _execute_with_fwd(
 
         jacobian_shape = [jax.ShapeDtypeStruct((1, len(p)), jnp.float32) for p in params]
         res, jacs = host_callback.call(
-            wrapper, params, result_shape=tuple([
-                                            jax.ShapeDtypeStruct((total_size, 1), jnp.float32),
-                                            jacobian_shape
-                                               ])
+            wrapper,
+            params,
+            result_shape=tuple(
+                [jax.ShapeDtypeStruct((total_size, 1), jnp.float32), jacobian_shape]
+            ),
         )
         return res, jacs
 
