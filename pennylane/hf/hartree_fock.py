@@ -27,36 +27,36 @@ from pennylane.hf.matrices import (
 def generate_hartree_fock(mol, n_steps=50, tol=1e-8):
     r"""Return a function that performs the self-consistent-field iterations.
 
-        Args:
-    ￼       mol (Molecule): the molecule object
-            n_steps (int): the number of iterations
-            tol (float): convergence tolerance
+    Args:
+￼       mol (Molecule): the molecule object
+        n_steps (int): the number of iterations
+        tol (float): convergence tolerance
 
-        Returns:
-             function: function that performs the self-consistent-field iterations
+    Returns:
+         function: function that performs the self-consistent-field iterations
 
-        **Example**
-    ￼
-    ￼   >>> symbols  = ['H', 'H']
-    ￼   >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
-    ￼   >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
-    ￼   >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True),
-    ￼   >>> mol = Molecule(symbols, geometry, alpha=alpha)
-    ￼   >>> args = [alpha]
-    ￼   >>> v_fock, coeffs, fock_matrix, h_core = generate_hartree_fock(mol)(*args)
-        >>> v_fock
-    ￼   array([-0.67578019,  0.94181155])
+    **Example**
+￼
+￼   >>> symbols  = ['H', 'H']
+￼   >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
+￼   >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
+￼   >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True),
+￼   >>> mol = Molecule(symbols, geometry, alpha=alpha)
+￼   >>> args = [alpha]
+￼   >>> v_fock, coeffs, fock_matrix, h_core = generate_hartree_fock(mol)(*args)
+    >>> v_fock
+￼   array([-0.67578019,  0.94181155])
     """
 
     def hartree_fock(*args):
         r"""Perform the self-consistent-field iterations.
 
-                Args:
-        ￼            args (array[float]): initial values of the differentiable parameters
+        Args:
+￼            args (array[float]): initial values of the differentiable parameters
 
-                Returns:
-        ￼            tuple(array[float]): eigenvalues of the Fock matrix, molecular orbital coefficients,
-                     Fock matrix, core matrix
+        Returns:
+￼            tuple(array[float]): eigenvalues of the Fock matrix, molecular orbital coefficients,
+             Fock matrix, core matrix
         """
         basis_functions = mol.basis_set
         charges = mol.nuclear_charges
@@ -105,41 +105,41 @@ def generate_hartree_fock(mol, n_steps=50, tol=1e-8):
 def nuclear_energy(charges, r):
     r"""Return a function that computes the nuclear repulsion energy.
 
-        The nuclear energy computed as
+    The nuclear energy computed as
 
-        .. math::
-    ￼
-    ￼        \sum_{i>j}^n \frac{q_i q_j}{r_{ij}},
+    .. math::
+￼
+￼        \sum_{i>j}^n \frac{q_i q_j}{r_{ij}},
 
-        where :math:`q`, :math:`r` and :math:`n` represent the nuclear charges, nuclear positions and
-        the number of nuclei, respectively.
+    where :math:`q`, :math:`r` and :math:`n` represent the nuclear charges, nuclear positions and
+    the number of nuclei, respectively.
 
-        Args:
-            charges (list[int]): nuclear charges
-            r (array[float]): nuclear positions
+    Args:
+        charges (list[int]): nuclear charges
+        r (array[float]): nuclear positions
 
-        Returns:
-            function: function that computes the nuclear repulsion energy
+    Returns:
+        function: function that computes the nuclear repulsion energy
 
-        **Example**
+    **Example**
 
-     ￼  >>> symbols  = ['H', 'F']
-    ￼   >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]], requires_grad = True)
-    ￼   >>> mol = Molecule(symbols, geometry)
-        >>> args = [mol.coordinates]
-    ￼   >>> e = nuclear_energy(mol.nuclear_charges, mol.coordinates)(*args)
-        >>> print(e)
-        4.5
+ ￼  >>> symbols  = ['H', 'F']
+￼   >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]], requires_grad = True)
+￼   >>> mol = Molecule(symbols, geometry)
+    >>> args = [mol.coordinates]
+￼   >>> e = nuclear_energy(mol.nuclear_charges, mol.coordinates)(*args)
+    >>> print(e)
+    4.5
     """
 
     def nuclear(*args):
         r"""Compute the nuclear repulsion energy.
 
-                Args:
-                    args (array[float]): initial values of the differentiable parameters
+        Args:
+            args (array[float]): initial values of the differentiable parameters
 
-                Returns:
-        ￼            array[float]: nuclear repulsion energy
+        Returns:
+￼            array[float]: nuclear repulsion energy
         """
         if r.requires_grad:
             coor = args[0]
@@ -158,32 +158,32 @@ def nuclear_energy(charges, r):
 def hf_energy(mol):
     r"""Return a function that computes the Hartree-Fock energy.
 
-        Args:
-    ￼       mol (Molecule): the molecule object
+    Args:
+￼       mol (Molecule): the molecule object
 
-        Returns:
-             function: function that computes the Hartree-Fock energy
+    Returns:
+         function: function that computes the Hartree-Fock energy
 
-        **Example**
-    ￼
-    ￼   >>> symbols  = ['H', 'H']
-    ￼   >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
-    ￼   >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
-    ￼   >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True),
-    ￼   >>> mol = Molecule(symbols, geometry, alpha=alpha)
-    ￼   >>> args = [alpha]
-    ￼   >>> hf_energy(mol)(*args)
-    ￼   -1.065999461545263
+    **Example**
+￼
+￼   >>> symbols  = ['H', 'H']
+￼   >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
+￼   >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
+￼   >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True),
+￼   >>> mol = Molecule(symbols, geometry, alpha=alpha)
+￼   >>> args = [alpha]
+￼   >>> hf_energy(mol)(*args)
+￼   -1.065999461545263
     """
 
     def energy(*args):
         r"""Compute the Hartree-Fock energy.
 
-                Args:
-        ￼            args (array[float]): initial values of the differentiable parameters
+        Args:
+            args (array[float]): initial values of the differentiable parameters
 
-                Returns:
-        ￼            float: the Hartree-Fock energy
+        Returns:
+￼            float: the Hartree-Fock energy
         """
         v_fock, coeffs, fock_matrix, h_core = generate_hartree_fock(mol)(*args)
         e_rep = nuclear_energy(mol.nuclear_charges, mol.coordinates)(*args)
