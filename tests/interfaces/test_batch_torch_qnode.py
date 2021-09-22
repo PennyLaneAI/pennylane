@@ -1279,7 +1279,7 @@ class TestTapeExpansion:
         w = torch.tensor([0.654, -0.734], requires_grad=True, dtype=torch.float64)
         c = torch.tensor([-0.6543, 0.24, 0.54], requires_grad=True, dtype=torch.float64)
 
-        # # test output
+        # test output
         res = circuit(d, w, c)
 
         expected = c[2] * torch.cos(d[1] + w[1]) - c[1] * torch.sin(d[0] + w[0]) * torch.sin(
