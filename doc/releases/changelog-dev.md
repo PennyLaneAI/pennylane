@@ -141,7 +141,7 @@
     will assume that the expanded tape returns exactly the same value as the original tape when
     executed.
 
-  - `Device.batch_transform(tape) -> (tapes, processing_fn)`: pre-processes the tape in the case
+  - `Device.batch_transform(tape) -> (tapes, processing_fn)`: preprocesses the tape in the case
     where the device needs to generate multiple circuits to execute from the input circuit. The
     requirement of a post-processing function makes this distinct to the `expand_fn` method above.
     

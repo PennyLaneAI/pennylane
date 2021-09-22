@@ -136,7 +136,7 @@ class QNode:
               such that all circuit operations are natively supported by the device.
 
             The ``gradient`` strategy typically results in a reduction in quantum device evaluations
-            required during optimization, at the expense of an increase in classical pre-processing.
+            required during optimization, at the expense of an increase in classical preprocessing.
         max_expansion (int): The number of times the internal circuit should be expanded when
             executed on a device. Expansion occurs when an operation or measurement is not
             supported, and results in a gate decomposition. If any operations in the decomposition

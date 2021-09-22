@@ -612,7 +612,7 @@ class Device(abc.ABC):
         By default, this method contains logic for generating multiple
         circuits, one per term, of a circuit that terminates in ``expval(H)``,
         if the underlying device does not support Hamiltonian expectation values,
-        or if the device requires finite-shots.
+        or if the device requires finite shots.
 
         .. warning::
 
@@ -633,8 +633,6 @@ class Device(abc.ABC):
         # If the observable contains a Hamiltonian and the device does not
         # support Hamiltonians, or if the simulation uses finite shots,
         # split tape into multiple tapes of diagonalizable known observables.
-        # In future, this logic should be moved to the device
-        # to allow for more efficient batch execution.
         supports_hamiltonian = self.supports_observable("Hamiltonian")
         finite_shots = self.shots is not None
 
