@@ -50,7 +50,7 @@ def test_get_unitary_matrix_nonparam_1qubit_ops(op, wire):
 
 # Test a circuit containing multiple gates
 def test_get_unitary_matrix_multiple_ops():
-    """Check the total matrix for a circuit containing multiple gates. Also 
+    """Check the total matrix for a circuit containing multiple gates. Also
     checks that non-integer wires work"""
     wires = ["a", "b", "c"]
 
@@ -329,15 +329,18 @@ def test_get_unitary_matrix_interface_tf():
         qml.CRY(theta[1], wires=[1, 2])
         return qml.expval(qml.PauliZ(1))
 
+    # set qnode interface
     qnode_tensorflow = qml.QNode(circuit, dev, interface="tf")
 
     get_matrix = get_unitary_matrix(qnode_tensorflow)
 
     beta = 0.1
+    # input tensorflow parameters
     theta = tf.Variable([0.2, 0.3])
 
     matrix = get_matrix(beta, theta)
 
+    # expected matrix
     theta_np = theta.numpy()
     matrix1 = np.kron(qml.RZ(beta, wires=0).matrix, np.kron(qml.RZ(theta_np[0], wires=1).matrix, I))
     matrix2 = np.kron(I, qml.CRY(theta_np[1], wires=[1, 2]).matrix)
@@ -347,7 +350,7 @@ def test_get_unitary_matrix_interface_tf():
 
 
 def test_get_unitary_matrix_interface_torch():
-    """Test torch interface"""
+    """Test with torch interface"""
 
     torch = pytest.importorskip("torch", minversion="1.8")
 
@@ -359,14 +362,17 @@ def test_get_unitary_matrix_interface_torch():
         qml.CRY(theta[2], wires=[1, 2])
         return qml.expval(qml.PauliZ(1))
 
+    # set qnode interface
     qnode_torch = qml.QNode(circuit, dev, interface="torch")
 
     get_matrix = get_unitary_matrix(qnode_torch)
 
+    # input torch parameters
     theta = torch.tensor([0.1, 0.2, 0.3])
 
     matrix = get_matrix(theta)
 
+    # expected matrix
     matrix1 = np.kron(
         qml.RZ(theta[0], wires=0).matrix, np.kron(qml.RZ(theta[1], wires=1).matrix, I)
     )
@@ -377,7 +383,7 @@ def test_get_unitary_matrix_interface_torch():
 
 
 def test_get_unitary_matrix_interface_autograd():
-    """Test autograd interface"""
+    """Test with autograd interface"""
 
     dev = qml.device("default.qubit", wires=3)
 
@@ -387,14 +393,55 @@ def test_get_unitary_matrix_interface_autograd():
         qml.CRY(theta[2], wires=[1, 2])
         return qml.expval(qml.PauliZ(1))
 
+    # set qnode interface
     qnode = qml.QNode(circuit, dev, interface="autograd")
 
     get_matrix = get_unitary_matrix(qnode)
 
+    # set input parameters
     theta = np.array([0.1, 0.2, 0.3], requires_grad=True)
 
     matrix = get_matrix(theta)
 
+    # expected matrix
+    matrix1 = np.kron(
+        qml.RZ(theta[0], wires=0).matrix, np.kron(qml.RZ(theta[1], wires=1).matrix, I)
+    )
+    matrix2 = np.kron(I, qml.CRY(theta[2], wires=[1, 2]).matrix)
+    expected_matrix = matrix2 @ matrix1
+
+    assert np.allclose(matrix, expected_matrix)
+
+
+def test_get_unitary_matrix_interface_jax():
+    """Test with JAX interface"""
+
+    jax = pytest.importorskip("jax")
+    from jax import numpy as jnp
+    from jax.config import config
+
+    remember = config.read("jax_enable_x64")
+    config.update("jax_enable_x64", True)
+
+    dev = qml.device("default.qubit", wires=3)
+
+    def circuit(theta):
+        qml.RZ(theta[0], wires=0)
+        qml.RZ(theta[1], wires=1)
+        qml.CRY(theta[2], wires=[1, 2])
+        return qml.expval(qml.PauliZ(1))
+
+    # set qnode interface
+    qnode = qml.QNode(circuit, dev, interface="jax")
+
+    get_matrix = get_unitary_matrix(qnode)
+
+    # input jax parameters
+    theta = jnp.array([0.1, 0.2, 0.3], dtype=jnp.float64)
+
+    matrix = get_matrix(theta)
+
+    # expected matrix
     matrix1 = np.kron(
         qml.RZ(theta[0], wires=0).matrix, np.kron(qml.RZ(theta[1], wires=1).matrix, I)
     )
