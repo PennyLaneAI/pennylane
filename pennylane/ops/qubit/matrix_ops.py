@@ -102,6 +102,8 @@ class QubitUnitary(Operation):
         ControlledQubitUnitary(*self.parameters, control_wires=wire, wires=self.wires)
 
     def label(self, *args, **kwargs):
+        if self.inverse:
+            return "U⁻¹"
         return "U"
 
 class ControlledQubitUnitary(QubitUnitary):
@@ -152,7 +154,6 @@ class ControlledQubitUnitary(QubitUnitary):
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
-    label = "U"
 
     def __init__(
         self,
@@ -240,6 +241,8 @@ class ControlledQubitUnitary(QubitUnitary):
         ControlledQubitUnitary(*self.parameters, control_wires=ctrl_wires, wires=self._target_wires)
 
     def label(self, *args, **kwargs):
+        if self.inverse:
+            "U⁻¹"
         return "U"
 
 class DiagonalQubitUnitary(DiagonalOperation):
@@ -284,4 +287,6 @@ class DiagonalQubitUnitary(DiagonalOperation):
         )
 
     def label(self, *args, **kwargs):
+        if self.inverse:
+            return "U⁻¹"
         return "U"

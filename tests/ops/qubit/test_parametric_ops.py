@@ -1362,3 +1362,32 @@ class TestMultiRZ:
 
         op.generator
         spy.assert_not_called()
+
+
+
+label_data = [
+    (qml.Rot(1.23456, 2.3456, 3.45678, wires=0), "Rot", "Rot(1.23,2.35,3.46)", "Rot(1,2,3)"),
+    (qml.RX(1.23456, wires=0), "RX", "RX(1.23)", "RX(1)"),
+    (qml.RY(1.23456, wires=0), "RY", "RY(1.23)", "RY(1)"),
+    (qml.RZ(1.23456, wires=0), "RZ", "RZ(1.23)", "RZ(1)"),
+    (qml.MultiRZ(1.23456, wires=0), "MultiRZ", "MultiRZ(1.23)", "MultiRZ(1)"),
+    (qml.PauliRot(1.2345, "XYZ", wires=(0,1,2)), "R(XYZ)", "R(XYZ)(1.23)", "R(XYZ)(1)"),
+    (qml.PhaseShift(1.2345, wires=0), "PhaseShift", "PhaseShift(1.23)", "PhaseShift(1)"),
+    (qml.ControlledPhaseShift(1.2345, wires=(0,1)), "PhaseShift", "PhaseShift(1.23)", "PhaseShift(1)"),
+    (qml.CRX(1.234, wires=(0,1)), "RX", "RX(1.23)", "RX(1)"),
+    (qml.CRY(1.234, wires=(0,1)), "RY", "RY(1.23)", "RY(1)"),
+    (qml.CRZ(1.234, wires=(0,1)), "RZ", "RZ(1.23)", "RZ(1)"),
+    (qml.CRot(1.234, 2.3456, 3.456, wires=(0,1)), "Rot", "Rot(1.23,2.35,3.46)", "Rot(1,2,3)"),
+    (qml.U1(1.2345, wires=0), "U1", "U1(1.23)", "U1(1)"),
+    (qml.U2(1.2345, 2.3456, wires=0), "U2", "U2(1.23,2.35)", "U2(1,2)"),
+    (qml.U3(1.2345, 2.345, 3.4567, wires=0), "U3", "U3(1.23,2.35,3.46)", "U3(1,2,3)"),
+    (qml.IsingXX(1.2345, wires=(0,1)), "IsingXX", "IsingXX(1.23)", "IsingXX(1)"),
+    (qml.IsingYY(1.2345, wires=(0,1)), "IsingYY", "IsingYY(1.23)", "IsingYY(1)"),
+    (qml.IsingZZ(1.2345, wires=(0,1)), "IsingZZ", "IsingZZ(1.23)", "IsingZZ(1)")
+]
+
+@pytest.mark.parametrize("op, label1, label2, label3", label_data)
+def test_label_method(op, label1, label2, label3):
+    assert op.label() == label1
+    assert op.label(include_parameters=True) == label2
+    assert op.label(include_parameters=True, decimal_places=0) == label3

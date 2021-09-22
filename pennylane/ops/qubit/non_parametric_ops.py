@@ -453,6 +453,9 @@ class CNOT(Operation):
     basis = "X"
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
+    def label(self, *args, **kwargs):
+        return "X"
+
     @classmethod
     def _matrix(cls, *params):
         return CNOT.matrix
@@ -763,6 +766,7 @@ class CSWAP(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_params = 0
+    is_self_inverse = True
     num_wires = 3
     par_domain = None
     matrix = np.array(
@@ -933,6 +937,7 @@ class MultiControlledX(Operation):
 
     """
     num_params = 0
+    is_self_inverse = True
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None

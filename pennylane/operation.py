@@ -804,7 +804,7 @@ class Operation(Operator):
 
     def label(self, include_parameters=False, decimal_places=2):
         op_label = super().label(include_parameters=include_parameters,decimal_places=decimal_places)
-        if self.inverse:
+        if not self.is_self_inverse and self.inverse:
             op_label += "⁻¹"
         return op_label
 

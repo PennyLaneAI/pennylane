@@ -265,6 +265,15 @@ class ControlledPhaseShift(DiagonalOperation):
     grad_method = "A"
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), 1]
 
+    def label(self, include_parameters=False, decimal_places=2):
+        op_label = "PhaseShift"
+
+        if include_parameters:
+            param_string = f'({self.parameters[0]:.{decimal_places}f})'
+            op_label += param_string
+
+        return op_label
+
     @classmethod
     def _matrix(cls, *params):
         phi = params[0]
@@ -715,6 +724,15 @@ class CRX(Operation):
         -1 / 2,
     ]
 
+    def label(self, include_parameters=False, decimal_places=2):
+        op_label = "RX"
+
+        if include_parameters:
+            param_string = f'({self.parameters[0]:.{decimal_places}f})'
+            op_label += param_string
+
+        return op_label
+
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
@@ -792,6 +810,15 @@ class CRY(Operation):
         np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]),
         -1 / 2,
     ]
+
+    def label(self, include_parameters=False, decimal_places=2):
+        op_label = "RY"
+
+        if include_parameters:
+            param_string = f'({self.parameters[0]:.{decimal_places}f})'
+            op_label += param_string
+
+        return op_label
 
     @classmethod
     def _matrix(cls, *params):
@@ -871,6 +898,15 @@ class CRZ(DiagonalOperation):
         np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]),
         -1 / 2,
     ]
+
+    def label(self, include_parameters=False, decimal_places=2):
+        op_label = "RZ"
+
+        if include_parameters:
+            param_string = f'({self.parameters[0]:.{decimal_places}f})'
+            op_label += param_string
+
+        return op_label
 
     @classmethod
     def _matrix(cls, *params):
@@ -956,6 +992,16 @@ class CRot(Operation):
     par_domain = "R"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe * 3
+
+    def label(self, include_parameters=False, decimal_places=2):
+        op_label = "Rot"
+
+        if include_parameters:
+            
+            param_string = ",".join(f"{p:.{decimal_places}f}" for p in self.parameters)
+            op_label += "(" + param_string + ")"
+
+        return op_label
 
     @classmethod
     def _matrix(cls, *params):

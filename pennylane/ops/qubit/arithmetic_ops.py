@@ -199,6 +199,8 @@ class QubitSum(Operation):
     )
     
     def label(self, *args, **kwargs):
+        if self.inverse:
+            return "+⁻¹"
         return "+"
 
     @classmethod
