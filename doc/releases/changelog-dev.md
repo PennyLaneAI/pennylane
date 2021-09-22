@@ -36,7 +36,7 @@
   >>> circuit(0.3, 0.4)
   tensor(-0.70520073, requires_grad=True)
   >>> print(qml.draw(circuit)(0.3, 0.4))
-  0: ──RX(0.3)─────────────────Rot(-3.5, 0.242, 0.86)──╭X──RZ(0.176)───╭C─────────────╭X──Rot(5.56, 0.321, -2.09)───RY(0.4)──┤ ⟨Z⟩ 
+  0: ──RX(0.3)─────────────────Rot(-3.5, 0.242, 0.86)──╭X──RZ(0.176)───╭C─────────────╭X──Rot(5.56, 0.321, -2.09)───RY(0.4)──┤ ⟨Z⟩
   1: ──Rot(-1.64, 2.69, 1.58)──────────────────────────╰C──RY(-0.883)──╰X──RY(-1.47)──╰C──Rot(-1.46, 0.337, 0.587)───────────┤
   ```
 
@@ -85,7 +85,7 @@
   It differs from the standard QNode in several ways:
 
   - Custom gradient transforms can be specified as the differentiation method:
-  
+
     ```python
     @qml.gradients.gradient_transform
     def my_gradient_transform(tape):
@@ -191,8 +191,11 @@
 
 <h3>Documentation</h3>
 
+* Adds a link to https://pennylane.ai/qml/demonstrations.html in the navbar.
+  [(#1624)](https://github.com/PennyLaneAI/pennylane/pull/1624)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Christina Lee, David Wierichs.
+Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee, David Wierichs.
