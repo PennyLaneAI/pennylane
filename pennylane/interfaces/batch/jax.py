@@ -24,7 +24,7 @@ from jax.experimental import host_callback
 import numpy as np
 import pennylane as qml
 
-dtype = jnp.float32
+dtype = jnp.float64
 
 
 def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1):
