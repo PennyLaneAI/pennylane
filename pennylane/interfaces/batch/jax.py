@@ -17,13 +17,13 @@ to a PennyLane Device class.
 """
 import inspect
 
-import numpy as np
-import pennylane as qml
-
 # pylint: disable=too-many-arguments
 import jax
 import jax.numpy as jnp
 from jax.experimental import host_callback
+
+import numpy as np
+import pennylane as qml
 
 dtype = jnp.float32
 
@@ -106,7 +106,7 @@ def _execute(
                 new_tapes[-1].set_parameters(a)
 
             with qml.tape.Unwrap(*new_tapes):
-                res, jacs = execute_fn(new_tapes, **gradient_kwargs)
+                res, _ = execute_fn(new_tapes, **gradient_kwargs)
 
             return np.stack(res)
 
