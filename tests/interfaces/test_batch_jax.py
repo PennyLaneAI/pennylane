@@ -247,6 +247,34 @@ class TestCaching:
         cache = spy.call_args[0][1]
         assert cache is custom_cache
 
+    def test_custom_cache_multiple(self, mocker):
+        """Test the use of a custom cache object with multiple tapes"""
+        dev = qml.device("default.qubit", wires=1)
+        spy = mocker.spy(qml.interfaces.batch, "cache_execute")
+
+        a = jnp.array(0.1)
+        b = jnp.array(0.2)
+
+        def cost(a, b, cache):
+            with qml.tape.JacobianTape() as tape1:
+                qml.RY(a, wires=0)
+                qml.RX(b, wires=0)
+                qml.expval(qml.PauliZ(0))
+
+            with qml.tape.JacobianTape() as tape2:
+                qml.RY(a, wires=0)
+                qml.RX(b, wires=0)
+                qml.expval(qml.PauliZ(0))
+
+            res = execute([tape1, tape2], dev, gradient_fn=param_shift, cache=cache, interface="jax")
+            return res[0][0]
+
+        custom_cache = {}
+        jax.grad(cost)(a, b, cache=custom_cache)
+
+        cache = spy.call_args[0][1]
+        assert cache is custom_cache
+
     def test_caching_param_shift(self, tol):
         """Test that, when using parameter-shift transform,
         caching produces the optimum number of evaluations."""

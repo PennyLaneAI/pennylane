@@ -154,27 +154,32 @@ def _execute(
                 result_shape=jax.ShapeDtypeStruct((total_params,), dtype),
             )
 
-            start = 0
+            param_idx = 0
             res = []
 
+            # Group the vjps based on the parameters of the tapes
             for p in params:
-                res.append(vjps[start : start + len(p)])
-                start += len(p)
+                res.append(vjps[param_idx : param_idx + len(p)])
+                param_idx += len(p)
+
+                # Unpack if we have the vjp for a single parameter
                 if len(p) == 1:
                     res[-1] = res[-1][0]
 
-            if res[0].ndim != 0:
-                res = [[jnp.array(p) for p in res[0]]]
+            # Unwrap partial results into arrays if need be
+            need_unwrapping = any(r.ndim != 0 for r in res)
+            if need_unwrapping:
+                unwrapped_res = []
+                for r in res:
+                    if r.ndim != 0:
+                        r = [jnp.array(p) for p in r]
+                    unwrapped_res.append(r)
+
+                res = unwrapped_res
+
             return (tuple(res),)
 
         # Gradient function is a device method.
-        # Note that unlike the previous branch:
-        #
-        # - there is no recursion here
-        # - gradient_fn is not differentiable
-        #
-        # so we cannot support higher-order derivatives.
-
         with qml.tape.Unwrap(*tapes):
             jacs = gradient_fn(tapes, **gradient_kwargs)
 
