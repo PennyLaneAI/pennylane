@@ -460,7 +460,7 @@ class TestJaxExecuteIntegration:
                 qml.expval(qml.PauliZ(0))
 
             result = execute(tapes=[tape1, tape2], device=dev, interface="jax",
-                             gradient_fn=param_shift,
+                              **execute_kwargs
                             )
             return result[0][0] + result[1][0] - 7 * result[1][1]
 

@@ -180,7 +180,7 @@ def _execute(
                 jacs = gradient_fn(tapes, **gradient_kwargs)
 
             vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(g, jacs)]
-            res = [[jnp.array(p) for p in vjps[0]]]
+            res = [[jnp.array(p) for p in v] for v in vjps]
             return (tuple(res),)
 
     wrapped_exec.defvjp(wrapped_exec_fwd, wrapped_exec_bwd)
@@ -235,4 +235,12 @@ def _execute_with_fwd(
         return tuple([tuple(res_jacs)])
 
     wrapped_exec.defvjp(wrapped_exec_fwd, wrapped_exec_bwd)
-    return wrapped_exec(params)[0]
+    res = wrapped_exec(params)
+    tracing = any(["Tracer" in str(type(r)) for r in res])
+
+    # If we're differentiating (no tracers) and have two outputs, than we only
+    # need to extract the forward pass value
+    if len(res) == 2 and not tracing:
+        res = res[0]
+
+    return res
