@@ -242,7 +242,6 @@ class QNode:
         self._tape = None
         self._qfunc_output = None
         self._user_gradient_kwargs = gradient_kwargs
-
         self._original_device = device
         self.gradient_fn = None
         self.gradient_kwargs = None

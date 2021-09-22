@@ -582,7 +582,7 @@ class Device(abc.ABC):
 
         Returns:
             .QuantumTape: The expanded/decomposed circuit, such that the device
-            will support native
+            will natively support all operations.
         """
         obs_on_same_wire = len(
             circuit._obs_sharing_wires  # pylint: disable=protected-access

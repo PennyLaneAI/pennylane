@@ -941,7 +941,7 @@ class TestTapeExpansion:
 
     def test_no_gradient_expansion(self, mocker):
         """Test that an unsupported operation with defined gradient recipe is
-        not expanded for both parameter-shift and finite-differences"""
+        not expanded"""
         dev = qml.device("default.qubit", wires=1)
 
         class UnsupportedOp(qml.operation.Operation):
@@ -986,7 +986,7 @@ class TestTapeExpansion:
 
     def test_gradient_expansion(self, mocker):
         """Test that a *supported* operation with no gradient recipe is
-        expanded for both parameter-shift and finite-differences, but not for execution."""
+        expanded when applying the gradient transform, but not for execution."""
         dev = qml.device("default.qubit", wires=1)
 
         class PhaseShift(qml.PhaseShift):
