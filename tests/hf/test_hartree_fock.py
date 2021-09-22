@@ -14,6 +14,7 @@
 """
 Unit tests for for Hartree-Fock functions.
 """
+import autograd
 import pytest
 from pennylane import numpy as np
 from pennylane.hf.hartree_fock import generate_hartree_fock, hf_energy, nuclear_energy
@@ -69,9 +70,33 @@ def test_hf_energy(symbols, geometry, e_ref):
 
 
 @pytest.mark.parametrize(
+    ("symbols", "geometry", "r", "g_ref"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
+            # HF gradient computed with pyscf using rhf.nuc_grad_method().kernel()
+            np.array([[0.0, 0.0, 0.3650435], [0.0, 0.0, -0.3650435]]),
+        ),
+    ],
+)
+def test_hf_gradient(symbols, geometry, r, g_ref):
+    r"""Test that the gradient of the Hartree-Fock energy wrt differentiable parameters is
+    correct."""
+    mol = Molecule(symbols, geometry, r=r)
+    args = [mol.coordinates, mol.r]
+    g_c = autograd.grad(hf_energy(mol), argnum=0)(*args)
+    g_r = autograd.grad(hf_energy(mol), argnum=1)(*args)
+    g = g_c + g_r
+
+    assert np.allclose(g, g_ref)
+
+
+@pytest.mark.parametrize(
     ("symbols", "geometry", "e_ref"),
     [
-        # e_repulsion = sum(q_i * q_j / r_ij)
+        # e_repulsion = \sum_{ij} (q_i * q_j / r_{ij})
         (
             ["H", "H"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
