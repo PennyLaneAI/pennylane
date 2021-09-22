@@ -99,7 +99,7 @@ def test_get_unitary_matrix_CNOT(target_wire):
 
 
 def test_get_unitary_matrix_CRX():
-    """Test controlled rotation with non-adjacent control- and target wires"""
+    """Test controlled rotation with non-adjacent control and target wires"""
     testangle = np.pi / 4
 
     wires = [0, 1, 2]
