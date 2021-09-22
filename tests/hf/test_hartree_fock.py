@@ -120,3 +120,27 @@ def test_nuclear_energy(symbols, geometry, e_ref):
     args = [mol.coordinates]
     e = nuclear_energy(mol.nuclear_charges, mol.coordinates)(*args)
     assert np.allclose(e, e_ref)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "g_ref"),
+    [
+        # gradient = d(q_i * q_j / (xi - xj)) / dxi, ...
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
+            np.array([[0.0, 0.0, 1.0], [0.0, 0.0, -1.0]]),
+        ),
+        (
+            ["H", "F"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]], requires_grad=True),
+            np.array([[0.0, 0.0, 2.25], [0.0, 0.0, -2.25]]),
+        ),
+    ],
+)
+def test_nuclear_energy_gradient(symbols, geometry, g_ref):
+    r"""Test that nuclear energy gradients are correct."""
+    mol = Molecule(symbols, geometry)
+    args = [mol.coordinates]
+    g = autograd.grad(nuclear_energy(mol.nuclear_charges, mol.coordinates))(*args)
+    assert np.allclose(g, g_ref)
