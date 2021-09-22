@@ -523,6 +523,14 @@ class PauliRot(Operation):
                 )
             )
 
+    def label(self, include_parameters=False, decimal_places=2):
+        op_label = "R(" + self.parameters[1] +")"
+        if include_parameters:
+            param_string = f'({self.parameters[0]:.{decimal_places}f})'
+            op_label += param_string
+
+        return op_label
+
     @staticmethod
     def _check_pauli_word(pauli_word):
         """Check that the given Pauli word has correct structure.

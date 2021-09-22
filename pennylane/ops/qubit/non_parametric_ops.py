@@ -48,6 +48,9 @@ class Hadamard(Observable, Operation):
     is_self_inverse = True
     eigvals = pauli_eigs(1)
     matrix = np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
+    
+    def label(self, *args, **kwargs):
+        return "H"
 
     @classmethod
     def _matrix(cls, *params):
@@ -112,6 +115,9 @@ class PauliX(Observable, Operation):
     eigvals = pauli_eigs(1)
     matrix = np.array([[0, 1], [1, 0]])
 
+    def label(self, *args, **kwargs):
+        return "X"
+
     @classmethod
     def _matrix(cls, *params):
         return cls.matrix
@@ -175,6 +181,9 @@ class PauliY(Observable, Operation):
     basis = "Y"
     eigvals = pauli_eigs(1)
     matrix = np.array([[0, -1j], [1j, 0]])
+
+    def label(self, *args, **kwargs):
+        return "Y"
 
     @classmethod
     def _matrix(cls, *params):
@@ -245,6 +254,9 @@ class PauliZ(Observable, DiagonalOperation):
     basis = "Z"
     eigvals = pauli_eigs(1)
     matrix = np.array([[1, 0], [0, -1]])
+
+    def label(self, *args, **kwargs):
+        return "Z"
 
     @classmethod
     def _matrix(cls, *params):
@@ -486,6 +498,9 @@ class CZ(DiagonalOperation):
     eigvals = np.array([1, 1, 1, -1])
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 
+    def label(self, *args, **kwargs):
+        return "Z"
+
     @classmethod
     def _matrix(cls, *params):
         return cls.matrix
@@ -536,6 +551,9 @@ class CY(Operation):
             [0, 0, 1j, 0],
         ]
     )
+
+    def label(self, *args, **kwargs):
+        return "Y"
 
     @classmethod
     def _matrix(cls, *params):
@@ -760,6 +778,9 @@ class CSWAP(Operation):
         ]
     )
 
+    def label(self, *args, **kwargs):
+        return "SWAP"
+
     @classmethod
     def _matrix(cls, *params):
         return cls.matrix
@@ -821,6 +842,9 @@ class Toffoli(Operation):
             [0, 0, 0, 0, 0, 0, 1, 0],
         ]
     )
+
+    def label(self, *args, **kwargs):
+        return "X"
 
     @classmethod
     def _matrix(cls, *params):
@@ -912,6 +936,9 @@ class MultiControlledX(Operation):
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
+    
+    def label(self, *args, **kwargs):
+        return "X"
 
     # pylint: disable=too-many-arguments
     def __init__(

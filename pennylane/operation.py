@@ -423,6 +423,31 @@ class Operator(abc.ABC):
     def name(self, value):
         self._name = value
 
+    def label(self, include_parameters=False, decimal_places=2):
+        """How the operator is represented in diagrams and drawings.
+        
+        Keyword Args:
+            include_parameters=False (Bool): Whether or not to include parameters in label
+            decimal_places=2 (Int): If parameters are include, how many decimals to include
+
+        Returns:
+            str: label to use in drawings
+        """
+        op_label = self.__class__.__name__
+
+        if include_parameters:
+            params = self.parameters
+
+            if (len(params) == 1) and len(qml.math.shape(params[0])) == 0:
+                param_string = f'({params[0]:.{decimal_places}f})'
+                op_label += param_string
+
+            if len(params) > 1:
+                param_string = ",".join(f"{p:.{decimal_places}f}" for p in params)
+                op_label  += f"({param_string})"
+
+        return op_label
+
     def __init__(self, *params, wires=None, do_queue=True, id=None):
         # pylint: disable=too-many-branches
         self._name = self.__class__.__name__  #: str: name of the operator
@@ -776,6 +801,12 @@ class Operation(Operator):
     def name(self):
         """Get and set the name of the operator."""
         return self._name + Operation.string_for_inverse if self.inverse else self._name
+
+    def label(self, include_parameters=False, decimal_places=2):
+        op_label = super().label(include_parameters=include_parameters,decimal_places=decimal_places)
+        if self.inverse:
+            op_label += "⁻¹"
+        return op_label
 
     def __init__(self, *params, wires=None, do_queue=True, id=None):
 
@@ -1208,6 +1239,9 @@ class Tensor(Observable):
         self.obs = []
         self._args = args
         self.queue(init=True)
+
+    def label(self, *args, **kwargs):
+        return " ".join(ob.label(*args,**kwargs) for ob in self.obs)
 
     def queue(self, context=qml.QueuingContext, init=False):  # pylint: disable=arguments-differ
         constituents = self.obs
