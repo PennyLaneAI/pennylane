@@ -210,6 +210,7 @@ def _execute_with_fwd(
 
             res, jacs = execute_fn(new_tapes, **gradient_kwargs)
 
+            # On the forward execution return the jacobian too
             return np.stack(res), jacs
 
         jacobian_shape = [jax.ShapeDtypeStruct((1, len(p)), jnp.float32) for p in params]
