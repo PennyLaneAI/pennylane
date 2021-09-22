@@ -50,7 +50,8 @@ def test_get_unitary_matrix_nonparam_1qubit_ops(op, wire):
 
 # Test a circuit containing multiple gates
 def test_get_unitary_matrix_multiple_ops():
-    """Check the total matrix for a circuit containing multiple gates. Also checks that non-integer wires work"""
+    """Check the total matrix for a circuit containing multiple gates. Also 
+    checks that non-integer wires work"""
     wires = ["a", "b", "c"]
 
     def testcircuit():
