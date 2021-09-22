@@ -15,14 +15,15 @@
 This module contains functions for adding the JAX interface
 to a PennyLane Device class.
 """
-# pylint: disable=too-many-arguments
-import jax
-from jax.experimental import host_callback
-import jax.numpy as jnp
-import numpy as np
 import inspect
 
+import numpy as np
 import pennylane as qml
+
+# pylint: disable=too-many-arguments
+import jax
+import jax.numpy as jnp
+from jax.experimental import host_callback
 
 dtype = jnp.float32
 
@@ -92,7 +93,6 @@ def _execute(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
-    jacs = None
     total_size = np.sum([t.output_dim for t in tapes])
     total_params = np.sum([len(p) for p in params])
 
@@ -167,21 +167,20 @@ def _execute(
                 res = [[jnp.array(p) for p in res[0]]]
             return (tuple(res),)
 
-        else:
-            # Gradient function is a device method.
-            # Note that unlike the previous branch:
-            #
-            # - there is no recursion here
-            # - gradient_fn is not differentiable
-            #
-            # so we cannot support higher-order derivatives.
+        # Gradient function is a device method.
+        # Note that unlike the previous branch:
+        #
+        # - there is no recursion here
+        # - gradient_fn is not differentiable
+        #
+        # so we cannot support higher-order derivatives.
 
-            with qml.tape.Unwrap(*tapes):
-                jacs = gradient_fn(tapes, **gradient_kwargs)
+        with qml.tape.Unwrap(*tapes):
+            jacs = gradient_fn(tapes, **gradient_kwargs)
 
-            vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(g, jacs)]
-            res = [[jnp.array(p) for p in v] for v in vjps]
-            return (tuple(res),)
+        vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(g, jacs)]
+        res = [[jnp.array(p) for p in v] for v in vjps]
+        return (tuple(res),)
 
     wrapped_exec.defvjp(wrapped_exec_fwd, wrapped_exec_bwd)
     return wrapped_exec(params)
@@ -195,9 +194,7 @@ def _execute_with_fwd(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
-    jacs = None
     total_size = np.sum([t.output_dim for t in tapes])
-    total_params = np.sum([len(p) for p in params])
 
     @jax.custom_vjp
     def wrapped_exec(params):
@@ -239,7 +236,7 @@ def _execute_with_fwd(
 
     wrapped_exec.defvjp(wrapped_exec_fwd, wrapped_exec_bwd)
     res = wrapped_exec(params)
-    tracing = any(["Tracer" in str(type(r)) for r in res])
+    tracing = any("Tracer" in str(type(r)) for r in res)
 
     # We have two outputs and no tracers when not differentiating
     # Only need to extract the forward pass value
