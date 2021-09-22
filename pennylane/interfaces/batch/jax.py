@@ -15,7 +15,6 @@
 This module contains functions for adding the JAX interface
 to a PennyLane Device class.
 """
-import inspect
 
 # pylint: disable=too-many-arguments
 import jax
@@ -113,7 +112,7 @@ def _execute(
             return np.stack(res)
 
         res = host_callback.call(
-            wrapper, params, result_shape=jax.ShapeDtypeStruct((total_size, 1), jnp.float32)
+            wrapper, params, result_shape=jax.ShapeDtypeStruct((total_size, 1), dtype)
         )
         return res
 
@@ -122,8 +121,7 @@ def _execute(
 
     def wrapped_exec_bwd(params, g):
 
-        module_name = getattr(inspect.getmodule(gradient_fn), "__name__", "")
-        if "pennylane.gradients" in module_name:
+        if isinstance(gradient_fn, qml.gradients.gradient_transform):
 
             def non_diff_wrapper(args):
                 """The derivative order is at the maximum. Compute the VJP
@@ -153,7 +151,7 @@ def _execute(
             vjps = host_callback.call(
                 non_diff_wrapper,
                 args,
-                result_shape=jax.ShapeDtypeStruct((total_params,), jnp.float32),
+                result_shape=jax.ShapeDtypeStruct((total_params,), dtype),
             )
 
             start = 0
@@ -214,12 +212,12 @@ def _execute_with_fwd(
             # On the forward execution return the jacobian too
             return np.stack(res), jacs
 
-        jacobian_shape = [jax.ShapeDtypeStruct((1, len(p)), jnp.float32) for p in params]
+        jacobian_shape = [jax.ShapeDtypeStruct((1, len(p)), dtype) for p in params]
         res, jacs = host_callback.call(
             wrapper,
             params,
             result_shape=tuple(
-                [jax.ShapeDtypeStruct((total_size, 1), jnp.float32), jacobian_shape]
+                [jax.ShapeDtypeStruct((total_size, 1), dtype), jacobian_shape]
             ),
         )
         return res, jacs
