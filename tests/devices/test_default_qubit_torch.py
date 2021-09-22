@@ -62,6 +62,7 @@ from gate_data import (
     DoubleExcitation,
     DoubleExcitationPlus,
     DoubleExcitationMinus,
+    OrbitalRotation,
 )
 
 np.random.seed(42)
@@ -122,6 +123,7 @@ four_qubit_param = [
     (qml.DoubleExcitation, DoubleExcitation),
     (qml.DoubleExcitationPlus, DoubleExcitationPlus),
     (qml.DoubleExcitationMinus, DoubleExcitationMinus),
+    (qml.OrbitalRotation, OrbitalRotation),
 ]
 
 
@@ -1123,7 +1125,7 @@ class TestQNodeIntegration:
     @pytest.mark.parametrize("theta", [0.5432, 4.213])
     @pytest.mark.parametrize("op,func", four_qubit_param)
     def test_four_qubit_param_gates(self, theta, op, func, init_state, tol):
-        """Test the integration of the two-qubit single parameter rotations by passing
+        """Test the integration of the four-qubit single parameter rotations by passing
         a Torch data structure as a parameter"""
         dev = qml.device("default.qubit.torch", wires=4)
         state = init_state(4)
