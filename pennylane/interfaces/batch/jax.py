@@ -93,7 +93,9 @@ def _execute(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
-    total_size = np.sum([t.output_dim for t in tapes])
+
+    # Only have scalar outputs
+    total_size = len(tapes)
     total_params = np.sum([len(p) for p in params])
 
     @jax.custom_vjp
@@ -194,7 +196,9 @@ def _execute_with_fwd(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
-    total_size = np.sum([t.output_dim for t in tapes])
+
+    # Only have scalar outputs
+    total_size = len(tapes)
 
     @jax.custom_vjp
     def wrapped_exec(params):
