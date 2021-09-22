@@ -36,7 +36,7 @@
   >>> circuit(0.3, 0.4)
   tensor(-0.70520073, requires_grad=True)
   >>> print(qml.draw(circuit)(0.3, 0.4))
-  0: ──RX(0.3)─────────────────Rot(-3.5, 0.242, 0.86)──╭X──RZ(0.176)───╭C─────────────╭X──Rot(5.56, 0.321, -2.09)───RY(0.4)──┤ ⟨Z⟩ 
+  0: ──RX(0.3)─────────────────Rot(-3.5, 0.242, 0.86)──╭X──RZ(0.176)───╭C─────────────╭X──Rot(5.56, 0.321, -2.09)───RY(0.4)──┤ ⟨Z⟩
   1: ──Rot(-1.64, 2.69, 1.58)──────────────────────────╰C──RY(-0.883)──╰X──RY(-1.47)──╰C──Rot(-1.46, 0.337, 0.587)───────────┤
   ```
 
@@ -80,11 +80,12 @@
   custom quantum gradient support, and arbitrary order derivatives. This QNode is available via
   `qml.beta.QNode`, and `@qml.beta.qnode`.
   [(#1642)](https://github.com/PennyLaneAI/pennylane/pull/1642)
+  [(#1646)](https://github.com/PennyLaneAI/pennylane/pull/1646)
 
   It differs from the standard QNode in several ways:
 
   - Custom gradient transforms can be specified as the differentiation method:
-  
+
     ```python
     @qml.gradients.gradient_transform
     def my_gradient_transform(tape):
@@ -115,10 +116,15 @@
   - Circuit decompositions
   - Non-mutability via the `mutable` keyword argument
   - Viewing specifications with `qml.specs`
+  - The `reversible` QNode differentiation method
+  - The ability to specify a `dtype` when using PyTorch and TensorFlow.
 
   It is also not tested with the `qml.qnn` module.
 
 <h3>Improvements</h3>
+
+* The tests for qubit operations are split into multiple files.
+  [(#1661)](https://github.com/PennyLaneAI/pennylane/pull/1661)
 
 * The `qml.metric_tensor` transform has been improved with regards to
   both function and performance.
@@ -179,10 +185,17 @@
 * The device suite tests can now execute successfully if no shots configuration variable is given.
   [(#1641)](https://github.com/PennyLaneAI/pennylane/pull/1641)
 
+* Fixes a bug where the `qml.gradients.param_shift` transform would raise an error while attempting
+  to compute the variance of a QNode with ragged output.
+  [(#1646)](https://github.com/PennyLaneAI/pennylane/pull/1646)
+
 <h3>Documentation</h3>
+
+* Adds a link to https://pennylane.ai/qml/demonstrations.html in the navbar.
+  [(#1624)](https://github.com/PennyLaneAI/pennylane/pull/1624)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Christina Lee, David Wierichs.
+Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee, David Wierichs.
