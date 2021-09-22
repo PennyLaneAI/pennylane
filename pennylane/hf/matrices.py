@@ -34,8 +34,8 @@ def molecular_density_matrix(n_electron, c):
         P_{\mu \nu} = \sum_{i=1}^{N} C_{\mu i} C_{\nu i},
 
     where :math:`N = N_{electrons} / 2` is the number of occupied orbitals. Note that the total
-    density matrix is the sum of the :math:`\sigma` and :math:`\beta` density
-    matrices, :math:`P = P^{\sigma} + P^{\beta}`.
+    density matrix is the sum of the :math:`\alpha` and :math:`\beta` density
+    matrices, :math:`P = P^{\alpha} + P^{\beta}`.
 
     Args:
         n_electron (integer): number of electrons
@@ -156,15 +156,16 @@ def kinetic_matrix(basis_functions):
 
 
 def attraction_matrix(basis_functions, charges, r):
-    r"""Return a function that computes the nuclear attraction matrix for a given set of basis functions.
+    r"""Return a function that computes the electron-nuclear attraction matrix for a given set of
+    basis functions.
 
     Args:
         basis_functions (list[BasisFunction]): basis functions
-
-    Returns:
-        basis_functions (list[BasisFunction]): basis functions
         charges (list[int]): nuclear charges
         r (array[float]): nuclear positions
+
+    Returns:
+        function: function that computes the electron-nuclear attraction matrix
 
     **Example**
 
@@ -179,13 +180,13 @@ def attraction_matrix(basis_functions, charges, r):
     """
 
     def attraction(*args):
-        r"""Construct the attraction matrix for a given set of basis functions.
+        r"""Construct the electron-nuclear matrix for a given set of basis functions.
 
         Args:
             args (array[float]): initial values of the differentiable parameters
 
         Returns:
-            array[float]: the attraction matrix
+            array[float]: the electron-nuclear matrix
         """
         n = len(basis_functions)
         v = anp.zeros((n, n))
@@ -226,13 +227,14 @@ def attraction_matrix(basis_functions, charges, r):
 
 
 def repulsion_tensor(basis_functions):
-    r"""Return a function that computes the electron repulsion tensor for a given set of basis functions.
+    r"""Return a function that computes the electron repulsion tensor for a given set of basis
+    functions.
 
     Args:
         basis_functions (list[BasisFunction]): basis functions
 
     Returns:
-        function: function that computes the repulsion tensor
+        function: function that computes the electron repulsion tensor
 
     **Example**
 
@@ -250,13 +252,13 @@ def repulsion_tensor(basis_functions):
     """
 
     def repulsion(*args):
-        r"""Construct the repulsion tensor for a given set of basis functions.
+        r"""Construct the electron repulsion tensor for a given set of basis functions.
 
         Args:
             args (array[float]): initial values of the differentiable parameters
 
         Returns:
-            array[float]: the repulsion tensor
+            array[float]: the electron repulsion tensor
         """
         n = len(basis_functions)
         e = anp.zeros((n, n, n, n))
@@ -299,7 +301,7 @@ def repulsion_tensor(basis_functions):
 def core_matrix(basis_functions, charges, r):
     r"""Return a function that computes the core matrix for a given set of basis functions.
 
-    The core matrix is computed as a sum of the kinetic and attraction matrices.
+    The core matrix is computed as a sum of the kinetic and electron-nuclear matrices.
 
     Args:
         basis_functions (list[BasisFunction]): basis functions
