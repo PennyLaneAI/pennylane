@@ -238,8 +238,8 @@ def _execute_with_fwd(
     res = wrapped_exec(params)
     tracing = any(["Tracer" in str(type(r)) for r in res])
 
-    # If we're differentiating (no tracers) and have two outputs, than we only
-    # need to extract the forward pass value
+    # We have two outputs and no tracers when not differentiating
+    # Only need to extract the forward pass value
     if len(res) == 2 and not tracing:
         res = res[0]
 
