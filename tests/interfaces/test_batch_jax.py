@@ -438,6 +438,7 @@ class TestJaxExecuteIntegration:
         assert tape.trainable_params == {0, 1}
 
         def cost(a, b):
+            tape._update()
             tape.set_parameters([a, b])
             return execute([tape], dev, interface="jax", **execute_kwargs)[0][0]
 

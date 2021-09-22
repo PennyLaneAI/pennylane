@@ -279,9 +279,6 @@ def requires_grad(tensor, interface=None):
     if interface == "jax":
         import jax
 
-        # TODO: modify this once we have a way of distinguishing jax arrays to
-        # be differentiable or not
-        # return isinstance(tensor, jax.interpreters.ad.JVPTracer)
-        return isinstance(tensor, jax.numpy.ndarray)
+        return isinstance(tensor, jax.interpreters.ad.JVPTracer)
 
     raise ValueError(f"Argument {tensor} is an unknown object")
