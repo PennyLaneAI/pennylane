@@ -60,7 +60,7 @@ def get_unitary_matrix(circuit, wire_order=None):
     Note that since ``wire_order`` was not specified, the default order ``[1, 0]``
     for ``circuit`` was used, and the unitary matrix corresponds to the operation
     :math:`Z\otimes R_X(\theta)`. To obtain the matrix for :math:`R_X(\theta)\otimes Z`,
-    specify ``wire_order=[0, 1`` in the function call:
+    specify ``wire_order=[0, 1]`` in the function call:
 
     >>> get_matrix = get_unitary_matrix(circuit, wire_order=[0, 1])
 
@@ -113,8 +113,8 @@ def get_unitary_matrix(circuit, wire_order=None):
 
                 I = np.reshape(np.eye(2 ** n_wires), [2] * n_wires * 2)
                 axes = (np.arange(len(op.wires), 2 * len(op.wires)), op_wire_pos)
-                # reshape op.matrix
 
+                # reshape op.matrix
                 U_op_reshaped = np.reshape(op.matrix, [2] * len(op.wires) * 2)
                 U_tensordot = np.tensordot(U_op_reshaped, I, axes=axes)
 
