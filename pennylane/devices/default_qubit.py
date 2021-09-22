@@ -137,6 +137,7 @@ class DefaultQubit(QubitDevice):
         "DoubleExcitationMinus",
         "QubitCarry",
         "QubitSum",
+        "OrbitalRotation",
     }
 
     observables = {

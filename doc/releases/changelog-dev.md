@@ -76,6 +76,32 @@
   For more usage details, please see the
   [classical Jacobian docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.transforms.classical_jacobian.html).
 
+* Added a new operation `OrbitalRotation`, which implements the spin-adapted spatial orbital rotation gate. 
+  [(#1665)](https://github.com/PennyLaneAI/pennylane/pull/1665)
+  
+  An example circuit that uses `OrbitalRotation` operation is:
+
+  ```python
+  dev = qml.device('default.qubit', wires=4)
+  @qml.qnode(dev)
+  def circuit(phi):
+      qml.BasisState(np.array([1, 1, 0, 0]), wires=[0, 1, 2, 3])
+      qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
+      return qml.state()
+  ```
+
+  If we run this circuit, we will get the following output
+
+  ```pycon 
+  >>> circuit(0.1)
+  array([ 0.        +0.j,  0.        +0.j,  0.        +0.j,
+          0.00249792+0.j,  0.        +0.j,  0.        +0.j,
+          -0.04991671+0.j,  0.        +0.j,  0.        +0.j,
+          -0.04991671+0.j,  0.        +0.j,  0.        +0.j,
+          0.99750208+0.j,  0.        +0.j,  0.        +0.j,
+          0.        +0.j])
+  ```
+
 * A new, experimental QNode has been added, that adds support for batch execution of circuits,
   custom quantum gradient support, and arbitrary order derivatives. This QNode is available via
   `qml.beta.QNode`, and `@qml.beta.qnode`.
@@ -198,4 +224,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee, David Wierichs.
+Utkarsh Azad, Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee, David Wierichs.
