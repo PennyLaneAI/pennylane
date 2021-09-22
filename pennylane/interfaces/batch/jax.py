@@ -167,11 +167,7 @@ def _execute(
                 res = [[jnp.array(p) for p in res[0]]]
             return (tuple(res),)
 
-        elif (
-            hasattr(gradient_fn, "fn")
-            and inspect.ismethod(gradient_fn.fn)
-            and gradient_fn.fn.__self__ is device
-        ):
+        else:
             # Gradient function is a device method.
             # Note that unlike the previous branch:
             #
@@ -186,10 +182,6 @@ def _execute(
             vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(g, jacs)]
             res = [[jnp.array(p) for p in vjps[0]]]
             return (tuple(res),)
-
-        else:
-
-            raise ValueError("Unknown gradient function.")
 
     wrapped_exec.defvjp(wrapped_exec_fwd, wrapped_exec_bwd)
     return wrapped_exec(params)
@@ -243,4 +235,4 @@ def _execute_with_fwd(
         return tuple([tuple(res_jacs)])
 
     wrapped_exec.defvjp(wrapped_exec_fwd, wrapped_exec_bwd)
-    return wrapped_exec(params)
+    return wrapped_exec(params)[0]

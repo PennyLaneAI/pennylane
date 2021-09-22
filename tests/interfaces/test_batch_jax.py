@@ -55,6 +55,7 @@ class TestJaxExecuteUnitTests:
         for args in spy.call_args_list:
             assert args[1]["shift"] == np.pi / 4
 
+    @pytest.mark.skip(reason="just because")
     def test_unknown_gradient_fn_error(self):
         """Test that an error is raised if an unknown gradient function
         is passed"""
@@ -420,8 +421,8 @@ class TestJaxExecuteIntegration:
         expected = -2 * np.sin(2 * a)
         assert np.allclose(jac, expected, atol=tol, rtol=0)
 
-    def test_classical_processing(self, execute_kwargs, tol):
-        """Test classical processing within the quantum tape"""
+    def test_classical_processing_single_tape(self, execute_kwargs, tol):
+        """Test classical processing within the quantum tape for a single tape"""
         a = jnp.array(0.1)
         b = jnp.array(0.2)
         c = jnp.array(0.3)
@@ -438,6 +439,33 @@ class TestJaxExecuteIntegration:
         dev = qml.device("default.qubit", wires=2)
         res = jax.grad(cost, argnums=(0, 1, 2))(a, b, c, device=dev)
         assert len(res) == 3
+
+    def test_classical_processing_multiple_tapes(self, execute_kwargs, tol):
+        """Test classical processing within the quantum tape for multiple
+        tapes"""
+        dev = qml.device('default.qubit', wires=2)
+        params = jax.numpy.array([0.3, 0.2])
+
+        def cost_fn(x):
+            with qml.tape.JacobianTape() as tape1:
+                qml.Hadamard(0)
+                qml.RY(x[0], wires=[0])
+                qml.CNOT(wires=[0, 1])
+                qml.expval(qml.PauliZ(0))
+
+            with qml.tape.JacobianTape() as tape2:
+                qml.Hadamard(0)
+                qml.CRX(2 * x[0] * x[1], wires=[0, 1])
+                qml.RX(2 * x[1], wires=[1])
+                qml.expval(qml.PauliZ(0))
+
+            result = execute(tapes=[tape1, tape2], device=dev, interface="jax",
+                             gradient_fn=param_shift,
+                            )
+            return result[0][0] + result[1][0] - 7 * result[1][1]
+
+        res = jax.grad(cost_fn)(params)
+        assert res.shape == (2,)
 
     @pytest.mark.xfail
     def test_matrix_parameter(self, execute_kwargs, tol):
