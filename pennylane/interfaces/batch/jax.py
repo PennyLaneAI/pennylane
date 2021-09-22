@@ -100,6 +100,7 @@ def _execute(
     @jax.custom_vjp
     def wrapped_exec(params):
         def wrapper(p):
+            """Compute the forward pass."""
             new_tapes = []
 
             for t, a in zip(tapes, p):
@@ -124,8 +125,7 @@ def _execute(
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
 
             def non_diff_wrapper(args):
-                """The derivative order is at the maximum. Compute the VJP
-                in a non-differentiable manner to reduce overhead."""
+                """Compute the VJP in a non-differentiable manner."""
                 new_tapes = []
                 p = args[:-1]
                 dy = args[-1]
@@ -191,6 +191,7 @@ def _execute(
     return wrapped_exec(params)
 
 
+# The execute function in forward mode
 def _execute_with_fwd(
     params,
     tapes=None,
@@ -206,6 +207,7 @@ def _execute_with_fwd(
     @jax.custom_vjp
     def wrapped_exec(params):
         def wrapper(p):
+            """Compute the forward pass by returning the jacobian too."""
             new_tapes = []
 
             for t, a in zip(tapes, p):
@@ -230,6 +232,8 @@ def _execute_with_fwd(
         return res, tuple([jacs, params])
 
     def wrapped_exec_bwd(params, g):
+
+        # Use the jacobian that was computed on the forward pass
         jacs, params = params
         res_jacs = []
         for j in jacs:
@@ -241,10 +245,12 @@ def _execute_with_fwd(
 
     wrapped_exec.defvjp(wrapped_exec_fwd, wrapped_exec_bwd)
     res = wrapped_exec(params)
-    tracing = any("Tracer" in str(type(r)) for r in res)
 
-    # We have two outputs and no tracers when not differentiating
-    # Only need to extract the forward pass value
+    tracing = any(isinstance(r, jax.interpreters.ad.JVPTracer) for r in res)
+
+    # When there are no tracers (not differentiating), we have the result of
+    # the forward pass and the jacobian, but only need the result of the
+    # forward pass
     if len(res) == 2 and not tracing:
         res = res[0]
 
