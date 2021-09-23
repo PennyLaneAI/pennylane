@@ -254,6 +254,9 @@ def repulsion_tensor(basis_functions):
     def repulsion(*args):
         r"""Construct the electron repulsion tensor for a given set of basis functions.
 
+        Permutational symmetries are taken from [D.F. Brailsford and G.G. Hall, International
+        Journal of Quantum Chemistry, 1971, 5, 657-668].
+
         Args:
             args (array[float]): initial values of the differentiable parameters
 
