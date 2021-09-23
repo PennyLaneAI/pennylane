@@ -101,12 +101,11 @@ def _execute(
     def wrapped_exec(params):
         def wrapper(p):
             """Compute the forward pass."""
-            # new_tapes = []
+            new_tapes = []
 
-            # for t, a in zip(tapes, p):
-            #     new_tapes.append(t.copy(copy_operations=True))
-            #     new_tapes[-1].set_parameters(a)
-            new_tapes = tapes
+            for t, a in zip(tapes, p):
+                new_tapes.append(t.copy(copy_operations=True))
+                new_tapes[-1].set_parameters(a)
 
             with qml.tape.Unwrap(*new_tapes):
                 res, _ = execute_fn(new_tapes, **gradient_kwargs)
