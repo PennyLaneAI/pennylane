@@ -271,7 +271,7 @@ class TestCaching:
                 qml.CNOT(wires=[0, 1])
                 qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
-            return execute([tape], dev, gradient_fn=param_shift, cache=cache)[0]
+            return execute([tape], dev, gradient_fn=param_shift, cache=cache, max_diff=2)[0]
 
         # No caching: number of executions is not ideal
         hess1 = qml.jacobian(qml.grad(cost))(params, cache=False)
@@ -763,7 +763,7 @@ class TestHigherOrderDerivatives:
                 qml.CNOT(wires=[0, 1])
                 qml.probs(wires=1)
 
-            result = execute([tape1, tape2], dev, gradient_fn=param_shift)
+            result = execute([tape1, tape2], dev, gradient_fn=param_shift, max_diff=2)
             return result[0] + result[1][0, 0]
 
         res = cost_fn(params)

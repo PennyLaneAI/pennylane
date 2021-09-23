@@ -160,7 +160,7 @@ class ExecuteTapes(torch.autograd.Function):
                     # The derivative order is at the maximum. Compute the VJP
                     # in a non-differentiable manner to reduce overhead.
 
-                    with qml.tape.Unwrap(*ctx.tapes):
+                    with qml.tape.Unwrap(*ctx.tapes, set_trainable=False):
                         vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                             ctx.tapes,
                             dy,

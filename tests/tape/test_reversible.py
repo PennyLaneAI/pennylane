@@ -1,3 +1,4 @@
+# pylint: disable=no-member
 # Copyright 2018-2020 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -312,6 +313,7 @@ class TestGradients:
         qml.DoubleExcitation,
         qml.DoubleExcitationPlus,
         qml.DoubleExcitationMinus,
+        qml.OrbitalRotation,
     }
 
     @pytest.mark.parametrize("obs", [qml.PauliX, qml.PauliY])
