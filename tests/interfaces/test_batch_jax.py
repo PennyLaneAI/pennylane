@@ -507,10 +507,35 @@ class TestJaxExecuteIntegration:
                 qml.expval(qml.PauliZ(0))
 
             result = execute(tapes=[tape1, tape2], device=dev, interface="jax", **execute_kwargs)
-            return result[0][0] + result[1][0] - 7 * result[1][1]
+            return (result[0] + result[1] - 7 * result[1])[0]
 
         res = jax.grad(cost_fn)(params)
         assert res.shape == (2,)
+
+    def test_multiple_tapes_output(self, execute_kwargs, tol):
+        """Test the output types for the execution of multiple quantum tapes"""
+        dev = qml.device("default.qubit", wires=2)
+        params = jax.numpy.array([0.3, 0.2])
+
+        def cost_fn(x):
+            with qml.tape.JacobianTape() as tape1:
+                qml.Hadamard(0)
+                qml.RY(x[0], wires=[0])
+                qml.CNOT(wires=[0, 1])
+                qml.expval(qml.PauliZ(0))
+
+            with qml.tape.JacobianTape() as tape2:
+                qml.Hadamard(0)
+                qml.CRX(2 * x[0] * x[1], wires=[0, 1])
+                qml.RX(2 * x[1], wires=[1])
+                qml.expval(qml.PauliZ(0))
+
+            return execute(tapes=[tape1, tape2], device=dev, interface="jax", **execute_kwargs)
+
+        res = cost_fn(params)
+        assert isinstance(res, list)
+        assert all(isinstance(r, jnp.ndarray) for r in res)
+        assert all(r.shape == (1,) for r in res)
 
     @pytest.mark.xfail
     def test_matrix_parameter(self, execute_kwargs, tol):

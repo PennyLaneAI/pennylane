@@ -101,19 +101,21 @@ def _execute(
     def wrapped_exec(params):
         def wrapper(p):
             """Compute the forward pass."""
-            new_tapes = []
+            # new_tapes = []
 
-            for t, a in zip(tapes, p):
-                new_tapes.append(t.copy(copy_operations=True))
-                new_tapes[-1].set_parameters(a)
+            # for t, a in zip(tapes, p):
+            #     new_tapes.append(t.copy(copy_operations=True))
+            #     new_tapes[-1].set_parameters(a)
+            new_tapes = tapes
 
             with qml.tape.Unwrap(*new_tapes):
                 res, _ = execute_fn(new_tapes, **gradient_kwargs)
 
-            return np.stack(res)
+            return res
 
+        shapes = [jax.ShapeDtypeStruct((1,), dtype) for _ in range(total_size)]
         res = host_callback.call(
-            wrapper, params, result_shape=jax.ShapeDtypeStruct((total_size, 1), dtype)
+            wrapper, params, result_shape=shapes
         )
         return res
 
@@ -159,12 +161,9 @@ def _execute(
 
             # Group the vjps based on the parameters of the tapes
             for p in params:
-                res.append(vjps[param_idx : param_idx + len(p)])
+                param_vjp = vjps[param_idx : param_idx + len(p)]
+                res.append(param_vjp)
                 param_idx += len(p)
-
-                # Unpack if we have the vjp for a single parameter
-                if len(p) == 1:
-                    res[-1] = res[-1][0]
 
             # Unwrap partial results into arrays if need be
             need_unwrapping = any(r.ndim != 0 for r in res)
@@ -217,13 +216,14 @@ def _execute_with_fwd(
             res, jacs = execute_fn(new_tapes, **gradient_kwargs)
 
             # On the forward execution return the jacobian too
-            return np.stack(res), jacs
+            return res, jacs
 
+        fwd_shapes = [jax.ShapeDtypeStruct((1,), dtype) for _ in range(total_size)]
         jacobian_shape = [jax.ShapeDtypeStruct((1, len(p)), dtype) for p in params]
         res, jacs = host_callback.call(
             wrapper,
             params,
-            result_shape=tuple([jax.ShapeDtypeStruct((total_size, 1), dtype), jacobian_shape]),
+            result_shape=tuple([fwd_shapes, jacobian_shape]),
         )
         return res, jacs
 
