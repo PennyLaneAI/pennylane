@@ -111,6 +111,7 @@
   `qml.beta.QNode`, and `@qml.beta.qnode`.
   [(#1642)](https://github.com/PennyLaneAI/pennylane/pull/1642)
   [(#1646)](https://github.com/PennyLaneAI/pennylane/pull/1646)
+  [(#1651)](https://github.com/PennyLaneAI/pennylane/pull/1651)
 
   It differs from the standard QNode in several ways:
 
@@ -136,6 +137,14 @@
     significant performance improvement when executing the QNode on remote
     quantum hardware.
 
+  - When decomposing the circuit, the default decomposition strategy will prioritize
+    decompositions that result in the smallest number of parametrized operations
+    required to satisfy the differentiation method. Additional decompositions required
+    to satisfy the native gate set of the quantum device will be performed later, by the
+    device at execution time. While this may lead to a slight increase in classical processing,
+    it significantly reduces the number of circuit evaluations needed to compute
+    gradients of complex unitaries.
+
   In an upcoming release, this QNode will replace the existing one. If you come across any bugs
   while using this QNode, please let us know via a [bug
   report](https://github.com/PennyLaneAI/pennylane/issues/new?assignees=&labels=bug+%3Abug%3A&template=bug_report.yml&title=%5BBUG%5D)
@@ -143,13 +152,36 @@
 
   Currently, this beta QNode does not support the following features:
 
-  - Circuit decompositions
   - Non-mutability via the `mutable` keyword argument
   - Viewing specifications with `qml.specs`
   - The `reversible` QNode differentiation method
   - The ability to specify a `dtype` when using PyTorch and TensorFlow.
 
   It is also not tested with the `qml.qnn` module.
+
+* Two new methods were added to the Device API, allowing PennyLane devices
+  increased control over circuit decompositions.
+  [(#1651)](https://github.com/PennyLaneAI/pennylane/pull/1651)
+
+  - `Device.expand_fn(tape) -> tape`: expands a tape such that it is supported by the device. By
+    default, performs the standard device-specific gate set decomposition done in the default
+    QNode. Devices may overwrite this method in order to define their own decomposition logic.
+
+    Note that the numerical result after applying this method should remain unchanged; PennyLane
+    will assume that the expanded tape returns exactly the same value as the original tape when
+    executed.
+
+  - `Device.batch_transform(tape) -> (tapes, processing_fn)`: preprocesses the tape in the case
+    where the device needs to generate multiple circuits to execute from the input circuit. The
+    requirement of a post-processing function makes this distinct to the `expand_fn` method above.
+    
+    By default, this method applies the transform
+
+    .. math:: \left\langle \sum_i c_i h_i\right\rangle -> \sum_i c_i \left\langle h_i \right\rangle
+
+    if `expval(H)` is present on devices that do not natively support Hamiltonians with
+    non-commuting terms.
+
 
 <h3>Improvements</h3>
 

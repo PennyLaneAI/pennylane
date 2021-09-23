@@ -898,3 +898,229 @@ class TestSpecs:
             assert info["num_trainable_params"] == 4
         else:
             assert info["device_name"] == "default.qubit.autograd"
+
+
+class TestTapeExpansion:
+    """Test that tape expansion within the QNode works correctly"""
+
+    @pytest.mark.parametrize(
+        "diff_method,mode",
+        [("parameter-shift", "backward"), ("adjoint", "forward"), ("adjoint", "backward")],
+    )
+    def test_device_expansion(self, diff_method, mode, mocker):
+        """Test expansion of an unsupported operation on the device"""
+        dev = qml.device("default.qubit", wires=1)
+
+        class UnsupportedOp(qml.operation.Operation):
+            num_wires = 1
+            num_params = 1
+            par_domain = "R"
+
+            def expand(self):
+                with qml.tape.QuantumTape() as tape:
+                    qml.RX(3 * self.data[0], wires=self.wires)
+                return tape
+
+        @qnode(dev, diff_method=diff_method, mode=mode)
+        def circuit(x):
+            UnsupportedOp(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        if diff_method == "adjoint" and mode == "forward":
+            spy = mocker.spy(circuit.device, "execute_and_gradients")
+        else:
+            spy = mocker.spy(circuit.device, "batch_execute")
+
+        x = np.array(0.5)
+        circuit(x)
+
+        tape = spy.call_args[0][0][0]
+        assert len(tape.operations) == 1
+        assert tape.operations[0].name == "RX"
+        assert np.allclose(tape.operations[0].parameters, 3 * x)
+
+    def test_no_gradient_expansion(self, mocker):
+        """Test that an unsupported operation with defined gradient recipe is
+        not expanded"""
+        dev = qml.device("default.qubit", wires=1)
+
+        class UnsupportedOp(qml.operation.Operation):
+            num_wires = 1
+            num_params = 1
+            par_domain = "R"
+
+            grad_method = "A"
+            grad_recipe = ([[3 / 2, 1, np.pi / 6], [-3 / 2, 1, -np.pi / 6]],)
+
+            def expand(self):
+                with qml.tape.QuantumTape() as tape:
+                    qml.RX(3 * self.data[0], wires=self.wires)
+                return tape
+
+        @qnode(dev, diff_method="parameter-shift", max_diff=2)
+        def circuit(x):
+            UnsupportedOp(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        x = np.array(0.5)
+        spy = mocker.spy(circuit.gradient_fn, "transform_fn")
+        qml.grad(circuit)(x)
+
+        # check that the gradient recipe was applied *prior* to
+        # device expansion
+        input_tape = spy.call_args[0][0]
+        assert len(input_tape.operations) == 1
+        assert input_tape.operations[0].name == "UnsupportedOp"
+        assert input_tape.operations[0].data[0] == x
+
+        shifted_tape1, shifted_tape2 = spy.spy_return[0]
+
+        assert len(shifted_tape1.operations) == 1
+        assert shifted_tape1.operations[0].name == "UnsupportedOp"
+
+        assert len(shifted_tape2.operations) == 1
+        assert shifted_tape2.operations[0].name == "UnsupportedOp"
+
+        # check second derivative
+        assert np.allclose(qml.grad(qml.grad(circuit))(x), -9 * np.cos(3 * x))
+
+    def test_gradient_expansion(self, mocker):
+        """Test that a *supported* operation with no gradient recipe is
+        expanded when applying the gradient transform, but not for execution."""
+        dev = qml.device("default.qubit", wires=1)
+
+        class PhaseShift(qml.PhaseShift):
+            grad_method = None
+
+            def expand(self):
+                with qml.tape.QuantumTape() as tape:
+                    qml.RY(3 * self.data[0], wires=self.wires)
+                return tape
+
+        @qnode(dev, diff_method="parameter-shift", max_diff=2)
+        def circuit(x):
+            qml.Hadamard(wires=0)
+            PhaseShift(x, wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        spy = mocker.spy(circuit.device, "batch_execute")
+        x = np.array(0.5)
+        circuit(x)
+
+        tape = spy.call_args[0][0][0]
+
+        spy = mocker.spy(circuit.gradient_fn, "transform_fn")
+        res = qml.grad(circuit)(x)
+
+        input_tape = spy.call_args[0][0]
+        assert len(input_tape.operations) == 2
+        assert input_tape.operations[1].name == "RY"
+        assert input_tape.operations[1].data[0] == 3 * x
+
+        shifted_tape1, shifted_tape2 = spy.spy_return[0]
+
+        assert len(shifted_tape1.operations) == 2
+        assert shifted_tape1.operations[1].name == "RY"
+
+        assert len(shifted_tape2.operations) == 2
+        assert shifted_tape2.operations[1].name == "RY"
+
+        assert np.allclose(res, -3 * np.sin(3 * x))
+
+        # test second order derivatives
+        res = qml.grad(qml.grad(circuit))(x)
+        assert np.allclose(res, -9 * np.cos(3 * x))
+
+    def test_hamiltonian_expansion_analytic(self, mocker):
+        """Test that the Hamiltonian is not expanded if there
+        are non-commuting groups and the number of shots is None"""
+        dev = qml.device("default.qubit", wires=3, shots=None)
+
+        obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
+        c = np.array([-0.6543, 0.24, 0.54])
+        H = qml.Hamiltonian(c, obs)
+        H.compute_grouping()
+
+        assert len(H.grouping_indices) == 2
+
+        @qnode(dev)
+        def circuit():
+            return qml.expval(H)
+
+        spy = mocker.spy(qml.transforms, "hamiltonian_expand")
+        res = circuit()
+        assert np.allclose(res, c[2], atol=0.1)
+
+        spy.assert_not_called()
+
+    def test_hamiltonian_expansion_finite_shots(self, mocker):
+        """Test that the Hamiltonian is expanded if there
+        are non-commuting groups and the number of shots is finite"""
+        dev = qml.device("default.qubit", wires=3, shots=50000)
+
+        obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
+        c = np.array([-0.6543, 0.24, 0.54])
+        H = qml.Hamiltonian(c, obs)
+        H.compute_grouping()
+
+        assert len(H.grouping_indices) == 2
+
+        @qnode(dev)
+        def circuit():
+            return qml.expval(H)
+
+        spy = mocker.spy(qml.transforms, "hamiltonian_expand")
+        res = circuit()
+        assert np.allclose(res, c[2], atol=0.1)
+
+        spy.assert_called()
+        tapes, fn = spy.spy_return
+
+        assert len(tapes) == 2
+
+    def test_invalid_hamiltonian_expansion_finite_shots(self, mocker):
+        """Test that an error is raised if multiple expectations are requested
+        when using finite shots"""
+        dev = qml.device("default.qubit", wires=3, shots=50000)
+
+        obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
+        c = np.array([-0.6543, 0.24, 0.54])
+        H = qml.Hamiltonian(c, obs)
+        H.compute_grouping()
+
+        assert len(H.grouping_indices) == 2
+
+        @qnode(dev)
+        def circuit():
+            return qml.expval(H), qml.expval(H)
+
+        with pytest.raises(
+            ValueError, match="Can only return the expectation of a single Hamiltonian"
+        ):
+            circuit()
+
+    def test_device_expansion_strategy(self, mocker):
+        """Test that the device expansion strategy performs the device
+        decomposition at construction time, and not at execution time"""
+        dev = qml.device("default.qubit", wires=2)
+        x = np.array(0.5)
+
+        @qnode(dev, diff_method="parameter-shift", expansion_strategy="device")
+        def circuit(x):
+            qml.SingleExcitation(x, wires=[0, 1])
+            return qml.expval(qml.PauliX(0))
+
+        assert circuit.expansion_strategy == "device"
+        assert circuit.execute_kwargs["expand_fn"] is None
+
+        spy_expand = mocker.spy(circuit.device, "expand_fn")
+
+        circuit.construct([x], {})
+        assert len(circuit.tape.operations) > 0
+        spy_expand.assert_called_once()
+
+        circuit(x)
+        assert len(spy_expand.call_args_list) == 2
+
+        qml.grad(circuit)(x)
+        assert len(spy_expand.call_args_list) == 3

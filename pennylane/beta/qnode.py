@@ -51,9 +51,10 @@ class QNode:
 
         Currently, this beta QNode does not support the following features:
 
-        - Circuit decompositions
         - Non-mutability via the ``mutable`` keyword argument
         - Viewing specifications with ``qml.specs``
+        - The ``reversible`` QNode differentiation method
+        - The ability to specify a ``dtype`` when using PyTorch and TensorFlow.
 
         It is also not tested with the :mod:`~.qnn` module.
 
@@ -123,6 +124,19 @@ class QNode:
 
             * ``None``: QNode cannot be differentiated. Works the same as ``interface=None``.
 
+        expansion_strategy (str): The strategy to use when circuit expansions or decompositions
+            are required.
+
+            - ``gradient``: The QNode will attempt to decompose
+              the internal circuit such that all circuit operations are supported by the gradient
+              method. Further decompositions required for device execution are performed by the
+              device prior to circuit execution.
+
+            - ``device``: The QNode will attempt to decompose the internal circuit
+              such that all circuit operations are natively supported by the device.
+
+            The ``gradient`` strategy typically results in a reduction in quantum device evaluations
+            required during optimization, at the expense of an increase in classical preprocessing.
         max_expansion (int): The number of times the internal circuit should be expanded when
             executed on a device. Expansion occurs when an operation or measurement is not
             supported, and results in a gate decomposition. If any operations in the decomposition
@@ -174,6 +188,7 @@ class QNode:
         device,
         interface="autograd",
         diff_method="best",
+        expansion_strategy="gradient",
         max_expansion=10,
         mode="best",
         cache=True,
@@ -208,6 +223,7 @@ class QNode:
         self.device = device
         self._interface = interface
         self.diff_method = diff_method
+        self.expansion_strategy = expansion_strategy
         self.max_expansion = max_expansion
 
         # execution keyword arguments
@@ -216,7 +232,11 @@ class QNode:
             "cache": cache,
             "cachesize": cachesize,
             "max_diff": max_diff,
+            "max_expansion": max_expansion,
         }
+
+        if self.expansion_strategy == "device":
+            self.execute_kwargs["expand_fn"] = None
 
         # internal data attributes
         self._tape = None
@@ -518,6 +538,14 @@ class QNode:
                         "Operator {} must act on all wires".format(obj.name)
                     )
 
+        if self.expansion_strategy == "device":
+            self._tape = self.device.expand_fn(self.tape, max_expansion=self.max_expansion)
+
+        # If the gradient function is a transform, expand the tape so that
+        # all operations are supported by the transform.
+        if isinstance(self.gradient_fn, qml.gradients.gradient_transform):
+            self._tape = self.gradient_fn.expand_fn(self._tape)
+
     def __call__(self, *args, **kwargs):
         override_shots = False
 
@@ -540,15 +568,20 @@ class QNode:
         # construct the tape
         self.construct(args, kwargs)
 
+        # preprocess the tapes by applying any device-specific transforms
+        tapes, processing_fn = self.device.batch_transform(self.tape)
+
         res = qml.execute(
-            [self.tape],
+            tapes,
             device=self.device,
             gradient_fn=self.gradient_fn,
             interface=self.interface,
             gradient_kwargs=self.gradient_kwargs,
             override_shots=override_shots,
             **self.execute_kwargs,
-        )[0]
+        )
+
+        res = processing_fn(res)
 
         if override_shots is not False:
             # restore the initialization gradient function
