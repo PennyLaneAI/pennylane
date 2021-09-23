@@ -26,6 +26,7 @@ import numpy as np
 from scipy.sparse import coo_matrix
 
 import pennylane as qml
+import jax
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
 from pennylane.operation import DiagonalOperation
 from pennylane.wires import WireError
@@ -625,12 +626,13 @@ class DefaultQubit(QubitDevice):
             raise ValueError("State vector must be of length 2**wires.")
 
         norm_error_message = "Sum of amplitudes-squared does not equal one."
-        if qml.math.get_interface(state) == "torch":
+        if qml.math.get_interface(state) != "jax":
             if not qml.math.allclose(qml.math.linalg.norm(state, ord=2), 1.0, atol=tolerance):
                 raise ValueError(norm_error_message)
         else:
-            if not np.allclose(np.linalg.norm(state, ord=2), 1.0, atol=tolerance):
-                raise ValueError(norm_error_message)
+            if not isinstance(qml.math.linalg.norm(state, ord=2), jax.interpreters.partial_eval.DynamicJaxprTracer):
+                if not qml.math.allclose(qml.math.linalg.norm(state, ord=2), 1.0, atol=tolerance):
+                    raise ValueError(norm_error_message)
 
         if len(device_wires) == self.num_wires and sorted(device_wires) == device_wires:
             # Initialize the entire wires with the state
