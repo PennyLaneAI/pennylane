@@ -124,6 +124,7 @@ class AmplitudeEmbedding(Operation):
     num_params = 1
     num_wires = AnyWires
     par_domain = "A"
+    grad_method = None
 
     def __init__(
         self, features, wires, pad_with=None, normalize=False, pad=None, do_queue=True, id=None
