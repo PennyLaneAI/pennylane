@@ -125,7 +125,7 @@ class SingleExcitationUnitary(Operation):
 
     num_params = 1
     num_wires = AnyWires
-    par_domain = "A"
+    par_domain = "R"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
