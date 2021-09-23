@@ -83,6 +83,7 @@ class CVNeuralNetLayers(Operation):
     num_params = 11
     num_wires = AnyWires
     par_domain = "A"
+    grad_method = None
 
     def __init__(
         self,

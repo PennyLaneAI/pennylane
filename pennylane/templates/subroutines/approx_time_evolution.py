@@ -100,6 +100,7 @@ class ApproxTimeEvolution(Operation):
     num_params = 3
     num_wires = AnyWires
     par_domain = "A"
+    grad_method = None
 
     def __init__(self, hamiltonian, time, n, do_queue=True, id=None):
 
