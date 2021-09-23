@@ -4,6 +4,39 @@
 
 <h3>New features since last release</h3>
 
+* Support for differentiable execution of batches of circuits has been
+  extended to the JAX interface for scalar functions, via the beta
+  `pennylane.interfaces.batch` module.
+  [(#1634)](https://github.com/PennyLaneAI/pennylane/pull/1634)
+
+  For example using the `execute` function from the `pennylane.interfaces.batch` module:
+
+  ```python
+  from pennylane.interfaces.batch import execute
+
+  def cost_fn(x):
+      with qml.tape.JacobianTape() as tape1:
+          qml.RX(x[0], wires=[0])
+          qml.RY(x[1], wires=[1])
+          qml.CNOT(wires=[0, 1])
+          qml.var(qml.PauliZ(0) @ qml.PauliX(1))
+
+      with qml.tape.JacobianTape() as tape2:
+          qml.RX(x[0], wires=0)
+          qml.RY(x[0], wires=1)
+          qml.CNOT(wires=[0, 1])
+          qml.probs(wires=1)
+
+      result = execute(
+        [tape1, tape2], dev,
+        gradient_fn=qml.gradients.param_shift,
+        interface="autograd"
+      )
+      return (result[0] + result[1][0, 0])[0]
+
+  res = jax.grad(cost_fn)(params)
+  ```
+
 * The unitary matrix corresponding to a quantum circuit can now be created using the new
   `get_unitary_matrix()` transform.
   [(#1609)](https://github.com/PennyLaneAI/pennylane/pull/1609)
@@ -263,4 +296,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Utkarsh Azad, Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee, Ingrid Strandberg, David Wierichs.
+Utkarsh Azad, Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee,
+Ingrid Strandberg, Antal Száva, David Wierichs.

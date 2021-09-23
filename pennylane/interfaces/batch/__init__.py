@@ -29,6 +29,7 @@ import pennylane as qml
 INTERFACE_NAMES = {
     "NumPy": (None,),
     "Autograd": ("autograd", "numpy"),  # for backwards compatibility
+    "JAX": ("jax", "JAX"),
     "PyTorch": ("torch", "pytorch"),
     "TensorFlow": ("tf", "tensorflow"),
 }
@@ -193,7 +194,7 @@ def execute(
     gradient_kwargs=None,
     cache=True,
     cachesize=10000,
-    max_diff=2,
+    max_diff=1,
     override_shots=False,
     expand_fn="device",
     max_expansion=10,
@@ -358,12 +359,13 @@ def execute(
             from .tensorflow import execute as _execute
         elif interface in INTERFACE_NAMES["PyTorch"]:
             from .torch import execute as _execute
+        elif interface in INTERFACE_NAMES["JAX"]:
+            from .jax import execute as _execute
         else:
             raise ValueError(
                 f"Unknown interface {interface}. Supported "
                 f"interfaces are {SUPPORTED_INTERFACES}"
             )
-
     except ImportError as e:
         interface_name = [k for k, v in INTERFACE_NAMES.items() if interface in v][0]
 

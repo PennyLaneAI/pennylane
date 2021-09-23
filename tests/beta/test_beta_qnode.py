@@ -36,7 +36,7 @@ class TestValidation:
         test_interface = "something"
         expected_error = (
             fr"Unknown interface {test_interface}\. Interface must be "
-            r"one of \[None, 'autograd', 'numpy', 'torch', 'pytorch', 'tf', 'tensorflow'\]\."
+            r"one of \[None, 'autograd', 'numpy', 'jax', 'JAX', 'torch', 'pytorch', 'tf', 'tensorflow'\]\."
         )
 
         with pytest.raises(qml.QuantumFunctionError, match=expected_error):
@@ -55,7 +55,7 @@ class TestValidation:
 
         expected_error = (
             fr"Unknown interface {test_interface}\. Interface must be "
-            r"one of \[None, 'autograd', 'numpy', 'torch', 'pytorch', 'tf', 'tensorflow'\]\."
+            r"one of \[None, 'autograd', 'numpy', 'jax', 'JAX', 'torch', 'pytorch', 'tf', 'tensorflow'\]\."
         )
 
         with pytest.raises(qml.QuantumFunctionError, match=expected_error):

@@ -247,7 +247,9 @@ class TestCaching:
                 qml.CNOT(wires=[0, 1])
                 qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
-            return execute([tape], dev, gradient_fn=param_shift, cache=cache, interface="torch")[0]
+            return execute(
+                [tape], dev, gradient_fn=param_shift, cache=cache, interface="torch", max_diff=2
+            )[0]
 
         # No caching: number of executions is not ideal
         hess1 = torch.autograd.functional.hessian(lambda x: cost(x, cache=None), params)
@@ -878,7 +880,9 @@ class TestHigherOrderDerivatives:
                 qml.CNOT(wires=[0, 1])
                 qml.probs(wires=1)
 
-            result = execute([tape1, tape2], dev, gradient_fn=param_shift, interface="torch")
+            result = execute(
+                [tape1, tape2], dev, gradient_fn=param_shift, interface="torch", max_diff=2
+            )
             return result[0] + result[1][0, 0]
 
         res = cost_fn(params)
@@ -911,7 +915,9 @@ class TestHigherOrderDerivatives:
                 qml.RX(x[1], wires=0)
                 qml.probs(wires=0)
 
-            return torch.stack(execute([tape], dev, gradient_fn=param_shift, interface="torch"))
+            return torch.stack(
+                execute([tape], dev, gradient_fn=param_shift, interface="torch", max_diff=2)
+            )
 
         x = torch.tensor([1.0, 2.0], requires_grad=True, device=torch_device)
         res = circuit(x)
