@@ -444,9 +444,9 @@ class TestJaxExecuteIntegration:
             # An explicit call to _update() is required here to update the
             # trainable parameters in between tape executions.
             # This is different from how the autograd interface works.
-            # Unless the update is issued, the following validation check fails
-            # in the tape: (len(params) != required_length) and the tape
-            # produces incorrect results.
+            # Unless the update is issued, the validation check related to the
+            # number of provided parameters fails in the tape: (len(params) !=
+            # required_length) and the tape produces incorrect results.
             tape._update()
             tape.set_parameters([a, b])
             return execute([tape], dev, interface="jax", **execute_kwargs)[0][0]
