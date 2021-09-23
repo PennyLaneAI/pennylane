@@ -231,7 +231,9 @@ class TestCaching:
                 qml.CNOT(wires=[0, 1])
                 qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
-            return execute([tape], dev, gradient_fn=param_shift, cache=cache, interface="tf", max_diff=2)[0]
+            return execute(
+                [tape], dev, gradient_fn=param_shift, cache=cache, interface="tf", max_diff=2
+            )[0]
 
         # No caching: number of executions is not ideal
         with tf.GradientTape() as t2:
@@ -728,7 +730,9 @@ class TestHigherOrderDerivatives:
                     qml.CNOT(wires=[0, 1])
                     qml.probs(wires=1)
 
-                result = execute([tape1, tape2], dev, gradient_fn=param_shift, interface="tf", max_diff=2)
+                result = execute(
+                    [tape1, tape2], dev, gradient_fn=param_shift, interface="tf", max_diff=2
+                )
                 res = result[0][0] + result[1][0, 0]
 
             expected = 0.5 * (3 + np.cos(x) ** 2 * np.cos(2 * y))
