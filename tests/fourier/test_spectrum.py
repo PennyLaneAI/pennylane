@@ -26,9 +26,11 @@ from pennylane.fourier.spectrum import (
 )
 from pennylane.transforms import classical_jacobian
 
+
 def circuit_0(a):
     [qml.RX(a, wires=0) for i in range(4)]
     return qml.expval(qml.PauliZ(0))
+
 
 def circuit_1(a, b):
     qml.RZ(-a / 3, wires=0)
@@ -38,29 +40,34 @@ def circuit_1(a, b):
     qml.RZ(-b, wires=1)
     return qml.expval(qml.PauliZ(0))
 
+
 def circuit_2(x):
     [qml.RX(x[i], wires=0) for i in range(3)]
     return qml.expval(qml.PauliZ(0))
 
+
 def circuit_3(x, y):
-    [qml.RX(0.1*(i+1)*x[i], wires=0) for i in range(3)]
+    [qml.RX(0.1 * (i + 1) * x[i], wires=0) for i in range(3)]
     for i in range(2):
-        [qml.RY((i+j)*y[i, j], wires=1) for j in range(2)]
+        [qml.RY((i + j) * y[i, j], wires=1) for j in range(2)]
     return qml.expval(qml.PauliZ(0))
+
 
 def circuit_4(x, y):
     perm_4 = ([2, 0, 1], [1, 2, 0, 3])
     for i in perm_4[0]:
-        qml.RX(1.2*(i+1)*x[i], wires=0)
+        qml.RX(1.2 * (i + 1) * x[i], wires=0)
     for j in perm_4[1]:
         qml.RY(y[j // 2, j % 2], wires=1)
     return qml.expval(qml.PauliZ(0))
 
+
 def circuit_5(x, y, z):
-    [qml.RX(i*x[i], wires=0) for i in range(3)]
+    [qml.RX(i * x[i], wires=0) for i in range(3)]
     qml.RZ(y[0, 1] - y[1, 0], wires=1)
     qml.RY(z[0] + 0.2 * z[1], wires=1)
     return qml.expval(qml.PauliZ(0))
+
 
 circuits = [circuit_0, circuit_1, circuit_2, circuit_3, circuit_4, circuit_5]
 
@@ -71,7 +78,8 @@ y = np.array([[0.4, 5.5], [1.6, 5.1]])
 z = np.array([-1.9, -0.1, 0.49, 0.24])
 all_args = [(a,), (a, b), (x,), (x, y), (x, y), (x, y, z)]
 
-interfaces = [('tf', 'tensorflow'), ('torch',)*2, ('autograd', 'pennylane'), ('jax',)*2]
+interfaces = [("tf", "tensorflow"), ("torch",) * 2, ("autograd", "pennylane"), ("jax",) * 2]
+
 
 class TestHelpers:
     @pytest.mark.parametrize(
@@ -120,7 +128,6 @@ class TestHelpers:
             _get_spectrum(qml.CNOT(wires=[0, 1]))
 
 
-
 class TestCircuits:
     """Tests that the spectrum is returned as expected."""
 
@@ -141,7 +148,7 @@ class TestCircuits:
 
         res = spectrum(circuit)(0.1)
         expected_degree = n_qubits * n_layers
-        assert list(res.keys())==["x"] and list(res["x"].keys())==[()]
+        assert list(res.keys()) == ["x"] and list(res["x"].keys()) == [()]
         assert np.allclose(res["x"][()], range(-expected_degree, expected_degree + 1))
 
     def test_argnum(self):
@@ -155,6 +162,7 @@ class TestCircuits:
             qml.RX(x, wires=0)
             qml.RY(y, wires=0)
             return qml.expval(qml.PauliZ(wires=0))
+
         x, y = [0.2, 0.1]
 
         res = spectrum(circuit, argnum=[0])(x, y)
@@ -228,15 +236,21 @@ expected_result = {
 
 
 class TestAutograd:
-
     @pytest.mark.parametrize("circuit, args", zip(circuits, all_args))
     def test_jacobian_validation(self, circuit, args):
         dev = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(circuit, dev, interface="autograd")
         class_jac = classical_jacobian(qnode, argnum=list(range(len(args))))(*args)
-        validated_class_jac = _get_and_validate_classical_jacobian(qnode, argnum=list(range(len(args))), args=args, kwargs={})
+        validated_class_jac = _get_and_validate_classical_jacobian(
+            qnode, argnum=list(range(len(args))), args=args, kwargs={}
+        )
         if isinstance(class_jac, tuple):
-            assert all((np.allclose(_jac, val_jac) for _jac, val_jac in zip(class_jac, validated_class_jac)))
+            assert all(
+                (
+                    np.allclose(_jac, val_jac)
+                    for _jac, val_jac in zip(class_jac, validated_class_jac)
+                )
+            )
         else:
             assert np.allclose(class_jac, validated_class_jac)
 
@@ -252,10 +266,10 @@ class TestAutograd:
 
         res = spectrum(qnode, argnum=0)(x, w)
         assert res
-        assert res==expected_result
+        assert res == expected_result
+
 
 class TestTorch:
-
     @pytest.mark.parametrize("circuit, args", zip(circuits, all_args))
     def test_jacobian_validation(self, circuit, args):
         torch = pytest.importorskip("torch")
@@ -263,9 +277,16 @@ class TestTorch:
         dev = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(circuit, dev, interface="torch")
         class_jac = classical_jacobian(qnode)(*args)
-        validated_class_jac = _get_and_validate_classical_jacobian(qnode, argnum=list(range(len(args))), args=args, kwargs={})
+        validated_class_jac = _get_and_validate_classical_jacobian(
+            qnode, argnum=list(range(len(args))), args=args, kwargs={}
+        )
         if isinstance(class_jac, tuple):
-            assert all((np.allclose(_jac, val_jac) for _jac, val_jac in zip(class_jac, validated_class_jac)))
+            assert all(
+                (
+                    np.allclose(_jac, val_jac)
+                    for _jac, val_jac in zip(class_jac, validated_class_jac)
+                )
+            )
         else:
             assert np.allclose(class_jac, validated_class_jac)
 
@@ -282,10 +303,10 @@ class TestTorch:
 
         res = spectrum(qnode, argnum=0)(x, w)
         assert res
-        assert res==expected_result
+        assert res == expected_result
+
 
 class TestTensorflow:
-
     @pytest.mark.parametrize("circuit, args", zip(circuits, all_args))
     def test_jacobian_validation(self, circuit, args):
         tf = pytest.importorskip("tensorflow")
@@ -293,9 +314,16 @@ class TestTensorflow:
         dev = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(circuit, dev, interface="tf")
         class_jac = classical_jacobian(qnode)(*args)
-        validated_class_jac = _get_and_validate_classical_jacobian(qnode, argnum=list(range(len(args))), args=args, kwargs={})
+        validated_class_jac = _get_and_validate_classical_jacobian(
+            qnode, argnum=list(range(len(args))), args=args, kwargs={}
+        )
         if isinstance(class_jac, tuple):
-            assert all((np.allclose(_jac, val_jac) for _jac, val_jac in zip(class_jac, validated_class_jac)))
+            assert all(
+                (
+                    np.allclose(_jac, val_jac)
+                    for _jac, val_jac in zip(class_jac, validated_class_jac)
+                )
+            )
         else:
             assert np.allclose(class_jac, validated_class_jac)
 
@@ -312,7 +340,7 @@ class TestTensorflow:
         res = spectrum(qnode, argnum=[0])(x, w)
 
         assert res
-        assert res==expected_result
+        assert res == expected_result
 
     def test_integration_jax(self):
         """Test that the spectra of a circuit is calculated correctly
@@ -330,4 +358,4 @@ class TestTensorflow:
         res = spectrum(qnode, argnum=0)(x, w)
 
         assert res
-        assert res==expected_result
+        assert res == expected_result

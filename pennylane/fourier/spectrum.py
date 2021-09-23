@@ -92,6 +92,7 @@ def _join_spectra(spec1, spec2):
 
     return sums.union(diffs)
 
+
 def _get_random_args(args, interface, num, seed):
     r"""Generate random arguments of the same shapes as provided args.
 
@@ -105,10 +106,11 @@ def _get_random_args(args, interface, num, seed):
     """
     if interface == "tf":
         import tensorflow as tf
+
         tf.random.set_seed(seed)
         rnd_args = []
         for _ in range(num):
-            _args = (tf.random.uniform(_arg.shape)*2*np.pi-np.pi for _arg in args)
+            _args = (tf.random.uniform(_arg.shape) * 2 * np.pi - np.pi for _arg in args)
             _args = (
                 tf.Variable(_arg) if isinstance(arg, tf.Variable) else _arg
                 for _arg, arg in zip(_args, args)
@@ -116,19 +118,20 @@ def _get_random_args(args, interface, num, seed):
             rnd_args.append(_args)
     elif interface == "torch":
         import torch
+
         torch.random.manual_seed(seed)
         rnd_args = [
-            tuple(torch.rand(arg.shape)*2*np.pi-np.pi for arg in args)
-            for _ in range(num)
+            tuple(torch.rand(arg.shape) * 2 * np.pi - np.pi for arg in args) for _ in range(num)
         ]
     else:
         np.random.seed(seed)
         rnd_args = [
-            tuple(np.random.random(np.shape(arg))*2*np.pi-np.pi for arg in args)
+            tuple(np.random.random(np.shape(arg)) * 2 * np.pi - np.pi for arg in args)
             for _ in range(num)
         ]
 
     return rnd_args
+
 
 def _get_and_validate_classical_jacobian(qnode, argnum, args, kwargs, num_pos):
     r"""Check classical preprocessing of a QNode to be linear and return its Jacobian.
@@ -174,8 +177,9 @@ def _get_and_validate_classical_jacobian(qnode, argnum, args, kwargs, num_pos):
     # Note that jacs is a list of tuples of arrays
     return jacs[0]
 
+
 def _process_ids(encoding_args, argnum, qnode):
-    r"""Process the passed ``encoding_args`` and ``argnum`` or infer them from 
+    r"""Process the passed ``encoding_args`` and ``argnum`` or infer them from
     the QNode signature.
 
     Args:
@@ -214,8 +218,7 @@ def _process_ids(encoding_args, argnum, qnode):
         requested_names = set(encoding_args)
         if not all(name in arg_names for name in requested_names):
             raise ValueError(
-                f"Not all names in {requested_names} are known. "
-                f"Known arguments: {arg_names}"
+                f"Not all names in {requested_names} are known. " f"Known arguments: {arg_names}"
             )
         # Selection of requested argument names from sorted names
         if isinstance(encoding_args, set):
@@ -383,7 +386,7 @@ def spectrum(qnode, encoding_args=None, argnum=None, decimals=5):
     "y": {(0,): [-2.3, 0.0, 2.3], (1,): [-2.3, 0.0, 2.3], (2,): [-2.3, 0.0, 2.3]}
 
     Note that for array-valued arguments the spectrum for each element of the array
-    is computed. A more fine-grained control is available by passing index tuples 
+    is computed. A more fine-grained control is available by passing index tuples
     for the respective argument name in ``encoding_args``:
 
     >>> encoding_args = {"y": [(0,),(2,)]}
@@ -451,7 +454,7 @@ def spectrum(qnode, encoding_args=None, argnum=None, decimals=5):
                 # Find parameters that where requested and feed into the operation
                 if len(class_jac.shape) == 1:
                     # Scalar argument, only axis of Jacobian is for gates
-                    if np.isclose(jac_of_op, 0.):
+                    if np.isclose(jac_of_op, 0.0):
                         continue
                     jac_of_op = {(): jac_of_op}
                     par_ids = {()}
