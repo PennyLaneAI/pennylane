@@ -407,3 +407,5 @@ label_data = [
 def test_label(op, label):
     assert op.label() == label
     assert op.label(include_parameters=True, decimal_places=5) == label
+    op.inv()
+    assert op.label() == label + "⁻¹"
