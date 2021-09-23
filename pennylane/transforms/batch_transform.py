@@ -246,6 +246,7 @@ class batch_transform:
                 device=qnode.device,
                 gradient_fn=gradient_fn,
                 interface=interface,
+                max_diff=2
             )
 
             return processing_fn(res)
