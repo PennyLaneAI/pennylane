@@ -114,9 +114,7 @@ def _execute(
             return res
 
         shapes = [jax.ShapeDtypeStruct((1,), dtype) for _ in range(total_size)]
-        res = host_callback.call(
-            wrapper, params, result_shape=shapes
-        )
+        res = host_callback.call(wrapper, params, result_shape=shapes)
         return res
 
     def wrapped_exec_fwd(params):
