@@ -172,6 +172,78 @@ class TestQNodeIntegration:
         np.testing.assert_array_equal(a, b)
         assert not np.all(a == c)
 
+    @pytest.mark.parametrize(
+        "state_vector",
+        [np.array([0.5 + 0.5j, 0.5 + 0.5j, 0, 0]), jnp.array([0.5 + 0.5j, 0.5 + 0.5j, 0, 0])],
+    )
+    def test_qubit_state_vector_arg_jax_jit(self, state_vector, tol):
+        """Test that Qubit state vector works with a jax.jit"""
+        dev = qml.device("default.qubit.jax", wires=list(range(2)))
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit(x):
+            wires = list(range(2))
+            qml.QubitStateVector(x, wires=wires)
+            return [qml.expval(qml.PauliX(wires=i)) for i in wires]
+
+        res = circuit(state_vector)
+        assert jnp.allclose(res, [0, 1], atol=tol, rtol=0)
+
+    @pytest.mark.parametrize(
+        "state_vector",
+        [np.array([0.5 + 0.5j, 0.5 + 0.5j, 0, 0]), jnp.array([0.5 + 0.5j, 0.5 + 0.5j, 0, 0])],
+    )
+    def test_qubit_state_vector_jax_jit(self, state_vector, tol):
+        """Test that Qubit state vector works with jax"""
+        dev = qml.device("default.qubit.jax", wires=list(range(2)))
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(x):
+            wires = list(range(2))
+            qml.QubitStateVector(x, wires=wires)
+            return [qml.expval(qml.PauliX(wires=i)) for i in wires]
+
+        res = circuit(state_vector)
+        assert jnp.allclose(res, [0, 1], atol=tol, rtol=0)
+
+    @pytest.mark.parametrize(
+        "state_vector",
+        [np.array([0.5 + 0.5j, 0.5 + 0.5j, 0, 0]), jnp.array([0.5 + 0.5j, 0.5 + 0.5j, 0, 0])],
+    )
+    def test_qubit_state_vector_jax_jit(self, state_vector, tol):
+        """Test that Qubit state vector works with a jax.jit"""
+        dev = qml.device("default.qubit.jax", wires=list(range(2)))
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit(x):
+            qml.QubitStateVector(state_vector, wires=dev.wires)
+            for w in dev.wires:
+                qml.RZ(x, wires=w, id="x")
+            return qml.expval(qml.PauliZ(wires=0))
+
+        res = circuit(0.1)
+        assert jnp.allclose(res, 1, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize(
+        "state_vector",
+        [np.array([0.5 + 0.5j, 0.5 + 0.5j, 0, 0]), jnp.array([0.5 + 0.5j, 0.5 + 0.5j, 0, 0])],
+    )
+    def test_qubit_state_vector_jit(self, state_vector, tol):
+        """Test that Qubit state vector works with a jax.jit"""
+        dev = qml.device("default.qubit.jax", wires=list(range(2)))
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(x):
+            qml.QubitStateVector(state_vector, wires=dev.wires)
+            for w in dev.wires:
+                qml.RZ(x, wires=w, id="x")
+            return qml.expval(qml.PauliZ(wires=0))
+
+        res = circuit(0.1)
+        assert jnp.allclose(res, 1, atol=tol, rtol=0)
+
     def test_sampling_op_by_op(self):
         """Test that op-by-op sampling works as a new user would expect"""
         dev = qml.device("default.qubit.jax", wires=1, shots=1000)
