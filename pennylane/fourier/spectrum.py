@@ -16,10 +16,9 @@ circuit."""
 from itertools import product, combinations
 from functools import wraps
 from collections import OrderedDict
-import warnings
+from inspect import signature
 import numpy as np
 import pennylane as qml
-from inspect import signature
 
 
 def _get_spectrum(op, decimals=8):
@@ -105,7 +104,7 @@ def _get_random_args(args, interface, num, seed):
         of arguments like ``args``.
     """
     if interface == "tf":
-        import tensorflow as tf
+        import tensorflow as tf # pylint: disable=import-outside-toplevel
 
         tf.random.set_seed(seed)
         rnd_args = []
@@ -117,7 +116,7 @@ def _get_random_args(args, interface, num, seed):
             )
             rnd_args.append(_args)
     elif interface == "torch":
-        import torch
+        import torch # pylint: disable=import-outside-toplevel
 
         torch.random.manual_seed(seed)
         rnd_args = [
@@ -167,7 +166,8 @@ def _get_and_validate_classical_jacobian(qnode, argnum, args, kwargs, num_pos):
 
     # Check that the Jacobian is constant
     if not all(
-        (all((np.allclose(jacs[0][i], jac[i]) for jac in jacs[1:])) for i in range(len(jacs[0])))
+        all(np.allclose(jacs[0][i], jac[i], atol=1e-8, rtol=0) for jac in jacs[1:])
+        for i in range(len(jacs[0]))
     ):
         raise ValueError(
             "The Jacobian of the classical preprocessing in the provided QNode is not constant; "
@@ -213,7 +213,6 @@ def _process_ids(encoding_args, argnum, qnode):
             argnum = [argnum]
         else:
             encoding_args = OrderedDict((arg_names[num], ...) for num in argnum)
-            argnum = argnum
     else:
         requested_names = set(encoding_args)
         if not all(name in arg_names for name in requested_names):
@@ -234,7 +233,7 @@ def _process_ids(encoding_args, argnum, qnode):
     return encoding_args, argnum
 
 
-def spectrum(qnode, encoding_args=None, argnum=None, decimals=5):
+def spectrum(qnode, encoding_args=None, argnum=None, decimals=5, num_pos=1):
     r"""Compute the frequency spectrum of the Fourier representation of quantum circuits.
 
     The circuit must only use single-parameter gates of the form :math:`e^{-i x_j G}` as
@@ -440,7 +439,7 @@ def spectrum(qnode, encoding_args=None, argnum=None, decimals=5):
         class_jacs = _get_and_validate_classical_jacobian(qnode, argnum, args, kwargs, num_pos)
 
         spectra = {}
-        par_info = qnode.qtape._par_info
+        par_info = qnode.qtape._par_info # pylint: disable=protected-access
         for jac_idx, class_jac in enumerate(class_jacs):
             arg_name = arg_name_map[jac_idx]
             if encoding_args[arg_name] is Ellipsis:
@@ -454,7 +453,7 @@ def spectrum(qnode, encoding_args=None, argnum=None, decimals=5):
                 # Find parameters that where requested and feed into the operation
                 if len(class_jac.shape) == 1:
                     # Scalar argument, only axis of Jacobian is for gates
-                    if np.isclose(jac_of_op, 0.0):
+                    if np.isclose(jac_of_op, 0.0, atol=atol, rtol=0):
                         continue
                     jac_of_op = {(): jac_of_op}
                     par_ids = {()}
