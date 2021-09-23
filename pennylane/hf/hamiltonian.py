@@ -18,48 +18,51 @@ import autograd.numpy as anp
 
 
 def generate_electron_integrals(mol, occupied=None, active=None):
-    """Return a function that computes the one and two electron integrals.
-    """
+    """Return a function that computes the one and two electron integrals."""
 
     def electron_integrals(*args):
-        v_fock, coeffs, fock_matrix, h_core, eri_tensor = scf(mol)(*args)
+        v_fock, coeffs, fock_matrix, h_core, e_tensor = scf(mol)(*args)
         one = anp.einsum("qr,rs,st->qt", coeffs.T, h_core, coeffs)
         two = anp.swapaxes(
-            anp.einsum("ab,cd,bdeg,ef,gh->acfh", coeffs.T, coeffs.T, eri_tensor, coeffs, coeffs), 1,
-            3)
-
+            anp.einsum("ab,cd,bdeg,ef,gh->acfh", coeffs.T, coeffs.T, e_tensor, coeffs, coeffs), 1, 3
+        )
         core, one_elec, two_elec = get_active(one, two, occupied=occupied, active=active)
         return anp.concatenate((anp.array([core]), one_elec.flatten(), two_elec.flatten()))
 
     return electron_integrals
 
 
-def get_active_space_integrals(one_body_integrals, two_body_integrals, occupied_indices=None, active_indices=None):
+def get_active(one_body_integrals, two_body_integrals, occupied=None, active=None):
     """
     Gets integrals in some active space
     """
     # Fix data type for a few edge cases
-    occupied_indices = [] if occupied_indices is None else occupied_indices
+    occupied = [] if occupied is None else occupied
 
     # Determine core constant
     core_constant = 0.0
-    for i in occupied_indices:
+    for i in occupied:
         core_constant = core_constant + 2 * one_body_integrals[i][i]
-        for j in occupied_indices:
-            core_constant = core_constant + (2 * two_body_integrals[i][j][j][i] -
-                              two_body_integrals[i][j][i][j])
+        for j in occupied:
+            core_constant = core_constant + (
+                2 * two_body_integrals[i][j][j][i] - two_body_integrals[i][j][i][j]
+            )
 
     # Modified one electron integrals
     one_body_integrals_new = anp.zeros(one_body_integrals.shape)
-    for u in active_indices:
-        for v in active_indices:
-            for i in occupied_indices:
+    for u in active:
+        for v in active:
+            for i in occupied:
                 c = 2 * two_body_integrals[i][u][v][i] - two_body_integrals[i][u][i][v]
-                one_body_integrals_new = one_body_integrals_new + c * build_arr(one_body_integrals.shape, (u, v))
+                one_body_integrals_new = one_body_integrals_new + c * build_arr(
+                    one_body_integrals.shape, (u, v)
+                )
 
     one_body_integrals_new = one_body_integrals_new + one_body_integrals
 
     # Restrict integral ranges and change M appropriately
-    return (core_constant,
-            one_body_integrals_new[anp.ix_(active_indices, active_indices)],
-            two_body_integrals[anp.ix_(active_indices, active_indices, active_indices, active_indices)])
+    return (
+        core_constant,
+        one_body_integrals_new[anp.ix_(active, active)],
+        two_body_integrals[anp.ix_(active, active, active, active)],
+    )
