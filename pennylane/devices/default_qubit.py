@@ -626,13 +626,9 @@ class DefaultQubit(QubitDevice):
             raise ValueError("State vector must be of length 2**wires.")
 
         norm_error_message = "Sum of amplitudes-squared does not equal one."
-        if qml.math.get_interface(state) != "jax":
+        if not isinstance(qml.math.linalg.norm(state, ord=2), jax.interpreters.partial_eval.DynamicJaxprTracer):
             if not qml.math.allclose(qml.math.linalg.norm(state, ord=2), 1.0, atol=tolerance):
                 raise ValueError(norm_error_message)
-        else:
-            if not isinstance(qml.math.linalg.norm(state, ord=2), jax.interpreters.partial_eval.DynamicJaxprTracer):
-                if not qml.math.allclose(qml.math.linalg.norm(state, ord=2), 1.0, atol=tolerance):
-                    raise ValueError(norm_error_message)
 
         if len(device_wires) == self.num_wires and sorted(device_wires) == device_wires:
             # Initialize the entire wires with the state
