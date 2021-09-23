@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* The unitary matrix corresponding to a quantum circuit can now be created using the new
+  `get_unitary_matrix()` transform.
+  [(#1609)](https://github.com/PennyLaneAI/pennylane/pull/1609)
+
 * Arbitrary two-qubit unitaries can now be decomposed into elementary gates. This
   functionality has been incorporated into the `qml.transforms.unitary_to_rot` transform, and is
   available separately as `qml.transforms.two_qubit_decomposition`.
@@ -36,7 +40,7 @@
   >>> circuit(0.3, 0.4)
   tensor(-0.70520073, requires_grad=True)
   >>> print(qml.draw(circuit)(0.3, 0.4))
-  0: ──RX(0.3)─────────────────Rot(-3.5, 0.242, 0.86)──╭X──RZ(0.176)───╭C─────────────╭X──Rot(5.56, 0.321, -2.09)───RY(0.4)──┤ ⟨Z⟩ 
+  0: ──RX(0.3)─────────────────Rot(-3.5, 0.242, 0.86)──╭X──RZ(0.176)───╭C─────────────╭X──Rot(5.56, 0.321, -2.09)───RY(0.4)──┤ ⟨Z⟩
   1: ──Rot(-1.64, 2.69, 1.58)──────────────────────────╰C──RY(-0.883)──╰X──RY(-1.47)──╰C──Rot(-1.46, 0.337, 0.587)───────────┤
   ```
 
@@ -76,6 +80,32 @@
   For more usage details, please see the
   [classical Jacobian docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.transforms.classical_jacobian.html).
 
+* Added a new operation `OrbitalRotation`, which implements the spin-adapted spatial orbital rotation gate.
+  [(#1665)](https://github.com/PennyLaneAI/pennylane/pull/1665)
+
+  An example circuit that uses `OrbitalRotation` operation is:
+
+  ```python
+  dev = qml.device('default.qubit', wires=4)
+  @qml.qnode(dev)
+  def circuit(phi):
+      qml.BasisState(np.array([1, 1, 0, 0]), wires=[0, 1, 2, 3])
+      qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
+      return qml.state()
+  ```
+
+  If we run this circuit, we will get the following output
+
+  ```pycon
+  >>> circuit(0.1)
+  array([ 0.        +0.j,  0.        +0.j,  0.        +0.j,
+          0.00249792+0.j,  0.        +0.j,  0.        +0.j,
+          -0.04991671+0.j,  0.        +0.j,  0.        +0.j,
+          -0.04991671+0.j,  0.        +0.j,  0.        +0.j,
+          0.99750208+0.j,  0.        +0.j,  0.        +0.j,
+          0.        +0.j])
+  ```
+
 * A new, experimental QNode has been added, that adds support for batch execution of circuits,
   custom quantum gradient support, and arbitrary order derivatives. This QNode is available via
   `qml.beta.QNode`, and `@qml.beta.qnode`.
@@ -85,7 +115,7 @@
   It differs from the standard QNode in several ways:
 
   - Custom gradient transforms can be specified as the differentiation method:
-  
+
     ```python
     @qml.gradients.gradient_transform
     def my_gradient_transform(tape):
@@ -206,10 +236,16 @@
   to compute the variance of a QNode with ragged output.
   [(#1646)](https://github.com/PennyLaneAI/pennylane/pull/1646)
 
+* Fixes a bug in `default.mixed`, to ensure that returned probabilities are always non-negative.
+  [(#1680)](https://github.com/PennyLaneAI/pennylane/pull/1680)
+
 <h3>Documentation</h3>
+
+* Adds a link to https://pennylane.ai/qml/demonstrations.html in the navbar.
+  [(#1624)](https://github.com/PennyLaneAI/pennylane/pull/1624)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Christina Lee, David Wierichs.
+Utkarsh Azad, Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee, Ingrid Strandberg, David Wierichs.
