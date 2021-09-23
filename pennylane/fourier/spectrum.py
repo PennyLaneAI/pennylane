@@ -104,7 +104,7 @@ def _get_random_args(args, interface, num, seed):
         of arguments like ``args``.
     """
     if interface == "tf":
-        import tensorflow as tf # pylint: disable=import-outside-toplevel
+        import tensorflow as tf  # pylint: disable=import-outside-toplevel
 
         tf.random.set_seed(seed)
         rnd_args = []
@@ -116,7 +116,7 @@ def _get_random_args(args, interface, num, seed):
             )
             rnd_args.append(_args)
     elif interface == "torch":
-        import torch # pylint: disable=import-outside-toplevel
+        import torch  # pylint: disable=import-outside-toplevel
 
         torch.random.manual_seed(seed)
         rnd_args = [
@@ -439,7 +439,7 @@ def spectrum(qnode, encoding_args=None, argnum=None, decimals=5, num_pos=1):
         class_jacs = _get_and_validate_classical_jacobian(qnode, argnum, args, kwargs, num_pos)
 
         spectra = {}
-        par_info = qnode.qtape._par_info # pylint: disable=protected-access
+        par_info = qnode.qtape._par_info  # pylint: disable=protected-access
         for jac_idx, class_jac in enumerate(class_jacs):
             arg_name = arg_name_map[jac_idx]
             if encoding_args[arg_name] is Ellipsis:
