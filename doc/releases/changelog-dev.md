@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* The unitary matrix corresponding to a quantum circuit can now be created using the new
+  `get_unitary_matrix()` transform.
+  [(#1609)](https://github.com/PennyLaneAI/pennylane/pull/1609)
+
 * Arbitrary two-qubit unitaries can now be decomposed into elementary gates. This
   functionality has been incorporated into the `qml.transforms.unitary_to_rot` transform, and is
   available separately as `qml.transforms.two_qubit_decomposition`.
@@ -76,9 +80,9 @@
   For more usage details, please see the
   [classical Jacobian docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.transforms.classical_jacobian.html).
 
-* Added a new operation `OrbitalRotation`, which implements the spin-adapted spatial orbital rotation gate. 
+* Added a new operation `OrbitalRotation`, which implements the spin-adapted spatial orbital rotation gate.
   [(#1665)](https://github.com/PennyLaneAI/pennylane/pull/1665)
-  
+
   An example circuit that uses `OrbitalRotation` operation is:
 
   ```python
@@ -92,7 +96,7 @@
 
   If we run this circuit, we will get the following output
 
-  ```pycon 
+  ```pycon
   >>> circuit(0.1)
   array([ 0.        +0.j,  0.        +0.j,  0.        +0.j,
           0.00249792+0.j,  0.        +0.j,  0.        +0.j,
@@ -247,6 +251,9 @@
   to compute the variance of a QNode with ragged output.
   [(#1646)](https://github.com/PennyLaneAI/pennylane/pull/1646)
 
+* Fixes a bug in `default.mixed`, to ensure that returned probabilities are always non-negative.
+  [(#1680)](https://github.com/PennyLaneAI/pennylane/pull/1680)
+
 <h3>Documentation</h3>
 
 * Adds a link to https://pennylane.ai/qml/demonstrations.html in the navbar.
@@ -256,4 +263,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Utkarsh Azad, Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee, David Wierichs.
+Utkarsh Azad, Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee, Ingrid Strandberg, David Wierichs.
