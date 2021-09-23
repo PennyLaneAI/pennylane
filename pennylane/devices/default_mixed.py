@@ -193,7 +193,7 @@ class DefaultMixed(QubitDevice):
         probs = self.marginal_prob(self._diag(rho), wires)
 
         # take the real part so probabilities are not shown as complex numbers
-        return self._real(probs)
+        return self._abs(self._real(probs))
 
     def _get_kraus(self, operation):  # pylint: disable=no-self-use
         """Return the Kraus operators representing the operation.
