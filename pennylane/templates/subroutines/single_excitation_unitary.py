@@ -15,6 +15,8 @@ r"""
 Contains the SingleExcitationUnitary template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import math
+
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import Operation, AnyWires
