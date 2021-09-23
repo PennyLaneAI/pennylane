@@ -18,7 +18,6 @@ import pytest
 import numpy as np
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.argmap import ArgMap
 from pennylane.fourier.spectrum import (
     spectrum,
     _join_spectra,
@@ -122,10 +121,6 @@ class TestHelpers:
 
 
 
-
-
-
-
 class TestCircuits:
     """Tests that the spectrum is returned as expected."""
 
@@ -146,7 +141,8 @@ class TestCircuits:
 
         res = spectrum(circuit)(0.1)
         expected_degree = n_qubits * n_layers
-        assert np.allclose(res[0], range(-expected_degree, expected_degree + 1))
+        assert list(res.keys())==["x"] and list(res["x"].keys())==[()]
+        assert np.allclose(res["x"][()], range(-expected_degree, expected_degree + 1))
 
     def test_argnum(self):
         """Test that the spectrum contains the ids provided in encoding_gates, or
@@ -162,16 +158,16 @@ class TestCircuits:
         x, y = [0.2, 0.1]
 
         res = spectrum(circuit, argnum=[0])(x, y)
-        assert res == ArgMap({0: [-1.0, 0.0, 1.0]})
+        assert res == {"x": {(): [-1.0, 0.0, 1.0]}}
 
         res = spectrum(circuit, argnum=[0, 1])(x, y)
-        assert res == ArgMap({0: [-1.0, 0.0, 1.0], 1: [-1.0, 0.0, 1.0]})
+        assert res == {"x": {(): [-1.0, 0.0, 1.0]}, "y": {(): [-1.0, 0.0, 1.0]}}
 
         res = spectrum(circuit)(x, y)
-        assert res == ArgMap({0: [-1.0, 0.0, 1.0], 1: [-1.0, 0.0, 1.0]})
+        assert res == {"x": {(): [-1.0, 0.0, 1.0]}, "y": {(): [-1.0, 0.0, 1.0]}}
 
-        with pytest.raises(ValueError, match="Could not compute Jacobian"):
-            res = spectrum(circuit, argnum=[3])(x, y)
+        with pytest.raises(IndexError, match="list index out of range"):
+            spectrum(circuit, argnum=[3])(x, y)
 
     def test_spectrum_changes_with_qnode_args(self):
         """Test that the spectrum changes per call if a qnode argument changes the
@@ -189,10 +185,10 @@ class TestCircuits:
 
         x = 0.9
         res_true = spectrum(circuit, argnum=[0])(x, last_gate=True)
-        assert np.allclose(res_true[0], range(-3, 4))
+        assert np.allclose(res_true["x"][()], range(-3, 4))
 
         res_false = spectrum(circuit, argnum=[0])(x, last_gate=False)
-        assert np.allclose(res_false[0], range(-2, 3))
+        assert np.allclose(res_false["x"][()], range(-2, 3))
 
     def test_input_gates_not_of_correct_form(self):
         """Test that an error is thrown if gates marked as encoding gates
@@ -222,11 +218,13 @@ def circuit(x, w):
     return qml.expval(qml.PauliZ(wires=0))
 
 
-expected_result = ArgMap({
-    (0, (0,)): [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0],
-    (0, (1,)): [-2.0, -1.0, 0.0, 1.0, 2.0],
-    (0, (2,)): [-2.0, -1.0, 0.0, 1.0, 2.0],
-})
+expected_result = {
+    "x": {
+        (0,): [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0],
+        (1,): [-2.0, -1.0, 0.0, 1.0, 2.0],
+        (2,): [-2.0, -1.0, 0.0, 1.0, 2.0],
+    }
+}
 
 
 class TestAutograd:
