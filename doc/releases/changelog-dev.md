@@ -186,6 +186,8 @@
   to compute the variance of a QNode with ragged output.
   [(#1646)](https://github.com/PennyLaneAI/pennylane/pull/1646)
 
+* Fixes a bug in `default.mixed`, to ensure that returned probabilities are always non-negative.
+
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
