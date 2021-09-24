@@ -16,6 +16,7 @@ This subpackage provides the functionality to perform differentiable Hartree-Foc
 """
 from .basis_data import *
 from .basis_set import *
+from .hamiltonian import generate_electron_integrals
 from .integrals import (
     contracted_norm,
     electron_repulsion,

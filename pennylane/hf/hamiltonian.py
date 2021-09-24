@@ -15,54 +15,76 @@
 This module contains the functions needed for computing the molecular Hamiltonian.
 """
 import autograd.numpy as anp
+from pennylane.hf.hartree_fock import generate_scf
 
 
 def generate_electron_integrals(mol, occupied=None, active=None):
-    """Return a function that computes the one and two electron integrals."""
+    r"""Return a function that computes the one- and two-electron integrals in the atomic orbital
+    basis.
+
+    Args:
+        mol (Molecule): the molecule object
+        occupied (list[int]): indices of occupied orbitals
+        active (list[int]): indices of active orbitals
+
+    Returns:
+        function: function that computes the core energy, the one- and two-electron integrals
+
+    **Example**
+
+    >>> symbols  = ['H', 'H']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
+    >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
+    >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
+    >>> mol = Molecule(symbols, geometry, alpha=alpha)
+    >>> args = [alpha]
+    >>> generate_electron_integrals(mol)(*args)
+    array([ 0.00000000e+00, -1.39021927e+00,  0.00000000e+00,  0.00000000e+00,
+           -2.91653313e-01,  7.14439078e-01, -2.77555756e-17,  5.55111512e-17,
+            1.70241443e-01,  5.55111512e-17,  1.70241443e-01,  7.01853154e-01,
+            6.66133815e-16, -1.38777878e-16,  7.01853154e-01,  1.70241443e-01,
+            2.22044605e-16,  1.70241443e-01, -4.44089210e-16,  6.66133815e-16,
+            7.38836690e-01])
+    """
 
     def electron_integrals(*args):
-        v_fock, coeffs, fock_matrix, h_core, e_tensor = scf(mol)(*args)
+        r"""Compute the one- and two-electron integrals in the atomic orbital basis.
+
+        Args:
+            args (array[array[float]]): initial values of the differentiable parameters
+
+        Returns:
+            array[float]: 1D array containing the core energy, the one- and two-electron integrals
+        """
+        v_fock, coeffs, fock_matrix, h_core, repulsion_tensor = generate_scf(mol)(*args)
         one = anp.einsum("qr,rs,st->qt", coeffs.T, h_core, coeffs)
         two = anp.swapaxes(
-            anp.einsum("ab,cd,bdeg,ef,gh->acfh", coeffs.T, coeffs.T, e_tensor, coeffs, coeffs), 1, 3
+            anp.einsum(
+                "ab,cd,bdeg,ef,gh->acfh", coeffs.T, coeffs.T, repulsion_tensor, coeffs, coeffs
+            ),
+            1,
+            3,
         )
-        core, one_elec, two_elec = get_active(one, two, occupied=occupied, active=active)
-        return anp.concatenate((anp.array([core]), one_elec.flatten(), two_elec.flatten()))
+        e_core = anp.array([0.0])
+
+        if occupied is None and active is None:
+            return anp.concatenate((e_core, one.flatten(), two.flatten()))
+
+        else:
+            for i in occupied:
+                e_core = e_core + 2 * one[i][i]
+                for j in occupied:
+                    e_core = e_core + 2 * two[i][j][j][i] - two[i][j][i][j]
+
+            for p in active:
+                for q in active:
+                    for i in occupied:
+                        o = anp.zeros(one.shape)
+                        o[p, q] = 1.0
+                        one = one + (2 * two[i][p][q][i] - two[i][p][i][q]) * o
+
+            two = two[anp.ix_(active, active, active, active)]
+
+            return anp.concatenate((e_core, one.flatten(), two.flatten()))
 
     return electron_integrals
-
-
-def get_active(one_body_integrals, two_body_integrals, occupied=None, active=None):
-    """
-    Gets integrals in some active space
-    """
-    # Fix data type for a few edge cases
-    occupied = [] if occupied is None else occupied
-
-    # Determine core constant
-    core_constant = 0.0
-    for i in occupied:
-        core_constant = core_constant + 2 * one_body_integrals[i][i]
-        for j in occupied:
-            core_constant = core_constant + (
-                2 * two_body_integrals[i][j][j][i] - two_body_integrals[i][j][i][j]
-            )
-
-    # Modified one electron integrals
-    one_body_integrals_new = anp.zeros(one_body_integrals.shape)
-    for u in active:
-        for v in active:
-            for i in occupied:
-                c = 2 * two_body_integrals[i][u][v][i] - two_body_integrals[i][u][i][v]
-                one_body_integrals_new = one_body_integrals_new + c * build_arr(
-                    one_body_integrals.shape, (u, v)
-                )
-
-    one_body_integrals_new = one_body_integrals_new + one_body_integrals
-
-    # Restrict integral ranges and change M appropriately
-    return (
-        core_constant,
-        one_body_integrals_new[anp.ix_(active, active)],
-        two_body_integrals[anp.ix_(active, active, active, active)],
-    )
