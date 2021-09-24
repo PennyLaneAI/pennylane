@@ -212,7 +212,7 @@ class Hamiltonian(Observable):
         # while H.coeffs is the original tensor
         super().__init__(*coeffs_flat, wires=self._wires, id=id, do_queue=do_queue)
 
-    def label(self, *args, **kwargs):
+    def label(self, decimals=None):
         return "H"
 
     @property

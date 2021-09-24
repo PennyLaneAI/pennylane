@@ -265,11 +265,11 @@ class ControlledPhaseShift(DiagonalOperation):
     grad_method = "A"
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), 1]
 
-    def label(self, include_parameters=False, decimal_places=2):
+    def label(self, decimals=None):
         op_label = "PhaseShift"
 
-        if include_parameters:
-            param_string = f'({self.parameters[0]:.{decimal_places}f})'
+        if decimals is not None:
+            param_string = f'({self.parameters[0]:.{decimals}f})'
             op_label += param_string
 
         return op_label
@@ -532,10 +532,10 @@ class PauliRot(Operation):
                 )
             )
 
-    def label(self, include_parameters=False, decimal_places=2):
+    def label(self, decimals=None):
         op_label = "R(" + self.parameters[1] +")"
-        if include_parameters:
-            param_string = f'({self.parameters[0]:.{decimal_places}f})'
+        if decimals is not None:
+            param_string = f'({self.parameters[0]:.{decimals}f})'
             op_label += param_string
 
         return op_label
@@ -724,11 +724,11 @@ class CRX(Operation):
         -1 / 2,
     ]
 
-    def label(self, include_parameters=False, decimal_places=2):
+    def label(self, decimals=None):
         op_label = "RX"
 
-        if include_parameters:
-            param_string = f'({self.parameters[0]:.{decimal_places}f})'
+        if decimals is not None:
+            param_string = f'({self.parameters[0]:.{decimals}f})'
             op_label += param_string
 
         return op_label
@@ -811,11 +811,11 @@ class CRY(Operation):
         -1 / 2,
     ]
 
-    def label(self, include_parameters=False, decimal_places=2):
+    def label(self, decimals=None):
         op_label = "RY"
 
-        if include_parameters:
-            param_string = f'({self.parameters[0]:.{decimal_places}f})'
+        if decimals is not None:
+            param_string = f'({self.parameters[0]:.{decimals}f})'
             op_label += param_string
 
         return op_label
@@ -899,11 +899,11 @@ class CRZ(DiagonalOperation):
         -1 / 2,
     ]
 
-    def label(self, include_parameters=False, decimal_places=2):
+    def label(self, decimals=None):
         op_label = "RZ"
 
-        if include_parameters:
-            param_string = f'({self.parameters[0]:.{decimal_places}f})'
+        if decimals is not None:
+            param_string = f'({self.parameters[0]:.{decimals}f})'
             op_label += param_string
 
         return op_label
@@ -993,12 +993,12 @@ class CRot(Operation):
     grad_method = "A"
     grad_recipe = four_term_grad_recipe * 3
 
-    def label(self, include_parameters=False, decimal_places=2):
+    def label(self, decimals=None):
         op_label = "Rot"
 
-        if include_parameters:
+        if decimals is not None:
             
-            param_string = ",".join(f"{p:.{decimal_places}f}" for p in self.parameters)
+            param_string = ",".join(f"{p:.{decimals}f}" for p in self.parameters)
             op_label += "(" + param_string + ")"
 
         return op_label

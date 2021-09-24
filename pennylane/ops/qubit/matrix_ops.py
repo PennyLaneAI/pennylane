@@ -240,7 +240,7 @@ class ControlledQubitUnitary(QubitUnitary):
         ctrl_wires = sorted(self.control_wires + wire)
         ControlledQubitUnitary(*self.parameters, control_wires=ctrl_wires, wires=self._target_wires)
 
-    def label(self, *args, **kwargs):
+    def label(self, decimals=None):
         if self.inverse:
             "U⁻¹"
         return "U"
@@ -286,7 +286,7 @@ class DiagonalQubitUnitary(DiagonalOperation):
             wires=Wires(control) + self.wires,
         )
 
-    def label(self, *args, **kwargs):
+    def label(self, decimals=None):
         if self.inverse:
             return "U⁻¹"
         return "U"

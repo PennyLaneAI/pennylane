@@ -49,7 +49,7 @@ class Hadamard(Observable, Operation):
     eigvals = pauli_eigs(1)
     matrix = np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
     
-    def label(self, *args, **kwargs):
+    def label(self, decimals=None):
         return "H"
 
     @classmethod
@@ -115,7 +115,7 @@ class PauliX(Observable, Operation):
     eigvals = pauli_eigs(1)
     matrix = np.array([[0, 1], [1, 0]])
 
-    def label(self, *args, **kwargs):
+    def label(self, decimals=None):
         return "X"
 
     @classmethod
@@ -182,7 +182,7 @@ class PauliY(Observable, Operation):
     eigvals = pauli_eigs(1)
     matrix = np.array([[0, -1j], [1j, 0]])
 
-    def label(self, *args, **kwargs):
+    def label(self, decimals=None):
         return "Y"
 
     @classmethod
@@ -255,7 +255,7 @@ class PauliZ(Observable, DiagonalOperation):
     eigvals = pauli_eigs(1)
     matrix = np.array([[1, 0], [0, -1]])
 
-    def label(self, *args, **kwargs):
+    def label(self, decimals=None):
         return "Z"
 
     @classmethod
@@ -453,7 +453,7 @@ class CNOT(Operation):
     basis = "X"
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
-    def label(self, *args, **kwargs):
+    def label(self, decimals=None):
         return "X"
 
     @classmethod
@@ -501,7 +501,7 @@ class CZ(DiagonalOperation):
     eigvals = np.array([1, 1, 1, -1])
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 
-    def label(self, *args, **kwargs):
+    def label(self, decimals=None):
         return "Z"
 
     @classmethod
@@ -555,7 +555,7 @@ class CY(Operation):
         ]
     )
 
-    def label(self, *args, **kwargs):
+    def label(self, decimals=None):
         return "Y"
 
     @classmethod
@@ -782,7 +782,7 @@ class CSWAP(Operation):
         ]
     )
 
-    def label(self, *args, **kwargs):
+    def label(self, decimals=None):
         return "SWAP"
 
     @classmethod
@@ -847,7 +847,7 @@ class Toffoli(Operation):
         ]
     )
 
-    def label(self, *args, **kwargs):
+    def label(self, decimals=None):
         return "X"
 
     @classmethod
@@ -942,7 +942,7 @@ class MultiControlledX(Operation):
     par_domain = "A"
     grad_method = None
     
-    def label(self, *args, **kwargs):
+    def label(self, decimals=None):
         return "X"
 
     # pylint: disable=too-many-arguments

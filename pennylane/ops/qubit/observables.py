@@ -57,7 +57,7 @@ class Hermitian(Observable):
     _eigs = {}
     
     
-    def label(self, *args, **kwargs):
+    def label(self, decimals=None):
         return "H"
 
     @classmethod
@@ -145,7 +145,7 @@ class SparseHamiltonian(Observable):
     par_domain = None
     grad_method = None
     
-    def label(self, *args, **kwargs):
+    def label(self, decimals=None):
         return "H"
 
     @classmethod
@@ -206,7 +206,7 @@ class Projector(Observable):
 
         super().__init__(basis_state, wires=wires, do_queue=do_queue)
 
-    def label(self, *args, **kwargs):
+    def label(self, decimals=None):
         basis_string = "".join(str(int(i)) for i in self.parameters[0])
         return f"|{basis_string}⟩⟨{basis_string}|"
 

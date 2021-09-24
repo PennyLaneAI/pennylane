@@ -732,7 +732,7 @@ label_data = [
 @pytest.mark.parametrize("op, label", label_data)
 def test_label_method(op, label):
     assert op.label() == label
-    assert op.label(include_parameters=True) == label
+    assert op.label(decimals=2) == label
 
     if op.is_self_inverse is True:
         op.inv()
