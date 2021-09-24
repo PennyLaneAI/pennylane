@@ -51,6 +51,7 @@ from gate_data import (
     MultiRZ1,
     MultiRZ2,
     ControlledPhaseShift,
+    OrbitalRotation,
 )
 
 np.random.seed(42)
@@ -99,7 +100,7 @@ two_qubit_param = [
     (qml.ControlledPhaseShift, ControlledPhaseShift),
 ]
 three_qubit = [(qml.Toffoli, Toffoli), (qml.CSWAP, CSWAP)]
-
+four_qubit_param = [(qml.OrbitalRotation, OrbitalRotation)]
 
 #####################################################
 # Fixtures
@@ -379,6 +380,21 @@ class TestApply:
 
         queue = [qml.QubitStateVector(state, wires=[0, 1])]
         queue += [op(theta, wires=[0, 1])]
+        dev.apply(queue)
+
+        res = dev.state
+        expected = func(theta) @ state
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("theta", [0.5432, -0.232])
+    @pytest.mark.parametrize("op,func", four_qubit_param)
+    def test_four_qubit_parameters(self, init_state, op, func, theta, tol):
+        """Test four qubit parametrized operations"""
+        dev = DefaultQubitTF(wires=4)
+        state = init_state(4)
+
+        queue = [qml.QubitStateVector(state, wires=[0, 1, 2, 3])]
+        queue += [op(theta, wires=[0, 1, 2, 3])]
         dev.apply(queue)
 
         res = dev.state
@@ -995,6 +1011,27 @@ class TestQNodeIntegration:
         def circuit(params):
             qml.QubitStateVector(state, wires=[0, 1])
             op(params[0], wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        # Pass a TF Variable to the qfunc
+        params = tf.Variable(np.array([theta]))
+        circuit(params)
+        res = dev.state
+        expected = func(theta) @ state
+        assert np.allclose(res.numpy(), expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("theta", [0.5432, 4.213])
+    @pytest.mark.parametrize("op,func", four_qubit_param)
+    def test_four_qubit_param_gates(self, theta, op, func, init_state, tol):
+        """Test the integration of the four-qubit single parameter rotations by passing
+        a TF data structure as a parameter"""
+        dev = qml.device("default.qubit.tf", wires=4)
+        state = init_state(4)
+
+        @qml.qnode(dev, interface="tf")
+        def circuit(params):
+            qml.QubitStateVector(state, wires=[0, 1, 2, 3])
+            op(params[0], wires=[0, 1, 2, 3])
             return qml.expval(qml.PauliZ(0))
 
         # Pass a TF Variable to the qfunc

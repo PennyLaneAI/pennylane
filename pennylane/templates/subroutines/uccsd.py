@@ -143,6 +143,7 @@ class UCCSD(Operation):
     num_params = 1
     num_wires = AnyWires
     par_domain = "A"
+    grad_method = None
 
     def __init__(
         self, weights, wires, s_wires=None, d_wires=None, init_state=None, do_queue=True, id=None
