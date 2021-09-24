@@ -215,6 +215,9 @@
     if `expval(H)` is present on devices that do not natively support Hamiltonians with
     non-commuting terms.
 
+* Added a new template `GateFabric`, which implements a local, expressive, quantum-number-preserving VQE
+  fabric.
+  [(#1687)](https://github.com/PennyLaneAI/pennylane/pull/1687)
 
 <h3>Improvements</h3>
 

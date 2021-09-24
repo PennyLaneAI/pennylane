@@ -452,4 +452,3 @@ class TestTemplateIntegration:
         expected[0] = 1.0
 
         assert np.allclose(res, expected)
-
