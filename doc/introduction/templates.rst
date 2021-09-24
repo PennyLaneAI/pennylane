@@ -120,6 +120,11 @@ neural network. Note arbitrary templates or operations can also be layered using
     :description: ParticleConservingU1
     :figure: ../_static/templates/layers/particle_conserving_u1_thumbnail.png
 
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.layers.GateFabric.html
+    :description: GateFabric
+    :figure: ../_static/templates/layers/gate_fabric_layer.png
+
 .. raw:: html
 
         <div style='clear:both'></div>
