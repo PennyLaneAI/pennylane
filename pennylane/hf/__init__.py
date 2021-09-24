@@ -37,4 +37,8 @@ from .matrices import (
     generate_repulsion_tensor,
     molecular_density_matrix,
 )
+from .hartree_fock import (
+    generate_scf,
+    nuclear_energy,
+    hf_energy)
 from .molecule import *

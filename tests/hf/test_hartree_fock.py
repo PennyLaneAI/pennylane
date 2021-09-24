@@ -17,7 +17,7 @@ Unit tests for for Hartree-Fock functions.
 import autograd
 import pytest
 from pennylane import numpy as np
-from pennylane.hf.hartree_fock import generate_scf, hf_energy, nuclear_energy
+from pennylane.hf.hartree_fock import generate_scf, nuclear_energy, hf_energy
 from pennylane.hf.molecule import Molecule
 
 
@@ -46,25 +46,34 @@ def test_scf(symbols, geometry, v_fock, coeffs, fock_matrix, h_core):
 
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "e_ref"),
+    ("symbols", "geometry", "charge", "e_ref"),
     [
         (
             ["H", "H"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+            0,
             # HF energy computed with pyscf using scf.hf.SCF(mol).kernel(numpy.eye(mol.nao_nr()))
             np.array([-1.06599931664376]),
         ),
         (
+            ["H", "H", "H"],
+            np.array([[0.0, 1.0, 0.0], [0.0, 0.0, 0.0], [1.0, 0.0, 0.0]], requires_grad=False),
+            1,
+            # HF energy computed with pyscf using scf.hf.SCF(mol).kernel(numpy.eye(mol.nao_nr()))
+            np.array([-0.948179228995941]),
+        ),
+        (
             ["H", "F"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+            0,
             # HF energy computed with pyscf using scf.hf.SCF(mol).kernel(numpy.eye(mol.nao_nr()))
             np.array([-97.8884541671664]),
         ),
     ],
 )
-def test_hf_energy(symbols, geometry, e_ref):
+def test_hf_energy(symbols, geometry, charge, e_ref):
     r"""Test that hf_energy returns the correct energy."""
-    mol = Molecule(symbols, geometry)
+    mol = Molecule(symbols, geometry, charge=charge)
     e = hf_energy(mol)()
     assert np.allclose(e, e_ref)
 
@@ -81,7 +90,7 @@ def test_hf_energy(symbols, geometry, e_ref):
         ),
     ],
 )
-def test_hf_gradient(symbols, geometry, r, g_ref):
+def test_hf_energy_gradient(symbols, geometry, r, g_ref):
     r"""Test that the gradient of the Hartree-Fock energy wrt differentiable parameters is
     correct."""
     mol = Molecule(symbols, geometry, r=r)
