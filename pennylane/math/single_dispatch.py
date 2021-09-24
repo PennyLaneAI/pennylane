@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc._take_torch
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -242,6 +242,14 @@ def _scatter_element_add_tf(tensor, index, value):
 
 ar.register_function("tensorflow", "scatter_element_add", _scatter_element_add_tf)
 
+
+def _sort_torch(tensor):
+    """Update handling of sort to return only values not indices."""
+    soterd_tensor = _i("torch").sort(tensor)
+    return soterd_tensor.values
+
+
+ar.register_function("torch", "sort", _sort_torch)
 
 # -------------------------------- Torch --------------------------------- #
 
