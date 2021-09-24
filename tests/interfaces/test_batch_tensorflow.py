@@ -231,7 +231,9 @@ class TestCaching:
                 qml.CNOT(wires=[0, 1])
                 qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
-            return execute([tape], dev, gradient_fn=param_shift, cache=cache, interface="tf")[0]
+            return execute(
+                [tape], dev, gradient_fn=param_shift, cache=cache, interface="tf", max_diff=2
+            )[0]
 
         # No caching: number of executions is not ideal
         with tf.GradientTape() as t2:
@@ -355,7 +357,7 @@ class TestTensorFlowExecuteIntegration:
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
                 qml.expval(qml.PauliY(1))
-            res = execute([tape], dev, **execute_kwargs)[0]
+            res = execute([tape], dev, max_diff=2, **execute_kwargs)[0]
 
         expected = [np.cos(a), -np.cos(a) * np.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -728,7 +730,9 @@ class TestHigherOrderDerivatives:
                     qml.CNOT(wires=[0, 1])
                     qml.probs(wires=1)
 
-                result = execute([tape1, tape2], dev, gradient_fn=param_shift, interface="tf")
+                result = execute(
+                    [tape1, tape2], dev, gradient_fn=param_shift, interface="tf", max_diff=2
+                )
                 res = result[0][0] + result[1][0, 0]
 
             expected = 0.5 * (3 + np.cos(x) ** 2 * np.cos(2 * y))
@@ -761,7 +765,7 @@ class TestHigherOrderDerivatives:
                     qml.RX(params[1], wires=0)
                     qml.probs(wires=0)
 
-                res = execute([tape], dev, gradient_fn=param_shift, interface="tf")
+                res = execute([tape], dev, gradient_fn=param_shift, interface="tf", max_diff=2)
                 res = tf.stack(res)
 
             g = t1.jacobian(res, params, experimental_use_pfor=False)
