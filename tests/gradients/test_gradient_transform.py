@@ -81,6 +81,10 @@ class TestGradientExpand:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
+        params = tape.get_parameters(trainable_only=False)
+        tape.trainable_params = qml.math.get_trainable_indices(params)
+        assert tape.trainable_params == {1}
+
         spy = mocker.spy(tape, "expand")
         new_tape = gradient_expand(tape)
 

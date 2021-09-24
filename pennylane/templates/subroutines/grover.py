@@ -102,6 +102,7 @@ class GroverOperator(Operation):
     num_params = 0
     num_wires = AnyWires
     par_domain = None
+    grad_method = None
 
     def __init__(self, wires=None, work_wires=None, do_queue=True, id=None):
         if (not hasattr(wires, "__len__")) or (len(wires) < 2):

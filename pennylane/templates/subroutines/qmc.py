@@ -330,6 +330,7 @@ class QuantumMonteCarlo(Operation):
     num_params = 3
     num_wires = AnyWires
     par_domain = "A"
+    grad_method = None
 
     def __init__(self, probs, func, target_wires, estimation_wires, do_queue=True, id=None):
         if isinstance(probs, np.ndarray) and probs.ndim != 1:
