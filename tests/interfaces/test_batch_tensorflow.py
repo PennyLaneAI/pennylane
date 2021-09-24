@@ -55,24 +55,6 @@ class TestTensorFlowExecuteUnitTests:
         for args in spy.call_args_list:
             assert args[1]["shift"] == np.pi / 4
 
-    def test_unknown_gradient_fn_error(self):
-        """Test that an error is raised if an unknown gradient function
-        is passed"""
-        a = tf.Variable([0.1, 0.2])
-
-        dev = qml.device("default.qubit", wires=1)
-
-        with tf.GradientTape() as t:
-            with qml.tape.JacobianTape() as tape:
-                qml.RY(a[0], wires=0)
-                qml.RX(a[1], wires=0)
-                qml.expval(qml.PauliZ(0))
-
-            res = execute([tape], dev, gradient_fn=lambda x: x, interface="tf")[0]
-
-        with pytest.raises(ValueError, match="Unknown gradient function"):
-            print(t.jacobian(res, a))
-
     def test_incorrect_mode(self):
         """Test that an error is raised if a gradient transform
         is used with mode=forward"""
@@ -249,7 +231,9 @@ class TestCaching:
                 qml.CNOT(wires=[0, 1])
                 qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
-            return execute([tape], dev, gradient_fn=param_shift, cache=cache, interface="tf")[0]
+            return execute(
+                [tape], dev, gradient_fn=param_shift, cache=cache, interface="tf", max_diff=2
+            )[0]
 
         # No caching: number of executions is not ideal
         with tf.GradientTape() as t2:
@@ -373,7 +357,7 @@ class TestTensorFlowExecuteIntegration:
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
                 qml.expval(qml.PauliY(1))
-            res = execute([tape], dev, **execute_kwargs)[0]
+            res = execute([tape], dev, max_diff=2, **execute_kwargs)[0]
 
         expected = [np.cos(a), -np.cos(a) * np.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -384,6 +368,36 @@ class TestTensorFlowExecuteIntegration:
 
         expected = [[-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)]]
         assert np.allclose(expected, [agrad, bgrad], atol=tol, rtol=0)
+
+    def test_tape_no_parameters(self, execute_kwargs, tol):
+        """Test that a tape with no parameters is correctly
+        ignored during the gradient computation"""
+        dev = qml.device("default.qubit", wires=1)
+        params = tf.Variable([0.1, 0.2], dtype=tf.float64)
+        x, y = 1.0 * params
+
+        with tf.GradientTape() as t:
+            with qml.tape.JacobianTape() as tape1:
+                qml.Hadamard(0)
+                qml.expval(qml.PauliX(0))
+
+            with qml.tape.JacobianTape() as tape2:
+                qml.RY(0.5, wires=0)
+                qml.expval(qml.PauliZ(0))
+
+            with qml.tape.JacobianTape() as tape3:
+                qml.RY(params[0], wires=0)
+                qml.RX(params[1], wires=0)
+                qml.expval(qml.PauliZ(0))
+
+            res = sum(execute([tape1, tape2, tape3], dev, **execute_kwargs))
+
+        expected = 1 + np.cos(0.5) + np.cos(x) * np.cos(y)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        grad = t.gradient(res, params)
+        expected = [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)]
+        assert np.allclose(grad, expected, atol=tol, rtol=0)
 
     def test_reusing_quantum_tape(self, execute_kwargs, tol):
         """Test re-using a quantum tape by passing new parameters"""
@@ -618,12 +632,12 @@ class TestTensorFlowExecuteIntegration:
         expected = np.array(
             [
                 [
-                    [-tf.sin(x) / 2, -tf.sin(x) * tf.cos(y) / 2],
-                    [tf.sin(x) / 2, tf.cos(y) * tf.sin(x) / 2],
+                    [-tf.sin(x) / 2, tf.sin(x) / 2],
+                    [-tf.sin(x) * tf.cos(y) / 2, tf.cos(y) * tf.sin(x) / 2],
                 ],
                 [
-                    [0, -tf.cos(x) * tf.sin(y) / 2],
-                    [0, tf.cos(x) * tf.sin(y) / 2],
+                    [0, 0],
+                    [-tf.cos(x) * tf.sin(y) / 2, tf.cos(x) * tf.sin(y) / 2],
                 ],
             ]
         )
@@ -686,6 +700,7 @@ class TestTensorFlowExecuteIntegration:
 class TestHigherOrderDerivatives:
     """Test that the TensorFlow execute function can be differentiated"""
 
+    @pytest.mark.slow
     @pytest.mark.parametrize(
         "params",
         [
@@ -715,7 +730,9 @@ class TestHigherOrderDerivatives:
                     qml.CNOT(wires=[0, 1])
                     qml.probs(wires=1)
 
-                result = execute([tape1, tape2], dev, gradient_fn=param_shift, interface="tf")
+                result = execute(
+                    [tape1, tape2], dev, gradient_fn=param_shift, interface="tf", max_diff=2
+                )
                 res = result[0][0] + result[1][0, 0]
 
             expected = 0.5 * (3 + np.cos(x) ** 2 * np.cos(2 * y))
@@ -748,7 +765,7 @@ class TestHigherOrderDerivatives:
                     qml.RX(params[1], wires=0)
                     qml.probs(wires=0)
 
-                res = execute([tape], dev, gradient_fn=param_shift, interface="tf")
+                res = execute([tape], dev, gradient_fn=param_shift, interface="tf", max_diff=2)
                 res = tf.stack(res)
 
             g = t1.jacobian(res, params, experimental_use_pfor=False)

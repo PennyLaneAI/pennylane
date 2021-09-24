@@ -6,6 +6,10 @@ and features.
 
 .. currentmodule:: pennylane.beta
 
+.. automodapi:: pennylane.beta
+    :include-all-objects:
+    :no-inheritance-diagram:
+
 .. automodapi:: pennylane.beta.devices
     :include-all-objects:
     :no-inheritance-diagram:

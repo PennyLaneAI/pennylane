@@ -48,7 +48,10 @@ def gradient_expand(tape, depth=10):
             and ((supported_op(obj) and trainable_op(obj)) or not trainable_op(obj))
         )
 
-        return tape.expand(depth=depth, stop_at=stop_cond)
+        new_tape = tape.expand(depth=depth, stop_at=stop_cond)
+        params = new_tape.get_parameters(trainable_only=False)
+        new_tape.trainable_params = qml.math.get_trainable_indices(params)
+        return new_tape
 
     return tape
 
@@ -141,20 +144,24 @@ class gradient_transform(qml.batch_transform):
         self.hybrid = hybrid
         super().__init__(transform_fn, expand_fn=expand_fn, differentiable=differentiable)
 
-    def qnode_execution_wrapper(self, qnode, targs, tkwargs):
+    def default_qnode_wrapper(self, qnode, targs, tkwargs):
         # Here, we overwrite the QNode execution wrapper in order
         # to take into account that classical processing may be present
         # inside the QNode.
         hybrid = tkwargs.pop("hybrid", self.hybrid)
-        _wrapper = super().qnode_execution_wrapper(qnode, targs, tkwargs)
+        _wrapper = super().default_qnode_wrapper(qnode, targs, tkwargs)
         cjac_fn = qml.transforms.classical_jacobian(qnode)
 
         def jacobian_wrapper(*args, **kwargs):
             qjac = _wrapper(*args, **kwargs)
-            cjac = cjac_fn(*args, **kwargs)
 
             if any(m.return_type is qml.operation.Probability for m in qnode.qtape.measurements):
                 qjac = qml.math.squeeze(qjac)
+
+            if not hybrid:
+                return qjac
+
+            cjac = cjac_fn(*args, **kwargs)
 
             if isinstance(cjac, tuple):
                 # Classical processing of multiple arguments is present. Return qjac @ cjac.
@@ -167,7 +174,7 @@ class gradient_transform(qml.batch_transform):
 
             is_square = cjac.shape == (1,) or (cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1])
 
-            if not hybrid or (is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0]))):
+            if is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
                 # Classical Jacobian is the identity. No classical processing
                 # is present inside the QNode.
                 return qjac

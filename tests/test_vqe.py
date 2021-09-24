@@ -366,6 +366,7 @@ class TestVQE:
             assert qnode.diff_options["h"] == 123
             assert qnode.diff_options["order"] == 2
 
+    @pytest.mark.slow
     @pytest.mark.parametrize("interface", ["tf", "torch", "autograd"])
     def test_optimize(self, interface, tf_support, torch_support):
         """Test that an ExpvalCost with observable optimization gives the same result as another
@@ -519,6 +520,7 @@ class TestVQE:
         dc = qml.grad(cost)(w)
         assert np.allclose(dc, 0)
 
+    @pytest.mark.slow
     def test_optimize_grad_torch(self, torch_support):
         """Test that the gradient of ExpvalCost is accessible and correct when using observable
         optimization and the Torch interface."""
@@ -544,6 +546,7 @@ class TestVQE:
 
         assert np.allclose(dc, big_hamiltonian_grad)
 
+    @pytest.mark.slow
     def test_optimize_grad_tf(self, tf_support):
         """Test that the gradient of ExpvalCost is accessible and correct when using observable
         optimization and the TensorFlow interface."""
@@ -827,6 +830,7 @@ class TestNewVQE:
         dc = qml.grad(circuit)(w)
         assert np.allclose(dc, 0, atol=tol)
 
+    @pytest.mark.slow
     def test_grad_torch(self, torch_support, tol):
         """Tests VQE gradients in the torch interface."""
         if not torch_support:
@@ -870,6 +874,7 @@ class TestNewVQE:
 
         assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
 
+    @pytest.mark.slow
     def test_grad_jax(self, tol):
         """Tests VQE gradients in the jax interface."""
         jax = pytest.importorskip("jax")

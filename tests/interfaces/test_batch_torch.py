@@ -53,23 +53,6 @@ class TestTorchExecuteUnitTests:
         for args in spy.call_args_list:
             assert args[1]["shift"] == np.pi / 4
 
-    def test_unknown_gradient_fn_error(self):
-        """Test that an error is raised if an unknown gradient function
-        is passed"""
-        a = torch.tensor([0.1, 0.2], requires_grad=True)
-
-        dev = qml.device("default.qubit", wires=1)
-
-        with qml.tape.JacobianTape() as tape:
-            qml.RY(a[0], wires=0)
-            qml.RX(a[1], wires=0)
-            qml.expval(qml.PauliZ(0))
-
-        res = execute([tape], dev, gradient_fn=lambda x: x, interface="torch")[0]
-
-        with pytest.raises(ValueError, match="Unknown gradient function"):
-            res.backward()
-
     def test_incorrect_mode(self):
         """Test that an error is raised if a gradient transform
         is used with mode=forward"""
@@ -264,7 +247,9 @@ class TestCaching:
                 qml.CNOT(wires=[0, 1])
                 qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
-            return execute([tape], dev, gradient_fn=param_shift, cache=cache, interface="torch")[0]
+            return execute(
+                [tape], dev, gradient_fn=param_shift, cache=cache, interface="torch", max_diff=2
+            )[0]
 
         # No caching: number of executions is not ideal
         hess1 = torch.autograd.functional.hessian(lambda x: cost(x, cache=None), params)
@@ -455,6 +440,35 @@ class TestTorchExecuteIntegration:
         )
         assert torch.allclose(a.grad, expected[0], atol=tol, rtol=0)
         assert torch.allclose(b.grad, expected[1], atol=tol, rtol=0)
+
+    def test_tape_no_parameters(self, torch_device, execute_kwargs, tol):
+        """Test that a tape with no parameters is correctly
+        ignored during the gradient computation"""
+        dev = qml.device("default.qubit", wires=1)
+        params = torch.tensor([0.1, 0.2], requires_grad=True, device=torch_device)
+        x, y = params.detach()
+
+        with qml.tape.JacobianTape() as tape1:
+            qml.Hadamard(0)
+            qml.expval(qml.PauliX(0))
+
+        with qml.tape.JacobianTape() as tape2:
+            qml.RY(0.5, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        with qml.tape.JacobianTape() as tape3:
+            qml.RY(params[0], wires=0)
+            qml.RX(params[1], wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        res = sum(execute([tape1, tape2, tape3], dev, **execute_kwargs))
+        expected = 1 + np.cos(0.5) + np.cos(x) * np.cos(y)
+        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+
+        res.backward()
+        grad = params.grad.detach()
+        expected = [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)]
+        assert np.allclose(grad, expected, atol=tol, rtol=0)
 
     def test_reusing_quantum_tape(self, torch_device, execute_kwargs, tol):
         """Test re-using a quantum tape by passing new parameters"""
@@ -777,6 +791,27 @@ class TestTorchExecuteIntegration:
         assert res.shape == (2, 10)
         assert isinstance(res, torch.Tensor)
 
+    def test_sampling_expval(self, torch_device, execute_kwargs):
+        """Test sampling works as expected if combined with expectation values"""
+        if execute_kwargs["gradient_fn"] == "device" and execute_kwargs["mode"] == "forward":
+            pytest.skip("Adjoint differentiation does not support samples")
+
+        dev = qml.device("default.qubit", wires=2, shots=10)
+
+        with qml.tape.JacobianTape() as tape:
+            qml.Hadamard(wires=[0])
+            qml.CNOT(wires=[0, 1])
+            qml.sample(qml.PauliZ(0))
+            qml.expval(qml.PauliX(1))
+
+        res = execute([tape], dev, **execute_kwargs)[0]
+
+        assert len(res) == 2
+        assert isinstance(res, tuple)
+        assert res[0].shape == (10,)
+        assert isinstance(res[0], torch.Tensor)
+        assert isinstance(res[1], torch.Tensor)
+
     def test_sampling_gradient_error(self, torch_device, execute_kwargs):
         """Test differentiating a tape with sampling results in an error"""
         if execute_kwargs["gradient_fn"] == "device" and execute_kwargs["mode"] == "forward":
@@ -845,7 +880,9 @@ class TestHigherOrderDerivatives:
                 qml.CNOT(wires=[0, 1])
                 qml.probs(wires=1)
 
-            result = execute([tape1, tape2], dev, gradient_fn=param_shift, interface="torch")
+            result = execute(
+                [tape1, tape2], dev, gradient_fn=param_shift, interface="torch", max_diff=2
+            )
             return result[0] + result[1][0, 0]
 
         res = cost_fn(params)
@@ -878,7 +915,9 @@ class TestHigherOrderDerivatives:
                 qml.RX(x[1], wires=0)
                 qml.probs(wires=0)
 
-            return torch.stack(execute([tape], dev, gradient_fn=param_shift, interface="torch"))
+            return torch.stack(
+                execute([tape], dev, gradient_fn=param_shift, interface="torch", max_diff=2)
+            )
 
         x = torch.tensor([1.0, 2.0], requires_grad=True, device=torch_device)
         res = circuit(x)

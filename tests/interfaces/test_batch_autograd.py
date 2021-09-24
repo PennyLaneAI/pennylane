@@ -13,7 +13,10 @@
 # limitations under the License.
 """Unit tests for the autograd interface"""
 import functools
+import importlib
+import sys
 
+import autograd
 import pytest
 from pennylane import numpy as np
 
@@ -24,6 +27,29 @@ from pennylane.interfaces.batch import execute
 
 class TestAutogradExecuteUnitTests:
     """Unit tests for autograd execution"""
+
+    def test_import_error(self, mocker):
+        """Test that an exception is caught on import error"""
+
+        mock = mocker.patch.object(autograd.extend, "defvjp")
+        mock.side_effect = ImportError()
+
+        try:
+            del sys.modules["pennylane.interfaces.batch.autograd"]
+        except:
+            pass
+
+        dev = qml.device("default.qubit", wires=2, shots=None)
+
+        with qml.tape.JacobianTape() as tape:
+            qml.expval(qml.PauliY(1))
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="Autograd not found. Please install the latest version "
+            "of Autograd to enable the 'autograd' interface",
+        ):
+            qml.execute([tape], dev, gradient_fn=param_shift, interface="autograd")
 
     def test_jacobian_options(self, mocker, tol):
         """Test setting jacobian options"""
@@ -48,26 +74,8 @@ class TestAutogradExecuteUnitTests:
         for args in spy.call_args_list:
             assert args[1]["shift"] == np.pi / 4
 
-    def test_unknown_gradient_fn_error(self):
-        """Test that an error is raised if an unknown gradient function
-        is passed"""
-        a = np.array([0.1, 0.2], requires_grad=True)
-
-        dev = qml.device("default.qubit", wires=1)
-
-        def cost(a, device):
-            with qml.tape.JacobianTape() as tape:
-                qml.RY(a[0], wires=0)
-                qml.RX(a[1], wires=0)
-                qml.expval(qml.PauliZ(0))
-
-            return execute([tape], device, gradient_fn=lambda x: x)[0]
-
-        with pytest.raises(ValueError, match="Unknown gradient function"):
-            res = qml.jacobian(cost)(a, device=dev)
-
     def test_incorrect_mode(self):
-        """Test that an error is raised if an gradient transform
+        """Test that an error is raised if a gradient transform
         is used with mode=forward"""
         a = np.array([0.1, 0.2], requires_grad=True)
 
@@ -98,7 +106,7 @@ class TestAutogradExecuteUnitTests:
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            return execute([tape], device, gradient_fn=param_shift, interface=None)[0]
+            return execute([tape], device, gradient_fn=param_shift, interface="None")[0]
 
         with pytest.raises(ValueError, match="Unknown interface"):
             cost(a, device=dev)
@@ -263,7 +271,7 @@ class TestCaching:
                 qml.CNOT(wires=[0, 1])
                 qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
-            return execute([tape], dev, gradient_fn=param_shift, cache=cache)[0]
+            return execute([tape], dev, gradient_fn=param_shift, cache=cache, max_diff=2)[0]
 
         # No caching: number of executions is not ideal
         hess1 = qml.jacobian(qml.grad(cost))(params, cache=False)
@@ -430,6 +438,38 @@ class TestAutogradExecuteIntegration:
 
         expected = [[-np.sin(a), 0], [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]]
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_tape_no_parameters(self, execute_kwargs, tol):
+        """Test that a tape with no parameters is correctly
+        ignored during the gradient computation"""
+        dev = qml.device("default.qubit", wires=1)
+
+        def cost(params):
+            with qml.tape.JacobianTape() as tape1:
+                qml.Hadamard(0)
+                qml.expval(qml.PauliX(0))
+
+            with qml.tape.JacobianTape() as tape2:
+                qml.RY(np.array(0.5, requires_grad=False), wires=0)
+                qml.expval(qml.PauliZ(0))
+
+            with qml.tape.JacobianTape() as tape3:
+                qml.RY(params[0], wires=0)
+                qml.RX(params[1], wires=0)
+                qml.expval(qml.PauliZ(0))
+
+            return sum(execute([tape1, tape2, tape3], dev, **execute_kwargs))
+
+        params = np.array([0.1, 0.2], requires_grad=True)
+        x, y = params
+
+        res = cost(params)
+        expected = 1 + np.cos(0.5) + np.cos(x) * np.cos(y)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        grad = qml.grad(cost)(params)
+        expected = [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)]
+        assert np.allclose(grad, expected, atol=tol, rtol=0)
 
     def test_reusing_quantum_tape(self, execute_kwargs, tol):
         """Test re-using a quantum tape by passing new parameters"""
@@ -626,13 +666,14 @@ class TestAutogradExecuteIntegration:
 
         expected = np.array(
             [
-                [[-np.sin(x) / 2, 0], [np.sin(x) / 2, 0]],
+                [[-np.sin(x) / 2, 0], [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2]],
                 [
-                    [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2],
+                    [np.sin(x) / 2, 0],
                     [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
                 ],
             ]
         )
+
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_ragged_differentiation(self, execute_kwargs, tol):
@@ -722,7 +763,7 @@ class TestHigherOrderDerivatives:
                 qml.CNOT(wires=[0, 1])
                 qml.probs(wires=1)
 
-            result = execute([tape1, tape2], dev, gradient_fn=param_shift)
+            result = execute([tape1, tape2], dev, gradient_fn=param_shift, max_diff=2)
             return result[0] + result[1][0, 0]
 
         res = cost_fn(params)
@@ -808,6 +849,90 @@ class TestHigherOrderDerivatives:
 
         expected = np.zeros([2, 2])
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
+class TestOverridingShots:
+    """Test overriding shots on execution"""
+
+    def test_changing_shots(self, mocker, tol):
+        """Test that changing shots works on execution"""
+        dev = qml.device("default.qubit", wires=2, shots=None)
+        a, b = np.array([0.543, -0.654], requires_grad=True)
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliY(1))
+
+        spy = mocker.spy(dev, "sample")
+
+        # execute with device default shots (None)
+        res = execute([tape], dev, gradient_fn=param_shift)
+        assert np.allclose(res, -np.cos(a) * np.sin(b), atol=tol, rtol=0)
+        spy.assert_not_called()
+
+        # execute with shots=100
+        res = execute([tape], dev, gradient_fn=param_shift, override_shots=100)
+        spy.assert_called()
+        assert spy.spy_return.shape == (100,)
+
+        # device state has been unaffected
+        assert dev.shots is None
+        spy = mocker.spy(dev, "sample")
+        res = execute([tape], dev, gradient_fn=param_shift)
+        assert np.allclose(res, -np.cos(a) * np.sin(b), atol=tol, rtol=0)
+        spy.assert_not_called()
+
+    def test_overriding_shots_with_same_value(self, mocker):
+        """Overriding shots with the same value as the device will have no effect"""
+        dev = qml.device("default.qubit", wires=2, shots=123)
+        a, b = np.array([0.543, -0.654], requires_grad=True)
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliY(1))
+
+        spy = mocker.Mock(wraps=qml.Device.shots.fset)
+        mock_property = qml.Device.shots.setter(spy)
+        mocker.patch.object(qml.Device, "shots", mock_property)
+
+        res = execute([tape], dev, gradient_fn=param_shift, override_shots=123)
+        # overriden shots is the same, no change
+        spy.assert_not_called()
+
+        res = execute([tape], dev, gradient_fn=param_shift, override_shots=100)
+        # overriden shots is not the same, shots were changed
+        spy.assert_called()
+
+        # shots were temporarily set to the overriden value
+        assert spy.call_args_list[0][0] == (dev, 100)
+        # shots were then returned to the built-in value
+        assert spy.call_args_list[1][0] == (dev, 123)
+
+    def test_gradient_integration(self, tol):
+        """Test that temporarily setting the shots works
+        for gradient computations"""
+        dev = qml.device("default.qubit", wires=2, shots=None)
+        a, b = np.array([0.543, -0.654], requires_grad=True)
+
+        def cost_fn(a, b, shots):
+            with qml.tape.JacobianTape() as tape:
+                qml.RY(a, wires=0)
+                qml.RX(b, wires=1)
+                qml.CNOT(wires=[0, 1])
+                qml.expval(qml.PauliY(1))
+
+            return execute([tape], dev, gradient_fn=param_shift, override_shots=shots)[0]
+
+        res = qml.jacobian(cost_fn)(a, b, shots=[10000, 10000, 10000])
+        assert dev.shots is None
+        assert len(res) == 3
+
+        expected = [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
+        assert np.allclose(np.mean(res, axis=0), expected, atol=0.1, rtol=0)
 
 
 execute_kwargs = [

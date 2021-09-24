@@ -81,6 +81,10 @@ class TestGradientExpand:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
+        params = tape.get_parameters(trainable_only=False)
+        tape.trainable_params = qml.math.get_trainable_indices(params)
+        assert tape.trainable_params == {1}
+
         spy = mocker.spy(tape, "expand")
         new_tape = gradient_expand(tape)
 
@@ -270,7 +274,7 @@ class TestGradientTransformIntegration:
 
         res = qml.gradients.param_shift(circuit)(d, w)
         classical_jac = spy.spy_return(d, w)
-        assert np.allclose(classical_jac, np.array([[0, 2 * w[0], 0], [0, 0, 1]]).T)
+        assert np.allclose(classical_jac, np.array([[2 * w[0], 0], [0, 1]]).T)
 
         expected = np.array([-2 * x * np.cos(np.cos(d)) * np.sin(x ** 2), 0])
         assert np.allclose(res, expected, atol=tol, rtol=0)

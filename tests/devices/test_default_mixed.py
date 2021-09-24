@@ -235,6 +235,15 @@ class TestAnalyticProb:
 
         assert dev.analytic_probability() is None
 
+    def test_probability_not_negative(self, nr_wires):
+        """Test that probabilities are always real"""
+        dev = qml.device("default.mixed", wires=nr_wires)
+        dev._state = np.zeros([2 ** nr_wires, 2 ** nr_wires])
+        dev._state[0, 0] = 1
+        dev._state[1, 1] = -5e-17
+
+        assert np.all(dev.analytic_probability() >= 0)
+
 
 class TestKrausOps:
     """Unit tests for the method `_get_kraus_ops()`"""
