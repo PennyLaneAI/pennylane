@@ -221,6 +221,7 @@ class batch_transform:
         the QNode, and return the output of the applying the tape transform
         to the QNode's constructed tape.
         """
+        max_diff = tkwargs.pop("max_diff", 2)
 
         def _wrapper(*args, **kwargs):
             qnode.construct(args, kwargs)
@@ -242,7 +243,11 @@ class batch_transform:
                 gradient_fn = qml.gradients.finite_diff
 
             res = qml.execute(
-                tapes, device=qnode.device, gradient_fn=gradient_fn, interface=interface, max_diff=2
+                tapes,
+                device=qnode.device,
+                gradient_fn=gradient_fn,
+                interface=interface,
+                max_diff=max_diff,
             )
 
             return processing_fn(res)
