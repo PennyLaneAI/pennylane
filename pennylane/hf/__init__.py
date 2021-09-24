@@ -30,11 +30,11 @@ from .integrals import (
     primitive_norm,
 )
 from .matrices import (
-    attraction_matrix,
-    core_matrix,
-    kinetic_matrix,
+    generate_attraction_matrix,
+    generate_core_matrix,
+    generate_kinetic_matrix,
+    generate_overlap_matrix,
+    generate_repulsion_tensor,
     molecular_density_matrix,
-    overlap_matrix,
-    repulsion_tensor,
 )
 from .molecule import *

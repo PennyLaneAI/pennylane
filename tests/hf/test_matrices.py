@@ -18,12 +18,12 @@ import autograd
 import pytest
 from pennylane import numpy as np
 from pennylane.hf.matrices import (
-    attraction_matrix,
-    core_matrix,
-    kinetic_matrix,
+    generate_attraction_matrix,
+    generate_core_matrix,
+    generate_kinetic_matrix,
+    generate_overlap_matrix,
+    generate_repulsion_tensor,
     molecular_density_matrix,
-    overlap_matrix,
-    repulsion_tensor,
 )
 from pennylane.hf.molecule import Molecule
 
@@ -63,7 +63,7 @@ def test_overlap_matrix(symbols, geometry, alpha, s_ref):
     r"""Test that overlap_matrix returns the correct matrix."""
     mol = Molecule(symbols, geometry, alpha=alpha)
     args = [alpha]
-    s = overlap_matrix(mol.basis_set)(*args)
+    s = generate_overlap_matrix(mol.basis_set)(*args)
     assert np.allclose(s, s_ref)
 
 
@@ -81,7 +81,7 @@ def test_overlap_matrix_nodiff(symbols, geometry, s_ref):
     r"""Test that overlap_matrix returns the correct matrix when no differentiable parameter is
     used."""
     mol = Molecule(symbols, geometry)
-    s = overlap_matrix(mol.basis_set)()
+    s = generate_overlap_matrix(mol.basis_set)()
     assert np.allclose(s, s_ref)
 
 
@@ -143,8 +143,8 @@ def test_gradient_overlap_matrix(symbols, geometry, alpha, coeff, g_alpha_ref, g
     r"""Test that the overlap gradients are correct."""
     mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
     args = [mol.alpha, mol.coeff]
-    g_alpha = autograd.jacobian(overlap_matrix(mol.basis_set), argnum=0)(*args)
-    g_coeff = autograd.jacobian(overlap_matrix(mol.basis_set), argnum=1)(*args)
+    g_alpha = autograd.jacobian(generate_overlap_matrix(mol.basis_set), argnum=0)(*args)
+    g_coeff = autograd.jacobian(generate_overlap_matrix(mol.basis_set), argnum=1)(*args)
     assert np.allclose(g_alpha, g_alpha_ref)
     assert np.allclose(g_coeff, g_coeff_ref)
 
@@ -172,7 +172,7 @@ def test_kinetic_matrix(symbols, geometry, alpha, t_ref):
     r"""Test that kinetic_matrix returns the correct matrix."""
     mol = Molecule(symbols, geometry, alpha=alpha)
     args = [alpha]
-    t = kinetic_matrix(mol.basis_set)(*args)
+    t = generate_kinetic_matrix(mol.basis_set)(*args)
     assert np.allclose(t, t_ref)
 
 
@@ -195,7 +195,7 @@ def test_kinetic_matrix_nodiff(symbols, geometry, t_ref):
     r"""Test that kinetic_matrix returns the correct matrix when no differentiable parameter is
     used."""
     mol = Molecule(symbols, geometry)
-    t = kinetic_matrix(mol.basis_set)()
+    t = generate_kinetic_matrix(mol.basis_set)()
     assert np.allclose(t, t_ref)
 
 
@@ -257,8 +257,8 @@ def test_gradient_kinetic_matrix(symbols, geometry, alpha, coeff, g_alpha_ref, g
     r"""Test that the kinetic gradients are correct."""
     mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
     args = [mol.alpha, mol.coeff]
-    g_alpha = autograd.jacobian(kinetic_matrix(mol.basis_set), argnum=0)(*args)
-    g_coeff = autograd.jacobian(kinetic_matrix(mol.basis_set), argnum=1)(*args)
+    g_alpha = autograd.jacobian(generate_kinetic_matrix(mol.basis_set), argnum=0)(*args)
+    g_coeff = autograd.jacobian(generate_kinetic_matrix(mol.basis_set), argnum=1)(*args)
     assert np.allclose(g_alpha, g_alpha_ref)
     assert np.allclose(g_coeff, g_coeff_ref)
 
@@ -287,7 +287,7 @@ def test_attraction_matrix(symbols, geometry, alpha, v_ref):
     r"""Test that attraction_matrix returns the correct matrix."""
     mol = Molecule(symbols, geometry, alpha=alpha)
     args = [mol.alpha]
-    v = attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
+    v = generate_attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
     assert np.allclose(v, v_ref)
 
 
@@ -315,7 +315,7 @@ def test_attraction_matrix_diffR(symbols, geometry, alpha, v_ref):
     r"""Test that attraction_matrix returns the correct matrix when positions are differentiable."""
     mol = Molecule(symbols, geometry, alpha=alpha, r=geometry)
     args = [mol.coordinates, mol.alpha, mol.r]
-    v = attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
+    v = generate_attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
     assert np.allclose(v, v_ref)
 
 
@@ -338,7 +338,7 @@ def test_attraction_matrix_diffR(symbols, geometry, alpha, v_ref):
 def test_attraction_matrix_nodiff(symbols, geometry, v_ref):
     r"""Test that attraction_matrix returns the correct matrix."""
     mol = Molecule(symbols, geometry)
-    v = attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)()
+    v = generate_attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)()
     assert np.allclose(v, v_ref)
 
 
@@ -384,7 +384,7 @@ def test_gradient_attraction_matrix(symbols, geometry, alpha, coeff, g_r_ref):
     args = [mol.coordinates, mol.alpha, mol.coeff, mol.r]
 
     g_r = autograd.jacobian(
-        attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates), argnum=0
+        generate_attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates), argnum=0
     )(*args)
     print(g_r)
     assert np.allclose(g_r, g_r_ref)
@@ -420,7 +420,7 @@ def test_repulsion_tensor(symbols, geometry, alpha, e_ref):
     r"""Test that repulsion_tensor returns the correct matrix."""
     mol = Molecule(symbols, geometry, alpha=alpha)
     args = [mol.alpha]
-    e = repulsion_tensor(mol.basis_set)(*args)
+    e = generate_repulsion_tensor(mol.basis_set)(*args)
     assert np.allclose(e, e_ref)
 
 
@@ -450,7 +450,7 @@ def test_repulsion_tensor_nodiff(symbols, geometry, e_ref):
     r"""Test that repulsion_tensor returns the correct matrix when no differentiable parameter is
     used."""
     mol = Molecule(symbols, geometry)
-    e = repulsion_tensor(mol.basis_set)()
+    e = generate_repulsion_tensor(mol.basis_set)()
     assert np.allclose(e, e_ref)
 
 
@@ -478,7 +478,7 @@ def test_core_matrix(symbols, geometry, alpha, c_ref):
     r"""Test that core_matrix returns the correct matrix."""
     mol = Molecule(symbols, geometry, alpha=alpha)
     args = [mol.alpha]
-    c = core_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
+    c = generate_core_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
     assert np.allclose(c, c_ref)
 
 
@@ -502,7 +502,7 @@ def test_core_matrix_nodiff(symbols, geometry, c_ref):
     r"""Test that core_matrix returns the correct matrix when no differentiable parameter is
     used."""
     mol = Molecule(symbols, geometry)
-    c = core_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)()
+    c = generate_core_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)()
     assert np.allclose(c, c_ref)
 
 
@@ -530,5 +530,5 @@ def test_core_matrix_diff_positions(symbols, geometry, alpha, c_ref):
     r"""Test that core_matrix returns the correct matrix when positions are differentiable."""
     mol = Molecule(symbols, geometry, alpha=alpha, r=geometry)
     args = [mol.coordinates, mol.alpha, mol.r]
-    c = core_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
+    c = generate_core_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
     assert np.allclose(c, c_ref)

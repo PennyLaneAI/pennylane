@@ -55,7 +55,7 @@ def molecular_density_matrix(n_electron, c):
     return p
 
 
-def overlap_matrix(basis_functions):
+def generate_overlap_matrix(basis_functions):
     r"""Return a function that computes the overlap matrix for a given set of basis functions.
 
     Args:
@@ -86,7 +86,7 @@ def overlap_matrix(basis_functions):
             array[array[float]]: the overlap matrix
         """
         n = len(basis_functions)
-        s = anp.eye(len(basis_functions))
+        overlap_matrix = anp.eye(len(basis_functions))
         for i, a in enumerate(basis_functions):
             for j, b in enumerate(basis_functions):
                 if i < j:
@@ -99,13 +99,13 @@ def overlap_matrix(basis_functions):
                         overlap_integral = generate_overlap(a, b)()
                     o = anp.zeros((n, n))
                     o[i, j] = o[j, i] = 1.0
-                    s = s + overlap_integral * o
-        return s
+                    overlap_matrix = overlap_matrix + overlap_integral * o
+        return overlap_matrix
 
     return overlap
 
 
-def kinetic_matrix(basis_functions):
+def generate_kinetic_matrix(basis_functions):
     r"""Return a function that computes the kinetic matrix for a given set of basis functions.
 
     Args:
@@ -136,7 +136,7 @@ def kinetic_matrix(basis_functions):
             array[array[float]]: the kinetic matrix
         """
         n = len(basis_functions)
-        k = anp.zeros((n, n))
+        kinetic_matrix = anp.zeros((n, n))
         for i, a in enumerate(basis_functions):
             for j, b in enumerate(basis_functions):
                 if i <= j:
@@ -149,13 +149,13 @@ def kinetic_matrix(basis_functions):
                         kinetic_integral = generate_kinetic(a, b)()
                     o = anp.zeros((n, n))
                     o[i, j] = o[j, i] = 1.0
-                    k = k + kinetic_integral * o
-        return k
+                    kinetic_matrix = kinetic_matrix + kinetic_integral * o
+        return kinetic_matrix
 
     return kinetic
 
 
-def attraction_matrix(basis_functions, charges, r):
+def generate_attraction_matrix(basis_functions, charges, r):
     r"""Return a function that computes the electron-nuclear attraction matrix for a given set of
     basis functions.
 
@@ -189,7 +189,7 @@ def attraction_matrix(basis_functions, charges, r):
             array[array[float]]: the electron-nuclear attraction matrix
         """
         n = len(basis_functions)
-        v = anp.zeros((n, n))
+        attraction_matrix = anp.zeros((n, n))
         for i, a in enumerate(basis_functions):
             for j, b in enumerate(basis_functions):
                 attraction_integral = 0
@@ -220,13 +220,13 @@ def attraction_matrix(basis_functions, charges, r):
 
                     o = anp.zeros((n, n))
                     o[i, j] = o[j, i] = 1.0
-                    v = v + attraction_integral * o
-        return v
+                    attraction_matrix = attraction_matrix + attraction_integral * o
+        return attraction_matrix
 
     return attraction
 
 
-def repulsion_tensor(basis_functions):
+def generate_repulsion_tensor(basis_functions):
     r"""Return a function that computes the electron repulsion tensor for a given set of basis
     functions.
 
@@ -264,7 +264,7 @@ def repulsion_tensor(basis_functions):
             array[array[float]]: the electron repulsion tensor
         """
         n = len(basis_functions)
-        e = anp.zeros((n, n, n, n))
+        repulsion_tensor = anp.zeros((n, n, n, n))
         e_calc = []
 
         for i, a in enumerate(basis_functions):
@@ -284,7 +284,7 @@ def repulsion_tensor(basis_functions):
                             o = anp.zeros((n, n, n, n))
                             o[i, j, k, l] = o[k, l, i, j] = o[j, i, l, k] = o[l, k, j, i] = 1.0
                             o[j, i, k, l] = o[l, k, i, j] = o[i, j, l, k] = o[k, l, j, i] = 1.0
-                            e = e + repulsion_integral * o
+                            repulsion_tensor = repulsion_tensor + repulsion_integral * o
                             e_calc = e_calc + [
                                 [i, j, k, l],
                                 [k, l, i, j],
@@ -296,12 +296,12 @@ def repulsion_tensor(basis_functions):
                                 [k, l, j, i],
                             ]
 
-        return e
+        return repulsion_tensor
 
     return repulsion
 
 
-def core_matrix(basis_functions, charges, r):
+def generate_core_matrix(basis_functions, charges, r):
     r"""Return a function that computes the core matrix for a given set of basis functions.
 
     The core matrix is computed as a sum of the kinetic and electron-nuclear attraction matrices.
@@ -336,11 +336,11 @@ def core_matrix(basis_functions, charges, r):
             array[array[float]]: the core matrix
         """
         if r.requires_grad:
-            t = kinetic_matrix(basis_functions)(*args[1:])
+            t = generate_kinetic_matrix(basis_functions)(*args[1:])
         else:
-            t = kinetic_matrix(basis_functions)(*args)
+            t = generate_kinetic_matrix(basis_functions)(*args)
 
-        a = attraction_matrix(basis_functions, charges, r)(*args)
+        a = generate_attraction_matrix(basis_functions, charges, r)(*args)
         return t + a
 
     return core
