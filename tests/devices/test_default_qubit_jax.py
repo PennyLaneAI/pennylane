@@ -188,7 +188,7 @@ class TestQNodeIntegration:
             return [qml.expval(qml.PauliX(wires=i)) for i in wires]
 
         res = circuit(state_vector)
-        assert jnp.allclose(res, [0, 1], atol=tol, rtol=0)
+        assert np.allclose(res, [0, 1], atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
         "state_vector",
@@ -205,7 +205,7 @@ class TestQNodeIntegration:
             return [qml.expval(qml.PauliX(wires=i)) for i in wires]
 
         res = circuit(state_vector)
-        assert jnp.allclose(res, [0, 1], atol=tol, rtol=0)
+        assert np.allclose(res, [0, 1], atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
         "state_vector",
@@ -224,7 +224,7 @@ class TestQNodeIntegration:
             return qml.expval(qml.PauliZ(wires=0))
 
         res = circuit(0.1)
-        assert jnp.allclose(res, 1, atol=tol, rtol=0)
+        assert np.allclose(res, 1, atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
         "state_vector",
@@ -242,7 +242,7 @@ class TestQNodeIntegration:
             return qml.expval(qml.PauliZ(wires=0))
 
         res = circuit(0.1)
-        assert jnp.allclose(res, 1, atol=tol, rtol=0)
+        assert np.allclose(res, 1, atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
         "state_vector",
