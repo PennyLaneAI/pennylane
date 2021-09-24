@@ -39,10 +39,10 @@ def molecular_density_matrix(n_electron, c):
 
     Args:
         n_electron (integer): number of electrons
-        c (array[float]): molecular orbital coefficients
+        c (array[array[float]]): molecular orbital coefficients
 
     Returns:
-        array[float]: density matrix
+        array[array[float]]: density matrix
 
     **Example**
 
@@ -80,10 +80,10 @@ def overlap_matrix(basis_functions):
         r"""Construct the overlap matrix for a given set of basis functions.
 
         Args:
-            args (array[float]): initial values of the differentiable parameters
+            args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
-            array[float]: the overlap matrix
+            array[array[float]]: the overlap matrix
         """
         n = len(basis_functions)
         s = anp.eye(len(basis_functions))
@@ -130,10 +130,10 @@ def kinetic_matrix(basis_functions):
         r"""Construct the kinetic matrix for a given set of basis functions.
 
         Args:
-            args (array[float]): initial values of the differentiable parameters
+            args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
-            array[float]: the kinetic matrix
+            array[array[float]]: the kinetic matrix
         """
         n = len(basis_functions)
         k = anp.zeros((n, n))
@@ -183,10 +183,10 @@ def attraction_matrix(basis_functions, charges, r):
         r"""Construct the electron-nuclear attraction matrix for a given set of basis functions.
 
         Args:
-            args (array[float]): initial values of the differentiable parameters
+            args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
-            array[float]: the electron-nuclear attraction matrix
+            array[array[float]]: the electron-nuclear attraction matrix
         """
         n = len(basis_functions)
         v = anp.zeros((n, n))
@@ -258,10 +258,10 @@ def repulsion_tensor(basis_functions):
         Journal of Quantum Chemistry, 1971, 5, 657-668].
 
         Args:
-            args (array[float]): initial values of the differentiable parameters
+            args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
-            array[float]: the electron repulsion tensor
+            array[array[float]]: the electron repulsion tensor
         """
         n = len(basis_functions)
         e = anp.zeros((n, n, n, n))
@@ -330,10 +330,10 @@ def core_matrix(basis_functions, charges, r):
         r"""Construct the core matrix for a given set of basis functions.
 
         Args:
-            args (array[float]): initial values of the differentiable parameters
+            args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
-            array[float]: the core matrix
+            array[array[float]]: the core matrix
         """
         if r.requires_grad:
             t = kinetic_matrix(basis_functions)(*args[1:])

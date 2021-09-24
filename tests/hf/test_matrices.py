@@ -526,7 +526,7 @@ def test_core_matrix_nodiff(symbols, geometry, c_ref):
         )
     ],
 )
-def test_core_matrix_diffR(symbols, geometry, alpha, c_ref):
+def test_core_matrix_diff_positions(symbols, geometry, alpha, c_ref):
     r"""Test that core_matrix returns the correct matrix when positions are differentiable."""
     mol = Molecule(symbols, geometry, alpha=alpha, r=geometry)
     args = [mol.coordinates, mol.alpha, mol.r]
