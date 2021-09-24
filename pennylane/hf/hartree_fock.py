@@ -43,7 +43,7 @@ def generate_scf(mol, n_steps=50, tol=1e-8):
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True),
     >>> mol = Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
-    >>> v_fock, coeffs, fock_matrix, h_core = generate_hartree_fock(mol)(*args)
+    >>> v_fock, coeffs, fock_matrix, h_core, repulsion_tensor = generate_hartree_fock(mol)(*args)
     >>> v_fock
     array([-0.67578019,  0.94181155])
     """
