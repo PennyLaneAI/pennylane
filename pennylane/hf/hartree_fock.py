@@ -52,7 +52,7 @@ def generate_scf(mol, n_steps=50, tol=1e-8):
         r"""Perform the self-consistent-field iterations.
 
         Args:
-            args (array[float]): initial values of the differentiable parameters
+            args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
             tuple(array[float]): eigenvalues of the Fock matrix, molecular orbital coefficients,
@@ -103,15 +103,15 @@ def generate_scf(mol, n_steps=50, tol=1e-8):
 
 
 def nuclear_energy(charges, r):
-    r"""Return a function that computes the nuclear repulsion energy.
+    r"""Return a function that computes the nuclear-repulsion energy.
 
-    The nuclear energy computed as
+    The nuclear-repulsion energy is computed as
 
     .. math::
 
         \sum_{i>j}^n \frac{q_i q_j}{r_{ij}},
 
-    where :math:`q`, :math:`r` and :math:`n` represent the nuclear charges, nuclear positions and
+    where :math:`q`, :math:`r` and :math:`n` denote the nuclear charges, nuclear positions and
     the number of nuclei, respectively.
 
     Args:
@@ -119,7 +119,7 @@ def nuclear_energy(charges, r):
         r (array[float]): nuclear positions
 
     Returns:
-        function: function that computes the nuclear repulsion energy
+        function: function that computes the nuclear-repulsion energy
 
     **Example**
 
@@ -133,13 +133,13 @@ def nuclear_energy(charges, r):
     """
 
     def nuclear(*args):
-        r"""Compute the nuclear repulsion energy.
+        r"""Compute the nuclear-repulsion energy.
 
         Args:
-            args (array[float]): initial values of the differentiable parameters
+            args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
-            array[float]: nuclear repulsion energy
+            array[float]: nuclear-repulsion energy
         """
         if r.requires_grad:
             coor = args[0]
@@ -180,7 +180,7 @@ def hf_energy(mol):
         r"""Compute the Hartree-Fock energy.
 
         Args:
-            args (array[float]): initial values of the differentiable parameters
+            args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
             float: the Hartree-Fock energy
