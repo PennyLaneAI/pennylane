@@ -64,10 +64,10 @@ def generate_scf(mol, n_steps=50, tol=1e-8):
         n_electron = mol.n_electrons
 
         if r.requires_grad:
-            e_repulsion = generate_repulsion_tensor(basis_functions)(*args[1:])
+            repulsion_tensor = generate_repulsion_tensor(basis_functions)(*args[1:])
             s = generate_overlap_matrix(basis_functions)(*args[1:])
         else:
-            e_repulsion = generate_repulsion_tensor(basis_functions)(*args)
+            repulsion_tensor = generate_repulsion_tensor(basis_functions)(*args)
             s = generate_overlap_matrix(basis_functions)(*args)
         h_core = generate_core_matrix(basis_functions, charges, r)(*args)
 
@@ -81,8 +81,8 @@ def generate_scf(mol, n_steps=50, tol=1e-8):
 
         for _ in range(n_steps):
 
-            j = anp.einsum("pqrs,rs->pq", e_repulsion, p)
-            k = anp.einsum("psqr,rs->pq", e_repulsion, p)
+            j = anp.einsum("pqrs,rs->pq", repulsion_tensor, p)
+            k = anp.einsum("psqr,rs->pq", repulsion_tensor, p)
 
             fock_matrix = h_core + 2 * j - k
 
@@ -97,7 +97,7 @@ def generate_scf(mol, n_steps=50, tol=1e-8):
 
             p = p_update
 
-        return v_fock, coeffs, fock_matrix, h_core
+        return v_fock, coeffs, fock_matrix, h_core, repulsion_tensor
 
     return scf
 
@@ -185,7 +185,7 @@ def hf_energy(mol):
         Returns:
             float: the Hartree-Fock energy
         """
-        v_fock, coeffs, fock_matrix, h_core = generate_scf(mol)(*args)
+        _, coeffs, fock_matrix, h_core, _ = generate_scf(mol)(*args)
         e_rep = nuclear_energy(mol.nuclear_charges, mol.coordinates)(*args)
         e_elec = anp.einsum(
             "pq,qp", fock_matrix + h_core, molecular_density_matrix(mol.n_electrons, coeffs)

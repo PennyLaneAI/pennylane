@@ -22,7 +22,7 @@ from pennylane.hf.molecule import Molecule
 
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "v_fock", "coeffs", "fock_matrix", "h_core"),
+    ("symbols", "geometry", "v_fock", "coeffs", "fock_matrix", "h_core", "repulsion_tensor"),
     [
         (
             ["H", "H"],
@@ -31,18 +31,31 @@ from pennylane.hf.molecule import Molecule
             np.array([[-0.52754647, -1.56782303], [-0.52754647, 1.56782303]]),
             np.array([[-0.51126165, -0.70283714], [-0.70283714, -0.51126165]]),
             np.array([[-1.27848869, -1.21916299], [-1.21916299, -1.27848869]]),
+            np.array(
+                [
+                    [
+                        [[0.77460595, 0.56886144], [0.56886144, 0.65017747]],
+                        [[0.56886144, 0.45590152], [0.45590152, 0.56886144]],
+                    ],
+                    [
+                        [[0.56886144, 0.45590152], [0.45590152, 0.56886144]],
+                        [[0.65017747, 0.56886144], [0.56886144, 0.77460595]],
+                    ],
+                ]
+            ),
         )
     ],
 )
-def test_scf(symbols, geometry, v_fock, coeffs, fock_matrix, h_core):
+def test_scf(symbols, geometry, v_fock, coeffs, fock_matrix, h_core, repulsion_tensor):
     r"""Test that generate_scf returns the correct values."""
     mol = Molecule(symbols, geometry)
-    v, c, f, h = generate_scf(mol)()
+    v, c, f, h, e = generate_scf(mol)()
 
     assert np.allclose(v, v_fock)
     assert np.allclose(c, coeffs)
     assert np.allclose(f, fock_matrix)
     assert np.allclose(h, h_core)
+    assert np.allclose(e, repulsion_tensor)
 
 
 @pytest.mark.parametrize(
