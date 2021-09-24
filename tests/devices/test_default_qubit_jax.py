@@ -188,7 +188,7 @@ class TestQNodeIntegration:
             return [qml.expval(qml.PauliX(wires=i)) for i in wires]
 
         res = circuit(state_vector)
-        assert jnp.allclose(jnp.array(res), [0, 1], atol=tol, rtol=0)
+        assert jnp.allclose(jnp.array(res), jnp.array([0, 1]), atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
         "state_vector",
@@ -205,7 +205,7 @@ class TestQNodeIntegration:
             return [qml.expval(qml.PauliX(wires=i)) for i in wires]
 
         res = circuit(state_vector)
-        assert jnp.allclose(jnp.array(res), [0, 1], atol=tol, rtol=0)
+        assert jnp.allclose(jnp.array(res), jnp.array([0, 1]), atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
         "state_vector",
@@ -462,7 +462,7 @@ class TestPassthruIntegration:
 
         grad = jax.jit(jax.grad(cost, argnums=(0, 1)))(a, b)
         expected = [jnp.sin(a) * jnp.cos(b), jnp.cos(a) * jnp.sin(b)]
-        assert jnp.allclose(jnp.array(grad), expected, atol=tol, rtol=0)
+        assert jnp.allclose(jnp.array(grad), jnp.array(expected), atol=tol, rtol=0)
 
     def test_backprop_gradient(self, tol):
         """Tests that the gradient of the qnode is correct"""
