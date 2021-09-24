@@ -22,7 +22,7 @@ from pennylane.hf.molecule import Molecule
 
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "occupied", "active", "core", "one", "two"),
+    ("symbols", "geometry", "core", "active", "e_core", "one", "two"),
     [
         (
             ["H", "H"],
@@ -86,10 +86,10 @@ from pennylane.hf.molecule import Molecule
         ),
     ],
 )
-def test_generate_electron_integrals(symbols, geometry, occupied, active, core, one, two):
+def test_generate_electron_integrals(symbols, geometry, core, active, e_core, one, two):
     r"""Test that generate_electron_integrals returns the correct values."""
     mol = Molecule(symbols, geometry)
     args = []
-    result = generate_electron_integrals(mol, occupied=occupied, active=active)(*args)
+    result = generate_electron_integrals(mol, core=core, active=active)(*args)
 
-    assert np.allclose(result, np.concatenate((core, one, two)))
+    assert np.allclose(result, np.concatenate((e_core, one, two)))

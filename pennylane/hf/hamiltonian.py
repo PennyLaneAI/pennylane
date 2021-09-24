@@ -18,13 +18,13 @@ import autograd.numpy as anp
 from pennylane.hf.hartree_fock import generate_scf
 
 
-def generate_electron_integrals(mol, occupied=None, active=None):
+def generate_electron_integrals(mol, core=None, active=None):
     r"""Return a function that computes the one- and two-electron integrals in the atomic orbital
     basis.
 
     Args:
         mol (Molecule): the molecule object
-        occupied (list[int]): indices of occupied orbitals
+        core (list[int]): indices of core orbitals
         active (list[int]): indices of active orbitals
 
     Returns:
@@ -67,18 +67,18 @@ def generate_electron_integrals(mol, occupied=None, active=None):
         )
         e_core = anp.array([0.0])
 
-        if occupied is None and active is None:
+        if core is None and active is None:
             return anp.concatenate((e_core, one.flatten(), two.flatten()))
 
         else:
-            for i in occupied:
+            for i in core:
                 e_core = e_core + 2 * one[i][i]
-                for j in occupied:
+                for j in core:
                     e_core = e_core + 2 * two[i][j][j][i] - two[i][j][i][j]
 
             for p in active:
                 for q in active:
-                    for i in occupied:
+                    for i in core:
                         o = anp.zeros(one.shape)
                         o[p, q] = 1.0
                         one = one + (2 * two[i][p][q][i] - two[i][p][i][q]) * o
