@@ -18,9 +18,9 @@ This module contains the functions needed for performing the self-consistent-fie
 import autograd.numpy as anp
 from pennylane.hf.matrices import (
     generate_core_matrix,
-    molecular_density_matrix,
     generate_overlap_matrix,
     generate_repulsion_tensor,
+    molecular_density_matrix,
 )
 
 

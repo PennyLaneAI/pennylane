@@ -17,7 +17,7 @@ Unit tests for for Hartree-Fock functions.
 import autograd
 import pytest
 from pennylane import numpy as np
-from pennylane.hf.hartree_fock import generate_scf, nuclear_energy, hf_energy
+from pennylane.hf.hartree_fock import generate_scf, hf_energy, nuclear_energy
 from pennylane.hf.molecule import Molecule
 
 

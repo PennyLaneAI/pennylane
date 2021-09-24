@@ -16,6 +16,7 @@ This subpackage provides the functionality to perform differentiable Hartree-Foc
 """
 from .basis_data import *
 from .basis_set import *
+from .hartree_fock import generate_scf, hf_energy, nuclear_energy
 from .integrals import (
     contracted_norm,
     electron_repulsion,
@@ -37,8 +38,4 @@ from .matrices import (
     generate_repulsion_tensor,
     molecular_density_matrix,
 )
-from .hartree_fock import (
-    generate_scf,
-    nuclear_energy,
-    hf_energy)
 from .molecule import *
