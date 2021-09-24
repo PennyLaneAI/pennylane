@@ -69,8 +69,8 @@ class batch_transform:
 
         @qml.batch_transform
         def my_transform(tape, a, b):
-            "Generates two tapes, one with all RX replaced with RY,
-            and the other with all RX replaced with RZ."
+            '''Generates two tapes, one with all RX replaced with RY,
+            and the other with all RX replaced with RZ.'''
 
             tape1 = qml.tape.JacobianTape()
             tape2 = qml.tape.JacobianTape()
@@ -242,10 +242,7 @@ class batch_transform:
                 gradient_fn = qml.gradients.finite_diff
 
             res = qml.execute(
-                tapes,
-                device=qnode.device,
-                gradient_fn=gradient_fn,
-                interface=interface,
+                tapes, device=qnode.device, gradient_fn=gradient_fn, interface=interface, max_diff=2
             )
 
             return processing_fn(res)

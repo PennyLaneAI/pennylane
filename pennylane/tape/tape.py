@@ -210,6 +210,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
     # Update circuit info
     new_tape._update_circuit_info()
+    new_tape._output_dim = tape.output_dim
     return new_tape
 
 

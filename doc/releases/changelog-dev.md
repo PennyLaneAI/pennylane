@@ -4,6 +4,43 @@
 
 <h3>New features since last release</h3>
 
+* Support for differentiable execution of batches of circuits has been
+  extended to the JAX interface for scalar functions, via the beta
+  `pennylane.interfaces.batch` module.
+  [(#1634)](https://github.com/PennyLaneAI/pennylane/pull/1634)
+
+  For example using the `execute` function from the `pennylane.interfaces.batch` module:
+
+  ```python
+  from pennylane.interfaces.batch import execute
+
+  def cost_fn(x):
+      with qml.tape.JacobianTape() as tape1:
+          qml.RX(x[0], wires=[0])
+          qml.RY(x[1], wires=[1])
+          qml.CNOT(wires=[0, 1])
+          qml.var(qml.PauliZ(0) @ qml.PauliX(1))
+
+      with qml.tape.JacobianTape() as tape2:
+          qml.RX(x[0], wires=0)
+          qml.RY(x[0], wires=1)
+          qml.CNOT(wires=[0, 1])
+          qml.probs(wires=1)
+
+      result = execute(
+        [tape1, tape2], dev,
+        gradient_fn=qml.gradients.param_shift,
+        interface="autograd"
+      )
+      return (result[0] + result[1][0, 0])[0]
+
+  res = jax.grad(cost_fn)(params)
+  ```
+
+* The unitary matrix corresponding to a quantum circuit can now be created using the new
+  `get_unitary_matrix()` transform.
+  [(#1609)](https://github.com/PennyLaneAI/pennylane/pull/1609)
+
 * Arbitrary two-qubit unitaries can now be decomposed into elementary gates. This
   functionality has been incorporated into the `qml.transforms.unitary_to_rot` transform, and is
   available separately as `qml.transforms.two_qubit_decomposition`.
@@ -36,7 +73,7 @@
   >>> circuit(0.3, 0.4)
   tensor(-0.70520073, requires_grad=True)
   >>> print(qml.draw(circuit)(0.3, 0.4))
-  0: ──RX(0.3)─────────────────Rot(-3.5, 0.242, 0.86)──╭X──RZ(0.176)───╭C─────────────╭X──Rot(5.56, 0.321, -2.09)───RY(0.4)──┤ ⟨Z⟩ 
+  0: ──RX(0.3)─────────────────Rot(-3.5, 0.242, 0.86)──╭X──RZ(0.176)───╭C─────────────╭X──Rot(5.56, 0.321, -2.09)───RY(0.4)──┤ ⟨Z⟩
   1: ──Rot(-1.64, 2.69, 1.58)──────────────────────────╰C──RY(-0.883)──╰X──RY(-1.47)──╰C──Rot(-1.46, 0.337, 0.587)───────────┤
   ```
 
@@ -76,15 +113,43 @@
   For more usage details, please see the
   [classical Jacobian docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.transforms.classical_jacobian.html).
 
+* Added a new operation `OrbitalRotation`, which implements the spin-adapted spatial orbital rotation gate.
+  [(#1665)](https://github.com/PennyLaneAI/pennylane/pull/1665)
+
+  An example circuit that uses `OrbitalRotation` operation is:
+
+  ```python
+  dev = qml.device('default.qubit', wires=4)
+  @qml.qnode(dev)
+  def circuit(phi):
+      qml.BasisState(np.array([1, 1, 0, 0]), wires=[0, 1, 2, 3])
+      qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
+      return qml.state()
+  ```
+
+  If we run this circuit, we will get the following output
+
+  ```pycon
+  >>> circuit(0.1)
+  array([ 0.        +0.j,  0.        +0.j,  0.        +0.j,
+          0.00249792+0.j,  0.        +0.j,  0.        +0.j,
+          -0.04991671+0.j,  0.        +0.j,  0.        +0.j,
+          -0.04991671+0.j,  0.        +0.j,  0.        +0.j,
+          0.99750208+0.j,  0.        +0.j,  0.        +0.j,
+          0.        +0.j])
+  ```
+
 * A new, experimental QNode has been added, that adds support for batch execution of circuits,
   custom quantum gradient support, and arbitrary order derivatives. This QNode is available via
   `qml.beta.QNode`, and `@qml.beta.qnode`.
   [(#1642)](https://github.com/PennyLaneAI/pennylane/pull/1642)
+  [(#1646)](https://github.com/PennyLaneAI/pennylane/pull/1646)
+  [(#1651)](https://github.com/PennyLaneAI/pennylane/pull/1651)
 
   It differs from the standard QNode in several ways:
 
   - Custom gradient transforms can be specified as the differentiation method:
-  
+
     ```python
     @qml.gradients.gradient_transform
     def my_gradient_transform(tape):
@@ -105,6 +170,14 @@
     significant performance improvement when executing the QNode on remote
     quantum hardware.
 
+  - When decomposing the circuit, the default decomposition strategy will prioritize
+    decompositions that result in the smallest number of parametrized operations
+    required to satisfy the differentiation method. Additional decompositions required
+    to satisfy the native gate set of the quantum device will be performed later, by the
+    device at execution time. While this may lead to a slight increase in classical processing,
+    it significantly reduces the number of circuit evaluations needed to compute
+    gradients of complex unitaries.
+
   In an upcoming release, this QNode will replace the existing one. If you come across any bugs
   while using this QNode, please let us know via a [bug
   report](https://github.com/PennyLaneAI/pennylane/issues/new?assignees=&labels=bug+%3Abug%3A&template=bug_report.yml&title=%5BBUG%5D)
@@ -112,13 +185,41 @@
 
   Currently, this beta QNode does not support the following features:
 
-  - Circuit decompositions
   - Non-mutability via the `mutable` keyword argument
   - Viewing specifications with `qml.specs`
+  - The `reversible` QNode differentiation method
+  - The ability to specify a `dtype` when using PyTorch and TensorFlow.
 
   It is also not tested with the `qml.qnn` module.
 
+* Two new methods were added to the Device API, allowing PennyLane devices
+  increased control over circuit decompositions.
+  [(#1651)](https://github.com/PennyLaneAI/pennylane/pull/1651)
+
+  - `Device.expand_fn(tape) -> tape`: expands a tape such that it is supported by the device. By
+    default, performs the standard device-specific gate set decomposition done in the default
+    QNode. Devices may overwrite this method in order to define their own decomposition logic.
+
+    Note that the numerical result after applying this method should remain unchanged; PennyLane
+    will assume that the expanded tape returns exactly the same value as the original tape when
+    executed.
+
+  - `Device.batch_transform(tape) -> (tapes, processing_fn)`: preprocesses the tape in the case
+    where the device needs to generate multiple circuits to execute from the input circuit. The
+    requirement of a post-processing function makes this distinct to the `expand_fn` method above.
+    
+    By default, this method applies the transform
+
+    .. math:: \left\langle \sum_i c_i h_i\right\rangle -> \sum_i c_i \left\langle h_i \right\rangle
+
+    if `expval(H)` is present on devices that do not natively support Hamiltonians with
+    non-commuting terms.
+
+
 <h3>Improvements</h3>
+
+* The tests for qubit operations are split into multiple files.
+  [(#1661)](https://github.com/PennyLaneAI/pennylane/pull/1661)
 
 * The `qml.metric_tensor` transform has been improved with regards to
   both function and performance.
@@ -179,10 +280,21 @@
 * The device suite tests can now execute successfully if no shots configuration variable is given.
   [(#1641)](https://github.com/PennyLaneAI/pennylane/pull/1641)
 
+* Fixes a bug where the `qml.gradients.param_shift` transform would raise an error while attempting
+  to compute the variance of a QNode with ragged output.
+  [(#1646)](https://github.com/PennyLaneAI/pennylane/pull/1646)
+
+* Fixes a bug in `default.mixed`, to ensure that returned probabilities are always non-negative.
+  [(#1680)](https://github.com/PennyLaneAI/pennylane/pull/1680)
+
 <h3>Documentation</h3>
+
+* Adds a link to https://pennylane.ai/qml/demonstrations.html in the navbar.
+  [(#1624)](https://github.com/PennyLaneAI/pennylane/pull/1624)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Christina Lee, David Wierichs.
+Utkarsh Azad, Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee,
+Ingrid Strandberg, Antal Száva, David Wierichs.

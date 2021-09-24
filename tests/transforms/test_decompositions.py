@@ -21,6 +21,7 @@ import pennylane as qml
 from pennylane import numpy as np
 
 from pennylane.wires import Wires
+from pennylane.transforms.get_unitary_matrix import get_unitary_matrix
 
 from pennylane.transforms.decompositions import zyz_decomposition
 from pennylane.transforms.decompositions import two_qubit_decomposition
@@ -30,7 +31,7 @@ from pennylane.transforms.decompositions.two_qubit_unitary import (
     _compute_num_cnots,
 )
 
-from test_optimization.utils import compute_matrix_from_ops_two_qubit, check_matrix_equivalence
+from test_optimization.utils import check_matrix_equivalence
 from gate_data import I, Z, S, T, H, X, CNOT, SWAP
 
 single_qubit_decomps = [
@@ -661,7 +662,7 @@ class TestTwoQubitUnitaryDecomposition:
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
     @pytest.mark.parametrize("U", samples_3_cnots)
     def test_two_qubit_decomposition_3_cnots(self, U, wires):
-        """Test that a two-qubit matrix in isolation is correctly decomposed."""
+        """Test that a two-qubit matrix using 3 CNOTs is correctly decomposed."""
         U = _convert_to_su4(np.array(U))
 
         assert _compute_num_cnots(U) == 3
@@ -669,9 +670,11 @@ class TestTwoQubitUnitaryDecomposition:
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
         assert len(obtained_decomposition) == 10
 
-        obtained_matrix = compute_matrix_from_ops_two_qubit(
-            obtained_decomposition, wire_order=wires
-        )
+        with qml.tape.QuantumTape() as tape:
+            for op in obtained_decomposition:
+                qml.apply(op)
+
+        obtained_matrix = get_unitary_matrix(tape, wire_order=wires)()
 
         # We check with a slightly great tolerance threshold here simply because the
         # test matrices were copied in here with reduced precision.
@@ -679,8 +682,8 @@ class TestTwoQubitUnitaryDecomposition:
 
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
     @pytest.mark.parametrize("U", samples_2_cnots)
-    def test_two_qubit_decomposition_1_cnot(self, U, wires):
-        """Test that a two-qubit matrix in isolation is correctly decomposed."""
+    def test_two_qubit_decomposition_2_cnots(self, U, wires):
+        """Test that a two-qubit matrix using 2 CNOTs isolation is correctly decomposed."""
         U = _convert_to_su4(np.array(U))
 
         assert _compute_num_cnots(U) == 2
@@ -688,16 +691,18 @@ class TestTwoQubitUnitaryDecomposition:
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
         assert len(obtained_decomposition) == 8
 
-        obtained_matrix = compute_matrix_from_ops_two_qubit(
-            obtained_decomposition, wire_order=wires
-        )
+        with qml.tape.QuantumTape() as tape:
+            for op in obtained_decomposition:
+                qml.apply(op)
+
+        obtained_matrix = get_unitary_matrix(tape, wire_order=wires)()
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
     @pytest.mark.parametrize("U", samples_1_cnot)
     def test_two_qubit_decomposition_1_cnot(self, U, wires):
-        """Test that a two-qubit matrix in isolation is correctly decomposed."""
+        """Test that a two-qubit matrix using one CNOT is correctly decomposed."""
         U = _convert_to_su4(np.array(U))
 
         assert _compute_num_cnots(U) == 1
@@ -705,16 +710,18 @@ class TestTwoQubitUnitaryDecomposition:
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
         assert len(obtained_decomposition) == 5
 
-        obtained_matrix = compute_matrix_from_ops_two_qubit(
-            obtained_decomposition, wire_order=wires
-        )
+        with qml.tape.QuantumTape() as tape:
+            for op in obtained_decomposition:
+                qml.apply(op)
+
+        obtained_matrix = get_unitary_matrix(tape, wire_order=wires)()
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
     @pytest.mark.parametrize("U_pair", samples_su2_su2)
     def test_two_qubit_decomposition_tensor_products(self, U_pair, wires):
-        """Test that a one-qubit matrix in isolation is correctly decomposed."""
+        """Test that a two-qubit tensor product matrix is correctly decomposed."""
         U = _convert_to_su4(qml.math.kron(np.array(U_pair[0]), np.array(U_pair[1])))
 
         assert _compute_num_cnots(U) == 0
@@ -722,7 +729,11 @@ class TestTwoQubitUnitaryDecomposition:
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
         assert len(obtained_decomposition) == 2
 
-        obtained_matrix = compute_matrix_from_ops_two_qubit(obtained_decomposition, wires)
+        with qml.tape.QuantumTape() as tape:
+            for op in obtained_decomposition:
+                qml.apply(op)
+
+        obtained_matrix = get_unitary_matrix(tape, wire_order=wires)()
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
@@ -739,9 +750,12 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
         U = torch.tensor(U, dtype=torch.complex128)
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
-        obtained_matrix = compute_matrix_from_ops_two_qubit(
-            obtained_decomposition, wire_order=wires
-        )
+
+        with qml.tape.QuantumTape() as tape:
+            for op in obtained_decomposition:
+                qml.apply(op)
+
+        obtained_matrix = get_unitary_matrix(tape, wire_order=wires)()
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
@@ -757,7 +771,11 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
 
-        obtained_matrix = compute_matrix_from_ops_two_qubit(obtained_decomposition, wires)
+        with qml.tape.QuantumTape() as tape:
+            for op in obtained_decomposition:
+                qml.apply(op)
+
+        obtained_matrix = get_unitary_matrix(tape, wire_order=wires)()
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
@@ -771,9 +789,11 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
 
-        obtained_matrix = compute_matrix_from_ops_two_qubit(
-            obtained_decomposition, wire_order=wires
-        )
+        with qml.tape.QuantumTape() as tape:
+            for op in obtained_decomposition:
+                qml.apply(op)
+
+        obtained_matrix = get_unitary_matrix(tape, wire_order=wires)()
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
@@ -789,8 +809,11 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
 
-        print(obtained_decomposition)
-        obtained_matrix = compute_matrix_from_ops_two_qubit(obtained_decomposition, wires)
+        with qml.tape.QuantumTape() as tape:
+            for op in obtained_decomposition:
+                qml.apply(op)
+
+        obtained_matrix = get_unitary_matrix(tape, wire_order=wires)()
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
@@ -808,9 +831,12 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
-        obtained_matrix = compute_matrix_from_ops_two_qubit(
-            obtained_decomposition, wire_order=wires
-        )
+
+        with qml.tape.QuantumTape() as tape:
+            for op in obtained_decomposition:
+                qml.apply(op)
+
+        obtained_matrix = get_unitary_matrix(tape, wire_order=wires)()
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
@@ -831,6 +857,10 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
 
-        obtained_matrix = compute_matrix_from_ops_two_qubit(obtained_decomposition, wires)
+        with qml.tape.QuantumTape() as tape:
+            for op in obtained_decomposition:
+                qml.apply(op)
+
+        obtained_matrix = get_unitary_matrix(tape, wire_order=wires)()
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
