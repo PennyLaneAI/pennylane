@@ -25,7 +25,7 @@ class GateFabric(Operation):
     proposed by Anselmetti *et al.* in `arXiv:2104.05692 <https://arxiv.org/abs/2104.05695>`_.
 
     This template prepares the :math:`N` qubits trial state by applying :math:`D` layers of gate fabric block
-    :math:`\hat{U}_{GF}(\vec{\theta},\vec{\phi})` to the Hartree-Fock state
+    :math:`\hat{U}_{GF}(\vec{\theta},\vec{\phi})` to the Hartree-Fock state in the Jordan-Wigner basis
 
     .. math::
 
@@ -83,6 +83,7 @@ class GateFabric(Operation):
 
         .. code-block:: python
 
+            import numpy as np
             import pennylane as qml
             from pennylane.templates import GateFabric
             from functools import partial
@@ -103,10 +104,16 @@ class GateFabric(Operation):
             # Define the cost function
             cost_fn = qml.ExpvalCost(ansatz, h, dev)
 
-            # Compute the expectation value of 'h'
+            # Get the shape of the weights for this template
             layers = 2
-            params = qml.init.gate_fabric_normal(layers, qubits)
-            print(cost_fn(params))
+            shape = GateFabric.shape(n_layers=layers, n_wires=qubits)
+
+            # Initialize the weight tensors
+            np.random.seed(42)
+            weights = np.random.random(size=shape)
+
+        >>> cost_fn(weights)
+        -0.5764255832593828
 
         **Parameter shape**
 
@@ -119,11 +126,14 @@ class GateFabric(Operation):
             shape = GateFabric.shape(n_layers=2, n_wires=4)
             weights = np.random.random(size=shape)
 
+        >>> weights.shape
+        (2, 1, 2)
 
     """
     num_params = 1
     num_wires = AnyWires
     par_domain = "A"
+    grad_method = None
 
     def __init__(self, weights, wires, init_state, include_pi=False, do_queue=True, id=None):
 
