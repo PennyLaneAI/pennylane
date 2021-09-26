@@ -48,7 +48,10 @@ def gradient_expand(tape, depth=10):
             and ((supported_op(obj) and trainable_op(obj)) or not trainable_op(obj))
         )
 
-        return tape.expand(depth=depth, stop_at=stop_cond)
+        new_tape = tape.expand(depth=depth, stop_at=stop_cond)
+        params = new_tape.get_parameters(trainable_only=False)
+        new_tape.trainable_params = qml.math.get_trainable_indices(params)
+        return new_tape
 
     return tape
 

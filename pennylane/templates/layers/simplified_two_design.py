@@ -101,6 +101,7 @@ class SimplifiedTwoDesign(Operation):
     num_params = 2
     num_wires = AnyWires
     par_domain = "A"
+    grad_method = None
 
     def __init__(self, initial_layer_weights, weights, wires, do_queue=True, id=None):
 
