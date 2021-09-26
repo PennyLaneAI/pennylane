@@ -102,7 +102,7 @@ process_id_cases = [
         OrderedDict({"y": [(0, 1), (1, 0)], "x": [(0,), (2,)]}),
         [0],
         {"x": [(0,), (2,)], "y": [(0, 1), (1, 0)]},
-        [0, 1]
+        [0, 1],
     ),
     (circuit_3, {"y": ..., "x": [(1,), (2,)]}, None, {"x": [(1,), (2,)], "y": ...}, [0, 1]),
     (circuit_4, {"y", "x"}, None, {"x": ..., "y": ...}, [0, 1]),
@@ -110,7 +110,7 @@ process_id_cases = [
     (circuit_5, None, None, {"x": ..., "y": ..., "z": ...}, [0, 1, 2]),
     (circuit_5, {"y"}, None, {"y": ...}, [1]),
 ]
-process_id_cases = [entry[:3]+(OrderedDict(entry[3]),)+entry[4:] for entry in process_id_cases]
+process_id_cases = [entry[:3] + (OrderedDict(entry[3]),) + entry[4:] for entry in process_id_cases]
 
 process_id_cases_unknown_arg = [
     (circuit_0, {"b"}, None),
@@ -182,7 +182,7 @@ class TestHelpers:
 
     @pytest.mark.parametrize(
         "circuit, enc_args, argnum",
-        process_id_cases_unknown_arg ,
+        process_id_cases_unknown_arg,
     )
     def test_process_ids_unknown_arg(self, circuit, enc_args, argnum):
         dev = qml.device("default.qubit", wires=2)
@@ -195,6 +195,7 @@ class TestHelpers:
         qnode = qml.QNode(circuit_0, dev)
         with pytest.raises(IndexError, match="x"):
             _process_ids(None, [5], qnode)
+
 
 class TestHelpersWithAutograd:
     @pytest.mark.parametrize("num_pos", [0, 1, 2])
@@ -222,18 +223,19 @@ class TestHelpersWithAutograd:
         [
             (0.2,),
             (1.1, 3.2, 0.2),
-            (np.array([[0, 9.2],[-1.2, 3.2]]),),
+            (np.array([[0, 9.2], [-1.2, 3.2]]),),
             (0.3, [1, 4, 2], np.array([0.3, 9.1])),
         ],
     )
     def test_get_random_args(self, args, num):
         seed = 921
         rnd_args = _get_random_args(args, "autograd", num, seed)
-        assert len(rnd_args)==num
+        assert len(rnd_args) == num
         np.random.seed(seed)
         for _rnd_args in rnd_args:
-            expected = tuple(np.random.random(np.shape(arg))*2*np.pi-np.pi for arg in args)
+            expected = tuple(np.random.random(np.shape(arg)) * 2 * np.pi - np.pi for arg in args)
             assert all(np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args))
+
 
 class TestHelpersWithJax:
     pytest.importorskip("jax")
@@ -265,18 +267,19 @@ class TestHelpersWithJax:
         [
             (0.2,),
             (1.1, 3.2, 0.2),
-            (np.array([[0, 9.2],[-1.2, 3.2]]),),
+            (np.array([[0, 9.2], [-1.2, 3.2]]),),
             (0.3, [1, 4, 2], np.array([0.3, 9.1])),
         ],
     )
     def test_get_random_args(self, args, num):
         seed = 921
         rnd_args = _get_random_args(args, "jax", num, seed)
-        assert len(rnd_args)==num
+        assert len(rnd_args) == num
         np.random.seed(seed)
         for _rnd_args in rnd_args:
-            expected = tuple(np.random.random(np.shape(arg))*2*np.pi-np.pi for arg in args)
+            expected = tuple(np.random.random(np.shape(arg)) * 2 * np.pi - np.pi for arg in args)
             assert all(np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args))
+
 
 class TestHelpersWithTensorflow:
     tf = pytest.importorskip("tensorflow")
@@ -308,7 +311,7 @@ class TestHelpersWithTensorflow:
         [
             (tf.Variable(0.2),),
             (tf.Variable(1.1), tf.constant(3.2), tf.Variable(0.2)),
-            (tf.Variable(np.array([[0, 9.2],[-1.2, 3.2]])),),
+            (tf.Variable(np.array([[0, 9.2], [-1.2, 3.2]])),),
             (tf.Variable(0.3), [1, 4, 2], tf.Variable(np.array([0.3, 9.1]))),
         ],
     )
@@ -316,15 +319,16 @@ class TestHelpersWithTensorflow:
         tf = pytest.importorskip("tensorflow")
         seed = 921
         rnd_args = _get_random_args(args, "tf", num, seed)
-        assert len(rnd_args)==num
+        assert len(rnd_args) == num
         tf.random.set_seed(seed)
         for _rnd_args in rnd_args:
-            expected = tuple(tf.random.uniform(tf.shape(arg))*2*np.pi-np.pi for arg in args)
+            expected = tuple(tf.random.uniform(tf.shape(arg)) * 2 * np.pi - np.pi for arg in args)
             expected = tuple(
                 tf.Variable(_exp) if isinstance(_arg, tf.Variable) else _exp
                 for _arg, _exp in zip(args, expected)
             )
             assert all(np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args))
+
 
 class TestHelpersWithTorch:
     torch = pytest.importorskip("torch")
@@ -356,7 +360,7 @@ class TestHelpersWithTorch:
         [
             (torch.tensor(0.2),),
             (1.1, 3.2, torch.tensor(0.2)),
-            (torch.tensor([[0, 9.2],[-1.2, 3.2]]),),
+            (torch.tensor([[0, 9.2], [-1.2, 3.2]]),),
             (0.3, torch.tensor([1, 4, 2]), torch.tensor([0.3, 9.1])),
         ],
     )
@@ -364,10 +368,10 @@ class TestHelpersWithTorch:
         torch = pytest.importorskip("torch")
         seed = 921
         rnd_args = _get_random_args(args, "torch", num, seed)
-        assert len(rnd_args)==num
+        assert len(rnd_args) == num
         torch.random.manual_seed(seed)
         for _rnd_args in rnd_args:
-            expected = tuple(torch.rand(np.shape(arg))*2*np.pi-np.pi for arg in args)
+            expected = tuple(torch.rand(np.shape(arg)) * 2 * np.pi - np.pi for arg in args)
             assert all(np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args))
 
 
@@ -401,8 +405,8 @@ class TestCircuits:
         @qml.qnode(dev)
         def circuit(x, y):
             qml.RX(x, wires=0)
-            qml.RY(0.2*y, wires=0)
-            qml.RY(3*y, wires=1)
+            qml.RY(0.2 * y, wires=0)
+            qml.RY(3 * y, wires=1)
             return qml.expval(qml.PauliZ(wires=0))
 
         x, y = [0.2, 0.1]
@@ -425,9 +429,9 @@ class TestCircuits:
 
         @qml.qnode(dev)
         def circuit(x, Y, z=z_0):
-            qml.RX(z*x, wires=0)
-            qml.RY(0.2*Y[0, 1, 0], wires=0)
-            qml.RY(3*Y[0, 0, 0], wires=1)
+            qml.RX(z * x, wires=0)
+            qml.RY(0.2 * Y[0, 1, 0], wires=0)
+            qml.RY(3 * Y[0, 0, 0], wires=1)
             return qml.expval(qml.PauliZ(wires=0))
 
         x = -1.5
@@ -440,10 +444,10 @@ class TestCircuits:
         res = spectrum(circuit, encoding_args={"x"})(x, Y)
         assert res == {"x": {(): [-z_0, 0.0, z_0]}}
 
-        res = spectrum(circuit, encoding_args={"x": ..., "Y": [(0,0,0), (1, 0, 1)]})(x, Y)
+        res = spectrum(circuit, encoding_args={"x": ..., "Y": [(0, 0, 0), (1, 0, 1)]})(x, Y)
         assert res == {
             "x": {(): [-z_0, 0.0, z_0]},
-            "Y": {(0, 0, 0): [-3.0, 0.0, 3.0], (1, 0, 1): [0.0]}
+            "Y": {(0, 0, 0): [-3.0, 0.0, 3.0], (1, 0, 1): [0.0]},
         }
 
     def test_spectrum_changes_with_qnode_args(self):
@@ -482,6 +486,7 @@ class TestCircuits:
         with pytest.raises(ValueError, match="Can only consider one-parameter gates"):
             spectrum(circuit)(1.5)
 
+
 def circuit(x, w):
     """Test circuit"""
     for l in range(2):
@@ -493,6 +498,7 @@ def circuit(x, w):
     qml.RZ(x[0], wires=0)
     return qml.expval(qml.PauliZ(wires=0))
 
+
 expected_result = {
     "x": {
         (0,): [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0],
@@ -501,8 +507,8 @@ expected_result = {
     }
 }
 
-class TestAutograd:
 
+class TestAutograd:
     def test_integration_autograd(self):
         """Test that the spectra of a circuit is calculated correctly
         in the autograd interface."""
@@ -519,7 +525,6 @@ class TestAutograd:
 
 
 class TestTorch:
-
     def test_integration_torch(self):
         """Test that the spectra of a circuit is calculated correctly
         in the torch interface."""
@@ -537,7 +542,6 @@ class TestTorch:
 
 
 class TestTensorflow:
-
     def test_integration_tf(self):
         """Test that the spectra of a circuit is calculated correctly
         in the tf interface."""
@@ -552,6 +556,7 @@ class TestTensorflow:
 
         assert res
         assert res == expected_result
+
 
 class TestJax:
     def test_integration_jax(self):
