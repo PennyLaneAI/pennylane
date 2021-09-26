@@ -4,6 +4,63 @@
 
 <h3>New features since last release</h3>
 
+* The `qml.fourier.spectrum` function now takes classical processing of QNode arguments into gate
+  arguments into account. The frequencies are computed per (requested) QNode argument instead
+  of per gate `id`. The gate `id`s are ignored.
+  [(#1681)](https://github.com/PennyLaneAI/pennylane/pull/1681)
+
+  Consider the following example, which uses non-trainable inputs `x`, `y` and `z`
+  as well as trainable parameters `w` as arguments to the QNode.
+
+  ```python
+  import pennylane as qml
+  import numpy as np
+
+  n_qubits = 3
+  dev = qml.device("default.qubit", wires=n_qubits)
+
+  @qml.qnode(dev)
+  def circuit(x, y, z, w):
+      for i in range(n_qubits):
+          qml.RX(0.5*x[i], wires=i)
+          qml.Rot(w[0,i,0], w[0,i,1], w[0,i,2], wires=i)
+          qml.RY(2.3*y[i], wires=i)
+          qml.Rot(w[1,i,0], w[1,i,1], w[1,i,2], wires=i)
+          qml.RX(z, wires=i)
+      return qml.expval(qml.PauliZ(wires=0))
+
+  x = np.array([1., 2., 3.])
+  y = np.array([0.1, 0.3, 0.5])
+  z = -1.8
+  w = np.random.random((2, n_qubits, 3))
+  ```
+
+  This circuit looks as follows:
+
+  ```pycon
+  >>> print(qml.draw(circuit)(x, y, z, w))
+  0: ──RX(0.5)──Rot(0.598, 0.949, 0.346)───RY(0.23)──Rot(0.693, 0.0738, 0.246)──RX(-1.8)──┤ ⟨Z⟩
+  1: ──RX(1)────Rot(0.0711, 0.701, 0.445)──RY(0.69)──Rot(0.32, 0.0482, 0.437)───RX(-1.8)──┤
+  2: ──RX(1.5)──Rot(0.401, 0.0795, 0.731)──RY(1.15)──Rot(0.756, 0.38, 0.38)─────RX(-1.8)──┤
+  ```
+
+  Applying the `qml.fourier.spectrum` function to the circuit for the non-trainable
+  parameters, we obtain:
+
+  ```pycon
+  >>> spec = spectrum(circuit, encoding_args={"x", "y", "z"})(x, y, z, w)
+  >>> for inp, freqs in res.items():
+  >>>     print(f"{inp}: {freqs}")
+  "x": {(0,): [-0.5, 0.0, 0.5], (1,): [-0.5, 0.0, 0.5], (2,): [-0.5, 0.0, 0.5]}
+  "y": {(0,): [-2.3, 0.0, 2.3], (1,): [-2.3, 0.0, 2.3], (2,): [-2.3, 0.0, 2.3]}
+  "z": {(): [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0]}
+  ```
+
+  For details on how to control for which parameters the spectrum is computed and other
+  usage details, please see the
+  [fourier.spectrum docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.fourier.spectrum.html).
+
+
 * Arbitrary two-qubit unitaries can now be decomposed into elementary gates. This
   functionality has been incorporated into the `qml.transforms.unitary_to_rot` transform, and is
   available separately as `qml.transforms.two_qubit_decomposition`.
@@ -195,6 +252,11 @@
   [(#1640)](https://github.com/PennyLaneAI/pennylane/pull/1640)
 
 <h3>Breaking changes</h3>
+
+- The updated version of `qml.fourier.spectrum` behaves differently in three ways:
+  It takes different arguments, the returned dictionary has a different structure, and
+  as classical preprocessing is taken into account, the returned frequency spectra differ.
+  [(#1681)](https://github.com/PennyLaneAI/pennylane/pull/1681)
 
 - The `QNode.metric_tensor` method has been deprecated, and will be removed in an upcoming release.
   Please use the `qml.metric_tensor` transform instead.
