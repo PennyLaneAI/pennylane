@@ -109,8 +109,8 @@ def _get_random_args(args, interface, num, seed):
         tf.random.set_seed(seed)
         rnd_args = []
         for _ in range(num):
-            _args = (tf.random.uniform(_arg.shape) * 2 * np.pi - np.pi for _arg in args)
-            _args = (
+            _args = (tf.random.uniform(tf.shape(_arg)) * 2 * np.pi - np.pi for _arg in args)
+            _args = tuple(
                 tf.Variable(_arg) if isinstance(arg, tf.Variable) else _arg
                 for _arg, arg in zip(_args, args)
             )
@@ -120,7 +120,7 @@ def _get_random_args(args, interface, num, seed):
 
         torch.random.manual_seed(seed)
         rnd_args = [
-            tuple(torch.rand(arg.shape) * 2 * np.pi - np.pi for arg in args) for _ in range(num)
+            tuple(torch.rand(np.shape(arg)) * 2 * np.pi - np.pi for arg in args) for _ in range(num)
         ]
     else:
         np.random.seed(seed)
@@ -155,18 +155,19 @@ def _get_and_validate_classical_jacobian(qnode, argnum, args, kwargs, num_pos):
     """
     try:
         # Get random input arguments
-        rnd_args = _get_random_args(args, qnode.interface, num_pos, seed=291)
+        all_args = _get_random_args(args, qnode.interface, num_pos, seed=291)
+        all_args.append(args)
         # Evaluate the classical Jacobian at multiple input args.
         jacs = [
             qml.transforms.classical_jacobian(qnode, argnum=argnum)(*_args, **kwargs)
-            for _args in rnd_args
+            for _args in all_args
         ]
     except Exception as e:
         raise ValueError("Could not compute Jacobian of the classical preprocessing.") from e
 
     # Check that the Jacobian is constant
     if not all(
-        all(np.allclose(jacs[0][i], jac[i], atol=1e-8, rtol=0) for jac in jacs[1:])
+        all(np.allclose(jacs[0][i], jac[i], atol=1e-6, rtol=0) for jac in jacs[1:])
         for i in range(len(jacs[0]))
     ):
         raise ValueError(
@@ -202,12 +203,13 @@ def _process_ids(encoding_args, argnum, qnode):
     Of these arguments, all elements are included in ``encoding_args``
     """
     sig_pars = signature(qnode.func).parameters
-    arg_names = [name for name, par in sig_pars.items() if par.default is par.empty]
+    arg_names = list(sig_pars.keys())
+    arg_names_no_def = [name for name, par in sig_pars.items() if par.default is par.empty]
 
     if encoding_args is None:
         if argnum is None:
-            encoding_args = OrderedDict((name, ...) for name in arg_names)
-            argnum = list(range(len(arg_names)))
+            encoding_args = OrderedDict((name, ...) for name in arg_names_no_def)
+            argnum = list(range(len(arg_names_no_def)))
         elif np.isscalar(argnum):
             encoding_args = OrderedDict({arg_names[argnum]: ...})
             argnum = [argnum]
@@ -350,10 +352,14 @@ def spectrum(qnode, encoding_args=None, argnum=None, decimals=5, num_pos=1):
         w = np.random.random((2, n_qubits, 3))
         res = spectrum(circuit, argnum=[0, 1, 2])(x, y, z, w)
 
+    This circuit looks as follows:
+
     >>> print(qml.draw(circuit)(x, y, z, w))
     0: ──RX(0.5)──Rot(0.598, 0.949, 0.346)───RY(0.23)──Rot(0.693, 0.0738, 0.246)──RX(-1.8)──┤ ⟨Z⟩
     1: ──RX(1)────Rot(0.0711, 0.701, 0.445)──RY(0.69)──Rot(0.32, 0.0482, 0.437)───RX(-1.8)──┤
     2: ──RX(1.5)──Rot(0.401, 0.0795, 0.731)──RY(1.15)──Rot(0.756, 0.38, 0.38)─────RX(-1.8)──┤
+
+    Applying the ``spectrum`` function to the circuit for the non-trainable parameters, we obtain:
 
     >>> for inp, freqs in res.items():
     >>>     print(f"{inp}: {freqs}")

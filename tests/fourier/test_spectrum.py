@@ -14,15 +14,18 @@
 """
 Tests for the Fourier spectrum transform.
 """
+from collections import OrderedDict
 import pytest
 import numpy as np
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.fourier.spectrum import (
     spectrum,
-    _join_spectra,
     _get_spectrum,
     _get_and_validate_classical_jacobian,
+    _get_random_args,
+    _join_spectra,
+    _process_ids,
 )
 from pennylane.transforms import classical_jacobian
 
@@ -78,28 +81,48 @@ y = np.array([[0.4, 5.5], [1.6, 5.1]])
 z = np.array([-1.9, -0.1, 0.49, 0.24])
 all_args = [(a,), (a, b), (x,), (x, y), (x, y), (x, y, z)]
 
-interfaces = [("tf", "tensorflow"), ("torch",) * 2, ("autograd", "pennylane"), ("jax",) * 2]
+process_id_cases = [
+    (circuit_0, {"a"}, None, {"a": ...}, [0]),
+    (circuit_0, None, 0, {"a": ...}, [0]),
+    (circuit_0, None, -1, {"a": ...}, [-1]),
+    (circuit_0, None, None, {"a": ...}, [0]),
+    (circuit_0, {"a": [()]}, None, {"a": [()]}, [0]),
+    (circuit_1, {"b"}, None, {"b": ...}, [1]),
+    (circuit_1, None, None, {"a": ..., "b": ...}, [0, 1]),
+    (circuit_1, {"a"}, [4], {"a": ...}, [0]),
+    (circuit_2, {"x"}, None, {"x": ...}, [0]),
+    (circuit_2, None, [0], {"x": ...}, [0]),
+    (circuit_2, None, [-1], {"x": ...}, [-1]),
+    (circuit_2, {"x": [(0,), (2,)]}, [0], {"x": [(0,), (2,)]}, [0]),
+    (circuit_2, {"x": ...}, [0], {"x": ...}, [0]),
+    (circuit_3, {"y"}, None, {"y": ...}, [1]),
+    (circuit_3, None, [1], {"y": ...}, [1]),
+    (
+        circuit_3,
+        OrderedDict({"y": [(0, 1), (1, 0)], "x": [(0,), (2,)]}),
+        [0],
+        {"x": [(0,), (2,)], "y": [(0, 1), (1, 0)]},
+        [0, 1]
+    ),
+    (circuit_3, {"y": ..., "x": [(1,), (2,)]}, None, {"x": [(1,), (2,)], "y": ...}, [0, 1]),
+    (circuit_4, {"y", "x"}, None, {"x": ..., "y": ...}, [0, 1]),
+    (circuit_4, None, [1], {"y": ...}, [1]),
+    (circuit_5, None, None, {"x": ..., "y": ..., "z": ...}, [0, 1, 2]),
+    (circuit_5, {"y"}, None, {"y": ...}, [1]),
+]
+process_id_cases = [entry[:3]+(OrderedDict(entry[3]),)+entry[4:] for entry in process_id_cases]
+
+process_id_cases_unknown_arg = [
+    (circuit_0, {"b"}, None),
+    (circuit_1, {"b", "c"}, [0]),
+    (circuit_2, {"a", "x"}, [0, 1]),
+    (circuit_3, {"xy", "x"}, None),
+    (circuit_4, {"x", "z"}, None),
+    (circuit_5, {"zy", "x"}, None),
+]
 
 
 class TestHelpers:
-    @pytest.mark.parametrize(
-        "spectrum1, spectrum2, expected",
-        [
-            ({0, 1}, {0, 1}, [0, 1, 2]),
-            ({0, 3}, {0, 5}, [0, 2, 3, 5, 8]),
-            ({0, 1, 2}, {0, 1}, [0, 1, 2, 3]),
-            ({0, 0.5}, {0, 1}, [0, 0.5, 1.0, 1.5]),
-            ({0, 0.5}, {}, [0, 0.5]),
-            ({0, 0.5}, {0}, [0, 0.5]),
-            ({}, {0, 0.5}, [0, 0.5]),
-            ({0}, {0, 0.5}, [0, 0.5]),
-        ],
-    )
-    def test_join_spectra(self, spectrum1, spectrum2, expected, tol):
-        """Test that spectra are joined correctly."""
-        joined = _join_spectra(spectrum1, spectrum2)
-        assert np.allclose(sorted(joined), expected, atol=tol, rtol=0)
-
     @pytest.mark.parametrize(
         "op, expected",
         [
@@ -127,6 +150,226 @@ class TestHelpers:
         with pytest.raises(ValueError, match="Generator of operation"):
             _get_spectrum(qml.CNOT(wires=[0, 1]))
 
+    @pytest.mark.parametrize(
+        "spectrum1, spectrum2, expected",
+        [
+            ({0, 1}, {0, 1}, [0, 1, 2]),
+            ({0, 3}, {0, 5}, [0, 2, 3, 5, 8]),
+            ({0, 1, 2}, {0, 1}, [0, 1, 2, 3]),
+            ({0, 0.5}, {0, 1}, [0, 0.5, 1.0, 1.5]),
+            ({0, 0.5}, {}, [0, 0.5]),
+            ({0, 0.5}, {0}, [0, 0.5]),
+            ({}, {0, 0.5}, [0, 0.5]),
+            ({0}, {0, 0.5}, [0, 0.5]),
+        ],
+    )
+    def test_join_spectra(self, spectrum1, spectrum2, expected, tol):
+        """Test that spectra are joined correctly."""
+        joined = _join_spectra(spectrum1, spectrum2)
+        assert np.allclose(sorted(joined), expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize(
+        "circuit, enc_args, argnum, enc_args_exp, argnum_exp",
+        process_id_cases,
+    )
+    def test_process_ids(self, circuit, enc_args, argnum, enc_args_exp, argnum_exp):
+        dev = qml.device("default.qubit", wires=2)
+        qnode = qml.QNode(circuit, dev)
+        encoding_args, argnum = _process_ids(enc_args, argnum, qnode)
+        assert encoding_args == enc_args_exp
+        assert all(np.issubdtype(type(num), int) for num in argnum)
+        assert np.allclose(argnum, argnum_exp)
+
+    @pytest.mark.parametrize(
+        "circuit, enc_args, argnum",
+        process_id_cases_unknown_arg ,
+    )
+    def test_process_ids_unknown_arg(self, circuit, enc_args, argnum):
+        dev = qml.device("default.qubit", wires=2)
+        qnode = qml.QNode(circuit, dev)
+        with pytest.raises(ValueError, match="Not all names in"):
+            _process_ids(enc_args, argnum, qnode)
+
+    def test_process_ids_index_error(self):
+        dev = qml.device("default.qubit", wires=2)
+        qnode = qml.QNode(circuit_0, dev)
+        with pytest.raises(IndexError, match="x"):
+            _process_ids(None, [5], qnode)
+
+class TestHelpersWithAutograd:
+    @pytest.mark.parametrize("num_pos", [0, 1, 2])
+    @pytest.mark.parametrize("circuit, args", zip(circuits, all_args))
+    def test_jacobian_validation(self, circuit, args, num_pos):
+        dev = qml.device("default.qubit", wires=2)
+        qnode = qml.QNode(circuit, dev, interface="autograd")
+        class_jac = classical_jacobian(qnode, argnum=list(range(len(args))))(*args)
+        validated_class_jac = _get_and_validate_classical_jacobian(
+            qnode, argnum=list(range(len(args))), args=args, kwargs={}, num_pos=num_pos
+        )
+        if isinstance(class_jac, tuple):
+            assert all(
+                (
+                    np.allclose(_jac, val_jac)
+                    for _jac, val_jac in zip(class_jac, validated_class_jac)
+                )
+            )
+        else:
+            assert np.allclose(class_jac, validated_class_jac)
+
+    @pytest.mark.parametrize("num", [0, 1, 2])
+    @pytest.mark.parametrize(
+        "args",
+        [
+            (0.2,),
+            (1.1, 3.2, 0.2),
+            (np.array([[0, 9.2],[-1.2, 3.2]]),),
+            (0.3, [1, 4, 2], np.array([0.3, 9.1])),
+        ],
+    )
+    def test_get_random_args(self, args, num):
+        seed = 921
+        rnd_args = _get_random_args(args, "autograd", num, seed)
+        assert len(rnd_args)==num
+        np.random.seed(seed)
+        for _rnd_args in rnd_args:
+            expected = tuple(np.random.random(np.shape(arg))*2*np.pi-np.pi for arg in args)
+            assert all(np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args))
+
+class TestHelpersWithJax:
+    pytest.importorskip("jax")
+
+    @pytest.mark.parametrize("num_pos", [0, 1, 2])
+    @pytest.mark.parametrize("circuit, args", zip(circuits, all_args))
+    def test_jacobian_validation(self, circuit, args, num_pos):
+        pytest.importorskip("jax")
+        dev = qml.device("default.qubit", wires=2)
+        qnode = qml.QNode(circuit, dev, interface="jax")
+        all_args = list(range(len(args)))
+        class_jac = classical_jacobian(qnode, argnum=all_args)(*args)
+        validated_class_jac = _get_and_validate_classical_jacobian(
+            qnode, argnum=all_args, args=args, kwargs={}, num_pos=num_pos
+        )
+        if isinstance(class_jac, tuple):
+            assert all(
+                (
+                    np.allclose(_jac, val_jac)
+                    for _jac, val_jac in zip(class_jac, validated_class_jac)
+                )
+            )
+        else:
+            assert np.allclose(class_jac, validated_class_jac)
+
+    @pytest.mark.parametrize("num", [0, 1, 2])
+    @pytest.mark.parametrize(
+        "args",
+        [
+            (0.2,),
+            (1.1, 3.2, 0.2),
+            (np.array([[0, 9.2],[-1.2, 3.2]]),),
+            (0.3, [1, 4, 2], np.array([0.3, 9.1])),
+        ],
+    )
+    def test_get_random_args(self, args, num):
+        seed = 921
+        rnd_args = _get_random_args(args, "jax", num, seed)
+        assert len(rnd_args)==num
+        np.random.seed(seed)
+        for _rnd_args in rnd_args:
+            expected = tuple(np.random.random(np.shape(arg))*2*np.pi-np.pi for arg in args)
+            assert all(np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args))
+
+class TestHelpersWithTensorflow:
+    tf = pytest.importorskip("tensorflow")
+
+    @pytest.mark.parametrize("num_pos", [0, 1, 2])
+    @pytest.mark.parametrize("circuit, args", zip(circuits, all_args))
+    def test_jacobian_validation(self, circuit, args, num_pos):
+        tf = pytest.importorskip("tensorflow")
+        args = tuple((tf.Variable(arg, dtype=tf.double) for arg in args))
+        dev = qml.device("default.qubit", wires=2)
+        qnode = qml.QNode(circuit, dev, interface="tf")
+        class_jac = classical_jacobian(qnode)(*args)
+        validated_class_jac = _get_and_validate_classical_jacobian(
+            qnode, argnum=list(range(len(args))), args=args, kwargs={}, num_pos=num_pos
+        )
+        if isinstance(class_jac, tuple):
+            assert all(
+                (
+                    np.allclose(_jac, val_jac)
+                    for _jac, val_jac in zip(class_jac, validated_class_jac)
+                )
+            )
+        else:
+            assert np.allclose(class_jac, validated_class_jac)
+
+    @pytest.mark.parametrize("num", [0, 1, 2])
+    @pytest.mark.parametrize(
+        "args",
+        [
+            (tf.Variable(0.2),),
+            (tf.Variable(1.1), tf.constant(3.2), tf.Variable(0.2)),
+            (tf.Variable(np.array([[0, 9.2],[-1.2, 3.2]])),),
+            (tf.Variable(0.3), [1, 4, 2], tf.Variable(np.array([0.3, 9.1]))),
+        ],
+    )
+    def test_get_random_args(self, args, num):
+        tf = pytest.importorskip("tensorflow")
+        seed = 921
+        rnd_args = _get_random_args(args, "tf", num, seed)
+        assert len(rnd_args)==num
+        tf.random.set_seed(seed)
+        for _rnd_args in rnd_args:
+            expected = tuple(tf.random.uniform(tf.shape(arg))*2*np.pi-np.pi for arg in args)
+            expected = tuple(
+                tf.Variable(_exp) if isinstance(_arg, tf.Variable) else _exp
+                for _arg, _exp in zip(args, expected)
+            )
+            assert all(np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args))
+
+class TestHelpersWithTorch:
+    torch = pytest.importorskip("torch")
+
+    @pytest.mark.parametrize("num_pos", [0, 1, 2])
+    @pytest.mark.parametrize("circuit, args", zip(circuits, all_args))
+    def test_jacobian_validation(self, circuit, args, num_pos):
+        torch = pytest.importorskip("torch")
+        args = tuple((torch.tensor(arg) for arg in args))
+        dev = qml.device("default.qubit", wires=2)
+        qnode = qml.QNode(circuit, dev, interface="torch")
+        class_jac = classical_jacobian(qnode)(*args)
+        validated_class_jac = _get_and_validate_classical_jacobian(
+            qnode, argnum=list(range(len(args))), args=args, kwargs={}, num_pos=num_pos
+        )
+        if isinstance(class_jac, tuple):
+            assert all(
+                (
+                    np.allclose(_jac, val_jac)
+                    for _jac, val_jac in zip(class_jac, validated_class_jac)
+                )
+            )
+        else:
+            assert np.allclose(class_jac, validated_class_jac)
+
+    @pytest.mark.parametrize("num", [0, 1, 2])
+    @pytest.mark.parametrize(
+        "args",
+        [
+            (torch.tensor(0.2),),
+            (1.1, 3.2, torch.tensor(0.2)),
+            (torch.tensor([[0, 9.2],[-1.2, 3.2]]),),
+            (0.3, torch.tensor([1, 4, 2]), torch.tensor([0.3, 9.1])),
+        ],
+    )
+    def test_get_random_args(self, args, num):
+        torch = pytest.importorskip("torch")
+        seed = 921
+        rnd_args = _get_random_args(args, "torch", num, seed)
+        assert len(rnd_args)==num
+        torch.random.manual_seed(seed)
+        for _rnd_args in rnd_args:
+            expected = tuple(torch.rand(np.shape(arg))*2*np.pi-np.pi for arg in args)
+            assert all(np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args))
+
 
 class TestCircuits:
     """Tests that the spectrum is returned as expected."""
@@ -152,34 +395,60 @@ class TestCircuits:
         assert np.allclose(res["x"][()], range(-expected_degree, expected_degree + 1))
 
     def test_argnum(self):
-        """Test that the spectrum contains the ids provided in encoding_gates, or
-        all ids if encoding_gates is None."""
-
-        dev = qml.device("default.qubit", wires=1)
+        """Test that the spectrum is computed for the arguments specified by ``argnum``."""
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def circuit(x, y):
             qml.RX(x, wires=0)
-            qml.RY(y, wires=0)
+            qml.RY(0.2*y, wires=0)
+            qml.RY(3*y, wires=1)
             return qml.expval(qml.PauliZ(wires=0))
 
         x, y = [0.2, 0.1]
+        y_freq = [-3.2, -3.0, -2.8, -0.2, 0.0, 0.2, 2.8, 3.0, 3.2]
 
         res = spectrum(circuit, argnum=[0])(x, y)
         assert res == {"x": {(): [-1.0, 0.0, 1.0]}}
 
         res = spectrum(circuit, argnum=[0, 1])(x, y)
-        assert res == {"x": {(): [-1.0, 0.0, 1.0]}, "y": {(): [-1.0, 0.0, 1.0]}}
+        assert res == {"x": {(): [-1.0, 0.0, 1.0]}, "y": {(): y_freq}}
 
         res = spectrum(circuit)(x, y)
-        assert res == {"x": {(): [-1.0, 0.0, 1.0]}, "y": {(): [-1.0, 0.0, 1.0]}}
+        assert res == {"x": {(): [-1.0, 0.0, 1.0]}, "y": {(): y_freq}}
 
-        with pytest.raises(IndexError, match="list index out of range"):
-            spectrum(circuit, argnum=[3])(x, y)
+    def test_encoding_args(self):
+        """Test that the spectrum is computed for the arguments
+        specified by ``encoding_args``."""
+        dev = qml.device("default.qubit", wires=2)
+        z_0 = 2.1
+
+        @qml.qnode(dev)
+        def circuit(x, Y, z=z_0):
+            qml.RX(z*x, wires=0)
+            qml.RY(0.2*Y[0, 1, 0], wires=0)
+            qml.RY(3*Y[0, 0, 0], wires=1)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        x = -1.5
+        Y = np.array([0.2, -1.2, 9.2, -0.2, 1.1, 4, -0.201, 0.8]).reshape((2, 2, 2))
+        z = 1.2
+
+        res = spectrum(circuit, encoding_args={"x"})(x, Y, z=z)
+        assert res == {"x": {(): [-z, 0.0, z]}}
+
+        res = spectrum(circuit, encoding_args={"x"})(x, Y)
+        assert res == {"x": {(): [-z_0, 0.0, z_0]}}
+
+        res = spectrum(circuit, encoding_args={"x": ..., "Y": [(0,0,0), (1, 0, 1)]})(x, Y)
+        assert res == {
+            "x": {(): [-z_0, 0.0, z_0]},
+            "Y": {(0, 0, 0): [-3.0, 0.0, 3.0], (1, 0, 1): [0.0]}
+        }
 
     def test_spectrum_changes_with_qnode_args(self):
-        """Test that the spectrum changes per call if a qnode argument changes the
-        circuit architecture."""
+        """Test that the spectrum changes per call if a qnode keyword argument
+        changes the circuit architecture."""
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -213,7 +482,6 @@ class TestCircuits:
         with pytest.raises(ValueError, match="Can only consider one-parameter gates"):
             spectrum(circuit)(1.5)
 
-
 def circuit(x, w):
     """Test circuit"""
     for l in range(2):
@@ -225,7 +493,6 @@ def circuit(x, w):
     qml.RZ(x[0], wires=0)
     return qml.expval(qml.PauliZ(wires=0))
 
-
 expected_result = {
     "x": {
         (0,): [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0],
@@ -234,25 +501,7 @@ expected_result = {
     }
 }
 
-
 class TestAutograd:
-    @pytest.mark.parametrize("circuit, args", zip(circuits, all_args))
-    def test_jacobian_validation(self, circuit, args):
-        dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(circuit, dev, interface="autograd")
-        class_jac = classical_jacobian(qnode, argnum=list(range(len(args))))(*args)
-        validated_class_jac = _get_and_validate_classical_jacobian(
-            qnode, argnum=list(range(len(args))), args=args, kwargs={}
-        )
-        if isinstance(class_jac, tuple):
-            assert all(
-                (
-                    np.allclose(_jac, val_jac)
-                    for _jac, val_jac in zip(class_jac, validated_class_jac)
-                )
-            )
-        else:
-            assert np.allclose(class_jac, validated_class_jac)
 
     def test_integration_autograd(self):
         """Test that the spectra of a circuit is calculated correctly
@@ -270,25 +519,6 @@ class TestAutograd:
 
 
 class TestTorch:
-    @pytest.mark.parametrize("circuit, args", zip(circuits, all_args))
-    def test_jacobian_validation(self, circuit, args):
-        torch = pytest.importorskip("torch")
-        args = tuple((torch.tensor(arg) for arg in args))
-        dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(circuit, dev, interface="torch")
-        class_jac = classical_jacobian(qnode)(*args)
-        validated_class_jac = _get_and_validate_classical_jacobian(
-            qnode, argnum=list(range(len(args))), args=args, kwargs={}
-        )
-        if isinstance(class_jac, tuple):
-            assert all(
-                (
-                    np.allclose(_jac, val_jac)
-                    for _jac, val_jac in zip(class_jac, validated_class_jac)
-                )
-            )
-        else:
-            assert np.allclose(class_jac, validated_class_jac)
 
     def test_integration_torch(self):
         """Test that the spectra of a circuit is calculated correctly
@@ -307,31 +537,12 @@ class TestTorch:
 
 
 class TestTensorflow:
-    @pytest.mark.parametrize("circuit, args", zip(circuits, all_args))
-    def test_jacobian_validation(self, circuit, args):
-        tf = pytest.importorskip("tensorflow")
-        args = tuple((tf.Variable(arg, dtype=tf.double) for arg in args))
-        dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(circuit, dev, interface="tf")
-        class_jac = classical_jacobian(qnode)(*args)
-        validated_class_jac = _get_and_validate_classical_jacobian(
-            qnode, argnum=list(range(len(args))), args=args, kwargs={}
-        )
-        if isinstance(class_jac, tuple):
-            assert all(
-                (
-                    np.allclose(_jac, val_jac)
-                    for _jac, val_jac in zip(class_jac, validated_class_jac)
-                )
-            )
-        else:
-            assert np.allclose(class_jac, validated_class_jac)
 
     def test_integration_tf(self):
         """Test that the spectra of a circuit is calculated correctly
         in the tf interface."""
-        tf = pytest.importorskip("tensorflow")
 
+        tf = pytest.importorskip("tensorflow")
         dev = qml.device("default.qubit", wires=3)
         qnode = qml.QNode(circuit, dev, interface="tf")
 
@@ -342,11 +553,12 @@ class TestTensorflow:
         assert res
         assert res == expected_result
 
+class TestJax:
     def test_integration_jax(self):
         """Test that the spectra of a circuit is calculated correctly
         in the jax interface."""
 
-        jax = pytest.importorskip("jax")
+        pytest.importorskip("jax")
         from jax import numpy as jnp
 
         x = jnp.array([1.0, 2.0, 3.0])
