@@ -132,7 +132,8 @@ class ParticleConservingU2(Operation):
 
             # Compute the expectation value of 'h' for a given set of parameters
             layers = 1
-            params = qml.init.particle_conserving_u2_normal(layers, qubits)
+            shape = ParticleConservingU2.shape(layers, qubits)
+            params = np.random.random(shape)
             print(cost_fn(params))
 
         **Parameter shape**
