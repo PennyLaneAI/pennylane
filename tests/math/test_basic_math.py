@@ -122,3 +122,14 @@ class TestFrobeniusInnerProduct:
         grad = B.grad
 
         assert np.allclose(grad, A)
+
+class TestTensorSortFunction:
+    """Test the _sort_torch method"""
+
+    @pytest.mark.parametrize("tensor", torch.tensor([1, 3, 4, 2]))
+    def test_sort_torch(self, tensor):
+        """Test the sort method is outputting only the values not
+        indices for tensors."""
+        result = fn.sort(tensor)
+
+        assert result.size() == tensor.size()

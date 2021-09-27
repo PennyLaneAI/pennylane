@@ -263,6 +263,9 @@
 * ``qml.circuit_drawer.CircuitDrawer`` can accept a string for the ``charset`` keyword, instead of a ``CharSet`` object.
   [(#1640)](https://github.com/PennyLaneAI/pennylane/pull/1640)
 
+* ``qml.math.sort``` will now take in a tensor and return only the sorted tensor value not the indices as well.
+    [(#1660)](https://github.com/PennyLaneAI/pennylane/pull/1660)
+
 <h3>Breaking changes</h3>
 
 - The `QNode.metric_tensor` method has been deprecated, and will be removed in an upcoming release.
@@ -296,5 +299,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Utkarsh Azad, Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee,
+Utkarsh Azad, Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee, Carrie-Anne Rubidge,
 Ingrid Strandberg, Antal Száva, David Wierichs.
