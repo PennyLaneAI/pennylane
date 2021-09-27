@@ -155,3 +155,100 @@ def test_numerical_analytic_diff_agree(init_state, tol):
 
     # Check that they agree up to numeric tolerance
     assert np.allclose(res_F, res_A, atol=tol, rtol=0)
+
+@pytest.mark.parametrize("hermitian", [1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])])
+def test_prob_generalize_param(hermitian, init_state, tol):
+    """Test that the correct probability is returned."""
+    dev = qml.device("default.qubit", wires=3)
+
+    @qml.qnode(dev)
+    def circuit(x, y):
+        qml.RZ(x, wires=0)
+        qml.CNOT(wires=[0, 1])
+        qml.RY(y, wires=1)
+        qml.CNOT(wires=[0, 2])
+        return qml.probs(op=qml.Hermitian(hermitian, wires=0))
+
+    res = circuit(0.56, 0.1)
+
+    def circuit_rotated(x, y):
+        qml.RZ(x, wires=0)
+        qml.CNOT(wires=[0, 1])
+        qml.RY(y, wires=1)
+        qml.CNOT(wires=[0, 2])
+        qml.Hadamard(wires=0).diagonalizing_gates()
+
+    state = np.array([1, 0, 0, 0, 0, 0, 0, 0])
+    matrix = qml.transforms.get_unitary_matrix(circuit_rotated)(0.56, 0.1)
+    state = np.dot(matrix, state)
+    expected = np.reshape(np.abs(state) ** 2, [2] * 3)
+    print(expected)
+    expected = np.einsum("ijk->i", expected).flatten()[::-1]
+    assert np.allclose(res, expected, atol=tol, rtol=0)
+
+@pytest.mark.parametrize("hermitian", [1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])])
+def test_prob_generalize_param_multiple(hermitian, init_state, tol):
+    """Test that the correct probability is returned."""
+    dev = qml.device("default.qubit", wires=3)
+
+    @qml.qnode(dev)
+    def circuit(x, y):
+        qml.RZ(x, wires=0)
+        qml.CNOT(wires=[0, 1])
+        qml.RY(y, wires=1)
+        qml.CNOT(wires=[0, 2])
+        return qml.probs(op=qml.Hermitian(hermitian, wires=0)), qml.probs(wires=[1, 2])
+
+    res = circuit(0.56, 0.1)
+    res = np.reshape(res, (3,2))
+    print(res)
+    def circuit_rotated(x, y):
+        qml.RZ(x, wires=0)
+        qml.CNOT(wires=[0, 1])
+        qml.RY(y, wires=1)
+        qml.CNOT(wires=[0, 2])
+        qml.Hadamard(wires=0).diagonalizing_gates()
+
+    state = np.array([1, 0, 0, 0, 0, 0, 0, 0])
+    matrix = qml.transforms.get_unitary_matrix(circuit_rotated)(0.56, 0.1)
+    state = np.dot(matrix, state)
+    expected = np.reshape(np.abs(state) ** 2, [2] * 3)
+    expected_0 = np.einsum("ijk->i", expected).flatten()
+    print(expected_0)
+    expected_1 = np.einsum("ijk->j", expected).flatten()
+    print(expected_1)
+    expected_2 = np.einsum("ijk->k", expected).flatten()
+    print(expected_2)
+    assert np.allclose(res[0], expected_0, atol=1e-2, rtol=0)
+    assert np.allclose(res[1], expected_1, atol=1e-2, rtol=0)
+    assert np.allclose(res[2], expected_2, atol=1e-2, rtol=0)
+
+@pytest.mark.parametrize("hermitian", [1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])])
+def test_prob_generalize_initial_state(hermitian, init_state, tol):
+    """Test that the correct probability is returned."""
+    dev = qml.device("default.qubit", wires=4)
+    state = init_state(4)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.QubitStateVector(state, wires=list(range(4)))
+        qml.PauliX(wires=0)
+        qml.PauliX(wires=1)
+        qml.PauliX(wires=2)
+        qml.PauliX(wires=3)
+        return qml.probs(op=qml.Hermitian(hermitian, wires=0))
+
+    res = circuit()
+
+    def circuit_rotated():
+        qml.PauliX(wires=0)
+        qml.PauliX(wires=1)
+        qml.PauliX(wires=2)
+        qml.PauliX(wires=3)
+        qml.Hadamard(wires=0).diagonalizing_gates()
+
+    matrix = qml.transforms.get_unitary_matrix(circuit_rotated)()
+    state = np.dot(matrix, state)
+    expected = np.reshape(np.abs(state) ** 2, [2] * 4)
+    expected = np.einsum("ijkl->i", expected).flatten()[::-1]
+    assert np.allclose(res, expected, atol=tol, rtol=0)
