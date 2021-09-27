@@ -132,7 +132,7 @@ class ParticleConservingU2(Operation):
 
             # Compute the expectation value of 'h' for a given set of parameters
             layers = 2
-            shape = (layers, 7)
+            shape = ParticleConservingU2.shape(layers, qubits)
             params = np.random.random(shape)
             print(cost_fn(params))
 
