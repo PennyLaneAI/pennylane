@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the functions needed for performing the self-consistent-field iterations.
+This module contains the functions needed for performing the self-consistent-field calculations.
 """
 
 import autograd.numpy as anp
@@ -25,7 +25,7 @@ from pennylane.hf.matrices import (
 
 
 def generate_scf(mol, n_steps=50, tol=1e-8):
-    r"""Return a function that performs the self-consistent-field iterations.
+    r"""Return a function that performs the self-consistent-field calculations.
 
     Args:
         mol (Molecule): the molecule object
@@ -33,7 +33,7 @@ def generate_scf(mol, n_steps=50, tol=1e-8):
         tol (float): convergence tolerance
 
     Returns:
-        function: function that performs the self-consistent-field iterations
+        function: function that performs the self-consistent-field calculations
 
     **Example**
 
