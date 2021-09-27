@@ -193,7 +193,7 @@ ANSAETZE = [
 EMPTY_PARAMS = []
 VAR_PARAMS = [0.5]
 EMBED_PARAMS = np.array([1 / np.sqrt(2 ** 3)] * 2 ** 3)
-LAYER_PARAMS = qml.init.strong_ent_layers_uniform(n_layers=2, n_wires=3)
+LAYER_PARAMS = np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=3))
 
 CIRCUITS = [
     (lambda params, wires=None: None, EMPTY_PARAMS),
@@ -396,7 +396,9 @@ class TestVQE:
             diff_method="parameter-shift",
         )
 
-        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
+        np.random.seed(1967)
+        shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
+        w = np.random.random(shape)
 
         c1 = cost(w)
         exec_opt = dev.num_executions
@@ -452,7 +454,9 @@ class TestVQE:
             diff_method="parameter-shift",
         )
 
-        w = qml.init.strong_ent_layers_uniform(2, 5, seed=1967)
+        np.random.seed(1967)
+        shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=5)
+        w = np.random.random(shape)
 
         c1 = cost(w)
         exec_opt = dev.num_executions
@@ -487,7 +491,9 @@ class TestVQE:
             diff_method="parameter-shift",
         )
 
-        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
+        np.random.seed(1967)
+        shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
+        w = np.random.random(shape)
 
         dc = qml.grad(cost)(w)
         exec_opt = dev.num_executions
@@ -515,7 +521,9 @@ class TestVQE:
             diff_method="parameter-shift",
         )
 
-        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
+        np.random.seed(1967)
+        shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
+        w = np.random.random(shape)
 
         dc = qml.grad(cost)(w)
         assert np.allclose(dc, 0)
@@ -538,7 +546,9 @@ class TestVQE:
             interface="torch",
         )
 
-        w = torch.tensor(qml.init.strong_ent_layers_uniform(2, 4, seed=1967), requires_grad=True)
+        torch.manual_seed(1967)
+        shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
+        w = torch.rand(shape, requires_grad=True)
 
         res = cost(w)
         res.backward()
@@ -560,7 +570,8 @@ class TestVQE:
             qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=True, interface="tf"
         )
 
-        w = tf.Variable(qml.init.strong_ent_layers_uniform(2, 4, seed=1967))
+        np.random.seed(1967)
+        w = tf.Variable(np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)))
 
         with tf.GradientTape() as tape:
             res = cost(w)
@@ -598,7 +609,8 @@ class TestVQE:
         h = qml.Hamiltonian([1, 1], obs)
 
         qnodes = qml.ExpvalCost(qml.templates.BasicEntanglerLayers, h, dev)
-        w = qml.init.basic_entangler_layers_uniform(3, 2, seed=1967)
+        np.random.seed(1967)
+        w = np.random.random(qml.templates.BasicEntanglerLayers.shape(n_layers=3, n_wires=2))
 
         res = qnodes(w)
 
@@ -669,7 +681,8 @@ class TestNewVQE:
         """Tests a VQE circuit where the observable does not act on all wires."""
         dev = qml.device("default.qubit", wires=3)
         coeffs = [1.0, 1.0, 1.0]
-        w = qml.init.strong_ent_layers_uniform(1, 2, seed=1967)
+        np.random.seed(1967)
+        w = np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=1, n_wires=2))
 
         observables1 = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
         H1 = qml.Hamiltonian(coeffs, observables1)
@@ -735,7 +748,8 @@ class TestNewVQE:
         dev = qml.device("default.qubit", wires=4)
         H1 = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)])
         H2 = qml.Hamiltonian(coeffs, [qml.PauliZ(2), qml.PauliY(2), qml.PauliZ(3)])
-        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
+        np.random.seed(1967)
+        w = np.random.random(qml.templates.BasicEntanglerLayers.shape(n_layers=2, n_wires=4))
 
         @qml.qnode(dev)
         def circuit():
@@ -763,7 +777,8 @@ class TestNewVQE:
         coeffs = [1.0, 1.0, 1.0]
         dev = qml.device("default.qubit", wires=4)
         H1 = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)])
-        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
+        np.random.seed(1967)
+        w = np.random.random(qml.templates.StronglyEntanglingLayers.shape(2, 4))
 
         @qml.qnode(dev)
         def circuit():
@@ -806,7 +821,8 @@ class TestNewVQE:
         """Tests the VQE gradient in the autograd interface."""
         dev = qml.device("default.qubit", wires=4)
         H = big_hamiltonian
-        w = pnp.array(qml.init.strong_ent_layers_uniform(2, 4, seed=1967), requires_grad=True)
+        np.random.seed(1967)
+        w = pnp.array(np.random.random(qml.templates.StronglyEntanglingLayers.shape(2, 4)), requires_grad=True)
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(w):
@@ -820,7 +836,8 @@ class TestNewVQE:
         """Tests the VQE gradient for a "zero" Hamiltonian."""
         dev = qml.device("default.qubit", wires=4)
         H = qml.Hamiltonian([0], [qml.PauliX(0)])
-        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
+        np.random.seed(1967)
+        w = pnp.array(np.random.random(qml.templates.StronglyEntanglingLayers.shape(2, 4)), requires_grad=True)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(w):
@@ -844,7 +861,8 @@ class TestNewVQE:
             qml.templates.StronglyEntanglingLayers(w, wires=range(4))
             return qml.expval(H)
 
-        w = torch.tensor(qml.init.strong_ent_layers_uniform(2, 4, seed=1967), requires_grad=True)
+        np.random.seed(1967)
+        w = torch.tensor(np.random.random(qml.templates.StronglyEntanglingLayers.shape(2, 4)), requires_grad=True)
 
         res = circuit(w)
         res.backward()
@@ -865,7 +883,8 @@ class TestNewVQE:
             qml.templates.StronglyEntanglingLayers(w, wires=range(4))
             return qml.expval(H)
 
-        w = tf.Variable(qml.init.strong_ent_layers_uniform(2, 4, seed=1967), dtype=tf.double)
+        np.random.seed(1967)
+        w = tf.Variable(np.random.random(qml.templates.StronglyEntanglingLayers.shape(2, 4)), dtype=tf.double)
 
         with tf.GradientTape() as tape:
             res = circuit(w)
@@ -882,7 +901,8 @@ class TestNewVQE:
 
         dev = qml.device("default.qubit", wires=4)
         H = big_hamiltonian
-        w = jnp.array(qml.init.strong_ent_layers_uniform(2, 4, seed=1967))
+        np.random.seed(1967)
+        w = jnp.array(np.random.random(qml.templates.StronglyEntanglingLayers.shape(2, 4)))
 
         @qml.qnode(dev, interface="jax")
         def circuit(w):
@@ -1059,7 +1079,8 @@ class TestMultipleInterfaceIntegration:
         H = qml.Hamiltonian(coeffs, observables)
 
         # TensorFlow interface
-        params = Variable(qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1))
+        np.random.seed(1)
+        params = Variable(np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2)))
         ansatz = qml.templates.layers.StronglyEntanglingLayers
 
         cost = qml.ExpvalCost(ansatz, H, dev, interface="tf")
@@ -1069,7 +1090,8 @@ class TestMultipleInterfaceIntegration:
             res_tf = np.array(tape.gradient(loss, params))
 
         # Torch interface
-        params = torch.tensor(qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1))
+        np.random.seed(1)
+        params = torch.tensor(np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2)))
         params = torch.autograd.Variable(params, requires_grad=True)
         ansatz = qml.templates.layers.StronglyEntanglingLayers
 
@@ -1079,7 +1101,8 @@ class TestMultipleInterfaceIntegration:
         res_torch = params.grad.numpy()
 
         # NumPy interface
-        params = qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1)
+        np.random.seed(1)
+        params = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
         ansatz = qml.templates.layers.StronglyEntanglingLayers
         cost = qml.ExpvalCost(ansatz, H, dev, interface="autograd")
         dcost = qml.grad(cost, argnum=[0])
