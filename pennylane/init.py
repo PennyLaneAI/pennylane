@@ -14,9 +14,15 @@
 r"""
 This module contains functions that generate initial parameters, for example
 to use in templates.
+
+.. warning::
+
+    This module will be deprecated soon, since the template classes now
+    have methods to extract the shape of initialisation tensors.
 """
 # pylint: disable=too-many-arguments
 from math import pi
+import warnings
 from pennylane import numpy as np
 
 
@@ -36,6 +42,13 @@ def particle_conserving_u2_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=N
     Returns:
         array: parameter array
     """
+
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
 
     if seed is not None:
         np.random.seed(seed)
@@ -65,6 +78,12 @@ def particle_conserving_u2_normal(n_layers, n_wires, mean=0, std=0.1, seed=None)
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
 
     if seed is not None:
         np.random.seed(seed)
@@ -94,6 +113,12 @@ def particle_conserving_u1_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=N
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
 
     if seed is not None:
         np.random.seed(seed)
@@ -123,6 +148,12 @@ def particle_conserving_u1_normal(n_layers, n_wires, mean=0, std=0.1, seed=None)
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
 
     if seed is not None:
         np.random.seed(seed)
@@ -154,6 +185,13 @@ def qaoa_embedding_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -186,6 +224,13 @@ def qaoa_embedding_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -220,6 +265,13 @@ def strong_ent_layers_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -247,6 +299,13 @@ def strong_ent_layers_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -274,6 +333,13 @@ def random_layers_uniform(n_layers, n_wires, n_rots=None, low=0, high=2 * pi, se
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -309,6 +375,13 @@ def random_layers_normal(n_layers, n_wires, n_rots=None, mean=0, std=0.1, seed=N
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -344,6 +417,13 @@ def cvqnn_layers_all(n_layers, n_wires, seed=None):
     Returns:
         list of parameter arrays
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -383,6 +463,13 @@ def cvqnn_layers_theta_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None)
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -410,6 +497,13 @@ def cvqnn_layers_theta_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -437,6 +531,13 @@ def cvqnn_layers_phi_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -464,6 +565,13 @@ def cvqnn_layers_phi_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -491,6 +599,13 @@ def cvqnn_layers_varphi_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -517,6 +632,13 @@ def cvqnn_layers_varphi_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -543,6 +665,13 @@ def cvqnn_layers_r_uniform(n_layers, n_wires, low=0, high=0.1, seed=None):
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -569,6 +698,13 @@ def cvqnn_layers_r_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -595,6 +731,13 @@ def cvqnn_layers_phi_r_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None)
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -621,6 +764,13 @@ def cvqnn_layers_phi_r_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -647,6 +797,13 @@ def cvqnn_layers_a_uniform(n_layers, n_wires, low=0, high=0.1, seed=None):
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -673,6 +830,13 @@ def cvqnn_layers_a_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -699,6 +863,13 @@ def cvqnn_layers_phi_a_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None)
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -725,6 +896,13 @@ def cvqnn_layers_phi_a_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -751,6 +929,13 @@ def cvqnn_layers_kappa_uniform(n_layers, n_wires, low=0, high=0.1, seed=None):
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -777,6 +962,13 @@ def cvqnn_layers_kappa_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -803,6 +995,13 @@ def interferometer_all(n_wires, seed=None):
     Returns:
         list of parameter arrays
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -832,6 +1031,13 @@ def interferometer_theta_uniform(n_wires, low=0, high=2 * pi, seed=None):
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
     n_if = n_wires * (n_wires - 1) // 2
@@ -857,6 +1063,13 @@ def interferometer_phi_uniform(n_wires, low=0, high=2 * pi, seed=None):
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
     n_if = n_wires * (n_wires - 1) // 2
@@ -882,6 +1095,13 @@ def interferometer_varphi_uniform(n_wires, low=0, high=2 * pi, seed=None):
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -906,6 +1126,13 @@ def interferometer_theta_normal(n_wires, mean=0, std=0.1, seed=None):
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
     n_if = n_wires * (n_wires - 1) // 2
@@ -931,6 +1158,13 @@ def interferometer_phi_normal(n_wires, mean=0, std=0.1, seed=None):
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
     n_if = n_wires * (n_wires - 1) // 2
@@ -956,6 +1190,13 @@ def interferometer_varphi_normal(n_wires, mean=0, std=0.1, seed=None):
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -980,6 +1221,13 @@ def simplified_two_design_initial_layer_uniform(n_wires, low=0, high=2 * pi, see
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -1005,6 +1253,13 @@ def simplified_two_design_initial_layer_normal(n_wires, mean=0, std=0.1, seed=No
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -1031,6 +1286,13 @@ def simplified_two_design_weights_uniform(n_layers, n_wires, low=0, high=2 * pi,
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -1064,6 +1326,13 @@ def simplified_two_design_weights_normal(n_layers, n_wires, mean=0, std=0.1, see
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -1095,6 +1364,13 @@ def basic_entangler_layers_normal(n_layers, n_wires, mean=0, std=0.1, seed=None)
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -1121,6 +1397,13 @@ def basic_entangler_layers_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=N
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
