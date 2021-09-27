@@ -263,7 +263,7 @@
 * ``qml.circuit_drawer.CircuitDrawer`` can accept a string for the ``charset`` keyword, instead of a ``CharSet`` object.
   [(#1640)](https://github.com/PennyLaneAI/pennylane/pull/1640)
 
-* ``qml.math.sort``` will now take in a tensor and return only the sorted tensor value not the indices as well.
+* ``qml.math.sort`` will now take in a tensor and return only the sorted tensor value not the indices as well.
     [(#1660)](https://github.com/PennyLaneAI/pennylane/pull/1660)
 
 <h3>Breaking changes</h3>
