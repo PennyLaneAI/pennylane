@@ -242,10 +242,7 @@ class batch_transform:
                 gradient_fn = qml.gradients.finite_diff
 
             res = qml.execute(
-                tapes,
-                device=qnode.device,
-                gradient_fn=gradient_fn,
-                interface=interface,
+                tapes, device=qnode.device, gradient_fn=gradient_fn, interface=interface, max_diff=2
             )
 
             return processing_fn(res)

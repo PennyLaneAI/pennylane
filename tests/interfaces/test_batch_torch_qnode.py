@@ -379,7 +379,6 @@ class TestQNode:
         res.backward()
         assert np.allclose(a.grad, np.sin(a_val), atol=tol, rtol=0)
 
-    @pytest.mark.xfail
     def test_differentiable_expand(self, dev_name, diff_method, mode, tol):
         """Test that operation and nested tapes expansion
         is differentiable"""
@@ -408,20 +407,7 @@ class TestQNode:
 
         res = circuit(a, p)
 
-        if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == {1, 2, 3, 4}
-        elif diff_method == "backprop":
-            # For a backprop device, no interface wrapping is performed, and JacobianTape.jacobian()
-            # is never called. As a result, JacobianTape.trainable_params is never set --- the ML
-            # framework uses its own backprop logic and its own bookkeeping re: trainable parameters.
-            assert circuit.qtape.trainable_params == {0, 1, 2, 3, 4}
-
-        assert [i.name for i in circuit.qtape.operations] == ["RX", "Rot", "PhaseShift"]
-
-        if diff_method == "finite-diff":
-            assert np.all(circuit.qtape.get_parameters() == [p[2], p[0], -p[2], p[1] + p[2]])
-        elif diff_method == "backprop":
-            assert np.all(circuit.qtape.get_parameters() == [a, p[2], p[0], -p[2], p[1] + p[2]])
+        assert circuit.qtape.trainable_params == {1, 2, 3}
 
         expected = np.cos(a) * np.cos(p_val[1]) * np.sin(p_val[0]) + np.sin(a) * (
             np.cos(p_val[2]) * np.sin(p_val[1])
@@ -757,7 +743,6 @@ class TestQubitIntegration:
         assert isinstance(res[0], torch.Tensor)
         assert isinstance(res[1], torch.Tensor)
 
-    @pytest.mark.xfail
     def test_chained_qnodes(self, dev_name, diff_method, mode):
         """Test that the gradient of chained QNodes works without error"""
         dev = qml.device(dev_name, wires=2)
@@ -777,7 +762,7 @@ class TestQubitIntegration:
             w1, w2 = weights
             c1 = circuit1(w1)
             c2 = circuit2(c1, w2)
-            return np.sum(c2) ** 2
+            return torch.sum(c2) ** 2
 
         w1 = qml.init.strong_ent_layers_normal(n_wires=2, n_layers=3)
         w2 = qml.init.strong_ent_layers_normal(n_wires=2, n_layers=4)
@@ -1098,3 +1083,244 @@ class TestCV:
         res = torch.tensor([n.grad, a.grad])
         expected = torch.tensor([[2 * a ** 2 + 2 * n + 1, 2 * a * (2 * n + 1)]])
         assert torch.allclose(res, expected, atol=tol, rtol=0)
+
+
+@pytest.mark.parametrize("dev_name,diff_method,mode", qubit_device_and_diff_method)
+class TestTapeExpansion:
+    """Test that tape expansion within the QNode integrates correctly
+    with the Torch interface"""
+
+    def test_gradient_expansion(self, dev_name, diff_method, mode, mocker):
+        """Test that a *supported* operation with no gradient recipe is
+        expanded for both parameter-shift and finite-differences, but not for execution."""
+        if diff_method not in ("parameter-shift", "finite-diff"):
+            pytest.skip("Only supports gradient transforms")
+
+        dev = qml.device(dev_name, wires=1)
+
+        class PhaseShift(qml.PhaseShift):
+            grad_method = None
+
+            def expand(self):
+                with qml.tape.QuantumTape() as tape:
+                    qml.RY(3 * self.data[0], wires=self.wires)
+                return tape
+
+        @qnode(dev, diff_method=diff_method, mode=mode, max_diff=2, interface="torch")
+        def circuit(x):
+            qml.Hadamard(wires=0)
+            PhaseShift(x, wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        spy = mocker.spy(circuit.device, "batch_execute")
+        x = torch.tensor(0.5, requires_grad=True)
+
+        loss = circuit(x)
+
+        tape = spy.call_args[0][0][0]
+
+        spy = mocker.spy(circuit.gradient_fn, "transform_fn")
+        loss.backward()
+        res = x.grad
+
+        input_tape = spy.call_args[0][0]
+        assert len(input_tape.operations) == 2
+        assert input_tape.operations[1].name == "RY"
+        assert input_tape.operations[1].data[0] == 3 * x
+
+        shifted_tape1, shifted_tape2 = spy.spy_return[0]
+
+        assert len(shifted_tape1.operations) == 2
+        assert shifted_tape1.operations[1].name == "RY"
+
+        assert len(shifted_tape2.operations) == 2
+        assert shifted_tape2.operations[1].name == "RY"
+
+        assert torch.allclose(res, -3 * torch.sin(3 * x))
+
+        if diff_method == "parameter-shift":
+            # test second order derivatives
+            res = torch.autograd.functional.hessian(circuit, x)
+            assert torch.allclose(res, -9 * torch.cos(3 * x))
+
+    @pytest.mark.parametrize("max_diff", [1, 2])
+    def test_gradient_expansion_trainable_only(self, dev_name, diff_method, mode, max_diff, mocker):
+        """Test that a *supported* operation with no gradient recipe is only
+        expanded for parameter-shift and finite-differences when it is trainable."""
+        if diff_method not in ("parameter-shift", "finite-diff"):
+            pytest.skip("Only supports gradient transforms")
+
+        dev = qml.device(dev_name, wires=1)
+
+        class PhaseShift(qml.PhaseShift):
+            grad_method = None
+
+            def expand(self):
+                with qml.tape.QuantumTape() as tape:
+                    qml.RY(3 * self.data[0], wires=self.wires)
+                return tape
+
+        @qnode(dev, diff_method=diff_method, mode=mode, max_diff=max_diff, interface="torch")
+        def circuit(x, y):
+            qml.Hadamard(wires=0)
+            PhaseShift(x, wires=0)
+            PhaseShift(2 * y, wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        spy = mocker.spy(circuit.device, "batch_execute")
+        x = torch.tensor(0.5, requires_grad=True)
+        y = torch.tensor(0.7, requires_grad=False)
+
+        loss = circuit(x, y)
+
+        spy = mocker.spy(circuit.gradient_fn, "transform_fn")
+        loss.backward()
+
+        input_tape = spy.call_args[0][0]
+        assert len(input_tape.operations) == 3
+        assert input_tape.operations[1].name == "RY"
+        assert input_tape.operations[1].data[0] == 3 * x
+        assert input_tape.operations[2].name == "PhaseShift"
+        assert input_tape.operations[2].grad_method is None
+
+    @pytest.mark.parametrize("max_diff", [1, 2])
+    def test_hamiltonian_expansion_analytic(self, dev_name, diff_method, mode, max_diff, mocker):
+        """Test that the Hamiltonian is not expanded if there
+        are non-commuting groups and the number of shots is None
+        and the first and second order gradients are correctly evaluated"""
+        if diff_method == "adjoint":
+            pytest.skip("The adjoint method does not yet support Hamiltonians")
+
+        dev = qml.device(dev_name, wires=3, shots=None)
+        spy = mocker.spy(qml.transforms, "hamiltonian_expand")
+        obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
+
+        @qnode(dev, diff_method=diff_method, mode=mode, max_diff=max_diff, interface="torch")
+        def circuit(data, weights, coeffs):
+            weights = torch.reshape(weights, [1, -1])
+            qml.templates.AngleEmbedding(data, wires=[0, 1])
+            qml.templates.BasicEntanglerLayers(weights, wires=[0, 1])
+            return qml.expval(qml.Hamiltonian(coeffs, obs))
+
+        d = torch.tensor([0.1, 0.2], requires_grad=False, dtype=torch.float64)
+        w = torch.tensor([0.654, -0.734], requires_grad=True, dtype=torch.float64)
+        c = torch.tensor([-0.6543, 0.24, 0.54], requires_grad=True, dtype=torch.float64)
+
+        # test output
+        res = circuit(d, w, c)
+
+        expected = c[2] * torch.cos(d[1] + w[1]) - c[1] * torch.sin(d[0] + w[0]) * torch.sin(
+            d[1] + w[1]
+        )
+        assert torch.allclose(res, expected)
+        spy.assert_not_called()
+
+        # test gradients
+        res.backward()
+        grad = (w.grad, c.grad)
+
+        expected_w = torch.tensor(
+            [
+                -c[1] * torch.cos(d[0] + w[0]) * torch.sin(d[1] + w[1]),
+                -c[1] * torch.cos(d[1] + w[1]) * torch.sin(d[0] + w[0])
+                - c[2] * torch.sin(d[1] + w[1]),
+            ]
+        )
+        expected_c = torch.tensor(
+            [0, -torch.sin(d[0] + w[0]) * torch.sin(d[1] + w[1]), torch.cos(d[1] + w[1])]
+        )
+        assert torch.allclose(grad[0], expected_w)
+        assert torch.allclose(grad[1], expected_c)
+
+        # test second-order derivatives
+        if diff_method in ("parameter-shift", "backprop") and max_diff == 2:
+            hessians = torch.autograd.functional.hessian(circuit, (d, w, c))
+
+            grad2_c = hessians[2][2]
+            assert torch.allclose(grad2_c, torch.zeros([3, 3], dtype=torch.float64))
+
+            grad2_w_c = hessians[1][2]
+            expected = torch.tensor(
+                [
+                    [0, -torch.cos(d[0] + w[0]) * torch.sin(d[1] + w[1]), 0],
+                    [
+                        0,
+                        -torch.cos(d[1] + w[1]) * torch.sin(d[0] + w[0]),
+                        -torch.sin(d[1] + w[1]),
+                    ],
+                ]
+            )
+            assert torch.allclose(grad2_w_c, expected)
+
+    @pytest.mark.parametrize("max_diff", [1, 2])
+    def test_hamiltonian_expansion_finite_shots(
+        self, dev_name, diff_method, mode, max_diff, mocker
+    ):
+        """Test that the Hamiltonian is expanded if there
+        are non-commuting groups and the number of shots is finite
+        and the first and second order gradients are correctly evaluated"""
+        if diff_method in ("adjoint", "backprop", "finite-diff"):
+            pytest.skip("The adjoint and backprop methods do not yet support sampling")
+
+        dev = qml.device(dev_name, wires=3, shots=50000)
+        spy = mocker.spy(qml.transforms, "hamiltonian_expand")
+        obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
+
+        @qnode(dev, diff_method=diff_method, mode=mode, max_diff=max_diff, interface="torch")
+        def circuit(data, weights, coeffs):
+            weights = torch.reshape(weights, [1, -1])
+            qml.templates.AngleEmbedding(data, wires=[0, 1])
+            qml.templates.BasicEntanglerLayers(weights, wires=[0, 1])
+            H = qml.Hamiltonian(coeffs, obs)
+            H.compute_grouping()
+            return qml.expval(H)
+
+        d = torch.tensor([0.1, 0.2], requires_grad=False, dtype=torch.float64)
+        w = torch.tensor([0.654, -0.734], requires_grad=True, dtype=torch.float64)
+        c = torch.tensor([-0.6543, 0.24, 0.54], requires_grad=True, dtype=torch.float64)
+
+        # test output
+        res = circuit(d, w, c)
+
+        expected = c[2] * torch.cos(d[1] + w[1]) - c[1] * torch.sin(d[0] + w[0]) * torch.sin(
+            d[1] + w[1]
+        )
+        assert torch.allclose(res, expected, atol=0.1)
+        spy.assert_called()
+
+        # test gradients
+        res.backward()
+        grad = (w.grad, c.grad)
+
+        expected_w = torch.tensor(
+            [
+                -c[1] * torch.cos(d[0] + w[0]) * torch.sin(d[1] + w[1]),
+                -c[1] * torch.cos(d[1] + w[1]) * torch.sin(d[0] + w[0])
+                - c[2] * torch.sin(d[1] + w[1]),
+            ]
+        )
+        expected_c = torch.tensor(
+            [0, -torch.sin(d[0] + w[0]) * torch.sin(d[1] + w[1]), torch.cos(d[1] + w[1])]
+        )
+        assert torch.allclose(grad[0], expected_w, atol=0.1)
+        assert torch.allclose(grad[1], expected_c, atol=0.1)
+
+        # test second-order derivatives
+        if diff_method == "parameter-shift" and max_diff == 2:
+            hessians = torch.autograd.functional.hessian(circuit, (d, w, c))
+
+            grad2_c = hessians[2][2]
+            assert torch.allclose(grad2_c, torch.zeros([3, 3], dtype=torch.float64), atol=0.1)
+
+            grad2_w_c = hessians[1][2]
+            expected = torch.tensor(
+                [
+                    [0, -torch.cos(d[0] + w[0]) * torch.sin(d[1] + w[1]), 0],
+                    [
+                        0,
+                        -torch.cos(d[1] + w[1]) * torch.sin(d[0] + w[0]),
+                        -torch.sin(d[1] + w[1]),
+                    ],
+                ]
+            )
+            assert torch.allclose(grad2_w_c, expected, atol=0.1)
