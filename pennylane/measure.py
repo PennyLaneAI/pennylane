@@ -405,8 +405,29 @@ def probs(wires=None, op=None):
     to a :math:`50\%` chance of measuring either :math:`|00\rangle`
     or :math:`|01\rangle`.
 
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        H = 1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliZ(wires=0)
+            qml.PauliX(wires=1)
+            return qml.probs(op=qml.Hermitian(H, wires=0))
+
+    >>> circuit()
+
+    array([0.14644661 0.85355339])
+
+    The returned array is in lexicographic order, so corresponds
+    to a :math:`14.6\%` chance of measuring the rotated :math:`|0\rangle` state
+    and :math:`85.4\%` of measuring the rotated :math:`|1\rangle` state.
+
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
+        op (Hermitian): Hermitian operator that rotates the computational basis
     """
     # pylint: disable=protected-access
 

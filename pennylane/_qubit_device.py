@@ -399,6 +399,7 @@ class QubitDevice(Device):
                 results.append(self.sample(obs, shot_range=shot_range, bin_size=bin_size))
 
             elif obs.return_type is Probability:
+
                 results.append(
                     self.probability(wires=obs.wires, shot_range=shot_range, bin_size=bin_size)
                 )
@@ -659,7 +660,7 @@ class QubitDevice(Device):
 
         return self._asarray(prob, dtype=self.R_DTYPE)
 
-    def probability(self, observable=None, wires=None, shot_range=None, bin_size=None):
+    def probability(self, wires=None, shot_range=None, bin_size=None):
         """Return either the analytic probability or estimated probability of
         each computational basis state.
 
@@ -736,7 +737,6 @@ class QubitDevice(Device):
             prob = self._flatten(self._reduce_sum(prob, inactive_device_wires.labels))
         else:
             prob = self._flatten(self._reduce_sum(prob, inactive_device_wires))
-
         # The wires provided might not be in consecutive order (i.e., wires might be [2, 0]).
         # If this is the case, we must permute the marginalized probability so that
         # it corresponds to the orders of the wires passed.
