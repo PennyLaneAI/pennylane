@@ -131,7 +131,7 @@ class ParticleConservingU2(Operation):
             cost_fn = qml.ExpvalCost(ansatz, h, dev)
 
             # Compute the expectation value of 'h' for a given set of parameters
-            layers = 2
+            layers = 1
             shape = ParticleConservingU2.shape(layers, qubits)
             params = np.random.random(shape)
             print(cost_fn(params))

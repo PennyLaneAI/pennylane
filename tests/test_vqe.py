@@ -749,7 +749,7 @@ class TestNewVQE:
         H1 = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)])
         H2 = qml.Hamiltonian(coeffs, [qml.PauliZ(2), qml.PauliY(2), qml.PauliZ(3)])
         np.random.seed(1967)
-        w = np.random.random(qml.templates.BasicEntanglerLayers.shape(n_layers=2, n_wires=4))
+        w = np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4))
 
         @qml.qnode(dev)
         def circuit():
@@ -822,7 +822,7 @@ class TestNewVQE:
         dev = qml.device("default.qubit", wires=4)
         H = big_hamiltonian
         np.random.seed(1967)
-        w = pnp.array(np.random.random(qml.templates.StronglyEntanglingLayers.shape(2, 4)), requires_grad=True)
+        w = pnp.random.random(qml.templates.StronglyEntanglingLayers.shape(2, 4), requires_grad=True)
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(w):
@@ -837,7 +837,7 @@ class TestNewVQE:
         dev = qml.device("default.qubit", wires=4)
         H = qml.Hamiltonian([0], [qml.PauliX(0)])
         np.random.seed(1967)
-        w = pnp.array(np.random.random(qml.templates.StronglyEntanglingLayers.shape(2, 4)), requires_grad=True)
+        w = pnp.random.random(qml.templates.StronglyEntanglingLayers.shape(2, 4), requires_grad=True)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(w):
@@ -861,8 +861,9 @@ class TestNewVQE:
             qml.templates.StronglyEntanglingLayers(w, wires=range(4))
             return qml.expval(H)
 
-        np.random.seed(1967)
-        w = torch.tensor(np.random.random(qml.templates.StronglyEntanglingLayers.shape(2, 4)), requires_grad=True)
+        torch.manual_seed(1967)
+        shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
+        w = torch.rand(shape, requires_grad=True)
 
         res = circuit(w)
         res.backward()
@@ -1091,7 +1092,8 @@ class TestMultipleInterfaceIntegration:
 
         # Torch interface
         np.random.seed(1)
-        params = torch.tensor(np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2)))
+        shape = qml.templates.StronglyEntanglingLayers.shape(3, 2)
+        params = torch.rand(shape, requires_grad=True)
         params = torch.autograd.Variable(params, requires_grad=True)
         ansatz = qml.templates.layers.StronglyEntanglingLayers
 
