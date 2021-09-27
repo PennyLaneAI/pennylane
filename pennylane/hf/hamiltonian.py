@@ -22,10 +22,28 @@ def generate_electron_integrals(mol, core=None, active=None):
     r"""Return a function that computes the one- and two-electron integrals in the atomic orbital
     basis.
 
+    The one- and two-electron integrals in the molecular orbital basis can be written in terms of
+    the integrals in the atomic orbital basis, by recalling that
+    :math:`\phi_i = \sum_{\nu}c_{\nu}^i \chi_{\nu}`, as
+
+    .. math::
+
+        h_{pq} = \sum_{\mu \nu} C_{p \mu} h_{\mu \nu} C_{\nu q},
+
+    and
+
+    .. math::
+
+        h_{pqrs} = \sum_{\mu \nu \rho \sigma} C_{p \mu} C_{q \nu} h_{\mu \nu \rho \sigma} C_{\rho r} C_{\sigma s}.
+
+
+    The :math:`h_{\mu \nu}` and :math:`h_{\mu \nu \rho \sigma}` terms refer to the elements of the
+    core matrix and the electron repulsion tensor, respectively.
+
     Args:
         mol (Molecule): the molecule object
-        core (list[int]): indices of core orbitals
-        active (list[int]): indices of active orbitals
+        core (list[int]): indices of the core orbitals
+        active (list[int]): indices of the active orbitals
 
     Returns:
         function: function that computes the core energy, the one- and two-electron integrals

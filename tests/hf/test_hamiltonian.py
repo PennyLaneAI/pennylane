@@ -14,7 +14,6 @@
 """
 Unit tests for functions needed for computing the Hamiltonian.
 """
-import autograd
 import pytest
 from pennylane import numpy as np
 from pennylane.hf.hamiltonian import generate_electron_integrals
