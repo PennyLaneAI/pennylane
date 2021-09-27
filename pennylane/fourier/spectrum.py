@@ -382,8 +382,8 @@ def spectrum(qnode, encoding_args=None, argnum=None, decimals=5, num_pos=1):
     >>>     print(f"{inp}: {freqs}")
     "x": {(0,): [-0.5, 0.0, 0.5], (1,): [-0.5, 0.0, 0.5], (2,): [-0.5, 0.0, 0.5]}
 
-    Selecting arguments with by name instead is possible via the ``encoding_args``
-    argument:
+    Selecting arguments by name instead of index is possible via the
+    ``encoding_args`` argument:
 
     >>> res = spectrum(circuit, encoding_args={"y"})(x, y, z, w)
     >>> for inp, freqs in res.items():
