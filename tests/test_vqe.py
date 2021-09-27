@@ -571,7 +571,9 @@ class TestVQE:
         )
 
         np.random.seed(1967)
-        w = tf.Variable(np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)))
+        w = tf.Variable(
+            np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4))
+        )
 
         with tf.GradientTape() as tape:
             res = cost(w)
@@ -822,7 +824,9 @@ class TestNewVQE:
         dev = qml.device("default.qubit", wires=4)
         H = big_hamiltonian
         np.random.seed(1967)
-        w = pnp.random.random(qml.templates.StronglyEntanglingLayers.shape(2, 4), requires_grad=True)
+        w = pnp.random.random(
+            qml.templates.StronglyEntanglingLayers.shape(2, 4), requires_grad=True
+        )
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(w):
@@ -837,7 +841,9 @@ class TestNewVQE:
         dev = qml.device("default.qubit", wires=4)
         H = qml.Hamiltonian([0], [qml.PauliX(0)])
         np.random.seed(1967)
-        w = pnp.random.random(qml.templates.StronglyEntanglingLayers.shape(2, 4), requires_grad=True)
+        w = pnp.random.random(
+            qml.templates.StronglyEntanglingLayers.shape(2, 4), requires_grad=True
+        )
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(w):
@@ -885,7 +891,9 @@ class TestNewVQE:
             return qml.expval(H)
 
         np.random.seed(1967)
-        w = tf.Variable(np.random.random(qml.templates.StronglyEntanglingLayers.shape(2, 4)), dtype=tf.double)
+        w = tf.Variable(
+            np.random.random(qml.templates.StronglyEntanglingLayers.shape(2, 4)), dtype=tf.double
+        )
 
         with tf.GradientTape() as tape:
             res = circuit(w)
