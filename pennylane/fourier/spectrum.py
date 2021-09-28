@@ -158,10 +158,8 @@ def _get_and_validate_classical_jacobian(qnode, argnum, args, kwargs, num_pos):
         all_args = _get_random_args(args, qnode.interface, num_pos, seed=291)
         all_args.append(args)
         # Evaluate the classical Jacobian at multiple input args.
-        jacs = [
-            qml.transforms.classical_jacobian(qnode, argnum=argnum)(*_args, **kwargs)
-            for _args in all_args
-        ]
+        jac_fns = tuple(qml.transforms.classical_jacobian(qnode, argnum=num) for num in argnum)
+        jacs = [tuple(_fn(*_args, **kwargs) for _fn in jac_fns) for _args in all_args]
     except Exception as e:
         raise ValueError("Could not compute Jacobian of the classical preprocessing.") from e
 

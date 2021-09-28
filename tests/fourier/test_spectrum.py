@@ -71,8 +71,23 @@ def circuit_5(x, y, z):
     qml.RY(z[0] + 0.2 * z[1], wires=1)
     return qml.expval(qml.PauliZ(0))
 
+def circuit_6(x, y, z):
+    [qml.RX(x[i]**i, wires=0) for i in range(3)]
+    qml.RZ(y[0, 1] / y[1, 0], wires=1)
+    qml.RY(z[0] + 0.2 ** z[1], wires=1)
+    return qml.expval(qml.PauliZ(0))
+
+def circuit_7(a):
+    [qml.RX(qml.math.sin(a), wires=0) for i in range(4)]
+    return qml.expval(qml.PauliZ(0))
+
+def circuit_8(a, x):
+    [qml.RX(a, wires=0) for i in range(4)]
+    [qml.RX(x[i]*a, wires=1) for i in range(3)]
+    return qml.expval(qml.PauliZ(0))
 
 circuits = [circuit_0, circuit_1, circuit_2, circuit_3, circuit_4, circuit_5]
+circuits_nonlinear = [circuit_6, circuit_7, circuit_8]
 
 a = 0.812
 b = -5.231
@@ -80,6 +95,7 @@ x = np.array([0.1, -1.9, 0.7])
 y = np.array([[0.4, 5.5], [1.6, 5.1]])
 z = np.array([-1.9, -0.1, 0.49, 0.24])
 all_args = [(a,), (a, b), (x,), (x, y), (x, y), (x, y, z)]
+all_args_nonlinear = [(x, y, z), (a,), (a, x)]
 
 process_id_cases = [
     (circuit_0, {"a"}, None, {"a": ...}, [0]),
@@ -217,6 +233,17 @@ class TestHelpersWithAutograd:
         else:
             assert np.allclose(class_jac, validated_class_jac)
 
+    @pytest.mark.parametrize("num_pos", [1, 2])
+    @pytest.mark.parametrize("circuit, args", zip(circuits_nonlinear, all_args_nonlinear))
+    def test_jacobian_validation_error(self, circuit, args, num_pos):
+        dev = qml.device("default.qubit", wires=2)
+        qnode = qml.QNode(circuit, dev, interface="autograd")
+        match = "The Jacobian of the classical preprocessing in the provided QNode is not constant"
+        with pytest.raises(ValueError, match=match):
+            validated_class_jac = _get_and_validate_classical_jacobian(
+                qnode, argnum=list(range(len(args))), args=args, kwargs={}, num_pos=num_pos
+            )
+
     @pytest.mark.parametrize("num", [0, 1, 2])
     @pytest.mark.parametrize(
         "args",
@@ -230,50 +257,6 @@ class TestHelpersWithAutograd:
     def test_get_random_args(self, args, num):
         seed = 921
         rnd_args = _get_random_args(args, "autograd", num, seed)
-        assert len(rnd_args) == num
-        np.random.seed(seed)
-        for _rnd_args in rnd_args:
-            expected = tuple(np.random.random(np.shape(arg)) * 2 * np.pi - np.pi for arg in args)
-            assert all(np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args))
-
-
-class TestHelpersWithJax:
-    pytest.importorskip("jax")
-
-    @pytest.mark.parametrize("num_pos", [0, 1, 2])
-    @pytest.mark.parametrize("circuit, args", zip(circuits, all_args))
-    def test_jacobian_validation(self, circuit, args, num_pos):
-        pytest.importorskip("jax")
-        dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(circuit, dev, interface="jax")
-        all_args = list(range(len(args)))
-        class_jac = classical_jacobian(qnode, argnum=all_args)(*args)
-        validated_class_jac = _get_and_validate_classical_jacobian(
-            qnode, argnum=all_args, args=args, kwargs={}, num_pos=num_pos
-        )
-        if isinstance(class_jac, tuple):
-            assert all(
-                (
-                    np.allclose(_jac, val_jac)
-                    for _jac, val_jac in zip(class_jac, validated_class_jac)
-                )
-            )
-        else:
-            assert np.allclose(class_jac, validated_class_jac)
-
-    @pytest.mark.parametrize("num", [0, 1, 2])
-    @pytest.mark.parametrize(
-        "args",
-        [
-            (0.2,),
-            (1.1, 3.2, 0.2),
-            (np.array([[0, 9.2], [-1.2, 3.2]]),),
-            (0.3, [1, 4, 2], np.array([0.3, 9.1])),
-        ],
-    )
-    def test_get_random_args(self, args, num):
-        seed = 921
-        rnd_args = _get_random_args(args, "jax", num, seed)
         assert len(rnd_args) == num
         np.random.seed(seed)
         for _rnd_args in rnd_args:
@@ -372,6 +355,50 @@ class TestHelpersWithTorch:
         torch.random.manual_seed(seed)
         for _rnd_args in rnd_args:
             expected = tuple(torch.rand(np.shape(arg)) * 2 * np.pi - np.pi for arg in args)
+            assert all(np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args))
+
+
+class TestHelpersWithJax:
+    pytest.importorskip("jax")
+
+    @pytest.mark.parametrize("num_pos", [0, 1, 2])
+    @pytest.mark.parametrize("circuit, args", zip(circuits, all_args))
+    def test_jacobian_validation(self, circuit, args, num_pos):
+        pytest.importorskip("jax")
+        dev = qml.device("default.qubit", wires=2)
+        qnode = qml.QNode(circuit, dev, interface="jax")
+        all_args = list(range(len(args)))
+        class_jac = classical_jacobian(qnode, argnum=all_args)(*args)
+        validated_class_jac = _get_and_validate_classical_jacobian(
+            qnode, argnum=all_args, args=args, kwargs={}, num_pos=num_pos
+        )
+        if isinstance(class_jac, tuple):
+            assert all(
+                (
+                    np.allclose(_jac, val_jac)
+                    for _jac, val_jac in zip(class_jac, validated_class_jac)
+                )
+            )
+        else:
+            assert np.allclose(class_jac, validated_class_jac)
+
+    @pytest.mark.parametrize("num", [0, 1, 2])
+    @pytest.mark.parametrize(
+        "args",
+        [
+            (0.2,),
+            (1.1, 3.2, 0.2),
+            (np.array([[0, 9.2], [-1.2, 3.2]]),),
+            (0.3, [1, 4, 2], np.array([0.3, 9.1])),
+        ],
+    )
+    def test_get_random_args(self, args, num):
+        seed = 921
+        rnd_args = _get_random_args(args, "jax", num, seed)
+        assert len(rnd_args) == num
+        np.random.seed(seed)
+        for _rnd_args in rnd_args:
+            expected = tuple(np.random.random(np.shape(arg)) * 2 * np.pi - np.pi for arg in args)
             assert all(np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args))
 
 
@@ -514,7 +541,7 @@ class TestAutograd:
         in the autograd interface."""
 
         x = pnp.array([1.0, 2.0, 3.0])
-        w = pnp.array([[-1, -2, -3], [-4, -5, -6]])
+        w = pnp.array([[-1, -2, -3], [-4, -5, -6]], dtype=float)
 
         dev = qml.device("default.qubit", wires=3)
         qnode = qml.QNode(circuit, dev, interface="autograd")
@@ -567,7 +594,7 @@ class TestJax:
         from jax import numpy as jnp
 
         x = jnp.array([1.0, 2.0, 3.0])
-        w = [[-1, -2, -3], [-4, -5, -6]]
+        w = [[-1., -2., -3.], [-4., -5., -6.]]
 
         dev = qml.device("default.qubit", wires=3)
         qnode = qml.QNode(circuit, dev, interface="jax")
