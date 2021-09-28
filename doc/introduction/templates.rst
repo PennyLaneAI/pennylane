@@ -320,7 +320,7 @@ statement:
 .. note::
 
     Make sure that classical processing is compatible with the autodifferentiation library you are using. For example,
-    if `MyTemplate` is to be used with the torch framework, we would have to change `np.sin` to `torch.sin`.
+    if `MyTemplate` is to be used with the torch framework, we would have to change ``np.sin`` to ``torch.sin``.
     PennyLane's :mod:`math <pennylane.math>` library contains some advanced functionality for
     framework-agnostic processing.
 
