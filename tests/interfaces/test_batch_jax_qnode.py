@@ -1103,3 +1103,61 @@ class TestTapeExpansion:
     #             -np.sin(d[1] + w[1]),
     #         ]
     #         assert np.allclose(grad2_w_c, expected, atol=0.1)
+
+
+@pytest.mark.parametrize("dev_name,diff_method,mode", qubit_device_and_diff_method)
+class TestJIT:
+    """Test JAX JIT integration with the QNode"""
+
+    def test_gradient(self, dev_name, diff_method, mode, tol):
+        """Test derivative calculation of a scalar valued QNode"""
+        dev = qml.device(dev_name, wires=1)
+
+        if diff_method == "adjoint":
+            pytest.xfail(reason="The adjoint method is not using host-callback currently")
+
+        @jax.jit
+        @qnode(dev, diff_method=diff_method, interface="jax", mode=mode)
+        def circuit(x):
+            qml.RY(x[0], wires=0)
+            qml.RX(x[1], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        x = jnp.array([1.0, 2.0])
+        res = circuit(x)
+        g = jax.grad(circuit)(x)
+
+        a, b = x
+
+        expected_res = np.cos(a) * np.cos(b)
+        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+
+        expected_g = [-np.sin(a) * np.cos(b), -np.cos(a) * np.sin(b)]
+        assert np.allclose(g, expected_g, atol=tol, rtol=0)
+
+    @pytest.mark.xfail(
+        reason="Non-trainable parameters are not being correctly unwrapped by the interface"
+    )
+    def test_gradient_subset(self, dev_name, diff_method, mode, tol):
+        """Test derivative calculation of a scalar valued QNode with respect
+        to a subset of arguments"""
+        a = jnp.array(0.1)
+        b = jnp.array(0.2)
+
+        dev = qml.device(dev_name, wires=1)
+
+        @jax.jit
+        @qnode(dev, diff_method=diff_method, interface="jax", mode=mode)
+        def circuit(a, b):
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            qml.RZ(c, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        res = jax.grad(circuit, argnums=[0, 1])(a, b, 0.0)
+
+        expected_res = np.cos(a) * np.cos(b)
+        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+
+        expected_g = [-np.sin(a) * np.cos(b), -np.cos(a) * np.sin(b)]
+        assert np.allclose(g, expected_g, atol=tol, rtol=0)

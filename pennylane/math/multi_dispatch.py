@@ -281,7 +281,7 @@ def get_trainable_indices(values):
     if interface == "jax":
         import jax
 
-        if not any(isinstance(v, jax.interpreters.ad.JVPTracer) for v in values):
+        if not any(isinstance(v, jax.core.Tracer) for v in values):
             # No JAX tracing is occuring; treat all `DeviceArray` objects as trainable.
             trainable = lambda p, **kwargs: isinstance(p, jax.numpy.DeviceArray)
         else:
