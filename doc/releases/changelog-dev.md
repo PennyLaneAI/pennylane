@@ -354,7 +354,18 @@
   `requires_grad=False` was explicitly set.
   [(#1638)](https://github.com/PennyLaneAI/pennylane/pull/1638)
 
+<h3>Deprecations</h3>
+
+* The `init` module, which contains functions to generate random parameter tensors for 
+  templates, is flagged for deprecation and will be removed in the next release cycle. 
+  Instead, the templates' `shape` method can be used to get the desired shape of the tensor, 
+  which can then be generated manually.
+  [(#1689)](https://github.com/PennyLaneAI/pennylane/pull/1689)
+
 <h3>Bug fixes</h3>
+
+* Fix a bug where it was not possible to use `jax.jit` on a `QNode` when using `QubitStateVector`.
+  [(#1683)](https://github.com/PennyLaneAI/pennylane/pull/1683)
 
 * The device suite tests can now execute successfully if no shots configuration variable is given.
   [(#1641)](https://github.com/PennyLaneAI/pennylane/pull/1641)
@@ -375,5 +386,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-Utkarsh Azad, Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee,
-Ingrid Strandberg, Antal Száva, David Wierichs.
+
+Utkarsh Azad, Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee, Romain Moyard,
+Maria Schuld, Ingrid Strandberg, Antal Száva, David Wierichs.
