@@ -71,20 +71,24 @@ def circuit_5(x, y, z):
     qml.RY(z[0] + 0.2 * z[1], wires=1)
     return qml.expval(qml.PauliZ(0))
 
+
 def circuit_6(x, y, z):
-    [qml.RX(x[i]**i, wires=0) for i in range(3)]
+    [qml.RX(x[i] ** i, wires=0) for i in range(3)]
     qml.RZ(y[0, 1] / y[1, 0], wires=1)
     qml.RY(z[0] + 0.2 ** z[1], wires=1)
     return qml.expval(qml.PauliZ(0))
+
 
 def circuit_7(a):
     [qml.RX(qml.math.sin(a), wires=0) for i in range(4)]
     return qml.expval(qml.PauliZ(0))
 
+
 def circuit_8(a, x):
     [qml.RX(a, wires=0) for i in range(4)]
-    [qml.RX(x[i]*a, wires=1) for i in range(3)]
+    [qml.RX(x[i] * a, wires=1) for i in range(3)]
     return qml.expval(qml.PauliZ(0))
+
 
 circuits = [circuit_0, circuit_1, circuit_2, circuit_3, circuit_4, circuit_5]
 circuits_nonlinear = [circuit_6, circuit_7, circuit_8]
@@ -594,7 +598,7 @@ class TestJax:
         from jax import numpy as jnp
 
         x = jnp.array([1.0, 2.0, 3.0])
-        w = [[-1., -2., -3.], [-4., -5., -6.]]
+        w = [[-1.0, -2.0, -3.0], [-4.0, -5.0, -6.0]]
 
         dev = qml.device("default.qubit", wires=3)
         qnode = qml.QNode(circuit, dev, interface="jax")
