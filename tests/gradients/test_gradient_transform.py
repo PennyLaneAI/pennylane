@@ -422,9 +422,9 @@ class TestInterfaceIntegration:
 
         x = jnp.array(-0.654)
 
-        # res = circuit(x)
-        # expected = -4 * x * np.cos(x ** 2) * np.sin(x ** 2)
-        # assert np.allclose(res, expected, atol=tol, rtol=0)
+        res = circuit(x)
+        expected = -4 * x * np.cos(x ** 2) * np.sin(x ** 2)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
         res = jax.grad(circuit)(x)
         expected = -2 * (4 * x ** 2 * np.cos(2 * x ** 2) + np.sin(2 * x ** 2))
