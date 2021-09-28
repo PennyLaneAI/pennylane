@@ -6,7 +6,7 @@
   to construct the electric dipole operator of a molecule.
   Currently, the implemented function relies on a PySCF functionality
   to load the dipole matrix elements in the atomic basis.
-  [(#)]()
+  [(#1698)](https://github.com/PennyLaneAI/pennylane/pull/1698)
 
 <h3>Improvements</h3>
 
