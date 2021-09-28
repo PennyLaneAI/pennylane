@@ -372,7 +372,7 @@ class TestPassthruIntegration:
 
         grad = jax.jit(jax.grad(cost, argnums=(0, 1)))(a, b)
         expected = [jnp.sin(a) * jnp.cos(b), jnp.cos(a) * jnp.sin(b)]
-        assert jnp.allclose(grad, expected, atol=tol, rtol=0)
+        assert jnp.allclose(jnp.array(grad), jnp.array(expected), atol=tol, rtol=0)
 
     def test_backprop_gradient(self, tol):
         """Tests that the gradient of the qnode is correct"""
@@ -394,7 +394,7 @@ class TestPassthruIntegration:
         expected_grad = jnp.array(
             [-0.5 * jnp.sin(a) * (jnp.cos(b) + 1), 0.5 * jnp.sin(b) * (1 - jnp.cos(a))]
         )
-        assert jnp.allclose(res, expected_grad, atol=tol, rtol=0)
+        assert jnp.allclose(jnp.array(res), jnp.array(expected_grad), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("operation", [qml.U3, qml.U3.decomposition])
     @pytest.mark.parametrize("diff_method", ["backprop"])
