@@ -17,7 +17,7 @@ PennyLane's :mod:`template <pennylane.template>` library.
 Templates are just operations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Conceptually, there is no difference in PennyLane between a template or ansatz and a gate - they are
+Conceptually, there is no difference in PennyLane between a template or ansatz and a gate --- they are
 both :doc:`operations </introduction/operations>` and inherit from the
 :class:`Operation <pennylane.operation.Operation>` class. Unless a device knows how to implement this class on a
 quantum computer, it queries the operation's ``expand()`` method, which expresses the operation as a
