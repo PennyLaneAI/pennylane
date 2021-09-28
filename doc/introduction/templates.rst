@@ -293,7 +293,7 @@ The shape can for example be used to construct random weights at the beginning o
     shape = BasicEntanglerLayers.shape(n_layers=2, n_wires=n_wires)
     weights = np.random.random(size=shape)
 
-If a template takes more than one weight tensor, the `shape` function returns a list of shape tuples.
+If a template takes more than one weight tensor, the ``shape`` method returns a list of shape tuples.
 
 Custom templates
 ----------------
