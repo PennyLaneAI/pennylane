@@ -302,6 +302,9 @@
 
 <h3>Bug fixes</h3>
 
+* Fix a bug where it was not possible to use `jax.jit` on a `QNode` when using `QubitStateVector`.
+  [(#1683)](https://github.com/PennyLaneAI/pennylane/pull/1683)
+
 * The device suite tests can now execute successfully if no shots configuration variable is given.
   [(#1641)](https://github.com/PennyLaneAI/pennylane/pull/1641)
 
@@ -321,5 +324,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-Utkarsh Azad, Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee, Maria Schuld, 
-Ingrid Strandberg, Antal Száva, David Wierichs.
+
+Utkarsh Azad, Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee, Romain Moyard,
+Maria Schuld, Ingrid Strandberg, Antal Száva, David Wierichs.
