@@ -773,11 +773,170 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
     return v_op
 
 
+def dipole(hf_file, core=None, active=None, mapping="jordan_wigner", cutoff=1.0e-12, wires=None):
+    r"""Computes the electric dipole moment operator in the Pauli basis.
+
+    The second quantized dipole moment operator :math:`\hat{D}` of a molecule is given by
+
+    .. math::
+
+        \hat{D} = \sum_{\alpha, \beta} \langle \alpha \vert {\bf r} \vert \beta \rangle
+        [\hat{c}_{\alpha\uparrow}^\dagger \hat{c}_{\beta\uparrow} +
+        \hat{c}_{\alpha\downarrow}^\dagger \hat{c}_{\beta\downarrow}] + \hat{D}_\mathrm{n}.
+
+    In the equation above, the indices :math:`\alpha, \beta` run over the basis of Hartree-Fock
+    molecular orbitals, the operators :math:`\hat{c}^\dagger` and :math:`\hat{c}` are the
+    electron creation and annihilation operators, respectively, and
+    :math:`\langle \alpha \vert {\bf r} \vert \beta \rangle` denotes
+    the matrix elements of the position operator :math:`\hat{r}`. These matrix elements
+    are obtained from their representation in the basis of atomic orbitals
+    :math:`\vert i \rangle`
+
+    .. math::
+
+        \langle \alpha \vert {\bf r} \vert \beta \rangle = \sum_{i, j} C_{\alpha i}^*C_{\beta j}
+        \langle i \vert {\bf r} \vert j \rangle,
+
+    where :math:`C_{\alpha i}` denotes the expansion coefficients of the molecular orbitals
+    in the atomic basis. Finally, the contribution due to the nuclei to the dipole operator
+    is given by
+
+    .. math::
+
+        \hat{D}_\mathrm{n} = -\sum_{J=1}^{N_\mathrm{atoms}} Z_J {\bf R}_J \hat{I},
+
+
+    where :math:`Z_J` and :math:`{\bf R}_J` are, respectively, the atomic number and the
+    position vector of the :math:`J`-th atom.
+
+    Args:
+        hf_file (str): Absolute path to the hdf5-formatted file with the Hartree-Fock
+            electronic structure. This file can be generated using the
+            :func:`~.meanfield` function.
+        core (list): indices of core orbitals, i.e., the orbitals that are
+            not correlated in the many-body wave function
+        active (list): indices of active orbitals, i.e., the orbitals used to
+            build the correlated many-body wave function
+        mapping (str): Specifies the transformation to map the fermionic operator to the
+            Pauli basis. Input values can be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
+        cutoff (float): Cutoff value for including the matrix elements
+            :math:`\langle \alpha \vert {\bf r} \vert \beta \rangle`. The matrix elements
+            with absolute value less than ``cutoff`` are neglected.
+        wires (Wires, list, tuple, dict): Custom wire mapping used to convert the qubit operator
+            to an observable measurable in a PennyLane ansatz.
+            For types Wires/list/tuple, each item in the iterable represents a wire label
+            corresponding to the qubit number equal to its index.
+            For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted.
+            If None, will use identity map (e.g. 0->0, 1->1, ...).
+
+
+    Returns:
+        list[pennylane.Hamiltonian]: the qubit observables corresponding to the components
+        :math:`\hat{D}_x`, :math:`\hat{D}_y` and :math:`\hat{D}_z` of the dipole operator in
+        atomic units (Bohr radii).
+
+
+    **Example**
+
+    >>> dipole_obs = dipole("./h3p.hdf5")
+    >>> print(dipole_obs)
+    [<Hamiltonian: terms=19, wires=[0, 1, 2, 3, 4, 5]>,
+    <Hamiltonian: terms=19, wires=[0, 1, 2, 3, 4, 5]>,
+    <Hamiltonian: terms=1, wires=[0]>]
+
+    >>> print(dipole_obs[0])
+    (-1.4861475511479285) [Z0]
+    + (-1.4861475511479285) [Z1]
+    + (-1.0207535180657459) [Z2]
+    + (-1.0207535180657459) [Z3]
+    + (-0.38409271341166346) [Z4]
+    + (-0.38409271341166346) [Z5]
+    + (2.9129875652506754) [I0]
+    + (-1.0463884953059674) [Y0 Z1 Y2]
+    + (-1.0463884953059674) [X0 Z1 X2]
+    + (-1.0463884953059674) [Y1 Z2 Y3]
+    + (-1.0463884953059674) [X1 Z2 X3]
+    + (-0.2949628258407493) [Y2 Z3 Y4]
+    + (-0.2949628258407493) [X2 Z3 X4]
+    + (-0.2949628258407493) [Y3 Z4 Y5]
+    + (-0.2949628258407493) [X3 Z4 X5]
+    + (-0.10008920247855208) [Y0 Z1 Z2 Z3 Y4]
+    + (-0.10008920247855208) [X0 Z1 Z2 Z3 X4]
+    + (-0.10008920247855208) [Y1 Z2 Z3 Z4 Y5]
+    + (-0.10008920247855208) [X1 Z2 Z3 Z4 X5]
+    """
+
+    bohr_angs = 0.529177210903
+    atomic_numbers = {
+        "H": 1,
+        "He": 2,
+        "Li": 3,
+        "Be": 4,
+        "B": 5,
+        "C": 6,
+        "N": 7,
+        "O": 8,
+        "F": 9,
+        "Ne": 10,
+    }
+
+    hf = openfermion.MolecularData(filename=hf_file.strip())
+
+    if hf.multiplicity != 1:
+        raise ValueError(
+            "Currently, this functionality is constrained to closed-shell Hartree-Fock states;"
+            " got spin multiplicity 2S+1 =  {}".format(hf.multiplicity)
+        )
+
+    for i in hf.geometry:
+        print(i[0])
+        if i[0] not in atomic_numbers:
+            raise ValueError(
+                "Currently, only first- or second-row elements of the periodic table are supported;"
+                " got element {}".format(i[0])
+            )
+
+    # Load dipole matrix elements in the atomic basis
+    from pyscf import gto
+
+    mol = gto.M(
+        atom=hf.geometry, basis=hf.basis, charge=hf.charge, spin=0.5 * (hf.multiplicity - 1)
+    )
+    dip_ao = mol.intor_symmetric("int1e_r", comp=3).real
+
+    # Transform dipole matrix elements to the MO basis
+    n_orbs = hf.n_orbitals
+    c_hf = hf.canonical_orbitals
+
+    dip_mo = np.zeros((3, n_orbs, n_orbs))
+    for comp in range(3):
+        for alpha in range(n_orbs):
+            for beta in range(alpha + 1):
+                dip_mo[comp, alpha, beta] = c_hf[alpha] @ dip_ao[comp] @ c_hf[beta]
+
+        dip_mo[comp] += dip_mo[comp].T - np.diag(np.diag(dip_mo[comp]))
+
+    # Compute the nuclear contribution
+    dip_n = np.zeros(3)
+    for comp in range(3):
+        for i in hf.geometry:
+            dip_n[comp] -= atomic_numbers[i[0]] * i[1][comp] / bohr_angs
+
+    # Build the observable
+    dip_obs = []
+    for i in range(3):
+        fermion_obs = one_particle(dip_mo[i], core=core, active=active, cutoff=cutoff)
+        dip_obs.append(observable([fermion_obs], init_term=dip_n[i], mapping=mapping, wires=wires))
+
+    return dip_obs
+
+
 __all__ = [
     "observable",
     "particle_number",
     "spin_z",
     "spin2",
+    "dipole",
     "one_particle",
     "two_particle",
     "_spin2_matrix_elements",
