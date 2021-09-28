@@ -897,6 +897,7 @@ def dipole(hf_file, core=None, active=None, mapping="jordan_wigner", cutoff=1.0e
             )
 
     # Load dipole matrix elements in the atomic basis
+    # pylint: disable=import-outside-toplevel
     from pyscf import gto
 
     mol = gto.M(
