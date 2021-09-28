@@ -788,26 +788,28 @@ def dipole(hf_file, core=None, active=None, mapping="jordan_wigner", cutoff=1.0e
     molecular orbitals, the operators :math:`\hat{c}^\dagger` and :math:`\hat{c}` are the
     electron creation and annihilation operators, respectively, and
     :math:`\langle \alpha \vert {\bf r} \vert \beta \rangle` denotes
-    the matrix elements of the position operator :math:`\hat{r}`. These matrix elements
-    are obtained from their representation in the basis of atomic orbitals
-    :math:`\vert i \rangle`
+    the matrix elements of the position operator :math:`\hat{{\bf r}`. These matrix elements
+    are calculated as
 
     .. math::
 
-        \langle \alpha \vert {\bf r} \vert \beta \rangle = \sum_{i, j} C_{\alpha i}^*C_{\beta j}
+        \langle \alpha \vert \hat{{\bf r}} \vert \beta \rangle = \sum_{i, j} C_{\alpha i}^*C_{\beta j}
         \langle i \vert {\bf r} \vert j \rangle,
 
-    where :math:`C_{\alpha i}` denotes the expansion coefficients of the molecular orbitals
-    in the atomic basis. Finally, the contribution due to the nuclei to the dipole operator
-    is given by
+    where :math:`\vert i \rangle` is the wave function of the atomic orbitals and
+    :math:`C_{\alpha i}` and :math:`\langle i \vert \hat{{\bf r}} \vert j \rangle`
+    are the representations of the molecular orbitals and the operator
+    :math:`\hat{{\bf r}}` in the atomic basis.
+
+    The contribution of the nuclei to the dipole operator is given by
 
     .. math::
 
-        \hat{D}_\mathrm{n} = -\sum_{J=1}^{N_\mathrm{atoms}} Z_J {\bf R}_J \hat{I},
+        \hat{D}_\mathrm{n} = -\sum_{i=1}^{N_\mathrm{atoms}} Z_i {\bf R}_i \hat{I},
 
 
-    where :math:`Z_J` and :math:`{\bf R}_J` are, respectively, the atomic number and the
-    position vector of the :math:`J`-th atom.
+    where :math:`Z_i` and :math:`{\bf R}_i` are, respectively, the atomic number and the
+    position vector of the :math:`i`-th atom of the molecule.
 
     Args:
         hf_file (str): Absolute path to the hdf5-formatted file with the Hartree-Fock
@@ -820,7 +822,7 @@ def dipole(hf_file, core=None, active=None, mapping="jordan_wigner", cutoff=1.0e
         mapping (str): Specifies the transformation to map the fermionic operator to the
             Pauli basis. Input values can be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
         cutoff (float): Cutoff value for including the matrix elements
-            :math:`\langle \alpha \vert {\bf r} \vert \beta \rangle`. The matrix elements
+            :math:`\langle \alpha \vert \hat{{\bf r}} \vert \beta \rangle`. The matrix elements
             with absolute value less than ``cutoff`` are neglected.
         wires (Wires, list, tuple, dict): Custom wire mapping used to convert the qubit operator
             to an observable measurable in a PennyLane ansatz.
