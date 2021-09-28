@@ -237,6 +237,22 @@ class TestHelpersWithAutograd:
         else:
             assert np.allclose(class_jac, validated_class_jac)
 
+    @pytest.mark.parametrize("num_pos", [0, 2])
+    def test_jacobian_computation_error(self, num_pos):
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="autograd")
+        def qnode(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        args = (2,)
+
+        with pytest.raises(ValueError, match="Could not compute"):
+            validated_class_jac = _get_and_validate_classical_jacobian(
+                qnode, argnum=list(range(len(args))), args=args, kwargs={}, num_pos=num_pos
+            )
+
     @pytest.mark.parametrize("num_pos", [1, 2])
     @pytest.mark.parametrize("circuit, args", zip(circuits_nonlinear, all_args_nonlinear))
     def test_jacobian_validation_error(self, circuit, args, num_pos):
@@ -292,6 +308,36 @@ class TestHelpersWithTensorflow:
         else:
             assert np.allclose(class_jac, validated_class_jac)
 
+    @pytest.mark.parametrize("num_pos", [0, 2])
+    def test_jacobian_computation_error(self, num_pos):
+        tf = pytest.importorskip("tensorflow")
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="tf")
+        def qnode(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        args = (2,)
+
+        with pytest.raises(ValueError, match="Could not compute"):
+            validated_class_jac = _get_and_validate_classical_jacobian(
+                qnode, argnum=list(range(len(args))), args=args, kwargs={}, num_pos=num_pos
+            )
+
+    @pytest.mark.parametrize("num_pos", [1, 2])
+    @pytest.mark.parametrize("circuit, args", zip(circuits_nonlinear, all_args_nonlinear))
+    def test_jacobian_validation_error(self, circuit, args, num_pos):
+        tf = pytest.importorskip("tensorflow")
+        args = tuple((tf.Variable(arg, dtype=tf.double) for arg in args))
+        dev = qml.device("default.qubit", wires=2)
+        qnode = qml.QNode(circuit, dev, interface="tf")
+        match = "The Jacobian of the classical preprocessing in the provided QNode is not constant"
+        with pytest.raises(ValueError, match=match):
+            validated_class_jac = _get_and_validate_classical_jacobian(
+                qnode, argnum=list(range(len(args))), args=args, kwargs={}, num_pos=num_pos
+            )
+
     @pytest.mark.parametrize("num", [0, 1, 2])
     @pytest.mark.parametrize(
         "args",
@@ -341,6 +387,36 @@ class TestHelpersWithTorch:
         else:
             assert np.allclose(class_jac, validated_class_jac)
 
+    @pytest.mark.parametrize("num_pos", [0, 2])
+    def test_jacobian_computation_error(self, num_pos):
+        torch = pytest.importorskip("torch")
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="torch")
+        def qnode(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        args = (2,)
+
+        with pytest.raises(ValueError, match="Could not compute"):
+            validated_class_jac = _get_and_validate_classical_jacobian(
+                qnode, argnum=list(range(len(args))), args=args, kwargs={}, num_pos=num_pos
+            )
+
+    @pytest.mark.parametrize("num_pos", [1, 2])
+    @pytest.mark.parametrize("circuit, args", zip(circuits_nonlinear, all_args_nonlinear))
+    def test_jacobian_validation_error(self, circuit, args, num_pos):
+        torch = pytest.importorskip("torch")
+        args = tuple((torch.tensor(arg) for arg in args))
+        dev = qml.device("default.qubit", wires=2)
+        qnode = qml.QNode(circuit, dev, interface="torch")
+        match = "The Jacobian of the classical preprocessing in the provided QNode is not constant"
+        with pytest.raises(ValueError, match=match):
+            validated_class_jac = _get_and_validate_classical_jacobian(
+                qnode, argnum=list(range(len(args))), args=args, kwargs={}, num_pos=num_pos
+            )
+
     @pytest.mark.parametrize("num", [0, 1, 2])
     @pytest.mark.parametrize(
         "args",
@@ -385,6 +461,35 @@ class TestHelpersWithJax:
             )
         else:
             assert np.allclose(class_jac, validated_class_jac)
+
+    @pytest.mark.parametrize("num_pos", [0, 2])
+    def test_jacobian_computation_error(self, num_pos):
+        pytest.importorskip("jax")
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="jax")
+        def qnode(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        args = (2,)
+
+        with pytest.raises(ValueError, match="Could not compute"):
+            validated_class_jac = _get_and_validate_classical_jacobian(
+                qnode, argnum=list(range(len(args))), args=args, kwargs={}, num_pos=num_pos
+            )
+
+    @pytest.mark.parametrize("num_pos", [1, 2])
+    @pytest.mark.parametrize("circuit, args", zip(circuits_nonlinear, all_args_nonlinear))
+    def test_jacobian_validation_error(self, circuit, args, num_pos):
+        pytest.importorskip("jax")
+        dev = qml.device("default.qubit", wires=2)
+        qnode = qml.QNode(circuit, dev, interface="jax")
+        match = "The Jacobian of the classical preprocessing in the provided QNode is not constant"
+        with pytest.raises(ValueError, match=match):
+            validated_class_jac = _get_and_validate_classical_jacobian(
+                qnode, argnum=list(range(len(args))), args=args, kwargs={}, num_pos=num_pos
+            )
 
     @pytest.mark.parametrize("num", [0, 1, 2])
     @pytest.mark.parametrize(
