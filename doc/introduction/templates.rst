@@ -8,21 +8,10 @@ Templates
 
 PennyLane provides a growing library of pre-coded templates of common variational circuit architectures
 that can be used to easily build, evaluate, and train more complex models. In the
-literature, such architectures are commonly known as an *ansatz*.
-
-.. note::
-
-    Templates are constructed out of **structured combinations** of the quantum operations
-    provided by PennyLane. This means that **template functions can only be used within a
-    valid** :class:`QNode <pennylane.QNode>`.
-
-PennyLane conceptually distinguishes different types of templates, such as :ref:`Embeddings <intro_ref_temp_emb>`,
-:ref:`Layers <intro_ref_temp_lay>`, :ref:`State preparations <intro_ref_temp_stateprep>` and
-:ref:`Subroutines <intro_ref_temp_subroutines>`.
-
-
-Most templates are complemented by functions that provide an array of
-random :ref:`initial parameters <intro_ref_temp_init>`.
+literature, such architectures are commonly known as an *ansatz*. Templates can be used to
+:ref:`embed data <intro_ref_temp_emb>` into quantum states, to define trainable :ref:`layers <intro_ref_temp_lay>`
+of quantum gates, to :ref:`prepare quantum states <intro_ref_temp_stateprep>` as the first operation in a circuit,
+or simply as general :ref:`subroutines <intro_ref_temp_subroutines>` that a circuit is built from.
 
 The following is a gallery of built-in templates provided by PennyLane.
 
@@ -32,8 +21,8 @@ Embedding templates
 -------------------
 
 Embeddings encode input features into the quantum state of the circuit.
-Hence, they take a feature vector as an argument. Embeddings can also depend on
-trainable parameters, and they may consist of repeated layers.
+Hence, they usually take a data sample such as a feature vector as an argument. Embeddings can also depend on
+trainable parameters, and they may be constructed from repeated layers.
 
 .. customgalleryitem::
     :link: ../code/api/pennylane.templates.embeddings.AmplitudeEmbedding.html
@@ -82,7 +71,7 @@ Layer templates
 .. currentmodule:: pennylane.templates.layers
 
 Layer architectures define sequences of trainable gates that are repeated like the layers in a
-neural network. Note arbitrary templates or operations can also be layered using the
+neural network. Note that arbitrary templates or operations can also be repeated using the
 :func:`~pennylane.layer` function.
 
 .. customgalleryitem::
@@ -129,7 +118,9 @@ neural network. Note arbitrary templates or operations can also be layered using
 State Preparations
 ------------------
 
-State preparation templates transform a given state into a sequence of gates preparing that state.
+State preparation templates transform the zero state :math:`|0\dots 0 \rangle` to another initial
+state. In contrast to embeddings that can in principle be used anywhere in a circuit,
+state preparation is typically used as the first operation.
 
 .. customgalleryitem::
     :link: ../code/api/pennylane.templates.state_preparations.BasisStatePreparation.html
@@ -152,11 +143,10 @@ State preparation templates transform a given state into a sequence of gates pre
 
 .. _intro_ref_temp_subroutines:
 
-Subroutines
------------
+Other subroutines
+-----------------
 
-Subroutines are sequences of (possibly trainable) gates that do not fulfill the conditions
-of other templates.
+Other useful templates which do not belong to the previous categories can be found here.
 
 .. customgalleryitem::
     :link: ../code/api/pennylane.templates.subroutines.GroverOperator.html
@@ -228,7 +218,12 @@ Broadcasting function
 ---------------------
 
 PennyLane offers a broadcasting function to easily construct templates: :func:`~.broadcast`
-takes single quantum operations or other templates and applies them to wires in a specific pattern.
+takes either quantum gates or templates and applies them to wires in a specific pattern.
+
+.. warning::
+
+    While the broadcasting function can make template construction very convenient, it
+    adds an overhead and is therefore not recommended when speed is a major concern.
 
 .. customgalleryitem::
     :link: ../code/api/pennylane.broadcast.html
@@ -279,113 +274,65 @@ takes single quantum operations or other templates and applies them to wires in 
 Parameter initializations
 -------------------------
 
-Each trainable template has dedicated functions in the :mod:`pennylane.init` module, which generate
-randomly initialized arrays for the trainable parameters. For example, :func:`random_layers_uniform` can
-be used together with the template :func:`RandomLayers`:
+Templates that take a weight parameter tensor usually provide methods that return the shape of this tensor.
+The shape can for example be used to construct random weights at the beginning of training.
 
 .. code-block:: python
 
     import pennylane as qml
-    from pennylane.templates import RandomLayers
-    from pennylane.init import random_layers_uniform
+    from pennylane.templates import BasicEntanglerLayers
+    from pennylane import numpy as np
 
-    dev = qml.device('default.qubit', wires=3)
+    n_wires = 3
+    dev = qml.device('default.qubit', wires=n_wires)
 
     @qml.qnode(dev)
     def circuit(weights):
-        RandomLayers(weights=weights, wires=[0, 2])
+        BasicEntanglerLayers(weights=weights, wires=range(n_wires))
         return qml.expval(qml.PauliZ(0))
 
-    init_pars = random_layers_uniform(n_layers=3, n_wires=2)
-    circuit(init_pars)
+    shape = BasicEntanglerLayers.shape(n_layers=2, n_wires=n_wires)
+    np.random.seed(42)  # to make the result reproducable
+    weights = np.random.random(size=shape)
 
-Templates that take more than one parameter
-array require several initialization functions:
+>>> circuit(weights)
+0.7258859204630561
 
-.. code-block:: python
-
-    from pennylane.templates import Interferometer
-    from pennylane.init import (interferometer_theta_uniform,
-                                interferometer_phi_uniform,
-                                interferometer_varphi_normal)
-
-    dev = qml.device('default.gaussian', wires=3)
-
-    @qml.qnode(dev)
-    def circuit(theta, phi, varphi):
-        Interferometer(theta=theta, phi=phi, varphi=varphi, wires=[0, 2])
-        return qml.expval(qml.X(0))
-
-    init_theta = interferometer_theta_uniform(n_wires=2)
-    init_phi = interferometer_phi_uniform(n_wires=2)
-    init_varphi = interferometer_varphi_normal(n_wires=2)
-
-    circuit(init_theta, init_phi, init_varphi)
-
-
-For templates with multiple parameters, initializations that
-return a list of all parameter arrays at once are provided, and can
-be conveniently used in conjunction with the unpacking operator ``*``:
-
-.. code-block:: python
-
-    from pennylane.templates import Interferometer
-    from pennylane.init import interferometer_all
-
-    dev = qml.device('default.gaussian', wires=3)
-
-    @qml.qnode(dev)
-    def circuit(*pars):
-        Interferometer(*pars, wires=[0, 2])
-        return qml.expval(qml.X(0))
-
-    init_pars = interferometer_all(n_wires=2)
-
-    circuit(*init_pars)
-
-Initial parameters can be converted to Torch or TensorFlow tensors, which can be used in the
-respective interfaces.
-
-.. code-block:: python
-
-    import torch
-    import tensorflow as tf
-    from pennylane.init import strong_ent_layers_normal
-
-    init_pars = strong_ent_layers_normal(n_layers=3, n_wires=2)
-    init_torch = torch.tensor(init_pars)
-    init_tf = tf.Variable(init_pars)
-
-The initialization functions can be found in the :mod:`~.pennylane.init` module.
+If a template takes more than one weight tensor, the ``shape`` method returns a list of shape tuples.
 
 Custom templates
 ----------------
 
-In addition, custom templates can be created; simply
-decorate a Python function that applies quantum gates
-with the :func:`pennylane.template` decorator:
+Creating a custom template can be as simple as defining a function that creates operations and does not have a return
+statement:
 
-.. code-block:: python3
+.. code-block:: python
 
-    @qml.template
-    def bell_state_preparation(wires):
-        qml.Hadamard(wires=wires[0])
-        qml.CNOT(wires=wires)
+    from pennylane import numpy as np
 
-This registers the template with PennyLane, making it compatible with
-functions that act on templates, such as :func:`~.pennylane.inv`:
+    def MyTemplate(a, b, wires):
+        c = np.sin(a) + b
+        qml.RX(c, wires=wires[0])
 
-.. code-block:: python3
-
-    dev = qml.device('default.qubit', wires=2)
+    n_wires = 3
+    dev = qml.device('default.qubit', wires=n_wires)
 
     @qml.qnode(dev)
-    def circuit():
-        qml.inv(bell_state_preparation(wires=[0, 1]))
-        return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+    def circuit(a, b):
+        MyTemplate(a, b, wires=range(n_wires))
+        return qml.expval(qml.PauliZ(0))
 
-Adding a new template
----------------------
+>>> circuit(2, 3)
+-0.7195065654396784
 
-Consult the :ref:`Contributing templates<contributing_templates>` page to learn how to grow the templates library by
-adding your own template to PennyLane.
+.. note::
+
+    Make sure that classical processing is compatible with the autodifferentiation library you are using. For example,
+    if ``MyTemplate`` is to be used with the torch framework, we would have to change ``np.sin`` to ``torch.sin``.
+    PennyLane's :mod:`math <pennylane.math>` library contains some advanced functionality for
+    framework-agnostic processing.
+
+As suggested by the camel-case naming, built-in templates in PennyLane are classes. Classes are more complex
+data structures than functions, since they can define properties and methods of templates (such as gradient
+recipes or matrix representations). Consult the :ref:`Contributing templates<contributing_templates>`
+page to learn how to code up your own template class, and how to add it to the PennyLane template library.

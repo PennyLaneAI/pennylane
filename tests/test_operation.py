@@ -301,7 +301,7 @@ class TestOperationConstruction:
 
         class DummyOp(qml.operation.CVOperation):
             r"""Dummy custom operation"""
-            num_wires = 1
+            num_wires = 2
             num_params = 1
             par_domain = "R"
             grad_method = "A"
@@ -317,7 +317,7 @@ class TestOperationConstruction:
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
-            num_wires = 1
+            num_wires = 2
             num_params = 1
             par_domain = "N"
             grad_method = "A"
@@ -333,7 +333,7 @@ class TestOperationConstruction:
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
-            num_wires = 1
+            num_wires = 2
             num_params = 1
             par_domain = "A"
             grad_method = "A"
@@ -349,7 +349,7 @@ class TestOperationConstruction:
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
-            num_wires = 1
+            num_wires = 2
             num_params = 1
             par_domain = "R"
             grad_method = "F"
@@ -357,6 +357,26 @@ class TestOperationConstruction:
 
         with pytest.raises(AssertionError, match="Gradient recipe is only used by the A method"):
             DummyOp(0.5, wires=[0, 1])
+
+    def test_grad_recipe_parameter_dependent(self):
+        """Test that an operation with a gradient recipe that depends on
+        its instantiated parameter values works correctly"""
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+            num_params = 1
+            par_domain = "R"
+            grad_method = "A"
+
+            @property
+            def grad_recipe(self):
+                x = self.data[0]
+                return ([[1.0, 1.0, x], [1.0, 0.0, -x]],)
+
+        x = 0.654
+        op = DummyOp(x, wires=0)
+        assert op.grad_recipe == ([[1.0, 1.0, x], [1.0, 0.0, -x]],)
 
     def test_no_wires_passed(self):
         """Test exception raised if no wires are passed"""

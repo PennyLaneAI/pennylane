@@ -263,6 +263,23 @@
 * ``qml.circuit_drawer.CircuitDrawer`` can accept a string for the ``charset`` keyword, instead of a ``CharSet`` object.
   [(#1640)](https://github.com/PennyLaneAI/pennylane/pull/1640)
 
+* Operations can now have gradient recipes that depend on the state of the operation.
+  [(#1674)](https://github.com/PennyLaneAI/pennylane/pull/1674)
+
+  For example, this allows for gradient recipes that are parameter dependent:
+
+  ```python
+  class RX(qml.RX):
+
+      @property
+      def grad_recipe(self):
+          # The gradient is given by [f(2x) - f(0)] / (2 sin(x)), by subsituting
+          # shift = x into the two term parameter-shift rule.
+          x = self.data[0]
+          c = 0.5 / np.sin(x)
+          return ([[c, 0.0, 2 * x], [-c, 0.0, 0.0]],)
+  ```
+
 <h3>Breaking changes</h3>
 
 - The `QNode.metric_tensor` method has been deprecated, and will be removed in an upcoming release.
@@ -274,6 +291,14 @@
   this function would return `True` for *all* NumPy arrays and Python floats, unless
   `requires_grad=False` was explicitly set.
   [(#1638)](https://github.com/PennyLaneAI/pennylane/pull/1638)
+
+<h3>Deprecations</h3>
+
+* The `init` module, which contains functions to generate random parameter tensors for 
+  templates, is flagged for deprecation and will be removed in the next release cycle. 
+  Instead, the templates' `shape` method can be used to get the desired shape of the tensor, 
+  which can then be generated manually.
+  [(#1689)](https://github.com/PennyLaneAI/pennylane/pull/1689)
 
 <h3>Bug fixes</h3>
 
@@ -296,5 +321,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Utkarsh Azad, Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee,
+Utkarsh Azad, Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee, Maria Schuld, 
 Ingrid Strandberg, Antal Száva, David Wierichs.
