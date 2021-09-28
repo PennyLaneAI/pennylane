@@ -281,6 +281,7 @@ The shape can for example be used to construct random weights at the beginning o
 
     import pennylane as qml
     from pennylane.templates import BasicEntanglerLayers
+    from pennylane import numpy as np
 
     n_wires = 3
     dev = qml.device('default.qubit', wires=n_wires)
@@ -291,7 +292,11 @@ The shape can for example be used to construct random weights at the beginning o
         return qml.expval(qml.PauliZ(0))
 
     shape = BasicEntanglerLayers.shape(n_layers=2, n_wires=n_wires)
+    np.random.seed(42)  # to make the result reproducable
     weights = np.random.random(size=shape)
+
+>>> circuit(weights)
+0.7258859204630561
 
 If a template takes more than one weight tensor, the ``shape`` method returns a list of shape tuples.
 
@@ -317,14 +322,17 @@ statement:
         MyTemplate(a, b, wires=range(n_wires))
         return qml.expval(qml.PauliZ(0))
 
+>>> circuit(2, 3)
+-0.7195065654396784
+
 .. note::
 
     Make sure that classical processing is compatible with the autodifferentiation library you are using. For example,
-    if `MyTemplate` is to be used with the torch framework, we would have to change ``np.sin`` to ``torch.sin``.
+    if ``MyTemplate`` is to be used with the torch framework, we would have to change ``np.sin`` to ``torch.sin``.
     PennyLane's :mod:`math <pennylane.math>` library contains some advanced functionality for
     framework-agnostic processing.
 
-As suggested by the camel case naming, built-in templates in PennyLane are classes. Classes allow for more complex
-designs for which we can define properties and methods. Consult the
-:ref:`Contributing templates<contributing_templates>` page to learn how to code up your own template class,
-and how to add it to the PennyLane template library.
+As suggested by the camel-case naming, built-in templates in PennyLane are classes. Classes are more complex
+data structures than functions, since they can define properties and methods of templates (such as gradient
+recipes or matrix representations). Consult the :ref:`Contributing templates<contributing_templates>`
+page to learn how to code up your own template class, and how to add it to the PennyLane template library.
