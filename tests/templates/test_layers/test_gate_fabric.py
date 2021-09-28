@@ -471,8 +471,7 @@ class TestDecomposition:
         ],
     )
     def test_decomposition_q(self, init_state, exp_state, tol):
-        """Test the decomposition of the Q_{theta, phi}` exchange gate by asserting the prepared
-        state."""
+        """Test the decomposition of the :math:`Q_{theta, phi}` gate by asserting the prepared state."""
 
         N = 4
         wires = range(N)
@@ -480,12 +479,133 @@ class TestDecomposition:
         weight = [[[np.pi / 2, np.pi / 2]]]
 
         dev = qml.device("default.qubit", wires=N)
-        print(init_state, exp_state)
 
         @qml.qnode(dev)
         def circuit(weight):
             qml.templates.layers.GateFabric(weight, wires, init_state=init_state)
             return qml.expval(qml.PauliZ(0))
+
+        circuit(weight)
+
+        assert qml.math.allclose(circuit.device.state, exp_state, atol=tol)
+
+    @pytest.mark.parametrize(
+        ("num_qubits", "layers", "exp_state"),
+        [
+            (
+                4,
+                4,
+                qml.math.array(
+                    [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.25,
+                        0.0,
+                        0.0,
+                        0.10355,
+                        0.0,
+                        0.0,
+                        0.10355,
+                        0.0,
+                        0.0,
+                        0.95711,
+                        0.0,
+                        0.0,
+                        0.0,
+                    ]
+                ),
+            ),
+            (
+                6,
+                6,
+                qml.math.array(
+                    [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        -0.24264,
+                        0.0,
+                        0.0,
+                        0.31019,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        -0.4068,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        -0.25487,
+                        0.0,
+                        0.0,
+                        -0.02977,
+                        0.0,
+                        0.0,
+                        0.37703,
+                        0.0,
+                        0.0,
+                        -0.49874,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.40826,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.23667,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                    ]
+                ),
+            ),
+        ],
+    )
+    def test_layers_gate_fabric(self, num_qubits, layers, exp_state, tol):
+        """Test that the GateFabric template with multiple layers works correctly asserting the prepared state."""
+
+        wires = range(num_qubits)
+
+        shape = qml.templates.layers.GateFabric.shape(n_layers=layers, n_wires=num_qubits)
+        weight = np.pi / 2 * qml.math.ones(shape)
+
+        dev = qml.device("default.qubit", wires=wires)
+
+        init_state = qml.math.array([1 if x < num_qubits // 2 else 0 for x in wires])
+
+        @qml.qnode(dev)
+        def circuit(weight):
+            qml.templates.layers.GateFabric(weight, wires, init_state=init_state, include_pi=True)
+            return qml.state()
 
         circuit(weight)
 

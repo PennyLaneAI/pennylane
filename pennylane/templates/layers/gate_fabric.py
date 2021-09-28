@@ -85,11 +85,12 @@ class GateFabric(Operation):
 
             import numpy as np
             import pennylane as qml
-            from pennylane.templates import GateFabric
             from functools import partial
 
-            # Build the electronic Hamiltonian from a local .xyz file
-            h, qubits = qml.qchem.molecular_hamiltonian("h2", "h2.xyz")
+            # Build the electronic Hamiltonian
+            symbols = ["H", "H"]
+            coordinates = np.array([0.0, 0.0, -0.6614, 0.0, 0.0, 0.6614])
+            H, qubits = qml.qchem.molecular_hamiltonian(symbols, coordinates)
 
             # Define the Hartree-Fock state
             electrons = 2
@@ -99,20 +100,20 @@ class GateFabric(Operation):
             dev = qml.device('default.qubit', wires=qubits)
 
             # Define the ansatz
-            ansatz = partial(GateFabric, init_state=ref_state, include_pi=True)
-
-            # Define the cost function
-            cost_fn = qml.ExpvalCost(ansatz, h, dev)
+            @qml.qnode(dev)
+            def ansatz(weights):
+                qml.templates.GateFabric(weights, wires=[0,1,2,3], init_state=ref_state, include_pi=True)
+                return qml.expval(H)
 
             # Get the shape of the weights for this template
             layers = 2
-            shape = GateFabric.shape(n_layers=layers, n_wires=qubits)
+            shape = qml.templates.GateFabric.shape(n_layers=layers, n_wires=qubits)
 
             # Initialize the weight tensors
             np.random.seed(42)
             weights = np.random.random(size=shape)
 
-        >>> cost_fn(weights)
+        >>> ansatz(weights)
         -0.5764255832593828
 
         **Parameter shape**
