@@ -400,9 +400,7 @@ class TestDot:
             coeffs = coeffs.numpy()
 
         expected = np.dot(qcval, coeffs)
-        print(res)
-        print(expected)
-        assert np.all(res == expected)
+        assert np.allclose(res, expected)
 
     def test_unknown_interface(self, monkeypatch):
         """Test exception raised if the interface is unknown"""

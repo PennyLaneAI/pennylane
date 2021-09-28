@@ -283,10 +283,12 @@ def get_trainable_indices(values):
 
         if not any(isinstance(v, jax.interpreters.ad.JVPTracer) for v in values):
             # No JAX tracing is occuring; treat all `DeviceArray` objects as trainable.
-            def trainable(p, **kwargs):
-                return isinstance(p, jax.numpy.DeviceArray)
-
+            trainable = lambda p, **kwargs: isinstance(p, jax.numpy.DeviceArray)
         else:
+            # JAX tracing is occuring; use the default behaviour (only traced arrays
+            # are treated as trainable). This is required to ensure that `jax.grad(func, argnums=...)
+            # works correctly, as the argnums argnument determines which parameters are
+            # traced arrays.
             trainable = requires_grad
 
     for idx, p in enumerate(values):
