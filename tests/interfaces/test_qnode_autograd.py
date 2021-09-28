@@ -639,8 +639,8 @@ class TestQNode:
             c2 = circuit2(c1, w2)
             return np.sum(c2) ** 2
 
-        w1 = qml.init.strong_ent_layers_normal(n_wires=2, n_layers=3)
-        w2 = qml.init.strong_ent_layers_normal(n_wires=2, n_layers=4)
+        w1 = np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=3, n_wires=2))
+        w2 = np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=4, n_wires=2))
 
         weights = [w1, w2]
 
