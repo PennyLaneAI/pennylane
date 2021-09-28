@@ -1430,7 +1430,9 @@ class TestHighLevelIntegration:
 
         assert qnodes.interface == "tf"
 
-        weights = tf.Variable(qml.init.strong_ent_layers_normal(n_wires=2, n_layers=2))
+        weights = tf.Variable(
+            np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2))
+        )
 
         @tf.function
         def cost(weights):

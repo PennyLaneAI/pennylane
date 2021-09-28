@@ -485,7 +485,9 @@ class TestHighLevelIntegration:
             qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        weights = jnp.array(qml.init.strong_ent_layers_normal(n_wires=2, n_layers=2))
+        weights = jnp.array(
+            np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2))
+        )
 
         grad = jax.grad(circuit)(weights)
         assert grad.shape == weights.shape
