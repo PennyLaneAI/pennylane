@@ -47,11 +47,11 @@ class Hadamard(Observable, Operation):
     par_domain = None
     is_self_inverse = True
     eigvals = pauli_eigs(1)
-    matrix = np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
+    op_matrix = np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
 
     @classmethod
     def _matrix(cls, *params):
-        return cls.matrix
+        return cls.op_matrix
 
     @classmethod
     def _eigvals(cls, *params):
@@ -110,11 +110,11 @@ class PauliX(Observable, Operation):
     is_self_inverse = True
     basis = "X"
     eigvals = pauli_eigs(1)
-    matrix = np.array([[0, 1], [1, 0]])
+    op_matrix = np.array([[0, 1], [1, 0]])
 
     @classmethod
     def _matrix(cls, *params):
-        return cls.matrix
+        return cls.op_matrix
 
     @classmethod
     def _eigvals(cls, *params):
@@ -174,11 +174,11 @@ class PauliY(Observable, Operation):
     is_self_inverse = True
     basis = "Y"
     eigvals = pauli_eigs(1)
-    matrix = np.array([[0, -1j], [1j, 0]])
+    op_matrix = np.array([[0, -1j], [1j, 0]])
 
     @classmethod
     def _matrix(cls, *params):
-        return cls.matrix
+        return cls.op_matrix
 
     @classmethod
     def _eigvals(cls, *params):
@@ -244,11 +244,11 @@ class PauliZ(Observable, DiagonalOperation):
     is_self_inverse = True
     basis = "Z"
     eigvals = pauli_eigs(1)
-    matrix = np.array([[1, 0], [0, -1]])
+    op_matrix = np.array([[1, 0], [0, -1]])
 
     @classmethod
     def _matrix(cls, *params):
-        return cls.matrix
+        return cls.op_matrix
 
     @classmethod
     def _eigvals(cls, *params):
@@ -439,7 +439,7 @@ class CNOT(Operation):
     par_domain = None
     is_self_inverse = True
     basis = "X"
-    matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+    op_matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
     @classmethod
     def _matrix(cls, *params):
@@ -484,11 +484,11 @@ class CZ(DiagonalOperation):
     is_symmetric_over_all_wires = True
     basis = "Z"
     eigvals = np.array([1, 1, 1, -1])
-    matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
+    op_matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 
     @classmethod
     def _matrix(cls, *params):
-        return cls.matrix
+        return cls.op_matrix
 
     @classmethod
     def _eigvals(cls, *params):
@@ -528,7 +528,7 @@ class CY(Operation):
     par_domain = None
     is_self_inverse = True
     basis = "Y"
-    matrix = np.array(
+    op_matrix = np.array(
         [
             [1, 0, 0, 0],
             [0, 1, 0, 0],
@@ -539,7 +539,7 @@ class CY(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        return cls.matrix
+        return cls.op_matrix
 
     @staticmethod
     def decomposition(wires):
@@ -579,11 +579,11 @@ class SWAP(Operation):
     is_self_inverse = True
     is_symmetric_over_all_wires = True
     basis = "X"
-    matrix = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
+    op_matrix = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
     @classmethod
     def _matrix(cls, *params):
-        return cls.matrix
+        return cls.op_matrix
 
     @staticmethod
     def decomposition(wires):
@@ -747,7 +747,7 @@ class CSWAP(Operation):
     num_params = 0
     num_wires = 3
     par_domain = None
-    matrix = np.array(
+    op_matrix = np.array(
         [
             [1, 0, 0, 0, 0, 0, 0, 0],
             [0, 1, 0, 0, 0, 0, 0, 0],
@@ -762,7 +762,7 @@ class CSWAP(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        return cls.matrix
+        return cls.op_matrix
 
     @staticmethod
     def decomposition(wires):
@@ -809,7 +809,7 @@ class Toffoli(Operation):
     is_self_inverse = True
     is_symmetric_over_control_wires = True
     basis = "X"
-    matrix = np.array(
+    op_matrix = np.array(
         [
             [1, 0, 0, 0, 0, 0, 0, 0],
             [0, 1, 0, 0, 0, 0, 0, 0],
@@ -824,7 +824,7 @@ class Toffoli(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        return cls.matrix
+        return cls.op_matrix
 
     @staticmethod
     def decomposition(wires):
