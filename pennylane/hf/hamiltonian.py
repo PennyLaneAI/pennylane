@@ -16,6 +16,7 @@ This module contains the functions needed for computing the molecular Hamiltonia
 """
 import autograd.numpy as anp
 from pennylane.hf.hartree_fock import generate_scf
+from pennylane import numpy as np
 
 
 def generate_electron_integrals(mol, core=None, active=None):
@@ -106,3 +107,31 @@ def generate_electron_integrals(mol, core=None, active=None):
             return anp.concatenate((e_core, one.flatten(), two.flatten()))
 
     return electron_integrals
+
+
+def generate_fermionic_hamiltonian(mol, cutoff=1.0e-12):
+    def fermionic_hamiltonian(*args):
+        e_core, one, two = generate_electron_integrals(mol)(*args)
+
+        indices_one = anp.argwhere(abs(one) >= cutoff)
+        operators_one = (indices_one * 2).tolist() + (indices_one * 2 + 1).tolist()
+        coeffs_one = anp.tile(one[abs(one) >= cutoff], 2)
+
+        indices_two = anp.argwhere(abs(two) >= cutoff)
+        n = len(indices_two)
+        operators_two = (
+            [(indices_two[i] * 2).tolist() for i in range(n)]
+            + [(indices_two[i] * 2 + [0, 1, 1, 0]).tolist() for i in range(n)]
+            + [(indices_two[i] * 2 + [0, 1, 1, 0]).tolist() for i in range(n)]
+            + [(indices_two[i] * 2 + 1).tolist() for i in range(n)]
+        )
+        coeffs_two = anp.tile(two[abs(two) >= cutoff], 4) / 2
+
+        coeffs = anp.concatenate((e_core, coeffs_one, coeffs_two))
+        operators = [[]] + operators_one + operators_two
+
+        indices_sort = [operators.index(i) for i in sorted(operators)]
+
+        return coeffs[indices_sort], sorted(operators)
+
+    return fermionic_hamiltonian
