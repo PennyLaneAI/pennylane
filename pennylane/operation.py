@@ -780,6 +780,7 @@ class Operation(Operator):
     def __init__(self, *params, wires=None, do_queue=True, id=None):
 
         self._inverse = False
+        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
         # check the grad_method validity
         if self.par_domain == "N":
@@ -803,8 +804,6 @@ class Operation(Operator):
                 ), "Gradient recipe must have one entry for each parameter!"
         else:
             assert self.grad_recipe is None, "Gradient recipe is only used by the A method!"
-
-        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
 
 class DiagonalOperation(Operation):
