@@ -411,8 +411,13 @@ class TestTorchLayer:
                 qlayer = qml.qnn.TorchLayer(circuit, weight_shapes)
 
                 x = torch.rand((5, n_qubits), dtype=torch.float64).to(torch.device("cuda"))
-                loss = torch.sum(qlayer(x)).squeeze()
+                res = qlayer(x)
+                assert res.is_cuda
+
+                loss = torch.sum(res).squeeze()
                 loss.backward()
+                assert loss.is_cuda
+
             except Exception:
                 pytest.fail("Exception raised in torch CUDA backward")
 

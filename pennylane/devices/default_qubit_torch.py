@@ -176,8 +176,15 @@ class DefaultQubitTorch(DefaultQubit):
     _norm = staticmethod(torch.norm)
     _flatten = staticmethod(torch.flatten)
 
-    def __init__(self, wires, *, shots=None, analytic=None, torch_device="cpu"):
-        self._torch_device = torch_device
+    def __init__(self, wires, *, shots=None, analytic=None, torch_device=None):
+
+        if torch_device is None:
+            self._torch_device = "cpu"
+            self._user_def_torch_device = False
+        else:
+            self._torch_device = torch_device
+            self._user_def_torch_device = True
+
         super().__init__(wires, shots=shots, cache=0, analytic=analytic)
 
         # Move state to torch device (e.g. CPU, GPU, XLA, ...)
