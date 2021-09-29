@@ -185,8 +185,8 @@ we can do the following:
     def cost(phi, theta):
         return torch.abs(circuit4(phi, theta) - 0.5)**2
 
-    phi = torch.tensor([0.011, 0.012], requires_grad=True)
-    theta = torch.tensor(0.05, requires_grad=True)
+    phi = torch.tensor([0.011, 0.012], requires_grad=True, device='cuda')
+    theta = torch.tensor(0.05, requires_grad=True, device='cuda')
 
     opt = torch.optim.Adam([phi, theta], lr = 0.1)
 
