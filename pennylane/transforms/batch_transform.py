@@ -223,6 +223,7 @@ class batch_transform:
         """
 
         def _wrapper(*args, **kwargs):
+            shots = kwargs.pop("shots", False)
             qnode.construct(args, kwargs)
             tapes, processing_fn = self.construct(qnode.qtape, *targs, **tkwargs)
 
@@ -242,7 +243,12 @@ class batch_transform:
                 gradient_fn = qml.gradients.finite_diff
 
             res = qml.execute(
-                tapes, device=qnode.device, gradient_fn=gradient_fn, interface=interface, max_diff=2
+                tapes,
+                device=qnode.device,
+                gradient_fn=gradient_fn,
+                interface=interface,
+                max_diff=2,
+                override_shots=shots,
             )
 
             return processing_fn(res)
