@@ -120,13 +120,17 @@ class TestIsIndependentAutograd:
             (0.3, [1, 4, 2], np.array([0.3, 9.1])),
         ],
     )
-    def test_get_random_args_autograd(self, args, num):
+    @pytest.mark.parametrize("bounds", [(-1, 1), (0.1, 1.0211)])
+    def test_get_random_args_autograd(self, args, num, bounds):
         seed = 921
-        rnd_args = _get_random_args(args, self.interface, num, seed)
+        rnd_args = _get_random_args(args, self.interface, num, seed, bounds)
         assert len(rnd_args) == num
         np.random.seed(seed)
         for _rnd_args in rnd_args:
-            expected = tuple(np.random.random(np.shape(arg)) * 2 * np.pi - np.pi for arg in args)
+            expected = tuple(
+                np.random.random(np.shape(arg)) * (bounds[1] - bounds[0]) + bounds[0]
+                for arg in args
+            )
             assert all(np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args))
 
     dev = qml.device("default.qubit", wires=1)
@@ -208,14 +212,16 @@ if have_jax:
                 (0.3, [1, 4, 2], np.array([0.3, 9.1])),
             ],
         )
-        def test_get_random_args(self, args, num):
+        @pytest.mark.parametrize("bounds", [(-1, 1), (0.1, 1.0211)])
+        def test_get_random_args(self, args, num, bounds):
             seed = 921
-            rnd_args = _get_random_args(args, self.interface, num, seed)
+            rnd_args = _get_random_args(args, self.interface, num, seed, bounds)
             assert len(rnd_args) == num
             np.random.seed(seed)
             for _rnd_args in rnd_args:
                 expected = tuple(
-                    np.random.random(np.shape(arg)) * 2 * np.pi - np.pi for arg in args
+                    np.random.random(np.shape(arg)) * (bounds[1] - bounds[0]) + bounds[0]
+                    for arg in args
                 )
                 assert all(np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args))
 
@@ -296,15 +302,17 @@ if have_tf:
                 (tf.Variable(0.3), [1, 4, 2], tf.Variable(np.array([0.3, 9.1]))),
             ],
         )
-        def test_get_random_args(self, args, num):
+        @pytest.mark.parametrize("bounds", [(-1, 1), (0.1, 1.0211)])
+        def test_get_random_args(self, args, num, bounds):
             tf = pytest.importorskip("tensorflow")
             seed = 921
-            rnd_args = _get_random_args(args, self.interface, num, seed)
+            rnd_args = _get_random_args(args, self.interface, num, seed, bounds)
             assert len(rnd_args) == num
             tf.random.set_seed(seed)
             for _rnd_args in rnd_args:
                 expected = tuple(
-                    tf.random.uniform(tf.shape(arg)) * 2 * np.pi - np.pi for arg in args
+                    tf.random.uniform(tf.shape(arg)) * (bounds[1] - bounds[0]) + bounds[0]
+                    for arg in args
                 )
                 expected = tuple(
                     tf.Variable(_exp) if isinstance(_arg, tf.Variable) else _exp
@@ -405,14 +413,17 @@ if have_torch:
                 (0.3, torch.tensor([1, 4, 2]), torch.tensor([0.3, 9.1])),
             ],
         )
-        def test_get_random_args(self, args, num):
+        @pytest.mark.parametrize("bounds", [(-1, 1), (0.1, 1.0211)])
+        def test_get_random_args(self, args, num, bounds):
             torch = pytest.importorskip("torch")
             seed = 921
-            rnd_args = _get_random_args(args, self.interface, num, seed)
+            rnd_args = _get_random_args(args, self.interface, num, seed, bounds)
             assert len(rnd_args) == num
             torch.random.manual_seed(seed)
             for _rnd_args in rnd_args:
-                expected = tuple(torch.rand(np.shape(arg)) * 2 * np.pi - np.pi for arg in args)
+                expected = tuple(
+                    torch.rand(np.shape(arg)) * (bounds[1] - bounds[0]) + bounds[0] for arg in args
+                )
                 assert all(np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args))
 
         dev = qml.device("default.qubit", wires=1)

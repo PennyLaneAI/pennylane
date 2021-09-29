@@ -29,7 +29,30 @@ from autograd.core import VJPNode
 
 
 def _autograd_is_independent_ana(func, *args, **kwargs):
-    """Test whether a function is independent of its arguments using autograd."""
+    """Test analytically whether a function is independent of its arguments
+    using Autograd.
+
+    Args:
+        func (callable): Function to test for independence
+        args (tuple): Arguments for the function with respect to which
+            to test for independence
+        kwargs (dict): Keyword arguments for the function at which
+            (but not with respect to which) to test for independence
+
+    Returns:
+        bool: Whether the function seems to not depend on it ``args``
+        analytically. That is, an output of ``True`` means that the
+        ``args`` do *not* feed into the output.
+
+    In Autograd, we test this by sending a ``Box`` through the function and
+    testing whether the output is again a ``Box`` and on the same trace as
+    the input ``Box``. This means that we can trace actual *independence*
+    of the output from the input, not only whether the passed function is
+    constant.
+    The code is adapted from
+    `autograd.tracer.py::trace
+    <https://github.com/HIPS/autograd/blob/master/autograd/tracer.py#L7>`__.
+    """
     # pylint: disable=protected-access
     node = VJPNode.new_root()
     with trace_stack.new_trace() as t:
@@ -51,7 +74,38 @@ def _autograd_is_independent_ana(func, *args, **kwargs):
 
 
 def _jax_is_independent_ana(func, *args, **kwargs):
-    """Test whether a function is independent of its arguments using JAX vjps."""
+    """Test analytically whether a function is independent of its arguments
+    using JAX.
+
+    Args:
+        func (callable): Function to test for independence
+        args (tuple): Arguments for the function with respect to which
+            to test for independence
+        kwargs (dict): Keyword arguments for the function at which
+            (but not with respect to which) to test for independence
+
+    Returns:
+        bool: Whether the function seems to not depend on it ``args``
+        analytically. That is, an output of ``True`` means that the
+        ``args`` do *not* feed into the output.
+
+    In JAX, we test this by constructing the VJP of the passed function
+    and inspecting its signature:
+    The first argument of the output of ``jax.vjp`` is a ``Partial``.
+    If *any* processing happens to any input, the arguments of that
+    ``Partial`` are unequal to ``((),)`.
+    Functions that depend on the input in a trivial manner, i.e. without
+    processing it, will go undetected by this. Therefore we also
+    test the arguments of the *function* of the above ``Partial``.
+    The first of these arguments is a list of tuples and if the
+    first entry of the first tuple is not ``None``, the input arguments
+    are detected to actually feed into the output.
+
+    .. warning::
+
+        This is an experimental function and unknown edge
+        cases may exist to this two-stage test.
+    """
     import jax  # pylint: disable=import-outside-toplevel
 
     mapped_func = lambda *_args: func(*_args, **kwargs)  # pylint: disable=unnecessary-lambda
@@ -65,8 +119,30 @@ def _jax_is_independent_ana(func, *args, **kwargs):
 
 
 def _tf_is_independent_ana(func, *args, **kwargs):
-    """Test whether a function is independent of its arguments using
-    a tensorflow GradientTape."""
+    """Test analytically whether a function is independent of its arguments
+    using TensorFlow.
+
+    Args:
+        func (callable): Function to test for independence
+        args (tuple): Arguments for the function with respect to which
+            to test for independence
+        kwargs (dict): Keyword arguments for the function at which
+            (but not with respect to which) to test for independence
+
+    Returns:
+        bool: Whether the function seems to not depend on it ``args``
+        analytically. That is, an output of ``True`` means that the
+        ``args`` do *not* feed into the output.
+
+    In TensorFlow, we test this by computing the Jacobian of the output(s)
+    with respect to the arguments. If the Jacobian is ``None``, the output(s)
+    is/are independent.
+
+    .. note::
+
+        Of all interfaces, this is currently the most robust for the
+        ``_is_independent`` functionality.
+    """
     import tensorflow as tf  # pylint: disable=import-outside-toplevel
 
     with tf.GradientTape(persistent=True) as tape:
@@ -79,24 +155,31 @@ def _tf_is_independent_ana(func, *args, **kwargs):
     return all(_jac is None for _jac in jac)
 
 
-def _get_random_args(args, interface, num, seed):
-    r"""Generate random arguments of the same shapes as provided args.
+def _get_random_args(args, interface, num, seed, bounds):
+    r"""Generate random arguments of a given structure.
+
     Args:
         args (tuple): Original input arguments
         interface (str): Interface of the QNode into which the arguments will be fed
         num (int): Number of random argument sets to generate
         seed (int): Seed for random generation
+        bounds (tuple[int]): Range within which to sample the random parameters.
+
     Returns:
         list[tuple]: List of length ``num`` with each entry being a random instance
         of arguments like ``args``.
+
+    This function generates ``num`` many tuples of random arguments in the given range
+    that have the same shapes as ``args``.
     """
+    width = bounds[1] - bounds[0]
     if interface == "tf":
         import tensorflow as tf  # pylint: disable=import-outside-toplevel
 
         tf.random.set_seed(seed)
         rnd_args = []
         for _ in range(num):
-            _args = (tf.random.uniform(tf.shape(_arg)) * 2 * np.pi - np.pi for _arg in args)
+            _args = (tf.random.uniform(tf.shape(_arg)) * width + bounds[0] for _arg in args)
             _args = tuple(
                 tf.Variable(_arg) if isinstance(arg, tf.Variable) else _arg
                 for _arg, arg in zip(_args, args)
@@ -107,27 +190,50 @@ def _get_random_args(args, interface, num, seed):
 
         torch.random.manual_seed(seed)
         rnd_args = [
-            tuple(torch.rand(np.shape(arg)) * 2 * np.pi - np.pi for arg in args) for _ in range(num)
+            tuple(torch.rand(np.shape(arg)) * width + bounds[0] for arg in args) for _ in range(num)
         ]
     else:
         np.random.seed(seed)
         rnd_args = [
-            tuple(np.random.random(np.shape(arg)) * 2 * np.pi - np.pi for arg in args)
+            tuple(np.random.random(np.shape(arg)) * width + bounds[0] for arg in args)
             for _ in range(num)
         ]
 
     return rnd_args
 
 
-def _is_independent_num(func, interface, args, kwargs, num_kwargs):
-    """Test whether a function is constant over ``num_pos`` random positions."""
-    num_kwargs = num_kwargs or {}
-    num_pos = num_kwargs.get("num_pos", 5)
-    seed = num_kwargs.get("seed", 9123)
-    atol = num_kwargs.get("atol", 1e-6)
-    rtol = num_kwargs.get("rtol", 0)
+def _is_independent_num(func, interface, args, kwargs, test_kwargs):
+    """Test whether a function returns the same output at random positions.
 
-    rnd_args = _get_random_args(args, interface, num_pos, seed)
+    Args:
+        func (callable): Function to be tested
+        interface (str): Interface used by ``func``
+        args (tuple): Positional arguments with respect to which to test
+        kwargs (dict): Keyword arguments for ``func`` at which to test;
+            The ``kwargs`` are kept fix in this test.
+        test_kwargs (dict): Options for the test.
+
+    Returns:
+        bool: Whether ``func`` returns the same output at the randomly
+        chosen points.
+
+    The available options via ``test_kwargs`` are
+
+      - ``num_pos=5``: Number of random positions to test
+      - ``seed=9123``: Seed for random number generator
+      - ``atol=1e-6``: Absolute precision for comparing the outputs
+      - ``rtol=0``: Absolute precision for comparing the outputs
+      - ``bounds=(-np.pi, np.pi)``: Limits of the range from which to sample
+
+    """
+    test_kwargs = test_kwargs or {}
+    num_pos = test_kwargs.get("num_pos", 5)
+    seed = test_kwargs.get("seed", 9123)
+    atol = test_kwargs.get("atol", 1e-6)
+    rtol = test_kwargs.get("rtol", 0)
+    bounds = test_kwargs.get("bounds", (-np.pi, np.pi))
+
+    rnd_args = _get_random_args(args, interface, num_pos, seed, bounds)
     original_output = func(*args, **kwargs)
     is_tuple_valued = isinstance(original_output, tuple)
     for _rnd_args in rnd_args:
@@ -146,18 +252,60 @@ def _is_independent_num(func, interface, args, kwargs, num_kwargs):
 
 
 def _is_independent(func, interface, args, kwargs=None, num_kwargs=None):
-    """Test whether a function is independent of its input arguments."""
+    """Test whether a function is independent of its input arguments,
+    both numerically and analytically.
+
+    Args:
+        func (callable): Function to be tested
+        interface (str): Interface used by ``func`` and the tests
+        args (tuple): Positional arguments with respect to which to test
+        kwargs (dict): Keyword arguments for ``func`` at which to test;
+            The ``kwargs`` are kept fix in this test.
+        num_kwargs (dict): Options for the numerical test at random positions,
+            see ``_is_independent_num``.
+
+    Returns:
+        bool: Whether ``func`` returns the same output at randomly
+        chosen points and is numerically independent of its arguments.
+
+    .. warning::
+
+        This function is experimental.
+        As such, it might yield wrong results and might behave
+        slightly differently in distinct ``interface``s for some edge cases.
+        A currently known edge case is the function
+        ``lambda x: x if abs(x)<1e-5 else 0.*x`` at ``x=0.0``.
+
+    The first, analytic test differs per ``interface`` both in its method
+    and its degree of reliability. The respective method is detailed in the
+    docstrings of ``_tf_is_independent_ana`` for TensorFlow,
+    ``_autograd_is_independent_ana`` for Autograd and ``_jax_is_independent_ana``
+    for JAX.
+    The function is then checked numerically to produce constant output at
+    a series of random positions, using ``_is_independent_num``.
+
+    .. warning ::
+
+        Currently, no analytical test is available in the PyTorch interface.
+        Only the numerical test ``_is_independent_num`` is performed in this case.
+        This is also remarked by a UserWarning.
+    """
     if not interface in {"autograd", "jax", "tf", "torch"}:
         raise ValueError(f"Unknown interface: {interface}")
 
     kwargs = kwargs or {}
-    if not _is_independent_num(func, interface, args, kwargs, num_kwargs):
-        return False
+
     if interface == "autograd":
-        return _autograd_is_independent_ana(func, *args, **kwargs)
+        if not _autograd_is_independent_ana(func, *args, **kwargs):
+            return False
 
     if interface == "jax":
-        return _jax_is_independent_ana(func, *args, **kwargs)
+        if not _jax_is_independent_ana(func, *args, **kwargs):
+            return False
+
+    if interface == "tf":
+        if not _tf_is_independent_ana(func, *args, **kwargs):
+            return False
 
     if interface == "torch":
         warnings.warn(
@@ -165,6 +313,5 @@ def _is_independent(func, interface, args, kwargs=None, num_kwargs=None):
             " Make sure that sampling positions and evaluating the function at these positions"
             " is a sufficient test, or change the interface."
         )
-        return True
 
-    return _tf_is_independent_ana(func, *args, **kwargs)
+    return _is_independent_num(func, interface, args, kwargs, test_kwargs=num_kwargs)
