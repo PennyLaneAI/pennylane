@@ -100,7 +100,7 @@ class DefaultQubitTorch(DefaultQubit):
     >>> res = circuit(weights)
     >>> res.backward()
     >>> print(weights.grad)
-    tensor([-2.2527e-01, -1.0086e+00,  1.3878e-17])
+    tensor([-2.2527e-01, -1.0086e+00,  2.9919e-17], device='cuda:0')
 
 
     There are a couple of things to keep in mind when using the ``"backprop"``
