@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This file contains the _is_independent function that checks 
+This file contains the _is_independent function that checks
 a function to be independent of its arguments for the interfaces
 
 * Autograd
@@ -32,22 +32,23 @@ def _autograd_is_independent(func, *args, **kwargs):
     """Test whether a function is independent of its arguments using autograd boxes."""
     # pylint: disable=protected-access
     node = VJPNode.new_root()
+    # pylint: disable=unnecessary-lambda
     with trace_stack.new_trace() as t:
         start_box = new_box(args, t, node)
         end_box = func(*start_box, **kwargs)
 
-        if type(end_box) in [tuple, list]:
-            if any(isbox(_end) and _end._trace == start_box._trace for _end in end_box):
-                return False
-        elif isinstance(end_box, np.ndarray):
-            if end_box.ndim == 0:
-                end_box = [end_box.item()]
-            if any(isbox(_end) and _end._trace == start_box._trace for _end in end_box):
-                return False
-        else:
-            if isbox(end_box) and end_box._trace == start_box._trace:
-                return False
-        return True
+    if type(end_box) in [tuple, list]:
+        if any(isbox(_end) and _end._trace == start_box._trace for _end in end_box):
+            return False
+    elif isinstance(end_box, np.ndarray):
+        if end_box.ndim == 0:
+            end_box = [end_box.item()]
+        if any(isbox(_end) and _end._trace == start_box._trace for _end in end_box):
+            return False
+    else:
+        if isbox(end_box) and end_box._trace == start_box._trace:
+            return False
+    return True
 
 
 def _jax_is_independent(func, *args, **kwargs):
