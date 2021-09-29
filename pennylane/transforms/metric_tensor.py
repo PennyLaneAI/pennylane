@@ -230,7 +230,11 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
         qnode = qnode.qnodes.qnodes[0]
 
     mt_fn = self.default_qnode_wrapper(qnode, targs, tkwargs)
-    cjac_fn = qml.transforms.classical_jacobian(qnode)
+
+    if isinstance(qnode, qml.beta.QNode):
+        cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=self.expand_fn)
+    else:
+        cjac_fn = qml.transforms.classical_jacobian(qnode)
 
     def wrapper(*args, **kwargs):
         mt = mt_fn(*args, **kwargs)
