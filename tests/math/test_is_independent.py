@@ -131,7 +131,6 @@ class TestIsIndependentAutograd:
     def test_nonconst(self, func, args):
         assert not _is_independent(func, self.interface, args)
 
-    @pytest.mark.xfail(reason="This test fails because a non-smooth function is checked.")
     @pytest.mark.parametrize("func, args", zip(overlooked_functions, args_overlooked))
     def test_overlooked(self, func, args):
         assert not _is_independent(func, self.interface, args)
@@ -210,7 +209,6 @@ class TestIsIndependentJax:
     def test_nonconst(self, func, args):
         assert not _is_independent(func, self.interface, args)
 
-    @pytest.mark.xfail(reason="This test fails because a non-smooth function is checked.")
     @pytest.mark.parametrize("func, args", zip(overlooked_functions, args_overlooked))
     def test_overlooked(self, func, args):
         assert not _is_independent(func, self.interface, args)
@@ -295,7 +293,6 @@ class TestIsIndependentTensorflow:
 
         assert not _is_independent(func, self.interface, args)
 
-    @pytest.mark.xfail(reason="This test fails because a non-smooth function is checked.")
     @pytest.mark.parametrize("func, args", zip(overlooked_functions, args_overlooked))
     def test_overlooked(self, func, args):
         assert not _is_independent(func, self.interface, args)
