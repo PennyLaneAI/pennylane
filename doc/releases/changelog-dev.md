@@ -317,7 +317,7 @@
 
 * Fixes a bug where gradient transforms would fail to apply to QNodes
   containing classical processing.
-  [(#)]()
+  [(#1699)](https://github.com/PennyLaneAI/pennylane/pull/1699)
 
 <h3>Documentation</h3>
 
