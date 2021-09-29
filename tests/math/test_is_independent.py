@@ -20,6 +20,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.math import _is_independent
+from pennylane.math._is_independent import _get_random_args
 
 nonconst_lambdas = [
     lambda x: x,
@@ -72,6 +73,26 @@ class TestIsIndependentAutograd:
     independent of its inputs, using Autograd."""
 
     interface = "autograd"
+
+    @pytest.mark.parametrize("num", [0, 1, 2])
+    @pytest.mark.parametrize(
+        "args",
+        [
+            (0.2,),
+            (1.1, 3.2, 0.2),
+            (np.array([[0, 9.2], [-1.2, 3.2]]),),
+            (0.3, [1, 4, 2], np.array([0.3, 9.1])),
+        ],
+    )
+    def test_get_random_args_autograd(self, args, num):
+        seed = 921
+        rnd_args = _get_random_args(args, self.interface, num, seed)
+        assert len(rnd_args) == num
+        np.random.seed(seed)
+        for _rnd_args in rnd_args:
+            expected = tuple(np.random.random(np.shape(arg)) * 2 * np.pi - np.pi for arg in args)
+            assert all(np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args))
+
 
     dev = qml.device("default.qubit", wires=1)
 
@@ -151,6 +172,25 @@ class TestIsIndependentJax:
     interface = "jax"
     jax = pytest.importorskip("jax")
 
+    @pytest.mark.parametrize("num", [0, 1, 2])
+    @pytest.mark.parametrize(
+        "args",
+        [
+            (0.2,),
+            (1.1, 3.2, 0.2),
+            (np.array([[0, 9.2], [-1.2, 3.2]]),),
+            (0.3, [1, 4, 2], np.array([0.3, 9.1])),
+        ],
+    )
+    def test_get_random_args(self, args, num):
+        seed = 921
+        rnd_args = _get_random_args(args, self.interface, num, seed)
+        assert len(rnd_args) == num
+        np.random.seed(seed)
+        for _rnd_args in rnd_args:
+            expected = tuple(np.random.random(np.shape(arg)) * 2 * np.pi - np.pi for arg in args)
+            assert all(np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args))
+
     dev = qml.device("default.qubit", wires=1)
 
     @qml.qnode(dev, interface=interface)
@@ -228,6 +268,30 @@ class TestIsIndependentTensorflow:
 
     interface = "tf"
     tf = pytest.importorskip("tensorflow")
+
+    @pytest.mark.parametrize("num", [0, 1, 2])
+    @pytest.mark.parametrize(
+        "args",
+        [
+            (tf.Variable(0.2),),
+            (tf.Variable(1.1), tf.constant(3.2), tf.Variable(0.2)),
+            (tf.Variable(np.array([[0, 9.2], [-1.2, 3.2]])),),
+            (tf.Variable(0.3), [1, 4, 2], tf.Variable(np.array([0.3, 9.1]))),
+        ],
+    )
+    def test_get_random_args(self, args, num):
+        tf = pytest.importorskip("tensorflow")
+        seed = 921
+        rnd_args = _get_random_args(args, self.interface, num, seed)
+        assert len(rnd_args) == num
+        tf.random.set_seed(seed)
+        for _rnd_args in rnd_args:
+            expected = tuple(tf.random.uniform(tf.shape(arg)) * 2 * np.pi - np.pi for arg in args)
+            expected = tuple(
+                tf.Variable(_exp) if isinstance(_arg, tf.Variable) else _exp
+                for _arg, _exp in zip(args, expected)
+            )
+            assert all(np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args))
 
     dev = qml.device("default.qubit", wires=1)
 
@@ -318,6 +382,26 @@ class TestIsIndependentTorch:
     interface = "torch"
     torch = pytest.importorskip("torch")
 
+    @pytest.mark.parametrize("num", [0, 1, 2])
+    @pytest.mark.parametrize(
+        "args",
+        [
+            (torch.tensor(0.2),),
+            (1.1, 3.2, torch.tensor(0.2)),
+            (torch.tensor([[0, 9.2], [-1.2, 3.2]]),),
+            (0.3, torch.tensor([1, 4, 2]), torch.tensor([0.3, 9.1])),
+        ],
+    )
+    def test_get_random_args(self, args, num):
+        torch = pytest.importorskip("torch")
+        seed = 921
+        rnd_args = _get_random_args(args, self.interface, num, seed)
+        assert len(rnd_args) == num
+        torch.random.manual_seed(seed)
+        for _rnd_args in rnd_args:
+            expected = tuple(torch.rand(np.shape(arg)) * 2 * np.pi - np.pi for arg in args)
+            assert all(np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args))
+
     dev = qml.device("default.qubit", wires=1)
 
     @qml.qnode(dev, interface=interface)
@@ -393,3 +477,10 @@ class TestIsIndependentTorch:
         assert _is_independent(f, self.interface, args)
         assert not _is_independent(f, self.interface, args, {"kw": True})
         assert _is_independent(jac, self.interface, args, {"kw": True})
+
+class TestOther:
+    """Other tests for _is_independent."""
+
+    def test_unknown_interface(self):
+        with pytest.raises(ValueError, match="Unknown interface: hello"):
+            _is_independent(lambda x: x, "hello", (0.1,))
