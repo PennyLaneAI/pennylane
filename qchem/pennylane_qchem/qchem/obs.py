@@ -841,7 +841,7 @@ def dipole(hf_file, core=None, active=None, mapping="jordan_wigner", cutoff=1.0e
     [<Hamiltonian: terms=19, wires=[0, 1, 2, 3, 4, 5]>,
     <Hamiltonian: terms=19, wires=[0, 1, 2, 3, 4, 5]>,
     <Hamiltonian: terms=1, wires=[0]>]
-    >>> print(dipole_obs[0])
+    >>> print(dipole_obs[0]) # x-component of D
     (-1.4861475511479285) [Z0]
     + (-1.4861475511479285) [Z1]
     + (-1.0207535180657459) [Z2]
@@ -881,8 +881,8 @@ def dipole(hf_file, core=None, active=None, mapping="jordan_wigner", cutoff=1.0e
 
     if hf.multiplicity != 1:
         raise ValueError(
-            "Currently, this functionality is constrained to closed-shell Hartree-Fock states with multiplicity = 1;"
-            " got spin multiplicity 2S+1 =  {}".format(hf.multiplicity)
+            "Currently, this functionality is constrained to Hartree-Fock states with spin multiplicity = 1;"
+            " got multiplicity 2S+1 =  {}".format(hf.multiplicity)
         )
 
     for i in hf.geometry:
