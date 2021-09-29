@@ -1,14 +1,36 @@
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+This file contains the _is_independent function that checks 
+a function to be independent of its arguments for the interfaces
+
+* Autograd
+* JAX
+* TensorFlow
+* PyTorch
+"""
 import warnings
 
 import numpy as np
 
 from autograd.tracer import isbox, new_box, trace_stack
 from autograd.core import VJPNode
-from autograd.wrap_util import unary_to_nary
 
 
 def _autograd_is_independent(func, *args, **kwargs):
     """Test whether a function is independent of its arguments using autograd boxes."""
+    # pylint: disable=protected-access
     node = VJPNode.new_root()
     with trace_stack.new_trace() as t:
         start_box = new_box(args, t, node)
@@ -78,16 +100,12 @@ def _tf_is_independent(func, *args, **kwargs):
 
     with tf.GradientTape(persistent=True) as tape:
         out = func(*args, **kwargs)
-    print(out)
 
     if isinstance(out, tuple):
         jac = [tape.jacobian(_out, args) for _out in out]
-        print(jac)
         return all(all(__jac is None for __jac in _jac) for _jac in jac)
-    else:
-        jac = tape.jacobian(out, args)
-        print(jac)
-        return all(_jac is None for _jac in jac)
+    jac = tape.jacobian(out, args)
+    return all(_jac is None for _jac in jac)
 
 
 def _is_independent(func, interface, args, kwargs=None, torch_kwargs=None):
