@@ -48,14 +48,14 @@ nonconst_lambdas = [
     lambda x: [x] * 10,
     lambda x: (2.0 * x, x),
     lambda x: 0.0 * x,
-    lambda x, y: (0.*x, 0.*y),
-    lambda x: x if x > 0 else 0.,  # RELU for x>0 is okay
-    lambda x: 1. if abs(x)<1e-5 else 0.,  # delta for x=0 is okay numerically
+    lambda x, y: (0.0 * x, 0.0 * y),
+    lambda x: x if x > 0 else 0.0,  # RELU for x>0 is okay
+    lambda x: 1.0 if abs(x) < 1e-5 else 0.0,  # delta for x=0 is okay numerically
     lambda x: qml.math.log(1 + qml.math.exp(1000.0 * x)) / 1000.0,  # Softplus is okay
     lambda x: qml.math.log(1 + qml.math.exp(1000.0 * x)) / 1000.0,  # Softplus is okay
-    lambda x: 1. if x > 0 else 0.,  # Heaviside is okay numerically
-    lambda x: 1. if x > 0 else 0.,  # Heaviside is okay numerically
-    lambda x: x if x > 0 else 0.,  # RELU for x<0 is okay numerically
+    lambda x: 1.0 if x > 0 else 0.0,  # Heaviside is okay numerically
+    lambda x: 1.0 if x > 0 else 0.0,  # Heaviside is okay numerically
+    lambda x: x if x > 0 else 0.0,  # RELU for x<0 is okay numerically
 ]
 
 args_nonconst_lambdas = [
@@ -64,7 +64,7 @@ args_nonconst_lambdas = [
     (2.19,),
     (1.0,),
     (np.ones((2, 3)),),
-    (np.array([2., 5.]), 1.2),
+    (np.array([2.0, 5.0]), 1.2),
     (1.6,),
     (0.0,),
     (-0.2,),
@@ -91,8 +91,8 @@ lambdas_expect_torch_fail = [
 ]
 
 overlooked_lambdas = [
-    lambda x: 1. if abs(x)<1e-5 else 0.,  # delta for x!=0 is not okay
-    lambda x: 1. if abs(x)<1e-5 else 0.,  # delta for x!=0 is not okay
+    lambda x: 1.0 if abs(x) < 1e-5 else 0.0,  # delta for x!=0 is not okay
+    lambda x: 1.0 if abs(x) < 1e-5 else 0.0,  # delta for x!=0 is not okay
 ]
 
 args_overlooked_lambdas = [
@@ -157,7 +157,7 @@ class TestIsIndependentAutograd:
     nonconst_functions = [
         nonconst_circuit,
         np.array,
-        lambda x: np.array(x*0.),
+        lambda x: np.array(x * 0.0),
         lambda x: (1 + qml.math.tanh(1000 * x)) / 2,
         *nonconst_lambdas,
     ]
