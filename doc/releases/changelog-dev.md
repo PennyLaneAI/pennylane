@@ -238,7 +238,7 @@
   weights = np.random.random(size=shape)
 
   opt = qml.GradientDescentOptimizer(stepsize=0.4)
-  
+
   energy = [ansatz(weights)]
   angle = [weights]
   max_iterations = 100
