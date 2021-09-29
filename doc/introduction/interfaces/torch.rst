@@ -206,7 +206,7 @@ The final weights and circuit value are:
 >>> phi_final, theta_final = opt.param_groups[0]['params']
 >>> phi_final, theta_final
 (tensor([0.7345, 0.0120], device='cuda:0', requires_grad=True), tensor(0.8316, device='cuda:0', requires_grad=True))
->>> circuit(phi_final, theta_final)
+>>> circuit4(phi_final, theta_final)
 tensor(0.5000, device='cuda:0', dtype=torch.float64, grad_fn=<_TorchQNodeBackward>)
 
 .. note::
