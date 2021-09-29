@@ -93,7 +93,6 @@ class TestIsIndependentAutograd:
             expected = tuple(np.random.random(np.shape(arg)) * 2 * np.pi - np.pi for arg in args)
             assert all(np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args))
 
-
     dev = qml.device("default.qubit", wires=1)
 
     @qml.qnode(dev, interface=interface)
@@ -477,6 +476,7 @@ class TestIsIndependentTorch:
         assert _is_independent(f, self.interface, args)
         assert not _is_independent(f, self.interface, args, {"kw": True})
         assert _is_independent(jac, self.interface, args, {"kw": True})
+
 
 class TestOther:
     """Other tests for _is_independent."""
