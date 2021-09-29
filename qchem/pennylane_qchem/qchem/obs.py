@@ -788,18 +788,18 @@ def dipole(hf_file, core=None, active=None, mapping="jordan_wigner", cutoff=1.0e
     molecular orbitals, the operators :math:`\hat{c}^\dagger` and :math:`\hat{c}` are the
     electron creation and annihilation operators, respectively, and
     :math:`\langle \alpha \vert {\bf r} \vert \beta \rangle` denotes
-    the matrix elements of the position operator :math:`\hat{{\bf r}`. These matrix elements
+    the matrix elements of the position operator. These matrix elements
     are calculated as
 
     .. math::
 
-        \langle \alpha \vert \hat{{\bf r}} \vert \beta \rangle = \sum_{i, j} C_{\alpha i}^*C_{\beta j}
+        \langle \alpha \vert {\bf r} \vert \beta \rangle = \sum_{i, j} C_{\alpha i}^*C_{\beta j}
         \langle i \vert {\bf r} \vert j \rangle,
 
     where :math:`\vert i \rangle` is the wave function of the atomic orbitals and
-    :math:`C_{\alpha i}` and :math:`\langle i \vert \hat{{\bf r}} \vert j \rangle`
-    are the representations of the molecular orbitals and the operator
-    :math:`\hat{{\bf r}}` in the atomic basis.
+    :math:`C_{\alpha i}` and :math:`\langle i \vert {\bf r} \vert j \rangle`
+    are, respectively, the representations of the molecular orbitals and the position
+    operator in the atomic basis.
 
     The contribution of the nuclei to the dipole operator is given by
 
