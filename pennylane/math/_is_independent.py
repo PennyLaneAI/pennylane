@@ -121,6 +121,7 @@ def _get_random_args(args, interface, num, seed):
 
     return rnd_args
 
+
 def _is_independent_num(func, interface, args, kwargs, num_kwargs):
     """Test whether a function is constant over ``num_pos`` random positions."""
     num_kwargs = num_kwargs or {}
