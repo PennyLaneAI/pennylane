@@ -780,24 +780,24 @@ def dipole(hf_file, core=None, active=None, mapping="jordan_wigner", cutoff=1.0e
 
     .. math::
 
-        \hat{D} = \sum_{\alpha, \beta} \langle \alpha \vert {\bf r} \vert \beta \rangle
+        \hat{D} = \sum_{\alpha, \beta} \langle \alpha \vert \hat{{\bf r}} \vert \beta \rangle
         [\hat{c}_{\alpha\uparrow}^\dagger \hat{c}_{\beta\uparrow} +
         \hat{c}_{\alpha\downarrow}^\dagger \hat{c}_{\beta\downarrow}] + \hat{D}_\mathrm{n}.
 
     In the equation above, the indices :math:`\alpha, \beta` run over the basis of Hartree-Fock
     molecular orbitals and the operators :math:`\hat{c}^\dagger` and :math:`\hat{c}` are the
     electron creation and annihilation operators, respectively. The matrix elements of the
-    position operator :math:`{\bf r}` are computed as
+    position operator :math:`\hat{{\bf r}}` are computed as
 
     .. math::
 
-        \langle \alpha \vert {\bf r} \vert \beta \rangle = \sum_{i, j} C_{\alpha i}^*C_{\beta j}
-        \langle i \vert {\bf r} \vert j \rangle,
+        \langle \alpha \vert \hat{{\bf r}} \vert \beta \rangle = \sum_{i, j} C_{\alpha i}^*C_{\beta j}
+        \langle i \vert \hat{{\bf r}} \vert j \rangle,
 
-    where :math:`\vert i \rangle` is the wave function of the atomic orbitals and
-    :math:`C_{\alpha i}` and :math:`\langle i \vert {\bf r} \vert j \rangle`
-    are, respectively, the representations of the molecular orbitals and the position
-    operator in the atomic basis.
+    where :math:`\vert i \rangle` is the wave function of the atomic orbitals,
+    :math:`C_{\alpha i}` are the coefficients defining the molecular orbitals,
+    and :math:`\langle i \vert \hat{{\bf r}} \vert j \rangle`
+    is the representation of operator :math:`\hat{{\bf r}}` in the atomic basis.
 
     The contribution of the nuclei to the dipole operator is given by
 
