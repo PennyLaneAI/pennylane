@@ -4,6 +4,56 @@
 
 <h3>New features since last release</h3>
 
+* There is a new utility function `qml.math._is_independent` that checks whether
+  a callable is independent of its  arguments.
+  [(#16xx)](https://github.com/PennyLaneAI/pennylane/pull/16xx)
+
+  **Warning**
+
+  This function is experimental and might behave differently than expected.
+  Also, it might be subject to change.
+
+  **Example**
+
+  Consider the function
+
+  ```python
+  def lin(x, weights=None):
+      return np.dot(x, weights)
+  ```
+
+  This function clearly depends on `x`. We may check for this via
+
+  ```pycon
+  >>> x = np.array([0.2, 9.1, -3.2])
+  >>> weights = np.array([1.1, -0.7, 1.8])
+  >>> qml.math._is_independent(lin, "autograd", (x,), {"weights": weights})
+  False
+  ```
+
+  However, the Jacobian will not depend on `x`:
+
+  ```pycon
+  >>> jac = qml.jacobian(lin)
+  >>> qml.math._is_independent(jac, "autograd", (x,), {"weights": weights})
+  True
+  ```
+
+  A function like `0.0*x` will be counted as _dependent_ on `x` because it does
+  depend on `x` functionally, even if the value is constant for all `x`.
+  This means that `_is_independent` is a stronger test than for constant
+  output functions.
+
+  **Disclaimer**
+
+  Note that the test relies on both, numerical and analytical checks, except
+  when using the PyTorch interface which only will perform a numerical check.
+  It is known that there are edge cases on which this test will yield wrong
+  results, in particular non-smooth functions may be problematic.
+  For details, please refer to the 
+  [`_is_indpendent` docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.math._is_independent.html).
+
+
 * Support for differentiable execution of batches of circuits has been
   extended to the JAX interface for scalar functions, via the beta
   `pennylane.interfaces.batch` module.
