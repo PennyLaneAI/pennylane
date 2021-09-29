@@ -787,7 +787,7 @@ def dipole(hf_file, core=None, active=None, mapping="jordan_wigner", cutoff=1.0e
     In the equation above, the indices :math:`\alpha, \beta` run over the basis of Hartree-Fock
     molecular orbitals and the operators :math:`\hat{c}^\dagger` and :math:`\hat{c}` are the
     electron creation and annihilation operators, respectively. The matrix elements of the
-    position operator {\bf r} are computed as
+    position operator :math:`{\bf r}` are computed as
 
     .. math::
 
@@ -806,7 +806,7 @@ def dipole(hf_file, core=None, active=None, mapping="jordan_wigner", cutoff=1.0e
         \hat{D}_\mathrm{n} = -\sum_{i=1}^{N_\mathrm{atoms}} Z_i {\bf R}_i \hat{I},
 
 
-    where :math:`Z_i` and :math:`{\bf R}_i` are, respectively, the atomic number and the
+    where :math:`Z_i` and :math:`{\bf R}_i` denote, respectively, the atomic number and the
     nuclear coordinates of the :math:`i`-th atom of the molecule.
 
     Args:
