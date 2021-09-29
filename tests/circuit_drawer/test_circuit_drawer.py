@@ -821,7 +821,7 @@ class TestCircuitDrawerIntegration:
             return [
                 qml.expval(qml.PauliZ(0)),
                 qml.expval(qml.PauliZ(1)),
-                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)),
             ]
 
         qnode(0.3, 0.2)
@@ -831,6 +831,7 @@ class TestCircuitDrawerIntegration:
             + " 1: ───────────────────────┤     ┤ ⟨Z⟩ ╰┤ ⟨Z ⊗ Z⟩ \n"
         )
         assert qnode.draw() == expected
+
 
 class TestWireOrdering:
     """Tests for wire ordering functionality"""
