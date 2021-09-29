@@ -224,7 +224,7 @@ if have_jax:
             const_circuit,
             lambda x: np.arange(20).reshape((2, 5, 2)),
             lambda x: (np.ones(3), -0.1),
-            jax.jacobian(lambda x, y: 4. * x - 2.1 * y, argnums=[0, 1]),
+            jax.jacobian(lambda x, y: 4.0 * x - 2.1 * y, argnums=[0, 1]),
         ]
 
         args_constant = [
