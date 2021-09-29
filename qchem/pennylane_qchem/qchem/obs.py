@@ -19,6 +19,8 @@ import numpy as np
 
 from . import openfermion, structure
 
+import pennylane as qml
+
 
 def _spin2_matrix_elements(sz):
     r"""Builds the table of matrix elements
@@ -773,7 +775,21 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
     return v_op
 
 
-def dipole(hf_file, core=None, active=None, mapping="jordan_wigner", cutoff=1.0e-12, wires=None):
+def dipole(
+    symbols,
+    coordinates,
+    name="molecule",
+    charge=0,
+    mult=1,
+    basis="sto-3g",
+    package="pyscf",
+    core=None,
+    active=None,
+    mapping="jordan_wigner",
+    cutoff=1.0e-12,
+    outpath=".",
+    wires=None,
+):
     r"""Computes the electric dipole moment operator in the Pauli basis.
 
     The second quantized dipole moment operator :math:`\hat{D}` of a molecule is given by
@@ -791,8 +807,8 @@ def dipole(hf_file, core=None, active=None, mapping="jordan_wigner", cutoff=1.0e
 
     .. math::
 
-        \langle \alpha \vert \hat{{\bf r}} \vert \beta \rangle = \sum_{i, j} C_{\alpha i}^*C_{\beta j}
-        \langle i \vert \hat{{\bf r}} \vert j \rangle,
+        \langle \alpha \vert \hat{{\bf r}} \vert \beta \rangle = \sum_{i, j}
+         C_{\alpha i}^*C_{\beta j} \langle i \vert \hat{{\bf r}} \vert j \rangle,
 
     where :math:`\vert i \rangle` is the wave function of the atomic orbitals,
     :math:`C_{\alpha i}` are the coefficients defining the molecular orbitals,
@@ -810,16 +826,28 @@ def dipole(hf_file, core=None, active=None, mapping="jordan_wigner", cutoff=1.0e
     nuclear coordinates of the :math:`i`-th atom of the molecule.
 
     Args:
-        hf_file (str): Absolute path to the hdf5-formatted file with the Hartree-Fock
-            electronic structure. This file can be generated using the
-            :func:`~.meanfield` function.
+        symbols (list[str]): symbols of the atomic species in the molecule
+        coordinates (array[float]): 1D array with the atomic positions in Cartesian
+            coordinates. The coordinates must be given in atomic units and the size of the array
+            should be ``3*N`` where ``N`` is the number of atoms.
+        name (str): name of the molecule
+        charge (int): charge of the molecule
+        mult (int): spin multiplicity :math:`\mathrm{mult}=N_\mathrm{unpaired} + 1` of the
+            Hartree-Fock (HF) state based on the number of unpaired electrons occupying the
+            HF orbitals
+        basis (str): Atomic basis set used to represent the molecular orbitals. Basis set
+            availability per element can be found
+            `here <www.psicode.org/psi4manual/master/basissets_byelement.html#apdx-basiselement>`_
+        package (str): quantum chemistry package (pyscf or psi4) used to solve the
+            mean field electronic structure problem
         core (list): indices of core orbitals
         active (list): indices of active orbitals
-        mapping (str): Specifies the transformation to map the fermionic operator to the
-            Pauli basis. Input values can be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
+        mapping (str): transformation (``'jordan_wigner'`` or ``'bravyi_kitaev'``) used to
+            map the fermionic operator to the Pauli basis
         cutoff (float): Cutoff value for including the matrix elements
             :math:`\langle \alpha \vert \hat{{\bf r}} \vert \beta \rangle`. The matrix elements
             with absolute value less than ``cutoff`` are neglected.
+        outpath (str): path to the directory containing output files
         wires (Wires, list, tuple, dict): Custom wire mapping used to convert the qubit operator
             to an observable measurable in a PennyLane ansatz.
             For types Wires/list/tuple, each item in the iterable represents a wire label
@@ -833,37 +861,38 @@ def dipole(hf_file, core=None, active=None, mapping="jordan_wigner", cutoff=1.0e
         :math:`\hat{D}_x`, :math:`\hat{D}_y` and :math:`\hat{D}_z` of the dipole operator in
         atomic units (Bohr radii).
 
-
     **Example**
 
-    >>> dipole_obs = dipole("./h3p.hdf5")
+    >>> symbols = ["H", "H", "H"]
+    >>> coordinates = np.array([0.028, 0.054, 0.0, 0.986, 1.610, 0.0, 1.855, 0.002, 0.0])
+    >>> dipole_obs = dipole(symbols, coordinates, charge=1)
     >>> print(dipole_obs)
     [<Hamiltonian: terms=19, wires=[0, 1, 2, 3, 4, 5]>,
     <Hamiltonian: terms=19, wires=[0, 1, 2, 3, 4, 5]>,
     <Hamiltonian: terms=1, wires=[0]>]
+
     >>> print(dipole_obs[0]) # x-component of D
-    (-1.4861475511479285) [Z0]
-    + (-1.4861475511479285) [Z1]
-    + (-1.0207535180657459) [Z2]
-    + (-1.0207535180657459) [Z3]
-    + (-0.38409271341166346) [Z4]
-    + (-0.38409271341166346) [Z5]
-    + (2.9129875652506754) [I0]
-    + (-1.0463884953059674) [Y0 Z1 Y2]
-    + (-1.0463884953059674) [X0 Z1 X2]
-    + (-1.0463884953059674) [Y1 Z2 Y3]
-    + (-1.0463884953059674) [X1 Z2 X3]
-    + (-0.2949628258407493) [Y2 Z3 Y4]
-    + (-0.2949628258407493) [X2 Z3 X4]
-    + (-0.2949628258407493) [Y3 Z4 Y5]
-    + (-0.2949628258407493) [X3 Z4 X5]
-    + (-0.10008920247855208) [Y0 Z1 Z2 Z3 Y4]
-    + (-0.10008920247855208) [X0 Z1 Z2 Z3 X4]
-    + (-0.10008920247855208) [Y1 Z2 Z3 Z4 Y5]
-    + (-0.10008920247855208) [X1 Z2 Z3 Z4 X5]
+    (-1.3030572751412595) [Z2]
+    + (-1.3030572751412595) [Z3]
+    + (-0.8886389216291275) [Z0]
+    + (-0.8886389216291275) [Z1]
+    + (-0.7506495490492537) [Z4]
+    + (-0.7506495490492537) [Z5]
+    + (3.0156914916392816) [I0]
+    + (-0.8878378199812019) [Y0 Z1 Y2]
+    + (-0.8878378199812019) [X0 Z1 X2]
+    + (-0.8878378199812019) [Y1 Z2 Y3]
+    + (-0.8878378199812019) [X1 Z2 X3]
+    + (-0.8007894776080673) [Y2 Z3 Y4]
+    + (-0.8007894776080673) [X2 Z3 X4]
+    + (-0.8007894776080673) [Y3 Z4 Y5]
+    + (-0.8007894776080673) [X3 Z4 X5]
+    + (0.22780640807443467) [Y0 Z1 Z2 Z3 Y4]
+    + (0.22780640807443467) [X0 Z1 Z2 Z3 X4]
+    + (0.22780640807443467) [Y1 Z2 Z3 Z4 Y5]
+    + (0.22780640807443467) [X1 Z2 Z3 Z4 X5]
     """
 
-    bohr_angs = 0.529177210903
     atomic_numbers = {
         "H": 1,
         "He": 2,
@@ -877,21 +906,22 @@ def dipole(hf_file, core=None, active=None, mapping="jordan_wigner", cutoff=1.0e
         "Ne": 10,
     }
 
-    hf = openfermion.MolecularData(filename=hf_file.strip())
-
-    if hf.multiplicity != 1:
+    if mult != 1:
         raise ValueError(
             "Currently, this functionality is constrained to Hartree-Fock states with spin multiplicity = 1;"
-            " got multiplicity 2S+1 =  {}".format(hf.multiplicity)
+            " got multiplicity 2S+1 =  {}".format(mult)
         )
 
-    for i in hf.geometry:
-        print(i[0])
-        if i[0] not in atomic_numbers:
+    for i in symbols:
+        if i not in atomic_numbers:
             raise ValueError(
                 "Currently, only first- or second-row elements of the periodic table are supported;"
-                " got element {}".format(i[0])
+                " got element {}".format(i)
             )
+
+    hf_file = qml.qchem.meanfield(symbols, coordinates, name, charge, mult, basis, package, outpath)
+
+    hf = openfermion.MolecularData(filename=hf_file.strip())
 
     # Load dipole matrix elements in the atomic basis
     # pylint: disable=import-outside-toplevel
@@ -917,8 +947,8 @@ def dipole(hf_file, core=None, active=None, mapping="jordan_wigner", cutoff=1.0e
     # Compute the nuclear contribution
     dip_n = np.zeros(3)
     for comp in range(3):
-        for i in hf.geometry:
-            dip_n[comp] -= atomic_numbers[i[0]] * i[1][comp] / bohr_angs
+        for i, symb in enumerate(symbols):
+            dip_n[comp] -= atomic_numbers[symb] * coordinates[3 * i + comp]
 
     # Build the observable
     dip_obs = []
