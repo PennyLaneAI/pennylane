@@ -32,7 +32,6 @@ def _autograd_is_independent_ana(func, *args, **kwargs):
     """Test whether a function is independent of its arguments using autograd."""
     # pylint: disable=protected-access
     node = VJPNode.new_root()
-    # pylint: disable=unnecessary-lambda
     with trace_stack.new_trace() as t:
         start_box = new_box(args, t, node)
         end_box = func(*start_box, **kwargs)
@@ -55,7 +54,7 @@ def _jax_is_independent_ana(func, *args, **kwargs):
     """Test whether a function is independent of its arguments using JAX vjps."""
     import jax  # pylint: disable=import-outside-toplevel
 
-    mapped_func = lambda *_args: func(*_args, **kwargs)
+    mapped_func = lambda *_args: func(*_args, **kwargs)  # pylint: disable=unnecessary-lambda
     _vjp = jax.vjp(mapped_func, *args)[1]
     if _vjp.args[0].args != ((),):
         return False
@@ -110,14 +109,12 @@ def _get_random_args(args, interface, num, seed):
         rnd_args = [
             tuple(torch.rand(np.shape(arg)) * 2 * np.pi - np.pi for arg in args) for _ in range(num)
         ]
-    elif interface in ["autograd", "jax"]:
+    else:
         np.random.seed(seed)
         rnd_args = [
             tuple(np.random.random(np.shape(arg)) * 2 * np.pi - np.pi for arg in args)
             for _ in range(num)
         ]
-    else:
-        raise ValueError(f"Unknown interface: {interface}")
 
     return rnd_args
 
@@ -150,6 +147,9 @@ def _is_independent_num(func, interface, args, kwargs, num_kwargs):
 
 def _is_independent(func, interface, args, kwargs=None, num_kwargs=None):
     """Test whether a function is independent of its input arguments."""
+    if not interface in {"autograd", "jax", "tf", "torch"}:
+        raise ValueError(f"Unknown interface: {interface}")
+
     kwargs = kwargs or {}
     if not _is_independent_num(func, interface, args, kwargs, num_kwargs):
         return False
@@ -167,5 +167,4 @@ def _is_independent(func, interface, args, kwargs=None, num_kwargs=None):
         )
         return True
 
-    if interface == "tf":
-        return _tf_is_independent_ana(func, *args, **kwargs)
+    return _tf_is_independent_ana(func, *args, **kwargs)
