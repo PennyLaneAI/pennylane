@@ -302,6 +302,9 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where the GPU cannot be used with `qml.qnn.TorchLayer`.
+  [(#1688)](https://github.com/PennyLaneAI/pennylane/pull/1688)
+
 * Fix a bug where it was not possible to use `jax.jit` on a `QNode` when using `QubitStateVector`.
   [(#1683)](https://github.com/PennyLaneAI/pennylane/pull/1683)
 
