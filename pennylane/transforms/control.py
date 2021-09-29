@@ -91,9 +91,15 @@ class ControlledOperation(Operation):
     num_wires = AnyWires
     num_params = property(lambda self: self.subtape.num_params)
 
+
     def __init__(self, tape, control_wires, do_queue=True):
         self.subtape = tape
         """QuantumTape: The tape that defines the underlying operation."""
+
+        if len(self.subtape.operations) == 1:
+            self.is_controlled = self.subtape.operations[0].name
+        else:
+            self.is_controlled = "MultipleTargets"
 
         self._control_wires = Wires(control_wires)
         """Wires: The control wires."""
@@ -104,6 +110,10 @@ class ControlledOperation(Operation):
     @property
     def control_wires(self):
         return self._control_wires
+
+    @property
+    def target_wires(self):
+        return self.subtape.wires
 
     def expand(self):
         tape = self.subtape

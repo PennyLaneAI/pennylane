@@ -438,6 +438,7 @@ class CNOT(Operation):
     num_wires = 2
     par_domain = None
     is_self_inverse = True
+    is_controlled = "PauliX"
     basis = "X"
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
@@ -455,6 +456,9 @@ class CNOT(Operation):
     def control_wires(self):
         return Wires(self.wires[0])
 
+    @property
+    def target_wires(self):
+        return Wires(self.wires[1])
 
 class CZ(DiagonalOperation):
     r"""CZ(wires)
@@ -481,6 +485,7 @@ class CZ(DiagonalOperation):
     num_wires = 2
     par_domain = None
     is_self_inverse = True
+    is_controlled = "PauliZ"
     is_symmetric_over_all_wires = True
     basis = "Z"
     eigvals = np.array([1, 1, 1, -1])
@@ -500,6 +505,10 @@ class CZ(DiagonalOperation):
     @property
     def control_wires(self):
         return Wires(self.wires[0])
+
+    @property
+    def target_wires(self):
+        return Wires(self.wires[1])
 
 
 class CY(Operation):
@@ -527,6 +536,7 @@ class CY(Operation):
     num_wires = 2
     par_domain = None
     is_self_inverse = True
+    is_controlled = "PauliY"
     basis = "Y"
     matrix = np.array(
         [
@@ -553,6 +563,10 @@ class CY(Operation):
     def control_wires(self):
         return Wires(self.wires[0])
 
+    @property
+    def target_wires(self):
+        return Wires(self.wires[1])
+
 
 class SWAP(Operation):
     r"""SWAP(wires)
@@ -578,7 +592,6 @@ class SWAP(Operation):
     par_domain = None
     is_self_inverse = True
     is_symmetric_over_all_wires = True
-    basis = "X"
     matrix = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
     @classmethod
@@ -599,10 +612,6 @@ class SWAP(Operation):
 
     def _controlled(self, wire):
         CSWAP(wires=wire + self.wires)
-
-    @property
-    def control_wires(self):
-        return Wires(self.wires[:2])
 
 
 class ISWAP(Operation):
@@ -746,6 +755,7 @@ class CSWAP(Operation):
     """
     num_params = 0
     num_wires = 3
+    is_controlled = "SWAP"
     par_domain = None
     matrix = np.array(
         [
@@ -775,6 +785,14 @@ class CSWAP(Operation):
 
     def adjoint(self):
         return CSWAP(wires=self.wires)
+
+    @property
+    def control_wires(self):
+        return Wires(self.wires[0])
+
+    @property
+    def target_wires(self):
+        return Wires(self.wires[1::])
 
 
 class Toffoli(Operation):
@@ -808,6 +826,7 @@ class Toffoli(Operation):
     par_domain = None
     is_self_inverse = True
     is_symmetric_over_control_wires = True
+    is_controlled = "PauliX"
     basis = "X"
     matrix = np.array(
         [
@@ -853,6 +872,10 @@ class Toffoli(Operation):
     @property
     def control_wires(self):
         return Wires(self.wires[:2])
+
+    @property
+    def target_wires(self):
+        return Wires(self.wires[2])
 
 
 class MultiControlledX(Operation):
@@ -910,6 +933,7 @@ class MultiControlledX(Operation):
     """
     num_params = 0
     num_wires = AnyWires
+    is_controlled = "PauliX"
     par_domain = "A"
     grad_method = None
 
@@ -964,6 +988,10 @@ class MultiControlledX(Operation):
     @property
     def control_wires(self):
         return self._control_wires
+
+    @property
+    def target_wires(self):
+        return self._target_wire
 
     @staticmethod
     def _parse_control_values(control_wires, control_values):

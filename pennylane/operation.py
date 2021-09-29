@@ -556,6 +556,9 @@ class Operation(Operator):
     """
 
     # Attributes for compilation transforms
+    is_controlled = None
+    """str or None: Return the name ``Str`` of the target gate if the operation is controlled."""
+    
     is_self_inverse = None
     """bool or None: ``True`` if the operation is its own inverse.
 
@@ -613,6 +616,15 @@ class Operation(Operator):
 
         Returns:
             Wires: The set of control wires of the operation.
+        """
+        raise NotImplementedError
+
+    @property
+    def target_wires(self):  # pragma: no cover
+        r"""For operations that are targeted, returns the set of target wires.
+
+        Returns:
+            Wires: The set of target wires of the operation.
         """
         raise NotImplementedError
 
