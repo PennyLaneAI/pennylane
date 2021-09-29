@@ -813,10 +813,8 @@ def dipole(hf_file, core=None, active=None, mapping="jordan_wigner", cutoff=1.0e
         hf_file (str): Absolute path to the hdf5-formatted file with the Hartree-Fock
             electronic structure. This file can be generated using the
             :func:`~.meanfield` function.
-        core (list): indices of core orbitals, i.e., the orbitals that are
-            not correlated in the many-body wave function
-        active (list): indices of active orbitals, i.e., the orbitals used to
-            build the correlated many-body wave function
+        core (list): indices of core orbitals
+        active (list): indices of active orbitals
         mapping (str): Specifies the transformation to map the fermionic operator to the
             Pauli basis. Input values can be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
         cutoff (float): Cutoff value for including the matrix elements
@@ -843,7 +841,6 @@ def dipole(hf_file, core=None, active=None, mapping="jordan_wigner", cutoff=1.0e
     [<Hamiltonian: terms=19, wires=[0, 1, 2, 3, 4, 5]>,
     <Hamiltonian: terms=19, wires=[0, 1, 2, 3, 4, 5]>,
     <Hamiltonian: terms=1, wires=[0]>]
-
     >>> print(dipole_obs[0])
     (-1.4861475511479285) [Z0]
     + (-1.4861475511479285) [Z1]
@@ -884,7 +881,7 @@ def dipole(hf_file, core=None, active=None, mapping="jordan_wigner", cutoff=1.0e
 
     if hf.multiplicity != 1:
         raise ValueError(
-            "Currently, this functionality is constrained to closed-shell Hartree-Fock states;"
+            "Currently, this functionality is constrained to closed-shell Hartree-Fock states with multiplicity = 1;"
             " got spin multiplicity 2S+1 =  {}".format(hf.multiplicity)
         )
 
