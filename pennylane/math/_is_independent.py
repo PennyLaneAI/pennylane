@@ -54,11 +54,16 @@ def _jax_is_independent_ana(func, *args, **kwargs):
     """Test whether a function is independent of its arguments using JAX vjps."""
     import jax  # pylint: disable=import-outside-toplevel
 
+    print(func, args, kwargs)
     mapped_func = lambda *_args: func(*_args, **kwargs)  # pylint: disable=unnecessary-lambda
     _vjp = jax.vjp(mapped_func, *args)[1]
+    print(_vjp)
+    print(_vjp.args[0])
     if _vjp.args[0].args != ((),):
+        print("First ana")
         return False
     if _vjp.args[0].func.args[0][0][0] is not None:
+        print("Second ana")
         return False
 
     return True
@@ -137,9 +142,11 @@ def _is_independent_num(func, interface, args, kwargs, num_kwargs):
                 np.allclose(new, orig, atol=atol, rtol=rtol)
                 for new, orig in zip(new_output, original_output)
             ):
+                print("tuple valued num")
                 return False
         else:
             if not np.allclose(new_output, original_output, atol=atol, rtol=rtol):
+                print("not tuple valued num")
                 return False
 
     return True
@@ -152,6 +159,7 @@ def _is_independent(func, interface, args, kwargs=None, num_kwargs=None):
 
     kwargs = kwargs or {}
     if not _is_independent_num(func, interface, args, kwargs, num_kwargs):
+        print("num")
         return False
     if interface == "autograd":
         return _autograd_is_independent_ana(func, *args, **kwargs)
