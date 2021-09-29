@@ -113,8 +113,48 @@ class GateFabric(Operation):
             np.random.seed(42)
             weights = np.random.random(size=shape)
 
-        >>> ansatz(weights)
-        -0.5764255832593828
+            # Define the optimizer
+            opt = qml.GradientDescentOptimizer(stepsize=0.4)
+
+            # Store the values of the cost function
+            energy = [ansatz(weights)]
+
+            # Store the values of the circuit weights
+            angle = [weights]
+
+            max_iterations = 100
+            conv_tol = 1e-06
+
+            for n in range(max_iterations):
+                weights, prev_energy = opt.step_and_cost(ansatz, weights)
+                energy.append(ansatz(weights))
+                angle.append(weights)
+                conv = np.abs(energy[-1] - prev_energy)
+
+                if n % 2 == 0:
+                    print(f"Step = {n},  Energy = {energy[-1]:.8f} Ha")
+
+                if conv <= conv_tol:
+                    break
+
+            print("\n" f"Final value of the ground-state energy = {energy[-1]:.8f} Ha")
+            print("\n" f"Optimal value of the circuit parameters = {angle[-1]}")
+
+        .. code-block:: none
+
+            Step = 0,  Energy = -0.92629604 Ha
+            Step = 2,  Energy = -1.10724005 Ha
+            Step = 4,  Energy = -1.13307755 Ha
+            Step = 6,  Energy = -1.13587374 Ha
+            Step = 8,  Energy = -1.13615720 Ha
+            Step = 10,  Energy = -1.13618592 Ha
+            Step = 12,  Energy = -1.13618883 Ha
+
+            Final value of the ground-state energy = -1.13618883 Ha
+
+            Optimal value of the circuit parameters = [[[ 0.58835515  0.40801101]]
+            [[ 0.83842218 -0.24228264]]]
+
 
         **Parameter shape**
 
