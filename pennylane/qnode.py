@@ -662,7 +662,7 @@ class QNode:
     def update_device_options(self):
         """Update the device options once the QNode has been constructed."""
 
-        if self.device.short_name == 'default.qubit.torch':
+        if self.device.short_name == "default.qubit.torch":
 
             # Check if we should be using CUDA
             ops_and_obs = self.qtape.operations + self.qtape.observables
@@ -671,10 +671,12 @@ class QNode:
             if any_op_uses_cuda and self.device._torch_device == "cpu":
 
                 if self.device._user_def_torch_device:
-                    warnings.warn("The requested Torch device was the CPU, " \
-                            "but some tensors are using the GPU. Pass " \
-                            "torch_device='cuda' when creating the PennyLane device " \
-                            "to use the GPU.")
+                    warnings.warn(
+                        "The requested Torch device was the CPU, "
+                        "but some tensors are using the GPU. Pass "
+                        "torch_device='cuda' when creating the PennyLane device "
+                        "to use the GPU."
+                    )
                 else:
 
                     # As there are tensors using the GPU, switch the underlying

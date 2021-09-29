@@ -1211,8 +1211,8 @@ class TestIntegration:
 
             x = torch.rand((5, n_qubits), dtype=torch.float64).to(torch.device("cuda"))
             res = qlayer(x)
-            assert circuit.device.short_name == 'default.qubit.torch'
-            assert circuit.device._torch_device == 'cuda'
+            assert circuit.device.short_name == "default.qubit.torch"
+            assert circuit.device._torch_device == "cuda"
             assert res.is_cuda
 
             loss = torch.sum(res).squeeze()
@@ -1227,13 +1227,18 @@ class TestIntegration:
             pytest.skip("Cuda device not available")
         else:
             n_qubits = 2
-            dev = qml.device('default.qubit.torch', wires=3, torch_device='cpu')
+            dev = qml.device("default.qubit.torch", wires=3, torch_device="cpu")
 
-            arr = torch.tensor([[ 1.8381, -0.0455],
-                    [ 0.9816,  0.1912],
-                    [ 1.1596, -0.4872],
-                    [-0.3454,  0.9385],
-                    [ 1.0960, -0.4954]], device='cuda:0')
+            arr = torch.tensor(
+                [
+                    [1.8381, -0.0455],
+                    [0.9816, 0.1912],
+                    [1.1596, -0.4872],
+                    [-0.3454, 0.9385],
+                    [1.0960, -0.4954],
+                ],
+                device="cuda:0",
+            )
 
             @qml.qnode(dev)
             def qnode(inputs, weights):
@@ -1241,17 +1246,18 @@ class TestIntegration:
                 qml.templates.StronglyEntanglingLayers(weights, wires=range(n_qubits))
                 return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-
             weight_shapes = {"weights": (3, n_qubits, 3)}
             qlayer = qml.qnn.TorchLayer(qnode, weight_shapes)
 
-            warn_sub_text = "The requested Torch device was the CPU, " \
-                                "but some tensors are using the GPU"
+            warn_sub_text = (
+                "The requested Torch device was the CPU, " "but some tensors are using the GPU"
+            )
 
             with pytest.warns(UserWarning, match=warn_sub_text):
                 qlayer(arr)
 
             assert qnode.device._torch_device == "cpu"
+
 
 class TestMutability:
     """Test for QNode immutability"""
