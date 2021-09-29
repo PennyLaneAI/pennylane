@@ -654,7 +654,7 @@ class TestInputs:
             (
                 qml.math.array([[[-0.080, 2.629]]]),
                 [0, 1, 2, 3, 4],
-                "This template requires even number of qubits",
+                "This template requires an even number of qubits",
             ),
             (
                 qml.math.array([[[-0.080]]]),
@@ -747,7 +747,7 @@ class TestAttributes:
     def test_shape_exception_not_even_qubits(self):
         """Test that the shape function warns if the number of qubits are not even."""
 
-        with pytest.raises(ValueError, match="This template requires even number of qubits"):
+        with pytest.raises(ValueError, match="This template requires an even number of qubits"):
             qml.templates.GateFabric.shape(1, 5)
 
 

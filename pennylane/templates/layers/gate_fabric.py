@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the quantum number preserving GateFabric template.
+Contains the quantum-number-preserving GateFabric template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import numpy as np
@@ -21,10 +21,10 @@ from pennylane.operation import Operation, AnyWires
 
 
 class GateFabric(Operation):
-    r"""Implements a local, expressive, and quantum-number-preserving ansatz using VQE circuit fabrics
-    proposed by Anselmetti *et al.* in `arXiv:2104.05692 <https://arxiv.org/abs/2104.05695>`_.
+    r"""Implements a local, expressive, and quantum-number-preserving ansatz proposed by
+    Anselmetti *et al.* in `arXiv:2104.05692 <https://arxiv.org/abs/2104.05695>`_.
 
-    This template prepares the :math:`N` qubits trial state by applying :math:`D` layers of gate fabric block
+    This template prepares the :math:`N`-qubit trial state by applying :math:`D` layers of gate-fabric blocks
     :math:`\hat{U}_{GF}(\vec{\theta},\vec{\phi})` to the Hartree-Fock state in the Jordan-Wigner basis
 
     .. math::
@@ -32,20 +32,20 @@ class GateFabric(Operation):
         \vert \Psi(\vec{\theta},\vec{\phi})\rangle =
         \hat{U}_{GF}^{(D)}(\vec{\theta}_{D},\vec{\phi}_{D}) \ldots
         \hat{U}_{GF}^{(2)}(\vec{\theta}_{2},\vec{\phi}_{2})
-        \hat{U}_{GF}^{(1)}(\vec{\theta}_{1},\vec{\phi}_{1}) \vert HF \rangle
+        \hat{U}_{GF}^{(1)}(\vec{\theta}_{1},\vec{\phi}_{1}) \vert HF \rangle,
 
-    where each of the gate fabric block :math:`\hat{U}_{GF}(\vec{\theta},\vec{\phi})` comprises of 2-parameter 4-qubit
-    gate elements :math:`\hat{Q}(\theta, \phi)` that act on 4-nearest-neighboring qubits. The circuit implementing a
+    where each of the gate fabric blocks :math:`\hat{U}_{GF}(\vec{\theta},\vec{\phi})` is comprised of two-parameter four-qubit
+    gates :math:`\hat{Q}(\theta, \phi)` that act on four nearest-neighbour qubits. The circuit implementing a
     single layer of the gate fabric block for :math:`N = 8` is shown in the figure below:
 
     .. figure:: ../../_static/templates/layers/gate_fabric_layer.png
         :align: center
-        :width: 80%
+        :width: 100%
         :target: javascript:void(0);
 
     The gate element :math:`\hat{Q}(\theta, \phi)` (`arXiv:2104.05692 <https://arxiv.org/abs/2104.05695>`_) is composed of
-    a 1-parameter 4-qubit spin-adapted spatial orbital rotation gate, which is implemented by :class:`~.OrbitalRotation()`
-    operation and 1-parameter 4-qubit diagonal pair-exchange gate, which is equivalent to the :class:`~.DoubleExcitation()`
+    a four-qubit spin-adapted spatial orbital rotation gate, which is implemented by the :class:`~.OrbitalRotation()`
+    operation and a four-qubit diagonal pair-exchange gate, which is equivalent to the :class:`~.DoubleExcitation()`
     operation. In addition to these two gates, the gate element :math:`\hat{Q}(\theta, \phi)` can also include an optional
     constant :math:`\hat{\Pi} \in \{\hat{I}, \text{OrbitalRotation}(\pi)\}` gate.
 
@@ -56,25 +56,25 @@ class GateFabric(Operation):
 
     |
 
-    The individual four qubit :class:`~.DoubleExcitation()` and :class:`~.OrbitalRotation()` gates given here are equivalent to the
-    :math:`\text{QNP}_{PX}(\theta)` and :math:`\text{QNP}_{OR}(\phi)` gates presented in `arXiv:2104.05692 <https://arxiv.org/abs/2104.05695>`_
-    respectively. Moreover, regardless of the choice of :math:`\hat{\Pi}`, this gate fabric will exactly preserve the quantum numbers
-    :math:`\hat{N}_{\alpha}`, :math:`\hat{N}_{\beta}` and :math:`\hat{S}^{2}`.
+    The four-qubit :class:`~.DoubleExcitation()` and :class:`~.OrbitalRotation()` gates given here are equivalent to the
+    :math:`\text{QNP}_{PX}(\theta)` and :math:`\text{QNP}_{OR}(\phi)` gates presented in `arXiv:2104.05692 <https://arxiv.org/abs/2104.05695>`_,
+    respectively. Moreover, regardless of the choice of :math:`\hat{\Pi}`, this gate fabric will exactly preserve the number of particles
+    and total spin of the state.
 
     Args:
         weights (tensor_like): Array of weights of shape ``(D, L, 2)``\,
             where ``D`` is the number of gate fabric layers and ``L = N/2-1``
-            is the number of :math:`\hat{Q}(\theta, \phi)` gates per layer.
+            is the number of :math:`\hat{Q}(\theta, \phi)` gates per layer with N being the total number of qubits.
         wires (Iterable): wires that the template acts on
-        init_state (tensor_like): iterable of shape ``(len(wires),)``\, representing the Hartree-Fock state in Jordan-Wigner basis
-            that is used to initialize the wires.
+        init_state (tensor_like): init_state (tensor_like): iterable of shape ``(len(wires),)``\, representing the input Hartree-Fock state
+            in the Jordan-Wigner representation.
         include_pi (boolean): If ``include_pi = True``\, the optional constant :math:`\hat{\Pi}` gate  is set to :math:`\text{OrbitalRotation}(\pi)`.
             Default value is :math:`\hat{I}`.
 
     .. UsageDetails::
 
         #. The number of wires :math:`N` has to be equal to the number of
-           spin orbitals included in the active space, and should be even.
+           spin-orbitals included in the active space, and should be even.
 
         #. The number of trainable parameters scales linearly with the number of layers as
            :math:`2 D (N/2-1)`.
@@ -102,7 +102,8 @@ class GateFabric(Operation):
             # Define the ansatz
             @qml.qnode(dev)
             def ansatz(weights):
-                qml.templates.GateFabric(weights, wires=[0,1,2,3], init_state=ref_state, include_pi=True)
+                qml.templates.GateFabric(weights, wires=[0,1,2,3],
+                                            init_state=ref_state, include_pi=True)
                 return qml.expval(H)
 
             # Get the shape of the weights for this template
@@ -144,7 +145,7 @@ class GateFabric(Operation):
             )
         if len(wires) % 2:
             raise ValueError(
-                f"This template requires even number of qubits; got {len(wires)} wires"
+                f"This template requires an even number of qubits; got {len(wires)} wires"
             )
 
         self.qwires = [
@@ -216,7 +217,7 @@ class GateFabric(Operation):
 
         if n_wires % 2:
             raise ValueError(
-                f"This template requires even number of qubits; got 'n_wires' = {n_wires}"
+                f"This template requires an even number of qubits; got 'n_wires' = {n_wires}"
             )
 
         return n_layers, n_wires // 2 - 1, 2
