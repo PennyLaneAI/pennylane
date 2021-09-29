@@ -671,8 +671,8 @@ class QNode:
             if any_op_uses_cuda and self.device._torch_device == "cpu":
 
                 if self.device._user_def_torch_device:
-                    warnings.warn("Although the CPU was requested as the Torch " \
-                            "device, some tensors are using the GPU. Pass "
+                    warnings.warn("The requested Torch device was the CPU, " \
+                            "but some tensors are using the GPU. Pass " \
                             "torch_device='cuda' when creating the PennyLane device " \
                             "to use the GPU.")
                 else:

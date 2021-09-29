@@ -1187,7 +1187,7 @@ class TestIntegration:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_switched_to_cuda(self):
+    def test_torch_device_cuda_if_tensors_on_cuda(self):
         """Test that if any tensor passed to operators is on the GPU then CUDA
         is set internally as a device option for 'default.qubit.torch'."""
         torch = pytest.importorskip("torch")
@@ -1219,6 +1219,37 @@ class TestIntegration:
             loss.backward()
             assert loss.is_cuda
 
+    def test_warn_if_cpu_torch_device_with_tensors_on_cuda(self):
+        """Test that if any tensor passed to operators is on the GPU then CUDA
+        is set internally as a device option for 'default.qubit.torch'."""
+        torch = pytest.importorskip("torch")
+        if not torch.cuda.is_available():
+            pytest.skip("Cuda device not available")
+        else:
+            n_qubits = 2
+            dev = qml.device('default.qubit.torch', wires=3, torch_device='cpu')
+
+            arr = torch.tensor([[ 1.8381, -0.0455],
+                    [ 0.9816,  0.1912],
+                    [ 1.1596, -0.4872],
+                    [-0.3454,  0.9385],
+                    [ 1.0960, -0.4954]], device='cuda:0')
+
+            @qml.qnode(dev)
+            def qnode(inputs, weights):
+                qml.templates.AngleEmbedding(inputs, wires=range(n_qubits))
+                qml.templates.StronglyEntanglingLayers(weights, wires=range(n_qubits))
+                return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+
+            weight_shapes = {"weights": (3, n_qubits, 3)}
+            qlayer = qml.qnn.TorchLayer(qnode, weight_shapes)
+
+            warn_sub_text = "The requested Torch device was the CPU, " \
+                                "but some tensors are using the GPU"
+
+            with pytest.warns(UserWarning, match=warn_sub_text):
+                qlayer(arr)
 
 class TestMutability:
     """Test for QNode immutability"""
