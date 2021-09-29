@@ -6,8 +6,8 @@ import pytest
 import pennylane as qml
 
 
-ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
-
+h2 = ["H", "H"]
+x_h2 = np.array([0.0, 0.0, -0.66140414, 0.0, 0.0, 0.66140414])
 coeffs_h2 = []
 coeffs_h2.append([0.0])
 coeffs_h2.append([0.0])
@@ -44,76 +44,67 @@ ops_h2.append(
 )
 
 
-coeffs_h2o_jw = []
-coeffs_h2o_jw.append(
-    [-0.26800371, -0.26800371, -0.26800371, -0.26800371, 0.0154021, 0.0154021, 0.0154021, 0.0154021]
-)
-
-coeffs_h2o_jw.append(
-    [1.13391414, 0.45813039, 0.45813039, 0.02155415, 0.02155415, 0.02155415, 0.02155415]
-)
-coeffs_h2o_jw.append(
+h3p = ["H", "H", "H"]
+x_h3p = np.array([0.028, 0.054, 0.0, 0.986, 1.610, 0.0, 1.855, 0.002, 0.0])
+coeffs_h3p = []
+coeffs_h3p.append(
     [
-        -0.5443051,
-        -0.10090594,
-        -0.10090594,
-        0.25657967,
-        0.25657967,
-        0.25657967,
-        0.25657967,
-        -0.11083244,
-        -0.11083244,
-        -0.11892573,
-        -0.11892573,
+        3.01569149,
+        -0.88863892,
+        -0.88863892,
+        -0.88783782,
+        -0.88783782,
+        -0.88783782,
+        -0.88783782,
+        0.22780641,
+        0.22780641,
+        0.22780641,
+        0.22780641,
+        -1.30305728,
+        -1.30305728,
+        -0.80078948,
+        -0.80078948,
+        -0.80078948,
+        -0.80078948,
+        -0.75064955,
+        -0.75064955,
     ]
 )
-
-
-ops_h2o_jw = []
-ops_h2o_jw.append(
+coeffs_h3p.append(
     [
+        1.6907817,
+        0.08159501,
+        0.08159501,
+        0.15052334,
+        0.15052334,
+        0.15052334,
+        0.15052334,
+        -0.18741661,
+        -0.18741661,
+        -0.18741661,
+        -0.18741661,
+        -0.47139071,
+        -0.47139071,
+        -0.78233294,
+        -0.78233294,
+        -0.78233294,
+        -0.78233294,
+        -1.28859515,
+        -1.28859515,
+    ]
+)
+coeffs_h3p.append([0.0])
+
+ops_h3p = []
+ops_h3p.append(
+    [
+        qml.Identity(wires=[0]),
+        qml.PauliZ(wires=[0]),
+        qml.PauliZ(wires=[1]),
         qml.PauliY(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliY(wires=[2]),
         qml.PauliX(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliX(wires=[2]),
         qml.PauliY(wires=[1]) @ qml.PauliZ(wires=[2]) @ qml.PauliY(wires=[3]),
         qml.PauliX(wires=[1]) @ qml.PauliZ(wires=[2]) @ qml.PauliX(wires=[3]),
-        qml.PauliY(wires=[2]) @ qml.PauliZ(wires=[3]) @ qml.PauliY(wires=[4]),
-        qml.PauliX(wires=[2]) @ qml.PauliZ(wires=[3]) @ qml.PauliX(wires=[4]),
-        qml.PauliY(wires=[3]) @ qml.PauliZ(wires=[4]) @ qml.PauliY(wires=[5]),
-        qml.PauliX(wires=[3]) @ qml.PauliZ(wires=[4]) @ qml.PauliX(wires=[5]),
-    ]
-)
-ops_h2o_jw.append(
-    [
-        qml.Identity(wires=[0]),
-        qml.PauliZ(wires=[0]),
-        qml.PauliZ(wires=[1]),
-        qml.PauliY(wires=[0])
-        @ qml.PauliZ(wires=[1])
-        @ qml.PauliZ(wires=[2])
-        @ qml.PauliZ(wires=[3])
-        @ qml.PauliY(wires=[4]),
-        qml.PauliX(wires=[0])
-        @ qml.PauliZ(wires=[1])
-        @ qml.PauliZ(wires=[2])
-        @ qml.PauliZ(wires=[3])
-        @ qml.PauliX(wires=[4]),
-        qml.PauliY(wires=[1])
-        @ qml.PauliZ(wires=[2])
-        @ qml.PauliZ(wires=[3])
-        @ qml.PauliZ(wires=[4])
-        @ qml.PauliY(wires=[5]),
-        qml.PauliX(wires=[1])
-        @ qml.PauliZ(wires=[2])
-        @ qml.PauliZ(wires=[3])
-        @ qml.PauliZ(wires=[4])
-        @ qml.PauliX(wires=[5]),
-    ]
-)
-ops_h2o_jw.append(
-    [
-        qml.Identity(wires=[0]),
-        qml.PauliZ(wires=[0]),
-        qml.PauliZ(wires=[1]),
         qml.PauliY(wires=[0])
         @ qml.PauliZ(wires=[1])
         @ qml.PauliZ(wires=[2])
@@ -136,19 +127,66 @@ ops_h2o_jw.append(
         @ qml.PauliX(wires=[5]),
         qml.PauliZ(wires=[2]),
         qml.PauliZ(wires=[3]),
+        qml.PauliY(wires=[2]) @ qml.PauliZ(wires=[3]) @ qml.PauliY(wires=[4]),
+        qml.PauliX(wires=[2]) @ qml.PauliZ(wires=[3]) @ qml.PauliX(wires=[4]),
+        qml.PauliY(wires=[3]) @ qml.PauliZ(wires=[4]) @ qml.PauliY(wires=[5]),
+        qml.PauliX(wires=[3]) @ qml.PauliZ(wires=[4]) @ qml.PauliX(wires=[5]),
         qml.PauliZ(wires=[4]),
         qml.PauliZ(wires=[5]),
     ]
 )
+ops_h3p.append(
+    [
+        qml.Identity(wires=[0]),
+        qml.PauliZ(wires=[0]),
+        qml.PauliZ(wires=[1]),
+        qml.PauliY(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliY(wires=[2]),
+        qml.PauliX(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliX(wires=[2]),
+        qml.PauliY(wires=[1]) @ qml.PauliZ(wires=[2]) @ qml.PauliY(wires=[3]),
+        qml.PauliX(wires=[1]) @ qml.PauliZ(wires=[2]) @ qml.PauliX(wires=[3]),
+        qml.PauliY(wires=[0])
+        @ qml.PauliZ(wires=[1])
+        @ qml.PauliZ(wires=[2])
+        @ qml.PauliZ(wires=[3])
+        @ qml.PauliY(wires=[4]),
+        qml.PauliX(wires=[0])
+        @ qml.PauliZ(wires=[1])
+        @ qml.PauliZ(wires=[2])
+        @ qml.PauliZ(wires=[3])
+        @ qml.PauliX(wires=[4]),
+        qml.PauliY(wires=[1])
+        @ qml.PauliZ(wires=[2])
+        @ qml.PauliZ(wires=[3])
+        @ qml.PauliZ(wires=[4])
+        @ qml.PauliY(wires=[5]),
+        qml.PauliX(wires=[1])
+        @ qml.PauliZ(wires=[2])
+        @ qml.PauliZ(wires=[3])
+        @ qml.PauliZ(wires=[4])
+        @ qml.PauliX(wires=[5]),
+        qml.PauliZ(wires=[2]),
+        qml.PauliZ(wires=[3]),
+        qml.PauliY(wires=[2]) @ qml.PauliZ(wires=[3]) @ qml.PauliY(wires=[4]),
+        qml.PauliX(wires=[2]) @ qml.PauliZ(wires=[3]) @ qml.PauliX(wires=[4]),
+        qml.PauliY(wires=[3]) @ qml.PauliZ(wires=[4]) @ qml.PauliY(wires=[5]),
+        qml.PauliX(wires=[3]) @ qml.PauliZ(wires=[4]) @ qml.PauliX(wires=[5]),
+        qml.PauliZ(wires=[4]),
+        qml.PauliZ(wires=[5]),
+    ]
+)
+ops_h3p.append([qml.Identity(wires=[0])])
 
 
-coeffs_h2o_bk = []
-coeffs_h2o_bk.append([-0.26800371, 0.26800371, 0.26800371, -0.26800371])
-coeffs_h2o_bk.append([1.13391414, 0.45813039, 0.45813039])
-coeffs_h2o_bk.append([-0.78215657, -0.10090594, -0.10090594, -0.11083244, -0.11083244])
+h2o = ["H", "H", "O"]
+x_h2o = np.array([0.0, 1.431, -0.887, 0.0, -1.431, -0.887, 0.0, 0.0, 0.222])
 
-ops_h2o_bk = []
-ops_h2o_bk.append(
+coeffs_h2o = []
+coeffs_h2o.append([0.01540292, -0.01540292, -0.01540292, 0.01540292])
+coeffs_h2o.append([3.21808936])
+coeffs_h2o.append([-0.57923888, -0.111, -0.111, -0.18010003, -0.18010003])
+
+ops_h2o = []
+ops_h2o.append(
     [
         qml.PauliX(wires=[0]) @ qml.PauliY(wires=[1]) @ qml.PauliY(wires=[2]),
         qml.PauliY(wires=[0]) @ qml.PauliY(wires=[1]) @ qml.PauliX(wires=[2]),
@@ -156,10 +194,8 @@ ops_h2o_bk.append(
         qml.PauliX(wires=[1]) @ qml.PauliZ(wires=[2]),
     ]
 )
-ops_h2o_bk.append(
-    [qml.Identity(wires=[0]), qml.PauliZ(wires=[0]), qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1])]
-)
-ops_h2o_bk.append(
+ops_h2o.append([qml.Identity(wires=[0])])
+ops_h2o.append(
     [
         qml.Identity(wires=[0]),
         qml.PauliZ(wires=[0]),
@@ -171,18 +207,25 @@ ops_h2o_bk.append(
 
 
 @pytest.mark.parametrize(
-    ("name", "core", "active", "mapping", "coeffs", "ops"),
+    ("symbols", "coords", "charge", "core", "active", "mapping", "coeffs", "ops"),
     [
-        ("h2_pyscf.hdf5", None, None, "jordan_wigner", coeffs_h2, ops_h2),
-        ("h2o_psi4.hdf5", range(4), [4, 5, 6], "jordan_wigner", coeffs_h2o_jw, ops_h2o_jw),
-        ("h2o_psi4.hdf5", range(4), [4, 5], "bravyi_kitaev", coeffs_h2o_bk, ops_h2o_bk),
+        (h2, x_h2, 0, None, None, "jordan_wigner", coeffs_h2, ops_h2),
+        (h3p, x_h3p, 1, None, None, "jordan_wigner", coeffs_h3p, ops_h3p),
+        (h2o, x_h2o, 0, range(4), [4, 5], "bravyi_kitaev", coeffs_h2o, ops_h2o),
     ],
 )
-def test_dipole(name, core, active, mapping, coeffs, ops, tol):
+def test_dipole(symbols, coords, charge, core, active, mapping, coeffs, ops, tol, tmpdir):
     r"""Tests the correctness of the dipole observable computed by the ``dipole`` function."""
 
-    hf_file = os.path.join(ref_dir, name)
-    dip = qml.qchem.dipole(hf_file, core=core, active=active, mapping=mapping)
+    dip = qml.qchem.dipole(
+        symbols,
+        coords,
+        charge=charge,
+        core=core,
+        active=active,
+        mapping=mapping,
+        outpath=tmpdir.strpath,
+    )
 
     assert len(dip) == len(ops)
 
@@ -195,16 +238,14 @@ def test_dipole(name, core, active, mapping, coeffs, ops, tol):
 
 
 @pytest.mark.parametrize(
-    ("name", "msg_match"),
+    ("symbols", "coords", "mult", "msg_match"),
     [
-        ("lih_anion.hdf5", "this functionality is constrained to closed-shell Hartree-Fock states"),
-        ("Mg.hdf5", "only first- or second-row elements of the periodic table"),
+        (["H", "H"], x_h2, 2, "this functionality is constrained to Hartree-Fock states"),
+        (["H", "Ca"], x_h2, 1, "only first- or second-row elements of the periodic table"),
     ],
 )
-def test_exceptions_dipole(name, msg_match):
+def test_exceptions_dipole(symbols, coords, mult, msg_match):
     """Test exceptions of the ``dipole`` function."""
 
-    hf_file = os.path.join(ref_dir, name)
-
     with pytest.raises(ValueError, match=msg_match):
-        qml.qchem.dipole(hf_file)
+        qml.qchem.dipole(symbols, coords, mult=mult)
