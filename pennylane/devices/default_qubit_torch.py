@@ -185,8 +185,7 @@ class DefaultQubitTorch(DefaultQubit):
         self._state = self._state.to(self._torch_device)
         self._pre_rotated_state = self._state
 
-    @staticmethod
-    def _asarray(a, dtype=None):
+    def _asarray(self, a, dtype=None):
         if isinstance(a, list):
             # Handle unexpected cases where we don't have a list of tensors
             if not isinstance(a[0], torch.Tensor):
@@ -197,7 +196,11 @@ class DefaultQubitTorch(DefaultQubit):
             res = torch.cat([torch.reshape(i, (-1,)) for i in res], dim=0)
         else:
             res = torch.as_tensor(a, dtype=dtype)
+
+        res = torch.as_tensor(res, device=self._torch_device)
         return res
+
+    _cast = _asarray
 
     @staticmethod
     def _dot(x, y):
@@ -208,9 +211,6 @@ class DefaultQubitTorch(DefaultQubit):
                 return torch.tensordot(x.to(y.device), y, dims=1)
 
         return torch.tensordot(x, y, dims=1)
-
-    def _cast(self, a, dtype=None):
-        return torch.as_tensor(self._asarray(a, dtype=dtype), device=self._torch_device)
 
     @staticmethod
     def _reduce_sum(array, axes):
