@@ -1251,6 +1251,8 @@ class TestIntegration:
             with pytest.warns(UserWarning, match=warn_sub_text):
                 qlayer(arr)
 
+            assert qnode.device._torch_device == "cpu"
+
 class TestMutability:
     """Test for QNode immutability"""
 
