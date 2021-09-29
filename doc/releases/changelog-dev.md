@@ -233,7 +233,8 @@
                                   init_state=ref_state, include_pi=True)
       return qml.expval(H)
   ```
-  For more details, see the [GateFabric documentation](../code/api/pennylane.templates.layers.GateFabric.html)
+
+  For more details, see the [GateFabric documentation](../code/api/pennylane.templates.layers.GateFabric.html).
 
 
 <h3>Improvements</h3>
