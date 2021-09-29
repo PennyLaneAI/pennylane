@@ -48,9 +48,14 @@ nonconst_lambdas = [
     lambda x: [x] * 10,
     lambda x: (2.0 * x, x),
     lambda x: 0.0 * x,
-    lambda x: x if x > 0 else 0,  # RELU for x>0 is okay
+    lambda x, y: (0.*x, 0.*y),
+    lambda x: x if x > 0 else 0.,  # RELU for x>0 is okay
+    lambda x: 1. if abs(x)<1e-5 else 0.,  # delta for x=0 is okay numerically
     lambda x: qml.math.log(1 + qml.math.exp(1000.0 * x)) / 1000.0,  # Softplus is okay
     lambda x: qml.math.log(1 + qml.math.exp(1000.0 * x)) / 1000.0,  # Softplus is okay
+    lambda x: 1. if x > 0 else 0.,  # Heaviside is okay numerically
+    lambda x: 1. if x > 0 else 0.,  # Heaviside is okay numerically
+    lambda x: x if x > 0 else 0.,  # RELU for x<0 is okay numerically
 ]
 
 args_nonconst_lambdas = [
@@ -59,9 +64,14 @@ args_nonconst_lambdas = [
     (2.19,),
     (1.0,),
     (np.ones((2, 3)),),
+    (np.array([2., 5.]), 1.2),
     (1.6,),
+    (0.0,),
     (-0.2,),
     (0.9,),
+    (-2.0,),
+    (2.0,),
+    (-2.0,),
 ]
 
 lambdas_expect_torch_fail = [
@@ -70,19 +80,22 @@ lambdas_expect_torch_fail = [
     False,
     False,
     True,
+    True,
+    False,
+    False,
+    False,
+    False,
     False,
     False,
     False,
 ]
 
 overlooked_lambdas = [
-    lambda x: 1 if x > 0 else 0,  # Heaviside is not okay
-    lambda x: 1 if x > 0 else 0,  # Heaviside is not okay
-    lambda x: x if x > 0 else 0,  # RELU for x<0 is not okay
+    lambda x: 1. if abs(x)<1e-5 else 0.,  # delta for x!=0 is not okay
+    lambda x: 1. if abs(x)<1e-5 else 0.,  # delta for x!=0 is not okay
 ]
 
 args_overlooked_lambdas = [
-    (-2.0,),
     (2.0,),
     (-2.0,),
 ]
@@ -144,6 +157,7 @@ class TestIsIndependentAutograd:
     nonconst_functions = [
         nonconst_circuit,
         np.array,
+        lambda x: np.array(x*0.),
         lambda x: (1 + qml.math.tanh(1000 * x)) / 2,
         *nonconst_lambdas,
     ]
@@ -151,16 +165,9 @@ class TestIsIndependentAutograd:
     args_nonconst = [
         (0.1, np.array([-2.1, 0.1]), -0.9),
         (-4.1,),
+        (-4.1,),
         (np.ones((3, 8)) * 1.1,),
         *args_nonconst_lambdas,
-    ]
-
-    overlooked_functions = [
-        *overlooked_lambdas,
-    ]
-
-    args_overlooked = [
-        *args_overlooked_lambdas,
     ]
 
     @pytest.mark.parametrize("func, args", zip(constant_functions, args_constant))
@@ -169,10 +176,6 @@ class TestIsIndependentAutograd:
 
     @pytest.mark.parametrize("func, args", zip(nonconst_functions, args_nonconst))
     def test_nonconst(self, func, args):
-        assert not _is_independent(func, self.interface, args)
-
-    @pytest.mark.parametrize("func, args", zip(overlooked_functions, args_overlooked))
-    def test_overlooked(self, func, args):
         assert not _is_independent(func, self.interface, args)
 
     def test_kwargs_are_considered(self):
@@ -255,24 +258,12 @@ if have_jax:
             *args_nonconst_lambdas,
         ]
 
-        overlooked_functions = [
-            *overlooked_lambdas,
-        ]
-
-        args_overlooked = [
-            *args_overlooked_lambdas,
-        ]
-
         @pytest.mark.parametrize("func, args", zip(constant_functions, args_constant))
         def test_constant(self, func, args):
             assert _is_independent(func, self.interface, args)
 
         @pytest.mark.parametrize("func, args", zip(nonconst_functions, args_nonconst))
         def test_nonconst(self, func, args):
-            assert not _is_independent(func, self.interface, args)
-
-        @pytest.mark.parametrize("func, args", zip(overlooked_functions, args_overlooked))
-        def test_overlooked(self, func, args):
             assert not _is_independent(func, self.interface, args)
 
         def test_kwargs_are_considered(self):
@@ -360,14 +351,6 @@ if have_tf:
             *args_nonconst_lambdas,
         ]
 
-        overlooked_functions = [
-            *overlooked_lambdas,
-        ]
-
-        args_overlooked = [
-            *args_overlooked_lambdas,
-        ]
-
         @pytest.mark.parametrize("func, args", zip(constant_functions, args_constant))
         def test_constant(self, func, args):
             args = tuple([tf.Variable(_arg) for _arg in args])
@@ -377,14 +360,15 @@ if have_tf:
         def test_nonconst(self, func, args):
             args = tuple([tf.Variable(_arg) for _arg in args])
             # Filter out functions with TF-incompatible output format
-            if not hasattr(func(*args), "shape"):
-                pytest.skip()
-
-            assert not _is_independent(func, self.interface, args)
-
-        @pytest.mark.parametrize("func, args", zip(overlooked_functions, args_overlooked))
-        def test_overlooked(self, func, args):
-            assert not _is_independent(func, self.interface, args)
+            out = func(*args)
+            if not isinstance(out, tf.Tensor):
+                try:
+                    _func = lambda *args: tf.Variable(func(*args))
+                    assert not _is_independent(_func, self.interface, args)
+                except:
+                    pytest.skip()
+            else:
+                assert not _is_independent(func, self.interface, args)
 
         def test_kwargs_are_considered(self):
             f = lambda x, kw=False: 0.1 * x if kw else tf.constant(0.2)
@@ -470,14 +454,6 @@ if have_torch:
 
         nonconst_expect_torch_fail = [False, False, False, *lambdas_expect_torch_fail]
 
-        overlooked_functions = [
-            *overlooked_lambdas,
-        ]
-
-        args_overlooked = [
-            *args_overlooked_lambdas,
-        ]
-
         @pytest.mark.parametrize("func, args", zip(constant_functions, args_constant))
         def test_constant(self, func, args):
             assert _is_independent(func, self.interface, args)
@@ -491,11 +467,6 @@ if have_torch:
                 assert _is_independent(func, self.interface, args)
             else:
                 assert not _is_independent(func, self.interface, args)
-
-        # In Pytorch, these functions are _not_ overlooked
-        @pytest.mark.parametrize("func, args", zip(overlooked_functions, args_overlooked))
-        def test_overlooked(self, func, args):
-            assert not _is_independent(func, self.interface, args)
 
         def test_kwargs_are_considered(self):
             f = lambda x, kw=False: 0.1 * x if kw else 0.2
