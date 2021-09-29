@@ -46,18 +46,15 @@ nonconst_lambdas = [
     lambda x: x,
     lambda x: (x, x),
     lambda x: [x] * 10,
-
     lambda x: (2.0 * x, x),
     lambda x: 0.0 * x,
     lambda x, y: (0.0 * x, 0.0 * y),
-
     lambda x: x if x > 0 else 0.0,  # RELU for x>0 is okay numerically
     lambda x: x if x > 0 else 0.0,  # RELU for x<0 is okay numerically
     lambda x: 1.0 if abs(x) < 1e-5 else 0.0,  # delta for x=0 is okay numerically
     lambda x: x if abs(x) < 1e-5 else 0.0,  # x*delta for x=0 is okay
     lambda x: 1.0 if x > 0 else 0.0,  # Heaviside is okay numerically
     lambda x: 1.0 if x > 0 else 0.0,  # Heaviside is okay numerically
-
     lambda x: qml.math.log(1 + qml.math.exp(1000.0 * x)) / 1000.0,  # Softplus is okay
     lambda x: qml.math.log(1 + qml.math.exp(1000.0 * x)) / 1000.0,  # Softplus is okay
 ]
@@ -66,18 +63,15 @@ args_nonconst_lambdas = [
     (np.array(1.2),),
     (2.19,),
     (2.19,),
-
     (1.0,),
     (np.ones((2, 3)),),
     (np.array([2.0, 5.0]), 1.2),
-
     (1.6,),
     (-2.0,),
     (0.0,),
     (0.0,),
     (-2.0,),
     (2.0,),
-
     (-0.2,),
     (0.9,),
 ]
@@ -86,18 +80,15 @@ lambdas_expect_torch_fail = [
     False,
     False,
     False,
-
     False,
     True,
     True,
-
     False,
     False,
     False,
     True,
     False,
     False,
-
     False,
     False,
 ]
