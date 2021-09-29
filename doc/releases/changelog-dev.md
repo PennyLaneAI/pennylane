@@ -315,6 +315,10 @@
 * Fixes a bug in `default.mixed`, to ensure that returned probabilities are always non-negative.
   [(#1680)](https://github.com/PennyLaneAI/pennylane/pull/1680)
 
+* Fixes a bug where gradient transforms would fail to apply to QNodes
+  containing classical processing.
+  [(#1699)](https://github.com/PennyLaneAI/pennylane/pull/1699)
+
 <h3>Documentation</h3>
 
 * Adds a link to https://pennylane.ai/qml/demonstrations.html in the navbar.
