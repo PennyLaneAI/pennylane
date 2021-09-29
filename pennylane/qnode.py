@@ -666,7 +666,7 @@ class QNode:
 
             # Check if we should be using CUDA
             ops_and_obs = self.qtape.operations + self.qtape.observables
-            any_op_uses_cuda = any(data.is_cuda for op in ops_and_obs for data in op.data)
+            any_op_uses_cuda = any(data.is_cuda for op in ops_and_obs for data in op.data if hasattr(data, "is_cuda"))
 
             if any_op_uses_cuda and self.device._torch_device == "cpu":
 
