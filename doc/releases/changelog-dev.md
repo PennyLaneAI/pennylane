@@ -6,7 +6,7 @@
 
 * There is a new utility function `qml.math._is_independent` that checks whether
   a callable is independent of its  arguments.
-  [(#16xx)](https://github.com/PennyLaneAI/pennylane/pull/16xx)
+  [(#1700)](https://github.com/PennyLaneAI/pennylane/pull/1700)
 
   **Warning**
 
