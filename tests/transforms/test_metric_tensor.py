@@ -243,6 +243,21 @@ class TestMetricTensor:
         )
         assert np.allclose(g, np.diag(expected), atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("strategy", ["gradient", "device"])
+    def test_template_integration(self, strategy, tol):
+        """Test that the metric tensor transform acts on QNodes
+        correctly when the QNode contains a template"""
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.beta.qnode(dev, expansion_strategy=strategy)
+        def circuit(weights):
+            qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
+            return qml.probs(wires=[0, 1])
+
+        weights = np.ones([2, 3, 3], dtype=np.float64, requires_grad=True)
+        res = qml.metric_tensor(circuit)(weights)
+        assert res.shape == (2, 3, 3, 2, 3, 3)
+
     def test_evaluate_diag_metric_tensor_classical_processing(self, tol):
         """Test that a diagonal metric tensor evaluates correctly
         when the QNode includes classical processing."""
