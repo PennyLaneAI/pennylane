@@ -215,9 +215,68 @@
     if `expval(H)` is present on devices that do not natively support Hamiltonians with
     non-commuting terms.
 
-* Added a new template `GateFabric`, which implements a local, expressive, quantum-number-preserving VQE
-  fabric.
+* Added a new template `GateFabric`, which implements a local, expressive, quantum-number-preserving
+  ansatz proposed by Anselmetti *et al.* in [arXiv:2104.05692](https://arxiv.org/abs/2104.05695).
   [(#1687)](https://github.com/PennyLaneAI/pennylane/pull/1687)
+
+  An example usecase where `GateFabric` template can be used is:
+
+  ```python
+  coordinates = np.array([0.0, 0.0, -0.6614, 0.0, 0.0, 0.6614])
+  H, qubits = qml.qchem.molecular_hamiltonian(symbols = ["H", "H"], coordinates)
+  ref_state = qml.qchem.hf_state(electrons=2, qubits)
+  
+  dev = qml.device('default.qubit', wires=qubits)
+  @qml.qnode(dev)
+  def ansatz(weights):
+      qml.templates.GateFabric(weights, wires=[0,1,2,3],
+                                  init_state=ref_state, include_pi=True)
+      return qml.expval(H)
+
+  shape = qml.templates.GateFabric.shape(n_layers=2, n_wires=qubits)
+  np.random.seed(42)
+  weights = np.random.random(size=shape)
+
+  opt = qml.GradientDescentOptimizer(stepsize=0.4)
+  
+  energy = [ansatz(weights)]
+  angle = [weights]
+  max_iterations = 100
+  conv_tol = 1e-06
+
+  for n in range(max_iterations):
+      weights, prev_energy = opt.step_and_cost(ansatz, weights)
+      energy.append(ansatz(weights))
+      angle.append(weights)
+      conv = np.abs(energy[-1] - prev_energy)
+
+      if n % 2 == 0:
+          print(f"Step = {n},  Energy = {energy[-1]:.8f} Ha")
+
+      if conv <= conv_tol:
+          break
+
+  print("\n" f"Final value of the ground-state energy = {energy[-1]:.8f} Ha")
+  print("\n" f"Optimal value of the circuit parameters = {angle[-1]}")
+  ```
+
+  If we run the above code, we will get the following output
+
+  ```pycon
+  Step = 0,  Energy = -0.92629604 Ha
+  Step = 2,  Energy = -1.10724005 Ha
+  Step = 4,  Energy = -1.13307755 Ha
+  Step = 6,  Energy = -1.13587374 Ha
+  Step = 8,  Energy = -1.13615720 Ha
+  Step = 10,  Energy = -1.13618592 Ha
+  Step = 12,  Energy = -1.13618883 Ha
+
+  Final value of the ground-state energy = -1.13618883 Ha
+
+  Optimal value of the circuit parameters = [[[ 0.58835515  0.40801101]]
+  [[ 0.83842218 -0.24228264]]]
+  ```    
+
 
 <h3>Improvements</h3>
 

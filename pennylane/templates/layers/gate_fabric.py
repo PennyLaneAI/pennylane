@@ -85,7 +85,6 @@ class GateFabric(Operation):
 
             import numpy as np
             import pennylane as qml
-            from functools import partial
 
             # Build the electronic Hamiltonian
             symbols = ["H", "H"]
