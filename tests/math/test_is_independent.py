@@ -499,8 +499,8 @@ if have_torch:
 
         def test_kwargs_are_considered(self):
             f = lambda x, kw=False: 0.1 * x if kw else 0.2
-            jac = lambda x, kw: self.torch.autograd.functional.jacobian(lambda x: f(x, kw), x)
-            args = (self.torch.tensor(0.2),)
+            jac = lambda x, kw: torch.autograd.functional.jacobian(lambda x: f(x, kw), x)
+            args = (torch.tensor(0.2),)
             assert _is_independent(f, self.interface, args)
             assert not _is_independent(f, self.interface, args, {"kw": True})
             assert _is_independent(jac, self.interface, args, {"kw": True})
