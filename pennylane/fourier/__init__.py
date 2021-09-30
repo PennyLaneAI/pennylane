@@ -13,5 +13,14 @@
 # limitations under the License.
 """This module contains functions to analyze the Fourier representation
 of quantum circuits."""
+import warnings
 from .coefficients import coefficients
-from .spectrum import spectrum
+from .simple_spectrum import simple_spectrum
+from .advanced_spectrum import advanced_spectrum
+
+def spectrum(*args, **kwargs):
+    warnings.warn(
+        "qml.fourier.spectrum has been renamed to qml.fourier.simple_spectrum. "
+        "The alias qml.fourier.spectrum is deprecated and will be removed soon."
+    )
+    return simple_spectrum(*args, **kwargs)
