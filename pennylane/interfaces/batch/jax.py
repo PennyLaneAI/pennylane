@@ -99,7 +99,8 @@ def _execute(
 
     @jax.custom_vjp
     def wrapped_exec(params):
-        def wrapper(p):
+        result = []
+        def wrapper(p, t):
             """Compute the forward pass."""
             new_tapes = []
 
@@ -110,20 +111,20 @@ def _execute(
             with qml.tape.Unwrap(*new_tapes):
                 res, _ = execute_fn(new_tapes, **gradient_kwargs)
 
-            return res
+            result.append(res)
 
-        shapes = [jax.ShapeDtypeStruct((1,), dtype) for _ in range(total_size)]
-        res = host_callback.call(wrapper, params, result_shape=shapes)
-        return res
+        host_callback.id_tap(wrapper, params)
+        return result[0]
 
     def wrapped_exec_fwd(params):
         return wrapped_exec(params), params
 
     def wrapped_exec_bwd(params, g):
+        result = []
 
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
 
-            def non_diff_wrapper(args):
+            def non_diff_wrapper(args, t):
                 """Compute the VJP in a non-differentiable manner."""
                 new_tapes = []
                 p = args[:-1]
@@ -144,23 +145,24 @@ def _execute(
 
                 partial_res = execute_fn(vjp_tapes)[0]
                 res = processing_fn(partial_res)
+                result.extend(res)
                 return np.concatenate(res)
 
             args = tuple(params) + (g,)
-            vjps = host_callback.call(
+            host_callback.id_tap(
                 non_diff_wrapper,
                 args,
-                result_shape=jax.ShapeDtypeStruct((total_params,), dtype),
             )
+            res = result
 
-            param_idx = 0
-            res = []
+            # param_idx = 0
+            # res = []
 
-            # Group the vjps based on the parameters of the tapes
-            for p in params:
-                param_vjp = vjps[param_idx : param_idx + len(p)]
-                res.append(param_vjp)
-                param_idx += len(p)
+            # # Group the vjps based on the parameters of the tapes
+            # for p in params:
+            #     param_vjp = vjps[param_idx : param_idx + len(p)]
+            #     res.append(param_vjp)
+            #     param_idx += len(p)
 
             # Unwrap partial results into ndim=0 arrays to allow
             # differentiability with JAX
@@ -170,6 +172,7 @@ def _execute(
             # is mapped to
             # [[DeviceArray(-0.9553365, dtype=float32)], [DeviceArray(0.,
             # dtype=float32), DeviceArray(0., dtype=float32)]].
+
             need_unwrapping = any(r.ndim != 0 for r in res)
             if need_unwrapping:
                 unwrapped_res = []
@@ -186,11 +189,13 @@ def _execute(
         with qml.tape.Unwrap(*tapes):
             jacs = gradient_fn(tapes, **gradient_kwargs)
 
+
         vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(g, jacs)]
         res = [[jnp.array(p) for p in v] for v in vjps]
         return (tuple(res),)
 
     wrapped_exec.defvjp(wrapped_exec_fwd, wrapped_exec_bwd)
+
     return wrapped_exec(params)
 
 
@@ -209,7 +214,10 @@ def _execute_with_fwd(
 
     @jax.custom_vjp
     def wrapped_exec(params):
-        def wrapper(p):
+
+        result = []
+        jacobian = []
+        def wrapper(p, t):
             """Compute the forward pass by returning the jacobian too."""
             new_tapes = []
 
@@ -220,16 +228,16 @@ def _execute_with_fwd(
             res, jacs = execute_fn(new_tapes, **gradient_kwargs)
 
             # On the forward execution return the jacobian too
-            return res, jacs
+            result.extend(res)
+            jacobian.extend(jacs)
 
         fwd_shapes = [jax.ShapeDtypeStruct((1,), dtype) for _ in range(total_size)]
         jacobian_shape = [jax.ShapeDtypeStruct((1, len(p)), dtype) for p in params]
-        res, jacs = host_callback.call(
+        host_callback.id_tap(
             wrapper,
             params,
-            result_shape=tuple([fwd_shapes, jacobian_shape]),
         )
-        return res, jacs
+        return result, jacobian
 
     def wrapped_exec_fwd(params):
         res, jacs = wrapped_exec(params)
