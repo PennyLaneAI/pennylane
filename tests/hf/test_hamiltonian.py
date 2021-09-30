@@ -28,7 +28,7 @@ from pennylane.hf.molecule import Molecule
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
             None,
             None,
-            np.array([0.0]),
+            np.array([1.0]),
             # computed with OpenFermion using molecule.one_body_integrals.flatten()
             np.array([-1.39021927e00, -6.33695658e-17, 7.33430905e-17, -2.91653305e-01]),
             # computed with OpenFermion using molecule.two_body_integrals.flatten()
@@ -58,7 +58,7 @@ from pennylane.hf.molecule import Molecule
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
             [],
             [0, 1],
-            np.array([0.0]),
+            np.array([1.0]),
             # computed with OpenFermion using molecule.one_body_integrals.flatten()
             np.array([-1.39021927e00, -6.33695658e-17, 7.33430905e-17, -2.91653305e-01]),
             # computed with OpenFermion using molecule.two_body_integrals.flatten()
@@ -83,12 +83,42 @@ from pennylane.hf.molecule import Molecule
                 ]
             ),
         ),
+        (
+            ["Li", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+            [0, 1, 2, 3],
+            [4, 5],
+            # reference values of e_core, one and two are computed with our initial prototype code
+            np.array([-5.141222763432437]),
+            np.array([1.17563204e00, -5.75186616e-18, -5.75186616e-18, 1.78830226e00]),
+            np.array(
+                [
+                    3.12945511e-01,
+                    4.79898448e-19,
+                    4.79898448e-19,
+                    9.78191587e-03,
+                    4.79898448e-19,
+                    9.78191587e-03,
+                    3.00580620e-01,
+                    4.28570365e-18,
+                    4.79898448e-19,
+                    3.00580620e-01,
+                    9.78191587e-03,
+                    4.28570365e-18,
+                    9.78191587e-03,
+                    4.28570365e-18,
+                    4.28570365e-18,
+                    5.10996835e-01,
+                ]
+            ),
+        ),
     ],
 )
 def test_generate_electron_integrals(symbols, geometry, core, active, e_core, one, two):
     r"""Test that generate_electron_integrals returns the correct values."""
     mol = Molecule(symbols, geometry)
     args = []
+
     result = generate_electron_integrals(mol, core=core, active=active)(*args)
 
     assert np.allclose(result, np.concatenate((e_core, one, two)))
