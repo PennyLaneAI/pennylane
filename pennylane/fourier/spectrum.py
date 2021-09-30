@@ -21,6 +21,44 @@ import numpy as np
 import pennylane as qml
 
 
+def _get_random_args(args, interface, num, seed):
+    r"""Generate random arguments of the same shapes as provided args.
+    Args:
+        args (tuple): Original input arguments
+        interface (str): Interface of the QNode into which the arguments will be fed
+        num (int): Number of random argument sets to generate
+    Returns:
+        list[tuple]: List of length ``num`` with each entry being a random instance
+        of arguments like ``args``.
+    """
+    if interface == "tf":
+        import tensorflow as tf  # pylint: disable=import-outside-toplevel
+
+        tf.random.set_seed(seed)
+        rnd_args = []
+        for _ in range(num):
+            _args = (tf.random.uniform(tf.shape(_arg)) * 2 * np.pi - np.pi for _arg in args)
+            _args = tuple(
+                tf.Variable(_arg) if isinstance(arg, tf.Variable) else _arg
+                for _arg, arg in zip(_args, args)
+            )
+            rnd_args.append(_args)
+    elif interface == "torch":
+        import torch  # pylint: disable=import-outside-toplevel
+
+        torch.random.manual_seed(seed)
+        rnd_args = [
+            tuple(torch.rand(np.shape(arg)) * 2 * np.pi - np.pi for arg in args) for _ in range(num)
+        ]
+    else:
+        np.random.seed(seed)
+        rnd_args = [
+            tuple(np.random.random(np.shape(arg)) * 2 * np.pi - np.pi for arg in args)
+            for _ in range(num)
+        ]
+
+    return rnd_args
+
 def _get_spectrum(op, decimals=8):
     r"""Extract the frequencies contributed by an input-encoding gate to the
     overall Fourier representation of a quantum circuit.
@@ -90,46 +128,6 @@ def _join_spectra(spec1, spec2):
     diffs = {np.abs(s1 - s2) for s1 in spec1 for s2 in spec2}
 
     return sums.union(diffs)
-
-
-def _get_random_args(args, interface, num, seed):
-    r"""Generate random arguments of the same shapes as provided args.
-
-    Args:
-        args (tuple): Original input arguments
-        interface (str): Interface of the QNode into which the arguments will be fed
-        num (int): Number of random argument sets to generate
-    Returns:
-        list[tuple]: List of length ``num`` with each entry being a random instance
-        of arguments like ``args``.
-    """
-    if interface == "tf":
-        import tensorflow as tf  # pylint: disable=import-outside-toplevel
-
-        tf.random.set_seed(seed)
-        rnd_args = []
-        for _ in range(num):
-            _args = (tf.random.uniform(tf.shape(_arg)) * 2 * np.pi - np.pi for _arg in args)
-            _args = tuple(
-                tf.Variable(_arg) if isinstance(arg, tf.Variable) else _arg
-                for _arg, arg in zip(_args, args)
-            )
-            rnd_args.append(_args)
-    elif interface == "torch":
-        import torch  # pylint: disable=import-outside-toplevel
-
-        torch.random.manual_seed(seed)
-        rnd_args = [
-            tuple(torch.rand(np.shape(arg)) * 2 * np.pi - np.pi for arg in args) for _ in range(num)
-        ]
-    else:
-        np.random.seed(seed)
-        rnd_args = [
-            tuple(np.random.random(np.shape(arg)) * 2 * np.pi - np.pi for arg in args)
-            for _ in range(num)
-        ]
-
-    return rnd_args
 
 
 def _get_and_validate_classical_jacobian(qnode, argnum, args, kwargs, num_pos):
@@ -233,7 +231,7 @@ def _process_ids(encoding_args, argnum, qnode):
     return encoding_args, argnum
 
 
-def spectrum(qnode, encoding_args=None, argnum=None, decimals=5, num_pos=1):
+def spectrum(qnode, encoding_args=None, argnum=None, decimals=5, validation_kwargs=None):
     r"""Compute the frequency spectrum of the Fourier representation of quantum circuits.
 
     The circuit must only use single-parameter gates of the form :math:`e^{-i x_j G}` as
@@ -431,7 +429,7 @@ def spectrum(qnode, encoding_args=None, argnum=None, decimals=5, num_pos=1):
     {"x": {(0,): [-0.4, 0.0, 0.4], (1,): [-3.14159, 0.0, 3.14159]}}
 
     """
-
+    validation_kwargs = validation_kwargs or {}
     encoding_args, argnum = _process_ids(encoding_args, argnum, qnode)
     atol = 10 ** (-decimals) if decimals is not None else 1e-10
     # A map between Jacobians (contiguous) and arg names (may be discontiguous)
@@ -440,7 +438,9 @@ def spectrum(qnode, encoding_args=None, argnum=None, decimals=5, num_pos=1):
     @wraps(qnode)
     def wrapper(*args, **kwargs):
         # Compute classical Jacobian and assert preprocessing is linear
-        class_jacs = _get_and_validate_classical_jacobian(qnode, argnum, args, kwargs, num_pos)
+        jac_fn = qml.transforms.classical_jacobian(qnode, argnum=argnum)
+        qml.math.is_independent(jac_fn, qnode.interface, args, kwargs, **validation_kwargs)
+        class_jacs = jac_fn(*args, **kwargs)
 
         spectra = {}
         par_info = qnode.qtape._par_info  # pylint: disable=protected-access

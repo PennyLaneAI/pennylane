@@ -59,6 +59,7 @@ from .utils import (
     requires_grad,
 )
 
+from .is_independent import is_independent
 
 sum = ar.numpy.sum
 toarray = ar.numpy.to_numpy
