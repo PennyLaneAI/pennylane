@@ -100,7 +100,7 @@ def _execute(
     @jax.custom_vjp
     def wrapped_exec(params):
         result = []
-        def wrapper(p, t):
+        def wrapper(p, t, device=None):
             """Compute the forward pass."""
             new_tapes = []
 
@@ -111,9 +111,11 @@ def _execute(
             with qml.tape.Unwrap(*new_tapes):
                 res, _ = execute_fn(new_tapes, **gradient_kwargs)
 
+            # Put the array back to the device as we're using id_tap
+            res = [jax.device_put(jnp.array(r), device) for r in res]
             result.append(res)
 
-        host_callback.id_tap(wrapper, params)
+        host_callback.id_tap(wrapper, params, tap_with_device=True)
         return result[0]
 
     def wrapped_exec_fwd(params):
@@ -124,7 +126,7 @@ def _execute(
 
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
 
-            def non_diff_wrapper(args, t):
+            def non_diff_wrapper(args, t, device=None):
                 """Compute the VJP in a non-differentiable manner."""
                 new_tapes = []
                 p = args[:-1]
@@ -145,13 +147,16 @@ def _execute(
 
                 partial_res = execute_fn(vjp_tapes)[0]
                 res = processing_fn(partial_res)
+
+                # Put the array back to the device as we're using id_tap
+                res = [jax.device_put(jnp.array(r), device) for r in res]
                 result.extend(res)
-                return np.concatenate(res)
 
             args = tuple(params) + (g,)
             host_callback.id_tap(
                 non_diff_wrapper,
                 args,
+                tap_with_device=True
             )
             res = result
 
@@ -217,7 +222,7 @@ def _execute_with_fwd(
 
         result = []
         jacobian = []
-        def wrapper(p, t):
+        def wrapper(p, t, device):
             """Compute the forward pass by returning the jacobian too."""
             new_tapes = []
 
@@ -227,8 +232,12 @@ def _execute_with_fwd(
 
             res, jacs = execute_fn(new_tapes, **gradient_kwargs)
 
-            # On the forward execution return the jacobian too
+            # Put the arrays back to the device as we're using id_tap
+            res = [jax.device_put(jnp.array(r), device) for r in res]
             result.extend(res)
+
+            # On the forward execution return the jacobian too
+            jacs = [jax.device_put(jnp.array(r), device) for r in jacs]
             jacobian.extend(jacs)
 
         fwd_shapes = [jax.ShapeDtypeStruct((1,), dtype) for _ in range(total_size)]
@@ -236,6 +245,7 @@ def _execute_with_fwd(
         host_callback.id_tap(
             wrapper,
             params,
+            tap_with_device=True
         )
         return result, jacobian
 
