@@ -66,8 +66,7 @@ def set_shots(device, shots):
             device.shots = shots
         yield
     finally:
-        if device.shots != original_shots:
-            device.shots = original_shots
+        device.shots = original_shots
 
 
 def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True, expand_fn=None):
