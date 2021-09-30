@@ -59,6 +59,10 @@ def set_shots(device, shots):
     >>> set_shots(dev, shots=100)(lambda: dev.shots)()
     100
     """
+    if shots == device.shots:
+        yield
+        return
+
     original_shots = device.shots
 
     try:
