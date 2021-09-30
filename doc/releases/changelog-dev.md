@@ -280,9 +280,13 @@
           return ([[c, 0.0, 2 * x], [-c, 0.0, 0.0]],)
   ```
 
-* Shots can now be passed as a runtime argument to batch transforms, similarly
+* Shots can now be passed as a runtime argument to transforms that execute circuits in batches, similarly
   to QNodes.
   [(#1707)](https://github.com/PennyLaneAI/pennylane/pull/1707)
+  
+  An example of such a transform are the gradient transforms in the
+  `qml.gradients` module. As a result, we can now call gradient transforms
+  (such as `qml.gradients.param_shift`) and set the number of shots at runtime.
 
   ```pycon
   >>> dev = qml.device("default.qubit", wires=1, shots=1000)
