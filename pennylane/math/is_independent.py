@@ -257,7 +257,7 @@ def is_independent(
     Args:
         func (callable): Function to be tested
         interface (str): Autodiff framework used by ``func``. Must correspond to one
-            of the supported PennyLane interface strings, such as ``"autograd"``, 
+            of the supported PennyLane interface strings, such as ``"autograd"``,
             ``"tf"``, ``"torch"``, ``"jax"``.
         args (tuple): Positional arguments with respect to which to test
         kwargs (dict): Keyword arguments for ``func`` at which to test;
@@ -276,12 +276,14 @@ def is_independent(
 
         This function is experimental.
         As such, it might yield wrong results and might behave
-        slightly differently in distinct autodifferentiation frameworks for some edge cases.
+        slightly differently in distinct autodifferentiation frameworks
+        for some edge cases.
         For example, a currently known edge case are piecewise
-        functions that use classical control, such as 
-        
+        functions that use classical control and simultaneously
+        return (almost) constant output, such as
+
         .. code-block:: python
-        
+
             def func(x):
                 if abs(x) <1e-5:
                     return x
@@ -289,10 +291,10 @@ def is_independent(
                     return 0. * x
 
     The analytic and numeric tests used are as follows.
-    
+
     - The analytic test performed depends on the provided ``interface``,
        both in its method and its degree of reliability.
-       
+
     - For the numeric test, the function is evaluated at a series of random positions,
       and the outputs numerically compared to verify that the output
       is constant.
