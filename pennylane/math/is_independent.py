@@ -222,6 +222,9 @@ def _is_indep_numerical(func, interface, args, kwargs, num_pos, seed, atol, rtol
         bool: Whether ``func`` returns the same output at the randomly
         chosen points.
     """
+
+    # pylint:disable=too-many-arguments
+
     rnd_args = _get_random_args(args, interface, num_pos, seed, bounds)
     original_output = func(*args, **kwargs)
     is_tuple_valued = isinstance(original_output, tuple)
@@ -344,6 +347,9 @@ def is_independent(
     This means that ``is_independent`` is a stronger test than simply verifying functions
     have constant output.
     """
+
+    # pylint:disable=too-many-arguments
+
     if not interface in {"autograd", "jax", "tf", "torch", "tensorflow"}:
         raise ValueError(f"Unknown interface: {interface}")
 
