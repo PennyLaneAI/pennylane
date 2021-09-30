@@ -68,7 +68,7 @@ def generate_scf(mol, n_steps=50, tol=1e-8):
 
        .. math:: X = V \Lambda^{-1/2} V^T,
 
-    where math:`V` and math:`\Lambda` are the eigenvectors and eigenvalues of :math:`S`,
+    where :math:`V` and :math:`\Lambda` are the eigenvectors and eigenvalues of :math:`S`,
     respectively. This gives the eigenvalue equation
 
           .. math:: \tilde{F}\tilde{C} = \tilde{C}E,
