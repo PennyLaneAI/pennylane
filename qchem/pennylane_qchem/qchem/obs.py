@@ -15,11 +15,10 @@
 values can be used to simulate molecular properties.
 """
 # pylint: disable=too-many-arguments, too-few-public-methods
+import pennylane as qml
 import numpy as np
 
 from . import openfermion, structure
-
-import pennylane as qml
 
 
 def _spin2_matrix_elements(sz):
