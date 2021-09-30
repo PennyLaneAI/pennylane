@@ -94,7 +94,7 @@ def _jax_is_independent_ana(func, *args, **kwargs):
     The first argument of the output of ``jax.vjp`` is a ``Partial``.
     If *any* processing happens to any input, the arguments of that
     ``Partial`` are unequal to ``((),)`.
-    Functions that depend on the input in a trivial manner, i.e. without
+    Functions that depend on the input in a trivial manner, i.e., without
     processing it, will go undetected by this. Therefore we also
     test the arguments of the *function* of the above ``Partial``.
     The first of these arguments is a list of tuples and if the
@@ -151,6 +151,7 @@ def _tf_is_independent_ana(func, *args, **kwargs):
     if isinstance(out, tuple):
         jac = [tape.jacobian(_out, args) for _out in out]
         return all(all(__jac is None for __jac in _jac) for _jac in jac)
+
     jac = tape.jacobian(out, args)
     return all(_jac is None for _jac in jac)
 
@@ -260,7 +261,7 @@ def _is_independent(func, interface, args, kwargs=None, num_kwargs=None):
         interface (str): Interface used by ``func`` and the tests
         args (tuple): Positional arguments with respect to which to test
         kwargs (dict): Keyword arguments for ``func`` at which to test;
-            The ``kwargs`` are kept fix in this test.
+            The ``kwargs`` are kept fixed in this test.
         num_kwargs (dict): Options for the numerical test at random positions,
             see ``_is_independent_num``.
 
@@ -274,7 +275,7 @@ def _is_independent(func, interface, args, kwargs=None, num_kwargs=None):
         As such, it might yield wrong results and might behave
         slightly differently in distinct ``interface``s for some edge cases.
         A currently known edge case is the function
-        ``lambda x: x if abs(x)<1e-5 else 0.*x`` at ``x=0.0``.
+        ``lambda x: x if abs(x) <1e-5 else 0. * x`` at ``x=0.0``.
 
     The first, analytic test differs per ``interface`` both in its method
     and its degree of reliability. The respective method is detailed in the

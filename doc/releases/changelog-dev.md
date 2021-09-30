@@ -39,19 +39,19 @@
   True
   ```
 
-  A function like `0.0*x` will be counted as _dependent_ on `x` because it does
+  A function like `0.0*x` will be counted as *dependent* on `x` because it does
   depend on `x` functionally, even if the value is constant for all `x`.
   This means that `_is_independent` is a stronger test than for constant
   output functions.
 
   **Disclaimer**
 
-  Note that the test relies on both, numerical and analytical checks, except
+  Note that the test relies on both numerical and analytical checks, except
   when using the PyTorch interface which only will perform a numerical check.
   It is known that there are edge cases on which this test will yield wrong
   results, in particular non-smooth functions may be problematic.
   For details, please refer to the 
-  [`_is_indpendent` docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.math._is_independent.html).
+  [_is_indpendent docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.math._is_independent.html).
 
 
 * Support for differentiable execution of batches of circuits has been
