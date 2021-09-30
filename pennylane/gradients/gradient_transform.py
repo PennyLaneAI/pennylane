@@ -161,7 +161,7 @@ class gradient_transform(qml.batch_transform):
             if not hybrid:
                 return qjac
 
-            shots = kwargs.pop("shots", False)
+            kwargs.pop("shots", False)
             cjac = cjac_fn(*args, **kwargs)
 
             if isinstance(cjac, tuple):
