@@ -18,6 +18,7 @@ from .coefficients import coefficients
 from .simple_spectrum import simple_spectrum
 from .advanced_spectrum import advanced_spectrum
 
+
 def spectrum(*args, **kwargs):
     warnings.warn(
         "qml.fourier.spectrum has been renamed to qml.fourier.simple_spectrum. "

@@ -115,4 +115,3 @@ def _join_spectra(spec1, spec2):
     diffs = {np.abs(s1 - s2) for s1 in spec1 for s2 in spec2}
 
     return sums.union(diffs)
-
