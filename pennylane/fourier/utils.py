@@ -82,9 +82,7 @@ def _get_spectrum(op, decimals):
 
     # compute all unique positive differences of eigenvalues, then add 0
     # note that evals are sorted already
-    _spectrum = set(
-        np.round([x[1] - x[0] for x in combinations(evals, 2)], decimals=decimals)
-    )
+    _spectrum = set(np.round([x[1] - x[0] for x in combinations(evals, 2)], decimals=decimals))
     _spectrum |= {0}
 
     return _spectrum
