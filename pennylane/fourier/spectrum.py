@@ -21,44 +21,6 @@ import numpy as np
 import pennylane as qml
 
 
-def _get_random_args(args, interface, num, seed):
-    r"""Generate random arguments of the same shapes as provided args.
-    Args:
-        args (tuple): Original input arguments
-        interface (str): Interface of the QNode into which the arguments will be fed
-        num (int): Number of random argument sets to generate
-    Returns:
-        list[tuple]: List of length ``num`` with each entry being a random instance
-        of arguments like ``args``.
-    """
-    if interface == "tf":
-        import tensorflow as tf  # pylint: disable=import-outside-toplevel
-
-        tf.random.set_seed(seed)
-        rnd_args = []
-        for _ in range(num):
-            _args = (tf.random.uniform(tf.shape(_arg)) * 2 * np.pi - np.pi for _arg in args)
-            _args = tuple(
-                tf.Variable(_arg) if isinstance(arg, tf.Variable) else _arg
-                for _arg, arg in zip(_args, args)
-            )
-            rnd_args.append(_args)
-    elif interface == "torch":
-        import torch  # pylint: disable=import-outside-toplevel
-
-        torch.random.manual_seed(seed)
-        rnd_args = [
-            tuple(torch.rand(np.shape(arg)) * 2 * np.pi - np.pi for arg in args) for _ in range(num)
-        ]
-    else:
-        np.random.seed(seed)
-        rnd_args = [
-            tuple(np.random.random(np.shape(arg)) * 2 * np.pi - np.pi for arg in args)
-            for _ in range(num)
-        ]
-
-    return rnd_args
-
 def _get_spectrum(op, decimals=8):
     r"""Extract the frequencies contributed by an input-encoding gate to the
     overall Fourier representation of a quantum circuit.
@@ -128,51 +90,6 @@ def _join_spectra(spec1, spec2):
     diffs = {np.abs(s1 - s2) for s1 in spec1 for s2 in spec2}
 
     return sums.union(diffs)
-
-
-def _get_and_validate_classical_jacobian(qnode, argnum, args, kwargs, num_pos):
-    r"""Check classical preprocessing of a QNode to be linear and return its Jacobian.
-
-    Args:
-        qnode (pennylane.QNode): a quantum node of which to validate the preprocessing
-        argnum (list[int]): the indices of the arguments with respect to which the Jacobian
-            is computed; passed to `~pennylane.transforms.classical_jacobian`
-        args (tuple): QNode arguments; the input parameters are one of four positions at which
-            the Jacobian is computed, and the QNode arguments are left at these values
-        kwargs (dict): QNode keyword arguments
-        num_pos (int): Number of additional random positions at which to evaluate the
-            Jacobian and test that it is constant
-
-    Returns:
-        (tuple[array]): Jacobian of the classical preprocessing (at QNode arguments args).
-
-    The output of the `~pennylane.QNode` is only a Fourier series in the encoded :math:`x_i`
-    if the processing of the QNode parameters into gate parameters is linear.
-    This method asserts this linearity by computing the Jacobian of the processing at
-    multiple positions and checking that it is constant.
-    """
-    try:
-        # Get random input arguments
-        all_args = _get_random_args(args, qnode.interface, num_pos, seed=291)
-        all_args.append(args)
-        # Evaluate the classical Jacobian at multiple input args.
-        jac_fns = tuple(qml.transforms.classical_jacobian(qnode, argnum=num) for num in argnum)
-        jacs = [tuple(_fn(*_args, **kwargs) for _fn in jac_fns) for _args in all_args]
-    except Exception as e:
-        raise ValueError("Could not compute Jacobian of the classical preprocessing.") from e
-
-    # Check that the Jacobian is constant
-    if not all(
-        all(np.allclose(jacs[0][i], jac[i], atol=1e-6, rtol=0) for jac in jacs[1:])
-        for i in range(len(jacs[0]))
-    ):
-        raise ValueError(
-            "The Jacobian of the classical preprocessing in the provided QNode is not constant; "
-            "only linear classical preprocessing is supported."
-        )
-
-    # Note that jacs is a list of tuples of arrays
-    return jacs[0]
 
 
 def _process_ids(encoding_args, argnum, qnode):
@@ -439,7 +356,11 @@ def spectrum(qnode, encoding_args=None, argnum=None, decimals=5, validation_kwar
     def wrapper(*args, **kwargs):
         # Compute classical Jacobian and assert preprocessing is linear
         jac_fn = qml.transforms.classical_jacobian(qnode, argnum=argnum)
-        qml.math.is_independent(jac_fn, qnode.interface, args, kwargs, **validation_kwargs)
+        if not qml.math.is_independent(jac_fn, qnode.interface, args, kwargs, **validation_kwargs):
+            raise ValueError(
+                "The Jacobian of the classical preprocessing in the provided QNode "
+                "is not constant; only linear classical preprocessing is supported."
+            )
         class_jacs = jac_fn(*args, **kwargs)
 
         spectra = {}
