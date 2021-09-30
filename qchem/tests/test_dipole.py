@@ -11,19 +11,7 @@ x_h2 = np.array([0.0, 0.0, -0.66140414, 0.0, 0.0, 0.66140414])
 coeffs_h2 = []
 coeffs_h2.append([0.0])
 coeffs_h2.append([0.0])
-coeffs_h2.append(
-    [
-        1.71471176,
-        -0.42867794,
-        -0.42867794,
-        -0.62481348,
-        -0.62481348,
-        -0.62481348,
-        -0.62481348,
-        -0.42867794,
-        -0.42867794,
-    ]
-)
+coeffs_h2.append([-0.45456255, -0.45456255, -0.45456255, -0.45456255])
 
 
 ops_h2 = []
@@ -31,15 +19,10 @@ ops_h2.append([qml.Identity(wires=[0])])
 ops_h2.append([qml.Identity(wires=[0])])
 ops_h2.append(
     [
-        qml.Identity(wires=[0]),
-        qml.PauliZ(wires=[0]),
-        qml.PauliZ(wires=[1]),
         qml.PauliY(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliY(wires=[2]),
         qml.PauliX(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliX(wires=[2]),
         qml.PauliY(wires=[1]) @ qml.PauliZ(wires=[2]) @ qml.PauliY(wires=[3]),
         qml.PauliX(wires=[1]) @ qml.PauliZ(wires=[2]) @ qml.PauliX(wires=[3]),
-        qml.PauliZ(wires=[2]),
-        qml.PauliZ(wires=[3]),
     ]
 )
 
@@ -49,48 +32,46 @@ x_h3p = np.array([0.028, 0.054, 0.0, 0.986, 1.610, 0.0, 1.855, 0.002, 0.0])
 coeffs_h3p = []
 coeffs_h3p.append(
     [
-        3.01569149,
-        -0.88863892,
-        -0.88863892,
-        -0.88783782,
-        -0.88783782,
-        -0.88783782,
-        -0.88783782,
-        0.22780641,
-        0.22780641,
-        0.22780641,
-        0.22780641,
-        -1.30305728,
-        -1.30305728,
-        -0.80078948,
-        -0.80078948,
-        -0.80078948,
-        -0.80078948,
-        -0.75064955,
-        -0.75064955,
+        0.47811232,
+        0.47811232,
+        -0.39136385,
+        -0.39136385,
+        -0.39136385,
+        -0.39136385,
+        0.26611147,
+        0.26611147,
+        0.26611147,
+        0.26611147,
+        0.71447791,
+        0.71447791,
+        -0.11734959,
+        -0.11734959,
+        -0.11734959,
+        -0.11734959,
+        0.24190978,
+        0.24190978,
     ]
 )
 coeffs_h3p.append(
     [
-        1.6907817,
-        0.08159501,
-        0.08159501,
-        0.15052334,
-        0.15052334,
-        0.15052334,
-        0.15052334,
-        -0.18741661,
-        -0.18741661,
-        -0.18741661,
-        -0.18741661,
-        -0.47139071,
-        -0.47139071,
-        -0.78233294,
-        -0.78233294,
-        -0.78233294,
-        -0.78233294,
-        -1.28859515,
-        -1.28859515,
+        0.27769368,
+        0.27769368,
+        0.26614699,
+        0.26614699,
+        0.26614699,
+        0.26614699,
+        0.39131162,
+        0.39131162,
+        0.39131162,
+        0.39131162,
+        0.16019825,
+        0.16019825,
+        -0.23616713,
+        -0.23616713,
+        -0.23616713,
+        -0.23616713,
+        0.39510807,
+        0.39510807,
     ]
 )
 coeffs_h3p.append([0.0])
@@ -98,7 +79,6 @@ coeffs_h3p.append([0.0])
 ops_h3p = []
 ops_h3p.append(
     [
-        qml.Identity(wires=[0]),
         qml.PauliZ(wires=[0]),
         qml.PauliZ(wires=[1]),
         qml.PauliY(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliY(wires=[2]),
@@ -137,7 +117,6 @@ ops_h3p.append(
 )
 ops_h3p.append(
     [
-        qml.Identity(wires=[0]),
         qml.PauliZ(wires=[0]),
         qml.PauliZ(wires=[1]),
         qml.PauliY(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliY(wires=[2]),
@@ -181,9 +160,9 @@ h2o = ["H", "H", "O"]
 x_h2o = np.array([0.0, 1.431, -0.887, 0.0, -1.431, -0.887, 0.0, 0.0, 0.222])
 
 coeffs_h2o = []
-coeffs_h2o.append([0.01540292, -0.01540292, -0.01540292, 0.01540292])
-coeffs_h2o.append([3.21808936])
-coeffs_h2o.append([-0.57923888, -0.111, -0.111, -0.18010003, -0.18010003])
+coeffs_h2o.append([-0.03700799, 0.03700799, 0.03700799, -0.03700799])
+coeffs_h2o.append([0.0])
+coeffs_h2o.append([0.28530454, 0.111, 0.111, -0.37101744, -0.37101744])
 
 ops_h2o = []
 ops_h2o.append(
@@ -214,7 +193,7 @@ ops_h2o.append(
         (h2o, x_h2o, 0, range(4), [4, 5], "bravyi_kitaev", coeffs_h2o, ops_h2o),
     ],
 )
-def test_dipole(symbols, coords, charge, core, active, mapping, coeffs, ops, tol, tmpdir):
+def test_dipole_obs(symbols, coords, charge, core, active, mapping, coeffs, ops, tol, tmpdir):
     r"""Tests the correctness of the dipole observable computed by the ``dipole`` function."""
 
     dip = qml.qchem.dipole(
@@ -235,6 +214,30 @@ def test_dipole(symbols, coords, charge, core, active, mapping, coeffs, ops, tol
         assert np.allclose(calc_coeffs, exp_coeffs, **tol)
         assert all(isinstance(o1, o2.__class__) for o1, o2 in zip(_dip.ops, ops[i]))
         assert all(o1.wires == o2.wires for o1, o2 in zip(_dip.ops, ops[i]))
+
+
+@pytest.mark.parametrize(
+    ("symbols", "coords", "charge", "hf_state", "exp_dipole"),
+    [
+        (h2, x_h2, 0, np.array([1, 1, 0, 0]), np.array([0.0, 0.0, 0.0])),
+        (h3p, x_h3p, 1, np.array([1, 1, 0, 0, 0, 0]), np.array([0.95655073, 0.55522528, 0.0])),
+    ],
+)
+def test_dipole(symbols, coords, charge, hf_state, exp_dipole, tol, tmpdir):
+    r"""Tests the correctness of the computed dipole moment."""
+
+    n_qubits = len(hf_state)
+
+    dev = qml.device("default.qubit", wires=n_qubits)
+
+    dip_obs = qml.qchem.dipole(symbols, coords, charge=charge, outpath=tmpdir.strpath)
+
+    def circuit(param, wires):
+        qml.BasisState(hf_state, wires=wires)
+
+    dipole = np.array([qml.ExpvalCost(circuit, obs, dev)(0.0) for obs in dip_obs])
+
+    assert np.allclose(dipole, exp_dipole, **tol)
 
 
 @pytest.mark.parametrize(
