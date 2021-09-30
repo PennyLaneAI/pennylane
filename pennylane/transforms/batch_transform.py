@@ -14,6 +14,7 @@
 """Contains tools and decorators for registering batch transforms."""
 # pylint: disable=too-few-public-methods
 import functools
+import inspect
 import types
 
 import pennylane as qml
@@ -221,8 +222,15 @@ class batch_transform:
         the QNode, and return the output of the applying the tape transform
         to the QNode's constructed tape.
         """
+        if "shots" in inspect.signature(qnode.func).parameters:
+            raise ValueError(
+                "Detected 'shots' as an argument of the quantum function to transform. "
+                "The 'shots' argument name is reserved for overriding the number of shots "
+                "taken by the device."
+            )
 
         def _wrapper(*args, **kwargs):
+            shots = kwargs.pop("shots", False)
             qnode.construct(args, kwargs)
             tapes, processing_fn = self.construct(qnode.qtape, *targs, **tkwargs)
 
@@ -242,7 +250,12 @@ class batch_transform:
                 gradient_fn = qml.gradients.finite_diff
 
             res = qml.execute(
-                tapes, device=qnode.device, gradient_fn=gradient_fn, interface=interface, max_diff=2
+                tapes,
+                device=qnode.device,
+                gradient_fn=gradient_fn,
+                interface=interface,
+                max_diff=2,
+                override_shots=shots,
             )
 
             return processing_fn(res)
