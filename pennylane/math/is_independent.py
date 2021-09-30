@@ -149,8 +149,7 @@ def _tf_is_indep_analytic(func, *args, **kwargs):
         out = func(*args, **kwargs)
 
     if isinstance(out, tuple):
-        jac = tape.jacobian(out, args)
-        #jac = [tape.jacobian(_out, args) for _out in out]
+        jac = [tape.jacobian(_out, args) for _out in out]
         return all(all(__jac is None for __jac in _jac) for _jac in jac)
 
     jac = tape.jacobian(out, args)
@@ -204,7 +203,7 @@ def _get_random_args(args, interface, num, seed, bounds):
     return rnd_args
 
 
-def _is_indep_numerical(func, interface, args, kwargs, test_kwargs):
+def _is_indep_numerical(func, interface, args, kwargs, num_pos, seed, atol, rtol, bounds):
     """Test whether a function returns the same output at random positions.
 
     Args:
@@ -213,28 +212,16 @@ def _is_indep_numerical(func, interface, args, kwargs, test_kwargs):
         args (tuple): Positional arguments with respect to which to test
         kwargs (dict): Keyword arguments for ``func`` at which to test;
             The ``kwargs`` are kept fix in this test.
-        test_kwargs (dict): Options for the test.
+        num_pos (int): Number of random positions to test
+        seed (int): Seed for random number generator
+        atol (float): Absolute precision for comparing the outputs
+        rtol (float): Absolute precision for comparing the outputs
+        bounds (tuple[int, int]): Limits of the range from which to sample
 
     Returns:
         bool: Whether ``func`` returns the same output at the randomly
         chosen points.
-
-    The available options via ``test_kwargs`` are
-
-      - ``num_pos=5``: Number of random positions to test
-      - ``seed=9123``: Seed for random number generator
-      - ``atol=1e-6``: Absolute precision for comparing the outputs
-      - ``rtol=0``: Absolute precision for comparing the outputs
-      - ``bounds=(-np.pi, np.pi)``: Limits of the range from which to sample
-
     """
-    test_kwargs = test_kwargs or {}
-    num_pos = test_kwargs.get("num_pos", 5)
-    seed = test_kwargs.get("seed", 9123)
-    atol = test_kwargs.get("atol", 1e-6)
-    rtol = test_kwargs.get("rtol", 0)
-    bounds = test_kwargs.get("bounds", (-np.pi, np.pi))
-
     rnd_args = _get_random_args(args, interface, num_pos, seed, bounds)
     original_output = func(*args, **kwargs)
     is_tuple_valued = isinstance(original_output, tuple)
@@ -253,7 +240,17 @@ def _is_indep_numerical(func, interface, args, kwargs, test_kwargs):
     return True
 
 
-def is_independent(func, interface, args, kwargs=None, num_kwargs=None):
+def is_independent(
+    func,
+    interface,
+    args,
+    kwargs=None,
+    num_pos=5,
+    seed=9123,
+    atol=1e-6,
+    rtol=0,
+    bounds=(-np.pi, np.pi),
+):
     """Test whether a function is independent of its input arguments,
     both numerically and analytically.
 
@@ -263,8 +260,11 @@ def is_independent(func, interface, args, kwargs=None, num_kwargs=None):
         args (tuple): Positional arguments with respect to which to test
         kwargs (dict): Keyword arguments for ``func`` at which to test;
             The ``kwargs`` are kept fixed in this test.
-        num_kwargs (dict): Options for the numerical test at random positions,
-            see ``_is_indep_numerical``.
+        num_pos (int): Number of random positions to test
+        seed (int): Seed for random number generator
+        atol (float): Absolute precision for comparing the outputs
+        rtol (float): Absolute precision for comparing the outputs
+        bounds (tuple[int, int]): Limits of the range from which to sample
 
     Returns:
         bool: Whether ``func`` returns the same output at randomly
@@ -291,7 +291,13 @@ def is_independent(func, interface, args, kwargs=None, num_kwargs=None):
         Currently, no analytical test is available in the PyTorch interface.
         Only the numerical test ``_is_indep_numerical`` is performed in this case.
         This is also remarked by a UserWarning.
-  
+
+    .. note ::
+
+        Due to the structure of ``is_independent``, it is possible that it
+        errs on the side of reporting a dependent function to be independent
+        (false positive) but reporting an independent function to be
+        dependent (false negative) is *very* unlikely.
 
     **Example**
 
@@ -349,4 +355,4 @@ def is_independent(func, interface, args, kwargs=None, num_kwargs=None):
             " is a sufficient test, or change the interface."
         )
 
-    return _is_indep_numerical(func, interface, args, kwargs, test_kwargs=num_kwargs)
+    return _is_indep_numerical(func, interface, args, kwargs, num_pos, seed, atol, rtol, bounds)
