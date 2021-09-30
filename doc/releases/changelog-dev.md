@@ -299,7 +299,7 @@
 
 * Specific QNode execution options are now re-used by batch transforms
   to execute transformed QNodes.
-  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+  [(#1708)](https://github.com/PennyLaneAI/pennylane/pull/1708)
 
 <h3>Breaking changes</h3>
 
