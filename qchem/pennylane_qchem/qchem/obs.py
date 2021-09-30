@@ -796,7 +796,7 @@ def dipole(
 
     .. math::
 
-        \hat{D} = \sum_{\alpha, \beta} \langle \alpha \vert \hat{{\bf r}} \vert \beta \rangle
+        \hat{D} = -\sum_{\alpha, \beta} \langle \alpha \vert \hat{{\bf r}} \vert \beta \rangle
         [\hat{c}_{\alpha\uparrow}^\dagger \hat{c}_{\beta\uparrow} +
         \hat{c}_{\alpha\downarrow}^\dagger \hat{c}_{\beta\downarrow}] + \hat{D}_\mathrm{n}.
 
@@ -819,7 +819,7 @@ def dipole(
 
     .. math::
 
-        \hat{D}_\mathrm{n} = -\sum_{i=1}^{N_\mathrm{atoms}} Z_i {\bf R}_i \hat{I},
+        \hat{D}_\mathrm{n} = \sum_{i=1}^{N_\mathrm{atoms}} Z_i {\bf R}_i \hat{I},
 
 
     where :math:`Z_i` and :math:`{\bf R}_i` denote, respectively, the atomic number and the
@@ -855,42 +855,40 @@ def dipole(
             For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted.
             If None, will use identity map (e.g. 0->0, 1->1, ...).
 
-
     Returns:
         list[pennylane.Hamiltonian]: the qubit observables corresponding to the components
         :math:`\hat{D}_x`, :math:`\hat{D}_y` and :math:`\hat{D}_z` of the dipole operator in
-        atomic units (Bohr radii).
+        atomic units.
 
     **Example**
 
     >>> symbols = ["H", "H", "H"]
     >>> coordinates = np.array([0.028, 0.054, 0.0, 0.986, 1.610, 0.0, 1.855, 0.002, 0.0])
-    >>> dipole_obs = dipole(symbols, coordinates, charge=1)
+    >>> dip_obs = dipole(symbols, coordinates, charge=1)
     >>> print(dipole_obs)
     [<Hamiltonian: terms=19, wires=[0, 1, 2, 3, 4, 5]>,
     <Hamiltonian: terms=19, wires=[0, 1, 2, 3, 4, 5]>,
     <Hamiltonian: terms=1, wires=[0]>]
 
-    >>> print(dipole_obs[0]) # x-component of D
-    (-1.3030572751412595) [Z2]
-    + (-1.3030572751412595) [Z3]
-    + (-0.8886389216291275) [Z0]
-    + (-0.8886389216291275) [Z1]
-    + (-0.7506495490492537) [Z4]
-    + (-0.7506495490492537) [Z5]
-    + (3.0156914916392816) [I0]
-    + (-0.8878378199812019) [Y0 Z1 Y2]
-    + (-0.8878378199812019) [X0 Z1 X2]
-    + (-0.8878378199812019) [Y1 Z2 Y3]
-    + (-0.8878378199812019) [X1 Z2 X3]
-    + (-0.8007894776080673) [Y2 Z3 Y4]
-    + (-0.8007894776080673) [X2 Z3 X4]
-    + (-0.8007894776080673) [Y3 Z4 Y5]
-    + (-0.8007894776080673) [X3 Z4 X5]
-    + (0.22780640807443467) [Y0 Z1 Z2 Z3 Y4]
-    + (0.22780640807443467) [X0 Z1 Z2 Z3 X4]
-    + (0.22780640807443467) [Y1 Z2 Z3 Z4 Y5]
-    + (0.22780640807443467) [X1 Z2 Z3 Z4 X5]
+    >>> print(dip_obs[0]) # x-component of D
+    (0.24190977644628117) [Z4]
+    + (0.24190977644628117) [Z5]
+    + (0.4781123173263878) [Z0]
+    + (0.4781123173263878) [Z1]
+    + (0.714477906181248) [Z2]
+    + (0.714477906181248) [Z3]
+    + (-0.3913638489487808) [Y0 Z1 Y2]
+    + (-0.3913638489487808) [X0 Z1 X2]
+    + (-0.3913638489487808) [Y1 Z2 Y3]
+    + (-0.3913638489487808) [X1 Z2 X3]
+    + (-0.1173495878099553) [Y2 Z3 Y4]
+    + (-0.1173495878099553) [X2 Z3 X4]
+    + (-0.1173495878099553) [Y3 Z4 Y5]
+    + (-0.1173495878099553) [X3 Z4 X5]
+    + (0.26611147045300276) [Y0 Z1 Z2 Z3 Y4]
+    + (0.26611147045300276) [X0 Z1 Z2 Z3 X4]
+    + (0.26611147045300276) [Y1 Z2 Z3 Z4 Y5]
+    + (0.26611147045300276) [X1 Z2 Z3 Z4 X5]
     """
 
     atomic_numbers = {
@@ -940,7 +938,7 @@ def dipole(
     for comp in range(3):
         for alpha in range(n_orbs):
             for beta in range(alpha + 1):
-                dip_mo[comp, alpha, beta] = c_hf[alpha] @ dip_ao[comp] @ c_hf[beta]
+                dip_mo[comp, alpha, beta] = c_hf[:, alpha] @ dip_ao[comp] @ c_hf[:, beta]
 
         dip_mo[comp] += dip_mo[comp].T - np.diag(np.diag(dip_mo[comp]))
 
@@ -948,15 +946,15 @@ def dipole(
     dip_n = np.zeros(3)
     for comp in range(3):
         for i, symb in enumerate(symbols):
-            dip_n[comp] -= atomic_numbers[symb] * coordinates[3 * i + comp]
+            dip_n[comp] += atomic_numbers[symb] * coordinates[3 * i + comp]
 
     # Build the observable
-    dip_obs = []
+    dip = []
     for i in range(3):
         fermion_obs = one_particle(dip_mo[i], core=core, active=active, cutoff=cutoff)
-        dip_obs.append(observable([fermion_obs], init_term=dip_n[i], mapping=mapping, wires=wires))
+        dip.append(observable([-fermion_obs], init_term=dip_n[i], mapping=mapping, wires=wires))
 
-    return dip_obs
+    return dip
 
 
 __all__ = [
