@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This file contains the _is_independent function that checks
+This file contains the is_independent function that checks
 a function to be independent of its arguments for the interfaces
 
 * Autograd
@@ -28,7 +28,7 @@ from autograd.tracer import isbox, new_box, trace_stack
 from autograd.core import VJPNode
 
 
-def _autograd_is_independent_ana(func, *args, **kwargs):
+def _autograd_is_indep_analytic(func, *args, **kwargs):
     """Test analytically whether a function is independent of its arguments
     using Autograd.
 
@@ -73,7 +73,7 @@ def _autograd_is_independent_ana(func, *args, **kwargs):
     return True
 
 
-def _jax_is_independent_ana(func, *args, **kwargs):
+def _jax_is_indep_analytic(func, *args, **kwargs):
     """Test analytically whether a function is independent of its arguments
     using JAX.
 
@@ -118,7 +118,7 @@ def _jax_is_independent_ana(func, *args, **kwargs):
     return True
 
 
-def _tf_is_independent_ana(func, *args, **kwargs):
+def _tf_is_indep_analytic(func, *args, **kwargs):
     """Test analytically whether a function is independent of its arguments
     using TensorFlow.
 
@@ -141,7 +141,7 @@ def _tf_is_independent_ana(func, *args, **kwargs):
     .. note::
 
         Of all interfaces, this is currently the most robust for the
-        ``_is_independent`` functionality.
+        ``is_independent`` functionality.
     """
     import tensorflow as tf  # pylint: disable=import-outside-toplevel
 
@@ -149,7 +149,8 @@ def _tf_is_independent_ana(func, *args, **kwargs):
         out = func(*args, **kwargs)
 
     if isinstance(out, tuple):
-        jac = [tape.jacobian(_out, args) for _out in out]
+        jac = tape.jacobian(out, args)
+        #jac = [tape.jacobian(_out, args) for _out in out]
         return all(all(__jac is None for __jac in _jac) for _jac in jac)
 
     jac = tape.jacobian(out, args)
@@ -203,7 +204,7 @@ def _get_random_args(args, interface, num, seed, bounds):
     return rnd_args
 
 
-def _is_independent_num(func, interface, args, kwargs, test_kwargs):
+def _is_indep_numerical(func, interface, args, kwargs, test_kwargs):
     """Test whether a function returns the same output at random positions.
 
     Args:
@@ -252,7 +253,7 @@ def _is_independent_num(func, interface, args, kwargs, test_kwargs):
     return True
 
 
-def _is_independent(func, interface, args, kwargs=None, num_kwargs=None):
+def is_independent(func, interface, args, kwargs=None, num_kwargs=None):
     """Test whether a function is independent of its input arguments,
     both numerically and analytically.
 
@@ -263,7 +264,7 @@ def _is_independent(func, interface, args, kwargs=None, num_kwargs=None):
         kwargs (dict): Keyword arguments for ``func`` at which to test;
             The ``kwargs`` are kept fixed in this test.
         num_kwargs (dict): Options for the numerical test at random positions,
-            see ``_is_independent_num``.
+            see ``_is_indep_numerical``.
 
     Returns:
         bool: Whether ``func`` returns the same output at randomly
@@ -279,17 +280,50 @@ def _is_independent(func, interface, args, kwargs=None, num_kwargs=None):
 
     The first, analytic test differs per ``interface`` both in its method
     and its degree of reliability. The respective method is detailed in the
-    docstrings of ``_tf_is_independent_ana`` for TensorFlow,
-    ``_autograd_is_independent_ana`` for Autograd and ``_jax_is_independent_ana``
+    docstrings of ``_tf_is_indep_analytic`` for TensorFlow,
+    ``_autograd_is_indep_analytic`` for Autograd and ``_jax_is_indep_analytic``
     for JAX.
     The function is then checked numerically to produce constant output at
-    a series of random positions, using ``_is_independent_num``.
+    a series of random positions, using ``_is_indep_numerical``.
 
     .. warning ::
 
         Currently, no analytical test is available in the PyTorch interface.
-        Only the numerical test ``_is_independent_num`` is performed in this case.
+        Only the numerical test ``_is_indep_numerical`` is performed in this case.
         This is also remarked by a UserWarning.
+  
+
+    **Example**
+
+    Consider the (linear) function
+
+    .. code-block:: python
+
+        def lin(x, weights=None):
+            return np.dot(x, weights)
+
+    This function clearly depends on ``x``. We may check for this via
+
+    .. code-block:: pycon
+
+        >>> x = np.array([0.2, 9.1, -3.2])
+        >>> weights = np.array([1.1, -0.7, 1.8])
+        >>> qml.math.is_independent(lin, "autograd", (x,), {"weights": weights})
+        False
+
+    However, the Jacobian will not depend on ``x`` because ``lin`` is a
+    linear function:
+
+    .. code-block:: pycon
+
+        >>> jac = qml.jacobian(lin)
+        >>> qml.math.is_independent(jac, "autograd", (x,), {"weights": weights})
+        True
+
+    A function like ``0.0*x`` will be counted as *dependent* on ``x`` because it does
+    depend on ``x`` *functionally*, even if the value is constant for all ``x``.
+    This means that ``is_independent`` is a stronger test than for constant
+    output functions.
     """
     if not interface in {"autograd", "jax", "tf", "torch"}:
         raise ValueError(f"Unknown interface: {interface}")
@@ -297,22 +331,22 @@ def _is_independent(func, interface, args, kwargs=None, num_kwargs=None):
     kwargs = kwargs or {}
 
     if interface == "autograd":
-        if not _autograd_is_independent_ana(func, *args, **kwargs):
+        if not _autograd_is_indep_analytic(func, *args, **kwargs):
             return False
 
     if interface == "jax":
-        if not _jax_is_independent_ana(func, *args, **kwargs):
+        if not _jax_is_indep_analytic(func, *args, **kwargs):
             return False
 
     if interface == "tf":
-        if not _tf_is_independent_ana(func, *args, **kwargs):
+        if not _tf_is_indep_analytic(func, *args, **kwargs):
             return False
 
     if interface == "torch":
         warnings.warn(
-            "The function _is_independent only is available numerically for the PyTorch interface."
+            "The function is_independent only is available numerically for the PyTorch interface."
             " Make sure that sampling positions and evaluating the function at these positions"
             " is a sufficient test, or change the interface."
         )
 
-    return _is_independent_num(func, interface, args, kwargs, test_kwargs=num_kwargs)
+    return _is_indep_numerical(func, interface, args, kwargs, test_kwargs=num_kwargs)

@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :func:`pennylane.math._is_independent` function.
+Unit tests for the :func:`pennylane.math.is_independent` function.
 """
 import pytest
 
 import numpy as np
 
 import pennylane as qml
-from pennylane.math import _is_independent
-from pennylane.math._is_independent import _get_random_args
+from pennylane.math import is_independent
+from pennylane.math.is_independent import _get_random_args
 
 try:
     import jax
@@ -105,7 +105,7 @@ args_overlooked_lambdas = [
 
 
 class TestIsIndependentAutograd:
-    """Tests for _is_independent, which tests a function to be
+    """Tests for is_independent, which tests a function to be
     independent of its inputs, using Autograd."""
 
     interface = "autograd"
@@ -179,25 +179,25 @@ class TestIsIndependentAutograd:
 
     @pytest.mark.parametrize("func, args", zip(constant_functions, args_constant))
     def test_constant(self, func, args):
-        assert _is_independent(func, self.interface, args)
+        assert is_independent(func, self.interface, args)
 
     @pytest.mark.parametrize("func, args", zip(nonconst_functions, args_nonconst))
     def test_nonconst(self, func, args):
-        assert not _is_independent(func, self.interface, args)
+        assert not is_independent(func, self.interface, args)
 
     def test_kwargs_are_considered(self):
         f = lambda x, kw=False: 0.1 * x if kw else 0.2
         jac = qml.jacobian(f, argnum=0)
         args = (0.2,)
-        assert _is_independent(f, self.interface, args)
-        assert not _is_independent(f, self.interface, args, {"kw": True})
-        assert _is_independent(jac, self.interface, args, {"kw": True})
+        assert is_independent(f, self.interface, args)
+        assert not is_independent(f, self.interface, args, {"kw": True})
+        assert is_independent(jac, self.interface, args, {"kw": True})
 
 
 if have_jax:
 
     class TestIsIndependentJax:
-        """Tests for _is_independent, which tests a function to be
+        """Tests for is_independent, which tests a function to be
         independent of its inputs, using JAX."""
 
         interface = "jax"
@@ -269,25 +269,25 @@ if have_jax:
 
         @pytest.mark.parametrize("func, args", zip(constant_functions, args_constant))
         def test_constant(self, func, args):
-            assert _is_independent(func, self.interface, args)
+            assert is_independent(func, self.interface, args)
 
         @pytest.mark.parametrize("func, args", zip(nonconst_functions, args_nonconst))
         def test_nonconst(self, func, args):
-            assert not _is_independent(func, self.interface, args)
+            assert not is_independent(func, self.interface, args)
 
         def test_kwargs_are_considered(self):
             f = lambda x, kw=False: 0.1 * x if kw else 0.2
             jac = jax.jacobian(f, argnums=0)
             args = (0.2,)
-            assert _is_independent(f, self.interface, args)
-            assert not _is_independent(f, self.interface, args, {"kw": True})
-            assert _is_independent(jac, self.interface, args, {"kw": True})
+            assert is_independent(f, self.interface, args)
+            assert not is_independent(f, self.interface, args, {"kw": True})
+            assert is_independent(jac, self.interface, args, {"kw": True})
 
 
 if have_tf:
 
     class TestIsIndependentTensorflow:
-        """Tests for _is_independent, which tests a function to be
+        """Tests for is_independent, which tests a function to be
         independent of its inputs, using Tensorflow."""
 
         interface = "tf"
@@ -365,7 +365,7 @@ if have_tf:
         @pytest.mark.parametrize("func, args", zip(constant_functions, args_constant))
         def test_constant(self, func, args):
             args = tuple([tf.Variable(_arg) for _arg in args])
-            assert _is_independent(func, self.interface, args)
+            assert is_independent(func, self.interface, args)
 
         @pytest.mark.parametrize("func, args", zip(nonconst_functions, args_nonconst))
         def test_nonconst(self, func, args):
@@ -375,11 +375,11 @@ if have_tf:
             if not isinstance(out, tf.Tensor):
                 try:
                     _func = lambda *args: tf.Variable(func(*args))
-                    assert not _is_independent(_func, self.interface, args)
+                    assert not is_independent(_func, self.interface, args)
                 except:
                     pytest.skip()
             else:
-                assert not _is_independent(func, self.interface, args)
+                assert not is_independent(func, self.interface, args)
 
         def test_kwargs_are_considered(self):
             f = lambda x, kw=False: 0.1 * x if kw else tf.constant(0.2)
@@ -390,15 +390,15 @@ if have_tf:
                 return tape.jacobian(out, x)
 
             args = (tf.Variable(0.2),)
-            assert _is_independent(f, self.interface, args)
-            assert not _is_independent(f, self.interface, args, {"kw": True})
-            assert _is_independent(_jac, self.interface, args, {"kw": True})
+            assert is_independent(f, self.interface, args)
+            assert not is_independent(f, self.interface, args, {"kw": True})
+            assert is_independent(_jac, self.interface, args, {"kw": True})
 
 
 if have_torch:
 
     class TestIsIndependentTorch:
-        """Tests for _is_independent, which tests a function to be
+        """Tests for is_independent, which tests a function to be
         independent of its inputs, using PyTorch."""
 
         interface = "torch"
@@ -470,7 +470,7 @@ if have_torch:
 
         @pytest.mark.parametrize("func, args", zip(constant_functions, args_constant))
         def test_constant(self, func, args):
-            assert _is_independent(func, self.interface, args)
+            assert is_independent(func, self.interface, args)
 
         @pytest.mark.parametrize(
             "func, args, exp_fail",
@@ -478,22 +478,22 @@ if have_torch:
         )
         def test_nonconst(self, func, args, exp_fail):
             if exp_fail:
-                assert _is_independent(func, self.interface, args)
+                assert is_independent(func, self.interface, args)
             else:
-                assert not _is_independent(func, self.interface, args)
+                assert not is_independent(func, self.interface, args)
 
         def test_kwargs_are_considered(self):
             f = lambda x, kw=False: 0.1 * x if kw else 0.2
             jac = lambda x, kw: torch.autograd.functional.jacobian(lambda x: f(x, kw), x)
             args = (torch.tensor(0.2),)
-            assert _is_independent(f, self.interface, args)
-            assert not _is_independent(f, self.interface, args, {"kw": True})
-            assert _is_independent(jac, self.interface, args, {"kw": True})
+            assert is_independent(f, self.interface, args)
+            assert not is_independent(f, self.interface, args, {"kw": True})
+            assert is_independent(jac, self.interface, args, {"kw": True})
 
 
 class TestOther:
-    """Other tests for _is_independent."""
+    """Other tests for is_independent."""
 
     def test_unknown_interface(self):
         with pytest.raises(ValueError, match="Unknown interface: hello"):
-            _is_independent(lambda x: x, "hello", (0.1,))
+            is_independent(lambda x: x, "hello", (0.1,))
