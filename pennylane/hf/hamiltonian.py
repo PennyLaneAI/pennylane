@@ -112,8 +112,47 @@ def generate_electron_integrals(mol, core=None, active=None):
 
 
 def generate_fermionic_hamiltonian(mol, cutoff=1.0e-12):
+    r"""Return a function that computes the fermionic hamiltonian.
+
+    Args:
+        mol (Molecule): the molecule object
+        cutoff (float): cutoff value for discarding the negligible electronic integrals
+
+    Returns:
+        function: function that computes the the fermionic hamiltonian
+
+    **Example**
+
+    >>> symbols  = ['H', 'H']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
+    >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
+    >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
+    >>> mol = Molecule(symbols, geometry, alpha=alpha)
+    >>> args = [alpha]
+    >>> h = generate_fermionic_hamiltonian(mol)(*args)
+    >>> h[0]
+    array([ 1.        , -1.39021927,  0.35721954,  0.08512072,  0.35721954,
+            0.35721954,  0.08512072,  0.08512072,  0.08512072,  0.35092658,
+            0.08512072,  0.08512072,  0.35092658,  0.35092658, -1.39021927,
+            0.35721954,  0.08512072,  0.08512072,  0.35092658,  0.35092658,
+            0.08512072,  0.35092658,  0.35092658,  0.08512072,  0.08512072,
+           -0.29165331,  0.08512072,  0.36941834,  0.08512072,  0.08512072,
+            0.36941834,  0.36941834,  0.35092658,  0.08512072, -0.29165331,
+            0.08512072,  0.36941834])
+    """
+
     def fermionic_hamiltonian(*args):
+        r"""Compute the fermionic hamiltonian.
+
+        Args:
+            args (array[array[float]]): initial values of the differentiable parameters
+
+        Returns:
+            tuple(array[float], list[list[int]]): the Hamiltonian coefficients and operators
+        """
         e_core, one, two = generate_electron_integrals(mol)(*args)
+
+        e_core = anp.array([e_core])
 
         indices_one = anp.argwhere(abs(one) >= cutoff)
         operators_one = (indices_one * 2).tolist() + (indices_one * 2 + 1).tolist()
@@ -124,14 +163,13 @@ def generate_fermionic_hamiltonian(mol, cutoff=1.0e-12):
         operators_two = (
             [(indices_two[i] * 2).tolist() for i in range(n)]
             + [(indices_two[i] * 2 + [0, 1, 1, 0]).tolist() for i in range(n)]
-            + [(indices_two[i] * 2 + [0, 1, 1, 0]).tolist() for i in range(n)]
+            + [(indices_two[i] * 2 + [1, 0, 0, 1]).tolist() for i in range(n)]
             + [(indices_two[i] * 2 + 1).tolist() for i in range(n)]
         )
         coeffs_two = anp.tile(two[abs(two) >= cutoff], 4) / 2
 
         coeffs = anp.concatenate((e_core, coeffs_one, coeffs_two))
         operators = [[]] + operators_one + operators_two
-
         indices_sort = [operators.index(i) for i in sorted(operators)]
 
         return coeffs[indices_sort], sorted(operators)

@@ -16,7 +16,7 @@ Unit tests for functions needed for computing the Hamiltonian.
 """
 import pytest
 from pennylane import numpy as np
-from pennylane.hf.hamiltonian import generate_electron_integrals
+from pennylane.hf.hamiltonian import generate_electron_integrals, generate_fermionic_hamiltonian
 from pennylane.hf.molecule import Molecule
 
 
@@ -100,3 +100,109 @@ def test_generate_electron_integrals(symbols, geometry, core, active, e_core, on
     assert np.allclose(e, e_core)
     assert np.allclose(one, one_ref)
     assert np.allclose(two, two_ref)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "alpha", "coeffs_h_ref", "ops_h_ref"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+            np.array(
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                requires_grad=True,
+            ),
+            # Hamiltonian coefficients and operators computed with OpenFermion using
+            # openfermion.transforms.get_fermion_operator(molecule.get_molecular_hamiltonian())
+            # The "^" symbols in the operators are removed and "," is added for consistency
+            np.array(
+                [
+                    1.0000000000321256,
+                    -1.3902192706002598,
+                    0.35721953951840535,
+                    0.08512072192002007,
+                    0.35721953951840535,
+                    0.08512072192002007,
+                    0.08512072192002007,
+                    0.35092657803574406,
+                    0.08512072192002007,
+                    0.35092657803574406,
+                    0.35721953951840535,
+                    0.08512072192002007,
+                    -1.3902192706002598,
+                    0.35721953951840535,
+                    0.08512072192002007,
+                    0.08512072192002007,
+                    0.35092657803574406,
+                    0.08512072192002007,
+                    0.35092657803574406,
+                    0.35092657803574495,
+                    0.08512072192002007,
+                    0.35092657803574495,
+                    0.08512072192002007,
+                    -0.2916533049477536,
+                    0.08512072192002007,
+                    0.3694183466586136,
+                    0.08512072192002007,
+                    0.3694183466586136,
+                    0.35092657803574495,
+                    0.08512072192002007,
+                    0.35092657803574495,
+                    0.08512072192002007,
+                    0.08512072192002007,
+                    0.3694183466586136,
+                    -0.2916533049477536,
+                    0.08512072192002007,
+                    0.3694183466586136,
+                ]
+            ),
+            [
+                [],
+                [0, 0],
+                [0, 0, 0, 0],
+                [0, 0, 2, 2],
+                [0, 1, 1, 0],
+                [0, 1, 3, 2],
+                [0, 2, 0, 2],
+                [0, 2, 2, 0],
+                [0, 3, 1, 2],
+                [0, 3, 3, 0],
+                [1, 0, 0, 1],
+                [1, 0, 2, 3],
+                [1, 1],
+                [1, 1, 1, 1],
+                [1, 1, 3, 3],
+                [1, 2, 0, 3],
+                [1, 2, 2, 1],
+                [1, 3, 1, 3],
+                [1, 3, 3, 1],
+                [2, 0, 0, 2],
+                [2, 0, 2, 0],
+                [2, 1, 1, 2],
+                [2, 1, 3, 0],
+                [2, 2],
+                [2, 2, 0, 0],
+                [2, 2, 2, 2],
+                [2, 3, 1, 0],
+                [2, 3, 3, 2],
+                [3, 0, 0, 3],
+                [3, 0, 2, 1],
+                [3, 1, 1, 3],
+                [3, 1, 3, 1],
+                [3, 2, 0, 1],
+                [3, 2, 2, 3],
+                [3, 3],
+                [3, 3, 1, 1],
+                [3, 3, 3, 3],
+            ],
+        )
+    ],
+)
+def test_generate_fermionic_hamiltonian(symbols, geometry, alpha, coeffs_h_ref, ops_h_ref):
+    r"""Test that fermionic_hamiltonian returns the correct Hamiltonian."""
+    mol = Molecule(symbols, geometry, alpha=alpha)
+    args = [alpha]
+    h = generate_fermionic_hamiltonian(mol)(*args)
+
+    assert np.allclose(h[0], coeffs_h_ref)
+    assert h[1] == ops_h_ref
