@@ -282,7 +282,7 @@
 
 * Shots can now be passed as a runtime argument to batch transforms, similarly
   to QNodes.
-  [(#)]()
+  [(#1707)](https://github.com/PennyLaneAI/pennylane/pull/1707)
 
   ```pycon
   >>> dev = qml.device("default.qubit", wires=1, shots=1000)
