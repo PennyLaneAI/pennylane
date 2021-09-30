@@ -256,15 +256,17 @@ def is_independent(
 
     Args:
         func (callable): Function to be tested
-        interface (str): Interface used by ``func`` and the tests
+        interface (str): Autodiff framework used by ``func``. Must correspond to one
+            of the supported PennyLane interface strings, such as ``"autograd"``, 
+            ``"tf"``, ``"torch"``, ``"jax"``.
         args (tuple): Positional arguments with respect to which to test
         kwargs (dict): Keyword arguments for ``func`` at which to test;
-            The ``kwargs`` are kept fixed in this test.
+            The keyword arguments are kept fixed in this test.
         num_pos (int): Number of random positions to test
-        seed (int): Seed for random number generator
+        seed (int): Seed for the random number generator
         atol (float): Absolute precision for comparing the outputs
         rtol (float): Absolute precision for comparing the outputs
-        bounds (tuple[int, int]): Limits of the range from which to sample
+        bounds (tuple[float]): 2-tuple containing limits of the range from which to sample
 
     Returns:
         bool: Whether ``func`` returns the same output at randomly
@@ -274,30 +276,39 @@ def is_independent(
 
         This function is experimental.
         As such, it might yield wrong results and might behave
-        slightly differently in distinct ``interface``s for some edge cases.
-        A currently known edge case is the function
-        ``lambda x: x if abs(x) <1e-5 else 0. * x`` at ``x=0.0``.
+        slightly differently in distinct autodifferentiation frameworks for some edge cases.
+        For example, a currently known edge case are piecewise
+        functions that use classical control, such as 
+        
+        .. code-block:: python
+        
+            def func(x):
+                if abs(x) <1e-5:
+                    return x
+                else:
+                    return 0. * x
 
-    The first, analytic test differs per ``interface`` both in its method
-    and its degree of reliability. The respective method is detailed in the
-    docstrings of ``_tf_is_indep_analytic`` for TensorFlow,
-    ``_autograd_is_indep_analytic`` for Autograd and ``_jax_is_indep_analytic``
-    for JAX.
-    The function is then checked numerically to produce constant output at
-    a series of random positions, using ``_is_indep_numerical``.
+    The analytic and numeric tests used are as follows.
+    
+    - The analytic test performed depends on the provided ``interface``,
+       both in its method and its degree of reliability.
+       
+    - For the numeric test, the function is evaluated at a series of random positions,
+      and the outputs numerically compared to verify that the output
+      is constant.
 
     .. warning ::
 
-        Currently, no analytical test is available in the PyTorch interface.
-        Only the numerical test ``_is_indep_numerical`` is performed in this case.
-        This is also remarked by a UserWarning.
+        Currently, no analytic test is available for the PyTorch interface.
+        When using PyTorch, a warning will be raised and only the
+        numeric test is performed.
 
     .. note ::
 
         Due to the structure of ``is_independent``, it is possible that it
         errs on the side of reporting a dependent function to be independent
-        (false positive) but reporting an independent function to be
-        dependent (false negative) is *very* unlikely.
+        (a false positive). However, reporting an independent function to be
+        dependent (a false negative) is *highly* unlikely.
 
     **Example**
 
@@ -326,12 +337,12 @@ def is_independent(
         >>> qml.math.is_independent(jac, "autograd", (x,), {"weights": weights})
         True
 
-    A function like ``0.0*x`` will be counted as *dependent* on ``x`` because it does
-    depend on ``x`` *functionally*, even if the value is constant for all ``x``.
-    This means that ``is_independent`` is a stronger test than for constant
-    output functions.
+    Note that a function ``f = lambda x: 0.0 * x`` will be counted as *dependent* on ``x``
+    because it does depend on ``x`` *functionally*, even if the value is constant for all ``x``.
+    This means that ``is_independent`` is a stronger test than simply verifying functions
+    have constant output.
     """
-    if not interface in {"autograd", "jax", "tf", "torch"}:
+    if not interface in {"autograd", "jax", "tf", "torch", "tensorflow"}:
         raise ValueError(f"Unknown interface: {interface}")
 
     kwargs = kwargs or {}
@@ -344,7 +355,7 @@ def is_independent(
         if not _jax_is_indep_analytic(func, *args, **kwargs):
             return False
 
-    if interface == "tf":
+    if interface in ("tf", "tensorflow"):
         if not _tf_is_indep_analytic(func, *args, **kwargs):
             return False
 
