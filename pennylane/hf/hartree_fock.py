@@ -74,7 +74,7 @@ def generate_scf(mol, n_steps=50, tol=1e-8):
         w, v = anp.linalg.eigh(s)
         x = v @ anp.diag(anp.array([1 / anp.sqrt(i) for i in w])) @ v.T
 
-        v_fock, w_fock = anp.linalg.eigh(x.T @ h_core @ x)
+        eigvals, w_fock = anp.linalg.eigh(x.T @ h_core @ x)  # initial guess for the scf problem
         coeffs = x @ w_fock
 
         p = molecular_density_matrix(n_electron, coeffs)
@@ -86,7 +86,7 @@ def generate_scf(mol, n_steps=50, tol=1e-8):
 
             fock_matrix = h_core + 2 * j - k
 
-            v_fock, w_fock = anp.linalg.eigh(x.T @ fock_matrix @ x)
+            eigvals, w_fock = anp.linalg.eigh(x.T @ fock_matrix @ x)
 
             coeffs = x @ w_fock
 
@@ -97,7 +97,7 @@ def generate_scf(mol, n_steps=50, tol=1e-8):
 
             p = p_update
 
-        return v_fock, coeffs, fock_matrix, h_core, repulsion_tensor
+        return eigvals, coeffs, fock_matrix, h_core, repulsion_tensor
 
     return scf
 
@@ -111,11 +111,11 @@ def nuclear_energy(charges, r):
 
         \sum_{i>j}^n \frac{q_i q_j}{r_{ij}},
 
-    where :math:`q`, :math:`r` and :math:`n` denote the nuclear charges, nuclear positions and
-    the number of nuclei, respectively.
+    where :math:`q`, :math:`r` and :math:`n` denote the nuclear charges (atomic numbers), nuclear
+    positions and the number of nuclei, respectively.
 
     Args:
-        charges (list[int]): nuclear charges
+        charges (list[int]): nuclear charges in atomic units
         r (array[float]): nuclear positions
 
     Returns:
@@ -147,9 +147,8 @@ def nuclear_energy(charges, r):
             coor = r
         e = 0
         for i, r1 in enumerate(coor):
-            for j, r2 in enumerate(coor):
-                if i > j:
-                    e = e + (charges[i] * charges[j] / anp.sqrt(((r1 - r2) ** 2).sum()))
+            for j, r2 in enumerate(coor[i + 1 :]):
+                e = e + (charges[i] * charges[i + j + 1] / anp.linalg.norm(r1 - r2))
         return e
 
     return nuclear
