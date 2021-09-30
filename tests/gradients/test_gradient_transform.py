@@ -329,6 +329,24 @@ class TestGradientTransformIntegration:
         expected = qml.jacobian(circuit)(w)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("strategy", ["gradient", "device"])
+    def test_template_integration(self, strategy, tol):
+        """Test that the gradient transform acts on QNodes
+        correctly when the QNode contains a template"""
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.beta.qnode(dev, expansion_strategy=strategy)
+        def circuit(weights):
+            qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
+            return qml.probs(wires=[0, 1])
+
+        weights = np.ones([2, 3, 3], dtype=np.float64, requires_grad=True)
+        res = qml.gradients.param_shift(circuit)(weights)
+        assert res.shape == (4, 2, 3, 3)
+
+        expected = qml.jacobian(circuit)(weights)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
 
 class TestInterfaceIntegration:
     """Test that the gradient transforms are differentiable
