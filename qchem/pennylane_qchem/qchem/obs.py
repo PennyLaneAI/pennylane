@@ -809,7 +809,7 @@ def dipole(
         \langle \alpha \vert \hat{{\bf r}} \vert \beta \rangle = \sum_{i, j}
          C_{\alpha i}^*C_{\beta j} \langle i \vert \hat{{\bf r}} \vert j \rangle,
 
-    where :math:`\vert i \rangle` is the wave function of the atomic orbitals,
+    where :math:`\vert i \rangle` is the wave function of the atomic orbital,
     :math:`C_{\alpha i}` are the coefficients defining the molecular orbitals,
     and :math:`\langle i \vert \hat{{\bf r}} \vert j \rangle`
     is the representation of operator :math:`\hat{{\bf r}}` in the atomic basis.
