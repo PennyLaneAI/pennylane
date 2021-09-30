@@ -104,6 +104,29 @@ class TestBatchTransform:
         with pytest.warns(UserWarning, match="Output seems independent of input"):
             qml.grad(circuit)(0.5)
 
+    def test_use_qnode_execution_options(self, mocker):
+        """Test that a QNodes execution options are used by the
+        batch transform"""
+        dev = qml.device("default.qubit", wires=2)
+        cache = {}
+
+        @qml.beta.qnode(dev, max_diff=3, cache=cache)
+        def circuit(x):
+            qml.Hadamard(wires=0)
+            qml.RY(x, wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        a = 0.1
+        b = 0.4
+        x = 0.543
+
+        fn = self.my_transform(circuit, a, b)
+
+        spy = mocker.spy(qml, "execute")
+        fn(x)
+        assert spy.call_args[1]["max_diff"] == 3
+        assert spy.call_args[1]["cache"] is cache
+
     def test_expand_fn(self, mocker):
         """Test that if an expansion function is provided,
         that the input tape is expanded before being transformed."""
