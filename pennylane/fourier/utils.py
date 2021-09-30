@@ -82,9 +82,8 @@ def _get_spectrum(op, decimals):
 
     # compute all unique positive differences of eigenvalues, then add 0
     # note that evals are sorted already
-    # TODO remove abs because of this
     _spectrum = set(
-        np.round(np.abs([x[1] - x[0] for x in combinations(evals, 2)]), decimals=decimals)
+        np.round([x[1] - x[0] for x in combinations(evals, 2)], decimals=decimals)
     )
     _spectrum |= {0}
 
@@ -106,9 +105,9 @@ def _join_spectra(spec1, spec2):
     Returns:
         set[float]: joined spectrum
     """
-    if spec1 in ({0}, set()):
+    if spec1 == {0}:
         return spec2
-    if spec2 in ({0}, set()):
+    if spec2 == {0}:
         return spec1
 
     sums = {s1 + s2 for s1 in spec1 for s2 in spec2}

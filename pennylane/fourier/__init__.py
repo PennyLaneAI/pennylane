@@ -20,6 +20,7 @@ from .advanced_spectrum import advanced_spectrum
 
 
 def spectrum(*args, **kwargs):
+    """Alias for ``simple_spectrum``. To be removed soon."""
     warnings.warn(
         "qml.fourier.spectrum has been renamed to qml.fourier.simple_spectrum. "
         "The alias qml.fourier.spectrum is deprecated and will be removed soon."
