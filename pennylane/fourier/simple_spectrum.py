@@ -15,7 +15,6 @@
 of a quantum circuit, that is the frequencies without considering
 preprocessing in the QNode."""
 from functools import wraps
-import numpy as np
 from .utils import _get_spectrum, _join_spectra
 
 
