@@ -242,7 +242,6 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
         if not hybrid:
             return mt
 
-        kwargs.pop("shots", False)
         cjac = cjac_fn(*args, **kwargs)
 
         if isinstance(cjac, tuple):
