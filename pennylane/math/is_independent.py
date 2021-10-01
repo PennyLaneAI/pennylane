@@ -90,7 +90,7 @@ def _jax_is_indep_analytic(func, *args, **kwargs):
         ``args`` do *not* feed into the output.
 
     In JAX, we test this by constructing the VJP of the passed function
-    and inspecting its signature:
+    and inspecting its signature.
     The first argument of the output of ``jax.vjp`` is a ``Partial``.
     If *any* processing happens to any input, the arguments of that
     ``Partial`` are unequal to ``((),)`.
