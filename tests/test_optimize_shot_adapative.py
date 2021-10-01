@@ -407,7 +407,7 @@ class TestWeightedRandomSampling:
         H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)])
 
         expval_cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
-        weights = qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2)
+        weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
         spy = mocker.spy(opt, "weighted_random_sampling")
@@ -427,7 +427,7 @@ class TestWeightedRandomSampling:
         H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)])
 
         expval_cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
-        weights = qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2)
+        weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10, term_sampling=None)
         spy = mocker.spy(opt, "weighted_random_sampling")
@@ -442,7 +442,7 @@ class TestWeightedRandomSampling:
         H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)])
 
         expval_cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
-        weights = qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2)
+        weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10, term_sampling="uniform_random_sampling")
 
@@ -457,7 +457,7 @@ class TestWeightedRandomSampling:
         H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)])
 
         expval_cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
-        weights = qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2)
+        weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
         spy = mocker.spy(qml, "jacobian")
@@ -478,7 +478,7 @@ class TestWeightedRandomSampling:
         H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)])
 
         expval_cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
-        weights = qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2)
+        weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
 

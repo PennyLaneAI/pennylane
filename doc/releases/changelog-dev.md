@@ -4,6 +4,25 @@
 
 <h3>New features since last release</h3>
 
+* There is a new utility function `qml.math.is_independent` that checks whether
+  a callable is independent of its arguments.
+  [(#1700)](https://github.com/PennyLaneAI/pennylane/pull/1700)
+
+  **Warning**
+
+  This function is experimental and might behave differently than expected.
+  Also, it might be subject to change.
+
+  **Disclaimer**
+
+  Note that the test relies on both numerical and analytical checks, except
+  when using the PyTorch interface which only performs a numerical check.
+  It is known that there are edge cases on which this test will yield wrong
+  results, in particular non-smooth functions may be problematic.
+  For details, please refer to the 
+  [is_indpendent docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.math.is_independent.html).
+
+
 * Support for differentiable execution of batches of circuits has been
   extended to the JAX interface for scalar functions, via the beta
   `pennylane.interfaces.batch` module.
@@ -215,6 +234,27 @@
     if `expval(H)` is present on devices that do not natively support Hamiltonians with
     non-commuting terms.
 
+* Added a new template `GateFabric`, which implements a local, expressive, quantum-number-preserving
+  ansatz proposed by Anselmetti *et al.* in [arXiv:2104.05692](https://arxiv.org/abs/2104.05695).
+  [(#1687)](https://github.com/PennyLaneAI/pennylane/pull/1687)
+
+  An example of a circuit using `GateFabric` template is:
+
+  ```python
+  coordinates = np.array([0.0, 0.0, -0.6614, 0.0, 0.0, 0.6614])
+  H, qubits = qml.qchem.molecular_hamiltonian(["H", "H"], coordinates)
+  ref_state = qml.qchem.hf_state(electrons=2, qubits)
+  
+  dev = qml.device('default.qubit', wires=qubits)
+  @qml.qnode(dev)
+  def ansatz(weights):
+      qml.templates.GateFabric(weights, wires=[0,1,2,3],
+                                  init_state=ref_state, include_pi=True)
+      return qml.expval(H)
+  ```
+
+  For more details, see the [GateFabric documentation](../code/api/pennylane.templates.layers.GateFabric.html).
+
 
 <h3>Improvements</h3>
 
@@ -263,6 +303,48 @@
 * ``qml.circuit_drawer.CircuitDrawer`` can accept a string for the ``charset`` keyword, instead of a ``CharSet`` object.
   [(#1640)](https://github.com/PennyLaneAI/pennylane/pull/1640)
 
+* Operations can now have gradient recipes that depend on the state of the operation.
+  [(#1674)](https://github.com/PennyLaneAI/pennylane/pull/1674)
+
+  For example, this allows for gradient recipes that are parameter dependent:
+
+  ```python
+  class RX(qml.RX):
+
+      @property
+      def grad_recipe(self):
+          # The gradient is given by [f(2x) - f(0)] / (2 sin(x)), by subsituting
+          # shift = x into the two term parameter-shift rule.
+          x = self.data[0]
+          c = 0.5 / np.sin(x)
+          return ([[c, 0.0, 2 * x], [-c, 0.0, 0.0]],)
+  ```
+
+* Shots can now be passed as a runtime argument to transforms that execute circuits in batches, similarly
+  to QNodes.
+  [(#1707)](https://github.com/PennyLaneAI/pennylane/pull/1707)
+  
+  An example of such a transform are the gradient transforms in the
+  `qml.gradients` module. As a result, we can now call gradient transforms
+  (such as `qml.gradients.param_shift`) and set the number of shots at runtime.
+
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=1, shots=1000)
+  >>> @qml.beta.qnode(dev)
+  ... def circuit(x):
+  ...     qml.RX(x, wires=0)
+  ...     return qml.expval(qml.PauliZ(0))
+  >>> grad_fn = qml.gradients.param_shift(circuit)
+  >>> grad_fn(0.564, shots=[(1, 10)]).T
+  array([[-1., -1., -1., -1., -1.,  0., -1.,  0., -1.,  0.]])
+  >>> grad_fn(0.1233, shots=None)
+  array([[-0.53457096]])
+  ```
+
+* Specific QNode execution options are now re-used by batch transforms
+  to execute transformed QNodes.
+  [(#1708)](https://github.com/PennyLaneAI/pennylane/pull/1708)
+
 <h3>Breaking changes</h3>
 
 - The `QNode.metric_tensor` method has been deprecated, and will be removed in an upcoming release.
@@ -275,7 +357,18 @@
   `requires_grad=False` was explicitly set.
   [(#1638)](https://github.com/PennyLaneAI/pennylane/pull/1638)
 
+<h3>Deprecations</h3>
+
+* The `init` module, which contains functions to generate random parameter tensors for 
+  templates, is flagged for deprecation and will be removed in the next release cycle. 
+  Instead, the templates' `shape` method can be used to get the desired shape of the tensor, 
+  which can then be generated manually.
+  [(#1689)](https://github.com/PennyLaneAI/pennylane/pull/1689)
+
 <h3>Bug fixes</h3>
+
+* Fix a bug where it was not possible to use `jax.jit` on a `QNode` when using `QubitStateVector`.
+  [(#1683)](https://github.com/PennyLaneAI/pennylane/pull/1683)
 
 * The device suite tests can now execute successfully if no shots configuration variable is given.
   [(#1641)](https://github.com/PennyLaneAI/pennylane/pull/1641)
@@ -287,6 +380,10 @@
 * Fixes a bug in `default.mixed`, to ensure that returned probabilities are always non-negative.
   [(#1680)](https://github.com/PennyLaneAI/pennylane/pull/1680)
 
+* Fixes a bug where gradient transforms would fail to apply to QNodes
+  containing classical processing.
+  [(#1699)](https://github.com/PennyLaneAI/pennylane/pull/1699)
+
 <h3>Documentation</h3>
 
 * Adds a link to https://pennylane.ai/qml/demonstrations.html in the navbar.
@@ -296,5 +393,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-Utkarsh Azad, Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee,
-Ingrid Strandberg, Antal Száva, David Wierichs.
+
+Utkarsh Azad, Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee, Romain Moyard,
+Maria Schuld, Ingrid Strandberg, Antal Száva, David Wierichs.

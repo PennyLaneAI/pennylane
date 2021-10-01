@@ -42,7 +42,9 @@ def sum(x):
     This is a lazy summation --- no QNode evaluation has yet occured. Evaluation
     only occurs when the returned function ``cost`` is evaluated:
 
-    >>> x = qml.init.strong_ent_layers_normal(3, 2, seed=42)
+    >>> np.random.seed(42)
+    >>> shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=3, n_wires=2)
+    >>> x = np.random.random(shape)
     >>> cost(x)
     tensor(0.9177, dtype=torch.float64)
     """
