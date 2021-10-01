@@ -318,6 +318,7 @@ def advanced_spectrum(qnode, encoding_args=None, argnum=None, decimals=5, valida
         spectra = {}
         tape = expand_multi_par(qnode.qtape)
         par_info = tape._par_info  # pylint: disable=protected-access
+
         for jac_idx, class_jac in enumerate(class_jacs):
             arg_name = arg_name_map[jac_idx]
             if encoding_args[arg_name] is Ellipsis:
