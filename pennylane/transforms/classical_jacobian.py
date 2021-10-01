@@ -138,6 +138,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None):
     def classical_preprocessing(*args, **kwargs):
         """Returns the trainable gate parameters for a given QNode input."""
         trainable_only = kwargs.pop("_trainable_only", True)
+        kwargs.pop("shots", None)
         qnode.construct(args, kwargs)
         tape = qnode.qtape
 
