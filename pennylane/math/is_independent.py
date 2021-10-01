@@ -214,8 +214,8 @@ def _is_indep_numerical(func, interface, args, kwargs, num_pos, seed, atol, rtol
             the ``kwargs`` are kept fixed in this test.
         num_pos (int): Number of random positions to test
         seed (int): Seed for random number generator
-        atol (float): Absolute precision for comparing the outputs
-        rtol (float): Absolute precision for comparing the outputs
+        atol (float): Absolute tolerance for comparing the outputs
+        rtol (float): Relative tolerance for comparing the outputs
         bounds (tuple[int, int]): Limits of the range from which to sample
 
     Returns:
