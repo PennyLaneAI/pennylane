@@ -267,8 +267,8 @@ def is_independent(
             the keyword arguments are kept fixed in this test.
         num_pos (int): Number of random positions to test
         seed (int): Seed for the random number generator
-        atol (float): Absolute precision for comparing the outputs
-        rtol (float): Absolute precision for comparing the outputs
+        atol (float): Absolute tolerance for comparing the outputs
+        rtol (float): Relative tolerance for comparing the outputs
         bounds (tuple[float]): 2-tuple containing limits of the range from which to sample
 
     Returns:
