@@ -4,8 +4,9 @@
 
 <h3>New features since last release</h3>
 
-* The `qml.fourier.spectrum` function now takes classical processing of QNode arguments into gate
-  arguments into account. The frequencies are computed per (requested) QNode argument instead
+* The `qml.fourier.advanced_spectrum` function extends the former `qml.fourier.spectrum` function
+  and takes classical processing of QNode arguments into gate arguments into account.
+  The frequencies are computed per (requested) QNode argument instead
   of per gate `id`. The gate `id`s are ignored.
   [(#1681)](https://github.com/PennyLaneAI/pennylane/pull/1681)
 
@@ -58,7 +59,7 @@
 
   For details on how to control for which parameters the spectrum is computed and other
   usage details, please see the
-  [fourier.spectrum docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.fourier.spectrum.html).
+  [fourier.advanced_spectrum docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.fourier.advanced_spectrum.html).
 
 * Support for differentiable execution of batches of circuits has been
   extended to the JAX interface for scalar functions, via the beta
@@ -355,6 +356,12 @@
   [(#1638)](https://github.com/PennyLaneAI/pennylane/pull/1638)
 
 <h3>Deprecations</h3>
+
+* The `qml.fourier.spectrum` function has been renamed to `qml.fourier.simple_spectrum`,
+  in order to clearly separate the new `advanced_spectrum` function from this one.
+  `qml.fourier.spectrum` is now an alias for `simple_spectrum` but is flagged for
+  deprecation and will be removed soon.
+  [(#1681)](https://github.com/PennyLaneAI/pennylane/pull/1681)
 
 * The `init` module, which contains functions to generate random parameter tensors for 
   templates, is flagged for deprecation and will be removed in the next release cycle. 
