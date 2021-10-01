@@ -211,7 +211,7 @@ def _is_indep_numerical(func, interface, args, kwargs, num_pos, seed, atol, rtol
         interface (str): Interface used by ``func``
         args (tuple): Positional arguments with respect to which to test
         kwargs (dict): Keyword arguments for ``func`` at which to test;
-            The ``kwargs`` are kept fix in this test.
+            the ``kwargs`` are kept fixed in this test.
         num_pos (int): Number of random positions to test
         seed (int): Seed for random number generator
         atol (float): Absolute precision for comparing the outputs
