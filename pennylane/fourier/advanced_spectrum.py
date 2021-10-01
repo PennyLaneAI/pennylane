@@ -78,6 +78,30 @@ def _process_ids(encoding_args, argnum, qnode):
     return encoding_args, argnum
 
 
+def expand_multi_par(tape, depth=10):
+    """Expand a tape until it does not contain any multi-parameter gates, if possible.
+
+    Args:
+        tape (.QuantumTape): Tape to be expanded
+        depth (int): Maximum expansion depth
+
+    Returns
+        .QuantumTape: Expanded tape
+
+    """
+    if any(len(op.parameters) > 1 for op in tape.operations):
+        stopping_cond = lambda g: (
+            isinstance(g, qml.measure.MeasurementProcess) or len(g.parameters) <= 1
+        )
+        new_tape = tape.expand(depth=depth, stop_at=stopping_cond)
+        params = new_tape.get_parameters(trainable_only=False)
+        new_tape.trainable_params = qml.math.get_trainable_indices(params)
+
+        return new_tape
+
+    return tape
+
+
 def advanced_spectrum(qnode, encoding_args=None, argnum=None, decimals=5, validation_kwargs=None):
     r"""Compute the frequency spectrum of the Fourier representation of quantum circuits,
     including classical preprocessing.
@@ -283,7 +307,7 @@ def advanced_spectrum(qnode, encoding_args=None, argnum=None, decimals=5, valida
     @wraps(qnode)
     def wrapper(*args, **kwargs):
         # Compute classical Jacobian and assert preprocessing is linear
-        jac_fn = qml.transforms.classical_jacobian(qnode, argnum=argnum)
+        jac_fn = qml.transforms.classical_jacobian(qnode, argnum=argnum, expand_fn=expand_multi_par)
         if not qml.math.is_independent(jac_fn, qnode.interface, args, kwargs, **validation_kwargs):
             raise ValueError(
                 "The Jacobian of the classical preprocessing in the provided QNode "
@@ -292,7 +316,8 @@ def advanced_spectrum(qnode, encoding_args=None, argnum=None, decimals=5, valida
         class_jacs = jac_fn(*args, **kwargs)
 
         spectra = {}
-        par_info = qnode.qtape._par_info  # pylint: disable=protected-access
+        tape = expand_multi_par(qnode.qtape)
+        par_info = tape._par_info  # pylint: disable=protected-access
         for jac_idx, class_jac in enumerate(class_jacs):
             arg_name = arg_name_map[jac_idx]
             if encoding_args[arg_name] is Ellipsis:

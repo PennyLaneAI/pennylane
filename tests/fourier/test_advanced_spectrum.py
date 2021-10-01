@@ -263,20 +263,45 @@ class TestCircuits:
         res_false = advanced_spectrum(circuit, argnum=[0])(x, last_gate=False)
         assert np.allclose(res_false["x"][()], range(-2, 3))
 
-    def test_input_gates_not_of_correct_form(self):
-        """Test that an error is thrown if gates marked as encoding gates
-        are not single-parameter gates."""
-
+    def test_multi_par_error(self):
+        """Test that an error is thrown if the spectrum of
+        a multi-parameter gate that cannot be decomposed is requested."""
         dev = qml.device("default.qubit", wires=3)
+
+        class nondecompRot(qml.Rot):
+            @staticmethod
+            def decomposition(phi, theta, omega, wires):
+                """Pseudo-decomposition: Just return the gate itself."""
+                return [nondecompRot(phi, theta, omega, wires=wires)]
 
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
-            qml.Rot(0.2, x, 0.4, wires=1)
+            nondecompRot(0.2, x, 0.4, wires=1)
             return qml.expval(qml.PauliZ(wires=0))
 
         with pytest.raises(ValueError, match="Can only consider one-parameter gates"):
             advanced_spectrum(circuit)(1.5)
+
+    def test_multi_parameter_expansion(self):
+        """Test that a multi-parameter gate is decomposed correctly."""
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit(x, z1, y, z2):
+            qml.RX(x, wires=0)
+            qml.Rot(z1, y, z2, wires=1)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        res = advanced_spectrum(circuit)(1.5, -2.1, 0.2, -0.418)
+        assert res == OrderedDict(
+            [
+                ("x", {(): [-1.0, 0.0, 1.0]}),
+                ("z1", {(): [-1.0, 0.0, 1.0]}),
+                ("y", {(): [-1.0, 0.0, 1.0]}),
+                ("z2", {(): [-1.0, 0.0, 1.0]}),
+            ]
+        )
 
 
 def circuit(x, w):
