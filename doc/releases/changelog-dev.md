@@ -16,7 +16,7 @@
   **Disclaimer**
 
   Note that the test relies on both numerical and analytical checks, except
-  when using the PyTorch interface which only will perform a numerical check.
+  when using the PyTorch interface which only performs a numerical check.
   It is known that there are edge cases on which this test will yield wrong
   results, in particular non-smooth functions may be problematic.
   For details, please refer to the 
