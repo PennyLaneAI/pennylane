@@ -266,10 +266,7 @@ class CommutationDAG:
     def _add_node(self, node):
         self.node_id += 1
         node.node_id = self.node_id
-        print(node.node_id)
-        print(node.name)
-        print("_______________________")
-        self._multi_graph.add_node(node)
+        self._multi_graph.add_node(node.node_id, node=node)
 
     def add_node(self, operation):
         new_node = qml.commutation_dag.CommutationDAGNode(
@@ -280,7 +277,50 @@ class CommutationDAG:
             predecessors=[],
         )
         self._add_node(new_node)
-        #self.update_edges()
+        self._update_edges()
+
+    def get_node(self, node_id):
+        return self._multi_graph.nodes(data='node')[node_id]
+
+    def get_nodes(self):
+        return self._multi_graph.nodes(data='node')
+
+    def add_edge(self, node_in, node_out):
+        return self._multi_graph.add_edge(node_in, node_out, commute=False)
+
+    def get_edge(self, node_in, node_out):
+        return self._multi_graph.get_edge_data(node_in, node_out)
+
+    def get_edges(self):
+        return self._multi_graph.edges.data()
+
+    def _update_edges(self):
+
+        max_node_id = len(self._multi_graph) - 1
+        max_node = self.get_node(max_node_id).op
+
+        for current_node_id in range(0, max_node_id):
+            self.get_node(current_node_id).reachable = True
+        # Check the commutation relation with reachable node, it adds edges if it does not commute
+        for prev_node_id in range(max_node_id - 1, -1, -1):
+            if self.get_node(prev_node_id).reachable and not is_commuting(
+                self.get_node(prev_node_id).op, max_node
+            ):
+                self.add_edge(prev_node_id, max_node_id)
+                #self._list_pred(max_node_id)
+                list_predecessors = self.get_node(max_node_id).predecessors
+                for pred_id in list_predecessors:
+                    self.get_node(pred_id).reachable = False
+
+    def direct_predecessors(self, node_id):
+        dir_pred = list(self._multi_graph.pred[node_id].keys())
+        dir_pred.sort()
+        return dir_pred
+
+    def direct_successors(self, node_id):
+        dir_succ = list(self._multi_graph.succ[node_id].keys())
+        dir_succ.sort()
+        return dir_succ
 
     @property
     def graph(self):

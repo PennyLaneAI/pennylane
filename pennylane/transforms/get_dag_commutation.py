@@ -18,6 +18,7 @@ from functools import wraps
 import numpy as np
 from pennylane.wires import Wires
 import pennylane as qml
+from collections import OrderedDict
 
 
 def get_dag_commutation(circuit, wire_order=None):
@@ -65,11 +66,15 @@ def get_dag_commutation(circuit, wire_order=None):
         # if no wire ordering is specified, take wire list from tape
         wires = tape.wires
 
+        consecutive_wires = Wires(range(len(wires)))
+        wires_map = OrderedDict(zip(wires, consecutive_wires))
+
         # initialize the dag
         dag = qml.commutation_dag.CommutationDAG(wires)
 
         with qml.tape.Unwrap(tape):
             for operation in tape.operations:
+                operation._wires=Wires([wires_map[wire] for wire in operation.wires.tolist()])
                 dag.add_node(operation)
                 #dag._add_successors()
         return dag
