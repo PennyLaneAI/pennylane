@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This file contains the is_independent function that checks
-a function to be independent of its arguments for the interfaces
+This file contains the is_independent function that checks if
+a function is independent of its arguments for the interfaces
 
 * Autograd
 * JAX
