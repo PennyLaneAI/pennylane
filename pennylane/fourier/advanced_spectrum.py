@@ -119,7 +119,7 @@ def advanced_spectrum(qnode, encoding_args=None, argnum=None, decimals=5, valida
     The argument ``argnum`` controls which QNode arguments are considered as encoded
     inputs and the spectrum is computed only for these arguments.
     The input-encoding *gates* are those that are controlled by input-encoding QNode arguments.
-    If no ``argnum`` are given, all QNode arguments are considered to be input-encoding
+    If no ``argnum`` is given, all QNode arguments are considered to be input-encoding
     arguments.
 
     .. note::
