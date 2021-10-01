@@ -610,3 +610,56 @@ class TestJaxExecuteIntegration:
             ]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_independent_expval(self, execute_kwargs):
+
+
+        # TODO: param_shift is failing because the output_dim of the tape is
+        # [0,3], instead of [1,3] and this causes empty lists to be returned
+
+        dev = qml.device("default.qubit", wires=2)
+        params = jnp.array([0.1, 0.2, 0.3])
+
+        def cost(a, cache):
+            with qml.tape.JacobianTape() as tape:
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.RY(a[2], wires=0)
+                qml.expval(qml.PauliZ(1))
+
+            res = qml.interfaces.batch.execute(
+                [tape],
+                dev,
+                cache=cache,
+                interface='jax',
+                **execute_kwargs
+            )
+            return res[0]
+
+        res = jax.jacobian(cost)(params, cache=None)
+        assert res.shape == (1, 3)
+
+    def test_multiple_expvals(self, execute_kwargs):
+        dev = qml.device("default.qubit", wires=2)
+        params = jnp.array([0.1, 0.2, 0.3])
+
+        def cost(a, cache):
+            with qml.tape.JacobianTape() as tape:
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.RY(a[2], wires=0)
+                qml.expval(qml.PauliZ(0))
+                qml.expval(qml.PauliZ(1))
+
+            res = qml.interfaces.batch.execute(
+                [tape],
+                dev,
+                cache=cache,
+                interface='jax',
+                **execute_kwargs
+            )
+            return res[0]
+
+        res = jax.jacobian(cost)(params, cache=None)
+        assert res.shape == (2,3)
+        #cost(params, cache=None)
