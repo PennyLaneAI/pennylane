@@ -369,7 +369,7 @@ def is_independent(
 
     if interface == "torch":
         warnings.warn(
-            "The function is_independent only is available numerically for the PyTorch interface."
+            "The function is_independent is only available numerically for the PyTorch interface."
             " Make sure that sampling positions and evaluating the function at these positions"
             " is a sufficient test, or change the interface."
         )
