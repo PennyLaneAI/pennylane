@@ -78,4 +78,4 @@ def batch_dim(tape):
         new_tape.set_parameters(p)
         output_tapes.append(new_tape)
 
-    return output_tapes, lambda x: qml.math.concatenate(x)
+    return output_tapes, qml.math.concatenate
