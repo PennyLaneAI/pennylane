@@ -337,6 +337,31 @@
           return ([[c, 0.0, 2 * x], [-c, 0.0, 0.0]],)
   ```
 
+* Shots can now be passed as a runtime argument to transforms that execute circuits in batches, similarly
+  to QNodes.
+  [(#1707)](https://github.com/PennyLaneAI/pennylane/pull/1707)
+  
+  An example of such a transform are the gradient transforms in the
+  `qml.gradients` module. As a result, we can now call gradient transforms
+  (such as `qml.gradients.param_shift`) and set the number of shots at runtime.
+
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=1, shots=1000)
+  >>> @qml.beta.qnode(dev)
+  ... def circuit(x):
+  ...     qml.RX(x, wires=0)
+  ...     return qml.expval(qml.PauliZ(0))
+  >>> grad_fn = qml.gradients.param_shift(circuit)
+  >>> grad_fn(0.564, shots=[(1, 10)]).T
+  array([[-1., -1., -1., -1., -1.,  0., -1.,  0., -1.,  0.]])
+  >>> grad_fn(0.1233, shots=None)
+  array([[-0.53457096]])
+  ```
+
+* Specific QNode execution options are now re-used by batch transforms
+  to execute transformed QNodes.
+  [(#1708)](https://github.com/PennyLaneAI/pennylane/pull/1708)
+
 <h3>Breaking changes</h3>
 
 - The updated version of `qml.fourier.spectrum` (see "New features above")
