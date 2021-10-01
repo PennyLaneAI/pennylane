@@ -264,7 +264,7 @@ def is_independent(
             ``"tf"``, ``"torch"``, ``"jax"``.
         args (tuple): Positional arguments with respect to which to test
         kwargs (dict): Keyword arguments for ``func`` at which to test;
-            The keyword arguments are kept fixed in this test.
+            the keyword arguments are kept fixed in this test.
         num_pos (int): Number of random positions to test
         seed (int): Seed for the random number generator
         atol (float): Absolute precision for comparing the outputs
