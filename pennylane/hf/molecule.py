@@ -173,27 +173,3 @@ class Molecule:
                 mo = mo + M[i]*mo_t(x,y,z)
             return mo
         return f_orbital
-
-
-
-def main():
-    symbols  = ['H', 'H']
-    geometry = np.array([[0.0, 0.0, 0.0],
-                      [1., 0., 0.0]])
-    mol = Molecule(symbols, geometry)
-
-    # f_ao = mol.get_atomic_orbital(1)
-    # mol.contourf_plot(f_ao,0.,1.,fig_name ='fig_ao_H1')
-#
-#     f_ao = mol.get_atomic_orbital(0)
-#     mol.contourf_plot(f_ao,0.,1.,fig_name ='fig_ao_H0')
-
-    M = np.random.rand(2)
-    M = M/np.linalg.norm(M)
-    f_mo = mol.get_molecular_orbital(0,M)
-    # mol.contourf_plot(f_mo,0.,1.,'x',fig_name ='fig_mo_H1_x')
-
-
-if __name__ == "__main__":
-
-    main()
