@@ -4,6 +4,25 @@
 
 <h3>New features since last release</h3>
 
+* There is a new utility function `qml.math.is_independent` that checks whether
+  a callable is independent of its arguments.
+  [(#1700)](https://github.com/PennyLaneAI/pennylane/pull/1700)
+
+  **Warning**
+
+  This function is experimental and might behave differently than expected.
+  Also, it might be subject to change.
+
+  **Disclaimer**
+
+  Note that the test relies on both numerical and analytical checks, except
+  when using the PyTorch interface which only performs a numerical check.
+  It is known that there are edge cases on which this test will yield wrong
+  results, in particular non-smooth functions may be problematic.
+  For details, please refer to the 
+  [is_indpendent docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.math.is_independent.html).
+
+
 * Support for differentiable execution of batches of circuits has been
   extended to the JAX interface for scalar functions, via the beta
   `pennylane.interfaces.batch` module.
@@ -300,6 +319,10 @@
   >>> grad_fn(0.1233, shots=None)
   array([[-0.53457096]])
   ```
+
+* Specific QNode execution options are now re-used by batch transforms
+  to execute transformed QNodes.
+  [(#1708)](https://github.com/PennyLaneAI/pennylane/pull/1708)
 
 <h3>Breaking changes</h3>
 
