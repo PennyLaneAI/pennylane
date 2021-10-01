@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This file contains the is_independent function that checks
-a function to be independent of its arguments for the interfaces
+This file contains the is_independent function that checks if
+a function is independent of its arguments for the interfaces
 
 * Autograd
 * JAX
@@ -90,7 +90,7 @@ def _jax_is_indep_analytic(func, *args, **kwargs):
         ``args`` do *not* feed into the output.
 
     In JAX, we test this by constructing the VJP of the passed function
-    and inspecting its signature:
+    and inspecting its signature.
     The first argument of the output of ``jax.vjp`` is a ``Partial``.
     If *any* processing happens to any input, the arguments of that
     ``Partial`` are unequal to ``((),)`.
@@ -211,11 +211,11 @@ def _is_indep_numerical(func, interface, args, kwargs, num_pos, seed, atol, rtol
         interface (str): Interface used by ``func``
         args (tuple): Positional arguments with respect to which to test
         kwargs (dict): Keyword arguments for ``func`` at which to test;
-            The ``kwargs`` are kept fix in this test.
+            the ``kwargs`` are kept fixed in this test.
         num_pos (int): Number of random positions to test
         seed (int): Seed for random number generator
-        atol (float): Absolute precision for comparing the outputs
-        rtol (float): Absolute precision for comparing the outputs
+        atol (float): Absolute tolerance for comparing the outputs
+        rtol (float): Relative tolerance for comparing the outputs
         bounds (tuple[int, int]): Limits of the range from which to sample
 
     Returns:
@@ -264,11 +264,11 @@ def is_independent(
             ``"tf"``, ``"torch"``, ``"jax"``.
         args (tuple): Positional arguments with respect to which to test
         kwargs (dict): Keyword arguments for ``func`` at which to test;
-            The keyword arguments are kept fixed in this test.
+            the keyword arguments are kept fixed in this test.
         num_pos (int): Number of random positions to test
         seed (int): Seed for the random number generator
-        atol (float): Absolute precision for comparing the outputs
-        rtol (float): Absolute precision for comparing the outputs
+        atol (float): Absolute tolerance for comparing the outputs
+        rtol (float): Relative tolerance for comparing the outputs
         bounds (tuple[float]): 2-tuple containing limits of the range from which to sample
 
     Returns:
@@ -369,7 +369,7 @@ def is_independent(
 
     if interface == "torch":
         warnings.warn(
-            "The function is_independent only is available numerically for the PyTorch interface."
+            "The function is_independent is only available numerically for the PyTorch interface."
             " Make sure that sampling positions and evaluating the function at these positions"
             " is a sufficient test, or change the interface."
         )
