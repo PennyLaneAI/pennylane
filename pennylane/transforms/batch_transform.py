@@ -234,10 +234,9 @@ class batch_transform:
             qnode.construct(args, kwargs)
             tapes, processing_fn = self.construct(qnode.qtape, *targs, **tkwargs)
 
-            # TODO: work out what to do for backprop
             interface = qnode.interface
-
-            # TODO: extract gradient_fn from QNode
+            execute_kwargs = getattr(qnode, "execute_kwargs", {})
+            max_diff = execute_kwargs.pop("max_diff", 2)
             gradient_fn = getattr(qnode, "gradient_fn", qnode.diff_method)
 
             if interface is None or not self.differentiable:
@@ -254,8 +253,9 @@ class batch_transform:
                 device=qnode.device,
                 gradient_fn=gradient_fn,
                 interface=interface,
-                max_diff=2,
+                max_diff=max_diff,
                 override_shots=shots,
+                **execute_kwargs,
             )
 
             return processing_fn(res)
