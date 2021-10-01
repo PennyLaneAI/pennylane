@@ -155,16 +155,22 @@ def generate_fermionic_hamiltonian(mol, cutoff=1.0e-12):
         e_core = anp.array([e_core])
 
         indices_one = anp.argwhere(abs(one) >= cutoff)
-        operators_one = (indices_one * 2).tolist() + (indices_one * 2 + 1).tolist()
+        operators_one = (indices_one * 2).tolist() + (
+            indices_one * 2 + 1
+        ).tolist()  # up-up + down-down terms
         coeffs_one = anp.tile(one[abs(one) >= cutoff], 2)
 
         indices_two = anp.argwhere(abs(two) >= cutoff)
         n = len(indices_two)
         operators_two = (
-            [(indices_two[i] * 2).tolist() for i in range(n)]
-            + [(indices_two[i] * 2 + [0, 1, 1, 0]).tolist() for i in range(n)]
-            + [(indices_two[i] * 2 + [1, 0, 0, 1]).tolist() for i in range(n)]
-            + [(indices_two[i] * 2 + 1).tolist() for i in range(n)]
+            [(indices_two[i] * 2).tolist() for i in range(n)]  # up-up-up-up term
+            + [
+                (indices_two[i] * 2 + [0, 1, 1, 0]).tolist() for i in range(n)
+            ]  # up-down-down-up term
+            + [
+                (indices_two[i] * 2 + [1, 0, 0, 1]).tolist() for i in range(n)
+            ]  # down-up-up-down term
+            + [(indices_two[i] * 2 + 1).tolist() for i in range(n)]  # down-down-down-down term
         )
         coeffs_two = anp.tile(two[abs(two) >= cutoff], 4) / 2
 
@@ -177,188 +183,191 @@ def generate_fermionic_hamiltonian(mol, cutoff=1.0e-12):
     return fermionic_hamiltonian
 
 
-D = {
-    "X": "X",
-    "Y": "Y",
-    "Z": "Z",
-    "XX": "1",
-    "YY": "1",
-    "ZZ": "1",
-    "ZX": "Y",
-    "XZ": "Y",
-    "ZY": "X",
-    "YZ": "X",
-    "XY": "Z",
-    "YX": "Z",
-    "1X": "X",
-    "1Y": "Y",
-    "1Z": "Z",
-    "X1": "X",
-    "Y1": "Y",
-    "Z1": "Z",
-    "1": "1",
-    "11": "1",
-}
+def _generate_qubit_operator(op):
+    r"""Convert a fermionic operator to a qubit operator.
 
-C = {
-    "ZX": 1.0j,
-    "XZ": -1.0j,
-    "ZY": -1.0j,
-    "YZ": 1.0j,
-    "XY": 1.0j,
-    "YX": -1.0j,
-}
+    The one-body fermionic operator ::math::`a_0^\dagger a_0` is constructed as [0, 0] and its
+    corresponding qubit operator returned by the function is [(0.5+0j), (-0.5+0j)], [[], [(0, 'Z')]]
+    which represents ::math::`\frac{1}{2}(I_0 - Z_0)`. The two-body operator
+    ::math::`a_0^\dagger a_2^\dagger a_0 a_2` is constructed as [0, 2, 0, 2].
 
+    Args:
+        list[int]: the fermionic operator
 
-def calc_mult_0(term1, term2, c):
+    Returns
+        tuple(list[complex], list[list[int, str]): list of coefficients and the qubit-operator terms
 
-    t1 = [t[0] for t in term1]
-    t2 = [t[0] for t in term2]
+    **Example**
 
-    K = []
-
-    for i in term1:
-        if i[0] in t1 and i[0] not in t2:
-            K.append((i[0], D[i[1]]))
-        for j in term2:
-            if j[0] in t2 and j[0] not in t1:
-                K.append((j[0], D[j[1]]))
-
-            if i[0] == j[0]:
-                if i[1] + j[1] in C:
-                    K.append((i[0], D[i[1] + j[1]]))
-                    c = c * C[i[1] + j[1]]
-                else:
-                    K.append((i[0], D[i[1] + j[1]]))
-
-    K = [k for k in K if "1" not in k[1]]
-
-    for item in K:
-        k_ = [i for i, x in enumerate(K) if x == item]
-        if len(k_) >= 2:
-            for j in k_[::-1][:-1]:
-                del K[j]
-    #         if len(k_) == 2:
-    #             K = K[:k_[1]] + K[k_[1]+1 :]
-
-    return K, c
-
-
-def calc_mult(k1, k2):
-
-    M = []
-    for term1 in k1:
-        for term2 in k2:
-            m, c = calc_mult_0(term1[:-1], term2[:-1], term1[-1] * term2[-1])
-            M.append(m + [c])
-
-    return M
-
-
-def jordan_wigner_fermion_operator(op):
-
+    >>> f  = [0, 0]
+    >>> q = _generate_qubit_operator([0, 0])
+    >>> q
+    ([(0.5+0j), (-0.5+0j)], [[], [(0, 'Z')]])
+    """
     if len(op) == 2:
         op = [((op[0], 1), (op[1], 0))]
 
     if len(op) == 4:
-
-        if op[0] == op[1] or op[2] == op[3]:
-            return 0
-
         op = [((op[0], 1), (op[1], 1), (op[2], 0), (op[3], 0))]
 
-    count = 0
+        if op[0][0][0] == op[0][1][0] or op[0][2][0] == op[0][3][0]:
+            return 0
 
-    for term in op:
+    for t in op:
+        for l in t:
+            z = [(index, "Z") for index in range(l[0])]
+            x = z + [(l[0], "X"), 0.5]
 
-        transformed_term = []
-
-        for ladder_operator in term:
-
-            z_factors = [(index, "Z") for index in range(ladder_operator[0])]
-
-            pauli_x_component = z_factors + [(ladder_operator[0], "X"), 0.5]
-
-            if ladder_operator[1]:
-                pauli_y_component = z_factors + [(ladder_operator[0], "Y"), -0.5j]
+            if l[1]:
+                y = z + [(l[0], "Y"), -0.5j]
 
             else:
-                pauli_y_component = z_factors + [(ladder_operator[0], "Y"), 0.5j]
+                y = z + [(l[0], "Y"), 0.5j]
 
-            if count == 0:
-                transformed_term = [pauli_x_component, pauli_y_component]
+            if t.index(l) == 0:
+                q = [x, y]
+            else:
+                q = [calc_mult(q, [x, y])][0]
 
-            if count > 0:
+    c = [p[-1] for p in q]
+    o = [p[:-1] for p in q]
 
-                transformed_term = [
-                    calc_mult(transformed_term, [pauli_x_component, pauli_y_component])
-                ][0]
+    for item in o:
+        k = [i for i, x in enumerate(o) if x == item]
+        if len(k) >= 2:
+            for j in k[::-1][:-1]:
+                del o[j]
+                c[k[0]] = c[k[0]] + c[j]
+                del c[j]
 
-            count += 1
-
-    ###
-
-    c_ = [p[-1] for p in transformed_term]
-    o_ = [p[:-1] for p in transformed_term]
-
-    for item in o_:
-        ko_ = [i for i, x in enumerate(o_) if x == item]
-        if len(ko_) >= 2:
-            for j in ko_[::-1][:-1]:
-                del o_[j]
-                c_[ko_[0]] = c_[ko_[0]] + c_[j]
-                del c_[j]
-
-    return c_, o_
+    return c, o
 
 
-# D_qml = {'X': qml.PauliX, 'Y': qml.PauliY, 'Z': qml.PauliZ}
-
-
-def ham_jw(h):
-
-    H = qml.Hamiltonian([1.0], [qml.Identity(0)])
-
-    for n, t in enumerate(h[1]):
-
-        if len(t) == 0:
-
-            H = H + qml.Hamiltonian([h[0][n]], [qml.Identity(0)])
-
-        elif len(t) == 2:
-            op_q = jordan_wigner_fermion_operator(t)
-
-            if op_q != 0:
-
-                for i, o in enumerate(op_q[1]):
-                    if len(o) == 0:
-                        op_q[1][i] = qml.Identity(0)
-
-                    if len(o) == 1:
-                        op_q[1][i] = D_qml[o[0][1]](o[0][0])
-
-                H = H + qml.Hamiltonian(np.array(op_q[0]) * h[0][n], op_q[1])
-
-        elif len(t) == 4:
-            op_q = jordan_wigner_fermion_operator(t)
-
-            if op_q != 0:
-
-                for i, o in enumerate(op_q[1]):
-
-                    if len(o) == 0:
-                        op_q[1][i] = qml.Identity(0)
-
-                    if len(o) == 1:
-                        op_q[1][i] = D_qml[o[0][1]](o[0][0])
-
-                    if len(o) > 1:
-                        k = qml.Identity(0)
-                        for j, o_ in enumerate(o):
-                            k = k @ D_qml[o_[1]](o_[0])
-
-                        op_q[1][i] = k
-
-                H = H + qml.Hamiltonian(np.array(op_q[0]) * h[0][n], op_q[1])
-
-    return H
+# D = {
+#     "X": "X",
+#     "Y": "Y",
+#     "Z": "Z",
+#     "XX": "1",
+#     "YY": "1",
+#     "ZZ": "1",
+#     "ZX": "Y",
+#     "XZ": "Y",
+#     "ZY": "X",
+#     "YZ": "X",
+#     "XY": "Z",
+#     "YX": "Z",
+#     "1X": "X",
+#     "1Y": "Y",
+#     "1Z": "Z",
+#     "X1": "X",
+#     "Y1": "Y",
+#     "Z1": "Z",
+#     "1": "1",
+#     "11": "1",
+# }
+#
+# C = {
+#     "ZX": 1.0j,
+#     "XZ": -1.0j,
+#     "ZY": -1.0j,
+#     "YZ": 1.0j,
+#     "XY": 1.0j,
+#     "YX": -1.0j,
+# }
+#
+#
+# def calc_mult_0(term1, term2, c):
+#
+#     t1 = [t[0] for t in term1]
+#     t2 = [t[0] for t in term2]
+#
+#     K = []
+#
+#     for i in term1:
+#         if i[0] in t1 and i[0] not in t2:
+#             K.append((i[0], D[i[1]]))
+#         for j in term2:
+#             if j[0] in t2 and j[0] not in t1:
+#                 K.append((j[0], D[j[1]]))
+#
+#             if i[0] == j[0]:
+#                 if i[1] + j[1] in C:
+#                     K.append((i[0], D[i[1] + j[1]]))
+#                     c = c * C[i[1] + j[1]]
+#                 else:
+#                     K.append((i[0], D[i[1] + j[1]]))
+#
+#     K = [k for k in K if "1" not in k[1]]
+#
+#     for item in K:
+#         k_ = [i for i, x in enumerate(K) if x == item]
+#         if len(k_) >= 2:
+#             for j in k_[::-1][:-1]:
+#                 del K[j]
+#
+#     return K, c
+#
+#
+# def calc_mult(k1, k2):
+#
+#     M = []
+#     for term1 in k1:
+#         for term2 in k2:
+#             m, c = calc_mult_0(term1[:-1], term2[:-1], term1[-1] * term2[-1])
+#             M.append(m + [c])
+#
+#     return M
+#
+#
+#
+#
+# # D_qml_ = {"X": qml.PauliX, "Y": qml.PauliY, "Z": qml.PauliZ}
+#
+#
+# def ham_jw(h):
+#
+#     H = qml.Hamiltonian([1.0], [qml.Identity(0)])
+#
+#     for n, t in enumerate(h[1]):
+#
+#         if len(t) == 0:
+#
+#             H = H + qml.Hamiltonian([h[0][n]], [qml.Identity(0)])
+#
+#         elif len(t) == 2:
+#             op_q = jordan_wigner_fermion_operator(t)
+#
+#             if op_q != 0:
+#
+#                 for i, o in enumerate(op_q[1]):
+#                     if len(o) == 0:
+#                         op_q[1][i] = qml.Identity(0)
+#
+#                     if len(o) == 1:
+#                         op_q[1][i] = D_qml_[o[0][1]](o[0][0])
+#
+#                 H = H + qml.Hamiltonian(np.array(op_q[0]) * h[0][n], op_q[1])
+#
+#         elif len(t) == 4:
+#             op_q = jordan_wigner_fermion_operator(t)
+#
+#             if op_q != 0:
+#
+#                 for i, o in enumerate(op_q[1]):
+#
+#                     if len(o) == 0:
+#                         op_q[1][i] = qml.Identity(0)
+#
+#                     if len(o) == 1:
+#                         op_q[1][i] = D_qml_[o[0][1]](o[0][0])
+#
+#                     if len(o) > 1:
+#                         k = qml.Identity(0)
+#                         for j, o_ in enumerate(o):
+#                             k = k @ D_qml_[o_[1]](o_[0])
+#
+#                         op_q[1][i] = k
+#
+#                 H = H + qml.Hamiltonian(np.array(op_q[0]) * h[0][n], op_q[1])
+#
+#     return H
