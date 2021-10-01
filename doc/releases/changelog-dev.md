@@ -45,7 +45,7 @@
   2: ──RX(1.5)──Rot(0.401, 0.0795, 0.731)──RY(1.15)──Rot(0.756, 0.38, 0.38)─────RX(-1.8)──┤
   ```
 
-  Applying the `qml.fourier.spectrum` function to the circuit for the non-trainable
+  Applying the `qml.fourier.advanced_spectrum` function to the circuit for the non-trainable
   parameters, we obtain:
 
   ```pycon
