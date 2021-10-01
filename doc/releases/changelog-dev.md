@@ -49,7 +49,7 @@
   parameters, we obtain:
 
   ```pycon
-  >>> spec = spectrum(circuit, encoding_args={"x", "y", "z"})(x, y, z, w)
+  >>> spec = advanced_spectrum(circuit, encoding_args={"x", "y", "z"})(x, y, z, w)
   >>> for inp, freqs in res.items():
   >>>     print(f"{inp}: {freqs}")
   "x": {(0,): [-0.5, 0.0, 0.5], (1,): [-0.5, 0.0, 0.5], (2,): [-0.5, 0.0, 0.5]}
