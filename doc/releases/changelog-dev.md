@@ -5,7 +5,7 @@
 <h3>New features since last release</h3>
 
 * The `qml.fourier.advanced_spectrum` function extends the former `qml.fourier.spectrum` function
-  and takes classical processing of QNode arguments into gate arguments into account.
+  and takes classical processing of QNode arguments into account.
   The frequencies are computed per (requested) QNode argument instead
   of per gate `id`. The gate `id`s are ignored.
   [(#1681)](https://github.com/PennyLaneAI/pennylane/pull/1681)
