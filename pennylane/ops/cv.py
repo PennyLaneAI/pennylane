@@ -35,8 +35,6 @@ quantum operations supported by PennyLane, as well as their conventions.
 # As the qubit based ``decomposition``, ``_matrix``, ``diagonalizing_gates``
 # abstract methods are not defined in the CV case, disabling the related check
 # pylint: disable=abstract-method
-import warnings
-
 import math
 import numpy as np
 from scipy.linalg import block_diag
