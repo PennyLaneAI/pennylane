@@ -230,7 +230,7 @@ def _generate_qubit_operator(op):
                 m = []
                 for t1 in q:
                     for t2 in [x, y]:
-                        q1, c1 = calc_mult_0(t1[:-1], t2[:-1], t1[-1] * t2[-1])
+                        q1, c1 = _pauli_mult(t1[:-1], t2[:-1], t1[-1], t2[-1])
                         m.append(q1 + [c1])
                 q = m
 
@@ -248,37 +248,54 @@ def _generate_qubit_operator(op):
     return c, o
 
 
-# D = {
-#     "X": "X",
-#     "Y": "Y",
-#     "Z": "Z",
-#     "XX": "1",
-#     "YY": "1",
-#     "ZZ": "1",
-#     "ZX": "Y",
-#     "XZ": "Y",
-#     "ZY": "X",
-#     "YZ": "X",
-#     "XY": "Z",
-#     "YX": "Z",
-#     "1X": "X",
-#     "1Y": "Y",
-#     "1Z": "Z",
-#     "X1": "X",
-#     "Y1": "Y",
-#     "Z1": "Z",
-#     "1": "1",
-#     "11": "1",
-# }
-#
-# C = {
-#     "ZX": 1.0j,
-#     "XZ": -1.0j,
-#     "ZY": -1.0j,
-#     "YZ": 1.0j,
-#     "XY": 1.0j,
-#     "YX": -1.0j,
-# }
+def _pauli_mult(p1, p2, c1, c2):
+    c = c1 * c2
+
+    t1 = [t[0] for t in p1]
+    t2 = [t[0] for t in p2]
+
+    K = []
+
+    for i in p1:
+        if i[0] in t1 and i[0] not in t2:
+            K.append((i[0], D[i[1]]))
+        for j in p2:
+            if j[0] in t2 and j[0] not in t1:
+                K.append((j[0], D[j[1]]))
+
+            if i[0] == j[0]:
+                if i[1] + j[1] in C:
+                    K.append((i[0], D[i[1] + j[1]]))
+                    c = c * C[i[1] + j[1]]
+                else:
+                    K.append((i[0], D[i[1] + j[1]]))
+
+    K = [k for k in K if 'I' not in k[1]]
+
+    for item in K:
+        k_ = [i for i, x in enumerate(K) if x == item]
+        if len(k_) >= 2:
+            for j in k_[::-1][:-1]:
+                del K[j]
+
+    return K, c
+
+D = {'X': 'X', 'Y':'Y', 'Z': 'Z',
+     'XX': 'I', 'YY': 'I', 'ZZ': 'I',
+     'ZX': 'Y', 'XZ': 'Y',
+     'ZY': 'X', 'YZ': 'X',
+     'XY': 'Z', 'YX': 'Z',
+     'IX': 'X', 'IY': 'Y', 'IZ': 'Z',
+     'XI': 'X', 'YI': 'Y', 'ZI': 'Z',
+     'I': 'I', 'II': 'I'
+     }
+
+C = {
+     'ZX': 1.0j, 'XZ': -1.0j,
+     'ZY': -1.0j, 'YZ': 1.0j,
+     'XY': 1.0j, 'YX': -1.0j,
+     }
+
 #
 #
 # def calc_mult_0(term1, term2, c):
