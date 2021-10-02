@@ -19,10 +19,12 @@ from pennylane import numpy as np
 from pennylane.hf.hamiltonian import (
     generate_electron_integrals,
     generate_fermionic_hamiltonian,
+    generate_hamiltonian,
     _generate_qubit_operator,
     _pauli_mult,
 )
 from pennylane.hf.molecule import Molecule
+from pennylane import PauliX, PauliY, PauliZ, Identity
 
 
 @pytest.mark.parametrize(
@@ -204,7 +206,7 @@ def test_generate_electron_integrals(symbols, geometry, core, active, e_core, on
     ],
 )
 def test_generate_fermionic_hamiltonian(symbols, geometry, alpha, coeffs_h_ref, ops_h_ref):
-    r"""Test that fermionic_hamiltonian returns the correct Hamiltonian."""
+    r"""Test that generate_fermionic_hamiltonian returns the correct Hamiltonian."""
     mol = Molecule(symbols, geometry, alpha=alpha)
     args = [alpha]
     h = generate_fermionic_hamiltonian(mol)(*args)
@@ -248,3 +250,137 @@ def test_pauli_mult(p1, p2, c1, c2, p_ref):
     result = _pauli_mult(p1, p2, c1, c2)
 
     assert result == p_ref
+
+
+@pytest.mark.parametrize(
+    ("coeffs", "ops", "h_ref"),
+    [
+        (
+            np.array(
+                [
+                    1.0000000000321256,
+                    -1.3902192706002598,
+                    0.35721953951840535,
+                    0.08512072192002007,
+                    0.35721953951840535,
+                    0.08512072192002007,
+                    0.08512072192002007,
+                    0.35092657803574406,
+                    0.08512072192002007,
+                    0.35092657803574406,
+                    0.35721953951840535,
+                    0.08512072192002007,
+                    -1.3902192706002598,
+                    0.35721953951840535,
+                    0.08512072192002007,
+                    0.08512072192002007,
+                    0.35092657803574406,
+                    0.08512072192002007,
+                    0.35092657803574406,
+                    0.35092657803574495,
+                    0.08512072192002007,
+                    0.35092657803574495,
+                    0.08512072192002007,
+                    -0.2916533049477536,
+                    0.08512072192002007,
+                    0.3694183466586136,
+                    0.08512072192002007,
+                    0.3694183466586136,
+                    0.35092657803574495,
+                    0.08512072192002007,
+                    0.35092657803574495,
+                    0.08512072192002007,
+                    0.08512072192002007,
+                    0.3694183466586136,
+                    -0.2916533049477536,
+                    0.08512072192002007,
+                    0.3694183466586136,
+                ]
+            ),
+            [
+                [],
+                [0, 0],
+                [0, 0, 0, 0],
+                [0, 0, 2, 2],
+                [0, 1, 1, 0],
+                [0, 1, 3, 2],
+                [0, 2, 0, 2],
+                [0, 2, 2, 0],
+                [0, 3, 1, 2],
+                [0, 3, 3, 0],
+                [1, 0, 0, 1],
+                [1, 0, 2, 3],
+                [1, 1],
+                [1, 1, 1, 1],
+                [1, 1, 3, 3],
+                [1, 2, 0, 3],
+                [1, 2, 2, 1],
+                [1, 3, 1, 3],
+                [1, 3, 3, 1],
+                [2, 0, 0, 2],
+                [2, 0, 2, 0],
+                [2, 1, 1, 2],
+                [2, 1, 3, 0],
+                [2, 2],
+                [2, 2, 0, 0],
+                [2, 2, 2, 2],
+                [2, 3, 1, 0],
+                [2, 3, 3, 2],
+                [3, 0, 0, 3],
+                [3, 0, 2, 1],
+                [3, 1, 1, 3],
+                [3, 1, 3, 1],
+                [3, 2, 0, 1],
+                [3, 2, 2, 3],
+                [3, 3],
+                [3, 3, 1, 1],
+                [3, 3, 3, 3],
+            ],
+            (
+                np.array(
+                    [
+                        0.29817879 + 0.0j,
+                        0.20813365 + 0.0j,
+                        0.20813365 + 0.0j,
+                        0.17860977 + 0.0j,
+                        0.04256036 + 0.0j,
+                        -0.04256036 + 0.0j,
+                        -0.04256036 + 0.0j,
+                        0.04256036 + 0.0j,
+                        -0.34724873 + 0.0j,
+                        0.13290293 + 0.0j,
+                        -0.34724873 + 0.0j,
+                        0.17546329 + 0.0j,
+                        0.17546329 + 0.0j,
+                        0.13290293 + 0.0j,
+                        0.18470917 + 0.0j,
+                    ]
+                ),
+                [
+                    Identity(wires=[0]),
+                    PauliZ(wires=[0]),
+                    PauliZ(wires=[1]),
+                    PauliZ(wires=[0]) @ PauliZ(wires=[1]),
+                    PauliY(wires=[0]) @ PauliX(wires=[2]) @ PauliY(wires=[3]) @ PauliX(wires=[1]),
+                    PauliY(wires=[0]) @ PauliX(wires=[2]) @ PauliX(wires=[3]) @ PauliY(wires=[1]),
+                    PauliX(wires=[0]) @ PauliY(wires=[2]) @ PauliY(wires=[3]) @ PauliX(wires=[1]),
+                    PauliX(wires=[0]) @ PauliY(wires=[2]) @ PauliX(wires=[3]) @ PauliY(wires=[1]),
+                    PauliZ(wires=[2]),
+                    PauliZ(wires=[0]) @ PauliZ(wires=[2]),
+                    PauliZ(wires=[3]),
+                    PauliZ(wires=[0]) @ PauliZ(wires=[3]),
+                    PauliZ(wires=[2]) @ PauliZ(wires=[1]),
+                    PauliZ(wires=[1]) @ PauliZ(wires=[3]),
+                    PauliZ(wires=[3]) @ PauliZ(wires=[2]),
+                ],
+            ),
+        )
+    ],
+)
+def test_generate_hamiltonian(coeffs, ops, h_ref):
+    r"""Test that generate_hamiltonian returns the correct Hamiltonian."""
+
+    h_ferm = tuple((coeffs, ops))
+    h = generate_hamiltonian(h_ferm)
+
+    assert np.allclose(h.terms[0], h_ref[0])

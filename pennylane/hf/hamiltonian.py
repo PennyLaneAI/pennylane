@@ -19,6 +19,8 @@ from pennylane.hf.hartree_fock import generate_scf, nuclear_energy
 from pennylane import numpy as np
 import pennylane as qml
 
+# from pennylane import PauliX, PauliY, PauliZ
+
 
 def generate_electron_integrals(mol, core=None, active=None):
     r"""Return a function that computes the one- and two-electron integrals in the atomic orbital
@@ -313,100 +315,60 @@ C = {
     "YX": -1.0j,
 }
 
-#
-#
-# def calc_mult_0(term1, term2, c):
-#
-#     t1 = [t[0] for t in term1]
-#     t2 = [t[0] for t in term2]
-#
-#     K = []
-#
-#     for i in term1:
-#         if i[0] in t1 and i[0] not in t2:
-#             K.append((i[0], D[i[1]]))
-#         for j in term2:
-#             if j[0] in t2 and j[0] not in t1:
-#                 K.append((j[0], D[j[1]]))
-#
-#             if i[0] == j[0]:
-#                 if i[1] + j[1] in C:
-#                     K.append((i[0], D[i[1] + j[1]]))
-#                     c = c * C[i[1] + j[1]]
-#                 else:
-#                     K.append((i[0], D[i[1] + j[1]]))
-#
-#     K = [k for k in K if "1" not in k[1]]
-#
-#     for item in K:
-#         k_ = [i for i, x in enumerate(K) if x == item]
-#         if len(k_) >= 2:
-#             for j in k_[::-1][:-1]:
-#                 del K[j]
-#
-#     return K, c
-#
-#
-# def calc_mult(k1, k2):
-#
-#     M = []
-#     for term1 in k1:
-#         for term2 in k2:
-#             m, c = calc_mult_0(term1[:-1], term2[:-1], term1[-1] * term2[-1])
-#             M.append(m + [c])
-#
-#     return M
-#
-#
-#
-#
-# # D_qml_ = {"X": qml.PauliX, "Y": qml.PauliY, "Z": qml.PauliZ}
-#
-#
-# def ham_jw(h):
-#
-#     H = qml.Hamiltonian([1.0], [qml.Identity(0)])
-#
-#     for n, t in enumerate(h[1]):
-#
-#         if len(t) == 0:
-#
-#             H = H + qml.Hamiltonian([h[0][n]], [qml.Identity(0)])
-#
-#         elif len(t) == 2:
-#             op_q = jordan_wigner_fermion_operator(t)
-#
-#             if op_q != 0:
-#
-#                 for i, o in enumerate(op_q[1]):
-#                     if len(o) == 0:
-#                         op_q[1][i] = qml.Identity(0)
-#
-#                     if len(o) == 1:
-#                         op_q[1][i] = D_qml_[o[0][1]](o[0][0])
-#
-#                 H = H + qml.Hamiltonian(np.array(op_q[0]) * h[0][n], op_q[1])
-#
-#         elif len(t) == 4:
-#             op_q = jordan_wigner_fermion_operator(t)
-#
-#             if op_q != 0:
-#
-#                 for i, o in enumerate(op_q[1]):
-#
-#                     if len(o) == 0:
-#                         op_q[1][i] = qml.Identity(0)
-#
-#                     if len(o) == 1:
-#                         op_q[1][i] = D_qml_[o[0][1]](o[0][0])
-#
-#                     if len(o) > 1:
-#                         k = qml.Identity(0)
-#                         for j, o_ in enumerate(o):
-#                             k = k @ D_qml_[o_[1]](o_[0])
-#
-#                         op_q[1][i] = k
-#
-#                 H = H + qml.Hamiltonian(np.array(op_q[0]) * h[0][n], op_q[1])
-#
-#     return H
+
+def return_pauli(p):
+    if p == "X":
+        return qml.PauliX
+    if p == "Y":
+        return qml.PauliY
+    if p == "Z":
+        return qml.PauliZ
+
+
+def generate_hamiltonian(h):
+    #     H = qml.Hamiltonian([1.0], [qml.Identity(0)])
+
+    for n, t in enumerate(h[1]):
+
+        if len(t) == 0:
+
+            H = qml.Hamiltonian([h[0][n]], [qml.Identity(0)])
+
+        elif len(t) == 2:
+            op_q = _generate_qubit_operator(t)
+
+            if op_q != 0:
+
+                for i, o in enumerate(op_q[1]):
+                    if len(o) == 0:
+                        op_q[1][i] = qml.Identity(0)
+
+                    if len(o) == 1:
+                        op_q[1][i] = return_pauli(o[0][1])(o[0][0])
+
+                H = H + qml.Hamiltonian(np.array(op_q[0]) * h[0][n], op_q[1])
+
+        elif len(t) == 4:
+            op_q = _generate_qubit_operator(t)
+
+            if op_q != 0:
+
+                for i, o in enumerate(op_q[1]):
+
+                    if len(o) == 0:
+                        op_q[1][i] = qml.Identity(0)
+
+                    if len(o) == 1:
+                        op_q[1][i] = return_pauli(o[0][1])(o[0][0])
+
+                    if len(o) > 1:
+                        k = qml.Identity(0)
+                        for j, o_ in enumerate(o):
+                            k = k @ return_pauli(o_[1])(o_[0])
+
+                        op_q[1][i] = k
+
+                H = H + qml.Hamiltonian(np.array(op_q[0]) * h[0][n], op_q[1])
+
+            #     print(H)
+    return H
