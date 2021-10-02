@@ -607,7 +607,9 @@ class InterferometerUnitary(CVOperation):
 
     def adjoint(self, do_queue=False):
         U = self.parameters[0]
-        return InterferometerUnitary(qml_math.T(qml_math.conj(U)), wires=self.wires, do_queue=do_queue)
+        return InterferometerUnitary(
+            qml_math.T(qml_math.conj(U)), wires=self.wires, do_queue=do_queue
+        )
 
 
 # =============================================================================
@@ -1172,15 +1174,7 @@ ops = {
 }
 
 
-obs = {
-    "QuadOperator",
-    "NumberOperator",
-    "TensorN",
-    "P",
-    "X",
-    "PolyXP",
-    "FockStateProjector",
-}
+obs = {"QuadOperator", "NumberOperator", "TensorN", "P", "X", "PolyXP", "FockStateProjector"}
 
 
 __all__ = list(ops | obs)
