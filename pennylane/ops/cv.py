@@ -553,8 +553,8 @@ class CubicPhase(CVOperation):
         return CubicPhase(-self.parameters[0], wires=self.wires, do_queue=do_queue)
 
 
-class Interferometer(CVOperation):
-    r"""pennylane.Interferometer(U, wires)
+class InterferometerUnitary(CVOperation):
+    r"""pennylane.InterferometerUnitary(U, wires)
     A linear interferometer transforming the bosonic operators according to
     the unitary matrix :math:`U`.
 
@@ -588,15 +588,6 @@ class Interferometer(CVOperation):
         wires (Sequence[int] or int): the wires the operation acts on
     """
 
-    def __init__(self, *args, **kwargs):
-        warnings.warn(
-            "'Interferometer' is deprecated and will be renamed 'InterferometerUnitary'",
-            UserWarning,
-            stacklevel=2,
-        )
-
-        super().__init__(*args, **kwargs)
-
     num_params = 1
     num_wires = AnyWires
     par_domain = "A"
@@ -618,7 +609,7 @@ class Interferometer(CVOperation):
 
     def adjoint(self, do_queue=False):
         U = self.parameters[0]
-        return Interferometer(qml_math.T(qml_math.conj(U)), wires=self.wires, do_queue=do_queue)
+        return InterferometerUnitary(qml_math.T(qml_math.conj(U)), wires=self.wires, do_queue=do_queue)
 
 
 # =============================================================================
@@ -1170,7 +1161,7 @@ ops = {
     "Squeezing",
     "TwoModeSqueezing",
     "CubicPhase",
-    "Interferometer",
+    "InterferometerUnitary",
     "CatState",
     "CoherentState",
     "FockDensityMatrix",

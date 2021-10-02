@@ -305,8 +305,8 @@ def controlled_phase(s):
     return S
 
 
-def interferometer(U):
-    """Interferometer
+def interferometer_unitary(U):
+    """InterferometerUnitary
 
     Args:
         U (array): unitary matrix
@@ -668,7 +668,7 @@ class DefaultGaussian(Device):
         "SqueezedState": squeezed_state,
         "ThermalState": thermal_state,
         "GaussianState": gaussian_state,
-        "Interferometer": interferometer,
+        "InterferometerUnitary": interferometer_unitary,
     }
 
     _observable_map = {
