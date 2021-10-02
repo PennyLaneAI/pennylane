@@ -270,7 +270,7 @@ def _pauli_mult(p1, p2, c1, c2):
                 else:
                     K.append((i[0], D[i[1] + j[1]]))
 
-    K = [k for k in K if 'I' not in k[1]]
+    K = [k for k in K if "I" not in k[1]]
 
     for item in K:
         k_ = [i for i, x in enumerate(K) if x == item]
@@ -280,21 +280,38 @@ def _pauli_mult(p1, p2, c1, c2):
 
     return K, c
 
-D = {'X': 'X', 'Y':'Y', 'Z': 'Z',
-     'XX': 'I', 'YY': 'I', 'ZZ': 'I',
-     'ZX': 'Y', 'XZ': 'Y',
-     'ZY': 'X', 'YZ': 'X',
-     'XY': 'Z', 'YX': 'Z',
-     'IX': 'X', 'IY': 'Y', 'IZ': 'Z',
-     'XI': 'X', 'YI': 'Y', 'ZI': 'Z',
-     'I': 'I', 'II': 'I'
-     }
+
+D = {
+    "X": "X",
+    "Y": "Y",
+    "Z": "Z",
+    "XX": "I",
+    "YY": "I",
+    "ZZ": "I",
+    "ZX": "Y",
+    "XZ": "Y",
+    "ZY": "X",
+    "YZ": "X",
+    "XY": "Z",
+    "YX": "Z",
+    "IX": "X",
+    "IY": "Y",
+    "IZ": "Z",
+    "XI": "X",
+    "YI": "Y",
+    "ZI": "Z",
+    "I": "I",
+    "II": "I",
+}
 
 C = {
-     'ZX': 1.0j, 'XZ': -1.0j,
-     'ZY': -1.0j, 'YZ': 1.0j,
-     'XY': 1.0j, 'YX': -1.0j,
-     }
+    "ZX": 1.0j,
+    "XZ": -1.0j,
+    "ZY": -1.0j,
+    "YZ": 1.0j,
+    "XY": 1.0j,
+    "YX": -1.0j,
+}
 
 #
 #
