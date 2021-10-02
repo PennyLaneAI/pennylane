@@ -227,7 +227,12 @@ def _generate_qubit_operator(op):
             if t.index(l) == 0:
                 q = [x, y]
             else:
-                q = [calc_mult(q, [x, y])][0]
+                m = []
+                for t1 in q:
+                    for t2 in [x, y]:
+                        q1, c1 = calc_mult_0(t1[:-1], t2[:-1], t1[-1] * t2[-1])
+                        m.append(q1 + [c1])
+                q = m
 
     c = [p[-1] for p in q]
     o = [p[:-1] for p in q]
