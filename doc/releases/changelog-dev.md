@@ -303,10 +303,9 @@
 * ``qml.circuit_drawer.CircuitDrawer`` can accept a string for the ``charset`` keyword, instead of a ``CharSet`` object.
   [(#1640)](https://github.com/PennyLaneAI/pennylane/pull/1640)
 
-<<<<<<< HEAD
 * ``qml.math.sort`` will now return only the sorted torch tensor and not the corresponding indices, making sort consistent across interfaces.
     [(#1660)](https://github.com/PennyLaneAI/pennylane/pull/1660)
-=======
+
 * Operations can now have gradient recipes that depend on the state of the operation.
   [(#1674)](https://github.com/PennyLaneAI/pennylane/pull/1674)
 
@@ -348,7 +347,6 @@
 * Specific QNode execution options are now re-used by batch transforms
   to execute transformed QNodes.
   [(#1708)](https://github.com/PennyLaneAI/pennylane/pull/1708)
->>>>>>> 6ffdba43e14799d44620e67d537711cd23e1f558
 
 <h3>Breaking changes</h3>
 
@@ -398,11 +396,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-<<<<<<< HEAD
 Utkarsh Azad, Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee, Romain Moyard,
 Carrie-Anne Rubidge, Maria Schuld, Ingrid Strandberg, Antal Száva, David Wierichs.
-=======
-
-Utkarsh Azad, Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee, Romain Moyard,
-Maria Schuld, Ingrid Strandberg, Antal Száva, David Wierichs.
->>>>>>> 6ffdba43e14799d44620e67d537711cd23e1f558
