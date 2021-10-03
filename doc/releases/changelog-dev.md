@@ -304,7 +304,7 @@
   [(#1640)](https://github.com/PennyLaneAI/pennylane/pull/1640)
 
 * ``qml.math.sort`` will now return only the sorted torch tensor and not the corresponding indices, making sort consistent across interfaces.
-    [(#1660)](https://github.com/PennyLaneAI/pennylane/pull/1660)
+    [(#1691)](https://github.com/PennyLaneAI/pennylane/pull/1691)
 
 * Operations can now have gradient recipes that depend on the state of the operation.
   [(#1674)](https://github.com/PennyLaneAI/pennylane/pull/1674)
