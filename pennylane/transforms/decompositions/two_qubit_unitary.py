@@ -471,14 +471,7 @@ def _decomposition_3_cnots(U, wires):
     RYb = qml.RY(beta, wires=wires[0]).matrix
     RYa = qml.RY(alpha, wires=wires[0]).matrix
 
-    V_mats = [
-        CNOT10,
-        math.kron(RZd, RYb),
-        CNOT01,
-        math.kron(math.eye(2), RYa),
-        CNOT10,
-        SWAP,
-    ]
+    V_mats = [CNOT10, math.kron(RZd, RYb), CNOT01, math.kron(math.eye(2), RYa), CNOT10, SWAP]
 
     V = math.convert_like(math.eye(4), U)
 
