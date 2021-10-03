@@ -347,6 +347,42 @@ class TestGradientTransformIntegration:
         expected = qml.jacobian(circuit)(weights)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    def test_setting_shots(self):
+        """Test that setting the number of shots works correctly for
+        a gradient transform"""
+
+        dev = qml.device("default.qubit", wires=1, shots=1000)
+
+        @qml.beta.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        x = 0.543
+
+        # the gradient function can be called with different shot values
+        grad_fn = qml.gradients.param_shift(circuit)
+        assert grad_fn(x).shape == (1, 1)
+        assert grad_fn(x, shots=[(1, 1000)]).shape == (1000, 1)
+
+        # the original QNode is unaffected
+        assert circuit(x).shape == tuple()
+        assert circuit(x, shots=1000).shape == tuple()
+
+    def test_shots_error(self):
+        """Raise an exception if shots is used within the QNode"""
+        dev = qml.device("default.qubit", wires=1, shots=1000)
+
+        @qml.beta.qnode(dev)
+        def circuit(x, shots):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(
+            ValueError, match="'shots' argument name is reserved for overriding the number of shots"
+        ):
+            qml.gradients.param_shift(circuit)(0.2, shots=100)
+
 
 class TestInterfaceIntegration:
     """Test that the gradient transforms are differentiable
