@@ -80,8 +80,9 @@ def _process_ids(encoding_args, argnum, qnode):
     return encoding_args, argnum
 
 
-def expand_multi_par(tape, depth=10):
-    """Expand a tape until it does not contain any multi-parameter gates, if possible.
+def expand_multi_par_and_no_gen(tape, depth=10):
+    """Expand a tape until it does not contain any multi-parameter gates or gates
+    without a valid ``generator``, if possible.
 
     Args:
         tape (.QuantumTape): Tape to be expanded
@@ -93,7 +94,8 @@ def expand_multi_par(tape, depth=10):
     """
     if any(len(op.parameters) > 1 for op in tape.operations):
         stopping_cond = lambda g: (
-            isinstance(g, qml.measure.MeasurementProcess) or len(g.parameters) <= 1
+            isinstance(g, qml.measure.MeasurementProcess)
+            or (len(g.parameters) <= 1 and hasattr(g, "generator") and g.generator[0] is not None)
         )
         new_tape = tape.expand(depth=depth, stop_at=stopping_cond)
         params = new_tape.get_parameters(trainable_only=False)
@@ -345,7 +347,9 @@ def advanced_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, valida
     atol = 10 ** (-decimals) if decimals is not None else 1e-10
     # A map between Jacobian indices (contiguous) and arg names (may be discontiguous)
     arg_name_map = dict(enumerate(encoding_args))
-    jac_fn = qml.transforms.classical_jacobian(qnode, argnum=argnum, expand_fn=expand_multi_par)
+    jac_fn = qml.transforms.classical_jacobian(
+        qnode, argnum=argnum, expand_fn=expand_multi_par_and_no_gen
+    )
 
     @wraps(qnode)
     def wrapper(*args, **kwargs):
@@ -358,7 +362,7 @@ def advanced_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, valida
         class_jacs = jac_fn(*args, **kwargs)
 
         spectra = {}
-        tape = expand_multi_par(qnode.qtape)
+        tape = expand_multi_par_and_no_gen(qnode.qtape)
         par_info = tape._par_info  # pylint: disable=protected-access
 
         # Iterate over jacobians per argument
@@ -405,7 +409,7 @@ def advanced_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, valida
                 # For each contributing parameter, rescale the operation's spectrum
                 # and add it to the spectrum for that parameter
                 for par_idx in par_ids:
-                    scale = float(jac_of_op[par_idx])
+                    scale = float(qml.math.abs(jac_of_op[par_idx]))
                     scaled_spec = [scale * f for f in spec]
                     _spectra[par_idx] = join_spectra(_spectra[par_idx], scaled_spec)
 
