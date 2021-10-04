@@ -51,10 +51,10 @@ def circuit_3(x, y):
 
 def circuit_4(x, y):
     perm_4 = ([2, 0, 1], [1, 2, 0, 3])
-    for i in perm_4[0]:
-        qml.RX(1.2 * (i + 1) * x[i], wires=0)
+    for i, j in enumerate(perm_4[0]):
+        qml.RX(1.2 * (i + 1) * x[j], wires=0)
     for j in perm_4[1]:
-        qml.RY(y[j // 2, j % 2], wires=1)
+        qml.RY((j // 2 + (j % 2)) * y[j // 2, j % 2], wires=1)
     return qml.expval(qml.PauliZ(0))
 
 
@@ -84,6 +84,52 @@ def circuit_8(a, x):
 
 
 circuits = [circuit_0, circuit_1, circuit_2, circuit_3, circuit_4, circuit_5]
+expected_spectra = [
+    OrderedDict([("a", {(): [-4.0, -3.0, -2.0, -1.0, 0, 1.0, 2.0, 3.0, 4.0]})]),
+    OrderedDict(
+        [
+            ("a", {(): [-8 / 15, -5 / 15, -3 / 15, -2 / 15, 0, 2 / 15, 3 / 15, 5 / 15, 8 / 15]}),
+            ("b", {(): [-3, -2, -1, 0, 1, 2, 3]}),
+        ]
+    ),
+    OrderedDict([("x", {(0,): [-1.0, 0, 1.0], (1,): [-1.0, 0, 1.0], (2,): [-1.0, 0, 1.0]})]),
+    OrderedDict(
+        [
+            ("x", {(0,): [-0.1, 0, 0.1], (1,): [-0.2, 0, 0.2], (2,): [-0.3, 0, 0.3]}),
+            (
+                "y",
+                {
+                    (0, 0): [0],
+                    (0, 1): [-1.0, 0, 1.0],
+                    (1, 0): [-1.0, 0, 1.0],
+                    (1, 1): [-2.0, 0.0, 2.0],
+                },
+            ),
+        ]
+    ),
+    OrderedDict(
+        [
+            ("x", {(2,): [-1.2, 0, 1.2], (0,): [-2.4, 0, 2.4], (1,): [-3.6, 0, 3.6]}),
+            (
+                "y",
+                {
+                    (0, 1): [-1.0, 0, 1.0],
+                    (1, 0): [-1.0, 0, 1.0],
+                    (0, 0): [0],
+                    (1, 1): [-2.0, 0.0, 2.0],
+                },
+            ),
+        ]
+    ),
+    OrderedDict(
+        [
+            ("x", {(0,): [0], (1,): [-1.0, 0, 1.0], (2,): [-2.0, 0, 2.0]}),
+            ("y", {(0, 1): [-1.0, 0, 1.0], (1, 0): [-1.0, 0, 1.0], (0, 0): [0], (1, 1): [0]}),
+            ("z", {(0,): [-1.0, 0, 1.0], (1,): [-0.2, 0, 0.2], (2,): [0], (3,): [0]}),
+        ]
+    ),
+]
+
 circuits_nonlinear = [circuit_6, circuit_7, circuit_8]
 
 a = 0.812
@@ -167,6 +213,21 @@ class TestHelpers:
 
 class TestCircuits:
     """Tests that the spectrum is returned as expected."""
+
+    @pytest.mark.parametrize(
+        "circuit, args, expected",
+        zip(circuits, all_args, expected_spectra),
+    )
+    def test_various_circuits(self, circuit, args, expected):
+        """Test the spectrum for some simple standard circuits."""
+        dev = qml.device("default.qubit", wires=2)
+        qnode = qml.QNode(circuit, dev)
+        spec = advanced_spectrum(qnode)(*args)
+        assert spec.keys() == expected.keys()
+        for outer_key in spec.keys():
+            assert spec[outer_key].keys() == expected[outer_key].keys()
+            for key in spec[outer_key]:
+                assert np.allclose(spec[outer_key][key], expected[outer_key][key])
 
     @pytest.mark.parametrize("n_layers, n_qubits", [(1, 1), (2, 3), (4, 1)])
     def test_spectrum_grows_with_gates(self, n_layers, n_qubits):
