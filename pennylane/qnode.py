@@ -366,7 +366,7 @@ class QNode:
         if device.shots is not None:
             raise qml.QuantumFunctionError(
                 "Devices with finite shots are incompatible with backpropogation. "
-                "Please set shots=None or chose a different diff_method."
+                "Please set shots=None or choose a different diff_method."
             )
 
         # determine if the device supports backpropagation

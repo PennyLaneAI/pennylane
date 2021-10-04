@@ -764,8 +764,8 @@ class TestQubitIntegration:
             c2 = circuit2(c1, w2)
             return torch.sum(c2) ** 2
 
-        w1 = qml.init.strong_ent_layers_normal(n_wires=2, n_layers=3)
-        w2 = qml.init.strong_ent_layers_normal(n_wires=2, n_layers=4)
+        w1 = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
+        w2 = np.random.random(qml.templates.StronglyEntanglingLayers.shape(4, 2))
 
         w1 = torch.tensor(w1, requires_grad=True)
         w2 = torch.tensor(w2, requires_grad=True)
