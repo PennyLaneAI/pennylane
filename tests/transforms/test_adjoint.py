@@ -435,3 +435,20 @@ class TestTemplateIntegration:
         ]
         res = circuit(weights)
         assert np.allclose(res, np.sinh(r) ** 2)
+
+    def test_gate_fabric(self, fn):
+        """Test that the adjoint correctly inverts the gate fabric template"""
+        dev = qml.device("default.qubit", wires=4)
+        template = qml.templates.GateFabric
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            template(weights=weights, wires=[0, 1, 2, 3], init_state=[1, 1, 0, 0])
+            fn(template, weights=weights, wires=[0, 1, 2, 3], init_state=[1, 1, 0, 0])
+            return qml.state()
+
+        res = circuit([[[0.6, 0.8]]])
+        expected = np.zeros([2 ** 4])
+        expected[0] = 1.0
+
+        assert np.allclose(res, expected)
