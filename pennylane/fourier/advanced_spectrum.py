@@ -13,12 +13,14 @@
 # limitations under the License.
 """Contains a transform that computes the frequency spectrum of a quantum
 circuit including classical preprocessing within the QNode."""
-from itertools import product
-from functools import wraps
 from collections import OrderedDict
+from functools import wraps
 from inspect import signature
+from itertools import product
+
 import numpy as np
 import pennylane as qml
+
 from .utils import get_spectrum, join_spectra
 
 
@@ -41,7 +43,7 @@ def _process_ids(encoding_args, argnum, qnode):
 
     If ``encoding_args`` are passed, they take precedence over ``argnum``.
     Passing a set with ``keys`` is an alias for ``{key: ... for key in keys}``.
-    If both, ``encoding_args`` and ``argnum`` are ``None``, all QNode arguments
+    If both ``encoding_args`` and ``argnum`` are ``None``, all QNode arguments
     of ``qnode`` that do not have a default value defined are included.
     Of these arguments, all elements are included in ``encoding_args``
     """
@@ -62,7 +64,7 @@ def _process_ids(encoding_args, argnum, qnode):
         requested_names = set(encoding_args)
         if not all(name in arg_names for name in requested_names):
             raise ValueError(
-                f"Not all names in {requested_names} are known. " f"Known arguments: {arg_names}"
+                f"Not all names in {requested_names} are known. Known arguments: {arg_names}"
             )
         # Selection of requested argument names from sorted names
         if isinstance(encoding_args, set):
@@ -102,7 +104,7 @@ def expand_multi_par(tape, depth=10):
     return tape
 
 
-def advanced_spectrum(qnode, encoding_args=None, argnum=None, decimals=5, validation_kwargs=None):
+def advanced_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validation_kwargs=None):
     r"""Compute the frequency spectrum of the Fourier representation of quantum circuits,
     including classical preprocessing.
 
@@ -147,15 +149,14 @@ def advanced_spectrum(qnode, encoding_args=None, argnum=None, decimals=5, valida
 
     Returns:
         function: Function which accepts the same arguments as the QNode.
-            When called, this function will return a dictionary of dictionaries
-            containing the frequency spectra per QNode parameter.
+        When called, this function will return a dictionary of dictionaries
+        containing the frequency spectra per QNode parameter.
 
     **Details**
 
     A circuit that returns an expectation value of a Hermitian observable which depends on
     :math:`N` scalar inputs :math:`x_j` can be interpreted as a function
-    :math:`f: \mathbb{R}^N \rightarrow \mathbb{R}` (as the observable is Hermitian,
-    the expectation value is real-valued).
+    :math:`f: \mathbb{R}^N \rightarrow \mathbb{R}`.
     This function can always be expressed by a Fourier-type sum
 
     .. math::
@@ -184,7 +185,7 @@ def advanced_spectrum(qnode, encoding_args=None, argnum=None, decimals=5, valida
 
     .. note::
 
-        In more detail, the ``advanced_spectrum`` function also allows for
+        The ``advanced_spectrum`` function also supports
         preprocessing of the QNode arguments before they are fed into the gates,
         as long as this processing is *linear*. In particular, constant
         prefactors for the encoding arguments are allowed.
@@ -195,10 +196,6 @@ def advanced_spectrum(qnode, encoding_args=None, argnum=None, decimals=5, valida
     as well as trainable parameters ``w`` as arguments to the QNode.
 
     .. code-block:: python
-
-        import pennylane as qml
-        import numpy as np
-        from advanced_spectrum import advanced_spectrum
 
         n_qubits = 3
         dev = qml.device("default.qubit", wires=n_qubits)
@@ -213,14 +210,12 @@ def advanced_spectrum(qnode, encoding_args=None, argnum=None, decimals=5, valida
                 qml.RX(z, wires=i)
             return qml.expval(qml.PauliZ(wires=0))
 
-        x = np.array([1., 2., 3.])
-        y = np.array([0.1, 0.3, 0.5])
-        z = -1.8
-        w = np.random.random((2, n_qubits, 3))
-        res = advanced_spectrum(circuit, argnum=[0, 1, 2])(x, y, z, w)
-
     This circuit looks as follows:
 
+    >>> x = np.array([1., 2., 3.])
+    >>> y = np.array([0.1, 0.3, 0.5])
+    >>> z = -1.8
+    >>> w = np.random.random((2, n_qubits, 3))
     >>> print(qml.draw(circuit)(x, y, z, w))
     0: ──RX(0.5)──Rot(0.598, 0.949, 0.346)───RY(0.23)──Rot(0.693, 0.0738, 0.246)──RX(-1.8)──┤ ⟨Z⟩
     1: ──RX(1)────Rot(0.0711, 0.701, 0.445)──RY(0.69)──Rot(0.32, 0.0482, 0.437)───RX(-1.8)──┤
@@ -229,8 +224,9 @@ def advanced_spectrum(qnode, encoding_args=None, argnum=None, decimals=5, valida
     Applying the ``advanced_spectrum`` function to the circuit for
     the non-trainable parameters, we obtain:
 
+    >>> res = qml.fourier.advanced_spectrum(circuit, argnum=[0, 1, 2])(x, y, z, w)
     >>> for inp, freqs in res.items():
-    >>>     print(f"{inp}: {freqs}")
+    ...     print(f"{inp}: {freqs}")
     "x": {(0,): [-0.5, 0.0, 0.5], (1,): [-0.5, 0.0, 0.5], (2,): [-0.5, 0.0, 0.5]}
     "y": {(0,): [-2.3, 0.0, 2.3], (1,): [-2.3, 0.0, 2.3], (2,): [-2.3, 0.0, 2.3]}
     "z": {(): [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0]}
@@ -247,7 +243,7 @@ def advanced_spectrum(qnode, encoding_args=None, argnum=None, decimals=5, valida
 
     >>> res = advanced_spectrum(circuit, argnum=[0])(x, y, z, w)
     >>> for inp, freqs in res.items():
-    >>>     print(f"{inp}: {freqs}")
+    ...     print(f"{inp}: {freqs}")
     "x": {(0,): [-0.5, 0.0, 0.5], (1,): [-0.5, 0.0, 0.5], (2,): [-0.5, 0.0, 0.5]}
 
     Selecting arguments by name instead of index is possible via the
@@ -255,7 +251,7 @@ def advanced_spectrum(qnode, encoding_args=None, argnum=None, decimals=5, valida
 
     >>> res = advanced_spectrum(circuit, encoding_args={"y"})(x, y, z, w)
     >>> for inp, freqs in res.items():
-    >>>     print(f"{inp}: {freqs}")
+    ...     print(f"{inp}: {freqs}")
     "y": {(0,): [-2.3, 0.0, 2.3], (1,): [-2.3, 0.0, 2.3], (2,): [-2.3, 0.0, 2.3]}
 
     Note that for array-valued arguments the spectrum for each element of the array
@@ -265,7 +261,7 @@ def advanced_spectrum(qnode, encoding_args=None, argnum=None, decimals=5, valida
     >>> encoding_args = {"y": [(0,),(2,)]}
     >>> res = advanced_spectrum(circuit, encoding_args=encoding_args)(x, y, z, w)
     >>> for inp, freqs in res.items():
-    >>>     print(f"{inp}: {freqs}")
+    ...     print(f"{inp}: {freqs}")
     "y": {(0,): [-2.3, 0.0, 2.3], (2,): [-2.3, 0.0, 2.3]}
 
     .. warning::
@@ -304,13 +300,13 @@ def advanced_spectrum(qnode, encoding_args=None, argnum=None, decimals=5, valida
     validation_kwargs = validation_kwargs or {}
     encoding_args, argnum = _process_ids(encoding_args, argnum, qnode)
     atol = 10 ** (-decimals) if decimals is not None else 1e-10
-    # A map between Jacobians (contiguous) and arg names (may be discontiguous)
+    # A map between Jacobian indices (contiguous) and arg names (may be discontiguous)
     arg_name_map = dict(enumerate(encoding_args))
+    jac_fn = qml.transforms.classical_jacobian(qnode, argnum=argnum, expand_fn=expand_multi_par)
 
     @wraps(qnode)
     def wrapper(*args, **kwargs):
         # Compute classical Jacobian and assert preprocessing is linear
-        jac_fn = qml.transforms.classical_jacobian(qnode, argnum=argnum, expand_fn=expand_multi_par)
         if not qml.math.is_independent(jac_fn, qnode.interface, args, kwargs, **validation_kwargs):
             raise ValueError(
                 "The Jacobian of the classical preprocessing in the provided QNode "
@@ -322,29 +318,40 @@ def advanced_spectrum(qnode, encoding_args=None, argnum=None, decimals=5, valida
         tape = expand_multi_par(qnode.qtape)
         par_info = tape._par_info  # pylint: disable=protected-access
 
+        # Iterate over jacobians per argument
         for jac_idx, class_jac in enumerate(class_jacs):
+            # Obtain argument name for the jacobian index
             arg_name = arg_name_map[jac_idx]
+            # Extract requested parameter indices for the current argument
             if encoding_args[arg_name] is Ellipsis:
+                # If no index for this argument is specified, request all parameters within
+                # the argument (Recall () is a valid index for scalar-valued arguments here)
                 requested_par_ids = set(product(*(range(sh) for sh in class_jac.shape[1:])))
             else:
                 requested_par_ids = set(encoding_args[arg_name])
+            # Each requested parameter at least "contributes" as a constant
             _spectra = {par_idx: {0} for par_idx in requested_par_ids}
 
+            # Iterate over the axis of the current Jacobian that corresponds to the tape operations
             for op_idx, jac_of_op in enumerate(np.round(class_jac, decimals=decimals)):
                 op = par_info[op_idx]["op"]
-                # Find parameters that where requested and feed into the operation
+                # Find parameters that both were requested and feed into the operation
                 if len(class_jac.shape) == 1:
-                    # Scalar argument, only axis of Jacobian is for gates
+                    # Scalar argument, only axis of Jacobian is for operations
                     if np.isclose(jac_of_op, 0.0, atol=atol, rtol=0):
                         continue
                     jac_of_op = {(): jac_of_op}
                     par_ids = {()}
                 else:
+                    # Array-valued argument
+                    # Extract indices of parameters contributing to the current operation
                     par_ids = zip(*[map(int, _ids) for _ids in np.where(jac_of_op)])
+                    # Exclude contributing parameters that were not requested
                     par_ids = set(par_ids).intersection(requested_par_ids)
                     if len(par_ids) == 0:
                         continue
-                # Multi-parameter gates are not supported
+
+                # Multi-parameter gates are not supported (we expanded the tape already)
                 if len(op.parameters) != 1:
                     raise ValueError(
                         "Can only consider one-parameter gates as data-encoding gates; "
@@ -352,6 +359,8 @@ def advanced_spectrum(qnode, encoding_args=None, argnum=None, decimals=5, valida
                     )
                 spec = get_spectrum(op, decimals=decimals)
 
+                # For each contributing parameter, rescale the operation's spectrum
+                # and add it to the spectrum for that parameter
                 for par_idx in par_ids:
                     scale = float(jac_of_op[par_idx])
                     scaled_spec = [scale * f for f in spec]

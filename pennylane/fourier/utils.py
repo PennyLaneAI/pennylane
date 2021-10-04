@@ -53,7 +53,7 @@ def get_spectrum(op, decimals):
     We only compute non-negative frequencies in this subroutine.
 
     Args:
-        op (~pennylane.operation.Operation): :class:`~.pennylane.Operation` to extract
+        op (~pennylane.operation.Operation): Operation to extract
             the frequencies for
         decimals (int): Number of decimal places to round the frequencies to
 

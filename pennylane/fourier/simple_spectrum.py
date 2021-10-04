@@ -18,7 +18,7 @@ from functools import wraps
 from .utils import get_spectrum, join_spectra
 
 
-def simple_spectrum(qnode, encoding_gates=None, decimals=5):
+def simple_spectrum(qnode, encoding_gates=None, decimals=8):
     r"""Compute the frequency spectrum of the Fourier representation of
     simple quantum circuits ignoring classical preprocessing.
 
