@@ -18,10 +18,18 @@ import pytest
 import numpy as np
 import pennylane as qml
 from pennylane.fourier.utils import (
+    format_nvec,
     get_spectrum,
     join_spectra,
 )
 
+@pytest.mark.parametrize(
+    "nvec, exp",
+    [(1, "1"), (-20, "-20"), ((23,), " 23"), ((-1,), "-1"), ((2, -1, 42), " 2 -1  42")],
+)
+def test_format_nvec(nvec, exp):
+    """Test formatting of a tuple of integers into a nice string."""
+    assert format_nvec(nvec)==exp
 
 @pytest.mark.parametrize(
     "spectrum1, spectrum2, expected",

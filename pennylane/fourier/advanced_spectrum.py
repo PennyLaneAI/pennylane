@@ -264,14 +264,13 @@ def advanced_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, valida
         "y": {(0,): [-2.3, 0.0, 2.3], (2,): [-2.3, 0.0, 2.3]}
 
         .. warning::
-            The ``advanced_spectrum`` function does not check if the result of the
-            circuit is an expectation value, it only excludes ``var``, ``sample``
-            and ``state``. Furthermore, it checks whether the classical preprocessing between
+            The ``advanced_spectrum`` function checks whether the classical preprocessing between
             QNode and gate arguments is linear by computing the Jacobian of the processing
-            at multiple points. This makes it unlikely -- *but not impossible* -- that
-            non-linear functions go undetected.
-            The number of additional points at which the Jacobian is computed can be controlled
-            via ``num_pos``, and the test is deactivated if ``num_pos=0`` (discouraged).
+            and applying :func:`~.pennylane.math.is_independent`. This makes it unlikely
+            -- *but not impossible* -- that non-linear functions go undetected.
+            The number of additional points at which the Jacobian is computed in the numerical
+            test of ``is_independent`` as well as other options for this function 
+            can be controlled via ``validation_kwargs``.
             Furthermore, the QNode arguments *not* marked in ``argnum`` will not be
             considered in this test and if they resemble encoded inputs, the entire
             spectrum might be incorrect or the circuit might not even admit one.
