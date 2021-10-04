@@ -301,13 +301,13 @@ class CommutationDAG:
 
         for current_node_id in range(0, max_node_id):
             self.get_node(current_node_id).reachable = True
-        # Check the commutation relation with reachable node, it adds edges if it does not commute
+
         for prev_node_id in range(max_node_id - 1, -1, -1):
             if self.get_node(prev_node_id).reachable and not is_commuting(
                 self.get_node(prev_node_id).op, max_node
             ):
                 self.add_edge(prev_node_id, max_node_id)
-                #self._list_pred(max_node_id)
+                self._pred_update(max_node_id)
                 list_predecessors = self.get_node(max_node_id).predecessors
                 for pred_id in list_predecessors:
                     self.get_node(pred_id).reachable = False
@@ -317,11 +317,43 @@ class CommutationDAG:
         dir_pred.sort()
         return dir_pred
 
+    def predecessors(self, node_id):
+        pred = list(nx.ancestors(self._multi_graph, node_id))
+        return pred
+
     def direct_successors(self, node_id):
         dir_succ = list(self._multi_graph.succ[node_id].keys())
         dir_succ.sort()
         return dir_succ
 
+    def successors(self, node_id):
+        succ = list(nx.descendants(self._multi_graph, node_id))
+        return succ
+
     @property
     def graph(self):
         return self._multi_graph
+
+    def _pred_update(self, node_id):
+        self.get_node(node_id).predecessors = []
+
+        for d_pred in self.direct_predecessors(node_id):
+            self.get_node(node_id).predecessors.append([d_pred])
+            self.get_node(node_id).predecessors.append(self.get_node(d_pred).predecessors)
+
+        self.get_node(node_id).predecessors = list(
+            merge_no_duplicates(*(self.get_node(node_id).predecessors))
+        )
+
+    def _add_successors(self):
+
+        for node_id in range(len(self._multi_graph) - 1, -1, -1):
+            direct_successors = self.direct_successors(node_id)
+
+            for d_succ in direct_successors:
+                self.get_node(node_id).successors.append([d_succ])
+                self.get_node(node_id).successors.append(self.get_node(d_succ).successors)
+
+            self.get_node(node_id).successors = list(
+                merge_no_duplicates(*(self.get_node(node_id).successors))
+            )

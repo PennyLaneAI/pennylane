@@ -76,7 +76,7 @@ def get_dag_commutation(circuit, wire_order=None):
             for operation in tape.operations:
                 operation._wires=Wires([wires_map[wire] for wire in operation.wires.tolist()])
                 dag.add_node(operation)
-                #dag._add_successors()
+            dag._add_successors()
         return dag
 
     return wrapper
