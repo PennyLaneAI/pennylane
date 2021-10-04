@@ -98,8 +98,10 @@ def expand_multi_par_and_no_gen(tape, depth=10):
             or (len(g.parameters) <= 1 and hasattr(g, "generator") and g.generator[0] is not None)
         )
         new_tape = tape.expand(depth=depth, stop_at=stopping_cond)
-        params = new_tape.get_parameters(trainable_only=False)
-        new_tape.trainable_params = qml.math.get_trainable_indices(params)
+        # The trainable_params attribute is not used in the advanced_spectrum context.
+        # However, when using this expansion elsewhere, the following lines might become necessary.
+        #params = new_tape.get_parameters(trainable_only=False)
+        #new_tape.trainable_params = qml.math.get_trainable_indices(params)
 
         return new_tape
 
