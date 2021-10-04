@@ -191,7 +191,7 @@ class TestIsIndependentAutograd:
     @pytest.mark.xfail
     @pytest.mark.parametrize("func, args", zip(overlooked_lambdas, args_overlooked_lambdas))
     def test_overlooked_dependence(self, func, args):
-        """Test that particular functions that dependent on the input
+        """Test that particular functions that are dependent on the input
         are overlooked."""
         assert not is_independent(func, self.interface, args)
 
@@ -293,7 +293,7 @@ if have_jax:
         @pytest.mark.xfail
         @pytest.mark.parametrize("func, args", zip(overlooked_lambdas, args_overlooked_lambdas))
         def test_overlooked_dependence(self, func, args):
-            """Test that particular functions that dependent on the input
+            """Test that particular functions that are dependent on the input
             are overlooked."""
             assert not is_independent(func, self.interface, args)
 
@@ -411,7 +411,7 @@ if have_tf:
         @pytest.mark.xfail
         @pytest.mark.parametrize("func, args", zip(overlooked_lambdas, args_overlooked_lambdas))
         def test_overlooked_dependence(self, func, args):
-            """Test that particular functions that dependent on the input
+            """Test that particular functions that are dependent on the input
             are overlooked."""
             assert not is_independent(func, self.interface, args)
 
@@ -524,7 +524,7 @@ if have_torch:
         @pytest.mark.xfail
         @pytest.mark.parametrize("func, args", zip(overlooked_lambdas, args_overlooked_lambdas))
         def test_overlooked_dependence(self, func, args):
-            """Test that particular functions that dependent on the input
+            """Test that particular functions that are dependent on the input
             are overlooked."""
             assert not is_independent(func, self.interface, args)
 

@@ -5,7 +5,7 @@
 <h3>New features since last release</h3>
 
 * The `qml.fourier.advanced_spectrum` function extends the former `qml.fourier.spectrum` function
-  and takes classical processing of QNode arguments into gate arguments into account.
+  and takes classical processing of QNode arguments into account.
   The frequencies are computed per (requested) QNode argument instead
   of per gate `id`. The gate `id`s are ignored.
   [(#1681)](https://github.com/PennyLaneAI/pennylane/pull/1681)
@@ -45,7 +45,7 @@
   2: ──RX(1.5)──Rot(0.401, 0.0795, 0.731)──RY(1.15)──Rot(0.756, 0.38, 0.38)─────RX(-1.8)──┤
   ```
 
-  Applying the `qml.fourier.spectrum` function to the circuit for the non-trainable
+  Applying the `qml.fourier.advanced_spectrum` function to the circuit for the non-trainable
   parameters, we obtain:
 
   ```pycon
@@ -66,6 +66,24 @@
   For details on how to control for which parameters the spectrum is computed and other
   usage details, please see the
   [fourier.advanced_spectrum docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.fourier.advanced_spectrum.html).
+
+* There is a new utility function `qml.math.is_independent` that checks whether
+  a callable is independent of its arguments.
+  [(#1700)](https://github.com/PennyLaneAI/pennylane/pull/1700)
+
+  **Warning**
+
+  This function is experimental and might behave differently than expected.
+  Also, it might be subject to change.
+
+  **Disclaimer**
+
+  Note that the test relies on both numerical and analytical checks, except
+  when using the PyTorch interface which only performs a numerical check.
+  It is known that there are edge cases on which this test will yield wrong
+  results, in particular non-smooth functions may be problematic.
+  For details, please refer to the 
+  [is_indpendent docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.math.is_independent.html).
 
 * Support for differentiable execution of batches of circuits has been
   extended to the JAX interface for scalar functions, via the beta
