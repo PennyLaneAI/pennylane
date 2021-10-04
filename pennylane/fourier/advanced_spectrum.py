@@ -237,105 +237,107 @@ def advanced_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, valida
         it may still change based on inputs to the QNode that alter the architecture
         of the circuit.
 
-    Above, we selected all input-encoding parameters for the spectrum computation, using
-    the ``argnum`` keyword argument. We may also restrict the full analysis to a single
-    QNode argument, again using ``argnum``:
+    .. UsageDetails::
 
-    >>> res = advanced_spectrum(circuit, argnum=[0])(x, y, z, w)
-    >>> for inp, freqs in res.items():
-    ...     print(f"{inp}: {freqs}")
-    "x": {(0,): [-0.5, 0.0, 0.5], (1,): [-0.5, 0.0, 0.5], (2,): [-0.5, 0.0, 0.5]}
+        Above, we selected all input-encoding parameters for the spectrum computation, using
+        the ``argnum`` keyword argument. We may also restrict the full analysis to a single
+        QNode argument, again using ``argnum``:
 
-    Selecting arguments by name instead of index is possible via the
-    ``encoding_args`` argument:
+        >>> res = advanced_spectrum(circuit, argnum=[0])(x, y, z, w)
+        >>> for inp, freqs in res.items():
+        ...     print(f"{inp}: {freqs}")
+        "x": {(0,): [-0.5, 0.0, 0.5], (1,): [-0.5, 0.0, 0.5], (2,): [-0.5, 0.0, 0.5]}
 
-    >>> res = advanced_spectrum(circuit, encoding_args={"y"})(x, y, z, w)
-    >>> for inp, freqs in res.items():
-    ...     print(f"{inp}: {freqs}")
-    "y": {(0,): [-2.3, 0.0, 2.3], (1,): [-2.3, 0.0, 2.3], (2,): [-2.3, 0.0, 2.3]}
+        Selecting arguments by name instead of index is possible via the
+        ``encoding_args`` argument:
 
-    Note that for array-valued arguments the spectrum for each element of the array
-    is computed. A more fine-grained control is available by passing index tuples
-    for the respective argument name in ``encoding_args``:
+        >>> res = advanced_spectrum(circuit, encoding_args={"y"})(x, y, z, w)
+        >>> for inp, freqs in res.items():
+        ...     print(f"{inp}: {freqs}")
+        "y": {(0,): [-2.3, 0.0, 2.3], (1,): [-2.3, 0.0, 2.3], (2,): [-2.3, 0.0, 2.3]}
 
-    >>> encoding_args = {"y": [(0,),(2,)]}
-    >>> res = advanced_spectrum(circuit, encoding_args=encoding_args)(x, y, z, w)
-    >>> for inp, freqs in res.items():
-    ...     print(f"{inp}: {freqs}")
-    "y": {(0,): [-2.3, 0.0, 2.3], (2,): [-2.3, 0.0, 2.3]}
+        Note that for array-valued arguments the spectrum for each element of the array
+        is computed. A more fine-grained control is available by passing index tuples
+        for the respective argument name in ``encoding_args``:
 
-    .. warning::
-        The ``advanced_spectrum`` function does not check if the result of the
-        circuit is an expectation value. It checks whether the classical preprocessing between
-        QNode and gate arguments is linear by computing the Jacobian of the processing
-        at multiple points. This makes it unlikely -- *but not impossible* -- that
-        non-linear functions go undetected.
-        The number of additional points at which the Jacobian is computed can be controlled
-        via ``num_pos``, and the test is deactivated if ``num_pos=0`` (discouraged).
-        Furthermore, the QNode arguments *not* marked in ``argnum`` will not be
-        considered in this test and if they resemble encoded inputs, the entire
-        spectrum might be incorrect or the circuit might not even admit one.
+        >>> encoding_args = {"y": [(0,),(2,)]}
+        >>> res = advanced_spectrum(circuit, encoding_args=encoding_args)(x, y, z, w)
+        >>> for inp, freqs in res.items():
+        ...     print(f"{inp}: {freqs}")
+        "y": {(0,): [-2.3, 0.0, 2.3], (2,): [-2.3, 0.0, 2.3]}
 
-    The ``advanced_spectrum`` function works in all interfaces:
+        .. warning::
+            The ``advanced_spectrum`` function does not check if the result of the
+            circuit is an expectation value. It checks whether the classical preprocessing between
+            QNode and gate arguments is linear by computing the Jacobian of the processing
+            at multiple points. This makes it unlikely -- *but not impossible* -- that
+            non-linear functions go undetected.
+            The number of additional points at which the Jacobian is computed can be controlled
+            via ``num_pos``, and the test is deactivated if ``num_pos=0`` (discouraged).
+            Furthermore, the QNode arguments *not* marked in ``argnum`` will not be
+            considered in this test and if they resemble encoded inputs, the entire
+            spectrum might be incorrect or the circuit might not even admit one.
 
-    .. code-block:: python
+        The ``advanced_spectrum`` function works in all interfaces:
 
-        import tensorflow as tf
+        .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=1)
+            import tensorflow as tf
 
-        @qml.qnode(dev, interface='tf')
-        def circuit(x):
-            qml.RX(0.4*x[0], wires=0)
-            qml.PhaseShift(x[1]*np.pi, wires=0)
-            return qml.expval(qml.PauliZ(wires=0))
+            dev = qml.device("default.qubit", wires=1)
 
-        x = tf.constant([1., 2.])
-        res = advanced_spectrum(circuit)(x)
+            @qml.qnode(dev, interface='tf')
+            def circuit(x):
+                qml.RX(0.4*x[0], wires=0)
+                qml.PhaseShift(x[1]*np.pi, wires=0)
+                return qml.expval(qml.PauliZ(wires=0))
 
-    >>> print(res)
-    {"x": {(0,): [-0.4, 0.0, 0.4], (1,): [-3.14159, 0.0, 3.14159]}}
+            x = tf.constant([1., 2.])
+            res = advanced_spectrum(circuit)(x)
 
-    Finally, compare ``advanced_spectrum`` with :func:`.pennylane.simple_spectrum`, using
-    the following circuit.
+        >>> print(res)
+        {"x": {(0,): [-0.4, 0.0, 0.4], (1,): [-3.14159, 0.0, 3.14159]}}
 
-    .. code-block:: python
+        Finally, compare ``advanced_spectrum`` with :func:`.pennylane.simple_spectrum`, using
+        the following circuit.
 
-        dev = qml.device("default.qubit", wires=2)
+        .. code-block:: python
 
-        @qml.qnode(dev)
-        def circuit(x, y, z):
-            qml.RX(0.5*x**2, wires=0, id="x")
-            qml.RY(2.3*y, wires=1, id="y0")
-            qml.CNOT(wires=[1,0])
-            qml.RY(z, wires=0, id="y1")
-            return qml.expval(qml.PauliZ(wires=0))
+            dev = qml.device("default.qubit", wires=2)
 
-    First, note that we assigned ``id``s to the gates for which we will use
-    ``simple_spectrum``. This allows us to choose these gates in the computation:
+            @qml.qnode(dev)
+            def circuit(x, y, z):
+                qml.RX(0.5*x**2, wires=0, id="x")
+                qml.RY(2.3*y, wires=1, id="y0")
+                qml.CNOT(wires=[1,0])
+                qml.RY(z, wires=0, id="y1")
+                return qml.expval(qml.PauliZ(wires=0))
 
-    >>> x, y, z = 0.1, 0.2, 0.3
-    >>> simple_spec_fn = qml.fourier.simple_spectrum(circuit, encoding_gates=["x", "y0", "y1"])
-    >>> simple_spec = simple_spec_fn(x, y, z)
-    >>> for _id, spec in simple_spec.items():
-    ...     print(f"{_id}: {spec}")
-    x: [-1.0, 0, 1.0]
-    y0: [-1.0, 0, 1.0]
-    y1: [-1.0, 0, 1.0]
+        First, note that we assigned ``id``s to the gates for which we will use
+        ``simple_spectrum``. This allows us to choose these gates in the computation:
 
-    As we can see, the preprocessing in the QNode is not included in the simple spectrum.
-    In contrast, the output of ``advanced_spectrum`` is:
+        >>> x, y, z = 0.1, 0.2, 0.3
+        >>> simple_spec_fn = qml.fourier.simple_spectrum(circuit, encoding_gates=["x", "y0", "y1"])
+        >>> simple_spec = simple_spec_fn(x, y, z)
+        >>> for _id, spec in simple_spec.items():
+        ...     print(f"{_id}: {spec}")
+        x: [-1.0, 0, 1.0]
+        y0: [-1.0, 0, 1.0]
+        y1: [-1.0, 0, 1.0]
 
-    >>> adv_spec = qml.fourier.advanced_spectrum(circuit, encoding_args={"y", "z"})
-    >>> for _id, spec in adv_spec.items():
-    ...     print(f"{_id}: {spec}")
-    y: {(): [-2.3, 0.0, 2.3]}
-    z: {(): [-1.0, 0.0, 1.0]}
+        As we can see, the preprocessing in the QNode is not included in the simple spectrum.
+        In contrast, the output of ``advanced_spectrum`` is:
 
-    Note that the values of the output are dictionaries instead of the spectrum lists, that
-    they include the prefactors introduced by classical preprocessing, and
-    that we would not be able to compute the advanced spectrum for ``x`` because it is
-    preprocessed non-linearily in the gate ``qml.RX(0.5*x**2, wires=0, id="x")``.
+        >>> adv_spec = qml.fourier.advanced_spectrum(circuit, encoding_args={"y", "z"})
+        >>> for _id, spec in adv_spec.items():
+        ...     print(f"{_id}: {spec}")
+        y: {(): [-2.3, 0.0, 2.3]}
+        z: {(): [-1.0, 0.0, 1.0]}
+
+        Note that the values of the output are dictionaries instead of the spectrum lists, that
+        they include the prefactors introduced by classical preprocessing, and
+        that we would not be able to compute the advanced spectrum for ``x`` because it is
+        preprocessed non-linearily in the gate ``qml.RX(0.5*x**2, wires=0, id="x")``.
 
     """
     validation_kwargs = validation_kwargs or {}
