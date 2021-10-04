@@ -50,12 +50,18 @@
 
   ```pycon
   >>> spec = spectrum(circuit, encoding_args={"x", "y", "z"})(x, y, z, w)
-  >>> for inp, freqs in res.items():
-  >>>     print(f"{inp}: {freqs}")
+  >>> for inp, freqs in spec.items():
+  ...     print(f"{inp}: {freqs}")
   "x": {(0,): [-0.5, 0.0, 0.5], (1,): [-0.5, 0.0, 0.5], (2,): [-0.5, 0.0, 0.5]}
   "y": {(0,): [-2.3, 0.0, 2.3], (1,): [-2.3, 0.0, 2.3], (2,): [-2.3, 0.0, 2.3]}
   "z": {(): [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0]}
   ```
+
+  We can see that all three parameters in the QNode arguments ``x`` and ``y``
+  contribute the spectrum of a Pauli rotation ``[-1.0, 0.0, 1.0]``, rescaled with the
+  prefactor of the respective parameter in the circuit.
+  The three ``RX`` rotations controlled by ``z`` accumulate the spectrum to have a more
+  complex frequency spectrum.
 
   For details on how to control for which parameters the spectrum is computed and other
   usage details, please see the
@@ -364,11 +370,13 @@
 
 <h3>Breaking changes</h3>
 
-- The updated version of `qml.fourier.spectrum` (see "New features above")
+- The updated version of `qml.fourier.spectrum`
   behaves differently in three ways:
-  It takes different arguments, the returned dictionary has a different structure, and
-  as classical preprocessing is taken into account, the returned frequency spectra differ.
   [(#1681)](https://github.com/PennyLaneAI/pennylane/pull/1681)
+
+  - It takes different arguments,
+  - the returned dictionary has a different structure, and
+  - as classical preprocessing is taken into account, the returned frequency spectra differ.
 
 - The `QNode.metric_tensor` method has been deprecated, and will be removed in an upcoming release.
   Please use the `qml.metric_tensor` transform instead.

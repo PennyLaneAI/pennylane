@@ -15,7 +15,7 @@
 of a quantum circuit, that is the frequencies without considering
 preprocessing in the QNode."""
 from functools import wraps
-from .utils import _get_spectrum, _join_spectra
+from .utils import get_spectrum, join_spectra
 
 
 def simple_spectrum(qnode, encoding_gates=None, decimals=5):
@@ -203,11 +203,11 @@ def simple_spectrum(qnode, encoding_gates=None, decimals=5):
                         f"data-encoding gates; got {op.name}."
                     )
 
-                spec = _get_spectrum(op, decimals=decimals)
+                spec = get_spectrum(op, decimals=decimals)
 
                 # if id has been seen before, join this spectrum to another one
                 if id in freqs:
-                    spec = _join_spectra(freqs[id], spec)
+                    spec = join_spectra(freqs[id], spec)
 
                 freqs[id] = spec
 

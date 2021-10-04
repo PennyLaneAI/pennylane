@@ -44,7 +44,7 @@ def to_dict(coeffs):
     return {nvec: coeffs[nvec] for nvec in nvecs}
 
 
-def _get_spectrum(op, decimals):
+def get_spectrum(op, decimals):
     r"""Extract the frequencies contributed by an input-encoding gate to the
     overall Fourier representation of a quantum circuit.
 
@@ -88,7 +88,7 @@ def _get_spectrum(op, decimals):
     return _spectrum
 
 
-def _join_spectra(spec1, spec2):
+def join_spectra(spec1, spec2):
     r"""Join two sets of frequencies that belong to the same input.
 
     Since :math:`\exp(i a x)\exp(i b x) = \exp(i (a+b) x)`, the spectra of two gates
@@ -108,7 +108,12 @@ def _join_spectra(spec1, spec2):
     if spec2 == {0}:
         return spec1
 
-    sums = {s1 + s2 for s1 in spec1 for s2 in spec2}
-    diffs = {np.abs(s1 - s2) for s1 in spec1 for s2 in spec2}
+    sums = set()
+    diffs = set()
+
+    for s1 in spec1:
+        for s2 in spec2:
+            sums.add(s1 + s2)
+            diffs.add(np.abs(s1 - s2)
 
     return sums.union(diffs)

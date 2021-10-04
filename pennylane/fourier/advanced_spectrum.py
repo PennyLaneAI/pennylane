@@ -19,7 +19,7 @@ from collections import OrderedDict
 from inspect import signature
 import numpy as np
 import pennylane as qml
-from .utils import _get_spectrum, _join_spectra
+from .utils import get_spectrum, join_spectra
 
 
 def _process_ids(encoding_args, argnum, qnode):
@@ -106,10 +106,12 @@ def advanced_spectrum(qnode, encoding_args=None, argnum=None, decimals=5, valida
     r"""Compute the frequency spectrum of the Fourier representation of quantum circuits,
     including classical preprocessing.
 
-    The circuit must only use single-parameter gates of the form :math:`e^{-i x_j G}` as
-    input-encoding gates, which allows the computation of the spectrum by inspecting the gates'
-    generators :math:`G`. The most important example of such gates are Pauli rotations.
+    The circuit must only use gates as input-encoding gates that can be decomposed
+    into single-parameter gates of the form :math:`e^{-i x_j G}` , which allows the
+    computation of the spectrum by inspecting the gates' generators :math:`G`.
+    The most important example of such single-parameter gates are Pauli rotations.
 
+    TODO: remove?!
     .. note::
 
         More precisely, the ``advanced_spectrum`` function relies on the gate to
@@ -124,8 +126,9 @@ def advanced_spectrum(qnode, encoding_args=None, argnum=None, decimals=5, valida
 
     .. note::
 
-        Arguments or parameters in an argument that do not contribute to the Fourier series
-        of the QNode with a frequency are considered as contributing with a constant term.
+        Arguments of the QNode or parameters within an array-valued QNode argument
+        that do not contribute to the Fourier series of the QNode
+        with any frequency are considered as contributing with a constant term.
         That is, a parameter that does not control any gate has the spectrum ``[0]``.
 
     Args:
@@ -138,9 +141,9 @@ def advanced_spectrum(qnode, encoding_args=None, argnum=None, decimals=5, valida
         argnum (list[int]): Numerical indices for arguments with respect to which
             to compute the spectrum
         decimals (int): number of decimals to which to round frequencies.
-        num_pos (int): Number of additional random positions at which to evaluate the
-            Jacobian of the preprocessing and test that it is constant.
-            Setting ``num_pos=0`` will deactivate the test.
+        validation_kwargs (dict): Keyword arguments passed to
+            :func:`~.pennylane.math.is_independent` when testing for linearity of
+            classical preprocessing in the QNode.
 
     Returns:
         function: Function which accepts the same arguments as the QNode.
@@ -346,12 +349,12 @@ def advanced_spectrum(qnode, encoding_args=None, argnum=None, decimals=5, valida
                         "Can only consider one-parameter gates as data-encoding gates; "
                         f"got {op.name}."
                     )
-                spec = _get_spectrum(op, decimals=decimals)
+                spec = get_spectrum(op, decimals=decimals)
 
                 for par_idx in par_ids:
                     scale = float(jac_of_op[par_idx])
                     scaled_spec = [scale * f for f in spec]
-                    _spectra[par_idx] = _join_spectra(_spectra[par_idx], scaled_spec)
+                    _spectra[par_idx] = join_spectra(_spectra[par_idx], scaled_spec)
 
             # Construct the sorted spectrum also containing negative frequencies
             for idx, spec in _spectra.items():
