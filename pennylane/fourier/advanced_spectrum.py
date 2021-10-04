@@ -296,6 +296,46 @@ def advanced_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, valida
     >>> print(res)
     {"x": {(0,): [-0.4, 0.0, 0.4], (1,): [-3.14159, 0.0, 3.14159]}}
 
+    Finally, compare ``advanced_spectrum`` with :func:`.pennylane.simple_spectrum`, using
+    the following circuit.
+
+    .. code-block:: python
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x, y, z):
+            qml.RX(0.5*x**2, wires=0, id="x")
+            qml.RY(2.3*y, wires=1, id="y0")
+            qml.CNOT(wires=[1,0])
+            qml.RY(z, wires=0, id="y1")
+            return qml.expval(qml.PauliZ(wires=0))
+
+    First, note that we assigned ``id``s to the gates for which we will use
+    ``simple_spectrum``. This allows us to choose these gates in the computation:
+
+    >>> x, y, z = 0.1, 0.2, 0.3
+    >>> simple_spec_fn = qml.fourier.simple_spectrum(circuit, encoding_gates=["x", "y0", "y1"])
+    >>> simple_spec = simple_spec_fn(x, y, z)
+    >>> for _id, spec in simple_spec.items():
+    ...     print(f"{_id}: {spec}")
+    x: [-1.0, 0, 1.0]
+    y0: [-1.0, 0, 1.0]
+    y1: [-1.0, 0, 1.0]
+
+    As we can see, the preprocessing in the QNode is not included in the simple spectrum.
+    In contrast, the output of ``advanced_spectrum`` is:
+
+    >>> adv_spec = qml.fourier.advanced_spectrum(circuit, encoding_args={"y", "z"})
+    >>> for _id, spec in adv_spec.items():
+    ...     print(f"{_id}: {spec}")
+    y: {(): [-2.3, 0.0, 2.3]}
+    z: {(): [-1.0, 0.0, 1.0]}
+
+    Note that the values of the output are dictionaries instead of the spectrum lists, and
+    that we would not be able to compute the advanced spectrum for ``x`` because it is
+    preprocessed non-linearily in the gate ``qml.RX(0.5*x**2, wires=0, id="x")``.
+
     """
     validation_kwargs = validation_kwargs or {}
     encoding_args, argnum = _process_ids(encoding_args, argnum, qnode)
