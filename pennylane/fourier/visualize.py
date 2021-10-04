@@ -313,9 +313,7 @@ def box(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True, show_fliers=Tru
         axis.boxplot(
             data[data_type],
             boxprops=dict(
-                facecolor=to_rgb(data_colour) + (0.4,),
-                color=data_colour,
-                edgecolor=data_colour,
+                facecolor=to_rgb(data_colour) + (0.4,), color=data_colour, edgecolor=data_colour
             ),
             medianprops=dict(color=data_colour, linewidth=1.5),
             flierprops=dict(markeredgecolor=data_colour),
@@ -422,12 +420,7 @@ def bar(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
     data_len = len(data["real"][0])
 
     for (data_type, axis) in zip(["real", "imag"], ax):
-        axis.bar(
-            np.arange(data_len),
-            data[data_type][0],
-            color=colour_dict[data_type],
-            alpha=0.7,
-        )
+        axis.bar(np.arange(data_len), data[data_type][0], color=colour_dict[data_type], alpha=0.7)
         axis.set_ylabel(data_type)
         axis.xaxis.set_ticks(np.arange(data_len))
         _adjust_spine_placement(axis)
@@ -542,10 +535,7 @@ def panel(coeffs, n_inputs, ax, colour=None):
 
         for coeff in range(coeffs.shape[1]):
             ax[coeff].scatter(
-                coeffs[:, coeff].real,
-                coeffs[:, coeff].imag,
-                facecolor="white",
-                edgecolor=colour,
+                coeffs[:, coeff].real, coeffs[:, coeff].imag, facecolor="white", edgecolor=colour
             )
             ax[coeff].set_title(f"{frequency_range[coeff]}", fontsize=14)
             ax[coeff].grid(True)
@@ -691,9 +681,7 @@ def radial_box(coeffs, n_inputs, ax, show_freqs=True, colour_dict=None, show_fli
             positions=angles,
             widths=width,
             boxprops=dict(
-                facecolor=to_rgb(data_colour) + (0.4,),
-                color=data_colour,
-                edgecolor=data_colour,
+                facecolor=to_rgb(data_colour) + (0.4,), color=data_colour, edgecolor=data_colour
             ),
             medianprops=dict(color=data_colour, linewidth=1.5),
             flierprops=dict(markeredgecolor=data_colour),
