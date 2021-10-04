@@ -37,7 +37,9 @@ def generate_scf(mol, n_steps=50, tol=1e-8):
     the total energy of the molecular system. This optimization problem can be reduced to solving a
     linear system of equations which are usually written as
 
-          .. math:: FC = SCE
+    .. math::
+
+        FC = SCE,
 
     where :math:`E` is a diagonal matrix of eigenvalues, representing the molecular orbital
     energies, :math:`C` is the matrix of molecular orbital coefficients, :math:`S` is the overlap
@@ -48,7 +50,9 @@ def generate_scf(mol, n_steps=50, tol=1e-8):
 
     The key step in in this process is constructing the Fock matrix which is defined as
 
-          .. math:: F = H + \frac{1}{2} J - K,
+    .. math::
+
+        F = H + \frac{1}{2} J - K,
 
     where :math:`H`, :math:`J` and :math:`K` are the core Hamiltonian matrix, Coulomb matrix and
     exchange matrix, respectively. The entries of :math:`H` are computed from the electronic kinetic
@@ -61,17 +65,23 @@ def generate_scf(mol, n_steps=50, tol=1e-8):
     express the molecular orbital coefficients in terms of a matrix :math:`X` as
     :math:`C = X \tilde{C}` which gives the following transformed equation
 
-        .. math:: \tilde{F} \tilde{C} = \tilde{S} \tilde{C} E,
+    .. math::
+
+         \tilde{F} \tilde{C} = \tilde{S} \tilde{C} E,
 
     where :math:`\tilde{F} = X^T F X`, :math:`\tilde{S} = X^T S X` and :math:`S` is the overlap
     matrix. We chose :math:`X` such that :math:`\tilde{S} = 1` as
 
-       .. math:: X = V \Lambda^{-1/2} V^T,
+    .. math::
+
+        X = V \Lambda^{-1/2} V^T,
 
     where :math:`V` and :math:`\Lambda` are the eigenvectors and eigenvalues of :math:`S`,
     respectively. This gives the eigenvalue equation
 
-          .. math:: \tilde{F}\tilde{C} = \tilde{C}E,
+    .. math::
+
+         \tilde{F}\tilde{C} = \tilde{C}E,
 
     which is solved with conventional methods iteratively.
 
