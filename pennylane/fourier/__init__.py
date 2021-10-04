@@ -24,6 +24,6 @@ def spectrum(*args, **kwargs):
     warnings.warn(
         "qml.fourier.spectrum has been renamed to qml.fourier.simple_spectrum. "
         "The alias qml.fourier.spectrum is deprecated and will be removed soon.",
-        UserWarning
+        UserWarning,
     )
     return simple_spectrum(*args, **kwargs)
