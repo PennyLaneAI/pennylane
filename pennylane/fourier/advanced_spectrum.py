@@ -337,6 +337,7 @@ def advanced_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, valida
         preprocessed non-linearily in the gate ``qml.RX(0.5*x**2, wires=0, id="x")``.
 
     """
+    # pylint: disable=too-many-branches,protected-access
     validation_kwargs = validation_kwargs or {}
     encoding_args, argnum = _process_ids(encoding_args, argnum, qnode)
     atol = 10 ** (-decimals) if decimals is not None else 1e-10
@@ -365,7 +366,7 @@ def advanced_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, valida
         class_jacs = jac_fn(*args, **kwargs)
         spectra = {}
         tape = expand_multi_par_and_no_gen(qnode.qtape)
-        par_info = tape._par_info  # pylint: disable=protected-access
+        par_info = tape._par_info
 
         # Iterate over jacobians per argument
         for jac_idx, class_jac in enumerate(class_jacs):
