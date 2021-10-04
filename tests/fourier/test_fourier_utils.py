@@ -18,8 +18,8 @@ import pytest
 import numpy as np
 import pennylane as qml
 from pennylane.fourier.utils import (
-    _get_spectrum,
-    _join_spectra,
+    get_spectrum,
+    join_spectra,
 )
 
 
@@ -36,7 +36,7 @@ from pennylane.fourier.utils import (
 )
 def test_join_spectra(spectrum1, spectrum2, expected, tol):
     """Test that spectra are joined correctly."""
-    joined = _join_spectra(spectrum1, spectrum2)
+    joined = join_spectra(spectrum1, spectrum2)
     assert joined == expected
     # assert np.allclose(sorted(joined), expected, atol=tol, rtol=0)
 
@@ -54,7 +54,7 @@ def test_join_spectra(spectrum1, spectrum2, expected, tol):
 )
 def test_get_spectrum(op, expected, tol):
     """Test that the spectrum is correctly extracted from an operator."""
-    spec = _get_spectrum(op, decimals=10)
+    spec = get_spectrum(op, decimals=10)
     assert np.allclose(sorted(spec), expected, atol=tol, rtol=0)
 
 
@@ -63,8 +63,8 @@ def test_get_spectrum_complains_no_generator():
 
     # Observables have no generator attribute
     with pytest.raises(ValueError, match="Generator of operation"):
-        _get_spectrum(qml.P(wires=0), decimals=10)
+        get_spectrum(qml.P(wires=0), decimals=10)
 
     # CNOT is an operation where generator is an abstract property
     with pytest.raises(ValueError, match="Generator of operation"):
-        _get_spectrum(qml.CNOT(wires=[0, 1]), decimals=10)
+        get_spectrum(qml.CNOT(wires=[0, 1]), decimals=10)
