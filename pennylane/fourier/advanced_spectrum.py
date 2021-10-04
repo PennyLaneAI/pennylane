@@ -117,13 +117,6 @@ def advanced_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, valida
     computation of the spectrum by inspecting the gates' generators :math:`G`.
     The most important example of such single-parameter gates are Pauli rotations.
 
-    TODO: remove?!
-    .. note::
-
-        More precisely, the ``advanced_spectrum`` function relies on the gate to
-        define a ``generator``, and will fail if gates marked controlled by marked
-        parameters do not have this attribute.
-
     The argument ``argnum`` controls which QNode arguments are considered as encoded
     inputs and the spectrum is computed only for these arguments.
     The input-encoding *gates* are those that are controlled by input-encoding QNode arguments.
@@ -272,7 +265,8 @@ def advanced_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, valida
 
         .. warning::
             The ``advanced_spectrum`` function does not check if the result of the
-            circuit is an expectation value. It checks whether the classical preprocessing between
+            circuit is an expectation value, it only excludes ``var``, ``sample``
+            and ``state``. Furthermore, it checks whether the classical preprocessing between
             QNode and gate arguments is linear by computing the Jacobian of the processing
             at multiple points. This makes it unlikely -- *but not impossible* -- that
             non-linear functions go undetected.
@@ -361,8 +355,15 @@ def advanced_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, valida
                 "The Jacobian of the classical preprocessing in the provided QNode "
                 "is not constant; only linear classical preprocessing is supported."
             )
+        # After construction, check whether invalid operations (for a spectrum)
+        # are present in the QNode
+        for m in qnode.qtape.measurements:
+            if m.return_type not in {qml.operation.Expectation, qml.operation.Probability}:
+                raise ValueError(
+                    f"The return_type {m.return_type.value} is not supported as it likely does "
+                    "not admit a Fourier spectrum."
+                )
         class_jacs = jac_fn(*args, **kwargs)
-
         spectra = {}
         tape = expand_multi_par_and_no_gen(qnode.qtape)
         par_info = tape._par_info  # pylint: disable=protected-access
