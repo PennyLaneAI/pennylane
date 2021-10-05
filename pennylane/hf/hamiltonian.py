@@ -15,9 +15,9 @@
 This module contains the functions needed for computing the molecular Hamiltonian.
 """
 import autograd.numpy as anp
-from pennylane.hf.hartree_fock import generate_scf, nuclear_energy
-from pennylane import numpy as np
 import pennylane as qml
+from pennylane import numpy as np
+from pennylane.hf.hartree_fock import generate_scf, nuclear_energy
 
 # from pennylane import PauliX, PauliY, PauliZ
 
@@ -328,6 +328,7 @@ def generate_hamiltonian(mol, cutoff=1.0e-12):
              0.13290293+0.j, -0.34724873+0.j,  0.17546329+0.j,
              0.17546329+0.j,  0.13290293+0.j,  0.18470917+0.j], requires_grad=True)
     """
+
     def hamiltonian(*args):
         r"""Compute the qubit hamiltonian.
 
@@ -378,7 +379,21 @@ def generate_hamiltonian(mol, cutoff=1.0e-12):
 
     return hamiltonian
 
+
 def _return_pauli(p):
+    r"""Return the PennyLane Pauli operator.
+
+    Args:
+        args (str): symbol representing the Pauli operator
+
+    Returns:
+        pennylane.ops: the PennyLane Pauli operator
+
+    **Example**
+
+    >>> _return_pauli('X')
+    qml.PauliX
+    """
     if p == "X":
         return qml.PauliX
     if p == "Y":

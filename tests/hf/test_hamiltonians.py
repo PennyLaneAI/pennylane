@@ -14,17 +14,19 @@
 """
 Unit tests for functions needed for computing the Hamiltonian.
 """
+import pennylane as qml
 import pytest
+from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane import numpy as np
 from pennylane.hf.hamiltonian import (
+    _generate_qubit_operator,
+    _pauli_mult,
+    _return_pauli,
     generate_electron_integrals,
     generate_fermionic_hamiltonian,
     generate_hamiltonian,
-    _generate_qubit_operator,
-    _pauli_mult,
 )
 from pennylane.hf.molecule import Molecule
-from pennylane import PauliX, PauliY, PauliZ, Identity
 
 
 @pytest.mark.parametrize(
@@ -254,8 +256,8 @@ def test_pauli_mult(p1, p2, p_ref):
     ("symbols", "geometry", "h_ref"),
     [
         (
-        ["H", "H"],
-        np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
             (
                 np.array(
                     [
@@ -305,3 +307,17 @@ def test_generate_hamiltonian(symbols, geometry, h_ref):
     h = generate_hamiltonian(mol)(*args)
 
     assert np.allclose(h.terms[0], h_ref[0])
+
+
+@pytest.mark.parametrize(
+    ("symbol", "operator"),
+    [
+        ("X", qml.PauliX),
+        ("Y", qml.PauliY),
+        ("Z", qml.PauliZ),
+    ],
+)
+def test_return_pauli(symbol, operator):
+    r"""Test that_return_pauli returns the correct operator."""
+    p = _return_pauli(symbol)
+    assert p is operator
