@@ -357,6 +357,15 @@ def _scatter_element_add_torch(tensor, index, value):
 ar.register_function("torch", "scatter_element_add", _scatter_element_add_torch)
 
 
+def _sort_torch(tensor):
+    """Update handling of sort to return only values not indices."""
+    sorted_tensor = _i("torch").sort(tensor)
+    return sorted_tensor.values
+
+
+ar.register_function("torch", "sort", _sort_torch)
+
+
 # -------------------------------- JAX --------------------------------- #
 
 
