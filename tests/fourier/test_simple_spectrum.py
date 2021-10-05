@@ -213,4 +213,4 @@ def test_alias_spectrum():
     with pytest.warns(UserWarning, match="qml.fourier.spectrum has been renamed"):
         res_alias = qml.fourier.spectrum(circuit)(0.1)
     res_nonalias = qml.fourier.spectrum(circuit)(0.1)
-    assert res_alias==res_nonalias
+    assert res_alias == res_nonalias

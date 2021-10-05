@@ -49,6 +49,7 @@ def test_join_spectra(spectrum1, spectrum2, expected):
     joined = join_spectra(spectrum1, spectrum2)
     assert joined == expected
 
+
 @pytest.mark.parametrize(
     "op, expected",
     [

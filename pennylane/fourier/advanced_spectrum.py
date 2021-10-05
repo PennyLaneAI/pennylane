@@ -52,7 +52,7 @@ def _process_ids(encoding_args, argnum, qnode):
       - If ``encoding_args`` is provided and is a dictionary, it is preserved
         up to arguments that do not appear in the QNode. Also, it is converted to
         an ``OrderedDict``, inferring the ordering from the QNode arguments.
-        Passing a set with ``keys`` instead is an alias for 
+        Passing a set with ``keys`` instead is an alias for
         ``{key: ... for key in keys}``.
         ``argnum`` will contain the indices of these arguments.
       - If both ``encoding_args`` and ``argnum`` are passed, ``encoding_args`` takes
@@ -65,7 +65,7 @@ def _process_ids(encoding_args, argnum, qnode):
     **Example**
 
     As an example, consider the qnode
-    
+
     >>> @qml.qnode(dev)
     >>> def circuit(a, b, c, x=2):
     ...     return qml.expval(qml.PauliX(0))
@@ -87,7 +87,7 @@ def _process_ids(encoding_args, argnum, qnode):
     (OrderedDict([('a', [(1,), (2,)]), ('c', Ellipsis), ('x', [()])]), [0, 2, 3])
 
     The first output, ``encoding_args``, essentially is unchanged, it simply was ordered in
-    the order of the QNode arguments. The second output, ``argnum``, contains all three 
+    the order of the QNode arguments. The second output, ``argnum``, contains all three
     argument indices because all of ``a``, ``b``, and ``c`` appear in ``encoding_args``.
     If we in addition pass ``argnum``, it is ignored:
 
