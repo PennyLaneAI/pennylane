@@ -10,6 +10,15 @@
   of per gate `id`. The gate `id`s are ignored.
   [(#1681)](https://github.com/PennyLaneAI/pennylane/pull/1681)
 
+  The updated version of `qml.fourier.spectrum`
+  behaves differently in three ways:
+
+  - It takes different arguments,
+
+  - the returned dictionary has a different structure, and
+
+  - as classical preprocessing is taken into account, the returned frequency spectra differ.
+
   Consider the following example, which uses non-trainable inputs `x`, `y` and `z`
   as well as trainable parameters `w` as arguments to the QNode.
 
@@ -408,14 +417,6 @@
   [(#1708)](https://github.com/PennyLaneAI/pennylane/pull/1708)
 
 <h3>Breaking changes</h3>
-
-- The updated version of `qml.fourier.spectrum`
-  behaves differently in three ways:
-  [(#1681)](https://github.com/PennyLaneAI/pennylane/pull/1681)
-
-  - It takes different arguments,
-  - the returned dictionary has a different structure, and
-  - as classical preprocessing is taken into account, the returned frequency spectra differ.
 
 - The `QNode.metric_tensor` method has been deprecated, and will be removed in an upcoming release.
   Please use the `qml.metric_tensor` transform instead.
