@@ -44,7 +44,7 @@ def generate_scf(mol, n_steps=50, tol=1e-8):
     where :math:`E` is a diagonal matrix of eigenvalues, representing the molecular orbital
     energies, :math:`C` is the matrix of molecular orbital coefficients, :math:`S` is the overlap
     matrix and :math:`F` is the Fock matrix, which also depends on the coefficients. Fixing an
-    initial guess :math:`C0`, the corresponding :math:`F0` is built and the system :math:`F0C = SCE`
+    initial guess :math:`C0`, the corresponding :math:`F0` is built and the system :math:`F0C0 = SC0E`
     is solved to obtain a solution :math:`C1`. This process is iteratively repeated until the
     coefficients are converged.
 
