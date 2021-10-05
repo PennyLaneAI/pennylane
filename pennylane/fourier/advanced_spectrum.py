@@ -41,11 +41,74 @@ def _process_ids(encoding_args, argnum, qnode):
             or an ``Ellipsis``
         list[int]: Numerical indices for arguments
 
-    If ``encoding_args`` are passed, they take precedence over ``argnum``.
-    Passing a set with ``keys`` is an alias for ``{key: ... for key in keys}``.
-    If both ``encoding_args`` and ``argnum`` are ``None``, all QNode arguments
-    of ``qnode`` that do not have a default value defined are included.
-    Of these arguments, all elements are included in ``encoding_args``
+    In ``advanced_spectrum`` both ``encoding_args`` and ``argnum`` are required.
+    However, they can be inferred from another and even from the QNode signature,
+    which is done in this helper function, using the following rules/design choices:
+
+      - If ``argnum`` is provided, the QNode arguments with the indices in ``argnum``
+        are considered and added to ``encoding_args`` with an ``Ellipsis``, meaning
+        that for array-valued arguments all parameters are considered in
+        ``advanced_spectrum``.
+      - If ``encoding_args`` is provided and is a dictionary, it is preserved
+        up to arguments that do not appear in the QNode. Also, it is converted to
+        an ``OrderedDict``, inferring the ordering from the QNode arguments.
+        Passing a set with ``keys`` instead is an alias for 
+        ``{key: ... for key in keys}``.
+        ``argnum`` will contain the indices of these arguments.
+      - If both ``encoding_args`` and ``argnum`` are passed, ``encoding_args`` takes
+        precedence over ``argnum``, in particular ``argnum`` is overwritten.
+      - If neither is passed, all arguments of the passed QNode that do not have a
+        default value defined are considered
+        and their value is an ``Ellipsis``, so that all parameters of array-valued
+        arguments will be considered in ``advanced_spectrum``.
+
+    **Example**
+
+    As an example, consider the qnode
+    
+    >>> @qml.qnode(dev)
+    >>> def circuit(a, b, c, x=2):
+    ...     return qml.expval(qml.PauliX(0))
+
+    which takes arguments:
+
+    >>> a = np.array([2.4, 1.2, 3.1])
+    >>> b = 0.2
+    >>> c = np.arange(20, dtype=float).reshape((2, 5, 2))
+
+    Then we may use the following inputs
+
+    >>> encoding_args = {"a": [(1,), (2,)], "c": ..., "x": [()]}
+    >>> argnum = [2, 0]
+
+    in various combinations:
+
+    >>> _process_ids(encoding_args, None, circuit)
+    (OrderedDict([('a', [(1,), (2,)]), ('c', Ellipsis), ('x', [()])]), [0, 2, 3])
+
+    The first output, ``encoding_args``, essentially is unchanged, it simply was ordered in
+    the order of the QNode arguments. The second output, ``argnum``, contains all three 
+    argument indices because all of ``a``, ``b``, and ``c`` appear in ``encoding_args``.
+    If we in addition pass ``argnum``, it is ignored:
+
+    >>> _process_ids(encoding_args, argnum, circuit)
+    (OrderedDict([('a', [(1,), (2,)]), ('c', Ellipsis), ('x', [()])]), [0, 2, 3])
+
+    Only if we leave out ``encoding_args`` does it make a difference:
+
+    >>> _process_ids(None, argnum, circuit)
+    (OrderedDict([('a', Ellipsis), ('c', Ellipsis)]), [0, 2])
+
+    Now only the arguments in ``argnum`` are considered, in particular the ``argnum`` input
+    is simply sorted. In ``encoding_args``, all argument names are paired with an ``Ellipsis``.
+    If we skip both inputs, all QNode arguments are extracted:
+
+    >>> _process_ids(None, None, circuit)
+    (OrderedDict([('a', Ellipsis), ('b', Ellipsis), ('c', Ellipsis)]), [0, 1, 2])
+
+    Note that ``x`` does not appear here, because it has a default value defined and thus is
+    considered a keyword argument.
+
     """
     sig_pars = signature(qnode.func).parameters
     arg_names = list(sig_pars.keys())
@@ -59,6 +122,7 @@ def _process_ids(encoding_args, argnum, qnode):
             encoding_args = OrderedDict({arg_names[argnum]: ...})
             argnum = [argnum]
         else:
+            argnum = sorted(argnum)
             encoding_args = OrderedDict((arg_names[num], ...) for num in argnum)
     else:
         requested_names = set(encoding_args)

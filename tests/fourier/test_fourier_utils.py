@@ -44,12 +44,10 @@ def test_format_nvec(nvec, exp):
         ({0}, {0, 0.5}, {0, 0.5}),
     ],
 )
-def test_join_spectra(spectrum1, spectrum2, expected, tol):
+def test_join_spectra(spectrum1, spectrum2, expected):
     """Test that spectra are joined correctly."""
     joined = join_spectra(spectrum1, spectrum2)
     assert joined == expected
-    # assert np.allclose(sorted(joined), expected, atol=tol, rtol=0)
-
 
 @pytest.mark.parametrize(
     "op, expected",
@@ -62,10 +60,10 @@ def test_join_spectra(spectrum1, spectrum2, expected, tol):
         (qml.ControlledPhaseShift(0.5, wires=[0, 1]), [0, 1]),  # generator is an array
     ],
 )
-def test_get_spectrum(op, expected, tol):
+def test_get_spectrum(op, expected):
     """Test that the spectrum is correctly extracted from an operator."""
     spec = get_spectrum(op, decimals=10)
-    assert np.allclose(sorted(spec), expected, atol=tol, rtol=0)
+    assert np.allclose(sorted(spec), expected, atol=1e-6, rtol=0)
 
 
 def test_get_spectrum_complains_no_generator():

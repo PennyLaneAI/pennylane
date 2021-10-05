@@ -17,6 +17,7 @@ import warnings
 from .coefficients import coefficients
 from .simple_spectrum import simple_spectrum
 from .advanced_spectrum import advanced_spectrum
+from .utils import join_spectra, get_spectrum
 
 
 def spectrum(*args, **kwargs):

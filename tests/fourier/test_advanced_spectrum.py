@@ -83,7 +83,7 @@ def circuit_8(a, x):
     return qml.expval(qml.PauliZ(0))
 
 
-circuits = [circuit_0, circuit_1, circuit_2, circuit_3, circuit_4, circuit_5]
+circuits_linear = [circuit_0, circuit_1, circuit_2, circuit_3, circuit_4, circuit_5]
 expected_spectra = [
     OrderedDict([("a", {(): [-4.0, -3.0, -2.0, -1.0, 0, 1.0, 2.0, 3.0, 4.0]})]),
     OrderedDict(
@@ -140,7 +140,13 @@ z = np.array([-1.9, -0.1, 0.49, 0.24])
 all_args = [(a,), (a, b), (x,), (x, y), (x, y), (x, y, z)]
 all_args_nonlinear = [(x, y, z), (a,), (a, x)]
 
+# Test data for ``process_ids``
 process_id_cases = [
+    # circuit         input           expected output
+    #       encoding_args, argnum  encoding_args, argnum
+    # We will test that ellipses are filled in correctly in encoding_args, that
+    # the argnum are compatible with the encoding_args and that encoding_args takes
+    # precedence as input over argnum, i.e. if both are provided, argnum is overwritten
     (circuit_0, {"a"}, None, {"a": ...}, [0]),
     (circuit_0, None, 0, {"a": ...}, [0]),
     (circuit_0, None, -1, {"a": ...}, [-1]),
@@ -216,7 +222,7 @@ class TestCircuits:
 
     @pytest.mark.parametrize(
         "circuit, args, expected",
-        zip(circuits, all_args, expected_spectra),
+        zip(circuits_linear, all_args, expected_spectra),
     )
     def test_various_circuits(self, circuit, args, expected):
         """Test the spectrum for some simple standard circuits."""

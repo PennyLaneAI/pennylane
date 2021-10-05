@@ -197,8 +197,8 @@ class TestInterfaces:
 
 
 def test_alias_spectrum():
-    """Test that the spectrum grows linearly with the number of
-    encoding gates if we use Pauli rotation encoding."""
+    """Test that the ``spectrum`` for ``simple_spectrum``
+    works properly."""
 
     dev = qml.device("default.qubit", wires=3)
 
@@ -210,5 +210,7 @@ def test_alias_spectrum():
                 qml.RY(0.4, wires=i)
         return qml.expval(qml.PauliZ(wires=0))
 
-    res = qml.fourier.spectrum(circuit)(0.1)
-    assert np.allclose(res["x"], range(-6, 7))
+    with pytest.warns(UserWarning, match="qml.fourier.spectrum has been renamed"):
+        res_alias = qml.fourier.spectrum(circuit)(0.1)
+    res_nonalias = qml.fourier.spectrum(circuit)(0.1)
+    assert res_alias==res_nonalias
