@@ -42,7 +42,7 @@ def _process_ids(encoding_args, argnum, qnode):
         list[int]: Numerical indices for arguments
 
     In ``qnode_spectrum`` both ``encoding_args`` and ``argnum`` are required.
-    However, they can be inferred from another and even from the QNode signature,
+    However, they can be inferred from one another and even from the QNode signature,
     which is done in this helper function, using the following rules/design choices:
 
       - If ``argnum`` is provided, the QNode arguments with the indices in ``argnum``
