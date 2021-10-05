@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,8 +33,8 @@ class Configuration:
 
     Args:
         name (str): filename of the configuration file.
-        This should be a valid TOML file. You may also pass an absolute
-        or a relative file path to the configuration file.
+            This should be a valid TOML file. You may also pass an absolute
+            or a relative file path to the configuration file.
     """
 
     def __init__(self, name):

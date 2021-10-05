@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,114 +16,17 @@ This submodule contains functionality for running Variational Quantum Eigensolve
 computations using PennyLane.
 """
 # pylint: disable=too-many-arguments, too-few-public-methods
-import numpy as np
+from collections.abc import Sequence
+import warnings
+
 import pennylane as qml
-from pennylane.operation import Observable, Tensor
+from pennylane import numpy as np
 
 
-OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identity": "I"}
+class ExpvalCost:
+    """Create a cost function that gives the expectation value of an input Hamiltonian.
 
-
-class Hamiltonian:
-    r"""Lightweight class for representing Hamiltonians for Variational Quantum
-    Eigensolver problems.
-
-    Hamiltonians can be expressed as linear combinations of observables, e.g.,
-    :math:`\sum_{k=0}^{N-1} c_k O_k`.
-
-    This class keeps track of the terms (coefficients and observables) separately.
-
-    Args:
-        coeffs (Iterable[float]): coefficients of the Hamiltonian expression
-        observables (Iterable[Observable]): observables in the Hamiltonian expression
-
-    .. seealso:: :class:`~.VQECost`, :func:`~.generate_hamiltonian`
-
-    **Example:**
-
-    A Hamiltonian can be created by simply passing the list of coefficients
-    as well as the list of observables:
-
-    >>> coeffs = [0.2, -0.543]
-    >>> obs = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.Hadamard(2)]
-    >>> H = qml.Hamiltonian(coeffs, obs)
-    >>> print(H)
-    (0.2) [X0 Z1] + (-0.543) [Z0 H2]
-
-    Alternatively, the :func:`~.generate_hamiltonian` function from the
-    :doc:`/introduction/chemistry` module can be used to generate a molecular
-    Hamiltonian.
-    """
-
-    def __init__(self, coeffs, observables):
-
-        if len(coeffs) != len(observables):
-            raise ValueError(
-                "Could not create valid Hamiltonian; "
-                "number of coefficients and operators does not match."
-            )
-
-        if any(np.imag(coeffs) != 0):
-            raise ValueError(
-                "Could not create valid Hamiltonian; " "coefficients are not real-valued."
-            )
-
-        for obs in observables:
-            if not isinstance(obs, Observable):
-                raise ValueError(
-                    "Could not create circuits. Some or all observables are not valid."
-                )
-
-        self._coeffs = coeffs
-        self._ops = observables
-
-    @property
-    def coeffs(self):
-        """Return the coefficients defining the Hamiltonian.
-
-        Returns:
-            Iterable[float]): coefficients in the Hamiltonian expression
-        """
-        return self._coeffs
-
-    @property
-    def ops(self):
-        """Return the operators defining the Hamiltonian.
-
-        Returns:
-            Iterable[Observable]): observables in the Hamiltonian expression
-        """
-        return self._ops
-
-    @property
-    def terms(self):
-        r"""The terms of the Hamiltonian expression :math:`\sum_{k=0}^{N-1}` c_k O_k`
-
-        Returns:
-            (tuple, tuple): tuples of coefficients and operations, each of length N
-        """
-        return self.coeffs, self.ops
-
-    def __str__(self):
-        terms = []
-
-        for i, obs in enumerate(self.ops):
-            coeff = "({}) [{{}}]".format(self.coeffs[i])
-
-            if isinstance(obs, Tensor):
-                obs_strs = ["{}{}".format(OBS_MAP[i.name], i.wires[0]) for i in obs.obs]
-                term = " ".join(obs_strs)
-            elif isinstance(obs, Observable):
-                term = "{}{}".format(OBS_MAP[obs.name], obs.wires[0])
-
-            terms.append(coeff.format(term))
-
-        return "\n+ ".join(terms)
-
-
-class VQECost:
-    """Create a VQE cost function, i.e., a cost function returning the
-    expectation value of a Hamiltonian.
+    This cost function is useful for a range of problems including VQE and QAOA.
 
     Args:
         ansatz (callable): The ansatz for the circuit before the final measurement step.
@@ -145,88 +48,162 @@ class VQECost:
             Supports all interfaces supported by the :func:`~.qnode` decorator.
         diff_method (str, None): The method of differentiation to use with the created cost function.
             Supports all differentiation methods supported by the :func:`~.qnode` decorator.
+        optimize (bool): Whether to optimize the observables composing the Hamiltonian by
+            separating them into qubit-wise commuting groups. Each group can then be executed
+            within a single QNode, resulting in fewer QNodes to evaluate.
 
     Returns:
         callable: a cost function with signature ``cost_fn(params, **kwargs)`` that evaluates
         the expectation of the Hamiltonian on the provided device(s)
 
-    .. seealso:: :class:`~.Hamiltonian`, :func:`~.generate_hamiltonian`, :func:`~.map`, :func:`~.dot`
+    .. seealso:: :class:`~.Hamiltonian`, :func:`~.molecular_hamiltonian`, :func:`~.map`, :func:`~.dot`
 
     **Example:**
 
-    First, we create a device and design an ansatz:
+    To construct an ``ExpvalCost`` cost function, we require a Hamiltonian to measure, and an ansatz
+    for our variational circuit.
+
+    We can construct a Hamiltonian manually,
 
     .. code-block:: python
-
-        dev = qml.device('default.qubit', wires=4)
-
-        def ansatz(params, **kwargs):
-            qml.BasisState(np.array([1, 1, 0, 0]), wires=[0, 1, 2, 3])
-            for i in range(4):
-                qml.Rot(*params[i], wires=i)
-            qml.CNOT(wires=[2, 3])
-            qml.CNOT(wires=[2, 0])
-            qml.CNOT(wires=[3, 1])
-
-    Now we can create the Hamiltonian that defines the VQE problem:
-
-    .. code-block:: python3
 
         coeffs = [0.2, -0.543]
         obs = [
             qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliY(3),
             qml.PauliZ(0) @ qml.Hadamard(2)
         ]
-        H = qml.vqe.Hamiltonian(coeffs, obs)
+        H = qml.Hamiltonian(coeffs, obs)
 
-    Alternatively, the :func:`~.generate_hamiltonian` function from the
-    :doc:`/introduction/chemistry` module can be used to generate a molecular
-    Hamiltonian.
+    Alternatively, the :func:`~.molecular_hamiltonian` function from the
+    :doc:`/introduction/chemistry` module can be used to generate a molecular Hamiltonian.
 
-    Next, we can define the cost function:
+    Once we have our Hamiltonian, we can select an ansatz and construct
+    the cost function.
 
-    >>> cost = qml.VQECost(ansatz, hamiltonian, dev, interface="torch")
-    >>> params = torch.rand([4, 3])
+    >>> ansatz = qml.templates.StronglyEntanglingLayers
+    >>> dev = qml.device("default.qubit", wires=4)
+    >>> cost = qml.ExpvalCost(ansatz, H, dev, interface="torch")
+    >>> params = torch.rand([2, 4, 3])
     >>> cost(params)
-    tensor(0.0245, dtype=torch.float64)
+    tensor(-0.2316, dtype=torch.float64)
 
-    The cost function can be minimized using any gradient descent-based
+    The cost function can then be minimized using any gradient descent-based
     :doc:`optimizer </introduction/optimizers>`.
+
+    .. UsageDetails::
+
+        **Optimizing observables:**
+
+        Setting ``optimize=True`` can be used to decrease the number of device executions. The
+        observables composing the Hamiltonian can be separated into groups that are qubit-wise
+        commuting using the :mod:`~.grouping` module. These groups can be executed together on a
+        *single* qnode, resulting in a lower device overhead:
+
+        .. code-block:: python
+
+            commuting_obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1)]
+            H = qml.Hamiltonian([1, 1], commuting_obs)
+
+            dev = qml.device("default.qubit", wires=2)
+            ansatz = qml.templates.StronglyEntanglingLayers
+
+            cost_opt = qml.ExpvalCost(ansatz, H, dev, optimize=True)
+            cost_no_opt = qml.ExpvalCost(ansatz, H, dev, optimize=False)
+
+            shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=3, n_wires=2)
+            params = np.random.random(shape)
+
+        Grouping these commuting observables leads to fewer device executions:
+
+        >>> cost_opt(params)
+        >>> ex_opt = dev.num_executions
+        >>> cost_no_opt(params)
+        >>> ex_no_opt = dev.num_executions - ex_opt
+        >>> print("Number of executions:", ex_no_opt)
+        Number of executions: 2
+        >>> print("Number of executions (optimized):", ex_opt)
+        Number of executions (optimized): 1
     """
 
     def __init__(
-        self, ansatz, hamiltonian, device, interface="autograd", diff_method="best", **kwargs
+        self,
+        ansatz,
+        hamiltonian,
+        device,
+        interface="autograd",
+        diff_method="best",
+        optimize=False,
+        **kwargs,
     ):
+        if kwargs.get("measure", "expval") != "expval":
+            raise ValueError("ExpvalCost can only be used to construct sums of expectation values.")
+
         coeffs, observables = hamiltonian.terms
+
         self.hamiltonian = hamiltonian
-        """Hamiltonian: the hamiltonian defining the VQE problem."""
+        """Hamiltonian: the input Hamiltonian."""
+
+        self.qnodes = None
+        """QNodeCollection: The QNodes to be evaluated. Each QNode corresponds to the expectation
+        value of each observable term after applying the circuit ansatz."""
+
+        self._multiple_devices = isinstance(device, Sequence)
+        """Bool: Records if multiple devices are input"""
+
+        if np.isclose(qml.math.toarray(qml.math.count_nonzero(coeffs)), 0):
+            self.cost_fn = lambda *args, **kwargs: np.array(0)
+            return
+
+        self._optimize = optimize
 
         self.qnodes = qml.map(
             ansatz, observables, device, interface=interface, diff_method=diff_method, **kwargs
         )
-        """QNodeCollection: The QNodes to be evaluated. Each QNode corresponds to the
-        the expectation value of each observable term after applying the circuit ansatz.
-        """
 
-        self.cost_fn = qml.dot(coeffs, self.qnodes)
+        if self._optimize:
+
+            if self._multiple_devices:
+                raise ValueError("Using multiple devices is not supported when optimize=True")
+
+            obs_groupings, coeffs_groupings = qml.grouping.group_observables(observables, coeffs)
+            d = device[0] if self._multiple_devices else device
+            w = d.wires.tolist()
+
+            @qml.qnode(device, interface=interface, diff_method=diff_method, **kwargs)
+            def circuit(*qnode_args, obs, **qnode_kwargs):
+                """Converting ansatz into a full circuit including measurements"""
+                ansatz(*qnode_args, wires=w, **qnode_kwargs)
+                return [qml.expval(o) for o in obs]
+
+            def cost_fn(*qnode_args, **qnode_kwargs):
+                """Combine results from grouped QNode executions with grouped coefficients"""
+                total = 0
+                for o, c in zip(obs_groupings, coeffs_groupings):
+                    res = circuit(*qnode_args, obs=o, **qnode_kwargs)
+                    total += sum([r * c_ for r, c_ in zip(res, c)])
+                return total
+
+            self.cost_fn = cost_fn
+
+        else:
+            self.cost_fn = qml.dot(coeffs, self.qnodes)
 
     def __call__(self, *args, **kwargs):
         return self.cost_fn(*args, **kwargs)
 
-    def metric_tensor(self, args, kwargs=None, diag_approx=False, only_construct=False):
-        """Evaluate the value of the metric tensor.
 
-        Args:
-            args (tuple[Any]): positional (differentiable) arguments
-            kwargs (dict[str, Any]): auxiliary arguments
-            diag_approx (bool): iff True, use the diagonal approximation
-            only_construct (bool): Iff True, construct the circuits used for computing
-                the metric tensor but do not execute them, and return None.
+class VQECost(ExpvalCost):
+    """Create a cost function that gives the expectation value of an input Hamiltonian.
 
-        Returns:
-            array[float]: metric tensor
-        """
-        # We know that for VQE, all the qnodes share the same ansatz so we select the first
-        return self.qnodes.qnodes[0].metric_tensor(
-            args=args, kwargs=kwargs, diag_approx=diag_approx, only_construct=only_construct
+    .. warning::
+        Use of :class:`~.VQECost` is deprecated and should be replaced with
+        :class:`~.ExpvalCost`.
+    """
+
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            "Use of VQECost is deprecated and should be replaced with ExpvalCost",
+            UserWarning,
+            2,
         )
+        super().__init__(*args, **kwargs)

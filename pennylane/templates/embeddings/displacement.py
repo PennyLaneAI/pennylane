@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,22 +15,13 @@ r"""
 Contains the ``DisplacementEmbedding`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from pennylane.templates.decorator import template
-from pennylane.ops import Displacement
-from pennylane.templates import broadcast
-from pennylane.wires import Wires
-from pennylane.templates.utils import (
-    check_shape,
-    check_no_variable,
-    check_is_in_options,
-    get_shape,
-)
+import pennylane as qml
+from pennylane.operation import Operation, AnyWires
 
 
-@template
-def DisplacementEmbedding(features, wires, method="amplitude", c=0.1):
+class DisplacementEmbedding(Operation):
     r"""Encodes :math:`N` features into the displacement amplitudes :math:`r` or phases :math:`\phi` of :math:`M` modes,
-     where :math:`N\leq M`.
+    where :math:`N\leq M`.
 
     The mathematical definition of the displacement gate is given by the operator
 
@@ -43,9 +34,8 @@ def DisplacementEmbedding(features, wires, method="amplitude", c=0.1):
     ``features`` than wires, the circuit does not apply the remaining displacement gates.
 
     Args:
-        features (array): Array of features of size (N,)
-        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
-            a Wires object.
+        features (tensor_like): tensor of features
+        wires (Iterable): wires that the template acts on
         method (str): ``'phase'`` encodes the input into the phase of single-mode displacement, while
             ``'amplitude'`` uses the amplitude
         c (float): value of the phase of all displacement gates if ``execution='amplitude'``, or
@@ -53,47 +43,43 @@ def DisplacementEmbedding(features, wires, method="amplitude", c=0.1):
 
     Raises:
         ValueError: if inputs do not have the correct format
-   """
+    """
 
-    #############
-    # Input checks
+    num_params = 1
+    num_wires = AnyWires
+    par_domain = "A"
 
-    wires = Wires(wires)
+    def __init__(self, features, wires, method="amplitude", c=0.1, do_queue=True, id=None):
 
-    check_no_variable(method, msg="'method' cannot be differentiable")
-    check_no_variable(c, msg="'c' cannot be differentiable")
+        shape = qml.math.shape(features)
+        constants = [c] * shape[0]
+        constants = qml.math.convert_like(constants, features)
 
-    expected_shape = (len(wires),)
-    check_shape(
-        features,
-        expected_shape,
-        bound="max",
-        msg="'features' must be of shape {} or smaller; got {}."
-        "".format(expected_shape, get_shape(features)),
-    )
+        if len(shape) != 1:
+            raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
 
-    check_is_in_options(
-        method,
-        ["amplitude", "phase"],
-        msg="did not recognize option {} for 'method'" "".format(method),
-    )
+        n_features = shape[0]
+        if n_features != len(wires):
+            raise ValueError(f"Features must be of length {len(wires)}; got length {n_features}.")
 
-    #############
+        if method == "amplitude":
+            pars = qml.math.stack([features, constants], axis=1)
 
-    constants = [c] * len(features)
+        elif method == "phase":
+            pars = qml.math.stack([constants, features], axis=1)
 
-    if method == "amplitude":
-        broadcast(
-            unitary=Displacement,
-            pattern="single",
-            wires=wires,
-            parameters=list(zip(features, constants)),
-        )
+        else:
+            raise ValueError(f"did not recognize method {method}")
 
-    elif method == "phase":
-        broadcast(
-            unitary=Displacement,
-            pattern="single",
-            wires=wires,
-            parameters=list(zip(constants, features)),
-        )
+        super().__init__(pars, wires=wires, do_queue=do_queue, id=id)
+
+    def expand(self):
+
+        pars = self.parameters[0]
+
+        with qml.tape.QuantumTape() as tape:
+
+            for i in range(len(self.wires)):
+                qml.Displacement(pars[i, 0], pars[i, 1], wires=self.wires[i : i + 1])
+
+        return tape

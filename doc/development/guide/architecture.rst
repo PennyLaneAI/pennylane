@@ -76,29 +76,29 @@ A  quantum node or QNode (represented by a subclass of
 :math:`f(x;\theta)=R^m\rightarrow R^n` that is executed using quantum
 information processing on a quantum device.
 
-Apart from encapsulating quantum functions, QNodes also provide custom quantum
-differentiation rules. Examples include the :doc:`parameter-shift rules
-<glossary/parameter_shift>` parameter-shift rule, where the derivative of
-quantum functions can be expressed by a linear combination of the other quantum
-function. As these rules allow quantum gradients to be obtained from QNodes,
-hybrid computations may include QNodes as part of training deep learnings
-models.
-
-Users don't typically instantiate QNodes directly---instead, the :func:`~.qnode` decorator or
-:func:`~.QNode` constructor function automates the process of creating a QNode from a provided
-quantum function and device. The constructor attempts to determine the ``"best"`` QNode
-subclass/differentiation method for the provided device and interface. For more fine-grained control,
+Users don't typically instantiate QNodes directly---instead, the :func:`~pennylane.qnode` decorator or
+:func:`~pennylane.QNode` constructor function automates the process of creating a QNode from a provided
+quantum function and device. The constructor attempts to determine the ``"best"``
+differentiation method for the provided device and interface. For more fine-grained control,
 the differentiation method can be specified directly via the ``diff_method`` option.
 
-A common representation of quantum circuits is by creating a `Directed
-Acyclic Graph (DAG)
-<https://pennylane.ai/qml/glossary/hybrid_computation.html#directed-acyclic-graphs>`__
-and representing quantum operations within such a graph. Each ``QNode``
-represents the quantum circuit by building such a DAG by creating a
-:class:`~.CircuitGraph` instance.
+Tapes
+*****
 
-For further details on QNodes, and a full list of QNodes with their custom
-differentiation rule, refer to the :doc:`/code/qml_qnodes` module.
+Internally, QNodes store the details of the quantum processing using a datastructure called the
+*tape*. Apart from encapsulating quantum processing, tapes also provide custom quantum
+differentiation rules. Examples include the :doc:`parameter-shift rule <glossary/parameter_shift>`,
+where the derivative of a tape can be expressed by a linear combination of other tapes plus
+classical post-processing. As these rules allow quantum gradients to be obtained from tapes, hybrid
+computations may include QNodes as part of training deep learning models.
+
+A common representation of quantum circuits is a `Directed Acyclic Graph (DAG)
+<https://pennylane.ai/qml/glossary/hybrid_computation.html#directed-acyclic-graphs>`__ where quantum
+operations are nodes within the graph. Each tape builds such a DAG using a :class:`~.CircuitGraph`
+instance.
+
+For further details on tapes, and a full list of tapes with their custom
+differentiation rules, refer to the :doc:`/code/qml_tape` module.
 
 Interfaces
 **********
@@ -140,7 +140,7 @@ number of wires it acts on, etc.) and further convenience methods (e.g.
 
 Two important subclasses of the ``Operator`` class are:
 
-* the :class:`~.Operation` class representing quantum gates and
+* the :class:`~.Operation` class representing quantum gates,
 * the :class:`~.Observable` representing quantum observables specified for
   measurement.
 
@@ -156,7 +156,7 @@ which are evaluated by a ``QNode`` on a bound device. Users can define such quan
 functions by creating regular Python functions and instantiating ``Operator``
 instances in temporal order, one per line.
 
-The following is an example of this using the :func:`~.qnode` decorator and a
+The following is an example of this using the :func:`~pennylane.qnode` decorator and a
 valid pre-defined device (``dev``).
 
 .. code-block:: python
@@ -175,20 +175,8 @@ QNode is evaluated. On QNode evaluation, the quantum function is executed.
 
 Operators are queued to the QNode on instantiation, by having :meth:`.Operator.__init__`
 call the :meth:`.Operator.queue` method. The operators themselves queue themselves to
-the surrounding :class:`~.QueuingContext`.
+the surrounding :class:`~.pennylane.QueuingContext`.
 
-Measurement functions such as :func:`~.expval` are responsible for queuing observables.
+Measurement functions such as :func:`~.pennylane.expval` are responsible for queuing observables.
 
-For further details, refer to the description in :class:`~.QueuingContext`.
-
-Variables
-*********
-
-Circuit parameters in PennyLane are tracked and updated using
-:class:`~.Variable`. They play a key role in the evaluation of ``QNode`` gradients, as
-the symbolic parameters are substituted with numeric values. The ``Variable`` class plays
-an important role in book-keeping, allowing PennyLane to keep track of which parameters are
-used in which operations, and automatically perform the product and chain rule where required.
-
-We refer to the :doc:`/code/qml_variable` page for a more in-depth description of how
-``Variables`` are used during execution.
+For further details, refer to the description in :class:`~.pennylane.QueuingContext`.

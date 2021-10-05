@@ -16,7 +16,15 @@ from setuptools import setup, find_packages
 with open("pennylane_qchem/_version.py") as f:
     version = f.readlines()[-1].split()[-1].strip("\"'")
 
-requirements = ["pennylane>=0.10", "openfermion", "openfermionpyscf", "openfermionpsi4", "pyscf<=1.7.1"]
+requirements = [
+    "pennylane>=0.13",
+    "scipy",
+    "openfermion>=1.0",
+    "openfermionpyscf>=0.5; platform_system != 'Windows'",
+    "openfermionpsi4>=0.5",
+    "h5py<=3.2.1",
+    "pyscf>=1.7.2; platform_system != 'Windows'",
+]
 
 info = {
     "name": "PennyLane-Qchem",
@@ -27,6 +35,7 @@ info = {
     "packages": find_packages(where="."),
     "description": "Package for quantum chemistry applications",
     "long_description": open("README.rst").read(),
+    "long_description_content_type": "text/x-rst",
     "provides": ["pennylane_qchem"],
     "install_requires": requirements,
     "entry_points": {"pennylane.qchem": ["OpenFermion = pennylane_qchem.qchem"]},
@@ -43,9 +52,9 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.6",
     "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Scientific/Engineering :: Physics",
 ]

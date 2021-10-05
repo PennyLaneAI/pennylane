@@ -1,13 +1,13 @@
 .. _torch_interf:
 
 PyTorch interface
-=================
+==================
 
 In order to use PennyLane in combination with PyTorch, we have to generate PyTorch-compatible
-quantum nodes. A basic :class:`QNode <pennylane.qnode.QNode>` can be translated into a quantum node that interfaces
-with PyTorch, either by using the ``interface='torch'`` flag in the QNode Decorator, or
-by calling the :meth:`QNode.to_torch <pennylane.QNode.to_torch>` method. Internally, the translation is executed by
-the :func:`TorchQNode <pennylane.interfaces.torch.TorchQNode>` function that returns the new quantum node object.
+quantum nodes. Such a QNode can be created explicitly using the ``interface='torch'`` keyword in
+the QNode decorator or QNode class constructor. Alternatively, an existing, basic QNode can be
+translated into a quantum node that interfaces with PyTorch by calling the
+:meth:`QNode.to_torch() <pennylane.qnode.QNode.to_torch>` method.
 
 .. note::
 
@@ -20,18 +20,48 @@ the :func:`TorchQNode <pennylane.interfaces.torch.TorchQNode>` function that ret
         import pennylane as qml
         import torch
 
+Using the PyTorch interface is easy in PennyLane --- let's consider a few ways
+it can be done.
 
-Construction via the decorator
-------------------------------
+
+.. _torch_interf_keyword:
+
+Construction via keyword
+------------------------
 
 The :ref:`QNode decorator <intro_vcirc_decorator>` is the recommended way for creating
-a PyTorch-capable QNode in PennyLane. Simply specify the ``interface='torch'`` keyword argument:
+:class:`QNode <pennylane.QNode>` objects in PennyLane. The only change required to construct a PyTorch-capable
+QNode is to specify the ``interface='torch'`` keyword argument:
 
 .. code-block:: python
 
     dev = qml.device('default.qubit', wires=2)
 
     @qml.qnode(dev, interface='torch')
+    def circuit(phi, theta):
+        qml.RX(phi[0], wires=0)
+        qml.RY(phi[1], wires=1)
+        qml.CNOT(wires=[0, 1])
+        qml.PhaseShift(theta, wires=0)
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
+
+The QNode ``circuit()`` is now a PyTorch-capable QNode, accepting ``torch.tensor`` objects as
+input, and returning ``torch.tensor`` objects. Subclassing from ``torch.autograd.Function``,
+it can now be used like any other PyTorch function:
+
+>>> phi = torch.tensor([0.5, 0.1])
+>>> theta = torch.tensor(0.2)
+>>> circuit(phi, theta)
+tensor([0.8776, 0.6880], dtype=torch.float64)
+
+PyTorch-capable QNodes can also be created using the
+:ref:`QNode class constructor <intro_vcirc_qnode>`:
+
+.. code-block:: python
+
+    dev1 = qml.device('default.qubit', wires=2)
+    dev2 = qml.device('default.mixed', wires=2)
+
     def circuit1(phi, theta):
         qml.RX(phi[0], wires=0)
         qml.RY(phi[1], wires=1)
@@ -39,46 +69,32 @@ a PyTorch-capable QNode in PennyLane. Simply specify the ``interface='torch'`` k
         qml.PhaseShift(theta, wires=0)
         return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
 
-The QNode ``circuit1()`` is now a PyTorch-capable QNode, accepting ``torch.tensor`` objects
-as input, and returning ``torch.tensor`` objects. Subclassing from ``torch.autograd.Function``,
-it can now be used like any other PyTorch function:
+    qnode1 = qml.QNode(circuit1, dev1)
+    qnode2 = qml.QNode(circuit1, dev2, interface='torch')
 
->>> phi = torch.tensor([0.5, 0.1])
->>> theta = torch.tensor(0.2)
->>> circuit1(phi, theta)
+``qnode1()`` is a default NumPy-interfacing QNode, while ``qnode2()`` is a PyTorch-capable
+QNode:
+
+>>> qnode2(phi, theta)
 tensor([0.8776, 0.6880], dtype=torch.float64)
 
-Construction from a NumPy QNode
--------------------------------
 
-Sometimes, it is more convenient to instantiate a :class:`~.QNode` object directly, for example,
-if you would like to reuse the same quantum function across multiple devices, or even
-use different classical interfaces:
+.. _torch_interf_convert:
 
-.. code-block:: python
+Construction from an existing QNode
+-----------------------------------
 
-    dev1 = qml.device('default.qubit', wires=2)
-    dev2 = qml.device('forest.wavefunction', wires=2)
+Let's say we change our mind and now want ``qnode1()`` to interface with PyTorch. We can easily
+perform the conversion by using the :meth:`~.QNode.to_torch` method:
 
-    def circuit2(phi, theta):
-        qml.RX(phi[0], wires=0)
-        qml.RY(phi[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.PhaseShift(theta, wires=0)
-        return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
+>>> qnode1.to_torch()
+>>> qnode1
+<QNode: device='default.mixed', func=circuit1, wires=2, interface=PyTorch>
 
-    qnode1 = qml.QNode(circuit2, dev1)
-    qnode2 = qml.QNode(circuit2, dev2)
+``qnode1()`` is now a PyTorch-capable QNode, as well.
 
-We can convert the default NumPy-interfacing QNode to a PyTorch-interfacing QNode by
-using the :meth:`~.QNode.to_torch` method:
 
->>> qnode1_torch = qnode1.to_torch()
->>> qnode1_torch
-<QNode: device='default.qubit', func=circuit, wires=2, interface=PyTorch>
-
-Internally, the :meth:`QNode.to_torch <qnode.QNode.to_torch>` method uses the
-:func:`TorchQNode <interfaces.torch.TorchQNode>` function to do the conversion.
+.. _pytorch_qgrad:
 
 Quantum gradients using PyTorch
 -------------------------------
@@ -90,8 +106,6 @@ For example:
 
 .. code-block:: python
 
-    from torch.autograd import Variable
-
     dev = qml.device('default.qubit', wires=2)
 
     @qml.qnode(dev, interface='torch')
@@ -102,8 +116,8 @@ For example:
         qml.PhaseShift(theta, wires=0)
         return qml.expval(qml.PauliZ(0))
 
-    phi = Variable(torch.tensor([0.5, 0.1]), requires_grad=True)
-    theta = Variable(torch.tensor(0.2), requires_grad=True)
+    phi = torch.tensor([0.5, 0.1], requires_grad=True)
+    theta = torch.tensor(0.2, requires_grad=True)
     result = circuit3(phi, theta)
 
 Now, performing the backpropagation and accumulating the gradients:
@@ -113,6 +127,31 @@ Now, performing the backpropagation and accumulating the gradients:
 tensor([-0.4794,  0.0000])
 >>> theta.grad
 tensor(-5.5511e-17)
+
+To include non-differentiable data arguments, simply set ``requires_grad=False``:
+
+.. code-block:: python
+
+    @qml.qnode(dev, interface='torch')
+    def circuit3(weights, data):
+        qml.templates.AmplitudeEmbedding(data, normalize=True, wires=[0, 1])
+        qml.RX(weights[0], wires=0)
+        qml.RY(weights[1], wires=1)
+        qml.CNOT(wires=[0, 1])
+        qml.PhaseShift(weights[2], wires=0)
+        return qml.expval(qml.PauliZ(0))
+
+Here, ``data`` is non-trainable embedded data, so should be marked as non-differentiable:
+
+>>> weights = torch.tensor([0.1, 0.2, 0.3], requires_grad=True)
+>>> data = torch.tensor(np.random.random([4]), requires_grad=False)
+>>> result = circuit3(weights, data)
+>>> result.backward()
+>>> data.grad
+None
+>>> weights.grad
+tensor([3.6317e-02, 0.0000e+00, 5.5511e-17])
+
 
 .. _pytorch_optimize:
 
@@ -131,7 +170,6 @@ we can do the following:
 .. code-block:: python
 
     import torch
-    from torch.autograd import Variable
     import pennylane as qml
 
     dev = qml.device('default.qubit', wires=2)
@@ -147,8 +185,8 @@ we can do the following:
     def cost(phi, theta):
         return torch.abs(circuit4(phi, theta) - 0.5)**2
 
-    phi = Variable(torch.tensor([0.011, 0.012]), requires_grad=True)
-    theta = Variable(torch.tensor(0.05), requires_grad=True)
+    phi = torch.tensor([0.011, 0.012], requires_grad=True)
+    theta = torch.tensor(0.05, requires_grad=True)
 
     opt = torch.optim.Adam([phi, theta], lr = 0.1)
 
@@ -178,5 +216,10 @@ tensor(0.5000, device='cuda:0', dtype=torch.float64, grad_fn=<_TorchQNodeBackwar
 
     See https://pytorch.org/docs/stable/notes/extending.html#adding-a-module for more details.
 
+Torch.nn integration
+--------------------
 
-
+Once you have a Torch-compaible QNode, it is easy to convert this into a ``torch.nn`` layer. To help
+automate this process, PennyLane also provides a :class:`~.qnn.TorchLayer` class to easily
+convert a QNode to a ``torch.nn`` layer. Please see the corresponding :class:`~.qnn.TorchLayer`
+documentation for more details and examples.

@@ -1,0 +1,11 @@
+\documentclass{standalone}
+\usepackage{qcircuit}
+
+\begin{document}
+\Qcircuit @C=1em @R=0.5em {
+& \multigate{2}{\mathcal{A}} & \multigate{3}{\mathcal{R}} & \qw \\
+& \ghost{\mathcal{A}} & \ghost{\mathcal{R}} & \qw \\
+& \ghost{\mathcal{A}} & \ghost{\mathcal{R}} & \qw \\
+& \qw & \ghost{\mathcal{R}} & \qw \\
+}
+\end{document}

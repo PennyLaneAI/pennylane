@@ -61,7 +61,7 @@ class TestDecorator:
         for res_op, exp_op in zip(res, expected):
             assert res_op.name == exp_op.name
             assert res_op.wires == exp_op.wires
-            assert res_op.params == exp_op.params
+            assert res_op.data == exp_op.data
 
     def test_decorated_dummy_template(self):
         """Test the decorator for an already decorated template."""
@@ -72,7 +72,7 @@ class TestDecorator:
         for res_op, exp_op in zip(res, expected):
             assert res_op.name == exp_op.name
             assert res_op.wires == exp_op.wires
-            assert res_op.params == exp_op.params
+            assert res_op.data == exp_op.data
 
     def test_decorated_decorated_dummy_template(self):
         """Test the decorator for decorating an already decorated template."""
@@ -87,4 +87,4 @@ class TestDecorator:
         for res_op, exp_op in zip(res, expected):
             assert res_op.name == exp_op.name
             assert res_op.wires == exp_op.wires
-            assert res_op.params == exp_op.params
+            assert res_op.data == exp_op.data

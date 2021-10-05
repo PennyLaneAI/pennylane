@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,23 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the ``BasicEntanglerLayers`` template.
+Contains the BasicEntanglerLayers template.
 """
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from pennylane.templates.decorator import template
-from pennylane.ops import CNOT, RX
-from pennylane.templates import broadcast
-from pennylane.templates.utils import (
-    check_shape,
-    check_no_variable,
-    check_number_of_layers,
-    get_shape,
-)
-from pennylane.wires import Wires
+# pylint: disable=consider-using-enumerate,too-many-arguments
+import pennylane as qml
+from pennylane.operation import Operation, AnyWires
 
 
-@template
-def BasicEntanglerLayers(weights, wires, rotation=None):
+class BasicEntanglerLayers(Operation):
     r"""Layers consisting of one-parameter single-qubit rotations on each qubit, followed by a closed chain
     or *ring* of CNOT gates.
 
@@ -56,10 +47,9 @@ def BasicEntanglerLayers(weights, wires, rotation=None):
             :target: javascript:void(0);
 
     Args:
-        weights (array[float]): array of weights with shape ``(L, len(wires))``, each weight is used as a parameter
-                                for the rotation
-        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
-            a Wires object.
+        weights (tensor_like): Weight tensor of shape ``(L, len(wires))``. Each weight is used as a parameter
+                                for the rotation.
+        wires (Iterable): wires that the template acts on
         rotation (pennylane.ops.Operation): one-parameter single-qubit gate to use,
                                             if ``None``, :class:`~pennylane.ops.RX` is used as default
     Raises:
@@ -86,20 +76,16 @@ def BasicEntanglerLayers(weights, wires, rotation=None):
         >>> circuit([[pi, pi, pi]])
         [1., 1., -1.]
 
-        **Parameter initialization function**
+        **Parameter shape**
 
-        The :mod:`~pennylane.init` module has two parameter initialization functions, ``basic_entangler_layers_normal``
-        and ``basic_entangler_layers_uniform``.
+        The shape of the weights argument can be computed by the static method
+        :meth:`~.BasicEntanglerLayers.shape` and used when creating randomly
+        initialised weight tensors:
 
         .. code-block:: python
 
-            from pennylane.init import basic_entangler_layers_normal
-
-            n_layers = 4
-            weights = basic_entangler_layers_normal(n_layers=n_layers, n_wires=n_wires)
-
-            circuit(weights)
-
+            shape = BasicEntanglerLayers.shape(n_layers=2, n_wires=2)
+            weights = np.random.random(size=shape)
 
         **No periodic boundary for two wires**
 
@@ -135,28 +121,59 @@ def BasicEntanglerLayers(weights, wires, rotation=None):
         ``ValueError: Wrong number of parameters``.
     """
 
-    #############
-    # Input checks
+    num_params = 1
+    num_wires = AnyWires
+    par_domain = "A"
+    grad_method = None
 
-    if rotation is None:
-        rotation = RX
+    def __init__(self, weights, wires=None, rotation=None, do_queue=True, id=None):
 
-    wires = Wires(wires)
+        self.rotation = rotation or qml.RX
 
-    check_no_variable(rotation, msg="'rotation' cannot be differentiable")
+        shape = qml.math.shape(weights)
+        if len(shape) != 2:
+            raise ValueError(f"Weights tensor must be 2-dimensional; got shape {shape}")
+        if shape[1] != len(wires):
+            raise ValueError(
+                f"Weights tensor must have second dimension of length {len(wires)}; got {shape[1]}"
+            )
 
-    repeat = check_number_of_layers([weights])
+        super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 
-    expected_shape = (repeat, len(wires))
-    check_shape(
-        weights,
-        expected_shape,
-        msg="'weights' must be of shape {}; got {}" "".format(expected_shape, get_shape(weights)),
-    )
+    def expand(self):
 
-    ###############
+        weights = self.parameters[0]
 
-    for layer in range(repeat):
+        # first dimension of the weights tensor determines
+        # the number of layers
+        repeat = qml.math.shape(weights)[0]
 
-        broadcast(unitary=rotation, pattern="single", wires=wires, parameters=weights[layer])
-        broadcast(unitary=CNOT, pattern="ring", wires=wires)
+        with qml.tape.QuantumTape() as tape:
+
+            for layer in range(repeat):
+                for i in range(len(self.wires)):
+                    self.rotation(weights[layer][i], wires=self.wires[i : i + 1])
+
+                if len(self.wires) == 2:
+                    qml.CNOT(wires=self.wires)
+
+                elif len(self.wires) > 2:
+                    for i in range(len(self.wires)):
+                        w = self.wires.subset([i, i + 1], periodic_boundary=True)
+                        qml.CNOT(wires=w)
+
+        return tape
+
+    @staticmethod
+    def shape(n_layers, n_wires):
+        r"""Returns the shape of the weight tensor required for this template.
+
+        Args:
+            n_layers (int): number of layers
+            n_wires (int): number of qubits
+
+        Returns:
+            tuple[int]: shape
+        """
+
+        return n_layers, n_wires

@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,25 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the ``IQPEmbedding`` template.
+Contains the IQPEmbedding template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from collections import Sequence, Iterable
 from itertools import combinations
-from pennylane.templates.decorator import template
-from pennylane.ops import RZ, MultiRZ, Hadamard
-from pennylane.templates import broadcast
-from pennylane.templates.utils import (
-    check_shape,
-    check_type,
-    get_shape,
-    check_no_variable,
-)
-from pennylane.wires import Wires
+
+import pennylane as qml
+from pennylane.operation import Operation, AnyWires
 
 
-@template
-def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
+class IQPEmbedding(Operation):
     r"""
     Encodes :math:`n` features into :math:`n` qubits using diagonal gates of an IQP circuit.
 
@@ -80,9 +71,8 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
       Since diagonal gates commute, the order of the entanglers does not change the result.
 
     Args:
-        features (array): array of features to encode
-        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
-            a Wires object.
+        features (tensor_like): tensor of features to encode
+        wires (Iterable): wires that the template acts on
         n_repeats (int): number of times the basic embedding is repeated
         pattern (list[int]): specifies the wires and features of the entanglers
 
@@ -101,28 +91,11 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
             dev = qml.device('default.qubit', wires=3)
 
             @qml.qnode(dev)
-            def circuit(features=None):
-                IQPEmbedding(features=features, wires=range(3))
+            def circuit(features):
+                IQPEmbedding(features, wires=range(3))
                 return [qml.expval(qml.PauliZ(w)) for w in range(3)]
 
-            circuit(features=[1., 2., 3.])
-
-        **Do not pass features as a positional argument to the qnode**
-
-        The ``features`` argument cannot be passed to the quantum node
-        as a positional argument. This is due to the fact that the embedding performs non-trivial calculations
-        on the features. As a consequence, the following code **will produce an error**:
-
-        .. code-block:: python
-
-            @qml.qnode(dev)
-            def circuit(features):
-               IQPEmbedding(features=features, wires=range(3), n_repeats=2)
-               return [qml.expval(qml.PauliZ(w)) for w in range(3)]
-
             circuit([1., 2., 3.])
-
-        >>> ValueError: 'features' cannot be differentiable
 
         **Repeating the embedding**
 
@@ -131,11 +104,11 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
         .. code-block:: python
 
             @qml.qnode(dev)
-            def circuit(features=None):
-                IQPEmbedding(features=features, wires=range(3), n_repeats=4)
+            def circuit(features):
+                IQPEmbedding(features, wires=range(3), n_repeats=4)
                 return [qml.expval(qml.PauliZ(w)) for w in range(3)]
 
-            circuit(features=[1., 2., 3.])
+            circuit([1., 2., 3.])
 
         Every repetition uses exactly the same quantum circuit.
 
@@ -149,11 +122,11 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
             pattern = [[1, 2], [0, 2], [1, 0]]
 
             @qml.qnode(dev)
-            def circuit(features=None):
-                IQPEmbedding(features=features, wires=range(3), pattern=pattern)
+            def circuit(features):
+                IQPEmbedding(features, wires=range(3), pattern=pattern)
                 return [qml.expval(qml.PauliZ(w)) for w in range(3)]
 
-            circuit(features=[1., 2., 3.])
+            circuit([1., 2., 3.])
 
         Since diagonal gates commute, the order of the wire pairs has no effect on the result.
 
@@ -165,12 +138,12 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
             pattern2 = [[1, 0], [0, 2], [1, 2]]  # a reshuffling of pattern1
 
             @qml.qnode(dev)
-            def circuit(features=None, pattern=None):
-                IQPEmbedding(features=features, wires=range(3), pattern=pattern, n_repeats=3)
+            def circuit(features, pattern):
+                IQPEmbedding(features, wires=range(3), pattern=pattern, n_repeats=3)
                 return [qml.expval(qml.PauliZ(w)) for w in range(3)]
 
-            res1 = circuit(features=[1., 2., 3.], pattern=pattern1)
-            res2 = circuit(features=[1., 2., 3.], pattern=pattern2)
+            res1 = circuit([1., 2., 3.], pattern=pattern1)
+            res2 = circuit([1., 2., 3.], pattern=pattern2)
 
             assert np.allclose(res1, res2)
 
@@ -189,56 +162,47 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
         forth.
 
     """
-    #############
-    # Input checks
 
-    wires = Wires(wires)
+    num_params = 1
+    num_wires = AnyWires
+    par_domain = "A"
 
-    check_no_variable(features, msg="'features' cannot be differentiable")
+    def __init__(self, features, wires, n_repeats=1, pattern=None, do_queue=True, id=None):
 
-    expected_shape = (len(wires),)
-    check_shape(
-        features,
-        expected_shape,
-        msg="'features' must be of shape {}; got {}" "".format(expected_shape, get_shape(features)),
-    )
+        shape = qml.math.shape(features)
 
-    check_type(
-        n_repeats, [int], msg="'n_repeats' must be an integer; got type {}".format(type(n_repeats))
-    )
+        if len(shape) != 1:
+            raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
 
-    if pattern is None:
-        # default is an all-to-all pattern
-        pattern = [Wires(wire_pair) for wire_pair in combinations(wires, 2)]
-    else:
-        # do some checks
-        check_type(
-            pattern,
-            [Iterable, type(None)],
-            msg="'pattern' must be a list of pairs of wires; got {}".format(pattern),
-        )
-        shape = get_shape(pattern)
-        if len(shape) != 2 or shape[1] != 2:
-            raise ValueError("'pattern' must be a list of pairs of wires; got {}".format(pattern))
+        n_features = shape[0]
+        if n_features != len(wires):
+            raise ValueError(f"Features must be of length {len(wires)}; got length {n_features}.")
 
-        # convert wire pairs to Wires object
-        pattern = [Wires(wire_pair) for wire_pair in pattern]
+        if pattern is None:
+            # default is an all-to-all pattern
+            pattern = combinations(wires, 2)
 
-    #####################
+        self.pattern = pattern
+        self.n_repeats = n_repeats
 
-    for i in range(n_repeats):
+        super().__init__(features, wires=wires, do_queue=do_queue, id=id)
 
-        # first block of Hadamards
-        broadcast(unitary=Hadamard, pattern="single", wires=wires)
-        # encode features into block of RZ rotations
-        broadcast(unitary=RZ, pattern="single", wires=wires, parameters=features)
+    def expand(self):
 
-        # create new features for entangling block
-        products = []
-        for wire_pair in pattern:
-            # get the position of the wire indices in the array
-            idx1, idx2 = wires.indices(wire_pair)
-            # create products of parameters
-            products.append(features[idx1] * features[idx2])
+        features = self.parameters[0]
 
-        broadcast(unitary=MultiRZ, pattern=pattern, wires=wires, parameters=products)
+        with qml.tape.QuantumTape() as tape:
+
+            for _ in range(self.n_repeats):
+
+                for i in range(len(self.wires)):
+                    qml.Hadamard(wires=self.wires[i])
+                    qml.RZ(features[i], wires=self.wires[i])
+
+                for wire_pair in self.pattern:
+                    # get the position of the wire indices in the array
+                    idx1, idx2 = self.wires.indices(wire_pair)
+                    # apply product of two features as entangler
+                    qml.MultiRZ(features[idx1] * features[idx2], wires=wire_pair)
+
+        return tape

@@ -1,4 +1,4 @@
-# Copyright 2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -45,6 +45,12 @@ class Grid:
             self.raw_grid = None
         else:
             self.raw_grid = np.array(raw_grid, dtype=object)
+            if len(self.raw_grid.shape) != 2:
+                raise ValueError(
+                    "The entered raw grid was not parsed as two-dimensional array: {}".format(
+                        raw_grid
+                    )
+                )
 
     def insert_layer(self, idx, layer):
         """Insert a layer into the Grid at the specified index.
@@ -170,7 +176,7 @@ class Grid:
         Returns:
             Grid: A copy of the Grid
         """
-        return Grid(self.raw_grid.copy())
+        return Grid(self.raw_grid.copy()) if self.raw_grid is not None else Grid()
 
     def append_grid_by_layers(self, other_grid):
         """Append the layers of another Grid to this Grid.

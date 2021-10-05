@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,55 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the ``RandomLayers`` template.
+Contains the RandomLayers template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import numpy as np
-from pennylane.templates.decorator import template
-from pennylane.ops import CNOT, RX, RY, RZ
-from pennylane.templates.utils import (
-    check_shape,
-    check_no_variable,
-    check_type,
-    check_number_of_layers,
-    get_shape,
-)
-from pennylane.wires import Wires
+import pennylane as qml
+from pennylane.operation import Operation, AnyWires
 
 
-def random_layer(weights, wires, ratio_imprim, imprimitive, rotations, seed):
-    r"""A single random layer.
-
-    Args:
-        weights (array[float]): array of weights of shape ``(k,)``
-        wires (Wires): wires that the template acts on
-        ratio_imprim (float): value between 0 and 1 that determines the ratio of imprimitive to rotation gates
-        imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
-        rotations (list[pennylane.ops.Operation]): List of Pauli-X, Pauli-Y and/or Pauli-Z gates. The frequency
-            determines how often a particular rotation type is used. Defaults to the use of all three
-            rotations with equal frequency.
-        seed (int): seed to generate random architecture
-    """
-    if seed is not None:
-        np.random.seed(seed)
-
-    i = 0
-    while i < len(weights):
-        if np.random.random() > ratio_imprim:
-            # Apply a random rotation gate to a random wire
-            gate = np.random.choice(rotations)
-            rnd_wire = wires.select_random(1)
-            gate(weights[i], wires=rnd_wire)
-            i += 1
-        else:
-            # Apply the imprimitive to two random wires
-            if len(wires) > 1:
-                rnd_wires = wires.select_random(2)
-                imprimitive(wires=rnd_wires)
-
-
-@template
-def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=None, seed=42):
+class RandomLayers(Operation):
     r"""Layers of randomly chosen single qubit rotations and 2-qubit entangling gates, acting
     on randomly chosen qubits.
 
@@ -88,18 +48,14 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
         :target: javascript:void(0);
 
     Args:
-        weights (array[float]): array of weights of shape ``(L, k)``,
-        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
-            a Wires object.
+        weights (tensor_like): weight tensor of shape ``(L, k)``,
+        wires (Iterable): wires that the template acts on
         ratio_imprim (float): value between 0 and 1 that determines the ratio of imprimitive to rotation gates
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
         rotations (list[pennylane.ops.Operation]): List of Pauli-X, Pauli-Y and/or Pauli-Z gates. The frequency
             determines how often a particular rotation type is used. Defaults to the use of all three
             rotations with equal frequency.
         seed (int): seed to generate random architecture, defaults to 42
-
-    Raises:
-        ValueError: if inputs do not have the correct format
 
     .. UsageDetails::
 
@@ -129,17 +85,18 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
                 return qml.expval(qml.PauliZ(0))
 
         >>> np.allclose(circuit1(weights), circuit2(weights))
-        >>> True
+        True
 
         You can verify this by drawing the circuits.
 
             >>> print(circuit1.draw())
-            >>>  0: ──RX(0.1)──RX(-2.1)──╭X──╭X───────────┤ ⟨Z⟩
-            ...  1: ─────────────────────╰C──╰C──RZ(1.4)──┤
+            0: ─────────────────────╭X──╭X──RZ(1.4)──┤ ⟨Z⟩
+            1: ──RX(0.1)──RX(-2.1)──╰C──╰C───────────┤
 
             >>> print(circuit2.draw())
-            >>>  0: ──RX(0.1)──RX(-2.1)──╭X──╭X───────────┤ ⟨Z⟩
-            ...  1: ─────────────────────╰C──╰C──RZ(1.4)──┤
+            0: ─────────────────────╭X──╭X──RZ(1.4)──┤ ⟨Z⟩
+            1: ──RX(0.1)──RX(-2.1)──╰C──╰C───────────┤
+
 
         **Changing the seed**
 
@@ -162,15 +119,15 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
         >>> False
 
         >>> print(circuit_9.draw())
-        >>>  0: ──╭X──RY(-2.1)──RX(1.4)──┤ ⟨Z⟩
-        ...  1: ──╰C──RX(0.1)────────────┤
+        0: ──╭X──RX(0.1)────────────┤ ⟨Z⟩
+        1: ──╰C──RY(-2.1)──RX(1.4)──┤
 
         >>> print(circuit_12.draw())
-        >>>  0: ──╭X──RX(-2.1)──╭C──╭X──RZ(1.4)──┤ ⟨Z⟩
-        ...  1: ──╰C──RZ(0.1)───╰X──╰C───────────┤
+        0: ──╭X──RZ(0.1)───╭C──╭X───────────┤ ⟨Z⟩
+        1: ──╰C──RX(-2.1)──╰X──╰C──RZ(1.4)──┤
 
 
-        **Automatically creating random circuits**
+        **Automatic creation of random circuits**
 
         To automate the process of creating different circuits with ``RandomLayers``,
         you can set ``seed=None`` to avoid specifying a seed. However, in this case care needs
@@ -189,7 +146,7 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
             second_call = circuit_rnd(weights)
 
         >>> np.allclose(first_call, second_call)
-        >>> False
+        False
 
         This can be rectified by making the quantum node **immutable**.
 
@@ -204,56 +161,87 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
             second_call = circuit_rnd(weights)
 
         >>> np.allclose(first_call, second_call)
-        >>> True
+        True
+
+        **Parameter shape**
+
+        The expected shape for the weight tensor can be computed with the static method
+        :meth:`~.RandomLayers.shape` and used when creating randomly
+        initialised weight tensors:
+
+        .. code-block:: python
+
+            shape = RandomLayers.shape(n_layers=2, n_rotations=3)
+            weights = np.random.random(size=shape)
     """
-    if seed is not None:
-        np.random.seed(seed)
 
-    if rotations is None:
-        rotations = [RX, RY, RZ]
+    num_params = 1
+    num_wires = AnyWires
+    par_domain = "A"
+    grad_method = None
 
-    #############
-    # Input checks
-
-    wires = Wires(wires)
-
-    check_no_variable(ratio_imprim, msg="'ratio_imprim' cannot be differentiable")
-    check_no_variable(imprimitive, msg="'imprimitive' cannot be differentiable")
-    check_no_variable(rotations, msg="'rotations' cannot be differentiable")
-    check_no_variable(seed, msg="'seed' cannot be differentiable")
-
-    repeat = check_number_of_layers([weights])
-    n_rots = get_shape(weights)[1]
-
-    expected_shape = (repeat, n_rots)
-    check_shape(
+    def __init__(
+        self,
         weights,
-        expected_shape,
-        msg="'weights' must be of shape {}; got {}" "".format(expected_shape, get_shape(weights)),
-    )
+        wires,
+        ratio_imprim=0.3,
+        imprimitive=None,
+        rotations=None,
+        seed=42,
+        do_queue=True,
+        id=None,
+    ):
 
-    check_type(
-        ratio_imprim,
-        [float, type(None)],
-        msg="'ratio_imprim' must be a float; got {}".format(ratio_imprim),
-    )
-    check_type(n_rots, [int, type(None)], msg="'n_rots' must be an integer; got {}".format(n_rots))
-    # TODO: Check that 'rotations' contains operations
-    check_type(
-        rotations,
-        [list, type(None)],
-        msg="'rotations' must be a list of PennyLane operations; got {}" "".format(rotations),
-    )
-    check_type(seed, [int, type(None)], msg="'seed' must be an integer; got {}.".format(seed))
+        self.seed = seed
+        self.rotations = rotations or [qml.RX, qml.RY, qml.RZ]
 
-    ###############
+        shape = qml.math.shape(weights)
+        if len(shape) != 2:
+            raise ValueError(f"Weights tensor must be 2-dimensional; got shape {shape}")
 
-    for l in range(repeat):
-        random_layer(
-            weights=weights[l],
-            wires=wires,
-            ratio_imprim=ratio_imprim,
-            imprimitive=imprimitive,
-            rotations=rotations,
-            seed=seed,
-        )
+        self.n_layers = shape[0]
+        self.imprimitive = imprimitive or qml.CNOT
+        self.ratio_imprimitive = ratio_imprim
+
+        super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
+
+    def expand(self):
+
+        if self.seed is not None:
+            np.random.seed(self.seed)
+
+        shape = qml.math.shape(self.parameters[0])
+
+        with qml.tape.QuantumTape() as tape:
+
+            for l in range(self.n_layers):
+
+                i = 0
+                while i < shape[1]:
+                    if np.random.random() > self.ratio_imprimitive:
+                        # apply a random rotation gate to a random wire
+                        gate = np.random.choice(self.rotations)
+                        rnd_wire = self.wires.select_random(1)
+                        gate(self.parameters[0][l, i], wires=rnd_wire)
+                        i += 1
+
+                    else:
+                        # apply the entangler to two random wires
+                        if len(self.wires) > 1:
+                            rnd_wires = self.wires.select_random(2)
+                            self.imprimitive(wires=rnd_wires)
+        return tape
+
+    @staticmethod
+    def shape(n_layers, n_rotations):
+        r"""Returns the expected shape of the weights tensor.
+
+        Args:
+            n_layers (int): number of layers
+            n_rotations (int): number of rotations
+
+        Returns:
+            tuple[int]: shape
+        """
+
+        return n_layers, n_rotations

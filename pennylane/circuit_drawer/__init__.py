@@ -1,4 +1,4 @@
-# Copyright 2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,8 +19,7 @@ as circuit diagrams.
 .. autosummary::
     :toctree: api
 
-    circuit_drawer
-    charsets
 """
-from .circuit_drawer import *
-from .charsets import *
+from .circuit_drawer import CircuitDrawer
+from .charsets import CHARSETS
+from .mpldrawer import MPLDrawer

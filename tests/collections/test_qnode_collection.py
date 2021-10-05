@@ -62,7 +62,7 @@ class TestConstruction:
         assert qc.qnodes == qnodes
         assert len(qc) == 4
 
-    @pytest.mark.parametrize("interface", ["autograd", "numpy", "torch", "tf"])
+    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf"])
     def test_interface_property(self, interface, tf_support, torch_support):
         """Test that the interface property correctly
         resolves interfaces from the internal QNodes"""
@@ -82,12 +82,6 @@ class TestConstruction:
         dev = qml.device("default.qubit", wires=1)
         qnodes = [qml.QNode(circuit, dev, interface=interface) for i in range(4)]
         qc = qml.QNodeCollection(qnodes)
-
-        if interface == "numpy":
-            # Note: the "numpy" interface is deprecated, and
-            # now resolves to "autograd"
-            interface = "autograd"
-
         assert qc.interface == interface
 
     def test_append_qnode(self):
@@ -179,10 +173,14 @@ class TestConstruction:
 class TestEvalation:
     """Tests for the QNodeCollection evaluation"""
 
-    @pytest.mark.parametrize("interface", ["autograd", "numpy"])
-    def test_eval_autograd(self, qnodes, parallel, interface):
+    @pytest.mark.parametrize("interface", ["autograd"])
+    def test_eval_autograd(self, qnodes, parallel, interface, dask_support):
         """Test correct evaluation of the QNodeCollection using
         the Autograd interface"""
+
+        if (not dask_support) and (parallel):
+            pytest.skip("Skipped, no dask support")
+
         qnode1, qnode2 = qnodes
         qc = qml.QNodeCollection([qnode1, qnode2])
         params = [0.5643, -0.45]
@@ -191,7 +189,7 @@ class TestEvalation:
         expected = np.vstack([qnode1(params), qnode2(params)])
         assert np.all(res == expected)
 
-    @pytest.mark.parametrize("interface", ["autograd", "numpy"])
+    @pytest.mark.parametrize("interface", ["autograd"])
     def test_grad_autograd(self, qnodes, parallel, interface):
         """Test correct gradient of the QNodeCollection using
         the Autograd interface"""
@@ -200,10 +198,10 @@ class TestEvalation:
         params = [0.5643, -0.45]
         qc = qml.QNodeCollection([qnode1, qnode2])
         cost_qc = lambda params: np.sum(qc(params))
-        grad_qc = qml.grad(cost_qc, argnum=0)
+        grad_qc = qml.grad(cost_qc)
 
         cost_expected = lambda params: np.sum(qnode1(params) + qnode2(params))
-        grad_expected = qml.grad(cost_expected, argnum=0)
+        grad_expected = qml.grad(cost_expected)
 
         res = grad_qc(params)
         expected = grad_expected(params)
@@ -260,6 +258,11 @@ class TestEvalation:
     def test_grad_tf(self, qnodes, skip_if_no_tf_support, parallel, interface):
         """Test correct gradient of the QNodeCollection using
         the tf interface"""
+        if parallel and qml.tape_mode_active():
+            pytest.skip(
+                "There appears to be a race condition when constructing TF tapes in parallel"
+            )
+
         qnode1, qnode2 = qnodes
 
         # calculate the gradient of the collection using tf

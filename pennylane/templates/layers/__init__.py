@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,3 +21,6 @@ from .random import RandomLayers
 from .cv_neural_net import CVNeuralNetLayers
 from .simplified_two_design import SimplifiedTwoDesign
 from .basic_entangler import BasicEntanglerLayers
+from .particle_conserving_u2 import ParticleConservingU2
+from .particle_conserving_u1 import ParticleConservingU1
+from .gate_fabric import GateFabric

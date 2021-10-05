@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,3 +21,10 @@ from .double_excitation_unitary import DoubleExcitationUnitary
 from .interferometer import Interferometer
 from .single_excitation_unitary import SingleExcitationUnitary
 from .uccsd import UCCSD
+from .approx_time_evolution import ApproxTimeEvolution
+from .permute import Permute
+from .qpe import QuantumPhaseEstimation
+from .qmc import QuantumMonteCarlo
+from .all_singles_doubles import AllSinglesDoubles
+from .grover import GroverOperator
+from .qft import QFT

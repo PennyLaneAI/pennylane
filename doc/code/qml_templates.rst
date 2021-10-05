@@ -26,7 +26,7 @@ Subroutines
     :no-heading:
     :include-all-objects:
 
-State preperations
+State preparations
 ------------------
 
 .. automodapi:: pennylane.templates.state_preparations
@@ -53,9 +53,29 @@ predefined pattern. You can import this function both via ``qml.broadcast`` and 
 
     pennylane.broadcast
 
+Layering Function
+-----------------
+
+The layer function creates a new template by repeatedly applying a sequence of quantum
+gates to a set of wires. You can import this function both via
+``qml.layer`` and ``qml.templates.layer``.
+
+.. autosummary::
+
+    pennylane.layer
+
 Utility functions for input checks
 ----------------------------------
 
 .. automodapi:: pennylane.templates.utils
     :no-heading:
     :include-all-objects:
+
+Utility functions for quantum Monte Carlo
+-----------------------------------------
+
+Functions
+^^^^^^^^^
+
+.. automodsumm:: pennylane.templates.subroutines.qmc
+    :functions-only:

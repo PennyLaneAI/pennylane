@@ -37,6 +37,12 @@ except ImportError as e:
     tf = None
     Variable = None
 
+try:
+    import jax
+    import jax.numpy as jnp
+except ImportError as e:
+    jax = None
+
 
 class TestMap:
     """Test for mapping ansatz over observables or devices,
@@ -63,16 +69,15 @@ class TestMap:
         # evaluate collection so that queue is populated
         qc(1)
 
-        assert len(qc[0].ops) == 2
-        assert qc[0].ops[0].name == "RX"
-        assert qc[0].ops[1].name == "PauliX"
+        queue = qc[0].qtape.operations + qc[0].qtape.observables
+        assert len(queue) == 2
+        assert queue[0].name == "RX"
+        assert queue[1].name == "PauliX"
 
-        assert len(qc[1].ops) == 2
-        assert qc[1].ops[0].name == "RX"
-        assert qc[1].ops[1].name == "PauliY"
-
-        # test that device is broadcast
-        assert qc[0].device is qc[1].device
+        queue = qc[1].qtape.operations + qc[1].qtape.observables
+        assert len(queue) == 2
+        assert queue[0].name == "RX"
+        assert queue[1].name == "PauliY"
 
     def test_mapping_over_observables_as_tuples(self):
         """Test that mapping over a tuple of observables produces
@@ -89,16 +94,15 @@ class TestMap:
         # evaluate collection so that queue is populated
         qc(1)
 
-        assert len(qc[0].ops) == 2
-        assert qc[0].ops[0].name == "RX"
-        assert qc[0].ops[1].name == "PauliX"
+        queue = qc[0].qtape.operations + qc[0].qtape.observables
+        assert len(queue) == 2
+        assert queue[0].name == "RX"
+        assert queue[1].name == "PauliX"
 
-        assert len(qc[1].ops) == 2
-        assert qc[1].ops[0].name == "RX"
-        assert qc[1].ops[1].name == "PauliY"
-
-        # test that device is broadcast
-        assert qc[0].device is qc[1].device
+        queue = qc[1].qtape.operations + qc[1].qtape.observables
+        assert len(queue) == 2
+        assert queue[0].name == "RX"
+        assert queue[1].name == "PauliY"
 
     def test_mapping_over_devices(self):
         """Test that mapping over a list of devices produces
@@ -115,18 +119,18 @@ class TestMap:
         # evaluate collection so that queue is populated
         qc(1)
 
-        assert len(qc[0].ops) == 2
-        assert qc[0].ops[0].name == "RX"
-        assert qc[0].ops[1].name == "PauliX"
+        queue = qc[0].qtape.operations + qc[0].qtape.observables
+        assert len(queue) == 2
+        assert queue[0].name == "RX"
+        assert queue[1].name == "PauliX"
 
-        assert len(qc[1].ops) == 2
-        assert qc[1].ops[0].name == "RX"
-        assert qc[1].ops[1].name == "PauliY"
+        queue = qc[1].qtape.operations + qc[1].qtape.observables
+        assert len(queue) == 2
+        assert queue[0].name == "RX"
+        assert queue[1].name == "PauliY"
 
         # test that device is not broadcast
         assert qc[0].device is not qc[1].device
-        assert qc[0].device is dev_list[0]
-        assert qc[1].device is dev_list[1]
 
     def test_mapping_over_measurements(self):
         """Test that mapping over a list of measurement types produces
@@ -143,15 +147,17 @@ class TestMap:
         # evaluate collection so that queue is populated
         qc(1)
 
-        assert len(qc[0].ops) == 2
-        assert qc[0].ops[0].name == "RX"
-        assert qc[0].ops[1].name == "PauliX"
-        assert qc[0].ops[1].return_type == qml.operation.Expectation
+        queue = qc[0].qtape.operations + qc[0].qtape.observables
+        assert len(queue) == 2
+        assert queue[0].name == "RX"
+        assert queue[1].name == "PauliX"
+        assert queue[1].return_type == qml.operation.Expectation
 
-        assert len(qc[1].ops) == 2
-        assert qc[1].ops[0].name == "RX"
-        assert qc[1].ops[1].name == "PauliY"
-        assert qc[1].ops[1].return_type == qml.operation.Variance
+        queue = qc[1].qtape.operations + qc[1].qtape.observables
+        assert len(queue) == 2
+        assert queue[0].name == "RX"
+        assert queue[1].name == "PauliY"
+        assert queue[1].return_type == qml.operation.Variance
 
     def test_invalid_observable(self):
         """Test that an invalid observable raises an exception"""
@@ -179,18 +185,18 @@ class TestMap:
         assert len(qc) == 2
 
         # Checking the h attribute which contains the step size
-        assert qc[0].h == 123
-        assert qc[1].h == 123
+        assert qc[0].diff_options["h"] == 123
+        assert qc[1].diff_options["h"] == 123
 
         # Checking that the order is set in each QNode
-        assert qc[0].order == 2
-        assert qc[1].order == 2
+        assert qc[0].diff_options["order"] == 2
+        assert qc[1].diff_options["order"] == 2
 
 
 class TestApply:
     """Tests for the apply function"""
 
-    @pytest.mark.parametrize("interface", ["autograd", "numpy", "torch", "tf"])
+    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", "jax"])
     def test_apply_summation(self, qnodes, interface, tf_support, torch_support, tol):
         """Test that summation can be applied using all interfaces"""
         if interface == "torch" and not torch_support:
@@ -206,10 +212,12 @@ class TestApply:
             sfn = tf.reduce_sum
         elif interface == "torch":
             sfn = torch.sum
+        elif interface == "jax":
+            sfn = jnp.sum
         else:
             sfn = np.sum
 
-        cost = qml.apply(sfn, qc)
+        cost = qml.collections.apply(sfn, qc)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -217,7 +225,7 @@ class TestApply:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("interface", ["autograd", "numpy", "torch", "tf"])
+    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", "jax"])
     def test_nested_apply(self, qnodes, interface, tf_support, torch_support, tol):
         """Test that nested apply can be done using all interfaces"""
         if interface == "torch" and not torch_support:
@@ -235,11 +243,14 @@ class TestApply:
         elif interface == "torch":
             sinfn = torch.sin
             sfn = torch.sum
+        elif interface == "jax":
+            sinfn = jnp.sin
+            sfn = jnp.sum
         else:
             sinfn = np.sin
             sfn = np.sum
 
-        cost = qml.apply(sfn, qml.apply(sinfn, qc))
+        cost = qml.collections.apply(sfn, qml.collections.apply(sinfn, qc))
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -251,7 +262,7 @@ class TestApply:
 class TestSum:
     """Tests for the sum function"""
 
-    @pytest.mark.parametrize("interface", ["autograd", "numpy", "torch", "tf", None])
+    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", "jax", None])
     def test_apply_summation(self, qnodes, interface, tf_support, torch_support, tol):
         """Test that summation can be applied using all interfaces"""
         if interface == "torch" and not torch_support:
@@ -292,7 +303,7 @@ class TestSum:
 class TestDot:
     """Tests for the sum function"""
 
-    @pytest.mark.parametrize("interface", ["autograd", "numpy", "torch", "tf", None])
+    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", "jax", None])
     def test_dot_product_tensor_qnodes(self, qnodes, interface, tf_support, torch_support):
         """Test that the dot product of tensor.qnodes can be applied using all interfaces"""
         if interface == "torch" and not torch_support:
@@ -325,9 +336,9 @@ class TestDot:
             coeffs = coeffs.numpy()
 
         expected = np.dot(coeffs, qcval)
-        assert np.all(res == expected)
+        np.testing.assert_allclose(res, expected)
 
-    @pytest.mark.parametrize("interface", ["autograd", "numpy", "torch", "tf", None])
+    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", "jax", None])
     def test_dot_product_qnodes_qnodes(self, qnodes, interface, tf_support, torch_support):
         """Test that the dot product of qnodes.qnodes can be applied using all interfaces"""
         if interface == "torch" and not torch_support:
@@ -357,7 +368,7 @@ class TestDot:
         expected = np.dot(qc1val, qc2val)
         assert np.all(res == expected)
 
-    @pytest.mark.parametrize("interface", ["autograd", "numpy", "torch", "tf", None])
+    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", "jax", None])
     def test_dot_product_qnodes_tensor(self, qnodes, interface, tf_support, torch_support):
         """Test that the dot product of qnodes.tensor can be applied using all interfaces"""
         if interface == "torch" and not torch_support:
@@ -409,6 +420,25 @@ class TestDot:
         qc = qml.QNodeCollection([circuit1, circuit2])
         with pytest.raises(ValueError, match="Unknown interface invalid"):
             qml.dot([1, 2], qc)
+
+    def test_mismatching_interface(self, monkeypatch):
+        """Test exception raised if the interfaces don't match"""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, interface=None)
+        def circuit1(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        @qml.qnode(dev, interface="autograd")
+        def circuit2(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        qc1 = qml.QNodeCollection([circuit1])
+        qc2 = qml.QNodeCollection([circuit2])
+        with pytest.raises(ValueError, match="have non-matching interfaces"):
+            qml.dot(qc1, qc2)
 
     def test_no_qnodes(self):
         """Test exception raised if no qnodes are provided as arguments"""

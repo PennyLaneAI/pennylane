@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -56,6 +56,14 @@ def _get_dot_func(interface, x=None):
 
         return np.dot, x
 
+    if interface == "jax":
+        import jax.numpy as jnp
+
+        if x is not None and not isinstance(x, jnp.ndarray):
+            x = jnp.array(x)
+
+        return jnp.dot, x
+
     if interface is None:
         import numpy as np
 
@@ -110,7 +118,8 @@ def dot(x, y):
     This is a lazy dot product --- no QNode evaluation has yet occured. Evaluation
     only occurs when the returned function ``cost`` is evaluated:
 
-    >>> x = qml.init.strong_ent_layers_normal(3, 2) # generate random parameters
+    >>> shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=3, n_wires=2)
+    >>> x = np.random.random(shape) # generate random parameters
     >>> cost(x)
     tensor(-0.2183, dtype=torch.float64, grad_fn=<DotBackward>)
     """

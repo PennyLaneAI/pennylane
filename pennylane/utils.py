@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,20 +15,19 @@
 This module contains utilities and auxiliary functions which are shared
 across the PennyLane submodules.
 """
-# pylint: disable=protected-access
+# pylint: disable=protected-access,too-many-branches
 from collections.abc import Iterable
-from collections import OrderedDict
-import copy
 import functools
 import inspect
 import itertools
 import numbers
 from operator import matmul
+import warnings
 
 import numpy as np
+import scipy
 
 import pennylane as qml
-from pennylane.variable import Variable
 
 
 def decompose_hamiltonian(H, hide_identity=False):
@@ -69,7 +68,7 @@ def decompose_hamiltonian(H, hide_identity=False):
     + (-0.5) [Z0 X1]
     + (-0.5) [Z0 Y1]
 
-    This Hamiltonian can then be used in defining VQE problems using :class:`~.VQECost`.
+    This Hamiltonian can then be used in defining VQE problems using :class:`~.ExpvalCost`.
     """
     n = int(np.log2(len(H)))
     N = 2 ** n
@@ -97,13 +96,84 @@ def decompose_hamiltonian(H, hide_identity=False):
             if not all(t is qml.Identity for t in term) and hide_identity:
                 obs.append(
                     functools.reduce(
-                        matmul, [t(i) for i, t in enumerate(term) if t is not qml.Identity],
+                        matmul,
+                        [t(i) for i, t in enumerate(term) if t is not qml.Identity],
                     )
                 )
             else:
                 obs.append(functools.reduce(matmul, [t(i) for i, t in enumerate(term)]))
 
     return coeffs, obs
+
+
+def sparse_hamiltonian(H, wires=None):
+    r"""Computes the sparse matrix representation a Hamiltonian in the computational basis.
+
+    Args:
+        H (~.Hamiltonian): Hamiltonian operator for which the matrix representation should be
+         computed
+        wires (Iterable): Wire labels that indicate the order of wires according to which the matrix
+         is constructed. If not profided, ``H.wires`` is used.
+
+    Returns:
+        coo_matrix: a sparse matrix in scipy coordinate list (COO) format with dimension
+        :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
+
+    **Example:**
+
+    This function can be used by passing a `qml.Hamiltonian` object as:
+
+    >>> coeffs = [1, -0.45]
+    >>> obs = [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1)]
+    >>> H = qml.Hamiltonian(coeffs, obs)
+    >>> H_sparse = sparse_hamiltonian(H)
+    >>> H_sparse
+    <4x4 sparse matrix of type '<class 'numpy.complex128'>'
+        with 2 stored elements in COOrdinate format>
+
+    The resulting sparse matrix can be either used directly or transformed into a numpy array:
+
+    >>> H_sparse.toarray()
+    array([[ 1.+0.j  ,  0.+0.j  ,  0.+0.45j,  0.+0.j  ],
+           [ 0.+0.j  , -1.+0.j  ,  0.+0.j  ,  0.-0.45j],
+           [ 0.-0.45j,  0.+0.j  , -1.+0.j  ,  0.+0.j  ],
+           [ 0.+0.j  ,  0.+0.45j,  0.+0.j  ,  1.+0.j  ]])
+    """
+    if not isinstance(H, qml.Hamiltonian):
+        raise TypeError("Passed Hamiltonian must be of type `qml.Hamiltonian`")
+
+    if wires is None:
+        wires = H.wires
+    else:
+        wires = qml.wires.Wires(wires)
+
+    n = len(wires)
+    matrix = scipy.sparse.coo_matrix((2 ** n, 2 ** n), dtype="complex128")
+
+    coeffs = qml.math.toarray(H.data)
+
+    for coeff, op in zip(coeffs, H.ops):
+
+        obs = []
+        for o in qml.operation.Tensor(op).obs:
+            if len(o.wires) > 1:
+                # todo: deal with operations created from multi-qubit operations such as Hermitian
+                raise ValueError(
+                    "Can only sparsify Hamiltonians whose constituent observables consist of "
+                    "(tensor products of) single-qubit operators; got {}.".format(op)
+                )
+            obs.append(scipy.sparse.coo_matrix(o.matrix))
+
+        mat = [scipy.sparse.eye(2, format="coo")] * n
+
+        for i, wire in enumerate(op.wires):
+            # find index of this wire in the ordering
+            idx = wires.index(wire)
+            mat[idx] = obs[i]
+
+        matrix += functools.reduce(lambda i, j: scipy.sparse.kron(i, j, format="coo"), mat) * coeff
+
+    return matrix.tocoo()
 
 
 def _flatten(x):
@@ -119,6 +189,11 @@ def _flatten(x):
     """
     if isinstance(x, np.ndarray):
         yield from _flatten(x.flat)  # should we allow object arrays? or just "yield from x.flat"?
+    elif isinstance(x, qml.wires.Wires):
+        # Reursive calls to flatten `Wires` will cause infinite recursion (`Wires` atoms are `Wires`).
+        # Since Wires are always flat, just yield.
+        for item in x:
+            yield item
     elif isinstance(x, Iterable) and not isinstance(x, (str, bytes)):
         for item in x:
             yield from _flatten(item)
@@ -142,7 +217,7 @@ def _unflatten(flat, model):
         Union[array, list, Any], array: first elements of flat arranged into the nested
         structure of model, unused elements of flat
     """
-    if isinstance(model, (numbers.Number, Variable, str)):
+    if isinstance(model, (numbers.Number, str)):
         return flat[0], flat[1:]
 
     if isinstance(model, np.ndarray):
@@ -230,95 +305,15 @@ def pauli_eigs(n):
     return np.concatenate([pauli_eigs(n - 1), -pauli_eigs(n - 1)])
 
 
-class OperationRecorder(qml.QueuingContext):
-    """A template and quantum function inspector,
-    allowing easy introspection of operators that have been
-    applied without requiring a QNode.
-
-    **Example**:
-
-    The OperationRecorder is a context manager. Executing templates
-    or quantum functions stores resulting applied operators in the
-    recorder, which can then be printed.
-
-    >>> weights = qml.init.strong_ent_layers_normal(n_layers=1, n_wires=2)
-    >>>
-    >>> with qml.utils.OperationRecorder() as rec:
-    >>>    qml.templates.layers.StronglyEntanglingLayers(*weights, wires=[0, 1])
-    >>>
-    >>> print(rec)
-    Operations
-    ==========
-    Rot(-0.10832656163640327, 0.14429091013664083, -0.010835826725765343, wires=[0])
-    Rot(-0.11254523669444501, 0.0947222564914006, -0.09139600968423377, wires=[1])
-    CNOT(wires=[0, 1])
-    CNOT(wires=[1, 0])
-
-    Alternatively, the :attr:`~.OperationRecorder.queue` attribute can be used
-    to directly accessed the applied :class:`~.Operation` and :class:`~.Observable`
-    objects.
-
-    Attributes:
-        queue (List[~.Operators]): list of operators applied within
-            the OperatorRecorder context, includes operations and observables
-        operations (List[~.Operations]): list of operations applied within
-            the OperatorRecorder context
-        observables (List[~.Observables]): list of observables applied within
-            the OperatorRecorder context
-    """
-
-    def __init__(self):
-        self.queue = []
-        self.operations = None
-        self.observables = None
-
-    def _append_operator(self, operator):
-        self.queue.append(operator)
-
-    def _remove_operator(self, operator):
-        self.queue.remove(operator)
-
-    def __exit__(self, exception_type, exception_value, traceback):
-        super().__exit__(exception_type, exception_value, traceback)
-
-        # Remove duplicates that might have arisen from measurements
-        self.queue = list(OrderedDict.fromkeys(self.queue))
-        self.operations = list(
-            filter(
-                lambda op: not (
-                    isinstance(op, qml.operation.Observable) and not op.return_type is None
-                ),
-                self.queue,
-            )
-        )
-        self.observables = list(
-            filter(
-                lambda op: isinstance(op, qml.operation.Observable) and not op.return_type is None,
-                self.queue,
-            )
-        )
-
-    def __str__(self):
-        output = ""
-        output += "Operations\n"
-        output += "==========\n"
-        for op in self.operations:
-            output += repr(op) + "\n"
-
-        output += "\n"
-        output += "Observables\n"
-        output += "==========\n"
-        for op in self.observables:
-            output += repr(op) + "\n"
-
-        return output
-
-
 def inv(operation_list):
     """Invert a list of operations or a :doc:`template </introduction/templates>`.
 
     If the inversion happens inside a QNode, the operations are removed and requeued
     in the reversed order for proper inversion.
+
+    .. warning::
+        Use of :func:`~.inv()` is deprecated and should be replaced with
+        :func:`~.adjoint()`.
 
     **Example:**
 
@@ -362,6 +357,11 @@ def inv(operation_list):
     Returns:
         List[~.Operation]: The inverted list of operations
     """
+
+    warnings.warn(
+        "Use of qml.inv() is deprecated and should be replaced with qml.adjoint().",
+        UserWarning,
+    )
     if isinstance(operation_list, qml.operation.Operation):
         operation_list = [operation_list]
     elif operation_list is None:
@@ -375,6 +375,10 @@ def inv(operation_list):
             "This could happen if inversion of a template function is attempted. "
             "Please use inv on the function including its arguments, as in inv(template(args))."
         )
+    elif isinstance(operation_list, qml.tape.QuantumTape):
+        new_tape = operation_list.adjoint()
+        return new_tape
+
     elif not isinstance(operation_list, Iterable):
         raise ValueError("The provided operation_list is not iterable.")
 
@@ -392,15 +396,24 @@ def inv(operation_list):
             + ",".join(string_reps)
         )
 
-    inv_ops = [op.inv() for op in reversed(copy.deepcopy(operation_list))]
-
     for op in operation_list:
-        qml.QueuingContext.remove_operator(op)
+        try:
+            # remove the queued operation to be inverted
+            # from the existing queuing context
+            qml.QueuingContext.remove(op)
+        except KeyError:
+            # operation to be inverted does not
+            # exist on the queuing context
+            pass
 
-    for inv_op in inv_ops:
-        qml.QueuingContext.append_operator(inv_op)
+    def qfunc():
+        for o in operation_list:
+            o.queue()
 
-    return inv_ops
+    with qml.tape.QuantumTape() as tape:
+        qml.adjoint(qfunc)()
+
+    return tape
 
 
 def expand(matrix, original_wires, expanded_wires):

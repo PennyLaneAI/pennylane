@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,21 +14,83 @@
 """
 This module contains the :class:`Device` abstract base class.
 """
-# pylint: disable=too-many-format-args
+# pylint: disable=too-many-format-args, use-maxsplit-arg
 import abc
+import warnings
+from collections.abc import Iterable, Sequence
+from collections import OrderedDict, namedtuple
+from functools import lru_cache
 
 import numpy as np
 
+import pennylane as qml
 from pennylane.operation import (
     Operation,
     Observable,
     Sample,
+    State,
     Variance,
     Expectation,
     Probability,
     Tensor,
 )
-from pennylane.qnodes import QuantumFunctionError
+from pennylane.wires import Wires, WireError
+
+
+ShotTuple = namedtuple("ShotTuple", ["shots", "copies"])
+"""tuple[int, int]: Represents copies of a shot number."""
+
+
+def _process_shot_sequence(shot_list):
+    """Process the shot sequence, to determine the total
+    number of shots and the shot vector.
+
+    Args:
+        shot_list (Sequence[int, tuple[int]]): sequence of non-negative shot integers
+
+    Returns:
+        tuple[int, list[.ShotTuple[int]]]: A tuple containing the total number
+        of shots, as well as a list of shot tuples.
+
+    **Example**
+
+    >>> shot_list = [3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10]
+    >>> _process_shot_sequence(shot_list)
+    (57,
+     [ShotTuple(shots=3, copies=1),
+      ShotTuple(shots=1, copies=1),
+      ShotTuple(shots=2, copies=4),
+      ShotTuple(shots=6, copies=1),
+      ShotTuple(shots=1, copies=2),
+      ShotTuple(shots=5, copies=1),
+      ShotTuple(shots=12, copies=1),
+      ShotTuple(shots=10, copies=2)])
+
+    The total number of shots (57), and a sparse representation of the shot
+    sequence is returned, where tuples indicate the number of times a shot
+    integer is repeated.
+    """
+    if all(isinstance(s, int) for s in shot_list):
+
+        if len(set(shot_list)) == 1:
+            # All shots are identical, only require a single shot tuple
+            shot_vector = [ShotTuple(shots=shot_list[0], copies=len(shot_list))]
+        else:
+            # Iterate through the shots, and group consecutive identical shots
+            split_at_repeated = np.split(shot_list, np.diff(shot_list).nonzero()[0] + 1)
+            shot_vector = [ShotTuple(shots=i[0], copies=len(i)) for i in split_at_repeated]
+
+    elif all(isinstance(s, (int, tuple)) for s in shot_list):
+        # shot list contains tuples; assume it is already in a sparse representation
+        shot_vector = [
+            ShotTuple(*i) if isinstance(i, tuple) else ShotTuple(i, 1) for i in shot_list
+        ]
+
+    else:
+        raise ValueError(f"Unknown shot sequence format {shot_list}")
+
+    total_shots = int(np.sum(np.prod(shot_vector, axis=1)))
+    return total_shots, shot_vector
 
 
 class DeviceError(Exception):
@@ -41,24 +103,43 @@ class Device(abc.ABC):
     """Abstract base class for PennyLane devices.
 
     Args:
-        wires (int): number of subsystems in the quantum state represented by the device.
-            Default 1 if not specified.
+        wires (int or Iterable[Number, str]]): Number of subsystems represented by the device,
+            or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
+            or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
         shots (int): Number of circuit evaluations/random samples used to estimate
             expectation values of observables. Defaults to 1000 if not specified.
     """
 
     # pylint: disable=too-many-public-methods
-    _capabilities = {}  #: dict[str->*]: plugin capabilities
+    _capabilities = {"model": None}
+    """The capabilities dictionary stores the properties of a device. Devices can add their
+    own custom properties and overwrite existing ones by overriding the ``capabilities()`` method."""
+
     _circuits = {}  #: dict[str->Circuit]: circuit templates associated with this API class
     _asarray = staticmethod(np.asarray)
 
-    def __init__(self, wires=1, shots=1000):
-        self.num_wires = wires
+    def __init__(self, wires=1, shots=1000, *, analytic=None):
+
         self.shots = shots
 
+        if analytic is not None:
+            msg = "The analytic argument has been replaced by shots=None. "
+            msg += "Please use shots=None instead of analytic=True."
+            raise DeviceError(msg)
+
+        if not isinstance(wires, Iterable):
+            # interpret wires as the number of consecutive wires
+            wires = range(wires)
+
+        self._wires = Wires(wires)
+        self.num_wires = len(self._wires)
+        self._wire_map = self.define_wire_map(self._wires)
+        self._num_executions = 0
         self._op_queue = None
         self._obs_queue = None
         self._parameters = None
+
+        self.tracker = qml.Tracker()
 
     def __repr__(self):
         """String representation."""
@@ -127,6 +208,34 @@ class Device(abc.ABC):
         expectation values of observables"""
         return self._shots
 
+    @property
+    def analytic(self):
+        """Whether shots is None or not. Kept for backwards compatability."""
+        if self._shots is None:
+            return True
+        return False
+
+    @property
+    def wires(self):
+        """All wires that can be addressed on this device"""
+        return self._wires
+
+    @property
+    def wire_map(self):
+        """Ordered dictionary that defines the map from user-provided wire labels to
+        the wire labels used on this device"""
+        return self._wire_map
+
+    @property
+    def num_executions(self):
+        """Number of times this device is executed by the evaluation of QNodes
+        running on this device
+
+        Returns:
+            int: number of executions
+        """
+        return self._num_executions
+
     @shots.setter
     def shots(self, shots):
         """Changes the number of shots.
@@ -138,24 +247,136 @@ class Device(abc.ABC):
         Raises:
             DeviceError: if number of shots is less than 1
         """
-        if shots < 1:
+        if shots is None:
+            # device is in analytic mode
+            self._shots = shots
+            self._shot_vector = None
+
+        elif isinstance(shots, int):
+            # device is in sampling mode (unbatched)
+            if shots < 1:
+                raise DeviceError(
+                    "The specified number of shots needs to be at least 1. Got {}.".format(shots)
+                )
+
+            self._shots = shots
+            self._shot_vector = None
+
+        elif isinstance(shots, Sequence) and not isinstance(shots, str):
+            # device is in batched sampling mode
+            self._shots, self._shot_vector = _process_shot_sequence(shots)
+
+        else:
             raise DeviceError(
-                "The specified number of shots needs to be at least 1. Got {}.".format(shots)
+                "Shots must be a single non-negative integer or a sequence of non-negative integers."
             )
 
-        self._shots = int(shots)
+    @property
+    def shot_vector(self):
+        """list[.ShotTuple[int, int]]: Returns the shot vector, a sparse
+        representation of the shot sequence used by the device
+        when evaluating QNodes.
+
+        **Example**
+
+        >>> dev = qml.device("default.qubit", wires=2, shots=[3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10])
+        >>> dev.shots
+        57
+        >>> dev.shot_vector
+        [ShotTuple(shots=3, copies=1),
+         ShotTuple(shots=1, copies=1),
+         ShotTuple(shots=2, copies=4),
+         ShotTuple(shots=6, copies=1),
+         ShotTuple(shots=1, copies=2),
+         ShotTuple(shots=5, copies=1),
+         ShotTuple(shots=12, copies=1),
+         ShotTuple(shots=10, copies=2)]
+
+        The sparse representation of the shot
+        sequence is returned, where tuples indicate the number of times a shot
+        integer is repeated.
+        """
+        return self._shot_vector
+
+    def _has_partitioned_shots(self):
+        """Checks if the device was instructed to perform executions with partitioned shots.
+
+        Returns:
+            bool: whether or not shots are partitioned
+        """
+        return self._shot_vector is not None and (
+            len(self._shot_vector) > 1 or self._shot_vector[0].copies > 1
+        )
+
+    def define_wire_map(self, wires):
+        """Create the map from user-provided wire labels to the wire labels used by the device.
+
+        The default wire map maps the user wire labels to wire labels that are consecutive integers.
+
+        However, by overwriting this function, devices can specify their preferred, non-consecutive and/or non-integer
+        wire labels.
+
+        Args:
+            wires (Wires): user-provided wires for this device
+
+        Returns:
+            OrderedDict: dictionary specifying the wire map
+
+        **Example**
+
+        >>> dev = device('my.device', wires=['b', 'a'])
+        >>> dev.wire_map()
+        OrderedDict( [(<Wires = ['a']>, <Wires = [0]>), (<Wires = ['b']>, <Wires = [1]>)])
+        """
+        consecutive_wires = Wires(range(self.num_wires))
+
+        wire_map = zip(wires, consecutive_wires)
+        return OrderedDict(wire_map)
+
+    @lru_cache()
+    def map_wires(self, wires):
+        """Map the wire labels of wires using this device's wire map.
+
+        Args:
+            wires (Wires): wires whose labels we want to map to the device's internal labelling scheme
+
+        Returns:
+            Wires: wires with new labels
+        """
+        try:
+            mapped_wires = wires.map(self.wire_map)
+        except WireError as e:
+            raise WireError(
+                "Did not find some of the wires {} on device with wires {}.".format(
+                    wires, self.wires
+                )
+            ) from e
+
+        return mapped_wires
 
     @classmethod
     def capabilities(cls):
-        """Get the other capabilities of the plugin.
+        """Get the capabilities of this device class.
 
-        Measurements, batching etc.
+        Inheriting classes that change or add capabilities must override this method, for example via
+
+        .. code-block:: python
+
+            @classmethod
+            def capabilities(cls):
+                capabilities = super().capabilities().copy()
+                capabilities.update(
+                    supports_inverse_operations=False,
+                    supports_a_new_capability=True,
+                )
+                return capabilities
 
         Returns:
             dict[str->*]: results
         """
         return cls._capabilities
 
+    # pylint: disable=too-many-branches
     def execute(self, queue, observables, parameters={}, **kwargs):
         """Execute a queue of quantum operations on the device and then measure the given observables.
 
@@ -186,6 +407,12 @@ class Device(abc.ABC):
         self._parameters.update(parameters)
 
         results = []
+        if self._shot_vector is not None:
+            # The following warning assumes that QubitDevice.execute is stand-alone
+            warnings.warn(
+                "Specifying a list of shots is only supported for "
+                "QubitDevice based devices. Falling back to executions using all shots in the shot list."
+            )
 
         with self.execution_context():
             self.pre_apply()
@@ -200,7 +427,6 @@ class Device(abc.ABC):
             for obs in observables:
 
                 if isinstance(obs, Tensor):
-                    # if obs is a tensor observable, use a list of individual wires
                     wires = [ob.wires for ob in obs.obs]
                 else:
                     wires = obs.wires
@@ -217,8 +443,11 @@ class Device(abc.ABC):
                 elif obs.return_type is Probability:
                     results.append(list(self.probability(wires=wires).values()))
 
+                elif obs.return_type is State:
+                    raise qml.QuantumFunctionError("Returning the state is not supported")
+
                 elif obs.return_type is not None:
-                    raise QuantumFunctionError(
+                    raise qml.QuantumFunctionError(
                         "Unsupported return type specified for observable {}".format(obs.name)
                     )
 
@@ -228,6 +457,13 @@ class Device(abc.ABC):
             self._obs_queue = None
             self._parameters = None
 
+            # increment counter for number of executions of device
+            self._num_executions += 1
+
+            if self.tracker.active:
+                self.tracker.update(executions=1, shots=self._shots)
+                self.tracker.record()
+
             # Ensures that a combination with sample does not put
             # expvals and vars in superfluous arrays
             if all(obs.return_type is Sample for obs in observables):
@@ -236,6 +472,183 @@ class Device(abc.ABC):
                 return self._asarray(results, dtype="object")
 
             return self._asarray(results)
+
+    def batch_execute(self, circuits):
+        """Execute a batch of quantum circuits on the device.
+
+        The circuits are represented by tapes, and they are executed one-by-one using the
+        device's ``execute`` method. The results are collected in a list.
+
+        For plugin developers: This function should be overwritten if the device can efficiently run multiple
+        circuits on a backend, for example using parallel and/or asynchronous executions.
+
+        Args:
+            circuits (list[.tape.QuantumTape]): circuits to execute on the device
+
+        Returns:
+            list[array[float]]: list of measured value(s)
+        """
+        results = []
+        for circuit in circuits:
+            # we need to reset the device here, else it will
+            # not start the next computation in the zero state
+            self.reset()
+
+            res = self.execute(circuit.operations, circuit.observables)
+            results.append(res)
+
+        if self.tracker.active:
+            self.tracker.update(batches=1, batch_len=len(circuits))
+            self.tracker.record()
+
+        return results
+
+    def execute_and_gradients(self, circuits, method="jacobian", **kwargs):
+        """Execute a batch of quantum circuits on the device, and return both the
+        results and the gradients.
+
+        The circuits are represented by tapes, and they are executed
+        one-by-one using the device's ``execute`` method. The results and the
+        corresponding Jacobians are collected in a list.
+
+        For plugin developers: This method should be overwritten if the device
+        can efficiently run multiple circuits on a backend, for example using
+        parallel and/or asynchronous executions, and return both the results and the
+        Jacobians.
+
+        Args:
+            circuits (list[.tape.QuantumTape]): circuits to execute on the device
+            method (str): the device method to call to compute the Jacobian of a single circuit
+            **kwargs: keyword argument to pass when calling ``method``
+
+        Returns:
+            tuple[list[array[float]], list[array[float]]]: Tuple containing list of measured value(s)
+            and list of Jacobians. Returned Jacobians should be of shape ``(output_shape, num_params)``.
+        """
+        gradient_method = getattr(self, method)
+
+        res = []
+        jacs = []
+
+        for circuit in circuits:
+            # Evaluations and gradients are paired, so that
+            # devices can re-use the device state for the
+            # gradient computation (if applicable).
+            res.append(self.batch_execute([circuit])[0])
+            jacs.append(gradient_method(circuit, **kwargs))
+
+        return res, jacs
+
+    def gradients(self, circuits, method="jacobian", **kwargs):
+        """Return the gradients of a batch of quantum circuits on the device.
+
+        The gradient method ``method`` is called sequentially for each
+        circuit, and the corresponding Jacobians are collected in a list.
+
+        For plugin developers: This method should be overwritten if the device
+        can efficiently compute the gradient of multiple circuits on a
+        backend, for example using parallel and/or asynchronous executions.
+
+        Args:
+            circuits (list[.tape.QuantumTape]): circuits to execute on the device
+            method (str): the device method to call to compute the Jacobian of a single circuit
+            **kwargs: keyword argument to pass when calling ``method``
+
+        Returns:
+            list[array[float]]: List of Jacobians. Returned Jacobians should be of
+            shape ``(output_shape, num_params)``.
+        """
+        gradient_method = getattr(self, method)
+        return [gradient_method(circuit, **kwargs) for circuit in circuits]
+
+    def expand_fn(self, circuit, max_expansion=10):
+        """Method for expanding or decomposing an input circuit.
+        This method should be overwritten if custom expansion logic is
+        required.
+
+        By default, this method expands the tape if:
+
+        - nested tapes are present,
+        - any operations are not supported on the device, or
+        - multiple observables are measured on the same wire.
+
+        Args:
+            circuit (.QuantumTape): the circuit to expand.
+            max_expansion (int): The number of times the circuit should be
+                expanded. Expansion occurs when an operation or measurement is not
+                supported, and results in a gate decomposition. If any operations
+                in the decomposition remain unsupported by the device, another
+                expansion occurs.
+
+        Returns:
+            .QuantumTape: The expanded/decomposed circuit, such that the device
+            will natively support all operations.
+        """
+        obs_on_same_wire = len(
+            circuit._obs_sharing_wires  # pylint: disable=protected-access
+        ) > 0 and not self.supports_observable("Hamiltonian")
+
+        ops_not_supported = any(
+            isinstance(op, qml.tape.QuantumTape)  # nested tapes must be expanded
+            or not self.supports_operation(op.name)  # unsupported ops must be expanded
+            for op in circuit.operations
+        )
+
+        if ops_not_supported or obs_on_same_wire:
+            circuit = circuit.expand(
+                depth=max_expansion,
+                stop_at=lambda obj: not isinstance(obj, qml.tape.QuantumTape)
+                and self.supports_operation(obj.name),
+            )
+
+        return circuit
+
+    def batch_transform(self, circuit):
+        """Apply a differentiable batch transform for preprocessing a circuit
+        prior to execution. This method is called directly by the QNode, and
+        should be overwritten if the device requires a transform that
+        generates multiple circuits prior to execution.
+
+        By default, this method contains logic for generating multiple
+        circuits, one per term, of a circuit that terminates in ``expval(H)``,
+        if the underlying device does not support Hamiltonian expectation values,
+        or if the device requires finite shots.
+
+        .. warning::
+
+            This method will be tracked by autodifferentiation libraries,
+            such as Autograd, JAX, TensorFlow, and Torch. Please make sure
+            to use ``qml.math`` for autodiff-agnostic tensor processing
+            if required.
+
+        Args:
+            circuit (.QuantumTape): the circuit to preprocess
+
+        Returns:
+            tuple[Sequence[.QuantumTape], callable]: Returns a tuple containing
+            the sequence of circuits to be executed, and a post-processing function
+            to be applied to the list of evaluated circuit results.
+        """
+
+        # If the observable contains a Hamiltonian and the device does not
+        # support Hamiltonians, or if the simulation uses finite shots,
+        # split tape into multiple tapes of diagonalizable known observables.
+        supports_hamiltonian = self.supports_observable("Hamiltonian")
+        finite_shots = self.shots is not None
+
+        hamiltonian_in_obs = "Hamiltonian" in [obs.name for obs in circuit.observables]
+
+        if hamiltonian_in_obs and (not supports_hamiltonian or finite_shots):
+            try:
+                return qml.transforms.hamiltonian_expand(circuit, group=False)
+
+            except ValueError as e:
+                raise ValueError(
+                    "Can only return the expectation of a single Hamiltonian observable"
+                ) from e
+
+        # otherwise, return an identity transform
+        return [circuit], lambda res: res[0]
 
     @property
     def op_queue(self):
@@ -346,9 +759,12 @@ class Device(abc.ABC):
         if isinstance(operation, str):
 
             if operation.endswith(Operation.string_for_inverse):
-                return operation[
-                    : -len(Operation.string_for_inverse)
-                ] in self.operations and self.capabilities().get("inverse_operations", False)
+                in_ops = operation[: -len(Operation.string_for_inverse)] in self.operations
+                # TODO: update when all capabilities keys changed to "supports_inverse_operations"
+                supports_inv = self.capabilities().get(
+                    "supports_inverse_operations", False
+                ) or self.capabilities().get("inverse_operations", False)
+                return in_ops and supports_inv
 
             return operation in self.operations
 
@@ -403,7 +819,11 @@ class Device(abc.ABC):
             operation_name = o.name
 
             if o.inverse:
-                if not self.capabilities().get("inverse_operations", False):
+                # TODO: update when all capabilities keys changed to "supports_inverse_operations"
+                supports_inv = self.capabilities().get(
+                    "supports_inverse_operations", False
+                ) or self.capabilities().get("inverse_operations", False)
+                if not supports_inv:
                     raise DeviceError(
                         "The inverse of gates are not supported on device {}".format(
                             self.short_name
@@ -417,9 +837,15 @@ class Device(abc.ABC):
                 )
 
         for o in observables:
+            if isinstance(o, qml.measure.MeasurementProcess) and o.obs is not None:
+                o = o.obs
 
             if isinstance(o, Tensor):
-                if not self.capabilities().get("tensor_observables", False):
+                # TODO: update when all capabilities keys changed to "supports_tensor_observables"
+                supports_tensor = self.capabilities().get(
+                    "supports_tensor_observables", False
+                ) or self.capabilities().get("tensor_observables", False)
+                if not supports_tensor:
                     raise DeviceError(
                         "Tensor observables not supported on device {}".format(self.short_name)
                     )
@@ -432,11 +858,14 @@ class Device(abc.ABC):
                             )
                         )
             else:
-
                 observable_name = o.name
 
                 if issubclass(o.__class__, Operation) and o.inverse:
-                    if not self.capabilities().get("inverse_operations", False):
+                    # TODO: update when all capabilities keys changed to "supports_inverse_operations"
+                    supports_inv = self.capabilities().get(
+                        "supports_inverse_operations", False
+                    ) or self.capabilities().get("inverse_operations", False)
+                    if not supports_inv:
                         raise DeviceError(
                             "The inverse of gates are not supported on device {}".format(
                                 self.short_name
@@ -459,7 +888,7 @@ class Device(abc.ABC):
 
         Args:
             operation (str): name of the operation
-            wires (Sequence[int]): subsystems the operation is applied on
+            wires (Wires): wires that the operation is applied to
             par (tuple): parameters for the operation
         """
 
@@ -472,7 +901,7 @@ class Device(abc.ABC):
 
         Args:
             observable (str or list[str]): name of the observable(s)
-            wires (List[int] or List[List[int]]): subsystems the observable(s) is to be measured on
+            wires (Wires): wires the observable(s) are to be measured on
             par (tuple or list[tuple]]): parameters for the observable(s)
 
         Returns:
@@ -487,7 +916,7 @@ class Device(abc.ABC):
 
         Args:
             observable (str or list[str]): name of the observable(s)
-            wires (List[int] or List[List[int]]): subsystems the observable(s) is to be measured on
+            wires (Wires): wires the observable(s) is to be measured on
             par (tuple or list[tuple]]): parameters for the observable(s)
 
         Raises:
@@ -511,7 +940,7 @@ class Device(abc.ABC):
 
         Args:
             observable (str or list[str]): name of the observable(s)
-            wires (List[int] or List[List[int]]): subsystems the observable(s) is to be measured on
+            wires (Wires): wires the observable(s) is to be measured on
             par (tuple or list[tuple]]): parameters for the observable(s)
 
         Raises:

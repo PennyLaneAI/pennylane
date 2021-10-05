@@ -59,9 +59,6 @@ def module(get_circuit, n_qubits, output_dim):
     return Net()
 
 
-ordered_weights = ["w{}".format(i) for i in range(1, 8)]  # we do this for Python 3.5
-
-
 @pytest.mark.parametrize("interface", ["torch"])  # required for the get_circuit fixture
 @pytest.mark.usefixtures("get_circuit")  # this fixture is in tests/qnn/conftest.py
 class TestTorchLayer:
@@ -77,13 +74,18 @@ class TestTorchLayer:
                 TorchLayer(c, w)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_no_input(self, get_circuit):
+    def test_no_input(self):
         """Test if a TypeError is raised when instantiated with a QNode that does not have an
         argument with name equal to the input_arg class attribute of TorchLayer"""
-        c, w = get_circuit
-        del c.func.sig[qml.qnn.torch.TorchLayer._input_arg]
+        dev = qml.device("default.qubit", wires=1)
+        weight_shapes = {"w1": (3, 3), "w2": 1}
+
+        @qml.qnode(dev, interface="torch")
+        def circuit(w1, w2):
+            return qml.expval(qml.PauliZ(0))
+
         with pytest.raises(TypeError, match="QNode must include an argument with name"):
-            TorchLayer(c, w)
+            TorchLayer(circuit, weight_shapes)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_input_in_weight_shapes(self, get_circuit, n_qubits):
@@ -110,42 +112,55 @@ class TestTorchLayer:
             TorchLayer(c, w)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_var_pos(self, get_circuit, monkeypatch):
+    def test_var_pos(self):
         """Test if a TypeError is raised when instantiated with a variable number of positional
         arguments"""
-        c, w = get_circuit
+        dev = qml.device("default.qubit", wires=1)
+        weight_shapes = {"w1": (3, 3), "w2": 1}
 
-        class FuncPatch:
-            """Patch for variable number of keyword arguments"""
+        @qml.qnode(dev, interface="torch")
+        def circuit(inputs, w1, w2, *args):
+            return qml.expval(qml.PauliZ(0))
 
-            sig = c.func.sig
-            var_pos = True
-            var_keyword = False
-
-        with monkeypatch.context() as m:
-            m.setattr(c, "func", FuncPatch)
-
-            with pytest.raises(TypeError, match="Cannot have a variable number of positional"):
-                TorchLayer(c, w)
+        with pytest.raises(TypeError, match="Cannot have a variable number of positional"):
+            TorchLayer(circuit, weight_shapes)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_var_keyword(self, get_circuit, monkeypatch):
-        """Test if a TypeError is raised when instantiated with a variable number of keyword
-        arguments"""
-        c, w = get_circuit
+    def test_var_keyword(self, n_qubits, output_dim):
+        """Test that variable number of keyword arguments works"""
+        dev = qml.device("default.qubit", wires=n_qubits)
+        w = {
+            "w1": (3, n_qubits, 3),
+            "w2": (1,),
+            "w3": 1,
+            "w4": [3],
+            "w5": (2, n_qubits, 3),
+            "w6": 3,
+            "w7": 0,
+        }
 
-        class FuncPatch:
-            """Patch for variable number of keyword arguments"""
+        @qml.qnode(dev, interface="torch")
+        def c(inputs, **kwargs):
+            """A circuit that embeds data using the AngleEmbedding and then performs a variety of
+            operations. The output is a PauliZ measurement on the first output_dim qubits. One set of
+            parameters, w5, are specified as non-trainable."""
+            qml.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
+            qml.templates.StronglyEntanglingLayers(kwargs["w1"], wires=list(range(n_qubits)))
+            qml.RX(kwargs["w2"][0], wires=0 % n_qubits)
+            qml.RX(kwargs["w3"], wires=1 % n_qubits)
+            qml.Rot(*kwargs["w4"], wires=2 % n_qubits)
+            qml.templates.StronglyEntanglingLayers(kwargs["w5"], wires=list(range(n_qubits)))
+            qml.Rot(*kwargs["w6"], wires=3 % n_qubits)
+            qml.RX(kwargs["w7"], wires=4 % n_qubits)
+            return [qml.expval(qml.PauliZ(i)) for i in range(output_dim)]
 
-            sig = c.func.sig
-            var_pos = False
-            var_keyword = True
+        layer = TorchLayer(c, w)
+        x = torch.ones(n_qubits)
 
-        with monkeypatch.context() as m:
-            m.setattr(c, "func", FuncPatch)
+        layer_out = layer._evaluate_qnode(x)
+        circuit_out = c(x, **layer.qnode_weights).type(x.dtype)
 
-            with pytest.raises(TypeError, match="Cannot have a variable number of keyword"):
-                TorchLayer(c, w)
+        assert torch.allclose(layer_out, circuit_out)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_nonspecified_init(self, get_circuit, n_qubits, monkeypatch):
@@ -160,21 +175,42 @@ class TestTorchLayer:
             assert kwargs["b"] == 2 * math.pi
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_non_input_defaults(self, get_circuit, n_qubits):
-        """Test if a TypeError is raised when default arguments that are not the input argument are
+    def test_non_input_defaults(self, n_qubits, output_dim):
+        """Test that everything works when default arguments that are not the input argument are
         present in the QNode"""
-        c, w = get_circuit
+        dev = qml.device("default.qubit", wires=n_qubits)
+        w = {
+            "w1": (3, n_qubits, 3),
+            "w2": (1,),
+            "w3": 1,
+            "w4": [3],
+            "w5": (2, n_qubits, 3),
+            "w6": 3,
+            "w7": 0,
+        }
 
-        @qml.qnode(qml.device("default.qubit", wires=n_qubits), interface="torch")
-        def c_dummy(inputs, w1, w2, w3, w4, w5, w6, w7, w8=None):
-            """Dummy version of the circuit with a default argument"""
-            return c(inputs, w1, w2, w3, w4, w5, w6, w7)
+        @qml.qnode(dev, interface="torch")
+        def c(inputs, w1, w2, w4, w5, w6, w7, w3=0.5):
+            """A circuit that embeds data using the AngleEmbedding and then performs a variety of
+            operations. The output is a PauliZ measurement on the first output_dim qubits. One set of
+            parameters, w5, are specified as non-trainable."""
+            qml.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
+            qml.templates.StronglyEntanglingLayers(w1, wires=list(range(n_qubits)))
+            qml.RX(w2[0], wires=0 % n_qubits)
+            qml.RX(w3, wires=1 % n_qubits)
+            qml.Rot(*w4, wires=2 % n_qubits)
+            qml.templates.StronglyEntanglingLayers(w5, wires=list(range(n_qubits)))
+            qml.Rot(*w6, wires=3 % n_qubits)
+            qml.RX(w7, wires=4 % n_qubits)
+            return [qml.expval(qml.PauliZ(i)) for i in range(output_dim)]
 
-        with pytest.raises(
-            TypeError,
-            match="Only the argument {} is permitted".format(qml.qnn.torch.TorchLayer._input_arg),
-        ):
-            TorchLayer(c_dummy, {**w, **{"w8": 1}})
+        layer = TorchLayer(c, w)
+        x = torch.ones(n_qubits)
+
+        layer_out = layer._evaluate_qnode(x)
+        circuit_out = c(x, **layer.qnode_weights).type(x.dtype)
+
+        assert torch.allclose(layer_out, circuit_out)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
     def test_qnode_weights_shapes(self, get_circuit, n_qubits):
@@ -214,12 +250,11 @@ class TestTorchLayer:
         layer = TorchLayer(c, w)
         x = torch.ones(n_qubits)
 
-        layer_out = layer._evaluate_qnode(x).detach().numpy()
+        layer_out = layer._evaluate_qnode(x)
+        weights = layer.qnode_weights.values()
+        circuit_out = c(x, *weights).type(x.dtype)
 
-        weights = [layer.qnode_weights[weight].detach().numpy() for weight in ordered_weights]
-
-        circuit_out = c(x, *weights)
-        assert np.allclose(layer_out, circuit_out)
+        assert torch.allclose(layer_out, circuit_out)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_evaluate_qnode_shuffled_args(self, get_circuit, output_dim, n_qubits):
@@ -244,12 +279,11 @@ class TestTorchLayer:
         layer = TorchLayer(c_shuffled, w)
         x = torch.Tensor(np.ones(n_qubits))
 
-        layer_out = layer._evaluate_qnode(x).detach().numpy()
+        layer_out = layer._evaluate_qnode(x)
+        weights = layer.qnode_weights.values()
+        circuit_out = c(x, *weights).type(x.dtype)
 
-        weights = [layer.qnode_weights[weight].detach().numpy() for weight in ordered_weights]
-
-        circuit_out = c(x, *weights)
-        assert np.allclose(layer_out, circuit_out)
+        assert torch.allclose(layer_out, circuit_out)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_evaluate_qnode_default_input(self, get_circuit, output_dim, n_qubits):
@@ -273,12 +307,11 @@ class TestTorchLayer:
         layer = TorchLayer(c_default, w)
         x = torch.Tensor(np.ones(n_qubits))
 
-        layer_out = layer._evaluate_qnode(x).detach().numpy()
+        layer_out = layer._evaluate_qnode(x)
+        weights = layer.qnode_weights.values()
+        circuit_out = c(x, *weights).type(x.dtype)
 
-        weights = [layer.qnode_weights[weight].detach().numpy() for weight in ordered_weights]
-
-        circuit_out = c(x, *weights)
-        assert np.allclose(layer_out, circuit_out)
+        assert torch.allclose(layer_out, circuit_out)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
     def test_forward_single_input(self, get_circuit, output_dim, n_qubits):
@@ -300,7 +333,28 @@ class TestTorchLayer:
         x = torch.Tensor(np.ones((2, n_qubits)))
 
         layer_out = layer.forward(x)
+
         assert layer_out.shape == torch.Size((2, output_dim))
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
+    @pytest.mark.parametrize("batch_size", [2, 4, 6])
+    @pytest.mark.parametrize("middle_dim", [2, 5, 8])
+    def test_forward_broadcasting(self, get_circuit, output_dim, middle_dim, batch_size, n_qubits):
+        """Test if the forward() method accepts a batched input with multiple dimensions and returns a tensor of the
+        right shape by broadcasting. Also tests if gradients are still backpropagated correctly."""
+        c, w = get_circuit
+        layer = TorchLayer(c, w)
+        x = torch.Tensor(np.ones((batch_size, middle_dim, n_qubits)))
+
+        weights = layer.qnode_weights.values()
+
+        layer_out = layer.forward(x)
+        layer_out.backward(torch.ones_like(layer_out))
+
+        g_layer = [w.grad for w in weights]
+
+        assert g_layer.count(None) == 0
+        assert layer_out.shape == torch.Size((batch_size, middle_dim, output_dim))
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_str_repr(self, get_circuit):
@@ -319,24 +373,51 @@ class TestTorchLayer:
         layer = TorchLayer(c, w)
         x = torch.ones(n_qubits)
 
-        weights = [layer.qnode_weights[weight] for weight in ordered_weights]
+        weights = layer.qnode_weights.values()
 
         out_layer = layer(x)
         out_layer.backward()
 
-        g_layer = [w.grad.numpy() for w in weights]
+        g_layer = [w.grad for w in weights]
 
-        out_circuit = c(x, *weights)
+        out_circuit = c(x, *weights).type(x.dtype)
         out_circuit.backward()
 
-        g_circuit = [w.grad.numpy() for w in weights]
+        g_circuit = [w.grad for w in weights]
 
         for g1, g2 in zip(g_layer, g_circuit):
-            assert np.allclose(g1, g2)
+            assert torch.allclose(g1, g2)
         assert len(weights) == len(list(layer.parameters()))
 
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
+    def test_cuda_backward(self):
+        """Test if TorchLayer can be run on GPU"""
+        if not torch.cuda.is_available():
+            pytest.skip("Cuda device not available")
+        else:
+            try:
+                n_qubits = 4
+                dev = qml.device("default.qubit", wires=n_qubits)
 
-@pytest.mark.parametrize("interface", qml.qnodes.decorator.ALLOWED_INTERFACES)
+                @qml.qnode(dev, interface="torch")
+                def circuit(inputs, weights):
+                    qml.templates.AngleEmbedding(inputs, wires=range(n_qubits))
+                    qml.templates.BasicEntanglerLayers(weights, wires=range(n_qubits))
+                    return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_qubits)]
+
+                n_layers = 1
+                weight_shapes = {"weights": (n_layers, n_qubits)}
+
+                qlayer = qml.qnn.TorchLayer(circuit, weight_shapes)
+
+                x = torch.rand((5, n_qubits), dtype=torch.float64).to(torch.device("cuda"))
+                loss = torch.sum(qlayer(x)).squeeze()
+                loss.backward()
+            except Exception:
+                pytest.fail("Exception raised in torch CUDA backward")
+
+
+@pytest.mark.parametrize("interface", ["autograd", "torch", "tf"])
 @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
 @pytest.mark.usefixtures("get_circuit")  # this fixture is in tests/qnn/conftest.py
 @pytest.mark.usefixtures("skip_if_no_tf_support")
@@ -368,7 +449,7 @@ class TestTorchLayerIntegration:
         x = torch.zeros((batch_size, n_qubits)).type(dtype)
         y = torch.zeros((batch_size, output_dim)).type(dtype)
 
-        params_before = [w.detach().numpy().copy() for w in list(module.parameters())]
+        params_before = [w.detach().clone() for w in module.parameters()]
 
         module_out = module(x)
         optimizer.zero_grad()
@@ -376,9 +457,9 @@ class TestTorchLayerIntegration:
         loss.backward()
         optimizer.step()
 
-        params_after = [w.detach().numpy().copy() for w in list(module.parameters())]
+        params_after = [w.detach().clone() for w in module.parameters()]
 
-        params_similar = [np.allclose(p1, p2) for p1, p2 in zip(params_before, params_after)]
+        params_similar = [torch.allclose(p1, p2) for p1, p2 in zip(params_before, params_after)]
         assert not all(params_similar)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))

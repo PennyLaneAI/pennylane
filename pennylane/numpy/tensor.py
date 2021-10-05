@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ This module provides the PennyLane :class:`~.tensor` class.
 import numpy as onp
 
 from autograd import numpy as _np
+from autograd.extend import primitive, defvjp
 
 from autograd.tracer import Box
 from autograd.numpy.numpy_boxes import ArrayBox
@@ -25,6 +26,23 @@ from autograd.core import VSpace
 
 
 __doc__ = "NumPy with automatic differentiation support, provided by Autograd and PennyLane."
+
+# Hotfix since _np.asarray doesn't have a gradient rule defined.
+@primitive
+def asarray(vals, *args, **kwargs):
+    """Gradient supporting autograd asarray"""
+    if isinstance(vals, (onp.ndarray, _np.ndarray)):
+        return _np.asarray(vals, *args, **kwargs)
+    return _np.array(vals, *args, **kwargs)
+
+
+def asarray_gradmaker(ans, *args, **kwargs):
+    """Gradient maker for asarray"""
+    del ans, args, kwargs
+    return lambda g: g
+
+
+defvjp(asarray, asarray_gradmaker, argnums=(0,))
 
 
 class tensor(_np.ndarray):
@@ -90,9 +108,9 @@ class tensor(_np.ndarray):
     """
 
     def __new__(cls, input_array, *args, requires_grad=True, **kwargs):
-        obj = _np.array(input_array, *args, **kwargs)
+        obj = asarray(input_array, *args, **kwargs)
 
-        if isinstance(obj, _np.ndarray):
+        if isinstance(obj, onp.ndarray):
             obj = obj.view(cls)
             obj.requires_grad = requires_grad
 
@@ -100,7 +118,7 @@ class tensor(_np.ndarray):
 
     def __array_finalize__(self, obj):
         # pylint: disable=attribute-defined-outside-init
-        if obj is None:
+        if obj is None:  # pragma: no cover
             return
 
         self.requires_grad = getattr(obj, "requires_grad", None)
@@ -108,6 +126,139 @@ class tensor(_np.ndarray):
     def __repr__(self):
         string = super().__repr__()
         return string[:-1] + ", requires_grad={})".format(self.requires_grad)
+
+    def __array_wrap__(self, obj):
+        out_arr = tensor(obj, requires_grad=self.requires_grad)
+        return super().__array_wrap__(out_arr)
+
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        # pylint: disable=no-member,attribute-defined-outside-init
+
+        # unwrap any outputs the ufunc might have
+        outputs = [i.view(onp.ndarray) for i in kwargs.get("out", ())]
+
+        if outputs:
+            # Insert the unwrapped outputs into the keyword
+            # args dictionary, to be passed to ndarray.__array_ufunc__
+            outputs = tuple(outputs)
+            kwargs["out"] = outputs
+        else:
+            # If the ufunc has no ouputs, we simply
+            # create a tuple containing None for all potential outputs.
+            outputs = (None,) * ufunc.nout
+
+        # unwrap the input arguments to the ufunc
+        args = [i.unwrap() if hasattr(i, "unwrap") else i for i in inputs]
+
+        # call the ndarray.__array_ufunc__ method to compute the result
+        # of the vectorized ufunc
+        res = super().__array_ufunc__(ufunc, method, *args, **kwargs)
+
+        if ufunc.nout == 1:
+            res = (res,)
+
+        # construct a list of ufunc outputs to return
+        ufunc_output = [
+            (onp.asarray(result) if output is None else output)
+            for result, output in zip(res, outputs)
+        ]
+
+        # if any of the inputs were trainable, the output is also trainable
+        requires_grad = any(
+            isinstance(x, onp.ndarray) and getattr(x, "requires_grad", True) for x in inputs
+        )
+
+        # Iterate through the ufunc outputs and convert each to a PennyLane tensor.
+        # We also correctly set the requires_grad attribute.
+        for i in range(len(ufunc_output)):  # pylint: disable=consider-using-enumerate
+            ufunc_output[i] = tensor(ufunc_output[i], requires_grad=requires_grad)
+
+        if len(ufunc_output) == 1:
+            # the ufunc has a single output so return a single tensor
+            return ufunc_output[0]
+
+        # otherwise we must return a tuple of tensors
+        return tuple(ufunc_output)
+
+    def __getitem__(self, *args, **kwargs):
+        item = super().__getitem__(*args, **kwargs)
+
+        if not isinstance(item, tensor):
+            item = tensor(item, requires_grad=self.requires_grad)
+
+        return item
+
+    def __hash__(self):
+        if self.ndim == 0:
+            # Allowing hashing if the tensor is a scalar.
+            # We hash both the scalar value *and* the differentiability information,
+            # to match the behaviour of PyTorch.
+            return hash((self.item(), self.requires_grad))
+
+        raise TypeError("unhashable type: 'numpy.tensor'")
+
+    def unwrap(self):
+        """Converts the tensor to a standard, non-differentiable NumPy ndarray or Python scalar if
+        the tensor is 0-dimensional.
+
+        All information regarding differentiability of the tensor will be lost.
+
+        .. warning::
+
+            The returned array is a new view onto the **same data**. That is,
+            the tensor and the returned ``ndarray`` share the same underlying storage.
+            Changes to the tensor object will be reflected within the returned array,
+            and vice versa.
+
+        **Example**
+
+        >>> from pennylane import numpy as np
+        >>> x = np.array([1, 2], requires_grad=True)
+        >>> x
+        tensor([1, 2], requires_grad=True)
+        >>> x.unwrap()
+        array([1, 2])
+
+        Zero dimensional array are converted to Python scalars:
+
+        >>> x = np.array(1.543, requires_grad=False)
+        >>> x.unwrap()
+        1.543
+        >>> type(x.unwrap())
+        float
+
+        The underlying data is **not** copied:
+
+        >>> x = np.array([1, 2], requires_grad=True)
+        >>> y = x.unwrap()
+        >>> x[0] = 5
+        >>> y
+        array([5, 2])
+        >>> y[1] = 7
+        >>> x
+        tensor([5, 7], requires_grad=True)
+
+
+        To create a copy, the ``copy()`` method can be used:
+
+        >>> x = np.array([1, 2], requires_grad=True)
+        >>> y = x.unwrap().copy()
+        >>> x[0] = 5
+        >>> y
+        array([1, 2])
+        """
+        if self.ndim == 0:
+            return self.view(onp.ndarray).item()
+
+        return self.view(onp.ndarray)
+
+    def numpy(self):
+        """Converts the tensor to a standard, non-differentiable NumPy ndarray or Python scalar if
+        the tensor is 0-dimensional.
+
+        This method is an alias for :meth:`~.unwrap`. See :meth:`~.unwrap` for more details.
+        """
+        return self.unwrap()
 
 
 class NonDifferentiableError(Exception):

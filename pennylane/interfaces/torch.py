@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,72 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the :func:`to_torch` function to convert Numpy-interfacing quantum nodes to PyTorch
-compatible quantum nodes.
+This module contains the mixin interface class for creating differentiable quantum tapes with
+PyTorch.
 """
-# pylint: disable=redefined-outer-name,arguments-differ
-from collections import Iterable
-import inspect
-from functools import partial
-import numbers
-
+# pylint: disable=protected-access, attribute-defined-outside-init, arguments-differ, no-member, import-self, too-many-statements
 import numpy as np
+import semantic_version
 import torch
-from torch.autograd.function import once_differentiable
 
+import pennylane as qml
+from pennylane.queuing import AnnotatedQueue
 
-def unflatten_torch(flat, model):
-    """Restores an arbitrary nested structure to a flattened Torch tensor.
-
-    Args:
-        flat (torch.Tensor): 1D tensor of items
-        model (array, Iterable, Number): model nested structure
-
-    Returns:
-        Tuple[list[torch.Tensor], torch.Tensor]: tuple containing elements of ``flat`` arranged
-        into the nested structure of model, as well as the unused elements of ``flat``.
-
-    Raises:
-        TypeError: if ``model`` contains an object of unsupported type
-    """
-    if isinstance(model, (numbers.Number, str)):
-        return flat[0], flat[1:]
-
-    if isinstance(model, (torch.Tensor, np.ndarray)):
-        try:
-            idx = model.numel()
-        except AttributeError:
-            idx = model.size
-
-        res = flat[:idx].reshape(model.shape)
-        return res, flat[idx:]
-
-    if isinstance(model, Iterable):
-        res = []
-        for x in model:
-            val, flat = unflatten_torch(flat, x)
-            res.append(val)
-        return res, flat
-
-    raise TypeError("Unsupported type in the model: {}".format(type(model)))
-
-
-def _get_default_args(func):
-    """Get the default arguments of a function.
-
-    Args:
-        func (function): a valid Python function
-
-    Returns:
-        dict: dictionary containing the argument name and tuple
-        (positional idx, default value)
-    """
-    signature = inspect.signature(func)
-    return {
-        k: (idx, v.default)
-        for idx, (k, v) in enumerate(signature.parameters.items())
-        if v.default is not inspect.Parameter.empty
-    }
+COMPLEX_SUPPORT = semantic_version.match(">=1.8.0", torch.__version__)
 
 
 def args_to_numpy(args):
@@ -106,186 +52,263 @@ def args_to_numpy(args):
     return res
 
 
-def kwargs_to_numpy(kwargs):
-    """Converts all Torch tensors in a dictionary to NumPy arrays
+class _TorchInterface(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, input_kwargs, *input_):
+        """Implements the forward pass QNode evaluation"""
+        # detach all input tensors, convert to NumPy array
+        ctx.args = args_to_numpy(input_)
+        ctx.kwargs = input_kwargs
+        ctx.save_for_backward(*input_)
 
-    Args:
-        args (dict): dictionary containing QNode keyword arguments, including Torch tensors
+        tape = ctx.kwargs["tape"]
+        device = ctx.kwargs["device"]
 
-    Returns:
-        dict: returns the same dictionary, with all Torch tensors converted to NumPy arrays
-    """
-    res = {}
+        # unwrap constant parameters
+        ctx.all_params = tape.get_parameters(trainable_only=False)
+        ctx.all_params_unwrapped = args_to_numpy(ctx.all_params)
 
-    for key, val in kwargs.items():
-        if isinstance(val, torch.Tensor):
-            if val.is_cuda:  # pragma: no cover
-                res[key] = val.cpu().detach().numpy()
-            else:
-                res[key] = val.detach().numpy()
-        else:
-            res[key] = val
+        # evaluate the tape
+        tape.set_parameters(ctx.all_params_unwrapped, trainable_only=False)
+        res = tape.execute_device(ctx.args, device)
+        tape.set_parameters(ctx.all_params, trainable_only=False)
 
-    # if NumPy array is scalar, convert to a Python float
-    res = {
-        k: v.tolist() if (isinstance(v, np.ndarray) and not v.shape) else v for k, v in res.items()
-    }
+        if hasattr(res, "numpy"):
+            res = res.numpy()
 
-    return res
+        use_adjoint_cached_state = False
+        # tape might not be a jacobian tape
+        jac_options = getattr(tape, "jacobian_options", dict())
+        # cache state for adjoint jacobian computation
+        if jac_options.get("jacobian_method", None) == "adjoint_jacobian":
+            if jac_options.get("adjoint_cache", True):
+                use_adjoint_cached_state = True
+                state = device._pre_rotated_state
 
+        ctx.saved_grad_matrices = {}
 
-def to_torch(qnode):
-    """Function that accepts a :class:`~.QNode`, and returns a PyTorch-compatible QNode.
+        def _evaluate_grad_matrix(grad_matrix_fn):
+            """Convenience function for generating gradient matrices
+            for the given parameter values.
 
-    Args:
-        qnode (~pennylane.qnode.QNode): a PennyLane QNode
+            This function serves two purposes:
 
-    Returns:
-        torch.autograd.Function: the QNode as a PyTorch autograd function
-    """
+            * Avoids duplicating logic surrounding parameter unwrapping/wrapping
 
-    class _TorchQNode(torch.autograd.Function):
-        """The TorchQNode"""
+            * Takes advantage of closure, to cache computed gradient matrices via
+              the ctx.saved_grad_matrices attribute, to avoid gradient matrices being
+              computed multiple redundant times.
 
-        @staticmethod
-        def set_trainable(args):
-            """Given input arguments to the TorchQNode, determine which arguments
-            are trainable and which aren't.
+              This is particularly useful when differentiating vector-valued QNodes.
+              Because PyTorch requests the vector-GradMatrix product,
+              and *not* the full GradMatrix, differentiating vector-valued
+              functions will result in multiple backward passes.
 
-            Currently, all arguments are assumed to be nondifferentiable by default,
-            unless the ``torch.tensor`` attribute ``requires_grad`` is set to True.
+            Args:
+                grad_matrix_fn (str): Name of the gradient matrix function. Should correspond to an existing
+                    tape method. Currently allowed values include ``"jacobian"`` and ``"hessian"``.
 
-            This method calls the underlying :meth:`set_trainable_args` method of the QNode.
+                Returns:
+                    array[float]: the gradient matrix
             """
-            trainable_args = set()
+            if grad_matrix_fn in ctx.saved_grad_matrices:
+                return ctx.saved_grad_matrices[grad_matrix_fn]
 
-            for idx, arg in enumerate(args):
-                if getattr(arg, "requires_grad", False):
-                    trainable_args.add(idx)
+            if use_adjoint_cached_state:
+                tape.jacobian_options["device_pd_options"] = {"starting_state": state}
 
-            qnode.set_trainable_args(trainable_args)
+            tape.set_parameters(ctx.all_params_unwrapped, trainable_only=False)
+            grad_matrix = getattr(tape, grad_matrix_fn)(
+                device, params=ctx.args, **tape.jacobian_options
+            )
+            tape.set_parameters(ctx.all_params, trainable_only=False)
 
-        @staticmethod
-        def forward(ctx, input_kwargs, *input_):
-            """Implements the forward pass QNode evaluation"""
-            # detach all input tensors, convert to NumPy array
-            ctx.args = args_to_numpy(input_)
-            ctx.kwargs = kwargs_to_numpy(input_kwargs)
-            ctx.save_for_backward(*input_)
+            grad_matrix = torch.as_tensor(torch.from_numpy(grad_matrix), dtype=tape.dtype)
+            ctx.saved_grad_matrices[grad_matrix_fn] = grad_matrix
 
-            # Determine which QNode input tensors require gradients,
-            # and thus communicate to the QNode which ones must
-            # be wrapped as PennyLane variables.
-            _TorchQNode.set_trainable(input_)
+            return grad_matrix
 
-            # evaluate the QNode
-            res = qnode(*ctx.args, **ctx.kwargs)
+        class _Jacobian(torch.autograd.Function):
+            @staticmethod
+            def forward(ctx_, parent_ctx, *input_):
+                """Implements the forward pass QNode Jacobian evaluation"""
+                ctx_.dy = parent_ctx.dy
+                ctx_.save_for_backward(*input_)
+                jacobian = _evaluate_grad_matrix("jacobian")
+                return jacobian
 
-            if not isinstance(res, np.ndarray):
-                # scalar result, cast to NumPy scalar
-                res = np.array(res)
+            @staticmethod
+            def backward(ctx_, ddy):  # pragma: no cover
+                """Implements the backward pass QNode vector-Hessian product"""
+                hessian = _evaluate_grad_matrix("hessian")
 
-            # if any input tensor uses the GPU, the output should as well
-            for i in input_:
-                if isinstance(i, torch.Tensor):
-                    if i.is_cuda:  # pragma: no cover
-                        cuda_device = i.get_device()
-                        return torch.as_tensor(torch.from_numpy(res), device=cuda_device)
+                if torch.squeeze(ddy).ndim > 1:
+                    vhp = ctx_.dy.view(1, -1) @ ddy @ hessian @ ctx_.dy.view(-1, 1)
+                    vhp = vhp / torch.linalg.norm(ctx_.dy) ** 2
+                else:
+                    vhp = ddy @ hessian
 
-            return torch.from_numpy(res)
+                vhp = torch.unbind(vhp.view(-1))
 
-        @staticmethod
-        @once_differentiable
-        def backward(ctx, grad_output):  # pragma: no cover
-            """Implements the backwards pass QNode vector-Jacobian product"""
-            # NOTE: This method is definitely tested by the `test_torch.py` test suite,
-            # however does not show up in the coverage. This is likely due to
-            # subtleties in the torch.autograd.FunctionMeta metaclass, specifically
-            # the way in which the backward class is created on the fly
+                grad_input = []
 
-            # evaluate the Jacobian matrix of the QNode
-            jacobian = qnode.jacobian(ctx.args, ctx.kwargs)
-            jacobian = torch.as_tensor(jacobian, dtype=grad_output.dtype)
+                # match the type and device of the input tensors
+                for i, j in zip(vhp, ctx_.saved_tensors):
+                    res = torch.as_tensor(i, dtype=tape.dtype)
+                    if j.is_cuda:  # pragma: no cover
+                        cuda_device = j.get_device()
+                        res = torch.as_tensor(res, device=cuda_device)
+                    grad_input.append(res)
 
-            vjp = torch.transpose(grad_output.view(-1, 1), 0, 1) @ jacobian
-            vjp = vjp.flatten()
+                return (None,) + tuple(grad_input)
 
-            # restore the nested structure of the input args
-            grad_input_list = unflatten_torch(vjp, ctx.saved_tensors)[0]
-            grad_input = []
+        ctx.jacobian = _Jacobian
 
-            # match the type and device of the input tensors
-            for i, j in zip(grad_input_list, ctx.saved_tensors):
-                res = torch.as_tensor(i, dtype=j.dtype)
-                if j.is_cuda:  # pragma: no cover
-                    cuda_device = j.get_device()
-                    res = torch.as_tensor(res, device=cuda_device)
-                grad_input.append(res)
+        # if any input tensor uses the GPU, the output should as well
+        for i in input_:
+            if isinstance(i, torch.Tensor):
+                if i.is_cuda:  # pragma: no cover
+                    cuda_device = i.get_device()
+                    return torch.as_tensor(
+                        torch.from_numpy(res), device=cuda_device, dtype=tape.dtype
+                    )
 
-            return (None,) + tuple(grad_input)
+        if tape.is_sampled and not tape.all_sampled:
+            return tuple([torch.as_tensor(t, dtype=tape.dtype) for t in res])
 
-    class TorchQNode(partial):
-        """Torch QNode"""
+        if res.dtype == np.dtype("object"):
+            res = np.hstack(res)
 
-        # pylint: disable=too-few-public-methods
+        return torch.as_tensor(torch.from_numpy(res), dtype=tape.dtype)
 
-        # Here, we are making use of functools.partial to dynamically add
-        # methods and attributes to the custom gradient method defined below.
-        # This allows us to provide more useful __str__ and __repr__ methods
-        # for the decorated function (so it would still look like a QNode to end-users),
-        # as well as making QNode attributes and methods available.
+    @staticmethod
+    def backward(ctx, dy):  # pragma: no cover
+        """Implements the backwards pass QNode vector-Jacobian product"""
+        ctx.dy = dy
 
-        @property
-        def interface(self):
-            """String representing the QNode interface"""
-            return "torch"
+        dyv = dy.view(1, -1)
+        jac_res = ctx.jacobian.apply(ctx, *ctx.saved_tensors)
 
-        def __str__(self):
-            """String representation"""
-            detail = "<QNode: device='{}', func={}, wires={}, interface={}>"
-            return detail.format(
-                qnode.device.short_name, qnode.func.__name__, qnode.num_wires, self.interface
+        # When using CUDA, dyv seems to remain on the GPU, while the result
+        # of jac_res is returned on CPU, even though the saved_tensors arguments are
+        # themselves on the GPU. Check whether this has happened, and move things
+        # back to the GPU if required.
+        if dyv.is_cuda or jac_res.is_cuda:
+            if not dyv.is_cuda:
+                dyv = torch.as_tensor(dyv, device=jac_res.get_device())
+            if not jac_res.is_cuda:
+                jac_res = torch.as_tensor(jac_res, device=dyv.get_device())
+
+        vjp = dyv @ jac_res
+        vjp = torch.unbind(vjp.view(-1))
+        return (None,) + tuple(vjp)
+
+
+class TorchInterface(AnnotatedQueue):
+    """Mixin class for applying an Torch interface to a :class:`~.JacobianTape`.
+
+    Torch-compatible quantum tape classes can be created via subclassing:
+
+    .. code-block:: python
+
+        class MyTorchQuantumTape(TorchInterface, JacobianTape):
+
+    Alternatively, the Torch interface can be dynamically applied to existing
+    quantum tapes via the :meth:`~.apply` class method. This modifies the
+    tape **in place**.
+
+    Once created, the Torch interface can be used to perform quantum-classical
+    differentiable programming.
+
+    **Example**
+
+    Once a Torch quantum tape has been created, it can be evaluated and differentiated:
+
+    .. code-block:: python
+
+        dev = qml.device("default.qubit", wires=1)
+        p = torch.tensor([0.1, 0.2, 0.3], requires_grad=True)
+
+        with TorchInterface.apply(JacobianTape()) as qtape:
+            qml.Rot(p[0], p[1] ** 2 + p[0] * p[2], p[1] * torch.sin(p[2]), wires=0)
+            expval(qml.PauliX(0))
+
+        result = qtape.execute(dev)
+
+    >>> print(result)
+    tensor([0.0698], dtype=torch.float64, grad_fn=<_TorchInterfaceBackward>)
+    >>> result.backward()
+    >>> print(p.grad)
+    tensor([0.2987, 0.3971, 0.0988])
+
+    The Torch interface defaults to ``torch.float64`` output. This can be modified by
+    providing the ``dtype`` argument when applying the interface:
+
+    >>> p = torch.tensor([0.1, 0.2, 0.3], requires_grad=True)
+    >>> with TorchInterface.apply(JacobianTape(), dtype=torch.float32) as qtape:
+    ...     qml.Rot(p[0], p[1] ** 2 + p[0] * p[2], p[1] * torch.sin(p[2]), wires=0)
+    ...     expval(qml.PauliX(0))
+    >>> result = qtape.execute(dev)
+    >>> print(result)
+    tensor([0.0698], grad_fn=<_TorchInterfaceBackward>)
+    >>> print(result.dtype)
+    torch.float32
+    >>> result.backward()
+    >>> print(p.grad)
+    tensor([0.2987, 0.3971, 0.0988])
+    >>> print(p.grad.dtype)
+    torch.float32
+    """
+
+    dtype = torch.float64
+
+    @property
+    def interface(self):  # pylint: disable=missing-function-docstring
+        return "torch"
+
+    def _update_trainable_params(self):
+        params = self.get_parameters(trainable_only=False)
+
+        trainable_params = set()
+
+        for idx, p in enumerate(params):
+            if getattr(p, "requires_grad", False):
+                trainable_params.add(idx)
+
+        self.trainable_params = trainable_params
+        return params
+
+    def _execute(self, params, **kwargs):
+        kwargs["tape"] = self
+        res = _TorchInterface.apply(kwargs, *params)
+        return res
+
+    @classmethod
+    def apply(cls, tape, dtype=torch.float64):
+        """Apply the Torch interface to an existing tape in-place.
+
+        Args:
+            tape (.JacobianTape): a quantum tape to apply the Torch interface to
+            dtype (torch.dtype): the dtype that the returned quantum tape should
+                output
+
+        **Example**
+
+        >>> with JacobianTape() as tape:
+        ...     qml.RX(0.5, wires=0)
+        ...     expval(qml.PauliZ(0))
+        >>> TorchInterface.apply(tape)
+        >>> tape
+        <TorchQuantumTape: wires=<Wires = [0]>, params=1>
+        """
+        if (dtype is torch.complex64 or dtype is torch.complex128) and not COMPLEX_SUPPORT:
+            raise qml.QuantumFunctionError(
+                "Version 1.8.0 or above of PyTorch must be installed for complex support, "
+                "which is required for quantum functions that return the state."
             )
 
-        def __repr__(self):
-            """REPL representation"""
-            return self.__str__()
-
-        # Bind QNode methods
-        print_applied = qnode.print_applied
-        jacobian = qnode.jacobian
-        metric_tensor = qnode.metric_tensor
-        draw = qnode.draw
-        func = qnode.func
-        set_trainable_args = qnode.set_trainable_args
-        get_trainable_args = qnode.get_trainable_args
-
-        # Bind QNode attributes. Note that attributes must be
-        # bound as properties; by making use of closure, we ensure
-        # that updates to the wrapped QNode attributes are reflected
-        # by the wrapper class.
-        arg_vars = property(lambda self: qnode.arg_vars)
-        num_variables = property(lambda self: qnode.num_variables)
-        par_to_grad_method = property(lambda self: qnode.par_to_grad_method)
-
-    @TorchQNode
-    def custom_apply(*args, **kwargs):
-        """Custom apply wrapper, to allow passing kwargs to the TorchQNode"""
-
-        # get default kwargs that weren't passed
-        keyword_sig = _get_default_args(qnode.func)
-        keyword_defaults = {k: v[1] for k, v in keyword_sig.items()}
-        # keyword_positions = {v[0]: k for k, v in keyword_sig.items()}
-
-        # create a keyword_values dict, that contains defaults
-        # and any user-passed kwargs
-        keyword_values = {}
-        keyword_values.update(keyword_defaults)
-        keyword_values.update(kwargs)
-
-        # sort keyword values into a list of args, using their position
-        # [keyword_values[k] for k in sorted(keyword_positions, key=keyword_positions.get)]
-
-        return _TorchQNode.apply(keyword_values, *args)
-
-    return custom_apply
+        tape_class = getattr(tape, "__bare__", tape.__class__)
+        tape.__bare__ = tape_class
+        tape.__class__ = type("TorchQuantumTape", (cls, tape_class), {"dtype": dtype})
+        tape._update_trainable_params()
+        return tape

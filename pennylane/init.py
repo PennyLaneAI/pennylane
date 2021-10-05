@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,10 +14,157 @@
 r"""
 This module contains functions that generate initial parameters, for example
 to use in templates.
+
+.. warning::
+
+    This module will be deprecated soon, since the template classes now
+    have methods to extract the shape of initialisation tensors.
 """
 # pylint: disable=too-many-arguments
 from math import pi
+import warnings
 from pennylane import numpy as np
+
+
+def particle_conserving_u2_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
+    r"""Creates a parameter array for :func:`~.ParticleConservingU2`, drawn from a uniform
+    distribution.
+    Each parameter is drawn uniformly at random from the half-open interval [``low``, ``high``).
+    The parameters define the trainable angles entering the Z rotation
+    :math:`R_\mathrm{z}(\vec{\theta})` and particle-conserving gate :math:`U_{2,\mathrm{ex}}`
+    implemented by the :func:`~.u2_ex_gate()`.
+    Args:
+        n_layers (int): number of layers
+        n_wires (int): number of qubits
+        low (float): lower endpoint of the parameter interval
+        high (float): upper endpoint of the parameter interval
+        seed (int): seed used in sampling the parameters, makes function call deterministic
+    Returns:
+        array: parameter array
+    """
+
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
+    if seed is not None:
+        np.random.seed(seed)
+
+    if n_wires < 2:
+        raise ValueError(
+            "The number of qubits must be greater than one; got 'n_wires' = {}".format(n_wires)
+        )
+
+    params = np.random.uniform(low=low, high=high, size=(n_layers, 2 * n_wires - 1))
+    return params
+
+
+def particle_conserving_u2_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
+    r"""Creates a parameter array for :func:`~.ParticleConservingU2`, drawn from a normal
+    distribution.
+    Each parameter is drawn from a normal distribution with ``mean`` and standard deviation ``std``.
+    The parameters define the trainable angles entering the Z rotation
+    :math:`R_\mathrm{z}(\vec{\theta})` and particle-conserving gate :math:`U_{2,\mathrm{ex}}`
+    implemented by the :func:`~.u2_ex_gate()`.
+    Args:
+        n_layers (int): number of layers
+        n_wires (int): number of qubits
+        mean (float): mean of parameters
+        std (float): standard deviation of parameters
+        seed (int): seed used in sampling the parameters, makes function call deterministic
+    Returns:
+        array: parameter array
+    """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
+    if seed is not None:
+        np.random.seed(seed)
+
+    if n_wires < 2:
+        raise ValueError(
+            "The number of qubits must be greater than one; got 'n_wires' = {}".format(n_wires)
+        )
+
+    params = np.random.normal(loc=mean, scale=std, size=(n_layers, 2 * n_wires - 1))
+    return params
+
+
+def particle_conserving_u1_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
+    r"""Creates a parameter array for :func:`~.ParticleConservingU1`, drawn from a uniform
+    distribution.
+    Each parameter is drawn uniformly at random from the half-open interval [``low``, ``high``).
+    The parameters define the trainable angles entering the particle-conserving
+    exchange gates :math:`U_{1,\mathrm{ex}}(\phi, \theta)` implemented by the
+    :func:`~.u1_ex_gate()`.
+    Args:
+        n_layers (int): number of layers
+        n_wires (int): number of qubits
+        low (float): lower endpoint of the parameter interval
+        high (float): upper endpoint of the parameter interval
+        seed (int): seed used in sampling the parameters, makes function call deterministic
+    Returns:
+        array: parameter array
+    """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
+    if seed is not None:
+        np.random.seed(seed)
+
+    if n_wires < 2:
+        raise ValueError(
+            "The number of qubits must be greater than one; got 'n_wires' = {}".format(n_wires)
+        )
+
+    params = np.random.uniform(low=low, high=high, size=(n_layers, n_wires - 1, 2))
+    return params
+
+
+def particle_conserving_u1_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
+    r"""Creates a parameter array for :func:`~.ParticleConservingU1`, drawn from a normal
+    distribution.
+    Each parameter is drawn from a normal distribution with ``mean`` and standard deviation ``std``.
+    The parameters define the trainable angles entering the particle-conserving
+    exchange gates :math:`U_{1,\mathrm{ex}}(\phi, \theta)` implemented by the
+    :func:`~.u1_ex_gate()`.
+    Args:
+        n_layers (int): number of layers
+        n_wires (int): number of qubits
+        mean (float): mean of parameters
+        std (float): standard deviation of parameters
+        seed (int): seed used in sampling the parameters, makes function call deterministic
+    Returns:
+        array: parameter array
+    """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
+    if seed is not None:
+        np.random.seed(seed)
+
+    if n_wires < 2:
+        raise ValueError(
+            "The number of qubits must be greater than one; got 'n_wires' = {}".format(n_wires)
+        )
+
+    params = np.random.normal(loc=mean, scale=std, size=(n_layers, n_wires - 1, 2))
+    return params
 
 
 def qaoa_embedding_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
@@ -38,6 +185,13 @@ def qaoa_embedding_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -70,6 +224,13 @@ def qaoa_embedding_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -104,6 +265,13 @@ def strong_ent_layers_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -131,6 +299,13 @@ def strong_ent_layers_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -158,6 +333,13 @@ def random_layers_uniform(n_layers, n_wires, n_rots=None, low=0, high=2 * pi, se
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -193,6 +375,13 @@ def random_layers_normal(n_layers, n_wires, n_rots=None, mean=0, std=0.1, seed=N
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -228,6 +417,13 @@ def cvqnn_layers_all(n_layers, n_wires, seed=None):
     Returns:
         list of parameter arrays
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -251,22 +447,29 @@ def cvqnn_layers_all(n_layers, n_wires, seed=None):
 def cvqnn_layers_theta_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
     r"""Creates a parameter array for the ``theta`` input to the interferometers of :func:`~.CVNeuralNetLayers`.
 
-        The parameters are drawn from a uniform distribution.
+    The parameters are drawn from a uniform distribution.
 
-        The shape of the arrays is ``(n_layers, n_wires*(n_wires-1)/2)``.
+    The shape of the arrays is ``(n_layers, n_wires*(n_wires-1)/2)``.
 
-        Args:
-            n_layers (int): number of layers of the CV Neural Net
-            n_wires (int): number of modes of the CV Neural Net
+    Args:
+        n_layers (int): number of layers of the CV Neural Net
+        n_wires (int): number of modes of the CV Neural Net
 
-        Keyword Args:
-            low (float): minimum value of uniform distribution
-            high (float): maximum value of uniform distribution
-            seed (int): seed used in sampling the parameters, makes function call deterministic
+    Keyword Args:
+        low (float): minimum value of uniform distribution
+        high (float): maximum value of uniform distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
 
-        Returns:
-            array: parameter array
-        """
+    Returns:
+        array: parameter array
+    """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -278,22 +481,29 @@ def cvqnn_layers_theta_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None)
 def cvqnn_layers_theta_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     r"""Creates a parameter array for the ``theta`` input to the interferometers of :func:`~.CVNeuralNetLayers`.
 
-        The parameters are drawn from a normal distribution.
+    The parameters are drawn from a normal distribution.
 
-        The shape of the array is ``(n_layers, n_wires*(n_wires-1)/2)``.
+    The shape of the array is ``(n_layers, n_wires*(n_wires-1)/2)``.
 
-        Args:
-            n_layers (int): number of layers of the CV Neural Net
-            n_wires (int): number of modes of the CV Neural Net
+    Args:
+        n_layers (int): number of layers of the CV Neural Net
+        n_wires (int): number of modes of the CV Neural Net
 
-        Keyword Args:
-            mean (float): mean of normal distribution
-            std (float): standard deviation of normal distribution
-            seed (int): seed used in sampling the parameters, makes function call deterministic
+    Keyword Args:
+        mean (float): mean of normal distribution
+        std (float): standard deviation of normal distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
 
-        Returns:
-            array: parameter array
-        """
+    Returns:
+        array: parameter array
+    """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -305,22 +515,29 @@ def cvqnn_layers_theta_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
 def cvqnn_layers_phi_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
     r"""Creates a parameter array for the ``phi`` input to the interferometers of :func:`~.CVNeuralNetLayers`.
 
-        The parameters are drawn from a uniform distribution.
+    The parameters are drawn from a uniform distribution.
 
-        The shape of the arrays is ``(n_layers, n_wires*(n_wires-1)/2)``.
+    The shape of the arrays is ``(n_layers, n_wires*(n_wires-1)/2)``.
 
-        Args:
-            n_layers (int): number of layers of the CV Neural Net
-            n_wires (int): number of modes of the CV Neural Net
+    Args:
+        n_layers (int): number of layers of the CV Neural Net
+        n_wires (int): number of modes of the CV Neural Net
 
-        Keyword Args:
-            low (float): minimum value of uniform distribution
-            high (float): maximum value of uniform distribution
-            seed (int): seed used in sampling the parameters, makes function call deterministic
+    Keyword Args:
+        low (float): minimum value of uniform distribution
+        high (float): maximum value of uniform distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
 
-        Returns:
-            array: parameter array
-        """
+    Returns:
+        array: parameter array
+    """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -332,22 +549,29 @@ def cvqnn_layers_phi_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
 def cvqnn_layers_phi_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     r"""Creates a parameter array for the ``phi`` input to the interferometers of :func:`~.CVNeuralNetLayers`.
 
-        The parameters are drawn from a normal distribution.
+    The parameters are drawn from a normal distribution.
 
-        The shape of the array is ``(n_layers, n_wires*(n_wires-1)/2)``.
+    The shape of the array is ``(n_layers, n_wires*(n_wires-1)/2)``.
 
-        Args:
-            n_layers (int): number of layers of the CV Neural Net
-            n_wires (int): number of modes of the CV Neural Net
+    Args:
+        n_layers (int): number of layers of the CV Neural Net
+        n_wires (int): number of modes of the CV Neural Net
 
-        Keyword Args:
-            mean (float): mean of normal distribution
-            std (float): standard deviation of normal distribution
-            seed (int): seed used in sampling the parameters, makes function call deterministic
+    Keyword Args:
+        mean (float): mean of normal distribution
+        std (float): standard deviation of normal distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
 
-        Returns:
-            array: parameter array
-        """
+    Returns:
+        array: parameter array
+    """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -359,22 +583,29 @@ def cvqnn_layers_phi_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
 def cvqnn_layers_varphi_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
     r"""Creates a parameter array for the ``varphi`` input to the interferometers of :func:`~.CVNeuralNetLayers`.
 
-        The parameters are drawn from a uniform distribution.
+    The parameters are drawn from a uniform distribution.
 
-        The shape of the arrays is ``(n_layers, n_wires)``.
+    The shape of the arrays is ``(n_layers, n_wires)``.
 
-        Args:
-            n_layers (int): number of layers of the CV Neural Net
-            n_wires (int): number of modes of the CV Neural Net
+    Args:
+        n_layers (int): number of layers of the CV Neural Net
+        n_wires (int): number of modes of the CV Neural Net
 
-        Keyword Args:
-            low (float): minimum value of uniform distribution
-            high (float): maximum value of uniform distribution
-            seed (int): seed used in sampling the parameters, makes function call deterministic
+    Keyword Args:
+        low (float): minimum value of uniform distribution
+        high (float): maximum value of uniform distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
 
-        Returns:
-            array: parameter array
-        """
+    Returns:
+        array: parameter array
+    """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -385,22 +616,29 @@ def cvqnn_layers_varphi_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None
 def cvqnn_layers_varphi_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     r"""Creates a parameter array for the ``varphi`` input to the interferometers of :func:`~.CVNeuralNetLayers`.
 
-        The parameters are drawn from a normal distribution.
+    The parameters are drawn from a normal distribution.
 
-        The shape of the arrays is ``(n_layers, n_wires)``.
+    The shape of the arrays is ``(n_layers, n_wires)``.
 
-        Args:
-            n_layers (int): number of layers of the CV Neural Net
-            n_wires (int): number of modes of the CV Neural Net
+    Args:
+        n_layers (int): number of layers of the CV Neural Net
+        n_wires (int): number of modes of the CV Neural Net
 
-        Keyword Args:
-            mean(float): mean of normal distribution
-            std(float): standard deviation of normal distribution
-            seed (int): seed used in sampling the parameters, makes function call deterministic
+    Keyword Args:
+        mean(float): mean of normal distribution
+        std(float): standard deviation of normal distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
 
-        Returns:
-            array: parameter array
-        """
+    Returns:
+        array: parameter array
+    """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -411,22 +649,29 @@ def cvqnn_layers_varphi_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
 def cvqnn_layers_r_uniform(n_layers, n_wires, low=0, high=0.1, seed=None):
     r"""Creates a parameter array for the squeezing amplitude ``r`` of :func:`~.CVNeuralNetLayers`.
 
-        The parameters are drawn from a uniform distribution.
+    The parameters are drawn from a uniform distribution.
 
-        The shape of the arrays is ``(n_layers, n_wires)``.
+    The shape of the arrays is ``(n_layers, n_wires)``.
 
-        Args:
-            n_layers (int): number of layers of the CV Neural Net
-            n_wires (int): number of modes of the CV Neural Net
+    Args:
+        n_layers (int): number of layers of the CV Neural Net
+        n_wires (int): number of modes of the CV Neural Net
 
-        Keyword Args:
-            low (float): minimum value of uniform distribution
-            high (float): maximum value of uniform distribution
-            seed (int): seed used in sampling the parameters, makes function call deterministic
+    Keyword Args:
+        low (float): minimum value of uniform distribution
+        high (float): maximum value of uniform distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
 
-        Returns:
-            array: parameter array
-        """
+    Returns:
+        array: parameter array
+    """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -437,22 +682,29 @@ def cvqnn_layers_r_uniform(n_layers, n_wires, low=0, high=0.1, seed=None):
 def cvqnn_layers_r_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     r"""Creates a parameter array for the squeezing amplitude ``r`` of :func:`~.CVNeuralNetLayers`.
 
-        The parameters are drawn from a normal distribution.
+    The parameters are drawn from a normal distribution.
 
-        The shape of the arrays is ``(n_layers, n_wires)``.
+    The shape of the arrays is ``(n_layers, n_wires)``.
 
-        Args:
-            n_layers (int): number of layers of the CV Neural Net
-            n_wires (int): number of modes of the CV Neural Net
+    Args:
+        n_layers (int): number of layers of the CV Neural Net
+        n_wires (int): number of modes of the CV Neural Net
 
-        Keyword Args:
-            mean(float): mean of normal distribution
-            std(float): standard deviation of normal distribution
-            seed (int): seed used in sampling the parameters, makes function call deterministic
+    Keyword Args:
+        mean(float): mean of normal distribution
+        std(float): standard deviation of normal distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
 
-        Returns:
-            array: parameter array
-        """
+    Returns:
+        array: parameter array
+    """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -463,22 +715,29 @@ def cvqnn_layers_r_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
 def cvqnn_layers_phi_r_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
     r"""Creates a parameter array for the squeezing phase ``phi_r`` of :func:`~.CVNeuralNetLayers`.
 
-        The parameters are drawn from a uniform distribution.
+    The parameters are drawn from a uniform distribution.
 
-        The shape of the arrays is ``(n_layers, n_wires)``.
+    The shape of the arrays is ``(n_layers, n_wires)``.
 
-        Args:
-            n_layers (int): number of layers of the CV Neural Net
-            n_wires (int): number of modes of the CV Neural Net
+    Args:
+        n_layers (int): number of layers of the CV Neural Net
+        n_wires (int): number of modes of the CV Neural Net
 
-        Keyword Args:
-            low (float): minimum value of uniform distribution
-            high (float): maximum value of uniform distribution
-            seed (int): seed used in sampling the parameters, makes function call deterministic
+    Keyword Args:
+        low (float): minimum value of uniform distribution
+        high (float): maximum value of uniform distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
 
-        Returns:
-            array: parameter array
-        """
+    Returns:
+        array: parameter array
+    """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -489,22 +748,29 @@ def cvqnn_layers_phi_r_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None)
 def cvqnn_layers_phi_r_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     r"""Creates a parameter array for the squeezing phase ``phi_r`` of :func:`~.CVNeuralNetLayers`.
 
-        The parameters are drawn from a normal distribution.
+    The parameters are drawn from a normal distribution.
 
-        The shape of the arrays is ``(n_layers, n_wires)``.
+    The shape of the arrays is ``(n_layers, n_wires)``.
 
-        Args:
-            n_layers (int): number of layers of the CV Neural Net
-            n_wires (int): number of modes of the CV Neural Net
+    Args:
+        n_layers (int): number of layers of the CV Neural Net
+        n_wires (int): number of modes of the CV Neural Net
 
-        Keyword Args:
-            mean(float): mean of normal distribution
-            std(float): standard deviation of normal distribution
-            seed (int): seed used in sampling the parameters, makes function call deterministic
+    Keyword Args:
+        mean(float): mean of normal distribution
+        std(float): standard deviation of normal distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
 
-        Returns:
-            array: parameter array
-        """
+    Returns:
+        array: parameter array
+    """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -515,22 +781,29 @@ def cvqnn_layers_phi_r_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
 def cvqnn_layers_a_uniform(n_layers, n_wires, low=0, high=0.1, seed=None):
     r"""Creates a parameter array for the displacement amplitude ``a`` of :func:`~.CVNeuralNetLayers`.
 
-        The parameters are drawn from a uniform distribution.
+    The parameters are drawn from a uniform distribution.
 
-        The shape of the arrays is ``(n_layers, n_wires)``.
+    The shape of the arrays is ``(n_layers, n_wires)``.
 
-        Args:
-            n_layers (int): number of layers of the CV Neural Net
-            n_wires (int): number of modes of the CV Neural Net
+    Args:
+        n_layers (int): number of layers of the CV Neural Net
+        n_wires (int): number of modes of the CV Neural Net
 
-        Keyword Args:
-            low (float): minimum value of uniform distribution
-            high (float): maximum value of uniform distribution
-            seed (int): seed used in sampling the parameters, makes function call deterministic
+    Keyword Args:
+        low (float): minimum value of uniform distribution
+        high (float): maximum value of uniform distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
 
-        Returns:
-            array: parameter array
-        """
+    Returns:
+        array: parameter array
+    """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -541,22 +814,29 @@ def cvqnn_layers_a_uniform(n_layers, n_wires, low=0, high=0.1, seed=None):
 def cvqnn_layers_a_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     r"""Creates a parameter array for the displacement amplitude ``a`` of :func:`~.CVNeuralNetLayers`.
 
-        The parameters are drawn from a normal distribution.
+    The parameters are drawn from a normal distribution.
 
-        The shape of the arrays is ``(n_layers, n_wires)``.
+    The shape of the arrays is ``(n_layers, n_wires)``.
 
-        Args:
-            n_layers (int): number of layers of the CV Neural Net
-            n_wires (int): number of modes of the CV Neural Net
+    Args:
+        n_layers (int): number of layers of the CV Neural Net
+        n_wires (int): number of modes of the CV Neural Net
 
-        Keyword Args:
-            mean(float): mean of normal distribution
-            std(float): standard deviation of normal distribution
-            seed (int): seed used in sampling the parameters, makes function call deterministic
+    Keyword Args:
+        mean(float): mean of normal distribution
+        std(float): standard deviation of normal distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
 
-        Returns:
-            array: parameter array
-        """
+    Returns:
+        array: parameter array
+    """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -567,22 +847,29 @@ def cvqnn_layers_a_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
 def cvqnn_layers_phi_a_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
     r"""Creates a parameter array for the displacement phase ``phi_a`` of :func:`~.CVNeuralNetLayers`.
 
-        The parameters are drawn from a uniform distribution.
+    The parameters are drawn from a uniform distribution.
 
-        The shape of the arrays is ``(n_layers, n_wires)``.
+    The shape of the arrays is ``(n_layers, n_wires)``.
 
-        Args:
-            n_layers (int): number of layers of the CV Neural Net
-            n_wires (int): number of modes of the CV Neural Net
+    Args:
+        n_layers (int): number of layers of the CV Neural Net
+        n_wires (int): number of modes of the CV Neural Net
 
-        Keyword Args:
-            low (float): minimum value of uniform distribution
-            high (float): maximum value of uniform distribution
-            seed (int): seed used in sampling the parameters, makes function call deterministic
+    Keyword Args:
+        low (float): minimum value of uniform distribution
+        high (float): maximum value of uniform distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
 
-        Returns:
-            array: parameter array
-        """
+    Returns:
+        array: parameter array
+    """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -593,22 +880,29 @@ def cvqnn_layers_phi_a_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None)
 def cvqnn_layers_phi_a_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     r"""Creates a parameter array for the displacement phase ``phi_a`` of :func:`~.CVNeuralNetLayers`.
 
-        The parameters are drawn from a normal distribution.
+    The parameters are drawn from a normal distribution.
 
-        The shape of the arrays is ``(n_layers, n_wires)``.
+    The shape of the arrays is ``(n_layers, n_wires)``.
 
-        Args:
-            n_layers (int): number of layers of the CV Neural Net
-            n_wires (int): number of modes of the CV Neural Net
+    Args:
+        n_layers (int): number of layers of the CV Neural Net
+        n_wires (int): number of modes of the CV Neural Net
 
-        Keyword Args:
-            mean(float): mean of normal distribution
-            std(float): standard deviation of normal distribution
-            seed (int): seed used in sampling the parameters, makes function call deterministic
+    Keyword Args:
+        mean(float): mean of normal distribution
+        std(float): standard deviation of normal distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
 
-        Returns:
-            array: parameter array
-        """
+    Returns:
+        array: parameter array
+    """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -619,22 +913,29 @@ def cvqnn_layers_phi_a_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
 def cvqnn_layers_kappa_uniform(n_layers, n_wires, low=0, high=0.1, seed=None):
     r"""Creates a parameter array for the kerr parameter ``kappa`` of :func:`~.CVNeuralNetLayers`.
 
-        The parameters are drawn from a uniform distribution.
+    The parameters are drawn from a uniform distribution.
 
-        The shape of the arrays is ``(n_layers, n_wires)``.
+    The shape of the arrays is ``(n_layers, n_wires)``.
 
-        Args:
-            n_layers (int): number of layers of the CV Neural Net
-            n_wires (int): number of modes of the CV Neural Net
+    Args:
+        n_layers (int): number of layers of the CV Neural Net
+        n_wires (int): number of modes of the CV Neural Net
 
-        Keyword Args:
-            low (float): minimum value of uniform distribution
-            high (float): maximum value of uniform distribution
-            seed (int): seed used in sampling the parameters, makes function call deterministic
+    Keyword Args:
+        low (float): minimum value of uniform distribution
+        high (float): maximum value of uniform distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
 
-        Returns:
-            array: parameter array
-        """
+    Returns:
+        array: parameter array
+    """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -645,22 +946,29 @@ def cvqnn_layers_kappa_uniform(n_layers, n_wires, low=0, high=0.1, seed=None):
 def cvqnn_layers_kappa_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     r"""Creates a parameter array for the kerr parameter ``kappa`` of :func:`~.CVNeuralNetLayers`.
 
-        The parameters are drawn from a normal distribution.
+    The parameters are drawn from a normal distribution.
 
-        The shape of the arrays is ``(n_layers, n_wires)``.
+    The shape of the arrays is ``(n_layers, n_wires)``.
 
-        Args:
-            n_layers (int): number of layers of the CV Neural Net
-            n_wires (int): number of modes of the CV Neural Net
+    Args:
+        n_layers (int): number of layers of the CV Neural Net
+        n_wires (int): number of modes of the CV Neural Net
 
-        Keyword Args:
-            mean(float): mean of normal distribution
-            std(float): standard deviation of normal distribution
-            seed (int): seed used in sampling the parameters, makes function call deterministic
+    Keyword Args:
+        mean(float): mean of normal distribution
+        std(float): standard deviation of normal distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
 
-        Returns:
-            array: parameter array
-        """
+    Returns:
+        array: parameter array
+    """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -687,6 +995,13 @@ def interferometer_all(n_wires, seed=None):
     Returns:
         list of parameter arrays
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -716,6 +1031,13 @@ def interferometer_theta_uniform(n_wires, low=0, high=2 * pi, seed=None):
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
     n_if = n_wires * (n_wires - 1) // 2
@@ -741,6 +1063,13 @@ def interferometer_phi_uniform(n_wires, low=0, high=2 * pi, seed=None):
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
     n_if = n_wires * (n_wires - 1) // 2
@@ -766,6 +1095,13 @@ def interferometer_varphi_uniform(n_wires, low=0, high=2 * pi, seed=None):
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -790,6 +1126,13 @@ def interferometer_theta_normal(n_wires, mean=0, std=0.1, seed=None):
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
     n_if = n_wires * (n_wires - 1) // 2
@@ -815,6 +1158,13 @@ def interferometer_phi_normal(n_wires, mean=0, std=0.1, seed=None):
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
     n_if = n_wires * (n_wires - 1) // 2
@@ -840,6 +1190,13 @@ def interferometer_varphi_normal(n_wires, mean=0, std=0.1, seed=None):
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -864,6 +1221,13 @@ def simplified_two_design_initial_layer_uniform(n_wires, low=0, high=2 * pi, see
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -889,6 +1253,13 @@ def simplified_two_design_initial_layer_normal(n_wires, mean=0, std=0.1, seed=No
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -915,6 +1286,13 @@ def simplified_two_design_weights_uniform(n_layers, n_wires, low=0, high=2 * pi,
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -948,6 +1326,13 @@ def simplified_two_design_weights_normal(n_layers, n_wires, mean=0, std=0.1, see
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -979,6 +1364,13 @@ def basic_entangler_layers_normal(n_layers, n_wires, mean=0, std=0.1, seed=None)
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 
@@ -1005,6 +1397,13 @@ def basic_entangler_layers_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=N
     Returns:
         array: parameter array
     """
+    warnings.warn(
+        "The init module will be deprecated soon, since templates can now provide a method "
+        "that returns the shape of parameter tensors.",
+        UserWarning,
+        stacklevel=2,
+    )
+
     if seed is not None:
         np.random.seed(seed)
 

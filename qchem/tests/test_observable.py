@@ -5,41 +5,74 @@ import pytest
 
 from pennylane import qchem
 
-from openfermion.ops._qubit_operator import QubitOperator
+from openfermion import FermionOperator, QubitOperator
+
+t = FermionOperator("0^ 0", 0.5) + FermionOperator("1^ 1", -0.5)
+
+v = (
+    FermionOperator("0^ 0^ 0 0", 0.25)
+    + FermionOperator("0^ 1^ 1 0", -0.25)
+    + FermionOperator("1^ 0^ 0 1", -0.5)
+)
+
+v1 = (
+    FermionOperator("0^ 0^ 0 0", 0.25)
+    + FermionOperator("0^ 1^ 1 0", -0.25)
+    + FermionOperator("0^ 2^ 2 0", 0.25)
+    + FermionOperator("0^ 3^ 3 0", -0.25)
+    + FermionOperator("1^ 0^ 0 1", -0.25)
+    + FermionOperator("2^ 0^ 0 2", 0.25)
+)
+
+v2 = (
+    FermionOperator("0^ 0^ 0 0", 0.5)
+    + FermionOperator("0^ 1^ 1 0", -0.25)
+    + FermionOperator("0^ 2^ 2 0", 0.5)
+    + FermionOperator("0^ 3^ 3 0", -0.25)
+    + FermionOperator("1^ 0^ 0 1", -0.25)
+    + FermionOperator("2^ 0^ 0 2", -0.25)
+)
 
 
 @pytest.mark.parametrize(
-    ("me_table", "init_term", "mapping", "terms_exp"),
+    ("fermion_ops", "init_term", "mapping", "terms_exp"),
     [
         (
-            np.array([[0.0, 0.0, 0.5], [1.0, 1.0, -0.5], [1.0, 0.0, 0.0]]),
+            [t, v],
+            1 / 4,
+            "bravyi_KITAEV",
+            {
+                (): (0.0625 + 0j),
+                ((0, "Z"),): (-0.0625 + 0j),
+                ((0, "Z"), (1, "Z")): (0.4375 + 0j),
+                ((1, "Z"),): (-0.1875 + 0j),
+            },
+        ),
+        (
+            [t, v],
+            1 / 4,
+            "JORDAN_wigner",
+            {
+                (): (0.0625 + 0j),
+                ((0, "Z"),): (-0.0625 + 0j),
+                ((1, "Z"),): (0.4375 + 0j),
+                ((0, "Z"), (1, "Z")): (-0.1875 + 0j),
+            },
+        ),
+        (
+            [t],
             1 / 2,
             "JORDAN_wigner",
             {(): (0.5 + 0j), ((0, "Z"),): (-0.25 + 0j), ((1, "Z"),): (0.25 + 0j)},
         ),
         (
-            np.array([[0.0, 0.0, 0.5], [1.0, 1.0, -0.5], [1.0, 0.0, 0.0]]),
+            [t],
             0,
             "JORDAN_wigner",
             {((0, "Z"),): (-0.25 + 0j), ((1, "Z"),): (0.25 + 0j)},
         ),
         (
-            np.array([[0.0, 0.0, 0.2], [1.0, 1.0, -0.5], [1.0, 0.0, 0.0]]),
-            1 / 2,
-            "bravyi_KITAEV",
-            {(): (0.35 + 0j), ((0, "Z"),): (-0.1 + 0j), ((0, "Z"), (1, "Z")): (0.25 + 0j),},
-        ),
-        (
-            np.array(
-                [
-                    [0.0, 0.0, 0.0, 0.0, 0.25],
-                    [0.0, 1.0, 1.0, 0.0, -0.25],
-                    [0.0, 2.0, 2.0, 0.0, 0.25],
-                    [0.0, 3.0, 3.0, 0.0, -0.25],
-                    [1.0, 0.0, 0.0, 1.0, -0.25],
-                    [2.0, 0.0, 0.0, 2.0, 0.25],
-                ]
-            ),
+            [v1],
             1 / 2,
             "JORDAN_wigner",
             {
@@ -54,16 +87,7 @@ from openfermion.ops._qubit_operator import QubitOperator
             },
         ),
         (
-            np.array(
-                [
-                    [0.0, 0.0, 0.0, 0.0, 0.5],
-                    [0.0, 1.0, 1.0, 0.0, -0.25],
-                    [0.0, 2.0, 2.0, 0.0, 0.5],
-                    [0.0, 3.0, 3.0, 0.0, -0.25],
-                    [1.0, 0.0, 0.0, 1.0, -0.25],
-                    [2.0, 0.0, 0.0, 2.0, -0.25],
-                ]
-            ),
+            [v2],
             1 / 4,
             "bravyi_KITAEV",
             {
@@ -79,7 +103,7 @@ from openfermion.ops._qubit_operator import QubitOperator
         ),
     ],
 )
-def test_observable(me_table, init_term, mapping, terms_exp, monkeypatch):
+def test_observable(fermion_ops, init_term, mapping, terms_exp, custom_wires, monkeypatch):
     r"""Tests the correctness of the 'observable' function used to build many-body observables.
 
     The parametrized inputs `terms_exp` are `.terms` attribute of the corresponding
@@ -87,38 +111,31 @@ def test_observable(me_table, init_term, mapping, terms_exp, monkeypatch):
     as it could be something useful to the users as well.
     """
 
-    res_obs = qchem.observable(me_table, init_term=init_term, mapping=mapping)
+    res_obs = qchem.observable(
+        fermion_ops, init_term=init_term, mapping=mapping, wires=custom_wires
+    )
 
     qubit_op = QubitOperator()
     monkeypatch.setattr(qubit_op, "terms", terms_exp)
 
-    assert qchem._qubit_operators_equivalent(qubit_op, res_obs)
+    assert qchem._qubit_operators_equivalent(qubit_op, res_obs, wires=custom_wires)
+
+
+msg1 = "Elements in the lists are expected to be of type 'FermionOperator'"
+msg2 = "Please set 'mapping' to 'jordan_wigner' or 'bravyi_kitaev'"
 
 
 @pytest.mark.parametrize(
-    "me_table",
+    ("fermion_ops", "mapping", "msg_match"),
     [
-        np.array([[0.0, 0.0, 1.0, 0.5], [1.0, 1.0, -0.5]]),
-        np.array([[0.0, 0.0, 1.0, 0.5], [1.0, -0.5]]),
-        np.array([[0.0, 0.0, 1.0, 2.0, 0.5], [1.0, -0.5]]),
-        np.array([[0.0, 0.0, 1.0, 2.0, 3.0, 0.5], [1.0, 0.0, -0.5]]),
+        ([FermionOperator("0^ 0", 0.5), "notFermionOperator"], "JORDAN_wigner", msg1),
+        ([FermionOperator("0^ 0", 0.5)], "no_valid_transformation", msg2),
     ],
 )
-def test_exceptions_observable(
-    me_table, message_match="expected entries of 'me_table' to be of shape"
-):
-    """Test that the 'observable' function throws an exception if the
-    array containing the matrix elements has incorrect shapes."""
+def test_exceptions_observable(fermion_ops, mapping, msg_match):
+    """Test that the 'observable' function throws an exception if any element
+    in the list 'fermion_ops' is not a FermionOperator objector or if the
+    fermionic-to-qubit transformation is not properly defined."""
 
-    with pytest.raises(ValueError, match=message_match):
-        qchem.observable(me_table)
-
-
-def test_mapping_observable(message_match="transformation is not available"):
-    """Test that the 'observable' function throws an exception if the
-    fermionic-to-qubit mapping is not properly defined."""
-
-    me_table = np.array([[0.0, 0.0, 0.5], [1.0, 1.0, -0.5]])
-
-    with pytest.raises(TypeError, match=message_match):
-        qchem.observable(me_table, mapping="no_valid_transformation")
+    with pytest.raises(TypeError, match=msg_match):
+        qchem.observable(fermion_ops, mapping=mapping)

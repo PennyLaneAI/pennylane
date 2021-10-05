@@ -25,6 +25,9 @@ requirements = [
     "toml",
     "appdirs",
     "semantic_version==2.6",
+    "autoray",
+    "cachetools",
+    "pennylane-lightning>=0.18",
 ]
 
 info = {
@@ -36,22 +39,31 @@ info = {
     'license': 'Apache License 2.0',
     'packages': find_packages(where="."),
     'entry_points': {
+        # TODO: rename entry point 'pennylane.plugins' to 'pennylane.devices'.
+        # This requires a rename in the setup file of all devices, and is best done during another refactor
         'pennylane.plugins': [
-            'default.qubit = pennylane.plugins:DefaultQubit',
-            'default.gaussian = pennylane.plugins:DefaultGaussian',
-            'default.qubit.tf = pennylane.plugins.default_qubit_tf:DefaultQubitTF',
-            'default.tensor = pennylane.beta.plugins.default_tensor:DefaultTensor',
-            'default.tensor.tf = pennylane.beta.plugins.default_tensor_tf:DefaultTensorTF',
+            'default.qubit = pennylane.devices:DefaultQubit',
+            'default.gaussian = pennylane.devices:DefaultGaussian',
+            'default.qubit.tf = pennylane.devices.default_qubit_tf:DefaultQubitTF',
+            'default.qubit.torch = pennylane.devices.default_qubit_torch:DefaultQubitTorch',
+            'default.qubit.autograd = pennylane.devices.default_qubit_autograd:DefaultQubitAutograd',
+            'default.qubit.jax = pennylane.devices.default_qubit_jax:DefaultQubitJax',
+            'default.tensor = pennylane.beta.devices.default_tensor:DefaultTensor',
+            'default.tensor.tf = pennylane.beta.devices.default_tensor_tf:DefaultTensorTF',
+            'default.mixed = pennylane.devices.default_mixed:DefaultMixed'
             ],
+        'console_scripts': [
+                'pl-device-test=pennylane.devices.tests:cli'
+            ]
         },
     'description': 'PennyLane is a Python quantum machine learning library by Xanadu Inc.',
-    'long_description': open('README.rst').read(),
+    'long_description': open('README.md').read(),
+    'long_description_content_type': "text/markdown",
     'provides': ["pennylane"],
     'install_requires': requirements,
-    'command_options': {
-        'build_sphinx': {
-            'version': ('setup.py', version),
-            'release': ('setup.py', version)}}
+    'extras_require': {'kernels': ['cvxpy', 'cvxopt']},
+    'package_data': {'pennylane': ['devices/tests/pytest.ini']},
+    'include_package_data': True
 }
 
 classifiers = [
@@ -66,9 +78,9 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
     "Programming Language :: Python",
     'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.6',
     'Programming Language :: Python :: 3.7',
     'Programming Language :: Python :: 3.8',
+    'Programming Language :: Python :: 3.9',
     'Programming Language :: Python :: 3 :: Only',
     "Topic :: Scientific/Engineering :: Physics"
 ]

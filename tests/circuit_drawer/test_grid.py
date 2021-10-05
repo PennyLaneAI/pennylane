@@ -17,7 +17,7 @@ Unit tests for the :mod:`pennylane.circuit_drawer.grid` module.
 import pytest
 import numpy as np
 
-from pennylane.circuit_drawer import Grid
+from pennylane.circuit_drawer.grid import Grid
 from pennylane.circuit_drawer.grid import _transpose
 
 
@@ -73,6 +73,22 @@ class TestGrid:
         assert np.array_equal(grid.raw_grid.T, [[0, 1, 2], [3, 4, 5]])
 
     @pytest.mark.parametrize(
+        "raw_grid",
+        [
+            [0, 3, 1, 4, 2, 5],
+            [[[0, 3], [1, 6]], [[2, 5], [4, 7]]],
+            [],
+        ],
+    )
+    def test_error_init_with_wrong_grid_shape(self, raw_grid):
+        """Test that the Grid class is initialized correctly."""
+
+        with pytest.raises(
+            ValueError, match="The entered raw grid was not parsed as two-dimensional array"
+        ):
+            grid = Grid(raw_grid)
+
+    @pytest.mark.parametrize(
         "idx,expected_transposed_grid",
         [
             (0, [[6, 7, 8], [0, 1, 2], [3, 4, 5]]),
@@ -103,7 +119,11 @@ class TestGrid:
         assert np.array_equal(grid.raw_grid.T, [[0, 1, 2], [3, 4, 5], [6, 7, 8]])
 
     @pytest.mark.parametrize(
-        "idx,expected_transposed_grid", [(0, [[6, 7, 8], [3, 4, 5]]), (1, [[0, 1, 2], [6, 7, 8]]),]
+        "idx,expected_transposed_grid",
+        [
+            (0, [[6, 7, 8], [3, 4, 5]]),
+            (1, [[0, 1, 2], [6, 7, 8]]),
+        ],
     )
     def test_replace_layer(self, idx, expected_transposed_grid):
         """Test that layer replacement works properly."""

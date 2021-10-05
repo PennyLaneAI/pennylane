@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ from typing import Callable, Optional
 try:
     import torch
     from torch.nn import Module
-    from pennylane.interfaces.torch import to_torch
 
     TORCH_IMPORTED = True
 except ImportError:
@@ -207,9 +206,34 @@ class TorchLayer(Module):
             )
         super().__init__()
 
-        self.sig = qnode.func.sig
+        weight_shapes = {
+            weight: (tuple(size) if isinstance(size, Iterable) else (size,) if size > 1 else ())
+            for weight, size in weight_shapes.items()
+        }
 
-        if self.input_arg not in self.sig:
+        # validate the QNode signature, and convert to a Torch QNode.
+        # TODO: update the docstring regarding changes to restrictions when tape mode is default.
+        self._signature_validation(qnode, weight_shapes)
+        self.qnode = qnode
+        self.qnode.to_torch()
+
+        if not init_method:
+            init_method = functools.partial(torch.nn.init.uniform_, b=2 * math.pi)
+
+        self.qnode_weights = {}
+
+        for name, size in weight_shapes.items():
+            if len(size) == 0:
+                self.qnode_weights[name] = torch.nn.Parameter(init_method(torch.Tensor(1))[0])
+            else:
+                self.qnode_weights[name] = torch.nn.Parameter(init_method(torch.Tensor(*size)))
+
+            self.register_parameter(name, self.qnode_weights[name])
+
+    def _signature_validation(self, qnode, weight_shapes):
+        sig = inspect.signature(qnode.func).parameters
+
+        if self.input_arg not in sig:
             raise TypeError(
                 "QNode must include an argument with name {} for inputting data".format(
                     self.input_arg
@@ -222,40 +246,14 @@ class TorchLayer(Module):
                 "weight_shapes".format(self.input_arg)
             )
 
-        if set(weight_shapes.keys()) | {self.input_arg} != set(self.sig.keys()):
-            raise ValueError("Must specify a shape for every non-input parameter in the QNode")
+        param_kinds = [p.kind for p in sig.values()]
 
-        if qnode.func.var_pos:
+        if inspect.Parameter.VAR_POSITIONAL in param_kinds:
             raise TypeError("Cannot have a variable number of positional arguments")
 
-        if qnode.func.var_keyword:
-            raise TypeError("Cannot have a variable number of keyword arguments")
-
-        self.qnode = to_torch(qnode)
-        weight_shapes = {
-            weight: (tuple(size) if isinstance(size, Iterable) else (size,) if size > 1 else ())
-            for weight, size in weight_shapes.items()
-        }
-
-        defaults = {
-            name for name, sig in self.sig.items() if sig.par.default != inspect.Parameter.empty
-        }
-        self.input_is_default = self.input_arg in defaults
-        if defaults - {self.input_arg} != set():
-            raise TypeError(
-                "Only the argument {} is permitted to have a default".format(self.input_arg)
-            )
-
-        if not init_method:
-            init_method = functools.partial(torch.nn.init.uniform_, b=2 * math.pi)
-
-        self.qnode_weights = {}
-        for name, size in weight_shapes.items():
-            if len(size) == 0:
-                self.qnode_weights[name] = torch.nn.Parameter(init_method(torch.Tensor(1))[0])
-            else:
-                self.qnode_weights[name] = torch.nn.Parameter(init_method(torch.Tensor(*size)))
-            self.register_parameter(name, self.qnode_weights[name])
+        if inspect.Parameter.VAR_KEYWORD not in param_kinds:
+            if set(weight_shapes.keys()) | {self.input_arg} != set(sig.keys()):
+                raise ValueError("Must specify a shape for every non-input parameter in the QNode")
 
     def forward(self, inputs):  # pylint: disable=arguments-differ
         """Evaluates a forward pass through the QNode based upon input data and the initialized
@@ -267,10 +265,17 @@ class TorchLayer(Module):
         Returns:
             tensor: output data
         """
-        if len(inputs.shape) == 1:
-            return self._evaluate_qnode(inputs)
 
-        return torch.stack([self._evaluate_qnode(x) for x in inputs])
+        if len(inputs.shape) > 1:
+            # If the input size is not 1-dimensional, unstack the input along its first dimension, recursively call
+            # the forward pass on each of the yielded tensors, and then stack the outputs back into the correct shape
+            reconstructor = []
+            for x in torch.unbind(inputs):
+                reconstructor.append(self.forward(x))
+            return torch.stack(reconstructor)
+
+        # If the input is 1-dimensional, calculate the forward pass as usual
+        return self._evaluate_qnode(inputs)
 
     def _evaluate_qnode(self, x):
         """Evaluates the QNode for a single input datapoint.
@@ -281,19 +286,11 @@ class TorchLayer(Module):
         Returns:
             tensor: output datapoint
         """
-        qnode = self.qnode
-
-        for arg in self.sig:
-            if arg is not self.input_arg:  # Non-input arguments must always be positional
-                w = self.qnode_weights[arg]
-
-                qnode = functools.partial(qnode, w)
-            else:
-                if self.input_is_default:  # The input argument can be positional or keyword
-                    qnode = functools.partial(qnode, **{self.input_arg: x})
-                else:
-                    qnode = functools.partial(qnode, x)
-        return qnode().type(x.dtype)
+        kwargs = {
+            **{self.input_arg: x},
+            **{arg: weight.to(x) for arg, weight in self.qnode_weights.items()},
+        }
+        return self.qnode(**kwargs).type(x.dtype)
 
     def __str__(self):
         detail = "<Quantum Torch Layer: func={}>"

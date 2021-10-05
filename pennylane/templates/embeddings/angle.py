@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,21 +15,15 @@ r"""
 Contains the ``AngleEmbedding`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from pennylane.templates.decorator import template
+import pennylane as qml
 from pennylane.ops import RX, RY, RZ
-from pennylane.templates import broadcast
-from pennylane.templates.utils import (
-    check_shape,
-    check_no_variable,
-    check_is_in_options,
-    check_type,
-    get_shape,
-)
-from pennylane.wires import Wires
+from pennylane.operation import Operation, AnyWires
 
 
-@template
-def AngleEmbedding(features, wires, rotation="X"):
+ROT = {"X": RX, "Y": RY, "Z": RZ}
+
+
+class AngleEmbedding(Operation):
     r"""
     Encodes :math:`N` features into the rotation angles of :math:`n` qubits, where :math:`N \leq n`.
 
@@ -46,45 +40,42 @@ def AngleEmbedding(features, wires, rotation="X"):
     ``features`` than rotations, the circuit does not apply the remaining rotation gates.
 
     Args:
-        features (array): input array of shape ``(N,)``, where N is the number of input features to embed,
+        features (tensor_like): input tensor of shape ``(N,)``, where N is the number of input features to embed,
             with :math:`N\leq n`
-        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
-            a Wires object.
-        rotation (str): Type of rotations used
-
-    Raises:
-        ValueError: if inputs do not have the correct format
+        wires (Iterable): wires that the template acts on
+        rotation (str): type of rotations used
     """
 
-    #############
-    # Input checks
+    num_params = 1
+    num_wires = AnyWires
+    par_domain = "A"
+    grad_method = None
 
-    wires = Wires(wires)
+    def __init__(self, features, wires, rotation="X", do_queue=True, id=None):
 
-    check_no_variable(rotation, msg="'rotation' cannot be differentiable")
+        if rotation not in ROT:
+            raise ValueError(f"Rotation option {rotation} not recognized.")
+        self.rotation = ROT[rotation]
 
-    check_shape(
-        features,
-        (len(wires),),
-        bound="max",
-        msg="'features' must be of shape {} or smaller; "
-        "got {}.".format((len(wires),), get_shape(features)),
-    )
-    check_type(rotation, [str], msg="'rotation' must be a string; got {}".format(rotation))
+        shape = qml.math.shape(features)
+        if len(shape) != 1:
+            raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
+        n_features = shape[0]
+        if n_features > len(wires):
+            raise ValueError(
+                f"Features must be of length {len(wires)} or less; got length {n_features}."
+            )
 
-    check_is_in_options(
-        rotation,
-        ["X", "Y", "Z"],
-        msg="did not recognize option {} for 'rotation'.".format(rotation),
-    )
+        wires = wires[:n_features]
+        super().__init__(features, wires=wires, do_queue=do_queue, id=id)
 
-    ###############
+    def expand(self):
 
-    if rotation == "X":
-        broadcast(unitary=RX, pattern="single", wires=wires, parameters=features)
+        features = self.parameters[0]
 
-    elif rotation == "Y":
-        broadcast(unitary=RY, pattern="single", wires=wires, parameters=features)
+        with qml.tape.QuantumTape() as tape:
 
-    elif rotation == "Z":
-        broadcast(unitary=RZ, pattern="single", wires=wires, parameters=features)
+            for i in range(len(self.wires)):
+                self.rotation(features[i], wires=self.wires[i])
+
+        return tape

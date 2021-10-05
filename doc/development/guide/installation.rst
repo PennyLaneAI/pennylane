@@ -6,7 +6,7 @@ Dependencies
 
 PennyLane requires the following libraries be installed:
 
-* `Python <http://python.org/>`_ >= 3.6
+* `Python <http://python.org/>`_ >= 3.7
 
 as well as the following Python packages:
 
@@ -17,6 +17,7 @@ as well as the following Python packages:
 * `toml <https://github.com/uiri/toml>`_
 * `appdirs <https://github.com/ActiveState/appdirs>`_
 * `semantic-version <https://github.com/rbarrois/python-semanticversion>`_ == 2.6
+* `autoray <https://github.com/jcmgray/autoray>`__
 
 The following Python packages are optional:
 
@@ -32,8 +33,8 @@ of Python packaged for scientific computation.
 Interface dependencies
 ~~~~~~~~~~~~~~~~~~~~~~
 
-For development of the TensorFlow and PyTorch interfaces, additional
-requirements are required.
+For development of the TensorFlow and PyTorch interfaces, there are additional
+requirements:
 
 * **PyTorch interface**: ``pytorch >= 1.1``
 
@@ -96,7 +97,7 @@ using development mode:
 
 .. code-block:: bash
 
-    git clone https://github.com/XanaduAI/pennylane
+    git clone https://github.com/PennyLaneAI/pennylane
     cd pennylane
     pip install -e .
 
@@ -116,3 +117,77 @@ importing PennyLane in Python.
     plugins, changes to PennyLane device class locations or shortnames
     requires ``pip install -e .`` to be re-run in the plugin repository
     for the changes to take effect.
+
+Docker
+------
+
+Build a PennyLane Docker image
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Docker** support exists for building using **CPU** and **GPU** (Nvidia CUDA 11.1+) images.
+
+.. note::
+
+    Docker builds using "make" will work on Linux and MacOS only. For MS Windows
+    you can use `WSL <https://docs.microsoft.com/en-us/windows/wsl/install-win10>`__.
+    They are currently not supported on the Apple M1 chip (ARM64).
+
+
+Build a basic PennyLane image
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- To build a basic PennyLane image without any additional interfaces (Torch,
+  TensorFlow, or Jax) or **plugins** (qiskit, amazon-braket, cirq, forest), run
+  the following:
+
+  .. code-block:: bash
+
+    make -f docker/Makefile build-base
+
+Build a PennyLane image with a specific interface
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- To build a PennyLane image using a specific **interface** (Torch, TensorFlow or Jax), run the following:
+
+  .. code-block:: bash
+
+    make -f docker/Makefile build-interface interface-name=tensorflow
+
+- To build a PennyLane image using a specific interface (Torch, TensorFlow or
+  Jax) with GPU support, run the following:
+
+  .. code-block:: bash
+
+    make -f docker/Makefile build-interface-gpu interface-name=tensorflow
+
+Build a PennyLane image with a plugin
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- To build a PennyLane image using a specific plugin (qiskit, amazon-braket,
+  cirq, forest, etc), run the following:
+
+  .. code-block:: bash
+
+    make -f docker/Makefile build-plugin plugin-name=qiskit
+
+Build a PennyLane-Qchem image
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- You can also build an image with the PennyLane Qchem package and its
+  dependencies. Use the following commands:
+
+  .. code-block:: bash
+
+    make -f docker/Makefile build-qchem
+
+- To check all available interfaces, run the following:
+
+  .. code-block:: bash
+
+    make -f docker/Makefile available-interfaces
+
+- To check all available plugins, run the following:
+
+  .. code-block:: bash
+
+    make -f docker/Makefile available-plugins

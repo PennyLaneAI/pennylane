@@ -1,0 +1,24 @@
+on:
+  pull_request:
+    types: [opened, ready_for_review]
+
+name: Changelog Reminder
+
+jobs:
+  remind:
+    name: Changelog Reminder
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - name: Changelog Reminder
+      uses: peterjgrainger/action-changelog-reminder@v1.3.0
+      with:
+        changelog_regex: 'doc/releases/changelog-dev.md'
+        customPrMessage: |
+          Hello. You may have forgotten to update the changelog!
+          Please edit [`doc/releases/changelog-dev.md`](/PennyLaneAI/pennylane/blob/master/doc/releases/changelog-dev.md) with:
+          * A one-to-two sentence description of the change. You may include a small working example for new features.
+          * A link back to this PR.
+          * Your name (or GitHub username) in the contributors section.
+      env:
+        GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"

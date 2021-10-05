@@ -1,4 +1,4 @@
-# Copyright 2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,12 +26,10 @@ class RepresentationResolver:
 
     Args:
         charset (CharSet, optional): The CharSet to be used for representation resolution.
-        show_variable_names (bool, optional): Show variable names instead of variable values.
     """
 
-    def __init__(self, charset=UnicodeCharSet, show_variable_names=False):
+    def __init__(self, charset=UnicodeCharSet):
         self.charset = charset
-        self.show_variable_names = show_variable_names
         self.matrix_cache = []
         self.unitary_matrix_cache = []
         self.hermitian_matrix_cache = []
@@ -44,6 +42,7 @@ class RepresentationResolver:
         "CSWAP": "SWAP",
         "PauliY": "Y",
         "PauliZ": "Z",
+        "CY": "Y",
         "CZ": "Z",
         "Identity": "I",
         "Hadamard": "H",
@@ -78,6 +77,7 @@ class RepresentationResolver:
         "CRY": [0],
         "CRZ": [0],
         "CRot": [0],
+        "CY": [0],
         "CZ": [0],
         "ControlledAddition": [0],
         "ControlledPhase": [0],
@@ -104,22 +104,20 @@ class RepresentationResolver:
 
         return len(target_list) - 1
 
-    def single_parameter_representation(self, par):
+    @staticmethod
+    def single_parameter_representation(par):
         """Resolve the representation of an Operator's parameter.
 
         Args:
-            par (Union[~.variable.Variable, int, float, str]): The parameter to be rendered
+            par (Union[int, float, str]): The parameter to be rendered
 
         Returns:
             str: String representation of the parameter
         """
-        if isinstance(par, qml.variable.Variable):
-            return par.render(self.show_variable_names)
-
         if isinstance(par, str):
             return par
 
-        return str(round(par, 3))
+        return f"{1.0 * par:.3g}"
 
     @staticmethod
     def _format_matrix_operation(operation, symbol, cache):
@@ -133,7 +131,24 @@ class RepresentationResolver:
         Returns:
             str: The formatted operation
         """
-        mat = operation.params[0]
+        mat = operation.data[0]
+        idx = RepresentationResolver.index_of_array_or_append(mat, cache)
+
+        return "{}{}".format(symbol, idx)
+
+    @staticmethod
+    def _format_controlled_qubit_unitary(operation, symbol, cache):
+        """Format an operation that corresponds to a single matrix with controls.
+
+        Args:
+            operation (~.Operation): Operation that shall be formatted
+            symbol (str): The symbol that should be used to identify matrices
+            cache (List[numpy.ndarray]): The cache of already known matrices
+
+        Returns:
+            str: The formatted operation
+        """
+        mat = operation.U
         idx = RepresentationResolver.index_of_array_or_append(mat, cache)
 
         return "{}{}".format(symbol, idx)
@@ -297,7 +312,7 @@ class RepresentationResolver:
         Returns:
             str: A string representing the polynomial
         """
-        coefficients = operation.params[0]
+        coefficients = operation.data[0]
         order = len(coefficients.shape)
 
         if order == 1:
@@ -311,11 +326,17 @@ class RepresentationResolver:
 
         Args:
             op (pennylane.operation.Operator): The Operator instance whose representation shall be returned
-            wire (int): The Operator's wire for which the string representation shall be returned
+            wire (Wires): The Operator's wire for which the string representation shall be returned
 
         Returns:
             str: String representation of the Operator
         """
+        if isinstance(op, qml.measure.MeasurementProcess):
+            if op.obs is not None:
+                op = op.obs
+            else:
+                return "basis"  # when no observable is provided we perform a raw measurement
+
         if isinstance(op, qml.operation.Tensor):
             constituent_representations = [
                 self.operator_representation(tensor_obs, wire) for tensor_obs in op.obs
@@ -338,17 +359,30 @@ class RepresentationResolver:
             # No need to add a -1 for inverse here
             return self.charset.CONTROL
 
-        if op.num_params == 0:
+        if base_name == "MultiControlledX":
+            if wire in op.control_wires:
+                return self.charset.CONTROL
+            representation = "X"
+
+        elif op.num_params == 0:
             representation = name
 
         elif base_name == "PauliRot":
             representation = "R{0}({1})".format(
-                op.params[1][op.wires.index(wire)],
-                self.single_parameter_representation(op.params[0]),
+                op.data[1][op.wires.index(wire)],
+                self.single_parameter_representation(op.data[0]),
             )
 
         elif base_name == "QubitUnitary":
             representation = RepresentationResolver._format_matrix_operation(
+                op, "U", self.unitary_matrix_cache
+            )
+
+        elif base_name == "ControlledQubitUnitary":
+            if wire in op.control_wires:
+                return self.charset.CONTROL
+
+            representation = RepresentationResolver._format_controlled_qubit_unitary(
                 op, "U", self.unitary_matrix_cache
             )
 
@@ -358,12 +392,12 @@ class RepresentationResolver:
             )
 
         elif base_name == "QuadOperator":
-            par_rep = self.single_parameter_representation(op.params[0])
+            par_rep = self.single_parameter_representation(op.data[0])
 
             representation = "cos({0})x+sin({0})p".format(par_rep)
 
         elif base_name == "FockStateProjector":
-            n_str = ",".join([str(n) for n in op.params[0]])
+            n_str = ",".join([str(n) for n in op.data[0]])
 
             representation = (
                 self.charset.PIPE + n_str + self.charset.CROSSED_LINES + n_str + self.charset.PIPE
@@ -373,11 +407,11 @@ class RepresentationResolver:
             representation = self._format_polyxp(op)
 
         elif base_name == "FockState":
-            representation = self.charset.PIPE + str(op.params[0]) + self.charset.RANGLE
+            representation = self.charset.PIPE + str(op.data[0]) + self.charset.RANGLE
 
         elif base_name in {"BasisState", "FockStateVector"}:
             representation = (
-                self.charset.PIPE + str(op.params[0][op.wires.index(wire)]) + self.charset.RANGLE
+                self.charset.PIPE + str(op.data[0][op.wires.index(wire)]) + self.charset.RANGLE
             )
 
         # Operations that only have matrix arguments
@@ -389,12 +423,12 @@ class RepresentationResolver:
             "Interferometer",
         }:
             representation = name + RepresentationResolver._format_matrix_arguments(
-                op.params, "M", self.matrix_cache
+                op.data, "M", self.matrix_cache
             )
 
         else:
             representation = "{}({})".format(
-                name, ", ".join([self.single_parameter_representation(par) for par in op.params])
+                name, ", ".join([self.single_parameter_representation(par) for par in op.data])
             )
 
         if getattr(op, "inverse", False):
@@ -407,7 +441,7 @@ class RepresentationResolver:
 
         Args:
             obs (pennylane.ops.Observable): The Observable instance whose representation shall be returned
-            wire (int): The Observable's wire for which the string representation shall be returned
+            wire (Wires): The Observable's wire for which the string representation shall be returned
 
         Returns:
             str: String representation of the Observable
@@ -429,6 +463,9 @@ class RepresentationResolver:
         if obs.return_type == qml.operation.Probability:
             return "Probs"
 
+        if obs.return_type == qml.operation.State:
+            return "State"
+
         # Unknown return_type
         return "{}[{}]".format(str(obs.return_type), self.operator_representation(obs, wire))
 
@@ -437,7 +474,7 @@ class RepresentationResolver:
 
         Args:
             element (Union[NoneType,str,qml.operation.Operator]): The circuit element whose representation shall be returned
-            wire (int): The element's wire for which the string representation shall be returned
+            wire (Wires): The element's wire for which the string representation shall be returned
 
         Returns:
             str: String representation of the element
@@ -446,7 +483,10 @@ class RepresentationResolver:
             return ""
         if isinstance(element, str):
             return element
-        if isinstance(element, qml.operation.Observable) and element.return_type is not None:
+        if (
+            isinstance(element, (qml.operation.Observable, qml.measure.MeasurementProcess))
+            and element.return_type is not None
+        ):
             return self.output_representation(element, wire)
 
         return self.operator_representation(element, wire)

@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ it works with the PennyLane :class:`~.tensor` class.
 from autograd import numpy as _np
 from autograd.numpy import *
 
-from .wrapper import wrap_arrays, extract_tensors
+from .wrapper import wrap_arrays, extract_tensors, tensor_wrapper
 
 wrap_arrays(_np.__dict__, globals())
 
@@ -33,6 +33,8 @@ from . import fft
 from . import linalg
 from . import random
 
-from .tensor import tensor, NonDifferentiableError
+from .tensor import tensor, NonDifferentiableError, asarray as _asarray
+
+asarray = tensor_wrapper(_asarray)
 
 __doc__ = "NumPy with automatic differentiation support, provided by Autograd and PennyLane."

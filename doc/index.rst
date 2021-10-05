@@ -27,8 +27,8 @@ PennyLane Documentation
     </style>
     <div class="container mt-2 mb-2">
         <p class="lead grey-text">
-            PennyLane is a cross-platform Python library for quantum machine learning,
-            automatic differentiation, and optimization of hybrid quantum-classical computations.
+            PennyLane is a cross-platform Python library for differentiable programming of quantum computers.
+            Train a quantum computer the same way as a neural network.
         </p>
         <div class="row mt-3">
             <div class="col-lg-4 mb-2 adlign-items-stretch">
@@ -81,9 +81,9 @@ PennyLane Documentation
 Features
 --------
 
-.. image:: _static/intro.png
-    :align: right
-    :width: 400px
+.. image:: _static/header.png
+    :align: left
+    :width: 450px
     :target: javascript:void(0);
 
 
@@ -106,7 +106,7 @@ Features
 - *Device independent*.
   The same quantum circuit model can be **run on different backends**. Install
   `plugins <https://pennylane.ai/plugins.html>`_ to access even more
-  devices, including **Strawberry Fields**, **IBM Q**, **Google Cirq**, **Rigetti Forest**,
+  devices, including **Strawberry Fields**, **Amazon Braket**, **IBM Q**, **Google Cirq**, **Rigetti Forest**,
   **Microsoft QDK**, and **ProjectQ**.
 
 
@@ -152,8 +152,8 @@ If you are doing research using PennyLane, please cite
 Support and contribution
 ------------------------
 
-- **Source Code:** https://github.com/XanaduAI/PennyLane
-- **Issue Tracker:** https://github.com/XanaduAI/PennyLane/issues
+- **Source Code:** https://github.com/PennyLaneAI/pennylane
+- **Issue Tracker:** https://github.com/PennyLaneAI/pennylane/issues
 
 If you are having issues, please let us know by posting the issue on our GitHub issue tracker.
 
@@ -202,15 +202,21 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :hidden:
 
    code/qml
-   code/qml_init
    code/qml_interfaces
    code/qml_operation
-   code/qml_plugins
+   code/qml_devices
+   code/qml_fourier
+   code/qml_gradients
+   code/qml_grouping
+   code/qml_kernels
+   code/qml_math
+   code/qml_qaoa
    code/qml_qchem
    code/qml_qnn
-   code/qml_qnodes
+   code/qml_tape
    code/qml_templates
+   code/qml_transforms
+   code/qml_circuit_drawer
    code/qml_utils
-   code/qml_variable
    code/qml_wires
    code/qml_beta

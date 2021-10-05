@@ -25,7 +25,7 @@ from pennylane.wires import Wires
 
 
 @pytest.fixture
-def queue():
+def ops():
     """A fixture of a complex example of operations that depend on previous operations."""
     return [
         qml.RX(0.43, wires=0),
@@ -48,36 +48,84 @@ def obs():
 
 
 @pytest.fixture
-def ops(queue, obs):
-    """Queue of Operations followed by Observables."""
-    return queue + obs
-
-
-@pytest.fixture
-def circuit(ops):
+def circuit(ops, obs):
     """A fixture of a circuit generated based on the queue and obs fixtures above."""
-    circuit = CircuitGraph(ops, {})
+    circuit = CircuitGraph(ops, obs, Wires([0, 1, 2]))
     return circuit
 
 
 @pytest.fixture
-def parameterized_circuit():
+def parameterized_circuit(wires):
     def qfunc(a, b, c, d, e, f):
-        qml.Rotation(a, wires=0),
-        qml.Rotation(b, wires=1),
-        qml.Rotation(c, wires=2),
-        qml.Beamsplitter(d, 1, wires=[0, 1])
-        qml.Rotation(1, wires=0),
-        qml.Rotation(e, wires=1),
-        qml.Rotation(f, wires=2),
+        qml.Rotation(a, wires=wires[0]),
+        qml.Rotation(b, wires=wires[1]),
+        qml.Rotation(c, wires=wires[2]),
+        qml.Beamsplitter(d, 1, wires=[wires[0], wires[1]])
+        qml.Rotation(1, wires=wires[0]),
+        qml.Rotation(e, wires=wires[1]),
+        qml.Rotation(f, wires=wires[2]),
 
         return [
-            qml.expval(qml.ops.NumberOperator(wires=0)),
-            qml.expval(qml.ops.NumberOperator(wires=1)),
-            qml.expval(qml.ops.NumberOperator(wires=2)),
+            qml.expval(qml.ops.NumberOperator(wires=wires[0])),
+            qml.expval(qml.ops.NumberOperator(wires=wires[1])),
+            qml.expval(qml.ops.NumberOperator(wires=wires[2])),
         ]
 
     return qfunc
+
+
+def circuit_measure_max_once():
+    """A fixture of a circuit that measures wire 0 once."""
+    return qml.expval(qml.PauliX(wires=0))
+
+
+def circuit_measure_max_twice():
+    """A fixture of a circuit that measures wire 0 twice."""
+    return qml.expval(qml.PauliX(wires=0)), qml.probs(wires=0)
+
+
+def circuit_measure_multiple_with_max_twice():
+    """A fixture of a circuit that measures wire 0 twice."""
+    return (
+        qml.expval(qml.PauliX(wires=0)),
+        qml.probs(wires=[0, 1, 2]),
+        qml.var(qml.PauliX(wires=[1]) @ qml.PauliZ([2])),
+    )
+
+
+def measurement_process_equality(mp1, mp2):
+    """Helper function to check for equality between two MeasurementProcess objects."""
+    same_return_type = mp1.return_type == mp2.return_type
+    same_obs = mp1.obs == mp2.obs
+    same_wires = mp1._wires == mp2._wires
+    same_eigs = mp1._eigvals == mp2._eigvals
+    same_name = mp1.name == mp2.name
+    same_data = mp1.data == mp2.data
+
+    if same_return_type and same_obs and same_wires and same_eigs and same_name and same_data:
+        return True
+
+    return False
+
+
+def lst_mp_equality(lst1, lst2):
+    """Wrapper function to check if two lists are identical when the
+    lists contain MeasurementProcess objects."""
+    assert len(lst1) == len(lst2)
+    lsts_same = True
+
+    for index in range(len(lst1)):
+        if not isinstance(lst1[index], type(lst2[index])):  # if they are different types
+            return False  # then return false
+
+        elif isinstance(lst1[index], qml.measure.MeasurementProcess):
+            lsts_same = lsts_same and measurement_process_equality(lst1[index], lst2[index])
+
+        else:
+            lsts_same = lsts_same and (lst1[index] == lst2[index])
+
+    return lsts_same
+
 
 class TestCircuitGraph:
     """Test conversion of queues to DAGs"""
@@ -88,51 +136,65 @@ class TestCircuitGraph:
 
         ops = [qml.RX(0.43, wires=0), qml.RY(0.35, wires=1)]
 
-        res = CircuitGraph(ops, {}).graph
+        res = CircuitGraph(ops, [], Wires([0, 1])).graph
         assert len(res) == 2
         assert not res.edges()
 
-    def test_dependence(self, ops):
+    def test_dependence(self, ops, obs):
         """Test a more complex example containing operations
         that do depend on the result of previous operations"""
 
-        circuit = CircuitGraph(ops, {})
+        circuit = CircuitGraph(ops, obs, Wires([0, 1, 2]))
         graph = circuit.graph
         assert len(graph) == 9
         assert len(graph.edges()) == 9
 
+        queue = ops + obs
+
         # all ops should be nodes in the graph
-        for k in ops:
+        for k in queue:
             assert k in graph.nodes
 
         # all nodes in the graph should be ops
         for k in graph.nodes:
-            assert k is ops[k.queue_idx]
+            assert k is queue[k.queue_idx]
 
         # Finally, checking the adjacency of the returned DAG:
         assert set(graph.edges()) == set(
-            (ops[a], ops[b])
-            for a, b in [(0, 3), (1, 3), (2, 4), (3, 5), (3, 6), (4, 5), (5, 7), (5, 8), (6, 8),]
+            (queue[a], queue[b])
+            for a, b in [
+                (0, 3),
+                (1, 3),
+                (2, 4),
+                (3, 5),
+                (3, 6),
+                (4, 5),
+                (5, 7),
+                (5, 8),
+                (6, 8),
+            ]
         )
 
-    def test_ancestors_and_descendants_example(self, ops):
+    def test_ancestors_and_descendants_example(self, ops, obs):
         """
         Test that the ``ancestors`` and ``descendants`` methods return the expected result.
         """
-        circuit = CircuitGraph(ops, {})
+        circuit = CircuitGraph(ops, obs, Wires([0, 1, 2]))
 
-        ancestors = circuit.ancestors([ops[6]])
+        queue = ops + obs
+
+        ancestors = circuit.ancestors([queue[6]])
         assert len(ancestors) == 3
         for o_idx in (0, 1, 3):
-            assert ops[o_idx] in ancestors
+            assert queue[o_idx] in ancestors
 
-        descendants = circuit.descendants([ops[6]])
-        assert descendants == set([ops[8]])
+        descendants = circuit.descendants([queue[6]])
+        assert descendants == set([queue[8]])
 
-    def test_update_node(self, ops):
+    def test_update_node(self, ops, obs):
         """Changing nodes in the graph."""
 
-        circuit = CircuitGraph(ops, {})
+        circuit = CircuitGraph(ops, obs, Wires([0, 1, 2]))
         new = qml.RX(0.1, wires=0)
         circuit.update_node(ops[0], new)
         assert circuit.operations[0] is new
@@ -141,9 +203,9 @@ class TestCircuitGraph:
         """Test that the `observables` property returns the list of observables in the circuit."""
         assert circuit.observables == obs
 
-    def test_operations(self, circuit, queue):
+    def test_operations(self, circuit, ops):
         """Test that the `operations` property returns the list of operations in the circuit."""
-        assert circuit.operations == queue
+        assert circuit.operations == ops
 
     def test_op_indices(self, circuit):
         """Test that for the given circuit, this method will fetch the correct operation indices for
@@ -156,13 +218,14 @@ class TestCircuitGraph:
         assert circuit.wire_indices(1) == op_indices_for_wire_1
         assert circuit.wire_indices(2) == op_indices_for_wire_2
 
-    def test_layers(self, parameterized_circuit):
+    @pytest.mark.parametrize("wires", [["a", "q1", 3]])
+    def test_layers(self, parameterized_circuit, wires):
         """A test of a simple circuit with 3 layers and 6 parameters"""
 
-        dev = qml.device("default.gaussian", wires=3)
+        dev = qml.device("default.gaussian", wires=wires)
         qnode = qml.QNode(parameterized_circuit, dev)
-        qnode._construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6), {})
-        circuit = qnode.circuit
+        qnode(0.1, 0.2, 0.3, 0.4, 0.5, 0.6)
+        circuit = qnode.qtape.graph
         layers = circuit.parametrized_layers
         ops = circuit.operations
 
@@ -172,15 +235,16 @@ class TestCircuitGraph:
         assert layers[1].ops == [ops[3]]
         assert layers[1].param_inds == [3]
         assert layers[2].ops == [ops[x] for x in [5, 6]]
-        assert layers[2].param_inds == [4, 5]
+        assert layers[2].param_inds == [6, 7]
 
-    def test_iterate_layers(self, parameterized_circuit):
+    @pytest.mark.parametrize("wires", [["a", "q1", 3]])
+    def test_iterate_layers(self, parameterized_circuit, wires):
         """A test of the different layers, their successors and ancestors using a simple circuit"""
 
-        dev = qml.device("default.gaussian", wires=3)
+        dev = qml.device("default.gaussian", wires=wires)
         qnode = qml.QNode(parameterized_circuit, dev)
-        qnode._construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6), {})
-        circuit = qnode.circuit
+        qnode(0.1, 0.2, 0.3, 0.4, 0.5, 0.6)
+        circuit = qnode.qtape.graph
         result = list(circuit.iterate_parametrized_layers())
 
         assert len(result) == 3
@@ -196,24 +260,49 @@ class TestCircuitGraph:
 
         assert set(result[2][0]) == set(circuit.operations[:4])
         assert set(result[2][1]) == set(circuit.operations[5:])
-        assert result[2][2] == (4, 5)
+        assert result[2][2] == (6, 7)
         assert set(result[2][3]) == set(circuit.observables[1:])
 
-    def test_diagonalizing_gates(self):
-        """Tests that the diagonalizing gates are correct for a circuit"""
-        circuit = CircuitGraph([qml.expval(qml.PauliX(0)), qml.var(qml.PauliZ(1))], {})
-        diag_gates = circuit.diagonalizing_gates
+    @pytest.mark.parametrize(
+        "circ, expected",
+        [
+            (circuit_measure_max_once, 1),
+            (circuit_measure_max_twice, 2),
+            (circuit_measure_multiple_with_max_twice, 2),
+        ],
+    )
+    def test_max_simultaneous_measurements(self, circ, expected):
+        """A test for getting the maximum number of measurements on any wire in
+        the circuit graph."""
 
-        assert len(diag_gates) == 1
-        assert isinstance(diag_gates[0], qml.Hadamard)
-        assert diag_gates[0].wires == [0]  # Wires([0])
+        dev = qml.device("default.qubit", wires=3)
+        qnode = qml.QNode(circ, dev)
+        qnode()
+        circuit = qnode.qtape.graph
+        assert circuit.max_simultaneous_measurements == expected
 
-    def test_is_sampled(self):
-        """Test that circuit graphs with sampled observables properly return
-        True for CircuitGraph.is_sampled"""
-        circuit = CircuitGraph([qml.expval(qml.PauliX(0)), qml.var(qml.PauliZ(1))], {})
-        assert not circuit.is_sampled
+    def test_grid_when_sample_no_wires(self):
+        """A test to ensure the sample operation applies to all wires when
+        none are explicitly provided."""
 
-        circuit = CircuitGraph([qml.expval(qml.PauliX(0)), qml.sample(qml.PauliZ(1))], {})
-        assert circuit.is_sampled
+        ops = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1])]
+        obs_no_wires = [qml.measure.sample(op=None, wires=None)]
+        obs_w_wires = [qml.measure.sample(op=None, wires=[0, 1, 2])]
 
+        circuit_no_wires = CircuitGraph(ops, obs_no_wires, wires=Wires([0, 1, 2]))
+        circuit_w_wires = CircuitGraph(ops, obs_w_wires, wires=Wires([0, 1, 2]))
+
+        sample_w_wires_op = qml.measure.sample(op=None, wires=[0, 1, 2])
+        expected_grid = {
+            0: [ops[0], ops[1], sample_w_wires_op],
+            1: [ops[1], sample_w_wires_op],
+            2: [sample_w_wires_op],
+        }
+
+        for key in range(3):
+            lst_w_wires = circuit_w_wires._grid[key]
+            lst_no_wires = circuit_no_wires._grid[key]
+            lst_expected = expected_grid[key]
+
+            assert lst_mp_equality(lst_no_wires, lst_w_wires)
+            assert lst_mp_equality(lst_no_wires, lst_expected)

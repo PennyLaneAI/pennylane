@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,12 +20,11 @@ To add a new pattern:
 * add tests to parametrizations in :func:`test_templates_broadcast`.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from collections import Iterable
-
+import pennylane as qml
 from pennylane.templates.decorator import template
-from pennylane.templates.utils import check_type, get_shape, check_is_in_options
 from pennylane.wires import Wires
 
+OPTIONS = {"single", "double", "double_odd", "chain", "ring", "pyramid", "all_to_all", "custom"}
 
 ###################
 # helpers to define pattern wire sequences
@@ -36,13 +35,14 @@ def wires_ring(wires):
 
     if len(wires) in [0, 1]:
         return []
-    elif len(wires) == 2:
+
+    if len(wires) == 2:
         # deviation from the rule: for 2 wires ring is set equal to chain,
         # to avoid duplication of single gate
         return [wires.subset([0, 1])]
-    else:
-        sequence = [wires.subset([i, i + 1], periodic_boundary=True) for i in range(len(wires))]
-        return sequence
+
+    sequence = [wires.subset([i, i + 1], periodic_boundary=True) for i in range(len(wires))]
+    return sequence
 
 
 def wires_pyramid(wires):
@@ -63,7 +63,82 @@ def wires_all_to_all(wires):
     return sequence
 
 
+# define wire sequences for patterns
+PATTERN_TO_WIRES = {
+    "single": lambda wires: [wires.subset([i]) for i in range(len(wires))],
+    "double": lambda wires: [wires.subset([i, i + 1]) for i in range(0, len(wires) - 1, 2)],
+    "double_odd": lambda wires: [wires.subset([i, i + 1]) for i in range(1, len(wires) - 1, 2)],
+    "chain": lambda wires: [wires.subset([i, i + 1]) for i in range(len(wires) - 1)],
+    "ring": wires_ring,
+    "pyramid": wires_pyramid,
+    "all_to_all": wires_all_to_all,
+    "custom": lambda wires: wires,
+}
+
+# define required number of parameters
+PATTERN_TO_NUM_PARAMS = {
+    "single": len,  # Use the length of the given wires.
+    "double": lambda wires: 0 if len(wires) in [0, 1] else len(wires) // 2,
+    "double_odd": lambda wires: 0 if len(wires) in [0, 1] else (len(wires) - 1) // 2,
+    "chain": lambda wires: 0 if len(wires) in [0, 1] else len(wires) - 1,
+    "ring": lambda wires: 0 if len(wires) in [0, 1] else (1 if len(wires) == 2 else len(wires)),
+    "pyramid": lambda w: 0 if len(w) in [0, 1] else sum(i + 1 for i in range(len(w) // 2)),
+    "all_to_all": lambda wires: 0 if len(wires) in [0, 1] else len(wires) * (len(wires) - 1) // 2,
+    "custom": lambda wires: len(wires) if wires is not None else None,
+}
 ###################
+
+
+def _preprocess(parameters, pattern, wires):
+    """Validate and pre-process inputs as follows:
+
+    * Check that pattern is recognised, or use default pattern if None.
+    * Check the dimension of the parameters
+    * Create wire sequence of the pattern.
+
+    Args:
+        parameters (tensor_like): trainable parameters of the template
+        pattern (str): specifies the wire pattern
+        wires (Wires): wires that template acts on
+
+    Returns:
+        wire_sequence, parameters: preprocessed pattern and parameters
+    """
+
+    if isinstance(pattern, str):
+        _wires = wires
+        if pattern not in OPTIONS:
+            raise ValueError(f"did not recognize pattern {pattern}".format())
+    else:
+        # turn custom pattern into list of Wires objects
+        _wires = [Wires(w) for w in pattern]
+        # set "pattern" to "custom", indicating that custom settings have to be used
+        pattern = "custom"
+
+    # check that there are enough parameters for pattern
+    if parameters is not None:
+
+        shape = qml.math.shape(parameters)
+
+        # expand dimension so that parameter sets for each unitary can be unpacked
+        if len(shape) == 1:
+            parameters = qml.math.expand_dims(parameters, 1)
+
+        # specific error message for ring edge case of 2 wires
+        if (pattern == "ring") and (len(wires) == 2) and (shape[0] != 1):
+            raise ValueError(
+                "the ring pattern with 2 wires is an exception and only applies one unitary"
+            )
+        num_params = PATTERN_TO_NUM_PARAMS[pattern](_wires)
+        if shape[0] != num_params:
+            raise ValueError(
+                "Parameters must contain entries for {} unitaries; got {} entries".format(
+                    num_params, shape[0]
+                )
+            )
+
+    wire_sequence = PATTERN_TO_WIRES[pattern](_wires)
+    return wire_sequence, parameters
 
 
 @template
@@ -435,7 +510,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
               @qml.qnode(dev)
               def circuit(pars):
-                  broadcast(unitary=qml.CRot, pattern='ring',
+                  broadcast(unitary=qml.CRot, pattern="all_to_all",
                             wires=[0,1,2,3], parameters=pars)
                   return qml.expval(qml.PauliZ(0))
 
@@ -488,89 +563,18 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
                 circuit(pars)
     """
-
-    OPTIONS = ["single", "double", "double_odd", "chain", "ring", "pyramid", "all_to_all", "custom"]
-
-    #########
-    # Input checks
-
+    # We deliberately disable iterating using enumerate here, since
+    # it causes a slowdown when iterating over TensorFlow variables.
+    # pylint: disable=consider-using-enumerate
     wires = Wires(wires)
-
-    check_type(
-        parameters,
-        [Iterable, type(None)],
-        msg="'parameters' must be either of type None or "
-        "Iterable; got {}".format(type(parameters)),
-    )
-
     if kwargs is None:
         kwargs = {}
 
-    check_type(
-        kwargs, [dict], msg="'kwargs' must be a dictionary; got {}".format(type(kwargs)),
-    )
+    wire_sequence, parameters = _preprocess(parameters, pattern, wires)
 
-    custom_pattern = None
-
-    if isinstance(pattern, str):
-        check_is_in_options(
-            pattern, OPTIONS, msg="did not recognize option {} for 'pattern'".format(pattern),
-        )
+    if parameters is None:
+        for i in range(len(wire_sequence)):
+            unitary(wires=wire_sequence[i], **kwargs)
     else:
-        # turn custom pattern into list of Wires objects
-        custom_pattern = [Wires(w) for w in pattern]
-        # set "pattern" to "custom", indicating that custom settings have to be used
-        pattern = "custom"
-
-    n_parameters = {
-        "single": len(wires),
-        "double": 0 if len(wires) in [0, 1] else len(wires) // 2,
-        "double_odd": 0 if len(wires) in [0, 1] else (len(wires) - 1) // 2,
-        "chain": 0 if len(wires) in [0, 1] else len(wires) - 1,
-        "ring": 0 if len(wires) in [0, 1] else (1 if len(wires) == 2 else len(wires)),
-        "pyramid": 0 if len(wires) in [0, 1] else sum(i + 1 for i in range(len(wires) // 2)),
-        "all_to_all": 0 if len(wires) in [0, 1] else len(wires) * (len(wires) - 1) // 2,
-        "custom": len(custom_pattern) if custom_pattern is not None else None,
-    }
-
-    # check that there are enough parameters for pattern
-    if parameters is not None:
-        shape = get_shape(parameters)
-
-        # specific error message for ring edge case of 2 wires
-        if (pattern == "ring") and (len(wires) == 2) and (shape[0] != 1):
-            raise ValueError(
-                "the ring pattern with 2 wires is an exception and only applies one unitary"
-            )
-
-        if shape[0] != n_parameters[pattern]:
-            raise ValueError(
-                "'parameters' must contain entries for {} unitaries; got {} entries".format(
-                    n_parameters[pattern], shape[0]
-                )
-            )
-
-        # repackage for consistent unpacking
-        if len(shape) == 1:
-            parameters = [[p] for p in parameters]
-    else:
-        parameters = [[] for _ in range(n_parameters[pattern])]
-
-    #########
-
-    # define wire sequences for patterns
-    wire_sequence = {
-        "single": [wires[i] for i in range(len(wires))],
-        "double": [wires.subset([i, i + 1]) for i in range(0, len(wires) - 1, 2)],
-        "double_odd": [wires.subset([i, i + 1]) for i in range(1, len(wires) - 1, 2)],
-        "chain": [wires.subset([i, i + 1]) for i in range(len(wires) - 1)],
-        "ring": wires_ring(wires),
-        "pyramid": wires_pyramid(wires),
-        "all_to_all": wires_all_to_all(wires),
-        "custom": custom_pattern,
-    }
-
-    # broadcast the unitary
-    for wires, pars in zip(wire_sequence[pattern], parameters):
-        wires = wires.tolist()  # TODO: Delete once operator takes Wires objects
-        unitary(*pars, wires=wires, **kwargs)
+        for i in range(len(wire_sequence)):
+            unitary(*parameters[i], wires=wire_sequence[i], **kwargs)

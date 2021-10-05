@@ -2,7 +2,8 @@ PYTHON3 := $(shell which python3 2>/dev/null)
 
 PYTHON := python3
 COVERAGE := --cov=pennylane --cov-report term-missing --cov-report=html:coverage_html_report
-TESTRUNNER := -m pytest tests --tb=native
+TESTRUNNER := -m pytest tests --tb=native --no-flaky-report
+PLUGIN_TESTRUNNER := -m pytest pennylane/devices/tests --tb=native --no-flaky-report
 
 .PHONY: help
 help:
@@ -11,6 +12,7 @@ help:
 	@echo "  wheel              to build the PennyLane wheel"
 	@echo "  dist               to package the source distribution"
 	@echo "  clean              to delete all temporary, cache, and build files"
+	@echo "  docs               to build the PennyLane documentation"
 	@echo "  clean-docs         to delete all built documentation"
 	@echo "  test               to run the test suite"
 	@echo "  coverage           to generate a coverage report"
@@ -36,7 +38,7 @@ clean:
 	rm -rf pennylane/optimize/__pycache__
 	rm -rf pennylane/expectation/__pycache__
 	rm -rf pennylane/ops/__pycache__
-	rm -rf pennylane/plugins/__pycache__
+	rm -rf pennylane/devices/__pycache__
 	rm -rf tests/__pycache__
 	rm -rf tests/new_qnode/__pycache__
 	rm -rf dist
@@ -56,7 +58,9 @@ clean-docs:
 
 test:
 	$(PYTHON) $(TESTRUNNER)
+	$(PYTHON) $(PLUGIN_TESTRUNNER) --device=default.qubit.autograd
 
 coverage:
 	@echo "Generating coverage report..."
 	$(PYTHON) $(TESTRUNNER) $(COVERAGE)
+	$(PYTHON) $(PLUGIN_TESTRUNNER) --device=default.qubit.autograd $(COVERAGE) --cov-append

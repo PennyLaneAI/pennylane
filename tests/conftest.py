@@ -20,16 +20,20 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.plugins import DefaultGaussian
+from pennylane.devices import DefaultGaussian
+
 
 # defaults
 TOL = 1e-3
 TF_TOL = 2e-2
+TOL_STOCHASTIC = 0.05
+
 
 class DummyDevice(DefaultGaussian):
     """Dummy device to allow Kerr operations"""
+
     _operation_map = DefaultGaussian._operation_map.copy()
-    _operation_map['Kerr'] = lambda *x, **y: np.identity(2)
+    _operation_map["Kerr"] = lambda *x, **y: np.identity(2)
 
 
 @pytest.fixture(scope="session")
@@ -37,10 +41,18 @@ def tol():
     """Numerical tolerance for equality tests."""
     return float(os.environ.get("TOL", TOL))
 
+
+@pytest.fixture(scope="session")
+def tol_stochastic():
+    """Numerical tolerance for equality tests of stochastic values."""
+    return TOL_STOCHASTIC
+
+
 @pytest.fixture(scope="session")
 def tf_tol():
     """Numerical tolerance for equality tests."""
     return float(os.environ.get("TF_TOL", TF_TOL))
+
 
 @pytest.fixture(scope="session", params=[1, 2])
 def n_layers(request):
@@ -56,22 +68,22 @@ def n_subsystems(request):
 
 @pytest.fixture(scope="session")
 def qubit_device(n_subsystems):
-    return qml.device('default.qubit', wires=n_subsystems)
+    return qml.device("default.qubit", wires=n_subsystems)
 
 
 @pytest.fixture(scope="function")
 def qubit_device_1_wire():
-    return qml.device('default.qubit', wires=1)
+    return qml.device("default.qubit", wires=1)
 
 
 @pytest.fixture(scope="function")
 def qubit_device_2_wires():
-    return qml.device('default.qubit', wires=2)
+    return qml.device("default.qubit", wires=2)
 
 
 @pytest.fixture(scope="function")
 def qubit_device_3_wires():
-    return qml.device('default.qubit', wires=3)
+    return qml.device("default.qubit", wires=3)
 
 
 @pytest.fixture(scope="session")
@@ -79,10 +91,12 @@ def gaussian_device(n_subsystems):
     """Number of qubits or modes."""
     return DummyDevice(wires=n_subsystems)
 
+
 @pytest.fixture(scope="session")
 def gaussian_dummy():
-    """Number of qubits or modes."""
+    """Gaussian device with dummy Kerr gate."""
     return DummyDevice
+
 
 @pytest.fixture(scope="session")
 def gaussian_device_2_wires():
@@ -96,12 +110,35 @@ def gaussian_device_4modes():
     return DummyDevice(wires=4)
 
 
-@pytest.fixture(scope='session')
+############### Package Support ##########################
+
+
+@pytest.fixture(scope="session")
+def dask_support():
+    """Boolean fixture for dask support"""
+    try:
+        import dask
+
+        dask_support = True
+    except ImportError as e:
+        dask_support = False
+
+    return dask_support
+
+
+@pytest.fixture()
+def skip_if_no_dask_support(dask_support):
+    if not dask_support:
+        pytest.skip("Skipped, no dask support")
+
+
+@pytest.fixture(scope="session")
 def torch_support():
     """Boolean fixture for PyTorch support"""
     try:
         import torch
         from torch.autograd import Variable
+
         torch_support = True
     except ImportError as e:
         torch_support = False
@@ -115,11 +152,12 @@ def skip_if_no_torch_support(torch_support):
         pytest.skip("Skipped, no torch support")
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def tf_support():
     """Boolean fixture for TensorFlow support"""
     try:
         import tensorflow as tf
+
         tf_support = True
 
     except ImportError as e:
@@ -134,8 +172,15 @@ def skip_if_no_tf_support(tf_support):
         pytest.skip("Skipped, no tf support")
 
 
-@pytest.fixture(scope="module",
-                params=[1, 2, 3])
+@pytest.fixture
+def skip_if_no_jax_support():
+    pytest.importorskip("jax")
+
+
+#######################################################################
+
+
+@pytest.fixture(scope="module", params=[1, 2, 3])
 def seed(request):
     """Different seeds."""
     return request.param
@@ -147,13 +192,14 @@ def mock_device(monkeypatch):
 
     with monkeypatch.context() as m:
         dev = qml.Device
-        m.setattr(dev, '__abstractmethods__', frozenset())
-        m.setattr(dev, 'short_name', 'mock_device')
-        m.setattr(dev, 'capabilities', lambda cls: {"model": "qubit"})
+        m.setattr(dev, "__abstractmethods__", frozenset())
+        m.setattr(dev, "short_name", "mock_device")
+        m.setattr(dev, "capabilities", lambda cls: {"model": "qubit"})
+        m.setattr(dev, "operations", {"RX", "RY", "RZ", "CNOT", "SWAP"})
         yield qml.Device(wires=2)
+
 
 @pytest.fixture
 def tear_down_hermitian():
     yield None
     qml.Hermitian._eigs = {}
-

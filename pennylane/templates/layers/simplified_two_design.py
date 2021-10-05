@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,39 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the ``SimplifiedTwoDesign`` template.
+Contains the SimplifiedTwoDesign template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from pennylane import numpy as np
-from pennylane.templates.decorator import template
-from pennylane.ops import CZ, RY
-from pennylane.templates import broadcast
-from pennylane.templates.utils import (
-    check_shape,
-    check_number_of_layers,
-    check_type,
-    get_shape,
-)
-from pennylane.wires import Wires
+import pennylane as qml
+from pennylane.operation import Operation, AnyWires
 
 
-@template
-def entangler(par1, par2, wires):
-    """Implements a two qubit unitary consisting of a controlled-Z entangler and Pauli-Y rotations.
-
-    Args:
-         par1 (float or qml.Variable): parameter of first Pauli-Y rotation
-         par2 (float or qml.Variable): parameter of second Pauli-Y rotation
-         wires (Wires): two wire indices that unitary acts on
-    """
-
-    CZ(wires=wires)
-    RY(par1, wires=wires[0])
-    RY(par2, wires=wires[1])
-
-
-@template
-def SimplifiedTwoDesign(initial_layer_weights, weights, wires):
+class SimplifiedTwoDesign(Operation):
     r"""
     Layers consisting of a simplified 2-design architecture of Pauli-Y rotations and controlled-Z entanglers
     proposed in `Cerezo et al. (2020) <https://arxiv.org/abs/2001.00550>`_.
@@ -78,17 +53,14 @@ def SimplifiedTwoDesign(initial_layer_weights, weights, wires):
     The number of layers :math:`L` is derived from the first dimension of ``weights``.
 
     Args:
-        initial_layer_weights (array[float]): array of weights for the initial rotation block, shape ``(M,)``
-        weights (array[float]): array of rotation angles for the layers, shape ``(L, M-1, 2)``
-        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
-            a Wires object.
+        initial_layer_weights (tensor_like): weight tensor for the initial rotation block, shape ``(M,)``
+        weights (tensor_like): tensor of rotation angles for the layers, shape ``(L, M-1, 2)``
+        wires (Iterable): wires that the template acts on
 
-    Raises:
-        ValueError: if inputs do not have the correct format
 
     .. UsageDetails::
 
-        template - here shown for two layers - is used inside a :class:`~.QNode`:
+        template - here shown for two layers - is used inside a :class:`QNode <pennylane.QNode>`:
 
         .. code-block:: python
 
@@ -114,81 +86,91 @@ def SimplifiedTwoDesign(initial_layer_weights, weights, wires):
             >>> circuit(init_weights, weights)
             [1., -1., 1.]
 
-        **Parameter initialization function**
+        **Parameter shapes**
 
-        The :mod:`~pennylane.init` module contains four parameter initialization functions:
-
-        * ``simplified_two_design_initial_layer_normal``
-        * ``simplified_two_design_initial_layer_uniform``
-        * ``simplified_two_design_weights_normal``.
-        * ``simplified_two_design_weights_uniform``.
-
-        They can be used as follows:
+        A list of shapes for the two weights arguments can be computed with the static method
+        :meth:`~.SimplifiedTwoDesign.shape` and used when creating randomly
+        initialised weight tensors:
 
         .. code-block:: python
 
-            from pennylane.init import (simplified_two_design_initial_layer_normal,
-                                        simplified_two_design_weights_normal)
-
-            n_layers = 4
-            init_weights = simplified_two_design_initial_layer_normal(n_wires)
-            weights = simplified_two_design_weights_normal(n_layers, n_wires)
-
-            >>> circuit(initial_layer_weights, weights)
+            shapes = SimplifiedTwoDesign.shape(n_layers=2, n_wires=2)
+            weights = [np.random.random(size=shape) for shape in shapes]
 
     """
+    num_params = 2
+    num_wires = AnyWires
+    par_domain = "A"
+    grad_method = None
 
-    #############
-    # Input checks
+    def __init__(self, initial_layer_weights, weights, wires, do_queue=True, id=None):
 
-    wires = Wires(wires)
+        shape = qml.math.shape(weights)
 
-    repeat = check_number_of_layers([weights])
+        if len(shape) > 1:
+            if shape[1] != len(wires) - 1:
+                raise ValueError(
+                    f"Weights tensor must have second dimension of length {len(wires) - 1}; got {shape[1]}"
+                )
 
-    check_type(
-        initial_layer_weights,
-        [list, np.ndarray],
-        msg="'initial_layer_weights' must be of type list or np.ndarray; got type {}".format(
-            type(initial_layer_weights)
-        ),
-    )
-    check_type(
-        weights,
-        [list, np.ndarray],
-        msg="'weights' must be of type list or np.ndarray; got type {}".format(type(weights)),
-    )
+            if shape[2] != 2:
+                raise ValueError(
+                    f"Weights tensor must have third dimension of length 2; got {shape[2]}"
+                )
 
-    expected_shape_initial = (len(wires),)
-    check_shape(
-        initial_layer_weights,
-        expected_shape_initial,
-        msg="'initial_layer_weights' must be of shape {}; got {}"
-        "".format(expected_shape_initial, get_shape(initial_layer_weights)),
-    )
+        shape2 = qml.math.shape(initial_layer_weights)
+        if shape2 != (len(wires),):
+            raise ValueError(
+                f"Initial layer weights must be of shape {(len(wires),)}; got {shape2}"
+            )
 
-    if len(wires) in [0, 1]:
-        expected_shape_weights = (0,)
-    else:
-        expected_shape_weights = (repeat, len(wires) - 1, 2)
+        self.n_layers = shape[0]
 
-    check_shape(
-        weights,
-        expected_shape_weights,
-        msg="'weights' must be of shape {}; got {}"
-        "".format(expected_shape_weights, get_shape(weights)),
-    )
+        super().__init__(initial_layer_weights, weights, wires=wires, do_queue=do_queue, id=id)
 
-    ###############
-    # initial rotations
-    broadcast(unitary=RY, pattern="single", wires=wires, parameters=initial_layer_weights)
+    def expand(self):
 
-    # alternate layers
-    for layer in range(repeat):
+        with qml.tape.QuantumTape() as tape:
 
-        # even layer
-        weights_even = weights[layer][: len(wires) // 2]
-        broadcast(unitary=entangler, pattern="double", wires=wires, parameters=weights_even)
+            # initial rotations
+            for i in range(len(self.wires)):
+                qml.RY(self.parameters[0][i], wires=self.wires[i])
 
-        # odd layer
-        weights_odd = weights[layer][len(wires) // 2 :]
-        broadcast(unitary=entangler, pattern="double_odd", wires=wires, parameters=weights_odd)
+            for layer in range(self.n_layers):
+
+                # even layer of entanglers
+                even_wires = [self.wires[i : i + 2] for i in range(0, len(self.wires) - 1, 2)]
+                for i, wire_pair in enumerate(even_wires):
+                    qml.CZ(wires=wire_pair)
+                    qml.RY(self.parameters[1][layer, i, 0], wires=wire_pair[0])
+                    qml.RY(self.parameters[1][layer, i, 1], wires=wire_pair[1])
+
+                # odd layer of entanglers
+                odd_wires = [self.wires[i : i + 2] for i in range(1, len(self.wires) - 1, 2)]
+                for i, wire_pair in enumerate(odd_wires):
+                    qml.CZ(wires=wire_pair)
+                    qml.RY(
+                        self.parameters[1][layer, len(self.wires) // 2 + i, 0], wires=wire_pair[0]
+                    )
+                    qml.RY(
+                        self.parameters[1][layer, len(self.wires) // 2 + i, 1], wires=wire_pair[1]
+                    )
+
+        return tape
+
+    @staticmethod
+    def shape(n_layers, n_wires):
+        r"""Returns a list of shapes for the 2 parameter tensors.
+
+        Args:
+            n_layers (int): number of layers
+            n_wires (int): number of wires
+
+        Returns:
+            list[tuple[int]]: list of shapes
+        """
+
+        if n_wires == 1:
+            return [(n_wires,), (n_layers,)]
+
+        return [(n_wires,), (n_layers, n_wires - 1, 2)]

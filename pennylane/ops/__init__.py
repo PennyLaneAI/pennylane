@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ from pennylane.operation import AnyWires, Observable, CVObservable
 
 from .cv import *
 from .qubit import *
+from .channel import *
 
 from .cv import __all__ as _cv__all__
 from .cv import ops as _cv__ops__
@@ -32,6 +33,14 @@ from .cv import obs as _cv__obs__
 from .qubit import __all__ as _qubit__all__
 from .qubit import ops as _qubit__ops__
 from .qubit import obs as _qubit__obs__
+
+from .channel import __all__ as _channel__ops__
+
+
+class AdjointError(Exception):
+    """Exception for non-adjointable operations."""
+
+    pass
 
 
 class Identity(CVObservable):
@@ -70,6 +79,6 @@ class Identity(CVObservable):
         return []
 
 
-__all__ = _cv__all__ + _qubit__all__ + ["Identity"]
+__all__ = _cv__all__ + _qubit__all__ + _channel__ops__ + ["Identity"]
 __all_ops__ = list(_cv__ops__ | _qubit__ops__)
 __all_obs__ = list(_cv__obs__ | _qubit__obs__) + ["Identity"]

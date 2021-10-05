@@ -18,8 +18,8 @@ one of the standard scientific computing or machine learning libraries. PennyLan
 **interface** to these libraries, making them quantum-aware.
 
 PennyLane's standard interface is `NumPy <https://numpy.org/>`_,
-but interfaces to powerful machine learning libraries like `PyTorch <https://pytorch.org/>`_
-and `Tensorflow <https://www.tensorflow.org/>`_ are also available.
+but interfaces to powerful machine learning libraries like `PyTorch <https://pytorch.org/>`_,
+`Tensorflow <https://www.tensorflow.org/>`_, and `JAX <https://github.com/google/jax>`__ are also available.
 
 The quantum computations are sent to a **device** for execution. A device can be real quantum
 hardware or a classical simulator. PennyLane comes with default simulator devices,
