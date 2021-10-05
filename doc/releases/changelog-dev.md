@@ -60,7 +60,7 @@
   We can see that all three parameters in the QNode arguments ``x`` and ``y``
   contribute the spectrum of a Pauli rotation ``[-1.0, 0.0, 1.0]``, rescaled with the
   prefactor of the respective parameter in the circuit.
-  The three ``RX`` rotations controlled by ``z`` accumulate the spectrum to have a more
+  The three ``RX`` rotations using the parameter ``z`` accumulate, yielding a more
   complex frequency spectrum.
 
   For details on how to control for which parameters the spectrum is computed and other
