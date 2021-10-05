@@ -263,6 +263,36 @@ class TestParamShift:
         assert np.allclose(j1, [exp, 0])
         assert np.allclose(j2, [0, exp])
 
+    def test_grad_recipe_parameter_dependent(self):
+        """Test that an operation with a gradient recipe that depends on
+        its instantiated parameter values works correctly within the parameter
+        shift rule"""
+
+        class RX(qml.RX):
+            @property
+            def grad_recipe(self):
+                # The gradient is given by [f(2x) - f(0)] / (2 sin(x)), by subsituting
+                # shift = x into the two term parameter-shift rule.
+                x = self.data[0]
+                c = 0.5 / np.sin(x)
+                return ([[c, 0.0, 2 * x], [-c, 0.0, 0.0]],)
+
+        x = np.array(0.654, requires_grad=True)
+        dev = qml.device("default.qubit", wires=2)
+
+        with qml.tape.JacobianTape() as tape:
+            RX(x, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        tapes, fn = qml.gradients.param_shift(tape)
+
+        assert len(tapes) == 2
+        assert tapes[0].operations[0].data[0] == 0
+        assert tapes[1].operations[0].data[0] == 2 * x
+
+        grad = fn(dev.batch_execute(tapes))
+        assert np.allclose(grad, -np.sin(x))
+
 
 class TestParameterShiftRule:
     """Tests for the parameter shift implementation"""

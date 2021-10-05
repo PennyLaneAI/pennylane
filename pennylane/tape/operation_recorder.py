@@ -30,10 +30,11 @@ class OperationRecorder(QuantumTape):
     or quantum functions stores applied operators in the
     recorder, which can then be printed.
 
-    >>> weights = qml.init.strong_ent_layers_normal(n_layers=1, n_wires=2)
+    >>> shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=1, n_wires=2)
+    >>> weights = np.random.random(shape)
     >>>
     >>> with OperationRecorder() as rec:
-    >>>    qml.templates.layers.StronglyEntanglingLayers(weights, wires=[0, 1])
+    >>>    qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
 
 
     Alternatively, the :attr:`~.OperationRecorder.queue` attribute can be used

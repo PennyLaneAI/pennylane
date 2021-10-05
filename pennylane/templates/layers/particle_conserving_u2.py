@@ -132,19 +132,20 @@ class ParticleConservingU2(Operation):
 
             # Compute the expectation value of 'h' for a given set of parameters
             layers = 1
-            params = qml.init.particle_conserving_u2_normal(layers, qubits)
+            shape = ParticleConservingU2.shape(layers, qubits)
+            params = np.random.random(shape)
             print(cost_fn(params))
 
         **Parameter shape**
 
-        The shape of the weights argument can be computed by the static method
+        The shape of the trainable weights tensor can be computed by the static method
         :meth:`~.ParticleConservingU2.shape` and used when creating randomly
         initialised weight tensors:
 
         .. code-block:: python
 
             shape = ParticleConservingU2.shape(n_layers=2, n_wires=2)
-            weights = np.random.random(size=shape)
+            params = np.random.random(size=shape)
     """
 
     num_params = 1

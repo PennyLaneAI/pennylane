@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
-def classical_jacobian(qnode, argnum=None):
+def classical_jacobian(qnode, argnum=None, expand_fn=None):
     r"""Returns a function to extract the Jacobian
     matrix of the classical part of a QNode.
 
@@ -30,6 +30,8 @@ def classical_jacobian(qnode, argnum=None):
         qnode (pennylane.QNode): QNode to compute the (classical) Jacobian of
         argnum (int or Sequence[int]): indices of QNode arguments with respect to which
             the (classical) Jacobian is computed
+        expand_fn (None or function): an expansion function (if required) to be applied to the
+            QNode quantum tape before the classical Jacobian is computed
 
     Returns:
         function: Function which accepts the same arguments as the QNode.
@@ -136,8 +138,14 @@ def classical_jacobian(qnode, argnum=None):
     def classical_preprocessing(*args, **kwargs):
         """Returns the trainable gate parameters for a given QNode input."""
         trainable_only = kwargs.pop("_trainable_only", True)
+        kwargs.pop("shots", None)
         qnode.construct(args, kwargs)
-        return qml.math.stack(qnode.qtape.get_parameters(trainable_only=trainable_only))
+        tape = qnode.qtape
+
+        if expand_fn is not None:
+            tape = expand_fn(tape)
+
+        return qml.math.stack(tape.get_parameters(trainable_only=trainable_only))
 
     if qnode.interface == "autograd":
 

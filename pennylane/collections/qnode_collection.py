@@ -140,7 +140,8 @@ class QNodeCollection(Sequence):
 
     We can now create some parameters and evaluate the collection:
 
-    >>> params = qml.init.strong_ent_layers_normal(n_layers=4, n_wires=4)
+    >>> shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=4, n_wires=4)
+    >>> params = np.random.random(shape)
     >>> qnodes(params)
     array([0.046875  , 0.93164062])
 

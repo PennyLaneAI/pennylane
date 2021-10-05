@@ -118,7 +118,8 @@ def dot(x, y):
     This is a lazy dot product --- no QNode evaluation has yet occured. Evaluation
     only occurs when the returned function ``cost`` is evaluated:
 
-    >>> x = qml.init.strong_ent_layers_normal(3, 2) # generate random parameters
+    >>> shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=3, n_wires=2)
+    >>> x = np.random.random(shape) # generate random parameters
     >>> cost(x)
     tensor(-0.2183, dtype=torch.float64, grad_fn=<DotBackward>)
     """
