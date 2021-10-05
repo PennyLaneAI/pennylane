@@ -260,17 +260,17 @@ def _pauli_mult(p1, p2, c1, c2):
 
     for i in p1:
         if i[0] in t1 and i[0] not in t2:
-            K.append((i[0], D[i[1]]))
+            K.append((i[0], pauli_mult[i[1]]))
         for j in p2:
             if j[0] in t2 and j[0] not in t1:
-                K.append((j[0], D[j[1]]))
+                K.append((j[0], pauli_mult[j[1]]))
 
             if i[0] == j[0]:
-                if i[1] + j[1] in C:
-                    K.append((i[0], D[i[1] + j[1]]))
-                    c = c * C[i[1] + j[1]]
+                if i[1] + j[1] in pauli_coeff:
+                    K.append((i[0], pauli_mult[i[1] + j[1]]))
+                    c = c * pauli_coeff[i[1] + j[1]]
                 else:
-                    K.append((i[0], D[i[1] + j[1]]))
+                    K.append((i[0], pauli_mult[i[1] + j[1]]))
 
     K = [k for k in K if "I" not in k[1]]
 
@@ -283,10 +283,7 @@ def _pauli_mult(p1, p2, c1, c2):
     return K, c
 
 
-D = {
-    "X": "X",
-    "Y": "Y",
-    "Z": "Z",
+pauli_mult = {
     "XX": "I",
     "YY": "I",
     "ZZ": "I",
@@ -304,9 +301,12 @@ D = {
     "ZI": "Z",
     "I": "I",
     "II": "I",
+    "X": "X",
+    "Y": "Y",
+    "Z": "Z",
 }
 
-C = {
+pauli_coeff = {
     "ZX": 1.0j,
     "XZ": -1.0j,
     "ZY": -1.0j,
@@ -316,7 +316,7 @@ C = {
 }
 
 
-def return_pauli(p):
+def _return_pauli(p):
     if p == "X":
         return qml.PauliX
     if p == "Y":
@@ -325,50 +325,36 @@ def return_pauli(p):
         return qml.PauliZ
 
 
-def generate_hamiltonian(h):
-    #     H = qml.Hamiltonian([1.0], [qml.Identity(0)])
+def generate_hamiltonian(h_ferm):
 
-    for n, t in enumerate(h[1]):
+    for n, t in enumerate(h_ferm[1]):
 
         if len(t) == 0:
-
-            H = qml.Hamiltonian([h[0][n]], [qml.Identity(0)])
+            h = qml.Hamiltonian([h_ferm[0][n]], [qml.Identity(0)])
 
         elif len(t) == 2:
-            op_q = _generate_qubit_operator(t)
-
-            if op_q != 0:
-
-                for i, o in enumerate(op_q[1]):
+            op = _generate_qubit_operator(t)
+            if op != 0:
+                for i, o in enumerate(op[1]):
                     if len(o) == 0:
-                        op_q[1][i] = qml.Identity(0)
-
+                        op[1][i] = qml.Identity(0)
                     if len(o) == 1:
-                        op_q[1][i] = return_pauli(o[0][1])(o[0][0])
-
-                H = H + qml.Hamiltonian(np.array(op_q[0]) * h[0][n], op_q[1])
+                        op[1][i] = _return_pauli(o[0][1])(o[0][0])
+                h = h + qml.Hamiltonian(np.array(op[0]) * h_ferm[0][n], op[1])
 
         elif len(t) == 4:
-            op_q = _generate_qubit_operator(t)
-
-            if op_q != 0:
-
-                for i, o in enumerate(op_q[1]):
-
+            op = _generate_qubit_operator(t)
+            if op != 0:
+                for i, o in enumerate(op[1]):
                     if len(o) == 0:
-                        op_q[1][i] = qml.Identity(0)
-
+                        op[1][i] = qml.Identity(0)
                     if len(o) == 1:
-                        op_q[1][i] = return_pauli(o[0][1])(o[0][0])
-
+                        op[1][i] = _return_pauli(o[0][1])(o[0][0])
                     if len(o) > 1:
                         k = qml.Identity(0)
                         for j, o_ in enumerate(o):
-                            k = k @ return_pauli(o_[1])(o_[0])
+                            k = k @ _return_pauli(o_[1])(o_[0])
+                        op[1][i] = k
+                h = h + qml.Hamiltonian(np.array(op[0]) * h_ferm[0][n], op[1])
 
-                        op_q[1][i] = k
-
-                H = H + qml.Hamiltonian(np.array(op_q[0]) * h[0][n], op_q[1])
-
-            #     print(H)
-    return H
+    return h
