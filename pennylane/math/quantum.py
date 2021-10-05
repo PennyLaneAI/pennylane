@@ -66,7 +66,8 @@ def cov_matrix(prob, obs, wires=None, diag_approx=False):
 
     We can now compute the covariance matrix:
 
-    >>> weights = qml.init.strong_ent_layers_normal(n_layers=2, n_wires=3)
+    >>> shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=3)
+    >>> weights = np.random.random(shape)
     >>> cov = qml.math.cov_matrix(circuit(weights), obs_list)
     >>> cov
     array([[0.98707611, 0.03665537],

@@ -628,7 +628,9 @@ class TestState:
 
         dev = qml.device("default.qubit", wires=wires)
 
-        weights = qml.init.strong_ent_layers_uniform(3, wires)
+        weights = np.random.random(
+            qml.templates.StronglyEntanglingLayers.shape(n_layers=3, n_wires=wires)
+        )
 
         @qml.qnode(dev)
         def func():
