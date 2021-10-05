@@ -15,16 +15,16 @@
 of quantum circuits."""
 import warnings
 from .coefficients import coefficients
-from .simple_spectrum import simple_spectrum
-from .advanced_spectrum import advanced_spectrum
+from .circuit_spectrum import circuit_spectrum
+from .qnode_spectrum import qnode_spectrum
 from .utils import join_spectra, get_spectrum
 
 
 def spectrum(*args, **kwargs):
-    """Alias for ``simple_spectrum``. To be removed soon."""
+    """Alias for ``circuit_spectrum``. To be removed soon."""
     warnings.warn(
-        "qml.fourier.spectrum has been renamed to qml.fourier.simple_spectrum. "
+        "qml.fourier.spectrum has been renamed to qml.fourier.circuit_spectrum. "
         "The alias qml.fourier.spectrum is deprecated and will be removed soon.",
         UserWarning,
     )
-    return simple_spectrum(*args, **kwargs)
+    return circuit_spectrum(*args, **kwargs)

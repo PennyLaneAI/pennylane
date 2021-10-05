@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-* The `qml.fourier.advanced_spectrum` function extends the former `qml.fourier.spectrum` function
+* The `qml.fourier.qnode_spectrum` function extends the former `qml.fourier.spectrum` function
   and takes classical processing of QNode arguments into account.
   The frequencies are computed per (requested) QNode argument instead
   of per gate `id`. The gate `id`s are ignored.
@@ -54,7 +54,7 @@
   2: ──RX(1.5)──Rot(0.401, 0.0795, 0.731)──RY(1.15)──Rot(0.756, 0.38, 0.38)─────RX(-1.8)──┤
   ```
 
-  Applying the `qml.fourier.advanced_spectrum` function to the circuit for the non-trainable
+  Applying the `qml.fourier.qnode_spectrum` function to the circuit for the non-trainable
   parameters, we obtain:
 
   ```pycon
@@ -74,7 +74,7 @@
 
   For details on how to control for which parameters the spectrum is computed and other
   usage details, please see the
-  [fourier.advanced_spectrum docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.fourier.advanced_spectrum.html).
+  [fourier.qnode_spectrum docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.fourier.qnode_spectrum.html).
 
 * There is a new utility function `qml.math.is_independent` that checks whether
   a callable is independent of its arguments.
@@ -430,9 +430,9 @@
 
 <h3>Deprecations</h3>
 
-* The `qml.fourier.spectrum` function has been renamed to `qml.fourier.simple_spectrum`,
-  in order to clearly separate the new `advanced_spectrum` function from this one.
-  `qml.fourier.spectrum` is now an alias for `simple_spectrum` but is flagged for
+* The `qml.fourier.spectrum` function has been renamed to `qml.fourier.circuit_spectrum`,
+  in order to clearly separate the new `qnode_spectrum` function from this one.
+  `qml.fourier.spectrum` is now an alias for `circuit_spectrum` but is flagged for
   deprecation and will be removed soon.
   [(#1681)](https://github.com/PennyLaneAI/pennylane/pull/1681)
 
