@@ -677,7 +677,13 @@ class QNode:
         finite_shots = self.device.shots is not None
         hamiltonian_in_obs = "Hamiltonian" in [obs.name for obs in self.qtape.observables]
         # check if all Hamiltonians know a grouping for their observables
-        grouping_known = all([obs.grouping_indices is not None for obs in self.qtape.observables if obs.name == "Hamiltonian"])
+        grouping_known = all(
+            [
+                obs.grouping_indices is not None
+                for obs in self.qtape.observables
+                if obs.name == "Hamiltonian"
+            ]
+        )
         if hamiltonian_in_obs and ((not supports_hamiltonian or finite_shots) or grouping_known):
             try:
                 tapes, fn = qml.transforms.hamiltonian_expand(self.qtape, group=False)
