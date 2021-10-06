@@ -156,11 +156,11 @@ def expand_multi_par_and_no_gen(tape, depth=10):
         .QuantumTape: Expanded tape
 
     """
-    if any(len(op.parameters) > 1 for op in tape.operations):
-        stopping_cond = lambda g: (
-            isinstance(g, qml.measure.MeasurementProcess)
-            or (len(g.parameters) <= 1 and hasattr(g, "generator") and g.generator[0] is not None)
-        )
+    stopping_cond = lambda g: (
+        isinstance(g, qml.measure.MeasurementProcess)
+        or (len(g.parameters) <= 1 and hasattr(g, "generator") and g.generator[0] is not None)
+    )
+    if not all(stopping_cond(op) for op in tape.operations):
         new_tape = tape.expand(depth=depth, stop_at=stopping_cond)
         # The trainable_params attribute is not used in the qnode_spectrum context.
         # However, when using this expansion elsewhere, the following lines might become necessary.
