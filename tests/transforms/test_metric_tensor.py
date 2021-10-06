@@ -35,7 +35,7 @@ class TestMetricTensor:
             qml.Rot(params[0], params[1], params[2], wires=0)
             qml.expval(qml.PauliX(0))
 
-        tapes, _ = qml.metric_tensor(circuit)
+        tapes, _ = qml.metric_tensor(circuit, approx="block diag")
         assert len(tapes) == 3
 
         # first parameter subcircuit
@@ -69,7 +69,7 @@ class TestMetricTensor:
 
         circuit = qml.QNode(circuit, dev, diff_method=diff_method)
         params = [0.1, 0.2]
-        result = qml.metric_tensor(circuit)(*params)
+        result = qml.metric_tensor(circuit, approx="block diag")(*params)
         assert result.shape == (2, 2)
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
@@ -88,7 +88,7 @@ class TestMetricTensor:
 
         circuit = qml.QNode(circuit, dev, diff_method=diff_method)
         params = [0.1]
-        result = qml.metric_tensor(circuit, hybrid=False)(*params)
+        result = qml.metric_tensor(circuit, hybrid=False, approx="block diag")(*params)
         assert result.shape == (2, 2)
 
     def test_generator_no_expval(self, monkeypatch):
@@ -102,7 +102,7 @@ class TestMetricTensor:
                 qml.expval(qml.PauliX(0))
 
             with pytest.raises(qml.QuantumFunctionError, match="no corresponding observable"):
-                qml.metric_tensor(tape)
+                qml.metric_tensor(tape, approx="block diag")
 
     def test_construct_subcircuit(self):
         """Test correct subcircuits constructed"""
@@ -115,7 +115,7 @@ class TestMetricTensor:
             qml.PhaseShift(np.array(1.0, requires_grad=True), wires=1)
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
 
-        tapes, _ = qml.metric_tensor(tape)
+        tapes, _ = qml.metric_tensor(tape, approx="block diag")
         assert len(tapes) == 3
 
         # first parameter subcircuit
@@ -165,7 +165,7 @@ class TestMetricTensor:
             qml.CNOT(wires=[1, 2])
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1)), qml.expval(qml.PauliX(2))
 
-        tapes, _ = qml.metric_tensor(tape)
+        tapes, _ = qml.metric_tensor(tape, approx="block diag")
 
         # this circuit should split into 4 independent
         # sections or layers when constructing subcircuits
@@ -232,7 +232,7 @@ class TestMetricTensor:
         c = -0.432
 
         # evaluate metric tensor
-        g = qml.metric_tensor(circuit)(a, b, c)
+        g = qml.metric_tensor(circuit, approx="block diag")(a, b, c)
 
         # check that the metric tensor is correct
         expected = (
@@ -255,7 +255,7 @@ class TestMetricTensor:
             return qml.probs(wires=[0, 1])
 
         weights = np.ones([2, 3, 3], dtype=np.float64, requires_grad=True)
-        res = qml.metric_tensor(circuit)(weights)
+        res = qml.metric_tensor(circuit, approx="block diag")(weights)
         assert res.shape == (2, 3, 3, 2, 3, 3)
 
     def test_evaluate_diag_metric_tensor_classical_processing(self, tol):
@@ -280,7 +280,7 @@ class TestMetricTensor:
         b = 0.12
 
         # evaluate metric tensor
-        g = qml.metric_tensor(circuit)(a, b)
+        g = qml.metric_tensor(circuit, approx="block diag")(a, b)
         assert isinstance(g, tuple)
         assert len(g) == 2
         assert g[0].shape == (len(a), len(a))
@@ -339,7 +339,7 @@ class TestMetricTensor:
         params = [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272]
         x, y, z, h, g, f = params
 
-        G = qml.metric_tensor(circuit)(*params)
+        G = qml.metric_tensor(circuit, approx="block diag")(*params)
 
         # ============================================
         # Test block diag metric tensor of first layer is correct.
@@ -482,7 +482,7 @@ class TestMetricTensor:
         params = [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272]
         x, y, z, h, g, f = params
 
-        G = qml.metric_tensor(circuit, diag_approx=True)(*params)
+        G = qml.metric_tensor(circuit, approx="diag")(*params)
 
         # ============================================
         # Test block diag metric tensor of first layer is correct.
@@ -590,7 +590,7 @@ class TestDifferentiability:
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
 
         def cost(weights):
-            return qml.metric_tensor(circuit)(weights)[2, 2]
+            return qml.metric_tensor(circuit, approx="block diag")(weights)[2, 2]
 
         weights = np.array([0.432, 0.12, -0.432], requires_grad=True)
         a, b, c = weights
@@ -622,7 +622,7 @@ class TestDifferentiability:
         circuit.interface = "jax"
 
         def cost(weights):
-            return qml.metric_tensor(circuit)(weights)[2, 2]
+            return qml.metric_tensor(circuit, approx="block diag")(weights)[2, 2]
 
         weights = jnp.array([0.432, 0.12, -0.432])
         a, b, c = weights
@@ -652,7 +652,7 @@ class TestDifferentiability:
         a, b, c = weights
 
         with tf.GradientTape() as tape:
-            loss = qml.metric_tensor(circuit)(weights_t)[2, 2]
+            loss = qml.metric_tensor(circuit, approx="block diag")(weights_t)[2, 2]
 
         grad = tape.gradient(loss, weights_t)
         expected = np.array(
@@ -678,7 +678,7 @@ class TestDifferentiability:
         a, b, c = weights
 
         weights_t = torch.tensor(weights, requires_grad=True)
-        loss = qml.metric_tensor(circuit)(weights_t)[2, 2]
+        loss = qml.metric_tensor(circuit, approx="block diag")(weights_t)[2, 2]
         loss.backward()
 
         grad = weights_t.grad
@@ -711,7 +711,7 @@ class TestDeprecatedQNodeMethod:
 
         # evaluate metric tensor
         with pytest.warns(UserWarning, match="has been deprecated"):
-            g = circuit.metric_tensor(a, b, c)
+            g = circuit.metric_tensor(a, b, c, approx="block diag")
 
         # check that the metric tensor is correct
         expected = (
@@ -740,6 +740,6 @@ class TestDeprecatedQNodeMethod:
 
         # evaluate metric tensor
         with pytest.warns(UserWarning, match="has been deprecated"):
-            tapes, fn = circuit.metric_tensor(a, b, c, only_construct=True)
+            tapes, fn = circuit.metric_tensor(a, b, c, approx="block diag", only_construct=True)
 
         assert len(tapes) == 3
