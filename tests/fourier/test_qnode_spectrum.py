@@ -376,9 +376,9 @@ class TestCircuits:
                 raise NotImplementedError()
 
         @qml.qnode(dev)
-        def circuit(x, z1, y, z2):
+        def circuit(x, z0, y, z1):
             qml.RX(x, wires=0)
-            qml.Rot(z1, y, z2, wires=1)
+            qml.Rot(z0, y, z1, wires=1)
             _CRX(x, wires=[0, 2])
             return qml.expval(qml.PauliZ(wires=0))
 
@@ -386,9 +386,9 @@ class TestCircuits:
         assert res == OrderedDict(
             [
                 ("x", {(): [-2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0]}),
-                ("z1", {(): [-1.0, 0.0, 1.0]}),
+                ("z0", {(): [-1.0, 0.0, 1.0]}),
                 ("y", {(): [-1.0, 0.0, 1.0]}),
-                ("z2", {(): [-1.0, 0.0, 1.0]}),
+                ("z1", {(): [-1.0, 0.0, 1.0]}),
             ]
         )
 
@@ -400,10 +400,12 @@ class TestCircuits:
         class _CRX(qml.CRX):
             generator = [None, 1]
 
-        @qml.qnode(dev)
-        def circuit(x, z1, y, z2):
+        @qml.qnode(dev, max_expansion=0)
+        def circuit(x, z0, y, z1):
             qml.RX(x, wires=0)
-            qml.Rot(z1, y, z2, wires=1)
+            qml.RZ(z0, wires=1)
+            qml.RY(y, wires=1)
+            qml.RZ(z1, wires=1)
             _CRX(x, wires=[0, 2])
             return qml.expval(qml.PauliZ(wires=0))
 
@@ -411,9 +413,9 @@ class TestCircuits:
         assert res == OrderedDict(
             [
                 ("x", {(): [-2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0]}),
-                ("z1", {(): [-1.0, 0.0, 1.0]}),
+                ("z0", {(): [-1.0, 0.0, 1.0]}),
                 ("y", {(): [-1.0, 0.0, 1.0]}),
-                ("z2", {(): [-1.0, 0.0, 1.0]}),
+                ("z1", {(): [-1.0, 0.0, 1.0]}),
             ]
         )
 
