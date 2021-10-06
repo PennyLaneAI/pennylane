@@ -235,8 +235,11 @@ def generate_hamiltonian(mol, cutoff=1.0e-12):
                             op[1][i] = qml.Identity(0)
                         if len(o) == 1:
                             op[1][i] = _return_pauli(o[0][1])(o[0][0])
-                        # len(o) > 1 case is not required here, can be copied from below if needed
-
+                        if len(o) > 1:
+                            k = qml.Identity(0)
+                            for j, o_ in enumerate(o):
+                                k = k @ _return_pauli(o_[1])(o_[0])
+                            op[1][i] = k
                     h = h + qml.Hamiltonian(np.array(op[0]) * h_ferm[0][n], op[1])
 
             elif len(t) == 4:
