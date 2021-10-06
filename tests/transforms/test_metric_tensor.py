@@ -258,6 +258,20 @@ class TestMetricTensor:
         res = qml.metric_tensor(circuit, approx="block diag")(weights)
         assert res.shape == (2, 3, 3, 2, 3, 3)
 
+    def test_full_tensor_not_implemented(self):
+        """Test that the full metric tensor can not be computed yet."""
+        dev = qml.device("default.qubit", wires=3)
+
+        def circuit(a, b):
+            qml.RX(a, wires=0)
+            qml.MultiRZ(b, wires=[0, 1, 2])
+            return qml.expval(qml.PauliX(0))
+
+        circuit = qml.QNode(circuit, dev)
+        params = [0.1, 0.2]
+        with pytest.raises(NotImplementedError):
+            result = qml.metric_tensor(circuit, approx=None)(*params)
+
     def test_evaluate_diag_metric_tensor_classical_processing(self, tol):
         """Test that a diagonal metric tensor evaluates correctly
         when the QNode includes classical processing."""
