@@ -21,7 +21,7 @@ from .utils import join_spectra, get_spectrum
 
 
 def spectrum(*args, **kwargs):
-    """Alias for ``circuit_spectrum``. To be removed soon."""
+    """Alias for :func:`~.circuit_spectrum`. To be removed soon."""
     warnings.warn(
         "qml.fourier.spectrum has been renamed to qml.fourier.circuit_spectrum. "
         "The alias qml.fourier.spectrum is deprecated and will be removed soon.",

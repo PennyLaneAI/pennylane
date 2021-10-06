@@ -10,8 +10,7 @@
   of per gate `id`. The gate `id`s are ignored.
   [(#1681)](https://github.com/PennyLaneAI/pennylane/pull/1681)
 
-  The updated version of `qml.fourier.spectrum`
-  behaves differently in three ways:
+  The new function `qml.fourier.qnode_spectrum` behaves differently in three ways:
 
   - It takes different arguments,
 
@@ -58,7 +57,7 @@
   parameters, we obtain:
 
   ```pycon
-  >>> spec = spectrum(circuit, encoding_args={"x", "y", "z"})(x, y, z, w)
+  >>> spec = qml.fourier.qnode_spectrum(circuit, encoding_args={"x", "y", "z"})(x, y, z, w)
   >>> for inp, freqs in spec.items():
   ...     print(f"{inp}: {freqs}")
   "x": {(0,): [-0.5, 0.0, 0.5], (1,): [-0.5, 0.0, 0.5], (2,): [-0.5, 0.0, 0.5]}

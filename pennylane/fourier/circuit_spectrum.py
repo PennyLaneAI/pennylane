@@ -93,7 +93,6 @@ def circuit_spectrum(qnode, encoding_gates=None, decimals=8):
 
         import pennylane as qml
         import numpy as np
-        from pennylane.fourier import circuit_spectrum
 
         n_layers = 2
         n_qubits = 3
@@ -110,7 +109,7 @@ def circuit_spectrum(qnode, encoding_gates=None, decimals=8):
 
         x = np.array([1, 2, 3])
         w = np.random.random((n_layers, n_qubits, 3))
-        res = circuit_spectrum(circuit)(x, w)
+        res = qml.fourier.circuit_spectrum(circuit)(x, w)
 
     >>> print(qml.draw(circuit)(x, w))
     0: ──RX(1)──Rot(0.863, 0.611, 0.281)───RX(1)──Rot(0.47, 0.158, 0.648)───RZ(1)──┤ ⟨Z⟩
@@ -144,7 +143,7 @@ def circuit_spectrum(qnode, encoding_gates=None, decimals=8):
             return qml.expval(qml.PauliZ(wires=0))
 
         x = np.array([1, 2])
-        res = circuit_spectrum(circuit, encoding_gates=["x0"])(x)
+        res = qml.fourier.circuit_spectrum(circuit, encoding_gates=["x0"])(x)
 
     >>> for inp, freqs in res.items():
     >>>     print(f"{inp}: {freqs}")
@@ -170,7 +169,7 @@ def circuit_spectrum(qnode, encoding_gates=None, decimals=8):
             return qml.expval(qml.PauliZ(wires=0))
 
         x = tf.constant([1, 2])
-        res = circuit_spectrum(circuit)(x)
+        res = qml.fourier.circuit_spectrum(circuit)(x)
 
     >>> for inp, freqs in res.items():
     >>>     print(f"{inp}: {freqs}")

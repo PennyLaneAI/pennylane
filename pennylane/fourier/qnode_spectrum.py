@@ -304,7 +304,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         the ``argnum`` keyword argument. We may also restrict the full analysis to a single
         QNode argument, again using ``argnum``:
 
-        >>> res = qnode_spectrum(circuit, argnum=[0])(x, y, z, w)
+        >>> res = qml.fourier.qnode_spectrum(circuit, argnum=[0])(x, y, z, w)
         >>> for inp, freqs in res.items():
         ...     print(f"{inp}: {freqs}")
         "x": {(0,): [-0.5, 0.0, 0.5], (1,): [-0.5, 0.0, 0.5], (2,): [-0.5, 0.0, 0.5]}
@@ -312,7 +312,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         Selecting arguments by name instead of index is possible via the
         ``encoding_args`` argument:
 
-        >>> res = qnode_spectrum(circuit, encoding_args={"y"})(x, y, z, w)
+        >>> res = qml.fourier.qnode_spectrum(circuit, encoding_args={"y"})(x, y, z, w)
         >>> for inp, freqs in res.items():
         ...     print(f"{inp}: {freqs}")
         "y": {(0,): [-2.3, 0.0, 2.3], (1,): [-2.3, 0.0, 2.3], (2,): [-2.3, 0.0, 2.3]}
@@ -322,7 +322,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         for the respective argument name in ``encoding_args``:
 
         >>> encoding_args = {"y": [(0,),(2,)]}
-        >>> res = qnode_spectrum(circuit, encoding_args=encoding_args)(x, y, z, w)
+        >>> res = qml.fourier.qnode_spectrum(circuit, encoding_args=encoding_args)(x, y, z, w)
         >>> for inp, freqs in res.items():
         ...     print(f"{inp}: {freqs}")
         "y": {(0,): [-2.3, 0.0, 2.3], (2,): [-2.3, 0.0, 2.3]}
@@ -354,12 +354,12 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
                 return qml.expval(qml.PauliZ(wires=0))
 
             x = tf.constant([1., 2.])
-            res = qnode_spectrum(circuit)(x)
+            res = qml.fourier.qnode_spectrum(circuit)(x)
 
         >>> print(res)
         {"x": {(0,): [-0.4, 0.0, 0.4], (1,): [-3.14159, 0.0, 3.14159]}}
 
-        Finally, compare ``qnode_spectrum`` with :func:`.pennylane.circuit_spectrum`, using
+        Finally, compare ``qnode_spectrum`` with :func:`~.circuit_spectrum`, using
         the following circuit.
 
         .. code-block:: python
@@ -374,7 +374,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
                 qml.RY(z, wires=0, id="y1")
                 return qml.expval(qml.PauliZ(wires=0))
 
-        First, note that we assigned ``id``s to the gates for which we will use
+        First, note that we assigned ``id`` labels to the gates for which we will use
         ``circuit_spectrum``. This allows us to choose these gates in the computation:
 
         >>> x, y, z = 0.1, 0.2, 0.3
