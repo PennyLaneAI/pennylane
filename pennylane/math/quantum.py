@@ -88,7 +88,7 @@ def cov_matrix(prob, obs, wires=None, diag_approx=False):
     variances = []
 
     # diagonal variances
-    for i, o in enumerate(obs):
+    for o in obs:
         l = cast(o.eigvals, dtype=float64)
         w = o.wires.labels if wires is None else wires.indices(o.wires)
         p = marginal_prob(prob, w)

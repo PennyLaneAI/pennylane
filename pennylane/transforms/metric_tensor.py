@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the metric tensor transform
+Contains the transform to compute the (block) diagonal of the metric tensor.
 """
 import functools
 import warnings
@@ -149,6 +149,12 @@ def metric_tensor(tape, diag_approx=False):
                [0.        , 0.00415023, 0.        ],
                [0.        , 0.        , 0.24878844]])
     """
+    metric_tensor_tapes, processing_fn, *_ = _metric_tensor_core(tape, diag_approx)
+    return metric_tensor_tapes, processing_fn
+
+
+def _metric_tensor_core(tape, diag_approx):
+    """This is the actual metric_tensor method, with additional output."""
     # get the circuit graph
     graph = tape.graph
 
@@ -210,7 +216,7 @@ def metric_tensor(tape, diag_approx=False):
         # create the block diagonal metric tensor
         return qml.math.block_diag(gs)
 
-    return metric_tensor_tapes, processing_fn
+    return metric_tensor_tapes, processing_fn, obs_list, coeffs_list
 
 
 @metric_tensor.custom_qnode_wrapper
