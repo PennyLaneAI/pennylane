@@ -48,32 +48,47 @@ class TestCircuitGraphHash:
         assert circuit_graph_1.serialize() == circuit_graph_2.serialize()
         assert expected_string == circuit_graph_1.serialize()
 
-    observable1 = qml.PauliZ(0)
-    observable1.return_type = not None
+    observable1 = qml.expval
+    observable2 = qml.var
 
-    observable2 = qml.Hermitian(np.array([[1, 0], [0, -1]]), wires=[0])
-    observable2.return_type = not None
-
-    observable3 = Tensor(qml.PauliZ(0) @ qml.PauliZ(1))
-    observable3.return_type = not None
+    operation1 = qml.PauliZ(wires=[0])
+    operation2 = qml.Hermitian(np.array([[1, 0], [0, -1]]), wires=[0])
+    operation3 = Tensor(qml.PauliZ(0) @ qml.PauliZ(1))
 
     numeric_observable_queue = [
-        ([], [observable1], "|||True!PauliZ[0]"),
-        ([], [observable2], "|||True!Hermitian![[ 1  0]\n [ 0 -1]]![0]"),
-        ([], [observable3], "|||True!['PauliZ', 'PauliZ'][0, 1]"),
+        (observable1, operation1, "|||ObservableReturnTypes.Expectation!PauliZ[0]"),
+        (
+            observable1,
+            operation2,
+            "|||ObservableReturnTypes.Expectation!Hermitian![[ 1  0]\n [ 0 -1]]![0]",
+        ),
+        (
+            observable1,
+            operation3,
+            "|||ObservableReturnTypes.Expectation!['PauliZ', 'PauliZ'][0, 1]",
+        ),
+        (observable2, operation1, "|||ObservableReturnTypes.Variance!PauliZ[0]"),
+        (
+            observable2,
+            operation2,
+            "|||ObservableReturnTypes.Variance!Hermitian![[ 1  0]\n [ 0 -1]]![0]",
+        ),
+        (observable2, operation3, "|||ObservableReturnTypes.Variance!['PauliZ', 'PauliZ'][0, 1]"),
     ]
 
-    @pytest.mark.parametrize("queue, observable_queue, expected_string", numeric_observable_queue)
-    def test_serialize_numeric_arguments_observables(
-        self, queue, observable_queue, expected_string
-    ):
+    @pytest.mark.parametrize("obs, op, expected_string", numeric_observable_queue)
+    def test_serialize_numeric_arguments_observables(self, obs, op, expected_string):
         """Tests that the same hash is created for two circuitgraphs that have identical queues and empty variable_deps."""
+        dev = qml.device("default.qubit", wires=2)
 
-        circuit_graph_1 = CircuitGraph(queue, observable_queue, Wires([0, 1]))
-        circuit_graph_2 = CircuitGraph(queue, observable_queue, Wires([0, 1]))
+        def circuit1():
+            return obs(op)
 
-        assert circuit_graph_1.serialize() == circuit_graph_2.serialize()
-        assert expected_string == circuit_graph_1.serialize()
+        node1 = qml.QNode(circuit1, dev)
+        node1.construct([], {})
+        circuit_hash_1 = node1.qtape.graph.serialize()
+
+        assert circuit_hash_1 == expected_string
 
 
 class TestQNodeCircuitHashIntegration:

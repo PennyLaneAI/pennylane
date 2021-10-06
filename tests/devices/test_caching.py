@@ -261,10 +261,15 @@ class TestCaching:
         assert calls3 == 10
         assert g is not None
 
-    def test_different_return_type(self):
+    devs = [
+        (qml.device("default.qubit", wires=2)),
+        (qml.device("default.qubit", cache=1, wires=2)),
+    ]
+
+    @pytest.mark.parametrize("dev", devs)
+    def test_different_return_type(self, dev):
         """Test that same circuit with different return type, returns different results"""
-        nwires = 2
-        wires = range(nwires)
+        wires = range(2)
 
         hamiltonian = np.array(
             [
@@ -276,22 +281,16 @@ class TestCaching:
         )
 
         np.random.seed(172)
-        params = np.random.randn(2, nwires)
-        devs = [
-            qml.device("default.qubit", wires=nwires),
-            qml.device("default.qubit", cache=1, wires=nwires),
-        ]
+        params = np.random.randn(2, 2)
 
-        for dev in devs:
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def expval_circuit(params):
+            qml.templates.BasicEntanglerLayers(params, wires=wires, rotation=qml.RX)
+            return qml.expval(qml.Hermitian(hamiltonian, wires=wires))
 
-            @qml.qnode(dev, diff_method="parameter-shift")
-            def expval_circuit(params):
-                qml.templates.BasicEntanglerLayers(params, wires=wires, rotation=qml.RX)
-                return qml.expval(qml.Hermitian(hamiltonian, wires=wires))
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def var_circuit(params):
+            qml.templates.BasicEntanglerLayers(params, wires=wires, rotation=qml.RX)
+            return qml.var(qml.Hermitian(hamiltonian, wires=wires))
 
-            @qml.qnode(dev, diff_method="parameter-shift")
-            def var_circuit(params):
-                qml.templates.BasicEntanglerLayers(params, wires=wires, rotation=qml.RX)
-                return qml.var(qml.Hermitian(hamiltonian, wires=wires))
-
-            assert expval_circuit(params) != var_circuit(params)
+        assert expval_circuit(params) != var_circuit(params)
