@@ -157,7 +157,6 @@ def metric_tensor(tape, allow_nonunitary=True, approx=None, cache_states=False, 
         expand_fn = expand_unsupported
     tape = expand_fn(tape)
 
-    print(tape.operations)
     if diag_approx is not None:
         warnings.warn(
             "The keyword argument diag_approx is deprecated. Please use approx='diag' instead."
@@ -215,7 +214,6 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
 
                 for c in cjac:
                     if c is not None:
-                        print(np.shape(mt), np.shape(c))
                         _mt = qml.math.tensordot(mt, c, [[-1], [0]])
                         _mt = qml.math.tensordot(c, _mt, [[0], [0]])
                         metric_tensors.append(_mt)
@@ -231,7 +229,6 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
 
         # Classical processing of a single argument is present. Return mt @ cjac.
         cjac = qml.math.convert_like(cjac, mt)
-        print(np.shape(mt), np.shape(cjac))
         mt = qml.math.tensordot(mt, cjac, [[-1], [0]])
         mt = qml.math.tensordot(cjac, mt, [[0], [0]])
         return mt
