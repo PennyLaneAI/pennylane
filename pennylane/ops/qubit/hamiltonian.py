@@ -18,7 +18,7 @@ arithmetic operations on their input states.
 # pylint: disable=too-many-arguments
 import itertools
 from copy import copy
-from collections import Iterable
+from collections.abc import Iterable
 
 import pennylane as qml
 from pennylane import numpy as np
