@@ -33,7 +33,7 @@ def _stopping_critera(obj):
 
 def expand_fn(tape):
     """Expands the tape to contain only operations
-    supported by the ``metric_tensor`` transform (specified
+    supported by the ``commuting_metric_tensor`` transform (specified
     by ``SUPPORTED_OPS``).
     """
     new_tape = tape.expand(depth=2, stop_at=_stopping_critera)
@@ -43,9 +43,14 @@ def expand_fn(tape):
 
 
 @functools.partial(batch_transform, expand_fn=expand_fn)
-def metric_tensor(tape, diag_approx=False):
+def commuting_metric_tensor(tape, diag_approx=False):
     """Returns a function that computes the block-diagonal approximation of the metric tensor
     of a given QNode or quantum tape.
+
+    .. note:: 
+
+        Only the diagonal and block diagonal approximations of the metric tensor
+        are supported.
 
     .. note::
 
@@ -97,10 +102,10 @@ def metric_tensor(tape, diag_approx=False):
             qml.CNOT(wires=[1, 2])
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)), qml.expval(qml.PauliY(2))
 
-    We can use the ``metric_tensor`` transform to generate a new function that returns the
+    We can use the ``commuting_metric_tensor`` transform to generate a new function that returns the
     metric tensor of this QNode:
 
-    >>> met_fn = qml.metric_tensor(circuit)
+    >>> met_fn = qml.commuting_metric_tensor(circuit)
     >>> weights = np.array([0.1, 0.2, 0.4, 0.5], requires_grad=True)
     >>> met_fn(weights)
     tensor([[0.25  , 0.    , 0.    , 0.    ],
@@ -131,7 +136,7 @@ def metric_tensor(tape, diag_approx=False):
         ...     qml.CNOT(wires=[0, 1])
         ...     qml.PhaseShift(params[2], wires=1)
         ...     qml.expval(qml.PauliX(0))
-        >>> tapes, fn = qml.metric_tensor(tape)
+        >>> tapes, fn = qml.commuting_metric_tensor(tape)
         >>> tapes
         [<QuantumTape: wires=[0, 1], params=0>,
          <QuantumTape: wires=[0, 1], params=1>,
@@ -213,7 +218,7 @@ def metric_tensor(tape, diag_approx=False):
     return metric_tensor_tapes, processing_fn
 
 
-@metric_tensor.custom_qnode_wrapper
+@commuting_metric_tensor.custom_qnode_wrapper
 def qnode_execution_wrapper(self, qnode, targs, tkwargs):
     """Here, we overwrite the QNode execution wrapper in order
     to take into account that classical processing may be present
