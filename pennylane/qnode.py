@@ -670,8 +670,8 @@ class QNode:
             # construct the tape
             self.construct(args, kwargs)
 
-        # Under certain conditions, split tape into multiple tapes of
-        # diagonalizable known observables.
+        # Under certain conditions, split tape into multiple tapes and recombine them.
+        # Else just execute the tape, and let the device take care of things.
         # TODO (future squad): This logic should be moved away from the qnode, preferably to the device.
         supports_hamiltonian = self.device.supports_observable("Hamiltonian")
         finite_shots = self.device.shots is not None
