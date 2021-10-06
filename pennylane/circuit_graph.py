@@ -233,6 +233,8 @@ class CircuitGraph:
         serialization_string += "|||"
 
         for obs in self.observables_in_order:
+            serialization_string += str(obs.return_type)
+            serialization_string += delimiter
             serialization_string += str(obs.name)
             for param in obs.data:
                 serialization_string += delimiter
@@ -240,7 +242,6 @@ class CircuitGraph:
                 serialization_string += delimiter
 
             serialization_string += str(obs.wires.tolist())
-
         return serialization_string
 
     @property

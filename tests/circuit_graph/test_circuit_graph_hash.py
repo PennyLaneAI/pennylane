@@ -58,9 +58,9 @@ class TestCircuitGraphHash:
     observable3.return_type = not None
 
     numeric_observable_queue = [
-        ([], [observable1], "|||PauliZ[0]"),
-        ([], [observable2], "|||Hermitian![[ 1  0]\n [ 0 -1]]![0]"),
-        ([], [observable3], "|||['PauliZ', 'PauliZ'][0, 1]"),
+        ([], [observable1], "|||True!PauliZ[0]"),
+        ([], [observable2], "|||True!Hermitian![[ 1  0]\n [ 0 -1]]![0]"),
+        ([], [observable3], "|||True!['PauliZ', 'PauliZ'][0, 1]"),
     ]
 
     @pytest.mark.parametrize("queue, observable_queue, expected_string", numeric_observable_queue)
@@ -236,8 +236,8 @@ class TestQNodeCircuitHashIntegration:
         "x,y",
         zip(np.linspace(-2 * np.pi, 2 * np.pi, 7), np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11),
     )
-    def test_evaluate_circuit_hash_numeric_and_symbolic_return_type_does_not_matter(self, x, y):
-        """Tests that the circuit hashes of identical circuits only differing on their return types are equal"""
+    def test_evaluate_circuit_hash_numeric_and_symbolic_return_type_does_matter(self, x, y):
+        """Tests that the circuit hashes of identical circuits only differing on their return types are not equal"""
         dev = qml.device("default.qubit", wires=3)
 
         def circuit1(x, y):
@@ -258,16 +258,7 @@ class TestQNodeCircuitHashIntegration:
         node2(x, y)
         circuit_hash_2 = node2.qtape.graph.hash
 
-        def circuit3(x, y):
-            qml.Rot(x, y, 0.3, wires=[0])
-            qml.CNOT(wires=[0, 1])
-            return qml.sample(qml.PauliZ(0) @ qml.PauliX(1))
-
-        node3 = qml.QNode(circuit1, dev)
-        node3(x, y)
-        circuit_hash_3 = node3.qtape.graph.hash
-
-        assert circuit_hash_1 == circuit_hash_2 == circuit_hash_3
+        assert circuit_hash_1 != circuit_hash_2
 
     @pytest.mark.parametrize(
         "x,y",
