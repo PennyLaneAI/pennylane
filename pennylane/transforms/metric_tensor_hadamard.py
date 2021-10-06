@@ -19,9 +19,7 @@ import functools
 import numpy as np
 import pennylane as qml
 
-from .batch_transform import batch_transform
-from .metric_tensor import expand_fn, _metric_tensor_core
-from pennylane.fourier.qnode_spectrum import expand_multi_par_and_no_gen
+from .metric_tensor_cov_matrix import metric_tensor_cov_matrix
 
 _GEN_TO_CGEN = {
     qml.PauliX: qml.CNOT,
@@ -33,10 +31,6 @@ _OP_TO_CGEN = {
     # PhaseShift is the same as RZ up to a global phase
     qml.PhaseShift: qml.CZ,
 }
-
-
-# TODO:
-# - implement distinction of expand_fn using the allow_nonunitary input
 
 
 def _get_non_block_diag_indices(size, block_sizes):
@@ -52,19 +46,25 @@ def _get_non_block_diag_indices(size, block_sizes):
     return ids
 
 
+@functools.lru_cache
 def _get_gen_op(op, aux_wire, allow_nonunitary):
     gen, _ = op.generator
-    if allow_nonunitary:
-        if issubclass(gen, qml.operation.Observable):
-            gen = gen.matrix
-        return qml.ControlledQubitUnitary(gen, control_wires=aux_wire, wires=op.wires)
+    try:
+        if isinstance(gen, np.ndarray) or gen not in _GEN_TO_CGEN:
+            cgen = _OP_TO_CGEN[op.__class__]
+        else:
+            cgen = _GEN_TO_CGEN.get(gen, None)
+        return cgen(wires=[aux_wire, *op.wires])
 
-    if isinstance(gen, np.ndarray) or gen not in _GEN_TO_CGEN:
-        cgen = _OP_TO_CGEN[op.__class__]
-    else:
-        cgen = _GEN_TO_CGEN.get(gen, None)
-
-    return cgen(wires=[aux_wire, *op.wires])
+    except KeyError as e:
+        if allow_nonunitary:
+            if issubclass(gen, qml.operation.Observable):
+                gen = gen.matrix
+            return qml.ControlledQubitUnitary(gen, control_wires=aux_wire, wires=op.wires)
+        raise ValueError(
+            f"Generator for operation {op.__name__} not known and non-unitary operations "
+            "deactivated via allow_nonunitary=False."
+        ) from e
 
 
 def _get_first_term_tapes(tape, layer_i, layer_j, allow_nonunitary):
@@ -94,12 +94,8 @@ def _get_first_term_tapes(tape, layer_i, layer_j, allow_nonunitary):
     return tapes, ids
 
 
-def _metric_tensor_hadamard(tape, allow_nonunitary=False, approx=None, cache_states=False):
-
-    diag_approx = approx == "diag"
-    diag_tapes, diag_proc_fn, obs_list, coeffs = _metric_tensor_core(tape, diag_approx)
-    if approx in {"diag", "block diag"}:
-        return diag_tapes, diag_proc_fn
+def metric_tensor_hadamard(tape, allow_nonunitary, cache_states):
+    diag_tapes, diag_proc_fn, obs_list, coeffs = metric_tensor_cov_matrix(tape, diag_approx=False)
 
     graph = tape.graph
     layers = list(graph.iterate_parametrized_layers())
@@ -151,79 +147,3 @@ def _metric_tensor_hadamard(tape, allow_nonunitary=False, approx=None, cache_sta
         return np.where(diag_mt, diag_mt, off_diag_mt)
 
     return tapes, processing_fn
-
-
-def qnode_execution_wrapper(self, qnode, targs, tkwargs):
-    """Here, we overwrite the QNode execution wrapper in order
-    to take into account that classical processing may be present
-    inside the QNode."""
-    hybrid = tkwargs.pop("hybrid", True)
-
-    if isinstance(qnode, qml.ExpvalCost):
-        if qnode._multiple_devices:  # pylint: disable=protected-access
-            warnings.warn(
-                "ExpvalCost was instantiated with multiple devices. Only the first device "
-                "will be used to evaluate the metric tensor."
-            )
-
-        qnode = qnode.qnodes.qnodes[0]
-
-    mt_fn = self.default_qnode_wrapper(qnode, targs, tkwargs)
-
-    if isinstance(qnode, qml.beta.QNode):
-        cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=self.expand_fn)
-    else:
-        cjac_fn = qml.transforms.classical_jacobian(qnode)
-
-    def wrapper(*args, **kwargs):
-        mt = mt_fn(*args, **kwargs)
-
-        if not hybrid:
-            return mt
-
-        kwargs.pop("shots", False)
-        cjac = cjac_fn(*args, **kwargs)
-
-        if isinstance(cjac, tuple):
-            if len(cjac) == 1:
-                cjac = cjac[0]
-            else:
-                # Classical processing of multiple arguments is present. Return mt @ cjac.
-                metric_tensors = []
-
-                for c in cjac:
-                    if c is not None:
-                        _mt = qml.math.tensordot(mt, c, [[-1], [0]])
-                        _mt = qml.math.tensordot(c, _mt, [[0], [0]])
-                        metric_tensors.append(_mt)
-
-                return tuple(metric_tensors)
-
-        is_square = cjac.shape == (1,) or (cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1])
-
-        if is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
-            # Classical Jacobian is the identity. No classical processing
-            # is present inside the QNode.
-            return mt
-
-        # Classical processing of a single argument is present. Return mt @ cjac.
-        cjac = qml.math.convert_like(cjac, mt)
-        mt = qml.math.tensordot(mt, cjac, [[-1], [0]])
-        mt = qml.math.tensordot(cjac, mt, [[0], [0]])
-        return mt
-
-    return wrapper
-
-
-def metric_tensor_hadamard(
-    tape, allow_nonunitary=False, approx=None, cache_states=False, **tkwargs
-):
-    if allow_nonunitary:
-        _expand_fn = expand_fn
-    else:
-        _expand_fn = expand_multi_par_and_no_gen
-
-    transform = batch_transform(_metric_tensor_hadamard, expand_fn=_expand_fn)
-    transform.custom_qnode_wrapper(qnode_execution_wrapper)
-
-    return transform(tape, approx, cache_states, **tkwargs)

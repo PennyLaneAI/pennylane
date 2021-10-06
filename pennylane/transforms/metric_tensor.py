@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the transform to compute the (block) diagonal of the metric tensor.
+Contains the metric_tensor batch_transform which wraps multiple
+methods of computing the metric tensor.
 """
 import functools
 import warnings
@@ -20,18 +21,19 @@ import warnings
 import numpy as np
 import pennylane as qml
 
-
 from .batch_transform import batch_transform
+from .metric_tensor_cov_matrix import metric_tensor_cov_matrix
+from .metric_tensor_hadamard import metric_tensor_hadamard
+from pennylane.fourier.qnode_spectrum import expand_multi_par_and_no_gen
 
 
 SUPPORTED_OPS = ["RX", "RY", "RZ", "PhaseShift"]
-
 
 def _stopping_critera(obj):
     return getattr(obj, "num_params", 0) == 0 or obj.name in SUPPORTED_OPS
 
 
-def expand_fn(tape):
+def expand_unsupported(tape):
     """Expands the tape to contain only operations
     supported by the ``metric_tensor`` transform (specified
     by ``SUPPORTED_OPS``).
@@ -42,8 +44,8 @@ def expand_fn(tape):
     return new_tape
 
 
-@functools.partial(batch_transform, expand_fn=expand_fn)
-def metric_tensor(tape, diag_approx=False):
+@batch_transform
+def metric_tensor(tape, allow_nonunitary=True, approx=None, cache_states=False, diag_approx=None):
     """Returns a function that computes the block-diagonal approximation of the metric tensor
     of a given QNode or quantum tape.
 
@@ -149,74 +151,30 @@ def metric_tensor(tape, diag_approx=False):
                [0.        , 0.00415023, 0.        ],
                [0.        , 0.        , 0.24878844]])
     """
-    metric_tensor_tapes, processing_fn, *_ = _metric_tensor_core(tape, diag_approx)
-    return metric_tensor_tapes, processing_fn
+    if allow_nonunitary:
+        print("right")
+        expand_fn = expand_multi_par_and_no_gen
+    else:
+        print("wrong")
+        expand_fn = expand_unsupported
+    tape = expand_fn(tape)
+    [print(op) for op in tape.operations]
+    [print(op.generator) for op in tape.operations]
 
+    if diag_approx is not None:
+        warnings.warn(
+            "The keyword argument diag_approx is deprecated. Please use approx='diag' instead."
+        )
+        if diag_approx:
+            approx = "diag"
 
-def _metric_tensor_core(tape, diag_approx):
-    """This is the actual metric_tensor method, with additional output."""
-    # get the circuit graph
-    graph = tape.graph
+    if approx in {"diag", "block diag"}:
+        # Only require covariance matrix based transform
+        diag_approx = approx == "diag"
+        # Cut off excess output of cov_matrix transform
+        return metric_tensor_cov_matrix(tape, diag_approx)[:2]
 
-    metric_tensor_tapes = []
-    obs_list = []
-    coeffs_list = []
-    params_list = []
-
-    for queue, curr_ops, param_idx, _ in graph.iterate_parametrized_layers():
-        params_list.append(param_idx)
-        coeffs_list.append([])
-        obs_list.append([])
-
-        # for each operation in the layer, get the generator
-        for op in curr_ops:
-            gen, s = op.generator
-            w = op.wires
-            coeffs_list[-1].append(s)
-
-            # get the observable corresponding to the generator of the current operation
-            if isinstance(gen, np.ndarray):
-                # generator is a Hermitian matrix
-                obs_list[-1].append(qml.Hermitian(gen, w))
-
-            elif issubclass(gen, qml.operation.Observable):
-                # generator is an existing PennyLane operation
-                obs_list[-1].append(gen(w))
-
-            else:
-                raise qml.QuantumFunctionError(
-                    "Can't generate metric tensor, generator {}"
-                    "has no corresponding observable".format(gen)
-                )
-
-        # Create a quantum tape with all operations
-        # prior to the parametrized layer, and the rotations
-        # to measure in the basis of the parametrized layer generators.
-        with tape.__class__() as layer_tape:
-            for op in queue:
-                qml.apply(op)
-
-            for o in obs_list[-1]:
-                o.diagonalizing_gates()
-
-            qml.probs(wires=tape.wires)
-
-        metric_tensor_tapes.append(layer_tape)
-
-    def processing_fn(probs):
-        gs = []
-
-        for prob, obs, coeffs in zip(probs, obs_list, coeffs_list):
-            # calculate the covariance matrix of this layer
-            scale = qml.math.convert_like(np.outer(coeffs, coeffs), prob)
-            scale = qml.math.cast_like(scale, prob)
-            g = scale * qml.math.cov_matrix(prob, obs, wires=tape.wires, diag_approx=diag_approx)
-            gs.append(g)
-
-        # create the block diagonal metric tensor
-        return qml.math.block_diag(gs)
-
-    return metric_tensor_tapes, processing_fn, obs_list, coeffs_list
+    return metric_tensor_hadamard(tape, allow_nonunitary, cache_states)
 
 
 @metric_tensor.custom_qnode_wrapper
