@@ -469,7 +469,8 @@ class DefaultQubit(QubitDevice):
             float: returns the expectation value of the observable
         """
         # intercept other Hamiltonians
-        # TODO: find a better way, in which devices do not have to reproduce this logic.
+        # TODO: Ideally, this logic should not live in the Device, but be moved
+        # to a component that can be re-used by devices as needed.
         if observable.name in ("Hamiltonian", "SparseHamiltonian"):
             assert self.shots is None, f"{observable.name} must be used with shots=None"
 
