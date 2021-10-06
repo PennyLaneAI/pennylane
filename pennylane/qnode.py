@@ -678,7 +678,7 @@ class QNode:
         supports_hamiltonian = self.device.supports_observable("Hamiltonian")
         # if the user wants a finite-shots computation we always split Hamiltonians
         finite_shots = self.device.shots is not None
-        # if a grouping has been computed for the Hamiltonian we assume that it should be split
+        # if a grouping has been computed for all Hamiltonians we assume that they should be split
         grouping_known = all(
             obs.grouping_indices is not None
             for obs in self.qtape.observables
