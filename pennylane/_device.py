@@ -951,7 +951,7 @@ class Device(abc.ABC):
             "Returning samples from QNodes not currently supported by {}".format(self.short_name)
         )
 
-    def probability(self, observable, wires, par):
+    def probability(self, wires):
         """Return the (marginal) probability of each computational basis
         state from the last run of the device.
 

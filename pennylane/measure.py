@@ -431,19 +431,20 @@ def probs(wires=None, op=None):
     """
     # pylint: disable=protected-access
 
-    if not isinstance(op, Observable) and op is not None:  # None type is also allowed for op
+    if not isinstance(op, qml.Hermitian) and op is not None:  # None type is also allowed for op
         raise qml.QuantumFunctionError(
-            "{} is not an observable: cannot be used with probability".format(op.name)
+            "{} is not an Hermitian operator: cannot be used with probability".format(op.name)
         )
 
     if wires is not None:
         if op is not None:
-            raise ValueError(
+            raise qml.QuantumFunctionError(
                 "Cannot specify the wires to get the proba if an observable is "
                 "provided. The wires to get the proba will be determined directly from the observable."
             )
-        return MeasurementProcess(Probability, obs=op, wires=qml.wires.Wires(wires))
+        return MeasurementProcess(Probability, wires=qml.wires.Wires(wires))
     return MeasurementProcess(Probability, obs=op)
+
 
 def state():
     r"""Quantum state in the computational basis.
