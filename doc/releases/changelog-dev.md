@@ -10,6 +10,8 @@
   The frequencies are computed per (requested) QNode argument instead
   of per gate `id`. The gate `id`s are ignored.
   [(#1681)](https://github.com/PennyLaneAI/pennylane/pull/1681)
+  [(#1720)](https://github.com/PennyLaneAI/pennylane/pull/1720)
+
 
   Consider the following example, which uses non-trainable inputs `x`, `y` and `z`
   as well as trainable parameters `w` as arguments to the QNode.
@@ -438,10 +440,6 @@
   [(#1689)](https://github.com/PennyLaneAI/pennylane/pull/1689)
 
 <h3>Bug fixes</h3>
-
-* Fixes a bug in the newly introduced expansion function `expand_multi_par_and_no_gen` in 
-  `qml.fourier.qnode_spectrum`.
-  [(#1720)](https://github.com/PennyLaneAI/pennylane/pull/1720)
 
 * Fix a bug where it was not possible to use `jax.jit` on a `QNode` when using `QubitStateVector`.
   [(#1683)](https://github.com/PennyLaneAI/pennylane/pull/1683)
