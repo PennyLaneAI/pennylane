@@ -18,51 +18,7 @@ import pytest
 import numpy as np
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.fourier.spectrum import spectrum, _join_spectra, _get_spectrum
-
-
-class TestHelpers:
-    @pytest.mark.parametrize(
-        "spectrum1, spectrum2, expected",
-        [
-            ([-1, 0, 1], [-1, 0, 1], [-2, -1, 0, 1, 2]),
-            ([-3, 0, 3], [-5, 0, 5], [-8, -5, -3, -2, 0, 2, 3, 5, 8]),
-            ([-2, -1, 0, 1, 2], [-1, 0, 1], [-3, -2, -1, 0, 1, 2, 3]),
-            ([-0.5, 0, 0.5], [-1, 0, 1], [-1.5, -1, -0.5, 0, 0.5, 1.0, 1.5]),
-            ([-0.5, 0, 0.5], [], [-0.5, 0, 0.5]),
-            ([], [-0.5, 0, 0.5], [-0.5, 0, 0.5]),
-        ],
-    )
-    def test_join_spectra(self, spectrum1, spectrum2, expected, tol):
-        """Test that spectra are joined correctly."""
-        joined = _join_spectra(spectrum1, spectrum2)
-        assert np.allclose(joined, expected, atol=tol, rtol=0)
-
-    @pytest.mark.parametrize(
-        "op, expected",
-        [
-            (qml.RX(0.1, wires=0), [-1, 0, 1]),  # generator is a class
-            (qml.RY(0.1, wires=0), [-1, 0, 1]),  # generator is a class
-            (qml.RZ(0.1, wires=0), [-1, 0, 1]),  # generator is a class
-            (qml.PhaseShift(0.5, wires=0), [-1, 0, 1]),  # generator is an array
-            (qml.ControlledPhaseShift(0.5, wires=[0, 1]), [-1, 0, 1]),  # generator is an array
-        ],
-    )
-    def test_get_spectrum(self, op, expected, tol):
-        """Test that the spectrum is correctly extracted from an operator."""
-        spec = _get_spectrum(op)
-        assert np.allclose(spec, expected, atol=tol, rtol=0)
-
-    def test_get_spectrum_complains_no_generator(self):
-        """Test that an error is raised if the operator has no generator defined."""
-
-        # Observables have no generator attribute
-        with pytest.raises(ValueError, match="Generator of operation"):
-            _get_spectrum(qml.P(wires=0))
-
-        # CNOT is an operation where generator is an abstract property
-        with pytest.raises(ValueError, match="Generator of operation"):
-            _get_spectrum(qml.CNOT(wires=[0, 1]))
+from pennylane.fourier.circuit_spectrum import circuit_spectrum
 
 
 class TestCircuits:
@@ -83,7 +39,7 @@ class TestCircuits:
                     qml.RY(0.4, wires=i)
             return qml.expval(qml.PauliZ(wires=0))
 
-        res = spectrum(circuit)(0.1)
+        res = circuit_spectrum(circuit)(0.1)
         expected_degree = n_qubits * n_layers
         assert np.allclose(res["x"], range(-expected_degree, expected_degree + 1))
 
@@ -99,16 +55,16 @@ class TestCircuits:
             qml.RY(0.4, wires=0, id="other")
             return qml.expval(qml.PauliZ(wires=0))
 
-        res = spectrum(circuit, encoding_gates=["x"])(0.1)
+        res = circuit_spectrum(circuit, encoding_gates=["x"])(0.1)
         assert res == {"x": [-1.0, 0.0, 1.0]}
 
-        res = spectrum(circuit, encoding_gates=["x", "other"])(0.1)
+        res = circuit_spectrum(circuit, encoding_gates=["x", "other"])(0.1)
         assert res == {"x": [-1.0, 0.0, 1.0], "other": [-1.0, 0.0, 1.0]}
 
-        res = spectrum(circuit)(0.1)
+        res = circuit_spectrum(circuit)(0.1)
         assert res == {"x": [-1.0, 0.0, 1.0], "other": [-1.0, 0.0, 1.0]}
 
-        res = spectrum(circuit, encoding_gates=["a"])(0.1)
+        res = circuit_spectrum(circuit, encoding_gates=["a"])(0.1)
         assert res == {"a": []}
 
     def test_spectrum_changes_with_qnode_args(self):
@@ -125,10 +81,10 @@ class TestCircuits:
                 qml.RX(0.3, wires=2, id="x")
             return qml.expval(qml.PauliZ(wires=0))
 
-        res_true = spectrum(circuit)(True)
+        res_true = circuit_spectrum(circuit)(True)
         assert np.allclose(res_true["x"], range(-3, 4))
 
-        res_false = spectrum(circuit)(False)
+        res_false = circuit_spectrum(circuit)(False)
         assert np.allclose(res_false["x"], range(-2, 3))
 
     def test_input_gates_not_of_correct_form(self):
@@ -144,7 +100,7 @@ class TestCircuits:
             return qml.expval(qml.PauliZ(wires=0))
 
         with pytest.raises(ValueError, match="Can only consider one-parameter gates"):
-            spectrum(circuit)()
+            circuit_spectrum(circuit)()
 
 
 def circuit(x, w):
@@ -180,7 +136,7 @@ class TestInterfaces:
         dev = qml.device("default.qubit", wires=3)
         qnode = qml.QNode(circuit, dev, interface="autograd")
 
-        res = spectrum(qnode)(x, w)
+        res = circuit_spectrum(qnode)(x, w)
         for (k1, v1), (k2, v2) in zip(res.items(), expected_result.items()):
             assert k1 == k2
             assert v1 == v2
@@ -196,7 +152,7 @@ class TestInterfaces:
         dev = qml.device("default.qubit", wires=3)
         qnode = qml.QNode(circuit, dev, interface="torch")
 
-        res = spectrum(qnode)(x, w)
+        res = circuit_spectrum(qnode)(x, w)
         assert res
         for (k1, v1), (k2, v2) in zip(res.items(), expected_result.items()):
             assert k1 == k2
@@ -212,7 +168,7 @@ class TestInterfaces:
 
         x = tf.Variable([1.0, 2.0, 3.0])
         w = tf.constant([[-1, -2, -3], [-4, -5, -6]])
-        res = spectrum(qnode)(x, w)
+        res = circuit_spectrum(qnode)(x, w)
 
         assert res
         for (k1, v1), (k2, v2) in zip(res.items(), expected_result.items()):
@@ -232,9 +188,29 @@ class TestInterfaces:
         dev = qml.device("default.qubit", wires=3)
         qnode = qml.QNode(circuit, dev, interface="jax")
 
-        res = spectrum(qnode)(x, w)
+        res = circuit_spectrum(qnode)(x, w)
 
         assert res
         for (k1, v1), (k2, v2) in zip(res.items(), expected_result.items()):
             assert k1 == k2
             assert v1 == v2
+
+
+def test_alias_spectrum():
+    """Test that the ``spectrum`` for ``circuit_spectrum``
+    works properly."""
+
+    dev = qml.device("default.qubit", wires=3)
+
+    @qml.qnode(dev)
+    def circuit(x):
+        for l in range(2):
+            for i in range(3):
+                qml.RX(x, wires=i, id="x")
+                qml.RY(0.4, wires=i)
+        return qml.expval(qml.PauliZ(wires=0))
+
+    with pytest.warns(UserWarning, match="qml.fourier.spectrum has been renamed"):
+        res_alias = qml.fourier.spectrum(circuit)(0.1)
+    res_nonalias = qml.fourier.spectrum(circuit)(0.1)
+    assert res_alias == res_nonalias
