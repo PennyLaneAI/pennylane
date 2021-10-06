@@ -14,6 +14,7 @@
 """
 Unit tests for functions needed for computing the Hamiltonian.
 """
+import autograd
 import pennylane as qml
 import pytest
 from pennylane import Identity, PauliX, PauliY, PauliZ
@@ -218,7 +219,7 @@ def test_generate_fermionic_hamiltonian(symbols, geometry, alpha, coeffs_h_ref, 
 
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "h_ref"),
+    ("symbols", "geometry", "h_ref_data"),
     [
         (
             ["H", "H"],
@@ -264,14 +265,15 @@ def test_generate_fermionic_hamiltonian(symbols, geometry, alpha, coeffs_h_ref, 
         )
     ],
 )
-def test_generate_hamiltonian(symbols, geometry, h_ref):
+def test_generate_hamiltonian(symbols, geometry, h_ref_data):
     r"""Test that generate_hamiltonian returns the correct Hamiltonian."""
 
     mol = Molecule(symbols, geometry)
     args = []
     h = generate_hamiltonian(mol)(*args)
+    h_ref = qml.Hamiltonian(h_ref_data[0], h_ref_data[1])
 
-    assert np.allclose(h.terms[0], h_ref[0])
+    h.compare(h_ref)
 
 
 @pytest.mark.parametrize(
@@ -279,7 +281,7 @@ def test_generate_hamiltonian(symbols, geometry, h_ref):
     [
         (
             [0, 0],
-            # obtained with openfermion using jordan_wigner(FermionOperator('0^ 0', 1)),
+            # obtained with openfermion using: jordan_wigner(FermionOperator('0^ 0', 1))
             # reformatted the original openfermion output: (0.5+0j) [] + (-0.5+0j) [Z0]
             ([(0.5 + 0j), (-0.5 + 0j)], [[], [(0, "Z")]]),
         ),
@@ -321,3 +323,51 @@ def test_return_pauli(symbol, operator):
     r"""Test that_return_pauli returns the correct operator."""
     p = _return_pauli(symbol)
     assert p is operator
+
+
+def test_gradient_expvalH():
+    r"""Test that the gradient of expval(H) computed with ``autograd.grad`` is equal to the value
+    obtained with the finite difference method."""
+    symbols = ["H", "H"]
+    geometry = (
+        np.array([[0.0, 0.0, -0.3674625962], [0.0, 0.0, 0.3674625962]], requires_grad=False)
+        / 0.529177210903
+    )
+    alpha = np.array(
+        [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+        requires_grad=True,
+    )
+
+    mol = Molecule(symbols, geometry, alpha=alpha)
+    args = [alpha]
+    dev = qml.device("default.qubit", wires=4)
+
+    def energy(mol):
+        @qml.qnode(dev)
+        def circuit(*args):
+            qml.PauliX(0)
+            qml.PauliX(1)
+            qml.DoubleExcitation(0.22350048111151138, wires=[0, 1, 2, 3])
+            h_qubit = generate_hamiltonian(mol)(*args)
+            return qml.expval(h_qubit)
+
+        return circuit
+
+    grad_autograd = autograd.grad(energy(mol), argnum=0)(*args)
+
+    alpha_1 = np.array(
+        [[3.42515091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+        requires_grad=False,
+    )  # alpha[0][0] -= 0.0001
+
+    alpha_2 = np.array(
+        [[3.42535091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+        requires_grad=False,
+    )  # alpha[0][0] += 0.0001
+
+    e_1 = energy(mol)(*[alpha_1])
+    e_2 = energy(mol)(*[alpha_2])
+
+    grad_finitediff = (e_2 - e_1) / 0.0002
+
+    assert np.allclose(grad_autograd[0][0], grad_finitediff)
