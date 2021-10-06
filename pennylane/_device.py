@@ -638,7 +638,7 @@ class Device(abc.ABC):
         finite_shots = self.shots is not None
         grouping_known = all(
             obs.grouping_indices is not None
-            for obs in self.qtape.observables
+            for obs in circuit.observables
             if obs.name == "Hamiltonian"
         )
 
