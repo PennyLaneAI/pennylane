@@ -439,6 +439,9 @@
 
 <h3>Bug fixes</h3>
 
+* Fix a bug where the cache devices would return same value for different observables return types.
+  [(#1719)](https://github.com/PennyLaneAI/pennylane/pull/1683)
+  
 * Fix a bug where it was not possible to use `jax.jit` on a `QNode` when using `QubitStateVector`.
   [(#1683)](https://github.com/PennyLaneAI/pennylane/pull/1683)
 
