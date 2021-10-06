@@ -267,25 +267,29 @@ class TestCaching:
         wires = range(nwires)
 
         hamiltonian = np.array(
-            [[-2.5623 + 0.j, 0. + 0.j, 0. + 0.j, 0. - 0.1234j],
-             [0. + 0.j, -2.5623 + 0.j, 0. + 0.1234j, 0. + 0.j],
-             [0. + 0.j, 0. - 0.1234j, -2.5623 + 0.j, 0. + 0.j],
-             [0. + 0.1234j, 0. + 0.j, 0. + 0.j, -2.5623 + 0.j]])
+            [
+                [-2.5623 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 - 0.1234j],
+                [0.0 + 0.0j, -2.5623 + 0.0j, 0.0 + 0.1234j, 0.0 + 0.0j],
+                [0.0 + 0.0j, 0.0 - 0.1234j, -2.5623 + 0.0j, 0.0 + 0.0j],
+                [0.0 + 0.1234j, 0.0 + 0.0j, 0.0 + 0.0j, -2.5623 + 0.0j],
+            ]
+        )
 
         np.random.seed(172)
         params = np.random.randn(2, nwires)
         devs = [
-            qml.device('default.qubit', wires=nwires),
-            qml.device('default.qubit', cache=1, wires=nwires),
+            qml.device("default.qubit", wires=nwires),
+            qml.device("default.qubit", cache=1, wires=nwires),
         ]
 
         for dev in devs:
-            @qml.qnode(dev, diff_method='parameter-shift')
+
+            @qml.qnode(dev, diff_method="parameter-shift")
             def expval_circuit(params):
                 qml.templates.BasicEntanglerLayers(params, wires=wires, rotation=qml.RX)
                 return qml.expval(qml.Hermitian(hamiltonian, wires=wires))
 
-            @qml.qnode(dev, diff_method='parameter-shift')
+            @qml.qnode(dev, diff_method="parameter-shift")
             def var_circuit(params):
                 qml.templates.BasicEntanglerLayers(params, wires=wires, rotation=qml.RX)
                 return qml.var(qml.Hermitian(hamiltonian, wires=wires))
