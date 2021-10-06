@@ -26,7 +26,7 @@ from .metric_tensor_cov_matrix import metric_tensor_cov_matrix
 
 
 @functools.partial(batch_transform, expand_fn=expand_multi_par_and_no_gen)
-def metric_tensor(tape, approx=None, diag_approx=None):
+def metric_tensor(tape, approx="block diag", diag_approx=None):
     """Returns a function that computes the block-diagonal approximation of the metric tensor
     of a given QNode or quantum tape.
 

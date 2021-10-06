@@ -323,6 +323,13 @@
 
 <h3>Improvements</h3>
 
+* The `metric_tensor` transform is now available for a bigger set of operations, reducing the 
+  decomposition steps that are necessary to evaluate the tensor.
+  [(#1721)](https://github.com/PennyLaneAI/pennylane/pull/1721)
+
+  In addition to reduced decomposition overhead, the change also result in fewer circuit
+  evaluations.
+
 * The tests for qubit operations are split into multiple files.
   [(#1661)](https://github.com/PennyLaneAI/pennylane/pull/1661)
 
@@ -414,6 +421,11 @@
   [(#1708)](https://github.com/PennyLaneAI/pennylane/pull/1708)
 
 <h3>Breaking changes</h3>
+
+- The expansion rule in the `qml.metric_tensor` transform has been changed.
+  [(#1721)](https://github.com/PennyLaneAI/pennylane/pull/1721)
+
+  If `hybrid=False`, this changed decomposition behaviour might lead to a changed output.
 
 - The `QNode.metric_tensor` method has been deprecated, and will be removed in an upcoming release.
   Please use the `qml.metric_tensor` transform instead.
