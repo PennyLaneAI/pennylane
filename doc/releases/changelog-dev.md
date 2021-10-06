@@ -391,6 +391,8 @@
 
 * Adds a link to https://pennylane.ai/qml/demonstrations.html in the navbar.
   [(#1624)](https://github.com/PennyLaneAI/pennylane/pull/1624)
+ 
+* Corrects the docstring of `ExpvalCost` by adding `wires` to the signature of the `ansatz` argument. [(#1715)](https://github.com/PennyLaneAI/pennylane/pull/1715)
 
 <h3>Contributors</h3>
 
