@@ -15,48 +15,42 @@
 Contains the metric_tensor batch_transform which wraps multiple
 methods of computing the metric tensor.
 """
+import functools
 import warnings
 
-import numpy as np
 import pennylane as qml
 
 from pennylane.fourier.qnode_spectrum import expand_multi_par_and_no_gen
 from .batch_transform import batch_transform
 from .metric_tensor_cov_matrix import metric_tensor_cov_matrix
 
-SUPPORTED_OPS = ["RX", "RY", "RZ", "PhaseShift"]
 
-
-def _stopping_critera(obj):
-    return getattr(obj, "num_params", 0) == 0 or obj.name in SUPPORTED_OPS
-
-
-# def expand_unsupported(tape):
-# """Expands the tape to contain only operations
-# supported by the ``metric_tensor`` transform (specified
-# by ``SUPPORTED_OPS``).
-# """
-# new_tape = tape.expand(depth=2, stop_at=_stopping_critera)
-# params = new_tape.get_parameters(trainable_only=False)
-# new_tape.trainable_params = qml.math.get_trainable_indices(params)
-# return new_tape
-
-
-@batch_transform
-def metric_tensor(tape, allow_nonunitary=True, approx=None, cache_states=False, diag_approx=None):
+@functools.partial(batch_transform, expand_fn=expand_multi_par_and_no_gen)
+def metric_tensor(tape, approx=None, diag_approx=None):
     """Returns a function that computes the block-diagonal approximation of the metric tensor
     of a given QNode or quantum tape.
 
     .. note::
 
-        Currently, only the :class:`~.RX`, :class:`~.RY`, :class:`~.RZ`, and
-        :class:`~.PhaseShift` parametrized gates are supported.
+        Only gates that have a single parameter and define a ``generator``
+        are supported.
         All other parametrized gates will be decomposed if possible.
 
     Args:
         qnode (pennylane.QNode or .QuantumTape): quantum tape or QNode to find the metric tensor of
+        approx (str): Which approximation of the metric tensor to compute.
+
+            - If ``None``, the full metric tensor is computed
+
+            - If ``"block diag"``, the block diagonal approximation is computed, reducing
+              the number of evaluated circuits significantly.
+
+            - If ``"diag"``, only the diagonal approximation is computed, slightly
+              reducing the classical overhead but not the quantum resources.
+
         diag_approx (bool): if True, use the diagonal approximation. If ``False``, a
-        block diagonal approximation of the metric tensor is computed.
+            block diagonal approximation of the metric tensor is computed.
+            This keyword argument is deprecated in favor of ``approx`` and will be removed soon
         hybrid (bool): Specifies whether classical processing inside a QNode
             should be taken into account when transforming a QNode.
 
@@ -149,10 +143,6 @@ def metric_tensor(tape, allow_nonunitary=True, approx=None, cache_states=False, 
                [0.        , 0.00415023, 0.        ],
                [0.        , 0.        , 0.24878844]])
     """
-    # if allow_nonunitary:
-    metric_tensor.expand_fn = expand_multi_par_and_no_gen
-    # else:
-    # metric_tensor.expand_fn = expand_unsupported
     tape = metric_tensor.expand_fn(tape)
 
     if diag_approx is not None:
