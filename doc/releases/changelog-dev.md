@@ -4,6 +4,90 @@
 
 <h3>New features since last release</h3>
 
+* The new `qml.fourier.qnode_spectrum` function extends the former
+  `qml.fourier.spectrum` function
+  and takes classical processing of QNode arguments into account.
+  The frequencies are computed per (requested) QNode argument instead
+  of per gate `id`. The gate `id`s are ignored.
+  [(#1681)](https://github.com/PennyLaneAI/pennylane/pull/1681)
+  [(#1720)](https://github.com/PennyLaneAI/pennylane/pull/1720)
+
+
+  Consider the following example, which uses non-trainable inputs `x`, `y` and `z`
+  as well as trainable parameters `w` as arguments to the QNode.
+
+  ```python
+  import pennylane as qml
+  import numpy as np
+
+  n_qubits = 3
+  dev = qml.device("default.qubit", wires=n_qubits)
+
+  @qml.qnode(dev)
+  def circuit(x, y, z, w):
+      for i in range(n_qubits):
+          qml.RX(0.5*x[i], wires=i)
+          qml.Rot(w[0,i,0], w[0,i,1], w[0,i,2], wires=i)
+          qml.RY(2.3*y[i], wires=i)
+          qml.Rot(w[1,i,0], w[1,i,1], w[1,i,2], wires=i)
+          qml.RX(z, wires=i)
+      return qml.expval(qml.PauliZ(wires=0))
+
+  x = np.array([1., 2., 3.])
+  y = np.array([0.1, 0.3, 0.5])
+  z = -1.8
+  w = np.random.random((2, n_qubits, 3))
+  ```
+
+  This circuit looks as follows:
+
+  ```pycon
+  >>> print(qml.draw(circuit)(x, y, z, w))
+  0: ──RX(0.5)──Rot(0.598, 0.949, 0.346)───RY(0.23)──Rot(0.693, 0.0738, 0.246)──RX(-1.8)──┤ ⟨Z⟩
+  1: ──RX(1)────Rot(0.0711, 0.701, 0.445)──RY(0.69)──Rot(0.32, 0.0482, 0.437)───RX(-1.8)──┤
+  2: ──RX(1.5)──Rot(0.401, 0.0795, 0.731)──RY(1.15)──Rot(0.756, 0.38, 0.38)─────RX(-1.8)──┤
+  ```
+
+  Applying the `qml.fourier.qnode_spectrum` function to the circuit for the non-trainable
+  parameters, we obtain:
+
+  ```pycon
+  >>> spec = qml.fourier.qnode_spectrum(circuit, encoding_args={"x", "y", "z"})(x, y, z, w)
+  >>> for inp, freqs in spec.items():
+  ...     print(f"{inp}: {freqs}")
+  "x": {(0,): [-0.5, 0.0, 0.5], (1,): [-0.5, 0.0, 0.5], (2,): [-0.5, 0.0, 0.5]}
+  "y": {(0,): [-2.3, 0.0, 2.3], (1,): [-2.3, 0.0, 2.3], (2,): [-2.3, 0.0, 2.3]}
+  "z": {(): [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0]}
+  ```
+
+  We can see that all three parameters in the QNode arguments ``x`` and ``y``
+  contribute the spectrum of a Pauli rotation ``[-1.0, 0.0, 1.0]``, rescaled with the
+  prefactor of the respective parameter in the circuit.
+  The three ``RX`` rotations using the parameter ``z`` accumulate, yielding a more
+  complex frequency spectrum.
+
+  For details on how to control for which parameters the spectrum is computed,
+  a comparison to `qml.fourier.circuit_spectrum`, and other usage details, please see the
+  [fourier.qnode_spectrum docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.fourier.qnode_spectrum.html).
+
+* There is a new utility function `qml.math.is_independent` that checks whether
+  a callable is independent of its arguments.
+  [(#1700)](https://github.com/PennyLaneAI/pennylane/pull/1700)
+
+  **Warning**
+
+  This function is experimental and might behave differently than expected.
+  Also, it might be subject to change.
+
+  **Disclaimer**
+
+  Note that the test relies on both numerical and analytical checks, except
+  when using the PyTorch interface which only performs a numerical check.
+  It is known that there are edge cases on which this test will yield wrong
+  results, in particular non-smooth functions may be problematic.
+  For details, please refer to the 
+  [is_indpendent docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.math.is_independent.html).
+
 * Support for differentiable execution of batches of circuits has been
   extended to the JAX interface for scalar functions, via the beta
   `pennylane.interfaces.batch` module.
@@ -215,6 +299,27 @@
     if `expval(H)` is present on devices that do not natively support Hamiltonians with
     non-commuting terms.
 
+* Added a new template `GateFabric`, which implements a local, expressive, quantum-number-preserving
+  ansatz proposed by Anselmetti *et al.* in [arXiv:2104.05692](https://arxiv.org/abs/2104.05695).
+  [(#1687)](https://github.com/PennyLaneAI/pennylane/pull/1687)
+
+  An example of a circuit using `GateFabric` template is:
+
+  ```python
+  coordinates = np.array([0.0, 0.0, -0.6614, 0.0, 0.0, 0.6614])
+  H, qubits = qml.qchem.molecular_hamiltonian(["H", "H"], coordinates)
+  ref_state = qml.qchem.hf_state(electrons=2, qubits)
+  
+  dev = qml.device('default.qubit', wires=qubits)
+  @qml.qnode(dev)
+  def ansatz(weights):
+      qml.templates.GateFabric(weights, wires=[0,1,2,3],
+                                  init_state=ref_state, include_pi=True)
+      return qml.expval(H)
+  ```
+
+  For more details, see the [GateFabric documentation](../code/api/pennylane.templates.layers.GateFabric.html).
+
 
 <h3>Improvements</h3>
 
@@ -263,6 +368,51 @@
 * ``qml.circuit_drawer.CircuitDrawer`` can accept a string for the ``charset`` keyword, instead of a ``CharSet`` object.
   [(#1640)](https://github.com/PennyLaneAI/pennylane/pull/1640)
 
+* ``qml.math.sort`` will now return only the sorted torch tensor and not the corresponding indices, making sort consistent across interfaces.
+    [(#1691)](https://github.com/PennyLaneAI/pennylane/pull/1691)
+
+* Operations can now have gradient recipes that depend on the state of the operation.
+  [(#1674)](https://github.com/PennyLaneAI/pennylane/pull/1674)
+
+  For example, this allows for gradient recipes that are parameter dependent:
+
+  ```python
+  class RX(qml.RX):
+
+      @property
+      def grad_recipe(self):
+          # The gradient is given by [f(2x) - f(0)] / (2 sin(x)), by subsituting
+          # shift = x into the two term parameter-shift rule.
+          x = self.data[0]
+          c = 0.5 / np.sin(x)
+          return ([[c, 0.0, 2 * x], [-c, 0.0, 0.0]],)
+  ```
+
+* Shots can now be passed as a runtime argument to transforms that execute circuits in batches, similarly
+  to QNodes.
+  [(#1707)](https://github.com/PennyLaneAI/pennylane/pull/1707)
+  
+  An example of such a transform are the gradient transforms in the
+  `qml.gradients` module. As a result, we can now call gradient transforms
+  (such as `qml.gradients.param_shift`) and set the number of shots at runtime.
+
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=1, shots=1000)
+  >>> @qml.beta.qnode(dev)
+  ... def circuit(x):
+  ...     qml.RX(x, wires=0)
+  ...     return qml.expval(qml.PauliZ(0))
+  >>> grad_fn = qml.gradients.param_shift(circuit)
+  >>> grad_fn(0.564, shots=[(1, 10)]).T
+  array([[-1., -1., -1., -1., -1.,  0., -1.,  0., -1.,  0.]])
+  >>> grad_fn(0.1233, shots=None)
+  array([[-0.53457096]])
+  ```
+
+* Specific QNode execution options are now re-used by batch transforms
+  to execute transformed QNodes.
+  [(#1708)](https://github.com/PennyLaneAI/pennylane/pull/1708)
+
 <h3>Breaking changes</h3>
 
 - The `QNode.metric_tensor` method has been deprecated, and will be removed in an upcoming release.
@@ -275,7 +425,24 @@
   `requires_grad=False` was explicitly set.
   [(#1638)](https://github.com/PennyLaneAI/pennylane/pull/1638)
 
+<h3>Deprecations</h3>
+
+* The `qml.fourier.spectrum` function has been renamed to `qml.fourier.circuit_spectrum`,
+  in order to clearly separate the new `qnode_spectrum` function from this one.
+  `qml.fourier.spectrum` is now an alias for `circuit_spectrum` but is flagged for
+  deprecation and will be removed soon.
+  [(#1681)](https://github.com/PennyLaneAI/pennylane/pull/1681)
+
+* The `init` module, which contains functions to generate random parameter tensors for 
+  templates, is flagged for deprecation and will be removed in the next release cycle. 
+  Instead, the templates' `shape` method can be used to get the desired shape of the tensor, 
+  which can then be generated manually.
+  [(#1689)](https://github.com/PennyLaneAI/pennylane/pull/1689)
+
 <h3>Bug fixes</h3>
+
+* Fix a bug where it was not possible to use `jax.jit` on a `QNode` when using `QubitStateVector`.
+  [(#1683)](https://github.com/PennyLaneAI/pennylane/pull/1683)
 
 * The device suite tests can now execute successfully if no shots configuration variable is given.
   [(#1641)](https://github.com/PennyLaneAI/pennylane/pull/1641)
@@ -287,6 +454,10 @@
 * Fixes a bug in `default.mixed`, to ensure that returned probabilities are always non-negative.
   [(#1680)](https://github.com/PennyLaneAI/pennylane/pull/1680)
 
+* Fixes a bug where gradient transforms would fail to apply to QNodes
+  containing classical processing.
+  [(#1699)](https://github.com/PennyLaneAI/pennylane/pull/1699)
+
 <h3>Documentation</h3>
 
 * Adds a link to https://pennylane.ai/qml/demonstrations.html in the navbar.
@@ -296,5 +467,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Utkarsh Azad, Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee,
-Ingrid Strandberg, Antal Száva, David Wierichs.
+Utkarsh Azad, Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee, Romain Moyard,
+Carrie-Anne Rubidge, Maria Schuld, Ingrid Strandberg, Antal Száva, David Wierichs.

@@ -29,7 +29,8 @@ def test_integration():
         qml.templates.StronglyEntanglingLayers(weights, wires=range(wires))
         return qml.expval(qml.PauliZ(0))
 
-    weights = qml.init.strong_ent_layers_normal(layers, wires, seed=1967)
+    np.random.seed(1967)
+    weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(layers, wires))
 
     qn_l = qml.QNode(circuit, dev_l)
     qn_d = qml.QNode(circuit, dev_d)
