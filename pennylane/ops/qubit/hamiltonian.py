@@ -267,7 +267,7 @@ class Hamiltonian(Observable):
         """Set the grouping indices, if known without explicit computation, or if
         computation was done externally. The groups are not verified.
 
-        **Example:**
+        **Example**
 
         Examples of valid groupings for the Hamiltonian
 
