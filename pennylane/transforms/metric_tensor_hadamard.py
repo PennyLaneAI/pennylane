@@ -32,20 +32,6 @@ _OP_TO_CGEN = {
     qml.PhaseShift: qml.CZ,
 }
 
-
-def _get_non_block_diag_indices(size, block_sizes):
-    """Get all indices for the upper triangle of a ``size``x``size`` matrix
-    which are not within the block diagonal with block sizes ``block_sizes``."""
-
-    ids = {}
-    offset = 0
-    for block_idx, bsize in enumerate(block_sizes):
-        for inner_idx in range(bsize):
-            ids[offset + inner_idx] = list(range(offset + bsize, size))
-        offset += bsize
-    return ids
-
-
 @functools.lru_cache
 def _get_gen_op(op, aux_wire, allow_nonunitary):
     gen, _ = op.generator

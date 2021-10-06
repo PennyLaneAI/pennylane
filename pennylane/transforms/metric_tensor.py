@@ -15,16 +15,14 @@
 Contains the metric_tensor batch_transform which wraps multiple
 methods of computing the metric tensor.
 """
-import functools
 import warnings
 
-import numpy as np
 import pennylane as qml
 
+from pennylane.fourier.qnode_spectrum import expand_multi_par_and_no_gen
 from .batch_transform import batch_transform
 from .metric_tensor_cov_matrix import metric_tensor_cov_matrix
 from .metric_tensor_hadamard import metric_tensor_hadamard
-from pennylane.fourier.qnode_spectrum import expand_multi_par_and_no_gen
 
 
 SUPPORTED_OPS = ["RX", "RY", "RZ", "PhaseShift"]
