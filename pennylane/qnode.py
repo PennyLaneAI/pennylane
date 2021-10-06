@@ -673,16 +673,16 @@ class QNode:
         # Under certain conditions, split tape into multiple tapes and recombine them.
         # Else just execute the tape, and let the device take care of things.
         # TODO (future squad): This logic should be moved away from the qnode, preferably to the device.
-        supports_hamiltonian = self.device.supports_observable("Hamiltonian")
-        finite_shots = self.device.shots is not None
         hamiltonian_in_obs = "Hamiltonian" in [obs.name for obs in self.qtape.observables]
-        # check if all Hamiltonians know a grouping for their observables
+        # if the device does not support Hamiltonians, we split them
+        supports_hamiltonian = self.device.supports_observable("Hamiltonian")
+        # if the user wants a finite-shots computation we always split Hamiltonians
+        finite_shots = self.device.shots is not None
+        # if a grouping has been computed for the Hamiltonian we assume that it should be split
         grouping_known = all(
-            [
-                obs.grouping_indices is not None
-                for obs in self.qtape.observables
-                if obs.name == "Hamiltonian"
-            ]
+            obs.grouping_indices is not None
+            for obs in self.qtape.observables
+            if obs.name == "Hamiltonian"
         )
         if hamiltonian_in_obs and ((not supports_hamiltonian or finite_shots) or grouping_known):
             try:
