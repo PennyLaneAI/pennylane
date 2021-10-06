@@ -323,7 +323,9 @@ def max_independent_set(graph, constrained=True):
         raise ValueError("Input graph must be a nx.Graph, got {}".format(type(graph).__name__))
 
     if constrained:
-        return (bit_driver(graph.nodes, 1), qaoa.bit_flip_mixer(graph, 0))
+        cost_h = bit_driver(graph.nodes, 1)
+        cost_h.grouping_indices = [list(range(len(cost_h.ops)))]
+        return (cost_h, qaoa.bit_flip_mixer(graph, 0))
 
     cost_h = 3 * edge_driver(graph, ["10", "01", "00"]) + bit_driver(graph.nodes, 1)
     mixer_h = qaoa.x_mixer(graph.nodes)
@@ -397,7 +399,9 @@ def min_vertex_cover(graph, constrained=True):
         raise ValueError("Input graph must be a nx.Graph, got {}".format(type(graph).__name__))
 
     if constrained:
-        return (bit_driver(graph.nodes, 0), qaoa.bit_flip_mixer(graph, 1))
+        cost_h = bit_driver(graph.nodes, 0)
+        cost_h.grouping_indices = [list(range(len(cost_h.ops)))]
+        return (cost_h, qaoa.bit_flip_mixer(graph, 1))
 
     cost_h = 3 * edge_driver(graph, ["11", "10", "01"]) + bit_driver(graph.nodes, 0)
     mixer_h = qaoa.x_mixer(graph.nodes)
@@ -473,7 +477,9 @@ def max_clique(graph, constrained=True):
         raise ValueError("Input graph must be a nx.Graph, got {}".format(type(graph).__name__))
 
     if constrained:
-        return (bit_driver(graph.nodes, 1), qaoa.bit_flip_mixer(nx.complement(graph), 0))
+        cost_h = bit_driver(graph.nodes, 1)
+        cost_h.grouping_indices = [list(range(len(cost_h.ops)))]
+        return (cost_h, qaoa.bit_flip_mixer(nx.complement(graph), 0))
 
     cost_h = 3 * edge_driver(nx.complement(graph), ["10", "01", "00"]) + bit_driver(graph.nodes, 1)
     mixer_h = qaoa.x_mixer(graph.nodes)
@@ -625,7 +631,9 @@ def max_weight_cycle(graph, constrained=True):
     mapping = qaoa.cycle.wires_to_edges(graph)
 
     if constrained:
-        return (qaoa.cycle.loss_hamiltonian(graph), qaoa.cycle.cycle_mixer(graph), mapping)
+        cost_h = qaoa.cycle.loss_hamiltonian(graph)
+        cost_h.grouping_indices = [list(range(len(cost_h.ops)))]
+        return (cost_h, qaoa.cycle.cycle_mixer(graph), mapping)
 
     cost_h = qaoa.cycle.loss_hamiltonian(graph) + 3 * (
         qaoa.cycle.net_flow_constraint(graph) + qaoa.cycle.out_flow_constraint(graph)
