@@ -218,41 +218,6 @@ def test_generate_fermionic_hamiltonian(symbols, geometry, alpha, coeffs_h_ref, 
 
 
 @pytest.mark.parametrize(
-    ("f_operator", "q_operator"),
-    [
-        (
-            [0, 0],
-            # obtained with openfermion using jordan_wigner(FermionOperator('0^ 0', 1)),
-            # reformatted the original openfermion output: (0.5+0j) [] + (-0.5+0j) [Z0]
-            ([(0.5 + 0j), (-0.5 + 0j)], [[], [(0, "Z")]]),
-        ),
-    ],
-)
-def test_generate_qubit_operator(f_operator, q_operator):
-    r"""Test that _generate_qubit_operator returns the correct operator."""
-    result = _generate_qubit_operator(f_operator)
-
-    assert result == q_operator
-
-
-@pytest.mark.parametrize(
-    ("p1", "p2", "p_ref"),
-    [
-        (
-            [(0, "X"), (1, "Y")],  # X_0 @ Y_1
-            [(0, "X"), (2, "Y")],  # X_0 @ Y_2
-            ([(2, "Y"), (1, "Y")], 1.0),  # X_0 @ Y_1 @ X_0 @ Y_2
-        ),
-    ],
-)
-def test_pauli_mult(p1, p2, p_ref):
-    r"""Test that _generate_qubit_operator returns the correct operator."""
-    result = _pauli_mult(p1, p2)
-
-    assert result == p_ref
-
-
-@pytest.mark.parametrize(
     ("symbols", "geometry", "h_ref"),
     [
         (
@@ -307,6 +272,41 @@ def test_generate_hamiltonian(symbols, geometry, h_ref):
     h = generate_hamiltonian(mol)(*args)
 
     assert np.allclose(h.terms[0], h_ref[0])
+
+
+@pytest.mark.parametrize(
+    ("f_operator", "q_operator"),
+    [
+        (
+            [0, 0],
+            # obtained with openfermion using jordan_wigner(FermionOperator('0^ 0', 1)),
+            # reformatted the original openfermion output: (0.5+0j) [] + (-0.5+0j) [Z0]
+            ([(0.5 + 0j), (-0.5 + 0j)], [[], [(0, "Z")]]),
+        ),
+    ],
+)
+def test_generate_qubit_operator(f_operator, q_operator):
+    r"""Test that _generate_qubit_operator returns the correct operator."""
+    result = _generate_qubit_operator(f_operator)
+
+    assert result == q_operator
+
+
+@pytest.mark.parametrize(
+    ("p1", "p2", "p_ref"),
+    [
+        (
+            [(0, "X"), (1, "Y")],  # X_0 @ Y_1
+            [(0, "X"), (2, "Y")],  # X_0 @ Y_2
+            ([(2, "Y"), (1, "Y")], 1.0),  # X_0 @ Y_1 @ X_0 @ Y_2
+        ),
+    ],
+)
+def test_pauli_mult(p1, p2, p_ref):
+    r"""Test that _generate_qubit_operator returns the correct operator."""
+    result = _pauli_mult(p1, p2)
+
+    assert result == p_ref
 
 
 @pytest.mark.parametrize(

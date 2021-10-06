@@ -184,6 +184,83 @@ def generate_fermionic_hamiltonian(mol, cutoff=1.0e-12):
 
     return fermionic_hamiltonian
 
+def generate_hamiltonian(mol, cutoff=1.0e-12):
+    r"""Return a function that computes the qubit hamiltonian.
+
+    Args:
+        mol (Molecule): the molecule object
+        cutoff (float): cutoff value for discarding the negligible electronic integrals
+
+    Returns:
+        function: function that computes the the qubit hamiltonian
+
+    **Example**
+
+    >>> symbols  = ['H', 'H']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
+    >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
+    >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
+    >>> mol = Molecule(symbols, geometry, alpha=alpha)
+    >>> args = [alpha]
+    >>> h = generate_hamiltonian(mol)(*args)
+    >>> h.terms[0]
+    tensor([ 0.29817879+0.j,  0.20813365+0.j,  0.20813365+0.j,
+             0.17860977+0.j,  0.04256036+0.j, -0.04256036+0.j,
+            -0.04256036+0.j,  0.04256036+0.j, -0.34724873+0.j,
+             0.13290293+0.j, -0.34724873+0.j,  0.17546329+0.j,
+             0.17546329+0.j,  0.13290293+0.j,  0.18470917+0.j], requires_grad=True)
+    """
+
+    def hamiltonian(*args):
+        r"""Compute the qubit hamiltonian.
+
+        Args:
+            args (array[array[float]]): initial values of the differentiable parameters
+
+        Returns:
+            Hamiltonian: the qubit Hamiltonian
+        """
+        h_ferm = generate_fermionic_hamiltonian(mol, cutoff)(*args)
+
+        for n, t in enumerate(h_ferm[1]):
+
+            if len(t) == 0:
+                h = qml.Hamiltonian([h_ferm[0][n]], [qml.Identity(0)])
+
+            elif len(t) == 2:
+                op = _generate_qubit_operator(t)
+                if op != 0:
+                    for i, o in enumerate(op[1]):
+                        if len(o) == 0:
+                            op[1][i] = qml.Identity(0)
+                        if len(o) == 1:
+                            op[1][i] = _return_pauli(o[0][1])(o[0][0])
+                        if len(o) > 1:
+                            k = qml.Identity(0)
+                            for j, o_ in enumerate(o):
+                                k = k @ _return_pauli(o_[1])(o_[0])
+                            op[1][i] = k
+                    h = h + qml.Hamiltonian(np.array(op[0]) * h_ferm[0][n], op[1])
+
+            elif len(t) == 4:
+                op = _generate_qubit_operator(t)
+                if op != 0:
+                    for i, o in enumerate(op[1]):
+                        if len(o) == 0:
+                            op[1][i] = qml.Identity(0)
+                        if len(o) == 1:
+                            op[1][i] = _return_pauli(o[0][1])(o[0][0])
+                        if len(o) > 1:
+                            k = qml.Identity(0)
+                            for j, o_ in enumerate(o):
+                                k = k @ _return_pauli(o_[1])(o_[0])
+                            op[1][i] = k
+                    h = h + qml.Hamiltonian(np.array(op[0]) * h_ferm[0][n], op[1])
+
+        return h
+
+    return hamiltonian
+
 
 def _generate_qubit_operator(op):
     r"""Convert a fermionic operator to a qubit operator.
@@ -300,85 +377,6 @@ def _pauli_mult(p1, p2):
                 del k[j]
 
     return k, c
-
-
-def generate_hamiltonian(mol, cutoff=1.0e-12):
-    r"""Return a function that computes the qubit hamiltonian.
-
-    Args:
-        mol (Molecule): the molecule object
-        cutoff (float): cutoff value for discarding the negligible electronic integrals
-
-    Returns:
-        function: function that computes the the qubit hamiltonian
-
-    **Example**
-
-    >>> symbols  = ['H', 'H']
-    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
-    >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
-    >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
-    >>> mol = Molecule(symbols, geometry, alpha=alpha)
-    >>> args = [alpha]
-    >>> h = generate_hamiltonian(mol)(*args)
-    >>> h.terms[0]
-    tensor([ 0.29817879+0.j,  0.20813365+0.j,  0.20813365+0.j,
-             0.17860977+0.j,  0.04256036+0.j, -0.04256036+0.j,
-            -0.04256036+0.j,  0.04256036+0.j, -0.34724873+0.j,
-             0.13290293+0.j, -0.34724873+0.j,  0.17546329+0.j,
-             0.17546329+0.j,  0.13290293+0.j,  0.18470917+0.j], requires_grad=True)
-    """
-
-    def hamiltonian(*args):
-        r"""Compute the qubit hamiltonian.
-
-        Args:
-            args (array[array[float]]): initial values of the differentiable parameters
-
-        Returns:
-            Hamiltonian: the qubit Hamiltonian
-        """
-        h_ferm = generate_fermionic_hamiltonian(mol, cutoff)(*args)
-
-        for n, t in enumerate(h_ferm[1]):
-
-            if len(t) == 0:
-                h = qml.Hamiltonian([h_ferm[0][n]], [qml.Identity(0)])
-
-            elif len(t) == 2:
-                op = _generate_qubit_operator(t)
-                if op != 0:
-                    for i, o in enumerate(op[1]):
-                        if len(o) == 0:
-                            op[1][i] = qml.Identity(0)
-                        if len(o) == 1:
-                            op[1][i] = _return_pauli(o[0][1])(o[0][0])
-                        if len(o) > 1:
-                            k = qml.Identity(0)
-                            for j, o_ in enumerate(o):
-                                k = k @ _return_pauli(o_[1])(o_[0])
-                            op[1][i] = k
-                    h = h + qml.Hamiltonian(np.array(op[0]) * h_ferm[0][n], op[1])
-
-            elif len(t) == 4:
-                op = _generate_qubit_operator(t)
-                if op != 0:
-                    for i, o in enumerate(op[1]):
-                        if len(o) == 0:
-                            op[1][i] = qml.Identity(0)
-                        if len(o) == 1:
-                            op[1][i] = _return_pauli(o[0][1])(o[0][0])
-                        if len(o) > 1:
-                            k = qml.Identity(0)
-                            for j, o_ in enumerate(o):
-                                k = k @ _return_pauli(o_[1])(o_[0])
-                            op[1][i] = k
-                    h = h + qml.Hamiltonian(np.array(op[0]) * h_ferm[0][n], op[1])
-
-        return h
-
-    return hamiltonian
-
 
 def _return_pauli(p):
     r"""Return the PennyLane Pauli operator.
