@@ -12,12 +12,68 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for :mod:`fourier` utils functions.
+Tests for the Fourier module helper functions.
 """
-from pennylane.fourier.utils import format_nvec
+import pytest
+import numpy as np
+import pennylane as qml
+from pennylane.fourier.utils import (
+    format_nvec,
+    get_spectrum,
+    join_spectra,
+)
 
 
-def test_format_nvec():
-    """Test the format_nvec function."""
-    assert format_nvec(1) == str(1)
-    assert format_nvec([1, -1]) == " 1 -1"
+@pytest.mark.parametrize(
+    "nvec, exp",
+    [(1, "1"), (-20, "-20"), ((23,), " 23"), ((-1,), "-1"), ((2, -1, 42), " 2 -1  42")],
+)
+def test_format_nvec(nvec, exp):
+    """Test formatting of a tuple of integers into a nice string."""
+    assert format_nvec(nvec) == exp
+
+
+@pytest.mark.parametrize(
+    "spectrum1, spectrum2, expected",
+    [
+        ({0, 1}, {0, 1}, {0, 1, 2}),
+        ({0, 3}, {0, 5}, {0, 2, 3, 5, 8}),
+        ({0, 1, 2}, {0, 1}, {0, 1, 2, 3}),
+        ({0, 0.5}, {0, 1}, {0, 0.5, 1.0, 1.5}),
+        ({0, 0.5}, {0}, {0, 0.5}),
+        ({0}, {0, 0.5}, {0, 0.5}),
+    ],
+)
+def test_join_spectra(spectrum1, spectrum2, expected):
+    """Test that spectra are joined correctly."""
+    joined = join_spectra(spectrum1, spectrum2)
+    assert joined == expected
+
+
+@pytest.mark.parametrize(
+    "op, expected",
+    [
+        (qml.RX(0.1, wires=0), [0, 1]),  # generator is a class
+        (qml.RY(0.1, wires=0), [0, 1]),  # generator is a class
+        (qml.RZ(0.1, wires=0), [0, 1]),  # generator is a class
+        (qml.PhaseShift(0.5, wires=0), [0, 1]),  # generator is an array
+        (qml.CRX(0.2, wires=[0, 1]), [0, 0.5, 1]),  # generator is an array
+        (qml.ControlledPhaseShift(0.5, wires=[0, 1]), [0, 1]),  # generator is an array
+    ],
+)
+def test_get_spectrum(op, expected):
+    """Test that the spectrum is correctly extracted from an operator."""
+    spec = get_spectrum(op, decimals=10)
+    assert np.allclose(sorted(spec), expected, atol=1e-6, rtol=0)
+
+
+def test_get_spectrum_complains_no_generator():
+    """Test that an error is raised if the operator has no generator defined."""
+
+    # Observables have no generator attribute
+    with pytest.raises(ValueError, match="Generator of operation"):
+        get_spectrum(qml.P(wires=0), decimals=10)
+
+    # CNOT is an operation where generator is an abstract property
+    with pytest.raises(ValueError, match="Generator of operation"):
+        get_spectrum(qml.CNOT(wires=[0, 1]), decimals=10)
