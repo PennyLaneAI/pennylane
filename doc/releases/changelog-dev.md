@@ -4,6 +4,70 @@
 
 <h3>New features since last release</h3>
 
+* The new `qml.fourier.qnode_spectrum` function extends the former
+  `qml.fourier.spectrum` function
+  and takes classical processing of QNode arguments into account.
+  The frequencies are computed per (requested) QNode argument instead
+  of per gate `id`. The gate `id`s are ignored.
+  [(#1681)](https://github.com/PennyLaneAI/pennylane/pull/1681)
+
+  Consider the following example, which uses non-trainable inputs `x`, `y` and `z`
+  as well as trainable parameters `w` as arguments to the QNode.
+
+  ```python
+  import pennylane as qml
+  import numpy as np
+
+  n_qubits = 3
+  dev = qml.device("default.qubit", wires=n_qubits)
+
+  @qml.qnode(dev)
+  def circuit(x, y, z, w):
+      for i in range(n_qubits):
+          qml.RX(0.5*x[i], wires=i)
+          qml.Rot(w[0,i,0], w[0,i,1], w[0,i,2], wires=i)
+          qml.RY(2.3*y[i], wires=i)
+          qml.Rot(w[1,i,0], w[1,i,1], w[1,i,2], wires=i)
+          qml.RX(z, wires=i)
+      return qml.expval(qml.PauliZ(wires=0))
+
+  x = np.array([1., 2., 3.])
+  y = np.array([0.1, 0.3, 0.5])
+  z = -1.8
+  w = np.random.random((2, n_qubits, 3))
+  ```
+
+  This circuit looks as follows:
+
+  ```pycon
+  >>> print(qml.draw(circuit)(x, y, z, w))
+  0: ──RX(0.5)──Rot(0.598, 0.949, 0.346)───RY(0.23)──Rot(0.693, 0.0738, 0.246)──RX(-1.8)──┤ ⟨Z⟩
+  1: ──RX(1)────Rot(0.0711, 0.701, 0.445)──RY(0.69)──Rot(0.32, 0.0482, 0.437)───RX(-1.8)──┤
+  2: ──RX(1.5)──Rot(0.401, 0.0795, 0.731)──RY(1.15)──Rot(0.756, 0.38, 0.38)─────RX(-1.8)──┤
+  ```
+
+  Applying the `qml.fourier.qnode_spectrum` function to the circuit for the non-trainable
+  parameters, we obtain:
+
+  ```pycon
+  >>> spec = qml.fourier.qnode_spectrum(circuit, encoding_args={"x", "y", "z"})(x, y, z, w)
+  >>> for inp, freqs in spec.items():
+  ...     print(f"{inp}: {freqs}")
+  "x": {(0,): [-0.5, 0.0, 0.5], (1,): [-0.5, 0.0, 0.5], (2,): [-0.5, 0.0, 0.5]}
+  "y": {(0,): [-2.3, 0.0, 2.3], (1,): [-2.3, 0.0, 2.3], (2,): [-2.3, 0.0, 2.3]}
+  "z": {(): [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0]}
+  ```
+
+  We can see that all three parameters in the QNode arguments ``x`` and ``y``
+  contribute the spectrum of a Pauli rotation ``[-1.0, 0.0, 1.0]``, rescaled with the
+  prefactor of the respective parameter in the circuit.
+  The three ``RX`` rotations using the parameter ``z`` accumulate, yielding a more
+  complex frequency spectrum.
+
+  For details on how to control for which parameters the spectrum is computed,
+  a comparison to `qml.fourier.circuit_spectrum`, and other usage details, please see the
+  [fourier.qnode_spectrum docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.fourier.qnode_spectrum.html).
+
 * There is a new utility function `qml.math.is_independent` that checks whether
   a callable is independent of its arguments.
   [(#1700)](https://github.com/PennyLaneAI/pennylane/pull/1700)
@@ -21,7 +85,6 @@
   results, in particular non-smooth functions may be problematic.
   For details, please refer to the 
   [is_indpendent docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.math.is_independent.html).
-
 
 * Support for differentiable execution of batches of circuits has been
   extended to the JAX interface for scalar functions, via the beta
@@ -361,6 +424,12 @@
   [(#1638)](https://github.com/PennyLaneAI/pennylane/pull/1638)
 
 <h3>Deprecations</h3>
+
+* The `qml.fourier.spectrum` function has been renamed to `qml.fourier.circuit_spectrum`,
+  in order to clearly separate the new `qnode_spectrum` function from this one.
+  `qml.fourier.spectrum` is now an alias for `circuit_spectrum` but is flagged for
+  deprecation and will be removed soon.
+  [(#1681)](https://github.com/PennyLaneAI/pennylane/pull/1681)
 
 * The `init` module, which contains functions to generate random parameter tensors for 
   templates, is flagged for deprecation and will be removed in the next release cycle. 
