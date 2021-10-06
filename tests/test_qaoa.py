@@ -119,7 +119,10 @@ class TestMixerHamiltonians:
         mixer_hamiltonian = qaoa.x_mixer(wires)
 
         # check that all observables commute
-        assert all(qml.grouping.is_commuting(o, mixer_hamiltonian.ops[0]) for o in mixer_hamiltonian.ops[1:])
+        assert all(
+            qml.grouping.is_commuting(o, mixer_hamiltonian.ops[0])
+            for o in mixer_hamiltonian.ops[1:]
+        )
         # check that the 1-group grouping information was set
         assert mixer_hamiltonian.grouped_indices is not None
         assert mixer_hamiltonian.grouped_indices == [[0, 1, 2, 3]]
