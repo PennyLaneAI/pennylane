@@ -304,8 +304,8 @@ def test_generalize_prob_not_hermitian():
 
 
 @pytest.mark.parametrize("hermitian", [1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])])
-def test_prob_generalize_initial_state(hermitian):
-    """Test that we can only give hermitian matrix as input"""
+def test_prob_wires_and_hermitian(hermitian):
+    """Test that we can cannot give simultaneously wires and a hermitian."""
 
     dev = qml.device("default.qubit", wires=2)
 
