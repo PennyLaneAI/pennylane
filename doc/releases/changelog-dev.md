@@ -4,19 +4,12 @@
 
 <h3>New features since last release</h3>
 
-* The `qml.fourier.qnode_spectrum` function extends the former `qml.fourier.spectrum` function
+* The new `qml.fourier.qnode_spectrum` function extends the former
+  `qml.fourier.spectrum` function
   and takes classical processing of QNode arguments into account.
   The frequencies are computed per (requested) QNode argument instead
   of per gate `id`. The gate `id`s are ignored.
   [(#1681)](https://github.com/PennyLaneAI/pennylane/pull/1681)
-
-  The new function `qml.fourier.qnode_spectrum` behaves differently in three ways:
-
-  - It takes different arguments,
-
-  - the returned dictionary has a different structure, and
-
-  - as classical preprocessing is taken into account, the returned frequency spectra differ.
 
   Consider the following example, which uses non-trainable inputs `x`, `y` and `z`
   as well as trainable parameters `w` as arguments to the QNode.
@@ -71,8 +64,8 @@
   The three ``RX`` rotations using the parameter ``z`` accumulate, yielding a more
   complex frequency spectrum.
 
-  For details on how to control for which parameters the spectrum is computed and other
-  usage details, please see the
+  For details on how to control for which parameters the spectrum is computed,
+  a comparison to `qml.fourier.circuit_spectrum`, and other usage details, please see the
   [fourier.qnode_spectrum docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.fourier.qnode_spectrum.html).
 
 * There is a new utility function `qml.math.is_independent` that checks whether
