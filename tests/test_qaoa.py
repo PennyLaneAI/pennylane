@@ -124,8 +124,8 @@ class TestMixerHamiltonians:
             for o in mixer_hamiltonian.ops[1:]
         )
         # check that the 1-group grouping information was set
-        assert mixer_hamiltonian.grouped_indices is not None
-        assert mixer_hamiltonian.grouped_indices == [[0, 1, 2, 3]]
+        assert mixer_hamiltonian.grouping_indices is not None
+        assert mixer_hamiltonian.grouping_indices == [[0, 1, 2, 3]]
 
     def test_xy_mixer_type_error(self):
         """Tests that the XY mixer throws the correct error"""
@@ -728,8 +728,8 @@ class TestCostHamiltonians:
         # check that all observables commute
         assert all(qml.grouping.is_commuting(o, cost_h.ops[0]) for o in cost_h.ops[1:])
         # check that the 1-group grouping information was set
-        assert cost_h.grouped_indices is not None
-        assert cost_h.grouped_indices == [[0, 1, 2, 3]]
+        assert cost_h.grouping_indices is not None
+        assert cost_h.grouping_indices == [[0, 1, 2, 3]]
 
     @pytest.mark.parametrize(("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian"), MIS)
     def test_mis_output(self, graph, constrained, cost_hamiltonian, mixer_hamiltonian):
@@ -749,8 +749,8 @@ class TestCostHamiltonians:
         # check that all observables commute
         assert all(qml.grouping.is_commuting(o, cost_h.ops[0]) for o in cost_h.ops[1:])
         # check that the 1-group grouping information was set
-        assert cost_h.grouped_indices is not None
-        assert cost_h.grouped_indices == [[0, 1, 2, 3]]
+        assert cost_h.grouping_indices is not None
+        assert cost_h.grouping_indices == [[0, 1, 2, 3]]
 
     @pytest.mark.parametrize(("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian"), MVC)
     def test_mvc_output(self, graph, constrained, cost_hamiltonian, mixer_hamiltonian):
@@ -770,8 +770,8 @@ class TestCostHamiltonians:
         # check that all observables commute
         assert all(qml.grouping.is_commuting(o, cost_h.ops[0]) for o in cost_h.ops[1:])
         # check that the 1-group grouping information was set
-        assert cost_h.grouped_indices is not None
-        assert cost_h.grouped_indices == [[0, 1, 2, 3]]
+        assert cost_h.grouping_indices is not None
+        assert cost_h.grouping_indices == [[0, 1, 2, 3]]
 
     @pytest.mark.parametrize(
         ("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian"), MAXCLIQUE
@@ -793,8 +793,8 @@ class TestCostHamiltonians:
         # check that all observables commute
         assert all(qml.grouping.is_commuting(o, cost_h.ops[0]) for o in cost_h.ops[1:])
         # check that the 1-group grouping information was set
-        assert cost_h.grouped_indices is not None
-        assert cost_h.grouped_indices == [[0, 1, 2, 3]]
+        assert cost_h.grouping_indices is not None
+        assert cost_h.grouping_indices == [[0, 1, 2, 3]]
 
     @pytest.mark.parametrize(
         ("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian", "mapping"), MWC
@@ -819,8 +819,8 @@ class TestCostHamiltonians:
         # check that all observables commute
         assert all(qml.grouping.is_commuting(o, cost_h.ops[0]) for o in cost_h.ops[1:])
         # check that the 1-group grouping information was set
-        assert cost_h.grouped_indices is not None
-        assert cost_h.grouped_indices == [[0, 1, 2, 3]]
+        assert cost_h.grouping_indices is not None
+        assert cost_h.grouping_indices == [[0, 1, 2, 3]]
 
 
 class TestUtils:
