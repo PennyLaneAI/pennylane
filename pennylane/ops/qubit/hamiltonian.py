@@ -18,6 +18,7 @@ arithmetic operations on their input states.
 # pylint: disable=too-many-arguments
 import itertools
 from copy import copy
+from collections import Iterable
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -287,6 +288,16 @@ class Hamiltonian(Observable):
             value (list[list[int]]): List of lists of indexes of the observables in ``self.ops``. Each sublist
                 represents a group of commuting observables.
         """
+
+        if (
+            not isinstance(value, Iterable)
+            or any(not isinstance(sublist, Iterable) for sublist in value)
+            or any(i not in range(len(self.ops)) for i in [i for sl in value for i in sl])
+        ):
+            raise ValueError(
+                f"The grouped index value needs to be a list of lists of integers between 0 and the "
+                "number of observables in the Hamiltonian; got {value}"
+            )
         self._grouping_indices = value
 
     def compute_grouping(self, grouping_type="qwc", method="rlf"):

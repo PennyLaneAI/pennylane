@@ -1111,6 +1111,16 @@ class TestGrouping:
 
         assert H.grouping_indices == [[0, 1], [2]]
 
+    def test_set_grouping_error(self):
+        """Test that grouping indices are validated."""
+        H = qml.Hamiltonian([1.0, 2.0, 3.0], [qml.PauliX(0), qml.PauliX(1), qml.PauliZ(0)])
+
+        with pytest.raises(ValueError, match="The grouped index value"):
+            H.grouping_indices = [[3, 1], [2]]
+
+        with pytest.raises(ValueError, match="The grouped index value"):
+            H.grouping_indices = "a"
+
     def test_grouping_for_non_groupable_hamiltonians(self):
         """Test that grouping is computed correctly, even if no observables commute"""
         a = qml.PauliX(0)
