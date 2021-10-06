@@ -257,6 +257,8 @@ def maxcut(graph):
         [-0.5 for e in graph.edges], [qml.Identity(e[0]) @ qml.Identity(e[1]) for e in graph.edges]
     )
     H = edge_driver(graph, ["10", "01"]) + identity_h
+    # store the valuable information that all observables are in one commuting group
+    H.grouping_indices = [list(range(len(H.ops)))]
     return (H, qaoa.x_mixer(graph.nodes))
 
 
@@ -325,6 +327,9 @@ def max_independent_set(graph, constrained=True):
 
     cost_h = 3 * edge_driver(graph, ["10", "01", "00"]) + bit_driver(graph.nodes, 1)
     mixer_h = qaoa.x_mixer(graph.nodes)
+
+    # store the valuable information that all observables are in one commuting group
+    cost_h.grouping_indices = [list(range(len(cost_h.ops)))]
 
     return (cost_h, mixer_h)
 
@@ -396,6 +401,9 @@ def min_vertex_cover(graph, constrained=True):
 
     cost_h = 3 * edge_driver(graph, ["11", "10", "01"]) + bit_driver(graph.nodes, 0)
     mixer_h = qaoa.x_mixer(graph.nodes)
+
+    # store the valuable information that all observables are in one commuting group
+    cost_h.grouping_indices = [list(range(len(cost_h.ops)))]
 
     return (cost_h, mixer_h)
 
@@ -469,6 +477,9 @@ def max_clique(graph, constrained=True):
 
     cost_h = 3 * edge_driver(nx.complement(graph), ["10", "01", "00"]) + bit_driver(graph.nodes, 1)
     mixer_h = qaoa.x_mixer(graph.nodes)
+
+    # store the valuable information that all observables are in one commuting group
+    cost_h.grouping_indices = [list(range(len(cost_h.ops)))]
 
     return (cost_h, mixer_h)
 

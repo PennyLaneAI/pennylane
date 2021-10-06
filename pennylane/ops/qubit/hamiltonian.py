@@ -261,6 +261,34 @@ class Hamiltonian(Observable):
         """
         return self._grouping_indices
 
+    @grouping_indices.setter
+    def grouping_indices(self, value):
+        """Set the grouping indices, if known without explicit computation, or if
+        computation was done externally. The groups are not verified.
+
+        **Example:**
+
+        Examples of valid groupings for the Hamiltonian
+
+        >>> H = qml.Hamiltonian([qml.PauliX('a'), qml.PauliX('b'), qml.PauliY('b')])
+
+        are
+
+        >>> H.grouping_indices = [[0, 1], [2]]
+
+        or
+
+        >>> H.grouping_indices = [[0, 2], [1]]
+
+        since both ``qml.PauliX('a'), qml.PauliX('b')`` and ``qml.PauliX('a'), qml.PauliY('b')`` commute.
+
+
+        Args:
+            value (list[list[int]]): List of lists of indexes of the observables in ``self.ops``. Each sublist
+                represents a group of commuting observables.
+        """
+        self._grouping_indices = value
+
     def compute_grouping(self, grouping_type="qwc", method="rlf"):
         """
         Compute groups of indices corresponding to commuting observables of this

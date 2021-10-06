@@ -1104,6 +1104,18 @@ class TestGrouping:
         H.compute_grouping()
         assert H.grouping_indices == [[0, 1], [2]]
 
+    def test_set_grouping(self):
+        """Test that we can set grouping indices."""
+        a = qml.PauliX(0)
+        b = qml.PauliX(1)
+        c = qml.PauliZ(0)
+        obs = [a, b, c]
+        coeffs = [1.0, 2.0, 3.0]
+
+        H = qml.Hamiltonian(coeffs, obs)
+        H.grouping_indices = [[0, 1], [2]]
+        assert H.grouping_indices == [[0, 1], [2]]
+
     def test_grouping_for_non_groupable_hamiltonians(self):
         """Test that grouping is computed correctly, even if no observables commute"""
         a = qml.PauliX(0)

@@ -112,6 +112,18 @@ class TestMixerHamiltonians:
         assert mixer_ops == ["PauliX", "PauliX", "PauliX", "PauliX"]
         assert mixer_wires == [0, 1, 2, 3]
 
+    def test_x_mixer_grouping(self):
+        """Tests that the grouping information is set and correct"""
+
+        wires = range(4)
+        mixer_hamiltonian = qaoa.x_mixer(wires)
+
+        # check that all observables commute
+        assert all(qml.grouping.is_commuting(o, mixer_hamiltonian.ops[0]) for o in mixer_hamiltonian.ops[1:])
+        # check that the 1-group grouping information was set
+        assert mixer_hamiltonian.grouped_indices is not None
+        assert mixer_hamiltonian.grouped_indices == [[0, 1, 2, 3]]
+
     def test_xy_mixer_type_error(self):
         """Tests that the XY mixer throws the correct error"""
 
@@ -704,6 +716,18 @@ class TestCostHamiltonians:
         assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
         assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
 
+    def test_maxcut_grouping(self):
+        """Tests that the grouping information is set and correct"""
+
+        graph = MAXCUT[0][0]
+        cost_h, mixer_h = qaoa.maxcut(graph)
+
+        # check that all observables commute
+        assert all(qml.grouping.is_commuting(o, cost_h.ops[0]) for o in cost_h.ops[1:])
+        # check that the 1-group grouping information was set
+        assert cost_h.grouped_indices is not None
+        assert cost_h.grouped_indices == [[0, 1, 2, 3]]
+
     @pytest.mark.parametrize(("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian"), MIS)
     def test_mis_output(self, graph, constrained, cost_hamiltonian, mixer_hamiltonian):
         """Tests that the output of the Max Indepenent Set method is correct"""
@@ -713,6 +737,18 @@ class TestCostHamiltonians:
         assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
         assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
 
+    def test_mis_grouping(self):
+        """Tests that the grouping information is set and correct"""
+
+        graph = MIS[0][0]
+        cost_h, mixer_h = qaoa.max_independent_set(graph)
+
+        # check that all observables commute
+        assert all(qml.grouping.is_commuting(o, cost_h.ops[0]) for o in cost_h.ops[1:])
+        # check that the 1-group grouping information was set
+        assert cost_h.grouped_indices is not None
+        assert cost_h.grouped_indices == [[0, 1, 2, 3]]
+
     @pytest.mark.parametrize(("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian"), MVC)
     def test_mvc_output(self, graph, constrained, cost_hamiltonian, mixer_hamiltonian):
         """Tests that the output of the Min Vertex Cover method is correct"""
@@ -721,6 +757,18 @@ class TestCostHamiltonians:
 
         assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
         assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
+
+    def test_mvc_grouping(self):
+        """Tests that the grouping information is set and correct"""
+
+        graph = MVC[0][0]
+        cost_h, mixer_h = qaoa.min_vertex_cover(graph)
+
+        # check that all observables commute
+        assert all(qml.grouping.is_commuting(o, cost_h.ops[0]) for o in cost_h.ops[1:])
+        # check that the 1-group grouping information was set
+        assert cost_h.grouped_indices is not None
+        assert cost_h.grouped_indices == [[0, 1, 2, 3]]
 
     @pytest.mark.parametrize(
         ("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian"), MAXCLIQUE
@@ -732,6 +780,18 @@ class TestCostHamiltonians:
 
         assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
         assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
+
+    def test_max_clique_grouping(self):
+        """Tests that the grouping information is set and correct"""
+
+        graph = MAXCLIQUE[0][0]
+        cost_h, mixer_h = qaoa.max_clique(graph)
+
+        # check that all observables commute
+        assert all(qml.grouping.is_commuting(o, cost_h.ops[0]) for o in cost_h.ops[1:])
+        # check that the 1-group grouping information was set
+        assert cost_h.grouped_indices is not None
+        assert cost_h.grouped_indices == [[0, 1, 2, 3]]
 
     @pytest.mark.parametrize(
         ("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian", "mapping"), MWC
@@ -746,6 +806,18 @@ class TestCostHamiltonians:
         assert mapping == m
         assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
         assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
+
+    def test_max_weight_cycle_grouping(self):
+        """Tests that the grouping information is set and correct"""
+
+        graph = MWC[0][0]
+        cost_h, mixer_h = qaoa.max_weight_cycle(graph)
+
+        # check that all observables commute
+        assert all(qml.grouping.is_commuting(o, cost_h.ops[0]) for o in cost_h.ops[1:])
+        # check that the 1-group grouping information was set
+        assert cost_h.grouped_indices is not None
+        assert cost_h.grouped_indices == [[0, 1, 2, 3]]
 
 
 class TestUtils:
