@@ -184,6 +184,7 @@ def generate_fermionic_hamiltonian(mol, cutoff=1.0e-12):
 
     return fermionic_hamiltonian
 
+
 def generate_hamiltonian(mol, cutoff=1.0e-12):
     r"""Return a function that computes the qubit hamiltonian.
 
@@ -377,6 +378,7 @@ def _pauli_mult(p1, p2):
                 del k[j]
 
     return k, c
+
 
 def _return_pauli(p):
     r"""Return the PennyLane Pauli operator.
