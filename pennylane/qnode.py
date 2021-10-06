@@ -672,7 +672,6 @@ class QNode:
 
         # Under certain conditions, split tape into multiple tapes and recombine them.
         # Else just execute the tape, and let the device take care of things.
-        # TODO (future squad): This logic should be moved away from the qnode, preferably to the device.
         hamiltonian_in_obs = "Hamiltonian" in [obs.name for obs in self.qtape.observables]
         # if the device does not support Hamiltonians, we split them
         supports_hamiltonian = self.device.supports_observable("Hamiltonian")
