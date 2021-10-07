@@ -396,10 +396,8 @@ class QNode:
             # device is analytic and has child devices that support backpropagation natively
 
             if interface in backprop_devices:
-                # TODO: need a better way of passing existing device init
-                # options to a new device? Note: some device init options may
-                # be circuit dependent (e.g., GPU usage based on the gate
-                # parameters for Torch). See update_device_options method.
+                # TODO: need a better way of passing existing device init options
+                # to a new device?
                 device = qml.device(
                     backprop_devices[interface],
                     wires=device.wires,
