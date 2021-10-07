@@ -468,10 +468,12 @@
 
 * Adds a link to https://pennylane.ai/qml/demonstrations.html in the navbar.
   [(#1624)](https://github.com/PennyLaneAI/pennylane/pull/1624)
+ 
+* Corrects the docstring of `ExpvalCost` by adding `wires` to the signature of the `ansatz` argument. [(#1715)](https://github.com/PennyLaneAI/pennylane/pull/1715)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad, Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee, Romain Moyard,
-Carrie-Anne Rubidge, Maria Schuld, Ingrid Strandberg, Antal Száva, David Wierichs.
+Carrie-Anne Rubidge, Maria Schuld, Ingrid Strandberg, Antal Száva, Cody Wang, David Wierichs.
