@@ -176,7 +176,7 @@ class DefaultQubitTorch(DefaultQubit):
     _norm = staticmethod(torch.norm)
     _flatten = staticmethod(torch.flatten)
 
-    def __init__(self, wires, *, shots=None, analytic=None, torch_device=None):
+    def __init__(self, wires, *, shots=None, analytic=None):
 
         self._torch_device = "cpu"
 

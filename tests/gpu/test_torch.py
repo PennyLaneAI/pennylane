@@ -16,118 +16,115 @@ import pennylane as qml
 from pennylane import numpy as np
 
 torch = pytest.importorskip("torch")
-if not torch.cuda.is_available():
-    pytest.skip("cuda not available")
 
 
-def test_device_to_cuda():
-    """Checks device executes with cuda is input data is cuda"""
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="no cuda support")
+class TestTorchDevice:
+    def test_device_to_cuda(self):
+        """Checks device executes with cuda is input data is cuda"""
 
-    dev = qml.device("default.qubit.torch", wires=1)
+        dev = qml.device("default.qubit.torch", wires=1)
 
-    x = torch.tensor(0.1, requires_grad=True, device=torch.device("cuda"))
+        x = torch.tensor(0.1, requires_grad=True, device=torch.device("cuda"))
 
-    with qml.tape.QuantumTape() as tape:
-        qml.RX(x, wires=0)
-        qml.expval(qml.PauliX(0))
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(x, wires=0)
+            qml.expval(qml.PauliX(0))
 
-    res = dev.execute(tape)
+        res = dev.execute(tape)
 
-    assert res.is_cuda
-    assert dev._torch_device == "cuda"
+        assert res.is_cuda
+        assert dev._torch_device == "cuda"
 
-    res.backward()
-    assert x.grad.is_cuda
+        res.backward()
+        assert x.grad.is_cuda
+
+    def test_mixed_devices(self):
+        """Asserts works with both cuda and cpu input data"""
+
+        dev = qml.device("default.qubit.torch", wires=1)
+
+        x = torch.tensor(0.1, requires_grad=True, device=torch.device("cuda"))
+        y = torch.tensor(0.2, requires_grad=True, device=torch.device("cpu"))
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=0)
+            qml.expval(qml.PauliX(0))
+
+        res = dev.execute(tape)
+
+        assert res.is_cuda
+        assert dev._torch_device == "cuda"
+
+        res.backward()
+        assert x.grad.is_cuda
+        # check that this works
+        ygrad = y.grad
+
+    def test_matrix_input(self):
+        """Test goes to GPU for matrix valued inputs."""
+
+        dev = qml.device("default.qubit.torch", wires=1)
+
+        U = torch.eye(2, requires_grad=False, device=torch.device("cuda"))
+
+        with qml.tape.QuantumTape() as tape:
+            qml.QubitUnitary(U, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        res = dev.execute(tape)
+        assert res.is_cuda
+        assert dev._torch_device == "cuda"
+
+    def test_resets(self):
+        """Asserts reverts to cpu after execution on gpu"""
+
+        dev = qml.device("default.qubit.torch", wires=1)
+
+        x = torch.tensor(0.1, requires_grad=True, device=torch.device("cuda"))
+        y = torch.tensor(0.2, requires_grad=True, device=torch.device("cpu"))
+
+        with qml.tape.QuantumTape() as tape1:
+            qml.RX(x, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        res1 = dev.execute(tape1)
+        assert dev._torch_device == "cuda"
+        assert res1.is_cuda
+
+        with qml.tape.QuantumTape() as tape2:
+            qml.RY(y, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        res2 = dev.execute(tape2)
+        assert dev._torch_device == "cpu"
+        assert not res2.is_cuda
+
+    def test_integration(self):
+        """Test cuda supported when device created in qnode creation."""
+
+        dev = qml.device("default.qubit", wires=1)
+
+        x = torch.tensor(0.1, requires_grad=True, device=torch.device("cuda"))
+        y = torch.tensor(0.2, requires_grad=True)
+
+        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        def circ(x, y):
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        res = circ(x, y)
+        assert res.is_cuda
+
+        assert circ.device._torch_device == "cuda"
+        res.backward()
+        assert x.grad.is_cuda
 
 
-def test_mixed_devices():
-    """Asserts works with both cuda and cpu input data"""
-
-    dev = qml.device("default.qubit.torch", wires=1)
-
-    x = torch.tensor(0.1, requires_grad=True, device=torch.device("cuda"))
-    y = torch.tensor(0.2, requires_grad=True, device=torch.device("cpu"))
-
-    with qml.tape.QuantumTape() as tape:
-        qml.RX(x, wires=0)
-        qml.RY(y, wires=0)
-        qml.expval(qml.PauliX(0))
-
-    res = dev.execute(tape)
-
-    assert res.is_cuda
-    assert dev._torch_device == "cuda"
-
-    res.backward()
-    assert x.grad.is_cuda
-    # check that this works
-    ygrad = y.grad
-
-
-def test_matrix_input():
-    """Test goes to GPU for matrix valued inputs."""
-
-    dev = qml.device("default.qubit.torch", wires=1)
-
-    U = torch.eye(2, requires_grad=False, device=torch.device("cuda"))
-
-    with qml.tape.QuantumTape() as tape:
-        qml.QubitUnitary(U, wires=0)
-        qml.expval(qml.PauliZ(0))
-
-    res = dev.execute(tape)
-    assert res.is_cuda
-    assert dev._torch_device == "cuda"
-
-
-def test_resets():
-    """Asserts reverts to cpu after execution on gpu"""
-
-    dev = qml.device("default.qubit.torch", wires=1)
-
-    x = torch.tensor(0.1, requires_grad=True, device=torch.device("cuda"))
-    y = torch.tensor(0.2, requires_grad=True, device=torch.device("cpu"))
-
-    with qml.tape.QuantumTape() as tape1:
-        qml.RX(x, wires=0)
-        qml.expval(qml.PauliZ(0))
-
-    res1 = dev.execute(tape1)
-    assert dev._torch_device == "cuda"
-    assert res1.is_cuda
-
-    with qml.tape.QuantumTape() as tape2:
-        qml.RY(y, wires=0)
-        qml.expval(qml.PauliZ(0))
-
-    res2 = dev.execute(tape2)
-    assert dev._torch_device == "cpu"
-    assert not res2.is_cuda
-
-
-def test_integration():
-    """Test cuda supported when device created in qnode creation."""
-
-    dev = qml.device("default.qubit", wires=1)
-
-    x = torch.tensor(0.1, requires_grad=True, device=torch.device("cuda"))
-    y = torch.tensor(0.2, requires_grad=True)
-
-    @qml.qnode(dev, interface="torch", diff_method="backprop")
-    def circ(x, y):
-        qml.RX(x, wires=0)
-        qml.RY(y, wires=0)
-        return qml.expval(qml.PauliZ(0))
-
-    res = circ(x, y)
-    assert res.is_cuda
-
-    assert circ.device._torch_device == "cuda"
-    res.backward()
-    assert x.grad.is_cuda
-
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="no cuda support")
 class TestqnnTorchLayer:
-
     def test_torch_device_cuda_if_tensors_on_cuda(self):
         """Test that if any tensor passed to operators is on the GPU then CUDA
         is set internally as a device option for 'default.qubit.torch'."""
