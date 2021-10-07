@@ -16,7 +16,11 @@ This subpackage provides the functionality to perform differentiable Hartree-Foc
 """
 from .basis_data import *
 from .basis_set import *
-from .hamiltonian import generate_electron_integrals
+from .hamiltonian import (
+    generate_electron_integrals,
+    generate_fermionic_hamiltonian,
+    generate_hamiltonian,
+)
 from .hartree_fock import generate_scf, hf_energy, nuclear_energy
 from .integrals import (
     contracted_norm,
