@@ -451,6 +451,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixed a bug of the default circuit drawer where having more measurements
+  compared to the number of measurements on any wire raised a `KeyError`.
+  [(#1702)](https://github.com/PennyLaneAI/pennylane/pull/1702)
+
 * Fix a bug where it was not possible to use `jax.jit` on a `QNode` when using `QubitStateVector`.
   [(#1683)](https://github.com/PennyLaneAI/pennylane/pull/1683)
 
@@ -472,10 +476,13 @@
 
 * Adds a link to https://pennylane.ai/qml/demonstrations.html in the navbar.
   [(#1624)](https://github.com/PennyLaneAI/pennylane/pull/1624)
+ 
+* Corrects the docstring of `ExpvalCost` by adding `wires` to the signature of the `ansatz` argument. [(#1715)](https://github.com/PennyLaneAI/pennylane/pull/1715)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad, Akash Narayanan B, Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee,
-Romain Moyard, Carrie-Anne Rubidge, Maria Schuld, Ingrid Strandberg, Antal Száva, David Wierichs.
+Romain Moyard, Carrie-Anne Rubidge, Maria Schuld, Ingrid Strandberg, Antal Száva, Cody Wang,
+David Wierichs.

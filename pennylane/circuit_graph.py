@@ -507,7 +507,7 @@ class CircuitGraph:
 
         if self.max_simultaneous_measurements == 1:
 
-            # There is a single measurement
+            # There is a single measurement for every wire
             for wire in sorted(self._grid):
                 observables[wire] = list(
                     filter(
@@ -522,12 +522,16 @@ class CircuitGraph:
                     observables[wire] = [None]
         else:
 
-            # There are multiple measurements
-            for wire in sorted(self._grid):
-                mp_map = dict(zip(self.observables, range(self.max_simultaneous_measurements)))
+            # There are wire(s) with multiple measurements.
+            # We are creating a separate "visual block" at the end of the
+            # circuit for each observable and mapping observables with block
+            # indices.
+            num_observables = len(self.observables)
+            mp_map = dict(zip(self.observables, range(num_observables)))
 
+            for wire in sorted(self._grid):
                 # Initialize to None everywhere
-                observables[wire] = [None] * self.max_simultaneous_measurements
+                observables[wire] = [None] * num_observables
 
                 for op in self._grid[wire]:
                     if _is_returned_observable(op):
