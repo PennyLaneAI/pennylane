@@ -262,7 +262,7 @@ def generate_hamiltonian(mol, cutoff=1.0e-12):
 
 
 def _generate_qubit_operator(op):
-    r"""Convert a fermionic operator to a qubit operator.
+    r"""Convert a fermionic operator to a qubit operator using the Jordan-Wigner mapping.
 
     The one-body fermionic operator ::math::`a_0^\dagger a_0` is constructed as [0, 0] and its
     corresponding qubit operator returned by the function is [(0.5+0j), (-0.5+0j)], [[], [(0, 'Z')]]
