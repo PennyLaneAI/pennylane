@@ -424,7 +424,7 @@
 * The `default.qubit.torch` device automatically determines if computations
   should be run on a CPU or a GPU and doesn't take a `torch_device` argument
   anymore.
-  [(#1688)](https://github.com/PennyLaneAI/pennylane/pull/1688)
+  [(#1705)](https://github.com/PennyLaneAI/pennylane/pull/1705)
 
 * The `QNode.metric_tensor` method has been deprecated, and will be removed in an upcoming release.
   Please use the `qml.metric_tensor` transform instead.
@@ -453,7 +453,7 @@
 <h3>Bug fixes</h3>
 
 * Fixes a bug where the GPU cannot be used with `qml.qnn.TorchLayer`.
-  [(#1688)](https://github.com/PennyLaneAI/pennylane/pull/1688)
+  [(#1705)](https://github.com/PennyLaneAI/pennylane/pull/1705)
 
 * Fixed a bug of the default circuit drawer where having more measurements
   compared to the number of measurements on any wire raised a `KeyError`.
