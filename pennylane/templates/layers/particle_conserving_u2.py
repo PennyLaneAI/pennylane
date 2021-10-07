@@ -117,7 +117,7 @@ class ParticleConservingU2(Operation):
 
             # Build the electronic Hamiltonian
             symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
-            h, qubits = qchem.molecular_hamiltonian(symbols, coordinates)
+            h, qubits = qml.qchem.molecular_hamiltonian(symbols, coordinates)
 
             # Define the HF state
             ref_state = qml.qchem.hf_state(2, qubits)
