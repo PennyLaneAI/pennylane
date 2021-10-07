@@ -191,6 +191,9 @@ class DefaultQubitTorch(DefaultQubit):
         ops_and_obs = circuit.operations + circuit.observables
         if any(data.is_cuda for op in ops_and_obs for data in op.data if hasattr(data, "is_cuda")):
             self._torch_device = "cuda"
+        else:
+            # need to reset in case last execution moved to cuda
+            self._torch_device = "cpu"
         return super().execute(circuit, **kwargs)
 
     def _asarray(self, a, dtype=None):
