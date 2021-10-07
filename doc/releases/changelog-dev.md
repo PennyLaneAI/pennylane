@@ -421,11 +421,16 @@
 
 <h3>Breaking changes</h3>
 
-- The `QNode.metric_tensor` method has been deprecated, and will be removed in an upcoming release.
+* The `default.qubit.torch` device automatically determines if computations
+  should be run on a CPU or a GPU and doesn't take a `torch_device` argument
+  anymore.
+  [(#1688)](https://github.com/PennyLaneAI/pennylane/pull/1688)
+
+* The `QNode.metric_tensor` method has been deprecated, and will be removed in an upcoming release.
   Please use the `qml.metric_tensor` transform instead.
   [(#1638)](https://github.com/PennyLaneAI/pennylane/pull/1638)
 
-- The utility function `qml.math.requires_grad` now returns `True` when using Autograd
+* The utility function `qml.math.requires_grad` now returns `True` when using Autograd
   if and only if the `requires_grad=True` attribute is set on the NumPy array. Previously,
   this function would return `True` for *all* NumPy arrays and Python floats, unless
   `requires_grad=False` was explicitly set.
