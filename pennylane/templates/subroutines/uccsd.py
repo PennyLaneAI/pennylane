@@ -109,9 +109,8 @@ class UCCSD(Operation):
             from functools import partial
 
             # Build the electronic Hamiltonian
-            name = "h2"
-            geo_file = "h2.xyz"
-            h, qubits = qchem.molecular_hamiltonian(name, geo_file)
+            symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
+            h, qubits = qchem.molecular_hamiltonian(symbols, coordinates)
 
             # Number of electrons
             electrons = 2
