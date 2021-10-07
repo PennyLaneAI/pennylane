@@ -631,14 +631,20 @@ class Device(abc.ABC):
         """
 
         # If the observable contains a Hamiltonian and the device does not
-        # support Hamiltonians, or if the simulation uses finite shots,
+        # support Hamiltonians, or if the simulation uses finite shots, or
+        # if the Hamiltonian explicitly specifies an observable grouping,
         # split tape into multiple tapes of diagonalizable known observables.
         supports_hamiltonian = self.supports_observable("Hamiltonian")
         finite_shots = self.shots is not None
+        grouping_known = all(
+            obs.grouping_indices is not None
+            for obs in circuit.observables
+            if obs.name == "Hamiltonian"
+        )
 
         hamiltonian_in_obs = "Hamiltonian" in [obs.name for obs in circuit.observables]
 
-        if hamiltonian_in_obs and (not supports_hamiltonian or finite_shots):
+        if hamiltonian_in_obs and ((not supports_hamiltonian or finite_shots) or grouping_known):
             try:
                 return qml.transforms.hamiltonian_expand(circuit, group=False)
 

@@ -670,15 +670,20 @@ class QNode:
             # construct the tape
             self.construct(args, kwargs)
 
-        # If the observable contains a Hamiltonian and the device does not
-        # support Hamiltonians, or if the simulation uses finite shots,
-        # split tape into multiple tapes of diagonalizable known observables.
-        # In future, this logic should be moved to the device
-        # to allow for more efficient batch execution.
-        supports_hamiltonian = self.device.supports_observable("Hamiltonian")
-        finite_shots = self.device.shots is not None
+        # Under certain conditions, split tape into multiple tapes and recombine them.
+        # Else just execute the tape, and let the device take care of things.
         hamiltonian_in_obs = "Hamiltonian" in [obs.name for obs in self.qtape.observables]
-        if hamiltonian_in_obs and (not supports_hamiltonian or finite_shots):
+        # if the device does not support Hamiltonians, we split them
+        supports_hamiltonian = self.device.supports_observable("Hamiltonian")
+        # if the user wants a finite-shots computation we always split Hamiltonians
+        finite_shots = self.device.shots is not None
+        # if a grouping has been computed for all Hamiltonians we assume that they should be split
+        grouping_known = all(
+            obs.grouping_indices is not None
+            for obs in self.qtape.observables
+            if obs.name == "Hamiltonian"
+        )
+        if hamiltonian_in_obs and ((not supports_hamiltonian or finite_shots) or grouping_known):
             try:
                 tapes, fn = qml.transforms.hamiltonian_expand(self.qtape, group=False)
             except ValueError as e:
