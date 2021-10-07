@@ -489,7 +489,7 @@ class TestMetricTensor:
         G_expected = block_diag(G1, G3, G2)
         assert np.allclose(G, G_expected, atol=tol, rtol=0)
 
-    def test_warning_for_restricted_decomp_with_diag(self, sample_circuit, tol):
+    def test_warning_for_nonunitary_decomp_with_diag(self, sample_circuit, tol):
         """Test that a metric tensor under the
         diagonal approximation evaluates correctly and that the old option
         ``diag_approx`` raises a Warning."""

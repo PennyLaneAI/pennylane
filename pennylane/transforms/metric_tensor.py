@@ -39,8 +39,9 @@ def expand_multi_par_and_nonunitary_gen(tape, depth=10):
     """
     stopping_cond = lambda g: (
         isinstance(g, qml.measure.MeasurementProcess)
+        or len(g.parameters) == 0
         or (
-            len(g.parameters) <= 1
+            len(g.parameters) == 1
             and hasattr(g, "generator")
             and g.generator[0] is not None
             and g.has_unitary_generator
@@ -203,7 +204,7 @@ def metric_tensor(tape, allow_nonunitary=True, approx="block-diag", diag_approx=
 @metric_tensor.set_expand_fn
 def mt_set_expand_fn(self, kwargs):
     """Set the metric tensor based on whether non-unitary gates are allowed."""
-    if kwargs.pop("allow_nonunitary", True):
+    if kwargs.get("allow_nonunitary", True):
         self.expand_fn = expand_multi_par_and_no_gen
     else:
         self.expand_fn = expand_multi_par_and_nonunitary_gen

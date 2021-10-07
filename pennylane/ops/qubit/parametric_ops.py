@@ -431,6 +431,7 @@ class MultiRZ(DiagonalOperation):
         if self._generator is None:
             self._generator = [np.diag(pauli_eigs(len(self.wires))), -1 / 2]
         return self._generator
+
     has_unitary_generator = True
 
     @property
@@ -613,6 +614,7 @@ class PauliRot(Operation):
             ]
 
         return self._generator
+
     has_unitary_generator = True
 
     @classmethod
