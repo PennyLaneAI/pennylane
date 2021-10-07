@@ -27,7 +27,7 @@ from .metric_tensor_cov_matrix import metric_tensor_cov_matrix
 
 def expand_multi_par_and_nonunitary_gen(tape, depth=10):
     """Expand a tape until it does not contain any multi-parameter gates or gates
-    without a unitary ``generator``, if possible.
+    with a non-unitary ``generator``, if possible.
 
     Args:
         tape (.QuantumTape): Tape to be expanded
