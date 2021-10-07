@@ -48,32 +48,32 @@ class TestCircuitGraphHash:
         assert circuit_graph_1.serialize() == circuit_graph_2.serialize()
         assert expected_string == circuit_graph_1.serialize()
 
-    observable1 = qml.expval
-    observable2 = qml.var
+    returntype1 = qml.expval
+    returntype2 = qml.var
 
-    operation1 = qml.PauliZ(wires=[0])
-    operation2 = qml.Hermitian(np.array([[1, 0], [0, -1]]), wires=[0])
-    operation3 = Tensor(qml.PauliZ(0) @ qml.PauliZ(1))
+    observable1 = qml.PauliZ(wires=[0])
+    observable2 = qml.Hermitian(np.array([[1, 0], [0, -1]]), wires=[0])
+    observable3 = Tensor(qml.PauliZ(0) @ qml.PauliZ(1))
 
     numeric_observable_queue = [
-        (observable1, operation1, "|||ObservableReturnTypes.Expectation!PauliZ[0]"),
+        (returntype1, observable1, "|||ObservableReturnTypes.Expectation!PauliZ[0]"),
         (
-            observable1,
-            operation2,
+            returntype1,
+            observable2,
             "|||ObservableReturnTypes.Expectation!Hermitian![[ 1  0]\n [ 0 -1]]![0]",
         ),
         (
-            observable1,
-            operation3,
+            returntype1,
+            observable3,
             "|||ObservableReturnTypes.Expectation!['PauliZ', 'PauliZ'][0, 1]",
         ),
-        (observable2, operation1, "|||ObservableReturnTypes.Variance!PauliZ[0]"),
+        (returntype2, observable1, "|||ObservableReturnTypes.Variance!PauliZ[0]"),
         (
+            returntype2,
             observable2,
-            operation2,
             "|||ObservableReturnTypes.Variance!Hermitian![[ 1  0]\n [ 0 -1]]![0]",
         ),
-        (observable2, operation3, "|||ObservableReturnTypes.Variance!['PauliZ', 'PauliZ'][0, 1]"),
+        (returntype2, observable3, "|||ObservableReturnTypes.Variance!['PauliZ', 'PauliZ'][0, 1]"),
     ]
 
     @pytest.mark.parametrize("obs, op, expected_string", numeric_observable_queue)
@@ -90,12 +90,12 @@ class TestCircuitGraphHash:
 
         assert circuit_hash_1 == expected_string
 
-    observable4 = qml.probs
-    observable5 = qml.sample
+    returntype4 = qml.probs
+    returntype5 = qml.sample
 
     numeric_observable_queue = [
-        (observable4, "|||ObservableReturnTypes.Probability!Identity[0]"),
-        (observable5, "|||ObservableReturnTypes.Sample!Identity[0]"),
+        (returntype4, "|||ObservableReturnTypes.Probability!Identity[0]"),
+        (returntype5, "|||ObservableReturnTypes.Sample!Identity[0]"),
     ]
 
     @pytest.mark.parametrize("obs, expected_string", numeric_observable_queue)
@@ -112,11 +112,10 @@ class TestCircuitGraphHash:
 
         assert circuit_hash_1 == expected_string
 
-    observable6 = qml.state
-    observable7 = qml.density_matrix
+    returntype6 = qml.state
 
     numeric_observable_queue = [
-        (observable6, "PauliX[0]|||ObservableReturnTypes.State!Identity[0]"),
+        (returntype6, "PauliX[0]|||ObservableReturnTypes.State!Identity[0]"),
     ]
 
     @pytest.mark.parametrize("obs, expected_string", numeric_observable_queue)
@@ -135,10 +134,10 @@ class TestCircuitGraphHash:
 
         assert circuit_hash_1 == expected_string
 
-    observable7 = qml.density_matrix
+    returntype7 = qml.density_matrix
 
     numeric_observable_queue = [
-        (observable7, "|||ObservableReturnTypes.State!Identity[0, 1]"),
+        (returntype7, "|||ObservableReturnTypes.State!Identity[0, 1]"),
     ]
 
     @pytest.mark.parametrize("obs, expected_string", numeric_observable_queue)
