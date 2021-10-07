@@ -263,6 +263,9 @@ class batch_transform:
         return _wrapper
 
     def __call__(self, qnode, *targs, **tkwargs):
+
+        self._set_expand_fn(tkwargs)
+
         if isinstance(qnode, qml.tape.QuantumTape):
             # Input is a quantum tape.
             # tapes, fn = some_transform(tape, *transform_args)
@@ -325,3 +328,35 @@ class batch_transform:
             processing_fn = lambda x: x
 
         return tapes, processing_fn
+
+    def _set_expand_fn(self, lkwargs):
+        """Logic to set the ``expand_fn`` based on keyword arguments
+        lkwargs."""
+        pass
+
+    def set_expand_fn(self, expand_fn_setting_fn):
+        """Register a custom logic to set the ``expand_fn``
+        for the batch transform.
+
+        **Example**
+
+        .. code-block:: python
+
+            def my_transform(tape, *targs, **tkwargs):
+                ...
+                return tapes, processing_fn
+
+            @my_transform.set_expand_fn
+            def my_expand_fn_decision(self, lkwargs):
+                if lkwargs.pop("expand_RX", False):
+                    self.expand_fn = expand_RX_fn
+                self.expand_fn = None
+
+        The custom ``expand_fn`` logic must have arguments
+        ``self`` (the batch transform object), and ``lkwargs`` (the logic
+        keyword arguments).
+
+        It should set ``self.expand_fn`` to a callable object that
+        expands/transforms a tape, or to ``None``.
+        """
+        self._set_expand_fn = types.MethodType(expand_fn_setting_fn, self)

@@ -25,8 +25,8 @@ from .batch_transform import batch_transform
 from .metric_tensor_cov_matrix import metric_tensor_cov_matrix
 
 
-@functools.partial(batch_transform, expand_fn=expand_multi_par_and_no_gen)
-def metric_tensor(tape, approx="block diag", diag_approx=None):
+@functools.partial(batch_transform, expand_fn=None)
+def metric_tensor(tape, allow_nonunitary=True, approx="block-diag", diag_approx=None):
     """Returns a function that computes the block-diagonal approximation of the metric tensor
     of a given QNode or quantum tape.
 
@@ -37,12 +37,14 @@ def metric_tensor(tape, approx="block diag", diag_approx=None):
         All other parametrized gates will be decomposed if possible.
 
     Args:
-        qnode (pennylane.QNode or .QuantumTape): quantum tape or QNode to find the metric tensor of
+        tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to find the metric tensor of
+        allow_nonunitary (bool): Whether non-unitary operations are allowed in circuits
+            created by the transform. Only relevant if ``approx`` is ``None``
         approx (str): Which approximation of the metric tensor to compute.
 
             - If ``None``, the full metric tensor is computed
 
-            - If ``"block diag"``, the block diagonal approximation is computed, reducing
+            - If ``"block-diag"``, the block diagonal approximation is computed, reducing
               the number of evaluated circuits significantly.
 
             - If ``"diag"``, only the diagonal approximation is computed, slightly
@@ -143,7 +145,7 @@ def metric_tensor(tape, approx="block diag", diag_approx=None):
                [0.        , 0.00415023, 0.        ],
                [0.        , 0.        , 0.24878844]])
     """
-    tape = metric_tensor.expand_fn(tape)
+    # tape = metric_tensor.expand_fn(tape)
 
     if diag_approx is not None:
         warnings.warn(
@@ -152,13 +154,22 @@ def metric_tensor(tape, approx="block diag", diag_approx=None):
         if diag_approx:
             approx = "diag"
 
-    if approx in {"diag", "block diag"}:
+    if approx in {"diag", "block-diag"}:
         # Only require covariance matrix based transform
         diag_approx = approx == "diag"
         # Cut off excess output of cov_matrix transform
         return metric_tensor_cov_matrix(tape, diag_approx)
 
     raise NotImplementedError("No method for the full metric tensor has been implemented yet.")
+
+
+@metric_tensor.set_expand_fn
+def mt_set_expand_fn(self, kwargs):
+    """Set the metric tensor based on whether non-unitary gates are allowed."""
+    if kwargs.pop("allow_nonunitary", True):
+        self.expand_fn = expand_multi_par_and_no_gen
+    else:
+        self.expand_fn = expand_multi_par_and_nonunitary_gen
 
 
 @metric_tensor.custom_qnode_wrapper
