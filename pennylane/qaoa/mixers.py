@@ -58,7 +58,10 @@ def x_mixer(wires):
     coeffs = [1 for w in wires]
     obs = [qml.PauliX(w) for w in wires]
 
-    return qml.Hamiltonian(coeffs, obs)
+    H = qml.Hamiltonian(coeffs, obs)
+    # store the valuable information that all observables are in one commuting group
+    H.grouping_indices = [list(range(len(H.ops)))]
+    return H
 
 
 def xy_mixer(graph):
