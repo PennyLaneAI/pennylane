@@ -19,8 +19,6 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.hf.hartree_fock import generate_scf, nuclear_energy
 
-# from pennylane import PauliX, PauliY, PauliZ
-
 
 def generate_electron_integrals(mol, core=None, active=None):
     r"""Return a function that computes the one- and two-electron integrals in the atomic orbital
