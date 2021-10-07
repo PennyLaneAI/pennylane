@@ -110,7 +110,7 @@ class UCCSD(Operation):
 
             # Build the electronic Hamiltonian
             symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
-            h, qubits = qchem.molecular_hamiltonian(symbols, coordinates)
+            h, qubits = qml.qchem.molecular_hamiltonian(symbols, coordinates)
 
             # Number of electrons
             electrons = 2
