@@ -1184,15 +1184,14 @@ class TestTapeExpansion:
         assert input_tape.operations[2].grad_method is None
 
     @pytest.mark.parametrize("max_diff", [1, 2])
-    def test_hamiltonian_expansion_analytic(self, dev_name, diff_method, mode, max_diff, mocker):
-        """Test that the Hamiltonian is not expanded if there
+    def test_hamiltonian_expansion_analytic(self, dev_name, diff_method, mode, max_diff):
+        """Test that if there
         are non-commuting groups and the number of shots is None
-        and the first and second order gradients are correctly evaluated"""
+        the first and second order gradients are correctly evaluated"""
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not yet support Hamiltonians")
 
         dev = qml.device(dev_name, wires=3, shots=None)
-        spy = mocker.spy(qml.transforms, "hamiltonian_expand")
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
 
         @qnode(dev, diff_method=diff_method, mode=mode, max_diff=max_diff, interface="torch")
@@ -1213,7 +1212,6 @@ class TestTapeExpansion:
             d[1] + w[1]
         )
         assert torch.allclose(res, expected)
-        spy.assert_not_called()
 
         # test gradients
         res.backward()
