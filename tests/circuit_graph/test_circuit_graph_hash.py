@@ -78,7 +78,7 @@ class TestCircuitGraphHash:
 
     @pytest.mark.parametrize("obs, op, expected_string", numeric_observable_queue)
     def test_serialize_numeric_arguments_observables_expval_var(self, obs, op, expected_string):
-        """Tests the hashes for expval and var return types """
+        """Tests the hashes for expval and var return types"""
         dev = qml.device("default.qubit", wires=2)
 
         def circuit1():
@@ -90,7 +90,6 @@ class TestCircuitGraphHash:
 
         assert circuit_hash_1 == expected_string
 
-
     observable4 = qml.probs
     observable5 = qml.sample
 
@@ -101,7 +100,7 @@ class TestCircuitGraphHash:
 
     @pytest.mark.parametrize("obs, expected_string", numeric_observable_queue)
     def test_serialize_numeric_arguments_observables_probs_sample(self, obs, expected_string):
-        """Tests the hashes for probs and sample return types """
+        """Tests the hashes for probs and sample return types"""
         dev = qml.device("default.qubit", wires=2)
 
         def circuit1():
@@ -122,7 +121,7 @@ class TestCircuitGraphHash:
 
     @pytest.mark.parametrize("obs, expected_string", numeric_observable_queue)
     def test_serialize_numeric_arguments_observables_state(self, obs, expected_string):
-        """Tests the hashes for state return types """
+        """Tests the hashes for state return types"""
         dev = qml.device("default.qubit", wires=2)
 
         def circuit1():
@@ -144,11 +143,11 @@ class TestCircuitGraphHash:
 
     @pytest.mark.parametrize("obs, expected_string", numeric_observable_queue)
     def test_serialize_numeric_arguments_observables_density_mat(self, obs, expected_string):
-        """Tests the hashes density matrix (state) return types """
+        """Tests the hashes density matrix (state) return types"""
         dev = qml.device("default.mixed", wires=2)
 
         def circuit1():
-            return obs(wires=[0,1])
+            return obs(wires=[0, 1])
 
         node1 = qml.QNode(circuit1, dev)
         node1.construct([], {})
@@ -156,6 +155,7 @@ class TestCircuitGraphHash:
         circuit_hash_1 = node1.qtape.graph.serialize()
 
         assert circuit_hash_1 == expected_string
+
 
 class TestQNodeCircuitHashIntegration:
     """Test for the circuit hash that is being created for a QNode during evaluation (inside of _construct)"""
