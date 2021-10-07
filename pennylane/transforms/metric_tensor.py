@@ -40,12 +40,7 @@ def expand_multi_par_and_nonunitary_gen(tape, depth=10):
     stopping_cond = lambda g: (
         isinstance(g, qml.measure.MeasurementProcess)
         or len(g.parameters) == 0
-        or (
-            len(g.parameters) == 1
-            and hasattr(g, "generator")
-            and g.generator[0] is not None
-            and g.has_unitary_generator
-        )
+        or (hasattr(g, "generator") and g.generator[0] is not None and g.has_unitary_generator)
     )
     if not all(stopping_cond(op) for op in tape.operations):
         new_tape = tape.expand(depth=depth, stop_at=stopping_cond)
