@@ -220,11 +220,16 @@ tensor(0.5000, dtype=torch.float64, grad_fn=<SqueezeBackward0>)
 GPU and CUDA support
 --------------------
 
-This section only applies to users who have installed torch with cuda support.  If you don't know if you have cuda support, you can check:
+This section only applies to users who have installed torch with CUDA support.
+If you are not sure if you have CUDA support, you can check with the following function:
 
 >>> torch.cuda.is_available()
+True
 
-If at least one input parameter is on a cuda device and you are using backpropogation, the execution will occur on the cuda device. For systems with a high number of wires, cuda execution can be much faster.  For lower wire count, the overhead of moving everything to the gpu will dominate performance. For less than 15 wires, the gpu will probably be slower.
+If at least one input parameter is on a CUDA device and you are using backpropogation,
+the execution will occur on the CUDA device. For systems with a high number of wires, CUDA
+execution can be much faster.  For lower wire count, the overhead of moving everything to
+the GPU will dominate performance; for less than 15 wires, the GPU will probably be slower.
 
 .. code-block:: python
 
