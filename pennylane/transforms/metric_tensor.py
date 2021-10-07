@@ -149,7 +149,8 @@ def metric_tensor(tape, allow_nonunitary=True, approx="block-diag", diag_approx=
 
     if diag_approx is not None:
         warnings.warn(
-            "The keyword argument diag_approx is deprecated. Please use approx='diag' instead."
+            "The keyword argument diag_approx is deprecated. Please use approx='diag' instead.",
+            UserWarning,
         )
         if diag_approx:
             approx = "diag"
@@ -183,7 +184,8 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
         if qnode._multiple_devices:  # pylint: disable=protected-access
             warnings.warn(
                 "ExpvalCost was instantiated with multiple devices. Only the first device "
-                "will be used to evaluate the metric tensor."
+                "will be used to evaluate the metric tensor.",
+                UserWarning,
             )
 
         qnode = qnode.qnodes.qnodes[0]

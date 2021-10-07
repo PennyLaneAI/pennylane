@@ -728,7 +728,15 @@ class QNode:
 
         return qml.math.squeeze(res)
 
-    def metric_tensor(self, *args, allow_nonunitary=True, approx=None, diag_approx=None, only_construct=False, **kwargs):
+    def metric_tensor(
+        self,
+        *args,
+        allow_nonunitary=True,
+        approx=None,
+        diag_approx=None,
+        only_construct=False,
+        **kwargs,
+    ):
         """Evaluate the value of the metric tensor.
 
         Args:
