@@ -332,6 +332,7 @@ class batch_transform:
     def _set_expand_fn(self, lkwargs):
         """Logic to set the ``expand_fn`` based on keyword arguments
         lkwargs."""
+        # pylint: disable=method-hidden
         pass
 
     def set_expand_fn(self, expand_fn_setting_fn):
