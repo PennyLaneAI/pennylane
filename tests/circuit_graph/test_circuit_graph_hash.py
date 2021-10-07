@@ -48,32 +48,112 @@ class TestCircuitGraphHash:
         assert circuit_graph_1.serialize() == circuit_graph_2.serialize()
         assert expected_string == circuit_graph_1.serialize()
 
-    observable1 = qml.PauliZ(0)
-    observable1.return_type = not None
+    returntype1 = qml.expval
+    returntype2 = qml.var
 
+    observable1 = qml.PauliZ(wires=[0])
     observable2 = qml.Hermitian(np.array([[1, 0], [0, -1]]), wires=[0])
-    observable2.return_type = not None
-
     observable3 = Tensor(qml.PauliZ(0) @ qml.PauliZ(1))
-    observable3.return_type = not None
 
     numeric_observable_queue = [
-        ([], [observable1], "|||PauliZ[0]"),
-        ([], [observable2], "|||Hermitian![[ 1  0]\n [ 0 -1]]![0]"),
-        ([], [observable3], "|||['PauliZ', 'PauliZ'][0, 1]"),
+        (returntype1, observable1, "|||ObservableReturnTypes.Expectation!PauliZ[0]"),
+        (
+            returntype1,
+            observable2,
+            "|||ObservableReturnTypes.Expectation!Hermitian![[ 1  0]\n [ 0 -1]]![0]",
+        ),
+        (
+            returntype1,
+            observable3,
+            "|||ObservableReturnTypes.Expectation!['PauliZ', 'PauliZ'][0, 1]",
+        ),
+        (returntype2, observable1, "|||ObservableReturnTypes.Variance!PauliZ[0]"),
+        (
+            returntype2,
+            observable2,
+            "|||ObservableReturnTypes.Variance!Hermitian![[ 1  0]\n [ 0 -1]]![0]",
+        ),
+        (returntype2, observable3, "|||ObservableReturnTypes.Variance!['PauliZ', 'PauliZ'][0, 1]"),
     ]
 
-    @pytest.mark.parametrize("queue, observable_queue, expected_string", numeric_observable_queue)
-    def test_serialize_numeric_arguments_observables(
-        self, queue, observable_queue, expected_string
-    ):
-        """Tests that the same hash is created for two circuitgraphs that have identical queues and empty variable_deps."""
+    @pytest.mark.parametrize("obs, op, expected_string", numeric_observable_queue)
+    def test_serialize_numeric_arguments_observables_expval_var(self, obs, op, expected_string):
+        """Tests the hashes for expval and var return types"""
+        dev = qml.device("default.qubit", wires=2)
 
-        circuit_graph_1 = CircuitGraph(queue, observable_queue, Wires([0, 1]))
-        circuit_graph_2 = CircuitGraph(queue, observable_queue, Wires([0, 1]))
+        def circuit1():
+            return obs(op)
 
-        assert circuit_graph_1.serialize() == circuit_graph_2.serialize()
-        assert expected_string == circuit_graph_1.serialize()
+        node1 = qml.QNode(circuit1, dev)
+        node1.construct([], {})
+        circuit_hash_1 = node1.qtape.graph.serialize()
+
+        assert circuit_hash_1 == expected_string
+
+    returntype4 = qml.probs
+    returntype5 = qml.sample
+
+    numeric_observable_queue = [
+        (returntype4, "|||ObservableReturnTypes.Probability!Identity[0]"),
+        (returntype5, "|||ObservableReturnTypes.Sample!Identity[0]"),
+    ]
+
+    @pytest.mark.parametrize("obs, expected_string", numeric_observable_queue)
+    def test_serialize_numeric_arguments_observables_probs_sample(self, obs, expected_string):
+        """Tests the hashes for probs and sample return types"""
+        dev = qml.device("default.qubit", wires=2)
+
+        def circuit1():
+            return obs(wires=0)
+
+        node1 = qml.QNode(circuit1, dev)
+        node1.construct([], {})
+        circuit_hash_1 = node1.qtape.graph.serialize()
+
+        assert circuit_hash_1 == expected_string
+
+    returntype6 = qml.state
+
+    numeric_observable_queue = [
+        (returntype6, "PauliX[0]|||ObservableReturnTypes.State!Identity[0]"),
+    ]
+
+    @pytest.mark.parametrize("obs, expected_string", numeric_observable_queue)
+    def test_serialize_numeric_arguments_observables_state(self, obs, expected_string):
+        """Tests the hashes for state return types"""
+        dev = qml.device("default.qubit", wires=2)
+
+        def circuit1():
+            qml.PauliX(wires=0)
+            return obs()
+
+        node1 = qml.QNode(circuit1, dev)
+        node1.construct([], {})
+
+        circuit_hash_1 = node1.qtape.graph.serialize()
+
+        assert circuit_hash_1 == expected_string
+
+    returntype7 = qml.density_matrix
+
+    numeric_observable_queue = [
+        (returntype7, "|||ObservableReturnTypes.State!Identity[0, 1]"),
+    ]
+
+    @pytest.mark.parametrize("obs, expected_string", numeric_observable_queue)
+    def test_serialize_numeric_arguments_observables_density_mat(self, obs, expected_string):
+        """Tests the hashes density matrix (state) return types"""
+        dev = qml.device("default.mixed", wires=2)
+
+        def circuit1():
+            return obs(wires=[0, 1])
+
+        node1 = qml.QNode(circuit1, dev)
+        node1.construct([], {})
+
+        circuit_hash_1 = node1.qtape.graph.serialize()
+
+        assert circuit_hash_1 == expected_string
 
 
 class TestQNodeCircuitHashIntegration:
@@ -236,8 +316,8 @@ class TestQNodeCircuitHashIntegration:
         "x,y",
         zip(np.linspace(-2 * np.pi, 2 * np.pi, 7), np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11),
     )
-    def test_evaluate_circuit_hash_numeric_and_symbolic_return_type_does_not_matter(self, x, y):
-        """Tests that the circuit hashes of identical circuits only differing on their return types are equal"""
+    def test_evaluate_circuit_hash_numeric_and_symbolic_return_type_does_matter(self, x, y):
+        """Tests that the circuit hashes of identical circuits only differing on their return types are not equal"""
         dev = qml.device("default.qubit", wires=3)
 
         def circuit1(x, y):
@@ -258,16 +338,7 @@ class TestQNodeCircuitHashIntegration:
         node2(x, y)
         circuit_hash_2 = node2.qtape.graph.hash
 
-        def circuit3(x, y):
-            qml.Rot(x, y, 0.3, wires=[0])
-            qml.CNOT(wires=[0, 1])
-            return qml.sample(qml.PauliZ(0) @ qml.PauliX(1))
-
-        node3 = qml.QNode(circuit1, dev)
-        node3(x, y)
-        circuit_hash_3 = node3.qtape.graph.hash
-
-        assert circuit_hash_1 == circuit_hash_2 == circuit_hash_3
+        assert circuit_hash_1 != circuit_hash_2
 
     @pytest.mark.parametrize(
         "x,y",
