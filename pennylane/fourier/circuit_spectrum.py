@@ -11,81 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains a transform that computes the frequency spectrum of a quantum
-circuit."""
-from itertools import chain, combinations
+"""Contains a transform that computes the simple frequency spectrum
+of a quantum circuit, that is the frequencies without considering
+preprocessing in the QNode."""
 from functools import wraps
-import numpy as np
-import pennylane as qml
+from .utils import get_spectrum, join_spectra
 
 
-def _get_spectrum(op):
-    r"""Extract the frequencies contributed by an input-encoding gate to the
-    overall Fourier representation of a quantum circuit.
-
-    If :math:`G` is the generator of the input-encoding gate :math:`\exp(-i x G)`,
-    the frequencies are the differences between any two of :math:`G`'s eigenvalues.
-
-    Args:
-        op (~pennylane.operation.Operation): an instance of the `Operation` class
-
-    Returns:
-        list: frequencies contributed by this input-encoding gate
-    """
-    no_generator = False
-    if hasattr(op, "generator"):
-        g, coeff = op.generator
-
-        if isinstance(g, np.ndarray):
-            matrix = g
-        elif hasattr(g, "matrix"):
-            matrix = g.matrix
-        else:
-            no_generator = True
-    else:
-        no_generator = True
-
-    if no_generator:
-        raise ValueError(f"Generator of operation {op} is not defined.")
-
-    matrix = coeff * matrix
-    # eigenvalues of hermitian ops are guaranteed to be real
-    # todo: use qml.math.linalg once it is tested properly
-    evals = qml.math.real(np.linalg.eigvals(matrix))
-
-    # compute all differences of eigenvalues
-    unique_frequencies = set(
-        chain.from_iterable(
-            np.round((x[1] - x[0], x[0] - x[1]), decimals=8) for x in combinations(evals, 2)
-        )
-    )
-    unique_frequencies = unique_frequencies.union({0})
-    return sorted(unique_frequencies)
-
-
-def _join_spectra(spec1, spec2):
-    r"""Join two sets of frequencies that belong to the same input.
-
-    Since :math:`\exp(i a x)\exp(i b x) = \exp(i (a+b) x)`, frequency sets of two gates
-    encoding the same :math:`x` are joined by computing the set of sums of their elements.
-
-    Args:
-        spec1 (list[float]): first spectrum
-        spec2 (list[float]): second spectrum
-    Returns:
-        list[float]: joined spectrum
-    """
-    if spec1 == []:
-        return sorted(set(spec2))
-    if spec2 == []:
-        return sorted(set(spec1))
-
-    sums = [s1 + s2 for s1 in spec1 for s2 in spec2]
-    return sorted(set(sums))
-
-
-def spectrum(qnode, encoding_gates=None):
-    r"""Compute the frequency spectrum of the Fourier representation of simple quantum circuits.
+def circuit_spectrum(qnode, encoding_gates=None, decimals=8):
+    r"""Compute the frequency spectrum of the Fourier representation of
+    simple quantum circuits ignoring classical preprocessing.
 
     The circuit must only use simple single-parameter gates of the form :math:`e^{-i x_j G}` as
     input-encoding gates, which allows the computation of the spectrum by inspecting the gates'
@@ -93,8 +28,9 @@ def spectrum(qnode, encoding_gates=None):
 
     .. note::
 
-        More precisely, the spectrum function relies on the gate to define a ``generator``, and will
-        fail if gates marked as inputs do not have this attribute.
+        More precisely, the ``circuit_spectrum`` function relies on the gate to
+        define a ``generator``, and will fail if gates marked as inputs do not
+        have this attribute.
 
     Gates are marked as input-encoding gates in the quantum function by giving them an ``id``.
     If two gates have the same ``id``, they are considered
@@ -110,6 +46,7 @@ def spectrum(qnode, encoding_gates=None):
             input-encoding gates are marked by their ``id`` attribute
         encoding_gates (list[str]): list of input-encoding gate ``id`` strings
             for which to compute the frequency spectra
+        decimals (int): number of decimals to which to round frequencies.
 
     Returns:
         (dict[str, list[float]]): Dictionary with the input-encoding gate ``id`` as keys and
@@ -144,7 +81,7 @@ def spectrum(qnode, encoding_gates=None):
     to a few frequencies only, which in turn limits the function class that the circuit
     can express.
 
-    The ``spectrum`` function computes all frequencies that will potentially appear in the
+    The ``circuit_spectrum`` function computes all frequencies that will potentially appear in the
     sets :math:`\Omega_1` to :math:`\Omega_N`.
 
     **Example**
@@ -156,7 +93,6 @@ def spectrum(qnode, encoding_gates=None):
 
         import pennylane as qml
         import numpy as np
-        from pennylane.fourier import spectrum
 
         n_layers = 2
         n_qubits = 3
@@ -173,7 +109,7 @@ def spectrum(qnode, encoding_gates=None):
 
         x = np.array([1, 2, 3])
         w = np.random.random((n_layers, n_qubits, 3))
-        res = spectrum(circuit)(x, w)
+        res = qml.fourier.circuit_spectrum(circuit)(x, w)
 
     >>> print(qml.draw(circuit)(x, w))
     0: ──RX(1)──Rot(0.863, 0.611, 0.281)───RX(1)──Rot(0.47, 0.158, 0.648)───RZ(1)──┤ ⟨Z⟩
@@ -207,18 +143,18 @@ def spectrum(qnode, encoding_gates=None):
             return qml.expval(qml.PauliZ(wires=0))
 
         x = np.array([1, 2])
-        res = spectrum(circuit, encoding_gates=["x0"])(x)
+        res = qml.fourier.circuit_spectrum(circuit, encoding_gates=["x0"])(x)
 
     >>> for inp, freqs in res.items():
     >>>     print(f"{inp}: {freqs}")
     'x0': [-2.0, -1.0, 0.0, 1.0, 2.0]
 
     .. note::
-        The ``spectrum`` function does not check if the result of the
+        The ``circuit_spectrum`` function does not check if the result of the
         circuit is an expectation, or if gates with the same ``id``
         take the same value in a given call of the function.
 
-    The ``spectrum`` function works in all interfaces:
+    The ``circuit_spectrum`` function works in all interfaces:
 
     .. code-block:: python
 
@@ -233,7 +169,7 @@ def spectrum(qnode, encoding_gates=None):
             return qml.expval(qml.PauliZ(wires=0))
 
         x = tf.constant([1, 2])
-        res = spectrum(circuit)(x)
+        res = qml.fourier.circuit_spectrum(circuit)(x)
 
     >>> for inp, freqs in res.items():
     >>>     print(f"{inp}: {freqs}")
@@ -246,12 +182,7 @@ def spectrum(qnode, encoding_gates=None):
     def wrapper(*args, **kwargs):
         qnode.construct(args, kwargs)
         tape = qnode.qtape
-
-        if encoding_gates is None:
-            freqs = {}
-        else:
-            freqs = {input_id: [] for input_id in encoding_gates}
-
+        freqs = {}
         for op in tape.operations:
             id = op.id
 
@@ -267,18 +198,27 @@ def spectrum(qnode, encoding_gates=None):
 
                 if len(op.parameters) != 1:
                     raise ValueError(
-                        "Can only consider one-parameter gates as data-encoding gates; "
-                        f"got {op.name}."
+                        "Can only consider one-parameter gates as "
+                        f"data-encoding gates; got {op.name}."
                     )
 
-                spec = _get_spectrum(op)
+                spec = get_spectrum(op, decimals=decimals)
 
-                # if id has been seen before,
-                # join this spectrum to another one
+                # if id has been seen before, join this spectrum to another one
                 if id in freqs:
-                    spec = _join_spectra(freqs[id], spec)
+                    spec = join_spectra(freqs[id], spec)
 
                 freqs[id] = spec
+
+        # Turn spectra into sorted lists and include negative frequencies
+        for id, spec in freqs.items():
+            spec = sorted(spec)
+            freqs[id] = [-f for f in spec[:0:-1]] + spec
+
+        # Add trivial spectrum for requested gate ids that are not in the circuit
+        if encoding_gates is not None:
+            for id in set(encoding_gates).difference(freqs):
+                freqs[id] = []
 
         return freqs
 
