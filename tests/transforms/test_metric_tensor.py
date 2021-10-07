@@ -489,9 +489,22 @@ class TestMetricTensor:
         G_expected = block_diag(G1, G3, G2)
         assert np.allclose(G, G_expected, atol=tol, rtol=0)
 
+    def test_warning_for_restricted_decomp_with_diag(self, sample_circuit, tol):
+        """Test that a metric tensor under the
+        diagonal approximation evaluates correctly and that the old option
+        ``diag_approx`` raises a Warning."""
+        dev, circuit, non_parametrized_layer, a, b, c = sample_circuit
+        params = [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272]
+
+        with pytest.warns(UserWarning):
+            G = qml.metric_tensor(circuit, allow_nonunitary=False, approx="diag")(*params)
+        with pytest.warns(UserWarning):
+            G = qml.metric_tensor(circuit, allow_nonunitary=False, approx="block-diag")(*params)
+
     def test_evaluate_diag_approx_metric_tensor(self, sample_circuit, tol):
         """Test that a metric tensor under the
-        diagonal approximation evaluates correctly."""
+        diagonal approximation evaluates correctly and that the old option
+        ``diag_approx`` raises a Warning."""
         dev, circuit, non_parametrized_layer, a, b, c = sample_circuit
         params = [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272]
         x, y, z, h, g, f = params

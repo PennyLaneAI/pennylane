@@ -25,6 +25,37 @@ from .batch_transform import batch_transform
 from .metric_tensor_cov_matrix import metric_tensor_cov_matrix
 
 
+def expand_multi_par_and_nonunitary_gen(tape, depth=10):
+    """Expand a tape until it does not contain any multi-parameter gates or gates
+    without a unitary ``generator``, if possible.
+
+    Args:
+        tape (.QuantumTape): Tape to be expanded
+        depth (int): Maximum expansion depth
+
+    Returns
+        .QuantumTape: Expanded tape
+
+    """
+    stopping_cond = lambda g: (
+        isinstance(g, qml.measure.MeasurementProcess)
+        or (
+            len(g.parameters) <= 1
+            and hasattr(g, "generator")
+            and g.generator[0] is not None
+            and g.has_unitary_generator
+        )
+    )
+    if not all(stopping_cond(op) for op in tape.operations):
+        new_tape = tape.expand(depth=depth, stop_at=stopping_cond)
+        params = new_tape.get_parameters(trainable_only=False)
+        new_tape.trainable_params = qml.math.get_trainable_indices(params)
+
+        return new_tape
+
+    return tape
+
+
 @functools.partial(batch_transform, expand_fn=None)
 def metric_tensor(tape, allow_nonunitary=True, approx="block-diag", diag_approx=None):
     """Returns a function that computes the block-diagonal approximation of the metric tensor
@@ -145,8 +176,6 @@ def metric_tensor(tape, allow_nonunitary=True, approx="block-diag", diag_approx=
                [0.        , 0.00415023, 0.        ],
                [0.        , 0.        , 0.24878844]])
     """
-    # tape = metric_tensor.expand_fn(tape)
-
     if diag_approx is not None:
         warnings.warn(
             "The keyword argument diag_approx is deprecated. Please use approx='diag' instead.",
@@ -156,9 +185,16 @@ def metric_tensor(tape, allow_nonunitary=True, approx="block-diag", diag_approx=
             approx = "diag"
 
     if approx in {"diag", "block-diag"}:
+        if not allow_nonunitary:
+            warnings.warn(
+                "The diagonal and block diagonal metric tensor do not make use of generators "
+                "as operations but only as observables. Are you sure you want to decompose "
+                "further via allow_nonunitary=False?",
+                UserWarning,
+            )
+
         # Only require covariance matrix based transform
         diag_approx = approx == "diag"
-        # Cut off excess output of cov_matrix transform
         return metric_tensor_cov_matrix(tape, diag_approx)
 
     raise NotImplementedError("No method for the full metric tensor has been implemented yet.")
@@ -192,10 +228,7 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
 
     mt_fn = self.default_qnode_wrapper(qnode, targs, tkwargs)
 
-    # if isinstance(qnode, qml.beta.QNode):
     cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=self.expand_fn)
-    # else:
-    # cjac_fn = qml.transforms.classical_jacobian(qnode)
 
     def wrapper(*args, **kwargs):
         mt = mt_fn(*args, **kwargs)
