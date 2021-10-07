@@ -18,6 +18,7 @@ arithmetic operations on their input states.
 # pylint: disable=too-many-arguments
 import itertools
 from copy import copy
+from collections.abc import Iterable
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -260,6 +261,44 @@ class Hamiltonian(Observable):
             list[list[int]]: indices needed to form groups of commuting observables
         """
         return self._grouping_indices
+
+    @grouping_indices.setter
+    def grouping_indices(self, value):
+        """Set the grouping indices, if known without explicit computation, or if
+        computation was done externally. The groups are not verified.
+
+        **Example**
+
+        Examples of valid groupings for the Hamiltonian
+
+        >>> H = qml.Hamiltonian([qml.PauliX('a'), qml.PauliX('b'), qml.PauliY('b')])
+
+        are
+
+        >>> H.grouping_indices = [[0, 1], [2]]
+
+        or
+
+        >>> H.grouping_indices = [[0, 2], [1]]
+
+        since both ``qml.PauliX('a'), qml.PauliX('b')`` and ``qml.PauliX('a'), qml.PauliY('b')`` commute.
+
+
+        Args:
+            value (list[list[int]]): List of lists of indexes of the observables in ``self.ops``. Each sublist
+                represents a group of commuting observables.
+        """
+
+        if (
+            not isinstance(value, Iterable)
+            or any(not isinstance(sublist, Iterable) for sublist in value)
+            or any(i not in range(len(self.ops)) for i in [i for sl in value for i in sl])
+        ):
+            raise ValueError(
+                "The grouped index value needs to be a list of lists of integers between 0 and the "
+                "number of observables in the Hamiltonian; got {}".format(value)
+            )
+        self._grouping_indices = value
 
     def compute_grouping(self, grouping_type="qwc", method="rlf"):
         """
