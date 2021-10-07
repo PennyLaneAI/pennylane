@@ -228,7 +228,7 @@ True
 
 If at least one input parameter is on a CUDA device and you are using backpropogation,
 the execution will occur on the CUDA device. For systems with a high number of wires, CUDA
-execution can be much faster.  For lower wire count, the overhead of moving everything to
+execution can be much faster. For lower wire count, the overhead of moving everything to
 the GPU will dominate performance; for less than 15 wires, the GPU will probably be slower.
 
 .. code-block:: python
