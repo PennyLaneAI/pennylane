@@ -273,7 +273,11 @@ def loss_hamiltonian(graph: nx.Graph) -> Hamiltonian:
         coeffs.append(np.log(weight))
         ops.append(qml.PauliZ(wires=edges_to_qubits[edge]))
 
-    return Hamiltonian(coeffs, ops)
+    H = Hamiltonian(coeffs, ops)
+    # store the valuable information that all observables are in one commuting group
+    H.grouping_indices = [list(range(len(H.ops)))]
+
+    return H
 
 
 def _square_hamiltonian_terms(
@@ -443,6 +447,8 @@ def _inner_out_flow_constraint_hamiltonian(graph: nx.DiGraph, node) -> Hamiltoni
 
     H = Hamiltonian(coeffs, ops)
     H.simplify()
+    # store the valuable information that all observables are in one commuting group
+    H.grouping_indices = [list(range(len(H.ops)))]
 
     return H
 
@@ -489,5 +495,6 @@ def _inner_net_flow_constraint_hamiltonian(graph: nx.DiGraph, node) -> Hamiltoni
     coeffs, ops = _square_hamiltonian_terms(coeffs, ops)
     H = Hamiltonian(coeffs, ops)
     H.simplify()
-
+    # store the valuable information that all observables are in one commuting group
+    H.grouping_indices = [list(range(len(H.ops)))]
     return H
