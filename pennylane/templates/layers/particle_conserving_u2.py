@@ -112,7 +112,7 @@ class ParticleConservingU2(Operation):
 
             import pennylane as qml
             from pennylane.templates import ParticleConservingU2
-
+            import numpy as np
             from functools import partial
 
             # Build the electronic Hamiltonian

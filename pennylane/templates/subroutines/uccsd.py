@@ -105,7 +105,7 @@ class UCCSD(Operation):
             import pennylane as qml
             from pennylane import qchem
             from pennylane.templates import UCCSD
-
+            import numpy as np
             from functools import partial
 
             # Build the electronic Hamiltonian
