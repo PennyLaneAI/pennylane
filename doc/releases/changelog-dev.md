@@ -448,8 +448,12 @@
 <h3>Bug fixes</h3>
 
 * Fix a bug where the devices cache the same result for different observables return types.
-  [(#1719)](https://github.com/PennyLaneAI/pennylane/pull/1683)
+  [(#1719)](https://github.com/PennyLaneAI/pennylane/pull/1719)
   
+* Fixed a bug of the default circuit drawer where having more measurements
+  compared to the number of measurements on any wire raised a `KeyError`.
+  [(#1702)](https://github.com/PennyLaneAI/pennylane/pull/1702)
+
 * Fix a bug where it was not possible to use `jax.jit` on a `QNode` when using `QubitStateVector`.
   [(#1683)](https://github.com/PennyLaneAI/pennylane/pull/1683)
 
