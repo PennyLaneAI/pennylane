@@ -77,8 +77,8 @@ class TestCircuitGraphHash:
     ]
 
     @pytest.mark.parametrize("obs, op, expected_string", numeric_observable_queue)
-    def test_serialize_numeric_arguments_observables(self, obs, op, expected_string):
-        """Tests that the same hash is created for two circuitgraphs that have identical queues and empty variable_deps."""
+    def test_serialize_numeric_arguments_observables_expval_var(self, obs, op, expected_string):
+        """Tests the hashes for expval and var return types """
         dev = qml.device("default.qubit", wires=2)
 
         def circuit1():
@@ -90,6 +90,72 @@ class TestCircuitGraphHash:
 
         assert circuit_hash_1 == expected_string
 
+
+    observable4 = qml.probs
+    observable5 = qml.sample
+
+    numeric_observable_queue = [
+        (observable4, "|||ObservableReturnTypes.Probability!Identity[0]"),
+        (observable5, "|||ObservableReturnTypes.Sample!Identity[0]"),
+    ]
+
+    @pytest.mark.parametrize("obs, expected_string", numeric_observable_queue)
+    def test_serialize_numeric_arguments_observables_probs_sample(self, obs, expected_string):
+        """Tests the hashes for probs and sample return types """
+        dev = qml.device("default.qubit", wires=2)
+
+        def circuit1():
+            return obs(wires=0)
+
+        node1 = qml.QNode(circuit1, dev)
+        node1.construct([], {})
+        circuit_hash_1 = node1.qtape.graph.serialize()
+
+        assert circuit_hash_1 == expected_string
+
+    observable6 = qml.state
+    observable7 = qml.density_matrix
+
+    numeric_observable_queue = [
+        (observable6, "PauliX[0]|||ObservableReturnTypes.State!Identity[0]"),
+    ]
+
+    @pytest.mark.parametrize("obs, expected_string", numeric_observable_queue)
+    def test_serialize_numeric_arguments_observables_state(self, obs, expected_string):
+        """Tests the hashes for state return types """
+        dev = qml.device("default.qubit", wires=2)
+
+        def circuit1():
+            qml.PauliX(wires=0)
+            return obs()
+
+        node1 = qml.QNode(circuit1, dev)
+        node1.construct([], {})
+
+        circuit_hash_1 = node1.qtape.graph.serialize()
+
+        assert circuit_hash_1 == expected_string
+
+    observable7 = qml.density_matrix
+
+    numeric_observable_queue = [
+        (observable7, "|||ObservableReturnTypes.State!Identity[0, 1]"),
+    ]
+
+    @pytest.mark.parametrize("obs, expected_string", numeric_observable_queue)
+    def test_serialize_numeric_arguments_observables_density_mat(self, obs, expected_string):
+        """Tests the hashes density matrix (state) return types """
+        dev = qml.device("default.mixed", wires=2)
+
+        def circuit1():
+            return obs(wires=[0,1])
+
+        node1 = qml.QNode(circuit1, dev)
+        node1.construct([], {})
+
+        circuit_hash_1 = node1.qtape.graph.serialize()
+
+        assert circuit_hash_1 == expected_string
 
 class TestQNodeCircuitHashIntegration:
     """Test for the circuit hash that is being created for a QNode during evaluation (inside of _construct)"""
