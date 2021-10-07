@@ -161,6 +161,52 @@ class TestBatchTransform:
         assert input_tape.operations[0].name == "RZ"
         assert input_tape.operations[0].parameters == [0.5]
 
+    @pytest.mark.parametrize("perform_expansion", [True, False])
+    def test_expand_fn(self, mocker, perform_expansion):
+        """Test that if no expansion function is provided, but a
+        set_expand_fn function is given to the transform,
+        that the input tape is expanded before being transformed,
+        depending on the keyword argument passed to set_expand_fn."""
+
+        def expand_fn(tape):
+            return tape.expand(stop_at=lambda obj: obj.name != "PhaseShift")
+
+        class MyTransform:
+            """Dummy class to allow spying to work"""
+
+            def my_transform(self, tape):
+                tape1 = tape.copy()
+                tape2 = tape.copy()
+                return [tape1, tape2], None
+
+        spy_transform = mocker.spy(MyTransform, "my_transform")
+        # No expand_fn in the beginning
+        transform_fn = qml.batch_transform(MyTransform().my_transform)
+
+        @transform_fn.set_expand_fn
+        def set_my_expand_fn(self, kwargs):
+            """Set an expand_fn depending on whether the argument is True."""
+            if kwargs.pop("perform_expansion"):
+                self.expand_fn = expand_fn
+            else:
+                self.expand_fn = None
+
+        with qml.tape.QuantumTape() as tape:
+            qml.PhaseShift(0.5, wires=0)
+            qml.expval(qml.PauliX(0))
+
+        spy_expand = mocker.spy(transform_fn, "expand_fn")
+
+        transform_fn(tape, perform_expansion=perform_expansion)
+
+        spy_transform.assert_called()
+        spy_expand.assert_not_called()
+
+        input_tape = spy_transform.call_args[0][1]
+        assert len(input_tape.operations) == 1
+        assert input_tape.operations[0].name == ("RZ" if perform_expansion else "PhaseShift")
+        assert input_tape.operations[0].parameters == [0.5]
+
     def test_parametrized_transform_tape(self):
         """Test that a parametrized transform can be applied
         to a tape"""
