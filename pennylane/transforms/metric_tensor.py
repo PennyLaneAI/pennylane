@@ -23,6 +23,7 @@ import pennylane as qml
 from pennylane.fourier.qnode_spectrum import expand_multi_par_and_no_gen
 from .batch_transform import batch_transform
 from .metric_tensor_cov_matrix import metric_tensor_cov_matrix
+from .metric_tensor_hadamard import metric_tensor_hadamard
 
 
 def expand_multi_par_and_nonunitary_gen(tape, depth=10):
@@ -53,7 +54,9 @@ def expand_multi_par_and_nonunitary_gen(tape, depth=10):
 
 
 @functools.partial(batch_transform, expand_fn=None)
-def metric_tensor(tape, allow_nonunitary=True, approx="block-diag", diag_approx=None):
+def metric_tensor(
+    tape, allow_nonunitary=True, approx="block-diag", aux_wire=None, diag_approx=None
+):
     """Returns a function that computes the block-diagonal approximation of the metric tensor
     of a given QNode or quantum tape.
 
@@ -77,6 +80,9 @@ def metric_tensor(tape, allow_nonunitary=True, approx="block-diag", diag_approx=
             - If ``"diag"``, only the diagonal approximation is computed, slightly
               reducing the classical overhead but not the quantum resources.
 
+        aux_wire (int or pennylane.wires.Wires): Auxiliary wire on which to
+            control the controlled-generator operations. Defaults to
+            ``tape.num_wires`` if not provided
         diag_approx (bool): if True, use the diagonal approximation. If ``False``, a
             block diagonal approximation of the metric tensor is computed.
             This keyword argument is deprecated in favor of ``approx`` and will be removed soon
@@ -94,6 +100,19 @@ def metric_tensor(tape, allow_nonunitary=True, approx="block-diag", diag_approx=
     Returns:
         func: Function which accepts the same arguments as the QNode. When called, this
         function will return the metric tensor.
+
+    The block diagonal part of the metric tensor always is computed using the
+    covariance-based approach implemented in :func:`.metric_tensor_cov_matrix`.
+    If no approximation is selected, the block off-diagonal is computed using
+    Hadamard tests.
+
+    .. warning::
+
+        The Hadamard test-based method requires the device used to execute
+        the tapes returned by the ``metric_tensor`` transform to
+        have an additional wire. This wire may be specified via ``aux_wire``.
+        By default contiguous numbering and an additional wire at the end
+        of the input tape wires are assumed.
 
     **Example**
 
@@ -191,9 +210,10 @@ def metric_tensor(tape, allow_nonunitary=True, approx="block-diag", diag_approx=
 
         # Only require covariance matrix based transform
         diag_approx = approx == "diag"
-        return metric_tensor_cov_matrix(tape, diag_approx)
+        # cut off excess output
+        return metric_tensor_cov_matrix(tape, diag_approx)[:2]
 
-    raise NotImplementedError("No method for the full metric tensor has been implemented yet.")
+    return metric_tensor_hadamard(tape, allow_nonunitary, aux_wire)
 
 
 @metric_tensor.set_expand_fn

@@ -82,4 +82,4 @@ def metric_tensor_cov_matrix(tape, diag_approx):
         # create the block diagonal metric tensor
         return qml.math.block_diag(gs)
 
-    return metric_tensor_tapes, processing_fn
+    return metric_tensor_tapes, processing_fn, obs_list, coeffs_list
