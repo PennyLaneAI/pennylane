@@ -48,7 +48,7 @@ def generate_electron_integrals(mol, core=None, active=None):
         active (list[int]): indices of the active orbitals
 
     Returns:
-        function: function that computes the core energy, the one- and two-electron integrals
+        function: function that computes the core constant, the one- and two-electron integrals
 
     **Example**
 
@@ -90,16 +90,16 @@ def generate_electron_integrals(mol, core=None, active=None):
             1,
             3,
         )
-        e_core = nuclear_energy(mol.nuclear_charges, mol.coordinates)(*args)
+        core_constant = nuclear_energy(mol.nuclear_charges, mol.coordinates)(*args)
 
         if core is None and active is None:
-            return e_core, one, two
+            return core_constant, one, two
 
         else:
             for i in core:
-                e_core = e_core + 2 * one[i][i]
+                core_constant = core_constant + 2 * one[i][i]
                 for j in core:
-                    e_core = e_core + 2 * two[i][j][j][i] - two[i][j][i][j]
+                    core_constant = core_constant + 2 * two[i][j][j][i] - two[i][j][i][j]
 
             for p in active:
                 for q in active:
@@ -111,7 +111,7 @@ def generate_electron_integrals(mol, core=None, active=None):
             one = one[anp.ix_(active, active)]
             two = two[anp.ix_(active, active, active, active)]
 
-            return e_core, one, two
+            return core_constant, one, two
 
     return electron_integrals
 
@@ -148,9 +148,9 @@ def generate_fermionic_hamiltonian(mol, cutoff=1.0e-12):
         Returns:
             tuple(array[float], list[list[int]]): the Hamiltonian coefficients and operators
         """
-        e_core, one, two = generate_electron_integrals(mol)(*args)
+        core_constant, one, two = generate_electron_integrals(mol)(*args)
 
-        e_core = anp.array([e_core])
+        core_constant = anp.array([core_constant])
 
         indices_one = anp.argwhere(abs(one) >= cutoff)
         operators_one = (indices_one * 2).tolist() + (
@@ -172,7 +172,7 @@ def generate_fermionic_hamiltonian(mol, cutoff=1.0e-12):
         )
         coeffs_two = anp.tile(two[abs(two) >= cutoff], 4) / 2
 
-        coeffs = anp.concatenate((e_core, coeffs_one, coeffs_two))
+        coeffs = anp.concatenate((core_constant, coeffs_one, coeffs_two))
         operators = [[]] + operators_one + operators_two
         indices_sort = [operators.index(i) for i in sorted(operators)]
 
