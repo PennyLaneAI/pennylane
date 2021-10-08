@@ -160,6 +160,9 @@ class batch_transform:
 
         self.transform_fn = transform_fn
         self.expand_fn = expand_fn
+        self.expand_fn_with_kwargs = (
+            expand_fn is not None and len(inspect.signature(self.expand_fn).parameters) > 1
+        )
         self.differentiable = differentiable
         self.qnode_wrapper = self.default_qnode_wrapper
         functools.update_wrapper(self, transform_fn)
@@ -264,8 +267,6 @@ class batch_transform:
 
     def __call__(self, qnode, *targs, **tkwargs):
 
-        self._set_expand_fn(tkwargs)
-
         if isinstance(qnode, qml.tape.QuantumTape):
             # Input is a quantum tape.
             # tapes, fn = some_transform(tape, *transform_args)
@@ -320,7 +321,7 @@ class batch_transform:
         expand = kwargs.pop("_expand", True)
 
         if expand and self.expand_fn is not None:
-            tape = self.expand_fn(tape)
+            tape = self.expand(tape, args, kwargs)
 
         tapes, processing_fn = self.transform_fn(tape, *args, **kwargs)
 
@@ -329,35 +330,12 @@ class batch_transform:
 
         return tapes, processing_fn
 
-    def _set_expand_fn(self, lkwargs):
-        """Logic to set the ``expand_fn`` based on keyword arguments
-        lkwargs."""
-        # pylint: disable=method-hidden
-        pass
-
-    def set_expand_fn(self, expand_fn_setting_fn):
-        """Register a custom logic to set the ``expand_fn``
-        for the batch transform.
-
-        **Example**
-
-        .. code-block:: python
-
-            def my_transform(tape, *targs, **tkwargs):
-                ...
-                return tapes, processing_fn
-
-            @my_transform.set_expand_fn
-            def my_expand_fn_decision(self, lkwargs):
-                if lkwargs.pop("expand_RX", False):
-                    self.expand_fn = expand_RX_fn
-                self.expand_fn = None
-
-        The custom ``expand_fn`` logic must have arguments
-        ``self`` (the batch transform object), and ``lkwargs`` (the logic
-        keyword arguments).
-
-        It should set ``self.expand_fn`` to a callable object that
-        expands/transforms a tape, or to ``None``.
+    def expand(self, tape, targs, tkwargs):
+        """Expand a tape using self.expand_fn. If it takes more
+        than just the tape as arguments, ``targs`` and ``tkwargs``
+        are passed to ``expand_fn`` as well.
         """
-        self._set_expand_fn = types.MethodType(expand_fn_setting_fn, self)
+        if self.expand_fn_with_kwargs:
+            return self.expand_fn(tape, *targs, **tkwargs)
+        else:
+            return self.expand_fn(tape)

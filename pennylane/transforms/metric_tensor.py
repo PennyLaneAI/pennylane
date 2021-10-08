@@ -52,8 +52,15 @@ def expand_multi_par_and_nonunitary_gen(tape, depth=10):
     return tape
 
 
-@functools.partial(batch_transform, expand_fn=None)
-def metric_tensor(tape, allow_nonunitary=True, approx="block-diag", diag_approx=None):
+def expand_fn(tape, *targs, **tkwargs):
+    """Set the metric tensor based on whether non-unitary gates are allowed."""
+    if tkwargs.get("allow_nonunitary", True):
+        return expand_multi_par_and_no_gen(tape)
+    return expand_multi_par_and_nonunitary_gen(tape)
+
+
+@functools.partial(batch_transform, expand_fn=expand_fn)
+def metric_tensor(tape, allow_nonunitary=True, approx="block-diag", diag_approx=None, **kwargs):
     """Returns a function that computes the block-diagonal approximation of the metric tensor
     of a given QNode or quantum tape.
 
@@ -196,15 +203,6 @@ def metric_tensor(tape, allow_nonunitary=True, approx="block-diag", diag_approx=
     raise NotImplementedError("No method for the full metric tensor has been implemented yet.")
 
 
-@metric_tensor.set_expand_fn
-def mt_set_expand_fn(self, kwargs):
-    """Set the metric tensor based on whether non-unitary gates are allowed."""
-    if kwargs.get("allow_nonunitary", True):
-        self.expand_fn = expand_multi_par_and_no_gen
-    else:
-        self.expand_fn = expand_multi_par_and_nonunitary_gen
-
-
 @metric_tensor.custom_qnode_wrapper
 def qnode_execution_wrapper(self, qnode, targs, tkwargs):
     """Here, we overwrite the QNode execution wrapper in order
@@ -224,7 +222,8 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
 
     mt_fn = self.default_qnode_wrapper(qnode, targs, tkwargs)
 
-    cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=self.expand_fn)
+    _expand_fn = functools.partial(self.expand, targs=targs, tkwargs=tkwargs)
+    cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=_expand_fn)
 
     def wrapper(*args, **kwargs):
         mt = mt_fn(*args, **kwargs)
