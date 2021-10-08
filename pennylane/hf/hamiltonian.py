@@ -74,7 +74,7 @@ def generate_electron_integrals(mol, core=None, active=None):
             args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
-            array[float]: 1D array containing the core energy, the one- and two-electron integrals
+            tuple[array[float]]: 1D tuple containing the core energy, the one- and two-electron integrals
         """
         v_fock, coeffs, fock_matrix, h_core, repulsion_tensor = generate_scf(mol)(*args)
         one = anp.einsum("qr,rs,st->qt", coeffs.T, h_core, coeffs)
@@ -264,13 +264,13 @@ def generate_hamiltonian(mol, cutoff=1.0e-12):
 def _generate_qubit_operator(op):
     r"""Convert a fermionic operator to a qubit operator using the Jordan-Wigner mapping.
 
-    The one-body fermionic operator ::math::`a_0^\dagger a_0` is constructed as [0, 0] and its
+    The one-body fermionic operator :math:`a_0^\dagger a_0` is constructed as [0, 0] and its
     corresponding qubit operator returned by the function is [(0.5+0j), (-0.5+0j)], [[], [(0, 'Z')]]
-    which represents ::math::`\frac{1}{2}(I_0 - Z_0)`. The two-body operator
-    ::math::`a_0^\dagger a_2^\dagger a_0 a_2` is constructed as [0, 2, 0, 2].
+    which represents :math:`\frac{1}{2}(I_0 - Z_0)`. The two-body operator
+    :math:`a_0^\dagger a_2^\dagger a_0 a_2` is constructed as [0, 2, 0, 2].
 
     Args:
-        list[int]: the fermionic operator
+        op (list[int]): the fermionic operator
 
     Returns
         tuple(list[complex], list[list[int, str]]): list of coefficients and the qubit-operator terms
@@ -329,12 +329,12 @@ def _generate_qubit_operator(op):
 def _pauli_mult(p1, p2):
     r"""Return the result of multipication between two tensor product of pauli operators.
 
-    The Pauli operator ::math::`(P_0)` is denoted by [(0, 'P')], where ::math::`P` represents
-    ::math::`X`, ::math::`Y` or ::math::`Z`.
+    The Pauli operator :math:`(P_0)` is denoted by [(0, 'P')], where :math:`P` represents
+    :math:`X`, :math:`Y` or :math:`Z`.
 
     Args:
-        p1 (list[list[tuple[int, str]]]): the first tensor product of pauli operators
-        p2 (list[list[tuple[int, str]]]): the second tensor product of pauli operators
+        p1 (list[tuple[int, str]]): the first tensor product of pauli operators
+        p2 (list[tuple[int, str]]): the second tensor product of pauli operators
 
     Returns
         tuple(list[tuple[int, str]], complex): list of the pauli operators and the coefficient
