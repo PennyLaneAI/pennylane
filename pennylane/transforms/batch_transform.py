@@ -149,6 +149,56 @@ class batch_transform:
     >>> gradient = qml.grad(circuit)(-0.5)
     >>> print(gradient)
     2.5800122591960153
+
+    The provided ``expand_fn`` can either have the signature
+    ``tape -> tape``, i.e. it is a simple tape expansion function,
+    or the signature ``tape, *targs, **tkwargs -> tape`` if the expansion
+    depends on keyword arguments passed to the created ``batch_transform``
+    itself.
+
+    .. warning::
+
+        In the case of ``expand_fn`` having the signature
+        ``tape, *targs, **tkwargs -> tape``, **both** ``expand_fn`` and
+        ``transform_fn`` must accept additional keyword arguments flexibly.
+
+    **Example**
+
+    Consider the following two expansion functions, where one is a straigh-
+    forward expansion and the other one checks a keyword argument to decide
+    whether the expansion actually takes place:
+
+    .. code-block:: python
+
+        def expand_fn(tape):
+            stopping_crit = lambda obj: obj.name!="PhaseShift"
+            return tape.expand(depth=10, stop_at=stopping_crit)
+
+        def expand_fn_with_kwargs(tape, *targs, actually_expand=None, **tkwargs):
+            if actually_expand:
+                return expand_fn(tape)
+            return tape
+
+    Note that we additionally included a flexible number of keyword arguments
+    in the signature of ``expand_fn_with_kwargs`` via ``**tkwargs`` but not in
+    the signature of ``expand_fn``.
+
+    Now take the example of a transform from above but include the two expansion
+    functions in the decoration of ``my_transform``:
+
+    .. code-block:: python
+
+        @functools.partial(batch_transform, expand_fn=expand_fn)
+        def my_transform_1(tape, a, b):
+            ...
+
+        @functools.partial(batch_transform, expand_fn=expand_fn_with_kwargs)
+        def my_transform_2(tape, a, b, **kwargs):
+            ...
+
+    The addition of ``**kwargs`` to the signature of ``my_transform_2`` is
+    necessary because we chose the more complicated ``expand_fn_with_kwargs``.
+    For ``expand_fn`` as expansion function, this modification is not necessary.
     """
 
     def __init__(self, transform_fn, expand_fn=None, differentiable=True):
@@ -337,5 +387,4 @@ class batch_transform:
         """
         if self.expand_fn_with_kwargs:
             return self.expand_fn(tape, *targs, **tkwargs)
-        else:
-            return self.expand_fn(tape)
+        return self.expand_fn(tape)

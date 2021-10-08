@@ -54,6 +54,7 @@ def expand_multi_par_and_nonunitary_gen(tape, depth=10):
 
 def expand_fn(tape, *targs, **tkwargs):
     """Set the metric tensor based on whether non-unitary gates are allowed."""
+    # pylint: disable=unused-argument
     if tkwargs.get("allow_nonunitary", True):
         return expand_multi_par_and_no_gen(tape)
     return expand_multi_par_and_nonunitary_gen(tape)
@@ -184,6 +185,7 @@ def metric_tensor(tape, approx="block-diag", diag_approx=None, allow_nonunitary=
                [0.        , 0.00415023, 0.        ],
                [0.        , 0.        , 0.24878844]])
     """
+    # pylint: disable=unused-argument
     if diag_approx is not None:
         warnings.warn(
             "The keyword argument diag_approx is deprecated. Please use approx='diag' instead.",
