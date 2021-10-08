@@ -38,6 +38,7 @@ def gradient_expand(tape, depth=10, **kwargs):
     Returns:
         .QuantumTape: the expanded tape
     """
+    # pylint: disable=unused-argument
 
     # check if the tape contains unsupported trainable operations
     if any(unsupported_op(op) and trainable_op(op) for op in tape.operations):
