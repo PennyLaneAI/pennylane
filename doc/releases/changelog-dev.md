@@ -436,6 +436,10 @@
   `requires_grad=False` was explicitly set.
   [(#1638)](https://github.com/PennyLaneAI/pennylane/pull/1638)
 
+- The operation `qml.Interferometer` has been renamed `qml.InterferometerUnitary` in order to 
+  distinguish it from the template `qml.templates.Interferometer`.
+  [(#1714)](https://github.com/PennyLaneAI/pennylane/pull/1714)
+
 <h3>Deprecations</h3>
 
 * The `qml.fourier.spectrum` function has been renamed to `qml.fourier.circuit_spectrum`,
@@ -490,5 +494,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-Utkarsh Azad, Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee, Romain Moyard,
-Carrie-Anne Rubidge, Maria Schuld, Ingrid Strandberg, Antal Száva, Cody Wang, David Wierichs.
+Utkarsh Azad, Akash Narayanan B, Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee,
+Romain Moyard, Carrie-Anne Rubidge, Maria Schuld, Ingrid Strandberg, Antal Száva, Cody Wang,
+David Wierichs.
