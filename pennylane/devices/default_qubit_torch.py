@@ -100,7 +100,7 @@ class DefaultQubitTorch(DefaultQubit):
     >>> res = circuit(weights)
     >>> res.backward()
     >>> print(weights.grad)
-    tensor([-2.2527e-01, -1.0086e+00,  1.3878e-17])
+    tensor([-2.2527e-01, -1.0086e+00,  2.9919e-17], device='cuda:0')
 
 
     There are a couple of things to keep in mind when using the ``"backprop"``
@@ -176,8 +176,10 @@ class DefaultQubitTorch(DefaultQubit):
     _norm = staticmethod(torch.norm)
     _flatten = staticmethod(torch.flatten)
 
-    def __init__(self, wires, *, shots=None, analytic=None, torch_device="cpu"):
-        self._torch_device = torch_device
+    def __init__(self, wires, *, shots=None, analytic=None):
+
+        self._torch_device = "cpu"
+
         super().__init__(wires, shots=shots, cache=0, analytic=analytic)
 
         # Move state to torch device (e.g. CPU, GPU, XLA, ...)
@@ -185,8 +187,16 @@ class DefaultQubitTorch(DefaultQubit):
         self._state = self._state.to(self._torch_device)
         self._pre_rotated_state = self._state
 
-    @staticmethod
-    def _asarray(a, dtype=None):
+    def execute(self, circuit, **kwargs):
+        ops_and_obs = circuit.operations + circuit.observables
+        if any(data.is_cuda for op in ops_and_obs for data in op.data if hasattr(data, "is_cuda")):
+            self._torch_device = "cuda"
+        else:
+            # need to reset in case last execution moved to cuda
+            self._torch_device = "cpu"
+        return super().execute(circuit, **kwargs)
+
+    def _asarray(self, a, dtype=None):
         if isinstance(a, list):
             # Handle unexpected cases where we don't have a list of tensors
             if not isinstance(a[0], torch.Tensor):
@@ -197,7 +207,11 @@ class DefaultQubitTorch(DefaultQubit):
             res = torch.cat([torch.reshape(i, (-1,)) for i in res], dim=0)
         else:
             res = torch.as_tensor(a, dtype=dtype)
+
+        res = torch.as_tensor(res, device=self._torch_device)
         return res
+
+    _cast = _asarray
 
     @staticmethod
     def _dot(x, y):
@@ -208,9 +222,6 @@ class DefaultQubitTorch(DefaultQubit):
                 return torch.tensordot(x.to(y.device), y, dims=1)
 
         return torch.tensordot(x, y, dims=1)
-
-    def _cast(self, a, dtype=None):
-        return torch.as_tensor(self._asarray(a, dtype=dtype), device=self._torch_device)
 
     @staticmethod
     def _reduce_sum(array, axes):
