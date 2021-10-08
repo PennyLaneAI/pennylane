@@ -287,8 +287,8 @@ def generate_overlap(basis_a, basis_b):
         args_a = [i[0] for i in args]
         args_b = [i[1] for i in args]
 
-        alpha, ca, ra = _generate_params(basis_a.params, args_a)
-        beta, cb, rb = _generate_params(basis_b.params, args_b)
+        ra, alpha, ca = _generate_params(basis_a.params, args_a)
+        rb, beta, cb = _generate_params(basis_b.params, args_b)
 
         ca = ca * primitive_norm(basis_a.l, alpha)
         cb = cb * primitive_norm(basis_b.l, beta)
@@ -443,8 +443,8 @@ def generate_kinetic(basis_a, basis_b):
         args_a = [i[0] for i in args]
         args_b = [i[1] for i in args]
 
-        alpha, ca, ra = _generate_params(basis_a.params, args_a)
-        beta, cb, rb = _generate_params(basis_b.params, args_b)
+        ra, alpha, ca = _generate_params(basis_a.params, args_a)
+        rb, beta, cb = _generate_params(basis_b.params, args_b)
 
         ca = ca * primitive_norm(basis_a.l, alpha)
         cb = cb * primitive_norm(basis_b.l, beta)
@@ -659,8 +659,8 @@ def generate_attraction(r, basis_a, basis_b):
             args_a = [i[0] for i in args]
             args_b = [i[1] for i in args]
 
-        alpha, ca, ra = _generate_params(basis_a.params, args_a)
-        beta, cb, rb = _generate_params(basis_b.params, args_b)
+        ra, alpha, ca = _generate_params(basis_a.params, args_a)
+        rb, beta, cb = _generate_params(basis_b.params, args_b)
 
         ca = ca * primitive_norm(basis_a.l, alpha)
         cb = cb * primitive_norm(basis_b.l, beta)
@@ -805,10 +805,10 @@ def generate_repulsion(basis_a, basis_b, basis_c, basis_d):
         args_c = [i[2] for i in args]
         args_d = [i[3] for i in args]
 
-        alpha, ca, ra = _generate_params(basis_a.params, args_a)
-        beta, cb, rb = _generate_params(basis_b.params, args_b)
-        gamma, cc, rc = _generate_params(basis_c.params, args_c)
-        delta, cd, rd = _generate_params(basis_d.params, args_d)
+        ra, alpha, ca = _generate_params(basis_a.params, args_a)
+        rb, beta, cb = _generate_params(basis_b.params, args_b)
+        rc, gamma, cc = _generate_params(basis_c.params, args_c)
+        rd, delta, cd = _generate_params(basis_d.params, args_d)
 
         ca = ca * primitive_norm(basis_a.l, alpha)
         cb = cb * primitive_norm(basis_b.l, beta)
