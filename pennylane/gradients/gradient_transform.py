@@ -22,7 +22,7 @@ supported_op = lambda op: op.grad_method is not None
 trainable_op = lambda op: any(qml.math.requires_grad(p) for p in op.parameters)
 
 
-def gradient_expand(tape, depth=10):
+def gradient_expand(tape, depth=10, **kwargs):
     """Expand out a tape so that it supports differentiation
     of requested operations.
 
