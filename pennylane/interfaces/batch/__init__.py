@@ -16,17 +16,64 @@ This subpackage defines functions for interfacing devices' batch execution
 capabilities with different machine learning libraries.
 """
 # pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches
+import contextlib
 from functools import wraps
+import itertools
 
 from cachetools import LRUCache
 import numpy as np
 
 import pennylane as qml
 
-from .autograd import execute as execute_autograd
+
+INTERFACE_NAMES = {
+    "NumPy": (None,),
+    "Autograd": ("autograd", "numpy"),  # for backwards compatibility
+    "JAX": ("jax", "JAX"),
+    "PyTorch": ("torch", "pytorch"),
+    "TensorFlow": ("tf", "tensorflow"),
+}
+"""dict[str, str]: maps allowed interface strings to the name of the interface"""
+
+SUPPORTED_INTERFACES = list(itertools.chain(*INTERFACE_NAMES.values()))
 
 
-def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True):
+@contextlib.contextmanager
+def set_shots(device, shots):
+    """Context manager to temporarily change the shots
+    of a device.
+
+    This context manager can be used in two ways.
+
+    As a standard context manager:
+
+    >>> dev = qml.device("default.qubit", wires=2, shots=None)
+    >>> with set_shots(dev, shots=100):
+    ...     print(dev.shots)
+    100
+    >>> print(dev.shots)
+    None
+
+    Or as a decorator that acts on a function that uses the device:
+
+    >>> set_shots(dev, shots=100)(lambda: dev.shots)()
+    100
+    """
+    if shots == device.shots:
+        yield
+        return
+
+    original_shots = device.shots
+
+    try:
+        if shots is not False and device.shots != shots:
+            device.shots = shots
+        yield
+    finally:
+        device.shots = original_shots
+
+
+def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True, expand_fn=None):
     """Decorator that adds caching to a function that executes
     multiple tapes on a device.
 
@@ -63,6 +110,12 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True):
         function: a wrapped version of the execution function ``fn`` with caching
         support
     """
+    if expand_fn is not None:
+        original_fn = fn
+
+        def fn(tapes, **kwargs):  # pylint: disable=function-redefined
+            tapes = [expand_fn(tape) for tape in tapes]
+            return original_fn(tapes, **kwargs)
 
     @wraps(fn)
     def wrapper(tapes, **kwargs):
@@ -74,7 +127,7 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True):
             # No caching. Simply execute the execution function
             # and return the results.
             res = fn(tapes, **kwargs)
-            return res, [] if return_tuple else res
+            return (res, []) if return_tuple else res
 
         execution_tapes = {}
         cached_results = {}
@@ -106,7 +159,7 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True):
         if not execution_tapes:
             if not repeated:
                 res = list(cached_results.values())
-                return res, [] if return_tuple else res
+                return (res, []) if return_tuple else res
 
         else:
             # execute all unique tapes that do not exist in the cache
@@ -129,7 +182,7 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True):
                 final_res.append(r)
                 cache[hashes[i]] = r
 
-        return final_res, [] if return_tuple else final_res
+        return (final_res, []) if return_tuple else final_res
 
     wrapper.fn = fn
     return wrapper
@@ -144,7 +197,10 @@ def execute(
     gradient_kwargs=None,
     cache=True,
     cachesize=10000,
-    max_diff=2,
+    max_diff=1,
+    override_shots=False,
+    expand_fn="device",
+    max_expansion=10,
 ):
     """Execute a batch of tapes on a device in an autodifferentiable-compatible manner.
 
@@ -173,6 +229,14 @@ def execute(
             the maximum number of derivatives to support. Increasing this value allows
             for higher order derivatives to be extracted, at the cost of additional
             (classical) computational overhead during the backwards pass.
+        expand_fn (function): Tape expansion function to be called prior to device execution.
+            Must have signature of the form ``expand_fn(tape, max_expansion)``, and return a
+            single :class:`~.QuantumTape`. If not provided, by default :meth:`Device.expand_fn`
+            is called.
+        max_expansion (int): The number of times the internal circuit should be expanded when
+            executed on a device. Expansion occurs when an operation or measurement is not
+            supported, and results in a gate decomposition. If any operations in the decomposition
+            remain unsupported by the device, another expansion occurs.
 
     Returns:
         list[list[float]]: A nested list of tape results. Each element in
@@ -236,27 +300,53 @@ def execute(
 
     if isinstance(cache, bool) and cache:
         # cache=True: create a LRUCache object
-        cache = LRUCache(maxsize=cachesize, getsizeof=len)
+        cache = LRUCache(maxsize=cachesize, getsizeof=lambda x: qml.math.shape(x)[0])
 
-    # the default execution function is device.batch_execute
-    execute_fn = cache_execute(device.batch_execute, cache)
+    batch_execute = set_shots(device, override_shots)(device.batch_execute)
+
+    if expand_fn == "device":
+        expand_fn = lambda tape: device.expand_fn(tape, max_expansion=max_expansion)
+
+    if gradient_fn is None:
+        with qml.tape.Unwrap(*tapes):
+            res = cache_execute(batch_execute, cache, return_tuple=False, expand_fn=expand_fn)(
+                tapes
+            )
+
+        return res
+
+    if gradient_fn == "backprop" or interface is None:
+        return cache_execute(batch_execute, cache, return_tuple=False, expand_fn=expand_fn)(tapes)
+
+    # the default execution function is batch_execute
+    execute_fn = cache_execute(batch_execute, cache, expand_fn=expand_fn)
 
     if gradient_fn == "device":
         # gradient function is a device method
 
+        # Expand all tapes as per the device's expand function here.
+        # We must do this now, prior to the interface, to ensure that
+        # decompositions with parameter processing is tracked by the
+        # autodiff frameworks.
+        for i, tape in enumerate(tapes):
+            tapes[i] = expand_fn(tape)
+
         if mode in ("forward", "best"):
             # replace the forward execution function to return
             # both results and gradients
-            execute_fn = device.execute_and_gradients
+            execute_fn = set_shots(device, override_shots)(device.execute_and_gradients)
             gradient_fn = None
 
         elif mode == "backward":
             # disable caching on the forward pass
-            execute_fn = cache_execute(device.batch_execute, cache=None)
+            execute_fn = cache_execute(batch_execute, cache=None)
 
             # replace the backward gradient computation
             gradient_fn = cache_execute(
-                device.gradients, cache, pass_kwargs=True, return_tuple=False
+                set_shots(device, override_shots)(device.gradients),
+                cache,
+                pass_kwargs=True,
+                return_tuple=False,
             )
 
     elif mode == "forward":
@@ -265,11 +355,28 @@ def execute(
         # in this case would have ambiguous behaviour.
         raise ValueError("Gradient transforms cannot be used with mode='forward'")
 
-    if interface == "autograd":
-        res = execute_autograd(
-            tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
-        )
-    else:
-        raise ValueError(f"Unknown interface {interface}")
+    try:
+        if interface in INTERFACE_NAMES["Autograd"]:
+            from .autograd import execute as _execute
+        elif interface in INTERFACE_NAMES["TensorFlow"]:
+            from .tensorflow import execute as _execute
+        elif interface in INTERFACE_NAMES["PyTorch"]:
+            from .torch import execute as _execute
+        elif interface in INTERFACE_NAMES["JAX"]:
+            from .jax import execute as _execute
+        else:
+            raise ValueError(
+                f"Unknown interface {interface}. Supported "
+                f"interfaces are {SUPPORTED_INTERFACES}"
+            )
+    except ImportError as e:
+        interface_name = [k for k, v in INTERFACE_NAMES.items() if interface in v][0]
+
+        raise qml.QuantumFunctionError(
+            f"{interface_name} not found. Please install the latest "
+            f"version of {interface_name} to enable the '{interface}' interface."
+        ) from e
+
+    res = _execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff)
 
     return res

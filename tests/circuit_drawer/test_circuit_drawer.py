@@ -22,6 +22,7 @@ import pennylane as qml
 from pennylane.circuit_drawer import CircuitDrawer
 from pennylane.circuit_drawer.circuit_drawer import _remove_duplicates
 from pennylane.circuit_drawer.grid import Grid, _transpose
+from pennylane.circuit_drawer.charsets import CHARSETS, UnicodeCharSet, AsciiCharSet
 from pennylane.wires import Wires
 
 from pennylane.measure import state
@@ -63,6 +64,41 @@ dummy_raw_observable_grid = [
     [qml.expval(qml.PauliY(wires=[2]))],
     [qml.var(qml.Hadamard(wires=[3]))],
 ]
+
+
+class TestInitialization:
+    def test_charset_default(self):
+
+        drawer_None = CircuitDrawer(
+            dummy_raw_operation_grid, dummy_raw_observable_grid, Wires(range(6)), charset=None
+        )
+
+        assert isinstance(drawer_None.charset, UnicodeCharSet)
+
+    @pytest.mark.parametrize("charset", ("unicode", "ascii"))
+    def test_charset_string(self, charset):
+
+        drawer_str = CircuitDrawer(
+            dummy_raw_operation_grid, dummy_raw_observable_grid, Wires(range(6)), charset=charset
+        )
+
+        assert isinstance(drawer_str.charset, CHARSETS[charset])
+
+    @pytest.mark.parametrize("charset", (UnicodeCharSet, AsciiCharSet))
+    def test_charset_class(self, charset):
+
+        drawer_class = CircuitDrawer(
+            dummy_raw_operation_grid, dummy_raw_observable_grid, Wires(range(6)), charset=charset
+        )
+
+        assert isinstance(drawer_class.charset, charset)
+
+    def test_charset_error(self):
+
+        with pytest.raises(ValueError, match=r"Charset 'nope' is not supported."):
+            CircuitDrawer(
+                dummy_raw_operation_grid, dummy_raw_observable_grid, Wires(range(6)), charset="nope"
+            )
 
 
 @pytest.fixture
@@ -298,6 +334,8 @@ def parameterized_qubit_qnode():
         qml.PauliZ(wires=[1]).inv()
         qml.CZ(wires=[0, 1])
         qml.CZ(wires=[0, 2]).inv()
+        qml.CY(wires=[1, 2])
+        qml.CY(wires=[2, 0]).inv()
         qml.CNOT(wires=[2, 1])
         qml.CNOT(wires=[0, 2])
         qml.SWAP(wires=[0, 2]).inv()
@@ -322,34 +360,14 @@ def parameterized_qubit_qnode():
 
 
 @pytest.fixture
-def drawn_parameterized_qubit_circuit_with_variable_names():
-    """The rendered circuit representation of the above qubit circuit with variable names."""
-    return (
-        " 0: ──RX(a)────────────────────────╭C─────RX(angles[0])──────────────────────────────────────────────╭C─────╭C───────╭C──╭C────────────╭C──╭SWAP⁻¹──╭SWAP───┤ ⟨Y⟩       \n"
-        + " 1: ──RX(b)───────Z────────────────╰X⁻¹──╭RY(b)──────────RX(4*angles[1])──╭RY(0.359)⁻¹──╭SWAP⁻¹──────├X──Z──│───Z⁻¹──╰Z──│─────╭X──╭C──│───│────────├SWAP───┤ Var[H]    \n"
-        + " 2: ──Rϕ(1.89*c)──RX(angles[2])⁻¹────────│────────────────────────────────│─────────────├SWAP⁻¹──U0──╰C─────╰X───────────╰Z⁻¹──╰C──│───╰X──╰SWAP⁻¹──│───────┤ Sample[X] \n"
-        + " 3: ─────────────────────────────────────╰C──────────────RZ(b)────────────╰C────────────│──────────────────────────────────────────╰X───────RZ(b)───│──────╭┤ ⟨H0⟩      \n"
-        + " 4: ────────────────────────────────────────────────────────────────────────────────────╰C──────────────────────────────────────────────────────────╰C─────╰┤ ⟨H0⟩      \n"
-        + "U0 =\n"
-        + "[[1. 0.]\n"
-        + " [0. 1.]]\n"
-        + "H0 =\n"
-        + "[[1. 0. 0. 0.]\n"
-        + " [0. 1. 0. 0.]\n"
-        + " [0. 0. 1. 0.]\n"
-        + " [0. 0. 0. 1.]]\n"
-    )
-
-
-@pytest.fixture
 def drawn_parameterized_qubit_circuit_with_values():
     """The rendered circuit representation of the above qubit circuit with variable values."""
     return (
-        " 0: ──RX(0.1)───────────────╭C─────RX(0.4)──────────────────────────────────────╭C───╭C──╭C─────╭C───────╭C──╭C────────────╭C──╭SWAP⁻¹───╭SWAP───┤ ⟨Y⟩       \n"
-        + " 1: ──RX(0.2)────Z──────────╰X⁻¹──╭RY(0.2)──RX(2)────╭RY(0.359)⁻¹──╭SWAP⁻¹──────├C───├C──├X──Z──│───Z⁻¹──╰Z──│─────╭X──╭C──│───│─────────├SWAP───┤ Var[H]    \n"
-        + " 2: ──Rϕ(0.567)──RX(0.6)⁻¹────────│──────────────────│─────────────├SWAP⁻¹──U0──╰U0──├C──╰C─────╰X───────────╰Z⁻¹──╰C──│───╰X──╰SWAP⁻¹───│───────┤ Sample[X] \n"
-        + " 3: ──────────────────────────────╰C────────RZ(0.2)──╰C────────────│─────────────────╰X────────────────────────────────╰X───────RZ(0.2)──│──────╭┤ ⟨H0⟩      \n"
-        + " 4: ───────────────────────────────────────────────────────────────╰C────────────────────────────────────────────────────────────────────╰C─────╰┤ ⟨H0⟩      \n"
+        " 0: ──RX(0.1)───────────────╭C─────RX(0.4)──────────────────────────────────────╭C───╭C──╭C─────╭C───────╭C──╭C────────╭Y⁻¹──────────╭C──╭SWAP⁻¹───╭SWAP───┤ ⟨Y⟩       \n"
+        + " 1: ──RX(0.2)────Z──────────╰X⁻¹──╭RY(0.2)──RX(2)────╭RY(0.359)⁻¹──╭SWAP⁻¹──────├C───├C──├X──Z──│───Z⁻¹──╰Z──│─────╭C──│─────╭X──╭C──│───│─────────├SWAP───┤ Var[H]    \n"
+        + " 2: ──Rϕ(0.567)──RX(0.6)⁻¹────────│──────────────────│─────────────├SWAP⁻¹──U0──╰U0──├C──╰C─────╰X───────────╰Z⁻¹──╰Y──╰C────╰C──│───╰X──╰SWAP⁻¹───│───────┤ Sample[X] \n"
+        + " 3: ──────────────────────────────╰C────────RZ(0.2)──╰C────────────│─────────────────╰X──────────────────────────────────────────╰X───────RZ(0.2)──│──────╭┤ ⟨H0⟩      \n"
+        + " 4: ───────────────────────────────────────────────────────────────╰C──────────────────────────────────────────────────────────────────────────────╰C─────╰┤ ⟨H0⟩      \n"
         + "U0 =\n"
         + "[[1. 0.]\n"
         + " [0. 1.]]\n"
@@ -707,6 +725,7 @@ class TestCircuitDrawerIntegration:
 
         assert output == drawn_wide_cv_qnode
 
+    @pytest.mark.slow
     def test_cv_circuit_with_values(
         self, parameterized_cv_qnode, drawn_parameterized_cv_qnode_with_values
     ):
@@ -784,6 +803,32 @@ class TestCircuitDrawerIntegration:
             + " 1: ──RY(-1.57)───────────────────────├┤ ⟨Z ⊗ Z ⊗ Z⟩ │┤         \n"
             + " 2: ──RY(-1.57)───────────────────────╰┤ ⟨Z ⊗ Z ⊗ Z⟩ │┤         \n"
             + " 3: ──RY(-1.57)────────────────────────┤             ╰┤ ⟨Z ⊗ Z⟩ \n"
+        )
+        assert qnode.draw() == expected
+
+    def test_same_wire_multiple_measurements_many_obs(self):
+        """Test that drawing a QNode with multiple measurements on certain
+        wires works correctly when there are more observables than the number of
+        observables for any wire.
+        """
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def qnode(x, y):
+            qml.RY(x, wires=0)
+            qml.Hadamard(0)
+            qml.RZ(y, wires=0)
+            return [
+                qml.expval(qml.PauliZ(0)),
+                qml.expval(qml.PauliZ(1)),
+                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)),
+            ]
+
+        qnode(0.3, 0.2)
+
+        expected = (
+            " 0: ──RY(0.3)──H──RZ(0.2)──┤ ⟨Z⟩ ┤     ╭┤ ⟨Z ⊗ Z⟩ \n"
+            + " 1: ───────────────────────┤     ┤ ⟨Z⟩ ╰┤ ⟨Z ⊗ Z⟩ \n"
         )
         assert qnode.draw() == expected
 

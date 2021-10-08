@@ -14,7 +14,7 @@
 """Unit tests for the torch interface"""
 import pytest
 
-torch = pytest.importorskip("torch", minversion="1.3")
+torch = pytest.importorskip("torch", minversion="1.8.0")
 
 import numpy as np
 
@@ -446,13 +446,13 @@ class TestTorchQuantumTape:
         assert isinstance(res, torch.Tensor)
 
     def test_complex_min_version(self, monkeypatch):
-        """Test if an error is raised when a version of torch before 1.6.0 is used as the dtype
+        """Test if an error is raised when a version of torch before 1.8.0 is used as the dtype
         in the apply() method"""
 
         with monkeypatch.context() as m:
             m.setattr(qml.interfaces.torch, "COMPLEX_SUPPORT", False)
             with pytest.raises(
-                qml.QuantumFunctionError, match=r"Version 1\.6\.0 or above of PyTorch"
+                qml.QuantumFunctionError, match=r"Version 1\.8\.0 or above of PyTorch"
             ):
                 TorchInterface.apply(JacobianTape(), dtype=torch.complex128)
 

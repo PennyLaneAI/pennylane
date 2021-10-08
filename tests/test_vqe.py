@@ -63,6 +63,11 @@ OBSERVABLES = [
     (qml.Hermitian(H_TWO_QUBITS, [0, 1]),),
 ]
 
+OBSERVABLES_NO_HERMITIAN = [
+    (qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)),
+    (qml.PauliX(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1), qml.PauliZ(1)),
+]
+
 JUNK_INPUTS = [None, [], tuple(), 5.0, {"junk": -1}]
 
 hamiltonians_with_expvals = [
@@ -188,7 +193,7 @@ ANSAETZE = [
 EMPTY_PARAMS = []
 VAR_PARAMS = [0.5]
 EMBED_PARAMS = np.array([1 / np.sqrt(2 ** 3)] * 2 ** 3)
-LAYER_PARAMS = qml.init.strong_ent_layers_uniform(n_layers=2, n_wires=3)
+LAYER_PARAMS = np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=3))
 
 CIRCUITS = [
     (lambda params, wires=None: None, EMPTY_PARAMS),
@@ -361,6 +366,7 @@ class TestVQE:
             assert qnode.diff_options["h"] == 123
             assert qnode.diff_options["order"] == 2
 
+    @pytest.mark.slow
     @pytest.mark.parametrize("interface", ["tf", "torch", "autograd"])
     def test_optimize(self, interface, tf_support, torch_support):
         """Test that an ExpvalCost with observable optimization gives the same result as another
@@ -390,7 +396,9 @@ class TestVQE:
             diff_method="parameter-shift",
         )
 
-        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
+        np.random.seed(1967)
+        shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
+        w = np.random.random(shape)
 
         c1 = cost(w)
         exec_opt = dev.num_executions
@@ -446,7 +454,9 @@ class TestVQE:
             diff_method="parameter-shift",
         )
 
-        w = qml.init.strong_ent_layers_uniform(2, 5, seed=1967)
+        np.random.seed(1967)
+        shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=5)
+        w = np.random.random(shape)
 
         c1 = cost(w)
         exec_opt = dev.num_executions
@@ -481,7 +491,9 @@ class TestVQE:
             diff_method="parameter-shift",
         )
 
-        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
+        np.random.seed(1967)
+        shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
+        w = np.random.uniform(low=0, high=2 * np.pi, size=shape)
 
         dc = qml.grad(cost)(w)
         exec_opt = dev.num_executions
@@ -509,11 +521,14 @@ class TestVQE:
             diff_method="parameter-shift",
         )
 
-        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
+        np.random.seed(1967)
+        shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
+        w = np.random.random(shape)
 
         dc = qml.grad(cost)(w)
         assert np.allclose(dc, 0)
 
+    @pytest.mark.slow
     def test_optimize_grad_torch(self, torch_support):
         """Test that the gradient of ExpvalCost is accessible and correct when using observable
         optimization and the Torch interface."""
@@ -531,7 +546,10 @@ class TestVQE:
             interface="torch",
         )
 
-        w = torch.tensor(qml.init.strong_ent_layers_uniform(2, 4, seed=1967), requires_grad=True)
+        np.random.seed(1967)
+        shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
+        w = np.random.uniform(low=0, high=2 * np.pi, size=shape)
+        w = torch.tensor(w, requires_grad=True)
 
         res = cost(w)
         res.backward()
@@ -539,6 +557,7 @@ class TestVQE:
 
         assert np.allclose(dc, big_hamiltonian_grad)
 
+    @pytest.mark.slow
     def test_optimize_grad_tf(self, tf_support):
         """Test that the gradient of ExpvalCost is accessible and correct when using observable
         optimization and the TensorFlow interface."""
@@ -552,7 +571,10 @@ class TestVQE:
             qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=True, interface="tf"
         )
 
-        w = tf.Variable(qml.init.strong_ent_layers_uniform(2, 4, seed=1967))
+        np.random.seed(1967)
+        shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
+        w = np.random.uniform(low=0, high=2 * np.pi, size=shape)
+        w = tf.Variable(w)
 
         with tf.GradientTape() as tape:
             res = cost(w)
@@ -590,7 +612,8 @@ class TestVQE:
         h = qml.Hamiltonian([1, 1], obs)
 
         qnodes = qml.ExpvalCost(qml.templates.BasicEntanglerLayers, h, dev)
-        w = qml.init.basic_entangler_layers_uniform(3, 2, seed=1967)
+        np.random.seed(1967)
+        w = np.random.random(qml.templates.BasicEntanglerLayers.shape(n_layers=3, n_wires=2))
 
         res = qnodes(w)
 
@@ -624,11 +647,17 @@ class TestVQE:
             qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, hamiltonian, dev, measure="var")
 
 
+# Test data
+np.random.seed(1967)
+shape = qml.templates.StronglyEntanglingLayers.shape(2, 4)
+PARAMS = np.random.uniform(low=0, high=2 * np.pi, size=shape)
+
+
 class TestNewVQE:
     """Test the new VQE syntax of passing the Hamiltonian as an observable."""
 
     @pytest.mark.parametrize("ansatz, params", CIRCUITS)
-    @pytest.mark.parametrize("observables", OBSERVABLES)
+    @pytest.mark.parametrize("observables", OBSERVABLES_NO_HERMITIAN)
     def test_circuits_evaluate(self, ansatz, observables, params, tol):
         """Tests simple VQE evaluations."""
         coeffs = [1.0] * len(observables)
@@ -661,7 +690,8 @@ class TestNewVQE:
         """Tests a VQE circuit where the observable does not act on all wires."""
         dev = qml.device("default.qubit", wires=3)
         coeffs = [1.0, 1.0, 1.0]
-        w = qml.init.strong_ent_layers_uniform(1, 2, seed=1967)
+        np.random.seed(1967)
+        w = np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=1, n_wires=2))
 
         observables1 = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
         H1 = qml.Hamiltonian(coeffs, observables1)
@@ -720,47 +750,77 @@ class TestNewVQE:
         expected = " 0: ──H──╭┤ ⟨Hamiltonian(1, 1, 1)⟩ \n" + " 2: ─────╰┤ ⟨Hamiltonian(1, 1, 1)⟩ \n"
         assert res == expected
 
-    def test_error_multiple_expvals(self):
-        """Tests that error is thrown if more than one expval is evaluated."""
-        observables = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
-        coeffs = [1.0] * len(observables)
+    def test_multiple_expvals(self):
+        """Tests that more than one Hamiltonian expval can be evaluated."""
+
+        coeffs = [1.0, 1.0, 1.0]
         dev = qml.device("default.qubit", wires=4)
-        H = qml.Hamiltonian(coeffs, observables)
-        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
+        H1 = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)])
+        H2 = qml.Hamiltonian(coeffs, [qml.PauliZ(2), qml.PauliY(2), qml.PauliZ(3)])
+        w = PARAMS
 
         @qml.qnode(dev)
         def circuit():
             qml.templates.StronglyEntanglingLayers(w, wires=range(4))
-            return qml.expval(H), qml.expval(qml.PauliX(3))
+            return qml.expval(H1), qml.expval(H2)
 
-        with pytest.raises(
-            ValueError, match="Only a single expectation of a Hamiltonian observable"
-        ):
+        res = circuit()
+
+        @qml.qnode(dev)
+        def circuit1():
+            qml.templates.StronglyEntanglingLayers(w, wires=range(4))
+            return qml.expval(H1)
+
+        @qml.qnode(dev)
+        def circuit2():
+            qml.templates.StronglyEntanglingLayers(w, wires=range(4))
+            return qml.expval(H2)
+
+        assert res[0] == circuit1()
+        assert res[1] == circuit2()
+
+    def test_error_multiple_expvals_same_wire(self):
+        """Tests that more than one Hamiltonian expval can be evaluated."""
+
+        coeffs = [1.0, 1.0, 1.0]
+        dev = qml.device("default.qubit", wires=4)
+        H1 = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)])
+        w = PARAMS
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.templates.StronglyEntanglingLayers(w, wires=range(4))
+            return qml.expval(H1), qml.expval(H1)
+
+        with pytest.raises(qml.QuantumFunctionError, match="Only observables that are qubit-wise"):
             circuit()
 
-    def test_error_non_expval_measurement(self):
-        """Tests that error is thrown if sample() or var() is used."""
+    def test_error_var_measurement(self):
+        """Tests that error is thrown if var(H) is measured."""
         observables = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
         coeffs = [1.0] * len(observables)
-        dev = qml.device("default.qubit", wires=4)
+        dev = qml.device("default.qubit", wires=2)
+        H = qml.Hamiltonian(coeffs, observables)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.var(H)
+
+        with pytest.raises(ValueError, match="Cannot compute analytic variance"):
+            circuit()
+
+    def test_error_sample_measurement(self):
+        """Tests that error is thrown if sample(H) is measured."""
+        observables = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
+        coeffs = [1.0] * len(observables)
+        dev = qml.device("default.qubit", wires=2, shots=10)
         H = qml.Hamiltonian(coeffs, observables)
 
         @qml.qnode(dev)
         def circuit():
             return qml.sample(H)
 
-        with pytest.raises(
-            ValueError, match="Only a single expectation of a Hamiltonian observable "
-        ):
-            circuit()
-
-        @qml.qnode(dev)
-        def circuit():
-            return qml.var(H)
-
-        with pytest.raises(
-            ValueError, match="Only a single expectation of a Hamiltonian observable"
-        ):
+        with pytest.raises(ValueError, match="Can only return the expectation of a single"):
             circuit()
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "best"])
@@ -768,7 +828,7 @@ class TestNewVQE:
         """Tests the VQE gradient in the autograd interface."""
         dev = qml.device("default.qubit", wires=4)
         H = big_hamiltonian
-        w = pnp.array(qml.init.strong_ent_layers_uniform(2, 4, seed=1967), requires_grad=True)
+        w = pnp.array(PARAMS, requires_grad=True)
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(w):
@@ -782,7 +842,7 @@ class TestNewVQE:
         """Tests the VQE gradient for a "zero" Hamiltonian."""
         dev = qml.device("default.qubit", wires=4)
         H = qml.Hamiltonian([0], [qml.PauliX(0)])
-        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
+        w = pnp.array(PARAMS, requires_grad=True)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(w):
@@ -792,6 +852,7 @@ class TestNewVQE:
         dc = qml.grad(circuit)(w)
         assert np.allclose(dc, 0, atol=tol)
 
+    @pytest.mark.slow
     def test_grad_torch(self, torch_support, tol):
         """Tests VQE gradients in the torch interface."""
         if not torch_support:
@@ -805,7 +866,7 @@ class TestNewVQE:
             qml.templates.StronglyEntanglingLayers(w, wires=range(4))
             return qml.expval(H)
 
-        w = torch.tensor(qml.init.strong_ent_layers_uniform(2, 4, seed=1967), requires_grad=True)
+        w = torch.tensor(PARAMS, requires_grad=True)
 
         res = circuit(w)
         res.backward()
@@ -826,7 +887,7 @@ class TestNewVQE:
             qml.templates.StronglyEntanglingLayers(w, wires=range(4))
             return qml.expval(H)
 
-        w = tf.Variable(qml.init.strong_ent_layers_uniform(2, 4, seed=1967), dtype=tf.double)
+        w = tf.Variable(PARAMS, dtype=tf.double)
 
         with tf.GradientTape() as tape:
             res = circuit(w)
@@ -835,6 +896,7 @@ class TestNewVQE:
 
         assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
 
+    @pytest.mark.slow
     def test_grad_jax(self, tol):
         """Tests VQE gradients in the jax interface."""
         jax = pytest.importorskip("jax")
@@ -842,7 +904,8 @@ class TestNewVQE:
 
         dev = qml.device("default.qubit", wires=4)
         H = big_hamiltonian
-        w = jnp.array(qml.init.strong_ent_layers_uniform(2, 4, seed=1967))
+        np.random.seed(1967)
+        w = jnp.array(PARAMS)
 
         @qml.qnode(dev, interface="jax")
         def circuit(w):
@@ -1018,32 +1081,36 @@ class TestMultipleInterfaceIntegration:
 
         H = qml.Hamiltonian(coeffs, observables)
 
+        np.random.seed(1)
+        shape = qml.templates.StronglyEntanglingLayers.shape(3, 2)
+        params = np.random.uniform(low=0, high=2 * np.pi, size=shape)
+
         # TensorFlow interface
-        params = Variable(qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1))
+        w = Variable(params)
         ansatz = qml.templates.layers.StronglyEntanglingLayers
 
         cost = qml.ExpvalCost(ansatz, H, dev, interface="tf")
 
         with tf.GradientTape() as tape:
-            loss = cost(params)
-            res_tf = np.array(tape.gradient(loss, params))
+            loss = cost(w)
+            res_tf = np.array(tape.gradient(loss, w))
 
         # Torch interface
-        params = torch.tensor(qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1))
-        params = torch.autograd.Variable(params, requires_grad=True)
+        w = torch.tensor(params, requires_grad=True)
+        w = torch.autograd.Variable(w, requires_grad=True)
         ansatz = qml.templates.layers.StronglyEntanglingLayers
 
         cost = qml.ExpvalCost(ansatz, H, dev, interface="torch")
-        loss = cost(params)
+        loss = cost(w)
         loss.backward()
-        res_torch = params.grad.numpy()
+        res_torch = w.grad.numpy()
 
         # NumPy interface
-        params = qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1)
+        w = params
         ansatz = qml.templates.layers.StronglyEntanglingLayers
         cost = qml.ExpvalCost(ansatz, H, dev, interface="autograd")
         dcost = qml.grad(cost, argnum=[0])
-        res = dcost(params)
+        res = dcost(w)
 
         assert np.allclose(res, res_tf, atol=tol, rtol=0)
         assert np.allclose(res, res_torch, atol=tol, rtol=0)

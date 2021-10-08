@@ -246,10 +246,13 @@ class TestQuantumMonteCarlo:
         target_wires, estimation_wires = Wires(range(3)), Wires(range(3, 5))
 
         op = QuantumMonteCarlo(p, self.func, target_wires, estimation_wires)
-        tape = op.expand().expand()
+        tape = op.expand()
 
+        # Do expansion in two steps to avoid also decomposing the first QubitUnitary
         queue_before_qpe = tape.operations[:2]
-        queue_after_qpe = tape.operations[2:]
+
+        # 2-qubit decomposition has 10 operations, and after is a 3-qubit gate so start at 11
+        queue_after_qpe = tape.expand().operations[11:]
 
         A = probs_to_unitary(p)
         R = func_to_unitary(self.func, 4)

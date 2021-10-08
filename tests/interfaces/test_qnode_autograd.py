@@ -423,22 +423,10 @@ class TestQNode:
             return qml.expval(qml.PauliX(0))
 
         res = circuit(a, p)
-
-        if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == {1, 2, 3, 4}
-        elif diff_method == "backprop":
-            # For a backprop device, no interface wrapping is performed, and JacobianTape.jacobian()
-            # is never called. As a result, JacobianTape.trainable_params is never set --- the ML
-            # framework uses its own backprop logic and its own bookkeeping re: trainable parameters.
-            assert circuit.qtape.trainable_params == {0, 1, 2, 3, 4}
+        assert circuit.qtape.trainable_params == {1, 2, 3, 4}
 
         assert [i.name for i in circuit.qtape.operations] == ["RX", "Rot", "PhaseShift"]
-
-        if diff_method == "finite-diff":
-            assert np.all(circuit.qtape.get_parameters() == [p[2], p[0], -p[2], p[1] + p[2]])
-        elif diff_method == "backprop":
-            # In backprop mode, all parameters are returned.
-            assert np.all(circuit.qtape.get_parameters() == [a, p[2], p[0], -p[2], p[1] + p[2]])
+        assert np.all(circuit.qtape.get_parameters() == [p[2], p[0], -p[2], p[1] + p[2]])
 
         expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
             np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
@@ -651,8 +639,8 @@ class TestQNode:
             c2 = circuit2(c1, w2)
             return np.sum(c2) ** 2
 
-        w1 = qml.init.strong_ent_layers_normal(n_wires=2, n_layers=3)
-        w2 = qml.init.strong_ent_layers_normal(n_wires=2, n_layers=4)
+        w1 = np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=3, n_wires=2))
+        w2 = np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=4, n_wires=2))
 
         weights = [w1, w2]
 

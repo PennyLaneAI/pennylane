@@ -174,9 +174,13 @@ class TestEvalation:
     """Tests for the QNodeCollection evaluation"""
 
     @pytest.mark.parametrize("interface", ["autograd"])
-    def test_eval_autograd(self, qnodes, parallel, interface):
+    def test_eval_autograd(self, qnodes, parallel, interface, dask_support):
         """Test correct evaluation of the QNodeCollection using
         the Autograd interface"""
+
+        if (not dask_support) and (parallel):
+            pytest.skip("Skipped, no dask support")
+
         qnode1, qnode2 = qnodes
         qc = qml.QNodeCollection([qnode1, qnode2])
         params = [0.5643, -0.45]

@@ -157,7 +157,13 @@ def convert_like(tensor1, tensor2):
     >>> convert_like(x, y)
     <tf.Tensor: shape=(2,), dtype=int64, numpy=array([1, 2])>
     """
-    return np.asarray(tensor1, like=get_interface(tensor2))
+    interface = get_interface(tensor2)
+
+    if interface == "torch":
+        dev = tensor2.device
+        return np.asarray(tensor1, device=dev, like=interface)
+
+    return np.asarray(tensor1, like=interface)
 
 
 def get_interface(tensor):
@@ -254,7 +260,9 @@ def requires_grad(tensor, interface=None):
         try:
             from tensorflow.python.eager.tape import should_record_backprop
         except ImportError:  # pragma: no cover
-            from tensorflow.python.eager.tape import should_record as should_record_backprop
+            from tensorflow.python.eager.tape import (
+                should_record as should_record_backprop,
+            )
 
         return should_record_backprop([tf.convert_to_tensor(tensor)])
 
@@ -262,9 +270,7 @@ def requires_grad(tensor, interface=None):
         if isinstance(tensor, ArrayBox):
             return True
 
-        # Currently, in the Autograd interface, we assume
-        # that all objects are differentiable by default.
-        return getattr(tensor, "requires_grad", True)
+        return getattr(tensor, "requires_grad", False)
 
     if interface == "torch":
         return getattr(tensor, "requires_grad", False)

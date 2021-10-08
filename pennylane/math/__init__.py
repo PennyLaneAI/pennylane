@@ -59,6 +59,7 @@ from .utils import (
     requires_grad,
 )
 
+from .is_independent import is_independent
 
 sum = ar.numpy.sum
 toarray = ar.numpy.to_numpy
@@ -88,5 +89,7 @@ __all__ = [
     "cov_matrix",
     "marginal_prob",
     "unwrap",
+    "frobenius_inner_product",
     "get_trainable_indices",
+    "is_independent",
 ]

@@ -8,12 +8,17 @@ import numpy as np
 # ========================================================
 
 I = np.eye(2)
+
 # Pauli matrices
 X = np.array([[0, 1], [1, 0]])  #: Pauli-X matrix
 Y = np.array([[0, -1j], [1j, 0]])  #: Pauli-Y matrix
 Z = np.array([[1, 0], [0, -1]])  #: Pauli-Z matrix
 
 H = np.array([[1, 1], [1, -1]]) / math.sqrt(2)  #: Hadamard gate
+
+II = np.eye(4, dtype=np.complex128)
+XX = np.array(np.kron(X, X), dtype=np.complex128)
+YY = np.array(np.kron(Y, Y), dtype=np.complex128)
 
 # Single-qubit projectors
 StateZeroProjector = np.array([[1, 0], [0, 0]])
@@ -23,6 +28,14 @@ StateOneProjector = np.array([[0, 0], [0, 1]])
 CNOT = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])  #: CNOT gate
 SWAP = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])  #: SWAP gate
 ISWAP = np.array([[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]])  #: ISWAP gate
+SISWAP = np.array(
+    [
+        [1, 0, 0, 0],
+        [0, 1 / math.sqrt(2), 1 / math.sqrt(2) * 1j, 0],
+        [0, 1 / math.sqrt(2) * 1j, 1 / math.sqrt(2), 0],
+        [0, 0, 0, 1],
+    ]
+)
 CZ = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])  #: CZ gate
 S = np.array([[1, 0], [0, 1j]])  #: Phase Gate
 T = np.array([[1, 0], [0, cmath.exp(1j * np.pi / 4)]])  #: T Gate
@@ -233,6 +246,62 @@ def MultiRZ2(theta):
     )
 
 
+def IsingXX(phi):
+    r"""Ising XX coupling gate
+
+    .. math:: XX(\phi) = \begin{bmatrix}
+        \cos(\phi / 2) & 0 & 0 & -i \sin(\phi / 2) \\
+        0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
+        0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
+        -i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
+        \end{bmatrix}.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+    Returns:
+        array[complex]: unitary 4x4 rotation matrix
+    """
+    return np.cos(phi / 2) * II - 1j * np.sin(phi / 2) * XX
+
+
+def IsingYY(phi):
+    r"""Ising YY coupling gate.
+
+    .. math:: YY(\phi) = \begin{bmatrix}
+        \cos(\phi / 2) & 0 & 0 & i \sin(\phi / 2) \\
+        0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
+        0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
+        i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
+        \end{bmatrix}.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+    Returns:
+        array[complex]: unitary 4x4 rotation matrix
+    """
+    return np.cos(phi / 2) * II - 1j * np.sin(phi / 2) * YY
+
+
+def IsingZZ(phi):
+    r"""Ising ZZ coupling gate
+
+    .. math:: ZZ(\phi) = \begin{bmatrix}
+        e^{-i \phi / 2} & 0 & 0 & 0 \\
+        0 & e^{i \phi / 2} & 0 & 0 \\
+        0 & 0 & e^{i \phi / 2} & 0 \\
+        0 & 0 & 0 & e^{-i \phi / 2}
+        \end{bmatrix}.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+    Returns:
+        array[complex]: unitary 4x4 rotation matrix
+    """
+    e_m = np.exp(-1j * phi / 2)
+    e = np.exp(1j * phi / 2)
+    return np.array([[e_m, 0, 0, 0], [0, e, 0, 0], [0, 0, e, 0], [0, 0, 0, e_m]])
+
+
 def ControlledPhaseShift(phi):
     r"""Controlled phase shift.
 
@@ -369,3 +438,37 @@ def DoubleExcitationMinus(phi):
     U[12, 12] = c
 
     return U
+
+
+def OrbitalRotation(phi):
+    r"""Quantum number preserving four-qubit one-parameter gate.
+
+    Args:
+        phi (float): rotation angle
+    Returns:
+        array: the four-qubit matrix describing the operation
+    """
+
+    c = math.cos(phi / 2)
+    s = math.sin(phi / 2)
+
+    return np.array(
+        [
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, c, 0, 0, -s, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, c, 0, 0, 0, 0, 0, -s, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, c ** 2, 0, 0, -c * s, 0, 0, -c * s, 0, 0, s ** 2, 0, 0, 0],
+            [0, s, 0, 0, c, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, c * s, 0, 0, c ** 2, 0, 0, -(s ** 2), 0, 0, -c * s, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, c, 0, 0, 0, 0, 0, -s, 0, 0],
+            [0, 0, s, 0, 0, 0, 0, 0, c, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, c * s, 0, 0, -(s ** 2), 0, 0, c ** 2, 0, 0, -c * s, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, c, 0, 0, -s, 0],
+            [0, 0, 0, s ** 2, 0, 0, c * s, 0, 0, c * s, 0, 0, c ** 2, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, s, 0, 0, 0, 0, 0, c, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, s, 0, 0, c, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        ]
+    )

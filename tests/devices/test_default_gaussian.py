@@ -412,7 +412,7 @@ class TestDefaultGaussianDevice:
                     p = [cov, mu]
                     w = list(range(2))
                     expected_out = [cov, mu]
-                elif gate_name == "Interferometer":
+                elif gate_name == "InterferometerUnitary":
                     w = list(range(2))
                     p = [U]
                     S = fn(*p)
@@ -464,12 +464,12 @@ class TestDefaultGaussianDevice:
 
         with pytest.raises(ValueError, match="Incorrect number of subsystems"):
             p = U
-            gaussian_dev.apply("Interferometer", wires=Wires([0]), par=[p])
+            gaussian_dev.apply("InterferometerUnitary", wires=Wires([0]), par=[p])
 
         with pytest.raises(qml.wires.WireError, match="Did not find some of the wires"):
             p = U2
             # dev = DefaultGaussian(wires=4, shots=1000, hbar=hbar)
-            gaussian_dev.apply("Interferometer", wires=Wires([0, 1, 2]), par=[p])
+            gaussian_dev.apply("InterferometerUnitary", wires=Wires([0, 1, 2]), par=[p])
 
     def test_expectation(self, tol):
         """Test that expectation values are calculated correctly"""
@@ -753,6 +753,25 @@ class TestDefaultGaussianIntegration:
 
         assert np.mean(runs) == pytest.approx(p * np.sqrt(2 * hbar), abs=tol_stochastic)
 
+    def test_shot_list_warns(self):
+        """Test that specifying a list of shots is unsupported for
+        default.gaussian and emits a warning"""
+
+        shots = [10, 10, 10]
+        dev = qml.device("default.gaussian", wires=1, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit():
+            """Test quantum function"""
+            return qml.sample(qml.X(0))
+
+        with pytest.warns(
+            UserWarning,
+            match="Specifying a list of shots is only supported for QubitDevice based devices.",
+        ):
+            circuit()
+        assert dev.shots == sum(shots)
+
     @pytest.mark.parametrize("g, qop", set(DefaultGaussian._operation_map.items()))
     def test_supported_gates(self, g, qop, gaussian_dev):
         """Test that all supported gates work correctly"""
@@ -800,7 +819,7 @@ class TestDefaultGaussianIntegration:
 
         if g == "GaussianState":
             p = [np.diag([0.5234] * 4), np.array([0.432, 0.123, 0.342, 0.123])]
-        elif g == "Interferometer":
+        elif g == "InterferometerUnitary":
             p = [U]
         else:
             p = [0.432423, -0.12312, 0.324, 0.763][: op.num_params]

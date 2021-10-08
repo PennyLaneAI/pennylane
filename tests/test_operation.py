@@ -57,7 +57,7 @@ class TestOperation:
 
         # fixed parameter values
         if test_class.par_domain == "A":
-            if test_class.__name__ == "Interferometer":
+            if test_class.__name__ == "InterferometerUnitary":
                 ww = list(range(2))
                 par = [
                     np.array(
@@ -301,7 +301,7 @@ class TestOperationConstruction:
 
         class DummyOp(qml.operation.CVOperation):
             r"""Dummy custom operation"""
-            num_wires = 1
+            num_wires = 2
             num_params = 1
             par_domain = "R"
             grad_method = "A"
@@ -317,7 +317,7 @@ class TestOperationConstruction:
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
-            num_wires = 1
+            num_wires = 2
             num_params = 1
             par_domain = "N"
             grad_method = "A"
@@ -333,7 +333,7 @@ class TestOperationConstruction:
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
-            num_wires = 1
+            num_wires = 2
             num_params = 1
             par_domain = "A"
             grad_method = "A"
@@ -349,7 +349,7 @@ class TestOperationConstruction:
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
-            num_wires = 1
+            num_wires = 2
             num_params = 1
             par_domain = "R"
             grad_method = "F"
@@ -357,6 +357,26 @@ class TestOperationConstruction:
 
         with pytest.raises(AssertionError, match="Gradient recipe is only used by the A method"):
             DummyOp(0.5, wires=[0, 1])
+
+    def test_grad_recipe_parameter_dependent(self):
+        """Test that an operation with a gradient recipe that depends on
+        its instantiated parameter values works correctly"""
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+            num_params = 1
+            par_domain = "R"
+            grad_method = "A"
+
+            @property
+            def grad_recipe(self):
+                x = self.data[0]
+                return ([[1.0, 1.0, x], [1.0, 0.0, -x]],)
+
+        x = 0.654
+        op = DummyOp(x, wires=0)
+        assert op.grad_recipe == ([[1.0, 1.0, x], [1.0, 0.0, -x]],)
 
     def test_no_wires_passed(self):
         """Test exception raised if no wires are passed"""
@@ -987,6 +1007,47 @@ class TestTensor:
 
         # the measurement owns the Pauli/pruned tensor
         assert ann_queue[m]["owns"] == T_pruned
+
+    def test_sparse_matrix_no_wires(self):
+        """Tests that the correct sparse matrix representation is used."""
+
+        t = qml.PauliX(0) @ qml.PauliZ(1)
+        s = t.sparse_matrix()
+
+        assert np.allclose(s.row, [0, 1, 2, 3])
+        assert np.allclose(s.col, [2, 3, 0, 1])
+        assert np.allclose(s.data, [1, -1, 1, -1])
+
+    def test_sparse_matrix_swapped_wires(self):
+        """Tests that the correct sparse matrix representation is used
+        when the custom wires swap the order."""
+
+        t = qml.PauliX(0) @ qml.PauliZ(1)
+        s = t.sparse_matrix(wires=[1, 0])
+
+        assert np.allclose(s.row, [0, 1, 2, 3])
+        assert np.allclose(s.col, [1, 0, 3, 2])
+        assert np.allclose(s.data, [1, 1, -1, -1])
+
+    def test_sparse_matrix_extra_wire(self):
+        """Tests that the correct sparse matrix representation is used
+        when the custom wires add an extra wire with an implied identity operation."""
+
+        t = qml.PauliX(0) @ qml.PauliZ(1)
+        s = t.sparse_matrix(wires=[0, 1, 2])
+
+        assert s.shape == (8, 8)
+        assert np.allclose(s.row, [0, 1, 2, 3, 4, 5, 6, 7])
+        assert np.allclose(s.col, [4, 5, 6, 7, 0, 1, 2, 3])
+        assert np.allclose(s.data, [1, 1, -1, -1, 1, 1, -1, -1])
+
+    def test_sparse_matrix_error(self):
+        """Tests that an error is raised if the sparse matrix is computed for
+        a tensor whose constituent operations are not all single-qubit gates."""
+
+        t = qml.PauliX(0) @ qml.Hermitian(np.eye(4), wires=[1, 2])
+        with pytest.raises(ValueError, match="Can only compute"):
+            t.sparse_matrix()
 
 
 equal_obs = [

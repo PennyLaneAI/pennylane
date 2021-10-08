@@ -112,11 +112,12 @@ class ParticleConservingU2(Operation):
 
             import pennylane as qml
             from pennylane.templates import ParticleConservingU2
-
+            import numpy as np
             from functools import partial
 
-            # Build the electronic Hamiltonian from a local .xyz file
-            h, qubits = qml.qchem.molecular_hamiltonian("h2", "h2.xyz")
+            # Build the electronic Hamiltonian
+            symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
+            h, qubits = qml.qchem.molecular_hamiltonian(symbols, coordinates)
 
             # Define the HF state
             ref_state = qml.qchem.hf_state(2, qubits)
@@ -132,24 +133,26 @@ class ParticleConservingU2(Operation):
 
             # Compute the expectation value of 'h' for a given set of parameters
             layers = 1
-            params = qml.init.particle_conserving_u2_normal(layers, qubits)
+            shape = ParticleConservingU2.shape(layers, qubits)
+            params = np.random.random(shape)
             print(cost_fn(params))
 
         **Parameter shape**
 
-        The shape of the weights argument can be computed by the static method
+        The shape of the trainable weights tensor can be computed by the static method
         :meth:`~.ParticleConservingU2.shape` and used when creating randomly
         initialised weight tensors:
 
         .. code-block:: python
 
             shape = ParticleConservingU2.shape(n_layers=2, n_wires=2)
-            weights = np.random.random(size=shape)
+            params = np.random.random(size=shape)
     """
 
     num_params = 1
     num_wires = AnyWires
     par_domain = "A"
+    grad_method = None
 
     def __init__(self, weights, wires, init_state=None, do_queue=True, id=None):
 

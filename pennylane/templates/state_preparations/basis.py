@@ -51,6 +51,7 @@ class BasisStatePreparation(Operation):
     num_params = 1
     num_wires = AnyWires
     par_domain = "A"
+    grad_method = None
 
     def __init__(self, basis_state, wires, do_queue=True, id=None):
 

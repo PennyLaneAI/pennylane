@@ -52,6 +52,8 @@ ops = {
     "CY",
     "SWAP",
     "ISWAP",
+    "SISWAP",
+    "SQISW",
     "CSWAP",
     "Toffoli",
     "RX",
@@ -85,6 +87,7 @@ ops = {
     "DoubleExcitationMinus",
     "QubitCarry",
     "QubitSum",
+    "OrbitalRotation",
 }
 
 

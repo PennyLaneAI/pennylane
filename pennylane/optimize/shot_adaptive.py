@@ -84,7 +84,8 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     ``opt.total_shots_used`` can be used to track the number of shots per
     iteration, and across the life of the optimizer, respectively.
 
-    >>> params = qml.init.strong_ent_layers_uniform(n_layers=2, n_wires=2)
+    >>> shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
+    >>> params = np.random.random(shape)
     >>> opt = qml.ShotAdaptiveOptimizer(min_shots=10)
     >>> for i in range(60):
     ...    params = opt.step(cost, params)
@@ -288,7 +289,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         """
         self.lipschitz = np.sum(np.abs(coeffs))
 
-        if self._stepsize > 2 / self.lipschitz:
+        if self.stepsize > 2 / self.lipschitz:
             raise ValueError(f"The learning rate must be less than {2 / self.lipschitz}")
 
     def _single_shot_expval_gradients(self, expval_cost, args, kwargs):
@@ -449,19 +450,16 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             # determine the new optimum shots distribution for the next
             # iteration of the optimizer
             s = np.ceil(
-                (2 * self.lipschitz * self._stepsize * xi)
-                / (
-                    (2 - self.lipschitz * self._stepsize)
-                    * (chi ** 2 + self.b * (self.mu ** self.k))
-                )
+                (2 * self.lipschitz * self.stepsize * xi)
+                / ((2 - self.lipschitz * self.stepsize) * (chi ** 2 + self.b * (self.mu ** self.k)))
             )
 
             # apply an upper and lower bound on the new shot distributions,
             # to avoid the number of shots reducing below min(2, min_shots),
             # or growing too significantly.
             gamma = (
-                (self._stepsize - self.lipschitz * self._stepsize ** 2 / 2) * chi ** 2
-                - xi * self.lipschitz * self._stepsize ** 2 / (2 * s)
+                (self.stepsize - self.lipschitz * self.stepsize ** 2 / 2) * chi ** 2
+                - xi * self.lipschitz * self.stepsize ** 2 / (2 * s)
             ) / s
 
             argmax_gamma = np.unravel_index(np.argmax(gamma), gamma.shape)
