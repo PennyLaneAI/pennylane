@@ -79,7 +79,7 @@ def generate_electron_integrals(mol, core=None, active=None):
             args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
-            tuple[array[float]]: 1D tuple containing the core energy, the one- and two-electron integrals
+            tuple[array[float]]: 1D tuple containing core constant, one- and two-electron integrals
         """
         v_fock, coeffs, fock_matrix, h_core, repulsion_tensor = generate_scf(mol)(*args)
         one = anp.einsum("qr,rs,st->qt", coeffs.T, h_core, coeffs)
