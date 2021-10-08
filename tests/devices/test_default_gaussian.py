@@ -412,7 +412,7 @@ class TestDefaultGaussianDevice:
                     p = [cov, mu]
                     w = list(range(2))
                     expected_out = [cov, mu]
-                elif gate_name == "Interferometer":
+                elif gate_name == "InterferometerUnitary":
                     w = list(range(2))
                     p = [U]
                     S = fn(*p)
@@ -464,12 +464,12 @@ class TestDefaultGaussianDevice:
 
         with pytest.raises(ValueError, match="Incorrect number of subsystems"):
             p = U
-            gaussian_dev.apply("Interferometer", wires=Wires([0]), par=[p])
+            gaussian_dev.apply("InterferometerUnitary", wires=Wires([0]), par=[p])
 
         with pytest.raises(qml.wires.WireError, match="Did not find some of the wires"):
             p = U2
             # dev = DefaultGaussian(wires=4, shots=1000, hbar=hbar)
-            gaussian_dev.apply("Interferometer", wires=Wires([0, 1, 2]), par=[p])
+            gaussian_dev.apply("InterferometerUnitary", wires=Wires([0, 1, 2]), par=[p])
 
     def test_expectation(self, tol):
         """Test that expectation values are calculated correctly"""
@@ -819,7 +819,7 @@ class TestDefaultGaussianIntegration:
 
         if g == "GaussianState":
             p = [np.diag([0.5234] * 4), np.array([0.432, 0.123, 0.342, 0.123])]
-        elif g == "Interferometer":
+        elif g == "InterferometerUnitary":
             p = [U]
         else:
             p = [0.432423, -0.12312, 0.324, 0.763][: op.num_params]
