@@ -437,15 +437,24 @@
   can be controlled with the more fine-grained `approx` keyword argument,
   with `approx="block-diag"` (the default) reproducing the old behaviour.
 
-- The `QNode.metric_tensor` method has been deprecated, and will be removed in an upcoming release.
+* The `default.qubit.torch` device automatically determines if computations
+  should be run on a CPU or a GPU and doesn't take a `torch_device` argument
+  anymore.
+  [(#1705)](https://github.com/PennyLaneAI/pennylane/pull/1705)
+
+* The `QNode.metric_tensor` method has been deprecated, and will be removed in an upcoming release.
   Please use the `qml.metric_tensor` transform instead.
   [(#1638)](https://github.com/PennyLaneAI/pennylane/pull/1638)
 
-- The utility function `qml.math.requires_grad` now returns `True` when using Autograd
+* The utility function `qml.math.requires_grad` now returns `True` when using Autograd
   if and only if the `requires_grad=True` attribute is set on the NumPy array. Previously,
   this function would return `True` for *all* NumPy arrays and Python floats, unless
   `requires_grad=False` was explicitly set.
   [(#1638)](https://github.com/PennyLaneAI/pennylane/pull/1638)
+
+- The operation `qml.Interferometer` has been renamed `qml.InterferometerUnitary` in order to 
+  distinguish it from the template `qml.templates.Interferometer`.
+  [(#1714)](https://github.com/PennyLaneAI/pennylane/pull/1714)
 
 <h3>Deprecations</h3>
 
@@ -462,6 +471,12 @@
   [(#1689)](https://github.com/PennyLaneAI/pennylane/pull/1689)
 
 <h3>Bug fixes</h3>
+
+* Fixes a bug where the GPU cannot be used with `qml.qnn.TorchLayer`.
+  [(#1705)](https://github.com/PennyLaneAI/pennylane/pull/1705)
+
+* Fix a bug where the devices cache the same result for different observables return types.
+  [(#1719)](https://github.com/PennyLaneAI/pennylane/pull/1719)
 
 * Fixed a bug of the default circuit drawer where having more measurements
   compared to the number of measurements on any wire raised a `KeyError`.
@@ -495,5 +510,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-Utkarsh Azad, Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee, Romain Moyard,
-Carrie-Anne Rubidge, Maria Schuld, Ingrid Strandberg, Antal Száva, Cody Wang, David Wierichs.
+Utkarsh Azad, Akash Narayanan B, Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee,
+Romain Moyard, Carrie-Anne Rubidge, Maria Schuld, Ingrid Strandberg, Antal Száva, Cody Wang,
+David Wierichs.
