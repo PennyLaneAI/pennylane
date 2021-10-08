@@ -119,7 +119,7 @@ def generate_fermionic_hamiltonian(mol, cutoff=1.0e-12):
         cutoff (float): cutoff value for discarding the negligible electronic integrals
 
     Returns:
-        function: function that computes the the fermionic hamiltonian
+        function: function that computes the fermionic hamiltonian
 
     **Example**
 
@@ -191,7 +191,7 @@ def generate_hamiltonian(mol, cutoff=1.0e-12):
         cutoff (float): cutoff value for discarding the negligible electronic integrals
 
     Returns:
-        function: function that computes the the qubit hamiltonian
+        function: function that computes the qubit hamiltonian
 
     **Example**
 
@@ -327,7 +327,7 @@ def _generate_qubit_operator(op):
 
 
 def _pauli_mult(p1, p2):
-    r"""Return the result of multipication between two tensor product of pauli operators.
+    r"""Return the result of multipication between two tensor products of pauli operators.
 
     The Pauli operator :math:`(P_0)` is denoted by [(0, 'P')], where :math:`P` represents
     :math:`X`, :math:`Y` or :math:`Z`.
@@ -337,7 +337,7 @@ def _pauli_mult(p1, p2):
         p2 (list[tuple[int, str]]): the second tensor product of pauli operators
 
     Returns
-        tuple(list[tuple[int, str]], complex): list of the pauli operators and the coefficient
+        tuple(list[tuple[int, str]], complex): list of the Pauli operators and the coefficient
 
     **Example**
 

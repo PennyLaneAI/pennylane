@@ -224,24 +224,29 @@ def test_generate_fermionic_hamiltonian(symbols, geometry, alpha, coeffs_h_ref, 
         (
             ["H", "H"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+            # computed with qchem.convert_observable and an OpenFermion Hamiltonian; data reordered
+            # h_mol = molecule.get_molecular_hamiltonian()
+            # h_f = openfermion.transforms.get_fermion_operator(h_mol)
+            # h_q = openfermion.transforms.jordan_wigner(h_f)
+            # h_pl = qchem.convert_observable(h_q, wires=[0, 1, 2, 3], tol=(5e-5))
             (
                 np.array(
                     [
-                        0.29817879 + 0.0j,
-                        0.20813365 + 0.0j,
-                        0.20813365 + 0.0j,
-                        0.17860977 + 0.0j,
-                        0.04256036 + 0.0j,
-                        -0.04256036 + 0.0j,
-                        -0.04256036 + 0.0j,
-                        0.04256036 + 0.0j,
-                        -0.34724873 + 0.0j,
-                        0.13290293 + 0.0j,
-                        -0.34724873 + 0.0j,
-                        0.17546329 + 0.0j,
-                        0.17546329 + 0.0j,
-                        0.13290293 + 0.0j,
-                        0.18470917 + 0.0j,
+                        0.2981788017,
+                        0.2081336485,
+                        0.2081336485,
+                        0.1786097698,
+                        0.042560361,
+                        -0.042560361,
+                        -0.042560361,
+                        0.042560361,
+                        -0.3472487379,
+                        0.1329029281,
+                        -0.3472487379,
+                        0.175463289,
+                        0.175463289,
+                        0.1329029281,
+                        0.1847091733,
                     ]
                 ),
                 [
@@ -249,17 +254,17 @@ def test_generate_fermionic_hamiltonian(symbols, geometry, alpha, coeffs_h_ref, 
                     PauliZ(wires=[0]),
                     PauliZ(wires=[1]),
                     PauliZ(wires=[0]) @ PauliZ(wires=[1]),
-                    PauliY(wires=[0]) @ PauliX(wires=[2]) @ PauliY(wires=[3]) @ PauliX(wires=[1]),
-                    PauliY(wires=[0]) @ PauliX(wires=[2]) @ PauliX(wires=[3]) @ PauliY(wires=[1]),
-                    PauliX(wires=[0]) @ PauliY(wires=[2]) @ PauliY(wires=[3]) @ PauliX(wires=[1]),
-                    PauliX(wires=[0]) @ PauliY(wires=[2]) @ PauliX(wires=[3]) @ PauliY(wires=[1]),
+                    PauliY(wires=[0]) @ PauliX(wires=[1]) @ PauliX(wires=[2]) @ PauliY(wires=[3]),
+                    PauliY(wires=[0]) @ PauliY(wires=[1]) @ PauliX(wires=[2]) @ PauliX(wires=[3]),
+                    PauliX(wires=[0]) @ PauliX(wires=[1]) @ PauliY(wires=[2]) @ PauliY(wires=[3]),
+                    PauliX(wires=[0]) @ PauliY(wires=[1]) @ PauliY(wires=[2]) @ PauliX(wires=[3]),
                     PauliZ(wires=[2]),
                     PauliZ(wires=[0]) @ PauliZ(wires=[2]),
                     PauliZ(wires=[3]),
                     PauliZ(wires=[0]) @ PauliZ(wires=[3]),
-                    PauliZ(wires=[2]) @ PauliZ(wires=[1]),
+                    PauliZ(wires=[1]) @ PauliZ(wires=[2]),
                     PauliZ(wires=[1]) @ PauliZ(wires=[3]),
-                    PauliZ(wires=[3]) @ PauliZ(wires=[2]),
+                    PauliZ(wires=[2]) @ PauliZ(wires=[3]),
                 ],
             ),
         )
@@ -273,7 +278,10 @@ def test_generate_hamiltonian(symbols, geometry, h_ref_data):
     h = generate_hamiltonian(mol)(*args)
     h_ref = qml.Hamiltonian(h_ref_data[0], h_ref_data[1])
 
-    h.compare(h_ref)
+    assert np.allclose(h.terms[0], h_ref.terms[0])
+    assert qml.Hamiltonian(np.ones(len(h.terms[0])), h.terms[1]).compare(
+        qml.Hamiltonian(np.ones(len(h_ref.terms[0])), h_ref.terms[1])
+    )
 
 
 @pytest.mark.parametrize(
