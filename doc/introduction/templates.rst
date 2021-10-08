@@ -209,7 +209,7 @@ Other useful templates which do not belong to the previous categories can be fou
     :figure: ../_static/templates/subroutines/all_singles_doubles.png
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.subroutines.QuantumFourierTransform.html
+    :link: ../code/api/pennylane.templates.subroutines.QFT.html
     :description: QuantumFourierTransform
     :figure: ../_static/templates/subroutines/qft.svg
 	
