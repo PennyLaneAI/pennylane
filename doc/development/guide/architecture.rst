@@ -17,8 +17,8 @@ algorithms common in optimization and machine learning to include quantum and
 A plugin system makes the framework compatible with many quantum
 simulators or hardware devices, remote or local.
 
-Basic abstractions
-##################
+Components
+##########
 
 The central object in PennyLane is a **QNode**, which represents a
 "node" performing a quantum computation. Several quantum nodes may be
@@ -130,11 +130,62 @@ The crucial property of a QNode is that it is differentiable by classical autodi
 frameworks such as autograd, jax, TensorFlow and PyTorch. The next section will look at
 differentiation workflows in more detail.
 
-Differentiation
-###############
+Workflow
+########
+
+Autodifferentiation frameworks may run QNodes in "forward mode" 
+to compute the result of a quantum circuit, or in "backward mode" to compute 
+the gradient of a qnode with respect to some trainable parameters.
+
+The internal workflow in the QNode is surprisingly similar in both cases, and 
+consists of three steps: to construct one or more tapes using the quantum function,
+to run the tapes on the device, and to post-process the results.
 
 
-[TODO: explain the workflow of forward vs backward passes]
+.. image:: pl_workflow.png
+    :width: 800px
+
+The fact that multiple tapes may be constructed from one quantum function may be 
+surprising at first, but there are many situations in which the evaluation of a quantum circuit 
+practically requires many circuits to be evaluated, for example:
+
+* When the observable is a Hamiltonian represented as a linear combination of Pauli words, the device may 
+  instruct the QNode to create one circuit for each Pauli word, and to compute their linear combination 
+  during post-processing.
+* When a gradient of the QNode is requested, and parameter-shift rules have to be used. The QNode 
+  constructs tapes in which parameters are shifted, and recombines the result to return a gradient.
+
+Interfaces
+**********
+
+The construction of tapes, as well as post-processing are classical computations, and they 
+are "tracked" by the autodifferentiation framework (marked in red above). 
+In other words, these steps can invoke differentiable classical computations, such as:
+
+* The decomposition of a user-defined gate into other gates that take some 
+  function of the original gate's parameters
+* The linear re-combination of Hamiltonian terms with trainable coefficients.
+
+There are some devices where the execution of the quantum circuit is also tracked by the 
+autodifferentiation framework. This is possible if the device is a simulator that is 
+coded entiely in the framework's language (such as a TensorFlow quantum simulator).
+
+.. image:: pl_backprop-device.png
+    :width: 300px
+
+Most devices, however, are blackboxes with regards to the autodifferentiation framework. 
+This means that when the execution on the device begins, autograd, jax, PyTorch and TensorFlow 
+tensors need to be converted to formats that the device understands - which is in most cases 
+a representation as Numpy arrays. Likewise, the results of the execution have to be translated 
+back to differentiable tensors. These two conversions happen at what PennyLane calls the
+"interface", and you can specify this interface in the QNode with the ``interface`` keyword argument.  
+
+Gradients
+*********
+
+[TODO: Be a bit more precise here]
+
+
 
 
 
