@@ -683,16 +683,17 @@ class TestMetricTensor:
             qml.IsingZZ(-4.2, wires=[1, 2])
 
         tapes, proc_fn = qml.metric_tensor(tape, approx="block-diag")
-        assert len(tapes)==4
-        assert [len(tape.operations) for tape in tapes]==[2, 4, 5, 6]
-        assert [len(tape.measurements) for tape in tapes]==[1]*4
+        assert len(tapes) == 4
+        assert [len(tape.operations) for tape in tapes] == [2, 4, 5, 6]
+        assert [len(tape.measurements) for tape in tapes] == [1] * 4
         expected_ops = [
             [qml.Hadamard, qml.QubitUnitary],
             [qml.Hadamard, qml.Hadamard, qml.IsingXX, qml.QubitUnitary],
             [qml.Hadamard, qml.Hadamard, qml.IsingXX, qml.IsingXX, qml.QubitUnitary],
             [qml.Hadamard, qml.Hadamard, qml.IsingXX, qml.IsingXX, qml.IsingZZ, qml.QubitUnitary],
         ]
-        assert [[type(op) for op in tape.operations] for tape in tapes]==expected_ops
+        assert [[type(op) for op in tape.operations] for tape in tapes] == expected_ops
+
 
 @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
 class TestDifferentiability:
