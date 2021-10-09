@@ -4,6 +4,16 @@
 
 <h3>New features since last release</h3>
 
+* Tape expansion functions are now collected in `qml.transforms.tape_expand.py`
+  in form of a new class `StoppingCriterion`.
+  [(#17xx)](https://github.com/PennyLaneAI/pennylane/pull/17xx)
+
+  These criteria can be manipulated and combined with the bitwise operators
+  `&`, `|` and `~`. 
+  `tape_expand` also contains a generator for tape expansion functions
+  `get_expand_fn` as well as some pre-defined stopping criteria and
+  expansion functions, which previously were scattered across the code base.
+
 * The new `qml.fourier.qnode_spectrum` function extends the former
   `qml.fourier.spectrum` function
   and takes classical processing of QNode arguments into account.

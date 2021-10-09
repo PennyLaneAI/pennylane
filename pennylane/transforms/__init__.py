@@ -123,3 +123,13 @@ from .specs import specs
 from .qmc import apply_controlled_Q, quantum_monte_carlo
 from .unitary_to_rot import unitary_to_rot
 from .get_unitary_matrix import get_unitary_matrix
+from .tape_expand import (
+    has_generator,
+    has_grad_method,
+    has_multiple_params,
+    has_no_params,
+    has_unitary_generator,
+    is_measurement,
+    is_trainable,
+    StoppingCriterion,
+)
