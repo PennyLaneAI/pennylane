@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -670,6 +670,29 @@ class TestMetricTensor:
         assert np.allclose(G, G_expected, atol=tol, rtol=0)
         assert np.allclose(G_alias, G_expected, atol=tol, rtol=0)
 
+    def test_multi_qubit_gates(self):
+        """Test that a tape with Ising gates has the correct metric tensor tapes."""
+
+        dev = qml.device("default.qubit", wires=3)
+        with qml.tape.JacobianTape() as tape:
+            qml.Hadamard(0)
+            qml.Hadamard(2)
+            qml.IsingXX(0.2, wires=[0, 1])
+            qml.IsingXX(-0.6, wires=[1, 2])
+            qml.IsingZZ(1.02, wires=[0, 1])
+            qml.IsingZZ(-4.2, wires=[1, 2])
+
+        tapes, proc_fn = qml.metric_tensor(tape, approx="block-diag")
+        assert len(tapes)==4
+        assert [len(tape.operations) for tape in tapes]==[2, 4, 5, 6]
+        assert [len(tape.measurements) for tape in tapes]==[1]*4
+        expected_ops = [
+            [qml.Hadamard, qml.QubitUnitary],
+            [qml.Hadamard, qml.Hadamard, qml.IsingXX, qml.QubitUnitary],
+            [qml.Hadamard, qml.Hadamard, qml.IsingXX, qml.IsingXX, qml.QubitUnitary],
+            [qml.Hadamard, qml.Hadamard, qml.IsingXX, qml.IsingXX, qml.IsingZZ, qml.QubitUnitary],
+        ]
+        assert [[type(op) for op in tape.operations] for tape in tapes]==expected_ops
 
 @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
 class TestDifferentiability:
