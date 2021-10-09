@@ -152,7 +152,7 @@ class batch_transform:
     2.5800122591960153
     """
 
-    def __new__(cls, *args, **kwargs):  # pylint: disable=unused-arument
+    def __new__(cls, *args, **kwargs):  # pylint: disable=unused-argument
         if os.environ.get("SPHINX_BUILD") == "1":
             # If called during a Sphinx documentation build,
             # simply return the original function rather than
