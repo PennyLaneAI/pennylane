@@ -341,7 +341,6 @@
   [(#1638)](https://github.com/PennyLaneAI/pennylane/pull/1638)
   [(#1721)](https://github.com/PennyLaneAI/pennylane/pull/1721)
 
-
   - If the underlying device supports batch execution of circuits, the quantum circuits required to
     compute the metric tensor elements will be automatically submitted as a batched job. This can
     lead to significant performance improvements for devices with a non-trivial job submission
