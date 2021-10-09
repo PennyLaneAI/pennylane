@@ -52,12 +52,12 @@ def expand_multi_par_and_nonunitary_gen(tape, depth=10):
     return tape
 
 
-def expand_fn(tape, *targs, **tkwargs):
+def expand_fn(tape, approx="block-diag", diag_approx=None, allow_nonunitary=True):
     """Set the metric tensor based on whether non-unitary gates are allowed."""
     # pylint: disable=unused-argument
-    if tkwargs.get("allow_nonunitary", True):
-        return expand_multi_par_and_no_gen(tape)
-    return expand_multi_par_and_nonunitary_gen(tape)
+    if not allow_nonunitary and approx is None:
+        return expand_multi_par_and_nonunitary_gen(tape)
+    return expand_multi_par_and_no_gen(tape)
 
 
 @functools.partial(batch_transform, expand_fn=expand_fn)
@@ -195,16 +195,6 @@ def metric_tensor(tape, approx="block-diag", diag_approx=None, allow_nonunitary=
             approx = "diag"
 
     if approx in {"diag", "block-diag"}:
-        if not allow_nonunitary:
-            warnings.warn(
-                "You set allow_nonunitary=False, enforcing a potentially more expensive "
-                "expansion. At the same time you requested the diagonal or block diagonal "
-                "metric tensor, which does not use gate generators as operations, making "
-                "the more expensive decomposition unnecessary. "
-                "Consider setting allow_nonunitary=True.",
-                UserWarning,
-            )
-
         # Only require covariance matrix based transform
         diag_approx = approx == "diag"
         return _metric_tensor_cov_matrix(tape, diag_approx)
@@ -231,7 +221,7 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
 
     mt_fn = self.default_qnode_wrapper(qnode, targs, tkwargs)
 
-    _expand_fn = functools.partial(self.expand, targs=targs, tkwargs=tkwargs)
+    _expand_fn = lambda tape: self.expand_fn(tape, *targs, **tkwargs)
     cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=_expand_fn)
 
     def wrapper(*args, **kwargs):
