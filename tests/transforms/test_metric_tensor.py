@@ -19,7 +19,6 @@ from pennylane import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.transforms.metric_tensor import expand_multi_par_and_nonunitary_gen
 from gate_data import Y, Z
 
 
@@ -32,7 +31,7 @@ def test_do_not_expand():
         qml.PauliRot(0.9, "XY", wires=[0, 1])
         qml.SingleExcitationPlus(-1.2, wires=[1, 0])
 
-    new_tape = expand_multi_par_and_nonunitary_gen(tape)
+    new_tape = qml.transforms.tape_expand.expand_multi_par_and_nonunitary_gen(tape)
 
     assert tape.operations == new_tape.operations
 
@@ -46,7 +45,7 @@ def test_expand_multi_par():
         qml.Rot(0.9, 1.2, -0.6, wires=0)
         qml.SingleExcitationPlus(-1.2, wires=[1, 0])
 
-    new_tape = expand_multi_par_and_nonunitary_gen(tape)
+    new_tape = qml.transforms.tape_expand.expand_multi_par_and_nonunitary_gen(tape)
     expanded = [
         qml.RZ(0.9, wires=0),
         qml.RY(1.2, wires=0),
@@ -73,7 +72,7 @@ def test_expand_missing_generator():
         _PhaseShift(2.1, wires=1)
         qml.SingleExcitationPlus(-1.2, wires=[1, 0])
 
-    new_tape = expand_multi_par_and_nonunitary_gen(tape)
+    new_tape = qml.transforms.tape_expand.expand_multi_par_and_nonunitary_gen(tape)
 
     assert tape.operations[:2] == new_tape.operations[:2]
     exp_op = new_tape.operations[2]
@@ -91,7 +90,7 @@ def test_expand_nonunitary_generator():
         qml.PhaseShift(2.1, wires=1)
         qml.SingleExcitationPlus(-1.2, wires=[1, 0])
 
-    new_tape = expand_multi_par_and_nonunitary_gen(tape)
+    new_tape = qml.transforms.tape_expand.expand_multi_par_and_nonunitary_gen(tape)
 
     assert tape.operations[:2] == new_tape.operations[:2]
     exp_op = new_tape.operations[2]
