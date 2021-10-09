@@ -17,6 +17,7 @@ including a decorator for specifying gradient expansions."""
 import pennylane as qml
 from pennylane.transforms import has_grad_method, is_measurement, is_trainable
 
+
 def gradient_expand(tape, depth=10, **kwargs):
     """Expand out a tape so that it supports differentiation
     of requested operations.
