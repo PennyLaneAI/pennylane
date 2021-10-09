@@ -35,7 +35,7 @@ class batch_transform:
             **must** be the input tape.
         expand_fn (function): An expansion function (if required) to be applied to the
             input tape before the transformation takes place.
-            It **must** have the same input arguments as ``transform_fn``.
+            It **must** take the same input arguments as ``transform_fn``.
         differentiable (bool): Specifies whether the transform is differentiable or
             not. A transform may be non-differentiable for several reasons:
 
@@ -151,53 +151,33 @@ class batch_transform:
     >>> print(gradient)
     2.5800122591960153
 
-    The provided ``expand_fn`` must have the same input arguments as
-    ``transform_fn`` and return a ``tape``.
+    .. UsageDetails::
 
-    **Example**
+        **Expansion functions**
 
-    In the above example, a valid ``expand_fn`` could look like this:
+        Tape expansion, decomposition, or manipulation may always be
+        performed within the custom batch transform. However, by specifying
+        a separate expansion function, PennyLane will be possible to access
+        this separate expansion function where needed via
 
-    .. code-block:: python
+        >>> my_transform.expand_fn
 
-        def expand_fn(tape, a, b):
-            stopping_crit = lambda obj: obj.name!="PhaseShift"
-            return tape.expand(depth=10, stop_at=stopping_crit)
+        The provided ``expand_fn`` must have the same input arguments as
+        ``transform_fn`` and return a ``tape``. Following the example above:
 
-    As you can see, the arguments ``a`` and ``b`` are included as input arguments
-    although they are not required by the logic of ``expand_fn`` itself.
-    An alternative would be to collect such arguments:
+        .. code-block:: python
 
-    .. code-block:: python
-
-        def expand_fn(tape, *args):
-            stopping_crit = lambda obj: obj.name!="PhaseShift"
-            return tape.expand(depth=10, stop_at=stopping_crit)
-
-    If the ``expand_fn`` has an additional keyword argument controlling the
-    expansion, the signature of ``transform_fn`` has to be adapted to it:
-
-    .. code-block:: python
-
-        def expand_fn(tape, a, b, actually_expand=False):
-            if actually_expand:
+            def expand_fn(tape, a, b):
                 stopping_crit = lambda obj: obj.name!="PhaseShift"
                 return tape.expand(depth=10, stop_at=stopping_crit)
-            return tape
 
-        def my_transform(tape, a, b, actually_expand=False):
-            ...
+            my_transform = batch_transform(my_transform, expand_fn)
 
-        my_transform = batch_transform(my_transform, expand_fn)
+        Note that:
 
-    Again, one could summarize such additional (keyword) arguments via ``**kwargs``
-    in the signature of ``my_transform``.
-
-    .. warning::
-
-        It is recommended to not use this flexible approach but to match
-        the input signatures of ``transform_fn`` and ``expand_fn`` explicitly.
-        This improves the stability and maintainability of the resulting code.
+        - the transform arguments ``a`` and ``b`` must be passed to
+          the expansion function, and
+        - the expansion function must return a single tape.
     """
 
     def __init__(self, transform_fn, expand_fn=None, differentiable=True):
