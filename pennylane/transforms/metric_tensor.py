@@ -61,7 +61,7 @@ def expand_fn(tape, *targs, **tkwargs):
 
 
 @functools.partial(batch_transform, expand_fn=expand_fn)
-def metric_tensor(tape, approx="block-diag", diag_approx=None, allow_nonunitary=True, **kwargs):
+def metric_tensor(tape, approx="block-diag", diag_approx=None, allow_nonunitary=True):
     """Returns a function that computes the block-diagonal approximation of the metric tensor
     of a given QNode or quantum tape.
 

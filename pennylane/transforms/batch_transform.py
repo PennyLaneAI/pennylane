@@ -371,7 +371,7 @@ class batch_transform:
         expand = kwargs.pop("_expand", True)
 
         if expand and self.expand_fn is not None:
-            tape = self.expand(tape, args, kwargs)
+            tape = self.expand(tape, *args, **kwargs)
 
         tapes, processing_fn = self.transform_fn(tape, *args, **kwargs)
 
@@ -380,7 +380,7 @@ class batch_transform:
 
         return tapes, processing_fn
 
-    def expand(self, tape, targs, tkwargs):
+    def expand(self, tape, *targs, **tkwargs):
         """Expand a tape using self.expand_fn. If it takes more
         than just the tape as arguments, ``targs`` and ``tkwargs``
         are passed to ``expand_fn`` as well.
