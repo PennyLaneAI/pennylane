@@ -12,7 +12,6 @@
   [(#1681)](https://github.com/PennyLaneAI/pennylane/pull/1681)
   [(#1720)](https://github.com/PennyLaneAI/pennylane/pull/1720)
 
-
   Consider the following example, which uses non-trainable inputs `x`, `y` and `z`
   as well as trainable parameters `w` as arguments to the QNode.
 
