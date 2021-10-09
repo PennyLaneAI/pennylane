@@ -74,11 +74,13 @@ class TestBatchTransform:
 
         monkeypatch.setenv("SPHINX_BUILD", "1")
 
-        @qml.batch_transform
-        def my_transform(tape):
-            tape1 = tape.copy()
-            tape2 = tape.copy()
-            return [tape1, tape2], None
+        with pytest.warns(UserWarning, match="Batch transformations have been disabled"):
+
+            @qml.batch_transform
+            def my_transform(tape):
+                tape1 = tape.copy()
+                tape2 = tape.copy()
+                return [tape1, tape2], None
 
         assert not isinstance(my_transform, qml.batch_transform)
 
