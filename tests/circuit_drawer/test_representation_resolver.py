@@ -139,8 +139,8 @@ class TestRepresentationResolver:
             (qml.CrossKerr(3.14, wires=[1, 2]), 1, "CrossKerr(3.14)"),
             (qml.CrossKerr(3.14, wires=[1, 2]), 2, "CrossKerr(3.14)"),
             (qml.CubicPhase(3.14, wires=[1]), 1, "V(3.14)"),
-            (qml.Interferometer(np.eye(4), wires=[1, 3]), 1, "Interferometer(M0)"),
-            (qml.Interferometer(np.eye(4), wires=[1, 3]), 3, "Interferometer(M0)"),
+            (qml.InterferometerUnitary(np.eye(4), wires=[1, 3]), 1, "InterferometerUnitary(M0)"),
+            (qml.InterferometerUnitary(np.eye(4), wires=[1, 3]), 3, "InterferometerUnitary(M0)"),
             (qml.CatState(3.14, 2.14, 1, wires=[1]), 1, "CatState(3.14, 2.14, 1)"),
             (qml.CoherentState(3.14, 2.14, wires=[1]), 1, "CoherentState(3.14, 2.14)"),
             (
@@ -280,8 +280,8 @@ class TestRepresentationResolver:
             (qml.CrossKerr(3.14, wires=[1, 2]), 1, "CrossKerr(3.14)"),
             (qml.CrossKerr(3.14, wires=[1, 2]), 2, "CrossKerr(3.14)"),
             (qml.CubicPhase(3.14, wires=[1]), 1, "V(3.14)"),
-            (qml.Interferometer(np.eye(4), wires=[1, 3]), 1, "Interferometer(M0)"),
-            (qml.Interferometer(np.eye(4), wires=[1, 3]), 3, "Interferometer(M0)"),
+            (qml.InterferometerUnitary(np.eye(4), wires=[1, 3]), 1, "InterferometerUnitary(M0)"),
+            (qml.InterferometerUnitary(np.eye(4), wires=[1, 3]), 3, "InterferometerUnitary(M0)"),
             (qml.CatState(3.14, 2.14, 1, wires=[1]), 1, "CatState(3.14, 2.14, 1)"),
             (qml.CoherentState(3.14, 2.14, wires=[1]), 1, "CoherentState(3.14, 2.14)"),
             (
