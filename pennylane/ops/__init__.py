@@ -20,7 +20,7 @@ such as gates, state preparations and observables.
 """
 import numpy as np
 
-from pennylane.operation import AnyWires, Observable, CVObservable
+from pennylane.operation import AnyWires, Observable, CVObservable      #yaha change krna hai aisa lag raha hai
 
 from .cv import *
 from .qubit import *
@@ -43,7 +43,7 @@ class AdjointError(Exception):
     pass
 
 
-class Identity(CVObservable):
+class Identity(CVObservable):         #yaha change krna hai aisa lag raha hai
     r"""pennylane.Identity(wires)
     The identity observable :math:`\I`.
 
@@ -55,7 +55,7 @@ class Identity(CVObservable):
     corresponds to the trace of the quantum state, which in exact
     simulators should always be equal to 1.
     """
-    num_wires = AnyWires
+    num_wires = AnyWires              #yaha change krna hai aisa lag raha hai
     num_params = 0
     par_domain = None
     grad_method = None

@@ -91,7 +91,7 @@ class DefaultQubit(QubitDevice):
     version = __version__
     author = "Xanadu Inc."
 
-    operations = {
+    operations = {                       #yaha change krna hai lag raha hai
         "BasisState",
         "QubitStateVector",
         "QubitUnitary",

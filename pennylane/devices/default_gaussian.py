@@ -654,7 +654,7 @@ class DefaultGaussian(Device):
     version = __version__
     author = "Xanadu Inc."
 
-    _operation_map = {
+    _operation_map = {                                     # yaha change krna hai lahta raha hai
         "Beamsplitter": beamsplitter,
         "ControlledAddition": controlled_addition,
         "ControlledPhase": controlled_phase,
