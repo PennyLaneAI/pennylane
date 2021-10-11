@@ -1208,6 +1208,7 @@ class IsingXX(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
+
     generator = [
         np.array([[0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0], [1, 0, 0, 0]]),
         -1 / 2,

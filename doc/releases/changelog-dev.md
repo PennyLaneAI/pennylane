@@ -354,7 +354,6 @@
   [(#1638)](https://github.com/PennyLaneAI/pennylane/pull/1638)
   [(#1721)](https://github.com/PennyLaneAI/pennylane/pull/1721)
 
-
   - If the underlying device supports batch execution of circuits, the quantum circuits required to
     compute the metric tensor elements will be automatically submitted as a batched job. This can
     lead to significant performance improvements for devices with a non-trivial job submission
@@ -390,11 +389,10 @@
            [0.        , 0.        , 0.24750832]])
     ```
 
-  - It is now available for a bigger set of operations, reducing the decomposition steps that
-    are necessary to evaluate the tensor. In addition to reduced decomposition overhead,
-    the change also results in fewer circuit evaluations.
-    All operations that have a single variational parameter and define a generator are now
-    supported.
+  - The metric tensor transform now works with a larger set of operations. In particular,
+    all operations that have a single variational parameter and define a generator are now
+    supported. In addition to a reduction in decomposition overhead, the change
+    also results in fewer circuit evaluations.
 
 
 * ``qml.circuit_drawer.CircuitDrawer`` can accept a string for the ``charset`` keyword, instead of a ``CharSet`` object.
@@ -456,9 +454,12 @@
   [(#1721)](https://github.com/PennyLaneAI/pennylane/pull/1721)
 
   If `hybrid=False`, the changed expansion rule might lead to a changed output.
-  The keyword argument `diag_approx` is deprecated and approximations
-  can be controlled with the more fine-grained `approx` keyword argument,
-  with `approx="block-diag"` (the default) reproducing the old behaviour.
+
+- The `qml.metric_tensor` keyword argument `diag_approx` is deprecated.
+  Approximations can be controlled with the more fine-grained `approx`
+  keyword argument, with `approx="block-diag"` (the default) reproducing
+  the old behaviour.
+  [(#1721)](https://github.com/PennyLaneAI/pennylane/pull/1721)
 
 * The `default.qubit.torch` device automatically determines if computations
   should be run on a CPU or a GPU and doesn't take a `torch_device` argument
