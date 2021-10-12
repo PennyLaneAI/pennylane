@@ -17,6 +17,7 @@ Contains a utility class ``BooleanFn`` that allows logical composition
 of functions with boolean output.
 """
 
+
 class BooleanFn:
     r"""Wrapper for simple callables with Boolean output that can be
     manipulated and combined with bit-wise operators.

@@ -16,6 +16,7 @@ Unit tests for BooleanFn utility class.
 """
 import pennylane as qml
 
+
 class TestBooleanFn:
     @pytest.mark.parametrize(
         "fn, arg, expected",
@@ -55,6 +56,3 @@ class TestBooleanFn:
         assert crit(-2)
         assert not crit(6)
         assert crit(10)
-
-
-

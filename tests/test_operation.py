@@ -1535,6 +1535,7 @@ class TestOperationDerivative:
         )
         assert np.allclose(derivative, expected_derivative)
 
+
 class TestCriteria:
 
     rx = qml.RX(qml.numpy.array(0.3, requires_grad=True), wires=1)
