@@ -61,6 +61,29 @@ class TestBatchTransform:
         with pytest.raises(ValueError, match="does not appear to be a valid Python function"):
             qml.batch_transform(5)
 
+    def test_sphinx_build(self, monkeypatch):
+        """Test that batch transforms are not created during Sphinx builds"""
+
+        @qml.batch_transform
+        def my_transform(tape):
+            tape1 = tape.copy()
+            tape2 = tape.copy()
+            return [tape1, tape2], None
+
+        assert isinstance(my_transform, qml.batch_transform)
+
+        monkeypatch.setenv("SPHINX_BUILD", "1")
+
+        with pytest.warns(UserWarning, match="Batch transformations have been disabled"):
+
+            @qml.batch_transform
+            def my_transform(tape):
+                tape1 = tape.copy()
+                tape2 = tape.copy()
+                return [tape1, tape2], None
+
+        assert not isinstance(my_transform, qml.batch_transform)
+
     def test_none_processing(self):
         """Test that a transform that returns None for a processing function applies
         the identity as the processing function"""
