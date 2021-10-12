@@ -101,7 +101,7 @@ class QubitUnitary(Operation):
     def _controlled(self, wire):
         ControlledQubitUnitary(*self.parameters, control_wires=wire, wires=self.wires)
 
-    def label(self, *args, **kwargs):
+    def label(self, decimals=None):
         if self.inverse:
             return "U⁻¹"
         return "U"
