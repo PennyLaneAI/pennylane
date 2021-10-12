@@ -48,6 +48,7 @@ def batch_params(tape, all_operations=False):
     Returns:
         func: Function which accepts the same arguments as the QNode, however the
         first dimension of each argument will be treated as a batch dimension.
+        The function output will also contain an initial batch dimension.
 
     **Example**
 
