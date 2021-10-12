@@ -130,7 +130,7 @@ def specs(qnode, max_expansion=None):
             try:
                 if isinstance(qnode.gradient_fn, qml.gradients.gradient_transform):
                     info["num_gradient_executions"] = len(qnode.gradient_fn(qnode.qtape)[0])
-            except:  # pylint: disable=broad-except
+            except Exception:  # pylint: disable=broad-except
                 # In the case of a broad exception, we don't want the `qml.specs` transform
                 # to fail. Instead, we simply indicate that the number of gradient executions
                 # is not supported.
