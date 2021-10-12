@@ -57,7 +57,7 @@ class TestOperation:
 
         # fixed parameter values
         if test_class.par_domain == "A":
-            if test_class.__name__ == "Interferometer":
+            if test_class.__name__ == "InterferometerUnitary":
                 ww = list(range(2))
                 par = [
                     np.array(

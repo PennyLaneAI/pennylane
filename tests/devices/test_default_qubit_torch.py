@@ -1040,12 +1040,12 @@ class TestQNodeIntegration:
         assert dev.short_name == "default.qubit.torch"
         assert dev.capabilities()["passthru_interface"] == "torch"
 
-    def test_qubit_circuit(self, tol, torch_device="cpu"):
+    def test_qubit_circuit(self, tol):
         """Test that the torch device provides correct
         result for a simple circuit using the old QNode."""
-        p = torch.tensor([0.543], device=torch_device, dtype=torch.float64)
+        p = torch.tensor([0.543], dtype=torch.float64)
 
-        dev = qml.device("default.qubit.torch", wires=1, torch_device=torch_device)
+        dev = qml.device("default.qubit.torch", wires=1)
 
         @qml.qnode(dev, interface="torch")
         def circuit(x):
@@ -1057,11 +1057,11 @@ class TestQNodeIntegration:
         assert circuit.diff_options["method"] == "backprop"
         assert torch.allclose(circuit(p), expected, atol=tol, rtol=0)
 
-    def test_correct_state(self, tol, torch_device="cpu"):
+    def test_correct_state(self, tol):
         """Test that the device state is correct after applying a
         quantum function on the device"""
 
-        dev = qml.device("default.qubit.torch", wires=2, torch_device=torch_device)
+        dev = qml.device("default.qubit.torch", wires=2)
 
         state = dev.state
         expected = torch.tensor([1, 0, 0, 0], dtype=torch.complex128)
