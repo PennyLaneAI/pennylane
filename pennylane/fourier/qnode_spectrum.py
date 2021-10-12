@@ -380,7 +380,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
     # A map between Jacobian indices (contiguous) and arg names (may be discontiguous)
     arg_name_map = dict(enumerate(encoding_args))
     jac_fn = qml.transforms.classical_jacobian(
-        qnode, argnum=argnum, expand_fn=qml.transforms.tape_expand.expand_multi_par_and_no_gen
+        qnode, argnum=argnum, expand_fn=qml.transforms.tape_expand.to_singlepar
     )
 
     @wraps(qnode)
@@ -401,7 +401,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
                 )
         class_jacs = jac_fn(*args, **kwargs)
         spectra = {}
-        tape = qml.transforms.tape_expand.expand_multi_par_and_no_gen(qnode.qtape)
+        tape = qml.transforms.tape_expand.expand_to_singlepar(qnode.qtape)
         par_info = tape._par_info
 
         # Iterate over jacobians per argument
