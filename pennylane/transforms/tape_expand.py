@@ -101,15 +101,13 @@ is_measurement = BooleanFn(lambda obj: isinstance(obj, qml.measure.MeasurementPr
 is_trainable = BooleanFn(lambda obj: any(qml.math.requires_grad(p) for p in obj.parameters))
 
 
-def get_expand_fn(depth, stop_at, allow_kwargs=False, docstring=None):
+def get_expand_fn(depth, stop_at, docstring=None):
     """Create an expansion function using a given depth and stopping criterions,
     wrapping ``tape.expand``.
 
     Args:
         depth (int): Depth for the expansion
         stop_at (callable): Stopping criterion passed to ``tape.expand``
-        allow_kwargs (bool): Whether to add ``**kwargs`` to the signature of the
-            expansion function.
         docstring (str): docstring for the expansion function
 
     Returns:
@@ -149,19 +147,15 @@ def get_expand_fn(depth, stop_at, allow_kwargs=False, docstring=None):
 
     """
 
-    def expand_fn(tape, _depth=depth):
+    def expand_fn(tape, _depth=depth, **kwargs):
         if not all(stop_at(op) for op in tape.operations):
             tape = tape.expand(depth=_depth, stop_at=stop_at)
             params = tape.get_parameters(trainable_only=False)
             tape.trainable_params = qml.math.get_trainable_indices(params)
         return tape
 
-    if allow_kwargs:
-        # TODO: allow kwargs
-        pass
     if docstring:
-        # TODO set docstring
-        pass
+        expand_fn.__doc__ = docstring
 
     return expand_fn
 
@@ -190,7 +184,6 @@ Returns:
 
 to_valid_trainable = get_expand_fn(
     depth=10,
-    stop_at=is_measurement | (~is_trainable | has_grad_method),
-    allow_kwargs=True,
+    stop_at=is_measurement | (~is_trainable) | has_grad_method,
     docstring=_to_valid_trainable_doc,
 )

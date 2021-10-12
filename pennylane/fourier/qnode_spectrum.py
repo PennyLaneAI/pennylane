@@ -401,7 +401,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
                 )
         class_jacs = jac_fn(*args, **kwargs)
         spectra = {}
-        tape = qml.transforms.tape_expand.expand_to_singlepar(qnode.qtape)
+        tape = qml.transforms.tape_expand.to_singlepar(qnode.qtape)
         par_info = tape._par_info
 
         # Iterate over jacobians per argument
