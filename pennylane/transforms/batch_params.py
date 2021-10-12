@@ -110,7 +110,9 @@ def batch_params(tape, all_operations=False):
     params = list(tape.get_parameters(trainable_only=not all_operations))
     output_tapes = []
 
-    if qml.math._multi_dispatch(params) == "tensorflow":
+    if qml.math._multi_dispatch(params) == "tensorflow":  # pylint: disable=protected-access
+        # in the case of TensorFlow, we must convert parameters to tensors,
+        # since Variable objects are not iterable.
         import tensorflow as tf
 
         params = [tf.convert_to_tensor(p) for p in params]
