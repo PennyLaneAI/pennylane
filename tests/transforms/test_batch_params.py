@@ -176,8 +176,8 @@ def test_tf(diff_method, tol):
     assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
-def test_tf_jit(tol):
-    """Test derivatives when using TF and JIT"""
+def test_tf_autograph(tol):
+    """Test derivatives when using TF and autograph"""
     tf = pytest.importorskip("tensorflow")
     dev = qml.device("default.qubit", wires=2)
 
