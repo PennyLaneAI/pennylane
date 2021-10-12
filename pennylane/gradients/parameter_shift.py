@@ -545,6 +545,9 @@ def param_shift(
     _gradient_analysis(tape)
     gradient_tapes = []
 
+    if argnum is None and not tape.trainable_params:
+        return gradient_tapes, lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
+
     # TODO: replace the JacobianTape._grad_method_validation
     # functionality before deprecation.
     method = "analytic" if fallback_fn is None else "best"
