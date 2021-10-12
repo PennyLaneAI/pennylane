@@ -30,9 +30,9 @@ class StoppingCriterion:
     Consider functions that filter numbers to lie in a certain domain,
     and wrap them using a ``StoppingCriterion``:
 
-    >>> bigger_than_4 = qml.transforms.StoppingCriterion(lambda x: x>4)
-    >>> smaller_than_10 = qml.transforms.StoppingCriterion(lambda x: x<10)
-    >>> is_int = qml.transforms.StoppingCriterion(lambda x: isinstance(int))
+    >>> bigger_than_4 = qml.transforms.StoppingCriterion(lambda x: x > 4)
+    >>> smaller_than_10 = qml.transforms.StoppingCriterion(lambda x: x < 10)
+    >>> is_int = qml.transforms.StoppingCriterion(lambda x: isinstance(x, int))
     >>> bigger_than_4(5.2)
     True
     >>> smaller_than_10(20.1)
@@ -50,7 +50,7 @@ class StoppingCriterion:
     >>> between_4_and_10(19.7)
     False
 
-    Other operations are ``|``, logical or and ``~``, logical not:
+    Other operations are ``|``, logical or, and ``~``, logical not:
 
     >>> smaller_equal_than_4 = ~bigger_than_4
     >>> smaller_than_10_or_int = smaller_than_10 | is_int

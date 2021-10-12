@@ -6,7 +6,7 @@
 
 * Tape expansion functions are now collected in `qml.transforms.tape_expand.py`
   in form of a new class `StoppingCriterion`.
-  [(#17xx)](https://github.com/PennyLaneAI/pennylane/pull/17xx)
+  [(#1734)](https://github.com/PennyLaneAI/pennylane/pull/1734)
 
   These criteria can be manipulated and combined with the bitwise operators
   `&`, `|` and `~`. 
