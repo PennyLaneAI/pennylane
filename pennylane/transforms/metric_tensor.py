@@ -23,13 +23,14 @@ import pennylane as qml
 
 from .batch_transform import batch_transform
 
+
 def expand_fn(tape, approx="block-diag", diag_approx=None, allow_nonunitary=True):
     """Set the metric tensor based on whether non-unitary gates are allowed."""
     # pylint: disable=unused-argument
     if not allow_nonunitary and approx is None:  # pragma: no cover
-        return qml.transforms.tape_expand.to_unitary_singlepar(tape)
-    return qml.transforms.tape_expand.to_singlepar(tape)
-  
+        return qml.transforms.expand_nonunitary_gen(tape)
+    return qml.transforms.expand_multipar(tape)
+
 
 @functools.partial(batch_transform, expand_fn=expand_fn)
 def metric_tensor(tape, approx="block-diag", diag_approx=None, allow_nonunitary=True):

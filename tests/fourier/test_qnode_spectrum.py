@@ -368,7 +368,7 @@ class TestCircuits:
         with pytest.raises(ValueError, match=f"{measure_fn.__name__} is not supported"):
             qnode_spectrum(circuit)(1.5)
 
-    def test_expansion_to_singlepar(self):
+    def test_expand_multipar(self):
         """Test that a multi-parameter gate is decomposed correctly.
         And that single-parameter gates are not decomposed."""
         dev = qml.device("default.qubit", wires=3)
