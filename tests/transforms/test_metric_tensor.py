@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,7 +19,84 @@ from pennylane import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qml
+from pennylane.transforms.metric_tensor import expand_multi_par_and_nonunitary_gen
 from gate_data import Y, Z
+
+
+def test_do_not_expand():
+    """Test that a tape with single-parameter operations with
+    unitary generators and non-parametric operations is not touched."""
+    with qml.tape.JacobianTape() as tape:
+        qml.RX(0.2, wires=0)
+        qml.Hadamard(0)
+        qml.PauliRot(0.9, "XY", wires=[0, 1])
+        qml.SingleExcitationPlus(-1.2, wires=[1, 0])
+
+    new_tape = expand_multi_par_and_nonunitary_gen(tape)
+
+    assert tape.operations == new_tape.operations
+
+
+def test_expand_multi_par():
+    """Test that a tape with single-parameter operations with
+    unitary generators and non-parametric operations is not touched."""
+    with qml.tape.JacobianTape() as tape:
+        qml.RX(0.2, wires=0)
+        qml.Hadamard(0)
+        qml.Rot(0.9, 1.2, -0.6, wires=0)
+        qml.SingleExcitationPlus(-1.2, wires=[1, 0])
+
+    new_tape = expand_multi_par_and_nonunitary_gen(tape)
+    expanded = [
+        qml.RZ(0.9, wires=0),
+        qml.RY(1.2, wires=0),
+        qml.RZ(-0.6, wires=0),
+    ]
+
+    assert tape.operations[:2] == new_tape.operations[:2]
+    assert all(exp.name == new.name for exp, new in zip(expanded, new_tape.operations[2:5]))
+    assert all(exp.data == new.data for exp, new in zip(expanded, new_tape.operations[2:5]))
+    assert all(exp.wires == new.wires for exp, new in zip(expanded, new_tape.operations[2:5]))
+    assert tape.operations[3:] == new_tape.operations[5:]
+
+
+def test_expand_missing_generator():
+    """Test that a tape with single-parameter operations with
+    unitary generators and non-parametric operations is not touched."""
+
+    class _PhaseShift(qml.PhaseShift):
+        generator = [None, 1]
+
+    with qml.tape.JacobianTape() as tape:
+        qml.RX(0.2, wires=0)
+        qml.Hadamard(0)
+        _PhaseShift(2.1, wires=1)
+        qml.SingleExcitationPlus(-1.2, wires=[1, 0])
+
+    new_tape = expand_multi_par_and_nonunitary_gen(tape)
+
+    assert tape.operations[:2] == new_tape.operations[:2]
+    exp_op = new_tape.operations[2]
+    assert exp_op.name == "RZ" and exp_op.data == [2.1] and exp_op.wires == qml.wires.Wires(1)
+    assert tape.operations[3:] == new_tape.operations[3:]
+
+
+def test_expand_nonunitary_generator():
+    """Test that a tape with single-parameter operations with
+    unitary generators and non-parametric operations is not touched."""
+
+    with qml.tape.JacobianTape() as tape:
+        qml.RX(0.2, wires=0)
+        qml.Hadamard(0)
+        qml.PhaseShift(2.1, wires=1)
+        qml.SingleExcitationPlus(-1.2, wires=[1, 0])
+
+    new_tape = expand_multi_par_and_nonunitary_gen(tape)
+
+    assert tape.operations[:2] == new_tape.operations[:2]
+    exp_op = new_tape.operations[2]
+    assert exp_op.name == "RZ" and exp_op.data == [2.1] and exp_op.wires == qml.wires.Wires(1)
+    assert tape.operations[3:] == new_tape.operations[3:]
 
 
 class TestMetricTensor:
@@ -35,7 +112,7 @@ class TestMetricTensor:
             qml.Rot(params[0], params[1], params[2], wires=0)
             qml.expval(qml.PauliX(0))
 
-        tapes, _ = qml.metric_tensor(circuit)
+        tapes, _ = qml.metric_tensor(circuit, approx="block-diag")
         assert len(tapes) == 3
 
         # first parameter subcircuit
@@ -69,7 +146,7 @@ class TestMetricTensor:
 
         circuit = qml.QNode(circuit, dev, diff_method=diff_method)
         params = [0.1, 0.2]
-        result = qml.metric_tensor(circuit)(*params)
+        result = qml.metric_tensor(circuit, approx="block-diag")(*params)
         assert result.shape == (2, 2)
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
@@ -88,7 +165,7 @@ class TestMetricTensor:
 
         circuit = qml.QNode(circuit, dev, diff_method=diff_method)
         params = [0.1]
-        result = qml.metric_tensor(circuit, hybrid=False)(*params)
+        result = qml.metric_tensor(circuit, hybrid=False, approx="block-diag")(*params)
         assert result.shape == (2, 2)
 
     def test_generator_no_expval(self, monkeypatch):
@@ -102,7 +179,7 @@ class TestMetricTensor:
                 qml.expval(qml.PauliX(0))
 
             with pytest.raises(qml.QuantumFunctionError, match="no corresponding observable"):
-                qml.metric_tensor(tape)
+                qml.metric_tensor(tape, approx="block-diag")
 
     def test_construct_subcircuit(self):
         """Test correct subcircuits constructed"""
@@ -115,7 +192,7 @@ class TestMetricTensor:
             qml.PhaseShift(np.array(1.0, requires_grad=True), wires=1)
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
 
-        tapes, _ = qml.metric_tensor(tape)
+        tapes, _ = qml.metric_tensor(tape, approx="block-diag")
         assert len(tapes) == 3
 
         # first parameter subcircuit
@@ -165,7 +242,7 @@ class TestMetricTensor:
             qml.CNOT(wires=[1, 2])
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1)), qml.expval(qml.PauliX(2))
 
-        tapes, _ = qml.metric_tensor(tape)
+        tapes, _ = qml.metric_tensor(tape, approx="block-diag")
 
         # this circuit should split into 4 independent
         # sections or layers when constructing subcircuits
@@ -232,7 +309,7 @@ class TestMetricTensor:
         c = -0.432
 
         # evaluate metric tensor
-        g = qml.metric_tensor(circuit)(a, b, c)
+        g = qml.metric_tensor(circuit, approx="block-diag")(a, b, c)
 
         # check that the metric tensor is correct
         expected = (
@@ -255,8 +332,22 @@ class TestMetricTensor:
             return qml.probs(wires=[0, 1])
 
         weights = np.ones([2, 3, 3], dtype=np.float64, requires_grad=True)
-        res = qml.metric_tensor(circuit)(weights)
+        res = qml.metric_tensor(circuit, approx="block-diag")(weights)
         assert res.shape == (2, 3, 3, 2, 3, 3)
+
+    def test_full_tensor_not_implemented(self):
+        """Test that the full metric tensor can not be computed yet."""
+        dev = qml.device("default.qubit", wires=3)
+
+        def circuit(a, b):
+            qml.RX(a, wires=0)
+            qml.MultiRZ(b, wires=[0, 1, 2])
+            return qml.expval(qml.PauliX(0))
+
+        circuit = qml.QNode(circuit, dev)
+        params = [0.1, 0.2]
+        with pytest.raises(NotImplementedError):
+            result = qml.metric_tensor(circuit, approx=None)(*params)
 
     def test_evaluate_diag_metric_tensor_classical_processing(self, tol):
         """Test that a diagonal metric tensor evaluates correctly
@@ -280,7 +371,7 @@ class TestMetricTensor:
         b = 0.12
 
         # evaluate metric tensor
-        g = qml.metric_tensor(circuit)(a, b)
+        g = qml.metric_tensor(circuit, approx="block-diag")(a, b)
         assert isinstance(g, tuple)
         assert len(g) == 2
         assert g[0].shape == (len(a), len(a))
@@ -331,7 +422,7 @@ class TestMetricTensor:
         return dev, final, non_parametrized_layer, a, b, c
 
     def test_evaluate_block_diag_metric_tensor(self, sample_circuit, tol):
-        """Test that a block diagonal metric tensor evaluates correctly,
+        """Test that a block-diagonal metric tensor evaluates correctly,
         by comparing it to a known analytic result as well as numerical
         computation."""
         dev, circuit, non_parametrized_layer, a, b, c = sample_circuit
@@ -339,10 +430,10 @@ class TestMetricTensor:
         params = [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272]
         x, y, z, h, g, f = params
 
-        G = qml.metric_tensor(circuit)(*params)
+        G = qml.metric_tensor(circuit, approx="block-diag")(*params)
 
         # ============================================
-        # Test block diag metric tensor of first layer is correct.
+        # Test block-diag metric tensor of first layer is correct.
         # We do this by comparing against the known analytic result.
         # First layer includes the non_parametrized_layer,
         # followed by observables corresponding to generators of:
@@ -386,7 +477,7 @@ class TestMetricTensor:
         assert np.allclose(G[:3, :3], G1, atol=tol, rtol=0)
 
         # =============================================
-        # Test block diag metric tensor of second layer is correct.
+        # Test block-diag metric tensor of second layer is correct.
         # We do this by computing the required expectation values
         # numerically using multiple circuits.
         # The second layer includes the non_parametrized_layer,
@@ -442,7 +533,7 @@ class TestMetricTensor:
         assert np.allclose(G[4:6, 4:6], G2, atol=tol, rtol=0)
 
         # =============================================
-        # Test block diag metric tensor of third layer is correct.
+        # Test block-diag metric tensor of third layer is correct.
         # We do this by computing the required expectation values
         # numerically.
         # The third layer includes the non_parametrized_layer,
@@ -477,15 +568,18 @@ class TestMetricTensor:
 
     def test_evaluate_diag_approx_metric_tensor(self, sample_circuit, tol):
         """Test that a metric tensor under the
-        diagonal approximation evaluates correctly."""
+        diagonal approximation evaluates correctly and that the old option
+        ``diag_approx`` raises a Warning."""
         dev, circuit, non_parametrized_layer, a, b, c = sample_circuit
         params = [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272]
         x, y, z, h, g, f = params
 
-        G = qml.metric_tensor(circuit, diag_approx=True)(*params)
+        G = qml.metric_tensor(circuit, approx="diag")(*params)
+        with pytest.warns(UserWarning):
+            G_alias = qml.metric_tensor(circuit, diag_approx=True)(*params)
 
         # ============================================
-        # Test block diag metric tensor of first layer is correct.
+        # Test block-diag metric tensor of first layer is correct.
         # We do this by comparing against the known analytic result.
         # First layer includes the non_parametrized_layer,
         # followed by observables corresponding to generators of:
@@ -508,9 +602,10 @@ class TestMetricTensor:
         G1[2, 2] = (3 - np.cos(2 * a) - 2 * np.cos(a) ** 2 * np.cos(2 * (b + c))) / 16
 
         assert np.allclose(G[:3, :3], G1, atol=tol, rtol=0)
+        assert np.allclose(G_alias[:3, :3], G1, atol=tol, rtol=0)
 
         # =============================================
-        # Test block diag metric tensor of second layer is correct.
+        # Test block-diag metric tensor of second layer is correct.
         # We do this by computing the required expectation values
         # numerically using multiple circuits.
         # The second layer includes the non_parametrized_layer,
@@ -537,6 +632,7 @@ class TestMetricTensor:
         G2[1, 1] = varK1 / 4
 
         assert np.allclose(G[4:6, 4:6], G2, atol=tol, rtol=0)
+        assert np.allclose(G_alias[4:6, 4:6], G2, atol=tol, rtol=0)
 
         # =============================================
         # Test metric tensor of third layer is correct.
@@ -564,6 +660,7 @@ class TestMetricTensor:
         layer3_diag = qml.QNode(layer3_diag, dev)
         G3 = layer3_diag(x, y, z, h, g, f) / 4
         assert np.allclose(G[3:4, 3:4], G3, atol=tol, rtol=0)
+        assert np.allclose(G_alias[3:4, 3:4], G3, atol=tol, rtol=0)
 
         # ============================================
         # Finally, double check that the entire metric
@@ -571,6 +668,31 @@ class TestMetricTensor:
 
         G_expected = block_diag(G1, G3, G2)
         assert np.allclose(G, G_expected, atol=tol, rtol=0)
+        assert np.allclose(G_alias, G_expected, atol=tol, rtol=0)
+
+    def test_multi_qubit_gates(self):
+        """Test that a tape with Ising gates has the correct metric tensor tapes."""
+
+        dev = qml.device("default.qubit", wires=3)
+        with qml.tape.JacobianTape() as tape:
+            qml.Hadamard(0)
+            qml.Hadamard(2)
+            qml.IsingXX(0.2, wires=[0, 1])
+            qml.IsingXX(-0.6, wires=[1, 2])
+            qml.IsingZZ(1.02, wires=[0, 1])
+            qml.IsingZZ(-4.2, wires=[1, 2])
+
+        tapes, proc_fn = qml.metric_tensor(tape, approx="block-diag")
+        assert len(tapes) == 4
+        assert [len(tape.operations) for tape in tapes] == [2, 4, 5, 6]
+        assert [len(tape.measurements) for tape in tapes] == [1] * 4
+        expected_ops = [
+            [qml.Hadamard, qml.QubitUnitary],
+            [qml.Hadamard, qml.Hadamard, qml.IsingXX, qml.QubitUnitary],
+            [qml.Hadamard, qml.Hadamard, qml.IsingXX, qml.IsingXX, qml.QubitUnitary],
+            [qml.Hadamard, qml.Hadamard, qml.IsingXX, qml.IsingXX, qml.IsingZZ, qml.QubitUnitary],
+        ]
+        assert [[type(op) for op in tape.operations] for tape in tapes] == expected_ops
 
 
 @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
@@ -590,7 +712,7 @@ class TestDifferentiability:
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
 
         def cost(weights):
-            return qml.metric_tensor(circuit)(weights)[2, 2]
+            return qml.metric_tensor(circuit, approx="block-diag")(weights)[2, 2]
 
         weights = np.array([0.432, 0.12, -0.432], requires_grad=True)
         a, b, c = weights
@@ -622,7 +744,7 @@ class TestDifferentiability:
         circuit.interface = "jax"
 
         def cost(weights):
-            return qml.metric_tensor(circuit)(weights)[2, 2]
+            return qml.metric_tensor(circuit, approx="block-diag")(weights)[2, 2]
 
         weights = jnp.array([0.432, 0.12, -0.432])
         a, b, c = weights
@@ -652,7 +774,7 @@ class TestDifferentiability:
         a, b, c = weights
 
         with tf.GradientTape() as tape:
-            loss = qml.metric_tensor(circuit)(weights_t)[2, 2]
+            loss = qml.metric_tensor(circuit, approx="block-diag")(weights_t)[2, 2]
 
         grad = tape.gradient(loss, weights_t)
         expected = np.array(
@@ -678,7 +800,7 @@ class TestDifferentiability:
         a, b, c = weights
 
         weights_t = torch.tensor(weights, requires_grad=True)
-        loss = qml.metric_tensor(circuit)(weights_t)[2, 2]
+        loss = qml.metric_tensor(circuit, approx="block-diag")(weights_t)[2, 2]
         loss.backward()
 
         grad = weights_t.grad
@@ -711,7 +833,7 @@ class TestDeprecatedQNodeMethod:
 
         # evaluate metric tensor
         with pytest.warns(UserWarning, match="has been deprecated"):
-            g = circuit.metric_tensor(a, b, c)
+            g = circuit.metric_tensor(a, b, c, approx="block-diag")
 
         # check that the metric tensor is correct
         expected = (
@@ -740,6 +862,6 @@ class TestDeprecatedQNodeMethod:
 
         # evaluate metric tensor
         with pytest.warns(UserWarning, match="has been deprecated"):
-            tapes, fn = circuit.metric_tensor(a, b, c, only_construct=True)
+            tapes, fn = circuit.metric_tensor(a, b, c, approx="block-diag", only_construct=True)
 
         assert len(tapes) == 3
