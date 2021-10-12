@@ -72,13 +72,11 @@ class BooleanFn:
         return self.fn(obj)
 
 
-has_generator = BooleanFn(
-    lambda obj: hasattr(obj, "generator") and obj.generator[0] is not None
-)
+has_gen = BooleanFn(lambda obj: hasattr(obj, "generator") and obj.generator[0] is not None)
 has_grad_method = BooleanFn(lambda obj: obj.grad_method is not None)
-has_multiple_params = BooleanFn(lambda obj: obj.num_params > 1)
-has_no_params = BooleanFn(lambda obj: obj.num_params == 0)
-has_unitary_generator = BooleanFn(lambda obj: obj.has_unitary_generator)
+has_multipar = BooleanFn(lambda obj: obj.num_params > 1)
+has_nopar = BooleanFn(lambda obj: obj.num_params == 0)
+has_unitary_gen = BooleanFn(lambda obj: obj.has_unitary_generator)
 is_measurement = BooleanFn(lambda obj: isinstance(obj, qml.measure.MeasurementProcess))
 is_trainable = BooleanFn(lambda obj: any(qml.math.requires_grad(p) for p in obj.parameters))
 
@@ -101,7 +99,7 @@ def get_expand_fn(depth, stop_at):
     steps, which can be controlled with the argument ``depth``.
     The stopping criterion is easy to write as
 
-    >>> stop_at = ~(qml.transforms.has_multiple_params & qml.transforms.is_trainable)
+    >>> stop_at = ~(qml.transforms.has_multipar & qml.transforms.is_trainable)
 
     Then the expansion function can be obtained via
 
@@ -127,6 +125,7 @@ def get_expand_fn(depth, stop_at):
     RZ(tensor(1.36, requires_grad=True), wires=[1])
 
     """
+
     def expand_fn(tape):
         if not all(stop_at(op) for op in tape.operations):
             tape = tape.expand(depth=depth, stop_at=stop_at)
@@ -137,9 +136,7 @@ def get_expand_fn(depth, stop_at):
     return expand_fn
 
 
-expand_multi_par_and_no_gen = get_expand_fn(
-    depth=10, stop_at=is_measurement | has_no_params | has_generator
-)
+expand_multi_par_and_no_gen = get_expand_fn(depth=10, stop_at=is_measurement | has_nopar | has_gen)
 expand_multi_par_and_nonunitary_gen = get_expand_fn(
-    depth=10, stop_at=is_measurement | has_no_params | (has_generator & has_unitary_generator)
+    depth=10, stop_at=is_measurement | has_nopar | (has_gen & has_unitary_gen)
 )

@@ -125,11 +125,11 @@ from .unitary_to_rot import unitary_to_rot
 from .get_unitary_matrix import get_unitary_matrix
 from .tape_expand import (
     get_expand_fn,
-    has_generator,
+    has_gen,
     has_grad_method,
-    has_multiple_params,
-    has_no_params,
-    has_unitary_generator,
+    has_multipar,
+    has_nopar,
+    has_unitary_gen,
     is_measurement,
     is_trainable,
     BooleanFn,

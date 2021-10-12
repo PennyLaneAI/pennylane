@@ -70,12 +70,12 @@ class TestCriteria:
     stiff_rot = qml.Rot(0.1, -0.7, 0.2, wires=0)
     exp = qml.expval(qml.PauliZ(0))
 
-    def test_has_generator(self):
-        """Test has_generator criterion."""
-        assert qml.transforms.has_generator(self.rx)
-        assert not qml.transforms.has_generator(self.cnot)
-        assert not qml.transforms.has_generator(self.rot)
-        assert not qml.transforms.has_generator(self.exp)
+    def test_has_gen(self):
+        """Test has_gen criterion."""
+        assert qml.transforms.has_gen(self.rx)
+        assert not qml.transforms.has_gen(self.cnot)
+        assert not qml.transforms.has_gen(self.rot)
+        assert not qml.transforms.has_gen(self.exp)
 
     def test_has_grad_method(self):
         """Test has_grad_method criterion."""
@@ -83,23 +83,23 @@ class TestCriteria:
         assert qml.transforms.has_grad_method(self.rot)
         assert not qml.transforms.has_grad_method(self.cnot)
 
-    def test_has_multiple_params(self):
-        """Test has_multiple_params criterion."""
-        assert not qml.transforms.has_multiple_params(self.rx)
-        assert qml.transforms.has_multiple_params(self.rot)
-        assert not qml.transforms.has_multiple_params(self.cnot)
+    def test_has_multipar(self):
+        """Test has_multipar criterion."""
+        assert not qml.transforms.has_multipar(self.rx)
+        assert qml.transforms.has_multipar(self.rot)
+        assert not qml.transforms.has_multipar(self.cnot)
 
-    def test_has_no_params(self):
-        """Test has_no_params criterion."""
-        assert not qml.transforms.has_no_params(self.rx)
-        assert not qml.transforms.has_no_params(self.rot)
-        assert qml.transforms.has_no_params(self.cnot)
+    def test_has_nopar(self):
+        """Test has_nopar criterion."""
+        assert not qml.transforms.has_nopar(self.rx)
+        assert not qml.transforms.has_nopar(self.rot)
+        assert qml.transforms.has_nopar(self.cnot)
 
-    def test_has_unitary_generator(self):
-        """Test has_unitary_generator criterion."""
-        assert qml.transforms.has_unitary_generator(self.rx)
-        assert not qml.transforms.has_unitary_generator(self.rot)
-        assert not qml.transforms.has_unitary_generator(self.cnot)
+    def test_has_unitary_gen(self):
+        """Test has_unitary_gen criterion."""
+        assert qml.transforms.has_unitary_gen(self.rx)
+        assert not qml.transforms.has_unitary_gen(self.rot)
+        assert not qml.transforms.has_unitary_gen(self.cnot)
 
     def test_is_measurement(self):
         """Test is_measurement criterion."""
@@ -119,9 +119,7 @@ class TestCriteria:
 
 class TestGetExpandFn:
 
-    crit_0 = (~qml.transforms.is_trainable) | (
-        qml.transforms.has_generator & qml.transforms.is_trainable
-    )
+    crit_0 = (~qml.transforms.is_trainable) | (qml.transforms.has_gen & qml.transforms.is_trainable)
     with qml.tape.JacobianTape() as tape:
         qml.RX(0.2, wires=0)
         qml.RY(qml.numpy.array(2.1, requires_grad=True), wires=1)
