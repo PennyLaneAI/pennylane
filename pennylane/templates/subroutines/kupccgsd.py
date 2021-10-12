@@ -18,7 +18,6 @@ Contains the k-UpCCGSD template.
 import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
-from pennylane.ops import BasisState
 
 
 def generalized_singles(wires, delta_sz):
@@ -81,7 +80,7 @@ class kUpCCGSD(Operation):
         \hat{c}_{j_\alpha}\hat{c}_{j_\beta} - \text{H.c.}) \Big\}}\bigg)
 
     where :math:`\hat{c}` and :math:`\hat{c}^{\dagger}` are the fermionic annihilation and creation operators.
-    The indices :math:`p, q` run over the spin orbitals and :math:`i, j` run over the spatial orbitals. The 
+    The indices :math:`p, q` run over the spin orbitals and :math:`i, j` run over the spatial orbitals. The
     singles and paired doubles amplitudes :math:`\theta_{r}^{p}` and
     :math:`\theta_{j_\alpha j_\beta}^{i_\alpha i_\beta}` represent the set of variational parameters.
 
@@ -104,7 +103,7 @@ class kUpCCGSD(Operation):
            spin-orbitals included in the active space, and should be even.
 
         #. The number of trainable parameters scales linearly with the number of layers as
-           :math:`2 k ||\vec{\theta}||`, where :math:`||\vec{\theta}||` is the total number of 
+           :math:`2 k ||\vec{\theta}||`, where :math:`||\vec{\theta}||` is the total number of
            generalized singles and paired doubles excitation terms.
 
         An example of how to use this template is shown below:
