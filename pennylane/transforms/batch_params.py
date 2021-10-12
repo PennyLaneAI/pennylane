@@ -114,7 +114,7 @@ def batch_params(tape, all_operations=False):
     try:
         batch_dim = qml.math.shape(params[0])[0]
     except IndexError:
-        raise ValueError(f"Parameter {params[0]} does not contain a batch dimension.")
+        raise ValueError(f"Parameter {params[0]} does not contain a batch dimension.") from None
 
     unbatched_params = [[] for i in range(batch_dim)]
 
