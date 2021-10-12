@@ -18,7 +18,6 @@ import pennylane as qml
 from pennylane.operation import (
     has_gen,
     has_grad_method,
-    has_multipar,
     has_nopar,
     has_unitary_gen,
     is_measurement,
@@ -71,6 +70,7 @@ def get_expand_fn(depth, stop_at, docstring=None):
     RZ(tensor(1.36, requires_grad=True), wires=[1])
 
     """
+    # pylint: disable=unused-argument
 
     def expand_fn(tape, _depth=depth, **kwargs):
         if not all(stop_at(op) for op in tape.operations):
