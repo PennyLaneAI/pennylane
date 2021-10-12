@@ -43,7 +43,7 @@ def batch_params(tape, all_operations=False):
     Args:
         qnode (pennylane.QNode or .QuantumTape): quantum tape or QNode to add a batch dimension to
         all_operations (bool): If ``True``, a batch dimension will be added to *all* operations
-            in the QNode, rather than just input QNode parameters.
+            in the QNode, rather than just trainable QNode parameters.
 
     Returns:
         func: Function which accepts the same arguments as the QNode, however the
