@@ -366,7 +366,7 @@ class QNode:
         if device.shots is not None:
             raise qml.QuantumFunctionError(
                 "Devices with finite shots are incompatible with backpropogation. "
-                "Please set shots=None or chose a different diff_method."
+                "Please set shots=None or choose a different diff_method."
             )
 
         # determine if the device supports backpropagation
@@ -670,15 +670,20 @@ class QNode:
             # construct the tape
             self.construct(args, kwargs)
 
-        # If the observable contains a Hamiltonian and the device does not
-        # support Hamiltonians, or if the simulation uses finite shots,
-        # split tape into multiple tapes of diagonalizable known observables.
-        # In future, this logic should be moved to the device
-        # to allow for more efficient batch execution.
-        supports_hamiltonian = self.device.supports_observable("Hamiltonian")
-        finite_shots = self.device.shots is not None
+        # Under certain conditions, split tape into multiple tapes and recombine them.
+        # Else just execute the tape, and let the device take care of things.
         hamiltonian_in_obs = "Hamiltonian" in [obs.name for obs in self.qtape.observables]
-        if hamiltonian_in_obs and (not supports_hamiltonian or finite_shots):
+        # if the device does not support Hamiltonians, we split them
+        supports_hamiltonian = self.device.supports_observable("Hamiltonian")
+        # if the user wants a finite-shots computation we always split Hamiltonians
+        finite_shots = self.device.shots is not None
+        # if a grouping has been computed for all Hamiltonians we assume that they should be split
+        grouping_known = all(
+            obs.grouping_indices is not None
+            for obs in self.qtape.observables
+            if obs.name == "Hamiltonian"
+        )
+        if hamiltonian_in_obs and ((not supports_hamiltonian or finite_shots) or grouping_known):
             try:
                 tapes, fn = qml.transforms.hamiltonian_expand(self.qtape, group=False)
             except ValueError as e:
@@ -723,7 +728,15 @@ class QNode:
 
         return qml.math.squeeze(res)
 
-    def metric_tensor(self, *args, diag_approx=False, only_construct=False, **kwargs):
+    def metric_tensor(
+        self,
+        *args,
+        allow_nonunitary=True,
+        approx=None,
+        diag_approx=None,
+        only_construct=False,
+        **kwargs,
+    ):
         """Evaluate the value of the metric tensor.
 
         Args:
@@ -744,10 +757,9 @@ class QNode:
 
         if only_construct:
             self.construct(args, kwargs)
-            tape = qml.metric_tensor.expand_fn(self.qtape)
-            return qml.metric_tensor.construct(tape, diag_approx=diag_approx)
+            return qml.metric_tensor.construct(self.qtape, allow_nonunitary, approx, diag_approx)
 
-        return qml.metric_tensor(self, diag_approx=diag_approx)(*args, **kwargs)
+        return qml.metric_tensor(self, allow_nonunitary, approx, diag_approx)(*args, **kwargs)
 
     def draw(
         self, charset="unicode", wire_order=None, show_all_wires=False

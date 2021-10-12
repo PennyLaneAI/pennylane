@@ -34,11 +34,11 @@ class ExpvalCost:
 
             .. code-block:: python
 
-                ansatz(params, **kwargs)
+                ansatz(params, wires, **kwargs)
 
-            where ``params`` are the trainable weights of the variational circuit, and
-            ``kwargs`` are any additional keyword arguments that need to be passed
-            to the template.
+            where ``params`` are the trainable weights of the variational circuit,
+            ``wires`` is the wires the circuit acts on, and ``kwargs`` are any additional
+            keyword arguments that need to be passed to the template.
         hamiltonian (~.Hamiltonian): Hamiltonian operator whose expectation value should be measured
         device (Device, Sequence[Device]): Corresponding device(s) where the resulting
             cost function should be executed. This can either be a single device, or a list
@@ -110,7 +110,8 @@ class ExpvalCost:
             cost_opt = qml.ExpvalCost(ansatz, H, dev, optimize=True)
             cost_no_opt = qml.ExpvalCost(ansatz, H, dev, optimize=False)
 
-            params = qml.init.strong_ent_layers_uniform(3, 2)
+            shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=3, n_wires=2)
+            params = np.random.random(shape)
 
         Grouping these commuting observables leads to fewer device executions:
 

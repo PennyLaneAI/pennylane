@@ -632,6 +632,19 @@ class Operation(Operator):
     ``ControlledPhaseShift`` and ``RZ`` have ``basis = "Z"``.
     """
 
+    has_unitary_generator = None
+    """bool or None: ``True`` if the operation has a ``generator`` and the first
+    entry of that ``generator`` is unitary.
+
+    For example, ``qml.RZ.generator = [qml.PauliZ, -1/2]`` and ``qml.PauliZ`` is
+    unitary, so that ``qml.RZ.has_unitary_generator = True``. Contrary,
+    ``qml.PhaseShift.generator = [np.array([[0, 0], [0, 1]]), 1]`` where the
+    array in the first entry is not unitary, so that
+    ``qml.PhaseShift.has_unitary_generator = False``. This flag is used for
+    decompositions in algorithms using the Hadamard test like ``qml.metric_tensor``
+    when used without approximation.
+    """
+
     @property
     def control_wires(self):  # pragma: no cover
         r"""For operations that are controlled, returns the set of control wires.
@@ -811,6 +824,7 @@ class Operation(Operator):
     def __init__(self, *params, wires=None, do_queue=True, id=None):
 
         self._inverse = False
+        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
         # check the grad_method validity
         if self.par_domain == "N":
@@ -834,8 +848,6 @@ class Operation(Operator):
                 ), "Gradient recipe must have one entry for each parameter!"
         else:
             assert self.grad_recipe is None, "Gradient recipe is only used by the A method!"
-
-        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
 
 class DiagonalOperation(Operation):
