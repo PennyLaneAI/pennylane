@@ -262,7 +262,7 @@ CV Gates
     ~pennylane.CrossKerr
     ~pennylane.CubicPhase
     ~pennylane.Displacement
-    ~pennylane.Interferometer
+    ~pennylane.InterferometerUnitary
     ~pennylane.Kerr
     ~pennylane.QuadraticPhase
     ~pennylane.Rotation

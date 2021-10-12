@@ -806,6 +806,32 @@ class TestCircuitDrawerIntegration:
         )
         assert qnode.draw() == expected
 
+    def test_same_wire_multiple_measurements_many_obs(self):
+        """Test that drawing a QNode with multiple measurements on certain
+        wires works correctly when there are more observables than the number of
+        observables for any wire.
+        """
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def qnode(x, y):
+            qml.RY(x, wires=0)
+            qml.Hadamard(0)
+            qml.RZ(y, wires=0)
+            return [
+                qml.expval(qml.PauliZ(0)),
+                qml.expval(qml.PauliZ(1)),
+                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)),
+            ]
+
+        qnode(0.3, 0.2)
+
+        expected = (
+            " 0: ──RY(0.3)──H──RZ(0.2)──┤ ⟨Z⟩ ┤     ╭┤ ⟨Z ⊗ Z⟩ \n"
+            + " 1: ───────────────────────┤     ┤ ⟨Z⟩ ╰┤ ⟨Z ⊗ Z⟩ \n"
+        )
+        assert qnode.draw() == expected
+
 
 class TestWireOrdering:
     """Tests for wire ordering functionality"""
