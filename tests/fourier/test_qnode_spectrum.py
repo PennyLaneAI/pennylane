@@ -25,6 +25,7 @@ from pennylane.transforms import classical_jacobian
 
 def circuit_0(a):
     [qml.RX(a, wires=0) for i in range(4)]
+    qml.Hadamard(0)
     return qml.expval(qml.PauliZ(0))
 
 
@@ -46,6 +47,7 @@ def circuit_3(x, y):
     [qml.RX(0.1 * (i + 1) * x[i], wires=0) for i in range(3)]
     for i in range(2):
         [qml.RY((i + j) * y[i, j], wires=1) for j in range(2)]
+    qml.Hadamard(0)
     return qml.expval(qml.PauliZ(0))
 
 
@@ -73,6 +75,7 @@ def circuit_6(x, y, z):
 
 
 def circuit_7(a):
+    qml.Hadamard(0)
     [qml.RX(qml.math.sin(a), wires=0) for i in range(4)]
     return qml.expval(qml.PauliZ(0))
 

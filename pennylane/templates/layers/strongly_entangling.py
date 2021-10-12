@@ -71,11 +71,8 @@ class StronglyEntanglingLayers(Operation):
 
     def __init__(self, weights, wires, ranges=None, imprimitive=None, do_queue=True, id=None):
 
-        shape = qml.math.shape(weights)
+        shape = qml.math.shape(weights)[-3:]
         self.n_layers = shape[0]
-
-        if len(shape) != 3:
-            raise ValueError(f"Weights tensor must be 3-dimensional; got shape {shape}")
 
         if shape[1] != len(wires):
             raise ValueError(
@@ -117,9 +114,9 @@ class StronglyEntanglingLayers(Operation):
 
                 for i in range(len(self.wires)):
                     qml.Rot(
-                        self.parameters[0][l, i, 0],
-                        self.parameters[0][l, i, 1],
-                        self.parameters[0][l, i, 2],
+                        self.parameters[0][..., l, i, 0],
+                        self.parameters[0][..., l, i, 1],
+                        self.parameters[0][..., l, i, 2],
                         wires=self.wires[i],
                     )
 
