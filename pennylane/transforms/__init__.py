@@ -30,7 +30,7 @@ that compute the desired quantity.
     :toctree: api
 
     ~transforms.classical_jacobian
-    ~batch_dim
+    ~batch_params
     ~draw
     ~transforms.get_unitary_matrix
     ~metric_tensor
@@ -105,7 +105,7 @@ to help build custom QNode, quantum function, and tape transforms:
 from .batch_transform import batch_transform
 from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
 from .adjoint import adjoint
-from .batch_dim import batch_dim
+from .batch_params import batch_params
 from .classical_jacobian import classical_jacobian
 from .compile import compile
 from .control import ControlledOperation, ctrl
