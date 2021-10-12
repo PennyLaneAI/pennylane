@@ -28,14 +28,14 @@ def _recursive_find_layer(layer_to_check, op_occupied_wires, occupied_wires_per_
     hashable label that operations act on. ``drawable_layers`` performs this conversion.
 
     Args:
-        layer_to_check (int): function determines if operation fits on this layer
+        layer_to_check (int): the function determines if the operation fits on this layer
         op_occupied_wires (set(int)): wires covered the drawn operation.  Includes everything
             between used wires in a multi-wire gate.
-        occupied_wires_per_layer (list[set[int]]): which wires will already have something drawn
-            on them
+        occupied_wires_per_layer (list[set[int]]): which wires already have something drawn
+            on them. Each set is a different layer.
 
     Returns:
-        int: layer to place relevant operation in
+        int: layer to place operation in
     """
 
     if occupied_wires_per_layer[layer_to_check] & op_occupied_wires:
@@ -44,12 +44,12 @@ def _recursive_find_layer(layer_to_check, op_occupied_wires, occupied_wires_per_
     if layer_to_check == 0:
         # reached first layer, so stop
         return 0
-    # keep pushing the operation back
+    # keep pushing the operation to lower layers
     return _recursive_find_layer(layer_to_check - 1, op_occupied_wires, occupied_wires_per_layer)
 
 
 def drawable_layers(ops, wire_map=None):
-    """Determine non-overlapping yet dense placement of operations for drawing.
+    """Determine non-overlapping yet dense placement of operations into layers for drawing.
 
     Args:
         ops Iterable[~.Operator]: a list of operations
@@ -60,6 +60,26 @@ def drawable_layers(ops, wire_map=None):
     Returns:
         list[set[~.Operator]] : Each index is a set of operations
             for the corresponding layer
+
+    **Details**
+
+    The function recursively pushes operations as far to the left (lowest layer) possible
+    *without* altering order.
+
+    From the start, the function cares about the locations the operation altered
+    during a drawing, not just the wires the operation acts on. An "occupied" wire
+    refers to a wire that will be altered in the drawing of an operation.
+    Assuming ``1`` is between ``0`` and ``2`` in the ordering, ``qml.CNOT(wires=(0,2))``
+    will also "occupy" wire ``1``.  In this scenario, an operation on wire ``1``, like
+    ``qml.PauliX(wires=1)``, will not be pushed to the left
+    of the ``qml.CNOT(wires=(0,2))`` gate, but be blocked by the occupied wire. This preserves
+    ordering and makes placement more intuitive.
+
+    The ``wire_order`` keyword argument used by user facing functions like :func:`~.draw` maps position
+    to wire label.   The ``wire_map`` keyword argument used here maps label to position.
+    The utility function :func:`~.circuit_drawer.utils.convert_wire_order` can perform this
+    transformation.
+
     """
 
     if wire_map is None:
@@ -101,8 +121,10 @@ def drawable_layers(ops, wire_map=None):
 
 def drawable_grid(ops, wire_map=None):
     """Determine non-overlapping yet dense placement of operations for drawing.
-    Converts between ``drawable_layers`` data structure and a structure compatible
-    with ``qml.circuit_drawer.Grid``.
+
+    The function outputs a shape and structure compatible with input to the text circuit drawer
+    :class:`~.circuit_drawer.circuit_drawer.CircuitDrawer` and its internal
+    data structure :class:`~.circuit_drawer.grid.Grid`.
 
     Args:
         ops Iterable[~.Operator]: a list of operations
@@ -128,6 +150,7 @@ def drawable_grid(ops, wire_map=None):
     n_layers = len(ops_in_layer)
 
     # initialize grid with proper size and default values
+    # structure determined by needs of ``Grid`` object
     grid = [[None for _ in range(n_layers)] for _ in range(n_wires)]
 
     for layer, layer_ops in enumerate(ops_in_layer):
