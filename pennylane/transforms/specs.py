@@ -109,11 +109,6 @@ def specs(qnode, max_expansion=None):
             # TODO: remove when the old QNode is removed
             return qnode.specs
 
-        if qnode.qtape is None:
-            raise qml.QuantumFunctionError(
-                "The QNode specifications can only be calculated after its quantum tape has been constructed."
-            )
-
         info = qnode.qtape.specs.copy()
 
         info["num_device_wires"] = qnode.device.num_wires
