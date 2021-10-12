@@ -61,6 +61,29 @@ class TestBatchTransform:
         with pytest.raises(ValueError, match="does not appear to be a valid Python function"):
             qml.batch_transform(5)
 
+    def test_sphinx_build(self, monkeypatch):
+        """Test that batch transforms are not created during Sphinx builds"""
+
+        @qml.batch_transform
+        def my_transform(tape):
+            tape1 = tape.copy()
+            tape2 = tape.copy()
+            return [tape1, tape2], None
+
+        assert isinstance(my_transform, qml.batch_transform)
+
+        monkeypatch.setenv("SPHINX_BUILD", "1")
+
+        with pytest.warns(UserWarning, match="Batch transformations have been disabled"):
+
+            @qml.batch_transform
+            def my_transform(tape):
+                tape1 = tape.copy()
+                tape2 = tape.copy()
+                return [tape1, tape2], None
+
+        assert not isinstance(my_transform, qml.batch_transform)
+
     def test_none_processing(self):
         """Test that a transform that returns None for a processing function applies
         the identity as the processing function"""
@@ -103,6 +126,29 @@ class TestBatchTransform:
 
         with pytest.warns(UserWarning, match="Output seems independent of input"):
             qml.grad(circuit)(0.5)
+
+    def test_use_qnode_execution_options(self, mocker):
+        """Test that a QNodes execution options are used by the
+        batch transform"""
+        dev = qml.device("default.qubit", wires=2)
+        cache = {}
+
+        @qml.beta.qnode(dev, max_diff=3, cache=cache)
+        def circuit(x):
+            qml.Hadamard(wires=0)
+            qml.RY(x, wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        a = 0.1
+        b = 0.4
+        x = 0.543
+
+        fn = self.my_transform(circuit, a, b)
+
+        spy = mocker.spy(qml, "execute")
+        fn(x)
+        assert spy.call_args[1]["max_diff"] == 3
+        assert spy.call_args[1]["cache"] is cache
 
     def test_expand_fn(self, mocker):
         """Test that if an expansion function is provided,

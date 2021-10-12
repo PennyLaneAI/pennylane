@@ -14,7 +14,10 @@
 """Contains tools and decorators for registering batch transforms."""
 # pylint: disable=too-few-public-methods
 import functools
+import inspect
+import os
 import types
+import warnings
 
 import pennylane as qml
 from pennylane.beta import QNode
@@ -150,6 +153,25 @@ class batch_transform:
     2.5800122591960153
     """
 
+    def __new__(cls, *args, **kwargs):  # pylint: disable=unused-argument
+        if os.environ.get("SPHINX_BUILD") == "1":
+            # If called during a Sphinx documentation build,
+            # simply return the original function rather than
+            # instantiating the object. This allows the signature to
+            # be correctly displayed in the documentation.
+
+            warnings.warn(
+                "Batch transformations have been disabled, as a Sphinx "
+                "build has been detected via SPHINX_BUILD='1'. If this is not the "
+                "case, please set the environment variable SPHINX_BUILD='0'.",
+                UserWarning,
+            )
+
+            args[0].custom_qnode_wrapper = lambda x: x
+            return args[0]
+
+        return super().__new__(cls)
+
     def __init__(self, transform_fn, expand_fn=None, differentiable=True):
         if not callable(transform_fn):
             raise ValueError(
@@ -221,15 +243,21 @@ class batch_transform:
         the QNode, and return the output of the applying the tape transform
         to the QNode's constructed tape.
         """
+        if "shots" in inspect.signature(qnode.func).parameters:
+            raise ValueError(
+                "Detected 'shots' as an argument of the quantum function to transform. "
+                "The 'shots' argument name is reserved for overriding the number of shots "
+                "taken by the device."
+            )
 
         def _wrapper(*args, **kwargs):
+            shots = kwargs.pop("shots", False)
             qnode.construct(args, kwargs)
             tapes, processing_fn = self.construct(qnode.qtape, *targs, **tkwargs)
 
-            # TODO: work out what to do for backprop
             interface = qnode.interface
-
-            # TODO: extract gradient_fn from QNode
+            execute_kwargs = getattr(qnode, "execute_kwargs", {})
+            max_diff = execute_kwargs.pop("max_diff", 2)
             gradient_fn = getattr(qnode, "gradient_fn", qnode.diff_method)
 
             if interface is None or not self.differentiable:
@@ -242,7 +270,13 @@ class batch_transform:
                 gradient_fn = qml.gradients.finite_diff
 
             res = qml.execute(
-                tapes, device=qnode.device, gradient_fn=gradient_fn, interface=interface, max_diff=2
+                tapes,
+                device=qnode.device,
+                gradient_fn=gradient_fn,
+                interface=interface,
+                max_diff=max_diff,
+                override_shots=shots,
+                **execute_kwargs,
             )
 
             return processing_fn(res)
