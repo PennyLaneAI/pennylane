@@ -24,12 +24,13 @@ class TestDefaultWireMap:
     """Tests ``_default_wire_map`` helper function."""
 
     def test_empty(self):
+        """Test creating an empty wire map"""
 
         wire_map = default_wire_map([])
         assert wire_map == {}
 
     def test_simple(self):
-        """Test wires not sucessive ordering"""
+        """Test creating a wire map with wires that do not have successive ordering"""
 
         ops = [qml.PauliX(0), qml.PauliX(2), qml.PauliX(1)]
 
@@ -49,7 +50,7 @@ class TestConvertWireOrder:
     """Tests the ``convert_wire_order`` utility function."""
 
     def test_no_wire_order(self):
-        """Test works if no wire order passed."""
+        """Test that the method works if no wire order is passed."""
 
         ops = [qml.PauliX(0), qml.PauliX(2), qml.PauliX(1)]
 

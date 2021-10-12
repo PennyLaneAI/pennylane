@@ -26,7 +26,7 @@ from pennylane.circuit_drawer.drawable_layers import (
 from pennylane.circuit_drawer.grid import Grid
 
 
-class TestRecursiveFinedLayer:
+class TestRecursiveFindLayer:
     """Tests for `_recursive_find_layer`"""
 
     def test_first_layer(self):
@@ -82,7 +82,7 @@ class TestDrawableLayers:
 
     @pytest.mark.parametrize("measurement", (qml.state(), qml.sample()))
     def test_all_wires_measurement(self, measurement):
-        """All wires gates block on all available wires."""
+        """Test that measurements that act on all wires also block on all available wires."""
 
         ops = [qml.PauliX(0), measurement, qml.PauliY(1)]
 
@@ -92,10 +92,10 @@ class TestDrawableLayers:
 
 
 class TestDrawableGrid:
-    """Unittests for `drawable_grid`."""
+    """Unit tests for `drawable_grid`."""
 
     def test_empty(self):
-        """Tests when empty operations and no wire map"""
+        """Tests creating a grid with empty operations and no wire map"""
         grid = drawable_grid([])
 
         assert grid == [[]]
@@ -104,7 +104,7 @@ class TestDrawableGrid:
         assert Grid_obj.raw_grid.shape == (1, 0)
 
     def test_empty_wire_map(self):
-        """Test grids compatible when no operations present but wire map """
+        """Test creating a grid when no operations are present but there is a wire map """
 
         wire_map = {1: 1, 2: 2}
         grid = drawable_grid([], wire_map)

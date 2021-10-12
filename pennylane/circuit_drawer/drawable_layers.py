@@ -59,7 +59,7 @@ def drawable_layers(ops, wire_map=None):
 
     Returns:
         list[set[~.Operator]] : Each index is a set of operations
-            for the corresponding layer
+        for the corresponding layer
 
     **Details**
 
@@ -69,7 +69,7 @@ def drawable_layers(ops, wire_map=None):
     From the start, the function cares about the locations the operation altered
     during a drawing, not just the wires the operation acts on. An "occupied" wire
     refers to a wire that will be altered in the drawing of an operation.
-    Assuming ``1`` is between ``0`` and ``2`` in the ordering, ``qml.CNOT(wires=(0,2))``
+    Assuming wire ``1`` is between ``0`` and ``2`` in the ordering, ``qml.CNOT(wires=(0,2))``
     will also "occupy" wire ``1``.  In this scenario, an operation on wire ``1``, like
     ``qml.PauliX(wires=1)``, will not be pushed to the left
     of the ``qml.CNOT(wires=(0,2))`` gate, but be blocked by the occupied wire. This preserves
@@ -112,7 +112,7 @@ def drawable_layers(ops, wire_map=None):
             occupied_wires_per_layer.append(set())
             ops_in_layer.append(set())
 
-        # Add to op_layer
+        # add to op_layer
         ops_in_layer[op_layer].add(op)
         occupied_wires_per_layer[op_layer].update(op_occupied_wires)
 
