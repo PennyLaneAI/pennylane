@@ -28,7 +28,7 @@ def batch_params(tape, all_operations=False):
 
     .. note::
 
-        This transform will create multiple circuits, one per batch dimension.
+        This transform will create multiple circuits inside the QNode, one per batch dimension.
         As a result, it is both simulator and hardware compatible. When using
         a simulator device, however, this means that a separate simulation
         will be performed per batch dimension.
