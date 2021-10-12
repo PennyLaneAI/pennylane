@@ -728,7 +728,15 @@ class QNode:
 
         return qml.math.squeeze(res)
 
-    def metric_tensor(self, *args, diag_approx=False, only_construct=False, **kwargs):
+    def metric_tensor(
+        self,
+        *args,
+        allow_nonunitary=True,
+        approx=None,
+        diag_approx=None,
+        only_construct=False,
+        **kwargs,
+    ):
         """Evaluate the value of the metric tensor.
 
         Args:
@@ -749,10 +757,9 @@ class QNode:
 
         if only_construct:
             self.construct(args, kwargs)
-            tape = qml.metric_tensor.expand_fn(self.qtape)
-            return qml.metric_tensor.construct(tape, diag_approx=diag_approx)
+            return qml.metric_tensor.construct(self.qtape, allow_nonunitary, approx, diag_approx)
 
-        return qml.metric_tensor(self, diag_approx=diag_approx)(*args, **kwargs)
+        return qml.metric_tensor(self, allow_nonunitary, approx, diag_approx)(*args, **kwargs)
 
     def draw(
         self, charset="unicode", wire_order=None, show_all_wires=False

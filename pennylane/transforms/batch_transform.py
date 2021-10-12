@@ -37,6 +37,7 @@ class batch_transform:
             **must** be the input tape.
         expand_fn (function): An expansion function (if required) to be applied to the
             input tape before the transformation takes place.
+            It **must** take the same input arguments as ``transform_fn``.
         differentiable (bool): Specifies whether the transform is differentiable or
             not. A transform may be non-differentiable for several reasons:
 
@@ -151,6 +152,34 @@ class batch_transform:
     >>> gradient = qml.grad(circuit)(-0.5)
     >>> print(gradient)
     2.5800122591960153
+
+    .. UsageDetails::
+
+        **Expansion functions**
+
+        Tape expansion, decomposition, or manipulation may always be
+        performed within the custom batch transform. However, by specifying
+        a separate expansion function, PennyLane will be possible to access
+        this separate expansion function where needed via
+
+        >>> my_transform.expand_fn
+
+        The provided ``expand_fn`` must have the same input arguments as
+        ``transform_fn`` and return a ``tape``. Following the example above:
+
+        .. code-block:: python
+
+            def expand_fn(tape, a, b):
+                stopping_crit = lambda obj: obj.name!="PhaseShift"
+                return tape.expand(depth=10, stop_at=stopping_crit)
+
+            my_transform = batch_transform(my_transform, expand_fn)
+
+        Note that:
+
+        - the transform arguments ``a`` and ``b`` must be passed to
+          the expansion function, and
+        - the expansion function must return a single tape.
     """
 
     def __new__(cls, *args, **kwargs):  # pylint: disable=unused-argument
@@ -284,6 +313,7 @@ class batch_transform:
         return _wrapper
 
     def __call__(self, qnode, *targs, **tkwargs):
+
         if isinstance(qnode, qml.tape.QuantumTape):
             # Input is a quantum tape.
             # tapes, fn = some_transform(tape, *transform_args)
@@ -338,7 +368,7 @@ class batch_transform:
         expand = kwargs.pop("_expand", True)
 
         if expand and self.expand_fn is not None:
-            tape = self.expand_fn(tape)
+            tape = self.expand_fn(tape, *args, **kwargs)
 
         tapes, processing_fn = self.transform_fn(tape, *args, **kwargs)
 
