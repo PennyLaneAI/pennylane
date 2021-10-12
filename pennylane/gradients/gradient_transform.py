@@ -18,38 +18,6 @@ import pennylane as qml
 from pennylane.transforms.tape_expand import to_valid_trainable
 
 
-def gradient_expand(tape, depth=10, **kwargs):
-    """Expand out a tape so that it supports differentiation
-    of requested operations.
-
-    This is achieved by decomposing all trainable operations that have
-    ``Operation.grad_method=None`` until all resulting operations
-    have a defined gradient method, up to maximum depth ``depth``. Note that this
-    might not be possible, in which case the gradient rule will fail to apply.
-
-    Args:
-        tape (.QuantumTape): the input tape to expand
-        depth (int) : the maximum expansion depth
-
-    Returns:
-        .QuantumTape: the expanded tape
-    """
-    # pylint: disable=unused-argument
-
-    # check if the tape contains unsupported trainable operations
-    if any((~has_grad_method & is_trainable)(op) for op in tape.operations):
-
-        # Define the stopping condition for the expansion
-        stop_cond = (~is_measurement) & ((has_grad_method & is_trainable) | (~is_trainable))
-
-        new_tape = tape.expand(depth=depth, stop_at=stop_cond)
-        params = new_tape.get_parameters(trainable_only=False)
-        new_tape.trainable_params = qml.math.get_trainable_indices(params)
-        return new_tape
-
-    return tape
-
-
 class gradient_transform(qml.batch_transform):
     """Decorator for defining quantum gradient transforms.
 

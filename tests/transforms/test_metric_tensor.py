@@ -19,6 +19,7 @@ from pennylane import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qml
+from pennylane.transforms.metric_tensor import expand_multi_par_and_nonunitary_gen
 from gate_data import Y, Z
 
 
@@ -73,7 +74,6 @@ def test_expand_missing_generator():
         qml.SingleExcitationPlus(-1.2, wires=[1, 0])
 
     new_tape = qml.transforms.tape_expand.to_unitary_singlepar(tape)
-
     assert tape.operations[:2] == new_tape.operations[:2]
     exp_op = new_tape.operations[2]
     assert exp_op.name == "RZ" and exp_op.data == [2.1] and exp_op.wires == qml.wires.Wires(1)
@@ -91,7 +91,7 @@ def test_expand_nonunitary_generator():
         qml.SingleExcitationPlus(-1.2, wires=[1, 0])
 
     new_tape = qml.transforms.tape_expand.to_unitary_singlepar(tape)
-
+    
     assert tape.operations[:2] == new_tape.operations[:2]
     exp_op = new_tape.operations[2]
     assert exp_op.name == "RZ" and exp_op.data == [2.1] and exp_op.wires == qml.wires.Wires(1)
