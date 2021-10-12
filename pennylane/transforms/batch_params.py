@@ -23,8 +23,8 @@ from .batch_transform import batch_transform
 
 @batch_transform
 def batch_params(tape, all_operations=False):
-    """Inserts a batch dimension to all trainable operation
-    parameters of a QNode.
+    """Transform a QNode to support an initial batch dimension
+    for operation parameters.
 
     .. note::
 
