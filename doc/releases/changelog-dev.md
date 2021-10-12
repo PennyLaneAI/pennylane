@@ -4,8 +4,8 @@
 
 <h3>New features since last release</h3>
 
-A new transform, `@qml.batch_params`, has been added, that inserts
-a batch dimension to all parameters of a QNode.
+A new transform, `@qml.batch_params`, has been added, that makes QNodes 
+handle a batch dimension in trainable parameters.
 [(#1710)](https://github.com/PennyLaneAI/pennylane/pull/1710)
 
 This transform will create multiple circuits, one per batch dimension.
