@@ -55,7 +55,7 @@ class StronglyEntanglingLayers(Operation):
         **Parameter shape**
 
         The expected shape for the weight tensor can be computed with the static method
-        :meth:`~.SimplifiedTwoDesign.shape` and used when creating randomly
+        :meth:`~.StronglyEntanglingLayers.shape` and used when creating randomly
         initialised weight tensors:
 
         .. code-block:: python
