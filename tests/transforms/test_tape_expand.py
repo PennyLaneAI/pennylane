@@ -17,10 +17,10 @@ Unit tests for tape expansion stopping criteria and expansion functions.
 import pytest
 import numpy as np
 import pennylane as qml
-from pennylane.transforms.tape_expand import StoppingCriterion, get_expand_fn
+from pennylane.transforms.tape_expand import BooleanFn, get_expand_fn
 
 
-class TestStoppingCriterion:
+class TestBooleanFn:
     @pytest.mark.parametrize(
         "fn, arg, expected",
         [
@@ -31,21 +31,21 @@ class TestStoppingCriterion:
         ],
     )
     def test_basic_functionality(self, fn, arg, expected):
-        """Test initialization and calling of StoppingCriterion."""
-        crit = StoppingCriterion(fn)
+        """Test initialization and calling of BooleanFn."""
+        crit = BooleanFn(fn)
         assert crit(arg) == expected
 
     def test_not(self):
         """Test that logical negation works."""
-        crit = StoppingCriterion(lambda x: x < 4)
+        crit = BooleanFn(lambda x: x < 4)
         ncrit = ~crit
         assert crit(-2) and not ncrit(-2)
         assert not crit(10) and ncrit(10)
 
     def test_and(self):
         """Test that logical conjunction works."""
-        crit_0 = StoppingCriterion(lambda x: x > 4)
-        crit_1 = StoppingCriterion(lambda x: x < 9)
+        crit_0 = BooleanFn(lambda x: x > 4)
+        crit_1 = BooleanFn(lambda x: x < 9)
         crit = crit_0 & crit_1
         assert not crit(-2)
         assert crit(6)
@@ -53,8 +53,8 @@ class TestStoppingCriterion:
 
     def test_or(self):
         """Test that logical or works."""
-        crit_0 = StoppingCriterion(lambda x: x < 4)
-        crit_1 = StoppingCriterion(lambda x: x > 9)
+        crit_0 = BooleanFn(lambda x: x < 4)
+        crit_1 = BooleanFn(lambda x: x > 9)
         crit = crit_0 | crit_1
         assert crit(-2)
         assert not crit(6)

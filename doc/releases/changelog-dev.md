@@ -5,10 +5,10 @@
 <h3>New features since last release</h3>
 
 * Tape expansion functions are now collected in `qml.transforms.tape_expand.py`
-  in form of a new class `StoppingCriterion`.
+  in form of a new class `BooleanFn`.
   [(#1734)](https://github.com/PennyLaneAI/pennylane/pull/1734)
 
-  These criteria can be manipulated and combined with the bitwise operators
+  These functions can be manipulated and combined with the bitwise operators
   `&`, `|` and `~`. 
   `tape_expand` also contains a generator for tape expansion functions
   `get_expand_fn` as well as some pre-defined stopping criteria and
