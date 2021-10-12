@@ -322,6 +322,9 @@
 
 <h3>Improvements</h3>
 
+* `@qml.beta.QNode` now supports the `qml.specs` transform.
+  [(#1739)](https://github.com/PennyLaneAI/pennylane/pull/1739)
+
 * The `qml.batch_transform` decorator is now ignored during Sphinx builds, allowing
   the correct signature to display in the built documentation.
   [(#1733)](https://github.com/PennyLaneAI/pennylane/pull/1733)
