@@ -224,3 +224,43 @@ def test_all_operations(mocker):
     res = circuit(x, weights)
     assert res.shape == (batch_size, 1, 4)
     assert len(spy.call_args[0][0]) == batch_size
+
+
+def test_unbatched_parameter():
+    """Test that an exception is raised if a parameter
+    is not batched"""
+
+    dev = qml.device("default.qubit", wires=1)
+
+    @qml.batch_params
+    @qml.beta.qnode(dev)
+    def circuit(x, y):
+        qml.RY(x, wires=[0])
+        qml.RX(y, wires=[0])
+        return qml.expval(qml.PauliZ(0))
+
+    x = np.array([0.3, 0.4, 0.5])
+    y = np.array(0.2)
+
+    with pytest.raises(ValueError, match="0.2 has incorrect batch dimension"):
+        circuit(x, y)
+
+
+def test_initial_unbatched_parameter():
+    """Test that an exception is raised if an initial parameter
+    is not batched"""
+
+    dev = qml.device("default.qubit", wires=1)
+
+    @qml.batch_params
+    @qml.beta.qnode(dev)
+    def circuit(x, y):
+        qml.RY(x, wires=[0])
+        qml.RX(y, wires=[0])
+        return qml.expval(qml.PauliZ(0))
+
+    x = np.array(0.2)
+    y = np.array([0.3, 0.4, 0.5])
+
+    with pytest.raises(ValueError, match="Parameter 0.2 does not contain a batch"):
+        circuit(x, y)

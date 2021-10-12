@@ -108,19 +108,25 @@ def batch_params(tape, all_operations=False):
     >>> qml.grad(cost_fn)(x, weights)[0]
     0.43792281188363347
     """
-    params = list(tape.get_parameters(trainable_only=not all_operations))
+    params = tape.get_parameters(trainable_only=not all_operations)
     output_tapes = []
 
     try:
-        unbatched_params = zip(*params)
-    except TypeError:
-        # In some frameworks (such as TensorFlow), tensors are not iterable.
         batch_dim = qml.math.shape(params[0])[0]
-        unbatched_params = [[] for i in range(batch_dim)]
+    except IndexError:
+        raise ValueError(f"Parameter {params[0]} does not contain a batch dimension.")
 
-        for p in params:
-            for i in range(batch_dim):
+    unbatched_params = [[] for i in range(batch_dim)]
+
+    for p in params:
+        for i in range(batch_dim):
+            try:
                 unbatched_params[i].append(p[i])
+            except IndexError:
+                raise ValueError(
+                    f"Parameter {p} has incorrect batch dimension. Expecting "
+                    f"first dimension of length {batch_dim}."
+                ) from None
 
     for p in unbatched_params:
         new_tape = tape.copy(copy_operations=True)
