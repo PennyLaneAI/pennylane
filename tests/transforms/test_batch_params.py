@@ -67,9 +67,35 @@ def test_autograd(diff_method, tol):
     assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
-@pytest.mark.parametrize("diff_method", ["adjoint", "parameter-shift"])
+@pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
 def test_jax(diff_method, tol):
     """Test derivatives when using JAX."""
+    jax = pytest.importorskip("jax")
+    jnp = jax.numpy
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.batch_params
+    @qml.beta.qnode(dev, interface="jax", diff_method=diff_method)
+    def circuit(x):
+        qml.RX(x, wires=0)
+        qml.RY(0.1, wires=1)
+        qml.CNOT(wires=[0, 1])
+        return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+    def cost(x):
+        return jnp.sum(circuit(x))
+
+    batch_size = 3
+    x = jnp.linspace(0.1, 0.5, batch_size)
+
+    res = jax.grad(cost)(x)
+    expected = -np.sin(0.1) * np.sin(x)
+    assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
+@pytest.mark.parametrize("diff_method", ["adjoint", "parameter-shift"])
+def test_jax_jit(diff_method, tol):
+    """Test derivatives when using JAX and JIT."""
     jax = pytest.importorskip("jax")
     jnp = jax.numpy
     dev = qml.device("default.qubit", wires=2)
@@ -136,6 +162,34 @@ def test_tf(diff_method, tol):
         qml.CNOT(wires=[0, 1])
         return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
+    def cost(x):
+        return tf.reduce_sum(circuit(x))
+
+    batch_size = 3
+    x = tf.Variable(tf.linspace(0.1, 0.5, batch_size))
+
+    with tf.GradientTape() as tape:
+        loss = cost(x)
+
+    res = tape.gradient(loss, x)
+    expected = -np.sin(0.1) * tf.sin(x)
+    assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
+def test_tf_jit(tol):
+    """Test derivatives when using TF and JIT"""
+    tf = pytest.importorskip("tensorflow")
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.batch_params
+    @qml.beta.qnode(dev, interface="tf", diff_method="backprop")
+    def circuit(x):
+        qml.RX(x, wires=0)
+        qml.RY(0.1, wires=1)
+        qml.CNOT(wires=[0, 1])
+        return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+    @tf.function
     def cost(x):
         return tf.reduce_sum(circuit(x))
 
