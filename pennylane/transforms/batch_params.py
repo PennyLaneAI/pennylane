@@ -110,12 +110,16 @@ def batch_params(tape, all_operations=False):
     params = list(tape.get_parameters(trainable_only=not all_operations))
     output_tapes = []
 
-    batch_dim = qml.math.shape(params[0])[0]
-    unbatched_params = [[] for i in range(batch_dim)]
+    try:
+        unbatched_params = zip(*params)
+    except TypeError:
+        # In some frameworks (such as TensorFlow), tensors are not iterable.
+        batch_dim = qml.math.shape(params[0])[0]
+        unbatched_params = [[] for i in range(batch_dim)]
 
-    for p in params:
-        for i in range(batch_dim):
-            unbatched_params[i].append(p[i])
+        for p in params:
+            for i in range(batch_dim):
+                unbatched_params[i].append(p[i])
 
     for p in unbatched_params:
         new_tape = tape.copy(copy_operations=True)
