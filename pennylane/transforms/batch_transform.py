@@ -287,7 +287,9 @@ class batch_transform:
             interface = qnode.interface
             execute_kwargs = getattr(qnode, "execute_kwargs", {})
             max_diff = execute_kwargs.pop("max_diff", 2)
+
             gradient_fn = getattr(qnode, "gradient_fn", qnode.diff_method)
+            gradient_kwargs = getattr(qnode, "gradient_kwargs", {})
 
             if interface is None or not self.differentiable:
                 gradient_fn = None
@@ -305,6 +307,7 @@ class batch_transform:
                 interface=interface,
                 max_diff=max_diff,
                 override_shots=shots,
+                gradient_kwargs=gradient_kwargs,
                 **execute_kwargs,
             )
 

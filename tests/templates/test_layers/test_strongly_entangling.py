@@ -137,10 +137,6 @@ class TestInputs:
             weights = np.random.randn(2, 2, 1)
             circuit(weights)
 
-        with pytest.raises(ValueError, match="Weights tensor must be 3-dimensional"):
-            weights = np.random.randn(2, 2, 3, 1)
-            circuit(weights)
-
         with pytest.raises(ValueError, match="Range sequence must be of length"):
             weights = np.random.randn(2, 2, 3)
             circuit(weights, ranges=[1])
