@@ -28,8 +28,8 @@ def expand_fn(tape, approx="block-diag", diag_approx=None, allow_nonunitary=True
     """Set the metric tensor based on whether non-unitary gates are allowed."""
     # pylint: disable=unused-argument
     if not allow_nonunitary and approx is None:  # pragma: no cover
-        return qml.transforms.tape_expand.expand_multi_par_and_nonunitary_gen(tape)
-    return qml.transforms.tape_expand.expand_multi_par_and_no_gen(tape)
+        return qml.transforms.tape_expand.to_unitary_singlepar(tape)
+    return qml.transforms.tape_expand.to_singlepar(tape)
 
 
 @functools.partial(batch_transform, expand_fn=expand_fn)

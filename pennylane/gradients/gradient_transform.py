@@ -15,7 +15,7 @@
 including a decorator for specifying gradient expansions."""
 # pylint: disable=too-few-public-methods
 import pennylane as qml
-from pennylane.transforms import has_grad_method, is_measurement, is_trainable
+from pennylane.transforms.tape_expand import to_valid_trainable
 
 
 def gradient_expand(tape, depth=10, **kwargs):
@@ -134,7 +134,9 @@ class gradient_transform(qml.batch_transform):
         ...     params = tape.get_parameters()  # list of floats
     """
 
-    def __init__(self, transform_fn, expand_fn=gradient_expand, differentiable=True, hybrid=True):
+    def __init__(
+        self, transform_fn, expand_fn=to_valid_trainable, differentiable=True, hybrid=True
+    ):
         self.hybrid = hybrid
         super().__init__(transform_fn, expand_fn=expand_fn, differentiable=differentiable)
 
@@ -144,7 +146,7 @@ class gradient_transform(qml.batch_transform):
         # inside the QNode.
         hybrid = tkwargs.pop("hybrid", self.hybrid)
         _wrapper = super().default_qnode_wrapper(qnode, targs, tkwargs)
-        cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=gradient_expand)
+        cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=to_valid_trainable)
 
         def jacobian_wrapper(*args, **kwargs):
             qjac = _wrapper(*args, **kwargs)

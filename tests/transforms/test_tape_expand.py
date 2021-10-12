@@ -17,7 +17,7 @@ Unit tests for tape expansion stopping criteria and expansion functions.
 import pytest
 import numpy as np
 import pennylane as qml
-from pennylane.transforms.tape_expand import BooleanFn, get_expand_fn
+from pennylane.transforms.tape_expand import BooleanFn, get_expand_fn, to_valid_trainable
 
 
 class TestBooleanFn:
@@ -145,3 +145,97 @@ class TestGetExpandFn:
 
         new_tape = expand_fn(self.tape)
         assert new_tape.operations == self.tape.operations
+
+
+class TestToValidTrainable:
+    """Tests for the gradient expand function"""
+
+    def test_no_expansion(self, mocker):
+        """Test that a circuit with differentiable
+        operations is not expanded"""
+        x = qml.numpy.array(0.2, requires_grad=True)
+        y = qml.numpy.array(0.1, requires_grad=True)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0))
+
+        spy = mocker.spy(tape, "expand")
+        new_tape = to_valid_trainable(tape)
+
+        assert new_tape is tape
+        spy.assert_not_called()
+
+    def test_trainable_nondiff_expansion(self, mocker):
+        """Test that a circuit with non-differentiable
+        trainable operations is expanded"""
+        x = qml.numpy.array(0.2, requires_grad=True)
+        y = qml.numpy.array(0.1, requires_grad=True)
+
+        class NonDiffPhaseShift(qml.PhaseShift):
+            grad_method = None
+
+        with qml.tape.QuantumTape() as tape:
+            NonDiffPhaseShift(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0))
+
+        spy = mocker.spy(tape, "expand")
+        new_tape = to_valid_trainable(tape)
+
+        assert new_tape is not tape
+        spy.assert_called()
+
+        new_tape.operations[0].name == "RZ"
+        new_tape.operations[0].grad_method == "A"
+        new_tape.operations[1].name == "RY"
+        new_tape.operations[2].name == "CNOT"
+
+    def test_nontrainable_nondiff(self, mocker):
+        """Test that a circuit with non-differentiable
+        non-trainable operations is not expanded"""
+        x = qml.numpy.array(0.2, requires_grad=False)
+        y = qml.numpy.array(0.1, requires_grad=True)
+
+        class NonDiffPhaseShift(qml.PhaseShift):
+            grad_method = None
+
+        with qml.tape.QuantumTape() as tape:
+            NonDiffPhaseShift(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0))
+
+        params = tape.get_parameters(trainable_only=False)
+        tape.trainable_params = qml.math.get_trainable_indices(params)
+        assert tape.trainable_params == {1}
+
+        spy = mocker.spy(tape, "expand")
+        new_tape = to_valid_trainable(tape)
+
+        assert new_tape is tape
+        spy.assert_not_called()
+
+    def test_trainable_numeric(self, mocker):
+        """Test that a circuit with numeric differentiable
+        trainable operations is *not* expanded"""
+        x = qml.numpy.array(0.2, requires_grad=True)
+        y = qml.numpy.array(0.1, requires_grad=True)
+
+        class NonDiffPhaseShift(qml.PhaseShift):
+            grad_method = "F"
+
+        with qml.tape.QuantumTape() as tape:
+            NonDiffPhaseShift(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0))
+
+        spy = mocker.spy(tape, "expand")
+        new_tape = to_valid_trainable(tape)
+
+        assert new_tape is tape
+        spy.assert_not_called()

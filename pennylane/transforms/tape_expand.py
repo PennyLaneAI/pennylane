@@ -54,6 +54,26 @@ class BooleanFn:
 
     >>> smaller_equal_than_4 = ~bigger_than_4
     >>> smaller_than_10_or_int = smaller_than_10 | is_int
+
+    .. warning::
+
+        While the logical composition of multiple ``BooleanFn`` s works as expected,
+        and in particular the operations ``|`` and ``&`` are symmetric,
+        it might make a difference in which order the composition is written, because
+        a ``BooleanFn`` might assume certain object properties to be defined.
+
+        .. code-block:: python
+
+            is_int = StoppingCriterion(lambda x: isinstance(x, int))
+            has_bit_length_3 = StoppingCriterion(lambda x: x.bit_length()==3)
+
+        >>> (is_int & has_bit_length_3)(4)
+        True
+        >>> (is_int & has_bit_length_3)(2.3)
+        False
+        >>> (has_bit_length_3 & is_int)(2.3)
+        AttributeError: 'float' object has no attribute 'bit_length'
+
     """
 
     def __init__(self, fn):
@@ -81,13 +101,16 @@ is_measurement = BooleanFn(lambda obj: isinstance(obj, qml.measure.MeasurementPr
 is_trainable = BooleanFn(lambda obj: any(qml.math.requires_grad(p) for p in obj.parameters))
 
 
-def get_expand_fn(depth, stop_at):
+def get_expand_fn(depth, stop_at, allow_kwargs=False, docstring=None):
     """Create an expansion function using a given depth and stopping criterions,
     wrapping ``tape.expand``.
 
     Args:
         depth (int): Depth for the expansion
         stop_at (callable): Stopping criterion passed to ``tape.expand``
+        allow_kwargs (bool): Whether to add ``**kwargs`` to the signature of the
+            expansion function.
+        docstring (str): docstring for the expansion function
 
     Returns:
         callable: Tape expansion function
@@ -126,17 +149,48 @@ def get_expand_fn(depth, stop_at):
 
     """
 
-    def expand_fn(tape):
+    def expand_fn(tape, _depth=depth):
         if not all(stop_at(op) for op in tape.operations):
-            tape = tape.expand(depth=depth, stop_at=stop_at)
+            tape = tape.expand(depth=_depth, stop_at=stop_at)
             params = tape.get_parameters(trainable_only=False)
             tape.trainable_params = qml.math.get_trainable_indices(params)
         return tape
 
+    if allow_kwargs:
+        # TODO: allow kwargs
+        pass
+    if docstring:
+        # TODO set docstring
+        pass
+
     return expand_fn
 
 
-expand_multi_par_and_no_gen = get_expand_fn(depth=10, stop_at=is_measurement | has_nopar | has_gen)
-expand_multi_par_and_nonunitary_gen = get_expand_fn(
+to_singlepar = get_expand_fn(depth=10, stop_at=is_measurement | has_nopar | has_gen)
+to_unitary_singlepar = get_expand_fn(
     depth=10, stop_at=is_measurement | has_nopar | (has_gen & has_unitary_gen)
+)
+
+
+_to_valid_trainable_doc = """Expand out a tape so that it supports differentiation
+of requested operations.
+
+This is achieved by decomposing all trainable operations that have
+``Operation.grad_method=None`` until all resulting operations
+have a defined gradient method, up to maximum depth ``depth``. Note that this
+might not be possible, in which case the gradient rule will fail to apply.
+
+Args:
+    tape (.QuantumTape): the input tape to expand
+    depth (int) : the maximum expansion depth
+
+Returns:
+    .QuantumTape: the expanded tape
+"""
+
+to_valid_trainable = get_expand_fn(
+    depth=10,
+    stop_at=is_measurement | (~is_trainable | has_grad_method),
+    allow_kwargs=True,
+    docstring=_to_valid_trainable_doc,
 )
