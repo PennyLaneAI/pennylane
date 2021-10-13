@@ -101,10 +101,6 @@ class QubitUnitary(Operation):
     def _controlled(self, wire):
         ControlledQubitUnitary(*self.parameters, control_wires=wire, wires=self.wires)
 
-    def label(self, decimals=None):
-        if self.inverse:
-            return "U⁻¹"
-        return "U"
 
 class ControlledQubitUnitary(QubitUnitary):
     r"""ControlledQubitUnitary(U, control_wires, wires, control_values)
@@ -240,10 +236,6 @@ class ControlledQubitUnitary(QubitUnitary):
         ctrl_wires = sorted(self.control_wires + wire)
         ControlledQubitUnitary(*self.parameters, control_wires=ctrl_wires, wires=self._target_wires)
 
-    def label(self, decimals=None):
-        if self.inverse:
-            "U⁻¹"
-        return "U"
 
 class DiagonalQubitUnitary(DiagonalOperation):
     r"""DiagonalQubitUnitary(D, wires)
@@ -268,7 +260,7 @@ class DiagonalQubitUnitary(DiagonalOperation):
     def _eigvals(cls, *params):
         D = qml.math.asarray(params[0])
 
-        if not qml.math.allclose(D * qml.math.conj(D), qml.math.ones_like(D)):
+        if not qml.math.allclose(D * D.conj(), qml.math.ones_like(D)):
             raise ValueError("Operator must be unitary.")
 
         return D
@@ -285,8 +277,3 @@ class DiagonalQubitUnitary(DiagonalOperation):
             qml.math.concatenate([np.array([1, 1]), self.parameters[0]]),
             wires=Wires(control) + self.wires,
         )
-
-    def label(self, decimals=None):
-        if self.inverse:
-            return "U⁻¹"
-        return "U"
