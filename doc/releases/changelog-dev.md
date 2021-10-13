@@ -334,7 +334,7 @@
   @qml.qnode(dev)
   def ansatz(weights):
       qml.templates.kUpCCGSD(weights, wires=[0,1,2,3], k=0, delta_sz=0,
-                                  init_state=ref_state, include_pi=True)
+                                  init_state=ref_state)
       return qml.expval(H)
   ```
   
