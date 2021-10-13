@@ -46,6 +46,88 @@ def test_drawing():
     assert result == expected
 
 
+def test_drawing_tf():
+    """Test circuit drawing when using TensorFlow"""
+    tf = pytest.importorskip("tensorflow")
+
+    x = tf.constant(0.1)
+    y = tf.constant([0.2, 0.3])
+    z = tf.Variable(0.4)
+
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.beta.qnode(dev, interface="tf")
+    def circuit(p1, p2=y, **kwargs):
+        qml.RX(p1, wires=0)
+        qml.RY(p2[0] * p2[1], wires=1)
+        qml.RX(kwargs["p3"], wires=0)
+        qml.CNOT(wires=[0, 1])
+        return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+    result = qml.draw(circuit)(p1=x, p3=z)
+    expected = """\
+ 0: ──RX(0.1)───RX(0.4)──╭C──╭┤ ⟨Z ⊗ X⟩ 
+ 1: ──RY(0.06)───────────╰X──╰┤ ⟨Z ⊗ X⟩ 
+"""
+
+    assert result == expected
+
+
+def test_drawing_torch():
+    """Test circuit drawing when using Torch"""
+    torch = pytest.importorskip("torch")
+
+    x = torch.tensor(0.1, requires_grad=True)
+    y = torch.tensor([0.2, 0.3], requires_grad=True)
+    z = torch.tensor(0.4, requires_grad=True)
+
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.beta.qnode(dev, interface="torch")
+    def circuit(p1, p2=y, **kwargs):
+        qml.RX(p1, wires=0)
+        qml.RY(p2[0] * p2[1], wires=1)
+        qml.RX(kwargs["p3"], wires=0)
+        qml.CNOT(wires=[0, 1])
+        return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+    result = qml.draw(circuit)(p1=x, p3=z)
+    expected = """\
+ 0: ──RX(0.1)───RX(0.4)──╭C──╭┤ ⟨Z ⊗ X⟩ 
+ 1: ──RY(0.06)───────────╰X──╰┤ ⟨Z ⊗ X⟩ 
+"""
+
+    assert result == expected
+
+
+def test_drawing_jax():
+    """Test circuit drawing when using JAX"""
+    jax = pytest.importorskip("jax")
+    jnp = jax.numpy
+
+    x = jnp.array(0.1)
+    y = jnp.array([0.2, 0.3])
+    z = jnp.array(0.4)
+
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.beta.qnode(dev, interface="jax")
+    def circuit(p1, p2=y, **kwargs):
+        qml.RX(p1, wires=0)
+        qml.RY(p2[0] * p2[1], wires=1)
+        qml.RX(kwargs["p3"], wires=0)
+        qml.CNOT(wires=[0, 1])
+        return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+    result = qml.draw(circuit)(p1=x, p3=z)
+    expected = """\
+ 0: ──RX(0.1)───RX(0.4)──╭C──╭┤ ⟨Z ⊗ X⟩ 
+ 1: ──RY(0.06)───────────╰X──╰┤ ⟨Z ⊗ X⟩ 
+"""
+
+    assert result == expected
+
+
 def test_drawing_ascii():
     """Test circuit drawing when using ASCII characters"""
     from pennylane import numpy as np
