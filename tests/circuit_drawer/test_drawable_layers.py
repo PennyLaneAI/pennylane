@@ -30,22 +30,31 @@ class TestRecursiveFindLayer:
     """Tests for `_recursive_find_layer`"""
 
     def test_first_layer(self):
-        out = _recursive_find_layer(0, {0}, [{1}])
+        """Test operation remains in 0th layer if not blocked"""
+        out = _recursive_find_layer(
+            layer_to_check=0, op_occupied_wires={0}, occupied_wires_per_layer=[{1}]
+        )
         assert out == 0
 
     def test_blocked_layer(self):
-        out = _recursive_find_layer(0, {0}, [{0}])
+        """Test operation moved to higher layer if blocked on 0th layer."""
+        out = _recursive_find_layer(
+            layer_to_check=0, op_occupied_wires={0}, occupied_wires_per_layer=[{0}]
+        )
         assert out == 1
 
     def test_recursion_no_block(self):
-
-        out = _recursive_find_layer(2, {0}, [{1}, {1}, {1}])
+        """Test recursion to zero if start in higher layer and not blocked"""
+        out = _recursive_find_layer(
+            layer_to_check=2, op_occupied_wires={0}, occupied_wires_per_layer=[{1}, {1}, {1}]
+        )
         assert out == 0
 
     def test_recursion_block(self):
-
-        # gets blocked at layer 1, so placed in layer 2
-        out = _recursive_find_layer(3, {0}, [{1}, {0}, {1}, {1}])
+        """Test blocked on layer 1 gives placement on layer 2"""
+        out = _recursive_find_layer(
+            layer_to_check=3, op_occupied_wires={0}, occupied_wires_per_layer=[{1}, {0}, {1}, {1}]
+        )
         assert out == 2
 
 
@@ -53,7 +62,7 @@ class TestDrawableLayers:
     """Tests for `drawable_layers`"""
 
     def test_single_wires_no_blocking(self):
-        """Simple case where nothing blocks each other"""
+        """Test simple case where nothing blocks each other"""
 
         ops = [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)]
 
@@ -62,7 +71,7 @@ class TestDrawableLayers:
         assert layers == [set(ops)]
 
     def test_single_wires_blocking(self):
-        """Simple case where single wire gates block each other"""
+        """Test single wire gates blocking each other"""
 
         ops = [qml.PauliX(0), qml.PauliX(0), qml.PauliX(0)]
 
@@ -70,11 +79,15 @@ class TestDrawableLayers:
 
         assert layers == [{ops[0]}, {ops[1]}, {ops[2]}]
 
-    def test_multiwire_blocking(self):
-        """Multi-wire gate blocks on unused wire"""
+    @pytest.mark.parametrize(
+        "multiwire_gate",
+        (qml.CNOT(wires=(0, 2)), qml.CNOT(wires=(2, 0)), qml.Toffoli(wires=(0, 2, 3))),
+    )
+    def test_multiwire_blocking(self, multiwire_gate):
+        """Test multi-wire gate blocks on unused wire"""
 
-        wire_map = {0: 0, 1: 1, 2: 2}
-        ops = [qml.PauliZ(1), qml.CNOT(wires=(0, 2)), qml.PauliX(1)]
+        wire_map = {0: 0, 1: 1, 2: 2, 3: 3}
+        ops = [qml.PauliZ(1), multiwire_gate, qml.PauliX(1)]
 
         layers = drawable_layers(ops, wire_map=wire_map)
 
@@ -82,7 +95,7 @@ class TestDrawableLayers:
 
     @pytest.mark.parametrize("measurement", (qml.state(), qml.sample()))
     def test_all_wires_measurement(self, measurement):
-        """Test that measurements that act on all wires also block on all available wires."""
+        """Test measurements that act on all wires also block on all available wires."""
 
         ops = [qml.PauliX(0), measurement, qml.PauliY(1)]
 
@@ -115,7 +128,7 @@ class TestDrawableGrid:
         assert Grid_obj.raw_grid.shape == (2, 0)
 
     def test_single_wires_no_blocking(self):
-        """Simple case where nothing blocks each other"""
+        """Test where nothing blocks each other"""
 
         ops = [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)]
 
@@ -127,7 +140,7 @@ class TestDrawableGrid:
         assert Grid_obj.raw_grid.shape == (3, 1)
 
     def test_single_wires_blocking(self):
-        """Simple case where single wire gates block each other"""
+        """Test where single wire gates block each other"""
 
         ops = [qml.PauliX(0), qml.PauliX(0), qml.PauliX(0)]
 
@@ -139,7 +152,7 @@ class TestDrawableGrid:
         assert Grid_obj.raw_grid.shape == (1, 3)
 
     def test_multiwire_blocking(self):
-        """Multi-wire gate blocks on unused wire."""
+        """Test multi-wire gate blocks on unused wire."""
 
         wire_map = {0: 0, 1: 1, 2: 2}
         ops = [qml.PauliZ(1), qml.CNOT(wires=(0, 2)), qml.PauliX(1)]
@@ -152,3 +165,15 @@ class TestDrawableGrid:
 
         Grid_obj = Grid(grid)
         assert Grid_obj.raw_grid.shape == (3, 3)
+
+    @pytest.mark.parametrize("measurement", (qml.state(), qml.sample()))
+    def test_all_wires_measurement(self, measurement):
+        """Test measurements that act on all wires also block on all available wires."""
+
+        ops = [qml.PauliX(0), measurement, qml.PauliY(1)]
+
+        grid = drawable_grid(ops, wire_map={0: 0, 1: 1, 2: 2})
+
+        assert grid[0] == [ops[0], ops[1], None]
+        assert grid[1] == [None, ops[1], ops[2]]
+        assert grid[2] == [None, ops[1], None]
