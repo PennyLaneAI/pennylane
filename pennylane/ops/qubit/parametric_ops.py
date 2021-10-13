@@ -16,7 +16,6 @@ This submodule contains the discrete-variable quantum operations that are the
 core parameterized gates.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access
-import cmath
 import functools
 import math
 import numpy as np
@@ -515,7 +514,7 @@ class MultiRZ(DiagonalOperation):
 
         Returns:
             array[complex]: The matrix representation
-        """        
+        """
         multi_Z_rot_eigs = MultiRZ._eigvals(theta, n)
         multi_Z_rot_matrix = np.diag(multi_Z_rot_eigs)
 
@@ -658,8 +657,7 @@ class PauliRot(Operation):
         # Simplest case is if the Pauli is the identity matrix
         if pauli_word == "I" * len(pauli_word):
             return qml.math.array(
-                np.exp(-1j * theta / 2) * np.eye(2 ** len(pauli_word)),
-                like=interface
+                np.exp(-1j * theta / 2) * np.eye(2 ** len(pauli_word)), like=interface
             )
 
         # We first generate the matrix excluding the identity parts and expand it afterwards.
@@ -1126,7 +1124,7 @@ class CRot(Operation):
             phi = qml.math.cast_like(phi, 1j)
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
-            
+
         mat = np.array(
             [
                 [1, 0, 0, 0],
@@ -1515,10 +1513,10 @@ class IsingYY(Operation):
 
         c = qml.math.cos(phi / 2)
         s = qml.math.sin(phi / 2)
-        
+
         if interface == "tensorflow":
             s = qml.math.cast_like(s, 1j)
-            
+
         return qml.math.array(
             np.array(
                 [
