@@ -47,6 +47,7 @@ from pennylane.qnode import QNode, qnode
 from pennylane.templates import broadcast, layer, template
 from pennylane.transforms import (
     adjoint,
+    batch_params,
     batch_transform,
     draw,
     ControlledOperation,

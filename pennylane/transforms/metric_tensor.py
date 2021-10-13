@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the metric tensor transform
+Contains the metric_tensor batch_transform which wraps multiple
+methods of computing the metric tensor.
 """
 import functools
 import warnings
@@ -20,43 +21,78 @@ import warnings
 import numpy as np
 import pennylane as qml
 
-
+from pennylane.fourier.qnode_spectrum import expand_multi_par_and_no_gen
 from .batch_transform import batch_transform
 
 
-SUPPORTED_OPS = ["RX", "RY", "RZ", "PhaseShift"]
+def expand_multi_par_and_nonunitary_gen(tape, depth=10):
+    """Expand a tape until it does not contain any multi-parameter gates or gates
+    with a non-unitary ``generator``, if possible.
 
+    Args:
+        tape (.QuantumTape): Tape to be expanded
+        depth (int): Maximum expansion depth
 
-def _stopping_critera(obj):
-    return getattr(obj, "num_params", 0) == 0 or obj.name in SUPPORTED_OPS
+    Returns
+        .QuantumTape: Expanded tape
 
-
-def expand_fn(tape):
-    """Expands the tape to contain only operations
-    supported by the ``metric_tensor`` transform (specified
-    by ``SUPPORTED_OPS``).
     """
-    new_tape = tape.expand(depth=2, stop_at=_stopping_critera)
-    params = new_tape.get_parameters(trainable_only=False)
-    new_tape.trainable_params = qml.math.get_trainable_indices(params)
-    return new_tape
+    stopping_cond = lambda g: (
+        isinstance(g, qml.measure.MeasurementProcess)
+        or len(g.parameters) == 0
+        or (hasattr(g, "generator") and g.generator[0] is not None and g.has_unitary_generator)
+    )
+    if not all(stopping_cond(op) for op in tape.operations):
+        new_tape = tape.expand(depth=depth, stop_at=stopping_cond)
+        params = new_tape.get_parameters(trainable_only=False)
+        new_tape.trainable_params = qml.math.get_trainable_indices(params)
+
+        return new_tape
+
+    return tape
+
+
+def expand_fn(tape, approx="block-diag", diag_approx=None, allow_nonunitary=True):
+    """Set the metric tensor based on whether non-unitary gates are allowed."""
+    # pylint: disable=unused-argument
+    if not allow_nonunitary and approx is None:  # pragma: no cover
+        return expand_multi_par_and_nonunitary_gen(tape)
+    return expand_multi_par_and_no_gen(tape)
 
 
 @functools.partial(batch_transform, expand_fn=expand_fn)
-def metric_tensor(tape, diag_approx=False):
+def metric_tensor(tape, approx="block-diag", diag_approx=None, allow_nonunitary=True):
     """Returns a function that computes the block-diagonal approximation of the metric tensor
     of a given QNode or quantum tape.
 
     .. note::
 
-        Currently, only the :class:`~.RX`, :class:`~.RY`, :class:`~.RZ`, and
-        :class:`~.PhaseShift` parametrized gates are supported.
+        Only gates that have a single parameter and define a ``generator`` are supported.
         All other parametrized gates will be decomposed if possible.
 
+    .. warning::
+
+        While ``approx=None`` is a valid input, the full metric tensor is not implemented yet
+        but will be added in an upcoming enhancement. Effectively, this means that only
+        ``approx="block-diag"`` and ``approx="diag"`` are currently supported.
+
     Args:
-        qnode (pennylane.QNode or .QuantumTape): quantum tape or QNode to find the metric tensor of
+        tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to find the metric tensor of
+        approx (str): Which approximation of the metric tensor to compute.
+
+            - If ``None``, the full metric tensor is computed
+
+            - If ``"block-diag"``, the block diagonal approximation is computed, reducing
+              the number of evaluated circuits significantly.
+
+            - If ``"diag"``, only the diagonal approximation is computed, slightly
+              reducing the classical overhead but not the quantum resources.
+
         diag_approx (bool): if True, use the diagonal approximation. If ``False``, a
-        block diagonal approximation of the metric tensor is computed.
+            block diagonal approximation of the metric tensor is computed.
+            This keyword argument is deprecated in favor of ``approx`` and will be removed soon
+        allow_nonunitary (bool): Whether non-unitary operations are allowed in circuits
+            created by the transform. Only relevant if ``approx`` is ``None``
         hybrid (bool): Specifies whether classical processing inside a QNode
             should be taken into account when transforming a QNode.
 
@@ -149,6 +185,88 @@ def metric_tensor(tape, diag_approx=False):
                [0.        , 0.00415023, 0.        ],
                [0.        , 0.        , 0.24878844]])
     """
+    # pylint: disable=unused-argument
+    if diag_approx is not None:
+        warnings.warn(
+            "The keyword argument diag_approx is deprecated. Please use approx='diag' instead.",
+            UserWarning,
+        )
+        if diag_approx:
+            approx = "diag"
+
+    if approx in {"diag", "block-diag"}:
+        # Only require covariance matrix based transform
+        diag_approx = approx == "diag"
+        return _metric_tensor_cov_matrix(tape, diag_approx)
+
+    raise NotImplementedError("No method for the full metric tensor has been implemented yet.")
+
+
+@metric_tensor.custom_qnode_wrapper
+def qnode_execution_wrapper(self, qnode, targs, tkwargs):
+    """Here, we overwrite the QNode execution wrapper in order
+    to take into account that classical processing may be present
+    inside the QNode."""
+    hybrid = tkwargs.pop("hybrid", True)
+
+    if isinstance(qnode, qml.ExpvalCost):
+        if qnode._multiple_devices:  # pylint: disable=protected-access
+            warnings.warn(
+                "ExpvalCost was instantiated with multiple devices. Only the first device "
+                "will be used to evaluate the metric tensor.",
+                UserWarning,
+            )
+
+        qnode = qnode.qnodes.qnodes[0]
+
+    mt_fn = self.default_qnode_wrapper(qnode, targs, tkwargs)
+
+    _expand_fn = lambda tape: self.expand_fn(tape, *targs, **tkwargs)
+    cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=_expand_fn)
+
+    def wrapper(*args, **kwargs):
+        mt = mt_fn(*args, **kwargs)
+
+        if not hybrid:
+            return mt
+
+        kwargs.pop("shots", False)
+        cjac = cjac_fn(*args, **kwargs)
+
+        if isinstance(cjac, tuple):
+            if len(cjac) == 1:
+                cjac = cjac[0]
+            else:
+                # Classical processing of multiple arguments is present. Return mt @ cjac.
+                metric_tensors = []
+
+                for c in cjac:
+                    if c is not None:
+                        _mt = qml.math.tensordot(mt, c, [[-1], [0]])
+                        _mt = qml.math.tensordot(c, _mt, [[0], [0]])
+                        metric_tensors.append(_mt)
+
+                return tuple(metric_tensors)
+
+        is_square = cjac.shape == (1,) or (cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1])
+
+        if is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
+            # Classical Jacobian is the identity. No classical processing
+            # is present inside the QNode.
+            return mt
+
+        # Classical processing of a single argument is present. Return mt @ cjac.
+        cjac = qml.math.convert_like(cjac, mt)
+        mt = qml.math.tensordot(mt, cjac, [[-1], [0]])
+        mt = qml.math.tensordot(cjac, mt, [[0], [0]])
+        return mt
+
+    return wrapper
+
+
+def _metric_tensor_cov_matrix(tape, diag_approx):
+    """This is the metric tensor method for the block diagonal, using
+    the covariance matrix of the generators of each layer."""
     # get the circuit graph
     graph = tape.graph
 
@@ -211,66 +329,3 @@ def metric_tensor(tape, diag_approx=False):
         return qml.math.block_diag(gs)
 
     return metric_tensor_tapes, processing_fn
-
-
-@metric_tensor.custom_qnode_wrapper
-def qnode_execution_wrapper(self, qnode, targs, tkwargs):
-    """Here, we overwrite the QNode execution wrapper in order
-    to take into account that classical processing may be present
-    inside the QNode."""
-    hybrid = tkwargs.pop("hybrid", True)
-
-    if isinstance(qnode, qml.ExpvalCost):
-        if qnode._multiple_devices:  # pylint: disable=protected-access
-            warnings.warn(
-                "ExpvalCost was instantiated with multiple devices. Only the first device "
-                "will be used to evaluate the metric tensor."
-            )
-
-        qnode = qnode.qnodes.qnodes[0]
-
-    mt_fn = self.default_qnode_wrapper(qnode, targs, tkwargs)
-
-    if isinstance(qnode, qml.beta.QNode):
-        cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=self.expand_fn)
-    else:
-        cjac_fn = qml.transforms.classical_jacobian(qnode)
-
-    def wrapper(*args, **kwargs):
-        mt = mt_fn(*args, **kwargs)
-
-        if not hybrid:
-            return mt
-
-        kwargs.pop("shots", False)
-        cjac = cjac_fn(*args, **kwargs)
-
-        if isinstance(cjac, tuple):
-            if len(cjac) == 1:
-                cjac = cjac[0]
-            else:
-                # Classical processing of multiple arguments is present. Return mt @ cjac.
-                metric_tensors = []
-
-                for c in cjac:
-                    if c is not None:
-                        _mt = qml.math.tensordot(mt, c, [[-1], [0]])
-                        _mt = qml.math.tensordot(c, _mt, [[0], [0]])
-                        metric_tensors.append(_mt)
-
-                return tuple(metric_tensors)
-
-        is_square = cjac.shape == (1,) or (cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1])
-
-        if is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
-            # Classical Jacobian is the identity. No classical processing
-            # is present inside the QNode.
-            return mt
-
-        # Classical processing of a single argument is present. Return mt @ cjac.
-        cjac = qml.math.convert_like(cjac, mt)
-        mt = qml.math.tensordot(mt, cjac, [[-1], [0]])
-        mt = qml.math.tensordot(cjac, mt, [[0], [0]])
-        return mt
-
-    return wrapper
