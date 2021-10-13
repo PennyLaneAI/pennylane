@@ -631,7 +631,7 @@ class TestExpectationQuantumGradients:
             assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("t", [0, 1])
-    def test_interferometer(self, t, tol):
+    def test_interferometer_unitary(self, t, tol):
         """An integration test for CV gates that support analytic differentiation
         if succeeding the gate to be differentiated, but cannot be differentiated
         themselves (for example, they may be Gaussian but accept no parameters,
@@ -640,7 +640,7 @@ class TestExpectationQuantumGradients:
         This ensures that, assuming their _heisenberg_rep is defined, the quantum
         gradient analytic method can still be used, and returns the correct result.
 
-        Currently, the only such operation is qml.Interferometer. In the future,
+        Currently, the only such operation is qml.InterferometerUnitary. In the future,
         we may consider adding a qml.GaussianTransfom operator.
         """
 
@@ -660,7 +660,7 @@ class TestExpectationQuantumGradients:
             # @qml.qnode(dev)
             # def circuit(r, phi):
             #     qml.Displacement(r, phi, wires=0)
-            #     qml.Interferometer(U, wires=[0, 1])
+            #     qml.InterferometerUnitary(U, wires=[0, 1])
             #     return qml.expval(qml.X(0))
 
             #
@@ -681,7 +681,7 @@ class TestExpectationQuantumGradients:
 
         with CVParamShiftTape() as tape:
             qml.Displacement(0.543, 0, wires=0)
-            qml.Interferometer(U, wires=[0, 1])
+            qml.InterferometerUnitary(U, wires=[0, 1])
             qml.expval(qml.X(0))
 
         tape._update_gradient_info()
