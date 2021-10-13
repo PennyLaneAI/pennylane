@@ -357,7 +357,7 @@ of shape ``(batch_size,)``:
 <h3>Improvements</h3>
 
 * The `qml.beta.QNode` now supports the `qml.qnn` module.
-  []()
+  [(#1748)](https://github.com/PennyLaneAI/pennylane/pull/1748)
 
 * `qml.transforms.batch_transform` now accepts `expand_fn`s that take additional arguments and
   keyword arguments. In fact, `expand_fn` and `transform_fn` now **must** have the same signature.
