@@ -357,7 +357,7 @@ of shape ``(batch_size,)``:
 <h3>Improvements</h3>
 
 * `qml.circuit_drawer.drawable_layers` and `qml.circuit_drawer.drawable_grid` process a list of
-  operations in layer positions for drawing.
+  operations to layer positions for drawing.
   [(#1639)](https://github.com/PennyLaneAI/pennylane/pull/1639)
 
 * `qml.transforms.batch_transform` now accepts `expand_fn`s that take additional arguments and
