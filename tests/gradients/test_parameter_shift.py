@@ -146,6 +146,14 @@ class TestShiftedTapes:
 class TestParamShift:
     """Unit tests for the param_shift function"""
 
+    def test_empty_circuit(self):
+        """Test that an empty circuit works correctly"""
+        with qml.tape.JacobianTape() as tape:
+            qml.expval(qml.PauliZ(0))
+
+        tapes, _ = qml.gradients.param_shift(tape)
+        assert not tapes
+
     def test_state_non_differentiable_error(self):
         """Test error raised if attempting to differentiate with
         respect to a state"""
