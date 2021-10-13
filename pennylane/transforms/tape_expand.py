@@ -61,13 +61,12 @@ def get_expand_fn(depth, stop_at, docstring=None):
             qml.Rot(*qml.numpy.array([-3.1, 0.73, 1.36], requires_grad=True), wires=1)
 
     >>> new_tape = expand_fn(tape)
-    >>> print(*new_tape.operations, sep='\n')
-    RX(0.2, wires=[0])
-    RX(tensor(-2.4, requires_grad=True), wires=[1])
-    Rot(1.7, 0.92, -1.1, wires=[0])
-    RZ(tensor(-3.1, requires_grad=True), wires=[1])
-    RY(tensor(0.73, requires_grad=True), wires=[1])
-    RZ(tensor(1.36, requires_grad=True), wires=[1])
+    >>> print(tape.draw())
+     0: ──RX(0.2)───Rot(1.7, 0.92, -1.1)───┤
+     1: ──RX(-2.4)──Rot(-3.1, 0.73, 1.36)──┤
+    >>> print(new_tape.draw())
+     0: ──RX(0.2)───Rot(1.7, 0.92, -1.1)──────────────────────┤
+     1: ──RX(-2.4)──RZ(-3.1)──────────────RY(0.73)──RZ(1.36)──┤
 
     """
     # pylint: disable=unused-argument
