@@ -15,6 +15,7 @@
 Unit tests for the batch transform.
 """
 
+import functools
 import pytest
 
 import pennylane as qml
@@ -53,6 +54,16 @@ class TestBatchTransform:
             return qml.math.sum(qml.math.stack(results))
 
         return [tape1, tape2], processing_fn
+
+    @staticmethod
+    def phaseshift_expand(tape):
+        return tape.expand(stop_at=lambda obj: obj.name != "PhaseShift")
+
+    @staticmethod
+    def expand_logic_with_kwarg(tape, perform_expansion=None, **kwargs):
+        if perform_expansion:
+            return TestBatchTransform.phaseshift_expand(tape)
+        return tape
 
     def test_error_invalid_callable(self):
         """Test that an error is raised if the transform
@@ -154,9 +165,6 @@ class TestBatchTransform:
         """Test that if an expansion function is provided,
         that the input tape is expanded before being transformed."""
 
-        def expand_fn(tape):
-            return tape.expand(stop_at=lambda obj: obj.name != "PhaseShift")
-
         class MyTransform:
             """Dummy class to allow spying to work"""
 
@@ -166,7 +174,9 @@ class TestBatchTransform:
                 return [tape1, tape2], None
 
         spy_transform = mocker.spy(MyTransform, "my_transform")
-        transform_fn = qml.batch_transform(MyTransform().my_transform, expand_fn=expand_fn)
+        transform_fn = qml.batch_transform(
+            MyTransform().my_transform, expand_fn=self.phaseshift_expand
+        )
 
         with qml.tape.QuantumTape() as tape:
             qml.PhaseShift(0.5, wires=0)
@@ -182,6 +192,75 @@ class TestBatchTransform:
         input_tape = spy_transform.call_args[0][1]
         assert len(input_tape.operations) == 1
         assert input_tape.operations[0].name == "RZ"
+        assert input_tape.operations[0].parameters == [0.5]
+
+    @pytest.mark.parametrize("perform_expansion", [True, False])
+    def test_expand_fn_with_kwarg(self, mocker, perform_expansion):
+        """Test that kwargs are respected in the expansion."""
+
+        class MyTransform:
+            """Dummy class to allow spying to work"""
+
+            def my_transform(self, tape, **kwargs):
+                tape1 = tape.copy()
+                tape2 = tape.copy()
+                return [tape1, tape2], None
+
+        spy_transform = mocker.spy(MyTransform, "my_transform")
+        transform_fn = qml.batch_transform(
+            MyTransform().my_transform, expand_fn=self.expand_logic_with_kwarg
+        )
+
+        with qml.tape.QuantumTape() as tape:
+            qml.PhaseShift(0.5, wires=0)
+            qml.expval(qml.PauliX(0))
+
+        spy_expand = mocker.spy(transform_fn, "expand_fn")
+
+        transform_fn(tape, perform_expansion=perform_expansion)
+
+        spy_transform.assert_called()
+        spy_expand.assert_called()  # The expand_fn of transform_fn always is called
+
+        input_tape = spy_transform.call_args[0][1]
+        assert len(input_tape.operations) == 1
+        assert input_tape.operations[0].name == ("RZ" if perform_expansion else "PhaseShift")
+        assert input_tape.operations[0].parameters == [0.5]
+
+    @pytest.mark.parametrize("perform_expansion", [True, False])
+    def test_expand_qnode_with_kwarg(self, mocker, perform_expansion):
+        """Test that kwargs are respected in the expansion."""
+
+        class MyTransform:
+            """Dummy class to allow spying to work"""
+
+            def my_transform(self, tape, **kwargs):
+                tape1 = tape.copy()
+                tape2 = tape.copy()
+                return [tape1, tape2], None
+
+        spy_transform = mocker.spy(MyTransform, "my_transform")
+        transform_fn = qml.batch_transform(
+            MyTransform().my_transform, expand_fn=self.expand_logic_with_kwarg
+        )
+
+        spy_expand = mocker.spy(transform_fn, "expand_fn")
+        dev = qml.device("default.qubit", wires=2)
+
+        @functools.partial(transform_fn, perform_expansion=perform_expansion)
+        @qml.qnode(dev)
+        def qnode(x):
+            qml.PhaseShift(0.5, wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        qnode(0.2)
+
+        spy_transform.assert_called()
+        spy_expand.assert_called()  # The expand_fn of transform_fn always is called
+
+        input_tape = spy_transform.call_args[0][1]
+        assert len(input_tape.operations) == 1
+        assert input_tape.operations[0].name == ("RZ" if perform_expansion else "PhaseShift")
         assert input_tape.operations[0].parameters == [0.5]
 
     def test_parametrized_transform_tape(self):
