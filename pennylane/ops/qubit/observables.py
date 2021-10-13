@@ -55,8 +55,7 @@ class Hermitian(Observable):
     par_domain = "A"
     grad_method = "F"
     _eigs = {}
-    
-    
+
     def label(self, decimals=None):
         return "H"
 
@@ -144,7 +143,7 @@ class SparseHamiltonian(Observable):
     num_params = 1
     par_domain = None
     grad_method = None
-    
+
     def label(self, decimals=None):
         return "H"
 

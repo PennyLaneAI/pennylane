@@ -400,8 +400,9 @@ class TestControlledQubitUnitary:
 label_data = [
     (qml.QubitUnitary(X, wires=0), "U"),
     (qml.DiagonalQubitUnitary([1, 1], wires=1), "U"),
-    (qml.ControlledQubitUnitary(X, control_wires=0, wires=1), "U")
+    (qml.ControlledQubitUnitary(X, control_wires=0, wires=1), "U"),
 ]
+
 
 @pytest.mark.parametrize("op, label", label_data)
 def test_label(op, label):

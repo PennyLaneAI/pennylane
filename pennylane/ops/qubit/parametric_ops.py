@@ -274,7 +274,7 @@ class ControlledPhaseShift(DiagonalOperation):
         op_label = "PhaseShift"
 
         if decimals is not None:
-            param_string = f'({self.parameters[0]:.{decimals}f})'
+            param_string = f"({1.0 * self.parameters[0]:.{decimals}f})"
             op_label += param_string
 
         return op_label
@@ -540,9 +540,9 @@ class PauliRot(Operation):
             )
 
     def label(self, decimals=None):
-        op_label = "R(" + self.parameters[1] +")"
+        op_label = "R(" + self.parameters[1] + ")"
         if decimals is not None:
-            param_string = f'({self.parameters[0]:.{decimals}f})'
+            param_string = f"({1.0*self.parameters[0]:.{decimals}f})"
             op_label += param_string
 
         return op_label
@@ -738,7 +738,7 @@ class CRX(Operation):
         op_label = "RX"
 
         if decimals is not None:
-            param_string = f'({self.parameters[0]:.{decimals}f})'
+            param_string = f"({1.0 * self.parameters[0]:.{decimals}f})"
             op_label += param_string
 
         return op_label
@@ -826,7 +826,7 @@ class CRY(Operation):
         op_label = "RY"
 
         if decimals is not None:
-            param_string = f'({self.parameters[0]:.{decimals}f})'
+            param_string = f"({1.0*self.parameters[0]:.{decimals}f})"
             op_label += param_string
 
         return op_label
@@ -915,7 +915,7 @@ class CRZ(DiagonalOperation):
         op_label = "RZ"
 
         if decimals is not None:
-            param_string = f'({self.parameters[0]:.{decimals}f})'
+            param_string = f"({1.0*self.parameters[0]:.{decimals}f})"
             op_label += param_string
 
         return op_label
@@ -1009,8 +1009,8 @@ class CRot(Operation):
         op_label = "Rot"
 
         if decimals is not None:
-            
-            param_string = ",".join(f"{p:.{decimals}f}" for p in self.parameters)
+
+            param_string = ",".join(f"{1.0*p:.{decimals}f}" for p in self.parameters)
             op_label += "(" + param_string + ")"
 
         return op_label

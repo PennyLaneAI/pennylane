@@ -709,6 +709,7 @@ class TestMultiControlledX:
         assert np.allclose(f(), rnd_state)
         spy.assert_called()
 
+
 label_data = [
     (qml.Hadamard(0), "H"),
     (qml.PauliX(0), "X"),
@@ -717,17 +718,18 @@ label_data = [
     (qml.S(wires=0), "S"),
     (qml.T(wires=0), "T"),
     (qml.SX(wires=0), "SX"),
-    (qml.CNOT(wires=(0,1)), "X"),
-    (qml.CZ(wires=(0,1)), "Z"),
-    (qml.CY(wires=(0,1)), "Y"),
-    (qml.SWAP(wires=(0,1)), "SWAP"),
-    (qml.ISWAP(wires=(0,1)), "ISWAP"),
-    (qml.SISWAP(wires=(0,1)), "SISWAP"),
-    (qml.SQISW(wires=(0,1)), "SISWAP"),
-    (qml.CSWAP(wires=(0,1,2)), "SWAP"),
-    (qml.Toffoli(wires=(0,1,2)), "X"),
-    (qml.MultiControlledX(control_wires=(0,1,2),wires=(3)), "X")
+    (qml.CNOT(wires=(0, 1)), "X"),
+    (qml.CZ(wires=(0, 1)), "Z"),
+    (qml.CY(wires=(0, 1)), "Y"),
+    (qml.SWAP(wires=(0, 1)), "SWAP"),
+    (qml.ISWAP(wires=(0, 1)), "ISWAP"),
+    (qml.SISWAP(wires=(0, 1)), "SISWAP"),
+    (qml.SQISW(wires=(0, 1)), "SISWAP"),
+    (qml.CSWAP(wires=(0, 1, 2)), "SWAP"),
+    (qml.Toffoli(wires=(0, 1, 2)), "X"),
+    (qml.MultiControlledX(control_wires=(0, 1, 2), wires=(3)), "X"),
 ]
+
 
 @pytest.mark.parametrize("op, label", label_data)
 def test_label_method(op, label):
@@ -739,4 +741,4 @@ def test_label_method(op, label):
         assert op.label() == label
     else:
         op.inv()
-        assert op.label() == label+"⁻¹"
+        assert op.label() == label + "⁻¹"

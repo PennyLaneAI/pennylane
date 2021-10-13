@@ -48,7 +48,7 @@ class Hadamard(Observable, Operation):
     is_self_inverse = True
     eigvals = pauli_eigs(1)
     matrix = np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
-    
+
     def label(self, decimals=None):
         return "H"
 
@@ -941,7 +941,7 @@ class MultiControlledX(Operation):
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
-    
+
     def label(self, decimals=None):
         return "X"
 

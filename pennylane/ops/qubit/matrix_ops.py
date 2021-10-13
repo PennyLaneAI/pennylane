@@ -106,6 +106,7 @@ class QubitUnitary(Operation):
             return "U⁻¹"
         return "U"
 
+
 class ControlledQubitUnitary(QubitUnitary):
     r"""ControlledQubitUnitary(U, control_wires, wires, control_values)
     Apply an arbitrary fixed unitary to ``wires`` with control from the ``control_wires``.
@@ -244,6 +245,7 @@ class ControlledQubitUnitary(QubitUnitary):
         if self.inverse:
             "U⁻¹"
         return "U"
+
 
 class DiagonalQubitUnitary(DiagonalOperation):
     r"""DiagonalQubitUnitary(D, wires)

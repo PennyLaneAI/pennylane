@@ -425,7 +425,7 @@ class Operator(abc.ABC):
 
     def label(self, decimals=None):
         """How the operator is represented in diagrams and drawings.
-        
+
         Keyword Args:
             decimals=None (Int): If ``None``, no parameters are included. Else,
                 how to round the parameters.
@@ -439,12 +439,12 @@ class Operator(abc.ABC):
             params = self.parameters
 
             if (len(params) == 1) and len(qml.math.shape(params[0])) == 0:
-                param_string = f'({params[0]:.{decimals}f})'
+                param_string = f"({1.0*params[0]:.{decimals}f})"
                 op_label += param_string
 
             if len(params) > 1:
-                param_string = ",".join(f"{p:.{decimals}f}" for p in params)
-                op_label  += f"({param_string})"
+                param_string = ",".join(f"{1.0*p:.{decimals}f}" for p in params)
+                op_label += f"({param_string})"
 
         return op_label
 

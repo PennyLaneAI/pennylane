@@ -197,7 +197,7 @@ class QubitSum(Operation):
             [0, 0, 0, 0, 0, 0, 0, 1],
         ]
     )
-    
+
     def label(self, decimals=None):
         if self.inverse:
             return "+⁻¹"

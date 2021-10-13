@@ -550,7 +550,7 @@ class TestHamiltonian:
         assert set(H.wires) == set([w for op in H.ops for w in op.wires])
 
     def test_label(self):
-        H = qml.Hamiltonian((-0.8,), (qml.PauliZ(0),) )
+        H = qml.Hamiltonian((-0.8,), (qml.PauliZ(0),))
         assert H.label() == "H"
 
     @pytest.mark.parametrize("terms, string", zip(valid_hamiltonians, valid_hamiltonians_str))
