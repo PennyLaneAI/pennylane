@@ -81,9 +81,16 @@ class TestDrawableLayers:
 
     @pytest.mark.parametrize(
         "multiwire_gate",
-        (qml.CNOT(wires=(0, 2)), qml.CNOT(wires=(2, 0)),
-         qml.Toffoli(wires=(0, 2, 3)), qml.Toffoli(wires=(2, 3, 0)), qml.Toffoli(wires=(3, 0, 2)),
-         qml.Toffoli(wires=(0, 3, 2)), qml.Toffoli(wires=(3, 2, 0)), qml.Toffoli(wires=(2, 0, 3))),
+        (
+            qml.CNOT(wires=(0, 2)),
+            qml.CNOT(wires=(2, 0)),
+            qml.Toffoli(wires=(0, 2, 3)),
+            qml.Toffoli(wires=(2, 3, 0)),
+            qml.Toffoli(wires=(3, 0, 2)),
+            qml.Toffoli(wires=(0, 3, 2)),
+            qml.Toffoli(wires=(3, 2, 0)),
+            qml.Toffoli(wires=(2, 0, 3)),
+        ),
     )
     def test_multiwire_blocking(self, multiwire_gate):
         """Test multi-wire gate blocks on unused wire"""
