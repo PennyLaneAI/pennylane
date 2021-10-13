@@ -553,7 +553,7 @@ def param_shift(
     method = "analytic" if fallback_fn is None else "best"
     diff_methods = tape._grad_method_validation(method)
     all_params_grad_method_zero = all(g == "0" for g in diff_methods)
-    if not tape.trainable_params or all_params_grad_method_zero:
+    if all_params_grad_method_zero:
         return gradient_tapes, lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
 
     # TODO: replace the JacobianTape._choose_params_with_methods

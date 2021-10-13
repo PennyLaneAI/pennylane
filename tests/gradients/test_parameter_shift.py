@@ -154,6 +154,15 @@ class TestParamShift:
         tapes, _ = qml.gradients.param_shift(tape)
         assert not tapes
 
+    def test_all_parameters_independent(self):
+        """Test that a circuit where all parameters do not affect the output"""
+        with qml.tape.JacobianTape() as tape:
+            qml.RX(0.4, wires=0)
+            qml.expval(qml.PauliZ(1))
+
+        tapes, _ = qml.gradients.param_shift(tape)
+        assert not tapes
+
     def test_state_non_differentiable_error(self):
         """Test error raised if attempting to differentiate with
         respect to a state"""
