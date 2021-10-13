@@ -189,6 +189,7 @@ class QubitDevice(Device):
                 return self._cache_execute[circuit_hash]
 
         self.check_validity(circuit.operations, circuit.observables)
+
         # apply all circuit operations
         self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
 
@@ -399,7 +400,6 @@ class QubitDevice(Device):
                 results.append(self.sample(obs, shot_range=shot_range, bin_size=bin_size))
 
             elif obs.return_type is Probability:
-
                 results.append(
                     self.probability(wires=obs.wires, shot_range=shot_range, bin_size=bin_size)
                 )
@@ -737,6 +737,7 @@ class QubitDevice(Device):
             prob = self._flatten(self._reduce_sum(prob, inactive_device_wires.labels))
         else:
             prob = self._flatten(self._reduce_sum(prob, inactive_device_wires))
+
         # The wires provided might not be in consecutive order (i.e., wires might be [2, 0]).
         # If this is the case, we must permute the marginalized probability so that
         # it corresponds to the orders of the wires passed.

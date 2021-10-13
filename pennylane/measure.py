@@ -430,10 +430,14 @@ def probs(wires=None, op=None):
         op (Hermitian): Hermitian operator that rotates the computational basis
     """
     # pylint: disable=protected-access
+    if isinstance(op, qml.Hamiltonian):
+        raise qml.QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
 
-    if not isinstance(op, qml.Hermitian) and op is not None:  # None type is also allowed for op
+    if op is not None and not hasattr(op, "diagonalizing_gates"):
         raise qml.QuantumFunctionError(
-            "{} is not an Hermitian operator: cannot be used with probability".format(op.name)
+            "{} has not diagonalizing_gates attribute: cannot be used to rotate the probability".format(
+                op
+            )
         )
 
     if wires is not None:

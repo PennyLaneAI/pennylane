@@ -416,12 +416,14 @@ class Device(abc.ABC):
 
         with self.execution_context():
             self.pre_apply()
+
             for operation in queue:
                 self.apply(operation.name, operation.wires, operation.parameters)
 
             self.post_apply()
 
             self.pre_measure()
+
             for obs in observables:
 
                 if isinstance(obs, Tensor):
@@ -951,7 +953,7 @@ class Device(abc.ABC):
             "Returning samples from QNodes not currently supported by {}".format(self.short_name)
         )
 
-    def probability(self, wires):
+    def probability(self, wires=None):
         """Return the (marginal) probability of each computational basis
         state from the last run of the device.
 
