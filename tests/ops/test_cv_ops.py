@@ -55,7 +55,12 @@ class TestCV:
             (cv.Displacement(2.004, 8.673, wires=0), 3),  # phi > 2pi
             (cv.Beamsplitter(0.456, -0.789, wires=[0, 2]), 5),
             (cv.TwoModeSqueezing(2.532, 1.778, wires=[1, 2]), 5),
-            (cv.Interferometer(np.array([[1, 1], [1, -1]]) * -1.0j / np.sqrt(2.0), wires=1), 5),
+            (
+                cv.InterferometerUnitary(
+                    np.array([[1, 1], [1, -1]]) * -1.0j / np.sqrt(2.0), wires=1
+                ),
+                5,
+            ),
             (cv.ControlledAddition(2.551, wires=[0, 2]), 5),
             (cv.ControlledPhase(2.189, wires=[3, 1]), 5),
         ],
@@ -69,14 +74,6 @@ class TestCV:
         np_testing.assert_allclose(res1, np.eye(size), atol=tol)
         np_testing.assert_allclose(res2, np.eye(size), atol=tol)
         assert op.wires == op_d.wires
-
-    def test_Interferometer_deprecation_warning(self):
-        """Tests whether a ``UserWarning`` is raised when ``Interferometer`` gate is used."""
-        with pytest.warns(
-            UserWarning,
-            match="'Interferometer' is deprecated and will be renamed 'InterferometerUnitary'",
-        ):
-            cv.Interferometer(np.array([[1, 1], [1, -1]]) * -1.0j / np.sqrt(2.0), wires=1)
 
     @pytest.mark.parametrize(
         "op",
@@ -129,34 +126,10 @@ class TestCV:
         true_matrix = np.array(
             [
                 [1, 0, 0, 0, 0],
-                [
-                    0,
-                    np.cos(theta),
-                    0,
-                    -np.cos(phi) * np.sin(theta),
-                    -np.sin(phi) * np.sin(theta),
-                ],
-                [
-                    0,
-                    0,
-                    np.cos(theta),
-                    np.sin(phi) * np.sin(theta),
-                    -np.cos(phi) * np.sin(theta),
-                ],
-                [
-                    0,
-                    np.cos(phi) * np.sin(theta),
-                    -np.sin(phi) * np.sin(theta),
-                    np.cos(theta),
-                    0,
-                ],
-                [
-                    0,
-                    np.sin(phi) * np.sin(theta),
-                    np.cos(phi) * np.sin(theta),
-                    0,
-                    np.cos(theta),
-                ],
+                [0, np.cos(theta), 0, -np.cos(phi) * np.sin(theta), -np.sin(phi) * np.sin(theta)],
+                [0, 0, np.cos(theta), np.sin(phi) * np.sin(theta), -np.cos(phi) * np.sin(theta)],
+                [0, np.cos(phi) * np.sin(theta), -np.sin(phi) * np.sin(theta), np.cos(theta), 0],
+                [0, np.sin(phi) * np.sin(theta), np.cos(phi) * np.sin(theta), 0, np.cos(theta)],
             ]
         )
         assert np.allclose(matrix, true_matrix)
@@ -190,13 +163,7 @@ class TestCV:
         """ops: Tests the Heisenberg representation of ControlledAddition gate."""
         matrix = cv.ControlledAddition._heisenberg_rep([s])
         true_matrix = np.array(
-            [
-                [1, 0, 0, 0, 0],
-                [0, 1, 0, 0, 0],
-                [0, 0, 1, 0, -s],
-                [0, s, 0, 1, 0],
-                [0, 0, 0, 0, 1],
-            ]
+            [[1, 0, 0, 0, 0], [0, 1, 0, 0, 0], [0, 0, 1, 0, -s], [0, s, 0, 1, 0], [0, 0, 0, 0, 1]]
         )
         assert np.allclose(matrix, true_matrix)
 
@@ -205,13 +172,7 @@ class TestCV:
         """Tests the Heisenberg representation of the ControlledPhase gate."""
         matrix = cv.ControlledPhase._heisenberg_rep([s])
         true_matrix = np.array(
-            [
-                [1, 0, 0, 0, 0],
-                [0, 1, 0, 0, 0],
-                [0, 0, 1, s, 0],
-                [0, 0, 0, 1, 0],
-                [0, s, 0, 0, 1],
-            ]
+            [[1, 0, 0, 0, 0], [0, 1, 0, 0, 0], [0, 0, 1, s, 0], [0, 0, 0, 1, 0], [0, s, 0, 0, 1]]
         )
         assert np.allclose(matrix, true_matrix)
 
