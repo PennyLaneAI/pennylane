@@ -117,7 +117,7 @@ class TestDrawableGrid:
         assert Grid_obj.raw_grid.shape == (1, 0)
 
     def test_empty_wire_map(self):
-        """Test creating a grid when no operations are present but there is a wire map """
+        """Test creating a grid when no operations are present but there is a wire map"""
 
         wire_map = {1: 1, 2: 2}
         grid = drawable_grid([], wire_map)
