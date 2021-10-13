@@ -26,29 +26,34 @@ from pennylane.operation import (
 
 
 def get_expand_fn(depth, stop_at, docstring=None):
-    """Create an expansion function using a given depth and stopping criterions,
-    wrapping ``tape.expand``.
+    """Create a function for expanding a tape to a given depth, and
+    with a specific stopping criterion. This is a wrapper around
+    :meth:`~.QuantumTape.expand`.
 
     Args:
         depth (int): Depth for the expansion
-        stop_at (callable): Stopping criterion passed to ``tape.expand``
-        docstring (str): docstring for the expansion function
+        stop_at (callable): Stopping criterion. This must be a function with signature
+            ``stop_at(obj)``, where ``obj`` is a *queueable* PennyLane object such as
+            :class:`~.Operation` or :class:`~.MeasurementProcess`. It must return a
+            boolean, indicating if the expansion should stop at this object.
+        docstring (str): docstring for the generated expansion function
 
     Returns:
-        callable: Tape expansion function
+        callable: Tape expansion function. The returned function accepts a :class:`~.QuantumTape`,
+        and returns an expanded :class:`~.QuantumTape`.
 
     **Example**
 
-    Let us construct an expansion function that expands a tape trying to remove
-    multi-parameter gates that are trainable. We allow for up to five expansion
+    Let us construct an expansion function that expands a tape in order to
+    decompose trainable multi-parameter gates. We allow for up to five expansion
     steps, which can be controlled with the argument ``depth``.
     The stopping criterion is easy to write as
 
-    >>> stop_at = ~(qml.transforms.has_multipar & qml.transforms.is_trainable)
+    >>> stop_at = ~(qml.operation.has_multipar & qml.operation.is_trainable)
 
     Then the expansion function can be obtained via
 
-    >>> expand_fn = qml.transforms.get_expand_fn(5, stop_at)
+    >>> expand_fn = qml.transforms.get_expand_fn(depth=5, stop_at=stop_at)
 
     We can test the newly generated function on an example tape:
 
