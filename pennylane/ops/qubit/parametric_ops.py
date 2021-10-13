@@ -59,6 +59,7 @@ class RX(Operation):
     basis = "X"
     grad_method = "A"
     generator = [PauliX, -1 / 2]
+    has_unitary_generator = True
 
     @classmethod
     def _matrix(cls, *params):
@@ -106,6 +107,7 @@ class RY(Operation):
     basis = "Y"
     grad_method = "A"
     generator = [PauliY, -1 / 2]
+    has_unitary_generator = True
 
     @classmethod
     def _matrix(cls, *params):
@@ -153,6 +155,7 @@ class RZ(DiagonalOperation):
     basis = "Z"
     grad_method = "A"
     generator = [PauliZ, -1 / 2]
+    has_unitary_generator = True
 
     @classmethod
     def _matrix(cls, *params):
@@ -206,6 +209,7 @@ class PhaseShift(DiagonalOperation):
     basis = "Z"
     grad_method = "A"
     generator = [np.array([[0, 0], [0, 1]]), 1]
+    has_unitary_generator = False
 
     @classmethod
     def _matrix(cls, *params):
@@ -264,6 +268,16 @@ class ControlledPhaseShift(DiagonalOperation):
     basis = "Z"
     grad_method = "A"
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), 1]
+    has_unitary_generator = False
+
+    def label(self, decimals=None):
+        op_label = "PhaseShift"
+
+        if decimals is not None:
+            param_string = f'({self.parameters[0]:.{decimals}f})'
+            op_label += param_string
+
+        return op_label
 
     @classmethod
     def _matrix(cls, *params):
@@ -427,6 +441,8 @@ class MultiRZ(DiagonalOperation):
             self._generator = [np.diag(pauli_eigs(len(self.wires))), -1 / 2]
         return self._generator
 
+    has_unitary_generator = True
+
     @property
     def matrix(self):
         # Redefine the property here to pass additionally the number of wires to the ``_matrix`` method
@@ -523,6 +539,14 @@ class PauliRot(Operation):
                 )
             )
 
+    def label(self, decimals=None):
+        op_label = "R(" + self.parameters[1] +")"
+        if decimals is not None:
+            param_string = f'({self.parameters[0]:.{decimals}f})'
+            op_label += param_string
+
+        return op_label
+
     @staticmethod
     def _check_pauli_word(pauli_word):
         """Check that the given Pauli word has correct structure.
@@ -607,6 +631,8 @@ class PauliRot(Operation):
             ]
 
         return self._generator
+
+    has_unitary_generator = True
 
     @classmethod
     def _eigvals(cls, theta, pauli_word):
@@ -706,6 +732,16 @@ class CRX(Operation):
         np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]),
         -1 / 2,
     ]
+    has_unitary_generator = False
+
+    def label(self, decimals=None):
+        op_label = "RX"
+
+        if decimals is not None:
+            param_string = f'({self.parameters[0]:.{decimals}f})'
+            op_label += param_string
+
+        return op_label
 
     @classmethod
     def _matrix(cls, *params):
@@ -784,6 +820,16 @@ class CRY(Operation):
         np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]),
         -1 / 2,
     ]
+    has_unitary_generator = False
+
+    def label(self, decimals=None):
+        op_label = "RY"
+
+        if decimals is not None:
+            param_string = f'({self.parameters[0]:.{decimals}f})'
+            op_label += param_string
+
+        return op_label
 
     @classmethod
     def _matrix(cls, *params):
@@ -863,6 +909,16 @@ class CRZ(DiagonalOperation):
         np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]),
         -1 / 2,
     ]
+    has_unitary_generator = False
+
+    def label(self, decimals=None):
+        op_label = "RZ"
+
+        if decimals is not None:
+            param_string = f'({self.parameters[0]:.{decimals}f})'
+            op_label += param_string
+
+        return op_label
 
     @classmethod
     def _matrix(cls, *params):
@@ -949,6 +1005,16 @@ class CRot(Operation):
     grad_method = "A"
     grad_recipe = four_term_grad_recipe * 3
 
+    def label(self, decimals=None):
+        op_label = "Rot"
+
+        if decimals is not None:
+            
+            param_string = ",".join(f"{p:.{decimals}f}" for p in self.parameters)
+            op_label += "(" + param_string + ")"
+
+        return op_label
+
     @classmethod
     def _matrix(cls, *params):
         phi, theta, omega = params
@@ -1021,6 +1087,7 @@ class U1(Operation):
     par_domain = "R"
     grad_method = "A"
     generator = [np.array([[0, 0], [0, 1]]), 1]
+    has_unitary_generator = False
 
     @classmethod
     def _matrix(cls, *params):
@@ -1195,10 +1262,12 @@ class IsingXX(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
+
     generator = [
         np.array([[0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0], [1, 0, 0, 0]]),
         -1 / 2,
     ]
+    has_unitary_generator = True
 
     @classmethod
     def _matrix(cls, *params):
@@ -1259,6 +1328,7 @@ class IsingYY(Operation):
         np.array([[0, 0, 0, -1], [0, 0, 1, 0], [0, 1, 0, 0], [-1, 0, 0, 0]]),
         -1 / 2,
     ]
+    has_unitary_generator = True
 
     @staticmethod
     def decomposition(phi, wires):
@@ -1318,6 +1388,7 @@ class IsingZZ(Operation):
         np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]),
         -1 / 2,
     ]
+    has_unitary_generator = True
 
     @staticmethod
     def decomposition(phi, wires):

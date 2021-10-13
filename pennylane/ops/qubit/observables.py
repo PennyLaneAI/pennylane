@@ -55,6 +55,10 @@ class Hermitian(Observable):
     par_domain = "A"
     grad_method = "F"
     _eigs = {}
+    
+    
+    def label(self, decimals=None):
+        return "H"
 
     @classmethod
     def _matrix(cls, *params):
@@ -140,6 +144,9 @@ class SparseHamiltonian(Observable):
     num_params = 1
     par_domain = None
     grad_method = None
+    
+    def label(self, decimals=None):
+        return "H"
 
     @classmethod
     def _matrix(cls, *params):
@@ -198,6 +205,10 @@ class Projector(Observable):
             raise ValueError(f"Basis state must only consist of 0s and 1s; got {basis_state}")
 
         super().__init__(basis_state, wires=wires, do_queue=do_queue)
+
+    def label(self, decimals=None):
+        basis_string = "".join(str(int(i)) for i in self.parameters[0])
+        return f"|{basis_string}⟩⟨{basis_string}|"
 
     @classmethod
     def _eigvals(cls, *params):

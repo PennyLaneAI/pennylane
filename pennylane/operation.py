@@ -423,6 +423,31 @@ class Operator(abc.ABC):
     def name(self, value):
         self._name = value
 
+    def label(self, decimals=None):
+        """How the operator is represented in diagrams and drawings.
+        
+        Keyword Args:
+            decimals=None (Int): If ``None``, no parameters are included. Else,
+                how to round the parameters.
+
+        Returns:
+            str: label to use in drawings
+        """
+        op_label = self.__class__.__name__
+
+        if decimals is not None:
+            params = self.parameters
+
+            if (len(params) == 1) and len(qml.math.shape(params[0])) == 0:
+                param_string = f'({params[0]:.{decimals}f})'
+                op_label += param_string
+
+            if len(params) > 1:
+                param_string = ",".join(f"{p:.{decimals}f}" for p in params)
+                op_label  += f"({param_string})"
+
+        return op_label
+
     def __init__(self, *params, wires=None, do_queue=True, id=None):
         # pylint: disable=too-many-branches
         self._name = self.__class__.__name__  #: str: name of the operator
@@ -607,6 +632,19 @@ class Operation(Operator):
     ``ControlledPhaseShift`` and ``RZ`` have ``basis = "Z"``.
     """
 
+    has_unitary_generator = None
+    """bool or None: ``True`` if the operation has a ``generator`` and the first
+    entry of that ``generator`` is unitary.
+
+    For example, ``qml.RZ.generator = [qml.PauliZ, -1/2]`` and ``qml.PauliZ`` is
+    unitary, so that ``qml.RZ.has_unitary_generator = True``. Contrary,
+    ``qml.PhaseShift.generator = [np.array([[0, 0], [0, 1]]), 1]`` where the
+    array in the first entry is not unitary, so that
+    ``qml.PhaseShift.has_unitary_generator = False``. This flag is used for
+    decompositions in algorithms using the Hadamard test like ``qml.metric_tensor``
+    when used without approximation.
+    """
+
     @property
     def control_wires(self):  # pragma: no cover
         r"""For operations that are controlled, returns the set of control wires.
@@ -776,6 +814,12 @@ class Operation(Operator):
     def name(self):
         """Get and set the name of the operator."""
         return self._name + Operation.string_for_inverse if self.inverse else self._name
+
+    def label(self, decimals=None):
+        op_label = super().label(decimals=decimals)
+        if not self.is_self_inverse and self.inverse:
+            op_label += "⁻¹"
+        return op_label
 
     def __init__(self, *params, wires=None, do_queue=True, id=None):
 
@@ -1207,6 +1251,9 @@ class Tensor(Observable):
         self.obs = []
         self._args = args
         self.queue(init=True)
+
+    def label(self, decimals=None):
+        return " ".join(ob.label(decimals=decimals) for ob in self.obs)
 
     def queue(self, context=qml.QueuingContext, init=False):  # pylint: disable=arguments-differ
         constituents = self.obs
