@@ -14,6 +14,7 @@
 """
 Unit tests for BooleanFn utility class.
 """
+import pytest
 import pennylane as qml
 
 

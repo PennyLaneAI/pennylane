@@ -17,6 +17,7 @@ including a decorator for specifying gradient expansions."""
 import pennylane as qml
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 
+
 class gradient_transform(qml.batch_transform):
     """Decorator for defining quantum gradient transforms.
 
