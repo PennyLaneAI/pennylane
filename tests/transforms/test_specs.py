@@ -170,7 +170,7 @@ class TestSpecsTransformBetaQNode:
     """Tests for the transform specs using the new QNode"""
 
     @pytest.mark.parametrize(
-        "diff_method, len_info", [("backprop", 16), ("parameter-shift", 17), ("adjoint", 16)]
+        "diff_method, len_info", [("backprop", 15), ("parameter-shift", 16), ("adjoint", 15)]
     )
     def test_empty(self, diff_method, len_info):
 
@@ -205,7 +205,7 @@ class TestSpecsTransformBetaQNode:
             assert info["device_name"] == "default.qubit.autograd"
 
     @pytest.mark.parametrize(
-        "diff_method, len_info", [("backprop", 16), ("parameter-shift", 17), ("adjoint", 16)]
+        "diff_method, len_info", [("backprop", 15), ("parameter-shift", 16), ("adjoint", 15)]
     )
     def test_specs(self, diff_method, len_info):
         """Test the specs transforms works in standard situations"""
@@ -252,7 +252,7 @@ class TestSpecsTransformBetaQNode:
             assert info["device_name"] == "default.qubit.autograd"
 
     @pytest.mark.parametrize(
-        "diff_method, len_info", [("backprop", 16), ("parameter-shift", 17), ("adjoint", 16)]
+        "diff_method, len_info", [("backprop", 15), ("parameter-shift", 16), ("adjoint", 15)]
     )
     def test_specs_state(self, diff_method, len_info):
         """Test specs works when state returned"""
@@ -292,7 +292,7 @@ class TestSpecsTransformBetaQNode:
         info = qml.specs(circuit, max_expansion=0)(params)
         assert circuit.max_expansion == 10
 
-        assert len(info) == 16
+        assert len(info) == 15
 
         assert info["gate_sizes"] == defaultdict(int, {5: 1})
         assert info["gate_types"] == defaultdict(int, {"BasicEntanglerLayers": 1})

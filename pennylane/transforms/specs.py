@@ -36,12 +36,13 @@ def specs(qnode, max_expansion=None):
 
     **Example**
 
+
     .. code-block:: python3
 
         x = np.array([0.1, 0.2])
 
         dev = qml.device('default.qubit', wires=2)
-        @qml.beta.qnode(dev, diff_method="parameter-shift", shift=np.pi / 4)
+        @qml.qnode(dev)
         def circuit(x, add_ry=True):
             qml.RX(x[0], wires=0)
             qml.CNOT(wires=(0,1))
@@ -51,26 +52,50 @@ def specs(qnode, max_expansion=None):
 
     >>> qml.specs(circuit)(x, add_ry=False)
     {'gate_sizes': defaultdict(int, {1: 1, 2: 1}),
-     'gate_types': defaultdict(int, {'RX': 1, 'CNOT': 1}),
-     'num_operations': 2,
-     'num_observables': 1,
-     'num_diagonalizing_gates': 0,
-     'num_used_wires': 2,
-     'depth': 2,
-     'num_trainable_params': 1,
-     'num_device_wires': 2,
-     'device_name': 'default.qubit',
-     'diff_method': 'parameter-shift',
-     'expansion_strategy': 'gradient',
-     'gradient_options': {'shift': 0.7853981633974483},
-     'execution_options': {'mode': 'best',
-      'cache': True,
-      'cachesize': 10000,
-      'max_diff': 1,
-      'max_expansion': 10},
-     'interface': 'autograd',
-     'gradient_fn': 'pennylane.gradients.parameter_shift',
-     'num_gradient_executions': 2}
+    'gate_types': defaultdict(int, {'RX': 1, 'CNOT': 1}),
+    'num_operations': 2,
+    'num_observables': 1,
+    'num_diagonalizing_gates': 0,
+    'num_used_wires': 2,
+    'depth': 2,
+    'num_device_wires': 2,
+    'device_name': 'default.qubit.autograd',
+    'diff_method': 'backprop'}
+
+    .. UsageDetails::
+
+        ``qml.specs`` can also be used with :class:`~.beta.qnode`:
+
+        .. code-block:: python3
+
+            x = np.array([0.1, 0.2])
+
+            dev = qml.device('default.qubit', wires=2)
+            @qml.beta.qnode(dev, diff_method="parameter-shift", shift=np.pi / 4)
+            def circuit(x, add_ry=True):
+                qml.RX(x[0], wires=0)
+                qml.CNOT(wires=(0,1))
+                if add_ry:
+                    qml.RY(x[1], wires=1)
+                return qml.probs(wires=(0,1))
+
+        >>> qml.specs(circuit)(x, add_ry=False)
+        {'gate_sizes': defaultdict(int, {1: 1, 2: 1}),
+         'gate_types': defaultdict(int, {'RX': 1, 'CNOT': 1}),
+         'num_operations': 2,
+         'num_observables': 1,
+         'num_diagonalizing_gates': 0,
+         'num_used_wires': 2,
+         'depth': 2,
+         'num_trainable_params': 1,
+         'num_device_wires': 2,
+         'device_name': 'default.qubit',
+         'diff_method': 'parameter-shift',
+         'expansion_strategy': 'gradient',
+         'gradient_options': {'shift': 0.7853981633974483},
+         'interface': 'autograd',
+         'gradient_fn': 'pennylane.gradients.parameter_shift',
+         'num_gradient_executions': 2}
 
     """
 
@@ -116,7 +141,6 @@ def specs(qnode, max_expansion=None):
         info["diff_method"] = qnode.diff_method
         info["expansion_strategy"] = qnode.expansion_strategy
         info["gradient_options"] = qnode.gradient_kwargs
-        info["execution_options"] = qnode.execute_kwargs
         info["interface"] = qnode.interface
 
         if callable(qnode.gradient_fn):
