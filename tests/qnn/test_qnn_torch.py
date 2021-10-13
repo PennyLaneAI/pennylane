@@ -80,7 +80,7 @@ class TestTorchLayer:
         dev = qml.device("default.qubit", wires=1)
         weight_shapes = {"w1": (3, 3), "w2": 1}
 
-        @qml.qnode(dev, interface="torch")
+        @qml.beta.qnode(dev, interface="torch")
         def circuit(w1, w2):
             return qml.expval(qml.PauliZ(0))
 
@@ -118,7 +118,7 @@ class TestTorchLayer:
         dev = qml.device("default.qubit", wires=1)
         weight_shapes = {"w1": (3, 3), "w2": 1}
 
-        @qml.qnode(dev, interface="torch")
+        @qml.beta.qnode(dev, interface="torch")
         def circuit(inputs, w1, w2, *args):
             return qml.expval(qml.PauliZ(0))
 
@@ -139,7 +139,7 @@ class TestTorchLayer:
             "w7": 0,
         }
 
-        @qml.qnode(dev, interface="torch")
+        @qml.beta.qnode(dev, interface="torch")
         def c(inputs, **kwargs):
             """A circuit that embeds data using the AngleEmbedding and then performs a variety of
             operations. The output is a PauliZ measurement on the first output_dim qubits. One set of
@@ -189,7 +189,7 @@ class TestTorchLayer:
             "w7": 0,
         }
 
-        @qml.qnode(dev, interface="torch")
+        @qml.beta.qnode(dev, interface="torch")
         def c(inputs, w1, w2, w4, w5, w6, w7, w3=0.5):
             """A circuit that embeds data using the AngleEmbedding and then performs a variety of
             operations. The output is a PauliZ measurement on the first output_dim qubits. One set of
@@ -263,7 +263,7 @@ class TestTorchLayer:
         directly"""
         c, w = get_circuit
 
-        @qml.qnode(qml.device("default.qubit", wires=n_qubits), interface="torch")
+        @qml.beta.qnode(qml.device("default.qubit", wires=n_qubits), interface="torch")
         def c_shuffled(w1, inputs, w2, w3, w4, w5, w6, w7):
             """Version of the circuit with a shuffled signature"""
             qml.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
@@ -291,7 +291,7 @@ class TestTorchLayer:
         default argument, i.e., that it gives the same result as calling the QNode directly"""
         c, w = get_circuit
 
-        @qml.qnode(qml.device("default.qubit", wires=n_qubits), interface="torch")
+        @qml.beta.qnode(qml.device("default.qubit", wires=n_qubits), interface="torch")
         def c_default(w1, w2, w3, w4, w5, w6, w7, inputs=None):
             """Version of the circuit with inputs as a default argument"""
             qml.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))

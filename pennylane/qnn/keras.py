@@ -215,9 +215,14 @@ class KerasLayer(Layer):
         self.qnode = qnode
 
         dtype = tf.float32 if tf.keras.backend.floatx() == tf.float32 else tf.float64
+        self.qnode.interface = "tf"
 
-        if self.qnode.diff_method != "backprop" or self.qnode.diff_method_change:
-            self.qnode.to_tf(dtype=dtype)
+        try:
+            # TODO: remove once the beta QNode is default
+            if self.qnode.diff_method != "backprop" or self.qnode.diff_method_change:
+                self.qnode.to_tf(dtype=dtype)
+        except AttributeError:
+            pass
 
         # Allows output_dim to be specified as an int or as a tuple, e.g, 5, (5,), (5, 2), [5, 2]
         # Note: Single digit values will be considered an int and multiple as a tuple, e.g [5,] or (5,)
