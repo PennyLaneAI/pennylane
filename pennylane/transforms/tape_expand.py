@@ -25,7 +25,7 @@ from pennylane.operation import (
 )
 
 
-def get_expand_fn(depth, stop_at, docstring=None):
+def create_expand_fn(depth, stop_at, docstring=None):
     """Create a function for expanding a tape to a given depth, and
     with a specific stopping criterion. This is a wrapper around
     :meth:`~.QuantumTape.expand`.
@@ -53,7 +53,7 @@ def get_expand_fn(depth, stop_at, docstring=None):
 
     Then the expansion function can be obtained via
 
-    >>> expand_fn = qml.transforms.get_expand_fn(depth=5, stop_at=stop_at)
+    >>> expand_fn = qml.transforms.create_expand_fn(depth=5, stop_at=stop_at)
 
     We can test the newly generated function on an example tape:
 
@@ -89,8 +89,8 @@ def get_expand_fn(depth, stop_at, docstring=None):
     return expand_fn
 
 
-expand_multipar = get_expand_fn(depth=10, stop_at=is_measurement | has_nopar | has_gen)
-expand_nonunitary_gen = get_expand_fn(
+expand_multipar = create_expand_fn(depth=10, stop_at=is_measurement | has_nopar | has_gen)
+expand_nonunitary_gen = create_expand_fn(
     depth=10, stop_at=is_measurement | has_nopar | (has_gen & has_unitary_gen)
 )
 
@@ -111,7 +111,7 @@ Returns:
     .QuantumTape: the expanded tape
 """
 
-expand_invalid_trainable = get_expand_fn(
+expand_invalid_trainable = create_expand_fn(
     depth=10,
     stop_at=is_measurement | (~is_trainable) | has_grad_method,
     docstring=_expand_invalid_trainable_doc,

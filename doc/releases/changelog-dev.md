@@ -5,14 +5,14 @@
 <h3>New features since last release</h3>
 
 * Tape expansion functions are now collected in `qml.transforms.tape_expand.py`
-  in form of a new class `BooleanFn`.
+  together with a `create_expand_fn` function that creates expansion functions
+  from stopping criteria.
   [(#1734)](https://github.com/PennyLaneAI/pennylane/pull/1734)
 
-  These functions can be manipulated and combined with the bitwise operators
-  `&`, `|` and `~`. 
-  `tape_expand` also contains a generator for tape expansion functions
-  `get_expand_fn` as well as some pre-defined stopping criteria and
-  expansion functions, which previously were scattered across the code base.
+  `create_expand_fn` takes the default depth to which the expansion function 
+  should expand a tape, a stopping criterion and a docstring to be set for the
+  created function.
+  The stopping criterion must take a queuable object and return a Boolean.
 
 * A new transform, `@qml.batch_params`, has been added, that makes QNodes 
   handle a batch dimension in trainable parameters.
@@ -365,6 +365,14 @@
 
 
 <h3>Improvements</h3>
+
+* A new utility class `qml.BooleanFn` is introduced. It wraps a function that takes a single
+  argument and returns a Boolean.
+  [(#1734)](https://github.com/PennyLaneAI/pennylane/pull/1734)
+
+  After wrapping, `qml.BooleanFn` can be called like the wrapped function, and
+  multiple instances can be manipulated and combined with the bitwise operators
+  `&`, `|` and `~`. 
 
 * `qml.transforms.batch_transform` now accepts `expand_fn`s that take additional arguments and
   keyword arguments. In fact, `expand_fn` and `transform_fn` now **must** have the same signature.
