@@ -27,13 +27,13 @@ class TestGetExpandFn:
         qml.RY(qml.numpy.array(2.1, requires_grad=True), wires=1)
         qml.Rot(*qml.numpy.array([0.5, 0.2, -0.1], requires_grad=True), wires=0)
 
-    def test_get_expand_fn(self):
+    def test_create_expand_fn(self):
         """Test creation of expand_fn."""
-        qml.transforms.get_expand_fn(depth=10, stop_at=self.crit_0)
+        qml.transforms.create_expand_fn(depth=10, stop_at=self.crit_0)
 
-    def test_get_expand_fn_expansion(self):
+    def test_create_expand_fn_expansion(self):
         """Test expansion with created expand_fn."""
-        expand_fn = qml.transforms.get_expand_fn(depth=10, stop_at=self.crit_0)
+        expand_fn = qml.transforms.create_expand_fn(depth=10, stop_at=self.crit_0)
         new_tape = expand_fn(self.tape)
         assert new_tape.operations[0] == self.tape.operations[0]
         assert new_tape.operations[1] == self.tape.operations[1]
@@ -41,9 +41,9 @@ class TestGetExpandFn:
         assert np.allclose([op.data for op in new_tape.operations[2:]], [[0.5], [0.2], [-0.1]])
         assert [op.wires for op in new_tape.operations[2:]] == [qml.wires.Wires(0)] * 3
 
-    def test_get_expand_fn_dont_expand(self):
+    def test_create_expand_fn_dont_expand(self):
         """Test expansion is skipped with depth=0."""
-        expand_fn = qml.transforms.get_expand_fn(depth=0, stop_at=self.crit_0)
+        expand_fn = qml.transforms.create_expand_fn(depth=0, stop_at=self.crit_0)
 
         new_tape = expand_fn(self.tape)
         assert new_tape.operations == self.tape.operations

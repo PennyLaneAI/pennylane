@@ -16,6 +16,7 @@
 Contains a utility class ``BooleanFn`` that allows logical composition
 of functions with boolean output.
 """
+import functools
 
 
 class BooleanFn:
@@ -78,6 +79,7 @@ class BooleanFn:
 
     def __init__(self, fn):
         self.fn = fn
+        functools.update_wrapper(self, fn)
 
     def __and__(self, other):
         return BooleanFn(lambda obj: self.fn(obj) and other.fn(obj))

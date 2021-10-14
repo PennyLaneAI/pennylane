@@ -1590,3 +1590,11 @@ class TestCriteria:
         assert qml.operation.is_trainable(self.rot)
         assert not qml.operation.is_trainable(self.stiff_rot)
         assert not qml.operation.is_trainable(self.cnot)
+
+    def test_composed(self):
+        """Test has_gen criterion."""
+        both = qml.operation.has_gen & qml.operation.is_trainable
+        assert both(self.rx)
+        assert not both(self.cnot)
+        assert not both(self.rot)
+        assert not both(self.exp)

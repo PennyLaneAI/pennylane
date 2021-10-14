@@ -129,5 +129,5 @@ from .tape_expand import (
     expand_invalid_trainable,
     expand_multipar,
     expand_nonunitary_gen,
-    get_expand_fn,
+    create_expand_fn,
 )
