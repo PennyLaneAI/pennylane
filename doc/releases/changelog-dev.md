@@ -554,6 +554,9 @@ of shape ``(batch_size,)``:
 
 * Corrects the docstring of `ExpvalCost` by adding `wires` to the signature of the `ansatz` argument. [(#1715)](https://github.com/PennyLaneAI/pennylane/pull/1715)
 
+* All instances of `qnode.draw()` have been updated to instead use the transform `qml.draw(qnode)`.
+  [(#)]()
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
