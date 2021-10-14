@@ -131,8 +131,6 @@ class DefaultQubitTorch(DefaultQubit):
     name = "Default qubit (Torch) PennyLane plugin"
     short_name = "default.qubit.torch"
 
-    parametric_ops = {}
-
     C_DTYPE = torch.complex128
     R_DTYPE = torch.float64
 
