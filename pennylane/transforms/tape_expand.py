@@ -25,7 +25,7 @@ from pennylane.operation import (
 )
 
 
-def get_expand_fn(depth, stop_at, docstring=None):
+def get_expand_fn(depth, stop_at, device=None, docstring=None):
     """Create an expansion function using a given depth and stopping criterions,
     wrapping ``tape.expand``.
 
@@ -74,7 +74,13 @@ def get_expand_fn(depth, stop_at, docstring=None):
 
     def expand_fn(tape, _depth=depth, **kwargs):
         if not all(stop_at(op) for op in tape.operations):
-            tape = tape.expand(depth=_depth, stop_at=stop_at)
+
+            with qml.tape.stop_recording():
+                tape = tape.expand(depth=_depth, stop_at=stop_at)
+
+                if device is not None:
+                    tape = device.expand_fn(tape, depth=_depth)
+
             params = tape.get_parameters(trainable_only=False)
             tape.trainable_params = qml.math.get_trainable_indices(params)
         return tape
