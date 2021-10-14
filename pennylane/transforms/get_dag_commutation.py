@@ -73,7 +73,7 @@ def get_dag_commutation(circuit):
 
         with qml.tape.Unwrap(tape):
             for operation in tape.operations:
-                operation._wires=Wires([wires_map[wire] for wire in operation.wires.tolist()])
+                operation._wires = Wires([wires_map[wire] for wire in operation.wires.tolist()])
                 dag.add_node(operation)
             dag._add_successors()
         return dag

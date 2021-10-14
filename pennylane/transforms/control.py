@@ -91,7 +91,6 @@ class ControlledOperation(Operation):
     num_wires = AnyWires
     num_params = property(lambda self: self.subtape.num_params)
 
-
     def __init__(self, tape, control_wires, do_queue=True):
         self.subtape = tape
         """QuantumTape: The tape that defines the underlying operation."""

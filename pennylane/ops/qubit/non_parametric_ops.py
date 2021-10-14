@@ -460,6 +460,7 @@ class CNOT(Operation):
     def target_wires(self):
         return Wires(self.wires[1])
 
+
 class CZ(DiagonalOperation):
     r"""CZ(wires)
     The controlled-Z operator
