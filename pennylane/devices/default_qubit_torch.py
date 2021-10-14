@@ -133,20 +133,6 @@ class DefaultQubitTorch(DefaultQubit):
     short_name = "default.qubit.torch"
 
     parametric_ops = {
-        "PhaseShift": torch_ops.PhaseShift,
-        "ControlledPhaseShift": torch_ops.ControlledPhaseShift,
-        "RX": torch_ops.RX,
-        "RY": torch_ops.RY,
-        "RZ": torch_ops.RZ,
-        "MultiRZ": torch_ops.MultiRZ,
-        "Rot": torch_ops.Rot,
-        "CRX": torch_ops.CRX,
-        "CRY": torch_ops.CRY,
-        "CRZ": torch_ops.CRZ,
-        "CRot": torch_ops.CRot,
-        "IsingXX": torch_ops.IsingXX,
-        "IsingYY": torch_ops.IsingYY,
-        "IsingZZ": torch_ops.IsingZZ,
         "SingleExcitation": torch_ops.SingleExcitation,
         "SingleExcitationPlus": torch_ops.SingleExcitationPlus,
         "SingleExcitationMinus": torch_ops.SingleExcitationMinus,
