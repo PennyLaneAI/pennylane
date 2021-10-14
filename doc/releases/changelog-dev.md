@@ -356,6 +356,9 @@ of shape ``(batch_size,)``:
 
 <h3>Improvements</h3>
 
+* `@qml.beta.QNode` now supports the `qml.specs` transform.
+  [(#1739)](https://github.com/PennyLaneAI/pennylane/pull/1739)
+
 * `qml.circuit_drawer.drawable_layers` and `qml.circuit_drawer.drawable_grid` process a list of
   operations to layer positions for drawing.
   [(#1639)](https://github.com/PennyLaneAI/pennylane/pull/1639)

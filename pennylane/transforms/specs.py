@@ -12,6 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Code for resource estimation"""
+import inspect
+
+import pennylane as qml
+
+
+def _get_absolute_import_path(fn):
+    return f"{inspect.getmodule(fn).__name__}.{fn.__name__}"
 
 
 def specs(qnode, max_expansion=None):
@@ -58,6 +65,41 @@ def specs(qnode, max_expansion=None):
     'device_name': 'default.qubit.autograd',
     'diff_method': 'backprop'}
 
+    .. UsageDetails::
+
+        ``qml.specs`` can also be used with :class:`~.beta.qnode`:
+
+        .. code-block:: python3
+
+            x = np.array([0.1, 0.2])
+
+            dev = qml.device('default.qubit', wires=2)
+            @qml.beta.qnode(dev, diff_method="parameter-shift", shift=np.pi / 4)
+            def circuit(x, add_ry=True):
+                qml.RX(x[0], wires=0)
+                qml.CNOT(wires=(0,1))
+                if add_ry:
+                    qml.RY(x[1], wires=1)
+                return qml.probs(wires=(0,1))
+
+        >>> qml.specs(circuit)(x, add_ry=False)
+        {'gate_sizes': defaultdict(int, {1: 1, 2: 1}),
+         'gate_types': defaultdict(int, {'RX': 1, 'CNOT': 1}),
+         'num_operations': 2,
+         'num_observables': 1,
+         'num_diagonalizing_gates': 0,
+         'num_used_wires': 2,
+         'depth': 2,
+         'num_trainable_params': 1,
+         'num_device_wires': 2,
+         'device_name': 'default.qubit',
+         'diff_method': 'parameter-shift',
+         'expansion_strategy': 'gradient',
+         'gradient_options': {'shift': 0.7853981633974483},
+         'interface': 'autograd',
+         'gradient_fn': 'pennylane.gradients.parameter_shift.param_shift',
+         'num_gradient_executions': 2}
+
     """
 
     def specs_qnode(*args, **kwargs):
@@ -83,15 +125,44 @@ def specs(qnode, max_expansion=None):
         Returns:
             dict[str, Union[defaultdict,int]]: dictionaries that contain QNode specifications
         """
-        if max_expansion is not None:
-            initial_max_expansion = qnode.max_expansion
-            qnode.max_expansion = max_expansion
+        initial_max_expansion = qnode.max_expansion
+        qnode.max_expansion = max_expansion
 
-        qnode.construct(args, kwargs)
-
-        if max_expansion is not None:
+        try:
+            qnode.construct(args, kwargs)
+        finally:
             qnode.max_expansion = initial_max_expansion
 
-        return qnode.specs
+        if isinstance(qnode, qml.QNode):
+            # TODO: remove when the old QNode is removed
+            return qnode.specs
+
+        info = qnode.qtape.specs.copy()
+
+        info["num_device_wires"] = qnode.device.num_wires
+        info["device_name"] = qnode.device.short_name
+        info["expansion_strategy"] = qnode.expansion_strategy
+        info["gradient_options"] = qnode.gradient_kwargs
+        info["interface"] = qnode.interface
+        info["diff_method"] = (
+            _get_absolute_import_path(qnode.diff_method)
+            if callable(qnode.diff_method)
+            else qnode.diff_method
+        )
+
+        if isinstance(qnode.gradient_fn, qml.gradients.gradient_transform):
+            info["gradient_fn"] = _get_absolute_import_path(qnode.gradient_fn)
+
+            try:
+                info["num_gradient_executions"] = len(qnode.gradient_fn(qnode.qtape)[0])
+            except Exception as e:  # pylint: disable=broad-except
+                # In the case of a broad exception, we don't want the `qml.specs` transform
+                # to fail. Instead, we simply indicate that the number of gradient executions
+                # is not supported for the reason specified.
+                info["num_gradient_executions"] = f"NotSupported: {str(e)}"
+        else:
+            info["gradient_fn"] = qnode.gradient_fn
+
+        return info
 
     return specs_qnode
