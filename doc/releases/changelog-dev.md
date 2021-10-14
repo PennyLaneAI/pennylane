@@ -359,6 +359,10 @@ of shape ``(batch_size,)``:
 * `@qml.beta.QNode` now supports the `qml.specs` transform.
   [(#1739)](https://github.com/PennyLaneAI/pennylane/pull/1739)
 
+* `qml.circuit_drawer.drawable_layers` and `qml.circuit_drawer.drawable_grid` process a list of
+  operations to layer positions for drawing.
+  [(#1639)](https://github.com/PennyLaneAI/pennylane/pull/1639)
+
 * `qml.transforms.batch_transform` now accepts `expand_fn`s that take additional arguments and
   keyword arguments. In fact, `expand_fn` and `transform_fn` now **must** have the same signature.
   [(#1721)](https://github.com/PennyLaneAI/pennylane/pull/1721)
