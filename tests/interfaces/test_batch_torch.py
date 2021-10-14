@@ -1100,9 +1100,9 @@ class TestHamiltonianWorkflows:
         )
 
     def test_multiple_hamiltonians_not_trainable(self, cost_fn, execute_kwargs, tol):
-        coeffs1 = torch.tensor([0.1, 0.2, 0.3], requires_grad=False)
-        coeffs2 = torch.tensor([0.7], requires_grad=False)
-        weights = torch.tensor([0.4, 0.5], requires_grad=True)
+        coeffs1 = torch.tensor([0.1, 0.2, 0.3], requires_grad=False, dtype=torch.float64)
+        coeffs2 = torch.tensor([0.7], requires_grad=False, dtype=torch.float64)
+        weights = torch.tensor([0.4, 0.5], requires_grad=True, dtype=torch.float64)
         dev = qml.device("default.qubit", wires=2)
 
         res = cost_fn(weights, coeffs1, coeffs2, dev=dev)
@@ -1118,9 +1118,9 @@ class TestHamiltonianWorkflows:
         assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
 
     def test_multiple_hamiltonians_trainable(self, cost_fn, execute_kwargs, tol):
-        coeffs1 = torch.tensor([0.1, 0.2, 0.3], requires_grad=True)
-        coeffs2 = torch.tensor([0.7], requires_grad=True)
-        weights = torch.tensor([0.4, 0.5], requires_grad=True)
+        coeffs1 = torch.tensor([0.1, 0.2, 0.3], requires_grad=True, dtype=torch.float64)
+        coeffs2 = torch.tensor([0.7], requires_grad=True, dtype=torch.float64)
+        weights = torch.tensor([0.4, 0.5], requires_grad=True, dtype=torch.float64)
         dev = qml.device("default.qubit", wires=2)
 
         res = cost_fn(weights, coeffs1, coeffs2, dev=dev)
