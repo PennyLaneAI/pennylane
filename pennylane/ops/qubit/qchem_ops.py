@@ -16,7 +16,6 @@ This submodule contains the discrete-variable quantum operations that come
 from quantum chemistry applications.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access
-import cmath
 import math
 import numpy as np
 
@@ -241,7 +240,7 @@ class SingleExcitationPlus(Operation):
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
 
-        e = cmath.exp(1j * theta / 2)
+        e = qml.math.exp(1j * theta / 2)
 
         mat = [[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]]
         return qml.math.stack([qml.math.stack(row) for row in mat])
@@ -456,7 +455,7 @@ class DoubleExcitationPlus(Operation):
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
 
-        e = cmath.exp(1j * theta / 2)
+        e = qml.math.exp(1j * theta / 2)
 
         mat = [
             [e, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
