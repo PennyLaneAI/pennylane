@@ -1896,10 +1896,12 @@ def has_gen(obj):
     """Returns ``True`` if an operator has a generator defined."""
     return hasattr(obj, "generator") and obj.generator[0] is not None
 
+
 @qml.BooleanFn
 def has_grad_method(obj):
     """Returns ``True`` if an operator has a grad_method defined."""
     return obj.grad_method is not None
+
 
 @qml.BooleanFn
 def has_multipar(obj):
@@ -1907,11 +1909,13 @@ def has_multipar(obj):
     according to ``num_params``."""
     return obj.num_params > 1
 
+
 @qml.BooleanFn
 def has_nopar(obj):
     """Returns ``True`` if an operator has no parameters
     according to ``num_params``."""
     return obj.num_params == 0
+
 
 @qml.BooleanFn
 def has_unitary_gen(obj):
@@ -1919,10 +1923,12 @@ def has_unitary_gen(obj):
     according to the ``has_unitary_generator`` flag."""
     return obj.has_unitary_generator
 
+
 @qml.BooleanFn
 def is_measurement(obj):
     """Returns ``True`` if an operator is a ``MeasurementProcess`` instance."""
     return isinstance(obj, qml.measure.MeasurementProcess)
+
 
 @qml.BooleanFn
 def is_trainable(obj):
