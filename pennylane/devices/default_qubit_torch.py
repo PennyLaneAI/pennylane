@@ -133,9 +133,6 @@ class DefaultQubitTorch(DefaultQubit):
     short_name = "default.qubit.torch"
 
     parametric_ops = {
-        "SingleExcitation": torch_ops.SingleExcitation,
-        "SingleExcitationPlus": torch_ops.SingleExcitationPlus,
-        "SingleExcitationMinus": torch_ops.SingleExcitationMinus,
         "DoubleExcitation": torch_ops.DoubleExcitation,
         "DoubleExcitationPlus": torch_ops.DoubleExcitationPlus,
         "DoubleExcitationMinus": torch_ops.DoubleExcitationMinus,

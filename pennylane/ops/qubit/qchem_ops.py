@@ -92,10 +92,15 @@ class SingleExcitation(Operation):
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
-        c = math.cos(theta / 2)
-        s = math.sin(theta / 2)
 
-        return np.array([[1, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, 1]])
+        if len(qml.math.shape(theta)) > 0:
+            theta = theta[0]
+
+        c = qml.math.cos(theta / 2)
+        s = qml.math.sin(theta / 2)
+
+        mat = [[1, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, 1]]
+        return qml.math.stack([qml.math.stack(row) for row in mat])
 
     @staticmethod
     def decomposition(theta, wires):
@@ -147,11 +152,24 @@ class SingleExcitationMinus(Operation):
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
-        c = math.cos(theta / 2)
-        s = math.sin(theta / 2)
-        e = cmath.exp(-1j * theta / 2)
 
-        return np.array([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
+        if len(qml.math.shape(theta)) > 0:
+            theta = theta[0]
+
+        c = qml.math.cos(theta / 2)
+        s = qml.math.sin(theta / 2)
+
+        interface = qml.math.get_interface(theta)
+
+        if interface == "tensorflow":
+            theta = qml.math.cast_like(theta, 1j)
+            c = qml.math.cast_like(c, 1j)
+            s = qml.math.cast_like(s, 1j)
+
+        e = qml.math.exp(-1j * theta / 2)
+
+        mat = [[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]]
+        return qml.math.stack([qml.math.stack(row) for row in mat])
 
     @staticmethod
     def decomposition(theta, wires):
@@ -209,11 +227,24 @@ class SingleExcitationPlus(Operation):
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
-        c = math.cos(theta / 2)
-        s = math.sin(theta / 2)
+
+        if len(qml.math.shape(theta)) > 0:
+            theta = theta[0]
+
+        c = qml.math.cos(theta / 2)
+        s = qml.math.sin(theta / 2)
+
+        interface = qml.math.get_interface(theta)
+
+        if interface == "tensorflow":
+            theta = qml.math.cast_like(theta, 1j)
+            c = qml.math.cast_like(c, 1j)
+            s = qml.math.cast_like(s, 1j)
+
         e = cmath.exp(1j * theta / 2)
 
-        return np.array([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
+        mat = [[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]]
+        return qml.math.stack([qml.math.stack(row) for row in mat])
 
     @staticmethod
     def decomposition(theta, wires):
