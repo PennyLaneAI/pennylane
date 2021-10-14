@@ -4,6 +4,40 @@
 
 <h3>New features since last release</h3>
 
+A new transform, `@qml.batch_params`, has been added, that makes QNodes 
+handle a batch dimension in trainable parameters.
+[(#1710)](https://github.com/PennyLaneAI/pennylane/pull/1710)
+
+This transform will create multiple circuits, one per batch dimension.
+As a result, it is both simulator and hardware compatible.
+
+```python
+@qml.batch_params
+@qml.beta.qnode(dev)
+def circuit(x, weights):
+    qml.RX(x, wires=0)
+    qml.RY(0.2, wires=1)
+    qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
+    return qml.expval(qml.Hadamard(0))
+```
+
+The `qml.batch_params` decorator allows us to pass arguments `x` and `weights`
+that have a batch dimension. For example,
+
+```pycon
+>>> batch_size = 3
+>>> x = np.linspace(0.1, 0.5, batch_size)
+>>> weights = np.random.random((batch_size, 10, 3, 3))
+```
+
+If we evaluate the QNode with these inputs, we will get an output
+of shape ``(batch_size,)``:
+
+```pycon
+>>> circuit(x, weights)
+[-0.30773348  0.23135516  0.13086565]
+```
+
 * The new `qml.fourier.qnode_spectrum` function extends the former
   `qml.fourier.spectrum` function
   and takes classical processing of QNode arguments into account.
@@ -321,6 +355,10 @@
 
 
 <h3>Improvements</h3>
+
+* `qml.circuit_drawer.drawable_layers` and `qml.circuit_drawer.drawable_grid` process a list of
+  operations to layer positions for drawing.
+  [(#1639)](https://github.com/PennyLaneAI/pennylane/pull/1639)
 
 * `qml.transforms.batch_transform` now accepts `expand_fn`s that take additional arguments and
   keyword arguments. In fact, `expand_fn` and `transform_fn` now **must** have the same signature.
