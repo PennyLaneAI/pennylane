@@ -73,9 +73,10 @@ class RX(Operation):
         s = qml.math.sin(theta / 2)
 
         if interface == "tensorflow":
+            c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
 
-        return qml.math.array(np.array([[c, -1j * s], [-1j * s, c]]), like=interface)
+        return qml.math.stack([qml.math.stack([c, -1j * s]), qml.math.stack([-1j * s, c])])
 
     def adjoint(self):
         return RX(-self.data[0], wires=self.wires)
@@ -127,7 +128,7 @@ class RY(Operation):
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
 
-        return qml.math.array(np.array([[c, -s], [s, c]]), like=qml.math.get_interface(theta))
+        return qml.math.stack([qml.math.stack([c, -s]), qml.math.stack([s, c])])
 
     def adjoint(self):
         return RY(-self.data[0], wires=self.wires)
@@ -183,7 +184,7 @@ class RZ(DiagonalOperation):
 
         p = qml.math.exp(-0.5j * theta)
 
-        return qml.math.array(np.array([[p, 0], [0, qml.math.conj(p)]]), like=interface)
+        return qml.math.stack([qml.math.stack([p, 0]), qml.math.stack([0, qml.math.conj(p)])])
 
     @classmethod
     def _eigvals(cls, *params):
@@ -199,7 +200,7 @@ class RZ(DiagonalOperation):
 
         p = qml.math.exp(-0.5j * theta)
 
-        return qml.math.array(np.array([p, qml.math.conj(p)]), like=interface)
+        return qml.math.stack([p, qml.math.conj(p)])
 
     def adjoint(self):
         return RZ(-self.data[0], wires=self.wires)
@@ -251,11 +252,11 @@ class PhaseShift(DiagonalOperation):
         interface = qml.math.get_interface(phi)
 
         if interface == "tensorflow":
-            exp_part = qml.math.exp(1j * qml.math.cast_like(phi, 1j))
-        else:
-            exp_part = qml.math.exp(1j * phi)
+            phi = qml.math.cast_like(phi, 1j)
 
-        return qml.math.array(np.array([[1, 0], [0, exp_part]]), like=interface)
+        exp_part = qml.math.exp(1j * phi)
+
+        return qml.math.stack([qml.math.stack([1, 0]), qml.math.stack([0, exp_part])])
 
     @classmethod
     def _eigvals(cls, *params):
@@ -271,7 +272,7 @@ class PhaseShift(DiagonalOperation):
 
         exp_part = qml.math.exp(1j * phi)
 
-        return qml.math.array(np.array([1, exp_part]), like=interface)
+        return qml.math.stack([1, exp_part])
 
     @staticmethod
     def decomposition(phi, wires):
@@ -336,9 +337,14 @@ class ControlledPhaseShift(DiagonalOperation):
 
         exp_part = qml.math.exp(1j * phi)
 
-        mat = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, exp_part]])
-
-        return qml.math.array(mat, like=interface)
+        return qml.math.stack(
+            [
+                qml.math.stack([1, 0, 0, 0]),
+                qml.math.stack([0, 1, 0, 0]),
+                qml.math.stack([0, 0, 1, 0]),
+                qml.math.stack([0, 0, 0, exp_part]),
+            ]
+        )
 
     @classmethod
     def _eigvals(cls, *params):
@@ -354,7 +360,7 @@ class ControlledPhaseShift(DiagonalOperation):
 
         exp_part = qml.math.exp(1j * phi)
 
-        return qml.math.array(np.array([1, 1, 1, exp_part]), like=interface)
+        return qml.math.stack([1, 1, 1, exp_part])
 
     @staticmethod
     def decomposition(phi, wires):
@@ -438,20 +444,18 @@ class Rot(Operation):
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
 
-        mat = np.array(
+        mat = [
             [
-                [
-                    qml.math.exp(-0.5j * (phi + omega)) * c,
-                    -qml.math.exp(0.5j * (phi - omega)) * s,
-                ],
-                [
-                    qml.math.exp(-0.5j * (phi - omega)) * s,
-                    qml.math.exp(0.5j * (phi + omega)) * c,
-                ],
-            ]
-        )
+                qml.math.exp(-0.5j * (phi + omega)) * c,
+                -qml.math.exp(0.5j * (phi - omega)) * s,
+            ],
+            [
+                qml.math.exp(-0.5j * (phi - omega)) * s,
+                qml.math.exp(0.5j * (phi + omega)) * c,
+            ],
+        ]
 
-        return qml.math.array(mat, like=interface)
+        return qml.math.stack([qml.math.stack(row) for row in mat])
 
     @staticmethod
     def decomposition(phi, theta, omega, wires):
@@ -516,7 +520,7 @@ class MultiRZ(DiagonalOperation):
             array[complex]: The matrix representation
         """
         multi_Z_rot_eigs = MultiRZ._eigvals(theta, n)
-        multi_Z_rot_matrix = np.diag(multi_Z_rot_eigs)
+        multi_Z_rot_matrix = qml.math.diag(multi_Z_rot_eigs)
 
         return multi_Z_rot_matrix
 
@@ -525,7 +529,7 @@ class MultiRZ(DiagonalOperation):
     @property
     def generator(self):
         if self._generator is None:
-            self._generator = [np.diag(pauli_eigs(len(self.wires))), -1 / 2]
+            self._generator = [qml.math.diag(pauli_eigs(len(self.wires))), -1 / 2]
         return self._generator
 
     has_unitary_generator = True
@@ -535,19 +539,27 @@ class MultiRZ(DiagonalOperation):
         # Redefine the property here to pass additionally the number of wires to the ``_matrix`` method
         if self.inverse:
             # The matrix is diagonal, so there is no need to transpose
-            return self._matrix(*self.parameters, len(self.wires)).conj()
+            return qml.math.conj(self._matrix(*self.parameters, len(self.wires)))
 
         return self._matrix(*self.parameters, len(self.wires))
 
     @classmethod
     def _eigvals(cls, theta, n):
-        return np.exp(-1j * theta / 2 * pauli_eigs(n))
+        if len(qml.math.shape(theta)) > 0:
+            theta = theta[0]
+
+        interface = qml.math.get_interface(theta)
+
+        if interface == "tensorflow":
+            theta = qml.math.cast_like(theta, 1j)
+
+        return qml.math.exp(-1j * theta / 2 * pauli_eigs(n))
 
     @property
     def eigvals(self):
         # Redefine the property here to pass additionally the number of wires to the ``_eigvals`` method
         if self.inverse:
-            return self._eigvals(*self.parameters, len(self.wires)).conj()
+            return qml.math.conj(self._eigvals(*self.parameters, len(self.wires)))
 
         return self._eigvals(*self.parameters, len(self.wires))
 
@@ -654,10 +666,13 @@ class PauliRot(Operation):
 
         interface = qml.math.get_interface(theta)
 
+        if interface == "tensorflow":
+            theta = qml.math.cast_like(theta, 1j)
+
         # Simplest case is if the Pauli is the identity matrix
         if pauli_word == "I" * len(pauli_word):
             return qml.math.array(
-                np.exp(-1j * theta / 2) * np.eye(2 ** len(pauli_word)), like=interface
+                qml.math.exp(-1j * theta / 2) * qml.math.eye(2 ** len(pauli_word)), like=interface
             )
 
         # We first generate the matrix excluding the identity parts and expand it afterwards.
@@ -670,12 +685,15 @@ class PauliRot(Operation):
 
         # now we conjugate with Hadamard and RX to create the Pauli string
         conjugation_matrix = functools.reduce(
-            np.kron,
+            qml.math.kron,
             [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
         )
 
         return expand(
-            qml.math.conj(conjugation_matrix) @ multi_Z_rot_matrix @ conjugation_matrix,
+            qml.math.dot(
+                qml.math.conj(conjugation_matrix),
+                qml.math.dot(multi_Z_rot_matrix, conjugation_matrix),
+            ),
             non_identity_wires,
             list(range(len(pauli_word))),
         )
@@ -689,7 +707,7 @@ class PauliRot(Operation):
 
             # Simplest case is if the Pauli is the identity matrix
             if pauli_word == "I" * len(pauli_word):
-                self._generator = [np.eye(2 ** len(pauli_word)), -1 / 2]
+                self._generator = [qml.math.eye(2 ** len(pauli_word)), -1 / 2]
                 return self._generator
 
             # We first generate the matrix excluding the identity parts and expand it afterwards.
@@ -699,17 +717,20 @@ class PauliRot(Operation):
             )
 
             # get MultiRZ's generator
-            multi_Z_rot_generator = np.diag(pauli_eigs(len(non_identity_gates)))
+            multi_Z_rot_generator = qml.math.diag(pauli_eigs(len(non_identity_gates)))
 
             # now we conjugate with Hadamard and RX to create the Pauli string
             conjugation_matrix = functools.reduce(
-                np.kron,
+                qml.math.kron,
                 [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
             )
 
             self._generator = [
                 expand(
-                    conjugation_matrix.T.conj() @ multi_Z_rot_generator @ conjugation_matrix,
+                    qml.math.dot(
+                        qml.math.conj(qml.math.T(conjugation_matrix)),
+                        qml.math.dot(multi_Z_rot_generator, conjugation_matrix),
+                    ),
                     non_identity_wires,
                     list(range(len(pauli_word))),
                 ),
@@ -722,9 +743,17 @@ class PauliRot(Operation):
 
     @classmethod
     def _eigvals(cls, theta, pauli_word):
+        if len(qml.math.shape(theta)) > 0:
+            theta = theta[0]
+
+        interface = qml.math.get_interface(theta)
+
+        if interface == "tensorflow":
+            theta = qml.math.cast_like(theta, 1j)
+
         # Identity must be treated specially because its eigenvalues are all the same
         if pauli_word == "I" * len(pauli_word):
-            return np.exp(-1j * theta / 2) * np.ones(2 ** len(pauli_word))
+            return qml.math.exp(-1j * theta / 2) * qml.math.ones(2 ** len(pauli_word))
 
         return MultiRZ._eigvals(theta, len(pauli_word))
 
@@ -837,9 +866,8 @@ class CRX(Operation):
 
         js = -1j * s
 
-        return qml.math.array(
-            np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, c, js], [0, 0, js, c]]), like=interface
-        )
+        mat = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, c, js], [0, 0, js, c]]
+        return qml.math.stack([qml.math.stack(row) for row in mat])
 
     @staticmethod
     def decomposition(theta, wires):
@@ -922,10 +950,8 @@ class CRY(Operation):
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
 
-        return qml.math.array(
-            np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, c, -s], [0, 0, s, c]]),
-            like=qml.math.get_interface(theta),
-        )
+        mat = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, c, -s], [0, 0, s, c]]
+        return qml.math.stack([qml.math.stack(row) for row in mat])
 
     @staticmethod
     def decomposition(theta, wires):
@@ -1013,16 +1039,14 @@ class CRZ(DiagonalOperation):
 
         exp_part = qml.math.exp(-0.5j * theta)
 
-        mat = np.array(
-            [
-                [1, 0, 0, 0],
-                [0, 1, 0, 0],
-                [0, 0, exp_part, 0],
-                [0, 0, 0, qml.math.conj(exp_part)],
-            ]
-        )
+        mat = [
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, exp_part, 0],
+            [0, 0, 0, qml.math.conj(exp_part)],
+        ]
 
-        return qml.math.array(mat, like=interface)
+        return qml.math.stack([qml.math.stack(row) for row in mat])
 
     @classmethod
     def _eigvals(cls, *params):
@@ -1038,7 +1062,7 @@ class CRZ(DiagonalOperation):
 
         exp_part = qml.math.exp(-0.5j * theta)
 
-        return qml.math.array(np.array([1, 1, exp_part, qml.math.conj(exp_part)]), like=interface)
+        return qml.math.stack([1, 1, exp_part, qml.math.conj(exp_part)])
 
     @staticmethod
     def decomposition(lam, wires):
@@ -1125,26 +1149,24 @@ class CRot(Operation):
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
 
-        mat = np.array(
+        mat = [
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
             [
-                [1, 0, 0, 0],
-                [0, 1, 0, 0],
-                [
-                    0,
-                    0,
-                    qml.math.exp(-0.5j * (phi + omega)) * c,
-                    -qml.math.exp(0.5j * (phi - omega)) * s,
-                ],
-                [
-                    0,
-                    0,
-                    qml.math.exp(-0.5j * (phi - omega)) * s,
-                    qml.math.exp(0.5j * (phi + omega)) * c,
-                ],
-            ]
-        )
+                0,
+                0,
+                qml.math.exp(-0.5j * (phi + omega)) * c,
+                -qml.math.exp(0.5j * (phi - omega)) * s,
+            ],
+            [
+                0,
+                0,
+                qml.math.exp(-0.5j * (phi - omega)) * s,
+                qml.math.exp(0.5j * (phi + omega)) * c,
+            ],
+        ]
 
-        return qml.math.array(mat, like=interface)
+        return qml.math.stack([qml.math.stack(row) for row in mat])
 
     @staticmethod
     def decomposition(phi, theta, omega, wires):
@@ -1209,7 +1231,7 @@ class U1(Operation):
 
         exp_part = qml.math.exp(1j * phi)
 
-        return qml.math.array(np.array([[1, 0], [0, exp_part]]), like=interface)
+        return qml.math.stack([qml.math.stack([1, 0]), qml.math.stack([0, exp_part])])
 
     @staticmethod
     def decomposition(phi, wires):
@@ -1274,14 +1296,12 @@ class U2(Operation):
             lam = qml.math.cast_like(lam, 1j)
             phi = qml.math.cast_like(phi, 1j)
 
-        mat = INV_SQRT2 * np.array(
-            [
-                [1, -qml.math.exp(1j * lam)],
-                [qml.math.exp(1j * phi), qml.math.exp(1j * (phi + lam))],
-            ]
-        )
+        mat = [
+            [1, -qml.math.exp(1j * lam)],
+            [qml.math.exp(1j * phi), qml.math.exp(1j * (phi + lam))],
+        ]
 
-        return qml.math.array(mat, like=interface)
+        return INV_SQRT2 * qml.math.stack([qml.math.stack(row) for row in mat])
 
     @staticmethod
     def decomposition(phi, lam, wires):
@@ -1363,14 +1383,12 @@ class U3(Operation):
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
 
-        mat = np.array(
-            [
-                [c, -s * qml.math.exp(1j * lam)],
-                [s * qml.math.exp(1j * phi), c * qml.math.exp(1j * (phi + lam))],
-            ]
-        )
+        mat = [
+            [c, -s * qml.math.exp(1j * lam)],
+            [s * qml.math.exp(1j * phi), c * qml.math.exp(1j * (phi + lam))],
+        ]
 
-        return qml.math.array(mat, like=interface)
+        return qml.math.stack([qml.math.stack(row) for row in mat])
 
     @staticmethod
     def decomposition(theta, phi, lam, wires):
@@ -1436,17 +1454,14 @@ class IsingXX(Operation):
         if interface == "tensorflow":
             s = qml.math.cast_like(s, 1j)
 
-        return qml.math.array(
-            np.array(
-                [
-                    [c, 0, 0, -1j * s],
-                    [0, c, -1j * s, 0],
-                    [0, -1j * s, c, 0],
-                    [-1j * s, 0, 0, c],
-                ]
-            ),
-            like=interface,
-        )
+        mat = [
+            [c, 0, 0, -1j * s],
+            [0, c, -1j * s, 0],
+            [0, -1j * s, c, 0],
+            [-1j * s, 0, 0, c],
+        ]
+
+        return qml.math.stack([qml.math.stack(row) for row in mat])
 
     @staticmethod
     def decomposition(phi, wires):
@@ -1517,17 +1532,14 @@ class IsingYY(Operation):
         if interface == "tensorflow":
             s = qml.math.cast_like(s, 1j)
 
-        return qml.math.array(
-            np.array(
-                [
-                    [c, 0.0, 0.0, 1j * s],
-                    [0.0, c, -1j * s, 0.0],
-                    [0.0, -1j * s, c, 0.0],
-                    [1j * s, 0.0, 0.0, c],
-                ]
-            ),
-            like=interface,
-        )
+        mat = [
+            [c, 0.0, 0.0, 1j * s],
+            [0.0, c, -1j * s, 0.0],
+            [0.0, -1j * s, c, 0.0],
+            [1j * s, 0.0, 0.0, c],
+        ]
+
+        return qml.math.stack([qml.math.stack(row) for row in mat])
 
     def adjoint(self):
         (phi,) = self.parameters
@@ -1589,7 +1601,14 @@ class IsingZZ(Operation):
         pos_phase = qml.math.exp(1.0j * phi / 2)
         neg_phase = qml.math.exp(-1.0j * phi / 2)
 
-        return qml.math.array(np.diag([neg_phase, pos_phase, pos_phase, neg_phase]), like=interface)
+        mat = [
+            [neg_phase, 0.0, 0.0, 0.0],
+            [0.0, pos_phase, 0.0, 0.0],
+            [0.0, 0.0, pos_phase, 0.0],
+            [0.0, 0.0, 0.0, neg_phase],
+        ]
+
+        return qml.math.stack([qml.math.stack(row) for row in mat])
 
     def adjoint(self):
         (phi,) = self.parameters
