@@ -1354,7 +1354,7 @@ class TestSamples:
             qml.RX(a, wires=0)
             return qml.sample(qml.PauliZ(0))
 
-        a = tf.Variable(0.54)
+        a = tf.Variable(0.54, dtype=tf.float64)
         res = circuit(a)
 
         assert isinstance(res, tf.Tensor)
@@ -1406,8 +1406,8 @@ class TestSamples:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-        a = tf.Variable(0.543)
-        b = tf.Variable(0.43)
+        a = tf.Variable(0.543, dtype=tf.float64)
+        b = tf.Variable(0.43, dtype=tf.float64)
 
         res = circuit(a, b)
         assert isinstance(res, tf.Tensor)
