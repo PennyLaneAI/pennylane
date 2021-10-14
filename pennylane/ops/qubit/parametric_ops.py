@@ -547,7 +547,7 @@ class MultiRZ(DiagonalOperation):
 
         if interface == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
-            eigs= qml.math.cast_like(eigs, 1j)
+            eigs = qml.math.cast_like(eigs, 1j)
 
         return qml.math.exp(-1j * theta / 2 * eigs)
 
@@ -1036,6 +1036,7 @@ class CRZ(DiagonalOperation):
         exp_part = qml.math.exp(-0.5j * theta)
 
         return qml.math.diag([1, 1, exp_part, qml.math.conj(exp_part)])
+
     @classmethod
     def _eigvals(cls, *params):
         theta = params[0]

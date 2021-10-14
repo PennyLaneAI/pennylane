@@ -542,7 +542,7 @@ class DoubleExcitationMinus(Operation):
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
 
-        e = cmath.exp(-1j * theta / 2)
+        e = qml.math.exp(-1j * theta / 2)
 
         mat = [
             [e, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
