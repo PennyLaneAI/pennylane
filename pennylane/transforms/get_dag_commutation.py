@@ -14,10 +14,10 @@
 """
 A transform to obtain the matrix representation of a quantum circuit.
 """
+from collections import OrderedDict
 from functools import wraps
 from pennylane.wires import Wires
 import pennylane as qml
-from collections import OrderedDict
 
 
 def get_dag_commutation(circuit):
