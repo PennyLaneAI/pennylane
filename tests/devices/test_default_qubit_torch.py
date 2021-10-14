@@ -1442,7 +1442,7 @@ class TestSamples:
             qml.RX(a, wires=0)
             return qml.sample(qml.PauliZ(0))
 
-        a = torch.tensor(0.54)
+        a = torch.tensor(0.54, dtype=torch.float64)
         res = circuit(a)
 
         assert torch.is_tensor(res)
@@ -1494,8 +1494,8 @@ class TestSamples:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-        a = torch.tensor(0.543)
-        b = torch.tensor(0.43)
+        a = torch.tensor(0.543, dtype=torch.float64)
+        b = torch.tensor(0.43, dtype=torch.float64)
 
         res = circuit(a, b)
         assert torch.is_tensor(res)
