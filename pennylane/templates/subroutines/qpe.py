@@ -110,12 +110,12 @@ class QuantumPhaseEstimation(Operation):
     grad_method = None
 
     def __init__(self, unitary, target_wires, estimation_wires, do_queue=True, id=None):
-        self.target_wires = list(target_wires)
+        self.tar_wires = list(target_wires)
         self.estimation_wires = list(estimation_wires)
 
-        wires = self.target_wires + self.estimation_wires
+        wires = self.tar_wires + self.estimation_wires
 
-        if any(wire in self.target_wires for wire in self.estimation_wires):
+        if any(wire in self.tar_wires for wire in self.estimation_wires):
             raise qml.QuantumFunctionError(
                 "The target wires and estimation wires must be different"
             )
@@ -134,7 +134,7 @@ class QuantumPhaseEstimation(Operation):
             for wire in self.estimation_wires:
                 Hadamard(wire)
                 ControlledQubitUnitary(
-                    unitary_powers.pop(), control_wires=wire, wires=self.target_wires
+                    unitary_powers.pop(), control_wires=wire, wires=self.tar_wires
                 )
 
             qml.templates.QFT(wires=self.estimation_wires).inv()

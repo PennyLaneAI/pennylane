@@ -70,7 +70,7 @@ def get_dag_commutation(circuit):
         wires_map = OrderedDict(zip(wires, consecutive_wires))
 
         # initialize the dag
-        dag = qml.commutation_dag.CommutationDAG(wires)
+        dag = qml.commutation_dag.CommutationDAG(consecutive_wires)
 
         with qml.tape.Unwrap(tape):
             for operation in tape.operations:

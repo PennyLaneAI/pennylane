@@ -345,11 +345,11 @@ class QuantumMonteCarlo(Operation):
                 "The probability distribution must have a length that is a power of two"
             )
 
-        self.target_wires = list(target_wires)
+        self.tar_wires = list(target_wires)
         self.estimation_wires = list(estimation_wires)
-        wires = self.target_wires + self.estimation_wires
+        wires = self.tar_wires + self.estimation_wires
 
-        if num_target_wires != len(self.target_wires):
+        if num_target_wires != len(self.tar_wires):
             raise ValueError(
                 f"The probability distribution of dimension {dim_p} requires"
                 f" {num_target_wires} target wires"
