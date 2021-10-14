@@ -14,7 +14,6 @@
 """This module contains an autograd implementation of the :class:`~.DefaultQubit`
 reference plugin.
 """
-from pennylane.operation import DiagonalOperation
 from pennylane import numpy as np
 
 from pennylane.devices import DefaultQubit

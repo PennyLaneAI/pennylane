@@ -17,8 +17,6 @@ reference plugin.
 import numpy as np
 import semantic_version
 
-from pennylane.operation import DiagonalOperation
-
 try:
     import tensorflow as tf
 

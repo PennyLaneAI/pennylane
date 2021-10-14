@@ -15,7 +15,6 @@
 reference plugin.
 """
 import pennylane as qml
-from pennylane.operation import DiagonalOperation
 from pennylane.devices import DefaultQubit
 
 import numpy as np
