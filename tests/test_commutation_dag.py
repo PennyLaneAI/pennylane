@@ -72,7 +72,9 @@ class TestCommutingFunction:
         def z():
             qml.PauliZ(wires=wires[1][1])
 
-        commutation = qml.is_commuting(qml.CZ(wires=wires[0]), qml.transforms.ctrl(z, control=wires[1][0])())
+        commutation = qml.is_commuting(
+            qml.CZ(wires=wires[0]), qml.transforms.ctrl(z, control=wires[1][0])()
+        )
         assert commutation == res
 
     @pytest.mark.parametrize(
@@ -89,9 +91,10 @@ class TestCommutingFunction:
         def z():
             qml.PauliZ(wires=wires[1][2])
 
-        commutation = qml.is_commuting(qml.CNOT(wires=wires[0]), qml.transforms.ctrl(z, control=wires[1][:-1])())
+        commutation = qml.is_commuting(
+            qml.CNOT(wires=wires[0]), qml.transforms.ctrl(z, control=wires[1][:-1])()
+        )
         assert commutation == res
-
 
     @pytest.mark.parametrize(
         "wires,res",
