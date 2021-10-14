@@ -16,20 +16,21 @@
 Contains a utility class ``BooleanFn`` that allows logical composition
 of functions with boolean output.
 """
+import functools
 
 
 class BooleanFn:
-    r"""Wrapper for simple callables with Boolean output that can be
+    r"""Wrapper for simple callables with boolean output that can be
     manipulated and combined with bit-wise operators.
 
     Args:
-        fn (callable): Function to be wrapped. It must have signature
-            ``object->bool``.
+        fn (callable): Function to be wrapped. It must accept a single
+            argument, and must return a boolean.
 
     **Example**
 
-    Consider functions that filter numbers to lie in a certain domain,
-    and wrap them using a ``BooleanFn``:
+    Consider functions that filter numbers to lie in a certain domain.
+    We may wrap them using ``BooleanFn``:
 
     >>> bigger_than_4 = qml.BooleanFn(lambda x: x > 4)
     >>> smaller_than_10 = qml.BooleanFn(lambda x: x < 10)
@@ -41,7 +42,8 @@ class BooleanFn:
     >>> is_int(2.3)
     False
 
-    These can then be combined into a single callable:
+    These can then be combined into a single callable using boolean operators,
+    such as ``&``, logical and:
 
     >>> between_4_and_10 = bigger_than_4 & smaller_than_10
     >>> between_4_and_10(-3.2)
@@ -51,23 +53,21 @@ class BooleanFn:
     >>> between_4_and_10(19.7)
     False
 
-    Other operations are ``|``, logical or, and ``~``, logical not:
+    Other supported operators are ``|``, logical or, and ``~``, logical not:
 
     >>> smaller_equal_than_4 = ~bigger_than_4
     >>> smaller_than_10_or_int = smaller_than_10 | is_int
 
     .. warning::
 
-        While the logical composition of multiple ``BooleanFn`` s works as expected,
-        and in particular the operations ``|`` and ``&`` are symmetric,
-        it might make a difference in which order the composition is written, because
-        a ``BooleanFn`` might assume certain object properties to be defined.
+        Note that Python conditional expressions are evaluated from left to right.
+        As a result, the order of composition may matter, even though logical
+        operators such as ``|`` and ``&`` are symmetric.
+        
+        For example:
 
-        .. code-block:: python
-
-            is_int = StoppingCriterion(lambda x: isinstance(x, int))
-            has_bit_length_3 = StoppingCriterion(lambda x: x.bit_length()==3)
-
+        >>> is_int = qml.BooleanFn(lambda x: isinstance(x, int))
+        >>> has_bit_length_3 = qml.BooleanFn(lambda x: x.bit_length()==3)
         >>> (is_int & has_bit_length_3)(4)
         True
         >>> (is_int & has_bit_length_3)(2.3)
@@ -79,6 +79,7 @@ class BooleanFn:
 
     def __init__(self, fn):
         self.fn = fn
+        functools.update_wrapper(self, fn)
 
     def __and__(self, other):
         return BooleanFn(lambda obj: self.fn(obj) and other.fn(obj))

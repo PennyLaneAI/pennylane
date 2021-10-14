@@ -1545,6 +1545,10 @@ class TestCriteria:
     stiff_rot = qml.Rot(0.1, -0.7, 0.2, wires=0)
     exp = qml.expval(qml.PauliZ(0))
 
+    def test_docstring(self):
+        expected = "Returns ``True`` if an operator has a generator defined."
+        assert qml.operation.has_gen.__doc__ == expected
+
     def test_has_gen(self):
         """Test has_gen criterion."""
         assert qml.operation.has_gen(self.rx)
@@ -1590,3 +1594,11 @@ class TestCriteria:
         assert qml.operation.is_trainable(self.rot)
         assert not qml.operation.is_trainable(self.stiff_rot)
         assert not qml.operation.is_trainable(self.cnot)
+
+    def test_composed(self):
+        """Test has_gen criterion."""
+        both = qml.operation.has_gen & qml.operation.is_trainable
+        assert both(self.rx)
+        assert not both(self.cnot)
+        assert not both(self.rot)
+        assert not both(self.exp)

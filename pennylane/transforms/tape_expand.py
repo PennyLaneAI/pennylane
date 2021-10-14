@@ -25,30 +25,37 @@ from pennylane.operation import (
 )
 
 
-def get_expand_fn(depth, stop_at, device=None, docstring=None):
-    """Create an expansion function using a given depth and stopping criterions,
-    wrapping ``tape.expand``.
+def create_expand_fn(depth, stop_at, device=None, docstring=None):
+    """Create a function for expanding a tape to a given depth, and
+    with a specific stopping criterion. This is a wrapper around
+    :meth:`~.QuantumTape.expand`.
 
     Args:
         depth (int): Depth for the expansion
-        stop_at (callable): Stopping criterion passed to ``tape.expand``
-        docstring (str): docstring for the expansion function
+        stop_at (callable): Stopping criterion. This must be a function with signature
+            ``stop_at(obj)``, where ``obj`` is a *queueable* PennyLane object such as
+            :class:`~.Operation` or :class:`~.MeasurementProcess`. It must return a
+            boolean, indicating if the expansion should stop at this object.
+        device (.Device): Ensure that the expanded tape only uses native gates of the
+            given device.
+        docstring (str): docstring for the generated expansion function
 
     Returns:
-        callable: Tape expansion function
+        callable: Tape expansion function. The returned function accepts a :class:`~.QuantumTape`,
+        and returns an expanded :class:`~.QuantumTape`.
 
     **Example**
 
-    Let us construct an expansion function that expands a tape trying to remove
-    multi-parameter gates that are trainable. We allow for up to five expansion
+    Let us construct an expansion function that expands a tape in order to
+    decompose trainable multi-parameter gates. We allow for up to five expansion
     steps, which can be controlled with the argument ``depth``.
     The stopping criterion is easy to write as
 
-    >>> stop_at = ~(qml.transforms.has_multipar & qml.transforms.is_trainable)
+    >>> stop_at = ~(qml.operation.has_multipar & qml.operation.is_trainable)
 
     Then the expansion function can be obtained via
 
-    >>> expand_fn = qml.transforms.get_expand_fn(5, stop_at)
+    >>> expand_fn = qml.transforms.create_expand_fn(depth=5, stop_at=stop_at)
 
     We can test the newly generated function on an example tape:
 
@@ -61,13 +68,12 @@ def get_expand_fn(depth, stop_at, device=None, docstring=None):
             qml.Rot(*qml.numpy.array([-3.1, 0.73, 1.36], requires_grad=True), wires=1)
 
     >>> new_tape = expand_fn(tape)
-    >>> print(*new_tape.operations, sep='\n')
-    RX(0.2, wires=[0])
-    RX(tensor(-2.4, requires_grad=True), wires=[1])
-    Rot(1.7, 0.92, -1.1, wires=[0])
-    RZ(tensor(-3.1, requires_grad=True), wires=[1])
-    RY(tensor(0.73, requires_grad=True), wires=[1])
-    RZ(tensor(1.36, requires_grad=True), wires=[1])
+    >>> print(tape.draw())
+     0: ──RX(0.2)───Rot(1.7, 0.92, -1.1)───┤
+     1: ──RX(-2.4)──Rot(-3.1, 0.73, 1.36)──┤
+    >>> print(new_tape.draw())
+     0: ──RX(0.2)───Rot(1.7, 0.92, -1.1)──────────────────────┤
+     1: ──RX(-2.4)──RZ(-3.1)──────────────RY(0.73)──RZ(1.36)──┤
 
     """
     # pylint: disable=unused-argument
@@ -91,8 +97,8 @@ def get_expand_fn(depth, stop_at, device=None, docstring=None):
     return expand_fn
 
 
-expand_multipar = get_expand_fn(depth=10, stop_at=is_measurement | has_nopar | has_gen)
-expand_nonunitary_gen = get_expand_fn(
+expand_multipar = create_expand_fn(depth=10, stop_at=is_measurement | has_nopar | has_gen)
+expand_nonunitary_gen = create_expand_fn(
     depth=10, stop_at=is_measurement | has_nopar | (has_gen & has_unitary_gen)
 )
 
@@ -113,7 +119,7 @@ Returns:
     .QuantumTape: the expanded tape
 """
 
-expand_invalid_trainable = get_expand_fn(
+expand_invalid_trainable = create_expand_fn(
     depth=10,
     stop_at=is_measurement | (~is_trainable) | has_grad_method,
     docstring=_expand_invalid_trainable_doc,
