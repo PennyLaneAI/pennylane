@@ -554,6 +554,10 @@ of shape ``(batch_size,)``:
 
 * Corrects the docstring of `ExpvalCost` by adding `wires` to the signature of the `ansatz` argument. [(#1715)](https://github.com/PennyLaneAI/pennylane/pull/1715)
 
+* Updates the 'Gradients and training' quickstart guide to provide information
+  on gradient transforms.
+  [(#)]()
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):

@@ -91,6 +91,43 @@ Device gradients
     rule, and finally finite-differences, in that order.
 
 
+Gradient transforms
+-------------------
+
+In addition to registering the differentiation method of QNodes to be used with autodifferentiation
+frameworks, PennyLane also provides a library of **gradient transforms** via the
+:mod:`qml.gradients <pennylane.gradients>` module.
+
+Quantum gradient transforms are strategies for computing the gradient of a quantum
+circuit that work by **transforming** the quantum circuit into one or more gradient circuits.
+These gradient circuits, once executed and post-processed, return the gradient
+of the original circuit.
+
+Examples of quantum gradient transforms include finite-differences and parameter-shift
+rules; these can be applied *directly* to QNodes:
+
+.. code-block:: python
+
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.qnode(dev)
+    def circuit(weights):
+        qml.RX(weights[0], wires=0)
+        qml.RY(weights[1], wires=1)
+        qml.CNOT(wires=[0, 1])
+        qml.RX(weights[2], wires=1)
+        return qml.probs(wires=1)
+
+>>> weights = np.array([0.1, 0.2, 0.3], requires_grad=True)
+>>> circuit(weights)
+tensor([0.9658079, 0.0341921], requires_grad=True)
+>>> qml.gradients.param_shift(circuit)(weights)
+tensor([[-0.04673668, -0.09442394, -0.14409127],
+        [ 0.04673668,  0.09442394,  0.14409127]], requires_grad=True)
+
+For more details on available gradient transforms, as well as learning how to define your own
+gradient transform, please see the :mod:`qml.gradients <pennylane.gradients>` documentation.
+
 Training and interfaces
 -----------------------
 
