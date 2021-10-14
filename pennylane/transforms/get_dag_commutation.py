@@ -15,7 +15,6 @@
 A transform to obtain the matrix representation of a quantum circuit.
 """
 from functools import wraps
-import numpy as np
 from pennylane.wires import Wires
 import pennylane as qml
 from collections import OrderedDict
@@ -39,6 +38,8 @@ def get_dag_commutation(circuit):
     >>> get_dag(theta)
 
     """
+
+    # pylint: disable=protected-access
 
     @wraps(circuit)
     def wrapper(*args, **kwargs):
