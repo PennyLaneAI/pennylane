@@ -47,7 +47,6 @@ except ImportError:
     pass
 
 from . import DefaultQubit
-from . import tf_ops
 
 
 class DefaultQubitTF(DefaultQubit):
@@ -129,12 +128,6 @@ class DefaultQubitTF(DefaultQubit):
     name = "Default qubit (TensorFlow) PennyLane plugin"
     short_name = "default.qubit.tf"
 
-    parametric_ops = {
-        "DoubleExcitation": tf_ops.DoubleExcitation,
-        "DoubleExcitationPlus": tf_ops.DoubleExcitationPlus,
-        "DoubleExcitationMinus": tf_ops.DoubleExcitationMinus,
-    }
-
     C_DTYPE = tf.complex128
     R_DTYPE = tf.float64
     _asarray = staticmethod(tf.convert_to_tensor)
@@ -205,19 +198,6 @@ class DefaultQubitTF(DefaultQubit):
             the return type will be a ``np.ndarray``. For parametric unitaries, a ``tf.Tensor``
             object will be returned.
         """
-        op_name = unitary.name.split(".inv")[0]
-
-        if op_name in self.parametric_ops:
-            if op_name == "MultiRZ":
-                mat = self.parametric_ops[op_name](*unitary.parameters, len(unitary.wires))
-            else:
-                mat = self.parametric_ops[op_name](*unitary.parameters)
-
-            if unitary.inverse:
-                mat = self._transpose(self._conj(mat))
-
-            return mat
-
         if isinstance(unitary, DiagonalOperation):
             return unitary.eigvals
 

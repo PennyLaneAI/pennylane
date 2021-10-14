@@ -17,7 +17,6 @@ reference plugin.
 import pennylane as qml
 from pennylane.operation import DiagonalOperation
 from pennylane.devices import DefaultQubit
-from pennylane.devices import jax_ops
 
 import numpy as np
 
@@ -133,12 +132,6 @@ class DefaultQubitJax(DefaultQubit):
     name = "Default qubit (jax) PennyLane plugin"
     short_name = "default.qubit.jax"
 
-    parametric_ops = {
-        "DoubleExcitation": jax_ops.DoubleExcitation,
-        "DoubleExcitationPlus": jax_ops.DoubleExcitationPlus,
-        "DoubleExcitationMinus": jax_ops.DoubleExcitationMinus,
-    }
-
     _asarray = staticmethod(jnp.array)
     _dot = staticmethod(jnp.dot)
     _abs = staticmethod(jnp.abs)
@@ -201,19 +194,6 @@ class DefaultQubitJax(DefaultQubit):
             the unitary in the computational basis, or, in the case of a diagonal unitary,
             a 1D array representing the matrix diagonal.
         """
-        op_name = unitary.name.split(".inv")[0]
-
-        if op_name in self.parametric_ops:
-            if op_name == "MultiRZ":
-                mat = self.parametric_ops[op_name](*unitary.parameters, len(unitary.wires))
-            else:
-                mat = self.parametric_ops[op_name](*unitary.parameters)
-
-            if unitary.inverse:
-                mat = self._transpose(self._conj(mat))
-
-            return mat
-
         if isinstance(unitary, DiagonalOperation):
             return unitary.eigvals
 

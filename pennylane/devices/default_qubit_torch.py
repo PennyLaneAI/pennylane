@@ -28,7 +28,6 @@ except ImportError as e:
 
 import numpy as np
 from pennylane.operation import DiagonalOperation
-from pennylane.devices import torch_ops
 from . import DefaultQubit
 
 
@@ -132,11 +131,7 @@ class DefaultQubitTorch(DefaultQubit):
     name = "Default qubit (Torch) PennyLane plugin"
     short_name = "default.qubit.torch"
 
-    parametric_ops = {
-        "DoubleExcitation": torch_ops.DoubleExcitation,
-        "DoubleExcitationPlus": torch_ops.DoubleExcitationPlus,
-        "DoubleExcitationMinus": torch_ops.DoubleExcitationMinus,
-    }
+    parametric_ops = {}
 
     C_DTYPE = torch.complex128
     R_DTYPE = torch.float64
@@ -244,21 +239,6 @@ class DefaultQubitTorch(DefaultQubit):
             the unitary in the computational basis, or, in the case of a diagonal unitary,
             a 1D array representing the matrix diagonal.
         """
-        op_name = unitary.base_name
-        if op_name in self.parametric_ops:
-            if op_name == "MultiRZ":
-                mat = self.parametric_ops[op_name](
-                    *unitary.parameters, len(unitary.wires), device=self._torch_device
-                )
-            else:
-                mat = self.parametric_ops[op_name](*unitary.parameters, device=self._torch_device)
-            if unitary.inverse:
-                if isinstance(unitary, DiagonalOperation):
-                    mat = self._conj(mat)
-                else:
-                    mat = self._transpose(self._conj(mat), axes=[1, 0])
-            return mat
-
         if isinstance(unitary, DiagonalOperation):
             return self._asarray(unitary.eigvals, dtype=self.C_DTYPE)
         return self._asarray(unitary.matrix, dtype=self.C_DTYPE)
