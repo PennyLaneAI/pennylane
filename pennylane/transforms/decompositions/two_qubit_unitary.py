@@ -132,10 +132,7 @@ def _compute_num_cnots(U):
     # To distinguish between 1/2 CNOT cases, we need to look at the eigenvalues
     evs = math.linalg.eigvals(gammaU)
 
-    if math.get_interface(u) == "torch":
-        sorted_evs, _ = math.sort(math.imag(evs))
-    else:
-        sorted_evs = math.sort(math.imag(evs))
+    sorted_evs = math.sort(math.imag(evs))
 
     # Case: 1 CNOT, the trace is 0, and the eigenvalues of gammaU are [-1j, -1j, 1j, 1j]
     # Checking the eigenvalues is needed because of some special 2-CNOT cases that yield
@@ -366,11 +363,7 @@ def _decomposition_2_cnots(U, wires):
     # some reason this case is not handled properly with the full algorithm, so
     # we treat it separately.
 
-    if math.get_interface(u) == "torch":
-        # Torch's sort function returns both the sorted values and the new order
-        sorted_evs, _ = math.sort(math.real(evs))
-    else:
-        sorted_evs = math.sort(math.real(evs))
+    sorted_evs = math.sort(math.real(evs))
 
     if math.allclose(sorted_evs, [-1, -1, 1, 1]):
         interior_decomp = [
