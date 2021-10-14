@@ -183,22 +183,6 @@ class DefaultQubitJax(DefaultQubit):
         new_array = new_array.at[indices].set(array)
         return new_array
 
-    def _get_unitary_matrix(self, unitary):
-        """Return the matrix representing a unitary operation.
-
-        Args:
-            unitary (~.Operation): a PennyLane unitary operation
-
-        Returns:
-            array[complex]: Returns a 2D matrix representation of
-            the unitary in the computational basis, or, in the case of a diagonal unitary,
-            a 1D array representing the matrix diagonal.
-        """
-        if isinstance(unitary, DiagonalOperation):
-            return unitary.eigvals
-
-        return unitary.matrix
-
     def sample_basis_states(self, number_of_states, state_probability):
         """Sample from the computational basis states based on the state
         probability.
