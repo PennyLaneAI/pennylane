@@ -560,7 +560,7 @@ of shape ``(batch_size,)``:
 
 * Updates the 'Gradients and training' quickstart guide to provide information
   on gradient transforms.
-  [(#)]()
+  [(#1751)](https://github.com/PennyLaneAI/pennylane/pull/1751)
 
 <h3>Contributors</h3>
 
