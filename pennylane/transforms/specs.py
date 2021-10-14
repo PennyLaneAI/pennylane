@@ -17,6 +17,10 @@ import inspect
 import pennylane as qml
 
 
+def _get_absolute_import_path(fn):
+    return f"{inspect.getmodule(fn).__name__}.{fn.__name__}"
+
+
 def specs(qnode, max_expansion=None):
     """Resource information about a quantum circuit.
 
@@ -35,7 +39,6 @@ def specs(qnode, max_expansion=None):
         returns a dictionary of information about qnode structure.
 
     **Example**
-
 
     .. code-block:: python3
 
@@ -94,7 +97,7 @@ def specs(qnode, max_expansion=None):
          'expansion_strategy': 'gradient',
          'gradient_options': {'shift': 0.7853981633974483},
          'interface': 'autograd',
-         'gradient_fn': 'pennylane.gradients.parameter_shift',
+         'gradient_fn': 'pennylane.gradients.parameter_shift.param_shift',
          'num_gradient_executions': 2}
 
     """
@@ -138,13 +141,17 @@ def specs(qnode, max_expansion=None):
 
         info["num_device_wires"] = qnode.device.num_wires
         info["device_name"] = qnode.device.short_name
-        info["diff_method"] = qnode.diff_method
         info["expansion_strategy"] = qnode.expansion_strategy
         info["gradient_options"] = qnode.gradient_kwargs
         info["interface"] = qnode.interface
+        info["diff_method"] = (
+            _get_absolute_import_path(qnode.diff_method)
+            if callable(qnode.diff_method)
+            else qnode.diff_method
+        )
 
         if isinstance(qnode.gradient_fn, qml.gradients.gradient_transform):
-            info["gradient_fn"] = f"{inspect.getmodule(qnode.gradient_fn).__name__}.{qnode.gradient_fn.__name__}"
+            info["gradient_fn"] = _get_absolute_import_path(qnode.gradient_fn)
 
             try:
                 info["num_gradient_executions"] = len(qnode.gradient_fn(qnode.qtape)[0])

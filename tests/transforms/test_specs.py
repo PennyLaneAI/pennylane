@@ -197,7 +197,7 @@ class TestSpecsTransformBetaQNode:
 
         if diff_method == "parameter-shift":
             assert info["num_gradient_executions"] == 0
-            assert info["gradient_fn"] == "pennylane.gradients.parameter_shift"
+            assert info["gradient_fn"] == "pennylane.gradients.parameter_shift.param_shift"
 
         if diff_method != "backprop":
             assert info["device_name"] == "default.qubit"
@@ -304,3 +304,31 @@ class TestSpecsTransformBetaQNode:
         assert info["device_name"] == "default.qubit.autograd"
         assert info["diff_method"] == "best"
         assert info["gradient_fn"] == "backprop"
+
+    def test_gradient_transform(self):
+        """Test that a gradient transform is properly labelled"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.beta.qnode(dev, diff_method=qml.gradients.param_shift)
+        def circuit():
+            return qml.probs(wires=0)
+
+        info = qml.specs(circuit)()
+        assert info["diff_method"] == "pennylane.gradients.parameter_shift.param_shift"
+        assert info["gradient_fn"] == "pennylane.gradients.parameter_shift.param_shift"
+
+    def test_custom_gradient_transform(self):
+        """Test that a custom gradient transform is properly labelled"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.gradients.gradient_transform
+        def my_transform(tape):
+            return tape, None
+
+        @qml.beta.qnode(dev, diff_method=my_transform)
+        def circuit():
+            return qml.probs(wires=0)
+
+        info = qml.specs(circuit)()
+        assert info["diff_method"] == "test_specs.my_transform"
+        assert info["gradient_fn"] == "test_specs.my_transform"
