@@ -543,7 +543,7 @@ class MultiRZ(DiagonalOperation):
 
         interface = qml.math.get_interface(theta)
 
-        eigs = qml.convert_like(pauli_eigs(n), theta)
+        eigs = qml.math.convert_like(pauli_eigs(n), theta)
 
         if interface == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
