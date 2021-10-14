@@ -20,6 +20,9 @@ as circuit diagrams.
     :toctree: api
 
 """
+
 from .circuit_drawer import CircuitDrawer
 from .charsets import CHARSETS
 from .mpldrawer import MPLDrawer
+from .drawable_layers import drawable_layers, drawable_grid
+from .utils import convert_wire_order
