@@ -367,7 +367,7 @@ class QuantumMonteCarlo(Operation):
             QubitUnitary(A, wires=self.tar_wires[:-1])
             QubitUnitary(R, wires=self.tar_wires)
             qml.templates.QuantumPhaseEstimation(
-                Q, target_wires=self.target_wires, estimation_wires=self.estimation_wires
+                Q, target_wires=self.tar_wires, estimation_wires=self.estimation_wires
             )
 
         return tape
