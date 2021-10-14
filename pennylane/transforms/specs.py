@@ -144,7 +144,7 @@ def specs(qnode, max_expansion=None):
         info["interface"] = qnode.interface
 
         if isinstance(qnode.gradient_fn, qml.gradients.gradient_transform):
-            info["gradient_fn"] = inspect.getmodule(qnode.gradient_fn).__name__
+            info["gradient_fn"] = f"{inspect.getmodule(qnode.gradient_fn).__name__}.{qnode.gradient_fn.__name__}"
 
             try:
                 info["num_gradient_executions"] = len(qnode.gradient_fn(qnode.qtape)[0])
