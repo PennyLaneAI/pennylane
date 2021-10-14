@@ -534,6 +534,8 @@ def expand_vector(vector, original_wires, expanded_wires):
 
     # Order tensor factors according to wires
     original_indices = np.array(range(N))
-    expanded_tensor = qml.math.moveaxis(expanded_tensor, tuple(original_indices), tuple(wire_indices))
+    expanded_tensor = qml.math.moveaxis(
+        expanded_tensor, tuple(original_indices), tuple(wire_indices)
+    )
 
     return qml.math.reshape(expanded_tensor, 2 ** M)
