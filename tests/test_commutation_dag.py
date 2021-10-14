@@ -122,6 +122,7 @@ class TestCommutingFunction:
         commutation = qml.is_commuting(qml.CNOT(wires=wires[1]), qml.PauliX(wires=wires[0]))
         assert commutation == res
 
+
 class TestCommutationDAG:
     """Commutation DAG tests."""
 
@@ -134,6 +135,3 @@ class TestCommutationDAG:
     )
     def test_empty_dag(self, wires):
         qml.commutation_dag.CommutationDAG(qml.wires.Wires(wires))
-
-
-
