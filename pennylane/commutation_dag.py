@@ -74,6 +74,23 @@ commutation_map = OrderedDict(
 
 
 def is_commuting(operation1, operation2):
+    r"""Check if two operations are commuting
+
+    Args:
+        operation1 (pennylane.Operation): A first quantum operation.
+        operation2 (pennylane.Operation): A second quantum operation.
+
+    Returns:
+         bool: True if the operations commute, False otherwise.
+
+    **Example**
+
+    >>> qml.is_commuting(qml.PauliX(wires=0), qml.PauliZ(wires=0))
+    True
+    """
+    # pylint: disable=too-many-branches
+    # pylint: disable=too-many-return-statements
+
     # Case 1 operations are disjoints
     if not bool(operation1.wires.toset().intersection(operation2.wires.toset())):
         return True
@@ -195,9 +212,8 @@ def is_commuting(operation1, operation2):
             return bool(commutation_map[operation1.name][position[operation2.is_controlled]])
 
     # Case 5: no controlled operations
-    else:
-        # Case 5.1: no controlled operations we simply check the commutation table
-        return bool(commutation_map[operation1.name][position[operation2.name]])
+    # Case 5.1: no controlled operations we simply check the commutation table
+    return bool(commutation_map[operation1.name][position[operation2.name]])
 
 def merge_no_duplicates(*iterables):
     """Merge K list without duplicate using python heapq ordered merging
@@ -215,6 +231,25 @@ def merge_no_duplicates(*iterables):
             yield val
 
 class CommutationDAGNode:
+    r"""Class to store information about a quantum operation in a node of the
+    commutation DAG.
+
+    Args:
+        op (qml.Operation): PennyLane operation.
+        name (str): Name of the operation.
+        wires (qml.Wires): Wires on which the operation acts on.
+        node_id (int): Id of the node in the DAG.
+        successors (array[int]): List of the node's successors in the DAG.
+        predecessors (array[int]): List of the node's predecessors in the DAG.
+        reachable (bool): Attribute used to check reachability by pairewise commutation.
+        matchedwith (array[int]): Id of the matched node in the pattern.
+        isblocked (bool): Id of the matched node in the pattern.
+        successortovisit (array[int]): List of nodes (ids) to visit in the forward part of the algorithm.
+    """
+
+    # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-arguments
+    # pylint: disable=too-few-public-methods
 
     __slots__ = [
         "op",
@@ -255,7 +290,17 @@ class CommutationDAGNode:
         self.successorstovisit = successorstovisit if successorstovisit is not None else []
 
 class CommutationDAG:
-    """Represents a quantum circuit as a directed acyclic graph, a node represent a quantum operation."""
+    r"""Class to represent a quantum circuit as a directed acyclic graph (DAG).
+
+    **Example:**
+
+    **Reference:**
+
+    [1] Iten, R., Moyard, R., Metger, T., Sutter, D. and Woerner, S., 2020.
+    Exact and practical pattern matching for quantum circuit optimization.
+    `arXiv:1909.05270 <https://arxiv.org/abs/1909.05270>`_
+
+    """
 
     def __init__(self, wires):
         self.wires = wires
@@ -269,6 +314,12 @@ class CommutationDAG:
         self._multi_graph.add_node(node.node_id, node=node)
 
     def add_node(self, operation):
+        """Add the operation as a node in the DAG and updates the edges.
+
+            Args:
+                operation (qml.operation): PennyLane quantum operation to add to the DAG.
+        """
+
         new_node = qml.commutation_dag.CommutationDAGNode(
             op=operation,
             wires=operation.wires,
@@ -280,18 +331,54 @@ class CommutationDAG:
         self._update_edges()
 
     def get_node(self, node_id):
+        """Add the operation as a node in the DAG and updates the edges.
+
+            Args:
+                node_id (int): PennyLane quantum operation to add to the DAG.
+
+            Returns:
+                qml.commutation_dag.CommutationDAGNOde: The node with the given id.
+        """
         return self._multi_graph.nodes(data='node')[node_id]
 
     def get_nodes(self):
+        """Return iterable to loop through all the nodes in the DAG
+
+            Returns:
+                networkx.classes.reportviews.NodeDataView: Iterable nodes.
+        """
         return self._multi_graph.nodes(data='node')
 
     def add_edge(self, node_in, node_out):
+        """Add an edge (non commutation) between node_in and node_out.
+
+            Args:
+                node_in (int): Id of the ingoing node.
+                node_out (int): Id of the outgoing node.
+
+            Returns:
+                int: Id of the created edge.
+        """
         return self._multi_graph.add_edge(node_in, node_out, commute=False)
 
     def get_edge(self, node_in, node_out):
+        """Get the edge between two nodes if it exists.
+
+            Args:
+                node_in (int): Id of the ingoing node.
+                node_out (int): Id of the outgoing node.
+
+            Returns:
+                dict or None: Default weight is 0, it returns None when there is no edge.
+        """
         return self._multi_graph.get_edge_data(node_in, node_out)
 
     def get_edges(self):
+        """Get all edges as an iterable.
+
+            Returns:
+                networkx.classes.reportviews.OutMultiEdgeDataView: Iterable over all edges.
+        """
         return self._multi_graph.edges.data()
 
     def _update_edges(self):
@@ -313,25 +400,62 @@ class CommutationDAG:
                     self.get_node(pred_id).reachable = False
 
     def direct_predecessors(self, node_id):
+        """Return the direct predecessors of the given node.
+
+            Args:
+                node_id (int): Id of the node in the DAG.
+
+            Returns:
+                list[int]: List of the direct predecessors of the given node.
+        """
         dir_pred = list(self._multi_graph.pred[node_id].keys())
         dir_pred.sort()
         return dir_pred
 
     def predecessors(self, node_id):
+        """Return the predecessors of the given node.
+
+            Args:
+                node_id (int): Id of the node in the DAG.
+
+            Returns:
+                list[int]: List of the predecessors of the given node.
+        """
         pred = list(nx.ancestors(self._multi_graph, node_id))
         return pred
 
     def direct_successors(self, node_id):
+        """Return the direct successors of the given node.
+
+            Args:
+                node_id (int): Id of the node in the DAG.
+
+            Returns:
+                list[int]: List of the direct successors of the given node.
+        """
         dir_succ = list(self._multi_graph.succ[node_id].keys())
         dir_succ.sort()
         return dir_succ
 
     def successors(self, node_id):
+        """Return the successors of the given node.
+
+            Args:
+                node_id (int): Id of the node in the DAG.
+
+            Returns:
+                list[int]: List of the successors of the given node.
+        """
         succ = list(nx.descendants(self._multi_graph, node_id))
         return succ
 
     @property
     def graph(self):
+        """Return the DAG object.
+
+            Returns:
+                networkx.MultiDiGraph(): Networkx representation of the DAG.
+        """
         return self._multi_graph
 
     def _pred_update(self, node_id):

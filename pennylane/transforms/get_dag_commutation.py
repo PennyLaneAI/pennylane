@@ -21,19 +21,18 @@ import pennylane as qml
 from collections import OrderedDict
 
 
-def get_dag_commutation(circuit, wire_order=None):
+def get_dag_commutation(circuit):
     r"""Construct the matrix representation of a quantum circuit.
 
     Args:
         circuit (pennylane.QNode, .QuantumTape, or Callable): A quantum node, tape,
             or function that applies quantum operations.
-        wire_order (Sequence[Any], optional): Order of the wires in the quantum circuit.
-            Defaults to the order in which the wires appear in the quantum function.
 
     Returns:
          function: Function which accepts the same arguments as the QNode or quantum function.
          When called, this function will return the commutation DAG representation of the circuit.
 
+    **Example
 
     >>> get_dag = get_dag_commutation(circuit)
     >>> theta = np.pi/4
