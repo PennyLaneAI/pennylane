@@ -184,7 +184,7 @@ class RZ(DiagonalOperation):
 
         p = qml.math.exp(-0.5j * theta)
 
-        return qml.math.stack([qml.math.stack([p, 0]), qml.math.stack([0, qml.math.conj(p)])])
+        return qml.math.diag([p, qml.math.conj(p)])
 
     @classmethod
     def _eigvals(cls, *params):
@@ -256,7 +256,7 @@ class PhaseShift(DiagonalOperation):
 
         exp_part = qml.math.exp(1j * phi)
 
-        return qml.math.stack([qml.math.stack([1, 0]), qml.math.stack([0, exp_part])])
+        return qml.math.diag([1, exp_part])
 
     @classmethod
     def _eigvals(cls, *params):
@@ -337,14 +337,7 @@ class ControlledPhaseShift(DiagonalOperation):
 
         exp_part = qml.math.exp(1j * phi)
 
-        return qml.math.stack(
-            [
-                qml.math.stack([1, 0, 0, 0]),
-                qml.math.stack([0, 1, 0, 0]),
-                qml.math.stack([0, 0, 1, 0]),
-                qml.math.stack([0, 0, 0, exp_part]),
-            ]
-        )
+        return qml.math.diag([1, 1, 1, exp_part])
 
     @classmethod
     def _eigvals(cls, *params):
@@ -550,10 +543,13 @@ class MultiRZ(DiagonalOperation):
 
         interface = qml.math.get_interface(theta)
 
+        eigs = qml.convert_like(pauli_eigs(n), theta)
+
         if interface == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
+            eigs= qml.math.cast_like(eigs, 1j)
 
-        return qml.math.exp(-1j * theta / 2 * pauli_eigs(n))
+        return qml.math.exp(-1j * theta / 2 * eigs)
 
     @property
     def eigvals(self):
@@ -1039,15 +1035,7 @@ class CRZ(DiagonalOperation):
 
         exp_part = qml.math.exp(-0.5j * theta)
 
-        mat = [
-            [1, 0, 0, 0],
-            [0, 1, 0, 0],
-            [0, 0, exp_part, 0],
-            [0, 0, 0, qml.math.conj(exp_part)],
-        ]
-
-        return qml.math.stack([qml.math.stack(row) for row in mat])
-
+        return qml.math.diag([1, 1, exp_part, qml.math.conj(exp_part)])
     @classmethod
     def _eigvals(cls, *params):
         theta = params[0]
@@ -1231,7 +1219,7 @@ class U1(Operation):
 
         exp_part = qml.math.exp(1j * phi)
 
-        return qml.math.stack([qml.math.stack([1, 0]), qml.math.stack([0, exp_part])])
+        return qml.math.diag([1, exp_part])
 
     @staticmethod
     def decomposition(phi, wires):
@@ -1601,14 +1589,7 @@ class IsingZZ(Operation):
         pos_phase = qml.math.exp(1.0j * phi / 2)
         neg_phase = qml.math.exp(-1.0j * phi / 2)
 
-        mat = [
-            [neg_phase, 0.0, 0.0, 0.0],
-            [0.0, pos_phase, 0.0, 0.0],
-            [0.0, 0.0, pos_phase, 0.0],
-            [0.0, 0.0, 0.0, neg_phase],
-        ]
-
-        return qml.math.stack([qml.math.stack(row) for row in mat])
+        return qml.math.diag([neg_phase, pos_phase, pos_phase, neg_phase])
 
     def adjoint(self):
         (phi,) = self.parameters
