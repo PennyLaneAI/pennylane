@@ -48,6 +48,26 @@ class TestGetExpandFn:
         new_tape = expand_fn(self.tape)
         assert new_tape.operations == self.tape.operations
 
+    def test_device_expansion(self):
+        """Test that passing a device ensures that all operations are
+        expanded to match the devices default gate set"""
+        dev = qml.device("default.qubit", wires=0)
+        expand_fn = qml.transforms.create_expand_fn(device=dev, depth=10, stop_at=self.crit_0)
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RX(0.2, wires=0)
+            qml.RY(qml.numpy.array(2.1, requires_grad=True), wires=1)
+            qml.Rot(*qml.numpy.array([0.5, 0.2, -0.1], requires_grad=True), wires=0)
+            qml.templates.StronglyEntanglingLayers(
+                qml.numpy.ones([2, 2, 3], requires_grad=True), wires=[0, 1]
+            )
+
+        new_tape = expand_fn(tape)
+        assert new_tape.operations[0] == tape.operations[0]
+        assert new_tape.operations[1] == tape.operations[1]
+        assert [op.name for op in new_tape.operations[2:5]] == ["RZ", "RY", "RZ"]
+        assert len(new_tape.operations[6:]) == 15
+
 
 class TestToValidTrainable:
     """Tests for the gradient expand function"""
