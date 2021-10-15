@@ -272,7 +272,6 @@ class CommutationDAGNode:
         isblocked=None,
         node_id=-1,
     ):
-
         self.op = op
         self.name = name
         self.wires = wires
@@ -298,12 +297,12 @@ class CommutationDAG:
 
     """
 
-    def __init__(self, wires, observables = []):
+    def __init__(self, wires, observables=None):
         self.wires = wires
         self.num_wires = len(wires)
         self.node_id = -1
         self._multi_graph = nx.MultiDiGraph()
-        self.observables = observables
+        self.observables = observables if observables is not None else []
 
     def _add_node(self, node):
         self.node_id += 1
