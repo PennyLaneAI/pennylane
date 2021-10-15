@@ -214,10 +214,10 @@ function. It takes the same arguments as the original quantum function:
 >>> circuit(np.pi/4, 0.7)
 0.7648421872844883
 
-To view the quantum circuit after it has been executed, we can use the :meth:`~.BaseQNode.draw`
-method:
+To view the quantum circuit given specific parameter values, we can use the :func:`~.pennylane.draw`
+transform:
 
->>> print(circuit.draw())
+>>> print(qml.draw(circuit)(np.pi/4, 0.7))
 0: ──RZ(0.785)──╭C───────────┤
 1: ─────────────╰X──RY(0.7)──┤ ⟨Z⟩
 
