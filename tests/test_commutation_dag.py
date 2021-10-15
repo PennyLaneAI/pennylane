@@ -15,6 +15,8 @@
 Unit tests for :mod:`pennylane.operation`.
 """
 import pytest
+from collections import OrderedDict
+from pennylane.wires import Wires
 import pennylane as qml
 
 
@@ -105,7 +107,6 @@ class TestCommutingFunction:
         ],
     )
     def test_x_cnot(self, wires, res, tol):
-
         commutation = qml.is_commuting(qml.PauliX(wires=wires[0]), qml.CNOT(wires=wires[1]))
         assert commutation == res
 
@@ -118,7 +119,6 @@ class TestCommutingFunction:
         ],
     )
     def test_cnot_x(self, wires, res, tol):
-
         commutation = qml.is_commuting(qml.CNOT(wires=wires[1]), qml.PauliX(wires=wires[0]))
         assert commutation == res
 
@@ -137,7 +137,7 @@ class TestCommutationDAG:
         qml.commutation_dag.CommutationDAG(qml.wires.Wires(wires))
 
     def test_dag_transform_simple_dag_function(self):
-        "Test a simple DAG on 1 wire with a quantum function."
+        """Test a simple DAG on 1 wire with a quantum function."""
 
         def circuit():
             qml.PauliZ(wires=0)
@@ -148,13 +148,46 @@ class TestCommutationDAG:
         a = qml.PauliZ(wires=0)
         b = qml.PauliX(wires=0)
 
+        nodes = [a, b]
+        edges = [(0, 1, {"commute": False})]
+
         assert dag.get_node(0).op.compare(a)
         assert dag.get_node(1).op.compare(b)
         assert dag.get_edge(0, 1) == {0: {"commute": False}}
         assert dag.get_edge(0, 2) is None
+        assert dag.observables == []
+        for i, node in enumerate(dag.get_nodes()):
+            assert node[1].op.compare(nodes[i])
+        for i, edge in enumerate(dag.get_edges()):
+            assert edges[i] == edge
+
+    def test_dag_transform_simple_dag_function_custom_wire(self):
+        """Test a simple DAG on 2 wires with a quantum function and custom wires."""
+
+        def circuit():
+            qml.PauliZ(wires="a")
+            qml.PauliX(wires="c")
+
+        dag = qml.transforms.get_dag_commutation(circuit)()
+
+        a = qml.PauliZ(wires=0)
+        b = qml.PauliX(wires=1)
+
+        nodes = [a, b]
+        edges = [(0, 1, {"commute": False})]
+
+        assert dag.get_node(0).op.compare(a)
+        assert dag.get_node(1).op.compare(b)
+        assert dag.get_edge(0, 1) is None
+        assert dag.get_edge(0, 2) is None
+        assert dag.observables == []
+        for i, node in enumerate(dag.get_nodes()):
+            assert node[1].op.compare(nodes[i])
+        for i, edge in enumerate(dag.get_edges()):
+            assert edges[i] == edge
 
     def test_dag_transform_simple_dag_qnode(self):
-        "Test a simple DAG on 1 wire with a qnode."
+        """Test a simple DAG on 1 wire with a qnode."""
 
         dev = qml.device("default.qubit", wires=1)
 
@@ -169,6 +202,9 @@ class TestCommutationDAG:
         a = qml.PauliZ(wires=0)
         b = qml.PauliX(wires=0)
 
+        nodes = [a, b]
+        edges = [(0, 1, {"commute": False})]
+
         assert dag.get_node(0).op.compare(a)
         assert dag.get_node(1).op.compare(b)
         assert dag.get_edge(0, 1) == {0: {"commute": False}}
@@ -176,3 +212,72 @@ class TestCommutationDAG:
         assert dag.observables[0].return_type.__repr__() == "expval"
         assert dag.observables[0].name == "PauliX"
         assert dag.observables[0].wires.tolist() == [0]
+        for i, node in enumerate(dag.get_nodes()):
+            assert node[1].op.compare(nodes[i])
+        for i, edge in enumerate(dag.get_edges()):
+            assert edges[i] == edge
+
+    def test_dag_pattern(self):
+        "Test a the DAG of a more complicated circuit."
+
+        def circuit():
+            qml.CNOT(wires=[3, 0])
+            qml.PauliX(wires=4)
+            qml.PauliZ(wires=0)
+            qml.CNOT(wires=[4, 2])
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[3, 4])
+            qml.CNOT(wires=[1, 2])
+            qml.PauliX(wires=1)
+            qml.CNOT(wires=[1, 0])
+            qml.PauliX(wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.CNOT(wires=[0, 3])
+
+        dag = qml.transforms.get_dag_commutation(circuit)()
+
+        wires = [3, 0, 4, 2, 1]
+        consecutive_wires = Wires(range(len(wires)))
+        wires_map = OrderedDict(zip(wires, consecutive_wires))
+
+        nodes = [
+            qml.CNOT(wires=[3, 0]),
+            qml.PauliX(wires=4),
+            qml.PauliZ(wires=0),
+            qml.CNOT(wires=[4, 2]),
+            qml.CNOT(wires=[0, 1]),
+            qml.CNOT(wires=[3, 4]),
+            qml.CNOT(wires=[1, 2]),
+            qml.PauliX(wires=1),
+            qml.CNOT(wires=[1, 0]),
+            qml.PauliX(wires=1),
+            qml.CNOT(wires=[1, 2]),
+            qml.CNOT(wires=[0, 3]),
+        ]
+
+        for node in nodes:
+            node._wires = Wires([wires_map[wire] for wire in node.wires.tolist()])
+
+        edges = [
+            (0, 2, {"commute": False}),
+            (0, 4, {"commute": False}),
+            (1, 3, {"commute": False}),
+            (2, 8, {"commute": False}),
+            (3, 5, {"commute": False}),
+            (4, 6, {"commute": False}),
+            (5, 11, {"commute": False}),
+            (6, 7, {"commute": False}),
+            (7, 8, {"commute": False}),
+            (8, 9, {"commute": False}),
+            (8, 11, {"commute": False}),
+            (9, 10, {"commute": False}),
+        ]
+
+        assert dag.observables == []
+
+        for i in range(0, 12):
+            assert dag.get_node(i).op.name == nodes[i].name
+            assert dag.get_node(i).op.wires == nodes[i].wires
+
+        for i, edge in enumerate(dag.get_edges()):
+            assert edges[i] == edge
