@@ -443,8 +443,8 @@ def probs(wires=None, op=None):
     if wires is not None:
         if op is not None:
             raise qml.QuantumFunctionError(
-                "Cannot specify the wires to get the proba if an observable is "
-                "provided. The wires to get the proba will be determined directly from the observable."
+                "Cannot specify the wires to probs if an observable is "
+                "provided. The wires for probs will be determined directly from the observable."
             )
         return MeasurementProcess(Probability, wires=qml.wires.Wires(wires))
     return MeasurementProcess(Probability, obs=op)
