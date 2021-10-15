@@ -19,9 +19,10 @@ import numpy as np
 import pennylane as qml
 
 
-class TestGetExpandFn:
+class TestCreateExpandFn:
 
     crit_0 = (~qml.operation.is_trainable) | (qml.operation.has_gen & qml.operation.is_trainable)
+    doc_0 = "Test docstring."
     with qml.tape.JacobianTape() as tape:
         qml.RX(0.2, wires=0)
         qml.RY(qml.numpy.array(2.1, requires_grad=True), wires=1)
@@ -29,7 +30,8 @@ class TestGetExpandFn:
 
     def test_create_expand_fn(self):
         """Test creation of expand_fn."""
-        qml.transforms.create_expand_fn(depth=10, stop_at=self.crit_0)
+        expand_fn = qml.transforms.create_expand_fn(depth=10, stop_at=self.crit_0, docstring=doc_0)
+        assert expand_fn.__doc__ == "Test docstring."
 
     def test_create_expand_fn_expansion(self):
         """Test expansion with created expand_fn."""
@@ -48,8 +50,63 @@ class TestGetExpandFn:
         new_tape = expand_fn(self.tape)
         assert new_tape.operations == self.tape.operations
 
+class TestExpandMultipar:
 
-class TestToValidTrainable:
+    def test_expand_multipar(self):
+        """Test that a multi-parameter gate is decomposed correctly.
+        And that single-parameter gates are not decomposed."""
+        dev = qml.device("default.qubit", wires=3)
+
+        class _CRX(qml.CRX):
+            @staticmethod
+            def decomposition(theta, wires):
+                raise NotImplementedError()
+
+        @qml.qnode(dev)
+        def circuit(x, z0, y, z1):
+            qml.RX(x, wires=0)
+            qml.Rot(z0, y, z1, wires=1)
+            _CRX(x, wires=[0, 2])
+            return qml.expval(qml.PauliZ(wires=0))
+
+        res = qnode_spectrum(circuit)(1.5, -2.1, 0.2, -0.418)
+        assert res == OrderedDict(
+            [
+                ("x", {(): [-2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0]}),
+                ("z0", {(): [-1.0, 0.0, 1.0]}),
+                ("y", {(): [-1.0, 0.0, 1.0]}),
+                ("z1", {(): [-1.0, 0.0, 1.0]}),
+            ]
+        )
+
+    def test_no_generator_expansion(self):
+        """Test that a gate is decomposed correctly if it has
+        generator[0]==None."""
+        dev = qml.device("default.qubit", wires=3)
+
+        class _CRX(qml.CRX):
+            generator = [None, 1]
+
+        @qml.qnode(dev, max_expansion=0)
+        def circuit(x, z0, y, z1):
+            qml.RX(x, wires=0)
+            qml.RZ(z0, wires=1)
+            qml.RY(y, wires=1)
+            qml.RZ(z1, wires=1)
+            _CRX(x, wires=[0, 2])
+            return qml.expval(qml.PauliZ(wires=0))
+
+        res = qnode_spectrum(circuit)(1.5, -2.1, 0.2, -0.418)
+        assert res == OrderedDict(
+            [
+                ("x", {(): [-2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0]}),
+                ("z0", {(): [-1.0, 0.0, 1.0]}),
+                ("y", {(): [-1.0, 0.0, 1.0]}),
+                ("z1", {(): [-1.0, 0.0, 1.0]}),
+            ]
+        )
+
+class TestExpandInvalidTrainable:
     """Tests for the gradient expand function"""
 
     def test_no_expansion(self, mocker):

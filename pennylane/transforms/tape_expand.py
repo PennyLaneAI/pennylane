@@ -90,8 +90,28 @@ def create_expand_fn(depth, stop_at, docstring=None):
 
 
 expand_multipar = create_expand_fn(depth=10, stop_at=is_measurement | has_nopar | has_gen)
+
+_expand_nonunitary_gen_doc = """Expand out a tape so that all its parametrized
+operations have a unitary generator.
+
+This is achieved by decomposing all parametrized operations that either do not have
+a generator or have a non-unitary generator, up to maximum depth ``depth``.
+For a sufficient ``depth``, it should always be possible to obtain a tape containing
+only unitarily generated operations.
+
+Args:
+    tape (.QuantumTape): the input tape to expand
+    depth (int) : the maximum expansion depth
+    **kwargs: additional keyword arguments are ignored
+
+Returns:
+    .QuantumTape: the expanded tape
+"""
+
 expand_nonunitary_gen = create_expand_fn(
-    depth=10, stop_at=is_measurement | has_nopar | (has_gen & has_unitary_gen)
+    depth=10,
+    stop_at=is_measurement | has_nopar | (has_gen & has_unitary_gen),
+    docstring = _expand_nonunitary_gen_doc,
 )
 
 
@@ -106,6 +126,7 @@ might not be possible, in which case the gradient rule will fail to apply.
 Args:
     tape (.QuantumTape): the input tape to expand
     depth (int) : the maximum expansion depth
+    **kwargs: additional keyword arguments are ignored
 
 Returns:
     .QuantumTape: the expanded tape
