@@ -63,7 +63,7 @@ class BooleanFn:
         Note that Python conditional expressions are evaluated from left to right.
         As a result, the order of composition may matter, even though logical
         operators such as ``|`` and ``&`` are symmetric.
-        
+
         For example:
 
         >>> is_int = qml.BooleanFn(lambda x: isinstance(x, int))

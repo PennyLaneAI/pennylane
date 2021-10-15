@@ -50,8 +50,8 @@ class TestCreateExpandFn:
         new_tape = expand_fn(self.tape)
         assert new_tape.operations == self.tape.operations
 
-class TestExpandMultipar:
 
+class TestExpandMultipar:
     def test_expand_multipar(self):
         """Test that a multi-parameter gate is decomposed correctly.
         And that single-parameter gates are not decomposed."""
@@ -105,6 +105,7 @@ class TestExpandMultipar:
                 ("z1", {(): [-1.0, 0.0, 1.0]}),
             ]
         )
+
 
 class TestExpandInvalidTrainable:
     """Tests for the gradient expand function"""
