@@ -356,6 +356,13 @@ of shape ``(batch_size,)``:
 
 <h3>Improvements</h3>
 
+* All qubit operations have been re-written to use the `qml.math` framework
+  for internal classical processing and the generation of their matrix representations.
+  As a result these representations are now fully differentiable, and the
+  framework-specific device classes no longer need to maintain framework-specific
+  versions of these matrices.
+  [(#1749)](https://github.com/PennyLaneAI/pennylane/pull/1749)
+
 * The `qml.beta.QNode` now supports the `qml.qnn` module.
   [(#1748)](https://github.com/PennyLaneAI/pennylane/pull/1748)
 
