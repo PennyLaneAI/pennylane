@@ -468,7 +468,7 @@ def test_prob_wires_and_hermitian(hermitian):
 
     with pytest.raises(
         qml.QuantumFunctionError,
-        match="Cannot specify the wires to get the proba if an observable is "
-        "provided. The wires to get the proba will be determined directly from the observable.",
+        match="Cannot specify the wires to probs if an observable is "
+        "provided. The wires for probs will be determined directly from the observable.",
     ):
         circuit()
