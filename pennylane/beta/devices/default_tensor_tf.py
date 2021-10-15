@@ -28,7 +28,7 @@ except ImportError as e:
     raise ImportError("default.tensor.tf device requires TensorFlow>=2.0") from e
 
 from pennylane.beta.devices.default_tensor import DefaultTensor
-from pennylane.devices import tf_ops as ops
+from pennylane.beta.devices import tf_ops as ops
 
 # tolerance for numerical errors
 tolerance = 1e-10
