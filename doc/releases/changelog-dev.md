@@ -578,5 +578,5 @@ of shape ``(batch_size,)``:
 This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad, Akash Narayanan B, Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee,
-Romain Moyard, Carrie-Anne Rubidge, Maria Schuld, Ingrid Strandberg, Antal Száva, Cody Wang,
+Romain Moyard, Carrie-Anne Rubidge, Maria Schuld, Rishabh Singh, Ingrid Strandberg, Antal Száva, Cody Wang,
 David Wierichs.
