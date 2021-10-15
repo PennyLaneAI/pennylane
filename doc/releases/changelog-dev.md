@@ -571,6 +571,8 @@ of shape ``(batch_size,)``:
 * All instances of `qnode.draw()` have been updated to instead use the transform `qml.draw(qnode)`.
   [(#1750)](https://github.com/PennyLaneAI/pennylane/pull/1750)
 
+* Add the `jax` interface in QNode Documentation. [(#1755)](https://github.com/PennyLaneAI/pennylane/pull/1755)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
