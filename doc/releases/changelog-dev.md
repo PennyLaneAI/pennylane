@@ -356,6 +356,9 @@ of shape ``(batch_size,)``:
 
 <h3>Improvements</h3>
 
+* The `qml.beta.QNode` now supports the `qml.qnn` module.
+  [(#1748)](https://github.com/PennyLaneAI/pennylane/pull/1748)
+
 * `@qml.beta.QNode` now supports the `qml.specs` transform.
   [(#1739)](https://github.com/PennyLaneAI/pennylane/pull/1739)
 
