@@ -423,17 +423,32 @@ class Operator(abc.ABC):
     def name(self, value):
         self._name = value
 
-    def label(self, decimals=None):
+    def label(self, decimals=None, base_label=None):
         """How the operator is represented in diagrams and drawings.
 
         Keyword Args:
             decimals=None (Int): If ``None``, no parameters are included. Else,
                 how to round the parameters.
+            base_label=None (str): overwrite the non-parameter component of the label
 
         Returns:
             str: label to use in drawings
+
+        >>> op = qml.RX(1.23456, wires=0)
+        >>> op.label()
+        "RX"
+        >>> op.label(decimals=2)
+        "RX\n(1.23)
+        >>> op.label(base_label="my_label")
+        "my_label"
+        >>> op.label(decimals=2, base_label="my_label")
+        "my_label\n(1.23)"
+        >>> op.inv()
+        >>> op.label()
+        "RX⁻¹"
+
         """
-        op_label = self.__class__.__name__
+        op_label = base_label or self.__class__.__name__
 
         if decimals is not None:
             params = self.parameters
@@ -815,8 +830,8 @@ class Operation(Operator):
         """Get and set the name of the operator."""
         return self._name + Operation.string_for_inverse if self.inverse else self._name
 
-    def label(self, decimals=None):
-        op_label = super().label(decimals=decimals)
+    def label(self, decimals=None, base_label=None):
+        op_label = super().label(decimals=decimals, base_label=base_label)
         if not self.is_self_inverse and self.inverse:
             op_label += "⁻¹"
         return op_label
@@ -1252,7 +1267,31 @@ class Tensor(Observable):
         self._args = args
         self.queue(init=True)
 
-    def label(self, decimals=None):
+    def label(self, decimals=None, base_label=None):
+        """How the operator is represented in diagrams and drawings.
+
+        Keyword Args:
+            decimals=None (Int): If ``None``, no parameters are included. Else,
+                how to round the parameters.
+            base_label=None (Iterable[str]): overwrite the non-parameter component of the label.
+                Must be same length as ``obs`` attribute.
+
+        Returns:
+            str: label to use in drawings
+
+        >>> T = qml.PauliX(0) @ qml.Hadamard(2)
+        >>> T.label()
+        "X H"
+        >>> T.label(base_label=["X0", "H2"])
+        "X0 H2"
+
+        """
+        if base_label is not None:
+            if len(base_label) != len(self.obs):
+                raise ValueError("Tensor label requires ``base_label`` keyword to be same length"
+                " as tensor components.")
+            return " ".join(ob.label(decimals=decimals, base_label=lbl) for ob, lbl in zip(self.obs, base_label))
+
         return " ".join(ob.label(decimals=decimals) for ob in self.obs)
 
     def queue(self, context=qml.QueuingContext, init=False):  # pylint: disable=arguments-differ

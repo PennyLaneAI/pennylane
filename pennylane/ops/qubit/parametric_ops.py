@@ -270,14 +270,8 @@ class ControlledPhaseShift(DiagonalOperation):
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), 1]
     has_unitary_generator = False
 
-    def label(self, decimals=None):
-        op_label = "PhaseShift"
-
-        if decimals is not None:
-            param_string = f"\n({1.0 * self.parameters[0]:.{decimals}f})"
-            op_label += param_string
-
-        return op_label
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "PhaseShift")
 
     @classmethod
     def _matrix(cls, *params):
@@ -539,11 +533,15 @@ class PauliRot(Operation):
                 )
             )
 
-    def label(self, decimals=None):
-        op_label = "R(" + self.parameters[1] + ")"
+    def label(self, decimals=None, base_label=None):
+        op_label = base_label or ("R(" + self.parameters[1] + ")")
+
         if decimals is not None:
             param_string = f"\n({1.0*self.parameters[0]:.{decimals}f})"
             op_label += param_string
+
+        if self.inverse:
+            op_label += "⁻¹"
 
         return op_label
 
@@ -734,14 +732,8 @@ class CRX(Operation):
     ]
     has_unitary_generator = False
 
-    def label(self, decimals=None):
-        op_label = "RX"
-
-        if decimals is not None:
-            param_string = f"\n({1.0 * self.parameters[0]:.{decimals}f})"
-            op_label += param_string
-
-        return op_label
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "RX")
 
     @classmethod
     def _matrix(cls, *params):
@@ -822,14 +814,8 @@ class CRY(Operation):
     ]
     has_unitary_generator = False
 
-    def label(self, decimals=None):
-        op_label = "RY"
-
-        if decimals is not None:
-            param_string = f"\n({1.0*self.parameters[0]:.{decimals}f})"
-            op_label += param_string
-
-        return op_label
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "RY")
 
     @classmethod
     def _matrix(cls, *params):
@@ -911,14 +897,8 @@ class CRZ(DiagonalOperation):
     ]
     has_unitary_generator = False
 
-    def label(self, decimals=None):
-        op_label = "RZ"
-
-        if decimals is not None:
-            param_string = f"\n({1.0*self.parameters[0]:.{decimals}f})"
-            op_label += param_string
-
-        return op_label
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "RZ")
 
     @classmethod
     def _matrix(cls, *params):
@@ -1005,15 +985,8 @@ class CRot(Operation):
     grad_method = "A"
     grad_recipe = four_term_grad_recipe * 3
 
-    def label(self, decimals=None):
-        op_label = "Rot"
-
-        if decimals is not None:
-
-            param_string = ",".join(f"{1.0*p:.{decimals}f}" for p in self.parameters)
-            op_label += "\n(" + param_string + ")"
-
-        return op_label
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "Rot")
 
     @classmethod
     def _matrix(cls, *params):

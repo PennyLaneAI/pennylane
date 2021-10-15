@@ -49,8 +49,8 @@ class Hadamard(Observable, Operation):
     eigvals = pauli_eigs(1)
     matrix = np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
 
-    def label(self, decimals=None):
-        return "H"
+    def label(self, decimals=None, base_label=None):
+        return base_label or "H"
 
     @classmethod
     def _matrix(cls, *params):
@@ -115,8 +115,8 @@ class PauliX(Observable, Operation):
     eigvals = pauli_eigs(1)
     matrix = np.array([[0, 1], [1, 0]])
 
-    def label(self, decimals=None):
-        return "X"
+    def label(self, decimals=None, base_label=None):
+        return base_label or "X"
 
     @classmethod
     def _matrix(cls, *params):
@@ -182,8 +182,8 @@ class PauliY(Observable, Operation):
     eigvals = pauli_eigs(1)
     matrix = np.array([[0, -1j], [1j, 0]])
 
-    def label(self, decimals=None):
-        return "Y"
+    def label(self, decimals=None, base_label=None):
+        return base_label or "Y"
 
     @classmethod
     def _matrix(cls, *params):
@@ -255,8 +255,8 @@ class PauliZ(Observable, DiagonalOperation):
     eigvals = pauli_eigs(1)
     matrix = np.array([[1, 0], [0, -1]])
 
-    def label(self, decimals=None):
-        return "Z"
+    def label(self, decimals=None, base_label=None):
+        return base_label or "Z"
 
     @classmethod
     def _matrix(cls, *params):
@@ -453,8 +453,8 @@ class CNOT(Operation):
     basis = "X"
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
-    def label(self, decimals=None):
-        return "X"
+    def label(self, decimals=None, base_label=None):
+        return base_label or "X"
 
     @classmethod
     def _matrix(cls, *params):
@@ -501,8 +501,8 @@ class CZ(DiagonalOperation):
     eigvals = np.array([1, 1, 1, -1])
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 
-    def label(self, decimals=None):
-        return "Z"
+    def label(self, decimals=None, base_label=None):
+        return base_label or "Z"
 
     @classmethod
     def _matrix(cls, *params):
@@ -555,8 +555,8 @@ class CY(Operation):
         ]
     )
 
-    def label(self, decimals=None):
-        return "Y"
+    def label(self, decimals=None, base_label=None):
+        return base_label or "Y"
 
     @classmethod
     def _matrix(cls, *params):
@@ -782,8 +782,8 @@ class CSWAP(Operation):
         ]
     )
 
-    def label(self, decimals=None):
-        return "SWAP"
+    def label(self, decimals=None, base_label=None):
+        return base_label or "SWAP"
 
     @classmethod
     def _matrix(cls, *params):
@@ -847,8 +847,8 @@ class Toffoli(Operation):
         ]
     )
 
-    def label(self, decimals=None):
-        return "X"
+    def label(self, decimals=None, base_label=None):
+        return base_label or "X"
 
     @classmethod
     def _matrix(cls, *params):
@@ -942,8 +942,8 @@ class MultiControlledX(Operation):
     par_domain = "A"
     grad_method = None
 
-    def label(self, decimals=None):
-        return "X"
+    def label(self, decimals=None, base_label=None):
+        return base_label or "X"
 
     # pylint: disable=too-many-arguments
     def __init__(

@@ -1398,6 +1398,10 @@ class TestLabel:
         assert op.label(decimals=2) == label2
         assert op.label(decimals=0) == label3
 
+        op.inv()
+        assert op.label() == label1 + "⁻¹"
+        assert op.label(decimals=2) == label2 + "⁻¹"
+
     def test_label_tf(self):
         """Test label methods work with tensorflow variables"""
         tf = pytest.importorskip("tensorflow")
