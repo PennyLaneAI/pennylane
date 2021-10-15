@@ -15,7 +15,9 @@
 # pylint: disable=too-few-public-methods
 import functools
 import inspect
+import os
 import types
+import warnings
 
 import pennylane as qml
 from pennylane.beta import QNode
@@ -35,6 +37,7 @@ class batch_transform:
             **must** be the input tape.
         expand_fn (function): An expansion function (if required) to be applied to the
             input tape before the transformation takes place.
+            It **must** take the same input arguments as ``transform_fn``.
         differentiable (bool): Specifies whether the transform is differentiable or
             not. A transform may be non-differentiable for several reasons:
 
@@ -149,7 +152,54 @@ class batch_transform:
     >>> gradient = qml.grad(circuit)(-0.5)
     >>> print(gradient)
     2.5800122591960153
+
+    .. UsageDetails::
+
+        **Expansion functions**
+
+        Tape expansion, decomposition, or manipulation may always be
+        performed within the custom batch transform. However, by specifying
+        a separate expansion function, PennyLane will be possible to access
+        this separate expansion function where needed via
+
+        >>> my_transform.expand_fn
+
+        The provided ``expand_fn`` must have the same input arguments as
+        ``transform_fn`` and return a ``tape``. Following the example above:
+
+        .. code-block:: python
+
+            def expand_fn(tape, a, b):
+                stopping_crit = lambda obj: obj.name!="PhaseShift"
+                return tape.expand(depth=10, stop_at=stopping_crit)
+
+            my_transform = batch_transform(my_transform, expand_fn)
+
+        Note that:
+
+        - the transform arguments ``a`` and ``b`` must be passed to
+          the expansion function, and
+        - the expansion function must return a single tape.
     """
+
+    def __new__(cls, *args, **kwargs):  # pylint: disable=unused-argument
+        if os.environ.get("SPHINX_BUILD") == "1":
+            # If called during a Sphinx documentation build,
+            # simply return the original function rather than
+            # instantiating the object. This allows the signature to
+            # be correctly displayed in the documentation.
+
+            warnings.warn(
+                "Batch transformations have been disabled, as a Sphinx "
+                "build has been detected via SPHINX_BUILD='1'. If this is not the "
+                "case, please set the environment variable SPHINX_BUILD='0'.",
+                UserWarning,
+            )
+
+            args[0].custom_qnode_wrapper = lambda x: x
+            return args[0]
+
+        return super().__new__(cls)
 
     def __init__(self, transform_fn, expand_fn=None, differentiable=True):
         if not callable(transform_fn):
@@ -237,7 +287,9 @@ class batch_transform:
             interface = qnode.interface
             execute_kwargs = getattr(qnode, "execute_kwargs", {})
             max_diff = execute_kwargs.pop("max_diff", 2)
+
             gradient_fn = getattr(qnode, "gradient_fn", qnode.diff_method)
+            gradient_kwargs = getattr(qnode, "gradient_kwargs", {})
 
             if interface is None or not self.differentiable:
                 gradient_fn = None
@@ -255,6 +307,7 @@ class batch_transform:
                 interface=interface,
                 max_diff=max_diff,
                 override_shots=shots,
+                gradient_kwargs=gradient_kwargs,
                 **execute_kwargs,
             )
 
@@ -263,8 +316,6 @@ class batch_transform:
         return _wrapper
 
     def __call__(self, qnode, *targs, **tkwargs):
-
-        self._set_expand_fn(tkwargs)
 
         if isinstance(qnode, qml.tape.QuantumTape):
             # Input is a quantum tape.
@@ -320,7 +371,7 @@ class batch_transform:
         expand = kwargs.pop("_expand", True)
 
         if expand and self.expand_fn is not None:
-            tape = self.expand_fn(tape)
+            tape = self.expand_fn(tape, *args, **kwargs)
 
         tapes, processing_fn = self.transform_fn(tape, *args, **kwargs)
 
