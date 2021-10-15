@@ -25,7 +25,7 @@ from pennylane.operation import (
 )
 
 
-def create_expand_fn(depth, stop_at, device=None, docstring=None):
+def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
     """Create a function for expanding a tape to a given depth, and
     with a specific stopping criterion. This is a wrapper around
     :meth:`~.QuantumTape.expand`.
@@ -77,12 +77,19 @@ def create_expand_fn(depth, stop_at, device=None, docstring=None):
 
     """
     # pylint: disable=unused-argument
+    depth_only = stop_at is None and device is None
 
     def expand_fn(tape, _depth=depth, **kwargs):
-        if not all(stop_at(op) for op in tape.operations):
 
-            with qml.tape.stop_recording():
-                tape = tape.expand(depth=_depth, stop_at=stop_at)
+        with qml.tape.stop_recording():
+
+            if depth_only:
+                tape = tape.expand(depth=_depth)
+
+            else:
+                if stop_at is not None:
+                    if not all(stop_at(op) for op in tape.operations):
+                        tape = tape.expand(depth=_depth, stop_at=stop_at)
 
                 if device is not None:
                     tape = device.expand_fn(tape, max_expansion=_depth)
