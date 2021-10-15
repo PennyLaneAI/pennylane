@@ -85,8 +85,7 @@ def cost_layer(gamma, hamiltonian):
 
         which gives us a circuit of the form:
 
-        >>> circuit(0.5)
-        >>> print(circuit.draw())
+        >>> print(qml.draw(circuit)(0.5))
         0: ──H──RZ(1)──╭RZ(1)──┤ ⟨Z⟩
         1: ──H─────────╰RZ(1)──┤ ⟨Z⟩
 
@@ -146,8 +145,7 @@ def mixer_layer(alpha, hamiltonian):
 
         which gives us a circuit of the form:
 
-        >>> circuit(0.5)
-        >>> print(circuit.draw())
+        >>> print(qml.draw(circuit)(0.5))
         0: ──H──RZ(1)──H──H──╭RZ(1)──H──┤ ⟨Z⟩
         1: ──H───────────────╰RZ(1)──H──┤ ⟨Z⟩
 
