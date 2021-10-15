@@ -200,8 +200,8 @@ class QubitSum(Operation):
 
     def label(self, decimals=None):
         if self.inverse:
-            return "+⁻¹"
-        return "+"
+            return "Σ⁻¹"
+        return "Σ"
 
     @classmethod
     def _matrix(cls, *params):

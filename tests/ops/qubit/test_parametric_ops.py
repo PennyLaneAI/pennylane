@@ -1365,29 +1365,29 @@ class TestMultiRZ:
 
 
 label_data = [
-    (qml.Rot(1.23456, 2.3456, 3.45678, wires=0), "Rot", "Rot(1.23,2.35,3.46)", "Rot(1,2,3)"),
-    (qml.RX(1.23456, wires=0), "RX", "RX(1.23)", "RX(1)"),
-    (qml.RY(1.23456, wires=0), "RY", "RY(1.23)", "RY(1)"),
-    (qml.RZ(1.23456, wires=0), "RZ", "RZ(1.23)", "RZ(1)"),
-    (qml.MultiRZ(1.23456, wires=0), "MultiRZ", "MultiRZ(1.23)", "MultiRZ(1)"),
-    (qml.PauliRot(1.2345, "XYZ", wires=(0, 1, 2)), "R(XYZ)", "R(XYZ)(1.23)", "R(XYZ)(1)"),
-    (qml.PhaseShift(1.2345, wires=0), "PhaseShift", "PhaseShift(1.23)", "PhaseShift(1)"),
+    (qml.Rot(1.23456, 2.3456, 3.45678, wires=0), "Rot", "Rot\n(1.23,2.35,3.46)", "Rot\n(1,2,3)"),
+    (qml.RX(1.23456, wires=0), "RX", "RX\n(1.23)", "RX\n(1)"),
+    (qml.RY(1.23456, wires=0), "RY", "RY\n(1.23)", "RY\n(1)"),
+    (qml.RZ(1.23456, wires=0), "RZ", "RZ\n(1.23)", "RZ\n(1)"),
+    (qml.MultiRZ(1.23456, wires=0), "MultiRZ", "MultiRZ\n(1.23)", "MultiRZ\n(1)"),
+    (qml.PauliRot(1.2345, "XYZ", wires=(0, 1, 2)), "R(XYZ)", "R(XYZ)\n(1.23)", "R(XYZ)\n(1)"),
+    (qml.PhaseShift(1.2345, wires=0), "PhaseShift", "PhaseShift\n(1.23)", "PhaseShift\n(1)"),
     (
         qml.ControlledPhaseShift(1.2345, wires=(0, 1)),
         "PhaseShift",
-        "PhaseShift(1.23)",
-        "PhaseShift(1)",
+        "PhaseShift\n(1.23)",
+        "PhaseShift\n(1)",
     ),
-    (qml.CRX(1.234, wires=(0, 1)), "RX", "RX(1.23)", "RX(1)"),
-    (qml.CRY(1.234, wires=(0, 1)), "RY", "RY(1.23)", "RY(1)"),
-    (qml.CRZ(1.234, wires=(0, 1)), "RZ", "RZ(1.23)", "RZ(1)"),
-    (qml.CRot(1.234, 2.3456, 3.456, wires=(0, 1)), "Rot", "Rot(1.23,2.35,3.46)", "Rot(1,2,3)"),
-    (qml.U1(1.2345, wires=0), "U1", "U1(1.23)", "U1(1)"),
-    (qml.U2(1.2345, 2.3456, wires=0), "U2", "U2(1.23,2.35)", "U2(1,2)"),
-    (qml.U3(1.2345, 2.345, 3.4567, wires=0), "U3", "U3(1.23,2.35,3.46)", "U3(1,2,3)"),
-    (qml.IsingXX(1.2345, wires=(0, 1)), "IsingXX", "IsingXX(1.23)", "IsingXX(1)"),
-    (qml.IsingYY(1.2345, wires=(0, 1)), "IsingYY", "IsingYY(1.23)", "IsingYY(1)"),
-    (qml.IsingZZ(1.2345, wires=(0, 1)), "IsingZZ", "IsingZZ(1.23)", "IsingZZ(1)"),
+    (qml.CRX(1.234, wires=(0, 1)), "RX", "RX\n(1.23)", "RX\n(1)"),
+    (qml.CRY(1.234, wires=(0, 1)), "RY", "RY\n(1.23)", "RY\n(1)"),
+    (qml.CRZ(1.234, wires=(0, 1)), "RZ", "RZ\n(1.23)", "RZ\n(1)"),
+    (qml.CRot(1.234, 2.3456, 3.456, wires=(0, 1)), "Rot", "Rot\n(1.23,2.35,3.46)", "Rot\n(1,2,3)"),
+    (qml.U1(1.2345, wires=0), "U1", "U1\n(1.23)", "U1\n(1)"),
+    (qml.U2(1.2345, 2.3456, wires=0), "U2", "U2\n(1.23,2.35)", "U2\n(1,2)"),
+    (qml.U3(1.2345, 2.345, 3.4567, wires=0), "U3", "U3\n(1.23,2.35,3.46)", "U3\n(1,2,3)"),
+    (qml.IsingXX(1.2345, wires=(0, 1)), "IsingXX", "IsingXX\n(1.23)", "IsingXX\n(1)"),
+    (qml.IsingYY(1.2345, wires=(0, 1)), "IsingYY", "IsingYY\n(1.23)", "IsingYY\n(1)"),
+    (qml.IsingZZ(1.2345, wires=(0, 1)), "IsingZZ", "IsingZZ\n(1.23)", "IsingZZ\n(1)"),
 ]
 
 
@@ -1403,23 +1403,23 @@ class TestLabel:
         tf = pytest.importorskip("tensorflow")
 
         op1 = qml.RX(tf.Variable(0.123456), wires=0)
-        assert op1.label(decimals=2) == "RX(0.12)"
+        assert op1.label(decimals=2) == "RX\n(0.12)"
 
         op2 = qml.CRX(tf.Variable(0.12345), wires=(0, 1))
-        assert op2.label(decimals=2) == "RX(0.12)"
+        assert op2.label(decimals=2) == "RX\n(0.12)"
 
         op3 = qml.Rot(tf.Variable(0.1), tf.Variable(0.2), tf.Variable(0.3), wires=0)
-        assert op3.label(decimals=2) == "Rot(0.10,0.20,0.30)"
+        assert op3.label(decimals=2) == "Rot\n(0.10,0.20,0.30)"
 
     def test_label_torch(self):
         """Test label methods work with torch tensors"""
         torch = pytest.importorskip("torch")
 
         op1 = qml.RX(torch.tensor(1.23456), wires=0)
-        assert op1.label(decimals=2) == "RX(1.23)"
+        assert op1.label(decimals=2) == "RX\n(1.23)"
 
         op2 = qml.CRX(torch.tensor(1.23456), wires=0)
-        assert op2.label(decimals=2) == "RX(1.23)"
+        assert op2.label(decimals=2) == "RX\n(1.23)"
 
         op3 = qml.Rot(torch.tensor(0.1), torch.tensor(0.2), torch.tensor(0.3), wires=0)
-        assert op3.label(decimals=2) == "Rot(0.10,0.20,0.30)"
+        assert op3.label(decimals=2) == "Rot\n(0.10,0.20,0.30)"

@@ -110,6 +110,11 @@ class SingleExcitation(Operation):
         (phi,) = self.parameters
         return SingleExcitation(-phi, wires=self.wires)
 
+    def label(self, decimals=None):
+        op_label = "G"
+        if decimals is not None:
+            op_label += f"\n({1.0*self.parameters[0]:.{decimals}f})"
+        return op_label
 
 class SingleExcitationMinus(Operation):
     r"""SingleExcitationMinus(phi, wires)
@@ -172,6 +177,13 @@ class SingleExcitationMinus(Operation):
         (phi,) = self.parameters
         return SingleExcitationMinus(-phi, wires=self.wires)
 
+    def label(self, decimals=None):
+        op_label = "G₋"
+        if decimals is not None:
+            op_label += f"\n({1.0*self.parameters[0]:.{decimals}f})"
+        return op_label
+
+
 
 class SingleExcitationPlus(Operation):
     r"""SingleExcitationPlus(phi, wires)
@@ -233,6 +245,12 @@ class SingleExcitationPlus(Operation):
     def adjoint(self):
         (phi,) = self.parameters
         return SingleExcitationPlus(-phi, wires=self.wires)
+
+    def label(self, decimals=None):
+        op_label = "G₊"
+        if decimals is not None:
+            op_label += f"\n({1.0*self.parameters[0]:.{decimals}f})"
+        return op_label
 
 
 class DoubleExcitation(Operation):
@@ -349,6 +367,12 @@ class DoubleExcitation(Operation):
         (theta,) = self.parameters
         return DoubleExcitation(-theta, wires=self.wires)
 
+    def label(self, decimals=None):
+        op_label = "G²"
+        if decimals is not None:
+            op_label += f"\n({1.0*self.parameters[0]:.{decimals}f})"
+        return op_label
+
 
 class DoubleExcitationPlus(Operation):
     r"""DoubleExcitationPlus(phi, wires)
@@ -410,6 +434,12 @@ class DoubleExcitationPlus(Operation):
         (theta,) = self.parameters
         return DoubleExcitationPlus(-theta, wires=self.wires)
 
+    def label(self, decimals=None):
+        op_label = "G₊²"
+        if decimals is not None:
+            op_label += f"\n({1.0*self.parameters[0]:.{decimals}f})"
+        return op_label
+
 
 class DoubleExcitationMinus(Operation):
     r"""DoubleExcitationMinus(phi, wires)
@@ -470,6 +500,12 @@ class DoubleExcitationMinus(Operation):
     def adjoint(self):
         (theta,) = self.parameters
         return DoubleExcitationMinus(-theta, wires=self.wires)
+
+    def label(self, decimals=None):
+        op_label = "G₋²"
+        if decimals is not None:
+            op_label += f"\n({1.0*self.parameters[0]:.{decimals}f})"
+        return op_label
 
 
 class OrbitalRotation(Operation):
