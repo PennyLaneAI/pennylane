@@ -59,7 +59,6 @@ class QNode:
               and returns NumPy arrays.
 
             * ``"jax"``:  Allows JAX to backpropogate through the QNode.
-
               The QNode accepts and returns a single expectation value or variance.
 
             * ``"torch"``: Allows PyTorch to backpropogate
