@@ -136,7 +136,6 @@ class TestCommutationDAG:
     def test_empty_dag(self, wires):
         qml.commutation_dag.CommutationDAG(qml.wires.Wires(wires))
 
-
     def test_dag_transform_simple_dag_function(self):
         "Test a simple DAG on 1 wire with a quantum function."
 

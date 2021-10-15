@@ -298,7 +298,7 @@ class CommutationDAG:
 
     """
 
-    def __init__(self, wires, observables):
+    def __init__(self, wires, observables = []):
         self.wires = wires
         self.num_wires = len(wires)
         self.node_id = -1
