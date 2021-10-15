@@ -30,7 +30,11 @@ class TestCreateExpandFn:
 
     def test_create_expand_fn(self):
         """Test creation of expand_fn."""
-        expand_fn = qml.transforms.create_expand_fn(depth=10, stop_at=self.crit_0, docstring=doc_0)
+        expand_fn = qml.transforms.create_expand_fn(
+            depth=10,
+            stop_at=self.crit_0,
+            docstring=self.doc_0,
+        )
         assert expand_fn.__doc__ == "Test docstring."
 
     def test_create_expand_fn_expansion(self):
@@ -58,26 +62,21 @@ class TestExpandMultipar:
         dev = qml.device("default.qubit", wires=3)
 
         class _CRX(qml.CRX):
+            name = "_CRX"
+
             @staticmethod
             def decomposition(theta, wires):
                 raise NotImplementedError()
 
-        @qml.qnode(dev)
-        def circuit(x, z0, y, z1):
-            qml.RX(x, wires=0)
-            qml.Rot(z0, y, z1, wires=1)
-            _CRX(x, wires=[0, 2])
-            return qml.expval(qml.PauliZ(wires=0))
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(1.5, wires=0)
+            qml.Rot(-2.1, 0.2, -0.418, wires=1)
+            _CRX(1.5, wires=[0, 2])
 
-        res = qnode_spectrum(circuit)(1.5, -2.1, 0.2, -0.418)
-        assert res == OrderedDict(
-            [
-                ("x", {(): [-2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0]}),
-                ("z0", {(): [-1.0, 0.0, 1.0]}),
-                ("y", {(): [-1.0, 0.0, 1.0]}),
-                ("z1", {(): [-1.0, 0.0, 1.0]}),
-            ]
-        )
+        new_tape = qml.transforms.expand_multipar(tape)
+        new_ops = new_tape.operations
+
+        assert [op.name for op in new_ops] == ["RX", "RZ", "RY", "RZ", "_CRX"]
 
     def test_no_generator_expansion(self):
         """Test that a gate is decomposed correctly if it has
@@ -87,24 +86,17 @@ class TestExpandMultipar:
         class _CRX(qml.CRX):
             generator = [None, 1]
 
-        @qml.qnode(dev, max_expansion=0)
-        def circuit(x, z0, y, z1):
-            qml.RX(x, wires=0)
-            qml.RZ(z0, wires=1)
-            qml.RY(y, wires=1)
-            qml.RZ(z1, wires=1)
-            _CRX(x, wires=[0, 2])
-            return qml.expval(qml.PauliZ(wires=0))
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(1.5, wires=0)
+            qml.RZ(-2.1, wires=1)
+            qml.RY(0.2, wires=1)
+            qml.RZ(-0.418, wires=1)
+            _CRX(1.5, wires=[0, 2])
 
-        res = qnode_spectrum(circuit)(1.5, -2.1, 0.2, -0.418)
-        assert res == OrderedDict(
-            [
-                ("x", {(): [-2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0]}),
-                ("z0", {(): [-1.0, 0.0, 1.0]}),
-                ("y", {(): [-1.0, 0.0, 1.0]}),
-                ("z1", {(): [-1.0, 0.0, 1.0]}),
-            ]
-        )
+        new_tape = qml.transforms.expand_multipar(tape)
+        new_ops = new_tape.operations
+        expected = ["RX", "RZ", "RY", "RZ", "RZ", "RY", "CNOT", "RY", "CNOT", "RZ"]
+        assert [op.name for op in new_ops] == expected
 
 
 class TestExpandInvalidTrainable:
