@@ -144,3 +144,27 @@ class AdamOptimizer(GradientDescentOptimizer):
     def reset(self):
         """Reset optimizer by erasing memory of past steps."""
         self.accumulation = None
+
+    @property
+    def fm(self):
+        """Returns estimated first moments of gradient"""
+        if self.accumulation is None:
+            raise ValueError("Cannot access the first moments!")
+
+        return self.accumulation.fm
+
+    @property
+    def sm(self):
+        """Returns estimated second moments of gradient"""
+        if self.accumulation is None:
+            raise ValueError("Cannot access the second moments!")
+
+        return self.accumulation.sm
+
+    @property
+    def t(self):
+        """Returns accumulated timesteps"""
+        if self.accumulation is None:
+            raise ValueError("Cannot access the accumulated timesteps!")
+
+        return self.accumulation.t
