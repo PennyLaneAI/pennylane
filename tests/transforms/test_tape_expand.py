@@ -68,6 +68,29 @@ class TestGetExpandFn:
         assert [op.name for op in new_tape.operations[2:5]] == ["RZ", "RY", "RZ"]
         assert len(new_tape.operations[6:]) == 15
 
+    def test_depth_only_expansion(self):
+        """Test that passing a depth simply expands to that depth"""
+        dev = qml.device("default.qubit", wires=0)
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RX(0.2, wires=0)
+            qml.RY(qml.numpy.array(2.1, requires_grad=True), wires=1)
+            qml.Rot(*qml.numpy.array([0.5, 0.2, -0.1], requires_grad=True), wires=0)
+            qml.templates.StronglyEntanglingLayers(
+                qml.numpy.ones([2, 2, 3], requires_grad=True), wires=[0, 1]
+            )
+
+        expand_fn = qml.transforms.create_expand_fn(depth=0)
+        new_tape = expand_fn(tape)
+        assert new_tape is tape
+
+        expand_fn = qml.transforms.create_expand_fn(depth=10)
+        new_tape = expand_fn(tape)
+        assert new_tape.operations[0] == tape.operations[0]
+        assert new_tape.operations[1] == tape.operations[1]
+        assert [op.name for op in new_tape.operations[2:5]] == ["RZ", "RY", "RZ"]
+        assert len(new_tape.operations[6:]) == 15
+
 
 class TestToValidTrainable:
     """Tests for the gradient expand function"""
