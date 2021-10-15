@@ -356,6 +356,10 @@ of shape ``(batch_size,)``:
 
 <h3>Improvements</h3>
 
+* `qml.probs` now accepts an attribute `op` that allows to rotate the computational basis and get the 
+  probabilities in the rotated basis.
+  [(#1692)](https://github.com/PennyLaneAI/pennylane/pull/1692)
+  
 * The `qml.beta.QNode` now supports the `qml.qnn` module.
   [(#1748)](https://github.com/PennyLaneAI/pennylane/pull/1748)
 
