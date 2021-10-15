@@ -356,6 +356,9 @@ of shape ``(batch_size,)``:
 
 <h3>Improvements</h3>
 
+* The `qml.beta.QNode` now supports the `qml.qnn` module.
+  [(#1748)](https://github.com/PennyLaneAI/pennylane/pull/1748)
+
 * `@qml.beta.QNode` now supports the `qml.specs` transform.
   [(#1739)](https://github.com/PennyLaneAI/pennylane/pull/1739)
 
@@ -564,6 +567,9 @@ of shape ``(batch_size,)``:
 * Updates the 'Gradients and training' quickstart guide to provide information
   on gradient transforms.
   [(#1751)](https://github.com/PennyLaneAI/pennylane/pull/1751)
+
+* All instances of `qnode.draw()` have been updated to instead use the transform `qml.draw(qnode)`.
+  [(#1750)](https://github.com/PennyLaneAI/pennylane/pull/1750)
 
 <h3>Contributors</h3>
 

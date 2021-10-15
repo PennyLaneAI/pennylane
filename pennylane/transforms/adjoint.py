@@ -87,8 +87,7 @@ def adjoint(fn):
 
         This creates the following circuit:
 
-        >>> circuit()
-        >>> print(circuit.draw())
+        >>> print(qml.draw(circuit)())
         0: --RX(0.123)--RY(0.456)--RY(-0.456)--RX(-0.123)--| <Z>
 
         **Single operation**
@@ -106,8 +105,7 @@ def adjoint(fn):
 
         This creates the following circuit:
 
-        >>> circuit()
-        >>> print(circuit.draw())
+        >>> print(qml.draw(circuit)())
         0: --RX(0.123)--RX(-0.123)--| <Z>
     """
 
