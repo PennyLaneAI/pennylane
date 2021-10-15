@@ -218,7 +218,7 @@ class TestCommutationDAG:
             assert edges[i] == edge
 
     def test_dag_pattern(self):
-        "Test a the DAG of a more complicated circuit."
+        "Test a the DAG and its attributes for a more complicated circuit."
 
         def circuit():
             qml.CNOT(wires=[3, 0])
@@ -273,11 +273,46 @@ class TestCommutationDAG:
             (9, 10, {"commute": False}),
         ]
 
+        direct_successors = [[2, 4], [3], [8], [5], [6], [11], [7], [8], [9, 11], [10], [], []]
+        successors = [
+            [2, 4, 6, 7, 8, 9, 10, 11],
+            [3, 5, 11],
+            [8, 9, 10, 11],
+            [5, 11],
+            [6, 7, 8, 9, 10, 11],
+            [11],
+            [7, 8, 9, 10, 11],
+            [8, 9, 10, 11],
+            [9, 10, 11],
+            [10],
+            [],
+            [],
+        ]
+        direct_predecessors = [[], [], [0], [1], [0], [3], [4], [6], [2, 7], [8], [9], [5, 8]]
+        predecessors = [
+            [],
+            [],
+            [0],
+            [1],
+            [0],
+            [1, 3],
+            [0, 4],
+            [0, 4, 6],
+            [0, 2, 4, 6, 7],
+            [0, 2, 4, 6, 7, 8],
+            [0, 2, 4, 6, 7, 8, 9],
+            [0, 1, 2, 3, 4, 5, 6, 7, 8],
+        ]
+
         assert dag.observables == []
 
         for i in range(0, 12):
             assert dag.get_node(i).op.name == nodes[i].name
             assert dag.get_node(i).op.wires == nodes[i].wires
+            assert dag.direct_successors(i) == direct_successors[i]
+            assert dag.get_node(i).successors == successors[i] == dag.successors(i)
+            assert dag.direct_predecessors(i) == direct_predecessors[i]
+            assert dag.get_node(i).predecessors == predecessors[i] == dag.predecessors(i)
 
         for i, edge in enumerate(dag.get_edges()):
             assert edges[i] == edge
