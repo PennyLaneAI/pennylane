@@ -58,14 +58,17 @@ def expand_fn(tape, approx="block-diag", diag_approx=None, allow_nonunitary=True
     if not allow_nonunitary and approx is None:  # pragma: no cover
         return expand_multi_par_and_nonunitary_gen(tape)
     return expand_multi_par_and_no_gen(tape)
-       
+
+
 @functools.partial(batch_transform, expand_fn=expand_fn)
-def metric_tensor(tape, approx="block-diag", diag_approx=None, allow_nonunitary=True, aux_wire=None):
+def metric_tensor(
+    tape, approx="block-diag", diag_approx=None, allow_nonunitary=True, aux_wire=None
+):
     """Returns a function that computes the block-diagonal approximation of the metric tensor
     of a given QNode or quantum tape.
 
     .. note::
-    
+
         Only gates that have a single parameter and define a ``generator`` are supported.
         All other parametrized gates will be decomposed if possible.
 
@@ -86,7 +89,7 @@ def metric_tensor(tape, approx="block-diag", diag_approx=None, allow_nonunitary=
 
             - If ``"diag"``, only the diagonal approximation is computed, slightly
               reducing the classical overhead but not the quantum resources.
-              
+
         diag_approx (bool): if True, use the diagonal approximation. If ``False``, a
             block diagonal approximation of the metric tensor is computed.
             This keyword argument is deprecated in favor of ``approx`` and will be removed soon
@@ -211,10 +214,10 @@ def metric_tensor(tape, approx="block-diag", diag_approx=None, allow_nonunitary=
         # Only require covariance matrix based transform
         diag_approx = approx == "diag"
         return _metric_tensor_cov_matrix(tape, diag_approx)
-      
+
     return _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire)
-  
-    
+
+
 @metric_tensor.custom_qnode_wrapper
 def qnode_execution_wrapper(self, qnode, targs, tkwargs):
     """Here, we overwrite the QNode execution wrapper in order

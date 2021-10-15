@@ -197,9 +197,10 @@ class TestBatchTransform:
     @pytest.mark.parametrize("perform_expansion", [True, False])
     def test_expand_fn_with_kwarg(self, mocker, perform_expansion):
         """Test that kwargs are respected in the expansion."""
-        
+
         class MyTransform:
             """Dummy class to allow spying to work"""
+
             def my_transform(self, tape, **kwargs):
                 tape1 = tape.copy()
                 tape2 = tape.copy()

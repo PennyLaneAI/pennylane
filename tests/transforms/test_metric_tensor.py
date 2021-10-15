@@ -706,6 +706,7 @@ class TestMetricTensor:
         ]
         assert [[type(op) for op in tape.operations] for tape in tapes] == expected_ops
 
+
 @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
 class TestDifferentiability:
     """Test for metric tensor differentiability"""
