@@ -69,10 +69,13 @@ def get_dag_commutation(circuit):
         consecutive_wires = Wires(range(len(wires)))
         wires_map = OrderedDict(zip(wires, consecutive_wires))
 
-        # initialize the dag
-        dag = qml.commutation_dag.CommutationDAG(consecutive_wires)
+        for obs in tape.observables:
+            obs._wires = Wires([wires_map[wire] for wire in obs.wires.tolist()])
 
         with qml.tape.Unwrap(tape):
+            # Initialize DAG
+            dag = qml.commutation_dag.CommutationDAG(consecutive_wires, tape.observables)
+
             for operation in tape.operations:
                 operation._wires = Wires([wires_map[wire] for wire in operation.wires.tolist()])
                 dag.add_node(operation)

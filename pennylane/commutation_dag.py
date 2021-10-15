@@ -298,11 +298,12 @@ class CommutationDAG:
 
     """
 
-    def __init__(self, wires):
+    def __init__(self, wires, observables):
         self.wires = wires
         self.num_wires = len(wires)
         self.node_id = -1
         self._multi_graph = nx.MultiDiGraph()
+        self.observables = observables
 
     def _add_node(self, node):
         self.node_id += 1

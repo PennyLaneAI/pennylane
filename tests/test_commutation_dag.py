@@ -135,3 +135,45 @@ class TestCommutationDAG:
     )
     def test_empty_dag(self, wires):
         qml.commutation_dag.CommutationDAG(qml.wires.Wires(wires))
+
+
+    def test_dag_transform_simple_dag_function(self):
+        "Test a simple DAG on 1 wire with a quantum function."
+
+        def circuit():
+            qml.PauliZ(wires=0)
+            qml.PauliX(wires=0)
+
+        dag = qml.transforms.get_dag_commutation(circuit)()
+
+        a = qml.PauliZ(wires=0)
+        b = qml.PauliX(wires=0)
+
+        assert dag.get_node(0).op.compare(a)
+        assert dag.get_node(1).op.compare(b)
+        assert dag.get_edge(0, 1) == {0: {"commute": False}}
+        assert dag.get_edge(0, 2) is None
+
+    def test_dag_transform_simple_dag_qnode(self):
+        "Test a simple DAG on 1 wire with a qnode."
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliZ(wires=0)
+            qml.PauliX(wires=0)
+            return qml.expval(qml.PauliX(wires=0))
+
+        dag = qml.transforms.get_dag_commutation(circuit)()
+
+        a = qml.PauliZ(wires=0)
+        b = qml.PauliX(wires=0)
+
+        assert dag.get_node(0).op.compare(a)
+        assert dag.get_node(1).op.compare(b)
+        assert dag.get_edge(0, 1) == {0: {"commute": False}}
+        assert dag.get_edge(0, 2) is None
+        assert dag.observables[0].return_type.__repr__() == "expval"
+        assert dag.observables[0].name == "PauliX"
+        assert dag.observables[0].wires.tolist() == [0]
