@@ -21,6 +21,7 @@ import pennylane as qml
 
 class TestCreateExpandFn:
     """Test creating expansion functions from stopping criteria."""
+
     crit_0 = (~qml.operation.is_trainable) | (qml.operation.has_gen & qml.operation.is_trainable)
     doc_0 = "Test docstring."
     with qml.tape.JacobianTape() as tape:
@@ -57,6 +58,7 @@ class TestCreateExpandFn:
 
 class TestExpandMultipar:
     """Test the expansion of multi-parameter gates."""
+
     def test_expand_multipar(self):
         """Test that a multi-parameter gate is decomposed correctly.
         And that single-parameter gates are not decomposed."""
@@ -99,6 +101,7 @@ class TestExpandMultipar:
         expected = ["RX", "RZ", "RY", "RZ", "RZ", "RY", "CNOT", "RY", "CNOT", "RZ"]
         assert [op.name for op in new_ops] == expected
 
+
 class TestExpandNonunitaryGen:
     """Test the expansion of operations without a unitary generator."""
 
@@ -114,7 +117,6 @@ class TestExpandNonunitaryGen:
         new_tape = qml.transforms.expand_nonunitary_gen(tape)
 
         assert tape.operations == new_tape.operations
-
 
     def test_expand_multi_par():
         """Test that a tape with single-parameter operations with
@@ -138,7 +140,6 @@ class TestExpandNonunitaryGen:
         assert all(exp.wires == new.wires for exp, new in zip(expanded, new_tape.operations[2:5]))
         assert tape.operations[3:] == new_tape.operations[5:]
 
-
     def test_expand_missing_generator():
         """Test that a tape with single-parameter operations with
         unitary generators and non-parametric operations is not touched."""
@@ -158,7 +159,6 @@ class TestExpandNonunitaryGen:
         assert exp_op.name == "RZ" and exp_op.data == [2.1] and exp_op.wires == qml.wires.Wires(1)
         assert tape.operations[3:] == new_tape.operations[3:]
 
-
     def test_expand_nonunitary_generator():
         """Test that a tape with single-parameter operations with
         unitary generators and non-parametric operations is not touched."""
@@ -175,7 +175,6 @@ class TestExpandNonunitaryGen:
         exp_op = new_tape.operations[2]
         assert exp_op.name == "RZ" and exp_op.data == [2.1] and exp_op.wires == qml.wires.Wires(1)
         assert tape.operations[3:] == new_tape.operations[3:]
-
 
 
 class TestExpandInvalidTrainable:
@@ -270,4 +269,3 @@ class TestExpandInvalidTrainable:
 
         assert new_tape is tape
         spy.assert_not_called()
-
