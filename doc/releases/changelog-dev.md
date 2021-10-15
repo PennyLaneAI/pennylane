@@ -356,6 +356,13 @@ of shape ``(batch_size,)``:
 
 <h3>Improvements</h3>
 
+* `qml.probs` now accepts an attribute `op` that allows to rotate the computational basis and get the 
+  probabilities in the rotated basis.
+  [(#1692)](https://github.com/PennyLaneAI/pennylane/pull/1692)
+  
+* The `qml.beta.QNode` now supports the `qml.qnn` module.
+  [(#1748)](https://github.com/PennyLaneAI/pennylane/pull/1748)
+
 * `@qml.beta.QNode` now supports the `qml.specs` transform.
   [(#1739)](https://github.com/PennyLaneAI/pennylane/pull/1739)
 
@@ -560,6 +567,9 @@ of shape ``(batch_size,)``:
   [(#1624)](https://github.com/PennyLaneAI/pennylane/pull/1624)
 
 * Corrects the docstring of `ExpvalCost` by adding `wires` to the signature of the `ansatz` argument. [(#1715)](https://github.com/PennyLaneAI/pennylane/pull/1715)
+
+* All instances of `qnode.draw()` have been updated to instead use the transform `qml.draw(qnode)`.
+  [(#1750)](https://github.com/PennyLaneAI/pennylane/pull/1750)
 
 <h3>Contributors</h3>
 
