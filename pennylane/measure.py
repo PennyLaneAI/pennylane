@@ -427,7 +427,7 @@ def probs(wires=None, op=None):
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
-        op (Hermitian): Hermitian operator that rotates the computational basis
+        op (Observable): Observable that rotates the computational basis
     """
     # pylint: disable=protected-access
     if isinstance(op, qml.Hamiltonian):
