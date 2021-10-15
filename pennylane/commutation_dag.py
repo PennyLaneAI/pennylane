@@ -27,7 +27,8 @@ position = OrderedDict(
         "PauliX": 1,
         "PauliY": 2,
         "PauliZ": 3,
-        "ctrl": 4,
+        "SWAP": 4,
+        "ctrl": 5,
     }
 )
 
@@ -39,10 +40,12 @@ commutation_map = OrderedDict(
             0,
             0,
             0,
+            0,
         ],
         "PauliX": [
             0,
             1,
+            0,
             0,
             0,
             0,
@@ -53,19 +56,30 @@ commutation_map = OrderedDict(
             1,
             0,
             0,
+            0,
         ],
         "PauliZ": [
             0,
             0,
             0,
             1,
+            0,
             1,
+        ],
+        "SWAP": [
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
         ],
         "ctrl": [
             0,
             0,
             0,
             1,
+            0,
             1,
         ],
     }

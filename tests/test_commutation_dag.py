@@ -122,19 +122,60 @@ class TestCommutingFunction:
         commutation = qml.is_commuting(qml.CNOT(wires=wires[1]), qml.PauliX(wires=wires[0]))
         assert commutation == res
 
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[1], [0, 1]], False),
+            ([[0], [0, 1]], False),
+            ([[2], [0, 1]], True),
+        ],
+    )
+    def test_x_cy(self, wires, res, tol):
+        commutation = qml.is_commuting(qml.PauliX(wires=wires[0]), qml.CY(wires=wires[1]))
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0, 2], [0, 1, 2]], False),
+            ([[0, 1], [0, 1, 2]], False),
+            ([[0, 3], [0, 1, 2]], True),
+        ],
+    )
+    def test_cnot_cswap(self, wires, res, tol):
+        commutation = qml.is_commuting(qml.CNOT(wires=wires[0]), qml.CSWAP(wires=wires[1]))
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0, 2], [0, 1, 2]], False),
+            ([[0, 1], [0, 1, 2]], False),
+            ([[0, 3], [0, 1, 2]], True),
+        ],
+    )
+    def test_cz_cswap(self, wires, res, tol):
+        commutation = qml.is_commuting(qml.CZ(wires=wires[0]), qml.CSWAP(wires=wires[1]))
+        assert commutation == res
+
 
 class TestCommutationDAG:
     """Commutation DAG tests."""
 
-    @pytest.mark.parametrize(
-        "wires",
-        [
-            ([0, 1]),
-            ([1, 0]),
-        ],
-    )
-    def test_empty_dag(self, wires):
-        qml.commutation_dag.CommutationDAG(qml.wires.Wires(wires))
+    def test_return_dag(self):
+        def circuit():
+            qml.PauliZ(wires=0)
+
+        dag_object = qml.transforms.get_dag_commutation(circuit)()
+        dag = dag_object.graph
+
+        assert len(dag) != 0
+
+    def test_dag_invalid_argument(self):
+        """Assert error raised when input is neither a tape, QNode, nor quantum function"""
+
+        with pytest.raises(ValueError, match="Input is not a tape, QNode, or quantum function"):
+            dag = qml.transforms.get_dag_commutation(qml.PauliZ(0))()
 
     def test_dag_transform_simple_dag_function(self):
         """Test a simple DAG on 1 wire with a quantum function."""
@@ -144,6 +185,30 @@ class TestCommutationDAG:
             qml.PauliX(wires=0)
 
         dag = qml.transforms.get_dag_commutation(circuit)()
+
+        a = qml.PauliZ(wires=0)
+        b = qml.PauliX(wires=0)
+
+        nodes = [a, b]
+        edges = [(0, 1, {"commute": False})]
+
+        assert dag.get_node(0).op.compare(a)
+        assert dag.get_node(1).op.compare(b)
+        assert dag.get_edge(0, 1) == {0: {"commute": False}}
+        assert dag.get_edge(0, 2) is None
+        assert dag.observables == []
+        for i, node in enumerate(dag.get_nodes()):
+            assert node[1].op.compare(nodes[i])
+        for i, edge in enumerate(dag.get_edges()):
+            assert edges[i] == edge
+
+    def test_dag_transform_simple_dag_tape(self):
+        """Test a simple DAG on 1 wire with a quantum tape."""
+        with qml.tape.QuantumTape() as tape:
+            qml.PauliZ(wires=0)
+            qml.PauliX(wires=0)
+
+        dag = qml.transforms.get_dag_commutation(tape)()
 
         a = qml.PauliZ(wires=0)
         b = qml.PauliX(wires=0)
