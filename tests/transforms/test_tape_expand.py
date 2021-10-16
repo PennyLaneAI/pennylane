@@ -105,7 +105,7 @@ class TestExpandMultipar:
 class TestExpandNonunitaryGen:
     """Test the expansion of operations without a unitary generator."""
 
-    def test_do_not_expand():
+    def test_do_not_expand(self):
         """Test that a tape with single-parameter operations with
         unitary generators and non-parametric operations is not touched."""
         with qml.tape.JacobianTape() as tape:
@@ -118,7 +118,7 @@ class TestExpandNonunitaryGen:
 
         assert tape.operations == new_tape.operations
 
-    def test_expand_multi_par():
+    def test_expand_multi_par(self):
         """Test that a tape with single-parameter operations with
         unitary generators and non-parametric operations is not touched."""
         with qml.tape.JacobianTape() as tape:
@@ -140,7 +140,7 @@ class TestExpandNonunitaryGen:
         assert all(exp.wires == new.wires for exp, new in zip(expanded, new_tape.operations[2:5]))
         assert tape.operations[3:] == new_tape.operations[5:]
 
-    def test_expand_missing_generator():
+    def test_expand_missing_generator(self):
         """Test that a tape with single-parameter operations with
         unitary generators and non-parametric operations is not touched."""
 
@@ -159,7 +159,7 @@ class TestExpandNonunitaryGen:
         assert exp_op.name == "RZ" and exp_op.data == [2.1] and exp_op.wires == qml.wires.Wires(1)
         assert tape.operations[3:] == new_tape.operations[3:]
 
-    def test_expand_nonunitary_generator():
+    def test_expand_nonunitary_generator(self):
         """Test that a tape with single-parameter operations with
         unitary generators and non-parametric operations is not touched."""
 
