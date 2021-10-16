@@ -837,7 +837,7 @@ class QNode:
         """
         warnings.warn(
             "The QNode.draw method has been deprecated. "
-            "Please use the qml.draw transform instead.",
+            "Please use the qml.draw(qnode)(*args) function instead.",
             UserWarning,
         )
 

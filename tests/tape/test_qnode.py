@@ -1490,7 +1490,7 @@ class TestDrawMethod:
 
         circuit(p1=x, p3=z)
 
-        with pytest.warns(UserWarning):
+        with pytest.warns(UserWarning, match=r"The QNode\.draw method has been deprecated"):
             result = circuit.draw()
 
         expected = """\

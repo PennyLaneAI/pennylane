@@ -530,7 +530,7 @@ of shape ``(batch_size,)``:
 
 * The `QNode.draw` method has been deprecated, and will be removed in an upcoming release.
   Please use the `qml.draw` transform instead.
-  [(#1638)](https://github.com/PennyLaneAI/pennylane/pull/1638)
+  [(#1746)](https://github.com/PennyLaneAI/pennylane/pull/1746)
   
 * The `QNode.metric_tensor` method has been deprecated, and will be removed in an upcoming release.
   Please use the `qml.metric_tensor` transform instead.

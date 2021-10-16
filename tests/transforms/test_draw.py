@@ -232,7 +232,7 @@ def test_invalid_wires():
 
 
 def test_direct_qnode_integration():
-    """Test that a regular QNode renders correctly."""
+    """Test that a QNode renders correctly."""
     dev = qml.device("default.qubit", wires=2)
 
     @qml.beta.qnode(dev)
