@@ -92,9 +92,6 @@ class SingleExcitation(Operation):
     def _matrix(cls, *params):
         theta = params[0]
 
-        if len(qml.math.shape(theta)) > 0:
-            theta = theta[0]
-
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
 
@@ -151,9 +148,6 @@ class SingleExcitationMinus(Operation):
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
-
-        if len(qml.math.shape(theta)) > 0:
-            theta = theta[0]
 
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
@@ -226,9 +220,6 @@ class SingleExcitationPlus(Operation):
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
-
-        if len(qml.math.shape(theta)) > 0:
-            theta = theta[0]
 
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
@@ -328,9 +319,6 @@ class DoubleExcitation(Operation):
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
-
-        if len(qml.math.shape(theta)) > 0:
-            theta = theta[0]
 
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
@@ -442,9 +430,6 @@ class DoubleExcitationPlus(Operation):
     def _matrix(cls, *params):
         theta = params[0]
 
-        if len(qml.math.shape(theta)) > 0:
-            theta = theta[0]
-
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
 
@@ -527,9 +512,6 @@ class DoubleExcitationMinus(Operation):
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
-
-        if len(qml.math.shape(theta)) > 0:
-            theta = theta[0]
 
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)

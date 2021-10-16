@@ -62,7 +62,7 @@ class RX(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        theta = qml.math.flatten(qml.math.stack([params]))[0]
+        theta = params[0]
 
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
@@ -115,7 +115,7 @@ class RY(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        theta = qml.math.flatten(qml.math.stack([params]))[0]
+        theta = params[0]
 
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
@@ -164,7 +164,7 @@ class RZ(DiagonalOperation):
 
     @classmethod
     def _matrix(cls, *params):
-        theta = qml.math.flatten(qml.math.stack([params]))[0]
+        theta = params[0]
 
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
@@ -175,7 +175,7 @@ class RZ(DiagonalOperation):
 
     @classmethod
     def _eigvals(cls, *params):
-        theta = qml.math.flatten(qml.math.stack([params]))[0]
+        theta = params[0]
 
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
@@ -226,7 +226,7 @@ class PhaseShift(DiagonalOperation):
 
     @classmethod
     def _matrix(cls, *params):
-        phi = qml.math.flatten(qml.math.stack([params]))[0]
+        phi = params[0]
 
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
@@ -237,7 +237,7 @@ class PhaseShift(DiagonalOperation):
 
     @classmethod
     def _eigvals(cls, *params):
-        phi = qml.math.flatten(qml.math.stack([params]))[0]
+        phi = params[0]
 
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
@@ -297,7 +297,7 @@ class ControlledPhaseShift(DiagonalOperation):
 
     @classmethod
     def _matrix(cls, *params):
-        phi = qml.math.flatten(qml.math.stack([params]))[0]
+        phi = params[0]
 
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
@@ -308,7 +308,7 @@ class ControlledPhaseShift(DiagonalOperation):
 
     @classmethod
     def _eigvals(cls, *params):
-        phi = qml.math.flatten(qml.math.stack([params]))[0]
+        phi = params[0]
 
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
@@ -378,9 +378,7 @@ class Rot(Operation):
     @classmethod
     def _matrix(cls, *params):
         # There are three input parameters to be dealth with
-        phi = qml.math.flatten(qml.math.stack([params[0]]))[0]
-        theta = qml.math.flatten(qml.math.stack([params[1]]))[0]
-        omega = qml.math.flatten(qml.math.stack([params[2]]))[0]
+        phi, theta, omega = params
 
         # It might be that they are in different interfaces, e.g.,
         # Rot(0.2, 0.3, tf.Variable(0.5), wires=0)
@@ -390,8 +388,8 @@ class Rot(Operation):
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
 
-        # If anything is not tensorflow, it has to be casted and then 
-        if any (interface == "tensorflow" for interface in interfaces):
+        # If anything is not tensorflow, it has to be casted and then
+        if any(interface == "tensorflow" for interface in interfaces):
             tf_param = [phi, theta, omega][interfaces.index("tensorflow")]
             phi = qml.math.cast_like(qml.math.cast_like(phi, tf_param), 1j)
             omega = qml.math.cast_like(qml.math.cast_like(omega, tf_param), 1j)
@@ -499,8 +497,6 @@ class MultiRZ(DiagonalOperation):
 
     @classmethod
     def _eigvals(cls, theta, n):
-        theta = qml.math.flatten(qml.math.stack([theta]))[0]
-
         eigs = qml.math.convert_like(pauli_eigs(n), theta)
 
         if qml.math.get_interface(theta) == "tensorflow":
@@ -614,7 +610,7 @@ class PauliRot(Operation):
                 " Allowed characters are I, X, Y and Z".format(pauli_word)
             )
 
-        theta = qml.math.flatten(qml.math.stack([params[0]]))[0]
+        theta = params[0]
 
         interface = qml.math.get_interface(theta)
 
@@ -695,8 +691,6 @@ class PauliRot(Operation):
 
     @classmethod
     def _eigvals(cls, theta, pauli_word):
-        theta = qml.math.flatten(qml.math.stack([theta]))[0]
-
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
 
@@ -800,13 +794,13 @@ class CRX(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        theta = qml.math.flatten(qml.math.stack([params]))[0]
+        theta = params[0]
 
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
 
         if qml.math.get_interface(theta) == "tensorflow":
-            c = qml.math.cast_like(c, 1j)            
+            c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
 
         js = -1j * s
@@ -887,7 +881,7 @@ class CRY(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        theta = qml.math.flatten(qml.math.stack([params]))[0]
+        theta = params[0]
 
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
@@ -969,7 +963,7 @@ class CRZ(DiagonalOperation):
 
     @classmethod
     def _matrix(cls, *params):
-        theta = qml.math.flatten(qml.math.stack([params]))[0]
+        theta = params[0]
 
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
@@ -1052,9 +1046,7 @@ class CRot(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        phi = qml.math.flatten(qml.math.stack([params[0]]))[0]
-        theta = qml.math.flatten(qml.math.stack([params[1]]))[0]
-        omega = qml.math.flatten(qml.math.stack([params[2]]))[0]
+        phi, theta, omega = params
 
         # It might be that they are in different interfaces, e.g.,
         # Rot(0.2, 0.3, tf.Variable(0.5), wires=0)
@@ -1064,8 +1056,8 @@ class CRot(Operation):
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
 
-        # If anything is not tensorflow, it has to be casted and then 
-        if any (interface == "tensorflow" for interface in interfaces):
+        # If anything is not tensorflow, it has to be casted and then
+        if any(interface == "tensorflow" for interface in interfaces):
             tf_param = [phi, theta, omega][interfaces.index("tensorflow")]
             phi = qml.math.cast_like(qml.math.cast_like(phi, tf_param), 1j)
             omega = qml.math.cast_like(qml.math.cast_like(omega, tf_param), 1j)
@@ -1142,7 +1134,7 @@ class U1(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        phi = qml.math.flatten(qml.math.stack([params]))[0]
+        phi = params[0]
 
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
@@ -1200,13 +1192,12 @@ class U2(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        phi = qml.math.flatten(qml.math.stack([params[0]]))[0]
-        lam = qml.math.flatten(qml.math.stack([params[1]]))[0]
+        phi, lam = params
 
         interfaces = [qml.math.get_interface(p) for p in [phi, lam]]
 
-        # If anything is not tensorflow, it has to be casted and then 
-        if any (interface == "tensorflow" for interface in interfaces):
+        # If anything is not tensorflow, it has to be casted and then
+        if any(interface == "tensorflow" for interface in interfaces):
             tf_param = [phi, theta, omega][interfaces.index("tensorflow")]
             phi = qml.math.cast_like(qml.math.cast_like(phi, tf_param), 1j)
             lam = qml.math.cast_like(qml.math.cast_like(lam, tf_param), 1j)
@@ -1276,9 +1267,7 @@ class U3(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        theta = qml.math.flatten(qml.math.stack([params[0]]))[0]
-        phi = qml.math.flatten(qml.math.stack([params[1]]))[0]
-        lam = qml.math.flatten(qml.math.stack([params[2]]))[0]
+        theta, phi, lam = params
 
         # It might be that they are in different interfaces, e.g.,
         # Rot(0.2, 0.3, tf.Variable(0.5), wires=0)
@@ -1288,14 +1277,14 @@ class U3(Operation):
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
 
-        # If anything is not tensorflow, it has to be casted and then 
-        if any (interface == "tensorflow" for interface in interfaces):
+        # If anything is not tensorflow, it has to be casted and then
+        if any(interface == "tensorflow" for interface in interfaces):
             tf_param = [phi, theta, omega][interfaces.index("tensorflow")]
             phi = qml.math.cast_like(qml.math.cast_like(phi, tf_param), 1j)
             lam = qml.math.cast_like(qml.math.cast_like(lam, tf_param), 1j)
             c = qml.math.cast_like(qml.math.cast_like(c, tf_param), 1j)
             s = qml.math.cast_like(qml.math.cast_like(s, tf_param), 1j)
-    
+
         mat = [
             [c, -s * qml.math.exp(1j * lam)],
             [s * qml.math.exp(1j * phi), c * qml.math.exp(1j * (phi + lam))],
@@ -1354,7 +1343,7 @@ class IsingXX(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        phi = qml.math.flatten(qml.math.stack([params]))[0]
+        phi = params[0]
 
         c = qml.math.cos(phi / 2)
         s = qml.math.sin(phi / 2)
@@ -1427,7 +1416,7 @@ class IsingYY(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        phi = qml.math.flatten(qml.math.stack([params]))[0]
+        phi = params[0]
 
         c = qml.math.cos(phi / 2)
         s = qml.math.sin(phi / 2)
@@ -1492,7 +1481,7 @@ class IsingZZ(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        phi = qml.math.flatten(qml.math.stack([params]))[0]
+        phi = params[0]
 
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
