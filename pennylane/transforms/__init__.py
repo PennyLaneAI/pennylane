@@ -100,10 +100,10 @@ to help build custom QNode, quantum function, and tape transforms:
     ~batch_transform
     ~qfunc_transform
     ~transforms.make_tape
-    ~create_expand_fn
-    ~expand_invalid_trainable
-    ~expand_multipar
-    ~expand_nonunitary_gen
+    ~tape_expand.create_expand_fn
+    ~tape_expand.expand_invalid_trainable
+    ~tape_expand.expand_multipar
+    ~tape_expand.expand_nonunitary_gen
 """
 # Import the decorators first to prevent circular imports when used in other transforms
 from .batch_transform import batch_transform
