@@ -363,6 +363,10 @@ of shape ``(batch_size,)``:
   versions of these matrices.
   [(#1749)](https://github.com/PennyLaneAI/pennylane/pull/1749)
 
+* `qml.probs` now accepts an attribute `op` that allows to rotate the computational basis and get the 
+  probabilities in the rotated basis.
+  [(#1692)](https://github.com/PennyLaneAI/pennylane/pull/1692)
+  
 * The `qml.beta.QNode` now supports the `qml.qnn` module.
   [(#1748)](https://github.com/PennyLaneAI/pennylane/pull/1748)
 
@@ -574,10 +578,12 @@ of shape ``(batch_size,)``:
 * All instances of `qnode.draw()` have been updated to instead use the transform `qml.draw(qnode)`.
   [(#1750)](https://github.com/PennyLaneAI/pennylane/pull/1750)
 
+* Add the `jax` interface in QNode Documentation. [(#1755)](https://github.com/PennyLaneAI/pennylane/pull/1755)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad, Akash Narayanan B, Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee,
-Romain Moyard, Carrie-Anne Rubidge, Maria Schuld, Ingrid Strandberg, Antal Száva, Cody Wang,
+Romain Moyard, Carrie-Anne Rubidge, Maria Schuld, Rishabh Singh, Ingrid Strandberg, Antal Száva, Cody Wang,
 David Wierichs.
