@@ -1198,7 +1198,7 @@ class U2(Operation):
 
         # If anything is not tensorflow, it has to be casted and then
         if any(interface == "tensorflow" for interface in interfaces):
-            tf_param = [phi, theta, omega][interfaces.index("tensorflow")]
+            tf_param = [phi, lam][interfaces.index("tensorflow")]
             phi = qml.math.cast_like(qml.math.cast_like(phi, tf_param), 1j)
             lam = qml.math.cast_like(qml.math.cast_like(lam, tf_param), 1j)
 
@@ -1279,7 +1279,7 @@ class U3(Operation):
 
         # If anything is not tensorflow, it has to be casted and then
         if any(interface == "tensorflow" for interface in interfaces):
-            tf_param = [phi, theta, omega][interfaces.index("tensorflow")]
+            tf_param = [theta, phi, lam][interfaces.index("tensorflow")]
             phi = qml.math.cast_like(qml.math.cast_like(phi, tf_param), 1j)
             lam = qml.math.cast_like(qml.math.cast_like(lam, tf_param), 1j)
             c = qml.math.cast_like(qml.math.cast_like(c, tf_param), 1j)
