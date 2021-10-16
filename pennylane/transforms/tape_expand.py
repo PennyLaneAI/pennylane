@@ -88,6 +88,7 @@ def create_expand_fn(depth, stop_at, docstring=None):
 
     return expand_fn
 
+
 _expand_multipar_doc = """Expand out a tape so that all its parametrized
 operations have a single parameter.
 
