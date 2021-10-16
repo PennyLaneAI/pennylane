@@ -117,7 +117,7 @@ def test_stop_recording_qnode_qfunc():
 
 
 def test_stop_recording_qnode():
-    """An stop_recording QNode is unaffected"""
+    """A stop_recording QNode is unaffected"""
     dev = qml.device("default.qubit", wires=1)
 
     @stop_recording()
