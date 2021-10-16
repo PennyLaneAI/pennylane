@@ -99,7 +99,7 @@ def test_nested_stop_recording_on_function():
 
 
 def test_stop_recording_qnode_qfunc():
-    """A QNode with an stop_recording qfunc will result in no quantum measurements."""
+    """A QNode with a stop_recording qfunc will result in no quantum measurements."""
     dev = qml.device("default.qubit", wires=1)
 
     @qml.qnode(dev)
