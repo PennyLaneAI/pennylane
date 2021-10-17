@@ -179,8 +179,8 @@ class AmplitudeEmbedding(Operation):
         features_batch = features if batched else [features]
 
         # apply pre-processing to each features tensor in the batch
-        for i, features in enumerate(features_batch):
-            shape = qml.math.shape(features)
+        for i, feature_set in enumerate(features_batch):
+            shape = qml.math.shape(feature_set)
 
             # check shape
             if len(shape) != 1:
@@ -202,20 +202,20 @@ class AmplitudeEmbedding(Operation):
             # pad
             if pad_with is not None and n_features < 2 ** len(wires):
                 padding = [pad_with] * (2 ** len(wires) - n_features)
-                features = qml.math.concatenate([features, padding], axis=0)
+                feature_set = qml.math.concatenate([feature_set, padding], axis=0)
 
             # normalize
-            norm = qml.math.sum(qml.math.abs(features) ** 2)
+            norm = qml.math.sum(qml.math.abs(feature_set) ** 2)
 
             if not qml.math.allclose(norm, 1.0, atol=TOLERANCE):
                 if normalize or pad_with:
-                    features = features / np.sqrt(norm)
+                    feature_set = feature_set / np.sqrt(norm)
                 else:
                     raise ValueError(
                         f"Features must be a vector of length 1.0; got length {norm}."
                         "Use 'normalize=True' to automatically normalize."
                     )
 
-            features_batch[i] = qml.math.cast(features, np.complex128)
+            features_batch[i] = qml.math.cast(feature_set, np.complex128)
 
         return features_batch if batched else features_batch[0]
