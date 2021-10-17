@@ -78,7 +78,10 @@ def create_expand_fn(depth, stop_at, docstring=None):
 
     def expand_fn(tape, _depth=depth, **kwargs):
         if not all(stop_at(op) for op in tape.operations):
-            tape = tape.expand(depth=_depth, stop_at=stop_at)
+
+            with qml.tape.stop_recording():
+                tape = tape.expand(depth=_depth, stop_at=stop_at)
+
             params = tape.get_parameters(trainable_only=False)
             tape.trainable_params = qml.math.get_trainable_indices(params)
         return tape
@@ -111,6 +114,7 @@ expand_multipar = create_expand_fn(
     stop_at=is_measurement | has_nopar | has_gen,
     docstring=_expand_multipar_doc,
 )
+
 
 _expand_nonunitary_gen_doc = """Expand out a tape so that all its parametrized
 operations have a unitary generator.

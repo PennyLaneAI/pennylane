@@ -536,6 +536,11 @@
   distinguish it from the template `qml.templates.Interferometer`.
   [(#1714)](https://github.com/PennyLaneAI/pennylane/pull/1714)
 
+* The `qml.transforms.invisible` decorator has been replaced with `qml.tape.stop_recording`, which
+  may act as a context manager as well as a decorator to ensure that contained logic is
+  non-recordable or non-queueable within a QNode or quantum tape context.
+  [(#1754)](https://github.com/PennyLaneAI/pennylane/pull/1754)
+
 <h3>Deprecations</h3>
 
 * The `qml.fourier.spectrum` function has been renamed to `qml.fourier.circuit_spectrum`,
