@@ -1534,3 +1534,71 @@ class TestOperationDerivative:
             ]
         )
         assert np.allclose(derivative, expected_derivative)
+
+
+class TestCriteria:
+
+    rx = qml.RX(qml.numpy.array(0.3, requires_grad=True), wires=1)
+    stiff_rx = qml.RX(0.3, wires=1)
+    cnot = qml.CNOT(wires=[1, 0])
+    rot = qml.Rot(*qml.numpy.array([0.1, -0.7, 0.2], requires_grad=True), wires=0)
+    stiff_rot = qml.Rot(0.1, -0.7, 0.2, wires=0)
+    exp = qml.expval(qml.PauliZ(0))
+
+    def test_docstring(self):
+        expected = "Returns ``True`` if an operator has a generator defined."
+        assert qml.operation.has_gen.__doc__ == expected
+
+    def test_has_gen(self):
+        """Test has_gen criterion."""
+        assert qml.operation.has_gen(self.rx)
+        assert not qml.operation.has_gen(self.cnot)
+        assert not qml.operation.has_gen(self.rot)
+        assert not qml.operation.has_gen(self.exp)
+
+    def test_has_grad_method(self):
+        """Test has_grad_method criterion."""
+        assert qml.operation.has_grad_method(self.rx)
+        assert qml.operation.has_grad_method(self.rot)
+        assert not qml.operation.has_grad_method(self.cnot)
+
+    def test_has_multipar(self):
+        """Test has_multipar criterion."""
+        assert not qml.operation.has_multipar(self.rx)
+        assert qml.operation.has_multipar(self.rot)
+        assert not qml.operation.has_multipar(self.cnot)
+
+    def test_has_nopar(self):
+        """Test has_nopar criterion."""
+        assert not qml.operation.has_nopar(self.rx)
+        assert not qml.operation.has_nopar(self.rot)
+        assert qml.operation.has_nopar(self.cnot)
+
+    def test_has_unitary_gen(self):
+        """Test has_unitary_gen criterion."""
+        assert qml.operation.has_unitary_gen(self.rx)
+        assert not qml.operation.has_unitary_gen(self.rot)
+        assert not qml.operation.has_unitary_gen(self.cnot)
+
+    def test_is_measurement(self):
+        """Test is_measurement criterion."""
+        assert not qml.operation.is_measurement(self.rx)
+        assert not qml.operation.is_measurement(self.rot)
+        assert not qml.operation.is_measurement(self.cnot)
+        assert qml.operation.is_measurement(self.exp)
+
+    def test_is_trainable(self):
+        """Test is_trainable criterion."""
+        assert qml.operation.is_trainable(self.rx)
+        assert not qml.operation.is_trainable(self.stiff_rx)
+        assert qml.operation.is_trainable(self.rot)
+        assert not qml.operation.is_trainable(self.stiff_rot)
+        assert not qml.operation.is_trainable(self.cnot)
+
+    def test_composed(self):
+        """Test has_gen criterion."""
+        both = qml.operation.has_gen & qml.operation.is_trainable
+        assert both(self.rx)
+        assert not both(self.cnot)
+        assert not both(self.rot)
+        assert not both(self.exp)
