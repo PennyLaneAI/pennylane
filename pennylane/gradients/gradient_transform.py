@@ -15,46 +15,7 @@
 including a decorator for specifying gradient expansions."""
 # pylint: disable=too-few-public-methods
 import pennylane as qml
-
-
-unsupported_op = lambda op: op.grad_method is None
-supported_op = lambda op: op.grad_method is not None
-trainable_op = lambda op: any(qml.math.requires_grad(p) for p in op.parameters)
-
-
-def gradient_expand(tape, depth=10, **kwargs):
-    """Expand out a tape so that it supports differentiation
-    of requested operations.
-
-    This is achieved by decomposing all trainable operations that have
-    ``Operation.grad_method=None`` until all resulting operations
-    have a defined gradient method, up to maximum depth ``depth``. Note that this
-    might not be possible, in which case the gradient rule will fail to apply.
-
-    Args:
-        tape (.QuantumTape): the input tape to expand
-        depth (int) : the maximum expansion depth
-
-    Returns:
-        .QuantumTape: the expanded tape
-    """
-    # pylint: disable=unused-argument
-
-    # check if the tape contains unsupported trainable operations
-    if any(unsupported_op(op) and trainable_op(op) for op in tape.operations):
-
-        # Define the stopping condition for the expansion
-        stop_cond = lambda obj: (
-            not isinstance(obj, qml.measure.MeasurementProcess)
-            and ((supported_op(obj) and trainable_op(obj)) or not trainable_op(obj))
-        )
-
-        new_tape = tape.expand(depth=depth, stop_at=stop_cond)
-        params = new_tape.get_parameters(trainable_only=False)
-        new_tape.trainable_params = qml.math.get_trainable_indices(params)
-        return new_tape
-
-    return tape
+from pennylane.transforms.tape_expand import expand_invalid_trainable
 
 
 class gradient_transform(qml.batch_transform):
@@ -141,7 +102,9 @@ class gradient_transform(qml.batch_transform):
         ...     params = tape.get_parameters()  # list of floats
     """
 
-    def __init__(self, transform_fn, expand_fn=gradient_expand, differentiable=True, hybrid=True):
+    def __init__(
+        self, transform_fn, expand_fn=expand_invalid_trainable, differentiable=True, hybrid=True
+    ):
         self.hybrid = hybrid
         super().__init__(transform_fn, expand_fn=expand_fn, differentiable=differentiable)
 
@@ -151,7 +114,7 @@ class gradient_transform(qml.batch_transform):
         # inside the QNode.
         hybrid = tkwargs.pop("hybrid", self.hybrid)
         _wrapper = super().default_qnode_wrapper(qnode, targs, tkwargs)
-        cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=gradient_expand)
+        cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=expand_invalid_trainable)
 
         def jacobian_wrapper(*args, **kwargs):
             qjac = _wrapper(*args, **kwargs)

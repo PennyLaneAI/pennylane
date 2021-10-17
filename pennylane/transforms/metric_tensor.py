@@ -34,7 +34,6 @@ _OP_TO_CGEN = {
     qml.PhaseShift: qml.CZ,
 }
 
-
 def expand_fn(tape, approx="block-diag", diag_approx=None, allow_nonunitary=True):
     """Set the metric tensor based on whether non-unitary gates are allowed."""
     # pylint: disable=unused-argument

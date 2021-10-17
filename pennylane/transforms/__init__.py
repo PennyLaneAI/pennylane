@@ -23,7 +23,7 @@ Transforms
 Transforms that act on QNodes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Thes transforms accept QNodes, and return new transformed functions
+These transforms accept QNodes, and return new transformed functions
 that compute the desired quantity.
 
 .. autosummary::
@@ -100,6 +100,10 @@ to help build custom QNode, quantum function, and tape transforms:
     ~batch_transform
     ~qfunc_transform
     ~transforms.make_tape
+    ~transforms.create_expand_fn
+    ~transforms.expand_invalid_trainable
+    ~transforms.expand_multipar
+    ~transforms.expand_nonunitary_gen
 """
 # Import the decorators first to prevent circular imports when used in other transforms
 from .batch_transform import batch_transform
@@ -125,3 +129,9 @@ from .specs import specs
 from .qmc import apply_controlled_Q, quantum_monte_carlo
 from .unitary_to_rot import unitary_to_rot
 from .get_unitary_matrix import get_unitary_matrix
+from .tape_expand import (
+    expand_invalid_trainable,
+    expand_multipar,
+    expand_nonunitary_gen,
+    create_expand_fn,
+)
