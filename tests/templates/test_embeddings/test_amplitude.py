@@ -125,7 +125,7 @@ class TestInputs:
             )
             return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
 
-        with pytest.raises(ValueError, match="Features must be a vector of length"):
+        with pytest.raises(ValueError, match="Features must be a vector of norm"):
             circuit(x=not_nrmlzd)
 
     def test_throws_exception_if_features_wrong_shape(self):
