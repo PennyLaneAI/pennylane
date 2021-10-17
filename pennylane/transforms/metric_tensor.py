@@ -102,11 +102,11 @@ def metric_tensor(
 
     .. warning::
 
-        The Hadamard test-based method requires the device used to execute
-        the tapes returned by the ``metric_tensor`` transform to
-        have an additional wire. This wire may be specified via ``aux_wire``.
-        By default contiguous numbering and an additional wire at the end
-        of the input tape wires are assumed.
+        Executing the tapes with the Hadamard tests requires a device
+        that has an additional wire as compared to the wires on which the
+        original tape was defined. This wire may be specified via ``aux_wire``.
+        By default, contiguous wire numbering is assumed and the additional
+        wire is set to ``tape.num_wires``.
 
     **Example**
 
