@@ -144,33 +144,6 @@ def _process_ids(encoding_args, argnum, qnode):
     return encoding_args, argnum
 
 
-def expand_multi_par_and_no_gen(tape, depth=10):
-    """Expand a tape until it does not contain any multi-parameter gates or gates
-    without a valid ``generator``, if possible.
-
-    Args:
-        tape (.QuantumTape): Tape to be expanded
-        depth (int): Maximum expansion depth
-
-    Returns
-        .QuantumTape: Expanded tape
-
-    """
-    stopping_cond = lambda g: (
-        isinstance(g, qml.measure.MeasurementProcess)
-        or len(g.parameters) == 0
-        or (hasattr(g, "generator") and g.generator[0] is not None)
-    )
-    if not all(stopping_cond(op) for op in tape.operations):
-        new_tape = tape.expand(depth=depth, stop_at=stopping_cond)
-        params = new_tape.get_parameters(trainable_only=False)
-        new_tape.trainable_params = qml.math.get_trainable_indices(params)
-
-        return new_tape
-
-    return tape
-
-
 def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validation_kwargs=None):
     r"""Compute the frequency spectrum of the Fourier representation of quantum circuits,
     including classical preprocessing.
@@ -407,7 +380,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
     # A map between Jacobian indices (contiguous) and arg names (may be discontiguous)
     arg_name_map = dict(enumerate(encoding_args))
     jac_fn = qml.transforms.classical_jacobian(
-        qnode, argnum=argnum, expand_fn=expand_multi_par_and_no_gen
+        qnode, argnum=argnum, expand_fn=qml.transforms.expand_multipar
     )
 
     @wraps(qnode)
@@ -428,7 +401,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
                 )
         class_jacs = jac_fn(*args, **kwargs)
         spectra = {}
-        tape = expand_multi_par_and_no_gen(qnode.qtape)
+        tape = qml.transforms.expand_multipar(qnode.qtape)
         par_info = tape._par_info
 
         # Iterate over jacobians per argument
