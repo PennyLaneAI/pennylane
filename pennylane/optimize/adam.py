@@ -157,7 +157,7 @@ class AdamOptimizer(GradientDescentOptimizer):
     def sm(self):
         """Returns estimated second moments of gradient"""
         if self.accumulation is None:
-            raise ValueError("Cannot access the second moments!")
+            return None
 
         return self.accumulation.sm
 
@@ -165,6 +165,6 @@ class AdamOptimizer(GradientDescentOptimizer):
     def t(self):
         """Returns accumulated timesteps"""
         if self.accumulation is None:
-            raise ValueError("Cannot access the accumulated timesteps!")
+           return None
 
         return self.accumulation.t
