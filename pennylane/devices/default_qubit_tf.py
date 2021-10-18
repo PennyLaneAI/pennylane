@@ -17,8 +17,6 @@ reference plugin.
 import numpy as np
 import semantic_version
 
-from pennylane.operation import DiagonalOperation
-
 try:
     import tensorflow as tf
 
@@ -47,7 +45,6 @@ except ImportError:
     pass
 
 from . import DefaultQubit
-from . import tf_ops
 
 
 class DefaultQubitTF(DefaultQubit):
@@ -129,30 +126,6 @@ class DefaultQubitTF(DefaultQubit):
     name = "Default qubit (TensorFlow) PennyLane plugin"
     short_name = "default.qubit.tf"
 
-    parametric_ops = {
-        "PhaseShift": tf_ops.PhaseShift,
-        "ControlledPhaseShift": tf_ops.ControlledPhaseShift,
-        "CPhase": tf_ops.ControlledPhaseShift,
-        "RX": tf_ops.RX,
-        "RY": tf_ops.RY,
-        "RZ": tf_ops.RZ,
-        "Rot": tf_ops.Rot,
-        "MultiRZ": tf_ops.MultiRZ,
-        "CRX": tf_ops.CRX,
-        "CRY": tf_ops.CRY,
-        "CRZ": tf_ops.CRZ,
-        "CRot": tf_ops.CRot,
-        "IsingXX": tf_ops.IsingXX,
-        "IsingYY": tf_ops.IsingYY,
-        "IsingZZ": tf_ops.IsingZZ,
-        "SingleExcitation": tf_ops.SingleExcitation,
-        "SingleExcitationPlus": tf_ops.SingleExcitationPlus,
-        "SingleExcitationMinus": tf_ops.SingleExcitationMinus,
-        "DoubleExcitation": tf_ops.DoubleExcitation,
-        "DoubleExcitationPlus": tf_ops.DoubleExcitationPlus,
-        "DoubleExcitationMinus": tf_ops.DoubleExcitationMinus,
-    }
-
     C_DTYPE = tf.complex128
     R_DTYPE = tf.float64
     _asarray = staticmethod(tf.convert_to_tensor)
@@ -209,34 +182,3 @@ class DefaultQubitTF(DefaultQubit):
     def _scatter(indices, array, new_dimensions):
         indices = np.expand_dims(indices, 1)
         return tf.scatter_nd(indices, array, new_dimensions)
-
-    def _get_unitary_matrix(self, unitary):
-        """Return the matrix representing a unitary operation.
-
-        Args:
-            unitary (~.Operation): a PennyLane unitary operation
-
-        Returns:
-            tf.Tensor[complex] or array[complex]: Returns a 2D matrix representation of
-            the unitary in the computational basis, or, in the case of a diagonal unitary,
-            a 1D array representing the matrix diagonal. For non-parametric unitaries,
-            the return type will be a ``np.ndarray``. For parametric unitaries, a ``tf.Tensor``
-            object will be returned.
-        """
-        op_name = unitary.name.split(".inv")[0]
-
-        if op_name in self.parametric_ops:
-            if op_name == "MultiRZ":
-                mat = self.parametric_ops[op_name](*unitary.parameters, len(unitary.wires))
-            else:
-                mat = self.parametric_ops[op_name](*unitary.parameters)
-
-            if unitary.inverse:
-                mat = self._transpose(self._conj(mat))
-
-            return mat
-
-        if isinstance(unitary, DiagonalOperation):
-            return unitary.eigvals
-
-        return unitary.matrix

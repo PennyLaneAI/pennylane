@@ -15,15 +15,15 @@
 import numpy as np
 
 import pennylane as qml
-from pennylane.transforms.invisible import invisible
+from pennylane.tape.stop_recording import stop_recording
 
 
-def test_invisible_on_function_inside_QNode():
-    """Test that the invisible transform when applied to a function
+def test_stop_recording_on_function_inside_QNode():
+    """Test that the stop_recording transform when applied to a function
     is not recorded by a QNode"""
     dev = qml.device("default.qubit", wires=1)
 
-    @invisible
+    @stop_recording()
     def my_op():
         return [qml.RX(0.123, wires=0), qml.RY(2.32, wires=0), qml.RZ(1.95, wires=0)]
 
@@ -41,14 +41,14 @@ def test_invisible_on_function_inside_QNode():
     assert len(res) == 3
 
 
-def test_invisible_directly_on_op():
-    """Test that invisible transform works when directly applied to an op"""
+def test_stop_recording_directly_on_op():
+    """Test that stop_recording transform works when directly applied to an op"""
     dev = qml.device("default.qubit", wires=1)
     res = []
 
     @qml.qnode(dev)
     def my_circuit():
-        op1 = invisible(qml.RX)(np.pi / 4.0, wires=0)
+        op1 = stop_recording()(qml.RX)(np.pi / 4.0, wires=0)
         op2 = qml.RY(np.pi / 4.0, wires=0)
         res.extend([op1, op2])
         return qml.expval(qml.PauliZ(0))
@@ -61,11 +61,11 @@ def test_invisible_directly_on_op():
     assert len(res) == 2
 
 
-def test_nested_invisible_on_function():
-    """Test that invisible works when nested with other invisibles"""
+def test_nested_stop_recording_on_function():
+    """Test that stop_recording works when nested with other stop_recordings"""
 
-    @invisible
-    @invisible
+    @stop_recording()
+    @stop_recording()
     def my_op():
         return [
             qml.RX(0.123, wires=0),
@@ -73,7 +73,7 @@ def test_nested_invisible_on_function():
             qml.RZ(1.95, wires=0),
         ]
 
-    # the invisible function will still work outside of any queuing contexts
+    # the stop_recording function will still work outside of any queuing contexts
     res = my_op()
     assert len(res) == 3
 
@@ -82,9 +82,13 @@ def test_nested_invisible_on_function():
     @qml.qnode(dev)
     def my_circuit():
         my_op()
-        invisible(my_op)()
+
+        with stop_recording():
+            qml.PauliX(wires=0)
+            my_op()
+
         qml.Hadamard(wires=0)
-        invisible(invisible(my_op))()
+        my_op()
         return qml.state()
 
     my_circuit.construct([], {})
@@ -94,12 +98,12 @@ def test_nested_invisible_on_function():
     assert tape.operations[0].name == "Hadamard"
 
 
-def test_invisible_qnode_qfunc():
-    """A QNode with an invisible qfunc will result in no quantum measurements."""
+def test_stop_recording_qnode_qfunc():
+    """A QNode with a stop_recording qfunc will result in no quantum measurements."""
     dev = qml.device("default.qubit", wires=1)
 
     @qml.qnode(dev)
-    @invisible
+    @stop_recording()
     def my_circuit():
         qml.PauliX(wires=0)
         return qml.expval(qml.PauliZ(0))
@@ -112,11 +116,11 @@ def test_invisible_qnode_qfunc():
     assert len(tape.measurements) == 0
 
 
-def test_invisible_qnode():
-    """An invisible QNode is unaffected"""
+def test_stop_recording_qnode():
+    """A stop_recording QNode is unaffected"""
     dev = qml.device("default.qubit", wires=1)
 
-    @invisible
+    @stop_recording()
     @qml.qnode(dev)
     def my_circuit():
         qml.RX(np.pi, wires=0)
