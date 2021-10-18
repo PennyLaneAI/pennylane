@@ -1192,13 +1192,12 @@ class U2(Operation):
     def _matrix(cls, *params):
         phi, lam = params
 
-        interfaces = [qml.math.get_interface(p) for p in [phi, lam]]
+        interface = qml.math._multi_dispatch(params)
 
         # If anything is not tensorflow, it has to be casted and then
-        if any(interface == "tensorflow" for interface in interfaces):
-            tf_param = [phi, lam][interfaces.index("tensorflow")]
-            phi = qml.math.cast_like(qml.math.cast_like(phi, tf_param), 1j)
-            lam = qml.math.cast_like(qml.math.cast_like(lam, tf_param), 1j)
+        if interface == "tensorflow":
+            phi = qml.math.cast_like(qml.math.asarray(phi, like=interface), 1j)
+            lam = qml.math.cast_like(qml.math.asarray(lam, like=interface), 1j)
 
         mat = [
             [1, -qml.math.exp(1j * lam)],
