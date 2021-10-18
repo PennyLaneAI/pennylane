@@ -20,9 +20,6 @@ from pennylane.numpy import ndarray, tensor
 from .gradient_descent import GradientDescentOptimizer
 
 
-ADAM_ACCUMULATION = namedtuple("accumulation", "fm sm t")
-
-
 class AdamOptimizer(GradientDescentOptimizer):
     r"""Gradient-descent optimizer with adaptive learning rate, first and second moment.
 
@@ -79,15 +76,15 @@ class AdamOptimizer(GradientDescentOptimizer):
         args_new = list(args)
 
         if self.accumulation is None:
-            self.accumulation = ADAM_ACCUMULATION([None] * len(args), [None] * len(args), [0])
+            self.accumulation = {"fm": [None] * len(args), "sm": [None] * len(args), "t": 0}
 
-        self.accumulation.t[0] += 1
+        self.accumulation["t"] += 1
 
         # Update step size (instead of correcting for bias)
         new_stepsize = (
             self.stepsize
-            * math.sqrt(1 - self.beta2 ** self.accumulation.t[0])
-            / (1 - self.beta1 ** self.accumulation.t[0])
+            * math.sqrt(1 - self.beta2 ** self.accumulation["t"])
+            / (1 - self.beta1 ** self.accumulation["t"])
         )
 
         trained_index = 0
@@ -102,7 +99,7 @@ class AdamOptimizer(GradientDescentOptimizer):
                 x_new_flat = [
                     e - new_stepsize * f / (math.sqrt(s) + self.eps)
                     for f, s, e in zip(
-                        self.accumulation.fm[index], self.accumulation.sm[index], x_flat
+                        self.accumulation["fm"][index], self.accumulation["sm"][index], x_flat
                     )
                 ]
                 args_new[index] = unflatten(x_new_flat, arg)
@@ -126,21 +123,21 @@ class AdamOptimizer(GradientDescentOptimizer):
             grad_flat (list): the flattened gradient for that trainable param
         """
         # update first moment
-        if self.accumulation.fm[index] is None:
-            self.accumulation.fm[index] = grad_flat
+        if self.accumulation["fm"][index] is None:
+            self.accumulation["fm"][index] = grad_flat
         else:
-            self.accumulation.fm[index] = [
+            self.accumulation["fm"][index] = [
                 self.beta1 * f + (1 - self.beta1) * g
-                for f, g in zip(self.accumulation.fm[index], grad_flat)
+                for f, g in zip(self.accumulation["fm"][index], grad_flat)
             ]
 
         # update second moment
-        if self.accumulation.sm[index] is None:
-            self.accumulation.sm[index] = [g * g for g in grad_flat]
+        if self.accumulation["sm"][index] is None:
+            self.accumulation["sm"][index] = [g * g for g in grad_flat]
         else:
-            self.accumulation.sm[index] = [
+            self.accumulation["sm"][index] = [
                 self.beta2 * f + (1 - self.beta2) * g * g
-                for f, g in zip(self.accumulation.sm[index], grad_flat)
+                for f, g in zip(self.accumulation["sm"][index], grad_flat)
             ]
 
     def reset(self):
@@ -153,7 +150,7 @@ class AdamOptimizer(GradientDescentOptimizer):
         if self.accumulation is None:
             return None
 
-        return self.accumulation.fm
+        return self.accumulation["fm"]
 
     @property
     def sm(self):
@@ -161,7 +158,7 @@ class AdamOptimizer(GradientDescentOptimizer):
         if self.accumulation is None:
             return None
 
-        return self.accumulation.sm
+        return self.accumulation["sm"]
 
     @property
     def t(self):
@@ -169,4 +166,4 @@ class AdamOptimizer(GradientDescentOptimizer):
         if self.accumulation is None:
             return None
 
-        return self.accumulation.t
+        return self.accumulation["t"]
