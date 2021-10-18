@@ -71,7 +71,9 @@ class RX(Operation):
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
 
-        return qml.math.stack([qml.math.stack([c, -1j * s]), qml.math.stack([-1j * s, c])])
+        js = -1j * s
+
+        return qml.math.stack([qml.math.stack([c, js]), qml.math.stack([js, c])])
 
     def adjoint(self):
         return RX(-self.data[0], wires=self.wires)
@@ -1055,7 +1057,7 @@ class CRot(Operation):
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
 
-        # If anything is not tensorflow, it has to be casted and then
+        # If anything is not tensorflow, it has to be casted
         if interface == "tensorflow":
             phi = qml.math.cast_like(qml.math.asarray(phi, like=interface), 1j)
             omega = qml.math.cast_like(qml.math.asarray(omega, like=interface), 1j)
@@ -1347,11 +1349,13 @@ class IsingXX(Operation):
         if qml.math.get_interface(phi) == "tensorflow":
             s = qml.math.cast_like(s, 1j)
 
+        js = -1j * s
+
         mat = [
-            [c, 0, 0, -1j * s],
-            [0, c, -1j * s, 0],
-            [0, -1j * s, c, 0],
-            [-1j * s, 0, 0, c],
+            [c, 0, 0, js],
+            [0, c, js, 0],
+            [0, js, c, 0],
+            [js, 0, 0, c],
         ]
 
         return qml.math.stack([qml.math.stack(row) for row in mat])
@@ -1421,11 +1425,13 @@ class IsingYY(Operation):
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
 
+        js = 1j * s
+
         mat = [
-            [c, 0.0, 0.0, 1j * s],
-            [0.0, c, -1j * s, 0.0],
-            [0.0, -1j * s, c, 0.0],
-            [1j * s, 0.0, 0.0, c],
+            [c, 0.0, 0.0, js],
+            [0.0, c, -js, 0.0],
+            [0.0, -js, c, 0.0],
+            [js, 0.0, 0.0, c],
         ]
 
         return qml.math.stack([qml.math.stack(row) for row in mat])
