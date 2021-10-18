@@ -4,15 +4,15 @@
 
 <h3>New features since last release</h3>
 
-* Tape expansion functions are now collected in `qml.transforms.tape_expand.py`
-  together with a `create_expand_fn` function that creates expansion functions
+* Common tape expansion functions are now available in `qml.transforms`,
+  alongside a new `create_expand_fn` function for easily creating expansion functions
   from stopping criteria.
   [(#1734)](https://github.com/PennyLaneAI/pennylane/pull/1734)
 
   `create_expand_fn` takes the default depth to which the expansion function 
-  should expand a tape, a stopping criterion and a docstring to be set for the
+  should expand a tape, a stopping criterion, and a docstring to be set for the
   created function.
-  The stopping criterion must take a queuable object and return a Boolean.
+  The stopping criterion must take a queuable object and return a boolean.
 
 * A new transform, `@qml.batch_params`, has been added, that makes QNodes 
   handle a batch dimension in trainable parameters.
