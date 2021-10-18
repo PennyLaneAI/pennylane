@@ -499,6 +499,8 @@
   to execute transformed QNodes.
   [(#1708)](https://github.com/PennyLaneAI/pennylane/pull/1708)
 
+* To standardize across all optimizers, `qml.optimize.AdamOptimizer` now also uses `accumulation` (in form of `collections.namedtuple`) to keep track of running quantities. Before it used three variables `fm`, `sm` and `t`. [(#1757)](https://github.com/PennyLaneAI/pennylane/pull/1757)
+
 <h3>Breaking changes</h3>
 
 - The input signature of an `expand_fn` used in a `batch_transform`
@@ -521,10 +523,6 @@
   should be run on a CPU or a GPU and doesn't take a `torch_device` argument
   anymore.
   [(#1705)](https://github.com/PennyLaneAI/pennylane/pull/1705)
-
-* The `QNode.metric_tensor` method has been deprecated, and will be removed in an upcoming release.
-  Please use the `qml.metric_tensor` transform instead.
-  [(#1638)](https://github.com/PennyLaneAI/pennylane/pull/1638)
 
 * The utility function `qml.math.requires_grad` now returns `True` when using Autograd
   if and only if the `requires_grad=True` attribute is set on the NumPy array. Previously,
@@ -554,6 +552,14 @@
   Instead, the templates' `shape` method can be used to get the desired shape of the tensor,
   which can then be generated manually.
   [(#1689)](https://github.com/PennyLaneAI/pennylane/pull/1689)
+
+* The `QNode.draw` method has been deprecated, and will be removed in an upcoming release.
+  Please use the `qml.draw` transform instead.
+  [(#1746)](https://github.com/PennyLaneAI/pennylane/pull/1746)
+  
+* The `QNode.metric_tensor` method has been deprecated, and will be removed in an upcoming release.
+  Please use the `qml.metric_tensor` transform instead.
+  [(#1638)](https://github.com/PennyLaneAI/pennylane/pull/1638)
 
 <h3>Bug fixes</h3>
 
@@ -602,4 +608,4 @@ This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad, Akash Narayanan B, Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee,
 Romain Moyard, Carrie-Anne Rubidge, Maria Schuld, Rishabh Singh, Ingrid Strandberg, Antal Száva, Cody Wang,
-David Wierichs.
+David Wierichs, Moritz Willmann.
