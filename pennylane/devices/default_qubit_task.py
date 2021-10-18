@@ -14,9 +14,10 @@
 """This module contains a proxy qubit object for spawning multiple instances of a given qubit type for run on a background scheduler.
 """
 from typing import List, Union
+from contextlib import nullcontext
 import pennylane as qml
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
-from pennylane.devices import DefaultQubit
+from pennylane.devices import *
 from pennylane_lightning import LightningQubit
 from .._version import __version__
 
@@ -88,7 +89,9 @@ class DefaultTask(QubitDevice):
     version = __version__
     author = "Xanadu Inc."
 
-    def __init__(self, wires, *, shots=None, analytic=None, scheduler=None, backend="default.qubit"):
+    supported_devices = {"default.qubit", "default.qubit.tf", "default.qubit.jax", "lightning.qubit", }
+
+    def __init__(self, wires, *, shots=None, analytic=None, scheduler=None, backend="default.qubit", gen_report: Union[bool, str] = False):
         try:
             self.client = dist.Client(scheduler)
         except:
@@ -96,16 +99,25 @@ class DefaultTask(QubitDevice):
 
         self._backend = backend
         self._wires = wires
+        self._gen_report = gen_report
 
-        if backend not in ["default.qubit", "lightning.qubit"]:
-            raise("Unsupported backend")
+        if backend not in DefaultTask.supported_devices:
+            raise("Unsupported device backend.")
 
     def batch_execute(self, circuits: List[qml.tape.QuantumTape], **kwargs):
-        results = []
-        for circuit in circuits:
-            results.append(self.client.submit(DefaultTask._execute_wrapper, self._backend, self._wires, circuit))
+        if self._gen_report:
+            filename = self._gen_report if isinstance(self._gen_report, str) else "dask-report.html"
+            from dask.distributed import performance_report
+            cm = performance_report(filename=filename)
+        else:
+            cm = nullcontext()
 
-        return self.client.gather(results)
+        with cm:
+            results = []
+            for circuit in circuits:
+                results.append(self.client.submit(DefaultTask._execute_wrapper, self._backend, self._wires, circuit))
+
+            return self.client.gather(results)
 
     def apply():
         pass
