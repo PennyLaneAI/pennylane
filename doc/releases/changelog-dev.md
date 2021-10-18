@@ -4,39 +4,49 @@
 
 <h3>New features since last release</h3>
 
-A new transform, `@qml.batch_params`, has been added, that makes QNodes 
-handle a batch dimension in trainable parameters.
-[(#1710)](https://github.com/PennyLaneAI/pennylane/pull/1710)
+* Common tape expansion functions are now available in `qml.transforms`,
+  alongside a new `create_expand_fn` function for easily creating expansion functions
+  from stopping criteria.
+  [(#1734)](https://github.com/PennyLaneAI/pennylane/pull/1734)
 
-This transform will create multiple circuits, one per batch dimension.
-As a result, it is both simulator and hardware compatible.
+  `create_expand_fn` takes the default depth to which the expansion function 
+  should expand a tape, a stopping criterion, and a docstring to be set for the
+  created function.
+  The stopping criterion must take a queuable object and return a boolean.
 
-```python
-@qml.batch_params
-@qml.beta.qnode(dev)
-def circuit(x, weights):
-    qml.RX(x, wires=0)
-    qml.RY(0.2, wires=1)
-    qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
-    return qml.expval(qml.Hadamard(0))
-```
+* A new transform, `@qml.batch_params`, has been added, that makes QNodes 
+  handle a batch dimension in trainable parameters.
+  [(#1710)](https://github.com/PennyLaneAI/pennylane/pull/1710)
 
-The `qml.batch_params` decorator allows us to pass arguments `x` and `weights`
-that have a batch dimension. For example,
+  This transform will create multiple circuits, one per batch dimension.
+  As a result, it is both simulator and hardware compatible.
 
-```pycon
->>> batch_size = 3
->>> x = np.linspace(0.1, 0.5, batch_size)
->>> weights = np.random.random((batch_size, 10, 3, 3))
-```
+  ```python
+  @qml.batch_params
+  @qml.beta.qnode(dev)
+  def circuit(x, weights):
+      qml.RX(x, wires=0)
+      qml.RY(0.2, wires=1)
+      qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
+      return qml.expval(qml.Hadamard(0))
+  ```
 
-If we evaluate the QNode with these inputs, we will get an output
-of shape ``(batch_size,)``:
+  The `qml.batch_params` decorator allows us to pass arguments `x` and `weights`
+  that have a batch dimension. For example,
 
-```pycon
->>> circuit(x, weights)
-[-0.30773348  0.23135516  0.13086565]
-```
+  ```pycon
+  >>> batch_size = 3
+  >>> x = np.linspace(0.1, 0.5, batch_size)
+  >>> weights = np.random.random((batch_size, 10, 3, 3))
+  ```
+
+  If we evaluate the QNode with these inputs, we will get an output
+  of shape ``(batch_size,)``:
+
+  ```pycon
+  >>> circuit(x, weights)
+  [-0.30773348  0.23135516  0.13086565]
+  ```
 
 * The new `qml.fourier.qnode_spectrum` function extends the former
   `qml.fourier.spectrum` function
@@ -356,6 +366,14 @@ of shape ``(batch_size,)``:
 
 <h3>Improvements</h3>
 
+* A new utility class `qml.BooleanFn` is introduced. It wraps a function that takes a single
+  argument and returns a Boolean.
+  [(#1734)](https://github.com/PennyLaneAI/pennylane/pull/1734)
+
+  After wrapping, `qml.BooleanFn` can be called like the wrapped function, and
+  multiple instances can be manipulated and combined with the bitwise operators
+  `&`, `|` and `~`. 
+
 * `qml.probs` now accepts an attribute `op` that allows to rotate the computational basis and get the 
   probabilities in the rotated basis.
   [(#1692)](https://github.com/PennyLaneAI/pennylane/pull/1692)
@@ -513,6 +531,11 @@ of shape ``(batch_size,)``:
 - The operation `qml.Interferometer` has been renamed `qml.InterferometerUnitary` in order to
   distinguish it from the template `qml.templates.Interferometer`.
   [(#1714)](https://github.com/PennyLaneAI/pennylane/pull/1714)
+
+* The `qml.transforms.invisible` decorator has been replaced with `qml.tape.stop_recording`, which
+  may act as a context manager as well as a decorator to ensure that contained logic is
+  non-recordable or non-queueable within a QNode or quantum tape context.
+  [(#1754)](https://github.com/PennyLaneAI/pennylane/pull/1754)
 
 <h3>Deprecations</h3>
 
