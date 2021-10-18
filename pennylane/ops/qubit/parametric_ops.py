@@ -379,7 +379,7 @@ class Rot(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        # There are three input parameters to be dealth with
+        # There are three input parameters to be dealt with
         phi, theta, omega = params
 
         # It might be that they are in different interfaces, e.g.,
@@ -482,7 +482,7 @@ class MultiRZ(DiagonalOperation):
     @property
     def generator(self):
         if self._generator is None:
-            self._generator = [qml.math.diag(pauli_eigs(len(self.wires))), -1 / 2]
+            self._generator = [np.diag(pauli_eigs(len(self.wires))), -1 / 2]
         return self._generator
 
     has_unitary_generator = True
@@ -656,7 +656,7 @@ class PauliRot(Operation):
 
             # Simplest case is if the Pauli is the identity matrix
             if pauli_word == "I" * len(pauli_word):
-                self._generator = [qml.math.eye(2 ** len(pauli_word)), -1 / 2]
+                self._generator = [np.eye(2 ** len(pauli_word)), -1 / 2]
                 return self._generator
 
             # We first generate the matrix excluding the identity parts and expand it afterwards.

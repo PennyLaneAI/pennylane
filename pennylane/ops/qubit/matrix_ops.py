@@ -204,9 +204,10 @@ class ControlledQubitUnitary(QubitUnitary):
 
     def _matrix(self, *params):
         if self._CU is None:
-            self._CU = qml.math.block_diag(
-                [qml.math.eye(self._padding_left), self.U, qml.math.eye(self._padding_right)]
-            )
+            interface = qml.math.get_interface(self.U)
+            left_pad = qml.math.cast_like(qml.math.eye(self._padding_left, like=interface), 1j)
+            right_pad = qml.math.cast_like(qml.math.eye(self._padding_right, like=interface), 1j)
+            self._CU = qml.math.block_diag([left_pad, self.U, right_pad])
 
         params = list(params)
         params[0] = self._CU
