@@ -387,3 +387,4 @@ label_data = [
 def test_label_method(op, label):
     assert op.label() == label
     assert op.label(decimals=5) == label
+    assert op.label(base_label="obs") == "obs"
