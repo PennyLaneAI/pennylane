@@ -382,31 +382,39 @@ class MPLDrawer:
         )
 
         if autosize:
+            margin = 0.1
+            max_width = box_width-margin
+            max_height = box_len + 2*self._box_dx - margin
 
-            text_width = self._text_width(text_obj)
+            w, h = self._text_dims(text_obj)
+            
+            # rotate
+            if box_len > 0 and (w > max_width):
+                text_obj.set_rotation(90)
+                w, h = self._text_dims(text_obj)
 
-            if text_width > (box_width-0.1) and (box_len > 0):
-                print("TOO BIG")
-                if box_len > 0:
-                    print("I'm rotating")
-                    text_obj.set_rotation(90)
-                    
+            # shrink
+            if (w > max_width) or (h > max_height):
+                current_fontsize = text_obj.get_fontsize()
+                for s in range(int(current_fontsize), 1, -1):
+                    text_obj.set_fontsize(s)
+                    w, h = self._text_dims(text_obj)
+                    if (w < max_width) and (h < max_height):
+                        break
 
-                current_fontsize = text
-                for s in range(int(text_obj.get_fontsize()-1))
-
-
-
-    def _text_width(self, text_obj):
+    def _text_dims(self, text_obj):
         """Get width of text object in data coordinates
         
         Args:
             text_obj (matplotlib.text.Text)
+
+        Returns:
+            width, height
         """
         renderer = self._fig.canvas.get_renderer()
         bbox = text_obj.get_window_extent(renderer)
         corners = self._ax.transData.inverted().transform(bbox)
-        return corners[1][0] - corners[0][0]
+        return corners[1][0] - corners[0][0], corners[1][1] - corners[0][1]
  
     def ctrl(self, layer, wires, wires_target=None, control_values=None, options=None):
         """Add an arbitrary number of control wires
