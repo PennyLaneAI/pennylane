@@ -366,6 +366,13 @@
 
 <h3>Improvements</h3>
 
+* All qubit operations have been re-written to use the `qml.math` framework
+  for internal classical processing and the generation of their matrix representations.
+  As a result these representations are now fully differentiable, and the
+  framework-specific device classes no longer need to maintain framework-specific
+  versions of these matrices.
+  [(#1749)](https://github.com/PennyLaneAI/pennylane/pull/1749)
+
 * A new utility class `qml.BooleanFn` is introduced. It wraps a function that takes a single
   argument and returns a Boolean.
   [(#1734)](https://github.com/PennyLaneAI/pennylane/pull/1734)
