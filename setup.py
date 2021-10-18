@@ -28,6 +28,8 @@ requirements = [
     "autoray",
     "cachetools",
     "pennylane-lightning>=0.18",
+    "dask",
+    "distributed"
 ]
 
 info = {
@@ -50,7 +52,8 @@ info = {
             'default.qubit.jax = pennylane.devices.default_qubit_jax:DefaultQubitJax',
             'default.tensor = pennylane.beta.devices.default_tensor:DefaultTensor',
             'default.tensor.tf = pennylane.beta.devices.default_tensor_tf:DefaultTensorTF',
-            'default.mixed = pennylane.devices.default_mixed:DefaultMixed'
+            'default.mixed = pennylane.devices.default_mixed:DefaultMixed',
+            'default.task = pennylane.devices:DefaultTask',
             ],
         'console_scripts': [
                 'pl-device-test=pennylane.devices.tests:cli'

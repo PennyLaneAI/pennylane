@@ -23,6 +23,7 @@ to verify and test quantum gradient computations.
     :toctree: api
 
     default_qubit
+    default_task
     default_qubit_jax
     default_qubit_torch
     default_qubit_tf
@@ -38,5 +39,6 @@ to verify and test quantum gradient computations.
 # would lead to an automatic import of tensorflow and autograd, which are
 # not PennyLane core dependencies
 from .default_qubit import DefaultQubit
+from .default_qubit_task import DefaultTask
 from .default_gaussian import DefaultGaussian
 from .default_mixed import DefaultMixed
