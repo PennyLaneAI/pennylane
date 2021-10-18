@@ -598,14 +598,15 @@ def two_qubit_decomposition(U, wires):
     # the form of the decomposition.
     num_cnots = _compute_num_cnots(U)
 
-    if num_cnots == 0:
-        decomp = qml.transforms.invisible(_decomposition_0_cnots)(U, wires)
-    elif num_cnots == 1:
-        decomp = qml.transforms.invisible(_decomposition_1_cnot)(U, wires)
-    elif num_cnots == 2:
-        decomp = qml.transforms.invisible(_decomposition_2_cnots)(U, wires)
-    else:
-        decomp = qml.transforms.invisible(_decomposition_3_cnots)(U, wires)
+    with qml.tape.stop_recording():
+        if num_cnots == 0:
+            decomp = _decomposition_0_cnots(U, wires)
+        elif num_cnots == 1:
+            decomp = _decomposition_1_cnot(U, wires)
+        elif num_cnots == 2:
+            decomp = _decomposition_2_cnots(U, wires)
+        else:
+            decomp = _decomposition_3_cnots(U, wires)
 
     # If there is an active tape, queue the decomposition so that expand works
     current_tape = qml.tape.get_active_tape()
