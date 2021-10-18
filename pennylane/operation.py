@@ -424,7 +424,7 @@ class Operator(abc.ABC):
         self._name = value
 
     def label(self, decimals=None, base_label=None):
-        """How the operator is represented in diagrams and drawings.
+        r"""How the operator is represented in diagrams and drawings.
 
         Args:
             decimals=None (Int): If ``None``, no parameters are included. Else,
@@ -1268,7 +1268,7 @@ class Tensor(Observable):
         self.queue(init=True)
 
     def label(self, decimals=None, base_label=None):
-        """How the operator is represented in diagrams and drawings.
+        r"""How the operator is represented in diagrams and drawings.
 
         Args:
             decimals=None (Int): If ``None``, no parameters are included. Else,
