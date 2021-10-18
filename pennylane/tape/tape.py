@@ -667,7 +667,9 @@ class QuantumTape(AnnotatedQueue):
             ~.QuantumTape: the adjointed tape
         """
         new_tape = self.copy(copy_operations=True)
-        qml.transforms.invisible(new_tape.inv)()
+
+        with qml.tape.stop_recording():
+            new_tape.inv()
 
         # the current implementation of the adjoint
         # transform requires that the returned inverted object
