@@ -772,7 +772,8 @@ class TestWireOrdering:
     """Tests for wire ordering functionality"""
 
     def test_default_ordering(self):
-        """Test that the default wire ordering matches the device"""
+        """Test that the default wire ordering matches the order of operations
+        on the tape."""
 
         with qml.tape.QuantumTape() as tape:
             qml.Hadamard(wires=-1)
@@ -780,11 +781,11 @@ class TestWireOrdering:
             qml.RX(0.2, wires="a")
             qml.expval(qml.PauliX(wires="q2"))
 
-        res = tape.draw(wire_order=qml.wires.Wires(["a", -1, "q2"]))
+        res = tape.draw()
         expected = [
-            "  a: ─────╭C──RX(0.2)──┤     ",
-            " -1: ──H──│────────────┤     ",
-            " q2: ─────╰X───────────┤ ⟨X⟩ \n",
+            " -1: ───H───────────┤     ",
+            "  a: ──╭C──RX(0.2)──┤     ",
+            " q2: ──╰X───────────┤ ⟨X⟩ \n"
         ]
 
         assert res == "\n".join(expected)
