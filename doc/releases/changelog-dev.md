@@ -499,6 +499,8 @@
   to execute transformed QNodes.
   [(#1708)](https://github.com/PennyLaneAI/pennylane/pull/1708)
 
+* To standardize across all optimizers, `qml.optimize.AdamOptimizer` now also uses `accumulation` (in form of `collections.namedtuple`) to keep track of running quantities. Before it used three variables `fm`, `sm` and `t`. [(#1757)](https://github.com/PennyLaneAI/pennylane/pull/1757)
+
 <h3>Breaking changes</h3>
 
 - The input signature of an `expand_fn` used in a `batch_transform`
@@ -606,4 +608,4 @@ This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad, Akash Narayanan B, Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee,
 Romain Moyard, Carrie-Anne Rubidge, Maria Schuld, Rishabh Singh, Ingrid Strandberg, Antal Száva, Cody Wang,
-David Wierichs.
+David Wierichs, Moritz Willmann.
