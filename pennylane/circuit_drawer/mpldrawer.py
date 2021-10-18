@@ -414,7 +414,7 @@ class MPLDrawer:
         renderer = self._fig.canvas.get_renderer()
         bbox = text_obj.get_window_extent(renderer)
         corners = self._ax.transData.inverted().transform(bbox)
-        return corners[1][0] - corners[0][0], corners[1][1] - corners[0][1]
+        return abs(corners[1][0] - corners[0][0]), abs(corners[0][1] - corners[1][1])
  
     def ctrl(self, layer, wires, wires_target=None, control_values=None, options=None):
         """Add an arbitrary number of control wires
