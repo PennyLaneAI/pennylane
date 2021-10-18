@@ -14,7 +14,7 @@
 """Code for the adjoint transform."""
 
 from functools import wraps
-from pennylane.tape import QuantumTape, get_active_tape
+from pennylane.tape import QuantumTape, stop_recording
 
 
 def adjoint(fn):
@@ -87,8 +87,7 @@ def adjoint(fn):
 
         This creates the following circuit:
 
-        >>> circuit()
-        >>> print(circuit.draw())
+        >>> print(qml.draw(circuit)())
         0: --RX(0.123)--RY(0.456)--RY(-0.456)--RX(-0.123)--| <Z>
 
         **Single operation**
@@ -106,22 +105,14 @@ def adjoint(fn):
 
         This creates the following circuit:
 
-        >>> circuit()
-        >>> print(circuit.draw())
+        >>> print(qml.draw(circuit)())
         0: --RX(0.123)--RX(-0.123)--| <Z>
     """
 
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        active_tape = get_active_tape()
-
-        if active_tape is not None:
-            with active_tape.stop_recording(), QuantumTape() as tape:
-                fn(*args, **kwargs)
-        else:
-            # Not within a queuing context
-            with QuantumTape() as tape:
-                fn(*args, **kwargs)
+        with stop_recording(), QuantumTape() as tape:
+            fn(*args, **kwargs)
 
         if not tape.operations:
             # we called op.expand(): get the outputted tape

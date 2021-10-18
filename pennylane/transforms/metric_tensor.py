@@ -21,43 +21,15 @@ import warnings
 import numpy as np
 import pennylane as qml
 
-from pennylane.fourier.qnode_spectrum import expand_multi_par_and_no_gen
 from .batch_transform import batch_transform
-
-
-def expand_multi_par_and_nonunitary_gen(tape, depth=10):
-    """Expand a tape until it does not contain any multi-parameter gates or gates
-    with a non-unitary ``generator``, if possible.
-
-    Args:
-        tape (.QuantumTape): Tape to be expanded
-        depth (int): Maximum expansion depth
-
-    Returns
-        .QuantumTape: Expanded tape
-
-    """
-    stopping_cond = lambda g: (
-        isinstance(g, qml.measure.MeasurementProcess)
-        or len(g.parameters) == 0
-        or (hasattr(g, "generator") and g.generator[0] is not None and g.has_unitary_generator)
-    )
-    if not all(stopping_cond(op) for op in tape.operations):
-        new_tape = tape.expand(depth=depth, stop_at=stopping_cond)
-        params = new_tape.get_parameters(trainable_only=False)
-        new_tape.trainable_params = qml.math.get_trainable_indices(params)
-
-        return new_tape
-
-    return tape
 
 
 def expand_fn(tape, approx="block-diag", diag_approx=None, allow_nonunitary=True):
     """Set the metric tensor based on whether non-unitary gates are allowed."""
     # pylint: disable=unused-argument
     if not allow_nonunitary and approx is None:  # pragma: no cover
-        return expand_multi_par_and_nonunitary_gen(tape)
-    return expand_multi_par_and_no_gen(tape)
+        return qml.transforms.expand_nonunitary_gen(tape)
+    return qml.transforms.expand_multipar(tape)
 
 
 @functools.partial(batch_transform, expand_fn=expand_fn)
