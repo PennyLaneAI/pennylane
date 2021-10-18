@@ -11,7 +11,7 @@
   [(#1760)](https://github.com/PennyLaneAI/pennylane/pull/1760)
 
   `create_expand_fn` takes the default depth to which the expansion function 
-  should expand a tape, a stopping criterion, and a docstring to be set for the
+  should expand a tape, a stopping criterion, an optional device, and a docstring to be set for the
   created function.
   The stopping criterion must take a queuable object and return a boolean.
 
