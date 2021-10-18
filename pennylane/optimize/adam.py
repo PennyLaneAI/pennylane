@@ -20,6 +20,9 @@ from pennylane.numpy import ndarray, tensor
 from .gradient_descent import GradientDescentOptimizer
 
 
+ADAM_ACCUMULATION = namedtuple("accumulation", "fm sm t")
+
+
 class AdamOptimizer(GradientDescentOptimizer):
     r"""Gradient-descent optimizer with adaptive learning rate, first and second moment.
 
@@ -76,8 +79,7 @@ class AdamOptimizer(GradientDescentOptimizer):
         args_new = list(args)
 
         if self.accumulation is None:
-            accumulation = namedtuple("accumulation", "fm sm t")
-            self.accumulation = accumulation([None] * len(args), [None] * len(args), [0])
+            self.accumulation = ADAM_ACCUMULATION([None] * len(args), [None] * len(args), [0])
 
         self.accumulation.t[0] += 1
 
@@ -149,7 +151,7 @@ class AdamOptimizer(GradientDescentOptimizer):
     def fm(self):
         """Returns estimated first moments of gradient"""
         if self.accumulation is None:
-           return None
+            return None
 
         return self.accumulation.fm
 
@@ -165,6 +167,6 @@ class AdamOptimizer(GradientDescentOptimizer):
     def t(self):
         """Returns accumulated timesteps"""
         if self.accumulation is None:
-           return None
+            return None
 
         return self.accumulation.t
