@@ -8,6 +8,7 @@
   alongside a new `create_expand_fn` function for easily creating expansion functions
   from stopping criteria.
   [(#1734)](https://github.com/PennyLaneAI/pennylane/pull/1734)
+  [(#1760)](https://github.com/PennyLaneAI/pennylane/pull/1760)
 
   `create_expand_fn` takes the default depth to which the expansion function 
   should expand a tape, a stopping criterion, and a docstring to be set for the

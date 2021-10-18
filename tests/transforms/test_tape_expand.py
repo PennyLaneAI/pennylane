@@ -55,7 +55,7 @@ class TestCreateExpandFn:
         new_tape = expand_fn(self.tape)
         assert new_tape.operations == self.tape.operations
 
-    def test_device_expansion(self):
+    def test_device_expansion(self, mocker):
         """Test that passing a device ensures that all operations are
         expanded to match the devices default gate set"""
         dev = qml.device("default.qubit", wires=0)
@@ -69,11 +69,9 @@ class TestCreateExpandFn:
                 qml.numpy.ones([2, 2, 3], requires_grad=True), wires=[0, 1]
             )
 
+        spy_device = mocker.spy(dev, "expand_fn")
         new_tape = expand_fn(tape)
-        assert new_tape.operations[0] == tape.operations[0]
-        assert new_tape.operations[1] == tape.operations[1]
-        assert [op.name for op in new_tape.operations[2:5]] == ["RZ", "RY", "RZ"]
-        assert len(new_tape.operations[6:]) == 15
+        spy_device.assert_called()
 
     def test_depth_only_expansion(self):
         """Test that passing a depth simply expands to that depth"""

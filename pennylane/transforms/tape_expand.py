@@ -98,7 +98,8 @@ def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
 
                 if device is not None:
                     tape = device.expand_fn(tape, max_expansion=_depth)
-           _update_trainable_params(tape)
+
+            _update_trainable_params(tape)
 
         return tape
 
