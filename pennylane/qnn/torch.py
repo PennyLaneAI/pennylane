@@ -215,7 +215,12 @@ class TorchLayer(Module):
         # TODO: update the docstring regarding changes to restrictions when tape mode is default.
         self._signature_validation(qnode, weight_shapes)
         self.qnode = qnode
-        self.qnode.to_torch()
+
+        try:
+            # TODO: remove once the beta QNode is default
+            self.qnode.to_torch()
+        except AttributeError:
+            self.qnode.interface = "torch"
 
         if not init_method:
             init_method = functools.partial(torch.nn.init.uniform_, b=2 * math.pi)

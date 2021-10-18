@@ -420,7 +420,7 @@ class RepresentationResolver:
             "FockDensityMatrix",
             "FockStateVector",
             "QubitStateVector",
-            "Interferometer",
+            "InterferometerUnitary",
         }:
             representation = name + RepresentationResolver._format_matrix_arguments(
                 op.data, "M", self.matrix_cache

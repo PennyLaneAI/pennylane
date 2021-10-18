@@ -1031,9 +1031,8 @@ class TestTapeExpansion:
         res = qml.grad(qml.grad(circuit))(x)
         assert np.allclose(res, -9 * np.cos(3 * x))
 
-    def test_hamiltonian_expansion_analytic(self, mocker):
-        """Test that the Hamiltonian is not expanded if there
-        are non-commuting groups and the number of shots is None"""
+    def test_hamiltonian_expansion_analytic(self):
+        """Test result if there are non-commuting groups and the number of shots is None"""
         dev = qml.device("default.qubit", wires=3, shots=None)
 
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
@@ -1047,11 +1046,8 @@ class TestTapeExpansion:
         def circuit():
             return qml.expval(H)
 
-        spy = mocker.spy(qml.transforms, "hamiltonian_expand")
         res = circuit()
         assert np.allclose(res, c[2], atol=0.1)
-
-        spy.assert_not_called()
 
     def test_hamiltonian_expansion_finite_shots(self, mocker):
         """Test that the Hamiltonian is expanded if there
