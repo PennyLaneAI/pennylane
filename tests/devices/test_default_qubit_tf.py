@@ -138,6 +138,72 @@ def test_analytic_deprecation():
 
 
 #####################################################
+# Device-level matrix creation tests
+#####################################################
+
+
+class TestTFMatrix:
+    """Test special case of matrix construction in TensorFlow for
+    cases where variables must be casted to complex."""
+
+    @pytest.mark.parametrize(
+        "op,params,wires",
+        [
+            (qml.PhaseShift, [0.1], 0),
+            (qml.ControlledPhaseShift, [0.1], [0, 1]),
+            (qml.CRZ, [0.1], [0, 1]),
+            (qml.U1, [0.1], 0),
+            (qml.U2, [0.1, 0.2], 0),
+            (qml.U3, [0.1, 0.2, 0.3], 0),
+        ],
+    )
+    def test_one_qubit_tf_matrix(self, op, params, wires):
+        tf_params = [tf.Variable(x) for x in params]
+        expected_mat = op(*params, wires=wires).matrix
+        obtained_mat = op(*tf_params, wires=wires).matrix
+        assert qml.math.get_interface(obtained_mat) == "tensorflow"
+        assert qml.math.allclose(expected_mat, qml.math.unwrap(obtained_mat))
+
+    @pytest.mark.parametrize(
+        "param,pauli,wires",
+        [
+            (0.1, "I", "a"),
+            (0.2, "IX", ["a", "b"]),
+            (-0.3, "III", [0, 1, 2]),
+            (0.5, "ZXI", [0, 1, 2]),
+        ],
+    )
+    def test_pauli_rot_tf_matrix(self, param, pauli, wires):
+        expected_mat = qml.PauliRot(param, pauli, wires=wires).matrix
+        obtained_mat = qml.PauliRot(tf.Variable(param), pauli, wires=wires).matrix
+        assert qml.math.get_interface(obtained_mat) == "tensorflow"
+        assert qml.math.allclose(expected_mat, qml.math.unwrap(obtained_mat))
+
+    @pytest.mark.parametrize(
+        "op,param,wires",
+        [
+            (qml.PhaseShift, 0.1, [1]),
+            (qml.ControlledPhaseShift, 0.1, [1, 2]),
+            (qml.CRZ, 0.1, [1, 2]),
+            (qml.U1, 0.1, [1]),
+        ],
+    )
+    def test_expand_tf_matrix(self, op, param, wires):
+        reg_mat = op(param, wires=wires).matrix
+
+        if len(wires) == 1:
+            expected_mat = qml.math.kron(I, qml.math.kron(reg_mat, qml.math.kron(I, I)))
+        else:
+            expected_mat = qml.math.kron(I, qml.math.kron(reg_mat, I))
+
+        tf_mat = op(tf.Variable(param), wires=wires).matrix
+        obtained_mat = qml.utils.expand(tf_mat, wires, list(range(4)))
+
+        assert qml.math.get_interface(obtained_mat) == "tensorflow"
+        assert qml.math.allclose(expected_mat, qml.math.unwrap(obtained_mat))
+
+
+#####################################################
 # Device-level integration tests
 #####################################################
 
