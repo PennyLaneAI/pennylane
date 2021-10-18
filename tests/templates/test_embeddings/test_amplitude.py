@@ -128,20 +128,6 @@ class TestInputs:
         with pytest.raises(ValueError, match="Features must be a vector of norm"):
             circuit(x=not_nrmlzd)
 
-    def test_throws_exception_if_features_wrong_shape(self):
-        """Checks exception if features has more than two dimensions."""
-
-        n_qubits = 2
-        dev = qml.device("default.qubit", wires=n_qubits)
-
-        @qml.qnode(dev)
-        def circuit(x=None):
-            qml.templates.AmplitudeEmbedding(features=x, wires=range(n_qubits))
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.raises(ValueError, match="Features must be a one-dimensional (tensor|vector)"):
-            circuit(x=[[[1.0, 0.0], [0.0, 0.0]], [[1.0, 0.0], [0.0, 0.0]]])
-
     @pytest.mark.parametrize("inpt", NOT_ENOUGH_FEATURES + TOO_MANY_FEATURES)
     def test_throws_exception_if_fewer_features_than_amplitudes(self, inpt):
         """Checks exception if the number of features is wrong and
