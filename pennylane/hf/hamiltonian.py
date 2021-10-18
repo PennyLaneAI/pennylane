@@ -24,9 +24,34 @@ def generate_electron_integrals(mol, core=None, active=None):
     r"""Return a function that computes the one- and two-electron integrals in the atomic orbital
     basis.
 
-    The one- and two-electron integrals in the molecular orbital basis can be written in terms of
-    the integrals in the atomic orbital basis, by recalling that
-    :math:`\phi_i = \sum_{\nu}c_{\nu}^i \chi_{\nu}`, as
+    The one- and two-electron integrals are required to construct a molecular Hamiltonian in the
+    second-quantized form
+
+    .. math::
+
+        H = \sum_{pq} h_{pq} c_p^{\dagger} c_q + \frac{1}{2} \sum_{pqrs} h_{pqrs} c_p^{\dagger} c_q^{\dagger} c_r c_s,
+
+    where :math:`c^{\dagger}` and :math:`c` are the creation and annihilation operators,
+    respectively, and :math:`h_{pq}` and :math:`h_{pqrs}` are the one- and two-electron integrals.
+    These integrals can be computed by integrating over molecular orbitals :math:`\phi` as
+
+    .. math::
+
+        h_{pq} = \int \phi_p(r)^* \left ( -\frac{\nabla_r^2}{2} - \sum_i \frac{Z_i}{|r-R_i|} \right )  \phi_q(r) dr,
+
+    and
+
+    .. math::
+
+        h_{pqrs} = \int \frac{\phi_p(r_1)^* \phi_q(r_2)^* \phi_r(r_1) \phi_s(r_2)}{|r_1 - r_2|} dr_1 dr_2.
+
+    The molecular orbitals are constructed as a linear combination of atomic orbitals as
+
+    .. math::
+
+        \phi_i = \sum_{\nu}c_{\nu}^i \chi_{\nu}.
+
+    The one- and two-electron integrals can be written in the atomic orbital basis as
 
     .. math::
 
@@ -38,9 +63,9 @@ def generate_electron_integrals(mol, core=None, active=None):
 
         h_{pqrs} = \sum_{\mu \nu \rho \sigma} C_{p \mu} C_{q \nu} h_{\mu \nu \rho \sigma} C_{\rho r} C_{\sigma s}.
 
-
     The :math:`h_{\mu \nu}` and :math:`h_{\mu \nu \rho \sigma}` terms refer to the elements of the
-    core matrix and the electron repulsion tensor, respectively.
+    core matrix and the electron repulsion tensor, respectively and :math:`C` is the molecular
+    orbital expansion coefficient matrix.
 
     Args:
         mol (Molecule): the molecule object
