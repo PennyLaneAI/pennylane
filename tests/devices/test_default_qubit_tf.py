@@ -162,7 +162,7 @@ class TestTFMatrix:
         expected_mat = op(*params, wires=wires).matrix
         obtained_mat = op(*tf_params, wires=wires).matrix
         assert qml.math.get_interface(obtained_mat) == "tensorflow"
-        assert qml.math.allclose(expected_mat, qml.math.unwrap(obtained_mat))
+        assert qml.math.allclose(qml.math.unwrap(obtained_mat), expected_mat)
 
     @pytest.mark.parametrize(
         "param,pauli,wires",
@@ -173,11 +173,20 @@ class TestTFMatrix:
             (0.5, "ZXI", [0, 1, 2]),
         ],
     )
-    def test_pauli_rot_tf_matrix(self, param, pauli, wires):
-        expected_mat = qml.PauliRot(param, pauli, wires=wires).matrix
-        obtained_mat = qml.PauliRot(tf.Variable(param), pauli, wires=wires).matrix
+    def test_pauli_rot_tf_(self, param, pauli, wires):
+        op = qml.PauliRot(param, pauli, wires=wires)
+        expected_mat = op.matrix
+        expected_eigvals = op.eigvals
+        
+        tf_op = qml.PauliRot(tf.Variable(param), pauli, wires=wires)
+        obtained_mat = tf_op.matrix
+        obtained_eigvals = tf_op.eigvals
+
         assert qml.math.get_interface(obtained_mat) == "tensorflow"
-        assert qml.math.allclose(expected_mat, qml.math.unwrap(obtained_mat))
+        assert qml.math.get_interface(obtained_eigvals) == "tensorflow"
+
+        assert qml.math.allclose(qml.math.unwrap(obtained_mat), expected_mat)
+        assert qml.math.allclose(qml.math.unwrap(obtained_eigvals), expected_eigvals)
 
     @pytest.mark.parametrize(
         "op,param,wires",
@@ -200,9 +209,8 @@ class TestTFMatrix:
         obtained_mat = qml.utils.expand(tf_mat, wires, list(range(4)))
 
         assert qml.math.get_interface(obtained_mat) == "tensorflow"
-        assert qml.math.allclose(expected_mat, qml.math.unwrap(obtained_mat))
-
-
+        assert qml.math.allclose(qml.math.unwrap(obtained_mat), expected_mat)
+        
 #####################################################
 # Device-level integration tests
 #####################################################

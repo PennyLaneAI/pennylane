@@ -508,6 +508,13 @@
 
 <h3>Breaking changes</h3>
 
+- The updates made to the operator matrix representations in order to
+  enable full differentiability in all interfaces now require that single
+  parameters be passed as rank-0 tensors in order for the matrix dimensions
+  to be correct (i.e., use `qml.RX(tf.Variable(0.3), wires=0)` instead of
+  `qml.RX(tf.Variable([0.3]), wires=0)`.
+  [(#1749)](https://github.com/PennyLaneAI/pennylane/pull/1749)  
+
 - The input signature of an `expand_fn` used in a `batch_transform`
   now **must** have the same signature as the provided `transform_fn`,
   and vice versa.
