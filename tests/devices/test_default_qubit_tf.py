@@ -177,7 +177,7 @@ class TestTFMatrix:
         op = qml.PauliRot(param, pauli, wires=wires)
         expected_mat = op.matrix
         expected_eigvals = op.eigvals
-        
+
         tf_op = qml.PauliRot(tf.Variable(param), pauli, wires=wires)
         obtained_mat = tf_op.matrix
         obtained_eigvals = tf_op.eigvals
@@ -210,7 +210,8 @@ class TestTFMatrix:
 
         assert qml.math.get_interface(obtained_mat) == "tensorflow"
         assert qml.math.allclose(qml.math.unwrap(obtained_mat), expected_mat)
-        
+
+
 #####################################################
 # Device-level integration tests
 #####################################################
