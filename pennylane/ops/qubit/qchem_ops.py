@@ -179,7 +179,6 @@ class SingleExcitationMinus(Operation):
         return super().label(decimals=decimals, base_label=base_label or "G₋")
 
 
-
 class SingleExcitationPlus(Operation):
     r"""SingleExcitationPlus(phi, wires)
     Single excitation rotation with positive phase-shift outside the rotation subspace.

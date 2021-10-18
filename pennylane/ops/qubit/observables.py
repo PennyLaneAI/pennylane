@@ -147,7 +147,6 @@ class SparseHamiltonian(Observable):
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "H")
 
-
     @classmethod
     def _matrix(cls, *params):
         A = params[0]

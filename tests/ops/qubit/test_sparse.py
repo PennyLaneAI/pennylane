@@ -56,7 +56,7 @@ H_hydrogen = coo_matrix((H_data, (H_row, H_col)), shape=(16, 16)).toarray()
 class TestSparse:
     """Tests for sparse hamiltonian observable"""
 
-    def test_label():
+    def test_label(self):
         H = qml.SparseHamiltonian(coo_matrix((np.array([[1, 0], [-1.5, 0]]))), 1)
         assert H.label() == "H"
 

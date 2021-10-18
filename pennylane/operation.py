@@ -426,7 +426,7 @@ class Operator(abc.ABC):
     def label(self, decimals=None, base_label=None):
         """How the operator is represented in diagrams and drawings.
 
-        Keyword Args:
+        Args:
             decimals=None (Int): If ``None``, no parameters are included. Else,
                 how to round the parameters.
             base_label=None (str): overwrite the non-parameter component of the label
@@ -1270,7 +1270,7 @@ class Tensor(Observable):
     def label(self, decimals=None, base_label=None):
         """How the operator is represented in diagrams and drawings.
 
-        Keyword Args:
+        Args:
             decimals=None (Int): If ``None``, no parameters are included. Else,
                 how to round the parameters.
             base_label=None (Iterable[str]): overwrite the non-parameter component of the label.
@@ -1288,9 +1288,13 @@ class Tensor(Observable):
         """
         if base_label is not None:
             if len(base_label) != len(self.obs):
-                raise ValueError("Tensor label requires ``base_label`` keyword to be same length"
-                " as tensor components.")
-            return " ".join(ob.label(decimals=decimals, base_label=lbl) for ob, lbl in zip(self.obs, base_label))
+                raise ValueError(
+                    "Tensor label requires ``base_label`` keyword to be same length"
+                    " as tensor components."
+                )
+            return " ".join(
+                ob.label(decimals=decimals, base_label=lbl) for ob, lbl in zip(self.obs, base_label)
+            )
 
         return " ".join(ob.label(decimals=decimals) for ob in self.obs)
 

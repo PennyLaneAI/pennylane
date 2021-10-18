@@ -38,7 +38,7 @@ def test_adjoint_with_decomposition(op_builder):
 
 label_data = [
     (qml.QubitCarry(wires=(0, 1, 2, 3)), "QubitCarry"),
-    (qml.QubitSum(wires=(0, 1, 2)), "+"),
+    (qml.QubitSum(wires=(0, 1, 2)), "Σ"),
 ]
 
 

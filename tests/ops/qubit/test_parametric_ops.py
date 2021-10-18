@@ -1422,7 +1422,7 @@ class TestLabel:
         op1 = qml.RX(torch.tensor(1.23456), wires=0)
         assert op1.label(decimals=2) == "RX\n(1.23)"
 
-        op2 = qml.CRX(torch.tensor(1.23456), wires=0)
+        op2 = qml.CRX(torch.tensor(1.23456), wires=(0, 1))
         assert op2.label(decimals=2) == "RX\n(1.23)"
 
         op3 = qml.Rot(torch.tensor(0.1), torch.tensor(0.2), torch.tensor(0.3), wires=0)
