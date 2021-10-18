@@ -785,7 +785,7 @@ class TestWireOrdering:
         expected = [
             " -1: ───H───────────┤     ",
             "  a: ──╭C──RX(0.2)──┤     ",
-            " q2: ──╰X───────────┤ ⟨X⟩ \n"
+            " q2: ──╰X───────────┤ ⟨X⟩ \n",
         ]
 
         assert res == "\n".join(expected)
