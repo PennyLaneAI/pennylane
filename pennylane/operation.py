@@ -1889,3 +1889,49 @@ def operation_derivative(operation) -> np.ndarray:
         generator = generator.conj().T
 
     return 1j * prefactor * generator @ operation.matrix
+
+
+@qml.BooleanFn
+def has_gen(obj):
+    """Returns ``True`` if an operator has a generator defined."""
+    return hasattr(obj, "generator") and obj.generator[0] is not None
+
+
+@qml.BooleanFn
+def has_grad_method(obj):
+    """Returns ``True`` if an operator has a grad_method defined."""
+    return obj.grad_method is not None
+
+
+@qml.BooleanFn
+def has_multipar(obj):
+    """Returns ``True`` if an operator has more than one parameter
+    according to ``num_params``."""
+    return obj.num_params > 1
+
+
+@qml.BooleanFn
+def has_nopar(obj):
+    """Returns ``True`` if an operator has no parameters
+    according to ``num_params``."""
+    return obj.num_params == 0
+
+
+@qml.BooleanFn
+def has_unitary_gen(obj):
+    """Returns ``True`` if an operator has a unitary_generator
+    according to the ``has_unitary_generator`` flag."""
+    return obj.has_unitary_generator
+
+
+@qml.BooleanFn
+def is_measurement(obj):
+    """Returns ``True`` if an operator is a ``MeasurementProcess`` instance."""
+    return isinstance(obj, qml.measure.MeasurementProcess)
+
+
+@qml.BooleanFn
+def is_trainable(obj):
+    """Returns ``True`` if any of the parameters of an operator is trainable
+    according to ``qml.math.requires_grad``."""
+    return any(qml.math.requires_grad(p) for p in obj.parameters)

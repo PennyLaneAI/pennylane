@@ -11,24 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains a transform to make quantum function non-recordable
-or invisible within a QNode or quantum tape context."""
-
-from functools import wraps
-
-import pennylane as qml
+"""
+Contains a context manager and decorator to turn off the PennyLane queuing system.
+"""
+import contextlib
 
 
-def invisible(fn):
-    """A transform to make a quantum function non-recordable
-    or invisible within a QNode or quantum tape context.
+from .tape import get_active_tape
 
-    Args:
-        fn (function): A quantum function that applies quantum operations.
 
-    Returns:
-        function: The input function transformed, so that it will not be
-        recorded by QNodes or quantum tapes.
+@contextlib.contextmanager
+def stop_recording():
+    """A context manager and decorator to ensure that contained logic is non-recordable
+    or non-queueable within a QNode or quantum tape context.
 
     **Example**
 
@@ -48,16 +43,28 @@ def invisible(fn):
     >>> @qml.qnode(dev)
     ... def circuit(params):
     ...     ops = list_of_ops(params, wires=0)
-    ...     # apply only the last operation from the list
-    ...     ops[-1].queue()
+    ...     qml.apply(ops[-1])  # apply only the last operation from the list
     ...     return qml.expval(qml.PauliZ(0))
     >>> print(qml.draw(circuit)([1, 2, 3]))
      0: ──RX(1)──RY(2)──RZ(3)──┤ ⟨Z⟩
 
-    Marking the quantum function as invisible will inhibit any internal
+    Using the ``stop_recording`` context manager, all logic
+    contained within is not queued or recorded by the QNode:
+
+    >>> @qml.qnode(dev)
+    ... def circuit(params):
+    ...     with stop_recording():
+    ...         ops = list_of_ops(params, wires=0)
+    ...     qml.apply(ops[-1])
+    ...     return qml.expval(qml.PauliZ(0))
+    >>> print(qml.draw(circuit)([1, 2, 3]))
+     0: ──RZ(3)──┤ ⟨Z⟩
+
+    ``stop_recording`` can also be used as a decorator. Decorated
+    functions, when executed, will inhibit any internal
     quantum operation processing from being recorded by the QNode:
 
-    >>> @qml.transforms.invisible
+    >>> @stop_recording()
     ... def list_of_ops(params, wires):
     ...     return [
     ...         qml.RX(params[0], wires=wires),
@@ -67,21 +74,18 @@ def invisible(fn):
     >>> @qml.qnode(dev)
     ... def circuit(params):
     ...     ops = list_of_ops(params, wires=0)
-    ...     # apply only the last operation from the list
-    ...     ops[-1].queue()
+    ...     qml.apply(ops[-1])
     ...     return qml.expval(qml.PauliZ(0))
     >>> print(qml.draw(circuit)([1, 2, 3]))
      0: ──RZ(3)──┤ ⟨Z⟩
     """
+    tape = get_active_tape()
 
-    @wraps(fn)
-    def wrapper(*args, **kwargs):
-        tape = qml.tape.get_active_tape()
+    if tape is None:
+        yield
+        return
 
-        if tape is None:
-            return fn(*args, **kwargs)
+    with tape.stop_recording():
+        yield
 
-        with tape.stop_recording():
-            return fn(*args, **kwargs)
-
-    return wrapper
+    return
