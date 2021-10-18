@@ -149,7 +149,7 @@ class AdamOptimizer(GradientDescentOptimizer):
     def fm(self):
         """Returns estimated first moments of gradient"""
         if self.accumulation is None:
-            raise ValueError("Cannot access the first moments!")
+           return None
 
         return self.accumulation.fm
 
