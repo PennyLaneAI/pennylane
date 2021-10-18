@@ -383,18 +383,17 @@ class Rot(Operation):
         # It might be that they are in different interfaces, e.g.,
         # Rot(0.2, 0.3, tf.Variable(0.5), wires=0)
         # So we need to make sure the matrix comes out having the right type
-        interfaces = [qml.math.get_interface(p) for p in [phi, theta, omega]]
+        interface = qml.math._multi_dispatch(params)
 
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
 
         # If anything is not tensorflow, it has to be casted and then
-        if any(interface == "tensorflow" for interface in interfaces):
-            tf_param = [phi, theta, omega][interfaces.index("tensorflow")]
-            phi = qml.math.cast_like(qml.math.cast_like(phi, tf_param), 1j)
-            omega = qml.math.cast_like(qml.math.cast_like(omega, tf_param), 1j)
-            c = qml.math.cast_like(qml.math.cast_like(c, tf_param), 1j)
-            s = qml.math.cast_like(qml.math.cast_like(s, tf_param), 1j)
+        if interface == "tensorflow":
+            phi = qml.math.cast_like(qml.math.asarray(phi, like=interface), 1j)
+            omega = qml.math.cast_like(qml.math.asarray(omega, like=interface), 1j)
+            c = qml.math.cast_like(qml.math.asarray(c, like=interface), 1j)
+            s = qml.math.cast_like(qml.math.asarray(s, like=interface), 1j)
 
         mat = [
             [
@@ -1051,18 +1050,17 @@ class CRot(Operation):
         # It might be that they are in different interfaces, e.g.,
         # Rot(0.2, 0.3, tf.Variable(0.5), wires=0)
         # So we need to make sure the matrix comes out having the right type
-        interfaces = [qml.math.get_interface(p) for p in [phi, theta, omega]]
+        interface = qml.math._multi_dispatch(params)
 
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
 
         # If anything is not tensorflow, it has to be casted and then
-        if any(interface == "tensorflow" for interface in interfaces):
-            tf_param = [phi, theta, omega][interfaces.index("tensorflow")]
-            phi = qml.math.cast_like(qml.math.cast_like(phi, tf_param), 1j)
-            omega = qml.math.cast_like(qml.math.cast_like(omega, tf_param), 1j)
-            c = qml.math.cast_like(qml.math.cast_like(c, tf_param), 1j)
-            s = qml.math.cast_like(qml.math.cast_like(s, tf_param), 1j)
+        if interface == "tensorflow":
+            phi = qml.math.cast_like(qml.math.asarray(phi, like=interface), 1j)
+            omega = qml.math.cast_like(qml.math.asarray(omega, like=interface), 1j)
+            c = qml.math.cast_like(qml.math.asarray(c, like=interface), 1j)
+            s = qml.math.cast_like(qml.math.asarray(s, like=interface), 1j)
 
         mat = [
             [1, 0, 0, 0],
@@ -1272,18 +1270,17 @@ class U3(Operation):
         # It might be that they are in different interfaces, e.g.,
         # Rot(0.2, 0.3, tf.Variable(0.5), wires=0)
         # So we need to make sure the matrix comes out having the right type
-        interfaces = [qml.math.get_interface(p) for p in [theta, phi, lam]]
+        interface = qml.math._multi_dispatch(params)
 
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
 
         # If anything is not tensorflow, it has to be casted and then
-        if any(interface == "tensorflow" for interface in interfaces):
-            tf_param = [theta, phi, lam][interfaces.index("tensorflow")]
-            phi = qml.math.cast_like(qml.math.cast_like(phi, tf_param), 1j)
-            lam = qml.math.cast_like(qml.math.cast_like(lam, tf_param), 1j)
-            c = qml.math.cast_like(qml.math.cast_like(c, tf_param), 1j)
-            s = qml.math.cast_like(qml.math.cast_like(s, tf_param), 1j)
+        if interface == "tensorflow":
+            phi = qml.math.cast_like(qml.math.asarray(phi, like=interface), 1j)
+            lam = qml.math.cast_like(qml.math.asarray(lam, like=interface), 1j)
+            c = qml.math.cast_like(qml.math.asarray(c, like=interface), 1j)
+            s = qml.math.cast_like(qml.math.asarray(s, like=interface), 1j)
 
         mat = [
             [c, -s * qml.math.exp(1j * lam)],
