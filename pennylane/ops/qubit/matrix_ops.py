@@ -18,7 +18,6 @@ accept a hermitian or an unitary matrix as a parameter.
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import warnings
 import numpy as np
-from scipy.linalg import block_diag
 
 import pennylane as qml
 from pennylane.operation import AnyWires, DiagonalOperation, Operation
@@ -205,7 +204,10 @@ class ControlledQubitUnitary(QubitUnitary):
 
     def _matrix(self, *params):
         if self._CU is None:
-            self._CU = block_diag(np.eye(self._padding_left), self.U, np.eye(self._padding_right))
+            interface = qml.math.get_interface(self.U)
+            left_pad = qml.math.cast_like(qml.math.eye(self._padding_left, like=interface), 1j)
+            right_pad = qml.math.cast_like(qml.math.eye(self._padding_right, like=interface), 1j)
+            self._CU = qml.math.block_diag([left_pad, self.U, right_pad])
 
         params = list(params)
         params[0] = self._CU
