@@ -13,7 +13,6 @@
 # limitations under the License.
 """Adam optimizer"""
 import math
-from collections import namedtuple
 
 from pennylane.utils import _flatten, unflatten
 from pennylane.numpy import ndarray, tensor
