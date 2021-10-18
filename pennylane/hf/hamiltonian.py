@@ -325,14 +325,14 @@ def _generate_qubit_operator(op):
 
 
 def _pauli_mult(p1, p2):
-    r"""Return the result of multipication between two tensor products of pauli operators.
+    r"""Return the result of multiplication between two tensor products of Pauli operators.
 
     The Pauli operator :math:`(P_0)` is denoted by [(0, 'P')], where :math:`P` represents
     :math:`X`, :math:`Y` or :math:`Z`.
 
     Args:
-        p1 (list[tuple[int, str]]): the first tensor product of pauli operators
-        p2 (list[tuple[int, str]]): the second tensor product of pauli operators
+        p1 (list[tuple[int, str]]): the first tensor product of Pauli operators
+        p2 (list[tuple[int, str]]): the second tensor product of Pauli operators
 
     Returns
         tuple(list[tuple[int, str]], complex): list of the Pauli operators and the coefficient
