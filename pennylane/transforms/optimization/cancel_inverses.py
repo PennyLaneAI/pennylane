@@ -16,6 +16,7 @@
 from pennylane import apply
 from pennylane.wires import Wires
 from pennylane.transforms import qfunc_transform
+from pennylane.ops import is_self_inverse
 
 from .optimization_utils import find_next_gate
 
@@ -95,7 +96,7 @@ def cancel_inverses(tape):
         # 3. The current gate is U and the next gate is U.inv
 
         # Case 1
-        are_self_inverses = current_gate.is_self_inverse and current_gate.name == next_gate.name
+        are_self_inverses = (current_gate in is_self_inverse) and current_gate.name == next_gate.name
 
         # Cases 2 and 3
         are_inverses = False

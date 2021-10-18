@@ -16,6 +16,7 @@
 from pennylane import apply
 from pennylane.transforms import qfunc_transform
 from pennylane.math import allclose, stack, cast_like, zeros
+from pennylane.ops import is_composable_rotation
 
 from .optimization_utils import find_next_gate, fuse_rot_angles
 
@@ -101,7 +102,7 @@ def merge_rotations(tape, atol=1e-8, include_gates=None):
                 continue
 
         # Check if the rotation is composable; if it is not, move on.
-        if not current_gate.is_composable_rotation:
+        if not current_gate in is_composable_rotation:
             apply(current_gate)
             list_copy.pop(0)
             continue
