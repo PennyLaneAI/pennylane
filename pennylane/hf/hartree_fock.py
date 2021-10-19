@@ -15,6 +15,8 @@
 This module contains the functions needed for performing the self-consistent-field calculations.
 """
 
+import itertools
+
 import autograd.numpy as anp
 from pennylane.hf.matrices import (
     generate_core_matrix,
@@ -124,12 +126,15 @@ def generate_scf(mol, n_steps=50, tol=1e-8):
         n_electron = mol.n_electrons
 
         if r.requires_grad:
-            repulsion_tensor = generate_repulsion_tensor(basis_functions)(*args[1:])
-            s = generate_overlap_matrix(basis_functions)(*args[1:])
+            args_r = [[args[0][i]] * mol.n_basis[i] for i in range(len(mol.n_basis))]
+            args_ = [*args] + [anp.vstack(list(itertools.chain(*args_r)))]
+            repulsion_tensor = generate_repulsion_tensor(basis_functions)(*args_[1:])
+            s = generate_overlap_matrix(basis_functions)(*args_[1:])
+            h_core = generate_core_matrix(basis_functions, charges, r)(*args_)
         else:
             repulsion_tensor = generate_repulsion_tensor(basis_functions)(*args)
             s = generate_overlap_matrix(basis_functions)(*args)
-        h_core = generate_core_matrix(basis_functions, charges, r)(*args)
+            h_core = generate_core_matrix(basis_functions, charges, r)(*args)
 
         w, v = anp.linalg.eigh(s)
         x = v @ anp.diag(anp.array([1 / anp.sqrt(i) for i in w])) @ v.T

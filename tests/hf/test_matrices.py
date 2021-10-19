@@ -313,8 +313,8 @@ def test_attraction_matrix(symbols, geometry, alpha, v_ref):
 )
 def test_attraction_matrix_diffR(symbols, geometry, alpha, v_ref):
     r"""Test that attraction_matrix returns the correct matrix when positions are differentiable."""
-    mol = Molecule(symbols, geometry, alpha=alpha, r=geometry)
-    args = [mol.coordinates, mol.alpha, mol.r]
+    mol = Molecule(symbols, geometry, alpha=alpha)
+    args = [mol.coordinates, mol.alpha, mol.coordinates]
     v = generate_attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
     assert np.allclose(v, v_ref)
 
@@ -356,7 +356,6 @@ def test_attraction_matrix_nodiff(symbols, geometry, v_ref):
                 [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
                 requires_grad=True,
             ),
-            #
             np.array(
                 [
                     [
@@ -380,13 +379,12 @@ def test_attraction_matrix_nodiff(symbols, geometry, v_ref):
 )
 def test_gradient_attraction_matrix(symbols, geometry, alpha, coeff, g_r_ref):
     r"""Test that the attraction gradients are correct."""
-    mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff, r=geometry)
-    args = [mol.coordinates, mol.alpha, mol.coeff, mol.r]
+    mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+    args = [mol.coordinates, mol.alpha, mol.coeff, mol.coordinates]
 
     g_r = autograd.jacobian(
         generate_attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates), argnum=0
     )(*args)
-    print(g_r)
     assert np.allclose(g_r, g_r_ref)
 
 
@@ -528,7 +526,7 @@ def test_core_matrix_nodiff(symbols, geometry, c_ref):
 )
 def test_core_matrix_diff_positions(symbols, geometry, alpha, c_ref):
     r"""Test that core_matrix returns the correct matrix when positions are differentiable."""
-    mol = Molecule(symbols, geometry, alpha=alpha, r=geometry)
-    args = [mol.coordinates, mol.alpha, mol.r]
+    mol = Molecule(symbols, geometry, alpha=alpha)
+    args = [mol.coordinates, mol.alpha, mol.coordinates]
     c = generate_core_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
     assert np.allclose(c, c_ref)

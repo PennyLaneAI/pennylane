@@ -103,7 +103,7 @@ class Molecule:
         self.r = r
 
         self.basis_set = [
-            BasisFunction(self.l[i], self.r[i], self.alpha[i], self.coeff[i]) for i in range(len(l))
+            BasisFunction(self.l[i], self.alpha[i], self.coeff[i], self.r[i]) for i in range(len(l))
         ]
         self.n_orbitals = len(self.l)
 
