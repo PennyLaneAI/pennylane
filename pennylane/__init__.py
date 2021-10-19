@@ -21,6 +21,7 @@ import pkg_resources
 import numpy as _np
 from semantic_version import Spec, Version
 
+from pennylane.boolean_fn import BooleanFn
 from pennylane.queuing import apply, QueuingContext
 
 import pennylane.init
@@ -47,6 +48,7 @@ from pennylane.qnode import QNode, qnode
 from pennylane.templates import broadcast, layer, template
 from pennylane.transforms import (
     adjoint,
+    batch_params,
     batch_transform,
     draw,
     ControlledOperation,

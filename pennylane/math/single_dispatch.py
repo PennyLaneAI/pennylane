@@ -134,6 +134,7 @@ ar.autoray._SUBMODULE_ALIASES["tensorflow", "arctan"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "arctan2"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "diag"] = "tensorflow.linalg"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "kron"] = "tensorflow.experimental.numpy"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "moveaxis"] = "tensorflow.experimental.numpy"
 
 
 ar.autoray._FUNC_ALIASES["tensorflow", "arcsin"] = "asin"
@@ -355,6 +356,15 @@ def _scatter_element_add_torch(tensor, index, value):
 
 
 ar.register_function("torch", "scatter_element_add", _scatter_element_add_torch)
+
+
+def _sort_torch(tensor):
+    """Update handling of sort to return only values not indices."""
+    sorted_tensor = _i("torch").sort(tensor)
+    return sorted_tensor.values
+
+
+ar.register_function("torch", "sort", _sort_torch)
 
 
 # -------------------------------- JAX --------------------------------- #

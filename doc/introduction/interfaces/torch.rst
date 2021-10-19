@@ -164,8 +164,7 @@ or your own custom PyTorch optimizer. **The** :ref:`PennyLane optimizers <intro_
 **cannot be used with the Torch interface**.
 
 For example, to optimize a Torch-interfacing QNode (below) such that the weights ``x``
-result in an expectation value of 0.5, with the classical nodes processed on a GPU,
-we can do the following:
+result in an expectation value of 0.5 we can do the following:
 
 .. code-block:: python
 
@@ -204,10 +203,12 @@ we can do the following:
 The final weights and circuit value are:
 
 >>> phi_final, theta_final = opt.param_groups[0]['params']
->>> phi_final, theta_final
-(tensor([0.7345, 0.0120], device='cuda:0', requires_grad=True), tensor(0.8316, device='cuda:0', requires_grad=True))
->>> circuit(phi_final, theta_final)
-tensor(0.5000, device='cuda:0', dtype=torch.float64, grad_fn=<_TorchQNodeBackward>)
+>>> phi_final
+tensor([0.7345, 0.0120], requires_grad=True)
+>>> theta_final
+tensor(0.8316, requires_grad=True)
+>>> circuit4(phi_final, theta_final)
+tensor(0.5000, dtype=torch.float64, grad_fn=<SqueezeBackward0>)
 
 .. note::
 
@@ -215,6 +216,42 @@ tensor(0.5000, device='cuda:0', dtype=torch.float64, grad_fn=<_TorchQNodeBackwar
     layers in custom PyTorch modules (``torch.nn.Module``).
 
     See https://pytorch.org/docs/stable/notes/extending.html#adding-a-module for more details.
+
+GPU and CUDA support
+--------------------
+
+This section only applies to users who have installed torch with CUDA support.
+If you are not sure if you have CUDA support, you can check with the following function:
+
+>>> torch.cuda.is_available()
+True
+
+If at least one input parameter is on a CUDA device and you are using backpropogation,
+the execution will occur on the CUDA device. For systems with a high number of wires, CUDA
+execution can be much faster. For lower wire count, the overhead of moving everything to
+the GPU will dominate performance; for less than 15 wires, the GPU will probably be slower.
+
+.. code-block:: python
+
+    n_wires = 20
+    n_layers = 10
+
+    dev = qml.device('default.qubit', wires=n_wires)
+
+    params_shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=n_layers, n_wires=n_wires)
+    params = torch.rand(params_shape)
+
+    @qml.qnode(dev, interface='torch', diff_method="backprop")
+    def circuit_cuda(params):
+        qml.templates.StronglyEntanglingLayers(params, wires=range(n_wires))
+        return qml.expval(qml.PauliZ(0))
+
+>>> import timeit
+>>> timeit.timeit("circuit_cuda(params)", globals=globals(), number=5))
+10.110647433029953
+>>> params = params.to(device=torch.device('cuda'))
+>>> timeit.timeit("circuit_cuda(params)", globals=globals(), number=5)
+2.297812332981266
 
 Torch.nn integration
 --------------------

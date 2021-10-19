@@ -34,11 +34,11 @@ class ExpvalCost:
 
             .. code-block:: python
 
-                ansatz(params, **kwargs)
+                ansatz(params, wires, **kwargs)
 
-            where ``params`` are the trainable weights of the variational circuit, and
-            ``kwargs`` are any additional keyword arguments that need to be passed
-            to the template.
+            where ``params`` are the trainable weights of the variational circuit,
+            ``wires`` is the wires the circuit acts on, and ``kwargs`` are any additional
+            keyword arguments that need to be passed to the template.
         hamiltonian (~.Hamiltonian): Hamiltonian operator whose expectation value should be measured
         device (Device, Sequence[Device]): Corresponding device(s) where the resulting
             cost function should be executed. This can either be a single device, or a list
