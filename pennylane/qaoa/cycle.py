@@ -17,8 +17,10 @@ Functionality for finding the maximum weighted cycle of directed graphs.
 # pylint: disable=unnecessary-comprehension
 import itertools
 from typing import Dict, Tuple, Iterable, List
+
 import networkx as nx
 import retworkx as rx
+
 import numpy as np
 import pennylane as qml
 from pennylane.ops import Hamiltonian

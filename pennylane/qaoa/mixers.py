@@ -16,8 +16,10 @@ Methods for constructing QAOA mixer Hamiltonians.
 """
 import itertools
 import functools
+
 import networkx as nx
 import retworkx as rx
+
 import pennylane as qml
 from pennylane.wires import Wires
 

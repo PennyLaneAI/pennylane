@@ -132,7 +132,7 @@ class TestMixerHamiltonians:
 
         graph = [(0, 1), (1, 2)]
 
-        with pytest.raises(ValueError, match=r"Input graph must be a nx.Graph object, got list"):
+        with pytest.raises(ValueError, match=r"Input graph must be a nx.Graph or rx.PyGraph object, got list"):
             qaoa.xy_mixer(graph)
 
     @pytest.mark.parametrize(
@@ -217,7 +217,7 @@ class TestMixerHamiltonians:
         """Tests that the bit-flip mixer throws the correct errors"""
 
         graph = [(0, 1), (1, 2)]
-        with pytest.raises(ValueError, match=r"Input graph must be a nx.Graph object"):
+        with pytest.raises(ValueError, match=r"Input graph must be a nx.Graph or rx.PyGraph object"):
             qaoa.bit_flip_mixer(graph, 0)
 
         n = 2
@@ -678,7 +678,7 @@ class TestCostHamiltonians:
         ):
             qaoa.edge_driver(Graph([(0, 1), (1, 2)]), ["11", "00", "01"])
 
-        with pytest.raises(ValueError, match=r"Input graph must be a nx.Graph"):
+        with pytest.raises(ValueError, match=r"Input graph must be a nx.Graph or rx.PyGraph"):
             qaoa.edge_driver([(0, 1), (1, 2)], ["00", "11"])
 
     @pytest.mark.parametrize(("graph", "reward", "hamiltonian"), EDGE_DRIVER)
@@ -693,7 +693,7 @@ class TestCostHamiltonians:
     def test_max_weight_cycle_errors(self):
         """Tests that the max weight cycle Hamiltonian throws the correct errors"""
 
-        with pytest.raises(ValueError, match=r"Input graph must be a nx.Graph"):
+        with pytest.raises(ValueError, match=r"Input graph must be a nx.Graph or rx.PyGraph"):
             qaoa.max_weight_cycle([(0, 1), (1, 2)])
 
     def test_cost_graph_error(self):
@@ -701,13 +701,13 @@ class TestCostHamiltonians:
 
         graph = [(0, 1), (1, 2)]
 
-        with pytest.raises(ValueError, match=r"Input graph must be a nx\.Graph"):
+        with pytest.raises(ValueError, match=r"Input graph must be a nx\.Graph or rx\.PyGraph"):
             qaoa.maxcut(graph)
-        with pytest.raises(ValueError, match=r"Input graph must be a nx\.Graph"):
+        with pytest.raises(ValueError, match=r"Input graph must be a nx\.Graph or rx\.PyGraph"):
             qaoa.max_independent_set(graph)
-        with pytest.raises(ValueError, match=r"Input graph must be a nx\.Graph"):
+        with pytest.raises(ValueError, match=r"Input graph must be a nx\.Graph or rx\.PyGraph"):
             qaoa.min_vertex_cover(graph)
-        with pytest.raises(ValueError, match=r"Input graph must be a nx\.Graph"):
+        with pytest.raises(ValueError, match=r"Input graph must be a nx\.Graph or rx\.PyGraph"):
             qaoa.max_clique(graph)
 
     @pytest.mark.parametrize(("graph", "cost_hamiltonian", "mixer_hamiltonian"), MAXCUT)

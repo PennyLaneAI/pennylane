@@ -15,11 +15,12 @@ r"""
 Methods for generating QAOA cost Hamiltonians corresponding to
 different optimization problems.
 """
-
 import networkx as nx
+import retworkx as rx
+
 from networkx.algorithms.similarity import graph_edit_distance
 from networkx.generators.expanders import paley_graph
-import retworkx as rx
+
 import pennylane as qml
 from pennylane import qaoa
 
@@ -182,6 +183,7 @@ def edge_driver(graph, reward):
     ops = []
 
     graph_nodes = graph.node_indexes() if isinstance(graph, rx.PyGraph) else graph.nodes
+    graph_edges = graph.edge_list() if isinstance(graph, rx.PyGraph) else graph.edges 
 
     if len(reward) == 0 or len(reward) == 4:
         coeffs = [1 for _ in graph_nodes]
@@ -199,19 +201,19 @@ def edge_driver(graph, reward):
         reward = reward[0]
 
         if reward == "00":
-            for e in graph_nodes:
+            for e in graph_edges:
                 coeffs.extend([0.25 * sign, 0.25 * sign, 0.25 * sign])
                 ops.extend(
                     [qml.PauliZ(e[0]) @ qml.PauliZ(e[1]), qml.PauliZ(e[0]), qml.PauliZ(e[1])]
                 )
 
         if reward == "10":
-            for e in graph_nodes:
+            for e in graph_edges:
                 coeffs.append(-0.5 * sign)
                 ops.append(qml.PauliZ(e[0]) @ qml.PauliZ(e[1]))
 
         if reward == "11":
-            for e in graph_nodes:
+            for e in graph_edges:
                 coeffs.extend([0.25 * sign, -0.25 * sign, -0.25 * sign])
                 ops.extend(
                     [qml.PauliZ(e[0]) @ qml.PauliZ(e[1]), qml.PauliZ(e[0]), qml.PauliZ(e[1])]
