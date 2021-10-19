@@ -82,13 +82,22 @@ class BooleanFn:
         functools.update_wrapper(self, fn)
 
     def __and__(self, other):
+        if other is None:
+            return self
+
         return BooleanFn(lambda obj: self.fn(obj) and other.fn(obj))
 
     def __or__(self, other):
+        if other is None:
+            return self
+
         return BooleanFn(lambda obj: self.fn(obj) or other.fn(obj))
 
     def __invert__(self):
         return BooleanFn(lambda obj: not self.fn(obj))
+
+    __rand__ = __and__
+    __ror__ = __or__
 
     def __call__(self, obj):
         return self.fn(obj)

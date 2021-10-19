@@ -82,24 +82,19 @@ def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
 
     """
     # pylint: disable=unused-argument
-    depth_only = stop_at is None and device is None
+    if device is not None:
+        stop_at &= device.stopping_condition
 
     def expand_fn(tape, _depth=depth, **kwargs):
 
         with qml.tape.stop_recording():
 
-            if depth_only:
+            if stop_at is None:
                 tape = tape.expand(depth=_depth)
                 _update_trainable_params(tape)
-
             else:
-                if stop_at is not None:
-                    if not all(stop_at(op) for op in tape.operations):
-                        tape = tape.expand(depth=_depth, stop_at=stop_at)
-                        _update_trainable_params(tape)
-
-                if device is not None:
-                    tape = device.expand_fn(tape, max_expansion=_depth)
+                if not all(stop_at(op) for op in tape.operations):
+                    tape = tape.expand(depth=_depth, stop_at=stop_at)
                     _update_trainable_params(tape)
 
         return tape

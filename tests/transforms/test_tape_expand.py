@@ -69,7 +69,7 @@ class TestCreateExpandFn:
                 qml.numpy.ones([2, 2, 3], requires_grad=True), wires=[0, 1]
             )
 
-        spy_device = mocker.spy(dev, "expand_fn")
+        spy_device = mocker.spy(dev, "supports_operation")
         new_tape = expand_fn(tape)
         spy_device.assert_called()
 
