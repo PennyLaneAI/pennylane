@@ -424,21 +424,21 @@ class Operator(abc.ABC):
         self._name = value
 
     def label(self, decimals=None, base_label=None):
-        r"""How the operator is represented in diagrams and drawings.
+        r"""A customizable string representation of the operator.
 
         Args:
-            decimals=None (Int): If ``None``, no parameters are included. Else,
-                how to round the parameters.
+            decimals=None (int): If ``None``, no parameters are included. Else,
+                specifies how to round the parameters.
             base_label=None (str): overwrite the non-parameter component of the label
 
         Returns:
             str: label to use in drawings
-
+**Example:**
         >>> op = qml.RX(1.23456, wires=0)
         >>> op.label()
         "RX"
         >>> op.label(decimals=2)
-        "RX\n(1.23)
+        "RX\n(1.23)"
         >>> op.label(base_label="my_label")
         "my_label"
         >>> op.label(decimals=2, base_label="my_label")
