@@ -21,7 +21,7 @@ import pennylane as qml
 
 
 class TestDecomposition:
-    """Tests that the template defines the correct decomposition."""
+    """Test that the template defines the correct decomposition."""
 
     @pytest.mark.parametrize(
         ("k", "delta_sz", "init_state", "wires"),
@@ -262,6 +262,88 @@ class TestDecomposition:
 
         assert qml.math.allclose(circuit.device.state, exp_state, atol=tol)
 
+    @pytest.mark.parametrize(
+        ("wires", "delta_sz", "generalized_singles_wires", "generalized_pair_doubles_wires"),
+        [
+            (
+                [0, 1, 2, 3],
+                0,
+                [[0, 1, 2], [1, 2, 3], [2, 1, 0], [3, 2, 1]],
+                [[[0, 1], [2, 3]], [[2, 3], [0, 1]]],
+            ),
+            (
+                [0, 1, 2, 3],
+                1,
+                [[1, 0], [1, 2], [3, 2, 1, 0], [3, 2]],
+                [[[0, 1], [2, 3]], [[2, 3], [0, 1]]],
+            ),
+            (
+                [0, 1, 2, 3, 4, 5],
+                -1,
+                [
+                    [0, 1],
+                    [0, 1, 2, 3],
+                    [0, 1, 2, 3, 4, 5],
+                    [2, 1],
+                    [2, 3],
+                    [2, 3, 4, 5],
+                    [4, 3, 2, 1],
+                    [4, 3],
+                    [4, 5],
+                ],
+                [
+                    [[0, 1], [2, 3]],
+                    [[0, 1], [4, 5]],
+                    [[2, 3], [0, 1]],
+                    [[2, 3], [4, 5]],
+                    [[4, 5], [0, 1]],
+                    [[4, 5], [2, 3]],
+                ],
+            ),
+            (
+                ["a0", "b1", "c2", "d3", "e4", "f5"],
+                1,
+                [
+                    ["b1", "a0"],
+                    ["b1", "c2"],
+                    ["b1", "c2", "d3", "e4"],
+                    ["d3", "c2", "b1", "a0"],
+                    ["d3", "c2"],
+                    ["d3", "e4"],
+                    ["f5", "e4", "d3", "c2", "b1", "a0"],
+                    ["f5", "e4", "d3", "c2"],
+                    ["f5", "e4"],
+                ],
+                [
+                    [["a0", "b1"], ["c2", "d3"]],
+                    [["a0", "b1"], ["e4", "f5"]],
+                    [["c2", "d3"], ["a0", "b1"]],
+                    [["c2", "d3"], ["e4", "f5"]],
+                    [["e4", "f5"], ["a0", "b1"]],
+                    [["e4", "f5"], ["c2", "d3"]],
+                ],
+            ),
+        ],
+    )
+    def test_excitations_wires_kupccgsd(
+        self, wires, delta_sz, generalized_singles_wires, generalized_pair_doubles_wires
+    ):
+        """Test the correctness of the wire indices for the generalized singles and paired doubles excitaitons
+        used by the template."""
+
+        shape = qml.templates.kUpCCGSD.shape(k=1, n_wires=len(wires), delta_sz=delta_sz)
+        weights = np.pi / 2 * qml.math.ones(shape)
+
+        ref_state = qml.math.array([1, 1, 0, 0])
+
+        op = qml.templates.kUpCCGSD(
+            weights, wires=wires, k=1, delta_sz=delta_sz, init_state=ref_state
+        )
+        gen_singles_wires, gen_doubles_wires = op.s_wires, op.d_wires
+
+        assert gen_singles_wires == generalized_singles_wires
+        assert gen_doubles_wires == generalized_pair_doubles_wires
+
 
 class TestInputs:
     """Test inputs and pre-processing."""
@@ -350,7 +432,7 @@ class TestInputs:
             circuit()
 
     def test_id(self):
-        """Tests that the id attribute can be set."""
+        """Test that the id attribute can be set."""
         template = qml.templates.kUpCCGSD(
             qml.math.array([[0.55, 0.72, 0.6, 0.54, 0.42, 0.65]]),
             wires=range(4),
@@ -363,7 +445,7 @@ class TestInputs:
 
 
 class TestAttributes:
-    """Tests additional methods and attributes"""
+    """Test additional methods and attributes"""
 
     @pytest.mark.parametrize(
         "k, n_wires, delta_sz, expected_shape",
@@ -377,7 +459,7 @@ class TestAttributes:
         ],
     )
     def test_shape(self, k, n_wires, delta_sz, expected_shape):
-        """Test that the shape method returns the correct shape of the weights tensor"""
+        """Test that the shape method returns the correct shape of the weights tensor."""
 
         shape = qml.templates.kUpCCGSD.shape(k, n_wires, delta_sz)
         assert shape == expected_shape
@@ -420,11 +502,11 @@ def circuit_decomposed(weights):
 
 
 class TestInterfaces:
-    """Tests that the template is compatible with all interfaces, including the computation
+    """Test that the template is compatible with all interfaces, including the computation
     of gradients."""
 
     def test_list_and_tuples(self, tol):
-        """Tests common iterables as inputs."""
+        """Test common iterables as inputs."""
 
         dev = qml.device("default.qubit", wires=4)
 
@@ -442,7 +524,7 @@ class TestInterfaces:
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
     def test_autograd(self, tol):
-        """Tests the autograd interface."""
+        """Test the autograd interface."""
 
         weights = qml.math.array(np.random.random(size=(1, 6)))
 
@@ -464,7 +546,7 @@ class TestInterfaces:
         assert np.allclose(grads, grads2, atol=tol, rtol=0)
 
     def test_jax(self, tol):
-        """Tests the jax interface."""
+        """Test the jax interface."""
 
         jax = pytest.importorskip("jax")
         import jax.numpy as jnp
@@ -489,7 +571,7 @@ class TestInterfaces:
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     def test_tf(self, tol):
-        """Tests the tf interface."""
+        """Test the tf interface."""
 
         tf = pytest.importorskip("tensorflow")
 
@@ -515,7 +597,7 @@ class TestInterfaces:
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     def test_torch(self, tol):
-        """Tests the torch interface."""
+        """Test the torch interface."""
 
         torch = pytest.importorskip("torch")
 

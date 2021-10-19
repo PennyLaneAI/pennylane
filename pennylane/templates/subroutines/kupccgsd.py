@@ -24,7 +24,7 @@ def generalized_singles(wires, delta_sz):
     r"""Return generalized single excitation terms
 
     .. math::
-        \hat{T_1} = \sum_{pq} t_{p}^{q} \hat{c}^{\dagger}_q \hat{c}_p
+        \hat{T_1} = \sum_{pq} t_{p}^{q} \hat{c}^{\dagger}_{q} \hat{c}_{p}
 
     """
     sz = np.array(
@@ -103,7 +103,7 @@ class kUpCCGSD(Operation):
            spin-orbitals included in the active space, and should be even.
 
         #. The number of trainable parameters scales linearly with the number of layers as
-           :math:`2 k ||\vec{\theta}||`, where :math:`||\vec{\theta}||` is the total number of
+           :math:`2 k n`, where :math:`n = ||\vec{\theta}||` is the total number of
            generalized singles and paired doubles excitation terms.
 
         An example of how to use this template is shown below:
@@ -263,7 +263,7 @@ class kUpCCGSD(Operation):
         Args:
             k (int): Number of layers
             n_wires (int): Number of qubits
-            delta_saz (int): Specifies the selection rules ``sz[p] - sz[r] = delta_sz``
+            delta_sz (int): Specifies the selection rules ``sz[p] - sz[r] = delta_sz``
             for the spin-projection ``sz`` of the orbitals involved in the single excitations.
             ``delta_sz`` can take the values :math:`0` and :math:`\pm 1`.
         Returns:
