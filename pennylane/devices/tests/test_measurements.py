@@ -78,6 +78,7 @@ class TestSupportedObservables:
             def circuit():
                 return qml.expval(obs[observable])
 
+            print(obs[observable])
             assert isinstance(circuit(), (float, np.ndarray))
 
     def test_tensor_observables_can_be_implemented(self, device_kwargs):
