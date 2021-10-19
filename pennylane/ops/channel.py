@@ -466,6 +466,72 @@ class QubitChannel(Channel):
         return K_list
 
 
+class ThermalRelaxationError(Channel):
+    r"""ThermalRelaxationError(pe, t1, t2, tg, wires)
+    thermal relaxation error channel.
+
+    This channel is modelled by the following Kraus matrices:
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 4
+
+    Args:
+        pe (float): exited state population.
+        t1 (float): the T_1 relaxation time constant.
+        t2 (float): the T_2 relaxation time constant.
+        tg (float): the gate time for relaxation error.
+        wires (Sequence[int] or int): the wire the channel acts on
+    """
+    num_params = 4
+    num_wires = 1
+    par_domain = "R"
+    grad_method = "F"
+
+    @classmethod
+    def _kraus_matrices(cls, *params):
+        pe = params[0]
+        t1 = params[1]
+        t2 = params[2]
+        tg = params[3]
+        if not 0.0 <= pe <= 1.0:
+            raise ValueError("p must be between [0,1].")
+        if tg < 0:
+            raise ValueError(f"Invalid gate_time ({tg} < 0)")
+        if t1 <= 0:
+            raise ValueError("Invalid T_1 relaxation time parameter: T_1 <= 0.")
+        if t2 <= 0:
+            raise ValueError("Invalid T_2 relaxation time parameter: T_2 <= 0.")
+        if t2 - 2 * t1 > 0:
+            raise ValueError("Invalid T_2 relaxation time parameter: T_2 greater than 2 * T_1.")
+        # T1 relaxation rate
+        if t1 == np.inf:
+            eT1 = 0
+            p_reset = 0
+        else:
+            eT1 = np.exp(-tg / t1)
+            p_reset = 1 - eT1
+        # T2 dephasing rate
+        if t2 == np.inf:
+            eT2 = 1
+        else:
+            eT2 = np.exp(-tg / t2)
+
+        if t2 <= t1:
+            pz = (1 - p_reset) * (1 - eT2 / eT1) / 2
+            pr0 = (1 - pe) * p_reset
+            pr1 = pe * p_reset
+            pid = 1 - pz - pr0 - pr1
+            K0 = np.sqrt(pid) * np.eye(2)
+            K1 = np.sqrt(pz) * np.array([[1, 0], [0, -1]])
+            K2 = np.sqrt(pr0) * np.array([[1, 0], [0, 0]])
+            K3 = np.sqrt(pr0) * np.array([[0, 1], [0, 0]])
+            K4 = np.sqrt(pr1) * np.array([[0, 0], [1, 0]])
+            K5 = np.sqrt(pr1) * np.array([[0, 0], [0, 1]])
+            return [K0, K1, K2, K3, K4, K5]
+
+
 __qubit_channels__ = {
     "AmplitudeDamping",
     "GeneralizedAmplitudeDamping",
@@ -475,6 +541,7 @@ __qubit_channels__ = {
     "PhaseFlip",
     "ResetError",
     "QubitChannel",
+    "ThermalRelaxationError",
 }
 
 __all__ = list(__qubit_channels__)
