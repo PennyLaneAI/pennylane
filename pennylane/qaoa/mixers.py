@@ -17,6 +17,7 @@ Methods for constructing QAOA mixer Hamiltonians.
 import itertools
 import functools
 import networkx as nx
+import retworkx as rx
 import pennylane as qml
 from pennylane.wires import Wires
 
@@ -79,7 +80,7 @@ def xy_mixer(graph):
     Eleanor G. Rieffel, Davide Venturelli, and Rupak Biswas [`arXiv:1709.03489 <https://arxiv.org/abs/1709.03489>`__].
 
     Args:
-        graph (nx.Graph): A graph defining the collections of wires on which the Hamiltonian acts.
+        graph (nx.Graph or rx.PyGraph): A graph defining the collections of wires on which the Hamiltonian acts.
 
     Returns:
         Hamiltonian: Mixer Hamiltonian
@@ -97,14 +98,25 @@ def xy_mixer(graph):
     + (0.5) [Y0 Y1]
     + (0.5) [X1 X2]
     + (0.5) [Y1 Y2]
+
+    >>> import retworkx as rx 
+    >>> graph = rx.PyGraph()
+    >>> graph.add_nodes_from([0, 1, 2])
+    >>> graph.add_edges_from([(0, 1, ""), (1, 2, "")])
+    >>> mixer_h = xy_mixer(graph)
+    >>> print(mixer_h)
+      (0.5) [X0 X1]
+    + (0.5) [Y0 Y1]
+    + (0.5) [X1 X2]
+    + (0.5) [Y1 Y2]
     """
 
-    if not isinstance(graph, nx.Graph):
+    if not isinstance(graph, (nx.Graph, rx.PyGraph)):
         raise ValueError(
-            "Input graph must be a nx.Graph object, got {}".format(type(graph).__name__)
+            "Input graph must be a nx.Graph or rx.PyGraph object, got {}".format(type(graph).__name__)
         )
 
-    edges = graph.edges
+    edges = graph.edge_list() if isinstance(graph, rx.PyGraph) else graph.edges 
     coeffs = 2 * [0.5 for e in edges]
 
     obs = []
@@ -133,7 +145,7 @@ def bit_flip_mixer(graph, b):
     This mixer was introduced in [`arXiv:1709.03489 <https://arxiv.org/abs/1709.03489>`__].
 
     Args:
-         graph (nx.Graph): A graph defining the collections of wires on which the Hamiltonian acts.
+         graph (nx.Graph or rx.PyGraph): A graph defining the collections of wires on which the Hamiltonian acts.
          b (int): Either :math:`0` or :math:`1`. When :math:`b=0`, a bit flip is performed on
              vertex :math:`v` only when all neighbouring nodes are in state :math:`|0\rangle`.
              Alternatively, for :math:`b=1`, a bit flip is performed only when all the neighbours of
@@ -159,11 +171,26 @@ def bit_flip_mixer(graph, b):
     + (0.5) [X0 Z1]
     + (0.5) [X2 Z1]
     + (0.25) [X1 Z0 Z2]
+
+    >>> import retworkx as rx
+    >>> graph = rx.PyGraph()
+    >>> graph.add_nodes_from([0, 1, 2])
+    >>> graph.add_edges_from([(0, 1, ""), (1, 2, "")])
+    >>> mixer_h = qaoa.bit_flip_mixer(graph, 0)
+    >>> print(mixer_h)
+      (0.25) [X1]
+    + (0.5) [X0]
+    + (0.5) [X2]
+    + (0.25) [X1 Z0]
+    + (0.25) [X1 Z2]
+    + (0.5) [X0 Z1]
+    + (0.5) [X2 Z1]
+    + (0.25) [X1 Z2 Z0]
     """
 
-    if not isinstance(graph, nx.Graph):
+    if not isinstance(graph, (nx.Graph, rx.PyGraph)):
         raise ValueError(
-            "Input graph must be a nx.Graph object, got {}".format(type(graph).__name__)
+            "Input graph must be a nx.Graph or rx.PyGraph object, got {}".format(type(graph).__name__)
         )
 
     if b not in [0, 1]:
@@ -174,7 +201,9 @@ def bit_flip_mixer(graph, b):
     coeffs = []
     terms = []
 
-    for i in graph.nodes:
+    graph_nodes = graph.node_indexes() if isinstance(graph, rx.PyGraph) else graph.nodes
+
+    for i in graph_nodes:
 
         neighbours = list(graph.neighbors(i))
         degree = len(neighbours)
