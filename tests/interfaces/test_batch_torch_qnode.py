@@ -19,7 +19,7 @@ torch = pytest.importorskip("torch", minversion="1.3")
 from torch.autograd.functional import hessian, jacobian
 
 import pennylane as qml
-from pennylane.beta import qnode, QNode
+from pennylane import qnode, QNode
 from pennylane.tape import JacobianTape
 
 

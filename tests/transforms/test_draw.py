@@ -29,7 +29,7 @@ def test_drawing():
 
     dev = qml.device("default.qubit", wires=2)
 
-    @qml.beta.qnode(dev, interface="autograd")
+    @qml.qnode(dev, interface="autograd")
     def circuit(p1, p2=y, **kwargs):
         qml.RX(p1, wires=0)
         qml.RY(p2[0] * p2[1], wires=1)
@@ -56,7 +56,7 @@ def test_drawing_tf():
 
     dev = qml.device("default.qubit", wires=2)
 
-    @qml.beta.qnode(dev, interface="tf")
+    @qml.qnode(dev, interface="tf")
     def circuit(p1, p2=y, **kwargs):
         qml.RX(p1, wires=0)
         qml.RY(p2[0] * p2[1], wires=1)
@@ -83,7 +83,7 @@ def test_drawing_torch():
 
     dev = qml.device("default.qubit", wires=2)
 
-    @qml.beta.qnode(dev, interface="torch")
+    @qml.qnode(dev, interface="torch")
     def circuit(p1, p2=y, **kwargs):
         qml.RX(p1, wires=0)
         qml.RY(p2[0] * p2[1], wires=1)
@@ -111,7 +111,7 @@ def test_drawing_jax():
 
     dev = qml.device("default.qubit", wires=2)
 
-    @qml.beta.qnode(dev, interface="jax")
+    @qml.qnode(dev, interface="jax")
     def circuit(p1, p2=y, **kwargs):
         qml.RX(p1, wires=0)
         qml.RY(p2[0] * p2[1], wires=1)
@@ -138,7 +138,7 @@ def test_drawing_ascii():
 
     dev = qml.device("default.qubit", wires=2)
 
-    @qml.beta.qnode(dev, interface="autograd")
+    @qml.qnode(dev, interface="autograd")
     def circuit(p1, p2=y, **kwargs):
         qml.RX(p1, wires=0)
         qml.RY(p2[0] * p2[1], wires=1)
@@ -161,7 +161,7 @@ def test_show_all_wires_error():
 
     dev = qml.device("default.qubit", wires=[-1, "a", "q2", 0])
 
-    @qml.beta.qnode(dev)
+    @qml.qnode(dev)
     def circuit():
         qml.Hadamard(wires=-1)
         qml.CNOT(wires=[-1, "q2"])
@@ -177,7 +177,7 @@ def test_missing_wire():
 
     dev = qml.device("default.qubit", wires=["a", -1, "q2"])
 
-    @qml.beta.qnode(dev)
+    @qml.qnode(dev)
     def circuit():
         qml.Hadamard(wires=-1)
         qml.CNOT(wires=["a", "q2"])
@@ -220,7 +220,7 @@ def test_invalid_wires():
     ordering does not exist on the device"""
     dev = qml.device("default.qubit", wires=["a", -1, "q2"])
 
-    @qml.beta.qnode(dev)
+    @qml.qnode(dev)
     def circuit():
         qml.Hadamard(wires=-1)
         qml.CNOT(wires=["a", "q2"])
@@ -235,7 +235,7 @@ def test_direct_qnode_integration():
     """Test that a QNode renders correctly."""
     dev = qml.device("default.qubit", wires=2)
 
-    @qml.beta.qnode(dev)
+    @qml.qnode(dev)
     def qfunc(a, w):
         qml.Hadamard(0)
         qml.CRX(a, wires=[0, 1])
@@ -261,7 +261,7 @@ def test_same_wire_multiple_measurements():
     """Test that drawing a QNode with multiple measurements on certain wires works correctly."""
     dev = qml.device("default.qubit", wires=4)
 
-    @qml.beta.qnode(dev)
+    @qml.qnode(dev)
     def qnode(x, y):
         qml.RY(x, wires=0)
         qml.Hadamard(0)
@@ -287,7 +287,7 @@ def test_same_wire_multiple_measurements_many_obs():
     """
     dev = qml.device("default.qubit", wires=4)
 
-    @qml.beta.qnode(dev)
+    @qml.qnode(dev)
     def qnode(x, y):
         qml.RY(x, wires=0)
         qml.Hadamard(0)
@@ -313,7 +313,7 @@ class TestWireOrdering:
 
         dev = qml.device("default.qubit", wires=["a", -1, "q2"])
 
-        @qml.beta.qnode(dev)
+        @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=-1)
             qml.CNOT(wires=["a", "q2"])
@@ -334,7 +334,7 @@ class TestWireOrdering:
 
         dev = qml.device("default.qubit", wires=["a", -1, "q2"])
 
-        @qml.beta.qnode(dev)
+        @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=-1)
             qml.CNOT(wires=["a", "q2"])
@@ -355,7 +355,7 @@ class TestWireOrdering:
 
         dev = qml.device("default.qubit", wires=[-1, "a", "q2", 0])
 
-        @qml.beta.qnode(dev)
+        @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=-1)
             qml.CNOT(wires=[-1, "q2"])
@@ -377,7 +377,7 @@ class TestWireOrdering:
 
         dev = qml.device("default.qubit", wires=[-1, "a", "q2", 0])
 
-        @qml.beta.qnode(dev)
+        @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=-1)
             qml.CNOT(wires=[-1, "q2"])
@@ -392,7 +392,7 @@ class TestWireOrdering:
 
         dev = qml.device("default.qubit", wires=["a", -1, "q2"])
 
-        @qml.beta.qnode(dev)
+        @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=-1)
             qml.CNOT(wires=["a", "q2"])
@@ -434,7 +434,7 @@ class TestWireOrdering:
         ordering does not exist on the device"""
         dev = qml.device("default.qubit", wires=["a", -1, "q2"])
 
-        @qml.beta.qnode(dev)
+        @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=-1)
             qml.CNOT(wires=["a", "q2"])
@@ -448,7 +448,7 @@ class TestWireOrdering:
         """Test that a QNode with no operations still draws correctly"""
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.beta.qnode(dev)
+        @qml.qnode(dev)
         def qnode():
             return qml.expval(qml.PauliX(wires=[0]) @ qml.PauliX(wires=[1]) @ qml.PauliX(wires=[2]))
 

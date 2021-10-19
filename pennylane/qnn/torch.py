@@ -216,11 +216,7 @@ class TorchLayer(Module):
         self._signature_validation(qnode, weight_shapes)
         self.qnode = qnode
 
-        try:
-            # TODO: remove once the beta QNode is default
-            self.qnode.to_torch()
-        except AttributeError:
-            self.qnode.interface = "torch"
+        self.qnode.interface = "torch"
 
         if not init_method:
             init_method = functools.partial(torch.nn.init.uniform_, b=2 * math.pi)
