@@ -35,9 +35,9 @@ def generalized_singles(wires, delta_sz):
         for p in range(len(wires)):
             if sz[p] - sz[r] == delta_sz and p != r:
                 if r < p:
-                    gen_singles_wires.append(wires[r: p + 1])
+                    gen_singles_wires.append(wires[r : p + 1])
                 else:
-                    gen_singles_wires.append(wires[p: r + 1].reverse())
+                    gen_singles_wires.append(wires[p : r + 1][::-1])
     return gen_singles_wires
 
 
