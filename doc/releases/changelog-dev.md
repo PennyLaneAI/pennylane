@@ -17,6 +17,7 @@
 * A new transform, `@qml.batch_params`, has been added, that makes QNodes 
   handle a batch dimension in trainable parameters.
   [(#1710)](https://github.com/PennyLaneAI/pennylane/pull/1710)
+  [(#1761)](https://github.com/PennyLaneAI/pennylane/pull/1761)
 
   This transform will create multiple circuits, one per batch dimension.
   As a result, it is both simulator and hardware compatible.
@@ -613,6 +614,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-Utkarsh Azad, Akash Narayanan B, Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee,
+Utkarsh Azad, Akash Narayanan B, Olivia Di Matteo, Andrew Gardhouse, David Ittah, Josh Izaac, Christina Lee,
 Romain Moyard, Carrie-Anne Rubidge, Maria Schuld, Rishabh Singh, Ingrid Strandberg, Antal Száva, Cody Wang,
 David Wierichs, Moritz Willmann.
