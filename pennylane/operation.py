@@ -815,7 +815,7 @@ class Operation(Operator):
         op_matrix = self._matrix(*self.parameters)
 
         if self.inverse:
-            return op_matrix.conj().T
+            return qml.math.conj(qml.math.T(op_matrix))
 
         return op_matrix
 
@@ -824,7 +824,7 @@ class Operation(Operator):
         op_eigvals = self._eigvals(*self.parameters)
 
         if self.inverse:
-            return op_eigvals.conj()
+            return qml.math.conj(op_eigvals)
 
         return op_eigvals
 
@@ -1971,7 +1971,7 @@ def operation_derivative(operation) -> np.ndarray:
 
     if operation.inverse:
         prefactor *= -1
-        generator = generator.conj().T
+        generator = qml.math.conj(qml.math.T(generator))
 
     return 1j * prefactor * generator @ operation.matrix
 
