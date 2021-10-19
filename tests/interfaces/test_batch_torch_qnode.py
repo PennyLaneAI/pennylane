@@ -618,8 +618,8 @@ class TestQubitIntegration:
         dev = qml.device(dev_name, wires=2)
         x_val = 0.543
         y_val = -0.654
-        x = torch.tensor(x_val, requires_grad=True)
-        y = torch.tensor(y_val, requires_grad=True)
+        x = torch.tensor(x_val, requires_grad=True, dtype=torch.float64)
+        y = torch.tensor(y_val, requires_grad=True, dtype=torch.float64)
 
         @qnode(dev, diff_method=diff_method, mode=mode, interface="torch")
         def circuit(x, y):
@@ -670,8 +670,8 @@ class TestQubitIntegration:
         dev = qml.device(dev_name, wires=2)
         x_val = 0.543
         y_val = -0.654
-        x = torch.tensor(x_val, requires_grad=True)
-        y = torch.tensor(y_val, requires_grad=True)
+        x = torch.tensor(x_val, requires_grad=True, dtype=torch.float64)
+        y = torch.tensor(y_val, requires_grad=True, dtype=torch.float64)
 
         @qnode(dev, diff_method=diff_method, mode=mode, interface="torch")
         def circuit(x, y):
@@ -998,7 +998,7 @@ class TestQubitIntegration:
         P = torch.tensor([1], requires_grad=False)
 
         x, y = 0.765, -0.654
-        weights = torch.tensor([x, y], requires_grad=True)
+        weights = torch.tensor([x, y], requires_grad=True, dtype=torch.float64)
 
         @qnode(dev, diff_method=diff_method, interface="torch", mode=mode)
         def circuit(x, y):

@@ -14,7 +14,7 @@
 """Code for the adjoint transform."""
 
 from functools import wraps
-from pennylane.tape import QuantumTape, get_active_tape
+from pennylane.tape import QuantumTape, stop_recording
 
 
 def adjoint(fn):
@@ -111,15 +111,8 @@ def adjoint(fn):
 
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        active_tape = get_active_tape()
-
-        if active_tape is not None:
-            with active_tape.stop_recording(), QuantumTape() as tape:
-                fn(*args, **kwargs)
-        else:
-            # Not within a queuing context
-            with QuantumTape() as tape:
-                fn(*args, **kwargs)
+        with stop_recording(), QuantumTape() as tape:
+            fn(*args, **kwargs)
 
         if not tape.operations:
             # we called op.expand(): get the outputted tape
