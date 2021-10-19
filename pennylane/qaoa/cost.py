@@ -18,6 +18,7 @@ different optimization problems.
 
 import networkx as nx
 from networkx.algorithms.similarity import graph_edit_distance
+from networkx.generators.expanders import paley_graph
 import retworkx as rx
 import pennylane as qml
 from pennylane import qaoa
@@ -501,13 +502,14 @@ def max_clique(graph, constrained=True):
         raise ValueError("Input graph must be a nx.Graph or rx.PyGraph, got {}".format(type(graph).__name__))
 
     graph_nodes = graph.node_indexes() if isinstance(graph, rx.PyGraph) else graph.nodes
-
+    graph_complement = rx.complement(graph) if isinstance(graph, rx.PyGraph) else nx.complement(graph)
+    
     if constrained:
         cost_h = bit_driver(graph_nodes, 1)
         cost_h.grouping_indices = [list(range(len(cost_h.ops)))]
-        return (cost_h, qaoa.bit_flip_mixer(nx.complement(graph), 0))
+        return (cost_h, qaoa.bit_flip_mixer(graph_complement, 0))
 
-    cost_h = 3 * edge_driver(nx.complement(graph), ["10", "01", "00"]) + bit_driver(graph_nodes, 1)
+    cost_h = 3 * edge_driver(graph_complement, ["10", "01", "00"]) + bit_driver(graph_nodes, 1)
     mixer_h = qaoa.x_mixer(graph_nodes)
 
     # store the valuable information that all observables are in one commuting group
