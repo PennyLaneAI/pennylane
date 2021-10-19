@@ -448,20 +448,28 @@ def expand(matrix, original_wires, expanded_wires):
     if not set(expanded_wires).issuperset(original_wires):
         raise ValueError("Invalid target subsystems provided in 'original_wires' argument.")
 
-    if matrix.shape != (2 ** N, 2 ** N):
+    if qml.math.shape(matrix) != (2 ** N, 2 ** N):
         raise ValueError(
             "Matrix parameter must be of size (2**len(original_wires), 2**len(original_wires))"
         )
 
     dims = [2] * (2 * N)
-    tensor = matrix.reshape(dims)
+    tensor = qml.math.reshape(matrix, dims)
+
+    interface = qml.math.get_interface(tensor)
 
     if D > 0:
         extra_dims = [2] * (2 * D)
-        identity = np.eye(2 ** D).reshape(extra_dims)
-        expanded_tensor = np.tensordot(tensor, identity, axes=0)
+        identity = qml.math.reshape(qml.math.eye(2 ** D), extra_dims)
+
+        if interface == "tensorflow":
+            identity = qml.math.cast_like(identity, tensor)
+
+        expanded_tensor = qml.math.tensordot(tensor, identity, axes=0)
         # Fix order of tensor factors
-        expanded_tensor = np.moveaxis(expanded_tensor, range(2 * N, 2 * N + D), range(N, N + D))
+        expanded_tensor = qml.math.moveaxis(
+            expanded_tensor, tuple(range(2 * N, 2 * N + D)), tuple(range(N, N + D))
+        )
     else:
         expanded_tensor = tensor
 
@@ -473,10 +481,14 @@ def expand(matrix, original_wires, expanded_wires):
 
     # Order tensor factors according to wires
     original_indices = np.array(range(N))
-    expanded_tensor = np.moveaxis(expanded_tensor, original_indices, wire_indices)
-    expanded_tensor = np.moveaxis(expanded_tensor, original_indices + M, wire_indices + M)
+    expanded_tensor = qml.math.moveaxis(
+        expanded_tensor, tuple(original_indices), tuple(wire_indices)
+    )
+    expanded_tensor = qml.math.moveaxis(
+        expanded_tensor, tuple(original_indices + M), tuple(wire_indices + M)
+    )
 
-    return expanded_tensor.reshape((2 ** M, 2 ** M))
+    return qml.math.reshape(expanded_tensor, (2 ** M, 2 ** M))
 
 
 def expand_vector(vector, original_wires, expanded_wires):
@@ -501,16 +513,16 @@ def expand_vector(vector, original_wires, expanded_wires):
     if not set(expanded_wires).issuperset(original_wires):
         raise ValueError("Invalid target subsystems provided in 'original_wires' argument.")
 
-    if vector.shape != (2 ** N,):
+    if qml.math.shape(vector) != (2 ** N,):
         raise ValueError("Vector parameter must be of length 2**len(original_wires)")
 
     dims = [2] * N
-    tensor = vector.reshape(dims)
+    tensor = qml.math.reshape(vector, dims)
 
     if D > 0:
         extra_dims = [2] * D
-        ones = np.ones(2 ** D).reshape(extra_dims)
-        expanded_tensor = np.tensordot(tensor, ones, axes=0)
+        ones = qml.math.ones(2 ** D).reshape(extra_dims)
+        expanded_tensor = qml.math.tensordot(tensor, ones, axes=0)
     else:
         expanded_tensor = tensor
 
@@ -522,6 +534,8 @@ def expand_vector(vector, original_wires, expanded_wires):
 
     # Order tensor factors according to wires
     original_indices = np.array(range(N))
-    expanded_tensor = np.moveaxis(expanded_tensor, original_indices, wire_indices)
+    expanded_tensor = qml.math.moveaxis(
+        expanded_tensor, tuple(original_indices), tuple(wire_indices)
+    )
 
-    return expanded_tensor.reshape(2 ** M)
+    return qml.math.reshape(expanded_tensor, 2 ** M)
