@@ -563,6 +563,9 @@ class Device(abc.ABC):
 
     @property
     def stopping_condition(self):
+        """.BooleanFn: Returns the stopping condition for the device. The returned
+        function accepts a queuable object (including a PennyLane operation
+        and observable) and returns ``True`` if supported by the device."""
         return qml.BooleanFn(
             lambda obj: not isinstance(obj, qml.tape.QuantumTape)
             and self.supports_operation(obj.name)

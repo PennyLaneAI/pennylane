@@ -83,7 +83,10 @@ def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
     """
     # pylint: disable=unused-argument
     if device is not None:
-        stop_at &= device.stopping_condition
+        if stop_at is None:
+            stop_at = device.stopping_condition
+        else:
+            stop_at &= device.stopping_condition
 
     def expand_fn(tape, _depth=depth, **kwargs):
 
