@@ -398,7 +398,7 @@ def test_gradient_kinetic(symbols, geometry, alpha, coeff):
     mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
     basis_a = mol.basis_set[0]
     basis_b = mol.basis_set[1]
-    args = [mol.alpha, mol.coeff, mol.r]
+    args = [mol.alpha, mol.coeff]
 
     g_alpha = autograd.grad(generate_kinetic(basis_a, basis_b), argnum=0)(*args)
     g_coeff = autograd.grad(generate_kinetic(basis_a, basis_b), argnum=1)(*args)
@@ -500,7 +500,7 @@ def test_gradient_attraction(symbols, geometry, alpha, coeff):
     mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
     basis_a = mol.basis_set[0]
     basis_b = mol.basis_set[1]
-    args = [mol.alpha, mol.coeff, mol.r]
+    args = [mol.alpha, mol.coeff]
     r_nuc = geometry[0]
 
     g_alpha = autograd.grad(generate_attraction(r_nuc, basis_a, basis_b), argnum=0)(*args)
