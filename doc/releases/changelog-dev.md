@@ -135,7 +135,7 @@
   extended to the JAX interface for scalar functions, via the beta
   `pennylane.interfaces.batch` module.
   [(#1634)](https://github.com/PennyLaneAI/pennylane/pull/1634)
-  [(#1683)](https://github.com/PennyLaneAI/pennylane/pull/1683)
+  [(#1685)](https://github.com/PennyLaneAI/pennylane/pull/1685)
 
   For example using the `execute` function from the `pennylane.interfaces.batch` module:
 

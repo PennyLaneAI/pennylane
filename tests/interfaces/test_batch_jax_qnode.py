@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ config.update("jax_enable_x64", True)
 
 @pytest.mark.parametrize("dev_name,diff_method,mode", qubit_device_and_diff_method)
 class TestQNode:
-    """Test that using the QNode with Autograd integrates with the PennyLane stack"""
+    """Test that using the QNode with JAX integrates with the PennyLane stack"""
 
     def test_execution_with_interface(self, dev_name, diff_method, mode):
         """Test execution works with the interface"""
@@ -943,7 +943,7 @@ def test_adjoint_reuse_device_state(mocker):
 @pytest.mark.parametrize("dev_name,diff_method,mode", qubit_device_and_diff_method)
 class TestTapeExpansion:
     """Test that tape expansion within the QNode integrates correctly
-    with the Autograd interface"""
+    with the JAX interface"""
 
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_gradient_expansion_trainable_only(self, dev_name, diff_method, mode, max_diff, mocker):

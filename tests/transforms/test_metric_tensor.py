@@ -672,7 +672,6 @@ class TestDifferentiability:
         weights = jnp.array([0.432, 0.12, -0.432])
         a, b, c = weights
 
-        cost(weights)
         grad = jax.grad(cost)(weights)
         expected = np.array(
             [np.cos(a) * np.cos(b) ** 2 * np.sin(a) / 2, np.cos(a) ** 2 * np.sin(2 * b) / 4, 0]
