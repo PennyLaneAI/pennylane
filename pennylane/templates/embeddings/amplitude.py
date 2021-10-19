@@ -172,9 +172,7 @@ class AmplitudeEmbedding(Operation):
         """
 
         # check if features is batched
-        batched = False
-        if len(qml.math.shape(features)) > 1:
-            batched = True
+        batched = len(qml.math.shape(features)) > 1
 
         features_batch = features if batched else [features]
 
