@@ -215,7 +215,7 @@ class TestInterfaces:
     def test_list_and_tuples(self, tol):
         """Tests common iterables as inputs."""
 
-        weights = [[[[0.1, -1.1], [0.2, 0.1]], [[0.1, -1.1], [0.2, 0.1]]]]
+        weights = [[[0.1, -1.1], [0.2, 0.1]]]
         initial_weights = [0.1, 0.2, 0.3]
 
         dev = qml.device("default.qubit", wires=3)

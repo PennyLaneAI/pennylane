@@ -368,60 +368,6 @@ class TestCircuits:
         with pytest.raises(ValueError, match=f"{measure_fn.__name__} is not supported"):
             qnode_spectrum(circuit)(1.5)
 
-    def test_multi_parameter_expansion(self):
-        """Test that a multi-parameter gate is decomposed correctly.
-        And that single-parameter gates are not decomposed."""
-        dev = qml.device("default.qubit", wires=3)
-
-        class _CRX(qml.CRX):
-            @staticmethod
-            def decomposition(theta, wires):
-                raise NotImplementedError()
-
-        @qml.qnode(dev)
-        def circuit(x, z0, y, z1):
-            qml.RX(x, wires=0)
-            qml.Rot(z0, y, z1, wires=1)
-            _CRX(x, wires=[0, 2])
-            return qml.expval(qml.PauliZ(wires=0))
-
-        res = qnode_spectrum(circuit)(1.5, -2.1, 0.2, -0.418)
-        assert res == OrderedDict(
-            [
-                ("x", {(): [-2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0]}),
-                ("z0", {(): [-1.0, 0.0, 1.0]}),
-                ("y", {(): [-1.0, 0.0, 1.0]}),
-                ("z1", {(): [-1.0, 0.0, 1.0]}),
-            ]
-        )
-
-    def test_no_generator_expansion(self):
-        """Test that a gate is decomposed correctly if it has
-        generator[0]==None."""
-        dev = qml.device("default.qubit", wires=3)
-
-        class _CRX(qml.CRX):
-            generator = [None, 1]
-
-        @qml.qnode(dev, max_expansion=0)
-        def circuit(x, z0, y, z1):
-            qml.RX(x, wires=0)
-            qml.RZ(z0, wires=1)
-            qml.RY(y, wires=1)
-            qml.RZ(z1, wires=1)
-            _CRX(x, wires=[0, 2])
-            return qml.expval(qml.PauliZ(wires=0))
-
-        res = qnode_spectrum(circuit)(1.5, -2.1, 0.2, -0.418)
-        assert res == OrderedDict(
-            [
-                ("x", {(): [-2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0]}),
-                ("z0", {(): [-1.0, 0.0, 1.0]}),
-                ("y", {(): [-1.0, 0.0, 1.0]}),
-                ("z1", {(): [-1.0, 0.0, 1.0]}),
-            ]
-        )
-
 
 def circuit(x, w):
     """Test circuit"""

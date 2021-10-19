@@ -372,7 +372,7 @@ def sample(op=None, wires=None):
     return MeasurementProcess(Sample, obs=op)
 
 
-def probs(wires):
+def probs(wires=None, op=None):
     r"""Probability of each computational basis state.
 
     This measurement function accepts no observables, and instead
@@ -405,11 +405,50 @@ def probs(wires):
     to a :math:`50\%` chance of measuring either :math:`|00\rangle`
     or :math:`|01\rangle`.
 
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        H = 1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliZ(wires=0)
+            qml.PauliX(wires=1)
+            return qml.probs(op=qml.Hermitian(H, wires=0))
+
+    >>> circuit()
+
+    array([0.14644661 0.85355339])
+
+    The returned array is in lexicographic order, so corresponds
+    to a :math:`14.6\%` chance of measuring the rotated :math:`|0\rangle` state
+    and :math:`85.4\%` of measuring the rotated :math:`|1\rangle` state.
+
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
+        op (Observable): Observable (with a diagonalzing_gates attribute) that rotates
+         the computational basis
     """
     # pylint: disable=protected-access
-    return MeasurementProcess(Probability, wires=qml.wires.Wires(wires))
+    if isinstance(op, qml.Hamiltonian):
+        raise qml.QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
+
+    if op is not None and not hasattr(op, "diagonalizing_gates"):
+        raise qml.QuantumFunctionError(
+            "{} has not diagonalizing_gates attribute: cannot be used to rotate the probability".format(
+                op
+            )
+        )
+
+    if wires is not None:
+        if op is not None:
+            raise qml.QuantumFunctionError(
+                "Cannot specify the wires to probs if an observable is "
+                "provided. The wires for probs will be determined directly from the observable."
+            )
+        return MeasurementProcess(Probability, wires=qml.wires.Wires(wires))
+    return MeasurementProcess(Probability, obs=op)
 
 
 def state():
