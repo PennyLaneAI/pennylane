@@ -106,6 +106,9 @@ class Rotation(CVOperation):
     def adjoint(self, do_queue=False):
         return Rotation(-self.parameters[0], wires=self.wires, do_queue=do_queue)
 
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "R")
+
 
 class Squeezing(CVOperation):
     r"""pennylane.Squeezing(r, phi, wires)
@@ -155,6 +158,9 @@ class Squeezing(CVOperation):
         r, phi = self.parameters
         new_phi = (phi + np.pi) % (2 * np.pi)
         return Squeezing(r, new_phi, wires=self.wires, do_queue=do_queue)
+
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "S")
 
 
 class Displacement(CVOperation):
@@ -206,6 +212,9 @@ class Displacement(CVOperation):
         a, phi = self.parameters
         new_phi = (phi + np.pi) % (2 * np.pi)
         return Displacement(a, new_phi, wires=self.wires, do_queue=do_queue)
+
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "D")
 
 
 class Beamsplitter(CVOperation):
@@ -260,6 +269,9 @@ class Beamsplitter(CVOperation):
     def adjoint(self, do_queue=False):
         theta, phi = self.parameters
         return Beamsplitter(-theta, phi, wires=self.wires, do_queue=do_queue)
+    
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "D")
 
 
 class TwoModeSqueezing(CVOperation):
@@ -323,6 +335,9 @@ class TwoModeSqueezing(CVOperation):
         new_phi = (phi + np.pi) % (2 * np.pi)
         return TwoModeSqueezing(r, new_phi, wires=self.wires, do_queue=do_queue)
 
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "S")
+
 
 class QuadraticPhase(CVOperation):
     r"""pennylane.QuadraticPhase(s, wires)
@@ -367,6 +382,9 @@ class QuadraticPhase(CVOperation):
         U = np.identity(3)
         U[2, 1] = p[0]
         return U
+
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "P")
 
 
 class ControlledAddition(CVOperation):
@@ -420,6 +438,9 @@ class ControlledAddition(CVOperation):
     def adjoint(self, do_queue=False):
         return ControlledAddition(-self.parameters[0], wires=self.wires, do_queue=do_queue)
 
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "X")
+
 
 class ControlledPhase(CVOperation):
     r"""pennylane.ControlledPhase(s, wires)
@@ -472,6 +493,8 @@ class ControlledPhase(CVOperation):
     def adjoint(self, do_queue=False):
         return ControlledPhase(-self.parameters[0], wires=self.wires, do_queue=do_queue)
 
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "Z")
 
 class Kerr(CVOperation):
     r"""pennylane.Kerr(kappa, wires)
@@ -550,6 +573,8 @@ class CubicPhase(CVOperation):
     def adjoint(self, do_queue=False):
         return CubicPhase(-self.parameters[0], wires=self.wires, do_queue=do_queue)
 
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "V")
 
 class InterferometerUnitary(CVOperation):
     r"""pennylane.InterferometerUnitary(U, wires)
@@ -711,6 +736,8 @@ class ThermalState(CVOperation):
     par_domain = "R"
     grad_method = "F"
 
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "Thermal")
 
 class GaussianState(CVOperation):
     r"""pennylane.GaussianState(V, r, wires)
@@ -732,6 +759,9 @@ class GaussianState(CVOperation):
     par_domain = "A"
     grad_method = "F"
 
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "Gaussian")
+
 
 class FockState(CVOperation):
     r"""pennylane.FockState(n, wires)
@@ -751,6 +781,9 @@ class FockState(CVOperation):
     num_params = 1
     par_domain = "N"
     grad_method = None
+
+    def label(self, decimals=None, base_label=None):
+        return base_label or f"|{self.parameters[0]}>"
 
 
 class FockStateVector(CVOperation):
@@ -811,6 +844,12 @@ class FockStateVector(CVOperation):
     num_params = 1
     par_domain = "A"
     grad_method = "F"
+
+    def label(self, decimals=None, base_label=None):
+        if base_label is not None:
+            return base_label
+        basis_string = "".join(str(int(i)) for i in self.parameters[0])
+        return f"|{basis_string}>"
 
 
 class FockDensityMatrix(CVOperation):
@@ -906,6 +945,9 @@ class NumberOperator(CVObservable):
     def _heisenberg_rep(p):
         hbar = 2
         return np.diag([-0.5, 0.5 / hbar, 0.5 / hbar])
+
+    def label(self, decimals=None, base_label=None):
+        return base_label or "n"
 
 
 class TensorN(CVObservable):
@@ -1059,6 +1101,37 @@ class QuadOperator(CVObservable):
         phi = p[0]
         return np.array([0, math.cos(phi), math.sin(phi)])  # TODO check
 
+    def label(self, decimals=None, base_label=None):
+        r"""A customizable string representation of the operator.
+
+        Args:
+            decimals=None (int): If ``None``, no parameters are included. Else,
+                specifies how to round the parameters.
+            base_label=None (str): overwrite the non-parameter component of the label
+
+        Returns:
+            str: label to use in drawings
+
+        **Example:**
+
+        >>> op = qml.QuadOperator(1.234, wires=0)
+        >>> op.label()
+        'cos(φ)x+sin(φ)p'
+        >>> op.label(decimals=2)
+        'cos(1.23)x+sin(1.23)p'
+        >>> op.label(base_label="Quad", decimals=2)
+        'Quad\n(1.23)'
+
+        """
+
+        if base_label is not None:
+            return super().label(decimals=decimals, base_label=base_label)
+
+        if decimals is None:
+            p = "φ"
+        else:
+            p = format(qml_math.array(self.parameters[0]), f".{decimals}f")
+        return f"cos({p})x+sin({p})p"
 
 class PolyXP(CVObservable):
     r"""pennylane.ops.PolyXP(q, wires)
@@ -1147,6 +1220,30 @@ class FockStateProjector(CVObservable):
 
     grad_method = None
     ev_order = None
+
+    def label(self, decimals=None, base_label=None):
+        r"""A customizable string representation of the operator.
+
+        Args:
+            decimals=None (int): If ``None``, no parameters are included. Else,
+                specifies how to round the parameters.
+            base_label=None (str): overwrite the non-parameter component of the label
+
+        Returns:
+            str: label to use in drawings
+
+        **Example:**
+
+        >>> qml.FockStateProjector([1,2,3], wires=(0,1,2)).label()
+        '|123⟩⟨123|'
+
+        """
+
+        if base_label is not None:
+            return super().label(decimals=decimals, base_label=base_label)
+
+        basis_string = "".join(str(int(i)) for i in self.parameters[0])
+        return f"|{basis_string}⟩⟨{basis_string}|"
 
 
 ops = {

@@ -433,7 +433,9 @@ class Operator(abc.ABC):
 
         Returns:
             str: label to use in drawings
-**Example:**
+        
+        **Example:**
+
         >>> op = qml.RX(1.23456, wires=0)
         >>> op.label()
         "RX"
@@ -453,15 +455,21 @@ class Operator(abc.ABC):
         if decimals is not None:
             params = self.parameters
 
-            if (len(params) == 1) and len(qml.math.shape(params[0])) == 0:
-                param_string = f"\n({1.0*params[0]:.{decimals}f})"
-                op_label += param_string
+            # matrix parameters not rendered
+            if len(qml.math.shape(params[0])) != 0:
+                return op_label
 
-            if len(params) > 1:
-                param_string = ",".join(f"{1.0*p:.{decimals}f}" for p in params)
-                op_label += f"\n({param_string})"
+            def _format(x):
+                return format(qml.math.toarray(x), f".{decimals}f")
 
-        return op_label
+            if self.num_params == 1:
+                return op_label + f"\n({_format(params[0])})"
+
+            if self.num_params > 1:
+                param_string = ",".join(_format(p) for p in params)
+                return op_label + f"\n({param_string})"
+
+            return op_label
 
     def __init__(self, *params, wires=None, do_queue=True, id=None):
         # pylint: disable=too-many-branches
@@ -831,10 +839,10 @@ class Operation(Operator):
         return self._name + Operation.string_for_inverse if self.inverse else self._name
 
     def label(self, decimals=None, base_label=None):
-        op_label = super().label(decimals=decimals, base_label=base_label)
         if not self.is_self_inverse and self.inverse:
-            op_label += "⁻¹"
-        return op_label
+            base_label = base_label or self.__class__.__name__
+            base_label += "⁻¹"
+        return super().label(decimals=decimals, base_label=base_label)
 
     def __init__(self, *params, wires=None, do_queue=True, id=None):
 
@@ -1281,9 +1289,9 @@ class Tensor(Observable):
 
         >>> T = qml.PauliX(0) @ qml.Hadamard(2)
         >>> T.label()
-        "X H"
+        'X⊗H'
         >>> T.label(base_label=["X0", "H2"])
-        "X0 H2"
+        'X0⊗H2'
 
         """
         if base_label is not None:
@@ -1292,11 +1300,11 @@ class Tensor(Observable):
                     "Tensor label requires ``base_label`` keyword to be same length"
                     " as tensor components."
                 )
-            return " ".join(
+            return "⊗".join(
                 ob.label(decimals=decimals, base_label=lbl) for ob, lbl in zip(self.obs, base_label)
             )
 
-        return " ".join(ob.label(decimals=decimals) for ob in self.obs)
+        return "⊗".join(ob.label(decimals=decimals) for ob in self.obs)
 
     def queue(self, context=qml.QueuingContext, init=False):  # pylint: disable=arguments-differ
         constituents = self.obs

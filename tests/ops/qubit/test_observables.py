@@ -377,8 +377,8 @@ def test_identity_eigvals(tol):
 
 
 label_data = [
-    (qml.Hermitian(np.eye(2), wires=1), "H"),
-    (qml.Identity(wires=0), "I"),
+    (qml.Hermitian(np.eye(2), wires=1), "𝓗"),
+    (qml.Identity(wires=0), "𝓗"),
     (qml.Projector([1, 0, 1], wires=(0, 1, 2)), "|101⟩⟨101|"),
 ]
 

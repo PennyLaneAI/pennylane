@@ -551,7 +551,7 @@ class TestHamiltonian:
 
     def test_label(self):
         H = qml.Hamiltonian((-0.8,), (qml.PauliZ(0),))
-        assert H.label() == "H"
+        assert H.label() == "𝓗"
 
     @pytest.mark.parametrize("terms, string", zip(valid_hamiltonians, valid_hamiltonians_str))
     def test_hamiltonian_str(self, terms, string):

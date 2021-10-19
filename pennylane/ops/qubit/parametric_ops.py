@@ -534,14 +534,35 @@ class PauliRot(Operation):
             )
 
     def label(self, decimals=None, base_label=None):
+        r"""A customizable string representation of the operator.
+
+        Args:
+            decimals=None (int): If ``None``, no parameters are included. Else,
+                specifies how to round the parameters.
+            base_label=None (str): overwrite the non-parameter component of the label
+
+        Returns:
+            str: label to use in drawings
+        
+        **Example:**
+
+        >>> op = qml.PauliRot(0.1, "XYY", wires=(0,1,2))
+        >>> op.label()
+        'R(XYY)'
+        >>> op.label(decimals=2)
+        'R(XYY)\n(0.10)'
+        >>> op.label(base_label="PauliRot")
+        'PauliRot\n(0.10)'
+
+        """
         op_label = base_label or ("R(" + self.parameters[1] + ")")
+
+        if self.inverse:
+            op_label += "⁻¹"
 
         if decimals is not None:
             param_string = f"\n({1.0*self.parameters[0]:.{decimals}f})"
             op_label += param_string
-
-        if self.inverse:
-            op_label += "⁻¹"
 
         return op_label
 

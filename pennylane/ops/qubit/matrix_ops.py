@@ -239,9 +239,6 @@ class ControlledQubitUnitary(QubitUnitary):
         ctrl_wires = sorted(self.control_wires + wire)
         ControlledQubitUnitary(*self.parameters, control_wires=ctrl_wires, wires=self._target_wires)
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "U")
-
 
 class DiagonalQubitUnitary(DiagonalOperation):
     r"""DiagonalQubitUnitary(D, wires)

@@ -58,7 +58,7 @@ class TestSparse:
 
     def test_label(self):
         H = qml.SparseHamiltonian(coo_matrix((np.array([[1, 0], [-1.5, 0]]))), 1)
-        assert H.label() == "H"
+        assert H.label() == "𝓗"
 
     @pytest.mark.parametrize("sparse_hamiltonian", SPARSE_HAMILTONIAN_TEST_DATA)
     def test_sparse_diagonalization(self, sparse_hamiltonian):

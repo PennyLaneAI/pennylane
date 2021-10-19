@@ -718,7 +718,7 @@ label_data = [
     (qml.S(wires=0), "S"),
     (qml.T(wires=0), "T"),
     (qml.SX(wires=0), "SX"),
-    (qml.CNOT(wires=(0, 1)), "X"),
+    (qml.CNOT(wires=(0, 1)), "⊕"),
     (qml.CZ(wires=(0, 1)), "Z"),
     (qml.CY(wires=(0, 1)), "Y"),
     (qml.SWAP(wires=(0, 1)), "SWAP"),
@@ -726,8 +726,8 @@ label_data = [
     (qml.SISWAP(wires=(0, 1)), "SISWAP"),
     (qml.SQISW(wires=(0, 1)), "SISWAP"),
     (qml.CSWAP(wires=(0, 1, 2)), "SWAP"),
-    (qml.Toffoli(wires=(0, 1, 2)), "X"),
-    (qml.MultiControlledX(control_wires=(0, 1, 2), wires=(3)), "X"),
+    (qml.Toffoli(wires=(0, 1, 2)), "⊕"),
+    (qml.MultiControlledX(control_wires=(0, 1, 2), wires=(3)), "⊕"),
 ]
 
 
