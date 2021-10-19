@@ -28,7 +28,6 @@ except ImportError as e:
 
 import numpy as np
 from pennylane.operation import DiagonalOperation
-from pennylane.devices import torch_ops
 from . import DefaultQubit
 
 
@@ -131,29 +130,6 @@ class DefaultQubitTorch(DefaultQubit):
 
     name = "Default qubit (Torch) PennyLane plugin"
     short_name = "default.qubit.torch"
-
-    parametric_ops = {
-        "PhaseShift": torch_ops.PhaseShift,
-        "ControlledPhaseShift": torch_ops.ControlledPhaseShift,
-        "RX": torch_ops.RX,
-        "RY": torch_ops.RY,
-        "RZ": torch_ops.RZ,
-        "MultiRZ": torch_ops.MultiRZ,
-        "Rot": torch_ops.Rot,
-        "CRX": torch_ops.CRX,
-        "CRY": torch_ops.CRY,
-        "CRZ": torch_ops.CRZ,
-        "CRot": torch_ops.CRot,
-        "IsingXX": torch_ops.IsingXX,
-        "IsingYY": torch_ops.IsingYY,
-        "IsingZZ": torch_ops.IsingZZ,
-        "SingleExcitation": torch_ops.SingleExcitation,
-        "SingleExcitationPlus": torch_ops.SingleExcitationPlus,
-        "SingleExcitationMinus": torch_ops.SingleExcitationMinus,
-        "DoubleExcitation": torch_ops.DoubleExcitation,
-        "DoubleExcitationPlus": torch_ops.DoubleExcitationPlus,
-        "DoubleExcitationMinus": torch_ops.DoubleExcitationMinus,
-    }
 
     C_DTYPE = torch.complex128
     R_DTYPE = torch.float64
@@ -261,21 +237,6 @@ class DefaultQubitTorch(DefaultQubit):
             the unitary in the computational basis, or, in the case of a diagonal unitary,
             a 1D array representing the matrix diagonal.
         """
-        op_name = unitary.base_name
-        if op_name in self.parametric_ops:
-            if op_name == "MultiRZ":
-                mat = self.parametric_ops[op_name](
-                    *unitary.parameters, len(unitary.wires), device=self._torch_device
-                )
-            else:
-                mat = self.parametric_ops[op_name](*unitary.parameters, device=self._torch_device)
-            if unitary.inverse:
-                if isinstance(unitary, DiagonalOperation):
-                    mat = self._conj(mat)
-                else:
-                    mat = self._transpose(self._conj(mat), axes=[1, 0])
-            return mat
-
         if isinstance(unitary, DiagonalOperation):
             return self._asarray(unitary.eigvals, dtype=self.C_DTYPE)
         return self._asarray(unitary.matrix, dtype=self.C_DTYPE)

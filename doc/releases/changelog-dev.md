@@ -17,6 +17,7 @@
 * A new transform, `@qml.batch_params`, has been added, that makes QNodes 
   handle a batch dimension in trainable parameters.
   [(#1710)](https://github.com/PennyLaneAI/pennylane/pull/1710)
+  [(#1761)](https://github.com/PennyLaneAI/pennylane/pull/1761)
 
   This transform will create multiple circuits, one per batch dimension.
   As a result, it is both simulator and hardware compatible.
@@ -366,6 +367,13 @@
 
 <h3>Improvements</h3>
 
+* All qubit operations have been re-written to use the `qml.math` framework
+  for internal classical processing and the generation of their matrix representations.
+  As a result these representations are now fully differentiable, and the
+  framework-specific device classes no longer need to maintain framework-specific
+  versions of these matrices.
+  [(#1749)](https://github.com/PennyLaneAI/pennylane/pull/1749)
+
 * A new utility class `qml.BooleanFn` is introduced. It wraps a function that takes a single
   argument and returns a Boolean.
   [(#1734)](https://github.com/PennyLaneAI/pennylane/pull/1734)
@@ -499,6 +507,8 @@
   to execute transformed QNodes.
   [(#1708)](https://github.com/PennyLaneAI/pennylane/pull/1708)
 
+* To standardize across all optimizers, `qml.optimize.AdamOptimizer` now also uses `accumulation` (in form of `collections.namedtuple`) to keep track of running quantities. Before it used three variables `fm`, `sm` and `t`. [(#1757)](https://github.com/PennyLaneAI/pennylane/pull/1757)
+
 <h3>Breaking changes</h3>
 
 - The input signature of an `expand_fn` used in a `batch_transform`
@@ -604,6 +614,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-Utkarsh Azad, Akash Narayanan B, Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee,
+Utkarsh Azad, Akash Narayanan B, Olivia Di Matteo, Andrew Gardhouse, David Ittah, Josh Izaac, Christina Lee,
 Romain Moyard, Carrie-Anne Rubidge, Maria Schuld, Rishabh Singh, Ingrid Strandberg, Antal Száva, Cody Wang,
-David Wierichs.
+David Wierichs, Moritz Willmann.
