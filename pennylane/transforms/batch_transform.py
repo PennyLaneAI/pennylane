@@ -272,7 +272,7 @@ class batch_transform:
         the QNode, and return the output of the applying the tape transform
         to the QNode's constructed tape.
         """
-        max_diff = tkwargs.pop("max_diff", 2)
+        transform_max_diff = tkwargs.pop("max_diff", None)
 
         if "shots" in inspect.signature(qnode.func).parameters:
             raise ValueError(
@@ -289,6 +289,7 @@ class batch_transform:
             interface = qnode.interface
             execute_kwargs = getattr(qnode, "execute_kwargs", {})
             max_diff = execute_kwargs.pop("max_diff", 2)
+            max_diff = transform_max_diff or max_diff
 
             gradient_fn = getattr(qnode, "gradient_fn", qnode.diff_method)
             gradient_kwargs = getattr(qnode, "gradient_kwargs", {})
