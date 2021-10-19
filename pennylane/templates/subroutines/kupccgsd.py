@@ -30,13 +30,14 @@ def generalized_singles(wires, delta_sz):
     sz = np.array(
         [0.5 if (i % 2 == 0) else -0.5 for i in range(len(wires))]
     )  # alpha-beta electrons
-    gen_singles_wires = [
-        wires[r : p + 1] if r < p else wires[p : r + 1][::-1]  # wires for [wire[r], wire[p]] terms
-        for r in range(len(wires))
-        for p in range(len(wires))
-        if sz[p] - sz[r] == delta_sz  # selection rules for spin projection
-        and p != r  # remove redundant terms
-    ]
+    gen_singles_wires = []
+    for r in range(len(wires)):
+        for p in range(len(wires)):
+            if sz[p] - sz[r] == delta_sz and p != r:
+                if r < p:
+                    gen_singles_wires.append(wires[r: p + 1])
+                else:
+                    gen_singles_wires.append(wires[p: r + 1].reverse())
     return gen_singles_wires
 
 
