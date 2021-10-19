@@ -55,23 +55,41 @@ class TestCreateExpandFn:
         new_tape = expand_fn(self.tape)
         assert new_tape.operations == self.tape.operations
 
-    def test_device_expansion(self, mocker):
-        """Test that passing a device ensures that all operations are
-        expanded to match the devices default gate set"""
-        dev = qml.device("default.qubit", wires=0)
+    def test_device_and_stopping_expansion(self, mocker):
+        """Test that passing a device alongside a stopping condition ensures
+        that all operations are expanded to match the devices default gate
+        set"""
+        dev = qml.device("default.qubit", wires=1)
         expand_fn = qml.transforms.create_expand_fn(device=dev, depth=10, stop_at=self.crit_0)
 
         with qml.tape.JacobianTape() as tape:
-            qml.RX(0.2, wires=0)
-            qml.RY(qml.numpy.array(2.1, requires_grad=True), wires=1)
+            qml.U1(0.2, wires=0)
             qml.Rot(*qml.numpy.array([0.5, 0.2, -0.1], requires_grad=True), wires=0)
-            qml.templates.StronglyEntanglingLayers(
-                qml.numpy.ones([2, 2, 3], requires_grad=True), wires=[0, 1]
-            )
 
         spy_device = mocker.spy(dev, "supports_operation")
         new_tape = expand_fn(tape)
         spy_device.assert_called()
+
+        assert new_tape.operations[0].name == "PhaseShift"
+        assert [op.name for op in new_tape.operations[1:]] == ["RZ", "RY", "RZ"]
+
+    def test_device_only_expansion(self, mocker):
+        """Test that passing a device ensures that all operations are expanded
+        to match the devices default gate set"""
+        dev = qml.device("default.qubit", wires=1)
+        expand_fn = qml.transforms.create_expand_fn(device=dev, depth=10)
+
+        with qml.tape.JacobianTape() as tape:
+            qml.U1(0.2, wires=0)
+            qml.Rot(*qml.numpy.array([0.5, 0.2, -0.1], requires_grad=True), wires=0)
+
+        spy_device = mocker.spy(dev, "supports_operation")
+        new_tape = expand_fn(tape)
+        spy_device.assert_called()
+
+        assert len(new_tape.operations) == 2
+        assert new_tape.operations[0].name == "PhaseShift"
+        assert new_tape.operations[1].name == "Rot"
 
     def test_depth_only_expansion(self):
         """Test that passing a depth simply expands to that depth"""
