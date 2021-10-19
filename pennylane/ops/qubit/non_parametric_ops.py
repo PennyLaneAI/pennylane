@@ -992,7 +992,7 @@ class MultiControlledX(Operation):
 
     @property
     def target_wires(self):
-        return self._target_wire
+        return qml.wires.Wires(self._target_wire)
 
     @staticmethod
     def _parse_control_values(control_wires, control_values):

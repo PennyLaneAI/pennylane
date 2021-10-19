@@ -140,10 +140,51 @@ class TestCommutingFunction:
             ([[0, 2], [0, 1, 2]], False),
             ([[0, 1], [0, 1, 2]], False),
             ([[0, 3], [0, 1, 2]], True),
+            ([[1, 2], [0, 1, 2]], False),
         ],
     )
     def test_cnot_cswap(self, wires, res, tol):
         commutation = qml.is_commuting(qml.CNOT(wires=wires[0]), qml.CSWAP(wires=wires[1]))
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0, 1, 2], [1, 2]], False),
+        ],
+    )
+    def test_cswap_cnot(self, wires, res, tol):
+        commutation = qml.is_commuting(qml.CSWAP(wires=wires[0]), qml.CNOT(wires=wires[1]))
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0, 1, 2], [2, 1, 0]], False),
+        ],
+    )
+    def test_cswap_cswap(self, wires, res, tol):
+        commutation = qml.is_commuting(qml.CSWAP(wires=wires[0]), qml.CSWAP(wires=wires[1]))
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0, 1], [0, 1]], False),
+        ],
+    )
+    def test_cnot_swap(self, wires, res, tol):
+        commutation = qml.is_commuting(qml.CNOT(wires=wires[0]), qml.SWAP(wires=wires[1]))
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0, 1], [0, 1]], False),
+        ],
+    )
+    def test_swap_cnot(self, wires, res, tol):
+        commutation = qml.is_commuting(qml.SWAP(wires=wires[0]), qml.CNOT(wires=wires[1]))
         assert commutation == res
 
     @pytest.mark.parametrize(
@@ -156,6 +197,23 @@ class TestCommutingFunction:
     )
     def test_cz_cswap(self, wires, res, tol):
         commutation = qml.is_commuting(qml.CZ(wires=wires[0]), qml.CSWAP(wires=wires[1]))
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0, 2], [0, 1, 2, 3]], False),
+            ([[0, 1], [0, 1, 2, 3]], False),
+            ([[0, 3], [0, 1, 2, 3]], True),
+        ],
+    )
+    def test_cnot_multix(self, wires, res, tol):
+        commutation = qml.is_commuting(
+            qml.CNOT(wires=wires[0]),
+            qml.MultiControlledX(
+                control_wires=wires[1][0:3], wires=wires[1][-1], control_values="111"
+            ),
+        )
         assert commutation == res
 
 
@@ -176,6 +234,15 @@ class TestCommutationDAG:
 
         with pytest.raises(ValueError, match="Input is not a tape, QNode, or quantum function"):
             dag = qml.transforms.get_dag_commutation(qml.PauliZ(0))()
+
+    def test_dag_wrong_function(self):
+        """Assert error raised when input function is not a quantum function"""
+
+        def test_function(x):
+            return x
+
+        with pytest.raises(ValueError, match="Function contains no quantum operation"):
+            qml.transforms.get_dag_commutation(test_function)(1)
 
     def test_dag_transform_simple_dag_function(self):
         """Test a simple DAG on 1 wire with a quantum function."""

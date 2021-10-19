@@ -432,12 +432,7 @@ class CommutationDAG:
             list[int]: List of the predecessors of the given node.
         """
         pred = list(nx.ancestors(self._multi_graph, node_id))
-
-        if pred is None:
-            pred = []
-        else:
-            pred.sort()
-
+        pred.sort()
         return pred
 
     def direct_successors(self, node_id):
@@ -463,12 +458,7 @@ class CommutationDAG:
             list[int]: List of the successors of the given node.
         """
         succ = list(nx.descendants(self._multi_graph, node_id))
-
-        if succ is None:
-            succ = []
-        else:
-            succ.sort()
-
+        succ.sort()
         return succ
 
     @property
