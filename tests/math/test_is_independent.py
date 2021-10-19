@@ -171,7 +171,7 @@ class TestIsIndependentAutograd:
     ]
 
     args_dependent = [
-        (0.1, np.array([-2.1, 0.1]), -0.9),
+        (0.1, np.array(-2.1), -0.9),
         (-4.1,),
         (-4.1,),
         (np.ones((3, 8)) * 1.1,),
@@ -274,7 +274,7 @@ if have_jax:
         ]
 
         args_dependent = [
-            (0.1, np.array([-2.1, 0.1]), -0.9),
+            (0.1, np.array(-2.1), -0.9),
             (-4.1,),
             (jax.numpy.ones((3, 8)) * 1.1,),
             *args_dependent_lambdas,
@@ -378,7 +378,7 @@ if have_tf:
         ]
 
         args_dependent = [
-            (tf.Variable(0.1), np.array([-2.1, 0.1]), tf.Variable(-0.9)),
+            (tf.Variable(0.1), np.array(-2.1), tf.Variable(-0.9)),
             (
                 tf.Variable(
                     np.ones((3, 8)) * 1.1,
@@ -497,7 +497,7 @@ if have_torch:
         ]
 
         args_dependent = [
-            (0.1, torch.tensor([-2.1, 0.1]), -0.9),
+            (0.1, torch.tensor(-2.1), -0.9),
             (-4.1,),
             (torch.ones((3, 8)) * 1.1,),
             *args_dependent_lambdas,

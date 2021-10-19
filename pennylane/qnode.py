@@ -58,6 +58,9 @@ class QNode:
               (floats, ints, lists) as well as NumPy array arguments,
               and returns NumPy arrays.
 
+            * ``"jax"``:  Allows JAX to backpropogate through the QNode.
+              The QNode accepts and returns a single expectation value or variance.
+
             * ``"torch"``: Allows PyTorch to backpropogate
               through the QNode. The QNode accepts and returns Torch tensors.
 
@@ -728,7 +731,15 @@ class QNode:
 
         return qml.math.squeeze(res)
 
-    def metric_tensor(self, *args, diag_approx=False, only_construct=False, **kwargs):
+    def metric_tensor(
+        self,
+        *args,
+        allow_nonunitary=True,
+        approx=None,
+        diag_approx=None,
+        only_construct=False,
+        **kwargs,
+    ):
         """Evaluate the value of the metric tensor.
 
         Args:
@@ -749,10 +760,9 @@ class QNode:
 
         if only_construct:
             self.construct(args, kwargs)
-            tape = qml.metric_tensor.expand_fn(self.qtape)
-            return qml.metric_tensor.construct(tape, diag_approx=diag_approx)
+            return qml.metric_tensor.construct(self.qtape, allow_nonunitary, approx, diag_approx)
 
-        return qml.metric_tensor(self, diag_approx=diag_approx)(*args, **kwargs)
+        return qml.metric_tensor(self, allow_nonunitary, approx, diag_approx)(*args, **kwargs)
 
     def draw(
         self, charset="unicode", wire_order=None, show_all_wires=False
@@ -825,6 +835,12 @@ class QNode:
           a: ──╰C──RX(0.2)──┤
          -1: ───H───────────┤
         """
+        warnings.warn(
+            "The QNode.draw method has been deprecated. "
+            "Please use the qml.draw(qnode)(*args) function instead.",
+            UserWarning,
+        )
+
         if self.qtape is None:
             raise qml.QuantumFunctionError(
                 "The QNode can only be drawn after its quantum tape has been constructed."
