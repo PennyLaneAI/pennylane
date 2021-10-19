@@ -16,7 +16,6 @@ This submodule contains the discrete-variable quantum operations that come
 from quantum chemistry applications.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access
-import cmath
 import math
 import numpy as np
 
@@ -87,14 +86,17 @@ class SingleExcitation(Operation):
         np.array([[0, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 0]]),
         -1 / 2,
     ]
+    has_unitary_generator = False
 
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
-        c = math.cos(theta / 2)
-        s = math.sin(theta / 2)
 
-        return np.array([[1, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, 1]])
+        c = qml.math.cos(theta / 2)
+        s = qml.math.sin(theta / 2)
+
+        mat = [[1, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, 1]]
+        return qml.math.stack([qml.math.stack(row) for row in mat])
 
     @staticmethod
     def decomposition(theta, wires):
@@ -141,15 +143,26 @@ class SingleExcitationMinus(Operation):
         np.array([[1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]]),
         -1 / 2,
     ]
+    has_unitary_generator = True
 
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
-        c = math.cos(theta / 2)
-        s = math.sin(theta / 2)
-        e = cmath.exp(-1j * theta / 2)
 
-        return np.array([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
+        c = qml.math.cos(theta / 2)
+        s = qml.math.sin(theta / 2)
+
+        interface = qml.math.get_interface(theta)
+
+        if interface == "tensorflow":
+            theta = qml.math.cast_like(theta, 1j)
+            c = qml.math.cast_like(c, 1j)
+            s = qml.math.cast_like(s, 1j)
+
+        e = qml.math.exp(-1j * theta / 2)
+
+        mat = [[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]]
+        return qml.math.stack([qml.math.stack(row) for row in mat])
 
     @staticmethod
     def decomposition(theta, wires):
@@ -202,15 +215,26 @@ class SingleExcitationPlus(Operation):
         np.array([[-1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, -1]]),
         -1 / 2,
     ]
+    has_unitary_generator = True
 
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
-        c = math.cos(theta / 2)
-        s = math.sin(theta / 2)
-        e = cmath.exp(1j * theta / 2)
 
-        return np.array([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
+        c = qml.math.cos(theta / 2)
+        s = qml.math.sin(theta / 2)
+
+        interface = qml.math.get_interface(theta)
+
+        if interface == "tensorflow":
+            theta = qml.math.cast_like(theta, 1j)
+            c = qml.math.cast_like(c, 1j)
+            s = qml.math.cast_like(s, 1j)
+
+        e = qml.math.exp(1j * theta / 2)
+
+        mat = [[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]]
+        return qml.math.stack([qml.math.stack(row) for row in mat])
 
     @staticmethod
     def decomposition(theta, wires):
@@ -290,20 +314,35 @@ class DoubleExcitation(Operation):
     G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
     G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
     generator = [G, -1 / 2]
+    has_unitary_generator = False
 
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
-        c = math.cos(theta / 2)
-        s = math.sin(theta / 2)
 
-        U = np.eye(16)
-        U[3, 3] = c  # 3 (dec) = 0011 (bin)
-        U[3, 12] = -s  # 12 (dec) = 1100 (bin)
-        U[12, 3] = s
-        U[12, 12] = c
+        c = qml.math.cos(theta / 2)
+        s = qml.math.sin(theta / 2)
 
-        return U
+        mat = [
+            [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, c, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -s, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, s, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, c, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
+        ]
+
+        return qml.math.stack([qml.math.stack(row) for row in mat])
 
     @staticmethod
     def decomposition(theta, wires):
@@ -385,21 +424,44 @@ class DoubleExcitationPlus(Operation):
     G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
     G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
     generator = [G, -1 / 2]
+    has_unitary_generator = True
 
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
-        c = math.cos(theta / 2)
-        s = math.sin(theta / 2)
-        e = cmath.exp(1j * theta / 2)
 
-        U = e * np.eye(16, dtype=np.complex64)
-        U[3, 3] = c  # 3 (dec) = 0011 (bin)
-        U[3, 12] = -s  # 12 (dec) = 1100 (bin)
-        U[12, 3] = s
-        U[12, 12] = c
+        c = qml.math.cos(theta / 2)
+        s = qml.math.sin(theta / 2)
 
-        return U
+        interface = qml.math.get_interface(theta)
+
+        if interface == "tensorflow":
+            theta = qml.math.cast_like(theta, 1j)
+            c = qml.math.cast_like(c, 1j)
+            s = qml.math.cast_like(s, 1j)
+
+        e = qml.math.exp(1j * theta / 2)
+
+        mat = [
+            [e, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, e, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, e, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, c, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -s, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, e, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, e, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, e, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, e, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, e, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, e, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, e, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, e, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, s, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, c, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, e, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, e, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, e],
+        ]
+
+        return qml.math.stack([qml.math.stack(row) for row in mat])
 
     def adjoint(self):
         (theta,) = self.parameters
@@ -445,21 +507,44 @@ class DoubleExcitationMinus(Operation):
     G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
     G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
     generator = [G, -1 / 2]
+    has_unitary_generator = True
 
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
-        c = math.cos(theta / 2)
-        s = math.sin(theta / 2)
-        e = cmath.exp(-1j * theta / 2)
 
-        U = e * np.eye(16, dtype=np.complex64)
-        U[3, 3] = c  # 3 (dec) = 0011 (bin)
-        U[3, 12] = -s  # 12 (dec) = 1100 (bin)
-        U[12, 3] = s
-        U[12, 12] = c
+        c = qml.math.cos(theta / 2)
+        s = qml.math.sin(theta / 2)
 
-        return U
+        interface = qml.math.get_interface(theta)
+
+        if interface == "tensorflow":
+            theta = qml.math.cast_like(theta, 1j)
+            c = qml.math.cast_like(c, 1j)
+            s = qml.math.cast_like(s, 1j)
+
+        e = qml.math.exp(-1j * theta / 2)
+
+        mat = [
+            [e, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, e, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, e, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, c, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -s, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, e, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, e, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, e, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, e, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, e, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, e, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, e, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, e, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, s, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, c, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, e, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, e, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, e],
+        ]
+
+        return qml.math.stack([qml.math.stack(row) for row in mat])
 
     def adjoint(self):
         (theta,) = self.parameters
@@ -545,6 +630,7 @@ class OrbitalRotation(Operation):
         ),
         -1 / 2,
     ]
+    has_unitary_generator = False
 
     @classmethod
     def _matrix(cls, *params):

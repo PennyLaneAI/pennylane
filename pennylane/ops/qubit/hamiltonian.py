@@ -18,6 +18,7 @@ arithmetic operations on their input states.
 # pylint: disable=too-many-arguments
 import itertools
 from copy import copy
+from collections.abc import Iterable
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -199,9 +200,10 @@ class Hamiltonian(Observable):
         if simplify:
             self.simplify()
         if grouping_type is not None:
-            self._grouping_indices = qml.transforms.invisible(_compute_grouping_indices)(
-                self.ops, grouping_type=grouping_type, method=method
-            )
+            with qml.tape.stop_recording():
+                self._grouping_indices = _compute_grouping_indices(
+                    self.ops, grouping_type=grouping_type, method=method
+                )
 
         coeffs_flat = [self._coeffs[i] for i in range(qml.math.shape(self._coeffs)[0])]
         # overwrite this attribute, now that we have the correct info
@@ -261,6 +263,44 @@ class Hamiltonian(Observable):
         """
         return self._grouping_indices
 
+    @grouping_indices.setter
+    def grouping_indices(self, value):
+        """Set the grouping indices, if known without explicit computation, or if
+        computation was done externally. The groups are not verified.
+
+        **Example**
+
+        Examples of valid groupings for the Hamiltonian
+
+        >>> H = qml.Hamiltonian([qml.PauliX('a'), qml.PauliX('b'), qml.PauliY('b')])
+
+        are
+
+        >>> H.grouping_indices = [[0, 1], [2]]
+
+        or
+
+        >>> H.grouping_indices = [[0, 2], [1]]
+
+        since both ``qml.PauliX('a'), qml.PauliX('b')`` and ``qml.PauliX('a'), qml.PauliY('b')`` commute.
+
+
+        Args:
+            value (list[list[int]]): List of lists of indexes of the observables in ``self.ops``. Each sublist
+                represents a group of commuting observables.
+        """
+
+        if (
+            not isinstance(value, Iterable)
+            or any(not isinstance(sublist, Iterable) for sublist in value)
+            or any(i not in range(len(self.ops)) for i in [i for sl in value for i in sl])
+        ):
+            raise ValueError(
+                "The grouped index value needs to be a list of lists of integers between 0 and the "
+                "number of observables in the Hamiltonian; got {}".format(value)
+            )
+        self._grouping_indices = value
+
     def compute_grouping(self, grouping_type="qwc", method="rlf"):
         """
         Compute groups of indices corresponding to commuting observables of this
@@ -273,9 +313,10 @@ class Hamiltonian(Observable):
                 can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First).
         """
 
-        self._grouping_indices = qml.transforms.invisible(_compute_grouping_indices)(
-            self.ops, grouping_type=grouping_type, method=method
-        )
+        with qml.tape.stop_recording():
+            self._grouping_indices = _compute_grouping_indices(
+                self.ops, grouping_type=grouping_type, method=method
+            )
 
     def simplify(self):
         r"""Simplifies the Hamiltonian by combining like-terms.

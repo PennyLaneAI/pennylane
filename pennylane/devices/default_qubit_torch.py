@@ -28,7 +28,6 @@ except ImportError as e:
 
 import numpy as np
 from pennylane.operation import DiagonalOperation
-from pennylane.devices import torch_ops
 from . import DefaultQubit
 
 
@@ -100,7 +99,7 @@ class DefaultQubitTorch(DefaultQubit):
     >>> res = circuit(weights)
     >>> res.backward()
     >>> print(weights.grad)
-    tensor([-2.2527e-01, -1.0086e+00,  1.3878e-17])
+    tensor([-2.2527e-01, -1.0086e+00,  2.9919e-17], device='cuda:0')
 
 
     There are a couple of things to keep in mind when using the ``"backprop"``
@@ -132,29 +131,6 @@ class DefaultQubitTorch(DefaultQubit):
     name = "Default qubit (Torch) PennyLane plugin"
     short_name = "default.qubit.torch"
 
-    parametric_ops = {
-        "PhaseShift": torch_ops.PhaseShift,
-        "ControlledPhaseShift": torch_ops.ControlledPhaseShift,
-        "RX": torch_ops.RX,
-        "RY": torch_ops.RY,
-        "RZ": torch_ops.RZ,
-        "MultiRZ": torch_ops.MultiRZ,
-        "Rot": torch_ops.Rot,
-        "CRX": torch_ops.CRX,
-        "CRY": torch_ops.CRY,
-        "CRZ": torch_ops.CRZ,
-        "CRot": torch_ops.CRot,
-        "IsingXX": torch_ops.IsingXX,
-        "IsingYY": torch_ops.IsingYY,
-        "IsingZZ": torch_ops.IsingZZ,
-        "SingleExcitation": torch_ops.SingleExcitation,
-        "SingleExcitationPlus": torch_ops.SingleExcitationPlus,
-        "SingleExcitationMinus": torch_ops.SingleExcitationMinus,
-        "DoubleExcitation": torch_ops.DoubleExcitation,
-        "DoubleExcitationPlus": torch_ops.DoubleExcitationPlus,
-        "DoubleExcitationMinus": torch_ops.DoubleExcitationMinus,
-    }
-
     C_DTYPE = torch.complex128
     R_DTYPE = torch.float64
 
@@ -176,8 +152,10 @@ class DefaultQubitTorch(DefaultQubit):
     _norm = staticmethod(torch.norm)
     _flatten = staticmethod(torch.flatten)
 
-    def __init__(self, wires, *, shots=None, analytic=None, torch_device="cpu"):
-        self._torch_device = torch_device
+    def __init__(self, wires, *, shots=None, analytic=None):
+
+        self._torch_device = "cpu"
+
         super().__init__(wires, shots=shots, cache=0, analytic=analytic)
 
         # Move state to torch device (e.g. CPU, GPU, XLA, ...)
@@ -185,8 +163,16 @@ class DefaultQubitTorch(DefaultQubit):
         self._state = self._state.to(self._torch_device)
         self._pre_rotated_state = self._state
 
-    @staticmethod
-    def _asarray(a, dtype=None):
+    def execute(self, circuit, **kwargs):
+        ops_and_obs = circuit.operations + circuit.observables
+        if any(data.is_cuda for op in ops_and_obs for data in op.data if hasattr(data, "is_cuda")):
+            self._torch_device = "cuda"
+        else:
+            # need to reset in case last execution moved to cuda
+            self._torch_device = "cpu"
+        return super().execute(circuit, **kwargs)
+
+    def _asarray(self, a, dtype=None):
         if isinstance(a, list):
             # Handle unexpected cases where we don't have a list of tensors
             if not isinstance(a[0], torch.Tensor):
@@ -197,7 +183,11 @@ class DefaultQubitTorch(DefaultQubit):
             res = torch.cat([torch.reshape(i, (-1,)) for i in res], dim=0)
         else:
             res = torch.as_tensor(a, dtype=dtype)
+
+        res = torch.as_tensor(res, device=self._torch_device)
         return res
+
+    _cast = _asarray
 
     @staticmethod
     def _dot(x, y):
@@ -208,9 +198,6 @@ class DefaultQubitTorch(DefaultQubit):
                 return torch.tensordot(x.to(y.device), y, dims=1)
 
         return torch.tensordot(x, y, dims=1)
-
-    def _cast(self, a, dtype=None):
-        return torch.as_tensor(self._asarray(a, dtype=dtype), device=self._torch_device)
 
     @staticmethod
     def _reduce_sum(array, axes):
@@ -250,21 +237,6 @@ class DefaultQubitTorch(DefaultQubit):
             the unitary in the computational basis, or, in the case of a diagonal unitary,
             a 1D array representing the matrix diagonal.
         """
-        op_name = unitary.base_name
-        if op_name in self.parametric_ops:
-            if op_name == "MultiRZ":
-                mat = self.parametric_ops[op_name](
-                    *unitary.parameters, len(unitary.wires), device=self._torch_device
-                )
-            else:
-                mat = self.parametric_ops[op_name](*unitary.parameters, device=self._torch_device)
-            if unitary.inverse:
-                if isinstance(unitary, DiagonalOperation):
-                    mat = self._conj(mat)
-                else:
-                    mat = self._transpose(self._conj(mat), axes=[1, 0])
-            return mat
-
         if isinstance(unitary, DiagonalOperation):
             return self._asarray(unitary.eigvals, dtype=self.C_DTYPE)
         return self._asarray(unitary.matrix, dtype=self.C_DTYPE)

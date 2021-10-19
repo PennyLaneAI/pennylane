@@ -260,3 +260,37 @@ class TestCaching:
         assert calls2 == 5
         assert calls3 == 10
         assert g is not None
+
+    devs = [
+        (qml.device("default.qubit", wires=2)),
+        (qml.device("default.qubit", cache=1, wires=2)),
+    ]
+
+    @pytest.mark.parametrize("dev", devs)
+    def test_different_return_type(self, dev):
+        """Test that same circuit with different return type, returns different results"""
+        wires = range(2)
+
+        hamiltonian = np.array(
+            [
+                [-2.5623 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 - 0.1234j],
+                [0.0 + 0.0j, -2.5623 + 0.0j, 0.0 + 0.1234j, 0.0 + 0.0j],
+                [0.0 + 0.0j, 0.0 - 0.1234j, -2.5623 + 0.0j, 0.0 + 0.0j],
+                [0.0 + 0.1234j, 0.0 + 0.0j, 0.0 + 0.0j, -2.5623 + 0.0j],
+            ]
+        )
+
+        np.random.seed(172)
+        params = np.random.randn(2, 2)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def expval_circuit(params):
+            qml.templates.BasicEntanglerLayers(params, wires=wires, rotation=qml.RX)
+            return qml.expval(qml.Hermitian(hamiltonian, wires=wires))
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def var_circuit(params):
+            qml.templates.BasicEntanglerLayers(params, wires=wires, rotation=qml.RX)
+            return qml.var(qml.Hermitian(hamiltonian, wires=wires))
+
+        assert expval_circuit(params) != var_circuit(params)
