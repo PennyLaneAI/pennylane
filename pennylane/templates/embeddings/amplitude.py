@@ -162,6 +162,7 @@ class AmplitudeEmbedding(Operation):
     def _preprocess(features, wires, pad_with, normalize):
         """Validate and pre-process inputs as follows:
 
+        * If features is batched, the processing that follows is applied to each feature set in the batch.
         * Check that the features tensor is one-dimensional.
         * If pad_with is None, check that the first dimension of the features tensor
           has length :math:`2^n` where :math:`n` is the number of qubits. Else check that the
@@ -170,41 +171,49 @@ class AmplitudeEmbedding(Operation):
           features tensor.
         """
 
-        shape = qml.math.shape(features)
+        # check if features is batched
+        batched = len(qml.math.shape(features)) > 1
 
-        # check shape
-        if len(shape) != 1:
-            raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
+        features_batch = features if batched else [features]
 
-        n_features = shape[0]
-        if pad_with is None and n_features != 2 ** len(wires):
-            raise ValueError(
-                f"Features must be of length {2 ** len(wires)}; got length {n_features}. "
-                f"Use the 'pad' argument for automated padding."
-            )
+        # apply pre-processing to each features tensor in the batch
+        for i, feature_set in enumerate(features_batch):
+            shape = qml.math.shape(feature_set)
 
-        if pad_with is not None and n_features > 2 ** len(wires):
-            raise ValueError(
-                f"Features must be of length {2 ** len(wires)} or "
-                f"smaller to be padded; got length {n_features}."
-            )
+            # check shape
+            if len(shape) != 1:
+                raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
 
-        # pad
-        if pad_with is not None and n_features < 2 ** len(wires):
-            padding = [pad_with] * (2 ** len(wires) - n_features)
-            features = qml.math.concatenate([features, padding], axis=0)
-
-        # normalize
-        norm = qml.math.sum(qml.math.abs(features) ** 2)
-
-        if not qml.math.allclose(norm, 1.0, atol=TOLERANCE):
-            if normalize or pad_with:
-                features = features / np.sqrt(norm)
-            else:
+            n_features = shape[0]
+            if pad_with is None and n_features != 2 ** len(wires):
                 raise ValueError(
-                    f"Features must be a vector of length 1.0; got length {norm}."
-                    "Use 'normalize=True' to automatically normalize."
+                    f"Features must be of length {2 ** len(wires)}; got length {n_features}. "
+                    f"Use the 'pad' argument for automated padding."
                 )
 
-        features = qml.math.cast(features, np.complex128)
-        return features
+            if pad_with is not None and n_features > 2 ** len(wires):
+                raise ValueError(
+                    f"Features must be of length {2 ** len(wires)} or "
+                    f"smaller to be padded; got length {n_features}."
+                )
+
+            # pad
+            if pad_with is not None and n_features < 2 ** len(wires):
+                padding = [pad_with] * (2 ** len(wires) - n_features)
+                feature_set = qml.math.concatenate([feature_set, padding], axis=0)
+
+            # normalize
+            norm = qml.math.sum(qml.math.abs(feature_set) ** 2)
+
+            if not qml.math.allclose(norm, 1.0, atol=TOLERANCE):
+                if normalize or pad_with:
+                    feature_set = feature_set / np.sqrt(norm)
+                else:
+                    raise ValueError(
+                        f"Features must be a vector of norm 1.0; got norm {norm}."
+                        "Use 'normalize=True' to automatically normalize."
+                    )
+
+            features_batch[i] = qml.math.cast(feature_set, np.complex128)
+
+        return features_batch if batched else features_batch[0]
