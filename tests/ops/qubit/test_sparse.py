@@ -124,7 +124,7 @@ class TestSparse:
             qml.DoubleExcitation(param, wires=[0, 1, 2, 3])
             return qml.expval(qml.SparseHamiltonian(hamiltonian, wires=range(qubits)))
 
-        assert np.allclose(qml.grad(circuit)([0.0]), expected_output, atol=tol, rtol=0)
+        assert np.allclose(qml.grad(circuit)(0.0), expected_output, atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
         "qubits, operations, hamiltonian, expected_output",

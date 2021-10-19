@@ -607,6 +607,19 @@ class Operation(Operator):
     ``ControlledPhaseShift`` and ``RZ`` have ``basis = "Z"``.
     """
 
+    has_unitary_generator = None
+    """bool or None: ``True`` if the operation has a ``generator`` and the first
+    entry of that ``generator`` is unitary.
+
+    For example, ``qml.RZ.generator = [qml.PauliZ, -1/2]`` and ``qml.PauliZ`` is
+    unitary, so that ``qml.RZ.has_unitary_generator = True``. Contrary,
+    ``qml.PhaseShift.generator = [np.array([[0, 0], [0, 1]]), 1]`` where the
+    array in the first entry is not unitary, so that
+    ``qml.PhaseShift.has_unitary_generator = False``. This flag is used for
+    decompositions in algorithms using the Hadamard test like ``qml.metric_tensor``
+    when used without approximation.
+    """
+
     @property
     def control_wires(self):  # pragma: no cover
         r"""For operations that are controlled, returns the set of control wires.
@@ -754,7 +767,7 @@ class Operation(Operator):
         op_matrix = self._matrix(*self.parameters)
 
         if self.inverse:
-            return op_matrix.conj().T
+            return qml.math.conj(qml.math.T(op_matrix))
 
         return op_matrix
 
@@ -763,7 +776,7 @@ class Operation(Operator):
         op_eigvals = self._eigvals(*self.parameters)
 
         if self.inverse:
-            return op_eigvals.conj()
+            return qml.math.conj(op_eigvals)
 
         return op_eigvals
 
@@ -1873,6 +1886,52 @@ def operation_derivative(operation) -> np.ndarray:
 
     if operation.inverse:
         prefactor *= -1
-        generator = generator.conj().T
+        generator = qml.math.conj(qml.math.T(generator))
 
     return 1j * prefactor * generator @ operation.matrix
+
+
+@qml.BooleanFn
+def has_gen(obj):
+    """Returns ``True`` if an operator has a generator defined."""
+    return hasattr(obj, "generator") and obj.generator[0] is not None
+
+
+@qml.BooleanFn
+def has_grad_method(obj):
+    """Returns ``True`` if an operator has a grad_method defined."""
+    return obj.grad_method is not None
+
+
+@qml.BooleanFn
+def has_multipar(obj):
+    """Returns ``True`` if an operator has more than one parameter
+    according to ``num_params``."""
+    return obj.num_params > 1
+
+
+@qml.BooleanFn
+def has_nopar(obj):
+    """Returns ``True`` if an operator has no parameters
+    according to ``num_params``."""
+    return obj.num_params == 0
+
+
+@qml.BooleanFn
+def has_unitary_gen(obj):
+    """Returns ``True`` if an operator has a unitary_generator
+    according to the ``has_unitary_generator`` flag."""
+    return obj.has_unitary_generator
+
+
+@qml.BooleanFn
+def is_measurement(obj):
+    """Returns ``True`` if an operator is a ``MeasurementProcess`` instance."""
+    return isinstance(obj, qml.measure.MeasurementProcess)
+
+
+@qml.BooleanFn
+def is_trainable(obj):
+    """Returns ``True`` if any of the parameters of an operator is trainable
+    according to ``qml.math.requires_grad``."""
+    return any(qml.math.requires_grad(p) for p in obj.parameters)
