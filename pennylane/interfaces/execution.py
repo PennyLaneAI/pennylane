@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This subpackage defines functions for interfacing devices' batch execution
-capabilities with different machine learning libraries.
+This module contains the `qml.execute(tapes, device)` function, the `set_shots`
+decorator, and the `cache_execute` decorator.
 """
 # pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches
 import contextlib

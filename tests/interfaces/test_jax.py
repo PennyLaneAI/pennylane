@@ -22,7 +22,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.gradients import param_shift
-from pennylane.interfaces.batch import execute
+from pennylane.interfaces import execute
 
 
 class TestJaxExecuteUnitTests:
@@ -207,7 +207,7 @@ class TestCaching:
     def test_cache_maxsize(self, mocker):
         """Test the cachesize property of the cache"""
         dev = qml.device("default.qubit", wires=1)
-        spy = mocker.spy(qml.interfaces.batch, "cache_execute")
+        spy = mocker.spy(qml.interfaces.execution, "cache_execute")
 
         def cost(a, cachesize):
             with qml.tape.JacobianTape() as tape:
@@ -230,7 +230,7 @@ class TestCaching:
     def test_custom_cache(self, mocker):
         """Test the use of a custom cache object"""
         dev = qml.device("default.qubit", wires=1)
-        spy = mocker.spy(qml.interfaces.batch, "cache_execute")
+        spy = mocker.spy(qml.interfaces.execution, "cache_execute")
 
         def cost(a, cache):
             with qml.tape.JacobianTape() as tape:
@@ -250,7 +250,7 @@ class TestCaching:
     def test_custom_cache_multiple(self, mocker):
         """Test the use of a custom cache object with multiple tapes"""
         dev = qml.device("default.qubit", wires=1)
-        spy = mocker.spy(qml.interfaces.batch, "cache_execute")
+        spy = mocker.spy(qml.interfaces.execution, "cache_execute")
 
         a = jnp.array(0.1)
         b = jnp.array(0.2)

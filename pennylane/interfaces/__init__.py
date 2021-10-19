@@ -15,3 +15,4 @@
 This subpackage defines functions convert quantum tapes to interface with different machine
 learning libraries.
 """
+from .execution import cache_execute, execute, set_shots, SUPPORTED_INTERFACES

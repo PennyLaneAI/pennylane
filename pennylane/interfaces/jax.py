@@ -12,130 +12,258 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the mixin interface class for creating differentiable quantum tapes with
-JAX.
+This module contains functions for adding the JAX interface
+to a PennyLane Device class.
 """
-from functools import partial
+
+# pylint: disable=too-many-arguments
 import jax
-import jax.experimental.host_callback as host_callback
 import jax.numpy as jnp
-from pennylane.queuing import AnnotatedQueue
-from pennylane.operation import Variance, Expectation
+from jax.experimental import host_callback
+
+import numpy as np
+import pennylane as qml
+
+dtype = jnp.float64
 
 
-class JAXInterface(AnnotatedQueue):
-    """Mixin class for applying an JAX interface to a :class:`~.JacobianTape`.
+def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1):
+    """Execute a batch of tapes with JAX parameters on a device.
 
-    JAX-compatible quantum tape classes can be created via subclassing:
+    Args:
+        tapes (Sequence[.QuantumTape]): batch of tapes to execute
+        device (.Device): Device to use to execute the batch of tapes.
+            If the device does not provide a ``batch_execute`` method,
+            by default the tapes will be executed in serial.
+        execute_fn (callable): The execution function used to execute the tapes
+            during the forward pass. This function must return a tuple ``(results, jacobians)``.
+            If ``jacobians`` is an empty list, then ``gradient_fn`` is used to
+            compute the gradients during the backwards pass.
+        gradient_kwargs (dict): dictionary of keyword arguments to pass when
+            determining the gradients of tapes
+        gradient_fn (callable): the gradient function to use to compute quantum gradients
+        _n (int): a positive integer used to track nesting of derivatives, for example
+            if the nth-order derivative is requested.
+        max_diff (int): If ``gradient_fn`` is a gradient transform, this option specifies
+            the maximum order of derivatives to support. Increasing this value allows
+            for higher order derivatives to be extracted, at the cost of additional
+            (classical) computational overhead during the backwards pass.
 
-    .. code-block:: python
-
-        class MyJAXQuantumTape(JAXInterface, JacobianTape):
-
-    Alternatively, the JAX interface can be dynamically applied to existing
-    quantum tapes via the :meth:`~.apply` class method. This modifies the
-    tape **in place**.
-
-    Once created, the JAX interface can be used to perform quantum-classical
-    differentiable programming.
-
-    .. note::
-
-        If using a device that supports native JAX computation and backpropagation, such as
-        :class:`~.DefaultQubitJAX`, the JAX interface **does not need to be applied**. It
-        is only applied to tapes executed on non-JAX compatible devices.
-
-    **Example**
-
-    Once a JAX quantum tape has been created, it can be differentiated using JAX:
-
-    .. code-block:: python
-
-        tape = JAXInterface.apply(JacobianTape())
-
-        with tape:
-            qml.Rot(0, 0, 0, wires=0)
-            expval(qml.PauliX(0))
-
-        def cost_fn(x, y, z, device):
-            tape.set_parameters([x, y ** 2, y * np.sin(z)], trainable_only=False)
-            return tape.execute(device=device)
-
-    >>> x = jnp.array(0.1, requires_grad=False)
-    >>> y = jnp.array(0.2, requires_grad=True)
-    >>> z = jnp.array(0.3, requires_grad=True)
-    >>> dev = qml.device("default.qubit", wires=2)
-    >>> cost_fn(x, y, z, device=dev)
-    DeviceArray([ 0.03991951], dtype=float32)
-    >>> jac_fn = jax.vjp(cost_fn)
-    >>> jac_fn(x, y, z, device=dev)
-    DeviceArray([[ 0.39828408, -0.00045133]], dtype=float32)
+    Returns:
+        list[list[float]]: A nested list of tape results. Each element in
+        the returned list corresponds in order to the provided tapes.
     """
+    if max_diff > 1:
+        raise ValueError("The JAX interface only supports first order derivatives.")
 
-    # pylint: disable=attribute-defined-outside-init
-    dtype = jnp.float64
+    for tape in tapes:
+        # set the trainable parameters
+        params = tape.get_parameters(trainable_only=False)
+        tape.trainable_params = qml.math.get_trainable_indices(params)
 
-    @property
-    def interface(self):  # pylint: disable=missing-function-docstring
-        return "jax"
+    parameters = tuple(list(t.get_parameters()) for t in tapes)
+    if gradient_fn is None:
+        return _execute_with_fwd(
+            parameters,
+            tapes=tapes,
+            device=device,
+            execute_fn=execute_fn,
+            gradient_kwargs=gradient_kwargs,
+            _n=_n,
+        )
 
-    def _execute(self, params, device):
-        # TODO (chase): Add support for more than 1 measured observable.
-        if len(self.observables) != 1:
-            raise ValueError(
-                "The JAX interface currently only supports quantum nodes with a single return type."
+    return _execute(
+        parameters,
+        tapes=tapes,
+        device=device,
+        execute_fn=execute_fn,
+        gradient_fn=gradient_fn,
+        gradient_kwargs=gradient_kwargs,
+        _n=_n,
+    )
+
+
+def _execute(
+    params,
+    tapes=None,
+    device=None,
+    execute_fn=None,
+    gradient_fn=None,
+    gradient_kwargs=None,
+    _n=1,
+):  # pylint: disable=dangerous-default-value,unused-argument
+
+    # Only have scalar outputs
+    total_size = len(tapes)
+    total_params = np.sum([len(p) for p in params])
+
+    @jax.custom_vjp
+    def wrapped_exec(params):
+        def wrapper(p):
+            """Compute the forward pass."""
+            new_tapes = []
+
+            for t, a in zip(tapes, p):
+                new_tapes.append(t.copy(copy_operations=True))
+                new_tapes[-1].set_parameters(a)
+
+            with qml.tape.Unwrap(*new_tapes):
+                res, _ = execute_fn(new_tapes, **gradient_kwargs)
+
+            return res
+
+        shapes = [jax.ShapeDtypeStruct((1,), dtype) for _ in range(total_size)]
+        res = host_callback.call(wrapper, params, result_shape=shapes)
+        return res
+
+    def wrapped_exec_fwd(params):
+        return wrapped_exec(params), params
+
+    def wrapped_exec_bwd(params, g):
+
+        if isinstance(gradient_fn, qml.gradients.gradient_transform):
+
+            def non_diff_wrapper(args):
+                """Compute the VJP in a non-differentiable manner."""
+                new_tapes = []
+                p = args[:-1]
+                dy = args[-1]
+
+                for t, a in zip(tapes, p):
+                    new_tapes.append(t.copy(copy_operations=True))
+                    new_tapes[-1].set_parameters(a)
+                    new_tapes[-1].trainable_params = t.trainable_params
+
+                vjp_tapes, processing_fn = qml.gradients.batch_vjp(
+                    new_tapes,
+                    dy,
+                    gradient_fn,
+                    reduction="append",
+                    gradient_kwargs=gradient_kwargs,
+                )
+
+                partial_res = execute_fn(vjp_tapes)[0]
+                res = processing_fn(partial_res)
+                return np.concatenate(res)
+
+            args = tuple(params) + (g,)
+            vjps = host_callback.call(
+                non_diff_wrapper,
+                args,
+                result_shape=jax.ShapeDtypeStruct((total_params,), dtype),
             )
-        return_type = self.observables[0].return_type
-        if return_type is not Variance and return_type is not Expectation:
-            raise ValueError(
-                f"Only Variance and Expectation returns are supported for the JAX interface, given {return_type}."
-            )
 
-        @jax.custom_vjp
-        def wrapped_exec(params):
-            exec_fn = partial(self.execute_device, device=device)
-            return host_callback.call(
-                exec_fn,
-                params,
-                result_shape=jax.ShapeDtypeStruct((1,), JAXInterface.dtype),
-            )
+            param_idx = 0
+            res = []
 
-        def wrapped_exec_fwd(params):
-            return wrapped_exec(params), params
+            # Group the vjps based on the parameters of the tapes
+            for p in params:
+                param_vjp = vjps[param_idx : param_idx + len(p)]
+                res.append(param_vjp)
+                param_idx += len(p)
 
-        def wrapped_exec_bwd(params, g):
-            def jacobian(params):
-                tape = self.copy()
-                tape.set_parameters(params)
-                return tape.jacobian(device, params=params, **tape.jacobian_options)
+            # Unwrap partial results into ndim=0 arrays to allow
+            # differentiability with JAX
+            # E.g.,
+            # [DeviceArray([-0.9553365], dtype=float32), DeviceArray([0., 0.],
+            # dtype=float32)]
+            # is mapped to
+            # [[DeviceArray(-0.9553365, dtype=float32)], [DeviceArray(0.,
+            # dtype=float32), DeviceArray(0., dtype=float32)]].
+            need_unwrapping = any(r.ndim != 0 for r in res)
+            if need_unwrapping:
+                unwrapped_res = []
+                for r in res:
+                    if r.ndim != 0:
+                        r = [jnp.array(p) for p in r]
+                    unwrapped_res.append(r)
 
-            val = g.reshape((-1,)) * host_callback.call(
-                jacobian,
-                params,
-                result_shape=jax.ShapeDtypeStruct((1, len(params)), JAXInterface.dtype),
-            )
-            return (list(val.reshape((-1,))),)  # Comma is on purpose.
+                res = unwrapped_res
 
-        wrapped_exec.defvjp(wrapped_exec_fwd, wrapped_exec_bwd)
-        return wrapped_exec(params)
+            return (tuple(res),)
 
-    @classmethod
-    def apply(cls, tape):
-        """Apply the JAX interface to an existing tape in-place.
+        # Gradient function is a device method.
+        with qml.tape.Unwrap(*tapes):
+            jacs = gradient_fn(tapes, **gradient_kwargs)
 
-        Args:
-            tape (.JacobianTape): a quantum tape to apply the JAX interface to
+        vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(g, jacs)]
+        res = [[jnp.array(p) for p in v] for v in vjps]
+        return (tuple(res),)
 
-        **Example**
+    wrapped_exec.defvjp(wrapped_exec_fwd, wrapped_exec_bwd)
+    return wrapped_exec(params)
 
-        >>> with JacobianTape() as tape:
-        ...     qml.RX(0.5, wires=0)
-        ...     expval(qml.PauliZ(0))
-        >>> JAXInterface.apply(tape)
-        >>> tape
-        <JAXQuantumTape: wires=<Wires = [0]>, params=1>
-        """
-        tape_class = getattr(tape, "__bare__", tape.__class__)
-        tape.__bare__ = tape_class
-        tape.__class__ = type("JAXQuantumTape", (cls, tape_class), {})
-        return tape
+
+# The execute function in forward mode
+def _execute_with_fwd(
+    params,
+    tapes=None,
+    device=None,
+    execute_fn=None,
+    gradient_kwargs=None,
+    _n=1,
+):  # pylint: disable=dangerous-default-value,unused-argument
+
+    # Only have scalar outputs
+    total_size = len(tapes)
+
+    @jax.custom_vjp
+    def wrapped_exec(params):
+        def wrapper(p):
+            """Compute the forward pass by returning the jacobian too."""
+            new_tapes = []
+
+            for t, a in zip(tapes, p):
+                new_tapes.append(t.copy(copy_operations=True))
+                new_tapes[-1].set_parameters(a)
+
+            res, jacs = execute_fn(new_tapes, **gradient_kwargs)
+
+            # On the forward execution return the jacobian too
+            return res, jacs
+
+        fwd_shapes = [jax.ShapeDtypeStruct((1,), dtype) for _ in range(total_size)]
+        jacobian_shape = [jax.ShapeDtypeStruct((1, len(p)), dtype) for p in params]
+        res, jacs = host_callback.call(
+            wrapper,
+            params,
+            result_shape=tuple([fwd_shapes, jacobian_shape]),
+        )
+        return res, jacs
+
+    def wrapped_exec_fwd(params):
+        res, jacs = wrapped_exec(params)
+        return res, tuple([jacs, params])
+
+    def wrapped_exec_bwd(params, g):
+
+        # Use the jacobian that was computed on the forward pass
+        jacs, params = params
+
+        # Adjust the structure of how the jacobian is returned to match the
+        # non-forward mode cases
+        # E.g.,
+        # [DeviceArray([[ 0.06695931,  0.01383095, -0.46500877]], dtype=float32)]
+        # is mapped to
+        # [[DeviceArray(0.06695931, dtype=float32), DeviceArray(0.01383095,
+        # dtype=float32), DeviceArray(-0.46500877, dtype=float32)]]
+        res_jacs = []
+        for j in jacs:
+            this_j = []
+            for i in range(j.shape[1]):
+                this_j.append(j[0, i])
+            res_jacs.append(this_j)
+        return tuple([tuple(res_jacs)])
+
+    wrapped_exec.defvjp(wrapped_exec_fwd, wrapped_exec_bwd)
+    res = wrapped_exec(params)
+
+    tracing = any(isinstance(r, jax.interpreters.ad.JVPTracer) for r in res)
+
+    # When there are no tracers (not differentiating), we have the result of
+    # the forward pass and the jacobian, but only need the result of the
+    # forward pass
+    if len(res) == 2 and not tracing:
+        res = res[0]
+
+    return res
