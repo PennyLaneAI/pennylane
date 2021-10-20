@@ -1643,6 +1643,7 @@ class TestHamiltonianDifferentiation:
         ):
             grad_fn(coeffs, param)
 
+    @pytest.mark.xfail
     def test_not_supported_by_reverse_differentiation(self):
         """Test that error is raised when attempting the reverse differentiation method."""
         dev = qml.device("default.qubit", wires=2)

@@ -215,7 +215,9 @@ def mock_device(monkeypatch):
         m.setattr(
             qml.Device, "_capabilities", {"supports_tensor_observables": True, "model": "qubit"}
         )
-        m.setattr(qml.Device, "operations", ["RX", "Rot", "CNOT", "Hadamard", "QubitStateVector"])
+        m.setattr(
+            qml.Device, "operations", ["RX", "RY", "Rot", "CNOT", "Hadamard", "QubitStateVector"]
+        )
         m.setattr(
             qml.Device, "observables", ["PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian"]
         )
@@ -363,8 +365,8 @@ class TestVQE:
 
         # Checking that the qnodes contain the step size and order
         for qnode in cost.qnodes:
-            assert qnode.diff_options["h"] == 123
-            assert qnode.diff_options["order"] == 2
+            assert qnode.gradient_kwargs["h"] == 123
+            assert qnode.gradient_kwargs["order"] == 2
 
     @pytest.mark.slow
     @pytest.mark.parametrize("interface", ["tf", "torch", "autograd"])
