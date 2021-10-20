@@ -579,6 +579,9 @@
 
 <h3>Deprecations</h3>
 
+* The `qml.inv` function has been removed, `qml.adjoint` should be used instead.
+  [(#1778)](https://github.com/PennyLaneAI/pennylane/pull/1778)
+
 * The `qml.fourier.spectrum` function has been renamed to `qml.fourier.circuit_spectrum`,
   in order to clearly separate the new `qnode_spectrum` function from this one.
   `qml.fourier.spectrum` is now an alias for `circuit_spectrum` but is flagged for
