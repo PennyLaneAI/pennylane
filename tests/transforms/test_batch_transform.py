@@ -486,8 +486,8 @@ class TestBatchTransformGradients:
         dev = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
 
-        weights = torch.tensor([0.1, 0.2], requires_grad=True)
-        x = torch.tensor(0.543, requires_grad=True)
+        weights = torch.tensor([0.1, 0.2], requires_grad=True, dtype=torch.float64)
+        x = torch.tensor(0.543, requires_grad=True, dtype=torch.float64)
 
         res = self.my_transform(qnode, weights)(x)
         expected = self.expval(x.detach().numpy(), weights.detach().numpy())

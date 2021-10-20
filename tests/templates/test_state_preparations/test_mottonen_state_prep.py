@@ -246,15 +246,13 @@ class TestDecomposition:
 
         dev = qml.device("default.qubit", wires=n_wires)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, expansion_strategy="device")
         def circuit(state_vector):
             qml.templates.MottonenStatePreparation(state_vector, wires=range(n_wires))
             return qml.expval(qml.PauliX(wires=0))
 
         # when the RZ cascade is skipped, CNOT gates should only be those required for RY cascade
-        circuit(state_vector)
-
-        assert circuit.qtape.specs["gate_types"]["CNOT"] == n_CNOT
+        assert qml.specs(circuit)(state_vector)["gate_types"]["CNOT"] == n_CNOT
 
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""

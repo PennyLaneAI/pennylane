@@ -97,7 +97,7 @@ def specs(qnode, max_expansion=None):
             dict[str, Union[defaultdict,int]]: dictionaries that contain QNode specifications
         """
         initial_max_expansion = qnode.max_expansion
-        qnode.max_expansion = max_expansion
+        qnode.max_expansion = max_expansion or initial_max_expansion
 
         try:
             qnode.construct(args, kwargs)
