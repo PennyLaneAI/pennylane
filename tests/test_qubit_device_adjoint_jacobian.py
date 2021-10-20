@@ -368,7 +368,6 @@ class TestAdjointJacobianQNode:
             qml.Rot(params[1], params[0], 2 * params[0], wires=[0])
             return qml.expval(qml.PauliX(0))
 
-        spy_numeric = mocker.spy(qml.tape.JacobianTape, "numeric_pd")
         spy_analytic = mocker.spy(dev, "adjoint_jacobian")
 
         cost = QNode(circuit, dev, diff_method="finite-diff")
@@ -376,7 +375,6 @@ class TestAdjointJacobianQNode:
         grad_fn = qml.grad(cost)
         grad_F = grad_fn(params)
 
-        spy_numeric.assert_called()
         spy_analytic.assert_not_called()
 
         cost = QNode(circuit, dev, diff_method="adjoint")
