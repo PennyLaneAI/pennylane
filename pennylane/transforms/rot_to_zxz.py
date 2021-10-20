@@ -5,6 +5,7 @@ import pennylane as qml
 from pennylane.numpy import pi
 from pennylane.transforms import qfunc_transform
 
+
 @qml.qfunc_transform
 def rot_to_zxz(tape):
     r"""Quantum function transform to decompose "Rot" :class:`~.QubitUnitary`
@@ -90,9 +91,8 @@ def rot_to_zxz(tape):
         if op.name == "Rot":
             wire = op.wires
             angles = op.single_qubit_rot_angles()
-            qml.RZ(angles[0]+pi/2, wires=wire)
+            qml.RZ(angles[0] + pi / 2, wires=wire)
             qml.RX(angles[1], wires=wire)
-            qml.RZ(angles[2]-pi/2, wires=wire)
+            qml.RZ(angles[2] - pi / 2, wires=wire)
         else:
             qml.apply(op)
-            
