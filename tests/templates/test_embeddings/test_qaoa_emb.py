@@ -77,9 +77,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.QAOAEmbedding(
-                features=x, weights=weights, wires=range(n_wires), local_field="A"
-            )
+            qml.QAOAEmbedding(features=x, weights=weights, wires=range(n_wires), local_field="A")
             return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
 
         with pytest.raises(ValueError, match="did not recognize"):
@@ -140,9 +138,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.QAOAEmbedding(
-                features=x, weights=weights, wires=range(n_wires), local_field="Z"
-            )
+            qml.QAOAEmbedding(features=x, weights=weights, wires=range(n_wires), local_field="Z")
             return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
 
         res = circuit(x=features)
@@ -242,9 +238,7 @@ class TestInputs:
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.QAOAEmbedding(
-            np.array([0]), weights=np.array([[0]]), wires=[0], id="a"
-        )
+        template = qml.QAOAEmbedding(np.array([0]), weights=np.array([[0]]), wires=[0], id="a")
         assert template.id == "a"
 
 

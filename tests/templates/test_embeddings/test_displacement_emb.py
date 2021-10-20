@@ -44,9 +44,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.DisplacementEmbedding(
-                features=x, wires=range(n_wires), method="amplitude", c=1.0
-            )
+            qml.DisplacementEmbedding(features=x, wires=range(n_wires), method="amplitude", c=1.0)
             return [
                 qml.expval(qml.NumberOperator(wires=0)),
                 qml.expval(qml.NumberOperator(wires=1)),
@@ -64,13 +62,9 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.DisplacementEmbedding(
-                features=x, wires=range(n_wires), method="phase", c=1.0
-            )
+            qml.DisplacementEmbedding(features=x, wires=range(n_wires), method="phase", c=1.0)
             qml.Beamsplitter(np.pi / 2, 0, wires=[0, 1])
-            qml.DisplacementEmbedding(
-                features=[0, 0], wires=range(n_wires), method="phase", c=1.0
-            )
+            qml.DisplacementEmbedding(features=[0, 0], wires=range(n_wires), method="phase", c=1.0)
             return [
                 qml.expval(qml.NumberOperator(wires=0)),
                 qml.expval(qml.NumberOperator(wires=1)),

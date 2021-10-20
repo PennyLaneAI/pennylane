@@ -139,9 +139,7 @@ class TestInputs:
         common element"""
 
         with pytest.raises(qml.QuantumFunctionError, match="The target wires and estimation wires"):
-            qml.QuantumPhaseEstimation(
-                np.eye(2), target_wires=[0, 1], estimation_wires=[1, 2]
-            )
+            qml.QuantumPhaseEstimation(np.eye(2), target_wires=[0, 1], estimation_wires=[1, 2])
 
     def test_id(self):
         """Tests that the id attribute can be set."""

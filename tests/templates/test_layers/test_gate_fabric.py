@@ -752,9 +752,7 @@ class TestAttributes:
 
 
 def circuit_template(weights):
-    qml.GateFabric(
-        weights, range(4), init_state=qml.math.array([1, 1, 0, 0]), include_pi=True
-    )
+    qml.GateFabric(weights, range(4), init_state=qml.math.array([1, 1, 0, 0]), include_pi=True)
     return qml.expval(qml.PauliZ(0))
 
 

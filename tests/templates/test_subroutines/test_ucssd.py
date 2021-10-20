@@ -115,9 +115,7 @@ class TestDecomposition:
 
         ref_state = np.array([1, 1, 0, 0, 0, 0])
 
-        op = qml.UCCSD(
-            weights, wires, s_wires=s_wires, d_wires=d_wires, init_state=ref_state
-        )
+        op = qml.UCCSD(weights, wires, s_wires=s_wires, d_wires=d_wires, init_state=ref_state)
         raw_queue = op.expand().operations
 
         # hack to avoid updating the test data:

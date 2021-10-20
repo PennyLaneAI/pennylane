@@ -30,9 +30,7 @@ class TestInterferometer:
 
         @qml.qnode(dev)
         def circuit(varphi, mesh=None):
-            qml.Interferometer(
-                theta=[0.21], phi=[0.53], varphi=varphi, mesh=mesh, wires=[0, 1]
-            )
+            qml.Interferometer(theta=[0.21], phi=[0.53], varphi=varphi, mesh=mesh, wires=[0, 1])
             return qml.expval(qml.NumberOperator(0))
 
         with pytest.raises(ValueError, match="did not recognize mesh"):

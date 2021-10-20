@@ -189,9 +189,7 @@ class TestInputs:
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.ArbitraryUnitary(
-            np.random.random(size=(63,)), wires=range(3), id="a"
-        )
+        template = qml.ArbitraryUnitary(np.random.random(size=(63,)), wires=range(3), id="a")
         assert template.id == "a"
 
 

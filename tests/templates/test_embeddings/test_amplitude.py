@@ -76,9 +76,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.AmplitudeEmbedding(
-                features=x, wires=range(n_qubits), pad_with=pad, normalize=False
-            )
+            qml.AmplitudeEmbedding(features=x, wires=range(n_qubits), pad_with=pad, normalize=False)
             return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
 
         circuit(x=inpt)
@@ -170,9 +168,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.AmplitudeEmbedding(
-                features=x, wires=range(n_qubits), pad_with=0.0, normalize=False
-            )
+            qml.AmplitudeEmbedding(features=x, wires=range(n_qubits), pad_with=0.0, normalize=False)
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Features must be of length"):
@@ -218,9 +214,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.AmplitudeEmbedding(
-                x, list(range(num_qubits)), pad_with=0.0, normalize=True
-            )
+            qml.AmplitudeEmbedding(x, list(range(num_qubits)), pad_with=0.0, normalize=True)
             return qml.expval(qml.PauliZ(0))
 
         # No normalization error is raised

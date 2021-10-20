@@ -44,9 +44,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.SqueezingEmbedding(
-                features=x, wires=range(n_wires), method="amplitude", c=1
-            )
+            qml.SqueezingEmbedding(features=x, wires=range(n_wires), method="amplitude", c=1)
             return [
                 qml.expval(qml.NumberOperator(wires=0)),
                 qml.expval(qml.NumberOperator(wires=1)),
@@ -66,9 +64,7 @@ class TestDecomposition:
         def circuit(x=None):
             qml.SqueezingEmbedding(features=x, wires=range(n_wires), method="phase", c=1)
             qml.Beamsplitter(np.pi / 2, 0, wires=[0, 1])
-            qml.SqueezingEmbedding(
-                features=[0, 0], wires=range(n_wires), method="phase", c=1
-            )
+            qml.SqueezingEmbedding(features=[0, 0], wires=range(n_wires), method="phase", c=1)
             return [
                 qml.expval(qml.NumberOperator(wires=0)),
                 qml.expval(qml.NumberOperator(wires=1)),

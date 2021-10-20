@@ -262,9 +262,7 @@ class TestInputs:
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.DoubleExcitationUnitary(
-            0.4, wires1=[0, 2], wires2=[1, 4, 3], id="a"
-        )
+        template = qml.DoubleExcitationUnitary(0.4, wires1=[0, 2], wires2=[1, 4, 3], id="a")
         assert template.id == "a"
 
 

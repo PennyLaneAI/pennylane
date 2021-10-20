@@ -132,9 +132,7 @@ class TestDecomposition:
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.ParticleConservingU2(
-                weights, wires=["z", "a", "k"], init_state=init_state
-            )
+            qml.ParticleConservingU2(weights, wires=["z", "a", "k"], init_state=init_state)
             return qml.expval(qml.Identity("z"))
 
         circuit()

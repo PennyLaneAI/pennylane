@@ -59,9 +59,7 @@ class TestDecomposition:
 
         weights = np.random.randn(n_layers, n_wires, 3)
 
-        op = qml.StronglyEntanglingLayers(
-            weights=weights, wires=range(n_wires), imprimitive=qml.CZ
-        )
+        op = qml.StronglyEntanglingLayers(weights=weights, wires=range(n_wires), imprimitive=qml.CZ)
         ops = op.expand().operations
 
         gate_names = [gate.name for gate in ops]
@@ -97,9 +95,7 @@ class TestDecomposition:
 
         weights = np.random.randn(n_layers, n_wires, 3)
 
-        op = qml.StronglyEntanglingLayers(
-            weights=weights, wires=range(n_wires), ranges=ranges
-        )
+        op = qml.StronglyEntanglingLayers(weights=weights, wires=range(n_wires), ranges=ranges)
         ops = op.expand().operations
 
         gate_wires = [gate.wires.labels for gate in ops]
@@ -158,9 +154,7 @@ class TestInputs:
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.StronglyEntanglingLayers(
-            np.array([[[1, 2, 3]]]), wires=[0], id="a"
-        )
+        template = qml.StronglyEntanglingLayers(np.array([[[1, 2, 3]]]), wires=[0], id="a")
         assert template.id == "a"
 
 
