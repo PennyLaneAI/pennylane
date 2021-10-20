@@ -114,12 +114,13 @@ class ApproxTimeEvolution(Operation):
         # extract the wires that the op acts on
         wire_list = [term.wires for term in hamiltonian.ops]
         unique_wires = list(set(wire_list))
+        self.hamiltonian = hamiltonian
 
-        super().__init__(hamiltonian, time, n, wires=unique_wires, do_queue=do_queue, id=id)
+        super().__init__(hamiltonian.data, time, n, wires=unique_wires, do_queue=do_queue, id=id)
 
     def expand(self):
 
-        hamiltonian = self.parameters[0]
+        hamiltonian = self.hamiltonian
         time = self.parameters[1]
         n = self.parameters[2]
 
