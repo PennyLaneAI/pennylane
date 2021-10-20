@@ -15,13 +15,12 @@
 This module contains the `qml.execute(tapes, device)` function, the `set_shots`
 decorator, and the `cache_execute` decorator.
 """
-# pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches
+# pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches,protected-access
 import contextlib
 from functools import wraps
 import itertools
 
 from cachetools import LRUCache
-import numpy as np
 
 import pennylane as qml
 
