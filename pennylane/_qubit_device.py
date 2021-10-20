@@ -269,6 +269,7 @@ class QubitDevice(Device):
         # TODO: This method and the tests can be globally implemented by Device
         # once it has the same signature in the execute() method
         results = []
+
         for circuit in circuits:
             # we need to reset the device here, else it will
             # not start the next computation in the zero state

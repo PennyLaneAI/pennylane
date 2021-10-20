@@ -105,10 +105,10 @@ class TestSingleShotGradientIntegration:
     dev = qml.device("default.qubit", wires=1, shots=100)
     H = qml.Hamiltonian([1.0], [qml.PauliZ(0)])
 
-    @qml.qnode(dev)
-    def expval_cost(x):
+    def ansatz(x, **kwargs):
         qml.RX(x, wires=0)
-        return qml.expval(qml.Hamiltonian([1.0], [qml.PauliZ(0)]))
+
+    expval_cost = qml.ExpvalCost(ansatz, H, dev)
 
     @qml.qnode(dev)
     def qnode(x):
