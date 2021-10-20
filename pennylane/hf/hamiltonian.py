@@ -21,7 +21,7 @@ from pennylane.hf.hartree_fock import generate_scf, nuclear_energy
 
 
 def generate_electron_integrals(mol, core=None, active=None):
-    r"""Return a function that computes the one- and two-electron integrals in the atomic orbital
+    r"""Return a function that computes the one- and two-electron integrals in the molecular orbital
     basis.
 
     The one- and two-electron integrals are required to construct a molecular Hamiltonian in the
@@ -51,7 +51,7 @@ def generate_electron_integrals(mol, core=None, active=None):
 
         \phi_i = \sum_{\nu}c_{\nu}^i \chi_{\nu}.
 
-    The one- and two-electron integrals can be written in the atomic orbital basis as
+    The one- and two-electron integrals can be written in the molecular orbital basis as
 
     .. math::
 
@@ -160,8 +160,6 @@ def generate_fermionic_hamiltonian(mol, cutoff=1.0e-12):
     >>> mol = Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> h = generate_fermionic_hamiltonian(mol)(*args)
-    >>> h[0][0], h[1][0] # first coefficient and first operator
-    (1.0, [])
     """
 
     def fermionic_hamiltonian(*args):
@@ -287,10 +285,8 @@ def generate_hamiltonian(mol, cutoff=1.0e-12):
 def _generate_qubit_operator(op):
     r"""Convert a fermionic operator to a qubit operator using the Jordan-Wigner mapping.
 
-    The one-body fermionic operator :math:`a_0^\dagger a_0` is constructed as [0, 0] and its
-    corresponding qubit operator returned by the function is [(0.5+0j), (-0.5+0j)], [[], [(0, 'Z')]]
-    which represents :math:`\frac{1}{2}(I_0 - Z_0)`. The two-body operator
-    :math:`a_0^\dagger a_2^\dagger a_0 a_2` is constructed as [0, 2, 0, 2].
+    The one-body fermionic operator :math:`a_2^\dagger a_0` is constructed as [2, 0] and the
+    two-body operator :math:`a_4^\dagger a_3^\dagger a_2 a_1` is constructed as [4, 3, 2, 1].
 
     Args:
         op (list[int]): the fermionic operator
@@ -301,9 +297,9 @@ def _generate_qubit_operator(op):
     **Example**
 
     >>> f  = [0, 0]
-    >>> q = _generate_qubit_operator([0, 0])
+    >>> q = _generate_qubit_operator(f)
     >>> q
-    ([(0.5+0j), (-0.5+0j)], [[], [(0, 'Z')]])
+    ([(0.5+0j), (-0.5+0j)], [[], [(0, 'Z')]]) # corresponds to :math:`\frac{1}{2}(I_0 - Z_0)`
     """
     if len(op) == 2:
         op = [((op[0], 1), (op[1], 0))]
