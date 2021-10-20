@@ -355,7 +355,7 @@ class MPLDrawer:
         if "zorder" not in box_options:
             box_options["zorder"] = 2
 
-        new_text_options = {"zorder": 3, "ha": "center", "va": "center", "fontsize": "x-large"}
+        new_text_options = {"zorder": 3, "ha": "center", "va": "center", "fontsize": 14}
         if text_options is not None:
             new_text_options.update(text_options)
 

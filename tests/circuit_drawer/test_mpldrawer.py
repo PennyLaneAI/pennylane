@@ -531,12 +531,98 @@ class TestMeasure:
 
         plt.close()
 
-    def test_matplotlib_import_error(self, monkeypatch):
-        """Test that an error is raised if the MPLDrawer would be used without
-        an installed version of matplotlib."""
-        with monkeypatch.context() as m:
-            m.setitem(sys.modules, "matplotlib", None)
-            reload(sys.modules["pennylane.circuit_drawer.mpldrawer"])
-            assert not pennylane.circuit_drawer.mpldrawer.has_mpl
-            with pytest.raises(ImportError, match="Module matplotlib is required for"):
-                MPLDrawer(1, 1)
+
+class TestAutosize:
+    """Test the autosize keyword on `box_gate`"""
+
+    def test_autosize_false(self):
+        """Test text unchanged if autosize is False."""
+
+        drawer = MPLDrawer(n_layers=1, n_wires=2)
+        drawer.box_gate(0, (0, 1), text="very very long text", autosize=False)
+
+        t = drawer.ax.texts[0]
+        assert t.get_fontsize() == 14
+        assert t.get_rotation() == 0
+
+        plt.close()
+
+    def test_autosize_one_wire(self):
+        """Test text shrunk and not rotated when box over a single wire."""
+
+        drawer = MPLDrawer(n_layers=1, n_wires=1)
+        drawer.box_gate(0, 0, text="very very long text", autosize=True)
+
+        t = drawer.ax.texts[0]
+        assert t.get_fontsize() == 5.0
+        assert t.get_rotation() == 0
+
+        plt.close()
+
+    def test_autosize_multiwires(self):
+        """Test text first rotated if multiwire boxgate."""
+
+        drawer = MPLDrawer(n_layers=1, n_wires=2)
+        drawer.box_gate(0, (0, 1), text="very very long text", autosize=True)
+
+        t = drawer.ax.texts[0]
+        assert t.get_fontsize() == 12.0
+        assert t.get_rotation() == 90.0
+
+        plt.close()
+
+    def test_multiline_text_single_wire(self):
+        """Test text shrunk to accomodate height as well."""
+
+        drawer = MPLDrawer(n_layers=1, n_wires=1)
+        drawer.box_gate(0, 0, text="text\nwith\nall\nthe\nlines\nyep", autosize=True)
+
+        t = drawer.ax.texts[0]
+        assert t.get_fontsize() == 8.0
+        assert t.get_rotation() == 0.0
+        plt.close()
+
+    def text_tall_multitline_text_multiwires(self):
+        """Test tall and skinny text is shrunk but not rotated."""
+
+        drawer = MPLDrawer(n_layers=1, n_wires=2)
+        drawer.box_gate(
+            0,
+            (0, 1),
+            text="text\nwith\nall\nthe\nlines\nyep\ntoo\nmany\nlines\nway\ntoo\nmany",
+            autosize=True,
+        )
+
+        t = drawer.ax.texts[0]
+        assert t.get_fontsize() == 8.0
+        assert t.get_rotation() == 0.0
+
+        plt.close()
+
+    def test_multline_text_multiwires(self):
+        """Test a wide and tall block of text is both rotated and shrunk with a multiwire box."""
+
+        drawer = MPLDrawer(n_layers=1, n_wires=2)
+        drawer.box_gate(0, (0, 1), text="very very long text\nall\nthe\nlines\nyep", autosize=True)
+
+        t = drawer.ax.texts[0]
+        assert t.get_fontsize() == 8.0
+        assert t.get_rotation() == 90.0
+
+        plt.close()
+
+
+def test_matplotlib_import_error(monkeypatch):
+    """Test that an error is raised if the MPLDrawer would be used without
+    an installed version of matplotlib.
+
+    This test needs to be the last in the suite because it makes a permanent change
+    to the system configuration. I don't know how to better make this test so it
+    won't screw everything else up.
+    """
+    with monkeypatch.context() as m:
+        m.setitem(sys.modules, "matplotlib", None)
+        reload(sys.modules["pennylane.circuit_drawer.mpldrawer"])
+        assert not pennylane.circuit_drawer.mpldrawer.has_mpl
+        with pytest.raises(ImportError, match="Module matplotlib is required for"):
+            MPLDrawer(1, 1)
