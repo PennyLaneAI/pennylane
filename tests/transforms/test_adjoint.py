@@ -150,7 +150,6 @@ class TestOutsideOfQueuing:
 
 test_functions = [
     lambda fn, *args, **kwargs: adjoint(fn)(*args, **kwargs),
-    lambda fn, *args, **kwargs: qml.inv(fn(*args, **kwargs)),
 ]
 
 
