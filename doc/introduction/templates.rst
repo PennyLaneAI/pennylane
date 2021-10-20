@@ -342,7 +342,6 @@ data structures than functions, since they can define properties and methods of 
 recipes or matrix representations). Consult the :ref:`Contributing templates<contributing_templates>`
 page to learn how to code up your own template class, and how to add it to the PennyLane template library.
 
-
 Layering Function
 -----------------
 
