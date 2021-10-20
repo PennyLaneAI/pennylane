@@ -15,7 +15,6 @@
 A transform to obtain the matrix representation of a quantum circuit.
 """
 from functools import wraps
-import numpy as np
 from pennylane.wires import Wires
 import pennylane as qml
 
@@ -94,6 +93,10 @@ def get_unitary_matrix(circuit, wire_order=None):
         else:
             raise ValueError("Input is not a tape, QNode, or quantum function")
 
+        params = tape.get_parameters(trainable_only=False)
+        interface = qml.math._multi_dispatch(params)
+        print(interface)
+
         # if no wire ordering is specified, take wire list from tape
         wire_order = tape.wires if wires is None else Wires(wires)
 
@@ -104,30 +107,84 @@ def get_unitary_matrix(circuit, wire_order=None):
             raise ValueError("Wires in circuit are inconsistent with those in wire_order")
 
         # initialize the unitary matrix
-        unitary_matrix = np.eye(2 ** n_wires)
+        unitary_matrix = qml.math.eye(2 ** n_wires, like=interface)
 
         with qml.tape.Unwrap(tape):
             for op in tape.operations:
                 # operator wire position relative to wire ordering
                 op_wire_pos = wire_order.indices(op.wires)
 
-                I = np.reshape(np.eye(2 ** n_wires), [2] * n_wires * 2)
-                axes = (np.arange(len(op.wires), 2 * len(op.wires)), op_wire_pos)
+                I = qml.math.reshape(qml.math.eye(2 ** n_wires, like=interface), [2] * n_wires * 2)
+                axes = [tuple(range(len(op.wires), 2 * len(op.wires))), tuple(op_wire_pos)]
+                # axes = (qml.math.arange(len(op.wires), 2 * len(op.wires), like=interface), op_wire_pos)
 
                 # reshape op.matrix
-                U_op_reshaped = np.reshape(op.matrix, [2] * len(op.wires) * 2)
-                U_tensordot = np.tensordot(U_op_reshaped, I, axes=axes)
+                op_matrix_interface = qml.math.convert_like(op.matrix, I)
+                U_op_reshaped = qml.math.reshape(op_matrix_interface, [2] * len(op.wires) * 2)
+                I = qml.math.cast_like(I, U_op_reshaped)
+                U_tensordot = qml.math.tensordot(U_op_reshaped, I, axes)
 
                 unused_idxs = [idx for idx in range(n_wires) if idx not in op_wire_pos]
                 # permute matrix axes to match wire ordering
                 perm = op_wire_pos + unused_idxs
-                U = np.moveaxis(U_tensordot, wire_order.indices(wire_order), perm)
+                U = qml.math.moveaxis(U_tensordot, wire_order.indices(wire_order), perm)
 
-                U = np.reshape(U, ((2 ** n_wires, 2 ** n_wires)))
+                U = qml.math.reshape(U, ((2 ** n_wires, 2 ** n_wires)))
 
                 # add to total matrix if there are multiple ops
-                unitary_matrix = np.dot(U, unitary_matrix)
+                unitary_matrix = qml.math.dot(U, unitary_matrix)
+                print("updated")
 
         return unitary_matrix
 
     return wrapper
+
+
+
+if __name__ == "__main__":
+
+    # import jax.numpy as jnp
+    # from jax import grad
+    # print(qml.__version__)
+    #
+    # # dev = qml.device("default.qubit", wires=1)
+    #
+    # # @qml.qnode(dev, interface="jax")
+    # def circuit(theta):
+    #     qml.RX(theta[0], wires=0)
+    #     qml.RY(theta[1], wires=0)
+    #     return qml.expval(qml.PauliZ(0))
+    #
+    # def loss(theta):
+    #     U = qml.transforms.get_unitary_matrix(circuit)(theta)
+    #     return qml.math.real(qml.math.trace(U))
+    #
+    # print(circuit(jnp.array([0.0, 1.0])))
+    #
+    #
+    # dcircuit = grad(loss)
+    #
+    # ok = dcircuit(jnp.array([0.0, 1.0]))
+    #
+    # print(type(ok))
+    # print(ok)
+
+
+    import torch
+    print(qml.__version__)
+    dev = qml.device("default.qubit", wires=1)
+    @qml.qnode(dev, interface="torch")
+    def circuit(theta):
+        qml.RX(theta[0], wires=0)
+        qml.RY(theta[1], wires=0)
+        return qml.expval(qml.PauliZ(0))
+
+    def loss(theta):
+        U = qml.transforms.get_unitary_matrix(circuit)(theta)
+        return qml.math.real(qml.math.trace(U))
+
+    params = torch.tensor([0.0, 1.0], requires_grad=True)
+    out = loss(params)
+    print(out)
+    # out.backward()
+    # print(params.grad)
