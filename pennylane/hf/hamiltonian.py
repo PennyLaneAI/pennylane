@@ -14,6 +14,7 @@
 """
 This module contains the functions needed for computing the molecular Hamiltonian.
 """
+# pylint: disable= too-many-branches, too-many-arguments, too-many-locals, too-many-nested-blocks
 import autograd.numpy as anp
 import pennylane as qml
 from pennylane import numpy as np
@@ -106,7 +107,7 @@ def generate_electron_integrals(mol, core=None, active=None):
         Returns:
             tuple[array[float]]: 1D tuple containing core constant, one- and two-electron integrals
         """
-        v_fock, coeffs, fock_matrix, h_core, repulsion_tensor = generate_scf(mol)(*args)
+        _, coeffs, _, h_core, repulsion_tensor = generate_scf(mol)(*args)
         one = anp.einsum("qr,rs,st->qt", coeffs.T, h_core, coeffs)
         two = anp.swapaxes(
             anp.einsum(
@@ -120,23 +121,22 @@ def generate_electron_integrals(mol, core=None, active=None):
         if core is None and active is None:
             return core_constant, one, two
 
-        else:
-            for i in core:
-                core_constant = core_constant + 2 * one[i][i]
-                for j in core:
-                    core_constant = core_constant + 2 * two[i][j][j][i] - two[i][j][i][j]
+        for i in core:
+            core_constant = core_constant + 2 * one[i][i]
+            for j in core:
+                core_constant = core_constant + 2 * two[i][j][j][i] - two[i][j][i][j]
 
-            for p in active:
-                for q in active:
-                    for i in core:
-                        o = anp.zeros(one.shape)
-                        o[p, q] = 1.0
-                        one = one + (2 * two[i][p][q][i] - two[i][p][i][q]) * o
+        for p in active:
+            for q in active:
+                for i in core:
+                    o = anp.zeros(one.shape)
+                    o[p, q] = 1.0
+                    one = one + (2 * two[i][p][q][i] - two[i][p][i][q]) * o
 
-            one = one[anp.ix_(active, active)]
-            two = two[anp.ix_(active, active, active, active)]
+        one = one[anp.ix_(active, active)]
+        two = two[anp.ix_(active, active, active, active)]
 
-            return core_constant, one, two
+        return core_constant, one, two
 
     return electron_integrals
 
@@ -257,7 +257,7 @@ def generate_hamiltonian(mol, cutoff=1.0e-12):
                             op[1][i] = _return_pauli(o[0][1])(o[0][0])
                         if len(o) > 1:
                             k = qml.Identity(0)
-                            for j, o_ in enumerate(o):
+                            for o_ in o:
                                 k = k @ _return_pauli(o_[1])(o_[0])
                             op[1][i] = k
                     h = h + qml.Hamiltonian(np.array(op[0]) * h_ferm[0][n], op[1])
@@ -272,7 +272,7 @@ def generate_hamiltonian(mol, cutoff=1.0e-12):
                             op[1][i] = _return_pauli(o[0][1])(o[0][0])
                         if len(o) > 1:
                             k = qml.Identity(0)
-                            for j, o_ in enumerate(o):
+                            for o_ in o:
                                 k = k @ _return_pauli(o_[1])(o_[0])
                             op[1][i] = k
                     h = h + qml.Hamiltonian(np.array(op[0]) * h_ferm[0][n], op[1])
@@ -415,8 +415,8 @@ def _return_pauli(p):
         return qml.PauliX
     if p == "Y":
         return qml.PauliY
-    if p == "Z":
-        return qml.PauliZ
+
+    return qml.PauliZ
 
 
 pauli_mult = {
