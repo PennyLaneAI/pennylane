@@ -16,8 +16,12 @@
 from pennylane import apply
 from pennylane.wires import Wires
 from pennylane.transforms import qfunc_transform
-from pennylane.ops.qubit.attributes import is_self_inverse
 
+from .attributes import (
+    is_self_inverse,
+    is_symmetric_over_all_wires,
+    is_symmetric_over_control_wires,
+)
 from .optimization_utils import find_next_gate
 
 
@@ -123,11 +127,11 @@ def cancel_inverses(tape):
                 else:
                     # If the wires are in a different order, gates that are "symmetric"
                     # over all wires (e.g., CZ), can be cancelled.
-                    if current_gate.is_symmetric_over_all_wires:
+                    if current_gate.name in is_symmetric_over_all_wires:
                         list_copy.pop(next_gate_idx + 1)
                     # For other gates, as long as the control wires are the same, we can still
                     # cancel (e.g., the Toffoli gate).
-                    elif current_gate.is_symmetric_over_control_wires:
+                    elif current_gate.name in is_symmetric_over_control_wires:
                         if (
                             len(Wires.shared_wires([current_gate.wires[:-1], next_gate.wires[:-1]]))
                             == len(current_gate.wires) - 1
