@@ -693,7 +693,10 @@ class TestState:
 
         d_func = qml.jacobian(func)
 
-        with pytest.raises(ValueError, match="The jacobian method does not support"):
+        with pytest.raises(
+            ValueError,
+            match="Computing the gradient of circuits that return the state is not supported",
+        ):
             d_func(0.1)
 
     def test_no_state_capability(self, monkeypatch):
@@ -760,7 +763,7 @@ class TestState:
             qml.RY(x, wires=0)
             return state()
 
-        x = tf.Variable(0.1, dtype=tf.complex128)
+        x = tf.Variable(0.1, dtype=tf.float64)
 
         with tf.GradientTape() as tape:
             result = func(x)

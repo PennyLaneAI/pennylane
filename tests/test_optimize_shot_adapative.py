@@ -80,8 +80,8 @@ class TestExceptions:
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        def cost(x):
-            return np.sin(circuit(x))
+        def cost(x, shots=dev.shots):
+            return np.sin(circuit(x, shots=shots))
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
 
@@ -105,10 +105,10 @@ class TestSingleShotGradientIntegration:
     dev = qml.device("default.qubit", wires=1, shots=100)
     H = qml.Hamiltonian([1.0], [qml.PauliZ(0)])
 
-    def ansatz(x, **kwargs):
+    @qml.qnode(dev)
+    def expval_cost(x):
         qml.RX(x, wires=0)
-
-    expval_cost = qml.ExpvalCost(ansatz, H, dev)
+        return qml.expval(qml.Hamiltonian([1.0], [qml.PauliZ(0)]))
 
     @qml.qnode(dev)
     def qnode(x):

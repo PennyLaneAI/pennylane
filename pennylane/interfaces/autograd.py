@@ -107,9 +107,12 @@ def _execute(
     for i, r in enumerate(res):
         res[i] = np.tensor(r)
 
+        multiple_sampled_jobs = tapes[i].is_sampled and device._has_partitioned_shots()
+
         if res[i].dtype == np.dtype("object"):
-            # For backwards compatibility, we flatten ragged tape outputs
-            res[i] = np.hstack(r)
+            if (tapes[i].all_sampled or not tapes[i].is_sampled) and not multiple_sampled_jobs:
+                # For backwards compatibility, we flatten ragged tape outputs
+                res[i] = np.hstack(r)
 
     return res, jacs
 
