@@ -62,12 +62,15 @@ def generalized_pair_doubles(wires):
 
 
 class kUpCCGSD(Operation):
-    r"""Implements the k-Unitary pair Coupled-Cluster Generalized Singles and Doubles (k-UpCCGSD) ansatz.
+    r"""Implements the k-Unitary Pair Coupled-Cluster Generalized Singles and Doubles (k-UpCCGSD) ansatz.
 
     The k-UpCCGSD ansatz calls the :func:`~.SingleExcitationUnitary` and :func:`~.DoubleExcitationUnitary`
     templates to exponentiate the product of :math:`k` generalized singles and pair coupled-cluster doubles
-    excitation operators. This k-UpCCGSD belongs to the family of Unitary Coupled Cluster (UCC) based ansätze,
-    commonly used to solve quantum chemistry problems on quantum computers.
+    excitation operators. Here, "generalized" means that the single and double excitation terms do not
+    distinguish between occupied and unoccupied orbitals. Additionally, the term "pair coupled-cluster"
+    refers to the fact that the double excitations contain only those two-body excitations that move a
+    pair of electrons from one spatial orbital to another. This k-UpCCGSD belongs to the family of Unitary
+    Coupled Cluster (UCC) based ansätze, commonly used to solve quantum chemistry problems on quantum computers.
 
     The k-UpCCGSD unitary, within the first-order Trotter approximation for a given integer :math:`k`, is given by:
 
@@ -92,7 +95,7 @@ class kUpCCGSD(Operation):
             single and pair double excitation terms.
         wires (Iterable): wires that the template acts on
         k (int): Number of times UpCCGSD unitary is repeated.
-        delta_saz (int): Specifies the selection rules ``sz[p] - sz[r] = delta_sz``
+        delta_sz (int): Specifies the selection rule ``sz[p] - sz[r] = delta_sz``
             for the spin-projection ``sz`` of the orbitals involved in the generalized single excitations.
             ``delta_sz`` can take the values :math:`0` and :math:`\pm 1`.
         init_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
@@ -104,7 +107,7 @@ class kUpCCGSD(Operation):
            spin-orbitals included in the active space, and should be even.
 
         #. The number of trainable parameters scales linearly with the number of layers as
-           :math:`2 k n`, where :math:`n = ||\vec{\theta}||` is the total number of
+           :math:`2 k n`, where :math:`n` is the total number of
            generalized singles and paired doubles excitation terms.
 
         An example of how to use this template is shown below:
@@ -120,7 +123,6 @@ class kUpCCGSD(Operation):
             H, qubits = qml.qchem.molecular_hamiltonian(symbols, coordinates)
 
             # Define the Hartree-Fock state
-            delta_sz = 0
             electrons = 2
             ref_state = qml.qchem.hf_state(electrons, qubits)
 
@@ -131,13 +133,13 @@ class kUpCCGSD(Operation):
             @qml.qnode(dev)
             def ansatz(weights):
                 qml.templates.kUpCCGSD(weights, wires=[0, 1, 2, 3],
-                                k=1, delta_sz=delta_sz, init_state=ref_state)
+                                k=1, delta_sz=0, init_state=ref_state)
                 return qml.expval(H)
 
             # Get the shape of the weights for this template
             layers = 1
             shape = qml.templates.kUpCCGSD.shape(k=layers,
-                                n_wires=qubits, delta_sz=delta_sz)
+                                n_wires=qubits, delta_sz=0)
 
             # Initialize the weight tensors
             np.random.seed(24)
