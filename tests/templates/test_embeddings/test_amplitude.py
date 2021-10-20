@@ -125,11 +125,11 @@ class TestInputs:
             )
             return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
 
-        with pytest.raises(ValueError, match="Features must be a vector of length"):
+        with pytest.raises(ValueError, match="Features must be a vector of norm"):
             circuit(x=not_nrmlzd)
 
     def test_throws_exception_if_features_wrong_shape(self):
-        """Checks exception if features has more than one dimension."""
+        """Checks exception if features has more than two dimensions."""
 
         n_qubits = 2
         dev = qml.device("default.qubit", wires=n_qubits)
@@ -140,7 +140,7 @@ class TestInputs:
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Features must be a one-dimensional (tensor|vector)"):
-            circuit(x=[[1.0, 0.0], [0.0, 0.0]])
+            circuit(x=[[[1.0, 0.0], [0.0, 0.0]], [[1.0, 0.0], [0.0, 0.0]]])
 
     @pytest.mark.parametrize("inpt", NOT_ENOUGH_FEATURES + TOO_MANY_FEATURES)
     def test_throws_exception_if_fewer_features_than_amplitudes(self, inpt):

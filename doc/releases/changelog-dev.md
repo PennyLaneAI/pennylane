@@ -17,6 +17,7 @@
 * A new transform, `@qml.batch_params`, has been added, that makes QNodes 
   handle a batch dimension in trainable parameters.
   [(#1710)](https://github.com/PennyLaneAI/pennylane/pull/1710)
+  [(#1761)](https://github.com/PennyLaneAI/pennylane/pull/1761)
 
   This transform will create multiple circuits, one per batch dimension.
   As a result, it is both simulator and hardware compatible.
@@ -135,6 +136,7 @@
   extended to the JAX interface for scalar functions, via the beta
   `pennylane.interfaces.batch` module.
   [(#1634)](https://github.com/PennyLaneAI/pennylane/pull/1634)
+  [(#1685)](https://github.com/PennyLaneAI/pennylane/pull/1685)
 
   For example using the `execute` function from the `pennylane.interfaces.batch` module:
 
@@ -365,6 +367,35 @@
 
 
 <h3>Improvements</h3>
+
+* It is now possible to draw QNodes that have been transformed by a 'batch transform'; that is,
+  a transform that maps a single QNode into multiple circuits under the hood. Examples of
+  batch transforms include `@qml.metric_tensor` and `@qml.gradients`.
+  [(#1762)](https://github.com/PennyLaneAI/pennylane/pull/1762)
+
+  For example, consider the parameter-shift rule, which generates two circuits per parameter;
+  one circuit that has the parameter shifted forward, and another that has the parameter shifted
+  backwards:
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.gradients.param_shift
+  @qml.beta.qnode(dev)
+  def circuit(x):
+      qml.RX(x, wires=0)
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.PauliZ(wires=0))
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)(0.6))
+   0: ──RX(2.17)──╭C──┤ ⟨Z⟩
+   1: ────────────╰X──┤
+
+   0: ──RX(-0.971)──╭C──┤ ⟨Z⟩
+   1: ──────────────╰X──┤
+  ```
 
 * All qubit operations have been re-written to use the `qml.math` framework
   for internal classical processing and the generation of their matrix representations.
@@ -617,6 +648,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-Utkarsh Azad, Akash Narayanan B, Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee,
+Utkarsh Azad, Akash Narayanan B, Olivia Di Matteo, Andrew Gardhouse, David Ittah, Josh Izaac, Christina Lee,
 Romain Moyard, Carrie-Anne Rubidge, Maria Schuld, Rishabh Singh, Ingrid Strandberg, Antal Száva, Cody Wang,
 David Wierichs, Moritz Willmann.
