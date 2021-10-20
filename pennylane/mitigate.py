@@ -18,7 +18,7 @@ from collections.abc import Sequence
 from pennylane.operation import Operation
 
 
-def to_mitiq(fn):
+def mitiq_interface(fn):
     from pennylane.tape import QuantumTape
 
     @wraps(fn)
