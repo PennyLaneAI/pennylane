@@ -480,7 +480,7 @@ class DoubleExcitationPlus(Operation):
         return DoubleExcitationPlus(-theta, wires=self.wires)
 
     def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "G₊²")
+        return super().label(decimals=decimals, base_label=base_label or "G²₊")
 
 
 class DoubleExcitationMinus(Operation):
@@ -566,7 +566,7 @@ class DoubleExcitationMinus(Operation):
         return DoubleExcitationMinus(-theta, wires=self.wires)
 
     def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "G₋²")
+        return super().label(decimals=decimals, base_label=base_label or "G²₋")
 
 
 class OrbitalRotation(Operation):

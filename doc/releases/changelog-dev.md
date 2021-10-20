@@ -367,6 +367,10 @@
 
 <h3>Improvements</h3>
 
+* Operators now have a `label` method to determine how they are drawn.  This will
+  eventually override the `RepresentationResolver` class.
+  [(#1678)](https://github.com/PennyLaneAI/pennylane/pull/1678)
+
 * All qubit operations have been re-written to use the `qml.math` framework
   for internal classical processing and the generation of their matrix representations.
   As a result these representations are now fully differentiable, and the

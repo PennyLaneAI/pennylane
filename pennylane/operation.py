@@ -433,7 +433,7 @@ class Operator(abc.ABC):
 
         Returns:
             str: label to use in drawings
-        
+
         **Example:**
 
         >>> op = qml.RX(1.23456, wires=0)
@@ -452,24 +452,24 @@ class Operator(abc.ABC):
         """
         op_label = base_label or self.__class__.__name__
 
-        if decimals is not None:
-            params = self.parameters
-
-            # matrix parameters not rendered
-            if len(qml.math.shape(params[0])) != 0:
-                return op_label
-
-            def _format(x):
-                return format(qml.math.toarray(x), f".{decimals}f")
-
-            if self.num_params == 1:
-                return op_label + f"\n({_format(params[0])})"
-
-            if self.num_params > 1:
-                param_string = ",".join(_format(p) for p in params)
-                return op_label + f"\n({param_string})"
-
+        if decimals is None or self.num_params == 0:
             return op_label
+
+        params = self.parameters
+
+        # matrix parameters not rendered
+        if len(qml.math.shape(params[0])) != 0:
+            return op_label
+
+        def _format(x):
+            return format(qml.math.toarray(x), f".{decimals}f")
+
+        if self.num_params == 1:
+            return op_label + f"\n({_format(params[0])})"
+
+        # self.num_params > 1:
+        param_string = ",".join(_format(p) for p in params)
+        return op_label + f"\n({param_string})"
 
     def __init__(self, *params, wires=None, do_queue=True, id=None):
         # pylint: disable=too-many-branches

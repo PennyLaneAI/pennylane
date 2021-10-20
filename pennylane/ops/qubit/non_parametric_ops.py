@@ -942,7 +942,6 @@ class MultiControlledX(Operation):
     par_domain = "A"
     grad_method = None
 
-
     # pylint: disable=too-many-arguments
     def __init__(
         self,

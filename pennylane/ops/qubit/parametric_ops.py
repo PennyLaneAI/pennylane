@@ -602,7 +602,7 @@ class PauliRot(Operation):
 
         Returns:
             str: label to use in drawings
-        
+
         **Example:**
 
         >>> op = qml.PauliRot(0.1, "XYY", wires=(0,1,2))
