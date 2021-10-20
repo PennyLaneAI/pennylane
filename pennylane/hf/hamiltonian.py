@@ -43,7 +43,7 @@ def generate_electron_integrals(mol, core=None, active=None):
 
     .. math::
 
-        h_{pqrs} = \int \frac{\phi_p(r_1)^* \phi_q(r_2)^* \phi_r(r_1) \phi_s(r_2)}{|r_1 - r_2|} dr_1 dr_2.
+        h_{pqrs} = \int \frac{\phi_p(r_1)^* \phi_q(r_2)^* \phi_r(r_2) \phi_s(r_1)}{|r_1 - r_2|} dr_1 dr_2.
 
     The molecular orbitals are constructed as a linear combination of atomic orbitals as
 
@@ -64,7 +64,7 @@ def generate_electron_integrals(mol, core=None, active=None):
         h_{pqrs} = \sum_{\mu \nu \rho \sigma} C_{p \mu} C_{q \nu} h_{\mu \nu \rho \sigma} C_{\rho r} C_{\sigma s}.
 
     The :math:`h_{\mu \nu}` and :math:`h_{\mu \nu \rho \sigma}` terms refer to the elements of the
-    core matrix and the electron repulsion tensor, respectively and :math:`C` is the molecular
+    core matrix and the electron repulsion tensor, respectively, and :math:`C` is the molecular
     orbital expansion coefficient matrix.
 
     Args:
@@ -73,7 +73,7 @@ def generate_electron_integrals(mol, core=None, active=None):
         active (list[int]): indices of the active orbitals
 
     Returns:
-        function: function that computes the core constant, the one- and two-electron integrals
+        function: function that computes the core constant, and the one- and two-electron integrals
 
     **Example**
 
@@ -98,7 +98,7 @@ def generate_electron_integrals(mol, core=None, active=None):
     """
 
     def electron_integrals(*args):
-        r"""Compute the one- and two-electron integrals in the atomic orbital basis.
+        r"""Compute the one- and two-electron integrals in the molecular orbital basis.
 
         Args:
             args (array[array[float]]): initial values of the differentiable parameters
