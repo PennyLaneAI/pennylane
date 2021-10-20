@@ -28,7 +28,6 @@ The operations are divided into six different files:
 * ``state_preparation.py``: Operations that initialize the state.
 """
 
-
 from .arithmetic_ops import *
 from .matrix_ops import *
 from .non_parametric_ops import *
