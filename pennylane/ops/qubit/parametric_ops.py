@@ -226,6 +226,9 @@ class PhaseShift(DiagonalOperation):
     generator = [np.array([[0, 0], [0, 1]]), 1]
     has_unitary_generator = False
 
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "Rϕ")
+
     @classmethod
     def _matrix(cls, *params):
         phi = params[0]
@@ -298,7 +301,7 @@ class ControlledPhaseShift(DiagonalOperation):
     has_unitary_generator = False
 
     def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "PhaseShift")
+        return super().label(decimals=decimals, base_label=base_label or "Rϕ")
 
     @classmethod
     def _matrix(cls, *params):
@@ -620,7 +623,7 @@ class PauliRot(Operation):
             op_label += "⁻¹"
 
         if decimals is not None:
-            param_string = f"\n({1.0*self.parameters[0]:.{decimals}f})"
+            param_string = f"\n({qml.math.asarray(self.parameters[0]):.{decimals}f})"
             op_label += param_string
 
         return op_label
