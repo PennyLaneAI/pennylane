@@ -19,6 +19,48 @@ from pennylane.operation import Operation
 
 
 def mitiq_interface(fn):
+    """A wrapper for functionality from the `mitiq <https://github.com/unitaryfund/mitiq>`__ library
+    to support mitigation in PennyLane.
+
+    This function wraps the
+    `execute_with_zne() <https://mitiq.readthedocs.io/en/stable/apidoc.html#mitiq.zne.zne.execute_with_zne>`__
+    and
+    `execute_with_pec() <https://mitiq.readthedocs.io/en/stable/apidoc.html#mitiq.pec.pec.execute_with_pec>`__
+    functions from ``mitiq``. As a result, the ``circuit`` argument can be a PennyLane tape which
+    includes measurements and the ``executor`` argument can be a PennyLane device.
+
+    Args:
+        fn (Callable): an ``execute_with_*`` function from the ``mitiq`` library
+
+    Returns:
+        function: the wrapped function that interfaces with PennyLane
+
+    **Example:**
+
+    We consider a noisy device by adding noise to ``default.mixed`` using the
+    :func:`~.add_noise_to_device` transform:
+
+    >>> dev = qml.device("default.mixed", wires=2)
+    >>> qml.mitigate.add_noise_to_device(dev, qml.AmplitudeDamping, 0.2, position="all")
+
+    Our objective is to mitigate noise from the following circuit:
+
+    .. code-block:: python3
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.9, wires=0)
+            qml.RY(0.4, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(0.5, wires=0)
+            qml.RX(0.6, wires=1)
+
+    This can be achieved using the ``mitiq`` library:
+
+    >>> from mitiq import zne
+    >>> from mitiq.zne.scaling import fold_global
+    >>> qml.mitigate.mitiq_interface(execute_with_zne)(tape, dev, scale_noise=fold_global)
+    0.7196657937904828
+    """
     from pennylane.tape import QuantumTape
 
     @wraps(fn)
@@ -41,14 +83,14 @@ def mitiq_interface(fn):
         tape_no_measurements = _remove_measurements(tape)
 
         def new_executor(updated_tape):
-            with QuantumTape as updated_tape_with_measurements:
+            with QuantumTape() as updated_tape_with_measurements:
                 for op in updated_tape.operations:
                     op.queue()
 
                 for meas in tape.measurements:
                     meas.queue()
 
-            return dev.execute(updated_tape_with_measurements)[0]
+            return updated_tape_with_measurements.execute(dev)[0]
 
         if tape_key is not None:
             kwargs[tape_key] = tape_no_measurements
@@ -58,7 +100,7 @@ def mitiq_interface(fn):
         if kwargs.get("executor", None) is not None:
             kwargs["executor"] = new_executor
         else:
-            args[1] = new_executor()
+            args[1] = new_executor
 
         return fn(*args, **kwargs)
 
