@@ -27,7 +27,7 @@ def test_work_wires():
     wires = ("a", "b")
     work_wire = ("aux",)
 
-    op = qml.templates.GroverOperator(wires=wires, work_wires=work_wire)
+    op = qml.GroverOperator(wires=wires, work_wires=work_wire)
 
     assert op.work_wires == work_wire
 
@@ -41,14 +41,14 @@ def test_single_wire_error(bad_wires):
     """Assert error raised when called with only a single wire"""
 
     with pytest.raises(ValueError, match="GroverOperator must have at least"):
-        op = qml.templates.GroverOperator(wires=bad_wires)
+        op = qml.GroverOperator(wires=bad_wires)
 
 
 def test_do_queue():
     """Assert do_queue=False is not queued"""
 
     with qml.tape.QuantumTape() as tape:
-        qml.templates.GroverOperator(wires=(0, 1), do_queue=False)
+        qml.GroverOperator(wires=(0, 1), do_queue=False)
 
     assert len(tape.operations) == 0
 
@@ -56,7 +56,7 @@ def test_do_queue():
 def test_id():
     """Assert id keyword works"""
 
-    op = qml.templates.GroverOperator(wires=(0, 1), id="hello")
+    op = qml.GroverOperator(wires=(0, 1), id="hello")
 
     assert op.id == "hello"
 
@@ -100,7 +100,7 @@ def test_grover_diffusion_matrix(n_wires):
     # uniform superposition state
     s = functools.reduce(np.kron, list(itertools.repeat(s1, n_wires)))
     # Grover matrix
-    G_matrix = qml.templates.GroverOperator(wires=wires).matrix
+    G_matrix = qml.GroverOperator(wires=wires).matrix
 
     amplitudes = G_matrix @ oracle @ s
     probs = amplitudes ** 2
@@ -145,14 +145,14 @@ def test_grover_diffusion_matrix_results():
 
         for _ in range(num_iterations):
             oracle()
-            qml.templates.GroverOperator(wires=wires)
+            qml.GroverOperator(wires=wires)
         return qml.probs(wires)
 
     # Get probabilities from example
     probs_example = GroverSearch(num_iterations=1)
 
     # Grover diffusion matrix
-    G_matrix = qml.templates.GroverOperator(wires=wires).matrix
+    G_matrix = qml.GroverOperator(wires=wires).matrix
 
     oracle_matrix = np.identity(2 ** n_wires)
     oracle_matrix[-1, -1] = -1
@@ -173,7 +173,7 @@ def test_grover_diffusion_matrix_results():
 @pytest.mark.parametrize("wires", ((0, 1, 2), ("a", "c", "b")))
 def test_expand(wires):
     """Asserts decomposition uses expected operations and wires"""
-    op = qml.templates.GroverOperator(wires=wires)
+    op = qml.GroverOperator(wires=wires)
 
     decomp = op.expand().operations
 
@@ -199,7 +199,7 @@ def test_findstate():
             qml.Hadamard(wires[0])
             qml.MultiControlledX(wires=wires[0], control_wires=wires[1:])
             qml.Hadamard(wires[0])
-            qml.templates.GroverOperator(wires=wires)
+            qml.GroverOperator(wires=wires)
 
         return qml.probs(wires=wires)
 

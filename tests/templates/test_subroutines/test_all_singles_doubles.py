@@ -83,7 +83,7 @@ class TestDecomposition:
 
         hf_state = np.array([1, 1, 0, 0, 0, 0])
 
-        op = qml.templates.AllSinglesDoubles(
+        op = qml.AllSinglesDoubles(
             weights, wires, hf_state, singles=singles, doubles=doubles
         )
         queue = op.expand().operations
@@ -114,7 +114,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.AllSinglesDoubles(
+            qml.AllSinglesDoubles(
                 weights,
                 wires=range(4),
                 hf_state=np.array([1, 1, 0, 0]),
@@ -125,7 +125,7 @@ class TestDecomposition:
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.AllSinglesDoubles(
+            qml.AllSinglesDoubles(
                 weights,
                 wires=["z", "a", "k", "e"],
                 hf_state=np.array([1, 1, 0, 0]),
@@ -255,7 +255,7 @@ class TestInputs:
         def circuit(
             weights=weights, wires=wires, hf_state=hf_state, singles=singles, doubles=doubles
         ):
-            qml.templates.AllSinglesDoubles(
+            qml.AllSinglesDoubles(
                 weights=weights,
                 wires=wires,
                 hf_state=hf_state,
@@ -277,7 +277,7 @@ class TestInputs:
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.templates.AllSinglesDoubles(
+        template = qml.AllSinglesDoubles(
             [1, 2],
             wires=range(4),
             hf_state=np.array([1, 1, 0, 0]),
@@ -304,12 +304,12 @@ class TestAttributes:
     def test_shape(self, singles, doubles, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""
 
-        shape = qml.templates.AllSinglesDoubles.shape(singles, doubles)
+        shape = qml.AllSinglesDoubles.shape(singles, doubles)
         assert shape == expected_shape
 
 
 def circuit_template(weights):
-    qml.templates.AllSinglesDoubles(
+    qml.AllSinglesDoubles(
         weights,
         wires=range(4),
         hf_state=np.array([1, 1, 0, 0]),

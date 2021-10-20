@@ -115,7 +115,7 @@ class TestDecomposition:
 
         ref_state = np.array([1, 1, 0, 0, 0, 0])
 
-        op = qml.templates.UCCSD(
+        op = qml.UCCSD(
             weights, wires, s_wires=s_wires, d_wires=d_wires, init_state=ref_state
         )
         raw_queue = op.expand().operations
@@ -156,7 +156,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.UCCSD(
+            qml.UCCSD(
                 weights,
                 wires=range(4),
                 s_wires=[[0, 1]],
@@ -167,7 +167,7 @@ class TestDecomposition:
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.UCCSD(
+            qml.UCCSD(
                 weights,
                 wires=["z", "a", "k", "e"],
                 s_wires=[["z", "a"]],
@@ -249,7 +249,7 @@ class TestInputs:
         def circuit(
             weights=weights, wires=wires, s_wires=s_wires, d_wires=d_wires, init_state=init_state
         ):
-            qml.templates.UCCSD(
+            qml.UCCSD(
                 weights=weights,
                 wires=wires,
                 s_wires=s_wires,
@@ -271,7 +271,7 @@ class TestInputs:
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.templates.UCCSD(
+        template = qml.UCCSD(
             [0.1, 0.2],
             wires=range(4),
             s_wires=[[0, 1]],
@@ -283,7 +283,7 @@ class TestInputs:
 
 
 def circuit_template(weights):
-    qml.templates.UCCSD(
+    qml.UCCSD(
         weights,
         wires=range(4),
         s_wires=[[0, 1]],
@@ -295,8 +295,8 @@ def circuit_template(weights):
 
 def circuit_decomposed(weights):
     qml.BasisState(np.array([1, 0, 0, 0]), wires=range(4))
-    qml.templates.DoubleExcitationUnitary(weights[1], wires1=[0, 1], wires2=[2, 3])
-    qml.templates.SingleExcitationUnitary(weights[0], wires=[0, 1])
+    qml.DoubleExcitationUnitary(weights[1], wires1=[0, 1], wires2=[2, 3])
+    qml.SingleExcitationUnitary(weights[0], wires=[0, 1])
     return qml.expval(qml.PauliZ(0))
 
 

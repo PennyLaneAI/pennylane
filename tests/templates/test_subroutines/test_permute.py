@@ -29,7 +29,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def identity_permutation():
-            qml.templates.Permute([0, 1, 2, 3], wires=dev.wires)
+            qml.Permute([0, 1, 2, 3], wires=dev.wires)
             return qml.expval(qml.PauliZ(0))
 
         identity_permutation()
@@ -43,7 +43,7 @@ class TestDecomposition:
         """Test that identity permutations have no effect on tapes."""
 
         with qml.tape.QuantumTape() as tape:
-            qml.templates.Permute([0, "a", "c", "d"], wires=[0, "a", "c", "d"])
+            qml.Permute([0, "a", "c", "d"], wires=[0, "a", "c", "d"])
 
         # expand the Permute operation
         tape = tape.expand()
@@ -67,7 +67,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def two_cycle():
-            qml.templates.Permute(permutation_order, wires=dev.wires)
+            qml.Permute(permutation_order, wires=dev.wires)
             return qml.expval(qml.PauliZ(0))
 
         two_cycle()
@@ -95,7 +95,7 @@ class TestDecomposition:
         """Test some two-cycles on tapes."""
 
         with qml.tape.QuantumTape() as tape:
-            qml.templates.Permute(permutation_order, wire_order)
+            qml.Permute(permutation_order, wire_order)
 
         # expand the Permute operation
         tape = tape.expand()
@@ -119,7 +119,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def cycle():
-            qml.templates.Permute(permutation_order, wires=dev.wires)
+            qml.Permute(permutation_order, wires=dev.wires)
             return qml.expval(qml.PauliZ(0))
 
         cycle()
@@ -143,7 +143,7 @@ class TestDecomposition:
         """Test more general cycles on tapes."""
 
         with qml.tape.QuantumTape() as tape:
-            qml.templates.Permute(permutation_order, wire_order)
+            qml.Permute(permutation_order, wire_order)
 
         # expand the Permute operation
         tape = tape.expand()
@@ -167,7 +167,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def arbitrary_perm():
-            qml.templates.Permute(permutation_order, wires=dev.wires)
+            qml.Permute(permutation_order, wires=dev.wires)
             return qml.expval(qml.PauliZ(0))
 
         arbitrary_perm()
@@ -199,7 +199,7 @@ class TestDecomposition:
         """Test arbitrarily generated permutations on tapes."""
 
         with qml.tape.QuantumTape() as tape:
-            qml.templates.Permute(permutation_order, wire_order)
+            qml.Permute(permutation_order, wire_order)
 
         # expand the Permute operation
         tape = tape.expand()
@@ -225,7 +225,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def subset_perm():
-            qml.templates.Permute(permutation_order, wires=wire_subset)
+            qml.Permute(permutation_order, wires=wire_subset)
             return qml.expval(qml.PauliZ(0))
 
         subset_perm()
@@ -259,7 +259,7 @@ class TestDecomposition:
             # Make sure all the wires are actually there
             for wire in wire_labels:
                 qml.RZ(0, wires=wire)
-            qml.templates.Permute(permutation_order, wire_subset)
+            qml.Permute(permutation_order, wire_subset)
 
         # expand the Permute operation
         tape = tape.expand()
@@ -278,12 +278,12 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.Permute(permutation, wires=range(4))
+            qml.Permute(permutation, wires=range(4))
             return qml.expval(qml.Identity(0))
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.Permute(permutation2, wires=["z", "a", "k", "o"])
+            qml.Permute(permutation2, wires=["z", "a", "k", "o"])
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -311,7 +311,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def permute_qubits():
-            qml.templates.Permute(permutation_order, wires=dev.wires)
+            qml.Permute(permutation_order, wires=dev.wires)
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match=expected_error_message):
@@ -333,9 +333,9 @@ class TestInputs:
 
         with qml.tape.QuantumTape() as tape:
             with pytest.raises(ValueError, match=expected_error_message):
-                qml.templates.Permute(permutation_order, wires=wire_labels)
+                qml.Permute(permutation_order, wires=wire_labels)
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.templates.Permute([0, 1, 2], wires=[0, 1, 2], id="a")
+        template = qml.Permute([0, 1, 2], wires=[0, 1, 2], id="a")
         assert template.id == "a"
