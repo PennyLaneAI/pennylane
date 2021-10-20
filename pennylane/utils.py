@@ -22,7 +22,6 @@ import inspect
 import itertools
 import numbers
 from operator import matmul
-import warnings
 
 import numpy as np
 import scipy
