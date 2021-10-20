@@ -147,7 +147,9 @@ class TestOutsideOfQueuing:
             assert o1.parameters == o2.parameters
             assert o1.wires == o2.wires
 
+
 fn = lambda func, *args, **kwargs: adjoint(func)(*args, **kwargs)
+
 
 class TestTemplateIntegration:
     """Test that templates work correctly with the adjoint transform"""
