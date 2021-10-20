@@ -28,6 +28,7 @@ import pennylane.init
 import pennylane.fourier
 import pennylane.kernels
 import pennylane.math
+import pennylane.mitigate
 import pennylane.operation
 import pennylane.qnn
 import pennylane.templates
