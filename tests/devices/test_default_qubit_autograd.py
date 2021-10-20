@@ -84,7 +84,7 @@ class TestQNodeIntegration:
 
         expected = -np.sin(p)
 
-        assert circuit.diff_options["method"] == "backprop"
+        assert circuit.gradient_fn == "backprop"
         assert np.isclose(circuit(p), expected, atol=tol, rtol=0)
 
     def test_correct_state(self, tol):
@@ -132,7 +132,7 @@ class TestPassthruIntegration:
             qml.RX(p[2] / 2, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        assert circuit.diff_options["method"] == "backprop"
+        assert circuit.gradient_fn == "backprop"
         res = circuit(weights)
 
         expected = np.cos(3 * x) * np.cos(y) * np.cos(z / 2) - np.sin(3 * x) * np.sin(z / 2)
@@ -198,8 +198,8 @@ class TestPassthruIntegration:
         circuit1 = qml.QNode(circuit, dev1, diff_method="backprop", interface="autograd")
         circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift")
 
-        assert circuit1.diff_options["method"] == "backprop"
-        assert circuit2.diff_options["method"] == "analytic"
+        assert circuit1.gradient_fn == "backprop"
+        assert circuit2.gradient_fn is qml.gradients.param_shift
 
         res = circuit1(p)
 
@@ -312,11 +312,11 @@ class TestPassthruIntegration:
 
         # Check that the correct differentiation method is being used.
         if diff_method == "backprop":
-            assert circuit.diff_options["method"] == "backprop"
+            assert circuit.gradient_fn == "backprop"
         elif diff_method == "parameter-shift":
-            assert circuit.diff_options["method"] == "analytic"
+            assert circuit.gradient_fn is qml.gradients.param_shift
         else:
-            assert circuit.diff_options["method"] == "numeric"
+            assert circuit.gradient_fn is qml.gradients.finite_diff
 
         res = qml.grad(cost)(params)
         expected_grad = (
