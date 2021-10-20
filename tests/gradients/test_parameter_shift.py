@@ -905,7 +905,7 @@ class TestParamShiftGradients:
         torch = pytest.importorskip("torch")
         from pennylane.interfaces.torch import TorchInterface
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.torch", wires=2)
         params = torch.tensor([0.543, -0.654], dtype=torch.float64, requires_grad=True)
 
         with TorchInterface.apply(qml.tape.QubitParamShiftTape()) as tape:
@@ -915,7 +915,7 @@ class TestParamShiftGradients:
             qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
         tapes, fn = qml.gradients.param_shift(tape)
-        jac = fn([t.execute(dev) for t in tapes])
+        jac = fn(dev.batch_execute(tapes))
         cost = jac[0, 0]
         cost.backward()
         hess = params.grad
@@ -938,7 +938,7 @@ class TestParamShiftGradients:
 
         config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.jax", wires=2)
         params = jnp.array([0.543, -0.654])
 
         def cost_fn(x):
@@ -950,7 +950,7 @@ class TestParamShiftGradients:
 
             tape.trainable_params = {0, 1}
             tapes, fn = qml.gradients.param_shift(tape)
-            jac = fn([t.execute(dev) for t in tapes])
+            jac = fn(dev.batch_execute(tapes))
             return jac
 
         res = jax.jacobian(cost_fn)(params)

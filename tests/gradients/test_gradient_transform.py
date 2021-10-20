@@ -365,3 +365,27 @@ class TestInterfaceIntegration:
         res.backward()
         expected = -2 * np.cos(2 * x_)
         assert np.allclose(x.grad.detach(), expected, atol=tol, rtol=0)
+
+    def test_jax(self, tol):
+        """Test that a gradient transform remains differentiable
+        with JAX"""
+        jax = pytest.importorskip("jax")
+        jnp = jax.numpy
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.gradients.param_shift
+        @qml.qnode(dev, interface="jax")
+        def circuit(x):
+            qml.RY(x ** 2, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.var(qml.PauliX(1))
+
+        x = jnp.array(-0.654)
+
+        res = circuit(x)
+        expected = -4 * x * np.cos(x ** 2) * np.sin(x ** 2)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        res = jax.grad(circuit)(x)
+        expected = -2 * (4 * x ** 2 * np.cos(2 * x ** 2) + np.sin(2 * x ** 2))
+        assert np.allclose(res, expected, atol=tol, rtol=0)
