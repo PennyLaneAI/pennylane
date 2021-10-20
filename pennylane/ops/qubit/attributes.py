@@ -16,7 +16,6 @@ This file contains a number of attributes that may be held by operators,
 and lists all operators satisfying those criteria.
 """
 import pennylane as qml
-import inspect
 
 
 class Attribute(set):
