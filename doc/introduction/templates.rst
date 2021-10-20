@@ -68,8 +68,6 @@ trainable parameters, and they may be constructed from repeated layers.
 Layer templates
 ---------------
 
-.. currentmodule:: pennylane.templates.layers
-
 Layer architectures define sequences of trainable gates that are repeated like the layers in a
 neural network. Note that arbitrary templates or operations can also be repeated using the
 :func:`~pennylane.layer` function.
@@ -347,7 +345,7 @@ The template decorator can used to register a quantum function as a template.
 .. autosummary::
     :toctree:
 
-    pennylane.template
+    pennylane.templates.template
 
 Layering Function
 -----------------
