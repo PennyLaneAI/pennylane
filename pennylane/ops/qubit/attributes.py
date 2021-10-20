@@ -71,7 +71,7 @@ is_composable_rotation = Attribute(
         "Rot",
     ]
 )
-"""Operators for which composing multiple copies of the operation results in an
+"""Operations for which composing multiple copies of the operation results in an
 addition (or alternative accumulation) of parameters.
 
 For example, ``qml.RZ`` is a composable rotation. Applying ``qml.RZ(0.1,
