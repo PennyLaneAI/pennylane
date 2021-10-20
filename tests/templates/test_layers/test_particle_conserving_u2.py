@@ -110,7 +110,7 @@ class TestDecomposition:
         @qml.qnode(dev)
         def circuit(weight):
             qml.BasisState(init_state, wires=wires)
-            qml.layers.particle_conserving_u2.u2_ex_gate(weight, wires)
+            qml.particle_conserving_u2.u2_ex_gate(weight, wires)
             return qml.expval(qml.PauliZ(0))
 
         circuit(weight)

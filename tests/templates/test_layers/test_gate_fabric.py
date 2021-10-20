@@ -482,7 +482,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(weight):
-            qml.layers.GateFabric(weight, wires, init_state=init_state)
+            qml.GateFabric(weight, wires, init_state=init_state)
             return qml.expval(qml.PauliZ(0))
 
         circuit(weight)
@@ -595,7 +595,7 @@ class TestDecomposition:
 
         wires = range(num_qubits)
 
-        shape = qml.layers.GateFabric.shape(n_layers=layers, n_wires=num_qubits)
+        shape = qml.GateFabric.shape(n_layers=layers, n_wires=num_qubits)
         weight = np.pi / 2 * qml.math.ones(shape)
 
         dev = qml.device("default.qubit", wires=wires)
@@ -604,7 +604,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(weight):
-            qml.layers.GateFabric(weight, wires, init_state=init_state, include_pi=True)
+            qml.GateFabric(weight, wires, init_state=init_state, include_pi=True)
             return qml.state()
 
         circuit(weight)
