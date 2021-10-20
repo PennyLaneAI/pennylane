@@ -14,6 +14,7 @@
 """
 Unit tests for the draw transform.
 """
+import functools
 import pytest
 
 import pennylane as qml
@@ -229,6 +230,24 @@ def test_invalid_wires():
 
     with pytest.raises(ValueError, match="contains wires not contained on the device"):
         qml.draw(circuit, wire_order=["q2", 5])()
+
+
+def test_draw_batch_transform():
+    """Test that drawing a batch transform works correctly"""
+    dev = qml.device("default.qubit", wires=1)
+
+    @functools.partial(qml.gradients.param_shift, shift=0.2)
+    @qml.beta.qnode(dev)
+    def circuit(x):
+        qml.Hadamard(wires=0)
+        qml.RX(x, wires=0)
+        return qml.expval(qml.PauliZ(wires=0))
+
+    # the parameter-shift transform will create two circuits; one with x+0.2
+    # and one with x-0.2.
+    res = qml.draw(circuit)(0.6)
+    expected = [" 0: ──H──RX(0.8)──┤ ⟨Z⟩ ", "", " 0: ──H──RX(0.4)──┤ ⟨Z⟩ ", ""]
+    assert res == "\n".join(expected)
 
 
 def test_direct_qnode_integration():
