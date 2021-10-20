@@ -65,7 +65,7 @@ class TestDecomposition:
 
         dev = qml.device("default.qubit", wires=len(permutation_order))
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, expansion_strategy="device")
         def two_cycle():
             qml.templates.Permute(permutation_order, wires=dev.wires)
             return qml.expval(qml.PauliZ(0))
@@ -117,7 +117,7 @@ class TestDecomposition:
 
         dev = qml.device("default.qubit", wires=len(permutation_order))
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, expansion_strategy="device")
         def cycle():
             qml.templates.Permute(permutation_order, wires=dev.wires)
             return qml.expval(qml.PauliZ(0))
@@ -165,7 +165,7 @@ class TestDecomposition:
 
         dev = qml.device("default.qubit", wires=len(permutation_order))
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, expansion_strategy="device")
         def arbitrary_perm():
             qml.templates.Permute(permutation_order, wires=dev.wires)
             return qml.expval(qml.PauliZ(0))
@@ -223,7 +223,7 @@ class TestDecomposition:
 
         dev = qml.device("default.qubit", wires=num_wires)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, expansion_strategy="device")
         def subset_perm():
             qml.templates.Permute(permutation_order, wires=wire_subset)
             return qml.expval(qml.PauliZ(0))
