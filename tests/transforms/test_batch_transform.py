@@ -501,15 +501,12 @@ class TestBatchTransformGradients:
     def test_differentiable_jax(self, diff_method):
         """Test that a batch transform is differentiable when using
         jax"""
-        if diff_method in ("parameter-shift", "finite-diff"):
-            pytest.skip("Does not support parameter-shift mode")
-
         jax = pytest.importorskip("jax")
         dev = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method)
 
         def cost(x, weights):
-            return self.my_transform(qnode, weights)(x)
+            return self.my_transform(qnode, weights, max_diff=1)(x)
 
         weights = jax.numpy.array([0.1, 0.2])
         x = jax.numpy.array(0.543)
