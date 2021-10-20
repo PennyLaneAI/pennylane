@@ -281,7 +281,6 @@ class QubitDevice(Device):
             self.tracker.update(batches=1, batch_len=len(circuits))
             self.tracker.record()
 
-        print(self._shot_vector, results)
         return results
 
     @abc.abstractmethod
