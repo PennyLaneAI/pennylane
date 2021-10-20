@@ -89,11 +89,11 @@ class RandomLayers(Operation):
 
         You can verify this by drawing the circuits.
 
-            >>> print(circuit1.draw())
+            >>> print(qml.draw(circuit1)(weights))
             0: ─────────────────────╭X──╭X──RZ(1.4)──┤ ⟨Z⟩
             1: ──RX(0.1)──RX(-2.1)──╰C──╰C───────────┤
 
-            >>> print(circuit2.draw())
+            >>> print(qml.draw(circuit2)(weights))
             0: ─────────────────────╭X──╭X──RZ(1.4)──┤ ⟨Z⟩
             1: ──RX(0.1)──RX(-2.1)──╰C──╰C───────────┤
 
@@ -118,11 +118,11 @@ class RandomLayers(Operation):
         >>> np.allclose(circuit_9(weights), circuit_12(weights))
         >>> False
 
-        >>> print(circuit_9.draw())
+        >>> print(qml.draw(circuit_9)(weights))
         0: ──╭X──RX(0.1)────────────┤ ⟨Z⟩
         1: ──╰C──RY(-2.1)──RX(1.4)──┤
 
-        >>> print(circuit_12.draw())
+        >>> print(qml.draw(circuit_12)(weights))
         0: ──╭X──RZ(0.1)───╭C──╭X───────────┤ ⟨Z⟩
         1: ──╰C──RX(-2.1)──╰X──╰C──RZ(1.4)──┤
 

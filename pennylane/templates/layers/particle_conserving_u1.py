@@ -190,10 +190,12 @@ class ParticleConservingU1(Operation):
 
             import pennylane as qml
             from pennylane.templates import ParticleConservingU1
+            import numpy as np
             from functools import partial
 
-            # Build the electronic Hamiltonian from a local .xyz file
-            h, qubits = qml.qchem.molecular_hamiltonian("h2", "h2.xyz")
+            # Build the electronic Hamiltonian
+            symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
+            h, qubits = qml.qchem.molecular_hamiltonian(symbols, coordinates)
 
             # Define the Hartree-Fock state
             electrons = 2
