@@ -368,6 +368,35 @@
 
 <h3>Improvements</h3>
 
+* It is now possible to draw QNodes that have been transformed by a 'batch transform'; that is,
+  a transform that maps a single QNode into multiple circuits under the hood. Examples of
+  batch transforms include `@qml.metric_tensor` and `@qml.gradients`.
+  [(#1762)](https://github.com/PennyLaneAI/pennylane/pull/1762)
+
+  For example, consider the parameter-shift rule, which generates two circuits per parameter;
+  one circuit that has the parameter shifted forward, and another that has the parameter shifted
+  backwards:
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.gradients.param_shift
+  @qml.beta.qnode(dev)
+  def circuit(x):
+      qml.RX(x, wires=0)
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.PauliZ(wires=0))
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)(0.6))
+   0: ──RX(2.17)──╭C──┤ ⟨Z⟩
+   1: ────────────╰X──┤
+
+   0: ──RX(-0.971)──╭C──┤ ⟨Z⟩
+   1: ──────────────╰X──┤
+  ```
+
 * All qubit operations have been re-written to use the `qml.math` framework
   for internal classical processing and the generation of their matrix representations.
   As a result these representations are now fully differentiable, and the

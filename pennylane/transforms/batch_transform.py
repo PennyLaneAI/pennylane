@@ -331,6 +331,12 @@ class batch_transform:
             wrapper = self.qnode_wrapper(qnode, targs, tkwargs)
             wrapper = functools.wraps(qnode)(wrapper)
 
+            def _construct(args, kwargs):
+                qnode.construct(args, kwargs)
+                return self.construct(qnode.qtape, *targs, **tkwargs)
+
+            wrapper.construct = _construct
+
         else:
             # Input is not a QNode nor a quantum tape.
             # Assume Python decorator syntax:
