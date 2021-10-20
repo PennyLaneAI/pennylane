@@ -347,7 +347,7 @@ The template decorator can used to register a quantum function as a template.
 .. autosummary::
     :toctree:
 
-    pennylane.templates.template
+    pennylane.template
 
 Layering Function
 -----------------
