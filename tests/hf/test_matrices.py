@@ -314,7 +314,8 @@ def test_attraction_matrix(symbols, geometry, alpha, v_ref):
 def test_attraction_matrix_diffR(symbols, geometry, alpha, v_ref):
     r"""Test that attraction_matrix returns the correct matrix when positions are differentiable."""
     mol = Molecule(symbols, geometry, alpha=alpha)
-    args = [mol.coordinates, mol.alpha, mol.coordinates]
+    r_basis = mol.coordinates
+    args = [mol.coordinates, mol.alpha, r_basis]
     v = generate_attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
     assert np.allclose(v, v_ref)
 
@@ -380,7 +381,8 @@ def test_attraction_matrix_nodiff(symbols, geometry, v_ref):
 def test_gradient_attraction_matrix(symbols, geometry, alpha, coeff, g_r_ref):
     r"""Test that the attraction gradients are correct."""
     mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
-    args = [mol.coordinates, mol.alpha, mol.coeff, mol.coordinates]
+    r_basis = mol.coordinates
+    args = [mol.coordinates, mol.alpha, mol.coeff, r_basis]
 
     g_r = autograd.jacobian(
         generate_attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates), argnum=0
@@ -527,6 +529,7 @@ def test_core_matrix_nodiff(symbols, geometry, c_ref):
 def test_core_matrix_diff_positions(symbols, geometry, alpha, c_ref):
     r"""Test that core_matrix returns the correct matrix when positions are differentiable."""
     mol = Molecule(symbols, geometry, alpha=alpha)
-    args = [mol.coordinates, mol.alpha, mol.coordinates]
+    r_basis = mol.coordinates
+    args = [mol.coordinates, mol.alpha, r_basis]
     c = generate_core_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
     assert np.allclose(c, c_ref)
