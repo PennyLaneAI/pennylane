@@ -471,8 +471,64 @@ class ThermalRelaxationError(Channel):
     thermal relaxation error channel.
 
     This channel is modelled by the following Kraus matrices:
+        
+    if T2 <= T1:
 
+    .. math::
+        K_0 = \sqrt{1 - pz - pr0 - pr1} \begin{bmatrix}
+                1 & 0 \\
+                0 & 1
+                \end{bmatrix}
+
+    .. math::
+        K_1 = \sqrt{pz}\begin{bmatrix}
+                1 & 0  \\
+                0 & -1
+                \end{bmatrix}
+
+    .. math::
+        K_2 = \sqrt{pr0}\begin{bmatrix}
+                1 & 0  \\
+                0 & 0
+                \end{bmatrix}
+    .. math::
+        K_3 = \sqrt{pr0}\begin{bmatrix}
+                0 & 1  \\
+                0 & 0
+                \end{bmatrix}
+
+    .. math::
+        K_4 = \sqrt{pr1}\begin{bmatrix}
+                0 & 0  \\
+                1 & 0
+                \end{bmatrix}
+
+    .. math::
+        K_5 = \sqrt{pr1}\begin{bmatrix}
+                0 & 0  \\
+                0 & 1
+                \end{bmatrix}
+    
+    where :math:`pr0 \in [0, 1]` is the probability of a reset to 0,
+        :math:`pr1 \in [0, 1]` is the probability of a reset to 1 error,
+        math:`pz \in [0, 1]` is the probability of a phase flip (Pauli :math:`Z`) error
+        
+    else:
+    .. math::
+        choi_matrix = \begin{bmatrix}
+                        1 - pe * p_reset & 0 & 0 & eT2 \\
+                        0 & pe * p_reset & 0 & 0 \\
+                        0 & 0 & (1 - pe) * p_reset & 0 \\
+                        eT2 & 0 & 0 & 1 - (1 - pe) * p_reset
+                        \end{bmatrix}
+        K_N = \sqrt{\lambda} \Phi(\nu_\lambda)
+        
+    where :math:`\lambda` are the eigenvalues of the choi_matrix,
+          :math:`\nu_lambda` are the eigenvectors of the choi_matrix,
+    and :math:`\Phi(x)` is a isomorphism from :math:`\mathbb{C}^{n^2}` to `\mathbb{C}^{n x n}`
+        with column-major order mapping.
     **Details:**
+    
 
     * Number of wires: 1
     * Number of parameters: 4
@@ -530,6 +586,16 @@ class ThermalRelaxationError(Channel):
             K4 = np.sqrt(pr1) * np.array([[0, 0], [1, 0]])
             K5 = np.sqrt(pr1) * np.array([[0, 0], [0, 1]])
             return [K0, K1, K2, K3, K4, K5]
+        else:
+            choi_matrix = np.array([[1 - pe * p_reset, 0, 0, eT2],
+                                    [0, pe * p_reset, 0, 0],
+                                    [0, 0, (1 - pe) * p_reset, 0],
+                                    [eT2, 0, 0, 1 - (1 - pe) * p_reset]])
+            eig, eig_vec = np.linalg.eigh(choi_matrix, UPLO="U")
+            K = []
+            for i in range(len(choi_matrix)):
+                K.append((np.sqrt(eig[i]) * eig_vec[:,i]).reshape(2, 2, order="F"))
+            return K
 
 
 __qubit_channels__ = {
