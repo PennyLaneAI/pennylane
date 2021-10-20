@@ -467,7 +467,6 @@ class Operator(abc.ABC):
         if self.num_params == 1:
             return op_label + f"\n({_format(params[0])})"
 
-        # self.num_params > 1:
         param_string = ",".join(_format(p) for p in params)
         return op_label + f"\n({param_string})"
 
