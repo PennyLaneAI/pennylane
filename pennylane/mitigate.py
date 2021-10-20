@@ -85,6 +85,12 @@ def _remove_measurements(tape):
 def add_noise_to_tape(tape, noisy_op: Operation, noisy_op_args, position: str = "all"):
     """Add noisy operations to an input tape.
 
+    The tape will be updated to have noisy gates, specified by the ``noisy_op`` argument, added
+    according to the positioning specified in the ``position`` argument.
+
+    To add noise to all tapes executed by a device, consider using the :func:`add_noise_to_device`
+    transform.
+
     Args:
         tape (QuantumTape): the input tape
         noisy_op (Operation): the noisy operation to be added at positions within the tape
@@ -105,7 +111,7 @@ def add_noise_to_tape(tape, noisy_op: Operation, noisy_op_args, position: str = 
     .. code-block:: python3
 
         with qml.tape.QuantumTape() as tape:
-            qml.RX(0.2, wires=0)
+            qml.RX(0.9, wires=0)
             qml.RY(0.4, wires=1)
             qml.CNOT(wires=[0, 1])
             qml.RZ(0.5, wires=0)
@@ -115,7 +121,7 @@ def add_noise_to_tape(tape, noisy_op: Operation, noisy_op_args, position: str = 
 
     >>> noisy_tape = add_noise_to_tape(tape, qml.AmplitudeDamping, 0.2, position="all")
     >>> print(noisy_tape.draw())
-     0: ──RX(0.2)──AmplitudeDamping(0.2)──╭C──AmplitudeDamping(0.2)──RZ(0.5)──AmplitudeDamping(0.2)──┤
+     0: ──RX(0.9)──AmplitudeDamping(0.2)──╭C──AmplitudeDamping(0.2)──RZ(0.5)──AmplitudeDamping(0.2)──┤
      1: ──RY(0.4)──AmplitudeDamping(0.2)──╰X──AmplitudeDamping(0.2)──RX(0.6)──AmplitudeDamping(0.2)──┤
     """
     from pennylane.tape import QuantumTape
@@ -125,7 +131,7 @@ def add_noise_to_tape(tape, noisy_op: Operation, noisy_op_args, position: str = 
         raise ValueError("Adding noise to the tape is only supported for single-qubit noisy operations")
     if position not in ("start", "end", "all"):
         raise ValueError("Position must be either 'start', 'end', or 'all' (default)")
-    if noisy_op.name not in __qubit_channels__:
+    if noisy_op.__name__ not in __qubit_channels__:
         raise ValueError("The noisy_op argument must be a noisy operation such as qml.AmplitudeDamping")
 
     if not isinstance(noisy_op_args, Sequence):
@@ -147,4 +153,66 @@ def add_noise_to_tape(tape, noisy_op: Operation, noisy_op_args, position: str = 
             for w in tape.wires:
                 noisy_op(*noisy_op_args, wires=w)
 
+        for m in tape.measurements:
+            m.queue()
+
     return noisy_tape
+
+
+def add_noise_to_device(dev, noisy_op: Operation, noisy_op_args, position: str = "all"):
+    """Add noise to a device.
+
+    Each circuit executed by the device will have noisy gates, specified by the ``noisy_op``
+    argument, added according to the positioning specified in the ``position`` argument. The device
+    is modified in place.
+
+    To add noise to a specific tape, consider using the :func:`add_noise_to_tape` transform.
+
+    Args:
+        dev (Device): device to be modified in place to add noise
+        noisy_op (Operation): the noisy operation to be added at positions within the tape
+        noisy_op_args (tuple or float): the arguments fed to the noisy operation or a single float
+            specifying the operation strength
+        position (str): Specification of where to add noise. Should be one of: ``"all"`` to add
+            the noisy operation after all gates; ``"start"`` to add the noisy operation to all wires
+            at the start of the circuit; ``"end"`` to add the noisy operation to all wires at the
+            end of the circuit.
+
+    **Example:**
+
+    Consider the following device:
+
+    >>> dev = qml.device("default.mixed", wires=2)
+
+    Also consider the tape:
+
+    .. code-block:: python3
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.9, wires=0)
+            qml.RY(0.4, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(0.5, wires=0)
+            qml.RX(0.6, wires=1)
+
+    We can execute the tape on the device using
+
+    >>> tape.execute(dev)
+    [0.62160997]
+
+    Noise can be added to the device using
+
+    >>> qml.mitigate.add_noise_to_device(dev, qml.AmplitudeDamping, s, position="all")
+
+    The resulting execution now gives a different result:
+
+    >>> tape.execute(dev)
+    [0.97578304]
+    """
+    original_execute = dev.execute
+
+    def execute(circuit, **kwargs):
+        noisy_circuit = add_noise_to_tape(circuit, noisy_op, noisy_op_args, position)
+        return original_execute(noisy_circuit, **kwargs)
+
+    dev.execute = execute
