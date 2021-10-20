@@ -25,6 +25,7 @@ is_composable_rotation = [
     "CRY",
     "CRZ",
     "ControlledPhaseShift",
+    "Rot"
 ]
 
 is_self_inverse = [

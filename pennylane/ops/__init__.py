@@ -33,7 +33,7 @@ from .cv import obs as _cv__obs__
 from .qubit import __all__ as _qubit__all__
 from .qubit import ops as _qubit__ops__
 from .qubit import obs as _qubit__obs__
-from .qubit import attributes as _attributes_
+from .qubit import attributes
 
 from .channel import __all__ as _channel__ops__
 
