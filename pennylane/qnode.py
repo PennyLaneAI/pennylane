@@ -58,6 +58,9 @@ class QNode:
               (floats, ints, lists) as well as NumPy array arguments,
               and returns NumPy arrays.
 
+            * ``"jax"``:  Allows JAX to backpropogate through the QNode.
+              The QNode accepts and returns a single expectation value or variance.
+
             * ``"torch"``: Allows PyTorch to backpropogate
               through the QNode. The QNode accepts and returns Torch tensors.
 
@@ -832,6 +835,12 @@ class QNode:
           a: ──╰C──RX(0.2)──┤
          -1: ───H───────────┤
         """
+        warnings.warn(
+            "The QNode.draw method has been deprecated. "
+            "Please use the qml.draw(qnode)(*args) function instead.",
+            UserWarning,
+        )
+
         if self.qtape is None:
             raise qml.QuantumFunctionError(
                 "The QNode can only be drawn after its quantum tape has been constructed."

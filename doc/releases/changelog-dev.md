@@ -4,39 +4,50 @@
 
 <h3>New features since last release</h3>
 
-A new transform, `@qml.batch_params`, has been added, that makes QNodes 
-handle a batch dimension in trainable parameters.
-[(#1710)](https://github.com/PennyLaneAI/pennylane/pull/1710)
+* Common tape expansion functions are now available in `qml.transforms`,
+  alongside a new `create_expand_fn` function for easily creating expansion functions
+  from stopping criteria.
+  [(#1734)](https://github.com/PennyLaneAI/pennylane/pull/1734)
 
-This transform will create multiple circuits, one per batch dimension.
-As a result, it is both simulator and hardware compatible.
+  `create_expand_fn` takes the default depth to which the expansion function 
+  should expand a tape, a stopping criterion, and a docstring to be set for the
+  created function.
+  The stopping criterion must take a queuable object and return a boolean.
 
-```python
-@qml.batch_params
-@qml.beta.qnode(dev)
-def circuit(x, weights):
-    qml.RX(x, wires=0)
-    qml.RY(0.2, wires=1)
-    qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
-    return qml.expval(qml.Hadamard(0))
-```
+* A new transform, `@qml.batch_params`, has been added, that makes QNodes 
+  handle a batch dimension in trainable parameters.
+  [(#1710)](https://github.com/PennyLaneAI/pennylane/pull/1710)
+  [(#1761)](https://github.com/PennyLaneAI/pennylane/pull/1761)
 
-The `qml.batch_params` decorator allows us to pass arguments `x` and `weights`
-that have a batch dimension. For example,
+  This transform will create multiple circuits, one per batch dimension.
+  As a result, it is both simulator and hardware compatible.
 
-```pycon
->>> batch_size = 3
->>> x = np.linspace(0.1, 0.5, batch_size)
->>> weights = np.random.random((batch_size, 10, 3, 3))
-```
+  ```python
+  @qml.batch_params
+  @qml.beta.qnode(dev)
+  def circuit(x, weights):
+      qml.RX(x, wires=0)
+      qml.RY(0.2, wires=1)
+      qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
+      return qml.expval(qml.Hadamard(0))
+  ```
 
-If we evaluate the QNode with these inputs, we will get an output
-of shape ``(batch_size,)``:
+  The `qml.batch_params` decorator allows us to pass arguments `x` and `weights`
+  that have a batch dimension. For example,
 
-```pycon
->>> circuit(x, weights)
-[-0.30773348  0.23135516  0.13086565]
-```
+  ```pycon
+  >>> batch_size = 3
+  >>> x = np.linspace(0.1, 0.5, batch_size)
+  >>> weights = np.random.random((batch_size, 10, 3, 3))
+  ```
+
+  If we evaluate the QNode with these inputs, we will get an output
+  of shape ``(batch_size,)``:
+
+  ```pycon
+  >>> circuit(x, weights)
+  [-0.30773348  0.23135516  0.13086565]
+  ```
 
 * The new `qml.fourier.qnode_spectrum` function extends the former
   `qml.fourier.spectrum` function
@@ -125,6 +136,7 @@ of shape ``(batch_size,)``:
   extended to the JAX interface for scalar functions, via the beta
   `pennylane.interfaces.batch` module.
   [(#1634)](https://github.com/PennyLaneAI/pennylane/pull/1634)
+  [(#1685)](https://github.com/PennyLaneAI/pennylane/pull/1685)
 
   For example using the `execute` function from the `pennylane.interfaces.batch` module:
 
@@ -356,6 +368,60 @@ of shape ``(batch_size,)``:
 
 <h3>Improvements</h3>
 
+* It is now possible to draw QNodes that have been transformed by a 'batch transform'; that is,
+  a transform that maps a single QNode into multiple circuits under the hood. Examples of
+  batch transforms include `@qml.metric_tensor` and `@qml.gradients`.
+  [(#1762)](https://github.com/PennyLaneAI/pennylane/pull/1762)
+
+  For example, consider the parameter-shift rule, which generates two circuits per parameter;
+  one circuit that has the parameter shifted forward, and another that has the parameter shifted
+  backwards:
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.gradients.param_shift
+  @qml.beta.qnode(dev)
+  def circuit(x):
+      qml.RX(x, wires=0)
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.PauliZ(wires=0))
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)(0.6))
+   0: ──RX(2.17)──╭C──┤ ⟨Z⟩
+   1: ────────────╰X──┤
+
+   0: ──RX(-0.971)──╭C──┤ ⟨Z⟩
+   1: ──────────────╰X──┤
+  ```
+
+* All qubit operations have been re-written to use the `qml.math` framework
+  for internal classical processing and the generation of their matrix representations.
+  As a result these representations are now fully differentiable, and the
+  framework-specific device classes no longer need to maintain framework-specific
+  versions of these matrices.
+  [(#1749)](https://github.com/PennyLaneAI/pennylane/pull/1749)
+
+* A new utility class `qml.BooleanFn` is introduced. It wraps a function that takes a single
+  argument and returns a Boolean.
+  [(#1734)](https://github.com/PennyLaneAI/pennylane/pull/1734)
+
+  After wrapping, `qml.BooleanFn` can be called like the wrapped function, and
+  multiple instances can be manipulated and combined with the bitwise operators
+  `&`, `|` and `~`. 
+
+* `qml.probs` now accepts an attribute `op` that allows to rotate the computational basis and get the 
+  probabilities in the rotated basis.
+  [(#1692)](https://github.com/PennyLaneAI/pennylane/pull/1692)
+  
+* The `qml.beta.QNode` now supports the `qml.qnn` module.
+  [(#1748)](https://github.com/PennyLaneAI/pennylane/pull/1748)
+
+* `@qml.beta.QNode` now supports the `qml.specs` transform.
+  [(#1739)](https://github.com/PennyLaneAI/pennylane/pull/1739)
+
 * `qml.circuit_drawer.drawable_layers` and `qml.circuit_drawer.drawable_grid` process a list of
   operations to layer positions for drawing.
   [(#1639)](https://github.com/PennyLaneAI/pennylane/pull/1639)
@@ -471,6 +537,8 @@ of shape ``(batch_size,)``:
   to execute transformed QNodes.
   [(#1708)](https://github.com/PennyLaneAI/pennylane/pull/1708)
 
+* To standardize across all optimizers, `qml.optimize.AdamOptimizer` now also uses `accumulation` (in form of `collections.namedtuple`) to keep track of running quantities. Before it used three variables `fm`, `sm` and `t`. [(#1757)](https://github.com/PennyLaneAI/pennylane/pull/1757)
+
 <h3>Breaking changes</h3>
 
 - The input signature of an `expand_fn` used in a `batch_transform`
@@ -494,10 +562,6 @@ of shape ``(batch_size,)``:
   anymore.
   [(#1705)](https://github.com/PennyLaneAI/pennylane/pull/1705)
 
-* The `QNode.metric_tensor` method has been deprecated, and will be removed in an upcoming release.
-  Please use the `qml.metric_tensor` transform instead.
-  [(#1638)](https://github.com/PennyLaneAI/pennylane/pull/1638)
-
 * The utility function `qml.math.requires_grad` now returns `True` when using Autograd
   if and only if the `requires_grad=True` attribute is set on the NumPy array. Previously,
   this function would return `True` for *all* NumPy arrays and Python floats, unless
@@ -507,6 +571,11 @@ of shape ``(batch_size,)``:
 - The operation `qml.Interferometer` has been renamed `qml.InterferometerUnitary` in order to
   distinguish it from the template `qml.templates.Interferometer`.
   [(#1714)](https://github.com/PennyLaneAI/pennylane/pull/1714)
+
+* The `qml.transforms.invisible` decorator has been replaced with `qml.tape.stop_recording`, which
+  may act as a context manager as well as a decorator to ensure that contained logic is
+  non-recordable or non-queueable within a QNode or quantum tape context.
+  [(#1754)](https://github.com/PennyLaneAI/pennylane/pull/1754)
 
 <h3>Deprecations</h3>
 
@@ -521,6 +590,14 @@ of shape ``(batch_size,)``:
   Instead, the templates' `shape` method can be used to get the desired shape of the tensor,
   which can then be generated manually.
   [(#1689)](https://github.com/PennyLaneAI/pennylane/pull/1689)
+
+* The `QNode.draw` method has been deprecated, and will be removed in an upcoming release.
+  Please use the `qml.draw` transform instead.
+  [(#1746)](https://github.com/PennyLaneAI/pennylane/pull/1746)
+  
+* The `QNode.metric_tensor` method has been deprecated, and will be removed in an upcoming release.
+  Please use the `qml.metric_tensor` transform instead.
+  [(#1638)](https://github.com/PennyLaneAI/pennylane/pull/1638)
 
 <h3>Bug fixes</h3>
 
@@ -558,10 +635,15 @@ of shape ``(batch_size,)``:
 
 * Corrects the docstring of `ExpvalCost` by adding `wires` to the signature of the `ansatz` argument. [(#1715)](https://github.com/PennyLaneAI/pennylane/pull/1715)
 
+* All instances of `qnode.draw()` have been updated to instead use the transform `qml.draw(qnode)`.
+  [(#1750)](https://github.com/PennyLaneAI/pennylane/pull/1750)
+
+* Add the `jax` interface in QNode Documentation. [(#1755)](https://github.com/PennyLaneAI/pennylane/pull/1755)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Utkarsh Azad, Akash Narayanan B, Olivia Di Matteo, Andrew Gardhouse, Josh Izaac, Christina Lee,
-Romain Moyard, Carrie-Anne Rubidge, Maria Schuld, Ingrid Strandberg, Antal Száva, Cody Wang,
-David Wierichs.
+Utkarsh Azad, Akash Narayanan B, Olivia Di Matteo, Andrew Gardhouse, David Ittah, Josh Izaac, Christina Lee,
+Romain Moyard, Carrie-Anne Rubidge, Maria Schuld, Rishabh Singh, Ingrid Strandberg, Antal Száva, Cody Wang,
+David Wierichs, Moritz Willmann.
