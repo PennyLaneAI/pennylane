@@ -80,8 +80,8 @@ class TestExceptions:
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        def cost(x, shots=dev.shots):
-            return np.sin(circuit(x, shots=shots))
+        def cost(x):
+            return np.sin(circuit(x))
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
 

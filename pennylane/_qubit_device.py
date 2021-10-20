@@ -268,7 +268,6 @@ class QubitDevice(Device):
         """
         # TODO: This method and the tests can be globally implemented by Device
         # once it has the same signature in the execute() method
-
         results = []
         for circuit in circuits:
             # we need to reset the device here, else it will
@@ -282,6 +281,7 @@ class QubitDevice(Device):
             self.tracker.update(batches=1, batch_len=len(circuits))
             self.tracker.record()
 
+        print(self._shot_vector, results)
         return results
 
     @abc.abstractmethod
