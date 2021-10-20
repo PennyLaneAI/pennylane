@@ -25,17 +25,7 @@ is_composable_rotation = [
     "CRY",
     "CRZ",
     "ControlledPhaseShift",
-    "Rot"
+    "Rot",
 ]
 
-is_self_inverse = [
-    "Hadamard",
-    "PauliX",
-    "PauliY",
-    "PauliZ",
-    "CNOT",
-    "CZ",
-    "CY",
-    "SWAP",
-    "Toffoli"
-]
+is_self_inverse = ["Hadamard", "PauliX", "PauliY", "PauliZ", "CNOT", "CZ", "CY", "SWAP", "Toffoli"]

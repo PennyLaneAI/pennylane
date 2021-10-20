@@ -96,7 +96,9 @@ def cancel_inverses(tape):
         # 3. The current gate is U and the next gate is U.inv
 
         # Case 1
-        are_self_inverses = (current_gate.name in is_self_inverse) and current_gate.name == next_gate.name
+        are_self_inverses = (
+            current_gate.name in is_self_inverse
+        ) and current_gate.name == next_gate.name
 
         # Cases 2 and 3
         are_inverses = False
