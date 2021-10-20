@@ -131,6 +131,8 @@ def generate_scf(mol, n_steps=50, tol=1e-8):
             s = generate_overlap_matrix(basis_functions)(*args)
         h_core = generate_core_matrix(basis_functions, charges, r)(*args)
 
+        s = s + anp.diag(anp.random.rand(len(s)) * 1e-10)
+
         w, v = anp.linalg.eigh(s)
         x = v @ anp.diag(anp.array([1 / anp.sqrt(i) for i in w])) @ v.T
 
