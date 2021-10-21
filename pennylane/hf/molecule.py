@@ -66,7 +66,6 @@ class Molecule:
         l=None,
         alpha=None,
         coeff=None,
-        r=None,
     ):
 
         if basis_name not in ["sto-3g", "STO-3G"]:
@@ -92,12 +91,11 @@ class Molecule:
         if coeff is None:
             coeff = [pnp.array(i[2], requires_grad=False) for i in self.basis_data]
 
-        if r is None:
-            r = list(
-                itertools.chain(
-                    *[[self.coordinates[i]] * self.n_basis[i] for i in range(len(self.n_basis))]
-                )
+        r = list(
+            itertools.chain(
+                *[[self.coordinates[i]] * self.n_basis[i] for i in range(len(self.n_basis))]
             )
+        )
 
         self.l = l
         self.alpha = alpha
