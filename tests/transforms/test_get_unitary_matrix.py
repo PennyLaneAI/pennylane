@@ -468,8 +468,7 @@ def test_get_unitary_matrix_wronglabel():
 
 def test_get_unitary_matrix_jax_differentiable():
 
-    import jax.numpy as jnp
-    from jax import grad
+    jax = pytest.importorskip("jax")
 
     def circuit(theta):
         qml.RX(theta, wires=0)
@@ -481,18 +480,20 @@ def test_get_unitary_matrix_jax_differentiable():
         U = qml.transforms.get_unitary_matrix(circuit)(theta)
         return qml.math.real(qml.math.trace(U))
 
-    x = jnp.array(0.5)
+    x = jax.numpy.array(0.5)
 
     l = loss(x)
-    dl = grad(loss)(x)
+    dl = jax.grad(loss)(x)
     matrix = qml.transforms.get_unitary_matrix(circuit)(x)
 
-    assert isinstance(matrix, jnp.ndarray)
+    assert isinstance(matrix, jax.numpy.ndarray)
     assert l == 1.9378248
     assert dl == -0.24740396
 
 def test_get_unitary_matrix_torch_differentiable():
 
+    torch = pytest.importorskip("torch")
+
     def circuit(theta):
         qml.RX(theta, wires=0)
         qml.PauliZ(wires=0)
@@ -502,7 +503,6 @@ def test_get_unitary_matrix_torch_differentiable():
         U = qml.transforms.get_unitary_matrix(circuit)(theta)
         return qml.math.real(qml.math.trace(U))
 
-    import torch
     x = torch.tensor(0.5, requires_grad=True)
     l = loss(x)
     l.backward()
@@ -515,6 +515,8 @@ def test_get_unitary_matrix_torch_differentiable():
 
 def test_get_unitary_matrix_tensorflow_differentiable():
 
+    tf = pytest.importorskip("tensorflow")
+
     def circuit(theta):
         qml.RX(theta, wires=0)
         qml.PauliZ(wires=0)
@@ -524,7 +526,6 @@ def test_get_unitary_matrix_tensorflow_differentiable():
         U = qml.transforms.get_unitary_matrix(circuit)(theta)
         return qml.math.real(qml.math.trace(U))
 
-    import tensorflow as tf
     x = tf.Variable(0.5)
     with tf.GradientTape() as tape:
         l = loss(x)
@@ -538,6 +539,8 @@ def test_get_unitary_matrix_tensorflow_differentiable():
 
 def test_get_unitary_matrix_autograd_differentiable():
 
+    from pennylane import numpy as np
+
     def circuit(theta):
         qml.RX(theta, wires=0)
         qml.PauliZ(wires=0)
@@ -548,7 +551,6 @@ def test_get_unitary_matrix_autograd_differentiable():
         U = qml.transforms.get_unitary_matrix(circuit)(theta)
         return qml.math.real(qml.math.trace(U))
 
-    from pennylane import numpy as np
     x = np.array(0.5, requires_grad=True)
     l = loss(x)
     dl = qml.grad(loss)(x)

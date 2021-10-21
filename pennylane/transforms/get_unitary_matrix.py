@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# pylint: disable=c-extension-no-member
+# need this pylint since we are using autoray implicity though qml.math
 """
 A transform to obtain the matrix representation of a quantum circuit.
 """
@@ -120,8 +123,7 @@ def get_unitary_matrix(circuit, wire_order=None):
             # reshape op.matrix
             op_matrix_interface = qml.math.convert_like(op.matrix, I)
             U_op_reshaped = qml.math.reshape(op_matrix_interface, [2] * len(op.wires) * 2)
-            I = qml.math.cast_like(I, U_op_reshaped)  # require same type as U_op_reshape for tensordot
-            U_tensordot = qml.math.tensordot(U_op_reshaped, I, axes)
+            U_tensordot = qml.math.tensordot(U_op_reshaped, qml.math.cast_like(I, U_op_reshaped), axes)
 
             unused_idxs = [idx for idx in range(n_wires) if idx not in op_wire_pos]
             # permute matrix axes to match wire ordering
