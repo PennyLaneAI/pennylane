@@ -49,10 +49,10 @@ class Attribute(set):
         if isinstance(obj, str):
             return super().__contains__(obj)
 
-        if isinstance(obj, qml.operation.Operation):
+        if isinstance(obj, qml.operation.Operator):
             return super().__contains__(obj.name)
 
-        if issubclass(obj, qml.operation.Operation):
+        if issubclass(obj, qml.operation.Operator):
             return super().__contains__(obj.__name__)
 
         return False
