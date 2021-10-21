@@ -301,7 +301,16 @@ class MPLDrawer:
         for wire, ii_label in enumerate(labels):
             self._ax.text(-1.5, wire, ii_label, **text_options)
 
-    def box_gate(self, layer, wires, text="", extra_width=0, autosize=True, box_options=None, text_options=None):
+    def box_gate(
+        self,
+        layer,
+        wires,
+        text="",
+        extra_width=0,
+        autosize=True,
+        box_options=None,
+        text_options=None,
+    ):
         """Draws a box and adds label text to its center.
 
         Args:
@@ -349,6 +358,25 @@ class MPLDrawer:
             :width: 60%
             :target: javascript:void(0);
 
+        By default, text is rotated and/or shrunk to fit within the box. This behavior can be turned off
+        with the `autosize=False` keyword.
+
+        .. code-block:: python
+
+            drawer = MPLDrawer(n_layers=4, n_wires=2)
+
+            drawer.box_gate(layer=0, wires=0, text="A longer label")
+            drawer.box_gate(layer=0, wires=1, text="Label")
+
+            drawer.box_gate(layer=1, wires=(0,1), text="long multigate label")
+
+            drawer.box_gate(layer=3, wires=(0,1), text="Not autosized label", autosize=False)
+
+        .. figure:: ../../_static/drawer/box_gates_autosized.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
         """
         if box_options is None:
             box_options = {}
@@ -369,7 +397,8 @@ class MPLDrawer:
 
         box = plt.Rectangle(
             (layer - self._box_dx - extra_width / 2, box_min - self._box_dx),
-            box_width, (box_len + 2 * self._box_dx),
+            box_width,
+            (box_len + 2 * self._box_dx),
             **box_options,
         )
         self._ax.add_patch(box)
@@ -383,11 +412,11 @@ class MPLDrawer:
 
         if autosize:
             margin = 0.1
-            max_width = box_width-margin
-            max_height = box_len + 2*self._box_dx - margin
+            max_width = box_width - margin
+            max_height = box_len + 2 * self._box_dx - 2 * margin
 
             w, h = self._text_dims(text_obj)
-            
+
             # rotate
             if box_len > 0 and (w > max_width):
                 text_obj.set_rotation(90)
@@ -404,7 +433,7 @@ class MPLDrawer:
 
     def _text_dims(self, text_obj):
         """Get width of text object in data coordinates
-        
+
         Args:
             text_obj (matplotlib.text.Text)
 
@@ -415,7 +444,7 @@ class MPLDrawer:
         bbox = text_obj.get_window_extent(renderer)
         corners = self._ax.transData.inverted().transform(bbox)
         return abs(corners[1][0] - corners[0][0]), abs(corners[0][1] - corners[1][1])
- 
+
     def ctrl(self, layer, wires, wires_target=None, control_values=None, options=None):
         """Add an arbitrary number of control wires
 

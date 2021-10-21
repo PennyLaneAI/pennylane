@@ -368,6 +368,10 @@
 
 <h3>Improvements</h3>
 
+* `qml.circuit_drawer.MPLDrawer` will now automatically rotate and resize text to fit inside
+  the rectangle in the `box_gate` method.
+  [(#1764)](https://github.com/PennyLaneAI/pennylane/pull/1764)
+
 * It is now possible to draw QNodes that have been transformed by a 'batch transform'; that is,
   a transform that maps a single QNode into multiple circuits under the hood. Examples of
   batch transforms include `@qml.metric_tensor` and `@qml.gradients`.
