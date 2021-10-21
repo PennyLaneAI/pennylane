@@ -183,7 +183,18 @@ def jacobian(func, argnum=None):
         argnum = []
 
         for idx, arg in enumerate(args):
-            if getattr(arg, "requires_grad", True):
+            trainable = getattr(arg, "requires_grad", None)
+            if trainable is None:
+
+                warnings.warn(
+                    "Starting with PennyLane v0.20.0, when using Autograd QNode inputs "
+                    "have to explicitly specify requires_grad=True to be treated as "
+                    "trainable.",
+                    UserWarning,
+                )
+                trainable = True
+
+            if trainable:
                 argnum.append(idx)
 
         if not argnum:

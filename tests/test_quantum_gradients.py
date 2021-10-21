@@ -659,8 +659,9 @@ class TestQubitGradient:
             grad_fn(1.0)
 
     def test_autograd_positional_non_trainable_warns_grad(self):
-        """Test that a warning is raised before deprecation if a positional
-        argument without the requires_grad attribute set is passed to a QNode."""
+        """Test that a warning is raised if a positional argument without the
+        requires_grad attribute set is passed when differentiating a QNode with a
+        scalar output."""
         dev = qml.device("default.qubit", wires=5)
 
         @qml.qnode(dev)
@@ -674,14 +675,15 @@ class TestQubitGradient:
             qml.grad(test)(0.3)
 
     def test_autograd_positional_non_trainable_warns_jacobian(self):
-        """Test that a warning is raised before deprecation if a positional
-        argument without the requires_grad attribute set is passed to a QNode."""
+        """Test that a warning is raised if a positional argument without the
+        requires_grad attribute set is passed when differentiating a QNode with a
+        vector output."""
         dev = qml.device("default.qubit", wires=5)
 
         @qml.qnode(dev)
         def test(x):
             qml.RY(x, wires=[0])
-            return qml.state()
+            return qml.probs(wires=[0])
 
         with pytest.warns(
             UserWarning, match="QNode inputs have to explicitly specify requires_grad=True"
