@@ -204,3 +204,62 @@ class TestNonGaussian:
         with pytest.raises(RuntimeError):
             op_ = op(*[0.1] * op.num_params, wires=range(op.num_wires))
             op_.heisenberg_tr(Wires(range(op.num_wires)))
+
+
+label_data = [
+    (cv.Rotation(1.2345, wires=0), "R", "R\n(1.23)", "R⁻¹\n(1)"),
+    (cv.Squeezing(1.234, 2.345, wires=0), "S", "S\n(1.23,2.35)", "S⁻¹\n(1,2)"),
+    (cv.Displacement(1.234, 2.345, wires=0), "D", "D\n(1.23,2.35)", "D⁻¹\n(1,2)"),
+    (cv.Beamsplitter(1.234, 2.345, wires=(0, 1)), "BS", "BS\n(1.23,2.35)", "BS⁻¹\n(1,2)"),
+    (cv.TwoModeSqueezing(1.2345, 2.3456, wires=(0, 1)), "S", "S\n(1.23,2.35)", "S⁻¹\n(1,2)"),
+    (cv.QuadraticPhase(1.2345, wires=0), "P", "P\n(1.23)", "P⁻¹\n(1)"),
+    (cv.ControlledAddition(1.234, wires=(0, 1)), "X", "X\n(1.23)", "X⁻¹\n(1)"),
+    (cv.ControlledPhase(1.2345, wires=(0, 1)), "Z", "Z\n(1.23)", "Z⁻¹\n(1)"),
+    (cv.Kerr(1.234, wires=0), "Kerr", "Kerr\n(1.23)", "Kerr⁻¹\n(1)"),
+    (cv.CrossKerr(1.234, wires=(0, 1)), "CrossKerr", "CrossKerr\n(1.23)", "CrossKerr⁻¹\n(1)"),
+    (cv.CubicPhase(1.234, wires=0), "V", "V\n(1.23)", "V⁻¹\n(1)"),
+    (cv.InterferometerUnitary(np.eye(2), wires=(0)), "U", "U", "U⁻¹"),
+    (cv.ThermalState(1.234, wires=0), "Thermal", "Thermal\n(1.23)", "Thermal⁻¹\n(1)"),
+    (
+        cv.GaussianState(np.array([[2, 0], [0, 2]]), np.array([1, 2]), wires=[1]),
+        "Gaussian",
+        "Gaussian",
+        "Gaussian⁻¹",
+    ),
+    (cv.FockState(7, wires=0), "|7⟩", "|7⟩", "|7⟩"),
+    (cv.FockStateVector([1, 2, 3], wires=(0, 1, 2)), "|123⟩", "|123⟩", "|123⟩"),
+    (cv.NumberOperator(wires=0), "n", "n", None),
+    (cv.TensorN(wires=(0, 1, 2)), "n⊗n⊗n", "n⊗n⊗n", None),
+    (cv.QuadOperator(1.234, wires=0), "cos(φ)x\n+sin(φ)p", "cos(1.23)x\n+sin(1.23)p", None),
+    (cv.FockStateProjector([1, 2, 3], wires=(0, 1, 2)), "|123⟩⟨123|", "|123⟩⟨123|", None),
+]
+
+
+label_data_base_name = [
+    (cv.FockState(7, wires=0), "name", "name\n(7)"),
+    (cv.FockStateVector([1, 2, 3], wires=(0, 1, 2)), "name", "name"),
+    (cv.TensorN(wires=(0, 1, 2)), "name", "name"),
+    (cv.QuadOperator(1.234, wires=0), "name", "name\n(1.23)"),
+    (cv.FockStateProjector([1, 2, 3], wires=(0, 1, 2)), "name", "name"),
+]
+
+
+class TestLabel:
+    @pytest.mark.parametrize("op, label1, label2, label3", label_data)
+    def test_label_method(self, op, label1, label2, label3):
+        """Tests the label method for formatting in drawings"""
+        assert op.label() == label1
+        assert op.label(decimals=2) == label2
+
+        # exclude observables
+        if label3 is not None:
+            op.inv()
+            assert op.label(decimals=0) == label3
+            op.inv()
+
+    @pytest.mark.parametrize("op, label1, label2", label_data_base_name)
+    def test_label_base_name(self, op, label1, label2):
+        """Test label method with custom base label."""
+
+        assert op.label(base_label="name") == label1
+        assert op.label(base_label="name", decimals=2) == label2

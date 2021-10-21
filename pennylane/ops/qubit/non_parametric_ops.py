@@ -48,6 +48,9 @@ class Hadamard(Observable, Operation):
     eigvals = pauli_eigs(1)
     matrix = np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
 
+    def label(self, decimals=None, base_label=None):
+        return base_label or "H"
+
     @classmethod
     def _matrix(cls, *params):
         return cls.matrix
@@ -109,6 +112,9 @@ class PauliX(Observable, Operation):
     basis = "X"
     eigvals = pauli_eigs(1)
     matrix = np.array([[0, 1], [1, 0]])
+
+    def label(self, decimals=None, base_label=None):
+        return base_label or "X"
 
     @classmethod
     def _matrix(cls, *params):
@@ -172,6 +178,9 @@ class PauliY(Observable, Operation):
     basis = "Y"
     eigvals = pauli_eigs(1)
     matrix = np.array([[0, -1j], [1j, 0]])
+
+    def label(self, decimals=None, base_label=None):
+        return base_label or "Y"
 
     @classmethod
     def _matrix(cls, *params):
@@ -241,6 +250,9 @@ class PauliZ(Observable, DiagonalOperation):
     basis = "Z"
     eigvals = pauli_eigs(1)
     matrix = np.array([[1, 0], [0, -1]])
+
+    def label(self, decimals=None, base_label=None):
+        return base_label or "Z"
 
     @classmethod
     def _matrix(cls, *params):
@@ -436,6 +448,9 @@ class CNOT(Operation):
     basis = "X"
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
+    def label(self, decimals=None, base_label=None):
+        return base_label or "⊕"
+
     @classmethod
     def _matrix(cls, *params):
         return CNOT.matrix
@@ -478,6 +493,9 @@ class CZ(DiagonalOperation):
     basis = "Z"
     eigvals = np.array([1, 1, 1, -1])
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
+
+    def label(self, decimals=None, base_label=None):
+        return base_label or "Z"
 
     @classmethod
     def _matrix(cls, *params):
@@ -528,6 +546,9 @@ class CY(Operation):
             [0, 0, 1j, 0],
         ]
     )
+
+    def label(self, decimals=None, base_label=None):
+        return base_label or "Y"
 
     @classmethod
     def _matrix(cls, *params):
@@ -735,6 +756,7 @@ class CSWAP(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_params = 0
+    is_self_inverse = True
     num_wires = 3
     par_domain = None
     matrix = np.array(
@@ -749,6 +771,9 @@ class CSWAP(Operation):
             [0, 0, 0, 0, 0, 0, 0, 1],
         ]
     )
+
+    def label(self, decimals=None, base_label=None):
+        return base_label or "SWAP"
 
     @classmethod
     def _matrix(cls, *params):
@@ -809,6 +834,9 @@ class Toffoli(Operation):
             [0, 0, 0, 0, 0, 0, 1, 0],
         ]
     )
+
+    def label(self, decimals=None, base_label=None):
+        return base_label or "⊕"
 
     @classmethod
     def _matrix(cls, *params):
@@ -897,6 +925,7 @@ class MultiControlledX(Operation):
 
     """
     num_params = 0
+    is_self_inverse = True
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
@@ -952,6 +981,9 @@ class MultiControlledX(Operation):
     @property
     def control_wires(self):
         return self._control_wires
+
+    def label(self, decimals=None, base_label=None):
+        return base_label or "⊕"
 
     @staticmethod
     def _parse_control_values(control_wires, control_values):

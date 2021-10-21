@@ -56,7 +56,6 @@ class TestDecomposition:
             weights, wires=range(qubits), init_state=init_state, include_pi=include_pi
         )
         queue = op.expand().operations
-        print(op, n_gates, queue)
 
         # number of gates
         assert len(queue) == n_gates
