@@ -59,7 +59,7 @@ class Attribute(set):
             elif issubclass(obj, qml.operation.Operator):
                 super().add(obj.__name__)
 
-        except TypeError as e:
+        except TypeError:
             raise TypeError(
                 "Only an Operator or string representing an Operator can be added to an attribute."
             )
@@ -76,11 +76,12 @@ class Attribute(set):
             if issubclass(obj, qml.operation.Operator):
                 return super().__contains__(obj.__name__)
 
-        except TypeError as e:
+        except TypeError:
             raise TypeError(
                 "Only an Operator or string representing an Operator can be checked for attribute inclusion."
             )
 
+        return False
 
 composable_rotations = Attribute(
     ["RX", "RY", "RZ", "PhaseShift", "CRX", "CRY", "CRZ", "ControlledPhaseShift", "Rot",]
