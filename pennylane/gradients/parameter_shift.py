@@ -560,10 +560,14 @@ def param_shift(
     # functionality before deprecation.
     method_map = dict(tape._choose_params_with_methods(diff_methods, argnum))
 
-    # If there are unsupported operations, call the callback gradient function
+    # If there are unsupported operations, call the fallback gradient function
     unsupported_params = {idx for idx, g in method_map.items() if g == "F"}
+    argnum = [i for i, dm in method_map.items() if dm == "A"]
 
     if unsupported_params:
+        if not argnum:
+            return fallback_fn(tape)
+
         g_tapes, fallback_proc_fn = fallback_fn(tape, argnum=unsupported_params)
         gradient_tapes.extend(g_tapes)
         fallback_len = len(g_tapes)
@@ -572,7 +576,6 @@ def param_shift(
         method_map = {t_idx: dm for t_idx, dm in method_map.items() if dm != "F"}
 
     # Generate parameter-shift gradient tapes
-    argnum = [i for i, dm in method_map.items() if dm == "A"]
 
     if gradient_recipes is None:
         gradient_recipes = [None] * len(argnum)

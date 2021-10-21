@@ -179,6 +179,11 @@ Other useful templates which do not belong to the previous categories can be fou
     :figure: ../_static/templates/subroutines/uccsd.png  
 
 .. customgalleryitem::
+    :link: ../code/api/pennylane.templates.subroutines.kUpCCGSD.html
+    :description: k-UpCCGSD
+    :figure: ../_static/templates/subroutines/kupccgsd.png  
+
+.. customgalleryitem::
     :link: ../code/api/pennylane.templates.subroutines.ArbitraryUnitary.html
     :description: ArbitraryUnitary
     :figure: ../_static/templates/subroutines/arbitraryunitary.png
