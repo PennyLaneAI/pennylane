@@ -365,6 +365,50 @@ class ResetError(Channel):
         return [K0, K1, K2, K3, K4]
 
 
+class PauliError(Channel):
+    r"""PauliError(operators, wires, p)
+    Arbitrary number qubit, arbitrary Pauli error channel.
+
+    Args:
+        operators (Sequence[str] or str): The Pauli operators acting on the specified (groups of) wires
+        wires (Sequence[int]): The wires the channel acts on
+        p (Sequence[float] or float): The probability of the operator being applied
+    """
+
+    @classmethod
+    def _kraus_matrices(cls, *params):
+        operators = params[0]
+        wires = params[1]
+        p = params[2]
+
+        # check if the specified operators are legal
+        if type(operators) == str and not all(c in "IXYZ" for c in operators):
+            raise ValueError("The specified operators need to be either of 'X', 'Y', 'Z' or 'I'")
+
+        if type(operators) == list and not all(c in "IXYZ" for c in "".join(operators)):
+            raise ValueError(
+                "The specified operators need to be combinations of 'X', 'Y', 'Z' or 'I'"
+            )
+
+        # check if the number of operators matches the number of wires
+        if type(operators) == list and (
+            len(operators) != len(wires) or any(len(o) != len(w) for o, w in zip(operators, wires))
+        ):
+            raise ValueError("The number of operators must match the number of wires")
+        
+        if type(operators) == str and len(operators) != len(wires):
+            raise ValueError("The number of operators must match the number of wires")
+
+        # check if probabilities are legal
+        if type(p) == list and not all(0.0 <= v <= 1.0 for v in p) or (not 0.0 <= p <= 1.0):
+            raise ValueError("p must be between [0,1]")
+
+        if type(p) == list and sum(p) > 1.0:
+            raise ValueError("the sum of p must not be larger than 1")
+
+        return super()._kraus_matrices(*params)
+
+
 class PhaseFlip(Channel):
     r"""PhaseFlip(p, wires)
     Single-qubit bit flip (Pauli :math:`Z`) error channel.
