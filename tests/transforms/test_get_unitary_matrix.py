@@ -520,7 +520,6 @@ def test_get_unitary_matrix_tensorflow_differentiable():
         qml.PauliZ(wires=0)
         qml.CNOT(wires=[0, 1])
 
-
     def loss(theta):
         U = qml.transforms.get_unitary_matrix(circuit)(theta)
         return qml.math.real(qml.math.trace(U))
@@ -533,8 +532,8 @@ def test_get_unitary_matrix_tensorflow_differentiable():
     matrix = qml.transforms.get_unitary_matrix(circuit)(x)
 
     assert isinstance(matrix, tf.Tensor)
-    assert round(float(l), 7) == 1.9378248
-    assert round(float(dl), 8) == -0.24740396
+    assert l == 1.9378248453140259
+    assert dl == -0.24740396440029144
 
 
 def test_get_unitary_matrix_autograd_differentiable():
@@ -556,5 +555,5 @@ def test_get_unitary_matrix_autograd_differentiable():
     matrix = qml.transforms.get_unitary_matrix(circuit)(x)
 
     assert isinstance(matrix, qml.numpy.tensor)
-    assert round(l, 7) == 1.9378248
-    assert round(dl, 8) == -0.24740396
+    assert l == 1.9378248434212895
+    assert dl == -0.24740395925452294
