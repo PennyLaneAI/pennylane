@@ -69,16 +69,14 @@ def rot_to_zxz(tape):
 
 
     >>> def circuit(angles):
-    >>>     qml.RX(angles[0],wires=0)
-    >>>     qml.RX(angles[1],wires=1)
-    >>>     qml.Rot(0.01, 0.2, 1.5,wires=0)
-    >>>     qml.Rot(1.2, 0.9, 0.7,wires=1)
-    >>>     qml.CNOT(wires=[0, 1])
-    >>>     return qml.expval(qml.PauliZ(0))
-
+    ...     qml.RX(angles[0],wires=0)
+    ...     qml.RX(angles[1],wires=1)
+    ...     qml.Rot(0.01, 0.2, 1.5,wires=0)
+    ...     qml.Rot(1.2, 0.9, 0.7,wires=1)
+    ...     qml.CNOT(wires=[0, 1])
+    ...     return qml.expval(qml.PauliZ(0))
     >>> dev = qml.device('default.qubit', wires=2)
     >>> transformed_qnode = qml.QNode(rot_to_zxz(circuit), dev)
-
     >>> grad = qml.grad(transformed_qnode, argnum=0)
     >>> print("grad:", grad([3.1, 2.7]))
     grad: [array(-0.04273676), array(-8.32667268e-17)]
