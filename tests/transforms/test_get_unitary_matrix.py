@@ -557,3 +557,4 @@ def test_get_unitary_matrix_autograd_differentiable():
     assert isinstance(matrix, qml.numpy.tensor)
     assert l == 1.9378248434212895
     assert dl == -0.24740395925452294
+
