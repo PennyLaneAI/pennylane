@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """TODO"""
+from copy import deepcopy
 from functools import wraps
 from collections.abc import Sequence
 
@@ -26,8 +27,8 @@ def mitiq_interface(fn):
     `execute_with_zne() <https://mitiq.readthedocs.io/en/stable/apidoc.html#mitiq.zne.zne.execute_with_zne>`__
     and
     `execute_with_pec() <https://mitiq.readthedocs.io/en/stable/apidoc.html#mitiq.pec.pec.execute_with_pec>`__
-    functions from ``mitiq``. As a result, the ``circuit`` argument can be a PennyLane tape which
-    includes measurements and the ``executor`` argument can be a PennyLane device.
+    functions from ``mitiq``. As a result, the ``circuit`` or ``qp`` argument can be a PennyLane
+    tape which includes measurements and the ``executor`` argument can be a PennyLane device.
 
     Args:
         fn (Callable): an ``execute_with_*`` function from the ``mitiq`` library
@@ -41,7 +42,7 @@ def mitiq_interface(fn):
     :func:`~.add_noise_to_device` transform:
 
     >>> dev = qml.device("default.mixed", wires=2)
-    >>> qml.mitigate.add_noise_to_device(dev, qml.AmplitudeDamping, 0.2, position="all")
+    >>> dev = qml.mitigate.add_noise_to_device(dev, qml.AmplitudeDamping, 0.2, position="all")
 
     Our objective is to mitigate noise from the following circuit:
 
@@ -53,12 +54,13 @@ def mitiq_interface(fn):
             qml.CNOT(wires=[0, 1])
             qml.RZ(0.5, wires=0)
             qml.RX(0.6, wires=1)
+            qml.expval(qml.PauliZ(0))
 
     This can be achieved using the ``mitiq`` library:
 
     >>> from mitiq import zne
     >>> from mitiq.zne.scaling import fold_global
-    >>> qml.mitigate.mitiq_interface(execute_with_zne)(tape, dev, scale_noise=fold_global)
+    >>> qml.mitigate.mitiq_interface(zne.execute_with_zne)(tape, dev, scale_noise=fold_global)
     0.7196657937904828
     """
     from pennylane.tape import QuantumTape
@@ -90,7 +92,8 @@ def mitiq_interface(fn):
                 for meas in tape.measurements:
                     meas.queue()
 
-            return updated_tape_with_measurements.execute(dev)[0]
+            dev.reset()
+            return dev.execute(updated_tape_with_measurements)[0]
 
         if tape_key is not None:
             kwargs[tape_key] = tape_no_measurements
@@ -158,6 +161,7 @@ def add_noise_to_tape(tape, noisy_op: Operation, noisy_op_args, position: str = 
             qml.CNOT(wires=[0, 1])
             qml.RZ(0.5, wires=0)
             qml.RX(0.6, wires=1)
+            qml.expval(qml.PauliZ(0))
 
     We can add the :class:`~.AmplitudeDamping` channel to each gate using:
 
@@ -205,8 +209,7 @@ def add_noise_to_device(dev, noisy_op: Operation, noisy_op_args, position: str =
     """Add noise to a device.
 
     Each circuit executed by the device will have noisy gates, specified by the ``noisy_op``
-    argument, added according to the positioning specified in the ``position`` argument. The device
-    is modified in place.
+    argument, added according to the positioning specified in the ``position`` argument.
 
     To add noise to a specific tape, consider using the :func:`add_noise_to_tape` transform.
 
@@ -219,6 +222,9 @@ def add_noise_to_device(dev, noisy_op: Operation, noisy_op_args, position: str =
             the noisy operation after all gates; ``"start"`` to add the noisy operation to all wires
             at the start of the circuit; ``"end"`` to add the noisy operation to all wires at the
             end of the circuit.
+
+    Returns:
+        Device: updated device with noisy executions
 
     **Example:**
 
@@ -236,6 +242,7 @@ def add_noise_to_device(dev, noisy_op: Operation, noisy_op_args, position: str =
             qml.CNOT(wires=[0, 1])
             qml.RZ(0.5, wires=0)
             qml.RX(0.6, wires=1)
+            qml.expval(qml.PauliZ(0))
 
     We can execute the tape on the device using
 
@@ -251,6 +258,7 @@ def add_noise_to_device(dev, noisy_op: Operation, noisy_op_args, position: str =
     >>> tape.execute(dev)
     [0.97578304]
     """
+    dev = deepcopy(dev)
     original_execute = dev.execute
 
     def execute(circuit, **kwargs):
@@ -258,3 +266,80 @@ def add_noise_to_device(dev, noisy_op: Operation, noisy_op_args, position: str =
         return original_execute(noisy_circuit, **kwargs)
 
     dev.execute = execute
+    return dev
+
+
+def mitigate_device(dev, method, method_kwargs):
+    """Add mitigation to a device using the `mitiq <https://github.com/unitaryfund/mitiq>`__
+    library as a backend.
+
+    Args:
+        dev (Device): the (noisy) device to be error mitigated
+        method: an ``execute_with_*`` function from the ``mitiq`` library
+        method_kwargs: keyword arguments for the ``method`` function
+
+    Returns:
+        Device: error mitigated device
+
+    **Example:**
+
+    We consider a noisy device by adding noise to ``default.mixed`` using the
+    :func:`~.add_noise_to_device` transform:
+
+    >>> dev = qml.device("default.mixed", wires=2)
+    >>> dev = qml.mitigate.add_noise_to_device(dev, qml.AmplitudeDamping, 0.2, position="all")
+
+    We can now mitigate the device using the ``mitiq`` library:
+
+    >>> from mitiq import zne
+    >>> from mitiq.zne.scaling import fold_global
+    >>> dev = qml.mitigate.mitigate_device(dev, zne.execute_with_zne, {"scale_noise": fold_global})
+
+    Once transformed, the device is compatible with the standard PennyLane workflow. Let's load a
+    QNode:
+
+    .. code-block:: python3
+
+        @qml.qnode(dev)
+        def f(w, x, y, z):
+            qml.RX(w, wires=0)
+            qml.RY(x, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(y, wires=0)
+            qml.RX(z, wires=1)
+            return qml.expval(qml.PauliZ(0))
+
+    Evaluations of the QNode will be error mitigated:
+
+    >>> f(0.9, 0.4, 0.5, 0.6)
+    tensor(0.71966579, requires_grad=True)
+
+    The gradient will also be error mitigated:
+
+    >>> qml.grad(f)(0.9, 0.4, 0.5, 0.6)
+    (array(-0.61729871), array(-4.99600361e-16), array(-2.22044605e-16), array(0.))
+    """
+    from pennylane.tape import QuantumTape
+
+    new_dev = deepcopy(dev)
+    original_execute = new_dev.execute
+
+    def execute(circuit, **kwargs):
+
+        tape_no_measurements = _remove_measurements(circuit)
+
+        def new_executor(updated_tape):
+            with QuantumTape() as updated_tape_with_measurements:
+                for op in updated_tape.operations:
+                    op.queue()
+
+                for meas in circuit.measurements:
+                    meas.queue()
+
+            dev.reset()
+            return original_execute(updated_tape_with_measurements, **kwargs)
+
+        return method(tape_no_measurements, new_executor, **method_kwargs)
+
+    new_dev.execute = execute
+    return new_dev
