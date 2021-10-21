@@ -546,7 +546,7 @@ class TestParameterShiftRule:
 
     def test_all_fallback(self, mocker, tol):
         """Test that *only* the fallback logic is called if no parameters
-        support the parameter shift rule"""
+        support the parameter-shift rule"""
         spy_fd = mocker.spy(qml.gradients, "finite_diff")
         spy_ps = mocker.spy(qml.gradients.parameter_shift, "expval_param_shift")
 

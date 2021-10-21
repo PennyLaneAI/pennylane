@@ -560,7 +560,7 @@ def param_shift(
     # functionality before deprecation.
     method_map = dict(tape._choose_params_with_methods(diff_methods, argnum))
 
-    # If there are unsupported operations, call the callback gradient function
+    # If there are unsupported operations, call the fallback gradient function
     unsupported_params = {idx for idx, g in method_map.items() if g == "F"}
     argnum = [i for i, dm in method_map.items() if dm == "A"]
 
