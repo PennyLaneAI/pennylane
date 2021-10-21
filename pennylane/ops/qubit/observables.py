@@ -56,6 +56,9 @@ class Hermitian(Observable):
     grad_method = "F"
     _eigs = {}
 
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "𝓗")
+
     @classmethod
     def _matrix(cls, *params):
         A = np.asarray(params[0])
@@ -141,6 +144,9 @@ class SparseHamiltonian(Observable):
     par_domain = None
     grad_method = None
 
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "𝓗")
+
     @classmethod
     def _matrix(cls, *params):
         A = params[0]
@@ -198,6 +204,29 @@ class Projector(Observable):
             raise ValueError(f"Basis state must only consist of 0s and 1s; got {basis_state}")
 
         super().__init__(basis_state, wires=wires, do_queue=do_queue)
+
+    def label(self, decimals=None, base_label=None):
+        r"""A customizable string representation of the operator.
+
+        Args:
+            decimals=None (int): If ``None``, no parameters are included. Else,
+                specifies how to round the parameters.
+            base_label=None (str): overwrite the non-parameter component of the label
+
+        Returns:
+            str: label to use in drawings
+
+        **Example:**
+
+        >>> qml.Projector([0, 1,0], wires=(0,1,2)).label()
+        '|010⟩⟨010|'
+
+        """
+
+        if base_label is not None:
+            return base_label
+        basis_string = "".join(str(int(i)) for i in self.parameters[0])
+        return f"|{basis_string}⟩⟨{basis_string}|"
 
     @classmethod
     def _eigvals(cls, *params):

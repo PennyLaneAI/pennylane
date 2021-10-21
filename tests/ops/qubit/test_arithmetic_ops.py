@@ -36,6 +36,20 @@ def test_adjoint_with_decomposition(op_builder):
         np.testing.assert_allclose(a.matrix, np.conj(b.matrix).T)
 
 
+label_data = [
+    (qml.QubitCarry(wires=(0, 1, 2, 3)), "QubitCarry"),
+    (qml.QubitSum(wires=(0, 1, 2)), "Σ"),
+]
+
+
+@pytest.mark.parametrize("op, label", label_data)
+def test_label(op, label):
+    assert op.label() == label
+    assert op.label(decimals=2) == label
+    op.inv()
+    assert op.label() == label + "⁻¹"
+
+
 class TestArithmetic:
     """Tests the arithmetic operations."""
 
