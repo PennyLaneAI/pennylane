@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""TODO"""
+"""This module contains functionality for error mitigation using the mitiq library as a backend."""
 from copy import deepcopy
 from functools import wraps
 from collections.abc import Sequence
