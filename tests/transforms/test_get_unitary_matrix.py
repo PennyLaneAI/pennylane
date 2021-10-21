@@ -488,6 +488,7 @@ def test_get_unitary_matrix_jax_differentiable():
     l = loss(x)
     dl = grad(loss)(x)
     matrix = qml.transforms.get_unitary_matrix(circuit)(x)
+
     assert isinstance(matrix, jnp.ndarray)
     assert l == 1.9378248
     assert dl == -0.24740396
@@ -509,6 +510,7 @@ def test_get_unitary_matrix_torch_differentiable():
     l.backward()
     dl = x.grad
     matrix = qml.transforms.get_unitary_matrix(circuit)(x)
+
     assert isinstance(matrix, torch.Tensor)
     assert l == 1.9378248
     assert dl == -0.24740396
@@ -554,6 +556,7 @@ def test_get_unitary_matrix_autograd_differentiable():
     l = loss(x)
     dl = qml.grad(loss)(x)
     matrix = qml.transforms.get_unitary_matrix(circuit)(x)
+
     assert isinstance(matrix, qml.numpy.tensor)
     assert round(l, 7) == 1.9378248
     assert round(dl, 8) == -0.24740396

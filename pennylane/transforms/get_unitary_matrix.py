@@ -30,7 +30,8 @@ def get_unitary_matrix(circuit, wire_order=None):
 
     Returns:
          function: Function which accepts the same arguments as the QNode or quantum function.
-         When called, this function will return the unitary matrix as a numpy array.
+         When called, this function will return the unitary matrix in the appropriate auto diff framework
+         (autograd, tensorflow, torch, jax) given the parameters.
 
     **Example**
 
@@ -93,6 +94,7 @@ def get_unitary_matrix(circuit, wire_order=None):
         else:
             raise ValueError("Input is not a tape, QNode, or quantum function")
 
+        # get interface of parameters to be used to construct the output matrix in same framework
         params = tape.get_parameters(trainable_only=False)
         interface = qml.math._multi_dispatch(params)
 
@@ -114,13 +116,12 @@ def get_unitary_matrix(circuit, wire_order=None):
             op_wire_pos = wire_order.indices(op.wires)
 
             I = qml.math.reshape(qml.math.eye(2 ** n_wires, like=interface), [2] * n_wires * 2)
-            axes = [tuple(range(len(op.wires), 2 * len(op.wires))), tuple(op_wire_pos)]
-            # axes = (qml.math.arange(len(op.wires), 2 * len(op.wires), like=interface), op_wire_pos)
+            axes = [list(range(len(op.wires), 2 * len(op.wires))), op_wire_pos]
 
             # reshape op.matrix
             op_matrix_interface = qml.math.convert_like(op.matrix, I)
             U_op_reshaped = qml.math.reshape(op_matrix_interface, [2] * len(op.wires) * 2)
-            I = qml.math.cast_like(I, U_op_reshaped)
+            I = qml.math.cast_like(I, U_op_reshaped)  # require same type as U_op_reshape for tensordot
             U_tensordot = qml.math.tensordot(U_op_reshaped, I, axes)
 
             unused_idxs = [idx for idx in range(n_wires) if idx not in op_wire_pos]
