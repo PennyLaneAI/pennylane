@@ -587,15 +587,24 @@ class ThermalRelaxationError(Channel):
             K5 = np.sqrt(pr1) * np.array([[0, 0], [0, 1]])
             return [K0, K1, K2, K3, K4, K5]
         else:
-            choi_matrix = np.array([[1 - pe * p_reset, 0, 0, eT2],
-                                    [0, pe * p_reset, 0, 0],
-                                    [0, 0, (1 - pe) * p_reset, 0],
-                                    [eT2, 0, 0, 1 - (1 - pe) * p_reset]])
-            eig, eig_vec = np.linalg.eigh(choi_matrix, UPLO="U")
-            K = []
-            for i in range(len(choi_matrix)):
-                K.append((np.sqrt(eig[i]) * eig_vec[:,i]).reshape(2, 2, order="F"))
-            return K
+            e0 = p_reset * pe
+            v0 = np.array([[0], [1], [0], [0]])
+            K0 = np.sqrt(e0) * v0.reshape(2, 2, order="F")
+            e1 = -p_reset * pe + p_reset
+            v1 = np.array([[0], [0], [1], [0]])
+            K1 = np.sqrt(e1) * v1.reshape(2, 2, order="F")
+            common_term = np.sqrt(
+                4 * eT2 ** 2 + 4 * p_reset ** 2 * pe ** 2 - 4 * p_reset ** 2 * pe + p_reset ** 2
+            )
+            e2 = 1 - p_reset / 2 - common_term / 2
+            term2 = 2 * eT2 / (2 * p_reset * pe - p_reset - common_term)
+            v2 = np.array([[term2], [0], [0], [1]]) / np.sqrt(term2 ** 2 + 1 ** 2)
+            K2 = np.sqrt(e2) * v2.reshape(2, 2, order="F")
+            term3 = 2 * eT2 / (2 * p_reset * pe - p_reset + common_term)
+            e3 = 1 - p_reset / 2 + common_term / 2
+            v3 = np.array([[term3], [0], [0], [1]]) / np.sqrt(term3 ** 2 + 1 ** 2)
+            K3 = np.sqrt(e3) * v3.reshape(2, 2, order="F")
+            return [K0, K1, K2, K3]
 
 
 __qubit_channels__ = {
