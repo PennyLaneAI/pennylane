@@ -18,7 +18,7 @@ from pennylane.wires import Wires
 from pennylane.transforms import qfunc_transform
 
 from pennylane.ops.qubit.attributes import (
-    self_inverse,
+    self_inverses,
     symmetric_over_all_wires,
     symmetric_over_control_wires,
 )
@@ -101,7 +101,7 @@ def cancel_inverses(tape):
 
         # Case 1
         are_self_inverses = (
-            current_gate in self_inverse
+            current_gate in self_inverses
         ) and current_gate.name == next_gate.name
 
         # Cases 2 and 3

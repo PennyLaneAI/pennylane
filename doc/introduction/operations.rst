@@ -217,28 +217,6 @@ Qubit observables
 
 :html:`</div>`
 
-Operation attributes
-^^^^^^^^^^^^^^^^^^^^
-
-PennyLane contains a mechanism for storing lists of operations with similar
-attributes and behaviour (for example, which operators are their own inverses).
-The attributes below are already included, and are used primarily for the
-purpose of compilation transforms.
-
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.ops.qubit.attributes.Attribute
-    ~pennylane.ops.qubit.attributes.is_composable_rotation
-    ~pennylane.ops.qubit.attributes.is_self_inverse
-    ~pennylane.ops.qubit.attributes.is_symmetric_over_all_wires
-    ~pennylane.ops.qubit.attributes.is_symmetric_over_control_wires
-
-:html:`</div>`
-    
 Grouping Pauli words
 ^^^^^^^^^^^^^^^^^^^^
 

@@ -85,6 +85,24 @@ negative shift:
 
 i.e., so that :math:`[c_0, a_0, s_0]=[1/2, 1, \pi/2]` and :math:`[c_1, a_1, s_1]=[-1/2, 1, -\pi/2]`.
 
+Operation attributes
+^^^^^^^^^^^^^^^^^^^^
+
+PennyLane contains a mechanism for storing lists of operations with similar
+attributes and behaviour (for example, those that are their own inverses).
+The attributes below are already included, and are used primarily for the
+purpose of compilation transforms. New attributes can be added by instantiating
+new `.qubit.Attribute` objects.
+
+.. autosummary::
+    :toctree: api
+
+    ~pennylane.ops.qubit.attributes.Attribute
+    ~pennylane.ops.qubit.attributes.composable_rotations
+    ~pennylane.ops.qubit.attributes.self_inverses
+    ~pennylane.ops.qubit.attributes.symmetric_over_all_wires
+    ~pennylane.ops.qubit.attributes.symmetric_over_control_wires
+
 CV Operation base classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 

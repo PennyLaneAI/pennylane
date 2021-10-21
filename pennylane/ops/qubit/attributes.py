@@ -24,24 +24,24 @@ class Attribute(set):
     **Example**
 
     Suppose we would like to store a list of which qubit operations are
-    Pauli operators. We can create a new Attribute, ``is_pauli``, like so,
+    Pauli operators. We can create a new Attribute, ``pauli_ops``, like so,
     listing which operations satisfy this property.
 
-    >>> is_pauli = Attribute(["PauliX", "PauliZ"])
+    >>> pauli_ops = Attribute(["PauliX", "PauliZ"])
 
     We can check either a string or an Operation for inclusion in this set:
 
-    >>> qml.PauliX(0) in is_pauli
+    >>> qml.PauliX(0) in pauli_ops
     True
-    >>> "Hadamard" in is_pauli
+    >>> "Hadamard" in pauli_ops
     False
 
     We can also dynamically add operators to the sets at runtime. This is useful
-    for adding custom operations to the attributes such as ``is_composable_rotation``
-    and ``is_self_inverse`` that are used in compilation transforms.
+    for adding custom operations to the attributes such as ``composable_rotations``
+    and ``self_inverses`` that are used in compilation transforms.
 
-    >>> is_pauli.add("PauliY")
-    >>> is_pauli
+    >>> pauli_ops.add("PauliY")
+    >>> pauli_ops
     ["PauliX", "PauliY", "PauliZ"]
     """
 
@@ -58,7 +58,7 @@ class Attribute(set):
         return False
 
 
-composable_rotation = Attribute(
+composable_rotations = Attribute(
     [
         "RX",
         "RY",
@@ -80,7 +80,7 @@ a single rotation ``qml.RZ(0.3, wires=0)``.
 """
 
 
-self_inverse = Attribute(
+self_inverses = Attribute(
     ["Hadamard", "PauliX", "PauliY", "PauliZ", "CNOT", "CZ", "CY", "SWAP", "Toffoli"]
 )
 """Operations that are their own inverses."""
