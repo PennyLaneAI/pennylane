@@ -174,7 +174,7 @@ def add_noise_to_tape(tape, noisy_op: Operation, noisy_op_args, position: str = 
     from pennylane.tape import QuantumTape
     from pennylane.ops.channel import __qubit_channels__
 
-    if noisy_op.num_wires > 1:
+    if noisy_op.num_wires != 1:
         raise ValueError("Adding noise to the tape is only supported for single-qubit noisy operations")
     if position not in ("start", "end", "all"):
         raise ValueError("Position must be either 'start', 'end', or 'all' (default)")
