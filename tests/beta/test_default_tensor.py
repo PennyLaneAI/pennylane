@@ -1177,7 +1177,7 @@ class TestDefaultTensorIntegration:
 
         assert dev.supports_operation(name)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method=None)
         def circuit():
             qml.QubitStateVector(np.array([1 / 2, 0, 0, math.sqrt(3) / 2]), wires=Wires([0, 1]))
             op(*par, wires=Wires([0, 1]))

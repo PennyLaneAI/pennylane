@@ -200,9 +200,10 @@ class Hamiltonian(Observable):
         if simplify:
             self.simplify()
         if grouping_type is not None:
-            self._grouping_indices = qml.transforms.invisible(_compute_grouping_indices)(
-                self.ops, grouping_type=grouping_type, method=method
-            )
+            with qml.tape.stop_recording():
+                self._grouping_indices = _compute_grouping_indices(
+                    self.ops, grouping_type=grouping_type, method=method
+                )
 
         coeffs_flat = [self._coeffs[i] for i in range(qml.math.shape(self._coeffs)[0])]
         # overwrite this attribute, now that we have the correct info
@@ -212,6 +213,9 @@ class Hamiltonian(Observable):
         # this causes H.data to be a list of tensor scalars,
         # while H.coeffs is the original tensor
         super().__init__(*coeffs_flat, wires=self._wires, id=id, do_queue=do_queue)
+
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "𝓗")
 
     @property
     def coeffs(self):
@@ -312,9 +316,10 @@ class Hamiltonian(Observable):
                 can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First).
         """
 
-        self._grouping_indices = qml.transforms.invisible(_compute_grouping_indices)(
-            self.ops, grouping_type=grouping_type, method=method
-        )
+        with qml.tape.stop_recording():
+            self._grouping_indices = _compute_grouping_indices(
+                self.ops, grouping_type=grouping_type, method=method
+            )
 
     def simplify(self):
         r"""Simplifies the Hamiltonian by combining like-terms.

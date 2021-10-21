@@ -544,6 +544,43 @@ class TestParameterShiftRule:
         assert np.allclose(jac[0, 0, 0], -np.cos(x), atol=tol, rtol=0)
         assert np.allclose(jac[1, 1, 1], -2 * np.cos(2 * y), atol=tol, rtol=0)
 
+    def test_all_fallback(self, mocker, tol):
+        """Test that *only* the fallback logic is called if no parameters
+        support the parameter-shift rule"""
+        spy_fd = mocker.spy(qml.gradients, "finite_diff")
+        spy_ps = mocker.spy(qml.gradients.parameter_shift, "expval_param_shift")
+
+        dev = qml.device("default.qubit.autograd", wires=2)
+        x = 0.543
+        y = -0.654
+
+        params = np.array([x, y], requires_grad=True)
+
+        class RY(qml.RY):
+            grad_method = "F"
+
+        class RX(qml.RX):
+            grad_method = "F"
+
+        with qml.tape.JacobianTape() as tape:
+            RX(x, wires=[0])
+            RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        tapes, fn = param_shift(tape, fallback_fn=qml.gradients.finite_diff)
+        assert len(tapes) == 1 + 2
+
+        # check that the fallback method was called for all argnums
+        spy_fd.assert_called()
+        spy_ps.assert_not_called()
+
+        res = fn(dev.batch_execute(tapes))
+        assert res.shape == (1, 2)
+
+        expected = np.array([[-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]])
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
     def test_single_expectation_value(self, tol):
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
@@ -905,7 +942,7 @@ class TestParamShiftGradients:
         torch = pytest.importorskip("torch")
         from pennylane.interfaces.torch import TorchInterface
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.torch", wires=2)
         params = torch.tensor([0.543, -0.654], dtype=torch.float64, requires_grad=True)
 
         with TorchInterface.apply(qml.tape.QubitParamShiftTape()) as tape:
@@ -915,7 +952,7 @@ class TestParamShiftGradients:
             qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
         tapes, fn = qml.gradients.param_shift(tape)
-        jac = fn([t.execute(dev) for t in tapes])
+        jac = fn(dev.batch_execute(tapes))
         cost = jac[0, 0]
         cost.backward()
         hess = params.grad
@@ -938,7 +975,7 @@ class TestParamShiftGradients:
 
         config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.jax", wires=2)
         params = jnp.array([0.543, -0.654])
 
         def cost_fn(x):
@@ -950,7 +987,7 @@ class TestParamShiftGradients:
 
             tape.trainable_params = {0, 1}
             tapes, fn = qml.gradients.param_shift(tape)
-            jac = fn([t.execute(dev) for t in tapes])
+            jac = fn(dev.batch_execute(tapes))
             return jac
 
         res = jax.jacobian(cost_fn)(params)
