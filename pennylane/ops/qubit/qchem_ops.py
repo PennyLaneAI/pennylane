@@ -111,6 +111,9 @@ class SingleExcitation(Operation):
         (phi,) = self.parameters
         return SingleExcitation(-phi, wires=self.wires)
 
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "G")
+
 
 class SingleExcitationMinus(Operation):
     r"""SingleExcitationMinus(phi, wires)
@@ -183,6 +186,9 @@ class SingleExcitationMinus(Operation):
         (phi,) = self.parameters
         return SingleExcitationMinus(-phi, wires=self.wires)
 
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "G₋")
+
 
 class SingleExcitationPlus(Operation):
     r"""SingleExcitationPlus(phi, wires)
@@ -254,6 +260,9 @@ class SingleExcitationPlus(Operation):
     def adjoint(self):
         (phi,) = self.parameters
         return SingleExcitationPlus(-phi, wires=self.wires)
+
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "G₊")
 
 
 class DoubleExcitation(Operation):
@@ -384,6 +393,9 @@ class DoubleExcitation(Operation):
         (theta,) = self.parameters
         return DoubleExcitation(-theta, wires=self.wires)
 
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "G²")
+
 
 class DoubleExcitationPlus(Operation):
     r"""DoubleExcitationPlus(phi, wires)
@@ -467,6 +479,9 @@ class DoubleExcitationPlus(Operation):
         (theta,) = self.parameters
         return DoubleExcitationPlus(-theta, wires=self.wires)
 
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "G²₊")
+
 
 class DoubleExcitationMinus(Operation):
     r"""DoubleExcitationMinus(phi, wires)
@@ -549,6 +564,9 @@ class DoubleExcitationMinus(Operation):
     def adjoint(self):
         (theta,) = self.parameters
         return DoubleExcitationMinus(-theta, wires=self.wires)
+
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "G²₋")
 
 
 class OrbitalRotation(Operation):

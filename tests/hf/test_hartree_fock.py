@@ -92,11 +92,10 @@ def test_hf_energy(symbols, geometry, charge, e_ref):
 
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "r", "g_ref"),
+    ("symbols", "geometry", "g_ref"),
     [
         (
             ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
             # HF gradient computed with pyscf using rhf.nuc_grad_method().kernel()
             np.array([[0.0, 0.0, 0.3650435], [0.0, 0.0, -0.3650435]]),
@@ -120,14 +119,12 @@ def test_hf_energy(symbols, geometry, charge, e_ref):
         ),
     ],
 )
-def test_hf_energy_gradient(symbols, geometry, r, g_ref):
+def test_hf_energy_gradient(symbols, geometry, g_ref):
     r"""Test that the gradient of the Hartree-Fock energy wrt differentiable parameters is
     correct."""
-    mol = Molecule(symbols, geometry, r=r)
-    args = [mol.coordinates, mol.r]
-    g_c = autograd.grad(hf_energy(mol), argnum=0)(*args)
-    g_r = autograd.grad(hf_energy(mol), argnum=1)(*args)
-    g = g_c + g_r
+    mol = Molecule(symbols, geometry)
+    args = [mol.coordinates]
+    g = autograd.grad(hf_energy(mol), argnum=0)(*args)
 
     assert np.allclose(g, g_ref)
 

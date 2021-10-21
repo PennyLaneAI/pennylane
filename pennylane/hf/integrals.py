@@ -188,9 +188,9 @@ def expansion(la, lb, ra, rb, alpha, beta, t):
     >>> c
     array([1.])
     """
-    p = alpha + beta
-    q = alpha * beta / p
-    r = ra - rb
+    p = anp.array(alpha + beta)
+    q = anp.array(alpha * beta / p)
+    r = anp.array(ra - rb)
 
     if la == lb == t == 0:
         return anp.exp(-q * r ** 2)
