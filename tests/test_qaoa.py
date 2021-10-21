@@ -14,13 +14,18 @@
 """
 Unit tests for the :mod:`pennylane.qaoa` submodule.
 """
+from networkx.algorithms.similarity import graph_edit_distance
 import pytest
 import itertools
 import numpy as np
+
 import networkx as nx
+from networkx import Graph
+import retworkx as rx
+
 import pennylane as qml
 from pennylane import qaoa
-from networkx import Graph
+
 from pennylane.qaoa.cycle import (
     edges_to_wires,
     wires_to_edges,
@@ -43,20 +48,42 @@ graph = Graph()
 graph.add_nodes_from([0, 1, 2])
 graph.add_edges_from([(0, 1), (1, 2)])
 
+graph_rx = rx.PyGraph()
+graph_rx.add_nodes_from([0, 1, 2])
+graph_rx.add_edges_from([(0, 1, ''), (1, 2, '')])
+
 non_consecutive_graph = Graph([(0, 4), (3, 4), (2, 1), (2, 0)])
+
+non_consecutive_graph_rx = rx.PyGraph()
+non_consecutive_graph_rx.add_nodes_from([0, 1, 2, 3, 4])
+non_consecutive_graph_rx.add_edges_from([(0, 4, ''), (0, 2, ''), (4, 3, ''), (2, 1, '')])
 
 digraph_complete = nx.complete_graph(3).to_directed()
 complete_edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(digraph_complete.edges)}
 for k, v in complete_edge_weight_data.items():
     digraph_complete[k[0]][k[1]]["weight"] = v
 
+digraph_complete_rx = rx.generators.directed_mesh_graph(3)
+for k, v in complete_edge_weight_data.items():
+    digraph_complete_rx.update_edge(k[0], k[1], {"weight": v})
+
+g1 = Graph([(0, 1), (1, 2)])
+
+g1_rx = rx.PyGraph()
+g1_rx.add_nodes_from([0, 1, 2])
+g1_rx.add_edges_from([(0, 1, ''), (1, 2, '')])
+
+g2 = nx.Graph([(0, 1), (1, 2), (2, 3)])
+
+g2_rx = rx.PyGraph()
+g2_rx.add_nodes_from([0,1,2,3])
+g2_rx.add_edges_from([(0, 1, ''), (1, 2, ''), (2, 3, '')])
 
 def decompose_hamiltonian(hamiltonian):
 
     coeffs = list(qml.math.toarray(hamiltonian.coeffs))
     ops = [i.name for i in hamiltonian.ops]
     wires = [i.wires for i in hamiltonian.ops]
-
     return [coeffs, ops, wires]
 
 
@@ -139,7 +166,7 @@ class TestMixerHamiltonians:
         ("graph", "target_hamiltonian"),
         [
             (
-                Graph([(0, 1), (1, 2), (2, 3)]),
+                g2,
                 qml.Hamiltonian(
                     [0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
                     [
@@ -180,6 +207,48 @@ class TestMixerHamiltonians:
             ),
             (
                 non_consecutive_graph,
+                qml.Hamiltonian(
+                    [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
+                    [
+                        qml.PauliX(0) @ qml.PauliX(4),
+                        qml.PauliY(0) @ qml.PauliY(4),
+                        qml.PauliX(0) @ qml.PauliX(2),
+                        qml.PauliY(0) @ qml.PauliY(2),
+                        qml.PauliX(4) @ qml.PauliX(3),
+                        qml.PauliY(4) @ qml.PauliY(3),
+                        qml.PauliX(2) @ qml.PauliX(1),
+                        qml.PauliY(2) @ qml.PauliY(1),
+                    ],
+                ),
+            ),
+            (
+                g2_rx,
+                qml.Hamiltonian(
+                    [0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
+                    [
+                        qml.PauliX(0) @ qml.PauliX(1),
+                        qml.PauliY(0) @ qml.PauliY(1),
+                        qml.PauliX(1) @ qml.PauliX(2),
+                        qml.PauliY(1) @ qml.PauliY(2),
+                        qml.PauliX(2) @ qml.PauliX(3),
+                        qml.PauliY(2) @ qml.PauliY(3),
+                    ],
+                ),
+            ),
+            (
+                graph_rx,
+                qml.Hamiltonian(
+                    [0.5, 0.5, 0.5, 0.5],
+                    [
+                        qml.PauliX(0) @ qml.PauliX(1),
+                        qml.PauliY(0) @ qml.PauliY(1),
+                        qml.PauliX(1) @ qml.PauliX(2),
+                        qml.PauliY(1) @ qml.PauliY(2),
+                    ],
+                ),
+            ),
+            (
+                non_consecutive_graph_rx,
                 qml.Hamiltonian(
                     [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
                     [
@@ -241,7 +310,7 @@ class TestMixerHamiltonians:
                 ),
             ),
             (
-                Graph([(0, 1), (1, 2)]),
+                g1,
                 0,
                 qml.Hamiltonian(
                     [0.5, 0.5, 0.25, 0.25, 0.25, 0.25, 0.5, 0.5],
@@ -290,12 +359,13 @@ class TestMixerHamiltonians:
 """GENERATES CASES TO TEST THE MAXCUT PROBLEM"""
 
 GRAPHS = [
-    Graph([(0, 1), (1, 2)]),
+    g1,
     Graph((np.array([0, 1]), np.array([1, 2]), np.array([0, 2]))),
     graph,
+    g1_rx,
 ]
 
-COST_COEFFS = [[0.5, 0.5, -1.0], [0.5, 0.5, 0.5, -1.5], [0.5, 0.5, -1.0]]
+COST_COEFFS = [[0.5, 0.5, -1.0], [0.5, 0.5, 0.5, -1.5], [0.5, 0.5, -1.0], [0.5, 0.5, -1.0]]
 
 COST_TERMS = [
     [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(1) @ qml.PauliZ(2), qml.Identity(0)],
@@ -306,27 +376,29 @@ COST_TERMS = [
         qml.Identity(0),
     ],
     [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(1) @ qml.PauliZ(2), qml.Identity(0)],
+    [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(1) @ qml.PauliZ(2), qml.Identity(0)],
 ]
 
-COST_HAMILTONIANS = [qml.Hamiltonian(COST_COEFFS[i], COST_TERMS[i]) for i in range(3)]
+COST_HAMILTONIANS = [qml.Hamiltonian(COST_COEFFS[i], COST_TERMS[i]) for i in range(4)]
 
-MIXER_COEFFS = [[1, 1, 1], [1, 1, 1], [1, 1, 1]]
+MIXER_COEFFS = [[1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1]]
 
 MIXER_TERMS = [
     [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)],
     [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)],
     [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)],
+    [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)],
 ]
 
-MIXER_HAMILTONIANS = [qml.Hamiltonian(MIXER_COEFFS[i], MIXER_TERMS[i]) for i in range(3)]
+MIXER_HAMILTONIANS = [qml.Hamiltonian(MIXER_COEFFS[i], MIXER_TERMS[i]) for i in range(4)]
 
 MAXCUT = list(zip(GRAPHS, COST_HAMILTONIANS, MIXER_HAMILTONIANS))
 
 """GENERATES THE CASES TO TEST THE MAX INDEPENDENT SET PROBLEM"""
 
-CONSTRAINED = [True, True, False]
+CONSTRAINED = [True, True, False, True]
 
-COST_COEFFS = [[1, 1, 1], [1, 1, 1], [0.75, 0.25, -0.5, 0.75, 0.25]]
+COST_COEFFS = [[1, 1, 1], [1, 1, 1], [0.75, 0.25, -0.5, 0.75, 0.25], [1, 1, 1]]
 
 COST_TERMS = [
     [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
@@ -338,14 +410,16 @@ COST_TERMS = [
         qml.PauliZ(1) @ qml.PauliZ(2),
         qml.PauliZ(2),
     ],
+    [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
 ]
 
-COST_HAMILTONIANS = [qml.Hamiltonian(COST_COEFFS[i], COST_TERMS[i]) for i in range(3)]
+COST_HAMILTONIANS = [qml.Hamiltonian(COST_COEFFS[i], COST_TERMS[i]) for i in range(4)]
 
 MIXER_COEFFS = [
     [0.5, 0.5, 0.25, 0.25, 0.25, 0.25, 0.5, 0.5],
     [0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25],
     [1, 1, 1],
+    [0.5, 0.5, 0.25, 0.25, 0.25, 0.25, 0.5, 0.5],
 ]
 
 MIXER_TERMS = [
@@ -374,15 +448,25 @@ MIXER_TERMS = [
         qml.PauliX(2) @ qml.PauliZ(1) @ qml.PauliZ(0),
     ],
     [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)],
+    [
+        qml.PauliX(0),
+        qml.PauliX(0) @ qml.PauliZ(1),
+        qml.PauliX(1),
+        qml.PauliX(1) @ qml.PauliZ(0),
+        qml.PauliX(1) @ qml.PauliZ(2),
+        qml.PauliX(1) @ qml.PauliZ(2) @ qml.PauliZ(0),
+        qml.PauliX(2),
+        qml.PauliX(2) @ qml.PauliZ(1),
+    ],
 ]
 
-MIXER_HAMILTONIANS = [qml.Hamiltonian(MIXER_COEFFS[i], MIXER_TERMS[i]) for i in range(3)]
+MIXER_HAMILTONIANS = [qml.Hamiltonian(MIXER_COEFFS[i], MIXER_TERMS[i]) for i in range(4)]
 
 MIS = list(zip(GRAPHS, CONSTRAINED, COST_HAMILTONIANS, MIXER_HAMILTONIANS))
 
 """GENERATES THE CASES TO TEST THE MIN VERTEX COVER PROBLEM"""
 
-COST_COEFFS = [[-1, -1, -1], [-1, -1, -1], [0.75, -0.25, 0.5, 0.75, -0.25]]
+COST_COEFFS = [[-1, -1, -1], [-1, -1, -1], [0.75, -0.25, 0.5, 0.75, -0.25], [-1, -1, -1]]
 
 COST_TERMS = [
     [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
@@ -394,33 +478,36 @@ COST_TERMS = [
         qml.PauliZ(1) @ qml.PauliZ(2),
         qml.PauliZ(2),
     ],
+    [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
 ]
 
-COST_HAMILTONIANS = [qml.Hamiltonian(COST_COEFFS[i], COST_TERMS[i]) for i in range(3)]
+COST_HAMILTONIANS = [qml.Hamiltonian(COST_COEFFS[i], COST_TERMS[i]) for i in range(4)]
 
 MIXER_COEFFS = [
     [0.5, -0.5, 0.25, -0.25, -0.25, 0.25, 0.5, -0.5],
     [0.25, -0.25, -0.25, 0.25, 0.25, -0.25, -0.25, 0.25, 0.25, -0.25, -0.25, 0.25],
     [1, 1, 1],
+    [0.5, -0.5, 0.25, -0.25, -0.25, 0.25, 0.5, -0.5],
 ]
 
-MIXER_HAMILTONIANS = [qml.Hamiltonian(MIXER_COEFFS[i], MIXER_TERMS[i]) for i in range(3)]
+MIXER_HAMILTONIANS = [qml.Hamiltonian(MIXER_COEFFS[i], MIXER_TERMS[i]) for i in range(4)]
 
 MVC = list(zip(GRAPHS, CONSTRAINED, COST_HAMILTONIANS, MIXER_HAMILTONIANS))
 
 """GENERATES THE CASES TO TEST THE MAXCLIQUE PROBLEM"""
 
-COST_COEFFS = [[1, 1, 1], [1, 1, 1], [0.75, 0.25, 0.25, 1]]
+COST_COEFFS = [[1, 1, 1], [1, 1, 1], [0.75, 0.25, 0.25, 1], [1, 1, 1]]
 
 COST_TERMS = [
     [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
     [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
     [qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(0), qml.PauliZ(2), qml.PauliZ(1)],
+    [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
 ]
 
-COST_HAMILTONIANS = [qml.Hamiltonian(COST_COEFFS[i], COST_TERMS[i]) for i in range(3)]
+COST_HAMILTONIANS = [qml.Hamiltonian(COST_COEFFS[i], COST_TERMS[i]) for i in range(4)]
 
-MIXER_COEFFS = [[0.5, 0.5, 1.0, 0.5, 0.5], [1.0, 1.0, 1.0], [1, 1, 1]]
+MIXER_COEFFS = [[0.5, 0.5, 1.0, 0.5, 0.5], [1.0, 1.0, 1.0], [1, 1, 1], [0.5, 0.5, 1.0, 0.5, 0.5]]
 
 MIXER_TERMS = [
     [
@@ -432,14 +519,21 @@ MIXER_TERMS = [
     ],
     [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)],
     [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)],
+    [
+        qml.PauliX(0),
+        qml.PauliX(0) @ qml.PauliZ(2),
+        qml.PauliX(1),
+        qml.PauliX(2),
+        qml.PauliX(2) @ qml.PauliZ(0),
+    ],
 ]
 
-MIXER_HAMILTONIANS = [qml.Hamiltonian(MIXER_COEFFS[i], MIXER_TERMS[i]) for i in range(3)]
+MIXER_HAMILTONIANS = [qml.Hamiltonian(MIXER_COEFFS[i], MIXER_TERMS[i]) for i in range(4)]
 
 MAXCLIQUE = list(zip(GRAPHS, CONSTRAINED, COST_HAMILTONIANS, MIXER_HAMILTONIANS))
 
 """GENERATES CASES TO TEST EDGE DRIVER COST HAMILTONIAN"""
-
+GRAPHS.pop()
 GRAPHS.append(graph)
 GRAPHS.append(Graph([("b", 1), (1, 2.3)]))
 REWARDS = [["00"], ["00", "11"], ["00", "01", "10"], ["00", "11", "01", "10"], ["00", "01", "10"]]
@@ -670,13 +764,13 @@ class TestCostHamiltonians:
         with pytest.raises(
             ValueError, match=r"Encountered invalid entry in 'reward', expected 2-bit bitstrings."
         ):
-            qaoa.edge_driver(Graph([(0, 1), (1, 2)]), ["10", "11", 21, "g"])
+            qaoa.edge_driver(g1, ["10", "11", 21, "g"])
 
         with pytest.raises(
             ValueError,
             match=r"'reward' cannot contain either '10' or '01', must contain neither or both.",
         ):
-            qaoa.edge_driver(Graph([(0, 1), (1, 2)]), ["11", "00", "01"])
+            qaoa.edge_driver(g1, ["11", "00", "01"])
 
         with pytest.raises(ValueError, match=r"Input graph must be a nx.Graph or rx.PyGraph"):
             qaoa.edge_driver([(0, 1), (1, 2)], ["00", "11"])
