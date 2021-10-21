@@ -67,7 +67,6 @@ def rot_to_zxz(tape):
     We can also differentiate when the input parameters are not used in the
     "Rot":
 
-    .. code-block:: python3
 
     >>> def circuit(angles):
     >>>     qml.RX(angles[0],wires=0)
