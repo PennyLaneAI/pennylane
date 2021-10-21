@@ -368,6 +368,9 @@
 
 <h3>Improvements</h3>
 
+* Templates are now top level imported and can be used directly e.g. `qml.QFT(wires=0)`.
+  [(#1779)](https://github.com/PennyLaneAI/pennylane/pull/1779)
+
 * It is now possible to draw QNodes that have been transformed by a 'batch transform'; that is,
   a transform that maps a single QNode into multiple circuits under the hood. Examples of
   batch transforms include `@qml.metric_tensor` and `@qml.gradients`.
@@ -540,9 +543,6 @@
 * To standardize across all optimizers, `qml.optimize.AdamOptimizer` now also uses `accumulation` (in form of `collections.namedtuple`) to keep track of running quantities. Before it used three variables `fm`, `sm` and `t`. [(#1757)](https://github.com/PennyLaneAI/pennylane/pull/1757)
 
 <h3>Breaking changes</h3>
-
-- Templates are now top level imported and can be used directly e.g. `qml.QFT(wires=0)`.
-  [(#1779)](https://github.com/PennyLaneAI/pennylane/pull/1779)
 
 - The input signature of an `expand_fn` used in a `batch_transform`
   now **must** have the same signature as the provided `transform_fn`,

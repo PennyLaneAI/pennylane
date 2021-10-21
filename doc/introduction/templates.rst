@@ -340,13 +340,6 @@ data structures than functions, since they can define properties and methods of 
 recipes or matrix representations). Consult the :ref:`Contributing templates<contributing_templates>`
 page to learn how to code up your own template class, and how to add it to the PennyLane template library.
 
-The template decorator can used to register a quantum function as a template.
-
-.. autosummary::
-    :toctree:
-
-    pennylane.templates.template
-
 Layering Function
 -----------------
 
@@ -358,18 +351,3 @@ gates to a set of wires. You can import this function both via
 
     pennylane.layer
 
-Utility functions for input checks
-----------------------------------
-
-.. automodapi:: pennylane.templates.utils
-    :no-heading:
-    :include-all-objects:
-
-Utility functions for quantum Monte Carlo
------------------------------------------
-
-Functions
-^^^^^^^^^
-
-.. automodsumm:: pennylane.templates.subroutines.qmc
-    :functions-only:
