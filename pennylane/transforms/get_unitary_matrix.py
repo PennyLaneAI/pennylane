@@ -111,12 +111,11 @@ def get_unitary_matrix(circuit, wire_order=None):
         unitary_matrix = qml.math.eye(2 ** n_wires, like=interface)
 
         for op in tape.operations:
-            # return op.matrix
             # operator wire position relative to wire ordering
             op_wire_pos = wire_order.indices(op.wires)
 
             I = qml.math.reshape(qml.math.eye(2 ** n_wires, like=interface), [2] * n_wires * 2)
-            axes = [list(range(len(op.wires), 2 * len(op.wires))), op_wire_pos]
+            axes = (list(range(len(op.wires), 2 * len(op.wires))), op_wire_pos)
 
             # reshape op.matrix
             op_matrix_interface = qml.math.convert_like(op.matrix, I)
