@@ -226,6 +226,9 @@ class PhaseShift(DiagonalOperation):
     generator = [np.array([[0, 0], [0, 1]]), 1]
     has_unitary_generator = False
 
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "Rϕ")
+
     @classmethod
     def _matrix(cls, *params):
         phi = params[0]
@@ -296,6 +299,9 @@ class ControlledPhaseShift(DiagonalOperation):
     grad_method = "A"
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), 1]
     has_unitary_generator = False
+
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "Rϕ")
 
     @classmethod
     def _matrix(cls, *params):
@@ -589,6 +595,39 @@ class PauliRot(Operation):
                 )
             )
 
+    def label(self, decimals=None, base_label=None):
+        r"""A customizable string representation of the operator.
+
+        Args:
+            decimals=None (int): If ``None``, no parameters are included. Else,
+                specifies how to round the parameters.
+            base_label=None (str): overwrite the non-parameter component of the label
+
+        Returns:
+            str: label to use in drawings
+
+        **Example:**
+
+        >>> op = qml.PauliRot(0.1, "XYY", wires=(0,1,2))
+        >>> op.label()
+        'R(XYY)'
+        >>> op.label(decimals=2)
+        'R(XYY)\n(0.10)'
+        >>> op.label(base_label="PauliRot")
+        'PauliRot\n(0.10)'
+
+        """
+        op_label = base_label or ("R(" + self.parameters[1] + ")")
+
+        if self.inverse:
+            op_label += "⁻¹"
+
+        if decimals is not None:
+            param_string = f"\n({qml.math.asarray(self.parameters[0]):.{decimals}f})"
+            op_label += param_string
+
+        return op_label
+
     @staticmethod
     def _check_pauli_word(pauli_word):
         """Check that the given Pauli word has correct structure.
@@ -793,6 +832,9 @@ class CRX(Operation):
     ]
     has_unitary_generator = False
 
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "RX")
+
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
@@ -880,6 +922,9 @@ class CRY(Operation):
     ]
     has_unitary_generator = False
 
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "RY")
+
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
@@ -961,6 +1006,9 @@ class CRZ(DiagonalOperation):
         -1 / 2,
     ]
     has_unitary_generator = False
+
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "RZ")
 
     @classmethod
     def _matrix(cls, *params):
@@ -1044,6 +1092,9 @@ class CRot(Operation):
     par_domain = "R"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe * 3
+
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "Rot")
 
     @classmethod
     def _matrix(cls, *params):
