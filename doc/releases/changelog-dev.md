@@ -4,9 +4,9 @@
 
 <h3>New features since last release</h3>
 
-* A new transform, rot_to_zxz, has been added that transforms all the instances
-of "Rot" gates into sequences [RZ,RX,RZ].
-(issue #1747)
+* A new transform, `qml.transforms.rot_to_zxz`, has been added that transforms all
+  `qml.Rot` single-qubit rotation gates into the sequence `[RZ,RX,RZ]`.
+  [(#1772)](https://github.com/PennyLaneAI/pennylane/pull/1772)
 
 * A new transform, `@qml.batch_params`, has been added, that makes QNodes 
 handle a batch dimension in trainable parameters.
