@@ -92,7 +92,7 @@ PennyLane contains a mechanism for storing lists of operations with similar
 attributes and behaviour (for example, those that are their own inverses).
 The attributes below are already included, and are used primarily for the
 purpose of compilation transforms. New attributes can be added by instantiating
-new `.qubit.Attribute` objects.
+new :class:`~pennylane.ops.qubit.attributes.Attribute` objects.
 
 .. autosummary::
     :toctree: api

@@ -15,6 +15,7 @@
 This file contains a number of attributes that may be held by operators,
 and lists all operators satisfying those criteria.
 """
+from inspect import isclass
 import pennylane as qml
 
 
@@ -36,40 +37,53 @@ class Attribute(set):
     >>> "Hadamard" in pauli_ops
     False
 
-    We can also dynamically add operators to the sets at runtime. This is useful
-    for adding custom operations to the attributes such as ``composable_rotations``
-    and ``self_inverses`` that are used in compilation transforms.
+    We can also dynamically add operators to the sets at runtime, by passing
+    either a string, an operation class, or an operation itself. This is useful
+    for adding custom operations to the attributes such as
+    ``composable_rotations`` and ``self_inverses`` that are used in compilation
+    transforms.
 
     >>> pauli_ops.add("PauliY")
     >>> pauli_ops
     ["PauliX", "PauliY", "PauliZ"]
     """
 
+    def add(self, obj):
+        try:
+            if isinstance(obj, str):
+                super().add(obj)
+
+            elif isinstance(obj, qml.operation.Operator):
+                super().add(obj.name)
+
+            elif issubclass(obj, qml.operation.Operator):
+                super().add(obj.__name__)
+
+        except TypeError as e:
+            raise TypeError(
+                "Only an Operator or string representing an Operator can be added to an attribute."
+            )
+
     def __contains__(self, obj):
+        """Check if the attribute contains a given operator."""
         if isinstance(obj, str):
             return super().__contains__(obj)
 
-        if isinstance(obj, qml.operation.Operator):
-            return super().__contains__(obj.name)
+        try:
+            if isinstance(obj, qml.operation.Operator):
+                return super().__contains__(obj.name)
 
-        if issubclass(obj, qml.operation.Operator):
-            return super().__contains__(obj.__name__)
+            if issubclass(obj, qml.operation.Operator):
+                return super().__contains__(obj.__name__)
 
-        return False
+        except TypeError as e:
+            raise TypeError(
+                "Only an Operator or string representing an Operator can be checked for attribute inclusion."
+            )
 
 
 composable_rotations = Attribute(
-    [
-        "RX",
-        "RY",
-        "RZ",
-        "PhaseShift",
-        "CRX",
-        "CRY",
-        "CRZ",
-        "ControlledPhaseShift",
-        "Rot",
-    ]
+    ["RX", "RY", "RZ", "PhaseShift", "CRX", "CRY", "CRZ", "ControlledPhaseShift", "Rot",]
 )
 """Operations for which composing multiple copies of the operation results in an
 addition (or alternative accumulation) of parameters.
@@ -85,12 +99,7 @@ self_inverses = Attribute(
 )
 """Operations that are their own inverses."""
 
-symmetric_over_all_wires = Attribute(
-    [
-        "CZ",
-        "SWAP",
-    ]
-)
+symmetric_over_all_wires = Attribute(["CZ", "SWAP",])
 """Operations that are the same if you exchange the order of wires.
 
 For example, ``qml.CZ(wires=[0, 1])`` has the same effect as ``qml.CZ(wires=[1,
