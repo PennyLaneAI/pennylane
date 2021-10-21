@@ -636,6 +636,7 @@ class TestValidation:
         warnings = {(warning.category, warning.message.args[0]) for warning in warning_list}
         assert warnings == expected_warnings
 
+
 class TestTapeConstruction:
     """Tests for the tape construction"""
 

@@ -121,6 +121,7 @@ class TestGradientMultiVar:
         ):
             qml.jacobian(np.sin)(arr)
 
+
 class TestGradientMultiargs:
     """Tests gradients of univariate functions with multiple arguments in signature."""
 

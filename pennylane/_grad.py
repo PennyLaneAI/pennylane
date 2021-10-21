@@ -14,16 +14,16 @@
 """
 This module contains the autograd wrappers :class:`grad` and :func:`jacobian`
 """
+import warnings
+from functools import partial
+
 import numpy as onp
+from autograd import jacobian as _jacobian
+from autograd.core import make_vjp as _make_vjp
+from autograd.extend import vspace
+from autograd.wrap_util import unary_to_nary
 
 from pennylane import numpy as np
-from functools import partial
-import warnings
-
-from autograd.core import make_vjp as _make_vjp
-from autograd.wrap_util import unary_to_nary
-from autograd.extend import vspace
-from autograd import jacobian as _jacobian
 
 make_vjp = unary_to_nary(_make_vjp)
 

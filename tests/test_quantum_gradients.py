@@ -690,6 +690,7 @@ class TestQubitGradient:
         ):
             qml.jacobian(test)(0.3)
 
+
 class TestFourTermParameterShifts:
     """Tests for quantum gradients that require a 4-term shift formula"""
 
