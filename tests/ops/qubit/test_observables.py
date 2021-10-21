@@ -374,3 +374,17 @@ def test_identity_eigvals(tol):
     res = qml.Identity._eigvals()
     expected = np.array([1, 1])
     assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
+label_data = [
+    (qml.Hermitian(np.eye(2), wires=1), "𝓗"),
+    (qml.Identity(wires=0), "I"),
+    (qml.Projector([1, 0, 1], wires=(0, 1, 2)), "|101⟩⟨101|"),
+]
+
+
+@pytest.mark.parametrize("op, label", label_data)
+def test_label_method(op, label):
+    assert op.label() == label
+    assert op.label(decimals=5) == label
+    assert op.label(base_label="obs") == "obs"
