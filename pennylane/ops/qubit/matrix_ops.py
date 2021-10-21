@@ -100,6 +100,9 @@ class QubitUnitary(Operation):
     def _controlled(self, wire):
         ControlledQubitUnitary(*self.parameters, control_wires=wire, wires=self.wires)
 
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "U")
+
 
 class ControlledQubitUnitary(QubitUnitary):
     r"""ControlledQubitUnitary(U, control_wires, wires, control_values)
@@ -279,3 +282,6 @@ class DiagonalQubitUnitary(DiagonalOperation):
             qml.math.concatenate([np.array([1, 1]), self.parameters[0]]),
             wires=Wires(control) + self.wires,
         )
+
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "U")
