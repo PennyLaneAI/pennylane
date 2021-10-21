@@ -95,7 +95,6 @@ def get_unitary_matrix(circuit, wire_order=None):
 
         params = tape.get_parameters(trainable_only=False)
         interface = qml.math._multi_dispatch(params)
-        print(interface)
 
         # if no wire ordering is specified, take wire list from tape
         wire_order = tape.wires if wires is None else Wires(wires)
@@ -119,9 +118,10 @@ def get_unitary_matrix(circuit, wire_order=None):
                 # axes = (qml.math.arange(len(op.wires), 2 * len(op.wires), like=interface), op_wire_pos)
 
                 # reshape op.matrix
-                op_matrix_interface = qml.math.convert_like(op.matrix, I)
+                # op_matrix_interface = qml.math.convert_like(op.matrix, I)
+                op_matrix_interface = op.matrix
                 U_op_reshaped = qml.math.reshape(op_matrix_interface, [2] * len(op.wires) * 2)
-                I = qml.math.cast_like(I, U_op_reshaped)
+                # I = qml.math.cast_like(I, U_op_reshaped)
                 U_tensordot = qml.math.tensordot(U_op_reshaped, I, axes)
 
                 unused_idxs = [idx for idx in range(n_wires) if idx not in op_wire_pos]
@@ -133,7 +133,6 @@ def get_unitary_matrix(circuit, wire_order=None):
 
                 # add to total matrix if there are multiple ops
                 unitary_matrix = qml.math.dot(U, unitary_matrix)
-                print("updated")
 
         return unitary_matrix
 
@@ -170,21 +169,76 @@ if __name__ == "__main__":
     # print(ok)
 
 
-    import torch
-    print(qml.__version__)
-    dev = qml.device("default.qubit", wires=1)
-    @qml.qnode(dev, interface="torch")
+    # import torch
+    # print(qml.__version__)
+    # dev = qml.device("default.qubit", wires=1)
+    # @qml.qnode(dev, interface="torch")
+    # def circuit(theta):
+    #     qml.RX(theta[0], wires=0)
+    #     qml.RY(theta[1], wires=0)
+    #     return qml.expval(qml.PauliZ(0))
+    #
+    # def loss(theta):
+    #     U = qml.transforms.get_unitary_matrix(circuit)(theta)
+    #     return qml.math.real(qml.math.trace(U))
+    #
+    # params = torch.tensor([0.0, 1.0], requires_grad=True)
+    # out = loss(params)
+    # print(out)
+    # # out.backward()
+    # # print(params.grad)
+
+    dev = qml.device("default.qubit", wires=2)
     def circuit(theta):
-        qml.RX(theta[0], wires=0)
-        qml.RY(theta[1], wires=0)
-        return qml.expval(qml.PauliZ(0))
+        qml.RX(theta, wires=0)
+        qml.PauliZ(wires=0)
+        qml.CNOT(wires=[0, 1])
+
 
     def loss(theta):
         U = qml.transforms.get_unitary_matrix(circuit)(theta)
         return qml.math.real(qml.math.trace(U))
 
-    params = torch.tensor([0.0, 1.0], requires_grad=True)
-    out = loss(params)
-    print(out)
-    # out.backward()
-    # print(params.grad)
+
+
+    # Test Jax
+    print("testing jax---------------")
+    import jax.numpy as jnp
+    from jax import grad
+    x = jnp.array(0.5)
+    print(loss(x))
+    print(grad(loss)(x))
+    print("testing jax----------------")
+
+
+    # Test Autograd
+    print("testing autograd----------------")
+    from pennylane import numpy as np
+    x = np.array(0.5, requires_grad=True)
+    print(loss(x))
+    print(qml.grad(loss)(x))
+    print("finished testing autograd-----------------")
+
+    # Test Torch
+    print("testing torch---------------")
+    import torch
+    x = torch.tensor(0.5, requires_grad=True)
+    l = loss(x)
+    print(l)
+    l.backward()
+    print(x.grad)
+    print("finished testing torch ----------------")
+
+
+    # Test TensorFlow
+    print("testing tensorflow --------------------")
+    import tensorflow as tf
+    from types import float64, float32
+    x = tf.Variable(0.5)
+    with tf.GradientTape() as tape:
+        l = loss(x)
+    print(l)
+    # tf.Tensor(1.9378248453140259, shape=(), dtype=float64)
+    print(tape.gradient(l, x))
+    # tf.Tensor(-0.24740396, shape=(), dtype=float32)
+    print("finished testing tensorflow --------------------")
