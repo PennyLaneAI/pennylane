@@ -15,6 +15,8 @@
 Unit tests for the get_unitary_matrix transform
 """
 from functools import reduce
+
+import jax.interpreters.xla
 import pytest
 from pennylane import numpy as np
 from gate_data import I, X, Y, Z, H, S, CNOT
@@ -465,3 +467,93 @@ def test_get_unitary_matrix_wronglabel():
         ValueError, match="Wires in circuit are inconsistent with those in wire_order"
     ):
         matrix = get_matrix()
+
+def test_get_unitary_matrix_jax_differentiable():
+
+    import jax.numpy as jnp
+    from jax import grad
+
+    def circuit(theta):
+        qml.RX(theta, wires=0)
+        qml.PauliZ(wires=0)
+        qml.CNOT(wires=[0, 1])
+
+
+    def loss(theta):
+        U = qml.transforms.get_unitary_matrix(circuit)(theta)
+        return qml.math.real(qml.math.trace(U))
+
+    x = jnp.array(0.5)
+
+    l = loss(x)
+    dl = grad(loss)(x)
+    matrix = qml.transforms.get_unitary_matrix(circuit)(x)
+    assert isinstance(matrix, jnp.ndarray)
+    assert l == 1.9378248
+    assert dl == -0.24740396
+
+def test_get_unitary_matrix_torch_differentiable():
+
+    def circuit(theta):
+        qml.RX(theta, wires=0)
+        qml.PauliZ(wires=0)
+        qml.CNOT(wires=[0, 1])
+
+    def loss(theta):
+        U = qml.transforms.get_unitary_matrix(circuit)(theta)
+        return qml.math.real(qml.math.trace(U))
+
+    import torch
+    x = torch.tensor(0.5, requires_grad=True)
+    l = loss(x)
+    l.backward()
+    dl = x.grad
+    matrix = qml.transforms.get_unitary_matrix(circuit)(x)
+    assert isinstance(matrix, torch.Tensor)
+    assert l == 1.9378248
+    assert dl == -0.24740396
+
+def test_get_unitary_matrix_tensorflow_differentiable():
+
+    def circuit(theta):
+        qml.RX(theta, wires=0)
+        qml.PauliZ(wires=0)
+        qml.CNOT(wires=[0, 1])
+
+
+    def loss(theta):
+        U = qml.transforms.get_unitary_matrix(circuit)(theta)
+        return qml.math.real(qml.math.trace(U))
+
+    import tensorflow as tf
+    x = tf.Variable(0.5)
+    with tf.GradientTape() as tape:
+        l = loss(x)
+    dl = tape.gradient(l, x)
+    matrix = qml.transforms.get_unitary_matrix(circuit)(x)
+
+    assert isinstance(matrix, tf.Tensor)
+    assert round(float(l), 7) == 1.9378248
+    assert round(float(dl), 8) == -0.24740396
+
+
+def test_get_unitary_matrix_autograd_differentiable():
+
+    def circuit(theta):
+        qml.RX(theta, wires=0)
+        qml.PauliZ(wires=0)
+        qml.CNOT(wires=[0, 1])
+
+
+    def loss(theta):
+        U = qml.transforms.get_unitary_matrix(circuit)(theta)
+        return qml.math.real(qml.math.trace(U))
+
+    from pennylane import numpy as np
+    x = np.array(0.5, requires_grad=True)
+    l = loss(x)
+    dl = qml.grad(loss)(x)
+    matrix = qml.transforms.get_unitary_matrix(circuit)(x)
+    assert isinstance(matrix, qml.numpy.tensor)
+    assert round(l, 7) == 1.9378248
+    assert round(dl, 8) == -0.24740396
