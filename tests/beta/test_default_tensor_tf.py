@@ -524,8 +524,8 @@ class TestJacobianIntegration:
         dev1 = qml.device("default.tensor.tf", wires=3, representation=rep)
         dev2 = qml.device("default.qubit", wires=3)
 
-        circuit1 = qml.QNode(circuit, dev1, diff_method=diff_method, h=1e-7, interface="tf")
-        circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift", h=1e-7, interface="tf")
+        circuit1 = qml.QNode(circuit, dev1, diff_method=diff_method, interface="tf")
+        circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift", interface="tf")
 
         with tf.GradientTape() as tape1:
             res1 = circuit1(p)
