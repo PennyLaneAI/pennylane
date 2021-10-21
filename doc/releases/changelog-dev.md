@@ -368,6 +368,10 @@
 
 <h3>Improvements</h3>
 
+* Operators now have a `label` method to determine how they are drawn.  This will
+  eventually override the `RepresentationResolver` class.
+  [(#1678)](https://github.com/PennyLaneAI/pennylane/pull/1678)
+
 * It is now possible to draw QNodes that have been transformed by a 'batch transform'; that is,
   a transform that maps a single QNode into multiple circuits under the hood. Examples of
   batch transforms include `@qml.metric_tensor` and `@qml.gradients`.
@@ -631,6 +635,10 @@
 * Fixes a bug where gradient transforms would fail to apply to QNodes
   containing classical processing.
   [(#1699)](https://github.com/PennyLaneAI/pennylane/pull/1699)
+
+* Fixes a bug where the the parameter-shift method was not correctly using the
+  fallback gradient function when *all* circuit parameters required the fallback.
+  [(#1782)](https://github.com/PennyLaneAI/pennylane/pull/1782)
 
 <h3>Documentation</h3>
 
