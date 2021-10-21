@@ -542,8 +542,8 @@ class TestAutosize:
         drawer.box_gate(0, (0, 1), text="very very long text", autosize=False)
 
         t = drawer.ax.texts[0]
-        assert t.get_fontsize() == 14
         assert t.get_rotation() == 0
+        assert t.get_fontsize() == 14
 
         plt.close()
 
@@ -554,8 +554,15 @@ class TestAutosize:
         drawer.box_gate(0, 0, text="very very long text", autosize=True)
 
         t = drawer.ax.texts[0]
-        assert t.get_fontsize() == 5.0
         assert t.get_rotation() == 0
+
+        rect = drawer.ax.patches[0]
+        r = drawer.fig.canvas.get_renderer()
+        
+        tbbox = t.get_window_extent(r)
+        rbbox = rect.get_window_extent(r)
+
+        assert all(rbbox.contains(*p) for p in tbbox.corners())
 
         plt.close()
 
@@ -566,8 +573,15 @@ class TestAutosize:
         drawer.box_gate(0, (0, 1), text="very very long text", autosize=True)
 
         t = drawer.ax.texts[0]
-        assert t.get_fontsize() == 12.0
         assert t.get_rotation() == 90.0
+
+        rect = drawer.ax.patches[0]
+        r = drawer.fig.canvas.get_renderer()
+        
+        tbbox = t.get_window_extent(r)
+        rbbox = rect.get_window_extent(r)
+
+        assert all(rbbox.contains(*p) for p in tbbox.corners())
 
         plt.close()
 
@@ -578,8 +592,16 @@ class TestAutosize:
         drawer.box_gate(0, 0, text="text\nwith\nall\nthe\nlines\nyep", autosize=True)
 
         t = drawer.ax.texts[0]
-        assert t.get_fontsize() == 8.0
         assert t.get_rotation() == 0.0
+
+        rect = drawer.ax.patches[0]
+        r = drawer.fig.canvas.get_renderer()
+        
+        tbbox = t.get_window_extent(r)
+        rbbox = rect.get_window_extent(r)
+
+        assert all(rbbox.contains(*p) for p in tbbox.corners())
+
         plt.close()
 
     def text_tall_multitline_text_multiwires(self):
@@ -594,8 +616,15 @@ class TestAutosize:
         )
 
         t = drawer.ax.texts[0]
-        assert t.get_fontsize() == 8.0
         assert t.get_rotation() == 0.0
+
+        rect = drawer.ax.patches[0]
+        r = drawer.fig.canvas.get_renderer()
+        
+        tbbox = t.get_window_extent(r)
+        rbbox = rect.get_window_extent(r)
+
+        assert all(rbbox.contains(*p) for p in tbbox.corners())
 
         plt.close()
 
@@ -606,8 +635,15 @@ class TestAutosize:
         drawer.box_gate(0, (0, 1), text="very very long text\nall\nthe\nlines\nyep", autosize=True)
 
         t = drawer.ax.texts[0]
-        assert t.get_fontsize() == 8.0
         assert t.get_rotation() == 90.0
+
+        rect = drawer.ax.patches[0]
+        r = drawer.fig.canvas.get_renderer()
+        
+        tbbox = t.get_window_extent(r)
+        rbbox = rect.get_window_extent(r)
+
+        assert all(rbbox.contains(*p) for p in tbbox.corners())
 
         plt.close()
 
