@@ -15,8 +15,6 @@
 Unit tests for the get_unitary_matrix transform
 """
 from functools import reduce
-
-import jax.interpreters.xla
 import pytest
 from pennylane import numpy as np
 from gate_data import I, X, Y, Z, H, S, CNOT

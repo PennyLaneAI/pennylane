@@ -31,7 +31,7 @@ def get_unitary_matrix(circuit, wire_order=None):
     Returns:
          function: Function which accepts the same arguments as the QNode or quantum function.
          When called, this function will return the unitary matrix in the appropriate auto diff framework
-         (autograd, tensorflow, torch, jax) given the parameters.
+         (autograd, tensorflow, torch, jax) given it's parameters.
 
     **Example**
 
@@ -96,7 +96,7 @@ def get_unitary_matrix(circuit, wire_order=None):
 
         # get interface of parameters to be used to construct the output matrix in same framework
         params = tape.get_parameters(trainable_only=False)
-        interface = qml.math._multi_dispatch(params)
+        interface = qml.math._multi_dispatch(params)  # pylint: disable=protected-access
 
         # if no wire ordering is specified, take wire list from tape
         wire_order = tape.wires if wires is None else Wires(wires)
