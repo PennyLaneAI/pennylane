@@ -365,6 +365,25 @@
 
   For more details, see the [GateFabric documentation](../code/api/pennylane.templates.layers.GateFabric.html).
 
+* Added a new template `kUpCCGSD`, which implements a unitary coupled cluster ansatz with
+  generalized singles and pair doubles excitation operators, proposed by Joonho Lee *et al.*
+  in [arXiv:1810.02327](https://arxiv.org/abs/1810.02327).
+
+  An example of a circuit using `kUpCCGSD` template is:
+
+  ```python
+  coordinates = np.array([0.0, 0.0, -0.6614, 0.0, 0.0, 0.6614])
+  H, qubits = qml.qchem.molecular_hamiltonian(["H", "H"], coordinates)
+  ref_state = qml.qchem.hf_state(electrons=2, qubits)
+  
+  dev = qml.device('default.qubit', wires=qubits)
+  @qml.qnode(dev)
+  def ansatz(weights):
+      qml.templates.kUpCCGSD(weights, wires=[0,1,2,3], k=0, delta_sz=0,
+                                  init_state=ref_state)
+      return qml.expval(H)
+  ```
+  
 
 <h3>Improvements</h3>
 
