@@ -58,7 +58,7 @@ class Attribute(set):
         return False
 
 
-is_composable_rotation = Attribute(
+composable_rotation = Attribute(
     [
         "RX",
         "RY",
@@ -80,12 +80,12 @@ a single rotation ``qml.RZ(0.3, wires=0)``.
 """
 
 
-is_self_inverse = Attribute(
+self_inverse = Attribute(
     ["Hadamard", "PauliX", "PauliY", "PauliZ", "CNOT", "CZ", "CY", "SWAP", "Toffoli"]
 )
 """Operations that are their own inverses."""
 
-is_symmetric_over_all_wires = Attribute(
+symmetric_over_all_wires = Attribute(
     [
         "CZ",
         "SWAP",
@@ -97,7 +97,7 @@ For example, ``qml.CZ(wires=[0, 1])`` has the same effect as ``qml.CZ(wires=[1,
 0])`` due to symmetry of the operation.
 """
 
-is_symmetric_over_control_wires = Attribute(["Toffoli"])
+symmetric_over_control_wires = Attribute(["Toffoli"])
 """Controlled operations that are the same if you exchange the order of all but
 the last (target) wire.
 
