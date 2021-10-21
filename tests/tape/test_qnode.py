@@ -636,22 +636,6 @@ class TestValidation:
         warnings = {(warning.category, warning.message.args[0]) for warning in warning_list}
         assert warnings == expected_warnings
 
-    def test_autograd_positional_non_trainable_warns(self):
-        """Test that a warning is raised before deprecation if a positional
-        argument without the requires_grad attribute set is passed to a QNode."""
-        dev = qml.device("default.qubit", wires=5)
-
-        @qml.qnode(dev)
-        def test(x):
-            qml.RY(x, wires=[0])
-            return qml.state()
-
-        with pytest.warns(
-            UserWarning, match="QNode inputs have to explicitly specify requires_grad=True"
-        ):
-            test(0.3)
-
-
 class TestTapeConstruction:
     """Tests for the tape construction"""
 

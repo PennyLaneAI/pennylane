@@ -566,30 +566,6 @@ class QNode:
     def construct(self, args, kwargs):
         """Call the quantum function with a tape context, ensuring the operations get queued."""
 
-        if self.interface == "autograd":
-            # HOTFIX: to maintain compatibility with core, here we treat
-            # all inputs that do not explicitly specify `requires_grad=False`
-            # as trainable. This should be removed at some point, forcing users
-            # to specify `requires_grad=True` for trainable parameters.
-            new_args = []
-            need_to_warn = False
-            for a in args:
-                if not hasattr(a, "requires_grad"):
-                    new_args.append(anp.array(a, requires_grad=True))
-                    need_to_warn = True
-                else:
-                    new_args.append(a)
-
-            if need_to_warn:
-                warnings.warn(
-                    "Starting with PennyLane v0.20.0, when using Autograd QNode inputs "
-                    "have to explicitly specify requires_grad=True to be treated as "
-                    "trainable.",
-                    UserWarning,
-                )
-
-            args = new_args
-
         self.qtape = self._tape()
 
         with self.qtape:

@@ -658,6 +658,35 @@ class TestQubitGradient:
             grad_fn = autograd.jacobian(circuit)
             grad_fn(1.0)
 
+    def test_autograd_positional_non_trainable_warns_grad(self):
+        """Test that a warning is raised before deprecation if a positional
+        argument without the requires_grad attribute set is passed to a QNode."""
+        dev = qml.device("default.qubit", wires=5)
+
+        @qml.qnode(dev)
+        def test(x):
+            qml.RY(x, wires=[0])
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.warns(
+            UserWarning, match="QNode inputs have to explicitly specify requires_grad=True"
+        ):
+            qml.grad(test)(0.3)
+
+    def test_autograd_positional_non_trainable_warns_jacobian(self):
+        """Test that a warning is raised before deprecation if a positional
+        argument without the requires_grad attribute set is passed to a QNode."""
+        dev = qml.device("default.qubit", wires=5)
+
+        @qml.qnode(dev)
+        def test(x):
+            qml.RY(x, wires=[0])
+            return qml.state()
+
+        with pytest.warns(
+            UserWarning, match="QNode inputs have to explicitly specify requires_grad=True"
+        ):
+            qml.jacobian(test)(0.3)
 
 class TestFourTermParameterShifts:
     """Tests for quantum gradients that require a 4-term shift formula"""
