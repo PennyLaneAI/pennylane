@@ -3,7 +3,6 @@ A transform for decomposing "Rot" gates into [RZ, RX, RZ] sequence.
 """
 import pennylane as qml
 from pennylane.numpy import pi
-from pennylane.transforms import qfunc_transform
 
 
 @qml.qfunc_transform
