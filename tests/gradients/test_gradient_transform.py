@@ -94,7 +94,7 @@ class TestGradientTransformIntegration:
         spy = mocker.spy(qml.gradients.parameter_shift, "expval_param_shift")
 
         class NonDiffRXGate(qml.PhaseShift):
-            grad_method = "F"
+            grad_method = None
 
             @staticmethod
             def decomposition(x, wires):
