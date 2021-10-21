@@ -2173,10 +2173,11 @@ class TestInverseDecomposition:
         expected = np.array([1.0, -1.0j]) / np.sqrt(2)
         assert np.allclose(dev.state, expected, atol=tol, rtol=0)
 
-    def test_inverse_S_decomposition(self, tol, monkeypatch):
+    def test_inverse_S_decomposition(self, tol, mocker, monkeypatch):
         """Test that applying the inverse of the S gate
         works when the inverse S gate is decomposed"""
         dev = qml.device("default.qubit", wires=1)
+        spy = mocker.spy(dev, "execute")
 
         patched_operations = dev.operations.copy()
         patched_operations.remove("S")
@@ -2189,7 +2190,7 @@ class TestInverseDecomposition:
             return qml.probs(wires=0)
 
         test_s()
-        operations = test_s.qtape.operations
+        operations = spy.call_args[0][0].operations
         assert "S" not in [i.name for i in operations]
         assert "PhaseShift" in [i.name for i in operations]
 
@@ -2203,7 +2204,7 @@ class TestInverseDecomposition:
             return qml.probs(wires=0)
 
         test_s_inverse()
-        operations = test_s_inverse.qtape.operations
+        operations = spy.call_args[0][0].operations
         assert "S.inv" not in [i.name for i in operations]
         assert "PhaseShift" in [i.name for i in operations]
 
