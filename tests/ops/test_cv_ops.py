@@ -229,19 +229,37 @@ label_data = [
     (cv.FockState(7, wires=0), "|7⟩", "|7⟩", "|7⟩"),
     (cv.FockStateVector([1, 2, 3], wires=(0, 1, 2)), "|123⟩", "|123⟩", "|123⟩"),
     (cv.NumberOperator(wires=0), "n", "n", None),
+    (cv.TensorN(wires=(0, 1, 2)), "n⊗n⊗n", "n⊗n⊗n", None),
     (cv.QuadOperator(1.234, wires=0), "cos(φ)x\n+sin(φ)p", "cos(1.23)x\n+sin(1.23)p", None),
     (cv.FockStateProjector([1, 2, 3], wires=(0, 1, 2)), "|123⟩⟨123|", "|123⟩⟨123|", None),
 ]
 
 
-@pytest.mark.parametrize("op, label1, label2, label3", label_data)
-def test_label_method(op, label1, label2, label3):
-    """Tests the label attribute for formatting in drawings"""
-    assert op.label() == label1
-    assert op.label(decimals=2) == label2
+label_data_base_name = [
+    (cv.FockState(7, wires=0), "name", "name\n(7)"),
+    (cv.FockStateVector([1, 2, 3], wires=(0, 1, 2)), "name", "name"),
+    (cv.TensorN(wires=(0, 1, 2)), "name", "name"),
+    (cv.QuadOperator(1.234, wires=0), "name", "name\n(1.23)"),
+    (cv.FockStateProjector([1, 2, 3], wires=(0, 1, 2)), "name", "name"),
+]
 
-    # exclude observables
-    if label3 is not None:
-        op.inv()
-        assert op.label(decimals=0) == label3
-        op.inv()
+
+class TestLabel:
+    @pytest.mark.parametrize("op, label1, label2, label3", label_data)
+    def test_label_method(self, op, label1, label2, label3):
+        """Tests the label method for formatting in drawings"""
+        assert op.label() == label1
+        assert op.label(decimals=2) == label2
+
+        # exclude observables
+        if label3 is not None:
+            op.inv()
+            assert op.label(decimals=0) == label3
+            op.inv()
+
+    @pytest.mark.parametrize("op, label1, label2", label_data_base_name)
+    def test_label_base_name(self, op, label1, label2):
+        """Test label method with custom base label."""
+
+        assert op.label(base_label="name") == label1
+        assert op.label(base_label="name", decimals=2) == label2

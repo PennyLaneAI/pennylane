@@ -838,7 +838,7 @@ class Operation(Operator):
         return self._name + Operation.string_for_inverse if self.inverse else self._name
 
     def label(self, decimals=None, base_label=None):
-        if not self.is_self_inverse and self.inverse:
+        if self.inverse:
             base_label = base_label or self.__class__.__name__
             base_label += "⁻¹"
         return super().label(decimals=decimals, base_label=base_label)

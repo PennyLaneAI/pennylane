@@ -711,34 +711,30 @@ class TestMultiControlledX:
 
 
 label_data = [
-    (qml.Hadamard(0), "H"),
-    (qml.PauliX(0), "X"),
-    (qml.PauliY(0), "Y"),
-    (qml.PauliZ(0), "Z"),
-    (qml.S(wires=0), "S"),
-    (qml.T(wires=0), "T"),
-    (qml.SX(wires=0), "SX"),
-    (qml.CNOT(wires=(0, 1)), "⊕"),
-    (qml.CZ(wires=(0, 1)), "Z"),
-    (qml.CY(wires=(0, 1)), "Y"),
-    (qml.SWAP(wires=(0, 1)), "SWAP"),
-    (qml.ISWAP(wires=(0, 1)), "ISWAP"),
-    (qml.SISWAP(wires=(0, 1)), "SISWAP"),
-    (qml.SQISW(wires=(0, 1)), "SISWAP"),
-    (qml.CSWAP(wires=(0, 1, 2)), "SWAP"),
-    (qml.Toffoli(wires=(0, 1, 2)), "⊕"),
-    (qml.MultiControlledX(control_wires=(0, 1, 2), wires=(3)), "⊕"),
+    (qml.Hadamard(0), "H", "H"),
+    (qml.PauliX(0), "X", "X"),
+    (qml.PauliY(0), "Y", "Y"),
+    (qml.PauliZ(0), "Z", "Z"),
+    (qml.S(wires=0), "S", "S⁻¹"),
+    (qml.T(wires=0), "T", "T⁻¹"),
+    (qml.SX(wires=0), "SX", "SX⁻¹"),
+    (qml.CNOT(wires=(0, 1)), "⊕", "⊕"),
+    (qml.CZ(wires=(0, 1)), "Z", "Z"),
+    (qml.CY(wires=(0, 1)), "Y", "Y"),
+    (qml.SWAP(wires=(0, 1)), "SWAP", "SWAP⁻¹"),
+    (qml.ISWAP(wires=(0, 1)), "ISWAP", "ISWAP⁻¹"),
+    (qml.SISWAP(wires=(0, 1)), "SISWAP", "SISWAP⁻¹"),
+    (qml.SQISW(wires=(0, 1)), "SISWAP", "SISWAP⁻¹"),
+    (qml.CSWAP(wires=(0, 1, 2)), "SWAP", "SWAP"),
+    (qml.Toffoli(wires=(0, 1, 2)), "⊕", "⊕"),
+    (qml.MultiControlledX(control_wires=(0, 1, 2), wires=(3)), "⊕", "⊕"),
 ]
 
 
-@pytest.mark.parametrize("op, label", label_data)
-def test_label_method(op, label):
-    assert op.label() == label
-    assert op.label(decimals=2) == label
+@pytest.mark.parametrize("op, label1, label2", label_data)
+def test_label_method(op, label1, label2):
+    assert op.label() == label1
+    assert op.label(decimals=2) == label1
 
-    if op.is_self_inverse is True:
-        op.inv()
-        assert op.label() == label
-    else:
-        op.inv()
-        assert op.label() == label + "⁻¹"
+    op.inv()
+    assert op.label() == label2

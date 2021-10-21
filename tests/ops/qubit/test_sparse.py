@@ -57,6 +57,7 @@ class TestSparse:
     """Tests for sparse hamiltonian observable"""
 
     def test_label(self):
+        """Test label method returns 𝓗"""
         H = qml.SparseHamiltonian(coo_matrix((np.array([[1, 0], [-1.5, 0]]))), 1)
         assert H.label() == "𝓗"
 

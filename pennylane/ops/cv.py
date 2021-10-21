@@ -807,7 +807,10 @@ class FockState(CVOperation):
 
         """
         if base_label is not None:
-            return super().label(base_label=base_label, decimals=decimals)
+            if decimals is None:
+                return base_label
+            p = format(qml_math.asarray(self.parameters[0]), ".0f")
+            return base_label + f"\n({p})"
         return f"|{qml_math.asarray(self.parameters[0])}⟩"
 
 
@@ -1044,6 +1047,11 @@ class TensorN(CVObservable):
         if wires is not None and (isinstance(wires, int) or len(wires) == 1):
             return NumberOperator(*params, wires=wires, do_queue=do_queue)
         return super().__new__(cls)
+
+    def label(self, decimals=None, base_label=None):
+        if base_label is not None:
+            return base_label
+        return "⊗".join("n" for _ in self.wires)
 
 
 class X(CVObservable):
