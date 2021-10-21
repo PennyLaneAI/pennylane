@@ -146,21 +146,40 @@ class TestCircuitGraph:
 
         circuit = CircuitGraph(ops, obs, Wires([0, 1, 2]))
         graph = circuit.graph
-        assert len(graph) == 9
+        # assert len(graph) == 9
+        assert len(graph.node_indexes()) == 9 # rx.
         assert len(graph.edges()) == 9
 
         queue = ops + obs
 
         # all ops should be nodes in the graph
         for k in queue:
-            assert k in graph.nodes
+            # assert k in graph.nodes
+            assert k in graph.nodes() # rx.
 
         # all nodes in the graph should be ops
-        for k in graph.nodes:
+        # for k in graph.nodes:
+        for k in graph.nodes(): # rx.
             assert k is queue[k.queue_idx]
 
         # Finally, checking the adjacency of the returned DAG:
-        assert set(graph.edges()) == set(
+        # assert set(graph.edges()) == set(
+        #     (queue[a], queue[b])
+        #     for a, b in [
+        #         (0, 3),
+        #         (1, 3),
+        #         (2, 4),
+        #         (3, 5),
+        #         (3, 6),
+        #         (4, 5),
+        #         (5, 7),
+        #         (5, 8),
+        #         (6, 8),
+        #     ]
+        # )
+        a = set((graph.get_node_data(e[0]), graph.get_node_data(e[1])) 
+                for e in graph.edge_list()) # rx.
+        b = set(
             (queue[a], queue[b])
             for a, b in [
                 (0, 3),
@@ -173,7 +192,9 @@ class TestCircuitGraph:
                 (5, 8),
                 (6, 8),
             ]
-        )
+        ) # rx.
+        assert a == b # rx.
+
 
     def test_ancestors_and_descendants_example(self, ops, obs):
         """

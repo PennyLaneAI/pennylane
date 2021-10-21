@@ -178,14 +178,17 @@ class CircuitGraph:
 
             for i in range(1, len(wire)):
                 # For subsequent operators on the wire:
-                if wire[i] not in self._graph:
+                # if wire[i] not in self._graph:
+                if wire[i] not in self._graph.nodes(): # rx.
                     # Add them to the graph if they are not already
                     # in the graph (multi-qubit operators might already have been placed)
                     self._graph.add_node(wire[i])
 
                 # Create an edge between this and the previous operator
                 # self._graph.add_edge(wire[i - 1], wire[i])
-                self._graph.add_edge(wire[i - 1], wire[i], '') # rx.
+                self._graph.add_edge(self._graph.nodes().index(wire[i - 1]), 
+                    self._graph.nodes().index(wire[i]), 
+                    '') # rx.
                 
         # For computing depth; want only a graph with the operations, not
         # including the observables
@@ -330,7 +333,8 @@ class CircuitGraph:
             set[Operator]: ancestors of the given operators
         """
         # return set().union(*(nx.dag.ancestors(self._graph, o) for o in ops)) - set(ops)
-        return set().union(*(rx.ancestors(self._graph, o) for o in ops)) - set(ops) # rx.
+        anc = set(self._graph.get_node_data(n) for n in set().union(*(rx.ancestors(self._graph, self._graph.nodes().index(o)) for o in ops))) # rx.
+        return anc - set(ops) # rx.
 
     def descendants(self, ops):
         """Descendants of a given set of operators.
@@ -342,7 +346,8 @@ class CircuitGraph:
             set[Operator]: descendants of the given operators
         """
         # return set().union(*(nx.dag.descendants(self._graph, o) for o in ops)) - set(ops)
-        return set().union(*(rx.descendants(self._graph, o) for o in ops)) - set(ops) # rx.
+        des = set(self._graph.get_node_data(n) for n in set().union(*(rx.descendants(self._graph, self._graph.nodes().index(o)) for o in ops))) # rx.
+        return des - set(ops) # rx.
 
     def _in_topological_order(self, ops):
         """Sorts a set of operators in the circuit in a topological order.
@@ -596,7 +601,8 @@ class CircuitGraph:
         new.queue_idx = old.queue_idx
         
         # nx.relabel_nodes(self._graph, {old: new}, copy=False)  # change the graph in place
-        self._graph[old] = new # rx.
+        # self._graph[old] = new # rx.
+        self._graph.update_edge_by_index(self._graph.nodes().index(old), new) # rx.
 
         self._operations = self.operations_in_order
         self._observables = self.observables_in_order
