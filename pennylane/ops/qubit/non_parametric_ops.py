@@ -45,7 +45,6 @@ class Hadamard(Observable, Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
-    is_self_inverse = True
     eigvals = pauli_eigs(1)
     matrix = np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
 
@@ -107,7 +106,6 @@ class PauliX(Observable, Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
-    is_self_inverse = True
     basis = "X"
     eigvals = pauli_eigs(1)
     matrix = np.array([[0, 1], [1, 0]])
@@ -171,7 +169,6 @@ class PauliY(Observable, Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
-    is_self_inverse = True
     basis = "Y"
     eigvals = pauli_eigs(1)
     matrix = np.array([[0, -1j], [1j, 0]])
@@ -241,7 +238,6 @@ class PauliZ(Observable, DiagonalOperation):
     num_params = 0
     num_wires = 1
     par_domain = None
-    is_self_inverse = True
     basis = "Z"
     eigvals = pauli_eigs(1)
     matrix = np.array([[1, 0], [0, -1]])
@@ -437,7 +433,6 @@ class CNOT(Operation):
     num_params = 0
     num_wires = 2
     par_domain = None
-    is_self_inverse = True
     basis = "X"
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
@@ -480,8 +475,6 @@ class CZ(DiagonalOperation):
     num_params = 0
     num_wires = 2
     par_domain = None
-    is_self_inverse = True
-    is_symmetric_over_all_wires = True
     basis = "Z"
     eigvals = np.array([1, 1, 1, -1])
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
@@ -526,7 +519,6 @@ class CY(Operation):
     num_params = 0
     num_wires = 2
     par_domain = None
-    is_self_inverse = True
     basis = "Y"
     matrix = np.array(
         [
@@ -576,8 +568,6 @@ class SWAP(Operation):
     num_params = 0
     num_wires = 2
     par_domain = None
-    is_self_inverse = True
-    is_symmetric_over_all_wires = True
     basis = "X"
     matrix = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
@@ -806,8 +796,6 @@ class Toffoli(Operation):
     num_params = 0
     num_wires = 3
     par_domain = None
-    is_self_inverse = True
-    is_symmetric_over_control_wires = True
     basis = "X"
     matrix = np.array(
         [

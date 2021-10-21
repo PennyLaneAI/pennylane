@@ -54,7 +54,6 @@ class RX(Operation):
     num_params = 1
     num_wires = 1
     par_domain = "R"
-    is_composable_rotation = True
     basis = "X"
     grad_method = "A"
     generator = [PauliX, -1 / 2]
@@ -109,7 +108,6 @@ class RY(Operation):
     num_params = 1
     num_wires = 1
     par_domain = "R"
-    is_composable_rotation = True
     basis = "Y"
     grad_method = "A"
     generator = [PauliY, -1 / 2]
@@ -158,7 +156,6 @@ class RZ(DiagonalOperation):
     num_params = 1
     num_wires = 1
     par_domain = "R"
-    is_composable_rotation = True
     basis = "Z"
     grad_method = "A"
     generator = [PauliZ, -1 / 2]
@@ -220,7 +217,6 @@ class PhaseShift(DiagonalOperation):
     num_params = 1
     num_wires = 1
     par_domain = "R"
-    is_composable_rotation = True
     basis = "Z"
     grad_method = "A"
     generator = [np.array([[0, 0], [0, 1]]), 1]
@@ -291,7 +287,6 @@ class ControlledPhaseShift(DiagonalOperation):
     num_params = 1
     num_wires = 2
     par_domain = "R"
-    is_composable_rotation = True
     basis = "Z"
     grad_method = "A"
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), 1]
@@ -374,7 +369,6 @@ class Rot(Operation):
     num_params = 3
     num_wires = 1
     par_domain = "R"
-    is_composable_rotation = True
     grad_method = "A"
 
     @classmethod
@@ -782,7 +776,6 @@ class CRX(Operation):
     num_params = 1
     num_wires = 2
     par_domain = "R"
-    is_composable_rotation = True
     basis = "X"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
@@ -869,7 +862,6 @@ class CRY(Operation):
     num_params = 1
     num_wires = 2
     par_domain = "R"
-    is_composable_rotation = True
     basis = "Y"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
@@ -951,7 +943,6 @@ class CRZ(DiagonalOperation):
     num_params = 1
     num_wires = 2
     par_domain = "R"
-    is_composable_rotation = True
     basis = "Z"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe

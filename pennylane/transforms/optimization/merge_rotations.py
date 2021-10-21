@@ -35,7 +35,7 @@ def merge_rotations(tape, atol=1e-8, include_gates=None):
             :math:`|\theta|\leq \text{atol}`, no rotation gate will be applied.
         include_gates (None or list[str]): A list of specific operations to merge. If
             set to ``None`` (default), all operations in the
-            `.pennylane.ops.qubit.attributes.composable_rotations` attribute will be merged. Otherwise,
+            `~.pennylane.ops.qubit.attributes.composable_rotations` attribute will be merged. Otherwise,
             only the operations whose names match those in the list will undergo merging.
 
     Returns:
