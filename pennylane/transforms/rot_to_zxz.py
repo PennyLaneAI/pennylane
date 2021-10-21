@@ -7,8 +7,8 @@ from pennylane.numpy import pi
 
 @qml.qfunc_transform
 def rot_to_zxz(tape):
-    r"""Quantum function transform to decompose "Rot" :class:`~.QubitUnitary`
-    gates into [RZ(a), RX(b), RZ(c)].
+    r"""Quantum function transform to decompose :class:`~.Rot`
+    gates into the sequence ``[RZ(a), RX(b), RZ(c)]``.
 
     "Rot" gates implement the sequence [RZ(theta), RY(phi), RZ(omega)]. Using
     the equality RZ(pi/2)RX(alpha)RZ(-pi/2)=RY(alpha) valid for every alpha,
