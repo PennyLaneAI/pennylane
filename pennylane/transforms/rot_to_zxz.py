@@ -57,8 +57,6 @@ def rot_to_zxz(tape):
     "Rot" gates being decomposed. For example, for the circuit above we
     have:
 
-    .. code-block:: python3
-
     >>> grad0 = qml.grad(transformed_qnode, argnum=[0])
     >>> grad1 = qml.grad(transformed_qnode, argnum=[1])
     >>> print("grad0:", grad0([0.01, 0.2, 1.5], [1.2, 0.9, 0.7]))
