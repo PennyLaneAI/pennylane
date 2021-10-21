@@ -632,6 +632,10 @@
   containing classical processing.
   [(#1699)](https://github.com/PennyLaneAI/pennylane/pull/1699)
 
+* Fixes a bug where the the parameter-shift method was not correctly using the
+  fallback gradient function when *all* circuit parameters required the fallback.
+  [(#1782)](https://github.com/PennyLaneAI/pennylane/pull/1782)
+
 <h3>Documentation</h3>
 
 * Adds a link to https://pennylane.ai/qml/demonstrations.html in the navbar.
