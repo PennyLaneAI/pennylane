@@ -10,9 +10,9 @@ def rot_to_zxz(tape):
     r"""Quantum function transform to decompose :class:`~.Rot`
     gates into the sequence ``[RZ(a), RX(b), RZ(c)]``.
 
-    "Rot" gates implement the sequence [RZ(theta), RY(phi), RZ(omega)]. Using
+    "Rot" gates implement the sequence [RZ(phi), RY(theta), RZ(omega)]. Using
     the equality RZ(pi/2)RX(alpha)RZ(-pi/2)=RY(alpha) valid for every alpha,
-    the "Rot" gates is replaced by [RZ(theta+pi/2), RX(phi), RZ(omega-pi/2)].
+    the "Rot" gates is replaced by [RZ(phi+pi/2), RX(theta), RZ(omega-pi/2)].
 
     Args:
         tape (function): a quantum function
@@ -85,8 +85,8 @@ def rot_to_zxz(tape):
         if op.name == "Rot":
             wire = op.wires
             angles = op.single_qubit_rot_angles()
-            qml.RZ(angles[0] + pi / 2, wires=wire)
+            qml.RZ(angles[0] - pi / 2, wires=wire)
             qml.RX(angles[1], wires=wire)
-            qml.RZ(angles[2] - pi / 2, wires=wire)
+            qml.RZ(angles[2] + pi / 2, wires=wire)
         else:
             qml.apply(op)
