@@ -103,17 +103,6 @@ def test_hf_energy(symbols, geometry, charge, e_ref):
         (
             ["H", "F"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
-            np.array(
-                [
-                    [0.0, 0.0, 0.0],
-                    [0.0, 0.0, 1.0],
-                    [0.0, 0.0, 1.0],
-                    [0.0, 0.0, 1.0],
-                    [0.0, 0.0, 1.0],
-                    [0.0, 0.0, 1.0],
-                ],
-                requires_grad=True,
-            ),
             # HF gradient computed with pyscf using rhf.nuc_grad_method().kernel()
             np.array([[0.0, 0.0, 2.93226228], [0.0, 0.0, -2.93226228]]),
         ),
