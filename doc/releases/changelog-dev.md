@@ -4,37 +4,37 @@
 
 <h3>New features since last release</h3>
 
-* A new class has been added to store operator attributes, such as `is_self_inverse`,
-  and `is_composable_rotation`, as a list of operation names.
+* A new class has been added to store operator attributes, such as `self_inverses`,
+  and `composable_rotation`, as a list of operation names.
   [(#1763)](https://github.com/PennyLaneAI/pennylane/pull/1763)
 
   A number of such attributes, for the purpose of compilation transforms, can be found
   in `ops/qubit/attributes.py`, but the class can also be used to create your own. For
-  example, we can create a new Attribute, `is_pauli`, like so:
+  example, we can create a new Attribute, `pauli_ops`, like so:
 
   ```pycon
   >>> from pennylane.ops.qubits.attributes import Attribute
-  >>> is_pauli = Attribute(["PauliX", "PauliY", "PauliZ"])
+  >>> pauli_ops = Attribute(["PauliX", "PauliY", "PauliZ"])
   ```
   
   We can check either a string or an Operation for inclusion in this set:
 
   ```pycon
-  >>> qml.PauliX(0) in is_pauli
+  >>> qml.PauliX(0) in pauli_ops
   True
-  >>> "Hadamard" in is_pauli
+  >>> "Hadamard" in pauli_ops
   False
   ```
   
   We can also dynamically add operators to the sets at runtime. This is useful
-  for adding custom operations to the attributes such as `is_composable_rotation`
-  and ``is_self_inverse`` that are used in compilation transforms. For example,
+  for adding custom operations to the attributes such as `composable_rotations`
+  and ``self_inverses`` that are used in compilation transforms. For example,
   suppose you have created a new Operation, `MyGate`, which you know to be its
   own inverse. Adding it to the set, like so
 
   ```pycon
-  >>> from pennylane.ops.qubits.attributes import is_self_inverse
-  >>> is_self_inverse.add("MyGate")
+  >>> from pennylane.ops.qubits.attributes import self_inverses
+  >>> self_inverses.add("MyGate")
   ```
 
   will enable the gate to be considered by the `cancel_inverses` compilation
