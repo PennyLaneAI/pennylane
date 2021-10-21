@@ -423,6 +423,53 @@ class Operator(abc.ABC):
     def name(self, value):
         self._name = value
 
+    def label(self, decimals=None, base_label=None):
+        r"""A customizable string representation of the operator.
+
+        Args:
+            decimals=None (int): If ``None``, no parameters are included. Else,
+                specifies how to round the parameters.
+            base_label=None (str): overwrite the non-parameter component of the label
+
+        Returns:
+            str: label to use in drawings
+
+        **Example:**
+
+        >>> op = qml.RX(1.23456, wires=0)
+        >>> op.label()
+        "RX"
+        >>> op.label(decimals=2)
+        "RX\n(1.23)"
+        >>> op.label(base_label="my_label")
+        "my_label"
+        >>> op.label(decimals=2, base_label="my_label")
+        "my_label\n(1.23)"
+        >>> op.inv()
+        >>> op.label()
+        "RX⁻¹"
+
+        """
+        op_label = base_label or self.__class__.__name__
+
+        if decimals is None or self.num_params == 0:
+            return op_label
+
+        params = self.parameters
+
+        # matrix parameters not rendered
+        if len(qml.math.shape(params[0])) != 0:
+            return op_label
+
+        def _format(x):
+            return format(qml.math.toarray(x), f".{decimals}f")
+
+        if self.num_params == 1:
+            return op_label + f"\n({_format(params[0])})"
+
+        param_string = ",".join(_format(p) for p in params)
+        return op_label + f"\n({param_string})"
+
     def __init__(self, *params, wires=None, do_queue=True, id=None):
         # pylint: disable=too-many-branches
         self._name = self.__class__.__name__  #: str: name of the operator
@@ -789,6 +836,12 @@ class Operation(Operator):
     def name(self):
         """Get and set the name of the operator."""
         return self._name + Operation.string_for_inverse if self.inverse else self._name
+
+    def label(self, decimals=None, base_label=None):
+        if self.inverse:
+            base_label = base_label or self.__class__.__name__
+            base_label += "⁻¹"
+        return super().label(decimals=decimals, base_label=base_label)
 
     def __init__(self, *params, wires=None, do_queue=True, id=None):
 
@@ -1220,6 +1273,37 @@ class Tensor(Observable):
         self.obs = []
         self._args = args
         self.queue(init=True)
+
+    def label(self, decimals=None, base_label=None):
+        r"""How the operator is represented in diagrams and drawings.
+
+        Args:
+            decimals=None (Int): If ``None``, no parameters are included. Else,
+                how to round the parameters.
+            base_label=None (Iterable[str]): overwrite the non-parameter component of the label.
+                Must be same length as ``obs`` attribute.
+
+        Returns:
+            str: label to use in drawings
+
+        >>> T = qml.PauliX(0) @ qml.Hadamard(2)
+        >>> T.label()
+        'X⊗H'
+        >>> T.label(base_label=["X0", "H2"])
+        'X0⊗H2'
+
+        """
+        if base_label is not None:
+            if len(base_label) != len(self.obs):
+                raise ValueError(
+                    "Tensor label requires ``base_label`` keyword to be same length"
+                    " as tensor components."
+                )
+            return "⊗".join(
+                ob.label(decimals=decimals, base_label=lbl) for ob, lbl in zip(self.obs, base_label)
+            )
+
+        return "⊗".join(ob.label(decimals=decimals) for ob in self.obs)
 
     def queue(self, context=qml.QueuingContext, init=False):  # pylint: disable=arguments-differ
         constituents = self.obs
