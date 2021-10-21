@@ -101,10 +101,10 @@ def test_hf_energy(symbols, geometry, charge, e_ref):
             np.array([[0.0, 0.0, 0.3650435], [0.0, 0.0, -0.3650435]]),
         ),
         (
-            ["H", "F"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
+            ["H", "Li"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]], requires_grad=True),
             # HF gradient computed with pyscf using rhf.nuc_grad_method().kernel()
-            np.array([[0.0, 0.0, 2.93226228], [0.0, 0.0, -2.93226228]]),
+            np.array([[0.0, 0.0, 0.21034957], [0.0, 0.0, -0.21034957]]),
         ),
     ],
 )
@@ -113,7 +113,7 @@ def test_hf_energy_gradient(symbols, geometry, g_ref):
     correct."""
     mol = Molecule(symbols, geometry)
     args = [mol.coordinates]
-    g = autograd.grad(hf_energy(mol), argnum=0)(*args)
+    g = autograd.grad(hf_energy(mol))(*args)
 
     assert np.allclose(g, g_ref)
 
