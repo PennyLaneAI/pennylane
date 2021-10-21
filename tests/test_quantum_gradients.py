@@ -158,7 +158,7 @@ class TestCVGradient:
         """Tests that the gradients of circuits of gaussian gates match between the finite difference and analytic methods."""
 
         tol = 1e-5
-        par = [0.4]
+        par = 0.4
 
         def circuit(x):
             args = [0.3] * G.num_params
@@ -174,15 +174,13 @@ class TestCVGradient:
         q = qml.QNode(circuit, gaussian_dev)
         val = q(par)
 
-        grad_F = q.qtape.jacobian(gaussian_dev, method="numeric")
-        grad_A2 = q.qtape.jacobian(gaussian_dev, method="analytic", force_order2=True)
+        grad_F = qml.gradients.finite_diff(q)(par)
+        grad_A2 = qml.gradients.param_shift_cv(q, dev=gaussian_dev, force_order2=True)(par)
         if O.ev_order == 1:
-            grad_A = q.qtape.jacobian(gaussian_dev, method="analytic")
+            grad_A = qml.gradients.param_shift_cv(q, dev=gaussian_dev)(par)
             # the different methods agree
             assert grad_A == pytest.approx(grad_F, abs=tol)
 
-        # analytic method works for every parameter
-        assert {q.qtape._grad_method(i) for i in range(q.qtape.num_params)}.issubset({"A", "A2"})
         # the different methods agree
         assert grad_A2 == pytest.approx(grad_F, abs=tol)
 
@@ -197,12 +195,10 @@ class TestCVGradient:
 
         q = qml.QNode(qf, gaussian_dev)
         q(*par)
-        grad_F = q.qtape.jacobian(gaussian_dev, method="numeric")
-        grad_A = q.qtape.jacobian(gaussian_dev, method="analytic")
-        grad_A2 = q.qtape.jacobian(gaussian_dev, method="analytic", force_order2=True)
+        grad_F = qml.gradients.finite_diff(q)(*par)
+        grad_A = qml.gradients.param_shift_cv(q, dev=gaussian_dev)(*par)
+        grad_A2 = qml.gradients.param_shift_cv(q, dev=gaussian_dev, force_order2=True)(*par)
 
-        # analytic method works for every parameter
-        assert {q.qtape._grad_method(i) for i in range(q.qtape.num_params)} == {"A2"}
         # the different methods agree
         assert grad_A == pytest.approx(grad_F, abs=tol)
         assert grad_A2 == pytest.approx(grad_F, abs=tol)
@@ -232,12 +228,10 @@ class TestCVGradient:
 
         q = qml.QNode(qf, gaussian_dev)
         q(*par)
-        grad_F = q.qtape.jacobian(gaussian_dev, method="numeric")
-        grad_A = q.qtape.jacobian(gaussian_dev, method="analytic")
-        grad_A2 = q.qtape.jacobian(gaussian_dev, method="analytic", force_order2=True)
+        grad_F = qml.gradients.finite_diff(q)(*par)
+        grad_A = qml.gradients.param_shift_cv(q, dev=gaussian_dev)(*par)
+        grad_A2 = qml.gradients.param_shift_cv(q, dev=gaussian_dev, force_order2=True)(*par)
 
-        # analytic method works for every parameter
-        assert {q.qtape._grad_method(i) for i in range(q.qtape.num_params)} == {"A"}
         # the different methods agree
         assert grad_A == pytest.approx(grad_F, abs=tol)
         assert grad_A2 == pytest.approx(grad_F, abs=tol)
@@ -257,12 +251,12 @@ class TestCVGradient:
 
         q = qml.QNode(qf, gaussian_dev)
         q(*par)
-        grad_F = q.qtape.jacobian(gaussian_dev, method="numeric")
-        grad_A = q.qtape.jacobian(gaussian_dev, method="best")
-        grad_A2 = q.qtape.jacobian(gaussian_dev, method="best", force_order2=True)
+        grad_F = qml.gradients.finite_diff(q, hybrid=False)(*par)
+        grad_A = qml.gradients.param_shift_cv(q, dev=gaussian_dev, hybrid=False)(*par)
+        grad_A2 = qml.gradients.param_shift_cv(
+            q, dev=gaussian_dev, force_order2=True, hybrid=False
+        )(*par)
 
-        # par[0] can use the 'A' method, par[1] cannot
-        assert {q.qtape._grad_method(i) for i in range(q.qtape.num_params)} == {"A2"}
         # the different methods agree
         assert grad_A2 == pytest.approx(grad_F, abs=tol)
 
@@ -278,12 +272,10 @@ class TestCVGradient:
 
         q = qml.QNode(circuit, gaussian_dev)
         q(*par)
-        grad_F = q.qtape.jacobian(gaussian_dev, method="numeric")
-        grad_A = q.qtape.jacobian(gaussian_dev, method="analytic")
-        grad_A2 = q.qtape.jacobian(gaussian_dev, method="analytic", force_order2=True)
+        grad_F = qml.gradients.finite_diff(q)(*par)
+        grad_A = qml.gradients.param_shift_cv(q, dev=gaussian_dev)(*par)
+        grad_A2 = qml.gradients.param_shift_cv(q, dev=gaussian_dev, force_order2=True)(*par)
 
-        # analytic method works for every parameter
-        assert {q.qtape._grad_method(i) for i in range(q.qtape.num_params)} == {"A"}
         # the different methods agree
         assert grad_A == pytest.approx(grad_F, abs=tol)
         assert grad_A2 == pytest.approx(grad_F, abs=tol)
@@ -323,14 +315,9 @@ class TestCVGradient:
 
             qnode = qml.QNode(circuit, gaussian_dev)
             qnode(0.5)
-            grad_F = qnode.qtape.jacobian(gaussian_dev, method="numeric")
-            grad_A = qnode.qtape.jacobian(gaussian_dev, method="analytic")
-            grad_A2 = qnode.qtape.jacobian(gaussian_dev, method="analytic", force_order2=True)
-
-            # par[0] can use the 'A' method
-            assert {i: qnode.qtape._grad_method(i) for i in range(qnode.qtape.num_params)} == {
-                0: "A"
-            }
+            grad_F = qml.gradients.finite_diff(qnode)(0.5)
+            grad_A = qml.gradients.param_shift_cv(qnode, dev=gaussian_dev)(0.5)
+            grad_A2 = qml.gradients.param_shift_cv(qnode, dev=gaussian_dev, force_order2=True)(0.5)
 
             # the different methods agree
             assert grad_A == pytest.approx(grad_F, abs=tol)
@@ -474,10 +461,9 @@ class TestQubitGradient:
         params = np.array([0.1, -1.6, np.pi / 5])
 
         # manual gradients
-        qnode(*params)
-        grad_fd1 = qnode.qtape.jacobian(qubit_device_2_wires, method="numeric", order=1)
-        grad_fd2 = qnode.qtape.jacobian(qubit_device_2_wires, method="numeric", order=2)
-        grad_angle = qnode.qtape.jacobian(qubit_device_2_wires, method="analytic")
+        grad_fd1 = qml.gradients.finite_diff(qnode, approx_order=1)(*params)
+        grad_fd2 = qml.gradients.finite_diff(qnode, approx_order=2)(*params)
+        grad_angle = qml.gradients.param_shift(qnode)(*params)
 
         # automatic gradient
         grad_fn = qml.grad(qnode)
@@ -524,18 +510,15 @@ class TestQubitGradient:
             for d_in, d_out in zip(in_data, out_data):
                 args = (d_in, p)
                 diff = classifier(*args) - d_out
-                classifier.qtape.set_parameters((d_in, -1.6, d_in, p), trainable_only=False)
-                ret = ret + 2 * diff * classifier.qtape.jacobian(
-                    qubit_device_2_wires, method=grad_method
-                )
+                ret = ret + 2 * diff * grad_method(classifier)(d_in, p)
             return ret
 
         y0 = error(param)
         grad = autograd.grad(error)
         grad_auto = grad(param)
 
-        grad_fd1 = d_error(param, "numeric")
-        grad_angle = d_error(param, "analytic")
+        grad_fd1 = d_error(param, qml.gradients.finite_diff)
+        grad_angle = d_error(param, qml.gradients.param_shift)
 
         # gradients computed with different methods must agree
         assert grad_fd1 == pytest.approx(grad_angle, abs=tol)
@@ -559,10 +542,10 @@ class TestQubitGradient:
             "Classical node, requires autograd.numpy functions."
             return anp.exp(anp.sum(quantum(p[0], anp.log(p[1]))))
 
-        def d_classical(a, b, method):
+        def d_classical(a, b, grad_method):
             "Gradient of classical computed symbolically, can use normal numpy functions."
             val = classical((a, b))
-            J = quantum.qtape.jacobian(qubit_device_2_wires, params=(a, np.log(b)), method=method)
+            J = grad_method(quantum)(a, np.log(b))
             return val * np.array([J[0, 0] + J[1, 0], (J[0, 1] + J[1, 1]) / b])
 
         param = np.array([-0.1259, 1.53])
@@ -570,8 +553,8 @@ class TestQubitGradient:
         grad_classical = autograd.jacobian(classical)
         grad_auto = grad_classical(param)
 
-        grad_fd1 = d_classical(*param, "numeric")
-        grad_angle = d_classical(*param, "analytic")
+        grad_fd1 = d_classical(*param, qml.gradients.finite_diff)
+        grad_angle = d_classical(*param, qml.gradients.param_shift)
 
         # gradients computed with different methods must agree
         assert grad_fd1 == pytest.approx(grad_angle, abs=tol)
