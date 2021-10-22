@@ -171,12 +171,12 @@ Other useful templates which do not belong to the previous categories can be fou
 .. customgalleryitem::
     :link: ../code/api/pennylane.templates.subroutines.DoubleExcitationUnitary.html
     :description: DoubleExcitationUnitary
-    :figure: ../_static/templates/subroutines/double_excitation_unitary.png    
+    :figure: ../_static/templates/subroutines/double_excitation_unitary.png
 
 .. customgalleryitem::
     :link: ../code/api/pennylane.templates.subroutines.UCCSD.html
     :description: UCCSD
-    :figure: ../_static/templates/subroutines/uccsd.png  
+    :figure: ../_static/templates/subroutines/uccsd.png
 
 .. customgalleryitem::
     :link: ../code/api/pennylane.templates.subroutines.ArbitraryUnitary.html
@@ -212,7 +212,12 @@ Other useful templates which do not belong to the previous categories can be fou
     :link: ../code/api/pennylane.templates.subroutines.QFT.html
     :description: QuantumFourierTransform
     :figure: ../_static/templates/subroutines/qft.svg
-	
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.subroutines.CommutingEvolution.html
+    :description: CommutingEvolution
+    :figure: ../_static/templates/CommutingEvolution/commuting_evolution.png
+
 .. raw:: html
 
         <div style='clear:both'></div>
