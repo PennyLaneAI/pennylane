@@ -26,7 +26,7 @@ from pennylane.ops.channel import __qubit_channels__
 
 @single_tape_transform
 def add_noise_to_tape(tape: QuantumTape, noisy_op: Type[Channel], noisy_op_args: Union[tuple, float], position: str = "all") -> QuantumTape:
-    """Add noisy operations to an input tape.
+    r"""Add noisy operations to an input tape.
 
     The tape will be updated to have noisy gates, specified by the ``noisy_op`` argument, added
     according to the positioning specified in the ``position`` argument.
@@ -44,11 +44,18 @@ def add_noise_to_tape(tape: QuantumTape, noisy_op: Type[Channel], noisy_op_args:
     Returns:
         QuantumTape: a noisy version of the input tape
 
+    Raises:
+        ValueError: if the noisy operation passed in ``noisy_op`` applies to more than one wire
+        ValueError: if the requested ``position`` argument is now ``'start'``, ``'end'`` or
+            ``'all'``
+        ValueError: if the noisy operation passed in ``noisy_op`` is not a noisy channel
+
     **Example:**
 
     Consider the following tape:
 
     .. code-block:: python3
+
         with qml.tape.QuantumTape() as tape:
             qml.RX(0.9, wires=0)
             qml.RY(0.4, wires=1)
@@ -95,3 +102,53 @@ def add_noise_to_tape(tape: QuantumTape, noisy_op: Type[Channel], noisy_op_args:
 
 
 add_noise_to_qfunc = qfunc_transform(add_noise_to_tape)
+add_noise_to_qfunc.__doc__ = """Add noisy operations to an input quantum function.
+
+    The function will be updated to have noisy gates, specified by the ``noisy_op`` argument, added
+    according to the positioning specified in the ``position`` argument.
+
+    Args:
+        fn (Callable): the quantum function
+        noisy_op (Type[Channel]): the noisy operation to be added at positions within the tape
+        noisy_op_args (tuple or float): the arguments fed to the noisy operation, or a single float
+            specifying the noise strength
+        position (str): Specification of where to add noise. Should be one of: ``"all"`` to add
+            the noisy operation after all gates; ``"start"`` to add the noisy operation to all wires
+            at the start of the circuit; ``"end"`` to add the noisy operation to all wires at the
+            end of the circuit.
+    
+    Returns:
+        Callable: a noisy version of the input function
+
+    Raises:
+        ValueError: if the noisy operation passed in ``noisy_op`` applies to more than one wire
+        ValueError: if the requested ``position`` argument is now ``'start'``, ``'end'`` or
+            ``'all'``
+        ValueError: if the noisy operation passed in ``noisy_op`` is not a noisy channel
+
+    **Example:**
+    
+    The following QNode can be transformed to add noise to the circuit:
+    
+    .. code-block:: python3
+    
+        from pennylane.transforms import add_noise_to_qfunc
+    
+        dev = qml.device("default.mixed", wires=2)
+        
+        @qml.qnode(dev)
+        @add_noise_to_qfunc(qml.AmplitudeDamping, 0.2, position="end")
+        def f(w, x, y, z):
+            qml.RX(w, wires=0)
+            qml.RY(x, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RY(y, wires=0)
+            qml.RX(z, wires=1)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+        
+    Executions of this circuit will differ from the noise-free value:
+    
+    >>> f(0.9, 0.4, 0.5, 0.6)
+    tensor(0.754847, requires_grad=True)
+"""
+
