@@ -14,7 +14,7 @@
 """
 Provides transforms for adding simple noise models to quantum circuits.
 """
-from collections import Sequence
+from collections.abc import Sequence
 from typing import Union, Type
 
 from pennylane import apply
@@ -100,7 +100,7 @@ def add_noise_to_tape(tape: QuantumTape, noisy_op: Type[Channel], noisy_op_args:
         for w in tape.wires:
             noisy_op(*noisy_op_args, wires=w)
 
-    for i, op in enumerate(tape.operations[start_pos:]):
+    for op in tape.operations[start_pos:]:
         apply(op)
         if position == "all":
             for w in op.wires:
