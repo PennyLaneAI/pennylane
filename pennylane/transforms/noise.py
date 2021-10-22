@@ -20,7 +20,7 @@ from typing import Union, Type
 from pennylane import apply
 from pennylane.operation import Channel
 from pennylane.tape import QuantumTape
-from pennylane.transforms.qfunc_transforms import single_tape_transform
+from pennylane.transforms.qfunc_transforms import single_tape_transform, qfunc_transform
 from pennylane.ops.channel import __qubit_channels__
 
 
@@ -92,3 +92,6 @@ def add_noise_to_tape(tape: QuantumTape, noisy_op: Type[Channel], noisy_op_args:
 
     for m in tape.measurements:
         apply(m)
+
+
+add_noise_to_qfunc = qfunc_transform(add_noise_to_tape)
