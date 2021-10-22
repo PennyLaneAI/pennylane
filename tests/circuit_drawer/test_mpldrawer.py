@@ -558,7 +558,7 @@ class TestAutosize:
 
         rect = drawer.ax.patches[0]
         r = drawer.fig.canvas.get_renderer()
-        
+
         tbbox = t.get_window_extent(r)
         rbbox = rect.get_window_extent(r)
 
@@ -577,7 +577,7 @@ class TestAutosize:
 
         rect = drawer.ax.patches[0]
         r = drawer.fig.canvas.get_renderer()
-        
+
         tbbox = t.get_window_extent(r)
         rbbox = rect.get_window_extent(r)
 
@@ -596,7 +596,7 @@ class TestAutosize:
 
         rect = drawer.ax.patches[0]
         r = drawer.fig.canvas.get_renderer()
-        
+
         tbbox = t.get_window_extent(r)
         rbbox = rect.get_window_extent(r)
 
@@ -620,7 +620,7 @@ class TestAutosize:
 
         rect = drawer.ax.patches[0]
         r = drawer.fig.canvas.get_renderer()
-        
+
         tbbox = t.get_window_extent(r)
         rbbox = rect.get_window_extent(r)
 
@@ -639,7 +639,7 @@ class TestAutosize:
 
         rect = drawer.ax.patches[0]
         r = drawer.fig.canvas.get_renderer()
-        
+
         tbbox = t.get_window_extent(r)
         rbbox = rect.get_window_extent(r)
 
