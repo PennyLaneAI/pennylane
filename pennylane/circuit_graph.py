@@ -360,7 +360,9 @@ class CircuitGraph:
         """
         # G = nx.DiGraph(self._graph.subgraph(ops))
         # return nx.dag.topological_sort(G)
-        return rx.topological_sort(self._graph.subgraph(ops)) # rx.
+        G = self._graph.subgraph( list(self._graph.nodes().index(o) for o in ops)) # rx.
+        indexes = rx.topological_sort(G) # rx.
+        return list(G[x] for x in indexes) # rx.
 
     def ancestors_in_order(self, ops):
         """Operator ancestors in a topological order.
@@ -602,7 +604,7 @@ class CircuitGraph:
         
         # nx.relabel_nodes(self._graph, {old: new}, copy=False)  # change the graph in place
         # self._graph[old] = new # rx.
-        self._graph.update_edge_by_index(self._graph.nodes().index(old), new) # rx.
+        self._graph[self._graph.nodes().index(old)] = new # rx.
 
         self._operations = self.operations_in_order
         self._observables = self.observables_in_order
@@ -647,10 +649,11 @@ class CircuitGraph:
         # expressed in terms of edges, and we want it in terms of nodes).
         if self._depth is None and self.operations:
             if self._operation_graph is None:
-                self._operation_graph = self.graph.subgraph(self.operations)
+                # self._operation_graph = self.graph.subgraph(self.operations)
+                self._operation_graph = self.graph.subgraph(list(self.graph.nodes().index(node) for node in self.operations)) # rx/
 
                 # self._depth = nx.dag_longest_path_length(self._operation_graph) + 1
-                self._depth = rx.dag_longest_path_length(self._operation_graph, weight_fn=lambda edge: edge) + 1 # rx.
+                self._depth = rx.dag_longest_path_length(self._operation_graph) + 1 # rx.
 
         return self._depth
 
@@ -665,7 +668,7 @@ class CircuitGraph:
             bool: returns ``True`` if a path exists
         """
         # return nx.has_path(self._graph, a, b)
-        return len(rx.dijkstra_shortest_paths(self._graph, a, b)) != 0 # rx.
+        return len(rx.dijkstra_shortest_paths(self._graph, self._graph.nodes().index(a), self._graph.nodes().index(b))) != 0 # rx.
 
     @property
     def max_simultaneous_measurements(self):
