@@ -51,7 +51,7 @@ def get_shift_rule(frequencies, diff_shifts=None):
 
     n_freqs = len(frequencies)
 
-    if not (len(set(frequencies)) == n_freqs and all([freq > 0 for freq in frequencies])):
+    if not (len(set(frequencies)) == n_freqs and all(freq > 0 for freq in frequencies)):
         raise ValueError(
             "Expected frequencies to be a list of unique positive values, instead got {}.".format(
                 frequencies

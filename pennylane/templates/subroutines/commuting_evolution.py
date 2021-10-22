@@ -14,9 +14,9 @@
 r"""
 Contains the CommutingEvolution template.
 """
+# pylint: disable-msg=too-many-arguments
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
-from pennylane.templates.subroutines.approx_time_evolution import ApproxTimeEvolution
 from pennylane.gradients.general_shift_rules import get_shift_rule
 
 
@@ -49,7 +49,9 @@ class CommutingEvolution(Operation):
        implement the time evolution, as a single-step Trotterization is exact for a commuting
        Hamiltonian. If the input Hamiltonian contains Pauli words which do not commute, the
        compilation of the time evolution operator to a sequence of gates will not equate to the
-       exact propagation under the given Hamiltonian.
+       exact propagation under the given Hamiltonian. Furthermore, if the specified frequencies
+       do not correspond to the true eigenvalue frequency spectrum of the commuting Hamiltonian,
+       computed gradients will be incorrect in general.
 
     Args:
         hamiltonian (.Hamiltonian): The commuting Hamiltonian defining the time-evolution operator.
@@ -117,7 +119,7 @@ class CommutingEvolution(Operation):
         hamiltonian = self.parameters[0]
         time = self.parameters[1]
 
-        return ApproxTimeEvolution(hamiltonian, time, 1).expand()
+        return qml.templates.ApproxTimeEvolution(hamiltonian, time, 1).expand()
 
     def adjoint(self):
 
@@ -125,4 +127,4 @@ class CommutingEvolution(Operation):
         time = self.parameters[1]
         frequencies = self.parameters[2]
 
-        return CommutingEvolution(hamiltonian, frequencies, -time)
+        return CommutingEvolution(hamiltonian, -time, frequencies)
