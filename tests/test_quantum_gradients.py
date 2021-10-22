@@ -641,6 +641,94 @@ class TestQubitGradient:
             grad_fn = autograd.jacobian(circuit)
             grad_fn(1.0)
 
+    def test_autograd_positional_non_trainable_warns_grad(self):
+        """Test that a warning is raised if a positional argument without the
+        requires_grad attribute set is passed when differentiating a QNode with a
+        scalar output."""
+        dev = qml.device("default.qubit", wires=5)
+
+        @qml.qnode(dev)
+        def test(x):
+            qml.RY(x, wires=[0])
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.warns(
+            UserWarning, match="inputs have to explicitly specify requires_grad=True"
+        ):
+            qml.grad(test)(0.3)
+
+    def test_autograd_positional_non_trainable_warns_jacobian(self):
+        """Test that a warning is raised if a positional argument without the
+        requires_grad attribute set is passed when differentiating a QNode with a
+        vector output."""
+        dev = qml.device("default.qubit", wires=5)
+
+        @qml.qnode(dev)
+        def test(x):
+            qml.RY(x, wires=[0])
+            return qml.probs(wires=[0])
+
+        with pytest.warns(
+            UserWarning, match="inputs have to explicitly specify requires_grad=True"
+        ):
+            qml.jacobian(test)(0.3)
+
+    def test_autograd_trainable_no_warn_grad(self, recwarn):
+        """Test that no warning is raised if positional arguments are marked as
+        trainable using the requires_grad attribute."""
+        dev = qml.device("default.qubit", wires=5)
+
+        @qml.qnode(dev)
+        def test(x):
+            qml.RZ(x, wires=[0])
+            return qml.expval(qml.PauliZ(0))
+
+        par = anp.array(0.3, requires_grad=True)
+        qml.grad(test)(par)
+        assert len(recwarn) == 0
+
+    def test_autograd_trainable_argnum_no_warn_grad(self, recwarn):
+        """Test that no warning is raised if positional arguments are marked as
+        trainable using the argnum argument."""
+        dev = qml.device("default.qubit", wires=5)
+
+        @qml.qnode(dev)
+        def test(x):
+            qml.RZ(x, wires=[0])
+            return qml.expval(qml.PauliZ(0))
+
+        par = np.array(0.3)
+        qml.grad(test, argnum=0)(par)
+        assert len(recwarn) == 0
+
+    def test_autograd_trainable_no_warn_jacobian(self, recwarn):
+        """Test that no warning is raised if positional arguments are marked as
+        trainable using the requires_grad attribute."""
+        dev = qml.device("default.qubit", wires=5)
+
+        @qml.qnode(dev)
+        def test(x):
+            qml.RZ(x, wires=[0])
+            return qml.probs(wires=[0])
+
+        par = anp.array(0.3, requires_grad=True)
+        qml.jacobian(test)(par)
+        assert len(recwarn) == 0
+
+    def test_autograd_trainable_argnum_no_warn_jacobian(self, recwarn):
+        """Test that no warning is raised if positional arguments are marked as
+        trainable using the argnum argument."""
+        dev = qml.device("default.qubit", wires=5)
+
+        @qml.qnode(dev)
+        def test(x):
+            qml.RZ(x, wires=[0])
+            return qml.probs(wires=[0])
+
+        par = np.array(0.3)
+        qml.jacobian(test, argnum=0)(par)
+        assert len(recwarn) == 0
+
 
 class TestFourTermParameterShifts:
     """Tests for quantum gradients that require a 4-term shift formula"""
