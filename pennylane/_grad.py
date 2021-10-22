@@ -90,8 +90,9 @@ class grad:
 
                 warnings.warn(
                     "Starting with PennyLane v0.20.0, when using Autograd QNode inputs "
-                    "have to explicitly specify requires_grad=True to be treated as "
-                    "trainable.",
+                    "have to explicitly specify requires_grad=True (or the "
+                    "argnum argument must be passed) in order for trainable parameters to be "
+                    "identified.to be treated as trainable.",
                     UserWarning,
                 )
                 trainable = True
@@ -187,9 +188,10 @@ def jacobian(func, argnum=None):
             if trainable is None:
 
                 warnings.warn(
-                    "Starting with PennyLane v0.20.0, when using Autograd inputs "
-                    "have to explicitly specify requires_grad=True to be treated as "
-                    "trainable.",
+                    "Starting with PennyLane v0.20.0, when using Autograd QNode inputs "
+                    "have to explicitly specify requires_grad=True (or the "
+                    "argnum argument must be passed) in order for trainable parameters to be "
+                    "identified.to be treated as trainable.",
                     UserWarning,
                 )
                 trainable = True
