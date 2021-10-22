@@ -115,11 +115,16 @@ class ApproxTimeEvolution(Operation):
         wire_list = [term.wires for term in hamiltonian.ops]
         unique_wires = list(set(wire_list))
 
-        super().__init__(hamiltonian, time, n, wires=unique_wires, do_queue=do_queue, id=id)
+        self.hamiltonian = hamiltonian
+
+        super().__init__(
+            qml.math.stack(hamiltonian.data), time, n, wires=unique_wires, do_queue=do_queue, id=id
+        )
 
     def expand(self):
 
-        hamiltonian = self.parameters[0]
+        hamiltonian = self.hamiltonian
+        coeffs = self.parameters[0]
         time = self.parameters[1]
         n = self.parameters[2]
 
@@ -147,7 +152,7 @@ class ApproxTimeEvolution(Operation):
 
             # skips terms composed solely of identities
             if word.count("I") != len(word):
-                theta.append((2 * time * hamiltonian.coeffs[i]) / n)
+                theta.append((2 * time * coeffs[i]) / n)
                 pauli_words.append(word)
                 wires.append(term.wires)
 

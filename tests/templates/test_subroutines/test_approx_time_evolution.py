@@ -346,3 +346,69 @@ class TestInterfaces:
         grads2 = [time.grad]
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
+
+
+@pytest.mark.parametrize(
+    "dev_name,diff_method",
+    [["default.qubit.autograd", "backprop"], ["default.qubit", qml.gradients.param_shift]],
+)
+def test_trainable_hamiltonian(dev_name, diff_method):
+    """Test that the ApproxTimeEvolution template
+    can be differentiated if the Hamiltonian coefficients are trainable"""
+    dev = qml.device(dev_name, wires=2)
+
+    obs = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(0) @ qml.PauliX(1)]
+
+    def create_tape(coeffs, t):
+        H = qml.Hamiltonian(coeffs, obs)
+
+        with qml.tape.JacobianTape() as tape:
+            qml.templates.ApproxTimeEvolution(H, t, 2)
+            qml.expval(qml.PauliZ(0))
+
+        return tape
+
+    def cost(coeffs, t):
+        tape = create_tape(coeffs, t)
+
+        if diff_method is qml.gradients.param_shift:
+            tape = dev.expand_fn(tape)
+
+        return qml.execute([tape], dev, diff_method)[0]
+
+    t = pnp.array(0.54, requires_grad=True)
+    coeffs = pnp.array([-0.6, 2.0], requires_grad=True)
+
+    res = cost(coeffs, t)
+    grad = qml.grad(cost)(coeffs, t)
+
+    assert len(grad) == 2
+
+    assert isinstance(grad[0], np.ndarray)
+    assert grad[0].shape == (2,)
+
+    assert isinstance(grad[1], np.ndarray)
+    assert grad[1].shape == tuple()
+
+    # compare to finite-differences
+    h = 1e-7
+
+    shifts = np.array(
+        qml.execute(
+            [
+                create_tape(coeffs, t),
+                create_tape(coeffs + np.array([h, 0]), t),
+                create_tape(coeffs + np.array([0, h]), t),
+                create_tape(coeffs, t + h),
+            ],
+            dev,
+            None,
+        )
+    )
+
+    t_grad = (shifts[3, 0] - shifts[0, 0]) / h
+    coeffs_grad = np.array([shifts[1, 0] - shifts[0, 0], shifts[2, 0] - shifts[0, 0]]) / h
+    expected = (coeffs_grad, t_grad)
+
+    assert np.allclose(grad[0], expected[0])
+    assert np.allclose(grad[1], expected[1])
