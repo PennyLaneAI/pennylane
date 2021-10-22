@@ -117,10 +117,7 @@ class RepresentationResolver:
         if isinstance(par, str):
             return par
 
-        try:
-            return f"{1.0 * par:.3g}"
-        except TypeError:
-            return f"{par}"
+        return f"{1.0 * par:.3g}"
 
     @staticmethod
     def _format_matrix_operation(operation, symbol, cache):
