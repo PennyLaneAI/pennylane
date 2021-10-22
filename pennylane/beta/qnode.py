@@ -538,8 +538,16 @@ class QNode:
                         "Operator {} must act on all wires".format(obj.name)
                     )
 
+            if isinstance(obj, qml.ops.qubit.SparseHamiltonian) and self.gradient_fn == "backprop":
+                raise qml.QuantumFunctionError(
+                    "SparseHamiltonian observable must be used with the parameter-shift"
+                    " differentiation method"
+                )
+
         if self.expansion_strategy == "device":
             self._tape = self.device.expand_fn(self.tape, max_expansion=self.max_expansion)
+            params = self.tape.get_parameters(trainable_only=False)
+            self.tape.trainable_params = qml.math.get_trainable_indices(params)
 
         # If the gradient function is a transform, expand the tape so that
         # all operations are supported by the transform.
