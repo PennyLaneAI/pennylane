@@ -20,7 +20,7 @@ import pennylane as qml
 from pennylane.tape import QuantumTape
 from pennylane.operation import Expectation
 
-from pennylane.transforms.noise import add_noise_to_tape
+from pennylane.transforms.noise import add_noise_to_tape, add_noise_to_qfunc
 
 
 class TestAddNoiseToTape:
@@ -122,3 +122,32 @@ class TestAddNoiseToTape:
         assert tape.observables[0].name == ["PauliZ", "PauliZ"]
         assert tape.observables[0].wires.tolist() == [0, 1]
         assert tape.measurements[0].return_type is Expectation
+
+
+def test_add_noise_to_qfunc():
+    """Test that a QNode with the add_noise_to_qfunc decorator gives a different result than one
+    without."""
+    dev = qml.device("default.mixed", wires=2)
+
+    @qml.qnode(dev)
+    @add_noise_to_qfunc(qml.AmplitudeDamping, 0.2, position="end")
+    def f_noisy(w, x, y, z):
+        qml.RX(w, wires=0)
+        qml.RY(x, wires=1)
+        qml.CNOT(wires=[0, 1])
+        qml.RY(y, wires=0)
+        qml.RX(z, wires=1)
+        return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+    @qml.qnode(dev)
+    def f(w, x, y, z):
+        qml.RX(w, wires=0)
+        qml.RY(x, wires=1)
+        qml.CNOT(wires=[0, 1])
+        qml.RY(y, wires=0)
+        qml.RX(z, wires=1)
+        return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+    args = [0.1, 0.2, 0.3, 0.4]
+
+    assert not np.isclose(f_noisy(*args), f(*args))
