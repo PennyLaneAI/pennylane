@@ -105,7 +105,7 @@ class CommutingEvolution(Operation):
         )  # pylint: disable=import-outside-toplevel
 
         if not isinstance(hamiltonian, qml.Hamiltonian):
-            raise ValueError(
+            raise TypeError(
                 "hamiltonian must be of type pennylane.Hamiltonian, got {}".format(
                     type(hamiltonian).__name__
                 )
