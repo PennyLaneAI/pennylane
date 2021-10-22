@@ -25,7 +25,7 @@ class TestDecomposition:
 
         m = qml.RX(0.3, wires=0).matrix
 
-        op = qml.templates.QuantumPhaseEstimation(m, target_wires=[0], estimation_wires=[1, 2])
+        op = qml.QuantumPhaseEstimation(m, target_wires=[0], estimation_wires=[1, 2])
         tape = op.expand()
 
         with qml.tape.QuantumTape() as tape2:
@@ -33,7 +33,7 @@ class TestDecomposition:
             qml.ControlledQubitUnitary(m @ m, control_wires=[1], wires=[0]),
             qml.Hadamard(2),
             qml.ControlledQubitUnitary(m, control_wires=[2], wires=[0]),
-            qml.templates.QFT(wires=[1, 2]).inv()
+            qml.QFT(wires=[1, 2]).inv()
 
         assert len(tape2.queue) == len(tape.queue)
         assert all([op1.name == op2.name for op1, op2 in zip(tape.queue, tape2.queue)])
@@ -57,7 +57,7 @@ class TestDecomposition:
                 # We want to prepare an eigenstate of RX, in this case |+>
                 qml.Hadamard(wires=target_wires)
 
-                qml.templates.QuantumPhaseEstimation(
+                qml.QuantumPhaseEstimation(
                     m, target_wires=target_wires, estimation_wires=estimation_wires
                 )
                 qml.probs(estimation_wires)
@@ -106,7 +106,7 @@ class TestDecomposition:
                 # We want to prepare an eigenstate of RX, in this case |+>
                 qml.QubitStateVector(state, wires=target_wires)
 
-                qml.templates.QuantumPhaseEstimation(
+                qml.QuantumPhaseEstimation(
                     unitary, target_wires=target_wires, estimation_wires=estimation_wires
                 )
                 qml.probs(estimation_wires)
@@ -139,13 +139,11 @@ class TestInputs:
         common element"""
 
         with pytest.raises(qml.QuantumFunctionError, match="The target wires and estimation wires"):
-            qml.templates.QuantumPhaseEstimation(
-                np.eye(2), target_wires=[0, 1], estimation_wires=[1, 2]
-            )
+            qml.QuantumPhaseEstimation(np.eye(2), target_wires=[0, 1], estimation_wires=[1, 2])
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.templates.QuantumPhaseEstimation(
+        template = qml.QuantumPhaseEstimation(
             np.eye(2), target_wires=[0, 1], estimation_wires=[2, 3], id="a"
         )
         assert template.id == "a"

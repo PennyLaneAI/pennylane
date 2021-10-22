@@ -30,9 +30,7 @@ class TestInterferometer:
 
         @qml.qnode(dev)
         def circuit(varphi, mesh=None):
-            qml.templates.Interferometer(
-                theta=[0.21], phi=[0.53], varphi=varphi, mesh=mesh, wires=[0, 1]
-            )
+            qml.Interferometer(theta=[0.21], phi=[0.53], varphi=varphi, mesh=mesh, wires=[0, 1])
             return qml.expval(qml.NumberOperator(0))
 
         with pytest.raises(ValueError, match="did not recognize mesh"):
@@ -46,7 +44,7 @@ class TestInterferometer:
 
         @qml.qnode(dev)
         def circuit(varphi, bs=None):
-            qml.templates.Interferometer(
+            qml.Interferometer(
                 theta=[0.21], phi=[0.53], varphi=varphi, beamsplitter=bs, mesh=mesh, wires=[0, 1]
             )
             return qml.expval(qml.NumberOperator(0))
@@ -64,12 +62,12 @@ class TestInterferometer:
         varphi = [0.42342, 0.1121]
 
         with qml.tape.OperationRecorder() as rec_rect:
-            qml.templates.Interferometer(
+            qml.Interferometer(
                 theta, phi, varphi, mesh="rectangular", beamsplitter="clements", wires=wires
             )
 
         with qml.tape.OperationRecorder() as rec_tria:
-            qml.templates.Interferometer(
+            qml.Interferometer(
                 theta, phi, varphi, mesh="triangular", beamsplitter="clements", wires=wires
             )
 
@@ -93,7 +91,7 @@ class TestInterferometer:
         varphi = [0.42342]
 
         with qml.tape.OperationRecorder() as rec:
-            qml.templates.Interferometer(theta=[], phi=[], varphi=varphi, wires=0)
+            qml.Interferometer(theta=[], phi=[], varphi=varphi, wires=0)
 
         assert len(rec.queue) == 1
         assert isinstance(rec.queue[0], qml.Rotation)
@@ -110,7 +108,7 @@ class TestInterferometer:
         varphi = [0.42342, 0.1121]
 
         with qml.tape.OperationRecorder() as rec:
-            qml.templates.Interferometer(theta, phi, varphi, wires=wires)
+            qml.Interferometer(theta, phi, varphi, wires=wires)
 
         isinstance(rec.queue[0], qml.Beamsplitter)
         assert rec.queue[0].parameters == theta + phi
@@ -132,7 +130,7 @@ class TestInterferometer:
         varphi = [0.42342, 0.1121]
 
         with qml.tape.OperationRecorder() as rec:
-            qml.templates.Interferometer(theta, phi, varphi, mesh="triangular", wires=wires)
+            qml.Interferometer(theta, phi, varphi, mesh="triangular", wires=wires)
 
         assert len(rec.queue) == 3
 
@@ -155,10 +153,10 @@ class TestInterferometer:
         varphi = [0.42342, 0.234, 0.1121]
 
         with qml.tape.OperationRecorder() as rec_rect:
-            qml.templates.Interferometer(theta, phi, varphi, wires=wires)
+            qml.Interferometer(theta, phi, varphi, wires=wires)
 
         with qml.tape.OperationRecorder() as rec_tria:
-            qml.templates.Interferometer(theta, phi, varphi, wires=wires)
+            qml.Interferometer(theta, phi, varphi, wires=wires)
 
         for rec in [rec_rect, rec_tria]:
             # test both meshes (both give identical results for the 3 mode case).
@@ -186,7 +184,7 @@ class TestInterferometer:
         varphi = [0.42342, 0.234, 0.4523, 0.1121]
 
         with qml.tape.OperationRecorder() as rec:
-            qml.templates.Interferometer(theta, phi, varphi, wires=wires)
+            qml.Interferometer(theta, phi, varphi, wires=wires)
 
         assert len(rec.queue) == 10
 
@@ -212,7 +210,7 @@ class TestInterferometer:
         varphi = [0.42342, 0.234, 0.4523, 0.1121]
 
         with qml.tape.OperationRecorder() as rec:
-            qml.templates.Interferometer(theta, phi, varphi, mesh="triangular", wires=wires)
+            qml.Interferometer(theta, phi, varphi, mesh="triangular", wires=wires)
 
         assert len(rec.queue) == 10
 
@@ -252,7 +250,7 @@ class TestInterferometer:
             for w in wires:
                 qml.Squeezing(sq[w][0], sq[w][1], wires=w)
 
-            qml.templates.Interferometer(theta=theta, phi=phi, varphi=varphi, wires=wires)
+            qml.Interferometer(theta=theta, phi=phi, varphi=varphi, wires=wires)
             return [qml.expval(qml.NumberOperator(w)) for w in wires]
 
         res = circuit(theta, phi, varphi)
@@ -265,7 +263,7 @@ class TestInterferometer:
 
         @qml.qnode(dev)
         def circuit(theta, phi, varphi):
-            qml.templates.Interferometer(theta=theta, phi=phi, varphi=varphi, wires=range(4))
+            qml.Interferometer(theta=theta, phi=phi, varphi=varphi, wires=range(4))
             return qml.expval(qml.X(0))
 
         theta = np.array([3.28406182, 3.0058243, 3.48940764, 3.41419504, 4.7808479, 4.47598146])
