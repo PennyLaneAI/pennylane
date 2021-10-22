@@ -17,7 +17,6 @@ Contains the CommutingEvolution template.
 # pylint: disable-msg=too-many-arguments
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
-from pennylane.gradients.general_shift_rules import get_shift_rule
 
 
 class CommutingEvolution(Operation):
@@ -99,6 +98,9 @@ class CommutingEvolution(Operation):
     grad_method = "A"
 
     def __init__(self, hamiltonian, time, frequencies=None, do_queue=True, id=None):
+        from pennylane.gradients.general_shift_rules import (
+            get_shift_rule,
+        )  # pylint: disable=import-outside-toplevel
 
         if not isinstance(hamiltonian, qml.Hamiltonian):
             raise ValueError(
@@ -110,20 +112,22 @@ class CommutingEvolution(Operation):
         if frequencies is not None:
             self.grad_recipe = (None, get_shift_rule(frequencies)[0], None)
 
+        self.hamiltonian = hamiltonian
+
         super().__init__(
-            hamiltonian, time, frequencies, wires=hamiltonian.wires, do_queue=do_queue, id=id
+            hamiltonian.data, time, frequencies, wires=hamiltonian.wires, do_queue=do_queue, id=id
         )
 
     def expand(self):
         # uses standard PauliRot decomposition through ApproxTimeEvolution.
-        hamiltonian = self.parameters[0]
+        hamiltonian = self.hamiltonian
         time = self.parameters[1]
 
         return qml.templates.ApproxTimeEvolution(hamiltonian, time, 1).expand()
 
     def adjoint(self):
 
-        hamiltonian = self.parameters[0]
+        hamiltonian = self.hamiltonian
         time = self.parameters[1]
         frequencies = self.parameters[2]
 

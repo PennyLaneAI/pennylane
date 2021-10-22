@@ -17,6 +17,7 @@ any of the characteristics of other templates (i.e. to prepare a specific state,
 """
 
 from .arbitrary_unitary import ArbitraryUnitary
+from .commuting_evolution import CommutingEvolution
 from .double_excitation_unitary import DoubleExcitationUnitary
 from .interferometer import Interferometer
 from .single_excitation_unitary import SingleExcitationUnitary
@@ -29,6 +30,3 @@ from .all_singles_doubles import AllSinglesDoubles
 from .grover import GroverOperator
 from .qft import QFT
 from .kupccgsd import kUpCCGSD
-
-# from .commuting_evolution import CommutingEvolution
-
