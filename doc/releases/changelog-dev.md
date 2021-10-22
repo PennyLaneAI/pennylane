@@ -565,6 +565,8 @@
 
 * To standardize across all optimizers, `qml.optimize.AdamOptimizer` now also uses `accumulation` (in form of `collections.namedtuple`) to keep track of running quantities. Before it used three variables `fm`, `sm` and `t`. [(#1757)](https://github.com/PennyLaneAI/pennylane/pull/1757)
 
+* The `qml.transforms.get_unitary_matrix` function will now return differentiable array, in the appropriate autodiff framework (Autograd, TensorFlow, PyTorch, JAX) given its parameters.
+
 <h3>Breaking changes</h3>
 
 * The `qml.inv` function has been removed, `qml.adjoint` should be used

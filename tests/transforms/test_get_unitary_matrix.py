@@ -20,6 +20,7 @@ import math
 from pennylane import numpy as np
 from gate_data import I, X, Y, Z, H, S, CNOT
 import pennylane as qml
+import numpy as onp
 
 from pennylane.transforms.get_unitary_matrix import get_unitary_matrix
 
@@ -468,7 +469,8 @@ def test_get_unitary_matrix_wronglabel():
         matrix = get_matrix()
 
 
-def test_get_unitary_matrix_jax_differentiable():
+@pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
+def test_get_unitary_matrix_jax_differentiable(v):
 
     jax = pytest.importorskip("jax")
 
@@ -481,18 +483,19 @@ def test_get_unitary_matrix_jax_differentiable():
         U = qml.transforms.get_unitary_matrix(circuit)(theta)
         return qml.math.real(qml.math.trace(U))
 
-    x = jax.numpy.array(0.5)
+    x = jax.numpy.array(v)
 
     l = loss(x)
     dl = jax.grad(loss)(x)
     matrix = qml.transforms.get_unitary_matrix(circuit)(x)
 
     assert isinstance(matrix, jax.numpy.ndarray)
-    assert math.isclose(l, 1.9378248453140259, rel_tol=1e-6)
-    assert math.isclose(dl, -0.24740396440029144, rel_tol=1e-6)
+    assert np.allclose(l, 2 * np.cos(v / 2))
+    assert np.allclose(dl, -np.sin(v / 2))
 
 
-def test_get_unitary_matrix_torch_differentiable():
+@pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
+def test_get_unitary_matrix_torch_differentiable(v):
 
     torch = pytest.importorskip("torch")
 
@@ -505,18 +508,19 @@ def test_get_unitary_matrix_torch_differentiable():
         U = qml.transforms.get_unitary_matrix(circuit)(theta)
         return qml.math.real(qml.math.trace(U))
 
-    x = torch.tensor(0.5, requires_grad=True)
+    x = torch.tensor(v, requires_grad=True)
     l = loss(x)
     l.backward()
     dl = x.grad
     matrix = qml.transforms.get_unitary_matrix(circuit)(x)
 
     assert isinstance(matrix, torch.Tensor)
-    assert math.isclose(l, 1.9378248453140259, rel_tol=1e-6)
-    assert math.isclose(dl, -0.24740396440029144, rel_tol=1e-6)
+    assert np.allclose(l.detach(), 2 * np.cos(v / 2))
+    assert np.allclose(dl.detach(), -np.sin(v / 2))
 
 
-def test_get_unitary_matrix_tensorflow_differentiable():
+@pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
+def test_get_unitary_matrix_tensorflow_differentiable(v):
 
     tf = pytest.importorskip("tensorflow")
 
@@ -529,21 +533,19 @@ def test_get_unitary_matrix_tensorflow_differentiable():
         U = qml.transforms.get_unitary_matrix(circuit)(theta)
         return qml.math.real(qml.math.trace(U))
 
-    x = tf.Variable(0.5)
+    x = tf.Variable(v)
     with tf.GradientTape() as tape:
         l = loss(x)
     dl = tape.gradient(l, x)
     matrix = qml.transforms.get_unitary_matrix(circuit)(x)
 
     assert isinstance(matrix, tf.Tensor)
-    assert math.isclose(l, 1.9378248453140259, rel_tol=1e-6)
-    assert math.isclose(dl, -0.24740396440029144, rel_tol=1e-6)
+    assert np.allclose(l, 2 * np.cos(v / 2))
+    assert np.allclose(dl, -np.sin(v / 2))
 
 
-def test_get_unitary_matrix_autograd_differentiable():
-
-    from pennylane import numpy as np
-
+@pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
+def test_get_unitary_matrix_autograd_differentiable(v):
     def circuit(theta):
         qml.RX(theta, wires=0)
         qml.PauliZ(wires=0)
@@ -553,11 +555,14 @@ def test_get_unitary_matrix_autograd_differentiable():
         U = qml.transforms.get_unitary_matrix(circuit)(theta)
         return qml.math.real(qml.math.trace(U))
 
-    x = np.array(0.5, requires_grad=True)
+    x = np.array(v, requires_grad=True)
+    print(
+        qml.grad(lambda theta: qml.math.real(qml.math.trace(get_unitary_matrix(circuit)(theta))))(v)
+    )
     l = loss(x)
     dl = qml.grad(loss)(x)
     matrix = qml.transforms.get_unitary_matrix(circuit)(x)
 
     assert isinstance(matrix, qml.numpy.tensor)
-    assert math.isclose(l, 1.9378248453140259, rel_tol=1e-6)
-    assert math.isclose(dl, -0.24740396440029144, rel_tol=1e-6)
+    assert np.allclose(l, 2 * np.cos(v / 2))
+    assert np.allclose(dl, -np.sin(v / 2))

@@ -30,8 +30,8 @@ def get_unitary_matrix(circuit, wire_order=None):
 
     Returns:
          function: Function which accepts the same arguments as the QNode or quantum function.
-         When called, this function will return the unitary matrix in the appropriate auto diff framework
-         (autograd, tensorflow, torch, jax) given it's parameters.
+         When called, this function will return the unitary matrix in the appropriate autodiff framework
+         (Autograd, TensorFlow, PyTorch, JAX) given its parameters.
 
     **Example**
 
@@ -68,6 +68,10 @@ def get_unitary_matrix(circuit, wire_order=None):
     larger Hilbert space. For example, with the same function ``circuit`` and
     ``wire_order=["a", 0, "b", 1]`` you obtain the :math:`16\times 16` matrix for
     the operation :math:`I\otimes Z\otimes I\otimes  R_X(\theta)`.
+
+    This unitary matrix can also be used in differentiable calculations:
+
+    >>> c_grad = qml.grad(lambda theta: qml.math.real(qml.math.trace(get_unitary_matrix(circuit)(theta))))
     """
 
     wires = wire_order
