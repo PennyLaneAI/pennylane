@@ -538,6 +538,12 @@ class QNode:
                         "Operator {} must act on all wires".format(obj.name)
                     )
 
+            if isinstance(obj, qml.ops.qubit.SparseHamiltonian) and self.gradient_fn == "backprop":
+                raise qml.QuantumFunctionError(
+                    "SparseHamiltonian observable must be used with the parameter-shift"
+                    " differentiation method"
+                )
+
         if self.expansion_strategy == "device":
             self._tape = self.device.expand_fn(self.tape, max_expansion=self.max_expansion)
 
