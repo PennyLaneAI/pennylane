@@ -117,6 +117,7 @@ from .draw import draw
 from .hamiltonian_expand import hamiltonian_expand
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
+from .noise import add_noise_to_tape
 from .optimization import (
     cancel_inverses,
     commute_controlled,
