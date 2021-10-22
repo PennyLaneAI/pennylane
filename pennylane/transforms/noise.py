@@ -31,7 +31,8 @@ def add_noise_to_tape(
     noisy_op_args: Union[tuple, float],
     position: str = "all",
 ) -> QuantumTape:
-    r"""Add noisy operations to an input tape.
+    r"""test()
+    Add noisy operations to an input tape.
 
     The tape will be updated to have noisy gates, specified by the ``noisy_op`` argument, added
     according to the positioning specified in the ``position`` argument.
@@ -74,10 +75,10 @@ def add_noise_to_tape(
     We can add the :class:`~.AmplitudeDamping` channel to the start of the circuit using:
 
     >>> from pennylane.transforms import add_noise_to_tape
-    >>> noisy_tape = add_noise_to_tape(tape, qml.AmplitudeDamping, 0.05, position="start")
+    >>> noisy_tape = add_noise_to_tape(tape, qml.AmplitudeDamping, 0.05, position="end")
     >>> print(noisy_tape.draw())
-     0: ──AmplitudeDamping(0.05)──RX(0.9)──╭C──RY(0.5)──╭┤ ⟨Z ⊗ Z⟩
-     1: ──AmplitudeDamping(0.05)──RY(0.4)──╰X──RX(0.6)──╰┤ ⟨Z ⊗ Z⟩
+     0: ──RX(0.9)──╭C──RY(0.5)──AmplitudeDamping(0.05)──╭┤ ⟨Z ⊗ Z⟩
+     1: ──RY(0.4)──╰X──RX(0.6)──AmplitudeDamping(0.05)──╰┤ ⟨Z ⊗ Z⟩
     """
     if noisy_op.num_wires != 1:
         raise ValueError(
@@ -130,7 +131,7 @@ add_noise_to_qfunc.__doc__ = """Add noisy operations to an input quantum functio
 
     Args:
         fn (Callable): the quantum function
-        noisy_op (Type[Channel]): the noisy operation to be added at positions within the tape
+        noisy_op (Type[Channel]): the noisy operation to be added at positions within the function
         noisy_op_args (tuple or float): the arguments fed to the noisy operation, or a single float
             specifying the noise strength
         position (str): Specification of where to add noise. Should be one of: ``"all"`` to add
@@ -146,6 +147,8 @@ add_noise_to_qfunc.__doc__ = """Add noisy operations to an input quantum functio
         ValueError: if the requested ``position`` argument is now ``'start'``, ``'end'`` or
             ``'all'``
         ValueError: if the noisy operation passed in ``noisy_op`` is not a noisy channel
+        ValueError: if more than one state preparation is present in the function, or if the
+            preparation is not at the start of the function
 
     **Example:**
     
@@ -171,4 +174,7 @@ add_noise_to_qfunc.__doc__ = """Add noisy operations to an input quantum functio
     
     >>> f(0.9, 0.4, 0.5, 0.6)
     tensor(0.754847, requires_grad=True)
+    >>> print(qml.draw(f)(0.9, 0.4, 0.5, 0.6))
+     0: ──RX(0.9)──╭C──RY(0.5)──AmplitudeDamping(0.2)──╭┤ ⟨Z ⊗ Z⟩ 
+     1: ──RY(0.4)──╰X──RX(0.6)──AmplitudeDamping(0.2)──╰┤ ⟨Z ⊗ Z⟩ 
 """
