@@ -119,7 +119,7 @@ class RepresentationResolver:
 
         try:
             return f"{1.0 * par:.3g}"
-        except:
+        except TypeError:
             return f"{par}"
 
     @staticmethod
