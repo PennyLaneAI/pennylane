@@ -410,13 +410,14 @@
   ```
         
   Executions of this circuit will differ from the noise-free value:
-    
+  
+  ```pycon  
   >>> f(0.9, 0.4, 0.5, 0.6)
   tensor(0.754847, requires_grad=True)
-
   >>> print(qml.draw(f)(0.9, 0.4, 0.5, 0.6))
    0: ──RX(0.9)──╭C──RY(0.5)──AmplitudeDamping(0.2)──╭┤ ⟨Z ⊗ Z⟩ 
-   1: ──RY(0.4)──╰X──RX(0.6)──AmplitudeDamping(0.2)──╰┤ ⟨Z ⊗ Z⟩ 
+   1: ──RY(0.4)──╰X──RX(0.6)──AmplitudeDamping(0.2)──╰┤ ⟨Z ⊗ Z⟩
+  ``` 
 
 * Templates are now top level imported and can be used directly e.g. `qml.QFT(wires=0)`.
   [(#1779)](https://github.com/PennyLaneAI/pennylane/pull/1779)
