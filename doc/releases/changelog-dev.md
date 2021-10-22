@@ -569,7 +569,7 @@
 
 * The `template` decorator is now deprecated with a warning message and will be removed
   in release `v0.20.0`.
-  [(#1786)](https://github.com/PennyLaneAI/pennylane/pull/1786)
+  [(#1794)](https://github.com/PennyLaneAI/pennylane/pull/1794)
 
 * The `qml.inv` function has been removed, `qml.adjoint` should be used
   instead.
