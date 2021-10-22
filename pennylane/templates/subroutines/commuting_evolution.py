@@ -80,7 +80,7 @@ class CommutingEvolution(Operation):
             coeffs = [1, -1]
             obs = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(0) @ qml.PauliX(1)])
             hamiltonian = qml.Hamiltonian(coeffs, obs)
-            frequencies = [1,2]
+            frequencies = [2,4]
 
             @qml.qnode(dev)
             def circuit(time):
