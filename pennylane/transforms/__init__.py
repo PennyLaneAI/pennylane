@@ -83,6 +83,7 @@ more tapes as well as a classical processing function.
 .. autosummary::
     :toctree: api
 
+    ~transforms.add_noise_to_tape
     ~transforms.measurement_grouping
     ~transforms.hamiltonian_expand
 
