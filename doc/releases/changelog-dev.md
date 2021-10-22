@@ -389,6 +389,9 @@
 
 * The `add_noise_to_tape` and `add_noise_to_qfunc` transforms have now been added, providing a simple way to add noise to a quantum circuit.
 
+* Templates are now top level imported and can be used directly e.g. `qml.QFT(wires=0)`.
+  [(#1779)](https://github.com/PennyLaneAI/pennylane/pull/1779)
+
 * Operators now have a `label` method to determine how they are drawn.  This will
   eventually override the `RepresentationResolver` class.
   [(#1678)](https://github.com/PennyLaneAI/pennylane/pull/1678)

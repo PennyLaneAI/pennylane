@@ -52,7 +52,7 @@ class TestDecomposition:
                 * (qubits // 2 - 1)
             ) * layers
 
-        op = qml.templates.GateFabric(
+        op = qml.GateFabric(
             weights, wires=range(qubits), init_state=init_state, include_pi=include_pi
         )
         queue = op.expand().operations
@@ -61,7 +61,7 @@ class TestDecomposition:
         assert len(queue) == n_gates
 
         # initialization
-        assert isinstance(queue[0], qml.templates.BasisEmbedding)
+        assert isinstance(queue[0], qml.BasisEmbedding)
 
         # order of gates
         for op1, op2 in zip(queue[1:], exp_gates):
@@ -481,7 +481,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(weight):
-            qml.templates.layers.GateFabric(weight, wires, init_state=init_state)
+            qml.GateFabric(weight, wires, init_state=init_state)
             return qml.expval(qml.PauliZ(0))
 
         circuit(weight)
@@ -594,7 +594,7 @@ class TestDecomposition:
 
         wires = range(num_qubits)
 
-        shape = qml.templates.layers.GateFabric.shape(n_layers=layers, n_wires=num_qubits)
+        shape = qml.GateFabric.shape(n_layers=layers, n_wires=num_qubits)
         weight = np.pi / 2 * qml.math.ones(shape)
 
         dev = qml.device("default.qubit", wires=wires)
@@ -603,7 +603,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(weight):
-            qml.templates.layers.GateFabric(weight, wires, init_state=init_state, include_pi=True)
+            qml.GateFabric(weight, wires, init_state=init_state, include_pi=True)
             return qml.state()
 
         circuit(weight)
@@ -620,12 +620,12 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.GateFabric(weights, wires=range(4), init_state=init_state)
+            qml.GateFabric(weights, wires=range(4), init_state=init_state)
             return qml.expval(qml.Identity(0))
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.GateFabric(weights, wires=["z", "a", "k", "r"], init_state=init_state)
+            qml.GateFabric(weights, wires=["z", "a", "k", "r"], init_state=init_state)
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -699,7 +699,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.GateFabric(
+            qml.GateFabric(
                 weights=weights,
                 wires=wires,
                 init_state=init_state,
@@ -712,7 +712,7 @@ class TestInputs:
     def test_id(self):
         """Tests that the id attribute can be set."""
         init_state = qml.math.array([1, 1, 0, 0])
-        template = qml.templates.GateFabric(
+        template = qml.GateFabric(
             weights=np.random.random(size=(1, 1, 2)), wires=range(4), init_state=init_state, id="a"
         )
         assert template.id == "a"
@@ -732,7 +732,7 @@ class TestAttributes:
     def test_shape(self, n_layers, n_wires, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""
 
-        shape = qml.templates.GateFabric.shape(n_layers, n_wires)
+        shape = qml.GateFabric.shape(n_layers, n_wires)
         assert shape == expected_shape
 
     def test_shape_exception_not_enough_qubits(self):
@@ -741,19 +741,17 @@ class TestAttributes:
         with pytest.raises(
             ValueError, match="This template requires the number of qubits to be greater than four"
         ):
-            qml.templates.GateFabric.shape(3, 1)
+            qml.GateFabric.shape(3, 1)
 
     def test_shape_exception_not_even_qubits(self):
         """Test that the shape function warns if the number of qubits are not even."""
 
         with pytest.raises(ValueError, match="This template requires an even number of qubits"):
-            qml.templates.GateFabric.shape(1, 5)
+            qml.GateFabric.shape(1, 5)
 
 
 def circuit_template(weights):
-    qml.templates.GateFabric(
-        weights, range(4), init_state=qml.math.array([1, 1, 0, 0]), include_pi=True
-    )
+    qml.GateFabric(weights, range(4), init_state=qml.math.array([1, 1, 0, 0]), include_pi=True)
     return qml.expval(qml.PauliZ(0))
 
 
