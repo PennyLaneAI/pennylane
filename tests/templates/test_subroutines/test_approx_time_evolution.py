@@ -391,24 +391,9 @@ def test_trainable_hamiltonian(dev_name, diff_method):
     assert grad[1].shape == tuple()
 
     # compare to finite-differences
-    h = 1e-7
+    tape = create_tape(coeffs, t)
+    g_tapes, fn = qml.gradients.finite_diff(tape, _expand=False, validate_params=False)
+    expected = fn(qml.execute(g_tapes, dev, None))[0]
 
-    shifts = np.array(
-        qml.execute(
-            [
-                create_tape(coeffs, t),
-                create_tape(coeffs + np.array([h, 0]), t),
-                create_tape(coeffs + np.array([0, h]), t),
-                create_tape(coeffs, t + h),
-            ],
-            dev,
-            None,
-        )
-    )
-
-    t_grad = (shifts[3, 0] - shifts[0, 0]) / h
-    coeffs_grad = np.array([shifts[1, 0] - shifts[0, 0], shifts[2, 0] - shifts[0, 0]]) / h
-    expected = (coeffs_grad, t_grad)
-
-    assert np.allclose(grad[0], expected[0])
-    assert np.allclose(grad[1], expected[1])
+    assert np.allclose(grad[0], expected[0:1])
+    assert np.allclose(grad[1], expected[2])

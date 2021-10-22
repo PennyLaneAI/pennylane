@@ -97,7 +97,7 @@ class ApproxTimeEvolution(Operation):
         tensor([-0.41614684 -0.41614684], requires_grad=True)
     """
 
-    num_params = 2  # template has two trainable parameters
+    num_params = 3  # template has two trainable parameters
     num_wires = AnyWires
     par_domain = "R"
     grad_method = None
@@ -119,16 +119,15 @@ class ApproxTimeEvolution(Operation):
         # attributes
         self.hamiltonian = hamiltonian
         self.n = n
+        self.num_params = len(hamiltonian.data) + 1
 
         # trainable parameters are passed to the base init method
-        super().__init__(
-            qml.math.stack(hamiltonian.data), time, wires=unique_wires, do_queue=do_queue, id=id
-        )
+        super().__init__(*hamiltonian.data, time, wires=unique_wires, do_queue=do_queue, id=id)
 
     def expand(self):
 
-        coeffs = self.parameters[0]
-        time = self.parameters[1]
+        coeffs = self.parameters[:-1]
+        time = self.parameters[-1]
 
         pauli = {"Identity": "I", "PauliX": "X", "PauliY": "Y", "PauliZ": "Z"}
 
