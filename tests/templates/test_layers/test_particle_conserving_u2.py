@@ -43,14 +43,14 @@ class TestDecomposition:
             [qml.RZ] * qubits + ([qml.CNOT] + [qml.CRX] + [qml.CNOT]) * (qubits - 1)
         ) * layers
 
-        op = qml.templates.ParticleConservingU2(weights, wires=range(qubits), init_state=init_state)
+        op = qml.ParticleConservingU2(weights, wires=range(qubits), init_state=init_state)
         queue = op.expand().operations
 
         # number of gates
         assert len(queue) == n_gates
 
         # initialization
-        assert isinstance(queue[0], qml.templates.BasisEmbedding)
+        assert isinstance(queue[0], qml.BasisEmbedding)
 
         # order of gates
         for op1, op2 in zip(queue[1:], exp_gates):
@@ -110,7 +110,7 @@ class TestDecomposition:
         @qml.qnode(dev)
         def circuit(weight):
             qml.BasisState(init_state, wires=wires)
-            qml.templates.layers.particle_conserving_u2.u2_ex_gate(weight, wires)
+            qml.particle_conserving_u2.u2_ex_gate(weight, wires)
             return qml.expval(qml.PauliZ(0))
 
         circuit(weight)
@@ -127,14 +127,12 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.ParticleConservingU2(weights, wires=range(3), init_state=init_state)
+            qml.ParticleConservingU2(weights, wires=range(3), init_state=init_state)
             return qml.expval(qml.Identity(0))
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.ParticleConservingU2(
-                weights, wires=["z", "a", "k"], init_state=init_state
-            )
+            qml.ParticleConservingU2(weights, wires=["z", "a", "k"], init_state=init_state)
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -186,7 +184,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.ParticleConservingU2(
+            qml.ParticleConservingU2(
                 weights=weights,
                 wires=wires,
                 init_state=init_state,
@@ -199,7 +197,7 @@ class TestInputs:
     def test_id(self):
         """Tests that the id attribute can be set."""
         init_state = np.array([1, 1, 0])
-        template = qml.templates.ParticleConservingU2(
+        template = qml.ParticleConservingU2(
             weights=np.random.random(size=(1, 5)), wires=range(3), init_state=init_state, id="a"
         )
         assert template.id == "a"
@@ -219,18 +217,18 @@ class TestAttributes:
     def test_shape(self, n_layers, n_wires, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""
 
-        shape = qml.templates.ParticleConservingU2.shape(n_layers, n_wires)
+        shape = qml.ParticleConservingU2.shape(n_layers, n_wires)
         assert shape == expected_shape
 
     def test_shape_exception_not_enough_qubits(self):
         """Test that the shape function warns if there are not enough qubits."""
 
         with pytest.raises(ValueError, match="The number of qubits must be greater than one"):
-            qml.templates.ParticleConservingU2.shape(3, 1)
+            qml.ParticleConservingU2.shape(3, 1)
 
 
 def circuit_template(weights):
-    qml.templates.ParticleConservingU2(weights, range(2), init_state=np.array([1, 1]))
+    qml.ParticleConservingU2(weights, range(2), init_state=np.array([1, 1]))
     return qml.expval(qml.PauliZ(0))
 
 

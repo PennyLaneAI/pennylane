@@ -387,6 +387,9 @@
 
 <h3>Improvements</h3>
 
+* Templates are now top level imported and can be used directly e.g. `qml.QFT(wires=0)`.
+  [(#1779)](https://github.com/PennyLaneAI/pennylane/pull/1779)
+
 * Operators now have a `label` method to determine how they are drawn.  This will
   eventually override the `RepresentationResolver` class.
   [(#1678)](https://github.com/PennyLaneAI/pennylane/pull/1678)
