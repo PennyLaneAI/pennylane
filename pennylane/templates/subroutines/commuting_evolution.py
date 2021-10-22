@@ -99,7 +99,7 @@ class CommutingEvolution(Operation):
     par_domain = "R"
     grad_method = "A"
 
-    def __init__(self, hamiltonian, time, frequencies=None, shifts=None, do_queue=True, id=None):
+    def __init__(self, hamiltonian, time, frequencies=None, param_shifts=None, do_queue=True, id=None):
         from pennylane.gradients.general_shift_rules import (
             get_shift_rule,
         )  # pylint: disable=import-outside-toplevel
@@ -112,7 +112,7 @@ class CommutingEvolution(Operation):
             )
 
         if frequencies is not None:
-            self.grad_recipe = (get_shift_rule(frequencies, shifts)[0],) + (None,) * len(
+            self.grad_recipe = (get_shift_rule(frequencies, param_shifts)[0],) + (None,) * len(
                 hamiltonian.data
             )
 
