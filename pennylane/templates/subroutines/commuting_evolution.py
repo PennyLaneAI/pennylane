@@ -80,7 +80,7 @@ class CommutingEvolution(Operation):
             coeffs = [1, -1]
             obs = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(0) @ qml.PauliX(1)])
             hamiltonian = qml.Hamiltonian(coeffs, obs)
-            frequencies = [1,2]
+            frequencies = [2,4]
 
             @qml.qnode(dev)
             def circuit(time):
@@ -110,25 +110,28 @@ class CommutingEvolution(Operation):
             )
 
         if frequencies is not None:
-            self.grad_recipe = (None, get_shift_rule(frequencies)[0], None)
+            self.grad_recipe = (get_shift_rule(frequencies)[0],) + (None,) * len(hamiltonian.data)
 
         self.hamiltonian = hamiltonian
+        self.num_params = len(hamiltonian.data) + 1
+        self.frequencies = frequencies
 
-        super().__init__(
-            hamiltonian.data, time, frequencies, wires=hamiltonian.wires, do_queue=do_queue, id=id
-        )
+        super().__init__(time, *hamiltonian.data, wires=hamiltonian.wires, do_queue=do_queue, id=id)
+
+        if qml.math.requires_grad(hamiltonian.coeffs):
+            self.grad_method = None  # fallback to decomposition
 
     def expand(self):
         # uses standard PauliRot decomposition through ApproxTimeEvolution.
-        hamiltonian = self.hamiltonian
-        time = self.parameters[1]
+        hamiltonian = qml.Hamiltonian(self.parameters[1:], self.hamiltonian.ops)
+        time = self.parameters[0]
 
         return qml.templates.ApproxTimeEvolution(hamiltonian, time, 1).expand()
 
     def adjoint(self):
 
-        hamiltonian = self.hamiltonian
-        time = self.parameters[1]
-        frequencies = self.parameters[2]
+        hamiltonian = qml.Hamiltonian(self.parameters[1:], self.hamiltonian.ops)
+        time = self.parameters[0]
+        frequencies = self.frequencies
 
         return CommutingEvolution(hamiltonian, -time, frequencies)
