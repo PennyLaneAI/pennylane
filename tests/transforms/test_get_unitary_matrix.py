@@ -16,11 +16,9 @@ Unit tests for the get_unitary_matrix transform
 """
 from functools import reduce
 import pytest
-import math
 from pennylane import numpy as np
 from gate_data import I, X, Y, Z, H, S, CNOT
 import pennylane as qml
-import numpy as onp
 
 from pennylane.transforms.get_unitary_matrix import get_unitary_matrix
 
