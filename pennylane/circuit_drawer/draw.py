@@ -22,18 +22,23 @@ from .mpldrawer import MPLDrawer
 from .drawable_layers import drawable_layers
 from .utils import convert_wire_order
 
+
 def _add_swap(drawer, layer, mapped_wires):
     drawer.SWAP(layer, mapped_wires)
+
 
 def _add_cswap(drawer, layer, mapped_wires):
     drawer.ctrl(layer, wires=mapped_wires[0], wires_target=mapped_wires[1:])
     drawer.SWAP(layer, wires=mapped_wires[1:])
 
+
 def _add_cx(drawer, layer, mapped_wires):
     drawer.CNOT(layer, mapped_wires)
 
+
 def _add_cz(drawer, layer, mapped_wires):
     drawer.ctrl(layer, mapped_wires)
+
 
 special_cases = {
     ops.SWAP: _add_swap,
@@ -41,10 +46,18 @@ special_cases = {
     ops.CNOT: _add_cx,
     ops.Toffoli: _add_cx,
     ops.MultiControlledX: _add_cx,
-    ops.CZ: _add_cz
+    ops.CZ: _add_cz,
 }
 
-def draw_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, wire_options=None, label_options=None):
+
+def draw_mpl(
+    tape,
+    wire_order=None,
+    show_all_wires=False,
+    decimals=None,
+    wire_options=None,
+    label_options=None,
+):
     """Draw a tape with matplotlib
 
     Args:
@@ -58,7 +71,7 @@ def draw_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, wire_op
 
     Returns:
         fig, ax
-        
+
     **Example**:
 
     .. code-block:: python
@@ -68,7 +81,7 @@ def draw_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, wire_op
             qml.Toffoli(wires=(0,1,2))
             qml.CSWAP(wires=(0,2,3))
             qml.RX(1.2345, wires=0)
-            
+
             qml.CRZ(1.2345, wires=(3,0))
             qml.expval(qml.PauliZ(0))
 
@@ -123,7 +136,7 @@ def draw_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, wire_op
             :align: center
             :width: 60%
             :target: javascript:void(0);
-            
+
     **Styling:**
 
 
@@ -151,14 +164,36 @@ def draw_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, wire_op
             :align: center
             :width: 60%
             :target: javascript:void(0);
-        
+
 
     .. code-block:: python
 
         fig, ax = draw_mpl(tape, wire_options={'color':'black', 'linewidth': 5},
                     label_options={'size': 20})
 
-    .. figure:: ../../_static/draw_mpl/wires_labels.png.png
+    .. figure:: ../../_static/draw_mpl/wires_labels.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
+    **Integration with matplotlib:**
+
+    This function returns matplotlib figure and axes objects, users can perform further
+    customization of the graphic with these objects.
+
+    .. code-block:: python
+
+        fig, ax = draw_mpl(tape)
+        fig.suptitle("My Circuit", fontsize="xx-large")
+
+        options = {'facecolor': "white", 'edgecolor': "#f57e7e", "linewidth": 6, "zorder": -1}
+        box1 = plt.Rectangle((-0.5, -0.5), width=3.0, height=4.0, **options)
+        ax.add_patch(box1)
+
+        ax.annotate("CSWAP", xy=(2, 2.5), xycoords='data', xytext=(2.8,1.5), textcoords='data',
+                    arrowprops={'facecolor': 'black'}, fontsize=14)
+
+    .. figure:: ../../_static/draw_mpl/postprocessing.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
@@ -170,8 +205,9 @@ def draw_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, wire_op
     else:
         wire_order = Wires.all_wires([Wires(wire_order), tape.wires])
 
-    wire_map = convert_wire_order(tape.operations+tape.measurements, wire_order=wire_order,
-        show_all_wires=show_all_wires)
+    wire_map = convert_wire_order(
+        tape.operations + tape.measurements, wire_order=wire_order, show_all_wires=show_all_wires
+    )
 
     layers = drawable_layers(tape.operations, wire_map=wire_map)
 
@@ -179,7 +215,7 @@ def draw_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, wire_op
     n_wires = len(wire_map)
 
     drawer = MPLDrawer(n_layers=n_layers, n_wires=n_wires, wire_options=wire_options)
-    drawer.label([label for label in wire_map], text_options=label_options)
+    drawer.label(list(wire_map), text_options=label_options)
 
     for layer, layer_ops in enumerate(layers):
         for op in layer_ops:
@@ -196,19 +232,23 @@ def draw_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, wire_op
             elif control_wires is not None:
                 target_wires = [wire_map[w] for w in op.wires if w not in op.control_wires]
                 drawer.ctrl(layer, control_wires, wires_target=target_wires)
-                drawer.box_gate(layer, target_wires, op.label(decimals=decimals), box_options={'zorder':4},
-                    text_options={'zorder':5} )
+                drawer.box_gate(
+                    layer,
+                    target_wires,
+                    op.label(decimals=decimals),
+                    box_options={"zorder": 4},
+                    text_options={"zorder": 5},
+                )
 
             else:
-                drawer.box_gate(layer, mapped_wires, op.label(decimals=decimals) )
+                drawer.box_gate(layer, mapped_wires, op.label(decimals=decimals))
 
     m_wires = Wires([])
     for m in tape.measurements:
         if len(m.wires) == 0:
             m_wires = -1
             break
-        else:
-            m_wires += m.wires
+        m_wires += m.wires
 
     if m_wires == -1:
         for wire in range(n_wires):
