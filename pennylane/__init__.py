@@ -66,7 +66,6 @@ from pennylane.transforms import (
     quantum_monte_carlo,
     apply_controlled_Q,
 )
-from pennylane.utils import inv
 from pennylane.vqe import ExpvalCost, VQECost
 
 # QueuingContext and collections needs to be imported after all other pennylane imports

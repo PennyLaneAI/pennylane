@@ -239,7 +239,7 @@ class TestDecomposition:
         ([2 / 3, 0, 0, 0, 1 / 3, 0, 0, 2 / 3], 3),
     ])
     # fmt: on
-    def test_RZ_skipped(self, state_vector, n_wires):
+    def test_RZ_skipped(self, mocker, state_vector, n_wires):
         """Tests that the cascade of RZ gates is skipped for real-valued states."""
 
         n_CNOT = 2 ** n_wires - 2
@@ -252,9 +252,11 @@ class TestDecomposition:
             return qml.expval(qml.PauliX(wires=0))
 
         # when the RZ cascade is skipped, CNOT gates should only be those required for RY cascade
+        spy = mocker.spy(circuit.device, "execute")
         circuit(state_vector)
+        tape = spy.call_args[0][0]
 
-        assert circuit.qtape.specs["gate_types"]["CNOT"] == n_CNOT
+        assert tape.specs["gate_types"]["CNOT"] == n_CNOT
 
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
