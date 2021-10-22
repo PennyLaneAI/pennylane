@@ -237,19 +237,18 @@ class TestVJPGradients:
         """Tests that the output of the VJP transform
         can be differentiated using Torch."""
         torch = pytest.importorskip("torch")
-        from pennylane.interfaces.torch import TorchInterface
 
         dev = qml.device("default.qubit", wires=2)
 
         params = torch.tensor([0.543, -0.654], requires_grad=True, dtype=torch.float64)
         dy = torch.tensor([-1.0, 0.0, 0.0, 1.0], dtype=torch.float64)
 
-        with TorchInterface.apply(qml.tape.QubitParamShiftTape()) as tape:
+        with qml.tape.JacobianTape() as tape:
             ansatz(params[0], params[1])
 
         tape.trainable_params = {0, 1}
         tapes, fn = qml.gradients.vjp(tape, dy, param_shift)
-        vjp = fn([t.execute(dev) for t in tapes])
+        vjp = fn(qml.execute(tapes, dev, qml.gradients.param_shift, interface="torch"))
 
         assert np.allclose(vjp.detach(), expected(params.detach()), atol=tol, rtol=0)
 
