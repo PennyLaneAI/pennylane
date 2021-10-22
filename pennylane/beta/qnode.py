@@ -552,6 +552,9 @@ class QNode:
         if isinstance(self.gradient_fn, qml.gradients.gradient_transform):
             self._tape = self.gradient_fn.expand_fn(self._tape)
 
+        params = self.tape.get_parameters(trainable_only=False)
+        self.tape.trainable_params = qml.math.get_trainable_indices(params)
+
     def __call__(self, *args, **kwargs):
         override_shots = False
 
