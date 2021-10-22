@@ -164,4 +164,3 @@ add_noise_to_qfunc.__doc__ = """Add noisy operations to an input quantum functio
     >>> f(0.9, 0.4, 0.5, 0.6)
     tensor(0.754847, requires_grad=True)
 """
-
