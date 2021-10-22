@@ -16,11 +16,11 @@ Tests for the noise-adding transforms.
 """
 import numpy as np
 import pytest
-import pennylane as qml
-from pennylane.tape import QuantumTape
-from pennylane.operation import Expectation
 
-from pennylane.transforms.noise import add_noise_to_tape, add_noise_to_qfunc
+import pennylane as qml
+from pennylane.operation import Expectation
+from pennylane.tape import QuantumTape
+from pennylane.transforms.noise import add_noise_to_qfunc, add_noise_to_tape
 
 
 class TestAddNoiseToTape:
@@ -75,8 +75,10 @@ class TestAddNoiseToTape:
 
         assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
         assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
-        assert all(np.allclose(o1.parameters, o2.parameters) for o1, o2 in
-                   zip(tape.operations, tape_exp.operations))
+        assert all(
+            np.allclose(o1.parameters, o2.parameters)
+            for o1, o2 in zip(tape.operations, tape_exp.operations)
+        )
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == ["PauliZ", "PauliZ"]
         assert tape.observables[0].wires.tolist() == [0, 1]
@@ -102,8 +104,10 @@ class TestAddNoiseToTape:
 
         assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
         assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
-        assert all(np.allclose(o1.parameters, o2.parameters) for o1, o2 in
-                   zip(tape.operations, tape_exp.operations))
+        assert all(
+            np.allclose(o1.parameters, o2.parameters)
+            for o1, o2 in zip(tape.operations, tape_exp.operations)
+        )
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == ["PauliZ", "PauliZ"]
         assert tape.observables[0].wires.tolist() == [0, 1]
@@ -111,7 +115,9 @@ class TestAddNoiseToTape:
 
     def test_end(self):
         """Test if the expected tape is returned when the end position is requested"""
-        tape = add_noise_to_tape(self.tape, qml.GeneralizedAmplitudeDamping, [0.4, 0.5], position="end")
+        tape = add_noise_to_tape(
+            self.tape, qml.GeneralizedAmplitudeDamping, [0.4, 0.5], position="end"
+        )
 
         with QuantumTape() as tape_exp:
             qml.RX(0.9, wires=0)
@@ -125,8 +131,10 @@ class TestAddNoiseToTape:
 
         assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
         assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
-        assert all(np.allclose(o1.parameters, o2.parameters) for o1, o2 in
-                   zip(tape.operations, tape_exp.operations))
+        assert all(
+            np.allclose(o1.parameters, o2.parameters)
+            for o1, o2 in zip(tape.operations, tape_exp.operations)
+        )
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == ["PauliZ", "PauliZ"]
         assert tape.observables[0].wires.tolist() == [0, 1]
@@ -150,8 +158,10 @@ class TestAddNoiseToTape:
 
         assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
         assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
-        assert all(np.allclose(o1.parameters, o2.parameters) for o1, o2 in
-                   zip(tape.operations, tape_exp.operations))
+        assert all(
+            np.allclose(o1.parameters, o2.parameters)
+            for o1, o2 in zip(tape.operations, tape_exp.operations)
+        )
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == ["PauliZ", "PauliZ"]
         assert tape.observables[0].wires.tolist() == [0, 1]
@@ -179,8 +189,10 @@ class TestAddNoiseToTape:
 
         assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
         assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
-        assert all(np.allclose(o1.parameters, o2.parameters) for o1, o2 in
-                   zip(tape.operations, tape_exp.operations))
+        assert all(
+            np.allclose(o1.parameters, o2.parameters)
+            for o1, o2 in zip(tape.operations, tape_exp.operations)
+        )
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == ["PauliZ", "PauliZ"]
         assert tape.observables[0].wires.tolist() == [0, 1]
@@ -189,7 +201,9 @@ class TestAddNoiseToTape:
     def test_end_with_state_prep(self):
         """Test if the expected tape is returned when the end position is requested in a tape
         that has state preparation"""
-        tape = add_noise_to_tape(self.tape_with_prep, qml.GeneralizedAmplitudeDamping, [0.4, 0.5], position="end")
+        tape = add_noise_to_tape(
+            self.tape_with_prep, qml.GeneralizedAmplitudeDamping, [0.4, 0.5], position="end"
+        )
 
         with QuantumTape() as tape_exp:
             qml.QubitStateVector([1, 0], wires=0)
@@ -204,8 +218,10 @@ class TestAddNoiseToTape:
 
         assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
         assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
-        assert all(np.allclose(o1.parameters, o2.parameters) for o1, o2 in
-                   zip(tape.operations, tape_exp.operations))
+        assert all(
+            np.allclose(o1.parameters, o2.parameters)
+            for o1, o2 in zip(tape.operations, tape_exp.operations)
+        )
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == ["PauliZ", "PauliZ"]
         assert tape.observables[0].wires.tolist() == [0, 1]

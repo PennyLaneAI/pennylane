@@ -15,18 +15,22 @@
 Provides transforms for adding simple noise models to quantum circuits.
 """
 from collections.abc import Sequence
-from typing import Union, Type
+from typing import Type, Union
 
-from pennylane import apply
+from pennylane import BasisState, QubitStateVector, apply
 from pennylane.operation import Channel
-from pennylane.tape import QuantumTape
-from pennylane.transforms.qfunc_transforms import single_tape_transform, qfunc_transform
 from pennylane.ops.channel import __qubit_channels__
-from pennylane import QubitStateVector, BasisState
+from pennylane.tape import QuantumTape
+from pennylane.transforms.qfunc_transforms import qfunc_transform, single_tape_transform
 
 
 @single_tape_transform
-def add_noise_to_tape(tape: QuantumTape, noisy_op: Type[Channel], noisy_op_args: Union[tuple, float], position: str = "all") -> QuantumTape:
+def add_noise_to_tape(
+    tape: QuantumTape,
+    noisy_op: Type[Channel],
+    noisy_op_args: Union[tuple, float],
+    position: str = "all",
+) -> QuantumTape:
     r"""Add noisy operations to an input tape.
 
     The tape will be updated to have noisy gates, specified by the ``noisy_op`` argument, added
@@ -76,11 +80,15 @@ def add_noise_to_tape(tape: QuantumTape, noisy_op: Type[Channel], noisy_op_args:
      1: ──AmplitudeDamping(0.05)──RY(0.4)──╰X──RX(0.6)──╰┤ ⟨Z ⊗ Z⟩
     """
     if noisy_op.num_wires != 1:
-        raise ValueError("Adding noise to the tape is only supported for single-qubit noisy operations")
+        raise ValueError(
+            "Adding noise to the tape is only supported for single-qubit noisy operations"
+        )
     if position not in ("start", "end", "all"):
         raise ValueError("Position must be either 'start', 'end', or 'all' (default)")
     if noisy_op.__name__ not in __qubit_channels__:
-        raise ValueError("The noisy_op argument must be a noisy operation such as qml.AmplitudeDamping")
+        raise ValueError(
+            "The noisy_op argument must be a noisy operation such as qml.AmplitudeDamping"
+        )
 
     if not isinstance(noisy_op_args, Sequence):
         noisy_op_args = [noisy_op_args]
