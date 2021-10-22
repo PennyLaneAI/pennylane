@@ -16,6 +16,7 @@ Unit tests for the get_unitary_matrix transform
 """
 from functools import reduce
 import pytest
+import math
 from pennylane import numpy as np
 from gate_data import I, X, Y, Z, H, S, CNOT
 import pennylane as qml
@@ -487,8 +488,8 @@ def test_get_unitary_matrix_jax_differentiable():
     matrix = qml.transforms.get_unitary_matrix(circuit)(x)
 
     assert isinstance(matrix, jax.numpy.ndarray)
-    assert l == 1.9378248
-    assert dl == -0.24740396
+    assert math.isclose(l, 1.9378248453140259, rel_tol=1e-6)
+    assert math.isclose(dl, -0.24740396440029144, rel_tol=1e-6)
 
 def test_get_unitary_matrix_torch_differentiable():
 
@@ -510,8 +511,8 @@ def test_get_unitary_matrix_torch_differentiable():
     matrix = qml.transforms.get_unitary_matrix(circuit)(x)
 
     assert isinstance(matrix, torch.Tensor)
-    assert l == 1.9378248
-    assert dl == -0.24740396
+    assert math.isclose(l, 1.9378248453140259, rel_tol=1e-6)
+    assert math.isclose(dl, -0.24740396440029144, rel_tol=1e-6)
 
 def test_get_unitary_matrix_tensorflow_differentiable():
 
@@ -533,8 +534,8 @@ def test_get_unitary_matrix_tensorflow_differentiable():
     matrix = qml.transforms.get_unitary_matrix(circuit)(x)
 
     assert isinstance(matrix, tf.Tensor)
-    assert l == 1.9378248453140259
-    assert dl == -0.24740396440029144
+    assert math.isclose(l, 1.9378248453140259, rel_tol=1e-6)
+    assert math.isclose(dl, -0.24740396440029144, rel_tol=1e-6)
 
 
 def test_get_unitary_matrix_autograd_differentiable():
@@ -557,6 +558,6 @@ def test_get_unitary_matrix_autograd_differentiable():
     matrix = qml.transforms.get_unitary_matrix(circuit)(x)
 
     assert isinstance(matrix, qml.numpy.tensor)
-    assert l == 1.9378248434212895
-    assert dl == -0.24740395925452294
+    assert math.isclose(l, 1.9378248453140259, rel_tol=1e-6)
+    assert math.isclose(dl, -0.24740396440029144, rel_tol=1e-6)
 
