@@ -65,6 +65,9 @@ class CommutingEvolution(Operation):
             will be computed using the standard two-term shift rule applied to the constituent
             Pauli words in the Hamiltonian individually.
 
+        shifts (list): The parameter shifts to use in obtaining the generalized parameter shift
+        rules. If unspecified, equidistant shifts are used.
+
     .. UsageDetails::
 
         The template is used inside a qnode:
@@ -72,20 +75,19 @@ class CommutingEvolution(Operation):
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane.templates import CommutingEvolution
 
             n_wires = 2
             dev = qml.device('default.qubit', wires=n_wires)
 
             coeffs = [1, -1]
-            obs = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(0) @ qml.PauliX(1)])
+            obs = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(0) @ qml.PauliX(1)]
             hamiltonian = qml.Hamiltonian(coeffs, obs)
             frequencies = [2,4]
 
             @qml.qnode(dev)
             def circuit(time):
                 qml.PauliX(0)
-                CommutingEvolution(hamiltonian, time, frequencies)
+                qml.CommutingEvolution(hamiltonian, time, frequencies)
                 return qml.expval(qml.PauliZ(0))
 
         >>> circuit(1)
@@ -97,7 +99,7 @@ class CommutingEvolution(Operation):
     par_domain = "R"
     grad_method = "A"
 
-    def __init__(self, hamiltonian, time, frequencies=None, do_queue=True, id=None):
+    def __init__(self, hamiltonian, time, frequencies=None, shifts=None, do_queue=True, id=None):
         from pennylane.gradients.general_shift_rules import (
             get_shift_rule,
         )  # pylint: disable=import-outside-toplevel
@@ -110,7 +112,9 @@ class CommutingEvolution(Operation):
             )
 
         if frequencies is not None:
-            self.grad_recipe = (get_shift_rule(frequencies)[0],) + (None,) * len(hamiltonian.data)
+            self.grad_recipe = (get_shift_rule(frequencies, shifts)[0],) + (None,) * len(
+                hamiltonian.data
+            )
 
         self.hamiltonian = hamiltonian
         self.num_params = len(hamiltonian.data) + 1
