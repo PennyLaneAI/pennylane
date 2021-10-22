@@ -44,25 +44,131 @@ special_cases = {
     ops.CZ: _add_cz
 }
 
-def draw(tape, wire_order=None, show_all_wires=False, decimals=None):
-    """docstring
+def draw_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, wire_options=None, label_options=None):
+    """Draw a tape with matplotlib
 
     Args:
-        tape
+        tape (QuantumTape): the operations and measurements to draw
 
     Keyword Args:
         wire_order=None
         show_all_wires=False
+        wire_options (dict)
+        label_options (dict)
 
     Returns:
         fig, ax
+        
+    **Example**:
+
+    .. code-block:: python
+
+        with qml.tape.QuantumTape() as tape:
+            qml.templates.GroverOperator(wires=(0,1,2,3))
+            qml.Toffoli(wires=(0,1,2))
+            qml.CSWAP(wires=(0,2,3))
+            qml.RX(1.2345, wires=0)
+            
+            qml.CRZ(1.2345, wires=(3,0))
+            qml.expval(qml.PauliZ(0))
+
+        fig, ax = draw_mpl(tape)
+
+    .. figure:: ../../_static/draw_mpl/default.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
+    .. UsageDetails::
+
+    **Decimals:**
+
+    The keyword ``decimals`` controls how many decimal points to include when labelling the operations.
+    The default value ``None`` omits parameters for brevity.
+
+    .. code-block:: python
+
+        with qml.tape.QuantumTape() as tape2:
+            qml.RX(1.23456, wires=0)
+            qml.Rot(1.2345,2.3456, 3.456, wires=0)
+
+        fig, ax = draw_mpl(tape2, decimals=2)
+
+    .. figure:: ../../_static/draw_mpl/decimals.png
+        :align: center
+        :width: 60%
+        :target: javascript:void(0);
+
+    **Wires:**
+
+    The keywords ``wire_order`` and ``show_all_wires`` control the location of wires from top to bottom.
+
+    .. code-block:: python
+
+        fig, ax = draw_mpl(tape, wire_order=[3,2,1,0])
+
+    .. figure:: ../../_static/draw_mpl/wire_order.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
+    If a wire is in ``wire_order``, but not in the ``tape``, it will be omitted by default.  Only by selecting
+    ``show_all_wires=True`` will empty wires be diplayed.
+
+    .. code-block:: python
+
+        fig, ax = draw_mpl(tape, wire_order=["aux"], show_all_wires=True)
+
+    .. figure:: ../../_static/draw_mpl/show_all_wires.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+            
+    **Styling:**
+
+
+    .. code-block:: python
+
+        with plt.style.context("Solarize_Light2):
+            fig, ax = draw_mpl(tape)
+
+    .. figure:: ../../_static/draw_mpl/Solarize_Light2.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
+    .. code-block:: python
+
+        plt.rcParams['patch.facecolor'] = 'white'
+        plt.rcParams['patch.edgecolor'] = 'black'
+        plt.rcParams['patch.linewidth'] = 2
+        plt.rcParams['patch.force_edgecolor'] = True
+        plt.rcParams['lines.color'] = 'black'
+
+        fig, ax = draw_mpl(tape)
+
+    .. figure:: ../../_static/draw_mpl/rcparams.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+        
+
+    .. code-block:: python
+
+        fig, ax = draw_mpl(tape, wire_options={'color':'black', 'linewidth': 5},
+                    label_options={'size': 20})
+
+    .. figure:: ../../_static/draw_mpl/wires_labels.png.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
 
     """
 
     if wire_order is None:
         wire_order = tape.wires
     else:
-        wire_order = Wires.all_wires([Wires(wire_order, tape.wires)])
+        wire_order = Wires.all_wires([Wires(wire_order), tape.wires])
 
     wire_map = convert_wire_order(tape.operations+tape.measurements, wire_order=wire_order,
         show_all_wires=show_all_wires)
@@ -72,8 +178,8 @@ def draw(tape, wire_order=None, show_all_wires=False, decimals=None):
     n_layers = len(layers)
     n_wires = len(wire_map)
 
-    drawer = MPLDrawer(n_layers=n_layers, n_wires=n_wires)
-    drawer.label([label for label in wire_map])
+    drawer = MPLDrawer(n_layers=n_layers, n_wires=n_wires, wire_options=wire_options)
+    drawer.label([label for label in wire_map], text_options=label_options)
 
     for layer, layer_ops in enumerate(layers):
         for op in layer_ops:
@@ -90,7 +196,8 @@ def draw(tape, wire_order=None, show_all_wires=False, decimals=None):
             elif control_wires is not None:
                 target_wires = [wire_map[w] for w in op.wires if w not in op.control_wires]
                 drawer.ctrl(layer, control_wires, wires_target=target_wires)
-                drawer.box_gate(layer, target_wires, op.label(decimals=decimals) )
+                drawer.box_gate(layer, target_wires, op.label(decimals=decimals), box_options={'zorder':4},
+                    text_options={'zorder':5} )
 
             else:
                 drawer.box_gate(layer, mapped_wires, op.label(decimals=decimals) )
