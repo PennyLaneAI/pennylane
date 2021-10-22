@@ -387,6 +387,9 @@
 
 <h3>Improvements</h3>
 
+* Templates are now top level imported and can be used directly e.g. `qml.QFT(wires=0)`.
+  [(#1779)](https://github.com/PennyLaneAI/pennylane/pull/1779)
+
 * Operators now have a `label` method to determine how they are drawn.  This will
   eventually override the `RepresentationResolver` class.
   [(#1678)](https://github.com/PennyLaneAI/pennylane/pull/1678)
@@ -564,17 +567,21 @@
 
 <h3>Breaking changes</h3>
 
-- The input signature of an `expand_fn` used in a `batch_transform`
+* The `qml.inv` function has been removed, `qml.adjoint` should be used
+  instead.
+  [(#1778)](https://github.com/PennyLaneAI/pennylane/pull/1778)
+
+* The input signature of an `expand_fn` used in a `batch_transform`
   now **must** have the same signature as the provided `transform_fn`,
   and vice versa.
   [(#1721)](https://github.com/PennyLaneAI/pennylane/pull/1721)
 
-- The expansion rule in the `qml.metric_tensor` transform has been changed.
+* The expansion rule in the `qml.metric_tensor` transform has been changed.
   [(#1721)](https://github.com/PennyLaneAI/pennylane/pull/1721)
 
   If `hybrid=False`, the changed expansion rule might lead to a changed output.
 
-- The `qml.metric_tensor` keyword argument `diag_approx` is deprecated.
+* The `qml.metric_tensor` keyword argument `diag_approx` is deprecated.
   Approximations can be controlled with the more fine-grained `approx`
   keyword argument, with `approx="block-diag"` (the default) reproducing
   the old behaviour.
@@ -591,7 +598,7 @@
   `requires_grad=False` was explicitly set.
   [(#1638)](https://github.com/PennyLaneAI/pennylane/pull/1638)
 
-- The operation `qml.Interferometer` has been renamed `qml.InterferometerUnitary` in order to
+* The operation `qml.Interferometer` has been renamed `qml.InterferometerUnitary` in order to
   distinguish it from the template `qml.templates.Interferometer`.
   [(#1714)](https://github.com/PennyLaneAI/pennylane/pull/1714)
 

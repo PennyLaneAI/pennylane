@@ -72,7 +72,7 @@ class TestDecomposition:
         shapes = expected_shapes(1, n_wires)
         weights = [np.random.random(shape) for shape in shapes]
 
-        op = qml.templates.CVNeuralNetLayers(*weights, wires=range(n_wires))
+        op = qml.CVNeuralNetLayers(*weights, wires=range(n_wires))
         tape = op.expand()
 
         for i, gate in enumerate(tape.operations):
@@ -89,12 +89,12 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.CVNeuralNetLayers(*weights, wires=range(3))
+            qml.CVNeuralNetLayers(*weights, wires=range(3))
             return qml.expval(qml.Identity(0))
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.CVNeuralNetLayers(*weights, wires=["z", "a", "k"])
+            qml.CVNeuralNetLayers(*weights, wires=["z", "a", "k"])
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -117,7 +117,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.CVNeuralNetLayers(*weights, wires=range(2))
+            qml.CVNeuralNetLayers(*weights, wires=range(2))
             return qml.expval(qml.X(0))
 
         with pytest.raises(ValueError, match="The first dimension of all parameters"):
@@ -133,7 +133,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.CVNeuralNetLayers(*weights, wires=range(2))
+            qml.CVNeuralNetLayers(*weights, wires=range(2))
             return qml.expval(qml.X(0))
 
         with pytest.raises(ValueError, match="Got unexpected shape for one or more parameters"):
@@ -144,7 +144,7 @@ class TestInputs:
         shapes = expected_shapes(1, 2)
         weights = [np.random.random(shape) for shape in shapes]
 
-        template = qml.templates.CVNeuralNetLayers(*weights, wires=range(2), id="a")
+        template = qml.CVNeuralNetLayers(*weights, wires=range(2), id="a")
         assert template.id == "a"
 
 
@@ -163,14 +163,14 @@ class TestAttributes:
         """Test that the shape method returns the correct shapes for
         the weight tensors"""
 
-        shapes = qml.templates.CVNeuralNetLayers.shape(n_layers, n_wires)
+        shapes = qml.CVNeuralNetLayers.shape(n_layers, n_wires)
         expected = expected_shapes(n_layers, n_wires)
 
         assert np.allclose(shapes, expected, atol=tol, rtol=0)
 
 
 def circuit_template(*weights):
-    qml.templates.CVNeuralNetLayers(*weights, range(2))
+    qml.CVNeuralNetLayers(*weights, range(2))
     return qml.expval(qml.X(0))
 
 
