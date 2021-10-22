@@ -481,7 +481,7 @@ def state():
 
         Calculating the derivative of :func:`~.state` is currently only supported when using the
         classical backpropagation differentiation method (``diff_method="backprop"``) with a
-        compatible device.
+        compatible device and interfaces other than Autograd.
     """
     # pylint: disable=protected-access
     return MeasurementProcess(State)
