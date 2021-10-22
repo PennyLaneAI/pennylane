@@ -43,7 +43,7 @@ def template(func):
 
         @qml.qnode(dev)
         def circuit():
-            qml.inv(bell_state_preparation(wires=[0, 1]))
+            qml.adjoint(bell_state_preparation)(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
     Args:

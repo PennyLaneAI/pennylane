@@ -566,12 +566,11 @@ class TestFiniteDiffGradients:
         """Tests that the output of the finite-difference transform
         can be differentiated using Torch, yielding second derivatives."""
         torch = pytest.importorskip("torch")
-        from pennylane.interfaces.torch import TorchInterface
 
         dev = qml.device("default.qubit.torch", wires=2)
         params = torch.tensor([0.543, -0.654], dtype=torch.float64, requires_grad=True)
 
-        with TorchInterface.apply(qml.tape.QubitParamShiftTape()) as tape:
+        with qml.tape.JacobianTape() as tape:
             qml.RX(params[0], wires=[0])
             qml.RY(params[1], wires=[1])
             qml.CNOT(wires=[0, 1])
@@ -601,7 +600,6 @@ class TestFiniteDiffGradients:
         can be differentiated using JAX, yielding second derivatives."""
         jax = pytest.importorskip("jax")
         from jax import numpy as jnp
-        from pennylane.interfaces.jax import JAXInterface
         from jax.config import config
 
         config.update("jax_enable_x64", True)
@@ -610,7 +608,7 @@ class TestFiniteDiffGradients:
         params = jnp.array([0.543, -0.654])
 
         def cost_fn(x):
-            with JAXInterface.apply(qml.tape.QubitParamShiftTape()) as tape:
+            with qml.tape.JacobianTape() as tape:
                 qml.RX(x[0], wires=[0])
                 qml.RY(x[1], wires=[1])
                 qml.CNOT(wires=[0, 1])
