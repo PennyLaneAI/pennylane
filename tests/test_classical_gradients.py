@@ -64,7 +64,7 @@ class TestGradientUnivar:
         x_vals = np.linspace(-10, 10, 16, endpoint=False)
 
         with pytest.warns(
-            UserWarning, match="QNode inputs have to explicitly specify requires_grad=True"
+            UserWarning, match="inputs have to explicitly specify requires_grad=True"
         ):
             qml.grad(np.sin)(0.0)
 
@@ -117,7 +117,7 @@ class TestGradientMultiVar:
         vector valued function."""
         arr = onp.array([0.1, 0.2, 0.3])
         with pytest.warns(
-            UserWarning, match="QNode inputs have to explicitly specify requires_grad=True"
+            UserWarning, match="inputs have to explicitly specify requires_grad=True"
         ):
             qml.jacobian(np.sin)(arr)
 

@@ -653,7 +653,7 @@ class TestQubitGradient:
             return qml.expval(qml.PauliZ(0))
 
         with pytest.warns(
-            UserWarning, match="QNode inputs have to explicitly specify requires_grad=True"
+            UserWarning, match="inputs have to explicitly specify requires_grad=True"
         ):
             qml.grad(test)(0.3)
 
@@ -669,7 +669,7 @@ class TestQubitGradient:
             return qml.probs(wires=[0])
 
         with pytest.warns(
-            UserWarning, match="QNode inputs have to explicitly specify requires_grad=True"
+            UserWarning, match="inputs have to explicitly specify requires_grad=True"
         ):
             qml.jacobian(test)(0.3)
 
