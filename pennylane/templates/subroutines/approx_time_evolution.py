@@ -97,9 +97,9 @@ class ApproxTimeEvolution(Operation):
         tensor([-0.41614684 -0.41614684], requires_grad=True)
     """
 
-    num_params = 3
+    num_params = 2  # template has two trainable parameters
     num_wires = AnyWires
-    par_domain = "A"
+    par_domain = "R"
     grad_method = None
 
     def __init__(self, hamiltonian, time, n, do_queue=True, id=None):
@@ -115,18 +115,20 @@ class ApproxTimeEvolution(Operation):
         wire_list = [term.wires for term in hamiltonian.ops]
         unique_wires = list(set(wire_list))
 
+        # non-trainable and non-numeric parameters are stored as
+        # attributes
         self.hamiltonian = hamiltonian
+        self.n = n
 
+        # trainable parameters are passed to the base init method
         super().__init__(
-            qml.math.stack(hamiltonian.data), time, n, wires=unique_wires, do_queue=do_queue, id=id
+            qml.math.stack(hamiltonian.data), time, wires=unique_wires, do_queue=do_queue, id=id
         )
 
     def expand(self):
 
-        hamiltonian = self.hamiltonian
         coeffs = self.parameters[0]
         time = self.parameters[1]
-        n = self.parameters[2]
 
         pauli = {"Identity": "I", "PauliX": "X", "PauliY": "Y", "PauliZ": "Z"}
 
@@ -134,7 +136,7 @@ class ApproxTimeEvolution(Operation):
         pauli_words = []
         wires = []
 
-        for i, term in enumerate(hamiltonian.ops):
+        for i, term in enumerate(self.hamiltonian.ops):
 
             word = ""
 
@@ -152,13 +154,13 @@ class ApproxTimeEvolution(Operation):
 
             # skips terms composed solely of identities
             if word.count("I") != len(word):
-                theta.append((2 * time * coeffs[i]) / n)
+                theta.append((2 * time * coeffs[i]) / self.n)
                 pauli_words.append(word)
                 wires.append(term.wires)
 
         with qml.tape.QuantumTape() as tape:
 
-            for i in range(n):
+            for i in range(self.n):
                 for j, term in enumerate(pauli_words):
                     PauliRot(theta[j], term, wires=wires[j])
 
