@@ -14,6 +14,7 @@
 """
 This module contains the template decorator.
 """
+import warnings
 from functools import wraps
 
 
@@ -62,4 +63,9 @@ def template(func):
 
         return rec.queue
 
+    warnings.warn(
+        "The template decorator is deprecated and will be removed in release v0.20.0",
+        UserWarning,
+        stacklevel=2,
+    )
     return wrapper
