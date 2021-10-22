@@ -387,6 +387,8 @@
 
 <h3>Improvements</h3>
 
+* The `add_noise_to_tape` and `add_noise_to_qfunc` transforms have now been added, providing a simple way to add noise to a quantum circuit.
+
 * Operators now have a `label` method to determine how they are drawn.  This will
   eventually override the `RepresentationResolver` class.
   [(#1678)](https://github.com/PennyLaneAI/pennylane/pull/1678)
@@ -675,6 +677,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-Utkarsh Azad, Akash Narayanan B, Olivia Di Matteo, Andrew Gardhouse, David Ittah, Josh Izaac, Christina Lee,
+Utkarsh Azad, Akash Narayanan B, Thomas Bromley, Olivia Di Matteo, Andrew Gardhouse, David Ittah, Josh Izaac, Christina Lee,
 Romain Moyard, Carrie-Anne Rubidge, Maria Schuld, Rishabh Singh, Ingrid Strandberg, Antal Száva, Cody Wang,
 David Wierichs, Moritz Willmann.
