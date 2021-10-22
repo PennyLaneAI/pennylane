@@ -80,16 +80,15 @@ def draw(tape, wire_order=None, show_all_wires=False, decimals=None):
             mapped_wires = [wire_map[w] for w in op.wires]
             try:
                 control_wires = [wire_map[w] for w in op.control_wires]
-                target_wires = [wire_map[w] for w in op.wires if w not in op.control_wires]
             except (NotImplementedError, AttributeError):
                 control_wires = None
-                target_wires = None
 
             specialfunc = special_cases.get(op.__class__, None)
             if specialfunc is not None:
                 specialfunc(drawer, layer, mapped_wires)
 
             elif control_wires is not None:
+                target_wires = [wire_map[w] for w in op.wires if w not in op.control_wires]
                 drawer.ctrl(layer, control_wires, wires_target=target_wires)
                 drawer.box_gate(layer, target_wires, op.label(decimals=decimals) )
 
