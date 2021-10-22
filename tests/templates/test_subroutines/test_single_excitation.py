@@ -88,7 +88,7 @@ class TestDecomposition:
         sqg = 10
         cnots = 4 * (len(single_wires) - 1)
         weight = np.pi / 3
-        op = qml.templates.SingleExcitationUnitary(weight, wires=single_wires)
+        op = qml.SingleExcitationUnitary(weight, wires=single_wires)
         queue = op.expand().operations
 
         assert len(queue) == sqg + cnots
@@ -116,12 +116,12 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.SingleExcitationUnitary(0.4, wires=[1, 0, 2])
+            qml.SingleExcitationUnitary(0.4, wires=[1, 0, 2])
             return qml.expval(qml.Identity(0))
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.SingleExcitationUnitary(0.4, wires=["a", "z", "k"])
+            qml.SingleExcitationUnitary(0.4, wires=["a", "z", "k"])
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -147,7 +147,7 @@ class TestInputs:
         dev = qml.device("default.qubit", wires=5)
 
         def circuit(weight=weight):
-            qml.templates.SingleExcitationUnitary(weight=weight, wires=single_wires)
+            qml.SingleExcitationUnitary(weight=weight, wires=single_wires)
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, dev)
@@ -157,12 +157,12 @@ class TestInputs:
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.templates.SingleExcitationUnitary(0.4, wires=[1, 0, 2], id="a")
+        template = qml.SingleExcitationUnitary(0.4, wires=[1, 0, 2], id="a")
         assert template.id == "a"
 
 
 def circuit_template(weight):
-    qml.templates.SingleExcitationUnitary(weight, wires=[0, 1])
+    qml.SingleExcitationUnitary(weight, wires=[0, 1])
     return qml.expval(qml.PauliZ(0))
 
 
