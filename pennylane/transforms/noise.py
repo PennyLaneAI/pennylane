@@ -22,6 +22,7 @@ from pennylane.operation import Channel
 from pennylane.tape import QuantumTape
 from pennylane.transforms.qfunc_transforms import single_tape_transform, qfunc_transform
 from pennylane.ops.channel import __qubit_channels__
+from pennylane import QubitStateVector, BasisState
 
 
 @single_tape_transform
@@ -49,6 +50,8 @@ def add_noise_to_tape(tape: QuantumTape, noisy_op: Type[Channel], noisy_op_args:
         ValueError: if the requested ``position`` argument is now ``'start'``, ``'end'`` or
             ``'all'``
         ValueError: if the noisy operation passed in ``noisy_op`` is not a noisy channel
+        ValueError: if more than one state preparation is present in the tape, or if the preparation
+            is not at the start of the tape
 
     **Example:**
 
@@ -82,13 +85,23 @@ def add_noise_to_tape(tape: QuantumTape, noisy_op: Type[Channel], noisy_op_args:
     if not isinstance(noisy_op_args, Sequence):
         noisy_op_args = [noisy_op_args]
 
+    preps = tuple(isinstance(o, (QubitStateVector, BasisState)) for o in tape.operations)
+    valid_preps = sum(preps) == 1 and preps[0] is True or sum(preps) == 0
+    if not valid_preps:
+        raise ValueError("Only a single state preparation at the start of the circuit is supported")
+
+    if sum(preps) == 1:
+        apply(tape.operations[0])
+        start_pos = 1
+    else:
+        start_pos = 0
+
     if position == "start":
         for w in tape.wires:
             noisy_op(*noisy_op_args, wires=w)
 
-    for op in tape.operations:
+    for i, op in enumerate(tape.operations[start_pos:]):
         apply(op)
-
         if position == "all":
             for w in op.wires:
                 noisy_op(*noisy_op_args, wires=w)
