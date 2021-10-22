@@ -554,9 +554,6 @@ def test_get_unitary_matrix_autograd_differentiable(v):
         return qml.math.real(qml.math.trace(U))
 
     x = np.array(v, requires_grad=True)
-    print(
-        qml.grad(lambda theta: qml.math.real(qml.math.trace(get_unitary_matrix(circuit)(theta))))(v)
-    )
     l = loss(x)
     dl = qml.grad(loss)(x)
     matrix = qml.transforms.get_unitary_matrix(circuit)(x)
