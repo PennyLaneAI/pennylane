@@ -15,12 +15,34 @@
 This module contains integration functions for drawing tapes.
 """
 
-import pennylane as qml
-
+# cant import pennylane as a whole because of circular imports with circuit graph
+from pennylane import ops
 from pennylane.wires import Wires
 from .mpldrawer import MPLDrawer
 from .drawable_layers import drawable_layers
 from .utils import convert_wire_order
+
+def _add_swap(drawer, layer, mapped_wires):
+    drawer.SWAP(layer, mapped_wires)
+
+def _add_cswap(drawer, layer, mapped_wires):
+    drawer.ctrl(layer, wires=mapped_wires[0], wires_target=mapped_wires[1:])
+    drawer.SWAP(layer, wires=mapped_wires[1:])
+
+def _add_cx(drawer, layer, mapped_wires):
+    drawer.CNOT(layer, mapped_wires)
+
+def _add_cz(drawer, layer, mapped_wires):
+    drawer.ctrl(layer, mapped_wires)
+
+special_cases = {
+    ops.SWAP: _add_swap,
+    ops.CSWAP: _add_cswap,
+    ops.CNOT: _add_cx,
+    ops.Toffoli: _add_cx,
+    ops.MultiControlledX: _add_cx,
+    ops.CZ: _add_cz
+}
 
 def draw(tape, wire_order=None, show_all_wires=False, decimals=None):
     """docstring
@@ -47,14 +69,6 @@ def draw(tape, wire_order=None, show_all_wires=False, decimals=None):
 
     layers = drawable_layers(tape.operations, wire_map=wire_map)
 
-    m_wires = Wires([])
-    for m in tape.measurements:
-        if len(m.wires) == 0:
-            m_wires = qml.operation.AllWires
-            break
-        else:
-            m_wires += m.wires
-
     n_layers = len(layers)
     n_wires = len(wire_map)
 
@@ -71,17 +85,26 @@ def draw(tape, wire_order=None, show_all_wires=False, decimals=None):
                 control_wires = None
                 target_wires = None
 
-            if isinstance(op, qml.SWAP):
-                drawer.SWAP(layer, wires=mapped_wires)
-            elif isinstance(op, qml.CNOT):
-                drawer.CNOT(layer, mapped_wires)
+            specialfunc = special_cases.get(op.__class__, None)
+            if specialfunc is not None:
+                specialfunc(drawer, layer, mapped_wires)
+
             elif control_wires is not None:
                 drawer.ctrl(layer, control_wires, wires_target=target_wires)
                 drawer.box_gate(layer, target_wires, op.label(decimals=decimals) )
+
             else:
                 drawer.box_gate(layer, mapped_wires, op.label(decimals=decimals) )
 
-    if m_wires == qml.operation.AllWires:
+    m_wires = Wires([])
+    for m in tape.measurements:
+        if len(m.wires) == 0:
+            m_wires = -1
+            break
+        else:
+            m_wires += m.wires
+
+    if m_wires == -1:
         for wire in range(n_wires):
             drawer.measure(n_layers, wire)
     else:
