@@ -31,8 +31,7 @@ def add_noise_to_tape(
     noisy_op_args: Union[tuple, float],
     position: str = "all",
 ) -> QuantumTape:
-    r"""test()
-    Add noisy operations to an input tape.
+    r"""Add noisy operations to an input tape.
 
     The tape will be updated to have noisy gates, specified by the ``noisy_op`` argument, added
     according to the positioning specified in the ``position`` argument.
