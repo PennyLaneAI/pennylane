@@ -565,6 +565,7 @@ class QNode:
 
     def construct(self, args, kwargs):
         """Call the quantum function with a tape context, ensuring the operations get queued."""
+
         if self.interface == "autograd":
             # HOTFIX: to maintain compatibility with core, here we treat
             # all inputs that do not explicitly specify `requires_grad=False`
