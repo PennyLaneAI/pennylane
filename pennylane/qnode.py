@@ -575,6 +575,7 @@ class QNode:
                 anp.array(a, requires_grad=True) if not hasattr(a, "requires_grad") else a
                 for a in args
             ]
+
         self.qtape = self._tape()
 
         with self.qtape:
