@@ -275,7 +275,9 @@ class QubitDevice(Device):
             # not start the next computation in the zero state
             self.reset()
 
+            print(circuit.draw())
             res = self.execute(circuit)
+            print(res)
             results.append(res)
 
         if self.tracker.active:

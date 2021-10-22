@@ -546,14 +546,13 @@ class QNode:
 
         if self.expansion_strategy == "device":
             self._tape = self.device.expand_fn(self.tape, max_expansion=self.max_expansion)
+            params = self.tape.get_parameters(trainable_only=False)
+            self.tape.trainable_params = qml.math.get_trainable_indices(params)
 
         # If the gradient function is a transform, expand the tape so that
         # all operations are supported by the transform.
         if isinstance(self.gradient_fn, qml.gradients.gradient_transform):
             self._tape = self.gradient_fn.expand_fn(self._tape)
-
-        params = self.tape.get_parameters(trainable_only=False)
-        self.tape.trainable_params = qml.math.get_trainable_indices(params)
 
     def __call__(self, *args, **kwargs):
         override_shots = False
