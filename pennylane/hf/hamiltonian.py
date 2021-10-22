@@ -242,10 +242,12 @@ def generate_hamiltonian(mol, cutoff=1.0e-12):
         """
         h_ferm = generate_fermionic_hamiltonian(mol, cutoff)(*args)
 
+        h = qml.Hamiltonian([0.0j], [qml.Identity(0)])
+
         for n, t in enumerate(h_ferm[1]):
 
             if len(t) == 0:
-                h = qml.Hamiltonian([h_ferm[0][n]], [qml.Identity(0)])
+                h = h + qml.Hamiltonian([h_ferm[0][n]], [qml.Identity(0)])
 
             elif len(t) == 2:
                 op = _generate_qubit_operator(t)
