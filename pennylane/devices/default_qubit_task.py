@@ -17,8 +17,8 @@ from typing import List, Union
 from contextlib import nullcontext
 import pennylane as qml
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
-from pennylane.devices import *
-from pennylane_lightning import LightningQubit
+from .default_qubit import DefaultQubit
+#from pennylane_lightning import LightningQubit
 from .._version import __version__
 
 import numpy as np
@@ -91,20 +91,24 @@ class DefaultTask(QubitDevice):
 
     supported_devices = {"default.qubit", "default.qubit.tf", "default.qubit.jax", "lightning.qubit", }
 
-    def __init__(self, wires, *, shots=None, analytic=None, scheduler=None, backend="default.qubit", gen_report: Union[bool, str] = False):
-        try:
+    def __init__(self, wires, *, shots=None, analytic=None, client=None, backend="default.qubit", gen_report: Union[bool, str] = False, future = False):
+        if client == None:
             self.client = dist.Client(scheduler)
-        except:
-            print("Unable to connect to scheduler.")
+        else:
+            self.client = client
 
         self._backend = backend
         self._wires = wires
         self._gen_report = gen_report
+        self.num_wires = wires if isinstance(wires, int) else len(wires)
+        self._shots = None
+        self._cache = None
+        self._future = future
 
         if backend not in DefaultTask.supported_devices:
             raise("Unsupported device backend.")
 
-    def batch_execute(self, circuits: List[qml.tape.QuantumTape], **kwargs):
+    def batch_execute(self, circuits: Union[List[qml.tape.QuantumTape], qml.beta.QNode], **kwargs):
         if self._gen_report:
             filename = self._gen_report if isinstance(self._gen_report, str) else "dask-report.html"
             from dask.distributed import performance_report
@@ -114,10 +118,20 @@ class DefaultTask(QubitDevice):
 
         with cm:
             results = []
-            for circuit in circuits:
+            if isinstance(circuits, qml.beta.QNode):
+                print(idx, circuit.operations)
                 results.append(self.client.submit(DefaultTask._execute_wrapper, self._backend, self._wires, circuit))
+            elif isinstance(circuits, dask.distributed.client.Future):
+                results = self.client.submit(lambda backend, wires, tapes: [DefaultTask._execute_wrapper(backend, wires, i) for i in tapes], self._backend, self._wires, circuits)
+            else:
+                for idx,circuit in enumerate(circuits):
+                    print(idx, circuit.operations)
+                    results.append(self.client.submit(DefaultTask._execute_wrapper, self._backend, self._wires, circuit))
 
-            return self.client.gather(results)
+            if self._future:
+                return results
+            else:
+                return self.client.gather(results)
 
     def apply():
         pass
