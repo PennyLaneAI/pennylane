@@ -914,7 +914,7 @@ class TestOverridingShots:
 
     def test_overriding_device_with_shot_vector(self):
         """Overriding a device that has a batch of shots set
-        results in that original shots being returned after execution"""
+        results in original shots being returned after execution"""
         dev = qml.device("default.qubit", wires=2, shots=[10, (1, 3), 5])
 
         assert dev.shots == 18
