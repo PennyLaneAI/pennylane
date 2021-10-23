@@ -32,7 +32,7 @@ except ImportError:
     CORRECT_TF_VERSION = False
 
 
-class KerasLayerRegularized(Layer):
+class KerasLayer(Layer):
     """KerasLayer(qnode, weight_shapes: dict, output_dim, weight_specs: Optional[dict] = None, **kwargs)
     Converts a :func:`~.QNode` to a Keras
     `Layer <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer>`__.
