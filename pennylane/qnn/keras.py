@@ -16,6 +16,7 @@ API."""
 import inspect
 from collections.abc import Iterable
 from typing import Optional
+from tensorflow.keras import regularizers
 
 try:
     import tensorflow as tf
@@ -31,7 +32,7 @@ except ImportError:
     CORRECT_TF_VERSION = False
 
 
-class KerasLayer(Layer):
+class KerasLayerRegularized(Layer):
     """KerasLayer(qnode, weight_shapes: dict, output_dim, weight_specs: Optional[dict] = None, **kwargs)
     Converts a :func:`~.QNode` to a Keras
     `Layer <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer>`__.
@@ -196,7 +197,7 @@ class KerasLayer(Layer):
     """
 
     def __init__(
-        self, qnode, weight_shapes: dict, output_dim, weight_specs: Optional[dict] = None, **kwargs
+        self, qnode, weight_shapes: dict, output_dim, weight_specs: Optional[dict] = None, kernel_regularizer=None, **kwargs
     ):
         if not CORRECT_TF_VERSION:
             raise ImportError(
@@ -234,7 +235,7 @@ class KerasLayer(Layer):
         self.weight_specs = weight_specs if weight_specs is not None else {}
 
         self.qnode_weights = {}
-
+        self.kernel_regularizer = regularizers.get(kernel_regularizer)
         super().__init__(dynamic=True, **kwargs)
 
     def _signature_validation(self, qnode, weight_shapes):
@@ -270,7 +271,7 @@ class KerasLayer(Layer):
         """
         for weight, size in self.weight_shapes.items():
             spec = self.weight_specs.get(weight, {})
-            self.qnode_weights[weight] = self.add_weight(name=weight, shape=size, **spec)
+            self.qnode_weights[weight] = self.add_weight(name=weight, shape=size, regularizer=self.kernel_regularizer, **spec)
 
         super().build(input_shape)
 
