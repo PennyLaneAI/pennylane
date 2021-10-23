@@ -76,7 +76,7 @@ class TestDecomposition:
     def test_evolution_operations(self, time, hamiltonian, steps, expected_queue):
         """Tests that the sequence of gates implemented in the ApproxTimeEvolution template is correct"""
 
-        op = qml.templates.ApproxTimeEvolution(hamiltonian, time, steps)
+        op = qml.ApproxTimeEvolution(hamiltonian, time, steps)
         queue = op.expand().operations
 
         for expected_gate, gate in zip(expected_queue, queue):
@@ -128,7 +128,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.ApproxTimeEvolution(hamiltonian, time, steps)
+            qml.ApproxTimeEvolution(hamiltonian, time, steps)
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
         assert np.allclose(circuit(), expectation)
@@ -145,12 +145,12 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.ApproxTimeEvolution(hamiltonian, 0.5, 2)
+            qml.ApproxTimeEvolution(hamiltonian, 0.5, 2)
             return qml.expval(qml.Identity(0))
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.ApproxTimeEvolution(hamiltonian2, 0.5, 2)
+            qml.ApproxTimeEvolution(hamiltonian2, 0.5, 2)
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -172,7 +172,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.ApproxTimeEvolution(hamiltonian, 2, 3)
+            qml.ApproxTimeEvolution(hamiltonian, 2, 3)
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
         with pytest.raises(ValueError, match="hamiltonian must be of type pennylane.Hamiltonian"):
@@ -196,7 +196,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.ApproxTimeEvolution(hamiltonian, 2, 3)
+            qml.ApproxTimeEvolution(hamiltonian, 2, 3)
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
         with pytest.raises(
@@ -207,7 +207,7 @@ class TestInputs:
     def test_id(self):
         """Tests that the id attribute can be set."""
         h = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliY(0)])
-        template = qml.templates.ApproxTimeEvolution(h, 2, 3, id="a")
+        template = qml.ApproxTimeEvolution(h, 2, 3, id="a")
         assert template.id == "a"
 
 
@@ -218,7 +218,7 @@ n = 2
 
 
 def circuit_template(time):
-    qml.templates.ApproxTimeEvolution(hamiltonian, time, n)
+    qml.ApproxTimeEvolution(hamiltonian, time, n)
     return qml.expval(qml.PauliZ(0))
 
 
