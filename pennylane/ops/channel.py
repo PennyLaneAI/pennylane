@@ -369,11 +369,58 @@ class PauliError(Channel):
     r"""PauliError(operators, wires, p)
     Arbitrary number qubit, arbitrary Pauli error channel.
 
+    This Class returns a dictionary of Kraus Matrices specified in the operators string.
+    The  returned dictionary is organized by wires specified in the wires list. Each wire
+    in the dictionary is assigned a list of numpy arrays of Kraus Matrices specified by
+    the according operator. The operators act on the wire in the corresponding position
+    of the wire's array.
+
+    The channel is modelled by the following Kraus Matrices:
+    
+    .. math::
+        K_I = \sqrt{1-p} \begin{bmatrix}
+                1 & 0 \\
+                0 & 1
+                \end{bmatrix}
+
+    and either of
+
+    .. math::
+        K_X = \sqrt{p/3}\begin{bmatrix}
+                0 & 1  \\
+                1 & 0
+                \end{bmatrix}
+
+    .. math::
+        K_Y = \sqrt{p/3}\begin{bmatrix}
+                0 & -i \\
+                i & 0
+                \end{bmatrix}
+
+    .. math::
+        K_Z = \sqrt{p/3}\begin{bmatrix}
+                1 & 0 \\
+                0 & -1
+                \end{bmatrix}
+
+    depending on the supplied operator.
+
+    **Details:**
+
+    * Number of wires: Any (the operation can act on any number of wires)
+    * Number of parameters: 3
+
     Args:
-        operators (Sequence[str] or str): The Pauli operators acting on the specified (groups of) wires
+        operators (str): The Pauli operators acting on the specified (groups of) wires
         wires (Sequence[int]): The wires the channel acts on
-        p (Sequence[float] or float): The probability of the operator being applied
+        p (float): The probability of the operator being applied
     """
+
+    ops = {
+        "X": np.array([[0, 1], [1, 0]]),
+        "Y": np.array([[0, -1j], [1j, 0]]),
+        "Z": np.array([[1, 0], [0, -1]]),
+    }
 
     @classmethod
     def _kraus_matrices(cls, *params):
@@ -382,20 +429,18 @@ class PauliError(Channel):
         p = params[2]
 
         # check if the specified operators are legal
-        if type(operators) == str and not all(c in "IXYZ" for c in operators):
-            raise ValueError("The specified operators need to be either of 'X', 'Y', 'Z' or 'I'")
+        if type(operators) == str and not all(c in "XYZ" for c in operators):
+            raise ValueError("The specified operators need to be either of 'X', 'Y' or 'Z'")
 
-        if type(operators) == list and not all(c in "IXYZ" for c in "".join(operators)):
-            raise ValueError(
-                "The specified operators need to be combinations of 'X', 'Y', 'Z' or 'I'"
-            )
+        if type(operators) == list and not all(c in "XYZ" for c in "".join(operators)):
+            raise ValueError("The specified operators need to be combinations of 'X', 'Y', or 'Z'")
 
         # check if the number of operators matches the number of wires
         if type(operators) == list and (
             len(operators) != len(wires) or any(len(o) != len(w) for o, w in zip(operators, wires))
         ):
             raise ValueError("The number of operators must match the number of wires")
-        
+
         if type(operators) == str and len(operators) != len(wires):
             raise ValueError("The number of operators must match the number of wires")
 
@@ -406,7 +451,17 @@ class PauliError(Channel):
         if type(p) == list and sum(p) > 1.0:
             raise ValueError("the sum of p must not be larger than 1")
 
-        return super()._kraus_matrices(*params)
+        max_q = max(wires)
+
+        K = dict(zip(range(max_q), [None] * max_q))
+
+        for op, wire in sorted(zip(operators, wires), key=lambda x: x[1]):
+            if K[wire] == None:
+                K[wire] = [[(1 - np.sqrt(p)) * cls.ops["I"], np.sqrt(p) * cls.ops[op]]]
+            else:
+                K[wire] += [[(1 - np.sqrt(p)) * cls.ops["I"], np.sqrt(p) * cls.ops[op]]]
+
+        return K
 
 
 class PhaseFlip(Channel):
