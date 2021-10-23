@@ -21,6 +21,7 @@ import pkg_resources
 import numpy as _np
 from semantic_version import Spec, Version
 
+from pennylane.boolean_fn import BooleanFn
 from pennylane.queuing import apply, QueuingContext
 
 import pennylane.init
@@ -61,7 +62,6 @@ from pennylane.transforms import (
     quantum_monte_carlo,
     apply_controlled_Q,
 )
-from pennylane.utils import inv
 from pennylane.vqe import ExpvalCost, VQECost
 
 # QueuingContext and collections needs to be imported after all other pennylane imports

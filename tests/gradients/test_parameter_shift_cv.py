@@ -966,19 +966,19 @@ class TestParamShiftInterfaces:
         """Tests that the output of the parameter-shift CV transform
         can be differentiated using autograd, yielding second derivatives."""
         dev = qml.device("default.gaussian", wires=1)
-        from pennylane.interfaces.autograd import AutogradInterface
 
         r = 0.12
         phi = 0.105
 
         def cost_fn(x):
-            with AutogradInterface.apply(qml.tape.CVParamShiftTape()) as tape:
+            with qml.tape.JacobianTape() as tape:
                 qml.Squeezing(x[0], 0, wires=0)
                 qml.Rotation(x[1], wires=0)
                 qml.var(qml.X(wires=[0]))
 
             tapes, fn = param_shift_cv(tape, dev)
-            return fn([t.execute(dev) for t in tapes])[0, 1]
+            jac = fn(qml.execute(tapes, dev, param_shift_cv, gradient_kwargs={"dev": dev}))
+            return jac[0, 2]
 
         params = np.array([r, phi], requires_grad=True)
         grad = qml.jacobian(cost_fn)(params)
@@ -991,19 +991,23 @@ class TestParamShiftInterfaces:
         """Tests that the output of the parameter-shift CV transform
         can be executed using TF"""
         tf = pytest.importorskip("tensorflow")
-        from pennylane.interfaces.tf import TFInterface
 
         dev = qml.device("default.gaussian", wires=1)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
 
         with tf.GradientTape() as t:
-            with TFInterface.apply(qml.tape.CVParamShiftTape()) as tape:
+            with qml.tape.JacobianTape() as tape:
                 qml.Squeezing(params[0], 0, wires=0)
                 qml.Rotation(params[1], wires=0)
                 qml.var(qml.X(wires=[0]))
 
-            tapes, fn = qml.gradients.param_shift_cv(tape, dev)
-            jac = fn([tp.execute(dev) for tp in tapes])
+            tape.trainable_params = {0, 2}
+            tapes, fn = param_shift_cv(tape, dev)
+            jac = fn(
+                qml.execute(
+                    tapes, dev, param_shift_cv, gradient_kwargs={"dev": dev}, interface="tf"
+                )
+            )
             res = jac[0, 1]
 
         r, phi = 1.0 * params
@@ -1026,18 +1030,20 @@ class TestParamShiftInterfaces:
         """Tests that the output of the parameter-shift CV transform
         can be executed using Torch."""
         torch = pytest.importorskip("torch")
-        from pennylane.interfaces.torch import TorchInterface
 
         dev = qml.device("default.gaussian", wires=1)
         params = torch.tensor([0.543, -0.654], dtype=torch.float64, requires_grad=True)
 
-        with TorchInterface.apply(qml.tape.CVParamShiftTape()) as tape:
+        with qml.tape.JacobianTape() as tape:
             qml.Squeezing(params[0], 0, wires=0)
             qml.Rotation(params[1], wires=0)
             qml.var(qml.X(wires=[0]))
 
+        tape.trainable_params = {0, 2}
         tapes, fn = qml.gradients.param_shift_cv(tape, dev)
-        jac = fn([t.execute(dev) for t in tapes])
+        jac = fn(
+            qml.execute(tapes, dev, param_shift_cv, gradient_kwargs={"dev": dev}, interface="torch")
+        )
 
         r, phi = params.detach().numpy()
 
@@ -1062,7 +1068,6 @@ class TestParamShiftInterfaces:
         can be differentiated using JAX, yielding second derivatives."""
         jax = pytest.importorskip("jax")
         from jax import numpy as jnp
-        from pennylane.interfaces.jax import JAXInterface
         from jax.config import config
 
         config.update("jax_enable_x64", True)
@@ -1071,14 +1076,18 @@ class TestParamShiftInterfaces:
         params = jnp.array([0.543, -0.654])
 
         def cost_fn(x):
-            with JAXInterface.apply(qml.tape.CVParamShiftTape()) as tape:
+            with qml.tape.JacobianTape() as tape:
                 qml.Squeezing(params[0], 0, wires=0)
                 qml.Rotation(params[1], wires=0)
                 qml.var(qml.X(wires=[0]))
 
             tape.trainable_params = {0, 2}
             tapes, fn = qml.gradients.param_shift_cv(tape, dev)
-            jac = fn([t.execute(dev) for t in tapes])
+            jac = fn(
+                qml.execute(
+                    tapes, dev, param_shift_cv, gradient_kwargs={"dev": dev}, interface="jax"
+                )
+            )
             return jac
 
         r, phi = params

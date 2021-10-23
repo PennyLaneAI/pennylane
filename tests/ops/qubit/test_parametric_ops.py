@@ -1362,3 +1362,134 @@ class TestMultiRZ:
 
         op.generator
         spy.assert_not_called()
+
+
+label_data = [
+    (
+        qml.Rot(1.23456, 2.3456, 3.45678, wires=0),
+        "Rot",
+        "Rot\n(1.23,2.35,3.46)",
+        "Rot\n(1,2,3)",
+        "Rot⁻¹\n(1,2,3)",
+    ),
+    (qml.RX(1.23456, wires=0), "RX", "RX\n(1.23)", "RX\n(1)", "RX⁻¹\n(1)"),
+    (qml.RY(1.23456, wires=0), "RY", "RY\n(1.23)", "RY\n(1)", "RY⁻¹\n(1)"),
+    (qml.RZ(1.23456, wires=0), "RZ", "RZ\n(1.23)", "RZ\n(1)", "RZ⁻¹\n(1)"),
+    (qml.MultiRZ(1.23456, wires=0), "MultiRZ", "MultiRZ\n(1.23)", "MultiRZ\n(1)", "MultiRZ⁻¹\n(1)"),
+    (
+        qml.PauliRot(1.2345, "XYZ", wires=(0, 1, 2)),
+        "R(XYZ)",
+        "R(XYZ)\n(1.23)",
+        "R(XYZ)\n(1)",
+        "R(XYZ)⁻¹\n(1)",
+    ),
+    (
+        qml.PhaseShift(1.2345, wires=0),
+        "Rϕ",
+        "Rϕ\n(1.23)",
+        "Rϕ\n(1)",
+        "Rϕ⁻¹\n(1)",
+    ),
+    (
+        qml.ControlledPhaseShift(1.2345, wires=(0, 1)),
+        "Rϕ",
+        "Rϕ\n(1.23)",
+        "Rϕ\n(1)",
+        "Rϕ⁻¹\n(1)",
+    ),
+    (qml.CRX(1.234, wires=(0, 1)), "RX", "RX\n(1.23)", "RX\n(1)", "RX⁻¹\n(1)"),
+    (qml.CRY(1.234, wires=(0, 1)), "RY", "RY\n(1.23)", "RY\n(1)", "RY⁻¹\n(1)"),
+    (qml.CRZ(1.234, wires=(0, 1)), "RZ", "RZ\n(1.23)", "RZ\n(1)", "RZ⁻¹\n(1)"),
+    (
+        qml.CRot(1.234, 2.3456, 3.456, wires=(0, 1)),
+        "Rot",
+        "Rot\n(1.23,2.35,3.46)",
+        "Rot\n(1,2,3)",
+        "Rot⁻¹\n(1,2,3)",
+    ),
+    (qml.U1(1.2345, wires=0), "U1", "U1\n(1.23)", "U1\n(1)", "U1⁻¹\n(1)"),
+    (qml.U2(1.2345, 2.3456, wires=0), "U2", "U2\n(1.23,2.35)", "U2\n(1,2)", "U2⁻¹\n(1,2)"),
+    (
+        qml.U3(1.2345, 2.345, 3.4567, wires=0),
+        "U3",
+        "U3\n(1.23,2.35,3.46)",
+        "U3\n(1,2,3)",
+        "U3⁻¹\n(1,2,3)",
+    ),
+    (
+        qml.IsingXX(1.2345, wires=(0, 1)),
+        "IsingXX",
+        "IsingXX\n(1.23)",
+        "IsingXX\n(1)",
+        "IsingXX⁻¹\n(1)",
+    ),
+    (
+        qml.IsingYY(1.2345, wires=(0, 1)),
+        "IsingYY",
+        "IsingYY\n(1.23)",
+        "IsingYY\n(1)",
+        "IsingYY⁻¹\n(1)",
+    ),
+    (
+        qml.IsingZZ(1.2345, wires=(0, 1)),
+        "IsingZZ",
+        "IsingZZ\n(1.23)",
+        "IsingZZ\n(1)",
+        "IsingZZ⁻¹\n(1)",
+    ),
+]
+
+
+class TestLabel:
+    """Test the label method on parametric ops"""
+
+    @pytest.mark.parametrize("op, label1, label2, label3, label4", label_data)
+    def test_label_method(self, op, label1, label2, label3, label4):
+        """Test label method with plain scalers."""
+
+        assert op.label() == label1
+        assert op.label(decimals=2) == label2
+        assert op.label(decimals=0) == label3
+
+        op.inv()
+        assert op.label(decimals=0) == label4
+        op.inv()
+
+    def test_label_tf(self):
+        """Test label methods work with tensorflow variables"""
+        tf = pytest.importorskip("tensorflow")
+
+        op1 = qml.RX(tf.Variable(0.123456), wires=0)
+        assert op1.label(decimals=2) == "RX\n(0.12)"
+
+        op2 = qml.CRX(tf.Variable(0.12345), wires=(0, 1))
+        assert op2.label(decimals=2) == "RX\n(0.12)"
+
+        op3 = qml.Rot(tf.Variable(0.1), tf.Variable(0.2), tf.Variable(0.3), wires=0)
+        assert op3.label(decimals=2) == "Rot\n(0.10,0.20,0.30)"
+
+    def test_label_torch(self):
+        """Test label methods work with torch tensors"""
+        torch = pytest.importorskip("torch")
+
+        op1 = qml.RX(torch.tensor(1.23456), wires=0)
+        assert op1.label(decimals=2) == "RX\n(1.23)"
+
+        op2 = qml.CRX(torch.tensor(1.23456), wires=(0, 1))
+        assert op2.label(decimals=2) == "RX\n(1.23)"
+
+        op3 = qml.Rot(torch.tensor(0.1), torch.tensor(0.2), torch.tensor(0.3), wires=0)
+        assert op3.label(decimals=2) == "Rot\n(0.10,0.20,0.30)"
+
+    def test_label_jax(self):
+        """Test the label method works with jax"""
+        jax = pytest.importorskip("jax")
+
+        op1 = qml.RX(jax.numpy.array(1.23456), wires=0)
+        assert op1.label(decimals=2) == "RX\n(1.23)"
+
+        op2 = qml.CRX(jax.numpy.array(1.23456), wires=(0, 1))
+        assert op2.label(decimals=2) == "RX\n(1.23)"
+
+        op3 = qml.Rot(jax.numpy.array(0.1), jax.numpy.array(0.2), jax.numpy.array(0.3), wires=0)
+        assert op3.label(decimals=2) == "Rot\n(0.10,0.20,0.30)"

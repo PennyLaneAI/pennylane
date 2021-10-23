@@ -58,9 +58,7 @@ class AdamOptimizer(GradientDescentOptimizer):
         self.beta1 = beta1
         self.beta2 = beta2
         self.eps = eps
-        self.fm = None
-        self.sm = None
-        self.t = 0
+        self.accumulation = None
 
     def apply_grad(self, grad, args):
         r"""Update the variables args to take a single optimization step. Flattens and unflattens
@@ -75,18 +73,18 @@ class AdamOptimizer(GradientDescentOptimizer):
             list: the new values :math:`x^{(t+1)}`
         """
         args_new = list(args)
-        self.t += 1
+
+        if self.accumulation is None:
+            self.accumulation = {"fm": [None] * len(args), "sm": [None] * len(args), "t": 0}
+
+        self.accumulation["t"] += 1
 
         # Update step size (instead of correcting for bias)
         new_stepsize = (
-            self.stepsize * math.sqrt(1 - self.beta2 ** self.t) / (1 - self.beta1 ** self.t)
+            self.stepsize
+            * math.sqrt(1 - self.beta2 ** self.accumulation["t"])
+            / (1 - self.beta1 ** self.accumulation["t"])
         )
-
-        if self.fm is None:
-            self.fm = [None] * len(args)
-
-        if self.sm is None:
-            self.sm = [None] * len(args)
 
         trained_index = 0
         for index, arg in enumerate(args):
@@ -99,7 +97,9 @@ class AdamOptimizer(GradientDescentOptimizer):
 
                 x_new_flat = [
                     e - new_stepsize * f / (math.sqrt(s) + self.eps)
-                    for f, s, e in zip(self.fm[index], self.sm[index], x_flat)
+                    for f, s, e in zip(
+                        self.accumulation["fm"][index], self.accumulation["sm"][index], x_flat
+                    )
                 ]
                 args_new[index] = unflatten(x_new_flat, arg)
 
@@ -122,23 +122,47 @@ class AdamOptimizer(GradientDescentOptimizer):
             grad_flat (list): the flattened gradient for that trainable param
         """
         # update first moment
-        if self.fm[index] is None:
-            self.fm[index] = grad_flat
+        if self.accumulation["fm"][index] is None:
+            self.accumulation["fm"][index] = grad_flat
         else:
-            self.fm[index] = [
-                self.beta1 * f + (1 - self.beta1) * g for f, g in zip(self.fm[index], grad_flat)
+            self.accumulation["fm"][index] = [
+                self.beta1 * f + (1 - self.beta1) * g
+                for f, g in zip(self.accumulation["fm"][index], grad_flat)
             ]
 
         # update second moment
-        if self.sm[index] is None:
-            self.sm[index] = [g * g for g in grad_flat]
+        if self.accumulation["sm"][index] is None:
+            self.accumulation["sm"][index] = [g * g for g in grad_flat]
         else:
-            self.sm[index] = [
-                self.beta2 * f + (1 - self.beta2) * g * g for f, g in zip(self.sm[index], grad_flat)
+            self.accumulation["sm"][index] = [
+                self.beta2 * f + (1 - self.beta2) * g * g
+                for f, g in zip(self.accumulation["sm"][index], grad_flat)
             ]
 
     def reset(self):
         """Reset optimizer by erasing memory of past steps."""
-        self.fm = None
-        self.sm = None
-        self.t = 0
+        self.accumulation = None
+
+    @property
+    def fm(self):
+        """Returns estimated first moments of gradient"""
+        if self.accumulation is None:
+            return None
+
+        return self.accumulation["fm"]
+
+    @property
+    def sm(self):
+        """Returns estimated second moments of gradient"""
+        if self.accumulation is None:
+            return None
+
+        return self.accumulation["sm"]
+
+    @property
+    def t(self):
+        """Returns accumulated timesteps"""
+        if self.accumulation is None:
+            return None
+
+        return self.accumulation["t"]
