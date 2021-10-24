@@ -15,7 +15,7 @@
 This module contains the available built-in noisy
 quantum channels supported by PennyLane, as well as their conventions.
 """
-import numpy as np
+import pennylane.math as np
 
 from pennylane.operation import AnyWires, Channel
 
@@ -64,7 +64,7 @@ class AmplitudeDamping(Channel):
 
         K0 = np.diag([1, np.sqrt(1 - gamma)])
         K1 = np.sqrt(gamma) * np.array([[0, 1], [0, 0]])
-        return [K0, K1]
+        return np.asarray(np.stack([K0, K1]), dtype=cls.C_DTYPE)
 
 
 class GeneralizedAmplitudeDamping(Channel):
@@ -130,7 +130,7 @@ class GeneralizedAmplitudeDamping(Channel):
         K1 = np.sqrt(p) * np.sqrt(gamma) * np.array([[0, 1], [0, 0]])
         K2 = np.sqrt(1 - p) * np.diag([np.sqrt(1 - gamma), 1])
         K3 = np.sqrt(1 - p) * np.sqrt(gamma) * np.array([[0, 0], [1, 0]])
-        return [K0, K1, K2, K3]
+        return np.stack([K0, K1, K2, K3])
 
 
 class PhaseDamping(Channel):
@@ -178,7 +178,7 @@ class PhaseDamping(Channel):
 
         K0 = np.diag([1, np.sqrt(1 - gamma)])
         K1 = np.diag([0, np.sqrt(gamma)])
-        return [K0, K1]
+        return np.stack([K0, K1])
 
 
 class DepolarizingChannel(Channel):
@@ -240,7 +240,7 @@ class DepolarizingChannel(Channel):
         K1 = np.sqrt(p / 3) * np.array([[0, 1], [1, 0]])
         K2 = np.sqrt(p / 3) * np.array([[0, -1j], [1j, 0]])
         K3 = np.sqrt(p / 3) * np.array([[1, 0], [0, -1]])
-        return [K0, K1, K2, K3]
+        return np.stack([K0, K1, K2, K3])
 
 
 class BitFlip(Channel):
@@ -287,7 +287,7 @@ class BitFlip(Channel):
 
         K0 = np.sqrt(1 - p) * np.eye(2)
         K1 = np.sqrt(p) * np.array([[0, 1], [1, 0]])
-        return [K0, K1]
+        return np.stack([K0, K1])
 
 
 class ResetError(Channel):
@@ -362,7 +362,7 @@ class ResetError(Channel):
         K2 = np.sqrt(p_0) * np.array([[0, 1], [0, 0]])
         K3 = np.sqrt(p_1) * np.array([[0, 0], [1, 0]])
         K4 = np.sqrt(p_1) * np.array([[0, 0], [0, 1]])
-        return [K0, K1, K2, K3, K4]
+        return np.stack([K0, K1, K2, K3, K4])
 
 
 class PhaseFlip(Channel):
@@ -409,7 +409,7 @@ class PhaseFlip(Channel):
 
         K0 = np.sqrt(1 - p) * np.eye(2)
         K1 = np.sqrt(p) * np.array([[1, 0], [0, -1]])
-        return [K0, K1]
+        return np.stack([K0, K1])
 
 
 class QubitChannel(Channel):
@@ -462,7 +462,7 @@ class QubitChannel(Channel):
 
     @classmethod
     def _kraus_matrices(cls, *params):
-        K_list = params[0]
+        K_list = np.stack(params[0])
         return K_list
 
 

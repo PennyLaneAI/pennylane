@@ -939,6 +939,8 @@ class Channel(Operation, abc.ABC):
     """
     # pylint: disable=abstract-method
 
+    C_DTYPE = np.complex128
+
     @classmethod
     @abc.abstractmethod
     def _kraus_matrices(cls, *params):
