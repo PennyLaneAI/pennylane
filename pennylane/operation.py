@@ -1976,6 +1976,12 @@ def operation_derivative(operation) -> np.ndarray:
 
 
 @qml.BooleanFn
+def not_tape(obj):
+    """Returns ``True`` if the object is not a quantum tape"""
+    return isinstance(obj, qml.tape.QuantumTape)
+
+
+@qml.BooleanFn
 def has_gen(obj):
     """Returns ``True`` if an operator has a generator defined."""
     return hasattr(obj, "generator") and obj.generator[0] is not None
