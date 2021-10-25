@@ -88,6 +88,17 @@ more tapes as well as a classical processing function.
     ~transforms.measurement_grouping
     ~transforms.hamiltonian_expand
 
+Transforms that act on devices
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+These transforms apply to circuits just before they are
+executed on the device.
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.add_noise_to_dev
+
 Decorators and utility functions
 --------------------------------
 
@@ -119,7 +130,7 @@ from .draw import draw
 from .hamiltonian_expand import hamiltonian_expand
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
-from .noise import add_noise_to_tape, add_noise
+from .noise import add_noise_to_tape, add_noise, add_noise_to_dev
 from .optimization import (
     cancel_inverses,
     commute_controlled,
