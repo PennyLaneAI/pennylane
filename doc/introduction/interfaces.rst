@@ -88,7 +88,7 @@ Device gradients
     If not specified, the default differentiation method is ``diff_method="best"``. PennyLane
     will attempt to determine the *best* differentiation method given the device and interface.
     Typically, PennyLane will prioritize device-provided gradients, backpropagation, parameter-shift
-    rule, and finally finite-differences, in that order.
+    rule, and finally finite differences, in that order.
 
 
 Gradient transforms
