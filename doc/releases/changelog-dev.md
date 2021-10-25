@@ -387,8 +387,8 @@
 
 <h3>Improvements</h3>
 
-* The `add_noise_to_tape` and `add_noise_to_qfunc` transforms have now been added, providing a
-  simple way to add noise to a quantum circuit.
+* The `add_noise`,  `add_noise_to_tape` and `add_noise_to_dev` transforms have now been added,
+  providing a way to add simple noise to a quantum circuit.
   [(#1795)](https://github.com/PennyLaneAI/pennylane/pull/1795)
   
   The following QNode can be transformed to add noise to the circuit:
