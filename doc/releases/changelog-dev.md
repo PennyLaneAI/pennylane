@@ -631,11 +631,11 @@
 
 <h3>Breaking changes</h3>
 
-- The operator attributes `is_composable_rotation`, `is_self_inverse`,
-  `is_symmetric_over_all_wires`, and `is_symmetric_over_control_wires` have been
-  removed as attributes from the base class. They have been replaced by
-  the sets that store the names of operations with similar properties
-  in `ops/qubit/attributes.py`.
+- The operator attributes `has_unitary_generator`, `is_composable_rotation`,
+  `is_self_inverse`, `is_symmetric_over_all_wires`, and
+  `is_symmetric_over_control_wires` have been removed as attributes from the
+  base class. They have been replaced by the sets that store the names of
+  operations with similar properties in `ops/qubit/attributes.py`.
   [(#1763)](https://github.com/PennyLaneAI/pennylane/pull/1763)
 
 * The `qml.inv` function has been removed, `qml.adjoint` should be used

@@ -106,7 +106,6 @@ wires=0)`` followed by ``qml.RZ(0.2, wires=0)`` is equivalent to performing
 a single rotation ``qml.RZ(0.3, wires=0)``.
 """
 
-
 has_unitary_generator = Attribute(
     [
         "RX",

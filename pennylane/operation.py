@@ -99,6 +99,7 @@ new :class:`~pennylane.ops.qubit.attributes.Attribute` objects.
 
     ~pennylane.ops.qubit.attributes.Attribute
     ~pennylane.ops.qubit.attributes.composable_rotations
+    ~pennylane.ops.qubit.attributes.has_unitary_generator
     ~pennylane.ops.qubit.attributes.self_inverses
     ~pennylane.ops.qubit.attributes.symmetric_over_all_wires
     ~pennylane.ops.qubit.attributes.symmetric_over_control_wires
