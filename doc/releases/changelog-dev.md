@@ -698,6 +698,10 @@
 
 * Corrects the docstring of `ExpvalCost` by adding `wires` to the signature of the `ansatz` argument. [(#1715)](https://github.com/PennyLaneAI/pennylane/pull/1715)
 
+* Updates the 'Gradients and training' quickstart guide to provide information
+  on gradient transforms.
+  [(#1751)](https://github.com/PennyLaneAI/pennylane/pull/1751)
+
 * All instances of `qnode.draw()` have been updated to instead use the transform `qml.draw(qnode)`.
   [(#1750)](https://github.com/PennyLaneAI/pennylane/pull/1750)
 
