@@ -70,4 +70,5 @@ def template(func):
             func(*args, **kwargs)
 
         return rec.queue
+
     return wrapper

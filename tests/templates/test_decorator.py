@@ -107,6 +107,7 @@ class TestDecorator:
     def test_deprecated_decorator_no_warn_if_not_called(self, recwarn):
         """Test that decorating a function with the template decorator does not
         raise a warning if the function is not being called."""
+
         @template
         def my_template(wires):
             decorated_dummy_template(wires)
