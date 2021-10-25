@@ -28,11 +28,7 @@ class TestQFT:
     @pytest.mark.parametrize("inverse", [True, False])
     def test_QFT(self, inverse):
         """Test if the QFT matrix is equal to a manually-calculated version for 3 qubits"""
-        op = (
-            qml.templates.QFT(wires=range(3)).inv()
-            if inverse
-            else qml.templates.QFT(wires=range(3))
-        )
+        op = qml.QFT(wires=range(3)).inv() if inverse else qml.QFT(wires=range(3))
         res = op.matrix
         exp = QFT.conj().T if inverse else QFT
         assert np.allclose(res, exp)
@@ -40,7 +36,7 @@ class TestQFT:
     @pytest.mark.parametrize("n_qubits", range(2, 6))
     def test_QFT_decomposition(self, n_qubits):
         """Test if the QFT operation is correctly decomposed"""
-        op = qml.templates.QFT(wires=range(n_qubits))
+        op = qml.QFT(wires=range(n_qubits))
         decomp = op.decomposition(wires=range(n_qubits))
 
         dev = qml.device("default.qubit", wires=n_qubits)
@@ -53,7 +49,7 @@ class TestQFT:
             out_states.append(dev.state)
 
         reconstructed_unitary = np.array(out_states).T
-        expected_unitary = qml.templates.QFT(wires=range(n_qubits)).matrix
+        expected_unitary = qml.QFT(wires=range(n_qubits)).matrix
 
         assert np.allclose(reconstructed_unitary, expected_unitary)
 
@@ -65,8 +61,8 @@ class TestQFT:
 
         @qml.qnode(dev)
         def circ(n_qubits):
-            qml.adjoint(qml.templates.QFT)(wires=range(n_qubits))
-            qml.templates.QFT(wires=range(n_qubits))
+            qml.adjoint(qml.QFT)(wires=range(n_qubits))
+            qml.QFT(wires=range(n_qubits))
             return qml.state()
 
         assert np.allclose(1, circ(n_qubits)[0], tol)
@@ -79,13 +75,13 @@ class TestQFT:
         """Test if the QFT adjoint operation has the right decomposition"""
 
         # QFT adjoint has right decompositions
-        qft = qml.templates.QFT(wires=range(n_qubits))
+        qft = qml.QFT(wires=range(n_qubits))
         qft_dec = qft.expand().operations
 
         expected_op = [x.adjoint() for x in qft_dec]
         expected_op.reverse()
 
-        adj = qml.templates.QFT(wires=range(n_qubits)).adjoint()
+        adj = qml.QFT(wires=range(n_qubits)).adjoint()
         op = adj.expand().operations
 
         for j in range(0, len(op)):
