@@ -196,8 +196,8 @@ def add_noise_to_dev(
 
     .. warning::
 
-        This device transform is a beta feature. Use the :class:`~.beta.QNode` decorator to create
-        compatible QNodes and use :func:`~.batch.execute` to execute quantum tapes.
+        This device transform is a beta feature. Use the :class:`pennylane.beta.QNode` decorator to
+        create compatible QNodes and use :func:`~.execute` to execute quantum tapes.
 
     Args:
         device (Device): the device to be transformed
