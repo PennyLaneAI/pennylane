@@ -485,7 +485,7 @@ def state():
 
     .. UsageDetails::
 
-        A QNode with the `qml.state` output can be used in a cost function with
+        A QNode with the ``qml.state`` output can be used in a cost function with
         is then differentiated:
 
         >>> dev = qml.device('default.qubit', wires=2)
