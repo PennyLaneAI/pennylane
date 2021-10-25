@@ -17,7 +17,7 @@ Provides transforms for adding simple noise models to quantum circuits.
 from collections.abc import Sequence
 from typing import Type, Union
 
-from pennylane import BasisState, QubitStateVector, apply
+from pennylane import BasisState, QubitStateVector, apply, Device
 from pennylane.operation import Channel
 from pennylane.ops.channel import __qubit_channels__
 from pennylane.tape import QuantumTape
@@ -177,3 +177,81 @@ add_noise.__doc__ = """Add noisy operations to an input quantum function.
      0: ──RX(0.9)──╭C──RY(0.5)──AmplitudeDamping(0.2)──╭┤ ⟨Z ⊗ Z⟩ 
      1: ──RY(0.4)──╰X──RX(0.6)──AmplitudeDamping(0.2)──╰┤ ⟨Z ⊗ Z⟩ 
 """
+
+
+def add_noise_to_dev(
+    device: Device,
+    noisy_op: Type[Channel],
+    noisy_op_args: Union[tuple, float],
+    position: str = "all",
+):
+    """Add noisy operations to an input device.
+
+    After applying this transform, circuits executed on the device will have noisy gates added.
+    The gates are specified by the ``noisy_op`` argument and positioned according to the
+    ``position`` argument. The device is transformed in-place.
+
+    This transform is only compatible with devices that support noisy operations (of type
+    :class:`~.Channel`), such as ``default.mixed``.
+
+    .. warning::
+
+        This device transform is a beta feature. Use the :class:`~.beta.QNode` decorator to create
+        compatible QNodes and use :func:`~.batch.execute` to execute quantum tapes.
+
+    Args:
+        device (Device): the device to be transformed
+        noisy_op (Type[Channel]): the noisy operation to be added at positions within the function
+        noisy_op_args (tuple or float): the arguments fed to the noisy operation, or a single float
+            specifying the noise strength
+        position (str): Specification of where to add noise. Should be one of: ``"all"`` to add
+            the noisy operation after all gates; ``"start"`` to add the noisy operation to all wires
+            at the start of the circuit; ``"end"`` to add the noisy operation to all wires at the
+            end of the circuit.
+
+    Raises:
+        ValueError: if the noisy operation passed in ``noisy_op`` applies to more than one wire
+        ValueError: if the requested ``position`` argument is now ``'start'``, ``'end'`` or
+            ``'all'``
+        ValueError: if the noisy operation passed in ``noisy_op`` is not a noisy channel
+        ValueError: if more than one state preparation is present in the function, or if the
+            preparation is not at the start of the function
+
+    **Example:**
+
+    Consider the following QNode:
+
+    .. code-block:: python3
+
+        from pennylane.beta import qnode
+
+        dev = qml.device("default.mixed", wires=4)
+
+        @qnode(dev)
+        def f(w, x, y, z):
+            qml.RX(w, wires=0)
+            qml.RY(x, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RY(y, wires=0)
+            qml.RX(z, wires=1)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+    Execution of the circuit on ``dev`` will be noise-free:
+
+    >>> f(0.9, 0.4, 0.5, 0.6)
+    tensor(0.86243536, requires_grad=True)
+
+    However, noise can be easily added to the device:
+
+    >>> qml.transforms.add_noise_to_dev(dev, qml.AmplitudeDamping, 0.2)
+    >>> f(0.9, 0.4, 0.5, 0.6)
+    tensor(0.72945434, requires_grad=True)
+    """
+    # TODO: Remove warning in docstrings once new QNode replaces the old
+    original_expand_fn = device.expand_fn
+
+    def new_expand_fn(circuit, max_expansion=10):
+        new_tape = add_noise_to_tape(circuit, noisy_op, noisy_op_args, position)
+        return original_expand_fn(new_tape, max_expansion=max_expansion)
+
+    device.expand_fn = new_expand_fn
