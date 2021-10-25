@@ -57,7 +57,7 @@ class Attribute(set):
 
             if issubclass(obj, qml.operation.Operator):
                 return super().add(obj.__name__)
-                
+
             raise TypeError
 
         except TypeError:
@@ -84,8 +84,19 @@ class Attribute(set):
 
         return False
 
+
 composable_rotations = Attribute(
-    ["RX", "RY", "RZ", "PhaseShift", "CRX", "CRY", "CRZ", "ControlledPhaseShift", "Rot",]
+    [
+        "RX",
+        "RY",
+        "RZ",
+        "PhaseShift",
+        "CRX",
+        "CRY",
+        "CRZ",
+        "ControlledPhaseShift",
+        "Rot",
+    ]
 )
 """Operations for which composing multiple copies of the operation results in an
 addition (or alternative accumulation) of parameters.
@@ -101,7 +112,12 @@ self_inverses = Attribute(
 )
 """Operations that are their own inverses."""
 
-symmetric_over_all_wires = Attribute(["CZ", "SWAP",])
+symmetric_over_all_wires = Attribute(
+    [
+        "CZ",
+        "SWAP",
+    ]
+)
 """Operations that are the same if you exchange the order of wires.
 
 For example, ``qml.CZ(wires=[0, 1])`` has the same effect as ``qml.CZ(wires=[1,
