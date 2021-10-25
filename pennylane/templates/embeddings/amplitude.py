@@ -123,9 +123,7 @@ class AmplitudeEmbedding(Operation):
     par_domain = "A"
     grad_method = None
 
-    def __init__(
-        self, features, wires, pad_with=None, normalize=False, do_queue=True, id=None
-    ):
+    def __init__(self, features, wires, pad_with=None, normalize=False, do_queue=True, id=None):
 
         wires = Wires(wires)
         self.pad_with = pad_with
