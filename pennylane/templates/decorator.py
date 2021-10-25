@@ -52,6 +52,9 @@ def template(func):
 
     Returns:
         callable: The wrapper function
+
+    .. warning::
+        Use of the template decorator is deprecated and will be removed in release `0.20.0`.
     """
     import pennylane as qml  # pylint: disable=import-outside-toplevel
 
