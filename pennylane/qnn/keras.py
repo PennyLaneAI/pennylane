@@ -197,7 +197,13 @@ class KerasLayer(Layer):
     """
 
     def __init__(
-        self, qnode, weight_shapes: dict, output_dim, weight_specs: Optional[dict] = None, kernel_regularizer=None, **kwargs
+        self,
+        qnode,
+        weight_shapes: dict,
+        output_dim,
+        weight_specs: Optional[dict] = None,
+        kernel_regularizer=None,
+        **kwargs
     ):
         if not CORRECT_TF_VERSION:
             raise ImportError(
@@ -208,7 +214,13 @@ class KerasLayer(Layer):
             )
 
         self.weight_shapes = {
-            weight: (tuple(size) if isinstance(size, Iterable) else (size,) if size > 1 else ())
+            weight: (
+                tuple(size)
+                if isinstance(size, Iterable)
+                else (size,)
+                if size > 1
+                else ()
+            )
             for weight, size in weight_shapes.items()
         }
 
@@ -230,7 +242,9 @@ class KerasLayer(Layer):
         if isinstance(output_dim, Iterable) and len(output_dim) > 1:
             self.output_dim = tuple(output_dim)
         else:
-            self.output_dim = output_dim[0] if isinstance(output_dim, Iterable) else output_dim
+            self.output_dim = (
+                output_dim[0] if isinstance(output_dim, Iterable) else output_dim
+            )
 
         self.weight_specs = weight_specs if weight_specs is not None else {}
 
@@ -261,7 +275,9 @@ class KerasLayer(Layer):
 
         if inspect.Parameter.VAR_KEYWORD not in param_kinds:
             if set(weight_shapes.keys()) | {self.input_arg} != set(sig.keys()):
-                raise ValueError("Must specify a shape for every non-input parameter in the QNode")
+                raise ValueError(
+                    "Must specify a shape for every non-input parameter in the QNode"
+                )
 
     def build(self, input_shape):
         """Initializes the QNode weights.
@@ -271,7 +287,9 @@ class KerasLayer(Layer):
         """
         for weight, size in self.weight_shapes.items():
             spec = self.weight_specs.get(weight, {})
-            self.qnode_weights[weight] = self.add_weight(name=weight, shape=size, regularizer=self.kernel_regularizer, **spec)
+            self.qnode_weights[weight] = self.add_weight(
+                name=weight, shape=size, regularizer=self.kernel_regularizer, **spec
+            )
 
         super().build(input_shape)
 
@@ -304,7 +322,10 @@ class KerasLayer(Layer):
         Returns:
             tensor: output datapoint
         """
-        kwargs = {**{self.input_arg: x}, **{k: 1.0 * w for k, w in self.qnode_weights.items()}}
+        kwargs = {
+            **{self.input_arg: x},
+            **{k: 1.0 * w for k, w in self.qnode_weights.items()},
+        }
         return self.qnode(**kwargs)
 
     def compute_output_shape(self, input_shape):
