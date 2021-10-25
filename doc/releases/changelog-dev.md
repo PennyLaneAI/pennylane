@@ -394,12 +394,12 @@
   The following QNode can be transformed to add noise to the circuit:
 
   ```python
-  from pennylane.transforms import add_noise_to_qfunc
+  from pennylane.transforms import add_noise
     
   dev = qml.device("default.mixed", wires=2)
         
   @qml.qnode(dev)
-  @add_noise_to_qfunc(qml.AmplitudeDamping, 0.2, position="end")
+  @add_noise(qml.AmplitudeDamping, 0.2, position="end")
   def f(w, x, y, z):
       qml.RX(w, wires=0)
       qml.RY(x, wires=1)

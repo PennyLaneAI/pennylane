@@ -122,8 +122,8 @@ def add_noise_to_tape(
         apply(m)
 
 
-add_noise_to_qfunc = qfunc_transform(add_noise_to_tape)
-add_noise_to_qfunc.__doc__ = """Add noisy operations to an input quantum function.
+add_noise = qfunc_transform(add_noise_to_tape)
+add_noise.__doc__ = """Add noisy operations to an input quantum function.
 
     The function will be updated to have noisy gates, specified by the ``noisy_op`` argument, added
     according to the positioning specified in the ``position`` argument.
@@ -155,12 +155,12 @@ add_noise_to_qfunc.__doc__ = """Add noisy operations to an input quantum functio
     
     .. code-block:: python3
     
-        from pennylane.transforms import add_noise_to_qfunc
+        from pennylane.transforms import add_noise
     
         dev = qml.device("default.mixed", wires=2)
         
         @qml.qnode(dev)
-        @add_noise_to_qfunc(qml.AmplitudeDamping, 0.2, position="end")
+        @add_noise(qml.AmplitudeDamping, 0.2, position="end")
         def f(w, x, y, z):
             qml.RX(w, wires=0)
             qml.RY(x, wires=1)
