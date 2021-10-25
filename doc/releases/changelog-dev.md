@@ -389,7 +389,7 @@
 <h3>Improvements</h3>
 
 * The `add_noise` and `add_noise_to_dev` transforms have now been added,
-  providing a way to add simple noise to a quantum circuit.
+  providing a way to insert simple noise into a quantum circuit.
   [(#1795)](https://github.com/PennyLaneAI/pennylane/pull/1795)
   
   The following QNode can be transformed to add noise to the circuit:
