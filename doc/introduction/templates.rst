@@ -25,37 +25,37 @@ Hence, they usually take a data sample such as a feature vector as an argument. 
 trainable parameters, and they may be constructed from repeated layers.
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.embeddings.AmplitudeEmbedding.html
+    :link: ../code/api/pennylane.AmplitudeEmbedding.html
     :description: AmplitudeEmbedding
     :figure: ../_static/templates/embeddings/amplitude.png
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.embeddings.AngleEmbedding.html
+    :link: ../code/api/pennylane.AngleEmbedding.html
     :description: AngleEmbedding
     :figure: ../_static/templates/embeddings/angle.png
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.embeddings.BasisEmbedding.html
+    :link: ../code/api/pennylane.BasisEmbedding.html
     :description: BasisEmbedding
     :figure: ../_static/templates/embeddings/basis.png
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.embeddings.DisplacementEmbedding.html
+    :link: ../code/api/pennylane.DisplacementEmbedding.html
     :description: DisplacementEmbedding
     :figure: ../_static/templates/embeddings/displacement.png
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.embeddings.IQPEmbedding.html
+    :link: ../code/api/pennylane.IQPEmbedding.html
     :description: IQPEmbedding
     :figure: ../_static/templates/embeddings/iqp.png
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.embeddings.QAOAEmbedding.html
+    :link: ../code/api/pennylane.QAOAEmbedding.html
     :description: QAOAEmbedding
     :figure: ../_static/templates/embeddings/qaoa.png
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.embeddings.SqueezingEmbedding.html
+    :link: ../code/api/pennylane.SqueezingEmbedding.html
     :description: SqueezingEmbedding
     :figure: ../_static/templates/embeddings/squeezing.png
 
@@ -68,49 +68,47 @@ trainable parameters, and they may be constructed from repeated layers.
 Layer templates
 ---------------
 
-.. currentmodule:: pennylane.templates.layers
-
 Layer architectures define sequences of trainable gates that are repeated like the layers in a
 neural network. Note that arbitrary templates or operations can also be repeated using the
 :func:`~pennylane.layer` function.
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.layers.CVNeuralNetLayers.html
+    :link: ../code/api/pennylane.CVNeuralNetLayers.html
     :description: CVNeuralNetLayers
     :figure: ../_static/templates/layers/cvqnn.png
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.layers.RandomLayers.html
+    :link: ../code/api/pennylane.RandomLayers.html
     :description: RandomLayers
     :figure: ../_static/templates/layers/random.png
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.layers.StronglyEntanglingLayers.html
+    :link: ../code/api/pennylane.StronglyEntanglingLayers.html
     :description: StronglyEntanglingLayers
     :figure: ../_static/templates/layers/strongly_entangling.png
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.layers.SimplifiedTwoDesign.html
+    :link: ../code/api/pennylane.SimplifiedTwoDesign.html
     :description: SimplifiedTwoDesign
     :figure: ../_static/templates/layers/simplified_two_design.png
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.layers.BasicEntanglerLayers.html
+    :link: ../code/api/pennylane.BasicEntanglerLayers.html
     :description: BasicEntanglerLayers
     :figure: ../_static/templates/layers/basic_entangler.png
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.layers.ParticleConservingU2.html
+    :link: ../code/api/pennylane.ParticleConservingU2.html
     :description: ParticleConservingU2
     :figure: ../_static/templates/layers/particle_conserving_u2.png
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.layers.ParticleConservingU1.html
+    :link: ../code/api/pennylane.ParticleConservingU1.html
     :description: ParticleConservingU1
     :figure: ../_static/templates/layers/particle_conserving_u1_thumbnail.png
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.layers.GateFabric.html
+    :link: ../code/api/pennylane.GateFabric.html
     :description: GateFabric
     :figure: ../_static/templates/layers/gate_fabric_layer.png
 
@@ -128,17 +126,17 @@ state. In contrast to embeddings that can in principle be used anywhere in a cir
 state preparation is typically used as the first operation.
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.state_preparations.BasisStatePreparation.html
+    :link: ../code/api/pennylane.BasisStatePreparation.html
     :description: BasisStatePreparation
     :figure: ../_static/templates/state_preparations/basis.png
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.state_preparations.MottonenStatePreparation.html
+    :link: ../code/api/pennylane.MottonenStatePreparation.html
     :description: MottonnenStatePrep
     :figure: ../_static/templates/state_preparations/mottonen.png
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.state_preparations.ArbitraryStatePreparation.html
+    :link: ../code/api/pennylane.ArbitraryStatePreparation.html
     :description: ArbitraryStatePreparation
     :figure: ../_static/templates/subroutines/arbitrarystateprep.png
 
@@ -154,67 +152,67 @@ Other subroutines
 Other useful templates which do not belong to the previous categories can be found here.
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.subroutines.GroverOperator.html
+    :link: ../code/api/pennylane.GroverOperator.html
     :description: Grover Diffusion Operator
     :figure: ../_static/templates/subroutines/grover.svg
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.subroutines.Interferometer.html
+    :link: ../code/api/pennylane.Interferometer.html
     :description: Interferometer
     :figure: ../_static/templates/subroutines/interferometer.png
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.subroutines.SingleExcitationUnitary.html
+    :link: ../code/api/pennylane.SingleExcitationUnitary.html
     :description: SingleExcitationUnitary
     :figure: ../_static/templates/subroutines/single_excitation_unitary.png
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.subroutines.DoubleExcitationUnitary.html
+    :link: ../code/api/pennylane.DoubleExcitationUnitary.html
     :description: DoubleExcitationUnitary
     :figure: ../_static/templates/subroutines/double_excitation_unitary.png    
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.subroutines.UCCSD.html
+    :link: ../code/api/pennylane.UCCSD.html
     :description: UCCSD
     :figure: ../_static/templates/subroutines/uccsd.png  
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.subroutines.kUpCCGSD.html
+    :link: ../code/api/pennylane.kUpCCGSD.html
     :description: k-UpCCGSD
     :figure: ../_static/templates/subroutines/kupccgsd.png  
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.subroutines.ArbitraryUnitary.html
+    :link: ../code/api/pennylane.ArbitraryUnitary.html
     :description: ArbitraryUnitary
     :figure: ../_static/templates/subroutines/arbitraryunitary.png
 
 .. customgalleryitem::
-  :link: ../code/api/pennylane.templates.subroutines.ApproxTimeEvolution.html
+  :link: ../code/api/pennylane.ApproxTimeEvolution.html
   :description: ApproxTimeEvolution
   :figure: ../_static/templates/subroutines/approx_time_evolution.png
 
 .. customgalleryitem::
-  :link: ../code/api/pennylane.templates.subroutines.Permute.html
+  :link: ../code/api/pennylane.Permute.html
   :description: Permute
   :figure: ../_static/templates/subroutines/permute.png
 
 .. customgalleryitem::
-  :link: ../code/api/pennylane.templates.subroutines.QuantumPhaseEstimation.html
+  :link: ../code/api/pennylane.QuantumPhaseEstimation.html
   :description: QuantumPhaseEstimation
   :figure: ../_static/templates/subroutines/qpe.svg
 
 .. customgalleryitem::
-  :link: ../code/api/pennylane.templates.subroutines.QuantumMonteCarlo.html
+  :link: ../code/api/pennylane.QuantumMonteCarlo.html
   :description: QuantumMonteCarlo
   :figure: ../_static/templates/subroutines/qmc.svg
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.subroutines.AllSinglesDoubles.html
+    :link: ../code/api/pennylane.AllSinglesDoubles.html
     :description: AllSinglesDoubles
     :figure: ../_static/templates/subroutines/all_singles_doubles.png
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.subroutines.QFT.html
+    :link: ../code/api/pennylane.QFT.html
     :description: QuantumFourierTransform
     :figure: ../_static/templates/subroutines/qft.svg
 	
@@ -346,3 +344,15 @@ As suggested by the camel-case naming, built-in templates in PennyLane are class
 data structures than functions, since they can define properties and methods of templates (such as gradient
 recipes or matrix representations). Consult the :ref:`Contributing templates<contributing_templates>`
 page to learn how to code up your own template class, and how to add it to the PennyLane template library.
+
+Layering Function
+-----------------
+
+The layer function creates a new template by repeatedly applying a sequence of quantum
+gates to a set of wires. You can import this function both via
+``qml.layer`` and ``qml.templates.layer``.
+
+.. autosummary::
+
+    pennylane.layer
+

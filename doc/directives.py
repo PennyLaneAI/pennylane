@@ -109,7 +109,7 @@ class CustomGalleryItemDirective(Directive):
             if 'link' in self.options:
                 link = self.options['link']
             else:
-                link = "code/qml_templates"
+                link = "introduction/templates"
 
         except FileNotFoundError as e:
             print(e)
