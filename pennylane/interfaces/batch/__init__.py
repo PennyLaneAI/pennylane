@@ -15,7 +15,7 @@
 This subpackage defines functions for interfacing devices' batch execution
 capabilities with different machine learning libraries.
 """
-# pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches
+# pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches,protected-access
 import contextlib
 from functools import wraps
 import itertools
@@ -64,6 +64,7 @@ def set_shots(device, shots):
         return
 
     original_shots = device.shots
+    original_shot_vector = device._shot_vector
 
     try:
         if shots is not False and device.shots != shots:
@@ -71,6 +72,7 @@ def set_shots(device, shots):
         yield
     finally:
         device.shots = original_shots
+        device._shot_vector = original_shot_vector
 
 
 def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True, expand_fn=None):
