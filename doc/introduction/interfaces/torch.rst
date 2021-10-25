@@ -134,7 +134,7 @@ To include non-differentiable data arguments, simply set ``requires_grad=False``
 
     @qml.qnode(dev, interface='torch')
     def circuit3(weights, data):
-        qml.templates.AmplitudeEmbedding(data, normalize=True, wires=[0, 1])
+        qml.AmplitudeEmbedding(data, normalize=True, wires=[0, 1])
         qml.RX(weights[0], wires=0)
         qml.RY(weights[1], wires=1)
         qml.CNOT(wires=[0, 1])
@@ -238,12 +238,12 @@ the GPU will dominate performance; for less than 15 wires, the GPU will probably
 
     dev = qml.device('default.qubit', wires=n_wires)
 
-    params_shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=n_layers, n_wires=n_wires)
+    params_shape = qml.StronglyEntanglingLayers.shape(n_layers=n_layers, n_wires=n_wires)
     params = torch.rand(params_shape)
 
     @qml.qnode(dev, interface='torch', diff_method="backprop")
     def circuit_cuda(params):
-        qml.templates.StronglyEntanglingLayers(params, wires=range(n_wires))
+        qml.StronglyEntanglingLayers(params, wires=range(n_wires))
         return qml.expval(qml.PauliZ(0))
 
 >>> import timeit

@@ -39,7 +39,7 @@ class TestDecomposition:
 
         features = list(range(n_wires))
 
-        op = qml.templates.IQPEmbedding(features, wires=range(n_wires))
+        op = qml.IQPEmbedding(features, wires=range(n_wires))
         tape = op.expand()
 
         for i, gate in enumerate(tape.operations):
@@ -54,7 +54,7 @@ class TestDecomposition:
         expected_names = self.QUEUES[2][1] + self.QUEUES[2][1]
         expected_wires = self.QUEUES[2][2] + self.QUEUES[2][2]
 
-        op = qml.templates.IQPEmbedding(features, wires=range(3), n_repeats=2)
+        op = qml.IQPEmbedding(features, wires=range(3), n_repeats=2)
         tape = op.expand()
 
         for i, gate in enumerate(tape.operations):
@@ -79,7 +79,7 @@ class TestDecomposition:
         ]
         expected_wires = [[0], [0], [1], [1], [2], [2], *pattern]
 
-        op = qml.templates.IQPEmbedding(features, wires=range(3), pattern=pattern)
+        op = qml.IQPEmbedding(features, wires=range(3), pattern=pattern)
         tape = op.expand()
 
         for i, gate in enumerate(tape.operations):
@@ -95,12 +95,12 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.IQPEmbedding(features, wires=range(3))
+            qml.IQPEmbedding(features, wires=range(3))
             return qml.expval(qml.Identity(0))
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.IQPEmbedding(features, wires=["z", "a", "k"])
+            qml.IQPEmbedding(features, wires=["z", "a", "k"])
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -122,7 +122,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(f=None):
-            qml.templates.IQPEmbedding(features=f, wires=range(3))
+            qml.IQPEmbedding(features=f, wires=range(3))
             return [qml.expval(qml.PauliZ(w)) for w in range(3)]
 
         with pytest.raises(ValueError, match="Features must be"):
@@ -130,12 +130,12 @@ class TestInputs:
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.templates.IQPEmbedding(np.array([1, 2]), wires=[0, 1], id="a")
+        template = qml.IQPEmbedding(np.array([1, 2]), wires=[0, 1], id="a")
         assert template.id == "a"
 
 
 def circuit_template(features):
-    qml.templates.IQPEmbedding(features, range(2))
+    qml.IQPEmbedding(features, range(2))
     return qml.expval(qml.PauliZ(0))
 
 

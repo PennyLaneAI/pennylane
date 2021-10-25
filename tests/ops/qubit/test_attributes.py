@@ -28,7 +28,7 @@ class TestAttribute:
 
     def test_invalid_input(self):
         """Test that anything that is not a string or Operation throws an error."""
-        with pytest.raises(TypeError, match="Only an Operator or string"):
+        with pytest.raises(TypeError, match="can be checked for attribute inclusion"):
             assert 3 not in new_attribute
 
     def test_string_inclusion(self):
@@ -46,6 +46,12 @@ class TestAttribute:
         or not anything has been instantiated."""
         assert qml.RZ in new_attribute
         assert qml.RX not in new_attribute
+
+    def test_invalid_addition(self):
+        """Test that an error is raised if we try to add something
+        other than an Operation or a string."""
+        with pytest.raises(TypeError, match="can be added to an attribute"):
+            new_attribute.add(0)
 
     def test_inclusion_after_addition(self):
         """Test that we can add operators to the set in multiple ways."""

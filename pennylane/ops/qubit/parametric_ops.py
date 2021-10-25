@@ -57,7 +57,6 @@ class RX(Operation):
     basis = "X"
     grad_method = "A"
     generator = [PauliX, -1 / 2]
-    has_unitary_generator = True
 
     @classmethod
     def _matrix(cls, *params):
@@ -111,7 +110,6 @@ class RY(Operation):
     basis = "Y"
     grad_method = "A"
     generator = [PauliY, -1 / 2]
-    has_unitary_generator = True
 
     @classmethod
     def _matrix(cls, *params):
@@ -159,7 +157,6 @@ class RZ(DiagonalOperation):
     basis = "Z"
     grad_method = "A"
     generator = [PauliZ, -1 / 2]
-    has_unitary_generator = True
 
     @classmethod
     def _matrix(cls, *params):
@@ -220,7 +217,6 @@ class PhaseShift(DiagonalOperation):
     basis = "Z"
     grad_method = "A"
     generator = [np.array([[0, 0], [0, 1]]), 1]
-    has_unitary_generator = False
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Rϕ")
@@ -293,7 +289,6 @@ class ControlledPhaseShift(DiagonalOperation):
     basis = "Z"
     grad_method = "A"
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), 1]
-    has_unitary_generator = False
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Rϕ")
@@ -484,8 +479,6 @@ class MultiRZ(DiagonalOperation):
         if self._generator is None:
             self._generator = [np.diag(pauli_eigs(len(self.wires))), -1 / 2]
         return self._generator
-
-    has_unitary_generator = True
 
     @property
     def matrix(self):
@@ -721,8 +714,6 @@ class PauliRot(Operation):
 
         return self._generator
 
-    has_unitary_generator = True
-
     @classmethod
     def _eigvals(cls, theta, pauli_word):
         if qml.math.get_interface(theta) == "tensorflow":
@@ -823,7 +814,6 @@ class CRX(Operation):
         np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]),
         -1 / 2,
     ]
-    has_unitary_generator = False
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "RX")
@@ -912,7 +902,6 @@ class CRY(Operation):
         np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]),
         -1 / 2,
     ]
-    has_unitary_generator = False
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "RY")
@@ -996,7 +985,6 @@ class CRZ(DiagonalOperation):
         np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]),
         -1 / 2,
     ]
-    has_unitary_generator = False
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "RZ")
@@ -1172,7 +1160,6 @@ class U1(Operation):
     par_domain = "R"
     grad_method = "A"
     generator = [np.array([[0, 0], [0, 1]]), 1]
-    has_unitary_generator = False
 
     @classmethod
     def _matrix(cls, *params):
@@ -1379,7 +1366,6 @@ class IsingXX(Operation):
         np.array([[0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0], [1, 0, 0, 0]]),
         -1 / 2,
     ]
-    has_unitary_generator = True
 
     @classmethod
     def _matrix(cls, *params):
@@ -1446,7 +1432,6 @@ class IsingYY(Operation):
         np.array([[0, 0, 0, -1], [0, 0, 1, 0], [0, 1, 0, 0], [-1, 0, 0, 0]]),
         -1 / 2,
     ]
-    has_unitary_generator = True
 
     @staticmethod
     def decomposition(phi, wires):
@@ -1513,7 +1498,6 @@ class IsingZZ(Operation):
         np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]),
         -1 / 2,
     ]
-    has_unitary_generator = True
 
     @staticmethod
     def decomposition(phi, wires):

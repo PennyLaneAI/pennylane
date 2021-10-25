@@ -15,8 +15,7 @@
 This file contains a number of attributes that may be held by operators,
 and lists all operators satisfying those criteria.
 """
-from inspect import isclass
-import pennylane as qml
+from pennylane.operation import Operator
 
 
 class Attribute(set):
@@ -51,18 +50,20 @@ class Attribute(set):
     def add(self, obj):
         try:
             if isinstance(obj, str):
-                super().add(obj)
+                return super().add(obj)
 
-            elif isinstance(obj, qml.operation.Operator):
-                super().add(obj.name)
+            if isinstance(obj, Operator):
+                return super().add(obj.name)
 
-            elif issubclass(obj, qml.operation.Operator):
-                super().add(obj.__name__)
+            if issubclass(obj, Operator):
+                return super().add(obj.__name__)
 
-        except TypeError:
+            raise TypeError
+
+        except TypeError as e:
             raise TypeError(
                 "Only an Operator or string representing an Operator can be added to an attribute."
-            )
+            ) from e
 
     def __contains__(self, obj):
         """Check if the attribute contains a given operator."""
@@ -70,16 +71,16 @@ class Attribute(set):
             return super().__contains__(obj)
 
         try:
-            if isinstance(obj, qml.operation.Operator):
+            if isinstance(obj, Operator):
                 return super().__contains__(obj.name)
 
-            if issubclass(obj, qml.operation.Operator):
+            if issubclass(obj, Operator):
                 return super().__contains__(obj.__name__)
 
-        except TypeError:
+        except TypeError as e:
             raise TypeError(
                 "Only an Operator or string representing an Operator can be checked for attribute inclusion."
-            )
+            ) from e
 
         return False
 
@@ -105,18 +106,39 @@ wires=0)`` followed by ``qml.RZ(0.2, wires=0)`` is equivalent to performing
 a single rotation ``qml.RZ(0.3, wires=0)``.
 """
 
+has_unitary_generator = Attribute(
+    [
+        "RX",
+        "RY",
+        "RZ",
+        "MultiRZ",
+        "PauliRot",
+        "IsingXX",
+        "IsingYY",
+        "IsingZZ",
+        "SingleExcitationMinus",
+        "SingleExcitationPlus",
+        "DoubleExcitationMinus",
+        "DoubleExcitationPlus",
+    ]
+)
+"""Operations that have a ``generator`` and the first entry of that
+``generator`` is unitary.
+
+For example, ``qml.RZ.generator = [qml.PauliZ, -1/2]`` and ``qml.PauliZ`` is
+unitary. Contrary, ``qml.PhaseShift.generator = [np.array([[0, 0], [0, 1]]),
+1]`` where the array in the first entry is not unitary. This attribute is used
+for decompositions in algorithms using the Hadamard test like
+``qml.metric_tensor`` when used without approximation.
+"""
 
 self_inverses = Attribute(
     ["Hadamard", "PauliX", "PauliY", "PauliZ", "CNOT", "CZ", "CY", "SWAP", "Toffoli"]
 )
 """Operations that are their own inverses."""
 
-symmetric_over_all_wires = Attribute(
-    [
-        "CZ",
-        "SWAP",
-    ]
-)
+
+symmetric_over_all_wires = Attribute(["CZ", "SWAP"])
 """Operations that are the same if you exchange the order of wires.
 
 For example, ``qml.CZ(wires=[0, 1])`` has the same effect as ``qml.CZ(wires=[1,

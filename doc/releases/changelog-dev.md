@@ -423,6 +423,37 @@
 
 <h3>Improvements</h3>
 
+* The `ApproxTimeEvolution` template can now be used with Hamiltonians that have
+  trainable coefficients.
+  [(#1789)](https://github.com/PennyLaneAI/pennylane/pull/1789)
+
+  Resulting QNodes can be differentiated with respect to both the time parameter
+  *and* the Hamiltonian coefficients.
+
+  ```python
+  dev = qml.device('default.qubit', wires=2)
+  obs = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(0) @ qml.PauliX(1)]
+
+  @qml.qnode(dev)
+  def circuit(coeffs, t):
+      H = qml.Hamiltonian(coeffs, obs)
+      qml.templates.ApproxTimeEvolution(H, t, 2)
+      return qml.expval(qml.PauliZ(0))
+  ```
+
+  ```pycon
+  >>> t = np.array(0.54, requires_grad=True)
+  >>> coeffs = np.array([-0.6, 2.0], requires_grad=True)
+  >>> qml.grad(circuit)(coeffs, t)
+  (array([-1.07813375, -1.07813375]), array(-2.79516158))
+  ```
+
+  All differentiation methods, including backpropagation and the parameter-shift
+  rule, are supported.
+
+* Templates are now top level imported and can be used directly e.g. `qml.QFT(wires=0)`.
+  [(#1779)](https://github.com/PennyLaneAI/pennylane/pull/1779)
+
 * Operators now have a `label` method to determine how they are drawn.  This will
   eventually override the `RepresentationResolver` class.
   [(#1678)](https://github.com/PennyLaneAI/pennylane/pull/1678)
@@ -600,24 +631,28 @@
 
 <h3>Breaking changes</h3>
 
-- The operator attributes `is_composable_rotation`, `is_self_inverse`,
-  `is_symmetric_over_all_wires`, and `is_symmetric_over_control_wires` have been
-  removed as attributes from the base class. They have been replaced by
-  the sets that store the names of operations with similar properties
-  in `ops/qubit/attributes.py`.
+- The operator attributes `has_unitary_generator`, `is_composable_rotation`,
+  `is_self_inverse`, `is_symmetric_over_all_wires`, and
+  `is_symmetric_over_control_wires` have been removed as attributes from the
+  base class. They have been replaced by the sets that store the names of
+  operations with similar properties in `ops/qubit/attributes.py`.
   [(#1763)](https://github.com/PennyLaneAI/pennylane/pull/1763)
 
-- The input signature of an `expand_fn` used in a `batch_transform`
+* The `qml.inv` function has been removed, `qml.adjoint` should be used
+  instead.
+  [(#1778)](https://github.com/PennyLaneAI/pennylane/pull/1778)
+
+* The input signature of an `expand_fn` used in a `batch_transform`
   now **must** have the same signature as the provided `transform_fn`,
   and vice versa.
   [(#1721)](https://github.com/PennyLaneAI/pennylane/pull/1721)
 
-- The expansion rule in the `qml.metric_tensor` transform has been changed.
+* The expansion rule in the `qml.metric_tensor` transform has been changed.
   [(#1721)](https://github.com/PennyLaneAI/pennylane/pull/1721)
 
   If `hybrid=False`, the changed expansion rule might lead to a changed output.
 
-- The `qml.metric_tensor` keyword argument `diag_approx` is deprecated.
+* The `qml.metric_tensor` keyword argument `diag_approx` is deprecated.
   Approximations can be controlled with the more fine-grained `approx`
   keyword argument, with `approx="block-diag"` (the default) reproducing
   the old behaviour.
@@ -634,7 +669,7 @@
   `requires_grad=False` was explicitly set.
   [(#1638)](https://github.com/PennyLaneAI/pennylane/pull/1638)
 
-- The operation `qml.Interferometer` has been renamed `qml.InterferometerUnitary` in order to
+* The operation `qml.Interferometer` has been renamed `qml.InterferometerUnitary` in order to
   distinguish it from the template `qml.templates.Interferometer`.
   [(#1714)](https://github.com/PennyLaneAI/pennylane/pull/1714)
 
