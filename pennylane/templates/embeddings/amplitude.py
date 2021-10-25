@@ -52,7 +52,6 @@ class AmplitudeEmbedding(Operation):
         wires (Iterable): wires that the template acts on
         pad_with (float or complex): if not None, the input is padded with this constant to size :math:`2^n`
         normalize (bool): whether to automatically normalize the features
-        pad (float or complex): same as `pad`, to be deprecated
 
     Example:
 
@@ -126,17 +125,8 @@ class AmplitudeEmbedding(Operation):
     grad_method = None
 
     def __init__(
-        self, features, wires, pad_with=None, normalize=False, pad=None, do_queue=True, id=None
+        self, features, wires, pad_with=None, normalize=False, do_queue=True, id=None
     ):
-
-        # pad is replaced with the more verbose pad_with
-        if pad is not None:
-            warnings.warn(
-                "The pad argument will be replaced by the pad_with option in future versions of PennyLane.",
-                UserWarning,
-            )
-            if pad_with is None:
-                pad_with = pad
 
         wires = Wires(wires)
         self.pad_with = pad_with
