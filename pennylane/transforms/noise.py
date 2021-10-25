@@ -17,11 +17,12 @@ Provides transforms for adding simple noise models to quantum circuits.
 from collections.abc import Sequence
 from typing import Type, Union
 
-from pennylane import BasisState, QubitStateVector, apply, Device
+from pennylane import BasisState, Device, QubitStateVector, apply
 from pennylane.operation import Channel
 from pennylane.ops.channel import __qubit_channels__
 from pennylane.tape import QuantumTape
-from pennylane.transforms.qfunc_transforms import qfunc_transform, single_tape_transform
+from pennylane.transforms.qfunc_transforms import (qfunc_transform,
+                                                   single_tape_transform)
 
 
 @single_tape_transform
