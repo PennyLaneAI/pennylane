@@ -45,7 +45,7 @@ class TestDecomposition:
         features = list(range(n_wires))
         weights = np.zeros(shape=weight_shape)
 
-        op = qml.templates.QAOAEmbedding(features, weights, wires=range(n_wires))
+        op = qml.QAOAEmbedding(features, weights, wires=range(n_wires))
         tape = op.expand()
 
         for i, gate in enumerate(tape.operations):
@@ -60,7 +60,7 @@ class TestDecomposition:
         features = list(range(2))
         weights = np.zeros(shape=(1, 3))
 
-        op = qml.templates.QAOAEmbedding(features, weights, wires=range(2), local_field=local_field)
+        op = qml.QAOAEmbedding(features, weights, wires=range(2), local_field=local_field)
         tape = op.expand()
         gate_names = [gate.name for gate in tape.operations]
 
@@ -77,9 +77,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.QAOAEmbedding(
-                features=x, weights=weights, wires=range(n_wires), local_field="A"
-            )
+            qml.QAOAEmbedding(features=x, weights=weights, wires=range(n_wires), local_field="A")
             return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
 
         with pytest.raises(ValueError, match="did not recognize"):
@@ -100,7 +98,7 @@ class TestDecomposition:
 
         @qml.qnode(qubit_device)
         def circuit(x=None):
-            qml.templates.QAOAEmbedding(features=x, weights=weights, wires=range(n_subsystems))
+            qml.QAOAEmbedding(features=x, weights=weights, wires=range(n_subsystems))
             return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
 
         res = circuit(x=features[:n_subsystems])
@@ -119,7 +117,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.QAOAEmbedding(features=x, weights=weights, wires=range(2))
+            qml.QAOAEmbedding(features=x, weights=weights, wires=range(2))
             return [qml.expval(qml.PauliZ(i)) for i in range(2)]
 
         res = circuit(x=[np.pi / 2, np.pi / 2])
@@ -140,9 +138,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.QAOAEmbedding(
-                features=x, weights=weights, wires=range(n_wires), local_field="Z"
-            )
+            qml.QAOAEmbedding(features=x, weights=weights, wires=range(n_wires), local_field="Z")
             return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
 
         res = circuit(x=features)
@@ -158,12 +154,12 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.QAOAEmbedding(features, weights, wires=range(3))
+            qml.QAOAEmbedding(features, weights, wires=range(3))
             return qml.expval(qml.Identity(0))
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.QAOAEmbedding(features, weights, wires=["z", "a", "k"])
+            qml.QAOAEmbedding(features, weights, wires=["z", "a", "k"])
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -188,7 +184,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.QAOAEmbedding(features=x, weights=weights, wires=range(n_wires))
+            qml.QAOAEmbedding(features=x, weights=weights, wires=range(n_wires))
             return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
 
         with pytest.raises(ValueError, match="Features must be of "):
@@ -203,7 +199,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.QAOAEmbedding(features, weights, wires=range(n_wires))
+            qml.QAOAEmbedding(features, weights, wires=range(n_wires))
             return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
 
         with pytest.raises(ValueError, match="Features must be a one-dimensional"):
@@ -220,7 +216,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.QAOAEmbedding(features, weights, wires=range(n_wires))
+            qml.QAOAEmbedding(features, weights, wires=range(n_wires))
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Weights tensor must be of shape"):
@@ -237,19 +233,17 @@ class TestInputs:
     def test_shape(self, n_layers, n_wires, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""
 
-        shape = qml.templates.QAOAEmbedding.shape(n_layers, n_wires)
+        shape = qml.QAOAEmbedding.shape(n_layers, n_wires)
         assert shape == expected_shape
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.templates.QAOAEmbedding(
-            np.array([0]), weights=np.array([[0]]), wires=[0], id="a"
-        )
+        template = qml.QAOAEmbedding(np.array([0]), weights=np.array([[0]]), wires=[0], id="a")
         assert template.id == "a"
 
 
 def circuit_template(features, weights):
-    qml.templates.QAOAEmbedding(features, weights, range(2))
+    qml.QAOAEmbedding(features, weights, range(2))
     return qml.expval(qml.PauliZ(0))
 
 
