@@ -562,17 +562,10 @@ class ThermalRelaxationError(Channel):
         if t2 - 2 * t1 > 0:
             raise ValueError("Invalid T_2 relaxation time parameter: T_2 greater than 2 * T_1.")
         # T1 relaxation rate
-        if t1 == np.inf:
-            eT1 = 0
-            p_reset = 0
-        else:
-            eT1 = np.exp(-tg / t1)
-            p_reset = 1 - eT1
+        eT1 = np.exp(-tg / t1)
+        p_reset = 1 - eT1
         # T2 dephasing rate
-        if t2 == np.inf:
-            eT2 = 1
-        else:
-            eT2 = np.exp(-tg / t2)
+        eT2 = np.exp(-tg / t2)
 
         if t2 <= t1:
             pz = (1 - p_reset) * (1 - eT2 / eT1) / 2

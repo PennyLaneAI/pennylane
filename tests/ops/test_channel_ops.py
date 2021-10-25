@@ -48,6 +48,11 @@ class TestChannels:
             op = ops(p, p, wires=0)
         elif ops.__name__ == "ResetError":
             op = ops(p / 2, p / 3, wires=0)
+        elif ops.__name__ == "ThermalRelaxationError":
+            t1 = 100e-6
+            t2 = 100e-6
+            tg = 100e-9
+            op = ops(p, t1, t2, tg, wires=0)
         else:
             op = ops(p, wires=0)
         K_list = op.kraus_matrices
@@ -375,16 +380,9 @@ class TestThermalRelaxationError:
 
         op = channel.ThermalRelaxationError
 
-        if t1 == np.inf:
-            eT1 = 0
-            p_reset = 0
-        else:
-            eT1 = np.exp(-tg / t1)
-            p_reset = 1 - eT1
-        if t2 == np.inf:
-            eT2 = 1
-        else:
-            eT2 = np.exp(-tg / t2)
+        eT1 = np.exp(-tg / t1)
+        p_reset = 1 - eT1
+        eT2 = np.exp(-tg / t2)
         pz = (1 - p_reset) * (1 - eT2 / eT1) / 2
         pr0 = (1 - pe) * p_reset
         pr1 = pe * p_reset
@@ -459,15 +457,15 @@ class TestThermalRelaxationError:
         grad recipes are independent of channel parameter"""
 
         dev = qml.device("default.mixed", wires=1)
-        pe, t1, t2, tg = 0.0, 100e-6, 100e-6, 20e-9
+        pe = 0.0
 
         @qml.qnode(dev)
         def circuit(pe):
             qml.RX(angle, wires=0)
-            qml.ThermalRelaxationError(pe, t1, t2, tg, wires=0)
+            qml.ThermalRelaxationError(pe, 120e-6, 100e-6, 20e-9, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        gradient = np.squeeze(qml.grad(circuit)(pe, t1, t2, tg))
+        gradient = np.squeeze(qml.grad(circuit)(pe))
         assert np.allclose(
             gradient,
             np.array(
