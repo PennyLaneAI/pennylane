@@ -389,7 +389,7 @@
 <h3>Improvements</h3>
 
 * `qml.circuit_drawer.MPLDrawer` will now automatically rotate and resize text to fit inside
-  the rectangle in the `box_gate` method.
+  the rectangle created by the `box_gate` method.
   [(#1764)](https://github.com/PennyLaneAI/pennylane/pull/1764)
   
 * The `ApproxTimeEvolution` template can now be used with Hamiltonians that have

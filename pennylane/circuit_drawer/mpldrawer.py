@@ -321,7 +321,7 @@ class MPLDrawer:
 
         Keyword Args:
             extra_width (float): extra box width
-            autosize (Bool): whether to rotate and shrink text to fit
+            autosize (bool): whether to rotate and shrink text to within the box
             box_options=None (dict): any matplotlib keywords for the ``plt.Rectangle`` patch
             text_options=None (dict): any matplotlib keywords for the text
 
@@ -417,12 +417,12 @@ class MPLDrawer:
 
             w, h = self._text_dims(text_obj)
 
-            # rotate
+            # rotate the text
             if box_len > 0 and (w > max_width):
                 text_obj.set_rotation(90)
                 w, h = self._text_dims(text_obj)
 
-            # shrink
+            # shrink by decreasing the font size
             if (w > max_width) or (h > max_height):
                 current_fontsize = text_obj.get_fontsize()
                 for s in range(int(current_fontsize), 1, -1):
@@ -432,7 +432,7 @@ class MPLDrawer:
                         break
 
     def _text_dims(self, text_obj):
-        """Get width of text object in data coordinates
+        """Get width and height of text object in same coordinates as the axes
 
         Args:
             text_obj (matplotlib.text.Text)

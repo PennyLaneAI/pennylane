@@ -533,10 +533,10 @@ class TestMeasure:
 
 
 class TestAutosize:
-    """Test the autosize keyword on `box_gate`"""
+    """Test the autosize keyword of the `box_gate` method"""
 
     def test_autosize_false(self):
-        """Test text unchanged if autosize is False."""
+        """Test that the text is unchanged if autosize is set to False."""
 
         drawer = MPLDrawer(n_layers=1, n_wires=2)
         drawer.box_gate(0, (0, 1), text="very very long text", autosize=False)
@@ -628,7 +628,7 @@ class TestAutosize:
 
         plt.close()
 
-    def test_multline_text_multiwires(self):
+    def test_wide_multline_text_multiwires(self):
         """Test a wide and tall block of text is both rotated and shrunk with a multiwire box."""
 
         drawer = MPLDrawer(n_layers=1, n_wires=2)
@@ -653,8 +653,7 @@ def test_matplotlib_import_error(monkeypatch):
     an installed version of matplotlib.
 
     This test needs to be the last in the suite because it makes a permanent change
-    to the system configuration. I don't know how to better make this test so it
-    won't screw everything else up.
+    to the system configuration.
     """
     with monkeypatch.context() as m:
         m.setitem(sys.modules, "matplotlib", None)
