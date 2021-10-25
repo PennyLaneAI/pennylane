@@ -47,7 +47,7 @@ class TestDecomposition:
         weights = np.random.random(size=weight_shape)
         initial_layer = np.random.randn(n_wires)
 
-        op = qml.templates.SimplifiedTwoDesign(initial_layer, weights, wires=range(n_wires))
+        op = qml.SimplifiedTwoDesign(initial_layer, weights, wires=range(n_wires))
         queue = op.expand().operations
 
         for i, gate in enumerate(queue):
@@ -64,7 +64,7 @@ class TestDecomposition:
         initial_layer = np.random.randn(n_wires)
         weights = np.random.randn(*shape_weights)
 
-        op = qml.templates.SimplifiedTwoDesign(initial_layer, weights, wires=range(n_wires))
+        op = qml.SimplifiedTwoDesign(initial_layer, weights, wires=range(n_wires))
         queue = op.expand().operations
 
         # test the device parameters
@@ -100,7 +100,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(initial_layer, weights):
-            qml.templates.SimplifiedTwoDesign(
+            qml.SimplifiedTwoDesign(
                 initial_layer_weights=initial_layer, weights=weights, wires=range(n_wires)
             )
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
@@ -119,12 +119,12 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.SimplifiedTwoDesign(initial_layer, weights, wires=range(3))
+            qml.SimplifiedTwoDesign(initial_layer, weights, wires=range(3))
             return qml.expval(qml.Identity(0))
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.SimplifiedTwoDesign(initial_layer, weights, wires=["z", "a", "k"])
+            qml.SimplifiedTwoDesign(initial_layer, weights, wires=["z", "a", "k"])
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -145,7 +145,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(initial_layer, weights):
-            qml.templates.SimplifiedTwoDesign(initial_layer, weights, wires=range(2))
+            qml.SimplifiedTwoDesign(initial_layer, weights, wires=range(2))
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Weights tensor must have second dimension"):
@@ -165,7 +165,7 @@ class TestInputs:
         """Tests that the id attribute can be set."""
         weights = np.random.random(size=(1, 2, 2))
         initial_layer = np.random.randn(3)
-        template = qml.templates.SimplifiedTwoDesign(initial_layer, weights, wires=range(3), id="a")
+        template = qml.SimplifiedTwoDesign(initial_layer, weights, wires=range(3), id="a")
         assert template.id == "a"
 
 
@@ -183,12 +183,12 @@ class TestAttributes:
     def test_shape(self, n_layers, n_wires, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""
 
-        shape = qml.templates.SimplifiedTwoDesign.shape(n_layers, n_wires)
+        shape = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
         assert shape == expected_shape
 
 
 def circuit_template(initial_weights, weights):
-    qml.templates.SimplifiedTwoDesign(initial_weights, weights, range(3))
+    qml.SimplifiedTwoDesign(initial_weights, weights, range(3))
     return qml.expval(qml.PauliZ(0))
 
 

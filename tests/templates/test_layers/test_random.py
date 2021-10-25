@@ -27,9 +27,9 @@ class TestDecomposition:
         """Test that the circuit is fixed by the seed."""
         weights = np.random.random((2, 3))
 
-        op1 = qml.templates.RandomLayers(weights, wires=range(2), seed=41)
-        op2 = qml.templates.RandomLayers(weights, wires=range(2), seed=42)
-        op3 = qml.templates.RandomLayers(weights, wires=range(2), seed=42)
+        op1 = qml.RandomLayers(weights, wires=range(2), seed=41)
+        op2 = qml.RandomLayers(weights, wires=range(2), seed=42)
+        op3 = qml.RandomLayers(weights, wires=range(2), seed=42)
 
         queue1 = op1.expand().operations
         queue2 = op2.expand().operations
@@ -43,7 +43,7 @@ class TestDecomposition:
         """Test that the number of gates is correct."""
         weights = np.random.randn(n_layers, n_rots)
 
-        op = qml.templates.RandomLayers(weights, wires=range(2))
+        op = qml.RandomLayers(weights, wires=range(2))
         ops = op.expand().operations
 
         gate_names = [g.name for g in ops]
@@ -55,7 +55,7 @@ class TestDecomposition:
         n_rots = 500
         weights = np.random.random(size=(1, n_rots))
 
-        op = qml.templates.RandomLayers(weights, wires=range(2), ratio_imprim=ratio)
+        op = qml.RandomLayers(weights, wires=range(2), ratio_imprim=ratio)
         queue = op.expand().operations
 
         gate_names = [gate.name for gate in queue]
@@ -68,7 +68,7 @@ class TestDecomposition:
         n_rots = 5000
         weights = np.random.random(size=(2, n_rots))
 
-        op = qml.templates.RandomLayers(weights, wires=range(3))
+        op = qml.RandomLayers(weights, wires=range(3))
         queue = op.expand().operations
 
         gate_wires = [gate.wires.labels for gate in queue]
@@ -86,12 +86,12 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.RandomLayers(weights, wires=range(3))
+            qml.RandomLayers(weights, wires=range(3))
             return qml.expval(qml.Identity(0))
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.RandomLayers(weights, wires=["z", "a", "k"])
+            qml.RandomLayers(weights, wires=["z", "a", "k"])
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -111,7 +111,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(phi):
-            qml.templates.RandomLayers(phi, wires=list(range(4)))
+            qml.RandomLayers(phi, wires=list(range(4)))
             return qml.expval(qml.PauliZ(0))
 
         phi = np.array([0.04, 0.14, 3.29, 2.51])
@@ -121,7 +121,7 @@ class TestInputs:
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.templates.RandomLayers(np.random.random(size=(1, 3)), wires=range(3), id="a")
+        template = qml.RandomLayers(np.random.random(size=(1, 3)), wires=range(3), id="a")
         assert template.id == "a"
 
 
@@ -139,12 +139,12 @@ class TestAttributes:
     def test_shape(self, n_layers, n_rots, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""
 
-        shape = qml.templates.RandomLayers.shape(n_layers, n_rots)
+        shape = qml.RandomLayers.shape(n_layers, n_rots)
         assert shape == expected_shape
 
 
 def circuit_template(weights):
-    qml.templates.RandomLayers(weights, range(3), seed=42)
+    qml.RandomLayers(weights, range(3), seed=42)
     return qml.expval(qml.PauliZ(0))
 
 
