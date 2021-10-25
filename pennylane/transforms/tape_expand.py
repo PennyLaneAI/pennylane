@@ -26,7 +26,12 @@ from pennylane.operation import (
 )
 
 
-def create_expand_fn(depth, stop_at, docstring=None):
+def _update_trainable_params(tape):
+    params = tape.get_parameters(trainable_only=False)
+    tape.trainable_params = qml.math.get_trainable_indices(params)
+
+
+def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
     """Create a function for expanding a tape to a given depth, and
     with a specific stopping criterion. This is a wrapper around
     :meth:`~.QuantumTape.expand`.
@@ -37,6 +42,8 @@ def create_expand_fn(depth, stop_at, docstring=None):
             ``stop_at(obj)``, where ``obj`` is a *queueable* PennyLane object such as
             :class:`~.Operation` or :class:`~.MeasurementProcess`. It must return a
             boolean, indicating if the expansion should stop at this object.
+        device (.Device): Ensure that the expanded tape only uses native gates of the
+            given device.
         docstring (str): docstring for the generated expansion function
 
     Returns:
@@ -76,15 +83,25 @@ def create_expand_fn(depth, stop_at, docstring=None):
 
     """
     # pylint: disable=unused-argument
+    if device is not None:
+        if stop_at is None:
+            stop_at = device.stopping_condition
+        else:
+            stop_at &= device.stopping_condition
 
     def expand_fn(tape, _depth=depth, **kwargs):
-        if not all(stop_at(op) for op in tape.operations):
 
-            with qml.tape.stop_recording():
+        with qml.tape.stop_recording():
+
+            if stop_at is None:
+                tape = tape.expand(depth=_depth)
+            elif not all(stop_at(op) for op in tape.operations):
                 tape = tape.expand(depth=_depth, stop_at=stop_at)
+            else:
+                return tape
 
-            params = tape.get_parameters(trainable_only=False)
-            tape.trainable_params = qml.math.get_trainable_indices(params)
+            _update_trainable_params(tape)
+
         return tape
 
     if docstring:
