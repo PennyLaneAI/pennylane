@@ -10,12 +10,12 @@
   [(#1734)](https://github.com/PennyLaneAI/pennylane/pull/1734)
   [(#1760)](https://github.com/PennyLaneAI/pennylane/pull/1760)
 
-  `create_expand_fn` takes the default depth to which the expansion function 
+  `create_expand_fn` takes the default depth to which the expansion function
   should expand a tape, a stopping criterion, an optional device, and a docstring to be set for the
   created function.
   The stopping criterion must take a queuable object and return a boolean.
 
-* A new transform, `@qml.batch_params`, has been added, that makes QNodes 
+* A new transform, `@qml.batch_params`, has been added, that makes QNodes
   handle a batch dimension in trainable parameters.
   [(#1710)](https://github.com/PennyLaneAI/pennylane/pull/1710)
   [(#1761)](https://github.com/PennyLaneAI/pennylane/pull/1761)
@@ -376,7 +376,7 @@
   coordinates = np.array([0.0, 0.0, -0.6614, 0.0, 0.0, 0.6614])
   H, qubits = qml.qchem.molecular_hamiltonian(["H", "H"], coordinates)
   ref_state = qml.qchem.hf_state(electrons=2, qubits)
-  
+
   dev = qml.device('default.qubit', wires=qubits)
   @qml.qnode(dev)
   def ansatz(weights):
@@ -384,7 +384,7 @@
                                   init_state=ref_state)
       return qml.expval(H)
   ```
-  
+
 
 <h3>Improvements</h3>
 
@@ -465,12 +465,12 @@
 
   After wrapping, `qml.BooleanFn` can be called like the wrapped function, and
   multiple instances can be manipulated and combined with the bitwise operators
-  `&`, `|` and `~`. 
+  `&`, `|` and `~`.
 
-* `qml.probs` now accepts an attribute `op` that allows to rotate the computational basis and get the 
+* `qml.probs` now accepts an attribute `op` that allows to rotate the computational basis and get the
   probabilities in the rotated basis.
   [(#1692)](https://github.com/PennyLaneAI/pennylane/pull/1692)
-  
+
 * The `qml.beta.QNode` now supports the `qml.qnn` module.
   [(#1748)](https://github.com/PennyLaneAI/pennylane/pull/1748)
 
@@ -642,6 +642,63 @@
 
 <h3>Deprecations</h3>
 
+* Allowing cost functions to be differentiated using `qml.grad` or
+  `qml.jacobian` without explicitly marking parameters as trainable is being
+  deprecated, and will be removed in the next release.
+  Please specify the `requires_grad` attribute for every argument, or specify
+  `argnum` when using `qml.grad` or `qml.jacobian`.
+  [(#1773)](https://github.com/PennyLaneAI/pennylane/pull/1773)
+
+  The following raises a warning in v0.19.0 and will raise an error in
+  v0.20.0:
+
+  ```python
+  import pennylane as qml
+
+  dev = qml.device('default.qubit', wires=1)
+
+  @qml.qnode(dev)
+  def test(x):
+      qml.RY(x, wires=[0])
+      return qml.expval(qml.PauliZ(0))
+
+  par = 0.3
+  qml.grad(test)(par)
+  ```
+
+  Preferred approaches include specifying the `requires_grad` attribute:
+
+  ```python
+  import pennylane as qml
+  from pennylane import numpy as np
+
+  dev = qml.device('default.qubit', wires=1)
+
+  @qml.qnode(dev)
+  def test(x):
+      qml.RY(x, wires=[0])
+      return qml.expval(qml.PauliZ(0))
+
+  par = np.array(0.3, requires_grad=True)
+  qml.grad(test)(par)
+  ```
+
+  Or specifying the `argnum` argument when using `qml.grad` or `qml.jacobian`:
+
+  ```python
+  import pennylane as qml
+
+  dev = qml.device('default.qubit', wires=1)
+
+  @qml.qnode(dev)
+  def test(x):
+      qml.RY(x, wires=[0])
+      return qml.expval(qml.PauliZ(0))
+
+  par = 0.3
+  qml.grad(test, argnum=0)(par)
+  ```
+
 * The `qml.fourier.spectrum` function has been renamed to `qml.fourier.circuit_spectrum`,
   in order to clearly separate the new `qnode_spectrum` function from this one.
   `qml.fourier.spectrum` is now an alias for `circuit_spectrum` but is flagged for
@@ -657,7 +714,7 @@
 * The `QNode.draw` method has been deprecated, and will be removed in an upcoming release.
   Please use the `qml.draw` transform instead.
   [(#1746)](https://github.com/PennyLaneAI/pennylane/pull/1746)
-  
+
 * The `QNode.metric_tensor` method has been deprecated, and will be removed in an upcoming release.
   Please use the `qml.metric_tensor` transform instead.
   [(#1638)](https://github.com/PennyLaneAI/pennylane/pull/1638)
