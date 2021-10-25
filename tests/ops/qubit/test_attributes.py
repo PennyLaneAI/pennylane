@@ -60,7 +60,6 @@ class TestAttribute:
 
         assert len(new_attribute) == 5
 
-        # Test something that is an object, but not of the right type.
         with pytest.raises(TypeError, match="can be added to an attribute"):
             new_attribute.add(qml.expval(qml.PauliZ(0)))
 

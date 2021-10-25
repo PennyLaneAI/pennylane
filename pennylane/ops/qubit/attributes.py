@@ -24,7 +24,7 @@ class Attribute(set):
     **Example**
 
     Suppose we would like to store a list of which qubit operations are
-    Pauli operators. We can create a new Attribute, ``pauli_ops``, like so,
+    Pauli operators. We can create a new `Attribute`, ``pauli_ops``, like so,
     listing which operations satisfy this property.
 
     >>> pauli_ops = Attribute(["PauliX", "PauliZ"])
