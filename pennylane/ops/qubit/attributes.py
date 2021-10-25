@@ -51,13 +51,15 @@ class Attribute(set):
     def add(self, obj):
         try:
             if isinstance(obj, str):
-                super().add(obj)
+                return super().add(obj)
 
-            elif isinstance(obj, qml.operation.Operator):
-                super().add(obj.name)
+            if isinstance(obj, qml.operation.Operator):
+                return super().add(obj.name)
 
-            elif issubclass(obj, qml.operation.Operator):
-                super().add(obj.__name__)
+            if issubclass(obj, qml.operation.Operator):
+                return super().add(obj.__name__)
+                
+            raise TypeError
 
         except TypeError:
             raise TypeError(
