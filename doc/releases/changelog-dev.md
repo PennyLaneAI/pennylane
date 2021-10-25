@@ -8,9 +8,10 @@
   alongside a new `create_expand_fn` function for easily creating expansion functions
   from stopping criteria.
   [(#1734)](https://github.com/PennyLaneAI/pennylane/pull/1734)
+  [(#1760)](https://github.com/PennyLaneAI/pennylane/pull/1760)
 
   `create_expand_fn` takes the default depth to which the expansion function 
-  should expand a tape, a stopping criterion, and a docstring to be set for the
+  should expand a tape, a stopping criterion, an optional device, and a docstring to be set for the
   created function.
   The stopping criterion must take a queuable object and return a boolean.
 
@@ -419,6 +420,34 @@
    1: ──RY(0.4)──╰X──RX(0.6)──AmplitudeDamping(0.2)──╰┤ ⟨Z ⊗ Z⟩
   ``` 
 
+* The `ApproxTimeEvolution` template can now be used with Hamiltonians that have
+  trainable coefficients.
+  [(#1789)](https://github.com/PennyLaneAI/pennylane/pull/1789)
+
+  Resulting QNodes can be differentiated with respect to both the time parameter
+  *and* the Hamiltonian coefficients.
+
+  ```python
+  dev = qml.device('default.qubit', wires=2)
+  obs = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(0) @ qml.PauliX(1)]
+
+  @qml.qnode(dev)
+  def circuit(coeffs, t):
+      H = qml.Hamiltonian(coeffs, obs)
+      qml.templates.ApproxTimeEvolution(H, t, 2)
+      return qml.expval(qml.PauliZ(0))
+  ```
+
+  ```pycon
+  >>> t = np.array(0.54, requires_grad=True)
+  >>> coeffs = np.array([-0.6, 2.0], requires_grad=True)
+  >>> qml.grad(circuit)(coeffs, t)
+  (array([-1.07813375, -1.07813375]), array(-2.79516158))
+  ```
+
+  All differentiation methods, including backpropagation and the parameter-shift
+  rule, are supported.
+
 * Templates are now top level imported and can be used directly e.g. `qml.QFT(wires=0)`.
   [(#1779)](https://github.com/PennyLaneAI/pennylane/pull/1779)
 
@@ -700,6 +729,10 @@
   [(#1624)](https://github.com/PennyLaneAI/pennylane/pull/1624)
 
 * Corrects the docstring of `ExpvalCost` by adding `wires` to the signature of the `ansatz` argument. [(#1715)](https://github.com/PennyLaneAI/pennylane/pull/1715)
+
+* Updates the 'Gradients and training' quickstart guide to provide information
+  on gradient transforms.
+  [(#1751)](https://github.com/PennyLaneAI/pennylane/pull/1751)
 
 * All instances of `qnode.draw()` have been updated to instead use the transform `qml.draw(qnode)`.
   [(#1750)](https://github.com/PennyLaneAI/pennylane/pull/1750)

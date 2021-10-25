@@ -912,6 +912,32 @@ class TestOverridingShots:
         # shots were then returned to the built-in value
         assert spy.call_args_list[1][0] == (dev, 123)
 
+    def test_overriding_device_with_shot_vector(self):
+        """Overriding a device that has a batch of shots set
+        results in original shots being returned after execution"""
+        dev = qml.device("default.qubit", wires=2, shots=[10, (1, 3), 5])
+
+        assert dev.shots == 18
+        assert dev._shot_vector == [(10, 1), (1, 3), (5, 1)]
+
+        a, b = np.array([0.543, -0.654], requires_grad=True)
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliY(1))
+
+        res = execute([tape], dev, gradient_fn=param_shift, override_shots=100)[0]
+        assert len(res) == 1
+
+        # device is unchanged
+        assert dev.shots == 18
+        assert dev._shot_vector == [(10, 1), (1, 3), (5, 1)]
+
+        res = execute([tape], dev, gradient_fn=param_shift)[0]
+        assert len(res) == 5
+
     def test_gradient_integration(self, tol):
         """Test that temporarily setting the shots works
         for gradient computations"""
