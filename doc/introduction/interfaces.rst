@@ -100,10 +100,11 @@ frameworks, PennyLane also provides a library of **gradient transforms** via the
 
 Quantum gradient transforms are strategies for computing the gradient of a quantum
 circuit that work by **transforming** the quantum circuit into one or more gradient circuits.
+They accompany these circuits with a function that **post-processes** their output.
 These gradient circuits, once executed and post-processed, return the gradient
 of the original circuit.
 
-Examples of quantum gradient transforms include finite-differences and parameter-shift
+Examples of quantum gradient transforms include finite-difference rules and parameter-shift
 rules; these can be applied *directly* to QNodes:
 
 .. code-block:: python
