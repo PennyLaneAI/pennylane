@@ -1497,7 +1497,7 @@ class IsingZZ(Operation):
     generator = [
         np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]),
         -1 / 2,
-    ] 
+    ]
 
     @staticmethod
     def decomposition(phi, wires):

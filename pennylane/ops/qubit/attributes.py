@@ -60,10 +60,10 @@ class Attribute(set):
 
             raise TypeError
 
-        except TypeError:
+        except TypeError as e:
             raise TypeError(
                 "Only an Operator or string representing an Operator can be added to an attribute."
-            )
+            ) from e
 
     def __contains__(self, obj):
         """Check if the attribute contains a given operator."""
@@ -77,10 +77,10 @@ class Attribute(set):
             if issubclass(obj, Operator):
                 return super().__contains__(obj.__name__)
 
-        except TypeError:
+        except TypeError as e:
             raise TypeError(
                 "Only an Operator or string representing an Operator can be checked for attribute inclusion."
-            )
+            ) from e
 
         return False
 
