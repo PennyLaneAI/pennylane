@@ -415,6 +415,10 @@
   All differentiation methods, including backpropagation and the parameter-shift
   rule, are supported.
 
+* `qml.circuit_drawer.MPLDrawer` will now automatically rotate and resize text to fit inside
+  the rectangle in the `box_gate` method.
+  [(#1764)](https://github.com/PennyLaneAI/pennylane/pull/1764)
+
 * Templates are now top level imported and can be used directly e.g. `qml.QFT(wires=0)`.
   [(#1779)](https://github.com/PennyLaneAI/pennylane/pull/1779)
 

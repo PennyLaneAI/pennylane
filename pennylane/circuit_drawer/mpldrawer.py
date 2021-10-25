@@ -301,7 +301,16 @@ class MPLDrawer:
         for wire, ii_label in enumerate(labels):
             self._ax.text(-1.5, wire, ii_label, **text_options)
 
-    def box_gate(self, layer, wires, text="", extra_width=0, box_options=None, text_options=None):
+    def box_gate(
+        self,
+        layer,
+        wires,
+        text="",
+        extra_width=0,
+        autosize=True,
+        box_options=None,
+        text_options=None,
+    ):
         """Draws a box and adds label text to its center.
 
         Args:
@@ -312,6 +321,7 @@ class MPLDrawer:
 
         Keyword Args:
             extra_width (float): extra box width
+            autosize (Bool): whether to rotate and shrink text to fit
             box_options=None (dict): any matplotlib keywords for the ``plt.Rectangle`` patch
             text_options=None (dict): any matplotlib keywords for the text
 
@@ -348,13 +358,32 @@ class MPLDrawer:
             :width: 60%
             :target: javascript:void(0);
 
+        By default, text is rotated and/or shrunk to fit within the box. This behavior can be turned off
+        with the ``autosize=False`` keyword.
+
+        .. code-block:: python
+
+            drawer = MPLDrawer(n_layers=4, n_wires=2)
+
+            drawer.box_gate(layer=0, wires=0, text="A longer label")
+            drawer.box_gate(layer=0, wires=1, text="Label")
+
+            drawer.box_gate(layer=1, wires=(0,1), text="long multigate label")
+
+            drawer.box_gate(layer=3, wires=(0,1), text="Not autosized label", autosize=False)
+
+        .. figure:: ../../_static/drawer/box_gates_autosized.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
         """
         if box_options is None:
             box_options = {}
         if "zorder" not in box_options:
             box_options["zorder"] = 2
 
-        new_text_options = {"zorder": 3, "ha": "center", "va": "center", "fontsize": "x-large"}
+        new_text_options = {"zorder": 3, "ha": "center", "va": "center", "fontsize": 14}
         if text_options is not None:
             new_text_options.update(text_options)
 
@@ -364,21 +393,57 @@ class MPLDrawer:
         box_max = max(wires)
         box_len = box_max - box_min
         box_center = (box_max + box_min) / 2.0
+        box_width = 2 * self._box_dx + extra_width
 
         box = plt.Rectangle(
             (layer - self._box_dx - extra_width / 2, box_min - self._box_dx),
-            2 * self._box_dx + extra_width,
+            box_width,
             (box_len + 2 * self._box_dx),
             **box_options,
         )
         self._ax.add_patch(box)
 
-        self._ax.text(
+        text_obj = self._ax.text(
             layer,
             box_center,
             text,
             **new_text_options,
         )
+
+        if autosize:
+            margin = 0.1
+            max_width = box_width - margin
+            max_height = box_len + 2 * self._box_dx - 2 * margin
+
+            w, h = self._text_dims(text_obj)
+
+            # rotate
+            if box_len > 0 and (w > max_width):
+                text_obj.set_rotation(90)
+                w, h = self._text_dims(text_obj)
+
+            # shrink
+            if (w > max_width) or (h > max_height):
+                current_fontsize = text_obj.get_fontsize()
+                for s in range(int(current_fontsize), 1, -1):
+                    text_obj.set_fontsize(s)
+                    w, h = self._text_dims(text_obj)
+                    if (w < max_width) and (h < max_height):
+                        break
+
+    def _text_dims(self, text_obj):
+        """Get width of text object in data coordinates
+
+        Args:
+            text_obj (matplotlib.text.Text)
+
+        Returns:
+            width, height
+        """
+        renderer = self._fig.canvas.get_renderer()
+        bbox = text_obj.get_window_extent(renderer)
+        corners = self._ax.transData.inverted().transform(bbox)
+        return abs(corners[1][0] - corners[0][0]), abs(corners[0][1] - corners[1][1])
 
     def ctrl(self, layer, wires, wires_target=None, control_values=None, options=None):
         """Add an arbitrary number of control wires
