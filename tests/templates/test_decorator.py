@@ -15,6 +15,7 @@
 Unit tests for the :mod:`pennylane.template.decorator` module.
 Integration tests should be placed into ``test_templates.py``.
 """
+import pytest
 import pennylane as qml
 from pennylane.templates.decorator import template
 
@@ -88,3 +89,17 @@ class TestDecorator:
             assert res_op.name == exp_op.name
             assert res_op.wires == exp_op.wires
             assert res_op.data == exp_op.data
+
+    def test_deprecated_decorator(self):
+        """Test that the warning is generated."""
+
+        with pytest.warns(
+            UserWarning,
+            match="The template decorator is deprecated and will be removed in release v0.20.0",
+        ):
+
+            @template
+            def my_template(wires):
+                decorated_dummy_template(wires)
+
+            my_template([0, 1])

@@ -118,13 +118,12 @@ class QAOAEmbedding(Operation):
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane.templates import QAOAEmbedding
 
             dev = qml.device('default.qubit', wires=2)
 
             @qml.qnode(dev)
             def circuit(weights, f=None):
-                QAOAEmbedding(features=f, weights=weights, wires=range(2))
+                qml.QAOAEmbedding(features=f, weights=weights, wires=range(2))
                 return qml.expval(qml.PauliZ(0))
 
             features = [1., 2.]
@@ -142,7 +141,7 @@ class QAOAEmbedding(Operation):
 
         .. code-block:: python
 
-            shape = QAOAEmbedding.shape(n_layers=2, n_wires=2)
+            shape = qml.QAOAEmbedding.shape(n_layers=2, n_wires=2)
             weights = np.random.random(shape)
 
         **Training the embedding**
@@ -168,7 +167,7 @@ class QAOAEmbedding(Operation):
 
             @qml.qnode(dev)
             def circuit2(weights, features):
-                QAOAEmbedding(features=features, weights=weights, wires=range(2))
+                qml.QAOAEmbedding(features=features, weights=weights, wires=range(2))
                 return qml.expval(qml.PauliZ(0))
 
 
@@ -189,7 +188,7 @@ class QAOAEmbedding(Operation):
 
             @qml.qnode(dev)
             def circuit(weights, f=None):
-                QAOAEmbedding(features=f, weights=weights, wires=range(2), local_field='Z')
+                qml.QAOAEmbedding(features=f, weights=weights, wires=range(2), local_field='Z')
                 return qml.expval(qml.PauliZ(0))
 
         Choosing ``'Z'`` fields implements a QAOAEmbedding where the second Hamiltonian is a
