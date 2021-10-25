@@ -21,8 +21,7 @@ from pennylane import BasisState, Device, QubitStateVector, apply
 from pennylane.operation import Channel
 from pennylane.ops.channel import __qubit_channels__
 from pennylane.tape import QuantumTape
-from pennylane.transforms.qfunc_transforms import (qfunc_transform,
-                                                   single_tape_transform)
+from pennylane.transforms.qfunc_transforms import qfunc_transform, single_tape_transform
 
 
 @qfunc_transform
@@ -75,10 +74,10 @@ def add_noise(
                 qml.RX(0.6, wires=1)
                 qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        We can add the :class:`~.AmplitudeDamping` channel to the start of the circuit using:
+        We can add the :class:`~.AmplitudeDamping` channel to the end of the circuit using:
 
         >>> from pennylane.transforms import add_noise
-        >>> noisy_tape = add_noise(tape, qml.AmplitudeDamping, 0.05, position="end")
+        >>> noisy_tape = add_noise.tape_fn(tape, qml.AmplitudeDamping, 0.05, position="end")
         >>> print(noisy_tape.draw())
          0: ──RX(0.9)──╭C──RY(0.5)──AmplitudeDamping(0.05)──╭┤ ⟨Z ⊗ Z⟩
          1: ──RY(0.4)──╰X──RX(0.6)──AmplitudeDamping(0.05)──╰┤ ⟨Z ⊗ Z⟩
@@ -200,7 +199,7 @@ def add_noise_to_dev(
 
         from pennylane.beta import qnode
 
-        dev = qml.device("default.mixed", wires=4)
+        dev = qml.device("default.mixed", wires=2)
 
         @qnode(dev)
         def f(w, x, y, z):
