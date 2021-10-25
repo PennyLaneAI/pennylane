@@ -44,7 +44,7 @@ class TestDecomposition:
     def test_expansion(self):
         """Checks the queue for the default settings."""
 
-        op = qml.AmplitudeEmbedding(features=FEATURES[0], wires=range(2))
+        op = qml.templates.AmplitudeEmbedding(features=FEATURES[0], wires=range(2))
         tape = op.expand()
 
         assert len(tape.operations) == 1
@@ -59,7 +59,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.AmplitudeEmbedding(features=x, wires=range(n_qubits), normalize=False)
+            qml.templates.AmplitudeEmbedding(features=x, wires=range(n_qubits), normalize=False)
             return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
 
         circuit(x=inpt)
@@ -76,7 +76,9 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.AmplitudeEmbedding(features=x, wires=range(n_qubits), pad_with=pad, normalize=False)
+            qml.templates.AmplitudeEmbedding(
+                features=x, wires=range(n_qubits), pad_with=pad, normalize=False
+            )
             return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
 
         circuit(x=inpt)
@@ -92,12 +94,12 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.AmplitudeEmbedding(features, wires=range(3))
+            qml.templates.AmplitudeEmbedding(features, wires=range(3))
             return qml.expval(qml.Identity(0))
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.AmplitudeEmbedding(features, wires=["z", "a", "k"])
+            qml.templates.AmplitudeEmbedding(features, wires=["z", "a", "k"])
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -118,7 +120,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.AmplitudeEmbedding(
+            qml.templates.AmplitudeEmbedding(
                 features=x, wires=range(n_qubits), pad_with=None, normalize=False
             )
             return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
@@ -134,7 +136,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.AmplitudeEmbedding(features=x, wires=range(n_qubits))
+            qml.templates.AmplitudeEmbedding(features=x, wires=range(n_qubits))
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Features must be a one-dimensional (tensor|vector)"):
@@ -150,7 +152,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.AmplitudeEmbedding(
+            qml.templates.AmplitudeEmbedding(
                 features=x, wires=range(n_qubits), pad_with=None, normalize=False
             )
             return qml.expval(qml.PauliZ(0))
@@ -168,7 +170,9 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.AmplitudeEmbedding(features=x, wires=range(n_qubits), pad_with=0.0, normalize=False)
+            qml.templates.AmplitudeEmbedding(
+                features=x, wires=range(n_qubits), pad_with=0.0, normalize=False
+            )
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Features must be of length"):
@@ -214,7 +218,9 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.AmplitudeEmbedding(x, list(range(num_qubits)), pad_with=0.0, normalize=True)
+            qml.templates.AmplitudeEmbedding(
+                x, list(range(num_qubits)), pad_with=0.0, normalize=True
+            )
             return qml.expval(qml.PauliZ(0))
 
         # No normalization error is raised
@@ -229,7 +235,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.AmplitudeEmbedding(x, list(range(num_qubits)), pad=0.0, normalize=True)
+            qml.templates.AmplitudeEmbedding(x, list(range(num_qubits)), pad=0.0, normalize=True)
             return qml.expval(qml.PauliZ(0))
 
         with pytest.warns(
@@ -240,12 +246,12 @@ class TestInputs:
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.AmplitudeEmbedding(np.array([1, 0]), wires=[0], id="a")
+        template = qml.templates.AmplitudeEmbedding(np.array([1, 0]), wires=[0], id="a")
         assert template.id == "a"
 
 
 def circuit_template(features):
-    qml.AmplitudeEmbedding(features, wires=range(3))
+    qml.templates.AmplitudeEmbedding(features, wires=range(3))
     return qml.state()
 
 

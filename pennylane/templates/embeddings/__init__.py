@@ -22,5 +22,5 @@ from .amplitude import AmplitudeEmbedding
 from .basis import BasisEmbedding
 from .displacement import DisplacementEmbedding
 from .iqp import IQPEmbedding
-from .qaoaembedding import QAOAEmbedding
+from .qaoa import QAOAEmbedding
 from .squeezing import SqueezingEmbedding

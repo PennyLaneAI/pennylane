@@ -38,6 +38,7 @@ def decimals():
     with qml.tape.QuantumTape() as tape2:
         qml.RX(1.23456, wires=0)
         qml.Rot(1.2345,2.3456,3.456, wires=0)
+        qml.expval(qml.PauliZ(0))
 
     fig, ax = draw_mpl(tape2, decimals=2)
     plt.savefig(folder / "decimals.png")

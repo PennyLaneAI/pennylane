@@ -46,7 +46,7 @@ class TestDecomposition:
 
         weights = np.random.random(size=weight_shape)
 
-        op = qml.StronglyEntanglingLayers(weights, wires=range(n_wires))
+        op = qml.templates.StronglyEntanglingLayers(weights, wires=range(n_wires))
         tape = op.expand()
 
         for i, gate in enumerate(tape.operations):
@@ -59,7 +59,9 @@ class TestDecomposition:
 
         weights = np.random.randn(n_layers, n_wires, 3)
 
-        op = qml.StronglyEntanglingLayers(weights=weights, wires=range(n_wires), imprimitive=qml.CZ)
+        op = qml.templates.StronglyEntanglingLayers(
+            weights=weights, wires=range(n_wires), imprimitive=qml.CZ
+        )
         ops = op.expand().operations
 
         gate_names = [gate.name for gate in ops]
@@ -74,12 +76,12 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.StronglyEntanglingLayers(weights, wires=range(3))
+            qml.templates.StronglyEntanglingLayers(weights, wires=range(3))
             return qml.expval(qml.Identity(0))
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.StronglyEntanglingLayers(weights, wires=["z", "a", "k"])
+            qml.templates.StronglyEntanglingLayers(weights, wires=["z", "a", "k"])
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -95,7 +97,9 @@ class TestDecomposition:
 
         weights = np.random.randn(n_layers, n_wires, 3)
 
-        op = qml.StronglyEntanglingLayers(weights=weights, wires=range(n_wires), ranges=ranges)
+        op = qml.templates.StronglyEntanglingLayers(
+            weights=weights, wires=range(n_wires), ranges=ranges
+        )
         ops = op.expand().operations
 
         gate_wires = [gate.wires.labels for gate in ops]
@@ -122,7 +126,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(weights, ranges=None):
-            qml.StronglyEntanglingLayers(weights, wires=range(2), ranges=ranges)
+            qml.templates.StronglyEntanglingLayers(weights, wires=range(2), ranges=ranges)
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Weights tensor must have second dimension"):
@@ -145,7 +149,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(weights, ranges=None):
-            qml.StronglyEntanglingLayers(weights, wires=range(2), ranges=ranges)
+            qml.templates.StronglyEntanglingLayers(weights, wires=range(2), ranges=ranges)
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Ranges must not be zero nor"):
@@ -154,7 +158,9 @@ class TestInputs:
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.StronglyEntanglingLayers(np.array([[[1, 2, 3]]]), wires=[0], id="a")
+        template = qml.templates.StronglyEntanglingLayers(
+            np.array([[[1, 2, 3]]]), wires=[0], id="a"
+        )
         assert template.id == "a"
 
 
@@ -172,12 +178,12 @@ class TestAttributes:
     def test_shape(self, n_layers, n_wires, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""
 
-        shape = qml.StronglyEntanglingLayers.shape(n_layers, n_wires)
+        shape = qml.templates.StronglyEntanglingLayers.shape(n_layers, n_wires)
         assert shape == expected_shape
 
 
 def circuit_template(weights):
-    qml.StronglyEntanglingLayers(weights, range(3))
+    qml.templates.StronglyEntanglingLayers(weights, range(3))
     return qml.expval(qml.PauliZ(0))
 
 

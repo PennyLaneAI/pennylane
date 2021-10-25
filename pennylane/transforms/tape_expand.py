@@ -22,7 +22,6 @@ from pennylane.operation import (
     has_unitary_gen,
     is_measurement,
     is_trainable,
-    not_tape,
 )
 
 
@@ -112,7 +111,7 @@ Returns:
 
 expand_multipar = create_expand_fn(
     depth=10,
-    stop_at=not_tape | is_measurement | has_nopar | has_gen,
+    stop_at=is_measurement | has_nopar | has_gen,
     docstring=_expand_multipar_doc,
 )
 
@@ -136,7 +135,7 @@ Returns:
 
 expand_nonunitary_gen = create_expand_fn(
     depth=10,
-    stop_at=not_tape | is_measurement | has_nopar | (has_gen & has_unitary_gen),
+    stop_at=is_measurement | has_nopar | (has_gen & has_unitary_gen),
     docstring=_expand_nonunitary_gen_doc,
 )
 
@@ -160,6 +159,6 @@ Returns:
 
 expand_invalid_trainable = create_expand_fn(
     depth=10,
-    stop_at=not_tape | is_measurement | (~is_trainable) | has_grad_method,
+    stop_at=is_measurement | (~is_trainable) | has_grad_method,
     docstring=_expand_invalid_trainable_doc,
 )
