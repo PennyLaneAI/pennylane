@@ -43,8 +43,10 @@ def get_unitary_matrix(circuit, wire_order=None):
             qml.RX(theta, wires=1)
             qml.PauliZ(wires=0)
 
+
     We can use ``get_unitary_matrix`` to generate a new function
     that returns the unitary matrix corresponding to the function ``circuit``:
+
 
     >>> get_matrix = get_unitary_matrix(circuit)
     >>> theta = np.pi / 4
@@ -53,6 +55,7 @@ def get_unitary_matrix(circuit, wire_order=None):
        [ 0.+0.j,  -0.92387953+0.j,  0.+0.j,  0. +0.38268343j],
        [ 0. -0.38268343j,  0.+0.j,  0.92387953+0.j,  0.+0.j],
        [ 0.+0.j,  0.+0.38268343j,  0.+0.j,  -0.92387953+0.j]])
+
 
     Note that since ``wire_order`` was not specified, the default order ``[1, 0]``
     for ``circuit`` was used, and the unitary matrix corresponds to the operation
@@ -69,16 +72,16 @@ def get_unitary_matrix(circuit, wire_order=None):
     This unitary matrix can also be used in differentiable calculations.
     For example, consider the following cost function:
 
-    ```python
-    def circuit(theta):
-        qml.RX(theta, wires=1)
-        qml.PauliZ(wires=0)
-        qml.CNOT(wires=[0, 1])
+    .. code-block:: python
 
-    def cost(theta):
-        matrix = get_unitary_matrix(circuit)(theta)
-        return np.real(np.trace(matrix))
-    ```
+        def circuit(theta):
+            qml.RX(theta, wires=1)
+            qml.PauliZ(wires=0)
+            qml.CNOT(wires=[0, 1])
+
+        def cost(theta):
+            matrix = get_unitary_matrix(circuit)(theta)
+            return np.real(np.trace(matrix))
 
     Since this cost function returns a real scalar as a function of ``theta``,
     we can differentiate it:
