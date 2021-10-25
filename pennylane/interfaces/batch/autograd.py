@@ -113,7 +113,7 @@ def _execute(
             res[i] = np.tensor(r)
 
         elif isinstance(res[i], tuple):
-            res[i] = tuple([np.tensor(r) for r in res[i]])
+            res[i] = tuple(np.tensor(r) for r in res[i])
 
     return res, jacs
 
