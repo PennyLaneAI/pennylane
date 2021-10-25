@@ -640,7 +640,7 @@
 * Allowing cost functions to be differentiated using `qml.grad` or
   `qml.jacobian` without explicitly marking parameters as trainable is being
   deprecated, and will be removed in the next release.
-  Please specify the `requires_grad` attribute for every argument or specify
+  Please specify the `requires_grad` attribute for every argument, or specify
   `argnum` when using `qml.grad` or `qml.jacobian`.
   [(#1773)](https://github.com/PennyLaneAI/pennylane/pull/1773)
 
