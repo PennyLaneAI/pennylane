@@ -226,7 +226,7 @@ def add_noise_to_dev(
     original_expand_fn = device.expand_fn
 
     def new_expand_fn(circuit, max_expansion=10):
-        new_tape = add_noise(circuit, noisy_op, noisy_op_args, position)
+        new_tape = add_noise.tape_fn(circuit, noisy_op, noisy_op_args, position)
         return original_expand_fn(new_tape, max_expansion=max_expansion)
 
     device.expand_fn = new_expand_fn
