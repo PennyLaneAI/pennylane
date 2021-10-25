@@ -84,7 +84,6 @@ more tapes as well as a classical processing function.
 .. autosummary::
     :toctree: api
 
-    ~transforms.add_noise_to_tape
     ~transforms.measurement_grouping
     ~transforms.hamiltonian_expand
 
@@ -130,7 +129,7 @@ from .draw import draw
 from .hamiltonian_expand import hamiltonian_expand
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
-from .noise import add_noise_to_tape, add_noise, add_noise_to_dev
+from .noise import add_noise, add_noise_to_dev
 from .optimization import (
     cancel_inverses,
     commute_controlled,

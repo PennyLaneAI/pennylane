@@ -387,7 +387,7 @@
 
 <h3>Improvements</h3>
 
-* The `add_noise`,  `add_noise_to_tape` and `add_noise_to_dev` transforms have now been added,
+* The `add_noise` and `add_noise_to_dev` transforms have now been added,
   providing a way to add simple noise to a quantum circuit.
   [(#1795)](https://github.com/PennyLaneAI/pennylane/pull/1795)
   

@@ -177,6 +177,8 @@ def _create_qfunc_internal_wrapper(fn, tape_transform, transform_args, transform
             f"The qfunc to transform, {fn}, does not appear "
             "to be a valid Python function or callable."
         )
+    if isinstance(fn, qml.tape.QuantumTape):
+        return tape_transform(fn, *transform_args, **transform_kwargs)
 
     @functools.wraps(fn)
     def internal_wrapper(*args, **kwargs):
@@ -359,11 +361,11 @@ def qfunc_transform(tape_transform):
         the queueing logic required under steps (1) and (3), so that it does not need to be
         repeated and tested for every new qfunc transform.
     """
-    if not callable(tape_transform):
-        raise ValueError(
-            "The qfunc_transform decorator can only be applied "
-            "to single tape transform functions."
-        )
+    # if not callable(tape_transform):
+    #     raise ValueError(
+    #         "The qfunc_transform decorator can only be applied "
+    #         "to single tape transform functions."
+    #     )
 
     if not isinstance(tape_transform, single_tape_transform):
         tape_transform = single_tape_transform(tape_transform)
@@ -381,7 +383,8 @@ def qfunc_transform(tape_transform):
             wrapper.tape_fn = functools.partial(tape_transform, *targs, **tkwargs)
 
             return wrapper
-
+    # if tape_transform.__name__ == "add_noise":
+    #     print(len(params))
     elif len(params) == 1:
 
         @functools.wraps(tape_transform)
