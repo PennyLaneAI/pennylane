@@ -561,6 +561,16 @@ class Device(abc.ABC):
         gradient_method = getattr(self, method)
         return [gradient_method(circuit, **kwargs) for circuit in circuits]
 
+    @property
+    def stopping_condition(self):
+        """.BooleanFn: Returns the stopping condition for the device. The returned
+        function accepts a queuable object (including a PennyLane operation
+        and observable) and returns ``True`` if supported by the device."""
+        return qml.BooleanFn(
+            lambda obj: not isinstance(obj, qml.tape.QuantumTape)
+            and self.supports_operation(obj.name)
+        )
+
     def expand_fn(self, circuit, max_expansion=10):
         """Method for expanding or decomposing an input circuit.
         This method should be overwritten if custom expansion logic is
@@ -588,18 +598,10 @@ class Device(abc.ABC):
             circuit._obs_sharing_wires  # pylint: disable=protected-access
         ) > 0 and not self.supports_observable("Hamiltonian")
 
-        ops_not_supported = any(
-            isinstance(op, qml.tape.QuantumTape)  # nested tapes must be expanded
-            or not self.supports_operation(op.name)  # unsupported ops must be expanded
-            for op in circuit.operations
-        )
+        ops_not_supported = not all(self.stopping_condition(op) for op in circuit.operations)
 
         if ops_not_supported or obs_on_same_wire:
-            circuit = circuit.expand(
-                depth=max_expansion,
-                stop_at=lambda obj: not isinstance(obj, qml.tape.QuantumTape)
-                and self.supports_operation(obj.name),
-            )
+            circuit = circuit.expand(depth=max_expansion, stop_at=self.stopping_condition)
 
         return circuit
 
