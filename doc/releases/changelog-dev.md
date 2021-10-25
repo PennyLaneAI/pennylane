@@ -387,6 +387,34 @@
 
 <h3>Improvements</h3>
 
+* The `ApproxTimeEvolution` template can now be used with Hamiltonians that have
+  trainable coefficients.
+  [(#1789)](https://github.com/PennyLaneAI/pennylane/pull/1789)
+
+  Resulting QNodes can be differentiated with respect to both the time parameter
+  *and* the Hamiltonian coefficients.
+
+  ```python
+  dev = qml.device('default.qubit', wires=2)
+  obs = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(0) @ qml.PauliX(1)]
+
+  @qml.qnode(dev)
+  def circuit(coeffs, t):
+      H = qml.Hamiltonian(coeffs, obs)
+      qml.templates.ApproxTimeEvolution(H, t, 2)
+      return qml.expval(qml.PauliZ(0))
+  ```
+
+  ```pycon
+  >>> t = np.array(0.54, requires_grad=True)
+  >>> coeffs = np.array([-0.6, 2.0], requires_grad=True)
+  >>> qml.grad(circuit)(coeffs, t)
+  (array([-1.07813375, -1.07813375]), array(-2.79516158))
+  ```
+
+  All differentiation methods, including backpropagation and the parameter-shift
+  rule, are supported.
+
 * Templates are now top level imported and can be used directly e.g. `qml.QFT(wires=0)`.
   [(#1779)](https://github.com/PennyLaneAI/pennylane/pull/1779)
 
