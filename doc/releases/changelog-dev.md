@@ -8,9 +8,10 @@
   alongside a new `create_expand_fn` function for easily creating expansion functions
   from stopping criteria.
   [(#1734)](https://github.com/PennyLaneAI/pennylane/pull/1734)
+  [(#1760)](https://github.com/PennyLaneAI/pennylane/pull/1760)
 
   `create_expand_fn` takes the default depth to which the expansion function 
-  should expand a tape, a stopping criterion, and a docstring to be set for the
+  should expand a tape, a stopping criterion, an optional device, and a docstring to be set for the
   created function.
   The stopping criterion must take a queuable object and return a boolean.
 
@@ -365,8 +366,62 @@
 
   For more details, see the [GateFabric documentation](../code/api/pennylane.templates.layers.GateFabric.html).
 
+* Added a new template `kUpCCGSD`, which implements a unitary coupled cluster ansatz with
+  generalized singles and pair doubles excitation operators, proposed by Joonho Lee *et al.*
+  in [arXiv:1810.02327](https://arxiv.org/abs/1810.02327).
+
+  An example of a circuit using `kUpCCGSD` template is:
+
+  ```python
+  coordinates = np.array([0.0, 0.0, -0.6614, 0.0, 0.0, 0.6614])
+  H, qubits = qml.qchem.molecular_hamiltonian(["H", "H"], coordinates)
+  ref_state = qml.qchem.hf_state(electrons=2, qubits)
+  
+  dev = qml.device('default.qubit', wires=qubits)
+  @qml.qnode(dev)
+  def ansatz(weights):
+      qml.templates.kUpCCGSD(weights, wires=[0,1,2,3], k=0, delta_sz=0,
+                                  init_state=ref_state)
+      return qml.expval(H)
+  ```
+  
 
 <h3>Improvements</h3>
+
+* The `ApproxTimeEvolution` template can now be used with Hamiltonians that have
+  trainable coefficients.
+  [(#1789)](https://github.com/PennyLaneAI/pennylane/pull/1789)
+
+  Resulting QNodes can be differentiated with respect to both the time parameter
+  *and* the Hamiltonian coefficients.
+
+  ```python
+  dev = qml.device('default.qubit', wires=2)
+  obs = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(0) @ qml.PauliX(1)]
+
+  @qml.qnode(dev)
+  def circuit(coeffs, t):
+      H = qml.Hamiltonian(coeffs, obs)
+      qml.templates.ApproxTimeEvolution(H, t, 2)
+      return qml.expval(qml.PauliZ(0))
+  ```
+
+  ```pycon
+  >>> t = np.array(0.54, requires_grad=True)
+  >>> coeffs = np.array([-0.6, 2.0], requires_grad=True)
+  >>> qml.grad(circuit)(coeffs, t)
+  (array([-1.07813375, -1.07813375]), array(-2.79516158))
+  ```
+
+  All differentiation methods, including backpropagation and the parameter-shift
+  rule, are supported.
+
+* Templates are now top level imported and can be used directly e.g. `qml.QFT(wires=0)`.
+  [(#1779)](https://github.com/PennyLaneAI/pennylane/pull/1779)
+
+* Operators now have a `label` method to determine how they are drawn.  This will
+  eventually override the `RepresentationResolver` class.
+  [(#1678)](https://github.com/PennyLaneAI/pennylane/pull/1678)
 
 * It is now possible to draw QNodes that have been transformed by a 'batch transform'; that is,
   a transform that maps a single QNode into multiple circuits under the hood. Examples of
@@ -541,17 +596,25 @@
 
 <h3>Breaking changes</h3>
 
-- The input signature of an `expand_fn` used in a `batch_transform`
+* The `template` decorator is now deprecated with a warning message and will be removed
+  in release `v0.20.0`.
+  [(#1794)](https://github.com/PennyLaneAI/pennylane/pull/1794)
+
+* The `qml.inv` function has been removed, `qml.adjoint` should be used
+  instead.
+  [(#1778)](https://github.com/PennyLaneAI/pennylane/pull/1778)
+
+* The input signature of an `expand_fn` used in a `batch_transform`
   now **must** have the same signature as the provided `transform_fn`,
   and vice versa.
   [(#1721)](https://github.com/PennyLaneAI/pennylane/pull/1721)
 
-- The expansion rule in the `qml.metric_tensor` transform has been changed.
+* The expansion rule in the `qml.metric_tensor` transform has been changed.
   [(#1721)](https://github.com/PennyLaneAI/pennylane/pull/1721)
 
   If `hybrid=False`, the changed expansion rule might lead to a changed output.
 
-- The `qml.metric_tensor` keyword argument `diag_approx` is deprecated.
+* The `qml.metric_tensor` keyword argument `diag_approx` is deprecated.
   Approximations can be controlled with the more fine-grained `approx`
   keyword argument, with `approx="block-diag"` (the default) reproducing
   the old behaviour.
@@ -568,7 +631,7 @@
   `requires_grad=False` was explicitly set.
   [(#1638)](https://github.com/PennyLaneAI/pennylane/pull/1638)
 
-- The operation `qml.Interferometer` has been renamed `qml.InterferometerUnitary` in order to
+* The operation `qml.Interferometer` has been renamed `qml.InterferometerUnitary` in order to
   distinguish it from the template `qml.templates.Interferometer`.
   [(#1714)](https://github.com/PennyLaneAI/pennylane/pull/1714)
 
@@ -628,12 +691,20 @@
   containing classical processing.
   [(#1699)](https://github.com/PennyLaneAI/pennylane/pull/1699)
 
+* Fixes a bug where the the parameter-shift method was not correctly using the
+  fallback gradient function when *all* circuit parameters required the fallback.
+  [(#1782)](https://github.com/PennyLaneAI/pennylane/pull/1782)
+
 <h3>Documentation</h3>
 
 * Adds a link to https://pennylane.ai/qml/demonstrations.html in the navbar.
   [(#1624)](https://github.com/PennyLaneAI/pennylane/pull/1624)
 
 * Corrects the docstring of `ExpvalCost` by adding `wires` to the signature of the `ansatz` argument. [(#1715)](https://github.com/PennyLaneAI/pennylane/pull/1715)
+
+* Updates the 'Gradients and training' quickstart guide to provide information
+  on gradient transforms.
+  [(#1751)](https://github.com/PennyLaneAI/pennylane/pull/1751)
 
 * All instances of `qnode.draw()` have been updated to instead use the transform `qml.draw(qnode)`.
   [(#1750)](https://github.com/PennyLaneAI/pennylane/pull/1750)

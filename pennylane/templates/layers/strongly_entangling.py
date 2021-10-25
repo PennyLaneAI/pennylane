@@ -55,12 +55,12 @@ class StronglyEntanglingLayers(Operation):
         **Parameter shape**
 
         The expected shape for the weight tensor can be computed with the static method
-        :meth:`~.StronglyEntanglingLayers.shape` and used when creating randomly
+        :meth:`~.qml.StronglyEntanglingLayers.shape` and used when creating randomly
         initialised weight tensors:
 
         .. code-block:: python
 
-            shape = StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
+            shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
             weights = np.random.random(size=shape)
 
     """

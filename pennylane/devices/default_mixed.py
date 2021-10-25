@@ -104,6 +104,7 @@ class DefaultMixed(QubitDevice):
         "QubitCarry",
         "QubitSum",
         "OrbitalRotation",
+        "QFT",
     }
 
     parametric_ops = {

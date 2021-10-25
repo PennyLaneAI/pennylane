@@ -14,6 +14,7 @@
 """
 This module contains the template decorator.
 """
+import warnings
 from functools import wraps
 
 
@@ -43,7 +44,7 @@ def template(func):
 
         @qml.qnode(dev)
         def circuit():
-            qml.inv(bell_state_preparation(wires=[0, 1]))
+            qml.adjoint(bell_state_preparation)(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
     Args:
@@ -51,6 +52,9 @@ def template(func):
 
     Returns:
         callable: The wrapper function
+
+    .. warning::
+        Use of the template decorator is deprecated and will be removed in release `0.20.0`.
     """
     import pennylane as qml  # pylint: disable=import-outside-toplevel
 
@@ -62,4 +66,9 @@ def template(func):
 
         return rec.queue
 
+    warnings.warn(
+        "The template decorator is deprecated and will be removed in release v0.20.0",
+        UserWarning,
+        stacklevel=2,
+    )
     return wrapper
