@@ -20,7 +20,7 @@ import pytest
 import pennylane as qml
 from pennylane.operation import Expectation
 from pennylane.tape import QuantumTape
-from pennylane.transforms.noise import add_noise_to_qfunc, add_noise_to_tape
+from pennylane.transforms.noise import add_noise, add_noise_to_tape, add_noise_to_dev
 
 
 class TestAddNoiseToTape:
@@ -237,13 +237,13 @@ class TestAddNoiseToTape:
             add_noise_to_tape(tape, qml.AmplitudeDamping, 0.4)
 
 
-def test_add_noise_to_qfunc():
-    """Test that a QNode with the add_noise_to_qfunc decorator gives a different result than one
+def test_add_noise():
+    """Test that a QNode with the add_noise decorator gives a different result than one
     without."""
     dev = qml.device("default.mixed", wires=2)
 
     @qml.qnode(dev)
-    @add_noise_to_qfunc(qml.AmplitudeDamping, 0.2, position="end")
+    @add_noise(qml.AmplitudeDamping, 0.2, position="end")
     def f_noisy(w, x, y, z):
         qml.RX(w, wires=0)
         qml.RY(x, wires=1)
@@ -264,3 +264,52 @@ def test_add_noise_to_qfunc():
     args = [0.1, 0.2, 0.3, 0.4]
 
     assert not np.isclose(f_noisy(*args), f(*args))
+
+
+def test_add_noise_to_dev(mocker):
+    """Test if a device transformed by the add_noise_to_dev does successfully add noise to
+    subsequent circuit executions"""
+    with QuantumTape() as in_tape:
+        qml.RX(0.9, wires=0)
+        qml.RY(0.4, wires=1)
+        qml.CNOT(wires=[0, 1])
+        qml.RY(0.5, wires=0)
+        qml.RX(0.6, wires=1)
+        qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+    dev = qml.device("default.mixed", wires=2)
+    res_without_noise = qml.execute([in_tape], dev, qml.gradients.param_shift)
+
+    spy = mocker.spy(dev, "expand_fn")
+
+    add_noise_to_dev(dev, qml.PhaseDamping, 0.4)
+
+    res_with_noise = qml.execute([in_tape], dev, qml.gradients.param_shift)
+    tape = spy.call_args[0][0]
+
+    with QuantumTape() as tape_exp:
+        qml.RX(0.9, wires=0)
+        qml.PhaseDamping(0.4, wires=0)
+        qml.RY(0.4, wires=1)
+        qml.PhaseDamping(0.4, wires=1)
+        qml.CNOT(wires=[0, 1])
+        qml.PhaseDamping(0.4, wires=0)
+        qml.PhaseDamping(0.4, wires=1)
+        qml.RY(0.5, wires=0)
+        qml.PhaseDamping(0.4, wires=0)
+        qml.RX(0.6, wires=1)
+        qml.PhaseDamping(0.4, wires=1)
+        qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+    assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
+    assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
+    assert all(
+        np.allclose(o1.parameters, o2.parameters)
+        for o1, o2 in zip(tape.operations, tape_exp.operations)
+    )
+    assert len(tape.measurements) == 1
+    assert tape.observables[0].name == ["PauliZ", "PauliZ"]
+    assert tape.observables[0].wires.tolist() == [0, 1]
+    assert tape.measurements[0].return_type is Expectation
+
+    assert not np.allclose(res_without_noise, res_with_noise)
