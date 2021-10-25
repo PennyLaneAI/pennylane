@@ -651,7 +651,7 @@
   ```python
   import pennylane as qml
 
-  dev = qml.device('default.qubit', wires=5)
+  dev = qml.device('default.qubit', wires=1)
 
   @qml.qnode(dev)
   def test(x):
@@ -668,7 +668,7 @@
   import pennylane as qml
   from pennylane import numpy as np
 
-  dev = qml.device('default.qubit', wires=5)
+  dev = qml.device('default.qubit', wires=1)
 
   @qml.qnode(dev)
   def test(x):
@@ -684,7 +684,7 @@
   ```python
   import pennylane as qml
 
-  dev = qml.device('default.qubit', wires=5)
+  dev = qml.device('default.qubit', wires=1)
 
   @qml.qnode(dev)
   def test(x):
