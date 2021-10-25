@@ -41,7 +41,7 @@ class TestDecomposition:
 
         weights = np.random.random(size=weight_shape)
 
-        op = qml.templates.BasicEntanglerLayers(weights, wires=range(n_wires))
+        op = qml.BasicEntanglerLayers(weights, wires=range(n_wires))
         tape = op.expand()
 
         for i, gate in enumerate(tape.operations):
@@ -54,7 +54,7 @@ class TestDecomposition:
 
         weights = np.zeros(shape=(1, 2))
 
-        op = qml.templates.BasicEntanglerLayers(weights, wires=range(2), rotation=rotation)
+        op = qml.BasicEntanglerLayers(weights, wires=range(2), rotation=rotation)
         queue = op.expand().operations
 
         assert rotation in [type(gate) for gate in queue]
@@ -75,7 +75,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(weights):
-            qml.templates.BasicEntanglerLayers(weights, wires=range(n_wires))
+            qml.BasicEntanglerLayers(weights, wires=range(n_wires))
             return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
 
         expectations = circuit(weights)
@@ -90,12 +90,12 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.BasicEntanglerLayers(weights, wires=range(3))
+            qml.BasicEntanglerLayers(weights, wires=range(3))
             return qml.expval(qml.Identity(0))
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.BasicEntanglerLayers(weights, wires=["z", "a", "k"])
+            qml.BasicEntanglerLayers(weights, wires=["z", "a", "k"])
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -115,7 +115,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(weights):
-            qml.templates.BasicEntanglerLayers(weights=weights, wires=range(n_wires))
+            qml.BasicEntanglerLayers(weights=weights, wires=range(n_wires))
             return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
 
         with pytest.raises(ValueError, match="Weights tensor must be 2-dimensional"):
@@ -126,7 +126,7 @@ class TestInputs:
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.templates.BasicEntanglerLayers(np.array([[1]]), wires=[0], id="a")
+        template = qml.BasicEntanglerLayers(np.array([[1]]), wires=[0], id="a")
         assert template.id == "a"
 
 
@@ -144,12 +144,12 @@ class TestAttributes:
     def test_shape(self, n_layers, n_wires, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""
 
-        shape = qml.templates.BasicEntanglerLayers.shape(n_layers, n_wires)
+        shape = qml.BasicEntanglerLayers.shape(n_layers, n_wires)
         assert shape == expected_shape
 
 
 def circuit_template(weights):
-    qml.templates.BasicEntanglerLayers(weights, range(3))
+    qml.BasicEntanglerLayers(weights, range(3))
     return qml.expval(qml.PauliZ(0))
 
 
