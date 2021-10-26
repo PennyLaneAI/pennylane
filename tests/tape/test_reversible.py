@@ -19,7 +19,7 @@ from pennylane import numpy as np
 import pennylane as qml
 from pennylane.interfaces.autograd import AutogradInterface
 from pennylane.tape import JacobianTape, ReversibleTape
-from pennylane import QNode, qnode
+from pennylane.qnode_old import QNode, qnode
 from pennylane.measure import MeasurementProcess
 
 

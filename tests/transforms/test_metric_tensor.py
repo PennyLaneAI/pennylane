@@ -742,7 +742,7 @@ class TestDeprecatedQNodeMethod:
         """Test that a warning is emitted"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode_old.qnode(dev)
         def circuit(a, b, c):
             qml.RX(a, wires=0)
             qml.RY(b, wires=0)
@@ -771,7 +771,7 @@ class TestDeprecatedQNodeMethod:
         """Test that a warning is emitted"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode_old.qnode(dev)
         def circuit(a, b, c):
             qml.RX(a, wires=0)
             qml.RY(b, wires=0)

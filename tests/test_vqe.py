@@ -365,8 +365,8 @@ class TestVQE:
 
         # Checking that the qnodes contain the step size and order
         for qnode in cost.qnodes:
-            assert qnode.diff_options["h"] == 123
-            assert qnode.diff_options["order"] == 2
+            assert qnode.gradient_kwargs["h"] == 123
+            assert qnode.gradient_kwargs["order"] == 2
 
     @pytest.mark.slow
     @pytest.mark.parametrize("interface", ["tf", "torch", "autograd"])
