@@ -58,21 +58,21 @@ special_cases = {
 
 
 def draw_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwargs):
-    """Draw a tape with matplotlib
+    """Produces a matplotlib graphic from a tape.
 
     Args:
         tape (QuantumTape): the operations and measurements to draw
 
     Keyword Args:
-        wire_order=None
-        show_all_wires=False
-        wire_options (dict)
-        label_options (dict)
+        wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
+        show_all_wires (bool): If True, all wires, including empty wires, are printed.
+        wire_options (dict): matplotlib formatting options for the wire lines
+        label_options (dict): matplotlib formatting options for the wire labels
 
     Returns:
-        fig, ax
+        matplotlib.figure.Figure, matplotlib.axes._axes.Axes
 
-    **Example**:
+    **Example:**
 
     .. code-block:: python
 
