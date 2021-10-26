@@ -313,15 +313,7 @@ class MPLDrawer:
         for wire, ii_label in enumerate(labels):
             self._ax.text(-1.5, wire, ii_label, **text_options)
 
-    def box_gate(
-        self,
-        layer,
-        wires,
-        text="",
-        box_options=None,
-        text_options=None,
-        **kwargs
-    ):
+    def box_gate(self, layer, wires, text="", box_options=None, text_options=None, **kwargs):
         """Draws a box and adds label text to its center.
 
         Args:
@@ -409,14 +401,15 @@ class MPLDrawer:
         box_max = max(wires)
         box_center = (box_max + box_min) / 2.0
 
-        x_loc = layer - self._box_length/2.0 - extra_width / 2.0
-        y_loc = box_min - self._box_length/2.0
+        x_loc = layer - self._box_length / 2.0 - extra_width / 2.0
+        y_loc = box_min - self._box_length / 2.0
         box_height = box_max - box_min + self._box_length
         box_width = self._box_length + extra_width
 
         box = plt.Rectangle(
             (x_loc, y_loc),
-            box_width, box_height,
+            box_width,
+            box_height,
             **box_options,
         )
         self._ax.add_patch(box)
@@ -437,7 +430,7 @@ class MPLDrawer:
             w, h = self._text_dims(text_obj)
 
             # rotate the text
-            if (box_min != box_max) and (w > max_width) and (w>h):
+            if (box_min != box_max) and (w > max_width) and (w > h):
                 text_obj.set_rotation(90)
                 w, h = self._text_dims(text_obj)
 
@@ -469,7 +462,7 @@ class MPLDrawer:
         renderer = self._fig.canvas.get_renderer()
 
         # https://matplotlib.org/stable/api/_as_gen/matplotlib.artist.Artist.get_window_extent.html
-        # Quote: "Be careful when using this function, the results will not update if the artist 
+        # Quote: "Be careful when using this function, the results will not update if the artist
         # window extent of the artist changes. "
         # But I haven't encountered any issues yet and don't see a better solution
         bbox = text_obj.get_window_extent(renderer)
@@ -759,8 +752,9 @@ class MPLDrawer:
             lines_options["zorder"] = 3
 
         box = plt.Rectangle(
-            (layer - self._box_length/2.0, wires - self._box_length/2.0),
-            self._box_length, self._box_length,
+            (layer - self._box_length / 2.0, wires - self._box_length / 2.0),
+            self._box_length,
+            self._box_length,
             **box_options,
         )
         self._ax.add_patch(box)

@@ -540,7 +540,7 @@ class TestAutosize:
         """This utility determines the last text drawn is inside the last is
         inside the last patch drawn. This is done over and over in this test class,
         and so extracted for convenience.
-        
+
         This is a complimentary approach to comparing sizing to that used in the drawer
         class `text_dims` method
         """
@@ -557,7 +557,6 @@ class TestAutosize:
         # check all text corners inside rectangle
         # https://matplotlib.org/stable/api/transformations.html
         return all(rect_bbox.contains(*p) for p in text_bbox.corners())
-
 
     def test_autosize_false(self):
         """Test that the text is unchanged if autosize is set to False."""
