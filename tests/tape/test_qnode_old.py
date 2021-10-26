@@ -215,13 +215,13 @@ class TestValidation:
         quantum tape, interface, and diff method."""
         dev = qml.device("default.qubit", wires=1)
 
-        mock_best = mocker.patch("pennylane.QNode.get_best_method")
+        mock_best = mocker.patch("pennylane.qnode_old.QNode.get_best_method")
         mock_best.return_value = 1, 2, 3, {"method": "best"}
 
-        mock_backprop = mocker.patch("pennylane.QNode._validate_backprop_method")
+        mock_backprop = mocker.patch("pennylane.qnode_old.QNode._validate_backprop_method")
         mock_backprop.return_value = 4, 5, 6, {"method": "backprop"}
 
-        mock_device = mocker.patch("pennylane.QNode._validate_device_method")
+        mock_device = mocker.patch("pennylane.qnode_old.QNode._validate_device_method")
         mock_device.return_value = 7, 8, 9, {"method": "device"}
 
         qn = QNode(dummyfunc, dev, diff_method="best")

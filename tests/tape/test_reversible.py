@@ -397,7 +397,7 @@ class TestQNodeIntegration:
             match="Requested reversible differentiation to be computed with finite shots.",
         ):
 
-            @qml.qnode(dev, diff_method="reversible")
+            @qml.qnode_old.qnode(dev, diff_method="reversible")
             def circ(x):
                 qml.RX(x, wires=0)
                 return qml.expval(qml.PauliZ(0))
