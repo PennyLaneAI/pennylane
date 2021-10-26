@@ -20,11 +20,11 @@ import pytest
 import pennylane as qml
 from pennylane.operation import Expectation
 from pennylane.tape import QuantumTape
-from pennylane.transforms.insert import add_noise, add_noise_to_dev
+from pennylane.transforms.insert import insert, add_noise_to_dev
 
 
 class TestAddNoise:
-    """Tests for the add_noise function using input tapes"""
+    """Tests for the insert function using input tapes"""
 
     with QuantumTape() as tape:
         qml.RX(0.9, wires=0)
@@ -46,22 +46,22 @@ class TestAddNoise:
     def test_multiwire_noisy_op(self):
         """Tests if a ValueError is raised when multiqubit channels are requested"""
         with pytest.raises(ValueError, match="Adding noise to the circuit is only"):
-            add_noise.tape_fn(self.tape, qml.QubitChannel, [])
+            insert.tape_fn(self.tape, qml.QubitChannel, [])
 
     def test_invalid_position(self):
         """Test if a ValueError is raised when an invalid position is requested"""
         with pytest.raises(ValueError, match="Position must be either 'start', 'end', or 'all'"):
-            add_noise.tape_fn(self.tape, qml.AmplitudeDamping, 0.4, position="ABC")
+            insert.tape_fn(self.tape, qml.AmplitudeDamping, 0.4, position="ABC")
 
     def test_not_noisy(self):
         """Test if a ValueError is raised when something that is not a noisy channel is fed to the
         noisy_op argument"""
         with pytest.raises(ValueError, match="The noisy_op argument must be a noisy operation"):
-            add_noise.tape_fn(self.tape, qml.PauliX, 0.4)
+            insert.tape_fn(self.tape, qml.PauliX, 0.4)
 
     def test_start(self):
         """Test if the expected tape is returned when the start position is requested"""
-        tape = add_noise.tape_fn(self.tape, qml.AmplitudeDamping, 0.4, position="start")
+        tape = insert.tape_fn(self.tape, qml.AmplitudeDamping, 0.4, position="start")
 
         with QuantumTape() as tape_exp:
             qml.AmplitudeDamping(0.4, wires=0)
@@ -86,7 +86,7 @@ class TestAddNoise:
 
     def test_all(self):
         """Test if the expected tape is returned when the all position is requested"""
-        tape = add_noise.tape_fn(self.tape, qml.PhaseDamping, 0.4, position="all")
+        tape = insert.tape_fn(self.tape, qml.PhaseDamping, 0.4, position="all")
 
         with QuantumTape() as tape_exp:
             qml.RX(0.9, wires=0)
@@ -115,7 +115,7 @@ class TestAddNoise:
 
     def test_end(self):
         """Test if the expected tape is returned when the end position is requested"""
-        tape = add_noise.tape_fn(
+        tape = insert.tape_fn(
             self.tape, qml.GeneralizedAmplitudeDamping, [0.4, 0.5], position="end"
         )
 
@@ -143,7 +143,7 @@ class TestAddNoise:
     def test_start_with_state_prep(self):
         """Test if the expected tape is returned when the start position is requested in a tape
         that has state preparation"""
-        tape = add_noise.tape_fn(self.tape_with_prep, qml.AmplitudeDamping, 0.4, position="start")
+        tape = insert.tape_fn(self.tape_with_prep, qml.AmplitudeDamping, 0.4, position="start")
 
         with QuantumTape() as tape_exp:
             qml.QubitStateVector([1, 0], wires=0)
@@ -170,7 +170,7 @@ class TestAddNoise:
     def test_all_with_state_prep(self):
         """Test if the expected tape is returned when the all position is requested in a tape
         that has state preparation"""
-        tape = add_noise.tape_fn(self.tape_with_prep, qml.PhaseDamping, 0.4, position="all")
+        tape = insert.tape_fn(self.tape_with_prep, qml.PhaseDamping, 0.4, position="all")
 
         with QuantumTape() as tape_exp:
             qml.QubitStateVector([1, 0], wires=0)
@@ -201,7 +201,7 @@ class TestAddNoise:
     def test_end_with_state_prep(self):
         """Test if the expected tape is returned when the end position is requested in a tape
         that has state preparation"""
-        tape = add_noise.tape_fn(
+        tape = insert.tape_fn(
             self.tape_with_prep, qml.GeneralizedAmplitudeDamping, [0.4, 0.5], position="end"
         )
 
@@ -234,16 +234,16 @@ class TestAddNoise:
             qml.QubitStateVector([1, 0], wires=0)
             qml.QubitStateVector([0, 1], wires=1)
         with pytest.raises(ValueError, match="Only a single state preparation at the start of the"):
-            add_noise.tape_fn(tape, qml.AmplitudeDamping, 0.4)
+            insert.tape_fn(tape, qml.AmplitudeDamping, 0.4)
 
 
 def test_add_noise_integration():
-    """Test that a QNode with the add_noise decorator gives a different result than one
+    """Test that a QNode with the insert decorator gives a different result than one
     without."""
     dev = qml.device("default.mixed", wires=2)
 
     @qml.qnode(dev)
-    @add_noise(qml.AmplitudeDamping, 0.2, position="end")
+    @insert(qml.AmplitudeDamping, 0.2, position="end")
     def f_noisy(w, x, y, z):
         qml.RX(w, wires=0)
         qml.RY(x, wires=1)

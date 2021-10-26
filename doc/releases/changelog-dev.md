@@ -388,19 +388,19 @@
 
 <h3>Improvements</h3>
 
-* The `add_noise` and `add_noise_to_dev` transforms have now been added,
+* The `insert` and `add_noise_to_dev` transforms have now been added,
   providing a way to insert simple noise into a quantum circuit.
   [(#1795)](https://github.com/PennyLaneAI/pennylane/pull/1795)
   
   The following QNode can be transformed to add noise to the circuit:
 
   ```python
-  from pennylane.transforms import add_noise
+  from pennylane.transforms import insert
     
   dev = qml.device("default.mixed", wires=2)
         
   @qml.qnode(dev)
-  @add_noise(qml.AmplitudeDamping, 0.2, position="end")
+  @insert(qml.AmplitudeDamping, 0.2, position="end")
   def f(w, x, y, z):
       qml.RX(w, wires=0)
       qml.RY(x, wires=1)

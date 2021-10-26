@@ -26,7 +26,7 @@ from pennylane.transforms.qfunc_transforms import qfunc_transform, single_tape_t
 
 @qfunc_transform
 @single_tape_transform
-def add_noise(
+def insert(
     circuit: Union[callable, QuantumTape],
     noisy_op: Type[Channel],
     noisy_op_args: Union[tuple, float],
@@ -76,8 +76,8 @@ def add_noise(
 
         We can add the :class:`~.AmplitudeDamping` channel to the end of the circuit using:
 
-        >>> from pennylane.transforms import add_noise
-        >>> noisy_tape = add_noise.tape_fn(tape, qml.AmplitudeDamping, 0.05, position="end")
+        >>> from pennylane.transforms import insert
+        >>> noisy_tape = insert.tape_fn(tape, qml.AmplitudeDamping, 0.05, position="end")
         >>> print(noisy_tape.draw())
          0: ──RX(0.9)──╭C──RY(0.5)──AmplitudeDamping(0.05)──╭┤ ⟨Z ⊗ Z⟩
          1: ──RY(0.4)──╰X──RX(0.6)──AmplitudeDamping(0.05)──╰┤ ⟨Z ⊗ Z⟩
@@ -225,7 +225,7 @@ def add_noise_to_dev(
     original_expand_fn = device.expand_fn
 
     def new_expand_fn(circuit, max_expansion=10):
-        new_tape = add_noise.tape_fn(circuit, noisy_op, noisy_op_args, position)
+        new_tape = insert.tape_fn(circuit, noisy_op, noisy_op_args, position)
         return original_expand_fn(new_tape, max_expansion=max_expansion)
 
     device.expand_fn = new_expand_fn

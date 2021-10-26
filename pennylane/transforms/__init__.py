@@ -49,7 +49,7 @@ containing quantum operations) that are used to construct QNodes.
     ~ctrl
     ~apply_controlled_Q
     ~quantum_monte_carlo
-    ~transforms.add_noise
+    ~transforms.insert
 
 Transforms for circuit compilation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -129,7 +129,7 @@ from .draw import draw
 from .hamiltonian_expand import hamiltonian_expand
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
-from .insert import add_noise, add_noise_to_dev
+from .insert import insert, add_noise_to_dev
 from .optimization import (
     cancel_inverses,
     commute_controlled,
