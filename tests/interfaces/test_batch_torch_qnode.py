@@ -1339,6 +1339,7 @@ class TestSample:
         assert np.array_equal(result[0].shape, (n_sample,))
         assert isinstance(result[1], torch.Tensor)
         assert isinstance(result[2], torch.Tensor)
+        assert result[0].dtype is torch.int64
 
     def test_single_wire_sample(self, tol):
         """Test the return type and shape of sampling a single wire"""
@@ -1374,23 +1375,3 @@ class TestSample:
         assert isinstance(result, torch.Tensor)
         assert np.array_equal(result.shape, (3, n_sample))
         assert result.dtype == torch.int64
-
-    def test_sample_output_type_in_combination(self, tol):
-        """Test the return type and shape of sampling multiple works
-        in combination with expvals and vars"""
-        n_sample = 10
-
-        dev = qml.device("default.qubit", wires=3, shots=n_sample)
-
-        @qnode(dev, diff_method="parameter-shift", interface="torch")
-        def circuit():
-            return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))
-
-        result = circuit()
-
-        # If all the dimensions are equal the result will end up to be a proper rectangular array
-        assert len(result) == 3
-        assert isinstance(result[0], torch.Tensor)
-        assert isinstance(result[1], torch.Tensor)
-        assert result[2].dtype is torch.int64
-        assert np.array_equal(result[2].shape, (n_sample,))
