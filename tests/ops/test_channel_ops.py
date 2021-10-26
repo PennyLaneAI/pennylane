@@ -51,7 +51,7 @@ class TestChannels:
         elif ops.__name__ == "ThermalRelaxationError":
             t1 = 100e-6
             t2 = 100e-6
-            tg = 100e-9
+            tg = 20e-9
             op = ops(p, t1, t2, tg, wires=0)
         else:
             op = ops(p, wires=0)
@@ -497,6 +497,18 @@ class TestThermalRelaxationError:
     def test_T2_g_2T1_invalid_parameter(self):
         with pytest.raises(ValueError, match="Invalid T_2 relaxation time parameter"):
             channel.ThermalRelaxationError(0.3, 100e-6, np.inf, 20e-9, wires=0).kraus_matrices
+
+    def test_T1_le_0_invalid_parameter(self):
+        with pytest.raises(ValueError, match="Invalid T_1 relaxation time parameter"):
+            channel.ThermalRelaxationError(0.3, -50e-6, np.inf, 20e-9, wires=0).kraus_matrices
+
+    def test_T2_le_0_invalid_parameter(self):
+        with pytest.raises(ValueError, match="Invalid T_2 relaxation time parameter"):
+            channel.ThermalRelaxationError(0.3, 100e-6, 0, 20e-9, wires=0).kraus_matrices
+
+    def test_tg_le_0_invalid_parameter(self):
+        with pytest.raises(ValueError, match="Invalid gate_time"):
+            channel.ThermalRelaxationError(0.3, 100e-6, 100e-6, -20e-9, wires=0).kraus_matrices
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
     def test_grad_thermal_relaxation_error(self, angle, tol):

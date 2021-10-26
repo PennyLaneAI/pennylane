@@ -471,8 +471,8 @@ class ThermalRelaxationError(Channel):
     thermal relaxation error channel.
 
     This channel is modelled by the following Kraus matrices:
-        
-    if T2 <= T1:
+
+    Case T2 <= T1:
 
     .. math::
         K_0 = \sqrt{1 - pz - pr0 - pr1} \begin{bmatrix}
@@ -512,8 +512,8 @@ class ThermalRelaxationError(Channel):
     where :math:`pr0 \in [0, 1]` is the probability of a reset to 0,
         :math:`pr1 \in [0, 1]` is the probability of a reset to 1 error,
         math:`pz \in [0, 1]` is the probability of a phase flip (Pauli :math:`Z`) error
-        
-    else:
+
+    Case T2 > T1:
     .. math::
         choi_matrix = \begin{bmatrix}
                         1 - pe * p_reset & 0 & 0 & eT2 \\
@@ -522,13 +522,13 @@ class ThermalRelaxationError(Channel):
                         eT2 & 0 & 0 & 1 - (1 - pe) * p_reset
                         \end{bmatrix}
         K_N = \sqrt{\lambda} \Phi(\nu_\lambda)
-        
+
     where :math:`\lambda` are the eigenvalues of the choi_matrix,
-          :math:`\nu_lambda` are the eigenvectors of the choi_matrix,
-    and :math:`\Phi(x)` is a isomorphism from :math:`\mathbb{C}^{n^2}` to `\mathbb{C}^{n x n}`
-        with column-major order mapping.
+          :math:`\nu_lambda` are the eigenvectors of the choi_matrix, and 
+          :math:`\Phi(x)` is a isomorphism from :math:`\mathbb{C}^{n^2}` to
+          `\mathbb{C}^{n x n}`with column-major order mapping.
+
     **Details:**
-    
 
     * Number of wires: 1
     * Number of parameters: 4
