@@ -266,8 +266,6 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
         .. code-block:: python
 
-            from pennylane.templates import template
-
             def mytemplate(pars, wires):
                 qml.Hadamard(wires=wires)
                 qml.RY(pars, wires=wires)
