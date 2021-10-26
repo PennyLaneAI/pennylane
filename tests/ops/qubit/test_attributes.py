@@ -60,7 +60,7 @@ class TestAttribute:
         assert len(new_attribute) == 5
 
         with pytest.raises(TypeError, match="can be added to an attribute"):
-            new_attribute.add(qml.expval(qml.PauliZ(0)))
+            new_attribute.add(qml.measure.MeasurementProcess)
 
         assert len(new_attribute) == 5
 
