@@ -26,19 +26,13 @@ ROT = {"X": RX, "Y": RY, "Z": RZ}
 class AngleEmbedding(Operation):
     r"""
     Encodes :math:`N` features into the rotation angles of :math:`n` qubits, where :math:`N \leq n`.
-
     The rotations can be chosen as either :class:`~pennylane.ops.RX`, :class:`~pennylane.ops.RY`
     or :class:`~pennylane.ops.RZ` gates, as defined by the ``rotation`` parameter:
-
     * ``rotation='X'`` uses the features as angles of RX rotations
-
     * ``rotation='Y'`` uses the features as angles of RY rotations
-
     * ``rotation='Z'`` uses the features as angles of RZ rotations
-
     The length of ``features`` has to be smaller or equal to the number of qubits. If there are fewer entries in
     ``features`` than rotations, the circuit does not apply the remaining rotation gates.
-
     Args:
         features (tensor_like): input tensor of shape ``(N,)``, where N is the number of input features to embed,
             with :math:`N\leq n`
@@ -51,13 +45,13 @@ class AngleEmbedding(Operation):
     par_domain = "A"
     grad_method = None
 
-    def __init__(self, features, wires, rotation="X", do_queue=True, id=None):
 
+    def __init__(self, features, wires, rotation="X", do_queue=True, id=None):
         if rotation not in ROT:
             raise ValueError(f"Rotation option {rotation} not recognized.")
         self.rotation = ROT[rotation]
 
-        shape = qml.math.shape(features)
+        shape = qml.math.shape(features)[-1:]
         if len(shape) != 1:
             raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
         n_features = shape[0]
