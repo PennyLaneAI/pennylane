@@ -20,7 +20,7 @@ import pytest
 import pennylane as qml
 from pennylane.operation import Expectation
 from pennylane.tape import QuantumTape
-from pennylane.transforms.noise import add_noise, add_noise_to_dev
+from pennylane.transforms.insert import add_noise, add_noise_to_dev
 
 
 class TestAddNoise:
