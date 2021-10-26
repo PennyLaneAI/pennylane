@@ -87,8 +87,15 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
     for i, tape in enumerate(tapes):
         # convert output to TensorFlow tensors
-        r = np.hstack(res[i]) if res[i].dtype == np.dtype("object") else res[i]
-        res[i] = tf.convert_to_tensor(r)
+
+        if isinstance(res[i], np.ndarray):
+            # For backwards compatibility, we flatten ragged tape outputs
+            # when there is no sampling
+            r = np.hstack(res[i]) if res[i].dtype == np.dtype("object") else res[i]
+            res[i] = tf.convert_to_tensor(r)
+
+        elif isinstance(res[i], tuple):
+            res[i] = tuple(tf.convert_to_tensor(r) for r in res[i])
 
     @tf.custom_gradient
     def _execute(*parameters):  # pylint:disable=unused-argument
