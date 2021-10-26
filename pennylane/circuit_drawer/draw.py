@@ -23,20 +23,25 @@ from .drawable_layers import drawable_layers
 from .utils import convert_wire_order
 
 
-def _add_swap(drawer, layer, mapped_wires):
+def _add_swap(drawer, op, layer, mapped_wires):
     drawer.SWAP(layer, mapped_wires)
 
 
-def _add_cswap(drawer, layer, mapped_wires):
+def _add_cswap(drawer, op, layer, mapped_wires):
     drawer.ctrl(layer, wires=mapped_wires[0], wires_target=mapped_wires[1:])
     drawer.SWAP(layer, wires=mapped_wires[1:])
 
 
-def _add_cx(drawer, layer, mapped_wires):
+def _add_cx(drawer, op, layer, mapped_wires):
     drawer.CNOT(layer, mapped_wires)
 
+def _add_multicontrolledx(drawer, op, layer, mapped_wires):
+    # convert control values
+    control_values = [(i=="1") for i in op.control_values]
+    drawer.ctrl(layer, mapped_wires[:-1], mapped_wires[-1], control_values=control_values)
+    drawer._target_x(layer, mapped_wires[-1])
 
-def _add_cz(drawer, layer, mapped_wires):
+def _add_cz(drawer, op, layer, mapped_wires):
     drawer.ctrl(layer, mapped_wires)
 
 
@@ -45,7 +50,7 @@ special_cases = {
     ops.CSWAP: _add_cswap,
     ops.CNOT: _add_cx,
     ops.Toffoli: _add_cx,
-    ops.MultiControlledX: _add_cx,
+    ops.MultiControlledX: _add_multicontrolledx,
     ops.CZ: _add_cz,
 }
 
@@ -55,8 +60,7 @@ def draw_mpl(
     wire_order=None,
     show_all_wires=False,
     decimals=None,
-    wire_options=None,
-    label_options=None,
+    **kwargs
 ):
     """Draw a tape with matplotlib
 
@@ -200,6 +204,8 @@ def draw_mpl(
             :target: javascript:void(0);
 
     """
+    wire_options = kwargs.get("wire_options", None)
+    label_options = kwargs.get("label_options", None)
 
     if wire_order is None:
         wire_order = tape.wires
@@ -228,7 +234,7 @@ def draw_mpl(
 
             specialfunc = special_cases.get(op.__class__, None)
             if specialfunc is not None:
-                specialfunc(drawer, layer, mapped_wires)
+                specialfunc(drawer, op, layer, mapped_wires)
 
             elif control_wires is not None:
                 target_wires = [wire_map[w] for w in op.wires if w not in op.control_wires]
