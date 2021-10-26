@@ -61,8 +61,6 @@ def insert(
         ValueError: if a single operation acting on multiple wires is passed to ``op``
         ValueError: if the requested ``position`` argument is not ``'start'``, ``'end'`` or
             ``'all'``
-        ValueError: if more than one state preparation is present in the circuit, or if the
-            preparation is not at the start of the circuit
 
     **Example:**
 
@@ -157,22 +155,16 @@ def insert(
     if not isinstance(op_args, Sequence):
         op_args = [op_args]
 
-    preps = tuple(isinstance(o, (QubitStateVector, BasisState)) for o in circuit.operations)
-    valid_preps = sum(preps) == 1 and preps[0] is True or sum(preps) == 0
-    if not valid_preps:
-        raise ValueError("Only a single state preparation at the start of the circuit is supported")
+    num_preps = sum(isinstance(o, (QubitStateVector, BasisState)) for o in circuit.operations)
 
-    if sum(preps) == 1:
-        apply(circuit.operations[0])
-        start_pos = 1
-    else:
-        start_pos = 0
+    for i in range(num_preps):
+        apply(circuit.operations[i])
 
     if position == "start":
         for w in circuit.wires:
             op(*op_args, wires=w)
 
-    for circuit_op in circuit.operations[start_pos:]:
+    for circuit_op in circuit.operations[num_preps:]:
         apply(circuit_op)
         if position == "all":
             for w in circuit_op.wires:
@@ -224,8 +216,6 @@ def insert_in_dev(
         ValueError: if a single operation acting on multiple wires is passed to ``op``
         ValueError: if the requested ``position`` argument is not ``'start'``, ``'end'`` or
             ``'all'``
-        ValueError: if more than one state preparation is present in the circuit, or if the
-            preparation is not at the start of the circuit
 
     **Example:**
 

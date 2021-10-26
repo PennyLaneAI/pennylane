@@ -223,15 +223,6 @@ class TestInsert:
         assert tape.observables[0].wires.tolist() == [0, 1]
         assert tape.measurements[0].return_type is Expectation
 
-    def test_multiple_preparations(self):
-        """Tests if a ValueError is raised when multiple state preparations are present in the
-        tape"""
-        with QuantumTape() as tape:
-            qml.QubitStateVector([1, 0], wires=0)
-            qml.QubitStateVector([0, 1], wires=1)
-        with pytest.raises(ValueError, match="Only a single state preparation at the start of the"):
-            insert.tape_fn(tape, qml.AmplitudeDamping, 0.4)
-
 
 def test_insert_integration():
     """Test that a QNode with the insert decorator gives a different result than one
