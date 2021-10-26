@@ -604,6 +604,7 @@ class TestDifferentiability:
         qml.CNOT(wires=[0, 1])
         qml.PhaseShift(weights[2], wires=1)
         return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
+
     dev = qml.device("default.qubit", wires=2)
     weights = np.array([0.432, 0.12, -0.432], requires_grad=True)
     a, b, c = weights
@@ -614,6 +615,7 @@ class TestDifferentiability:
     def test_autograd(self, diff_method, tol):
         """Test metric tensor differentiability in the autograd interface"""
         qnode = qml.QNode(self.circuit, self.dev, interface="autograd", diff_method=diff_method)
+
         def cost(weights):
             return qml.metric_tensor(qnode, approx="block-diag")(weights)[2, 2]
 
@@ -661,6 +663,7 @@ class TestDifferentiability:
         grad = weights_t.grad
         assert np.allclose(grad, self.expected, atol=tol, rtol=0)
 
+
 def test_generator_no_expval(monkeypatch):
     """Test exception is raised if subcircuit contains an
     operation with generator object that is not an observable"""
@@ -673,6 +676,7 @@ def test_generator_no_expval(monkeypatch):
 
         with pytest.raises(qml.QuantumFunctionError, match="no corresponding observable"):
             qml.metric_tensor(tape, approx="block-diag")
+
 
 class TestDeprecatedQNodeMethod:
     """The QNode.metric_tensor method has been deprecated.
