@@ -472,7 +472,7 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire):
     aux_wire = aux_wire or tape.num_wires
     # Get tapes and processing function for the block diagonal metric tensor,
     # as well as the generator observables and generator coefficients for each diff'ed operation
-    diag_tapes, diag_proc_fn, obs_list, coeffs = metric_tensor_cov_matrix(tape, diag_approx=False)
+    diag_tapes, diag_proc_fn, obs_list, coeffs = _metric_tensor_cov_matrix(tape, diag_approx=False)
     graph = tape.graph
     layers = list(graph.iterate_parametrized_layers())
 
