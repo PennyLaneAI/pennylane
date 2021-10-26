@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* ``qml.circuit_drawer.draw_mpl`` produces a matplotlib figure and axes given a tape.
+  [(#1787)](https://github.com/PennyLaneAI/pennylane/pull/1787)
+
 * Common tape expansion functions are now available in `qml.transforms`,
   alongside a new `create_expand_fn` function for easily creating expansion functions
   from stopping criteria.

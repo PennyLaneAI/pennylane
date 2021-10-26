@@ -82,9 +82,9 @@ class TestInitialization:
         options = {"linewidth": 3, "color": rgba_red}
         drawer = MPLDrawer(n_wires=2, n_layers=2, wire_options=options)
 
-        for wire in drawer.ax.lines:
-            assert wire.get_linewidth() == 3
-            assert wire.get_color() == rgba_red
+        for line in drawer.ax.lines:
+            assert line.get_linewidth() == 3
+            assert line.get_color() == rgba_red
 
         plt.close()
 

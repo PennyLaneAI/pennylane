@@ -35,11 +35,13 @@ def _add_cswap(drawer, op, layer, mapped_wires):
 def _add_cx(drawer, op, layer, mapped_wires):
     drawer.CNOT(layer, mapped_wires)
 
+
 def _add_multicontrolledx(drawer, op, layer, mapped_wires):
     # convert control values
-    control_values = [(i=="1") for i in op.control_values]
+    control_values = [(i == "1") for i in op.control_values]
     drawer.ctrl(layer, mapped_wires[:-1], mapped_wires[-1], control_values=control_values)
     drawer._target_x(layer, mapped_wires[-1])
+
 
 def _add_cz(drawer, op, layer, mapped_wires):
     drawer.ctrl(layer, mapped_wires)
@@ -55,13 +57,7 @@ special_cases = {
 }
 
 
-def draw_mpl(
-    tape,
-    wire_order=None,
-    show_all_wires=False,
-    decimals=None,
-    **kwargs
-):
+def draw_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwargs):
     """Draw a tape with matplotlib
 
     Args:
@@ -142,49 +138,10 @@ def draw_mpl(
             :width: 60%
             :target: javascript:void(0);
 
-    **Styling:**
-
-
-    .. code-block:: python
-
-        with plt.style.context("Solarize_Light2):
-            fig, ax = draw_mpl(tape)
-
-    .. figure:: ../../_static/draw_mpl/Solarize_Light2.png
-            :align: center
-            :width: 60%
-            :target: javascript:void(0);
-
-    .. code-block:: python
-
-        plt.rcParams['patch.facecolor'] = 'white'
-        plt.rcParams['patch.edgecolor'] = 'black'
-        plt.rcParams['patch.linewidth'] = 2
-        plt.rcParams['patch.force_edgecolor'] = True
-        plt.rcParams['lines.color'] = 'black'
-
-        fig, ax = draw_mpl(tape)
-
-    .. figure:: ../../_static/draw_mpl/rcparams.png
-            :align: center
-            :width: 60%
-            :target: javascript:void(0);
-
-
-    .. code-block:: python
-
-        fig, ax = draw_mpl(tape, wire_options={'color':'black', 'linewidth': 5},
-                    label_options={'size': 20})
-
-    .. figure:: ../../_static/draw_mpl/wires_labels.png
-            :align: center
-            :width: 60%
-            :target: javascript:void(0);
-
     **Integration with matplotlib:**
 
-    This function returns matplotlib figure and axes objects, users can perform further
-    customization of the graphic with these objects.
+    This function returns matplotlib figure and axes objects. Using these objects,
+    users can perform further customization of the graphic.
 
     .. code-block:: python
 
@@ -203,14 +160,59 @@ def draw_mpl(
             :width: 60%
             :target: javascript:void(0);
 
+    **Formatting:**
+
+    You can globally control the style with ``plt.rcParams`` and styles, see the
+    `matplotlib docs <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
+    If we customize ``plt.rcParams``, we get a
+    different style:
+
+    .. code-block:: python
+
+        plt.rcParams['patch.facecolor'] = 'white'
+        plt.rcParams['patch.edgecolor'] = 'black'
+        plt.rcParams['patch.linewidth'] = 2
+        plt.rcParams['patch.force_edgecolor'] = True
+        plt.rcParams['lines.color'] = 'black'
+
+        fig, ax = draw_mpl(tape)
+
+    .. figure:: ../../_static/draw_mpl/rcparams.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
+    Instead of manually customizing everything, you can choose one of
+    the provided styles. You can see available styles with ``plt.style.available``.
+    We can set the ``'Solarize_Light2'`` style and instead get:
+
+    .. code-block:: python
+
+        with plt.style.context("Solarize_Light2):
+            fig, ax = draw_mpl(tape)
+
+    .. figure:: ../../_static/draw_mpl/Solarize_Light2.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
+    The wires and wire labels can be manually formatted by passing in dictionaries of
+    keyword-value pairs of matplotlib options. ``wire_options`` accepts options for lines,
+    and ``label_options`` accepts text options.
+
+    .. code-block:: python
+
+        fig, ax = draw_mpl(tape, wire_options={'color':'black', 'linewidth': 5},
+                    label_options={'size': 20})
+
+    .. figure:: ../../_static/draw_mpl/wires_labels.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
     """
     wire_options = kwargs.get("wire_options", None)
     label_options = kwargs.get("label_options", None)
-
-    if wire_order is None:
-        wire_order = tape.wires
-    else:
-        wire_order = Wires.all_wires([Wires(wire_order), tape.wires])
 
     wire_map = convert_wire_order(
         tape.operations + tape.measurements, wire_order=wire_order, show_all_wires=show_all_wires
