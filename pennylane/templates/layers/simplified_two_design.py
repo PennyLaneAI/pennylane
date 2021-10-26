@@ -65,7 +65,6 @@ class SimplifiedTwoDesign(Operation):
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane.templates import SimplifiedTwoDesign
             from math import pi
 
             n_wires = 3
@@ -73,7 +72,7 @@ class SimplifiedTwoDesign(Operation):
 
             @qml.qnode(dev)
             def circuit(init_weights, weights):
-                SimplifiedTwoDesign(initial_layer_weights=init_weights, weights=weights, wires=range(n_wires))
+                qml.SimplifiedTwoDesign(initial_layer_weights=init_weights, weights=weights, wires=range(n_wires))
                 return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
             init_weights = [pi, pi, pi]
@@ -89,12 +88,12 @@ class SimplifiedTwoDesign(Operation):
         **Parameter shapes**
 
         A list of shapes for the two weights arguments can be computed with the static method
-        :meth:`~.SimplifiedTwoDesign.shape` and used when creating randomly
+        :meth:`~.qml.SimplifiedTwoDesign.shape` and used when creating randomly
         initialised weight tensors:
 
         .. code-block:: python
 
-            shapes = SimplifiedTwoDesign.shape(n_layers=2, n_wires=2)
+            shapes = qml.SimplifiedTwoDesign.shape(n_layers=2, n_wires=2)
             weights = [np.random.random(size=shape) for shape in shapes]
 
     """
