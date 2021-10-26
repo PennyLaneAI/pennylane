@@ -17,7 +17,6 @@ Contains the ``Interferometer`` template.
 import pennylane as qml
 
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from pennylane.templates.decorator import template
 from pennylane.ops import Beamsplitter, Rotation
 from pennylane.wires import Wires
 
@@ -140,50 +139,46 @@ def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="
 
     shape_varphi = _preprocess(theta, phi, varphi, wires)
 
-    with qml.tape.OperationRecorder() as rec:
+    if M == 1:
+        # the interferometer is a single rotation
+        Rotation(varphi[0], wires=wires[0])
+        return
 
-        if M == 1:
-            # the interferometer is a single rotation
-            Rotation(varphi[0], wires=wires[0])
-            return
+    n = 0  # keep track of free parameters
 
-        n = 0  # keep track of free parameters
-
-        if mesh == "rectangular":
-            # Apply the Clements beamsplitter array
-            # The array depth is N
-            for l in range(M):
-                for k, (w1, w2) in enumerate(zip(wires[:-1], wires[1:])):
-                    # skip even or odd pairs depending on layer
-                    if (l + k) % 2 != 1:
-                        if beamsplitter == "clements":
-                            Rotation(phi[n], wires=Wires(w1))
-                            Beamsplitter(theta[n], 0, wires=Wires([w1, w2]))
-                        elif beamsplitter == "pennylane":
-                            Beamsplitter(theta[n], phi[n], wires=Wires([w1, w2]))
-                        else:
-                            raise ValueError(f"did not recognize beamsplitter {beamsplitter}")
-                        n += 1
-
-        elif mesh == "triangular":
-            # apply the Reck beamsplitter array
-            # The array depth is 2*N-3
-            for l in range(2 * M - 3):
-                for k in range(abs(l + 1 - (M - 1)), M - 1, 2):
+    if mesh == "rectangular":
+        # Apply the Clements beamsplitter array
+        # The array depth is N
+        for l in range(M):
+            for k, (w1, w2) in enumerate(zip(wires[:-1], wires[1:])):
+                # skip even or odd pairs depending on layer
+                if (l + k) % 2 != 1:
                     if beamsplitter == "clements":
-                        Rotation(phi[n], wires=wires[k])
-                        Beamsplitter(theta[n], 0, wires=wires.subset([k, k + 1]))
+                        Rotation(phi[n], wires=Wires(w1))
+                        Beamsplitter(theta[n], 0, wires=Wires([w1, w2]))
                     elif beamsplitter == "pennylane":
-                        Beamsplitter(theta[n], phi[n], wires=wires.subset([k, k + 1]))
+                        Beamsplitter(theta[n], phi[n], wires=Wires([w1, w2]))
                     else:
-                        raise ValueError(f"did not recognize beamsplitter {beamsplitter} ")
+                        raise ValueError(f"did not recognize beamsplitter {beamsplitter}")
                     n += 1
-        else:
-            raise ValueError(f"did not recognize mesh {mesh}")
 
-        # apply the final local phase shifts to all modes
-        for i in range(shape_varphi[0]):
-            act_on = wires[i]
-            Rotation(varphi[i], wires=act_on)
+    elif mesh == "triangular":
+        # apply the Reck beamsplitter array
+        # The array depth is 2*N-3
+        for l in range(2 * M - 3):
+            for k in range(abs(l + 1 - (M - 1)), M - 1, 2):
+                if beamsplitter == "clements":
+                    Rotation(phi[n], wires=wires[k])
+                    Beamsplitter(theta[n], 0, wires=wires.subset([k, k + 1]))
+                elif beamsplitter == "pennylane":
+                    Beamsplitter(theta[n], phi[n], wires=wires.subset([k, k + 1]))
+                else:
+                    raise ValueError(f"did not recognize beamsplitter {beamsplitter} ")
+                n += 1
+    else:
+        raise ValueError(f"did not recognize mesh {mesh}")
 
-    return rec.queue
+    # apply the final local phase shifts to all modes
+    for i in range(shape_varphi[0]):
+        act_on = wires[i]
+        Rotation(varphi[i], wires=act_on)

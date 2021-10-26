@@ -621,10 +621,6 @@
 
 <h3>Breaking changes</h3>
 
-* The `template` decorator is now deprecated with a warning message and will be removed
-  in release `v0.20.0`.
-  [(#1794)](https://github.com/PennyLaneAI/pennylane/pull/1794)
-
 * The `qml.inv` function has been removed, `qml.adjoint` should be used
   instead.
   [(#1778)](https://github.com/PennyLaneAI/pennylane/pull/1778)
@@ -666,6 +662,13 @@
   [(#1754)](https://github.com/PennyLaneAI/pennylane/pull/1754)
 
 <h3>Deprecations</h3>
+
+* The `template` decorator is removed from different PennyLane functions.
+  [(#1808)](https://github.com/PennyLaneAI/pennylane/pull/1808)
+  
+* The `template` decorator is now deprecated with a warning message and will be removed
+  in release `v0.20.0`.
+  [(#1794)](https://github.com/PennyLaneAI/pennylane/pull/1794)
 
 * Allowing cost functions to be differentiated using `qml.grad` or
   `qml.jacobian` without explicitly marking parameters as trainable is being
