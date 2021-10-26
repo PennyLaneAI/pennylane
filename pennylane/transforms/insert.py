@@ -153,7 +153,7 @@ def insert(
         apply(m)
 
 
-def add_noise_to_dev(
+def insert_in_dev(
     device: Device,
     noisy_op: Type[Channel],
     noisy_op_args: Union[tuple, float],
@@ -217,7 +217,7 @@ def add_noise_to_dev(
 
     However, noise can be easily added to the device:
 
-    >>> qml.transforms.add_noise_to_dev(dev, qml.AmplitudeDamping, 0.2)
+    >>> qml.transforms.insert_in_dev(dev, qml.AmplitudeDamping, 0.2)
     >>> f(0.9, 0.4, 0.5, 0.6)
     tensor(0.72945434, requires_grad=True)
     """

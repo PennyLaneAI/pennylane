@@ -388,7 +388,7 @@
 
 <h3>Improvements</h3>
 
-* The `insert` and `add_noise_to_dev` transforms have now been added,
+* The `insert` and `insert_in_dev` transforms have now been added,
   providing a way to insert simple noise into a quantum circuit.
   [(#1795)](https://github.com/PennyLaneAI/pennylane/pull/1795)
   

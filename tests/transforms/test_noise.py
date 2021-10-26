@@ -20,7 +20,7 @@ import pytest
 import pennylane as qml
 from pennylane.operation import Expectation
 from pennylane.tape import QuantumTape
-from pennylane.transforms.insert import insert, add_noise_to_dev
+from pennylane.transforms.insert import insert, insert_in_dev
 
 
 class TestAddNoise:
@@ -267,7 +267,7 @@ def test_add_noise_integration():
 
 
 def test_add_noise_to_dev(mocker):
-    """Test if a device transformed by the add_noise_to_dev does successfully add noise to
+    """Test if a device transformed by the insert_in_dev does successfully add noise to
     subsequent circuit executions"""
     with QuantumTape() as in_tape:
         qml.RX(0.9, wires=0)
@@ -282,7 +282,7 @@ def test_add_noise_to_dev(mocker):
 
     spy = mocker.spy(dev, "expand_fn")
 
-    add_noise_to_dev(dev, qml.PhaseDamping, 0.4)
+    insert_in_dev(dev, qml.PhaseDamping, 0.4)
 
     res_with_noise = qml.execute([in_tape], dev, qml.gradients.param_shift)
     tape = spy.call_args[0][0]
