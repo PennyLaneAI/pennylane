@@ -12,27 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """TODO"""
-from functools import wraps
-from typing import Any, Dict, Sequence, Optional, Tuple
-from pennylane.transforms import batch_transform, single_tape_transform
+from typing import Any, Dict, Sequence, Optional
+from pennylane.transforms import batch_transform, support_preparations_and_measurements
 from pennylane.tape import QuantumTape
-from pennylane import apply
 from pennylane.math import mean
-from pennylane import QubitStateVector, BasisState
-from pennylane.operation import Operation
-from pennylane.measure import MeasurementProcess
 
 
 @batch_transform
 def mitigate_with_zne(tape: QuantumTape, scale_factors: Sequence[float], folding: callable, extrapolate: callable, folding_kwargs: Optional[Dict[str, Any]]=None, extrapolate_kwargs: Optional[Dict[str, Any]]=None, reps_per_factor=1) -> float:
     folding_kwargs = folding_kwargs or {}
     extrapolate_kwargs = extrapolate_kwargs or {}
+    folding = support_preparations_and_measurements(folding)
 
-    tape_no_meas = _remove_measurements(tape)
-
-    tapes = [[folding(tape_no_meas, s, **folding_kwargs) for _ in range(reps_per_factor)] for s in scale_factors]
+    tapes = [[folding(tape, s, **folding_kwargs) for _ in range(reps_per_factor)] for s in scale_factors]
     tapes = [tape_ for tapes_ in tapes for tape_ in tapes_]
-    tapes = [_add_measurements(t, tape.measurements) for t in tapes]
 
     def processing_fn(results):
         results = [results[i:i + reps_per_factor] for i in range(0, len(results), reps_per_factor)]
