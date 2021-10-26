@@ -19,7 +19,7 @@ tf = pytest.importorskip("tensorflow", minversion="2.1")
 import numpy as np
 
 import pennylane as qml
-from pennylane import qnode, QNode
+from pennylane.qnode_old import qnode, QNode
 from pennylane.tape import JacobianTape
 
 

@@ -20,7 +20,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import qnode, QNode
-from pennylane.tape import JacobianTape
+from pennylane.tape.qnode_old import JacobianTape
 from torch.autograd.functional import hessian, jacobian
 
 

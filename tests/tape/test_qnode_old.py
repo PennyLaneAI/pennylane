@@ -19,7 +19,7 @@ from collections import defaultdict
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane import QNodeCollection
-from pennylane import qnode, QNode
+from pennylane.qnode_old import qnode, QNode
 from pennylane.transforms import draw
 from pennylane.tape import JacobianTape, QubitParamShiftTape, CVParamShiftTape
 
