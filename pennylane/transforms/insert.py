@@ -15,6 +15,7 @@
 Provides transforms for inserting operations into quantum circuits.
 """
 from collections.abc import Sequence
+from copy import deepcopy
 from types import FunctionType
 from typing import Type, Union
 
@@ -190,7 +191,7 @@ def insert_in_dev(
     op: Union[callable, Type[Operation]],
     op_args: Union[tuple, float],
     position: str = "all",
-):
+) -> Device:
     """Insert an operation into specified points in circuits during device execution.
 
     After applying this transform, circuits executed on the device will have operations inserted.
@@ -257,10 +258,14 @@ def insert_in_dev(
     tensor(0.72945434, requires_grad=True)
     """
     # TODO: Remove warning in docstrings once new QNode replaces the old
-    original_expand_fn = device.expand_fn
+
+    new_dev = deepcopy(device)
+    original_expand_fn = new_dev.expand_fn
 
     def new_expand_fn(circuit, max_expansion=10):
         new_tape = insert.tape_fn(circuit, op, op_args, position)
         return original_expand_fn(new_tape, max_expansion=max_expansion)
 
-    device.expand_fn = new_expand_fn
+    new_dev.expand_fn = new_expand_fn
+
+    return new_dev
