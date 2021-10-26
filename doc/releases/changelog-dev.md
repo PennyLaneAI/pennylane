@@ -663,12 +663,10 @@
 
 <h3>Deprecations</h3>
 
-* The `template` decorator is removed from different PennyLane functions.
-  [(#1808)](https://github.com/PennyLaneAI/pennylane/pull/1808)
-  
 * The `template` decorator is now deprecated with a warning message and will be removed
-  in release `v0.20.0`.
+  in release `v0.20.0`. It has been removed from different PennyLane functions
   [(#1794)](https://github.com/PennyLaneAI/pennylane/pull/1794)
+  [(#1808)](https://github.com/PennyLaneAI/pennylane/pull/1808)
 
 * Allowing cost functions to be differentiated using `qml.grad` or
   `qml.jacobian` without explicitly marking parameters as trainable is being
