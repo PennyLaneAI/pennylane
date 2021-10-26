@@ -140,7 +140,7 @@ def insert(
         We can add the :class:`~.AmplitudeDamping` channel to the end of the circuit using:
 
         >>> from pennylane.transforms import insert
-        >>> noisy_tape = insert.tape_fn(tape, qml.AmplitudeDamping, 0.05, position="end")
+        >>> noisy_tape = insert(qml.AmplitudeDamping, 0.05, position="end")(tape)
         >>> print(noisy_tape.draw())
          0: ──RX(0.9)──╭C──RY(0.5)──AmplitudeDamping(0.05)──╭┤ ⟨Z ⊗ Z⟩
          1: ──RY(0.4)──╰X──RX(0.6)──AmplitudeDamping(0.05)──╰┤ ⟨Z ⊗ Z⟩
@@ -251,7 +251,7 @@ def insert_in_dev(
     original_expand_fn = new_dev.expand_fn
 
     def new_expand_fn(circuit, max_expansion=10):
-        new_tape = insert.tape_fn(circuit, op, op_args, position)
+        new_tape = insert(op, op_args, position)(circuit)
         return original_expand_fn(new_tape, max_expansion=max_expansion)
 
     new_dev.expand_fn = new_expand_fn

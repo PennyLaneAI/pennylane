@@ -49,16 +49,16 @@ class TestInsert:
     def test_multiwire_noisy_op(self):
         """Tests if a ValueError is raised when multiqubit channels are requested"""
         with pytest.raises(ValueError, match="Only single-qubit operations can be inserted into"):
-            insert.tape_fn(self.tape, qml.CNOT, [])
+            insert(qml.CNOT, [])(self.tape)
 
     def test_invalid_position(self):
         """Test if a ValueError is raised when an invalid position is requested"""
         with pytest.raises(ValueError, match="Position must be either 'start', 'end', or 'all'"):
-            insert.tape_fn(self.tape, qml.AmplitudeDamping, 0.4, position="ABC")
+            insert(qml.AmplitudeDamping, 0.4, position="ABC")(self.tape)
 
     def test_start(self):
         """Test if the expected tape is returned when the start position is requested"""
-        tape = insert.tape_fn(self.tape, qml.AmplitudeDamping, 0.4, position="start")
+        tape = insert(qml.AmplitudeDamping, 0.4, position="start")(self.tape)
 
         with QuantumTape() as tape_exp:
             qml.AmplitudeDamping(0.4, wires=0)
@@ -83,7 +83,7 @@ class TestInsert:
 
     def test_all(self):
         """Test if the expected tape is returned when the all position is requested"""
-        tape = insert.tape_fn(self.tape, qml.PhaseDamping, 0.4, position="all")
+        tape = insert(qml.PhaseDamping, 0.4, position="all")(self.tape)
 
         with QuantumTape() as tape_exp:
             qml.RX(0.9, wires=0)
@@ -112,9 +112,7 @@ class TestInsert:
 
     def test_end(self):
         """Test if the expected tape is returned when the end position is requested"""
-        tape = insert.tape_fn(
-            self.tape, qml.GeneralizedAmplitudeDamping, [0.4, 0.5], position="end"
-        )
+        tape = insert(qml.GeneralizedAmplitudeDamping, [0.4, 0.5], position="end")(self.tape)
 
         with QuantumTape() as tape_exp:
             qml.RX(0.9, wires=0)
@@ -140,7 +138,7 @@ class TestInsert:
     def test_start_with_state_prep(self):
         """Test if the expected tape is returned when the start position is requested in a tape
         that has state preparation"""
-        tape = insert.tape_fn(self.tape_with_prep, qml.AmplitudeDamping, 0.4, position="start")
+        tape = insert(qml.AmplitudeDamping, 0.4, position="start")(self.tape_with_prep)
 
         with QuantumTape() as tape_exp:
             qml.QubitStateVector([1, 0], wires=0)
@@ -167,7 +165,7 @@ class TestInsert:
     def test_all_with_state_prep(self):
         """Test if the expected tape is returned when the all position is requested in a tape
         that has state preparation"""
-        tape = insert.tape_fn(self.tape_with_prep, qml.PhaseDamping, 0.4, position="all")
+        tape = insert(qml.PhaseDamping, 0.4, position="all")(self.tape_with_prep)
 
         with QuantumTape() as tape_exp:
             qml.QubitStateVector([1, 0], wires=0)
@@ -198,8 +196,8 @@ class TestInsert:
     def test_end_with_state_prep(self):
         """Test if the expected tape is returned when the end position is requested in a tape
         that has state preparation"""
-        tape = insert.tape_fn(
-            self.tape_with_prep, qml.GeneralizedAmplitudeDamping, [0.4, 0.5], position="end"
+        tape = insert(qml.GeneralizedAmplitudeDamping, [0.4, 0.5], position="end")(
+            self.tape_with_prep
         )
 
         with QuantumTape() as tape_exp:
