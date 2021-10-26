@@ -15,6 +15,7 @@
 Provides transforms for inserting operations into quantum circuits.
 """
 from collections.abc import Sequence
+from types import FunctionType
 from typing import Type, Union
 
 from pennylane import BasisState, Device, QubitStateVector, apply
@@ -145,7 +146,7 @@ def insert(
          0: ──RX(0.9)──╭C──RY(0.5)──AmplitudeDamping(0.05)──╭┤ ⟨Z ⊗ Z⟩
          1: ──RY(0.4)──╰X──RX(0.6)──AmplitudeDamping(0.05)──╰┤ ⟨Z ⊗ Z⟩
     """
-    if isinstance(op, Operation) and op.num_wires != 1:
+    if not isinstance(op, FunctionType) and op.num_wires != 1:
         raise ValueError(
             "Only single-qubit operations can be inserted into the circuit"
         )

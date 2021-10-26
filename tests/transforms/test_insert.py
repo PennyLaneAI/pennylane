@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the noise-adding transforms.
+Tests for the insert transforms.
 """
 import numpy as np
 import pytest
@@ -23,7 +23,7 @@ from pennylane.tape import QuantumTape
 from pennylane.transforms.insert import insert, insert_in_dev
 
 
-class TestAddNoise:
+class TestInsert:
     """Tests for the insert function using input tapes"""
 
     with QuantumTape() as tape:
@@ -45,19 +45,13 @@ class TestAddNoise:
 
     def test_multiwire_noisy_op(self):
         """Tests if a ValueError is raised when multiqubit channels are requested"""
-        with pytest.raises(ValueError, match="Adding noise to the circuit is only"):
-            insert.tape_fn(self.tape, qml.QubitChannel, [])
+        with pytest.raises(ValueError, match="Only single-qubit operations can be inserted into"):
+            insert.tape_fn(self.tape, qml.CNOT, [])
 
     def test_invalid_position(self):
         """Test if a ValueError is raised when an invalid position is requested"""
         with pytest.raises(ValueError, match="Position must be either 'start', 'end', or 'all'"):
             insert.tape_fn(self.tape, qml.AmplitudeDamping, 0.4, position="ABC")
-
-    def test_not_noisy(self):
-        """Test if a ValueError is raised when something that is not a noisy channel is fed to the
-        noisy_op argument"""
-        with pytest.raises(ValueError, match="The noisy_op argument must be a noisy operation"):
-            insert.tape_fn(self.tape, qml.PauliX, 0.4)
 
     def test_start(self):
         """Test if the expected tape is returned when the start position is requested"""
@@ -237,7 +231,7 @@ class TestAddNoise:
             insert.tape_fn(tape, qml.AmplitudeDamping, 0.4)
 
 
-def test_add_noise_integration():
+def test_insert_integration():
     """Test that a QNode with the insert decorator gives a different result than one
     without."""
     dev = qml.device("default.mixed", wires=2)
@@ -266,7 +260,7 @@ def test_add_noise_integration():
     assert not np.isclose(f_noisy(*args), f(*args))
 
 
-def test_add_noise_to_dev(mocker):
+def test_insert_in_dev(mocker):
     """Test if a device transformed by the insert_in_dev does successfully add noise to
     subsequent circuit executions"""
     with QuantumTape() as in_tape:
