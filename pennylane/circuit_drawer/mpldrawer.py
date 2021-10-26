@@ -326,7 +326,7 @@ class MPLDrawer:
             box_options=None (dict): any matplotlib keywords for the ``plt.Rectangle`` patch
             text_options=None (dict): any matplotlib keywords for the text
             extra_width (float): extra box width
-            autosize (bool): whether to rotate and shrink text to within the box
+            autosize (bool): whether to rotate and shrink text to fit within the box
 
         **Example**
 
