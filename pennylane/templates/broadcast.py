@@ -141,7 +141,6 @@ def _preprocess(parameters, pattern, wires):
     return wire_sequence, parameters
 
 
-@template
 def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
     r"""Applies a unitary multiple times to a specific pattern of wires.
 
@@ -270,7 +269,6 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
             from pennylane.templates import template
 
-            @template
             def mytemplate(pars, wires):
                 qml.Hadamard(wires=wires)
                 qml.RY(pars, wires=wires)
@@ -309,7 +307,6 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
             from pennylane.templates import template
 
-            @template
             def mytemplate(pars1, pars2, wires):
                 qml.Hadamard(wires=wires)
                 qml.RY(pars1, wires=wires)
@@ -340,7 +337,6 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
         .. code-block:: python
 
-            @template
             def mytemplate(pars, wires):
                 qml.Hadamard(wires=wires)
                 qml.RY(pars[0], wires=wires)
@@ -357,7 +353,6 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
         .. code-block:: python
 
-            @template
             def mytemplate(pars1, pars2, wires):
                 qml.Hadamard(wires=wires)
                 qml.RY(pars1, wires=wires)
@@ -377,7 +372,6 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
         .. code-block:: python
 
-            @template
             def mytemplate(wires, h=True):
                 if h:
                     qml.Hadamard(wires=wires)
