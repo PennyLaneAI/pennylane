@@ -32,8 +32,9 @@ class TestAttribute:
         with pytest.raises(TypeError, match="can be checked for attribute inclusion"):
             assert 3 not in new_attribute
 
+        # Test a dummy object that is not an Operation.
         with pytest.raises(TypeError, match="can be checked for attribute inclusion"):
-            assert qml.measure.MeasurementProcess not in new_attribute
+            assert object() not in new_attribute
 
     def test_string_inclusion(self):
         """Test that we can check inclusion using strings."""
@@ -60,7 +61,7 @@ class TestAttribute:
         assert len(new_attribute) == 5
 
         with pytest.raises(TypeError, match="can be added to an attribute"):
-            new_attribute.add(qml.measure.MeasurementProcess)
+            new_attribute.add(object())
 
         assert len(new_attribute) == 5
 
