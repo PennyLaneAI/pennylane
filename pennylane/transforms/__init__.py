@@ -129,7 +129,7 @@ from .draw import draw
 from .hamiltonian_expand import hamiltonian_expand
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
-from .insert import insert, insert_in_dev
+from .insert_ops import insert, insert_in_dev
 from .optimization import (
     cancel_inverses,
     commute_controlled,

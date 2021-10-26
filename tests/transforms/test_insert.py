@@ -14,13 +14,15 @@
 """
 Tests for the insert transforms.
 """
+from copy import deepcopy
 import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane.operation import Expectation
 from pennylane.tape import QuantumTape
-from pennylane.transforms.insert import insert, insert_in_dev
+from pennylane.transforms.insert_ops import insert, insert_in_dev
+import pennylane.transforms.insert_ops
 
 
 class TestInsert:
@@ -260,7 +262,7 @@ def test_insert_integration():
     assert not np.isclose(f_noisy(*args), f(*args))
 
 
-def test_insert_in_dev(mocker):
+def test_insert_in_dev(mocker, monkeypatch):
     """Test if a device transformed by the insert_in_dev does successfully add noise to
     subsequent circuit executions"""
     with QuantumTape() as in_tape:
@@ -274,11 +276,17 @@ def test_insert_in_dev(mocker):
     dev = qml.device("default.mixed", wires=2)
     res_without_noise = qml.execute([in_tape], dev, qml.gradients.param_shift)
 
-    spy = mocker.spy(dev, "expand_fn")
+    def patched_deepcopy(dev):
+        global spy
+        copied = deepcopy(dev)
+        spy = mocker.spy(copied, "expand_fn")
+        return copied
 
-    insert_in_dev(dev, qml.PhaseDamping, 0.4)
+    with monkeypatch.context() as m:
+        m.setattr(pennylane.transforms.insert_ops, "deepcopy", patched_deepcopy)
+        new_dev = insert_in_dev(dev, qml.PhaseDamping, 0.4)
 
-    res_with_noise = qml.execute([in_tape], dev, qml.gradients.param_shift)
+    res_with_noise = qml.execute([in_tape], new_dev, qml.gradients.param_shift)
     tape = spy.call_args[0][0]
 
     with QuantumTape() as tape_exp:
