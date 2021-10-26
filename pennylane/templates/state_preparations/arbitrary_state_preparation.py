@@ -62,7 +62,7 @@ class ArbitraryStatePreparation(Operation):
 
         @qml.qnode(dev)
         def vqe(weights):
-            qml.templates.ArbitraryStatePreparation(weights, wires=[0, 1, 2, 3])
+            qml.ArbitraryStatePreparation(weights, wires=[0, 1, 2, 3])
 
             return qml.expval(qml.Hermitian(H, wires=[0, 1, 2, 3]))
 
@@ -70,7 +70,7 @@ class ArbitraryStatePreparation(Operation):
 
     .. code-block:: python
 
-        shape = qml.templates.ArbitraryStatePreparation.shape(n_wires=4)
+        shape = qml.ArbitraryStatePreparation.shape(n_wires=4)
 
 
     Args:

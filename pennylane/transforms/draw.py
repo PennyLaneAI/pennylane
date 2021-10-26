@@ -88,7 +88,7 @@ def draw(qnode, charset="unicode", wire_order=None, show_all_wires=False):
 
     @wraps(qnode)
     def wrapper(*args, **kwargs):
-        qnode.construct(args, kwargs)
+        tapes = qnode.construct(args, kwargs)
         _wire_order = wire_order or qnode.device.wires
         _wire_order = qml.wires.Wires(_wire_order)
 
@@ -101,6 +101,13 @@ def draw(qnode, charset="unicode", wire_order=None, show_all_wires=False):
             raise ValueError(
                 f"Provided wire order {_wire_order.labels} contains wires not contained on the device: {qnode.device.wires}."
             )
+
+        if tapes is not None:
+            res = [
+                t.draw(charset=charset, wire_order=_wire_order, show_all_wires=show_all_wires)
+                for t in tapes[0]
+            ]
+            return "\n".join(res)
 
         return qnode.qtape.draw(
             charset=charset, wire_order=_wire_order, show_all_wires=show_all_wires

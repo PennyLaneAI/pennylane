@@ -47,7 +47,6 @@ containing quantum operations) that are used to construct QNodes.
 
     ~adjoint
     ~ctrl
-    ~transforms.invisible
     ~apply_controlled_Q
     ~quantum_monte_carlo
 
@@ -116,7 +115,6 @@ from .control import ControlledOperation, ctrl
 from .decompositions import zyz_decomposition, two_qubit_decomposition
 from .draw import draw
 from .hamiltonian_expand import hamiltonian_expand
-from .invisible import invisible
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
 from .optimization import (

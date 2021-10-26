@@ -1466,3 +1466,83 @@ def test_finitediff_float32(tol):
     grad32 = qml.grad(circuit)(params_f32)
 
     assert np.allclose(grad64, grad32, atol=tol, rtol=0)
+
+
+class TestDrawMethod:
+    """Tests for the deprecated qnode.draw() method"""
+
+    def test_method_deprecation(self):
+        """Test that the qnode.draw() method raises a deprecation warning"""
+
+        x = np.array(0.1)
+        y = np.array([0.2, 0.3])
+        z = np.array(0.4)
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="autograd")
+        def circuit(p1, p2=y, **kwargs):
+            qml.RX(p1, wires=0)
+            qml.RY(p2[0] * p2[1], wires=1)
+            qml.RX(kwargs["p3"], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        circuit(p1=x, p3=z)
+
+        with pytest.warns(UserWarning, match=r"The QNode\.draw method has been deprecated"):
+            result = circuit.draw()
+
+        expected = """\
+ 0: ──RX(0.1)───RX(0.4)──╭C──╭┤ ⟨Z ⊗ X⟩ 
+ 1: ──RY(0.06)───────────╰X──╰┤ ⟨Z ⊗ X⟩ 
+"""
+
+        assert result == expected
+
+    def test_invalid_wires(self):
+        """Test that an exception is raised if a wire in the wire
+        ordering does not exist on the device"""
+        dev = qml.device("default.qubit", wires=["a", -1, "q2"])
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=-1)
+            qml.CNOT(wires=["a", "q2"])
+            qml.RX(0.2, wires="a")
+            return qml.expval(qml.PauliX(wires="q2"))
+
+        circuit()
+
+        with pytest.raises(ValueError, match="contains wires not contained on the device"):
+            res = circuit.draw(wire_order=["q2", 5])
+
+    def test_tape_not_constructed(self):
+        """Test that an exception is raised if the tape has not been constructed"""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(qml.PauliX(wires=0))
+
+        with pytest.raises(
+            qml.QuantumFunctionError, match="after its quantum tape has been constructed"
+        ):
+            res = circuit.draw()
+
+    def test_show_all_wires_error(self):
+        """Test that show_all_wires will raise an error if the provided wire
+        order does not contain all wires on the device"""
+
+        dev = qml.device("default.qubit", wires=[-1, "a", "q2", 0])
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=-1)
+            qml.CNOT(wires=[-1, "q2"])
+            return qml.expval(qml.PauliX(wires="q2"))
+
+        circuit()
+
+        with pytest.raises(ValueError, match="must contain all wires"):
+            circuit.draw(show_all_wires=True, wire_order=[-1, "a"])

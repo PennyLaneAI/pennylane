@@ -14,15 +14,16 @@
 """
 This module contains the autograd wrappers :class:`grad` and :func:`jacobian`
 """
-import numpy as onp
-
-from pennylane import numpy as np
+import warnings
 from functools import partial
 
-from autograd.core import make_vjp as _make_vjp
-from autograd.wrap_util import unary_to_nary
-from autograd.extend import vspace
+import numpy as onp
 from autograd import jacobian as _jacobian
+from autograd.core import make_vjp as _make_vjp
+from autograd.extend import vspace
+from autograd.wrap_util import unary_to_nary
+
+from pennylane import numpy as np
 
 make_vjp = unary_to_nary(_make_vjp)
 
@@ -84,7 +85,19 @@ class grad:
         argnum = []
 
         for idx, arg in enumerate(args):
-            if getattr(arg, "requires_grad", True):
+            trainable = getattr(arg, "requires_grad", None)
+            if trainable is None:
+
+                warnings.warn(
+                    "Starting with PennyLane v0.20.0, when using Autograd, inputs "
+                    "have to explicitly specify requires_grad=True (or the "
+                    "argnum argument must be passed) in order for trainable parameters to be "
+                    "identified.",
+                    UserWarning,
+                )
+                trainable = True
+
+            if trainable:
                 argnum.append(idx)
 
         if len(argnum) == 1:
@@ -171,7 +184,19 @@ def jacobian(func, argnum=None):
         argnum = []
 
         for idx, arg in enumerate(args):
-            if getattr(arg, "requires_grad", True):
+            trainable = getattr(arg, "requires_grad", None)
+            if trainable is None:
+
+                warnings.warn(
+                    "Starting with PennyLane v0.20.0, when using Autograd, inputs "
+                    "have to explicitly specify requires_grad=True (or the "
+                    "argnum argument must be passed) in order for trainable parameters to be "
+                    "identified.",
+                    UserWarning,
+                )
+                trainable = True
+
+            if trainable:
                 argnum.append(idx)
 
         if not argnum:
