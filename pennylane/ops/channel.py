@@ -552,7 +552,7 @@ class ThermalRelaxationError(Channel):
         t2 = params[2]
         tg = params[3]
         if not 0.0 <= pe <= 1.0:
-            raise ValueError("p must be between [0,1].")
+            raise ValueError("pe must be between")
         if tg < 0:
             raise ValueError(f"Invalid gate_time ({tg} < 0)")
         if t1 <= 0:

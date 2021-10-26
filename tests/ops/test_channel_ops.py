@@ -371,10 +371,21 @@ class TestQubitChannel:
         with pytest.raises(ValueError, match="Only trace preserving channels can be applied."):
             channel.QubitChannel(K_list2 * 2, wires=0)
 
+
 class TestThermalRelaxationError:
     """Tests for the quantum channel ThermalRelaxationError"""
 
-    @pytest.mark.parametrize("pe,t1,t2,tg", list(zip([0.2, 0.4, 0.6, 0.0], [100e-6, 50e-6, 80e-6, np.inf], [80e-6, 40e-6, 80e-6, 50e-6], [20e-9, 40e-9, 40e-6, 40e-9])))
+    @pytest.mark.parametrize(
+        "pe,t1,t2,tg",
+        list(
+            zip(
+                [0.2, 0.4, 0.6, 0.0],
+                [100e-6, 50e-6, 80e-6, np.inf],
+                [80e-6, 40e-6, 80e-6, 50e-6],
+                [20e-9, 40e-9, 40e-6, 40e-9],
+            )
+        ),
+    )
     def test_t2_le_t1_arbitrary(self, pe, t1, t2, tg, tol):
         """Test that various values of pe, t1, t2, and tg  for t2 <= t1 give correct Kraus matrices"""
 
@@ -389,24 +400,46 @@ class TestThermalRelaxationError:
         pid = 1 - pz - pr0 - pr1
 
         expected_K0 = np.sqrt(pid) * np.eye(2)
-        assert np.allclose(op(pe, t1, t2, tg, wires=0).kraus_matrices[0], expected_K0, atol=tol, rtol=0)
+        assert np.allclose(
+            op(pe, t1, t2, tg, wires=0).kraus_matrices[0], expected_K0, atol=tol, rtol=0
+        )
 
         expected_K1 = np.sqrt(pz) * np.array([[1, 0], [0, -1]])
-        assert np.allclose(op(pe, t1, t2, tg, wires=0).kraus_matrices[1], expected_K1, atol=tol, rtol=0)
+        assert np.allclose(
+            op(pe, t1, t2, tg, wires=0).kraus_matrices[1], expected_K1, atol=tol, rtol=0
+        )
 
         expected_K2 = np.sqrt(pr0) * np.array([[1, 0], [0, 0]])
-        assert np.allclose(op(pe, t1, t2, tg, wires=0).kraus_matrices[2], expected_K2, atol=tol, rtol=0)
+        assert np.allclose(
+            op(pe, t1, t2, tg, wires=0).kraus_matrices[2], expected_K2, atol=tol, rtol=0
+        )
 
         expected_K3 = np.sqrt(pr0) * np.array([[0, 1], [0, 0]])
-        assert np.allclose(op(pe, t1, t2, tg, wires=0).kraus_matrices[3], expected_K3, atol=tol, rtol=0)
+        assert np.allclose(
+            op(pe, t1, t2, tg, wires=0).kraus_matrices[3], expected_K3, atol=tol, rtol=0
+        )
 
         expected_K4 = np.sqrt(pr1) * np.array([[0, 0], [1, 0]])
-        assert np.allclose(op(pe, t1, t2, tg, wires=0).kraus_matrices[4], expected_K4, atol=tol, rtol=0)
+        assert np.allclose(
+            op(pe, t1, t2, tg, wires=0).kraus_matrices[4], expected_K4, atol=tol, rtol=0
+        )
 
         expected_K5 = np.sqrt(pr1) * np.array([[0, 0], [0, 1]])
-        assert np.allclose(op(pe, t1, t2, tg, wires=0).kraus_matrices[5], expected_K5, atol=tol, rtol=0)
+        assert np.allclose(
+            op(pe, t1, t2, tg, wires=0).kraus_matrices[5], expected_K5, atol=tol, rtol=0
+        )
 
-    @pytest.mark.parametrize("pe,t1,t2,tg", list(zip([0.8, 0.5, 0.0], [100e-6, 50e-6, 80e-6], [120e-6, np.inf, 90e-3], [20e-9, 40e-9, 90e-3])))
+    @pytest.mark.parametrize(
+        "pe,t1,t2,tg",
+        list(
+            zip(
+                [0.8, 0.5, 0.0],
+                [100e-6, 50e-6, 80e-6],
+                [120e-6, 100e-6, 90e-6],
+                [20e-9, 40e-9, 90e-6],
+            )
+        ),
+    )
     def test_t2_g_t1_arbitrary(self, pe, t1, t2, tg, tol):
         """Test that various values of pe, t1, t2, and tg  for t2 > t1 give correct Kraus matrices"""
 
@@ -425,31 +458,45 @@ class TestThermalRelaxationError:
 
         e0 = p_reset * pe
         v0 = np.array([[0], [1], [0], [0]])
-        e1 = -p_reset*pe + p_reset
+        e1 = -p_reset * pe + p_reset
         v1 = np.array([[0], [0], [1], [0]])
-        common_term = np.sqrt(4*eT2**2 + 4*p_reset**2*pe**2 - 4*p_reset**2*pe + p_reset**2)
-        e2 = 1 - p_reset/2 - common_term/2
-        term2 = 2*eT2/(2*p_reset*pe - p_reset - common_term)
-        v2 = np.array([[term2], [0], [0], [1]]) / np.sqrt(term2**2 + 1**2)
-        term3 = 2*eT2/(2*p_reset*pe - p_reset + common_term)
-        e3 = 1 - p_reset/2 + common_term/2
-        v3 = np.array([[term3], [0], [0], [1]]) / np.sqrt(term3**2 + 1**2)
+        common_term = np.sqrt(
+            4 * eT2 ** 2 + 4 * p_reset ** 2 * pe ** 2 - 4 * p_reset ** 2 * pe + p_reset ** 2
+        )
+        e2 = 1 - p_reset / 2 - common_term / 2
+        term2 = 2 * eT2 / (2 * p_reset * pe - p_reset - common_term)
+        v2 = np.array([[term2], [0], [0], [1]]) / np.sqrt(term2 ** 2 + 1 ** 2)
+        term3 = 2 * eT2 / (2 * p_reset * pe - p_reset + common_term)
+        e3 = 1 - p_reset / 2 + common_term / 2
+        v3 = np.array([[term3], [0], [0], [1]]) / np.sqrt(term3 ** 2 + 1 ** 2)
 
         expected_K0 = np.sqrt(e0) * v0.reshape(2, 2, order="F")
-        assert np.allclose(op(pe, t1, t2, tg, wires=0).kraus_matrices[0], expected_K0, atol=tol, rtol=0)
+        assert np.allclose(
+            op(pe, t1, t2, tg, wires=0).kraus_matrices[0], expected_K0, atol=tol, rtol=0
+        )
 
         expected_K1 = np.sqrt(e1) * v1.reshape(2, 2, order="F")
-        assert np.allclose(op(pe, t1, t2, tg, wires=0).kraus_matrices[1], expected_K1, atol=tol, rtol=0)
+        assert np.allclose(
+            op(pe, t1, t2, tg, wires=0).kraus_matrices[1], expected_K1, atol=tol, rtol=0
+        )
 
         expected_K2 = np.sqrt(e2) * v2.reshape(2, 2, order="F")
-        assert np.allclose(op(pe, t1, t2, tg, wires=0).kraus_matrices[2], expected_K2, atol=tol, rtol=0)
+        assert np.allclose(
+            op(pe, t1, t2, tg, wires=0).kraus_matrices[2], expected_K2, atol=tol, rtol=0
+        )
 
         expected_K3 = np.sqrt(e3) * v3.reshape(2, 2, order="F")
-        assert np.allclose(op(pe, t1, t2, tg, wires=0).kraus_matrices[3], expected_K3, atol=tol, rtol=0)
+        assert np.allclose(
+            op(pe, t1, t2, tg, wires=0).kraus_matrices[3], expected_K3, atol=tol, rtol=0
+        )
 
     def test_pe_invalid_parameter(self):
         with pytest.raises(ValueError, match="pe must be between"):
             channel.ThermalRelaxationError(1.5, 100e-6, 100e-6, 20e-9, wires=0).kraus_matrices
+
+    def test_T2_g_2T1_invalid_parameter(self):
+        with pytest.raises(ValueError, match="Invalid T_2 relaxation time parameter"):
+            channel.ThermalRelaxationError(0.3, 100e-6, np.inf, 20e-9, wires=0).kraus_matrices
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
     def test_grad_thermal_relaxation_error(self, angle, tol):
@@ -471,14 +518,6 @@ class TestThermalRelaxationError:
             np.array(
                 [
                     (1 / 0.1) * (circuit(0.1) - circuit(0.0)),
-                ]
-            ),
-        )
-        assert np.allclose(
-            gradient,
-            np.array(
-                [
-                    (2 * np.sin(angle / 2) * np.sin(angle / 2)),
                 ]
             ),
         )
