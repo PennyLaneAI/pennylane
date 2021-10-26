@@ -15,14 +15,15 @@
 Tests for the insert transforms.
 """
 from copy import deepcopy
+
 import numpy as np
 import pytest
 
 import pennylane as qml
+import pennylane.transforms.insert_ops
 from pennylane.operation import Expectation
 from pennylane.tape import QuantumTape
 from pennylane.transforms.insert_ops import insert, insert_in_dev
-import pennylane.transforms.insert_ops
 
 
 class TestInsert:

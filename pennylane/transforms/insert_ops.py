@@ -146,9 +146,7 @@ def insert(
          1: ──RY(0.4)──╰X──RX(0.6)──AmplitudeDamping(0.05)──╰┤ ⟨Z ⊗ Z⟩
     """
     if not isinstance(op, FunctionType) and op.num_wires != 1:
-        raise ValueError(
-            "Only single-qubit operations can be inserted into the circuit"
-        )
+        raise ValueError("Only single-qubit operations can be inserted into the circuit")
     if position not in ("start", "end", "all"):
         raise ValueError("Position must be either 'start', 'end', or 'all' (default)")
 
