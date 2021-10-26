@@ -225,6 +225,7 @@ class TestInsert:
     def test_with_qfunc_op(self):
         """Test if the transform works as expected if the operation is a qfunc rather than single
         operation"""
+
         def op(x, y, wires):
             qml.RX(x, wires=wires)
             qml.PhaseShift(y, wires=wires)
