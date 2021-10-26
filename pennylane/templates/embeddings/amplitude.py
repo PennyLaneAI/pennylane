@@ -62,13 +62,12 @@ class AmplitudeEmbedding(Operation):
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane.templates import AmplitudeEmbedding
 
             dev = qml.device('default.qubit', wires=2)
 
             @qml.qnode(dev)
             def circuit(f=None):
-                AmplitudeEmbedding(features=f, wires=range(2))
+                qml.AmplitudeEmbedding(features=f, wires=range(2))
                 return qml.expval(qml.PauliZ(0))
 
             circuit(f=[1/2, 1/2, 1/2, 1/2])
@@ -92,7 +91,7 @@ class AmplitudeEmbedding(Operation):
 
             @qml.qnode(dev)
             def circuit(f=None):
-                AmplitudeEmbedding(features=f, wires=range(2), normalize=True)
+                qml.AmplitudeEmbedding(features=f, wires=range(2), normalize=True)
                 return qml.expval(qml.PauliZ(0))
 
             circuit(f=[15, 15, 15, 15])
@@ -111,7 +110,7 @@ class AmplitudeEmbedding(Operation):
 
             @qml.qnode(dev)
             def circuit(f=None):
-                AmplitudeEmbedding(features=f, wires=range(2), pad_with=0.)
+                qml.AmplitudeEmbedding(features=f, wires=range(2), pad_with=0.)
                 return qml.expval(qml.PauliZ(0))
 
             circuit(f=[1/sqrt(2), 1/sqrt(2)])
@@ -147,9 +146,7 @@ class AmplitudeEmbedding(Operation):
         super().__init__(features, wires=wires, do_queue=do_queue, id=id)
 
     def adjoint(self):  # pylint: disable=arguments-differ
-        return qml.adjoint(qml.templates.MottonenStatePreparation)(
-            self.parameters[0], wires=self.wires
-        )
+        return qml.adjoint(qml.MottonenStatePreparation)(self.parameters[0], wires=self.wires)
 
     def expand(self):
 
