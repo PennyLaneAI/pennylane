@@ -15,6 +15,7 @@
 from collections import defaultdict
 import pytest
 import numpy as np
+from scipy.sparse import coo_matrix
 
 import pennylane as qml
 from pennylane import numpy as pnp
@@ -329,6 +330,23 @@ class TestValidation:
             @qnode(dev, diff_method="adjoint")
             def circ():
                 return qml.expval(qml.PauliZ(0))
+
+    def test_sparse_diffmethod_error(self):
+        """Test that an error is raised when the observable is SparseHamiltonian and the
+        differentiation method is not parameter-shift."""
+        dev = qml.device("default.qubit", wires=2, shots=None)
+
+        @qnode(dev, diff_method="backprop")
+        def circuit(param):
+            qml.RX(param, wires=0)
+            return qml.expval(qml.SparseHamiltonian(coo_matrix(np.eye(4)), [0, 1]))
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="SparseHamiltonian observable must be"
+            " used with the parameter-shift differentiation method",
+        ):
+            qml.grad(circuit)([0.5])
 
     def test_qnode_print(self):
         """Test that printing a QNode object yields the right information."""

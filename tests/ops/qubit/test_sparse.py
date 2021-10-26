@@ -56,6 +56,11 @@ H_hydrogen = coo_matrix((H_data, (H_row, H_col)), shape=(16, 16)).toarray()
 class TestSparse:
     """Tests for sparse hamiltonian observable"""
 
+    def test_label(self):
+        """Test label method returns 𝓗"""
+        H = qml.SparseHamiltonian(coo_matrix((np.array([[1, 0], [-1.5, 0]]))), 1)
+        assert H.label() == "𝓗"
+
     @pytest.mark.parametrize("sparse_hamiltonian", SPARSE_HAMILTONIAN_TEST_DATA)
     def test_sparse_diagonalization(self, sparse_hamiltonian):
         """Test that the diagonalizing_gates property of the SparseHamiltonian class returns empty."""
@@ -124,7 +129,7 @@ class TestSparse:
             qml.DoubleExcitation(param, wires=[0, 1, 2, 3])
             return qml.expval(qml.SparseHamiltonian(hamiltonian, wires=range(qubits)))
 
-        assert np.allclose(qml.grad(circuit)([0.0]), expected_output, atol=tol, rtol=0)
+        assert np.allclose(qml.grad(circuit)(0.0), expected_output, atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
         "qubits, operations, hamiltonian, expected_output",

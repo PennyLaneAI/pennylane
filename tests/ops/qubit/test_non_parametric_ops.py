@@ -708,3 +708,33 @@ class TestMultiControlledX:
 
         assert np.allclose(f(), rnd_state)
         spy.assert_called()
+
+
+label_data = [
+    (qml.Hadamard(0), "H", "H"),
+    (qml.PauliX(0), "X", "X"),
+    (qml.PauliY(0), "Y", "Y"),
+    (qml.PauliZ(0), "Z", "Z"),
+    (qml.S(wires=0), "S", "S⁻¹"),
+    (qml.T(wires=0), "T", "T⁻¹"),
+    (qml.SX(wires=0), "SX", "SX⁻¹"),
+    (qml.CNOT(wires=(0, 1)), "⊕", "⊕"),
+    (qml.CZ(wires=(0, 1)), "Z", "Z"),
+    (qml.CY(wires=(0, 1)), "Y", "Y"),
+    (qml.SWAP(wires=(0, 1)), "SWAP", "SWAP⁻¹"),
+    (qml.ISWAP(wires=(0, 1)), "ISWAP", "ISWAP⁻¹"),
+    (qml.SISWAP(wires=(0, 1)), "SISWAP", "SISWAP⁻¹"),
+    (qml.SQISW(wires=(0, 1)), "SISWAP", "SISWAP⁻¹"),
+    (qml.CSWAP(wires=(0, 1, 2)), "SWAP", "SWAP"),
+    (qml.Toffoli(wires=(0, 1, 2)), "⊕", "⊕"),
+    (qml.MultiControlledX(control_wires=(0, 1, 2), wires=(3)), "⊕", "⊕"),
+]
+
+
+@pytest.mark.parametrize("op, label1, label2", label_data)
+def test_label_method(op, label1, label2):
+    assert op.label() == label1
+    assert op.label(decimals=2) == label1
+
+    op.inv()
+    assert op.label() == label2
