@@ -222,6 +222,38 @@ class TestInsert:
         assert tape.observables[0].wires.tolist() == [0, 1]
         assert tape.measurements[0].return_type is Expectation
 
+    def test_with_qfunc_op(self):
+        """Test if the transform works as expected if the operation is a qfunc rather than single
+        operation"""
+        def op(x, y, wires):
+            qml.RX(x, wires=wires)
+            qml.PhaseShift(y, wires=wires)
+
+        tape = insert(op, [0.4, 0.5], position="end")(self.tape)
+
+        with QuantumTape() as tape_exp:
+            qml.RX(0.9, wires=0)
+            qml.RY(0.4, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RY(0.5, wires=0)
+            qml.RX(0.6, wires=1)
+            qml.RX(0.4, wires=0)
+            qml.PhaseShift(0.5, wires=0)
+            qml.RX(0.4, wires=1)
+            qml.PhaseShift(0.5, wires=1)
+            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
+        assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
+        assert all(
+            np.allclose(o1.parameters, o2.parameters)
+            for o1, o2 in zip(tape.operations, tape_exp.operations)
+        )
+        assert len(tape.measurements) == 1
+        assert tape.observables[0].name == ["PauliZ", "PauliZ"]
+        assert tape.observables[0].wires.tolist() == [0, 1]
+        assert tape.measurements[0].return_type is Expectation
+
 
 def test_insert_integration():
     """Test that a QNode with the insert decorator gives a different result than one
