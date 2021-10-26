@@ -167,9 +167,34 @@
   res = jax.grad(cost_fn)(params)
   ```
 
-* The unitary matrix corresponding to a quantum circuit can now be created using the new
+* The unitary matrix corresponding to a quantum circuit can now be generated using the new
   `get_unitary_matrix()` transform.
   [(#1609)](https://github.com/PennyLaneAI/pennylane/pull/1609)
+  [(#1786)](https://github.com/PennyLaneAI/pennylane/pull/1786)
+
+  This transform is fully differentiable across all supported PennyLane autodiff frameworks.
+
+  ```python
+  def circuit(theta):
+      qml.RX(theta, wires=1)
+      qml.PauliZ(wires=0)
+      qml.CNOT(wires=[0, 1])
+  ```
+
+  ```pycon
+  >>> theta = torch.tensor(0.3, requires_grad=True)
+  >>> matrix = qml.transforms.get_unitary_matrix(circuit)(theta)
+  >>> print(matrix)
+  tensor([[ 0.9888+0.0000j,  0.0000+0.0000j,  0.0000-0.1494j,  0.0000+0.0000j],
+        [ 0.0000+0.0000j,  0.0000+0.1494j,  0.0000+0.0000j, -0.9888+0.0000j],
+        [ 0.0000-0.1494j,  0.0000+0.0000j,  0.9888+0.0000j,  0.0000+0.0000j],
+        [ 0.0000+0.0000j, -0.9888+0.0000j,  0.0000+0.0000j,  0.0000+0.1494j]],
+       grad_fn=<MmBackward>)
+  >>> loss = torch.real(torch.trace(matrix))
+  >>> loss.backward()
+  >>> theta.grad
+  tensor(-0.1494)
+  ```
 
 * Arbitrary two-qubit unitaries can now be decomposed into elementary gates. This
   functionality has been incorporated into the `qml.transforms.unitary_to_rot` transform, and is
@@ -772,6 +797,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-Utkarsh Azad, Akash Narayanan B, Olivia Di Matteo, Andrew Gardhouse, David Ittah, Josh Izaac, Christina Lee,
+Utkarsh Azad, Akash Narayanan B, Sam Banning, Olivia Di Matteo, Andrew Gardhouse, David Ittah, Josh Izaac, Christina Lee,
 Romain Moyard, Carrie-Anne Rubidge, Maria Schuld, Rishabh Singh, Ingrid Strandberg, Antal Száva, Cody Wang,
 David Wierichs, Moritz Willmann.
