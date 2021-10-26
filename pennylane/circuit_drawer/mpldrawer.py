@@ -207,23 +207,23 @@ class MPLDrawer:
             :target: javascript:void(0);
     """
 
-    """The width/height of the rectangle drawn by ``box_gate``"""
     _box_length = 0.8
+    """The width/height of the rectangle drawn by ``box_gate``"""
 
-    """The radius of CNOT's target symbol."""
     _circ_rad = 0.3
+    """The radius of CNOT's target symbol."""
 
-    """The radius of the control-on-one solid circle."""
     _ctrl_rad = 0.1
+    """The radius of the control-on-one solid circle."""
 
-    """The radius of the control-on-zero open circle."""
     _octrl_rad = 0.1
+    """The radius of the control-on-zero open circle."""
 
-    """Half the width/height of the SWAP X-symbol."""
     _swap_dx = 0.2
+    """Half the width/height of the SWAP X-symbol."""
 
-    """The default fontsize."""
     _fontsize = 14
+    """The default fontsize."""
 
     def __init__(self, n_layers, n_wires, wire_options=None, figsize=None):
 
@@ -308,7 +308,7 @@ class MPLDrawer:
 
         """
         if text_options is None:
-            text_options = {"zorder": 3, "ha": "center", "va": "center", "fontsize": 14}
+            text_options = {"zorder": 3, "ha": "center", "va": "center", "fontsize": self._fontsize}
 
         for wire, ii_label in enumerate(labels):
             self._ax.text(-1.5, wire, ii_label, **text_options)
@@ -399,7 +399,7 @@ class MPLDrawer:
         if "zorder" not in box_options:
             box_options["zorder"] = 2
 
-        new_text_options = {"zorder": 3, "ha": "center", "va": "center", "fontsize": 14}
+        new_text_options = {"zorder": 3, "ha": "center", "va": "center", "fontsize": self._fontsize}
         if text_options is not None:
             new_text_options.update(text_options)
 
@@ -437,7 +437,7 @@ class MPLDrawer:
             w, h = self._text_dims(text_obj)
 
             # rotate the text
-            if (box_min != box_max) and (w > max_width):
+            if (box_min != box_max) and (w > max_width) and (w>h):
                 text_obj.set_rotation(90)
                 w, h = self._text_dims(text_obj)
 
@@ -467,7 +467,13 @@ class MPLDrawer:
             height (float): the height of the text in data coordinates.
         """
         renderer = self._fig.canvas.get_renderer()
+
+        # https://matplotlib.org/stable/api/_as_gen/matplotlib.artist.Artist.get_window_extent.html
+        # Quote: "Be careful when using this function, the results will not update if the artist 
+        # window extent of the artist changes. "
+        # But I haven't encountered any issues yet and don't see a better solution
         bbox = text_obj.get_window_extent(renderer)
+
         corners = self._ax.transData.inverted().transform(bbox)
         return abs(corners[1][0] - corners[0][0]), abs(corners[0][1] - corners[1][1])
 
