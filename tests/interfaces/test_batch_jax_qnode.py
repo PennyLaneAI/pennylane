@@ -16,7 +16,7 @@ import pytest
 from pennylane import numpy as np
 
 import pennylane as qml
-from pennylane.beta import qnode, QNode
+from pennylane import qnode, QNode
 from pennylane.tape import JacobianTape
 
 qubit_device_and_diff_method = [

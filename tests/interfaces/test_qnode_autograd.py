@@ -106,10 +106,6 @@ class TestQNode:
         assert isinstance(res, np.ndarray)
         assert res.shape == tuple()
 
-        # without the interface, the tape is unable to deduce
-        # trainable parameters
-        assert circuit.qtape.trainable_params == {0, 1}
-
         # gradients should cause an error
         with pytest.raises(TypeError, match="must be real number, not ArrayBox"):
             qml.grad(circuit)(a)

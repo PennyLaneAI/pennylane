@@ -144,7 +144,7 @@ class TestBatchTransform:
         dev = qml.device("default.qubit", wires=2)
         cache = {}
 
-        @qml.beta.qnode(dev, max_diff=3, cache=cache)
+        @qml.qnode(dev, max_diff=3, cache=cache)
         def circuit(x):
             qml.Hadamard(wires=0)
             qml.RY(x, wires=0)

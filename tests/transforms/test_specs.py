@@ -21,7 +21,7 @@ from pennylane import numpy as np
 
 class TestSpecsTransform:
     """Tests for the transform specs using the old QNode. This can be
-    removed when `qml.beta.QNode is made default."""
+    removed when `qml.QNode is made default."""
 
     @pytest.mark.parametrize(
         "diff_method, len_info", [("backprop", 10), ("parameter-shift", 12), ("adjoint", 11)]
@@ -176,7 +176,7 @@ class TestSpecsTransformBetaQNode:
 
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.beta.qnode(dev, diff_method=diff_method)
+        @qml.qnode(dev, diff_method=diff_method)
         def circ():
             return qml.expval(qml.PauliZ(0))
 
@@ -211,7 +211,7 @@ class TestSpecsTransformBetaQNode:
         """Test the specs transforms works in standard situations"""
         dev = qml.device("default.qubit", wires=4)
 
-        @qml.beta.qnode(dev, diff_method=diff_method)
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(x, y, add_RY=True):
             qml.RX(x[0], wires=0)
             qml.Toffoli(wires=(0, 1, 2))
@@ -259,7 +259,7 @@ class TestSpecsTransformBetaQNode:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.beta.qnode(dev, diff_method=diff_method)
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit():
             return qml.state()
 
@@ -279,7 +279,7 @@ class TestSpecsTransformBetaQNode:
 
         dev = qml.device("default.qubit", wires=n_wires)
 
-        @qml.beta.qnode(dev)
+        @qml.qnode(dev)
         def circuit(params):
             qml.templates.BasicEntanglerLayers(params, wires=range(n_wires))
             return qml.expval(qml.PauliZ(0))
@@ -309,7 +309,7 @@ class TestSpecsTransformBetaQNode:
         """Test that a gradient transform is properly labelled"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.beta.qnode(dev, diff_method=qml.gradients.param_shift)
+        @qml.qnode(dev, diff_method=qml.gradients.param_shift)
         def circuit():
             return qml.probs(wires=0)
 
@@ -325,7 +325,7 @@ class TestSpecsTransformBetaQNode:
         def my_transform(tape):
             return tape, None
 
-        @qml.beta.qnode(dev, diff_method=my_transform)
+        @qml.qnode(dev, diff_method=my_transform)
         def circuit():
             return qml.probs(wires=0)
 

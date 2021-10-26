@@ -35,7 +35,7 @@ def get_circuit(n_qubits, output_dim, interface):
         "w7": 0,
     }
 
-    @qml.beta.qnode(dev, interface=interface)
+    @qml.qnode(dev, interface=interface)
     def circuit(inputs, w1, w2, w3, w4, w5, w6, w7):
         """A circuit that embeds data using the AngleEmbedding and then performs a variety of
         operations. The output is a PauliZ measurement on the first output_dim qubits. One set of
@@ -69,7 +69,7 @@ def get_circuit_dm(n_qubits, output_dim, interface):
         "w7": 0,
     }
 
-    @qml.beta.qnode(dev, interface=interface)
+    @qml.qnode(dev, interface=interface)
     def circuit(inputs, w1, w2, w3, w4, w5, w6, w7):
         """Sample circuit to be used for testing density_matrix() return type."""
         qml.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
