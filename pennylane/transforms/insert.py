@@ -57,8 +57,8 @@ def insert(
         callable or QuantumTape: the updated version of the input circuit
 
     Raises:
-        ValueError: if a single multiqubit operation is passed to ``op``
-        ValueError: if the requested ``position`` argument is now ``'start'``, ``'end'`` or
+        ValueError: if a single operation acting on multiple wires is passed to ``op``
+        ValueError: if the requested ``position`` argument is not ``'start'``, ``'end'`` or
             ``'all'``
         ValueError: if more than one state preparation is present in the circuit, or if the
             preparation is not at the start of the circuit
@@ -69,12 +69,10 @@ def insert(
 
     .. code-block:: python3
 
-        from pennylane.transforms import insert
-
         dev = qml.device("default.mixed", wires=2)
 
         @qml.qnode(dev)
-        @insert(qml.AmplitudeDamping, 0.2, position="end")
+        @qml.transforms.insert(qml.AmplitudeDamping, 0.2, position="end")
         def f(w, x, y, z):
             qml.RX(w, wires=0)
             qml.RY(x, wires=1)
@@ -123,6 +121,8 @@ def insert(
         To check this, let's print out the circuit:
 
         >>> print(qml.draw(f)(0.9, 0.4, 0.5, 0.6))
+         0: ──RX(0.9)──╭C──RY(0.5)──RX(0.2)──Rϕ(0.3)──╭┤ ⟨Z ⊗ Z⟩
+         1: ──RY(0.4)──╰X──RX(0.6)──RX(0.2)──Rϕ(0.3)──╰┤ ⟨Z ⊗ Z⟩
 
         **Transforming tapes:**
 
@@ -220,8 +220,8 @@ def insert_in_dev(
         Device: the updated device
 
     Raises:
-        ValueError: if a single multiqubit operation is passed to ``op``
-        ValueError: if the requested ``position`` argument is now ``'start'``, ``'end'`` or
+        ValueError: if a single operation acting on multiple wires is passed to ``op``
+        ValueError: if the requested ``position`` argument is not ``'start'``, ``'end'`` or
             ``'all'``
         ValueError: if more than one state preparation is present in the circuit, or if the
             preparation is not at the start of the circuit
