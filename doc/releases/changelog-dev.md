@@ -4,6 +4,38 @@
 
 <h3>New features since last release</h3>
 
+* The `insert` and `insert_in_dev` transforms have now been added,
+  providing a way to insert simple noise into a quantum circuit.
+  [(#1795)](https://github.com/PennyLaneAI/pennylane/pull/1795)
+  
+  The following QNode can be transformed to add noise to the circuit:
+
+  ```python
+  from pennylane.transforms import insert
+    
+  dev = qml.device("default.mixed", wires=2)
+        
+  @qml.qnode(dev)
+  @insert(qml.AmplitudeDamping, 0.2, position="end")
+  def f(w, x, y, z):
+      qml.RX(w, wires=0)
+      qml.RY(x, wires=1)
+      qml.CNOT(wires=[0, 1])
+      qml.RY(y, wires=0)
+      qml.RX(z, wires=1)
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+  ```
+        
+  Executions of this circuit will differ from the noise-free value:
+  
+  ```pycon  
+  >>> f(0.9, 0.4, 0.5, 0.6)
+  tensor(0.754847, requires_grad=True)
+  >>> print(qml.draw(f)(0.9, 0.4, 0.5, 0.6))
+   0: ──RX(0.9)──╭C──RY(0.5)──AmplitudeDamping(0.2)──╭┤ ⟨Z ⊗ Z⟩ 
+   1: ──RY(0.4)──╰X──RX(0.6)──AmplitudeDamping(0.2)──╰┤ ⟨Z ⊗ Z⟩
+  ``` 
+
 * Common tape expansion functions are now available in `qml.transforms`,
   alongside a new `create_expand_fn` function for easily creating expansion functions
   from stopping criteria.
@@ -412,38 +444,6 @@
 
 
 <h3>Improvements</h3>
-
-* The `insert` and `insert_in_dev` transforms have now been added,
-  providing a way to insert simple noise into a quantum circuit.
-  [(#1795)](https://github.com/PennyLaneAI/pennylane/pull/1795)
-  
-  The following QNode can be transformed to add noise to the circuit:
-
-  ```python
-  from pennylane.transforms import insert
-    
-  dev = qml.device("default.mixed", wires=2)
-        
-  @qml.qnode(dev)
-  @insert(qml.AmplitudeDamping, 0.2, position="end")
-  def f(w, x, y, z):
-      qml.RX(w, wires=0)
-      qml.RY(x, wires=1)
-      qml.CNOT(wires=[0, 1])
-      qml.RY(y, wires=0)
-      qml.RX(z, wires=1)
-      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-  ```
-        
-  Executions of this circuit will differ from the noise-free value:
-  
-  ```pycon  
-  >>> f(0.9, 0.4, 0.5, 0.6)
-  tensor(0.754847, requires_grad=True)
-  >>> print(qml.draw(f)(0.9, 0.4, 0.5, 0.6))
-   0: ──RX(0.9)──╭C──RY(0.5)──AmplitudeDamping(0.2)──╭┤ ⟨Z ⊗ Z⟩ 
-   1: ──RY(0.4)──╰X──RX(0.6)──AmplitudeDamping(0.2)──╰┤ ⟨Z ⊗ Z⟩
-  ``` 
 
 * The `ApproxTimeEvolution` template can now be used with Hamiltonians that have
   trainable coefficients.
