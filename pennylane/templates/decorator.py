@@ -61,14 +61,14 @@ def template(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
 
+        warnings.warn(
+            "The template decorator is deprecated and will be removed in release v0.20.0",
+            UserWarning,
+            stacklevel=2,
+        )
         with qml.tape.OperationRecorder() as rec:
             func(*args, **kwargs)
 
         return rec.queue
 
-    warnings.warn(
-        "The template decorator is deprecated and will be removed in release v0.20.0",
-        UserWarning,
-        stacklevel=2,
-    )
     return wrapper
