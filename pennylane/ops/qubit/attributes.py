@@ -15,6 +15,7 @@
 This file contains a number of attributes that may be held by operators,
 and lists all operators satisfying those criteria.
 """
+from inspect import isclass
 from pennylane.operation import Operator
 
 
@@ -48,15 +49,18 @@ class Attribute(set):
     """
 
     def add(self, obj):
+        """Add an Operator to an attribute."""
+        if isinstance(obj, str):
+            return super().add(obj)
+
         try:
-            if isinstance(obj, str):
-                return super().add(obj)
 
             if isinstance(obj, Operator):
                 return super().add(obj.name)
 
-            if issubclass(obj, Operator):
-                return super().add(obj.__name__)
+            if isclass(obj):
+                if issubclass(obj, Operator):
+                    return super().add(obj.__name__)
 
             raise TypeError
 
@@ -66,7 +70,7 @@ class Attribute(set):
             ) from e
 
     def __contains__(self, obj):
-        """Check if the attribute contains a given operator."""
+        """Check if the attribute contains a given Operator."""
         if isinstance(obj, str):
             return super().__contains__(obj)
 
@@ -74,15 +78,16 @@ class Attribute(set):
             if isinstance(obj, Operator):
                 return super().__contains__(obj.name)
 
-            if issubclass(obj, Operator):
-                return super().__contains__(obj.__name__)
+            if isclass(obj):
+                if issubclass(obj, Operator):
+                    return super().__contains__(obj.__name__)
+
+            raise TypeError
 
         except TypeError as e:
             raise TypeError(
                 "Only an Operator or string representing an Operator can be checked for attribute inclusion."
             ) from e
-
-        return False
 
 
 composable_rotations = Attribute(

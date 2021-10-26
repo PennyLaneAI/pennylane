@@ -32,9 +32,8 @@ class TestAttribute:
         with pytest.raises(TypeError, match="can be checked for attribute inclusion"):
             assert 3 not in new_attribute
 
-        # Test something that is an object, but not of the right type.
         with pytest.raises(TypeError, match="can be checked for attribute inclusion"):
-            assert qml.expval(qml.PauliZ(0)) not in new_attribute
+            assert qml.measure.MeasurementProcess not in new_attribute
 
     def test_string_inclusion(self):
         """Test that we can check inclusion using strings."""
