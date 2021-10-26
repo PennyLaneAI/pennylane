@@ -68,11 +68,12 @@ class TestInitialization:
 
         drawer = MPLDrawer(1, 1)
 
-        assert drawer._box_dx == 0.4
+        assert drawer._box_length == 0.8
         assert drawer._circ_rad == 0.3
         assert drawer._ctrl_rad == 0.1
         assert drawer._octrl_rad == 0.1
         assert drawer._swap_dx == 0.2
+        assert drawer._fontsize == 14
         plt.close()
 
     def test_wires_formatting(self):
@@ -535,6 +536,23 @@ class TestMeasure:
 class TestAutosize:
     """Test the autosize keyword of the `box_gate` method"""
 
+    def text_in_box(self, drawer):
+        """This utility determines the last text drawn is inside the last is
+        inside the last patch drawn. This is done over and over in this test class,
+        and so extracted for convienience."""
+
+        text = drawer.ax.texts[-1]
+        rect = drawer.ax.patches[-1]
+
+        renderer = drawer.fig.canvas.get_renderer()
+
+        text_bbox = text.get_window_extent(renderer)
+        rect_bbox = rect.get_window_extent(renderer)
+
+        # check all text corners inside rectangle
+        return all(rect_bbox.contains(*p) for p in text_bbox.corners())
+
+
     def test_autosize_false(self):
         """Test that the text is unchanged if autosize is set to False."""
 
@@ -556,13 +574,7 @@ class TestAutosize:
         t = drawer.ax.texts[0]
         assert t.get_rotation() == 0
 
-        rect = drawer.ax.patches[0]
-        r = drawer.fig.canvas.get_renderer()
-
-        tbbox = t.get_window_extent(r)
-        rbbox = rect.get_window_extent(r)
-
-        assert all(rbbox.contains(*p) for p in tbbox.corners())
+        assert self.text_in_box(drawer)
 
         plt.close()
 
@@ -575,13 +587,7 @@ class TestAutosize:
         t = drawer.ax.texts[0]
         assert t.get_rotation() == 90.0
 
-        rect = drawer.ax.patches[0]
-        r = drawer.fig.canvas.get_renderer()
-
-        tbbox = t.get_window_extent(r)
-        rbbox = rect.get_window_extent(r)
-
-        assert all(rbbox.contains(*p) for p in tbbox.corners())
+        assert self.text_in_box(drawer)
 
         plt.close()
 
@@ -594,13 +600,7 @@ class TestAutosize:
         t = drawer.ax.texts[0]
         assert t.get_rotation() == 0.0
 
-        rect = drawer.ax.patches[0]
-        r = drawer.fig.canvas.get_renderer()
-
-        tbbox = t.get_window_extent(r)
-        rbbox = rect.get_window_extent(r)
-
-        assert all(rbbox.contains(*p) for p in tbbox.corners())
+        assert self.text_in_box(drawer)
 
         plt.close()
 
@@ -618,13 +618,7 @@ class TestAutosize:
         t = drawer.ax.texts[0]
         assert t.get_rotation() == 0.0
 
-        rect = drawer.ax.patches[0]
-        r = drawer.fig.canvas.get_renderer()
-
-        tbbox = t.get_window_extent(r)
-        rbbox = rect.get_window_extent(r)
-
-        assert all(rbbox.contains(*p) for p in tbbox.corners())
+        assert self.text_in_box(drawer)
 
         plt.close()
 
@@ -634,16 +628,7 @@ class TestAutosize:
         drawer = MPLDrawer(n_layers=1, n_wires=2)
         drawer.box_gate(0, (0, 1), text="very very long text\nall\nthe\nlines\nyep", autosize=True)
 
-        t = drawer.ax.texts[0]
-        assert t.get_rotation() == 90.0
-
-        rect = drawer.ax.patches[0]
-        r = drawer.fig.canvas.get_renderer()
-
-        tbbox = t.get_window_extent(r)
-        rbbox = rect.get_window_extent(r)
-
-        assert all(rbbox.contains(*p) for p in tbbox.corners())
+        assert self.text_in_box(drawer)
 
         plt.close()
 
