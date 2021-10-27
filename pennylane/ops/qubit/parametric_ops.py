@@ -23,7 +23,6 @@ import numpy as np
 import pennylane as qml
 from pennylane.operation import AnyWires, DiagonalOperation, Operation
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ, Hadamard
-from pennylane.templates.decorator import template
 from pennylane.utils import expand, pauli_eigs
 from pennylane.wires import Wires
 
