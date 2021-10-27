@@ -130,7 +130,9 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None,
         label_options (dict)
 
     Returns:
-        fig, ax
+        A function that has the same argument signature as ``qnode``. When called,
+        the function will draw the QNode as a tuple of (``matplotlib.figure.Figure``,
+        ``matplotlib.axes._axes.Axes``)
 
     **Example**:
 
@@ -202,49 +204,10 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None,
             :width: 60%
             :target: javascript:void(0);
 
-    **Styling:**
-
-
-    .. code-block:: python
-
-        with plt.style.context("Solarize_Light2):
-            fig, ax = draw_mpl(circuit)(1.2345,1.2345)
-
-    .. figure:: ../../_static/draw_mpl/Solarize_Light2.png
-            :align: center
-            :width: 60%
-            :target: javascript:void(0);
-
-    .. code-block:: python
-
-        plt.rcParams['patch.facecolor'] = 'white'
-        plt.rcParams['patch.edgecolor'] = 'black'
-        plt.rcParams['patch.linewidth'] = 2
-        plt.rcParams['patch.force_edgecolor'] = True
-        plt.rcParams['lines.color'] = 'black'
-
-        fig, ax = draw_mpl(tape)
-
-    .. figure:: ../../_static/draw_mpl/rcparams.png
-            :align: center
-            :width: 60%
-            :target: javascript:void(0);
-
-
-    .. code-block:: python
-
-        fig, ax = draw_mpl(circuit, wire_options={'color':'black', 'linewidth': 5},
-                    label_options={'size': 20})(1.2345,1.2345)
-
-    .. figure:: ../../_static/draw_mpl/wires_labels.png
-            :align: center
-            :width: 60%
-            :target: javascript:void(0);
-
     **Integration with matplotlib:**
 
-    This function returns matplotlib figure and axes objects, users can perform further
-    customization of the graphic with these objects.
+    This function returns matplotlib figure and axes objects. Using these objects,
+    users can perform further customization of the graphic.
 
     .. code-block:: python
 
@@ -263,6 +226,56 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None,
             :width: 60%
             :target: javascript:void(0);
 
+    **Formatting:**
+
+    You can globally control the style with ``plt.rcParams`` and styles, see the
+    `matplotlib docs <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
+    If we customize ``plt.rcParams``, we get a
+    different style:
+
+    .. code-block:: python
+
+        plt.rcParams['patch.facecolor'] = 'white'
+        plt.rcParams['patch.edgecolor'] = 'black'
+        plt.rcParams['patch.linewidth'] = 2
+        plt.rcParams['patch.force_edgecolor'] = True
+        plt.rcParams['lines.color'] = 'black'
+
+        fig, ax = draw_mpl(tape)
+
+    .. figure:: ../../_static/draw_mpl/rcparams.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
+    Instead of manually customizing everything, you can choose one of
+    the provided styles. You can see available styles with ``plt.style.available``.
+    We can set the ``'Solarize_Light2'`` style and instead get:
+
+    .. code-block:: python
+
+        with plt.style.context("Solarize_Light2):
+            fig, ax = draw_mpl(circuit)(1.2345,1.2345)
+
+    .. figure:: ../../_static/draw_mpl/Solarize_Light2.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
+    The wires and wire labels can be manually formatted by passing in dictionaries of
+    keyword-value pairs of matplotlib options. ``wire_options`` accepts options for lines,
+    and ``label_options`` accepts text options.
+
+    .. code-block:: python
+
+        fig, ax = draw_mpl(circuit, wire_options={'color':'black', 'linewidth': 5},
+                    label_options={'size': 20})(1.2345,1.2345)
+
+    .. figure:: ../../_static/draw_mpl/wires_labels.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
     """
 
 
@@ -272,7 +285,7 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None,
 
         _wire_order = wire_order or qnode.device.wires
 
-        return qml.circuit_drawer.draw_mpl(qnode.qtape, wire_order=wire_order,
+        return qml.circuit_drawer.draw_mpl(qnode.qtape, wire_order=_wire_order,
             show_all_wires=show_all_wires, decimals=decimals, wire_options=wire_options,
             label_options=label_options)
 
