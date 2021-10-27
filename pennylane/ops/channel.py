@@ -511,8 +511,8 @@ class ThermalRelaxationError(Channel):
                 \end{bmatrix}
 
     where :math:`pr0 \in [0, 1]` is the probability of a reset to 0,
-        :math:`pr1 \in [0, 1]` is the probability of a reset to 1 error,
-        math:`pz \in [0, 1]` is the probability of a phase flip (Pauli :math:`Z`) error
+    :math:`pr1 \in [0, 1]` is the probability of a reset to 1 error,
+    :math:`pz \in [0, 1]` is the probability of a phase flip (Pauli :math:`Z`) error
 
     Case T2 > T1:
 
@@ -528,9 +528,9 @@ class ThermalRelaxationError(Channel):
         K_N = \sqrt{\lambda} \Phi(\nu_\lambda)
 
     where :math:`\lambda` are the eigenvalues of the choi_matrix,
-          :math:`\nu_lambda` are the eigenvectors of the choi_matrix, and
-          :math:`\Phi(x)` is a isomorphism from :math:`\mathbb{C}^{n^2}` to
-          `\mathbb{C}^{n x n}`with column-major order mapping.
+    :math:`\nu_lambda` are the eigenvectors of the choi_matrix, and
+    :math:`\Phi(x)` is a isomorphism from :math:`\mathbb{C}^{n^2}` to
+    :math:`\mathbb{C}^{n x n}` with column-major order mapping.
 
     **Details:**
 
