@@ -4,6 +4,42 @@
 
 <h3>New features since last release</h3>
 
+* A new class has been added to store operator attributes, such as `self_inverses`,
+  and `composable_rotation`, as a list of operation names.
+  [(#1763)](https://github.com/PennyLaneAI/pennylane/pull/1763)
+
+  A number of such attributes, for the purpose of compilation transforms, can be found
+  in `ops/qubit/attributes.py`, but the class can also be used to create your own. For
+  example, we can create a new Attribute, `pauli_ops`, like so:
+
+  ```pycon
+  >>> from pennylane.ops.qubits.attributes import Attribute
+  >>> pauli_ops = Attribute(["PauliX", "PauliY", "PauliZ"])
+  ```
+  
+  We can check either a string or an Operation for inclusion in this set:
+
+  ```pycon
+  >>> qml.PauliX(0) in pauli_ops
+  True
+  >>> "Hadamard" in pauli_ops
+  False
+  ```
+  
+  We can also dynamically add operators to the sets at runtime. This is useful
+  for adding custom operations to the attributes such as `composable_rotations`
+  and ``self_inverses`` that are used in compilation transforms. For example,
+  suppose you have created a new Operation, `MyGate`, which you know to be its
+  own inverse. Adding it to the set, like so
+
+  ```pycon
+  >>> from pennylane.ops.qubits.attributes import self_inverses
+  >>> self_inverses.add("MyGate")
+  ```
+
+  will enable the gate to be considered by the `cancel_inverses` compilation
+  transform if two such gates are adjacent in a circuit.
+
 * Common tape expansion functions are now available in `qml.transforms`,
   alongside a new `create_expand_fn` function for easily creating expansion functions
   from stopping criteria.
@@ -620,6 +656,13 @@
 * To standardize across all optimizers, `qml.optimize.AdamOptimizer` now also uses `accumulation` (in form of `collections.namedtuple`) to keep track of running quantities. Before it used three variables `fm`, `sm` and `t`. [(#1757)](https://github.com/PennyLaneAI/pennylane/pull/1757)
 
 <h3>Breaking changes</h3>
+
+- The operator attributes `has_unitary_generator`, `is_composable_rotation`,
+  `is_self_inverse`, `is_symmetric_over_all_wires`, and
+  `is_symmetric_over_control_wires` have been removed as attributes from the
+  base class. They have been replaced by the sets that store the names of
+  operations with similar properties in `ops/qubit/attributes.py`.
+  [(#1763)](https://github.com/PennyLaneAI/pennylane/pull/1763)
 
 * The `template` decorator is now deprecated with a warning message and will be removed
   in release `v0.20.0`.
