@@ -479,9 +479,26 @@ def state():
 
     .. note::
 
-        Calculating the derivative of :func:`~.state` is currently only supported when using the
+        Differentiating :func:`~.state` is currently only supported when using the
         classical backpropagation differentiation method (``diff_method="backprop"``) with a
         compatible device.
+
+    .. UsageDetails::
+
+        A QNode with the ``qml.state`` output can be used in a cost function with
+        is then differentiated:
+
+        >>> dev = qml.device('default.qubit', wires=2)
+        >>> qml.qnode(dev, diff_method="backprop")
+        ... def test(x):
+        ...     qml.RY(x, wires=[0])
+        ...     return qml.state()
+        >>> def cost(x):
+        ...     return np.abs(test(x)[0])
+        >>> cost(x)
+        tensor(0.98877108, requires_grad=True)
+        >>> qml.grad(cost)(x)
+        -0.07471906623679961
     """
     # pylint: disable=protected-access
     return MeasurementProcess(State)
