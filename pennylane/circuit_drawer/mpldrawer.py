@@ -308,7 +308,7 @@ class MPLDrawer:
 
         """
         if text_options is None:
-            text_options = {"zorder": 3, "ha": "center", "va": "center", "fontsize": self._fontsize}
+            text_options = {"ha": "center", "va": "center", "fontsize": self._fontsize}
 
         for wire, ii_label in enumerate(labels):
             self._ax.text(-1.5, wire, ii_label, **text_options)
@@ -453,11 +453,11 @@ class MPLDrawer:
         as the figure is modified.
 
         Args:
-            text_obj (matplotlib.text.Text): The matplotlib text object
+            text_obj (matplotlib.text.Text): the matplotlib text object
 
         Returns:
             width (float): the width of the text in data coordinates
-            height (float): the height of the text in data coordinates.
+            height (float): the height of the text in data coordinates
         """
         renderer = self._fig.canvas.get_renderer()
 

@@ -537,9 +537,8 @@ class TestAutosize:
     """Test the autosize keyword of the `box_gate` method"""
 
     def text_in_box(self, drawer):
-        """This utility determines the last text drawn is inside the last is
-        inside the last patch drawn. This is done over and over in this test class,
-        and so extracted for convenience.
+        """This utility determines the last text drawn is inside the last patch drawn.
+        This is done over and over in this test class, and so extracted for convenience.
 
         This is a complimentary approach to comparing sizing to that used in the drawer
         class `text_dims` method
@@ -633,7 +632,7 @@ class TestAutosize:
         plt.close()
 
     def test_wide_multline_text_multiwires(self):
-        """Test case where the box is on multiple wires and text text is fat, tall,
+        """Test case where the box is on multiple wires and text is fat, tall,
         and fatter than it is tall. It should be rotated."""
 
         drawer = MPLDrawer(n_layers=1, n_wires=2)
