@@ -4,6 +4,74 @@
 
 <h3>New features since last release</h3>
 
+* The `insert` transform has now been added, providing a way to insert single-qubit operations into
+  a quantum circuit. The transform can apply to quantum functions, tapes, and devices.
+  [(#1795)](https://github.com/PennyLaneAI/pennylane/pull/1795)
+  
+  The following QNode can be transformed to add noise to the circuit:
+
+  ```python
+  from pennylane.transforms import insert
+    
+  dev = qml.device("default.mixed", wires=2)
+        
+  @qml.qnode(dev)
+  @insert(qml.AmplitudeDamping, 0.2, position="end")
+  def f(w, x, y, z):
+      qml.RX(w, wires=0)
+      qml.RY(x, wires=1)
+      qml.CNOT(wires=[0, 1])
+      qml.RY(y, wires=0)
+      qml.RX(z, wires=1)
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+  ```
+        
+  Executions of this circuit will differ from the noise-free value:
+  
+  ```pycon  
+  >>> f(0.9, 0.4, 0.5, 0.6)
+  tensor(0.754847, requires_grad=True)
+  >>> print(qml.draw(f)(0.9, 0.4, 0.5, 0.6))
+   0: ──RX(0.9)──╭C──RY(0.5)──AmplitudeDamping(0.2)──╭┤ ⟨Z ⊗ Z⟩ 
+   1: ──RY(0.4)──╰X──RX(0.6)──AmplitudeDamping(0.2)──╰┤ ⟨Z ⊗ Z⟩
+  ``` 
+
+* A new class has been added to store operator attributes, such as `self_inverses`,
+  and `composable_rotation`, as a list of operation names.
+  [(#1763)](https://github.com/PennyLaneAI/pennylane/pull/1763)
+
+  A number of such attributes, for the purpose of compilation transforms, can be found
+  in `ops/qubit/attributes.py`, but the class can also be used to create your own. For
+  example, we can create a new Attribute, `pauli_ops`, like so:
+
+  ```pycon
+  >>> from pennylane.ops.qubits.attributes import Attribute
+  >>> pauli_ops = Attribute(["PauliX", "PauliY", "PauliZ"])
+  ```
+  
+  We can check either a string or an Operation for inclusion in this set:
+
+  ```pycon
+  >>> qml.PauliX(0) in pauli_ops
+  True
+  >>> "Hadamard" in pauli_ops
+  False
+  ```
+  
+  We can also dynamically add operators to the sets at runtime. This is useful
+  for adding custom operations to the attributes such as `composable_rotations`
+  and ``self_inverses`` that are used in compilation transforms. For example,
+  suppose you have created a new Operation, `MyGate`, which you know to be its
+  own inverse. Adding it to the set, like so
+
+  ```pycon
+  >>> from pennylane.ops.qubits.attributes import self_inverses
+  >>> self_inverses.add("MyGate")
+  ```
+
+  will enable the gate to be considered by the `cancel_inverses` compilation
+  transform if two such gates are adjacent in a circuit.
+
 * Common tape expansion functions are now available in `qml.transforms`,
   alongside a new `create_expand_fn` function for easily creating expansion functions
   from stopping criteria.
@@ -413,6 +481,35 @@
 
 <h3>Improvements</h3>
 
+* `qml.circuit_drawer.MPLDrawer` will now automatically rotate and resize text to fit inside
+  the rectangle created by the `box_gate` method.
+  [(#1764)](https://github.com/PennyLaneAI/pennylane/pull/1764)
+  
+* Quantum function transforms can now be applied to devices.
+  Once applied to a device, any quantum function executed on the
+  modified device will be transformed prior to execution.
+  [(#1809)](https://github.com/PennyLaneAI/pennylane/pull/1809)
+
+  ```python
+  dev = qml.device("default.mixed", wires=1)
+  dev = qml.transforms.merge_rotations()(dev)
+  
+  @qml.beta.qnode(dev)
+  def f(w, x, y, z):
+      qml.RX(w, wires=0)
+      qml.RX(x, wires=0)
+      qml.RX(y, wires=0)
+      qml.RX(z, wires=0)
+      return qml.expval(qml.PauliZ(0))
+  ```
+
+  ```pycon
+  >>> print(f(0.9, 0.4, 0.5, 0.6))
+   -0.7373937155412453
+  >>> print(qml.draw(f, expansion_strategy="device")(0.9, 0.4, 0.5, 0.6))
+   0: ──RX(2.4)──┤ ⟨Z⟩
+  ```
+
 * The `ApproxTimeEvolution` template can now be used with Hamiltonians that have
   trainable coefficients.
   [(#1789)](https://github.com/PennyLaneAI/pennylane/pull/1789)
@@ -623,6 +720,13 @@
 
 <h3>Breaking changes</h3>
 
+- The operator attributes `has_unitary_generator`, `is_composable_rotation`,
+  `is_self_inverse`, `is_symmetric_over_all_wires`, and
+  `is_symmetric_over_control_wires` have been removed as attributes from the
+  base class. They have been replaced by the sets that store the names of
+  operations with similar properties in `ops/qubit/attributes.py`.
+  [(#1763)](https://github.com/PennyLaneAI/pennylane/pull/1763)
+
 * The `template` decorator is now deprecated with a warning message and will be removed
   in release `v0.20.0`.
   [(#1794)](https://github.com/PennyLaneAI/pennylane/pull/1794)
@@ -799,6 +903,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-Utkarsh Azad, Akash Narayanan B, Sam Banning, Olivia Di Matteo, Andrew Gardhouse, David Ittah, Josh Izaac, Christina Lee,
+Utkarsh Azad, Akash Narayanan B, Sam Banning, Thomas Bromley, Olivia Di Matteo, Andrew Gardhouse, David Ittah, Josh Izaac, Christina Lee,
 Romain Moyard, Carrie-Anne Rubidge, Maria Schuld, Rishabh Singh, Ingrid Strandberg, Antal Száva, Cody Wang,
 David Wierichs, Moritz Willmann.
