@@ -18,6 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.operation import Expectation
 
 
 class TestSingleTapeTransform:
@@ -421,3 +422,65 @@ class TestQFuncTransformGradients:
         expected = qml.grad(self.expval)(np.array(x), np.array(a), np.array(b))
         print(grad, expected)
         assert all(np.allclose(g, e) for g, e in zip(grad, expected))
+
+
+def compare_ops(ops1, ops2):
+    """Compares two input lists of operations"""
+    assert all(o1.name == o2.name for o1, o2 in zip(ops1, ops2))
+    assert all(o1.wires == o2.wires for o1, o2 in zip(ops1, ops2))
+    assert all(
+        np.allclose(o1.parameters, o2.parameters)
+        for o1, o2 in zip(ops1, ops2)
+    )
+
+
+def test_add_remove_preps():
+    """Test for the _remove_preps and _add_preps functions"""
+    with qml.tape.QuantumTape() as in_tape:
+        qml.BasisState([0], wires=0)
+        qml.QubitStateVector([1, 0, 0, 0], wires=[1, 2])
+        qml.Hadamard(0)
+        qml.expval(qml.PauliZ(0))
+
+    out_tape, removed_preps = qml.transforms.qfunc_transforms._remove_preps(in_tape)
+
+    with qml.tape.QuantumTape() as exp_tape:
+        qml.Hadamard(0)
+        qml.expval(qml.PauliZ(0))
+
+    expected_preps = [qml.BasisState([0], wires=0), qml.QubitStateVector([1, 0, 0, 0], wires=[1, 2])]
+
+    compare_ops(out_tape.operations, exp_tape.operations)
+    compare_ops(removed_preps, expected_preps)
+
+    recovered_tape = qml.transforms.qfunc_transforms._add_preps(out_tape, removed_preps)
+
+    compare_ops(recovered_tape.operations, in_tape.operations)
+
+
+def test_add_remove_measurements():
+    """Test for the _remove_measurements and _add_measurements functions"""
+    with qml.tape.QuantumTape() as in_tape:
+        qml.BasisState([0], wires=0)
+        qml.QubitStateVector([1, 0, 0, 0], wires=[1, 2])
+        qml.Hadamard(0)
+        qml.expval(qml.PauliZ(0))
+
+    out_tape = qml.transforms.qfunc_transforms._remove_measurements(in_tape)
+    assert len(out_tape.measurements) == 0
+
+    with qml.tape.QuantumTape() as exp_tape:
+        qml.BasisState([0], wires=0)
+        qml.QubitStateVector([1, 0, 0, 0], wires=[1, 2])
+        qml.Hadamard(0)
+
+    compare_ops(out_tape.operations, exp_tape.operations)
+
+    recovered_tape = qml.transforms.qfunc_transforms._add_measurements(out_tape, in_tape.measurements)
+
+    compare_ops(in_tape.operations, recovered_tape.operations)
+    assert len(recovered_tape.measurements) == 1
+
+    assert recovered_tape.observables[0].name == "PauliZ"
+    assert recovered_tape.observables[0].wires.tolist() == [0]
+    assert recovered_tape.measurements[0].return_type is Expectation
