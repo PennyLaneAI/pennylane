@@ -47,7 +47,8 @@ def insert(
     for more information.
 
     Args:
-        circuit (callable or QuantumTape): the input circuit
+        circuit (callable or QuantumTape or Device): the input circuit to be transformed, or a
+            device TODO
         op (callable or Type[Operation]): the single-qubit operation, or sequence of operations
             acting on a single qubit, to be inserted into the circuit
         op_args (tuple or float): the arguments fed to the operation, either as a tuple or a single
@@ -147,6 +148,44 @@ def insert(
         >>> print(noisy_tape.draw())
          0: ──RX(0.9)──╭C──RY(0.5)──AmplitudeDamping(0.05)──╭┤ ⟨Z ⊗ Z⟩
          1: ──RY(0.4)──╰X──RX(0.6)──AmplitudeDamping(0.05)──╰┤ ⟨Z ⊗ Z⟩
+
+        **Transforming devices:**
+
+        .. warning::
+
+            Using this transform on devices is a beta feature. Use the :class:`pennylane.beta.QNode`
+            decorator to create compatible QNodes and use :func:`~.execute` to execute quantum
+            tapes.
+
+        Consider the following QNode:
+
+        .. code-block:: python3
+
+            from pennylane.beta import qnode
+
+            dev = qml.device("default.mixed", wires=2)
+
+            def f(w, x, y, z):
+                qml.RX(w, wires=0)
+                qml.RY(x, wires=1)
+                qml.CNOT(wires=[0, 1])
+                qml.RY(y, wires=0)
+                qml.RX(z, wires=1)
+                return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+            qnode = QNode(f, dev)
+
+        Execution of the circuit on ``dev`` will be noise-free:
+
+        >>> qnode(0.9, 0.4, 0.5, 0.6)
+        tensor(0.86243536, requires_grad=True)
+
+        However, noise can be easily added to the device:
+
+        >>> dev_noisy = qml.transforms.insert(dev, qml.AmplitudeDamping, 0.2)
+        >>> qnode_noisy = QNode(f, dev_noisy)
+        >>> qnode_noisy(0.9, 0.4, 0.5, 0.6)
+        tensor(0.72945434, requires_grad=True)
     """
     if not isinstance(op, FunctionType) and op.num_wires != 1:
         raise ValueError("Only single-qubit operations can be inserted into the circuit")
@@ -195,65 +234,7 @@ def _(
 
     The type of ``op`` can be either a single operation or a quantum function. A quantum function
     can be used to specify a sequence of operations acting on a single qubit.
-
-    .. warning::
-
-        This device transform is a beta feature. Use the :class:`pennylane.beta.QNode` decorator to
-        create compatible QNodes and use :func:`~.execute` to execute quantum tapes.
-
-    Args:
-        device (Device): the device to be transformed
-        op (callable or Type[Operation]): the single-qubit operation, or sequence of operations
-            acting on a single qubit, to be inserted into circuits
-        op_args (tuple or float): the arguments fed to the operation, either as a tuple or a single
-            float
-        position (str): Specification of where to add the operation. Should be one of: ``"all"`` to
-            add the operation after all gates; ``"start"`` to add the operation to all wires
-            at the start of the circuit; ``"end"`` to add the operation to all wires at the
-            end of the circuit.
-
-    Returns:
-        Device: the updated device
-
-    Raises:
-        ValueError: if a single operation acting on multiple wires is passed to ``op``
-        ValueError: if the requested ``position`` argument is not ``'start'``, ``'end'`` or
-            ``'all'``
-
-    **Example:**
-
-    Consider the following QNode:
-
-    .. code-block:: python3
-
-        from pennylane.beta import qnode
-
-        dev = qml.device("default.mixed", wires=2)
-
-        def f(w, x, y, z):
-            qml.RX(w, wires=0)
-            qml.RY(x, wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.RY(y, wires=0)
-            qml.RX(z, wires=1)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-        qnode = QNode(f, dev)
-
-    Execution of the circuit on ``dev`` will be noise-free:
-
-    >>> qnode(0.9, 0.4, 0.5, 0.6)
-    tensor(0.86243536, requires_grad=True)
-
-    However, noise can be easily added to the device:
-
-    >>> dev_noisy = qml.transforms.insert(dev, qml.AmplitudeDamping, 0.2)
-    >>> qnode_noisy = QNode(f, dev_noisy)
-    >>> qnode_noisy(0.9, 0.4, 0.5, 0.6)
-    tensor(0.72945434, requires_grad=True)
     """
-    # TODO: Remove warning in docstrings once new QNode replaces the old
-
     new_dev = deepcopy(device)
     original_expand_fn = new_dev.expand_fn
 
