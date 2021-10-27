@@ -141,7 +141,7 @@ def generate_electron_integrals(mol, core=None, active=None):
     return electron_integrals
 
 
-def generate_fermionic_hamiltonian(mol, cutoff=1.0e-12):
+def generate_fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
     r"""Return a function that computes the fermionic hamiltonian.
 
     Args:
@@ -171,7 +171,7 @@ def generate_fermionic_hamiltonian(mol, cutoff=1.0e-12):
         Returns:
             tuple(array[float], list[list[int]]): the Hamiltonian coefficients and operators
         """
-        core_constant, one, two = generate_electron_integrals(mol)(*args)
+        core_constant, one, two = generate_electron_integrals(mol, core, active)(*args)
 
         core_constant = anp.array([core_constant])
 
@@ -204,7 +204,7 @@ def generate_fermionic_hamiltonian(mol, cutoff=1.0e-12):
     return fermionic_hamiltonian
 
 
-def generate_hamiltonian(mol, cutoff=1.0e-12):
+def generate_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
     r"""Return a function that computes the qubit hamiltonian.
 
     Args:
@@ -240,7 +240,7 @@ def generate_hamiltonian(mol, cutoff=1.0e-12):
         Returns:
             Hamiltonian: the qubit Hamiltonian
         """
-        h_ferm = generate_fermionic_hamiltonian(mol, cutoff)(*args)
+        h_ferm = generate_fermionic_hamiltonian(mol, cutoff, core, active)(*args)
 
         ops = []
 
