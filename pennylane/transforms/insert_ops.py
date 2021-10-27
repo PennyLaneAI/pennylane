@@ -19,10 +19,11 @@ from copy import deepcopy
 from types import FunctionType
 from typing import Type, Union
 
-from pennylane import BasisState, Device, QubitStateVector, apply
+from pennylane import Device, apply
 from pennylane.operation import Operation
 from pennylane.tape import QuantumTape
-from pennylane.transforms.qfunc_transforms import qfunc_transform, single_tape_transform
+from pennylane.transforms.qfunc_transforms import qfunc_transform
+from pennylane.tape.tape import STATE_PREP_OPS
 
 
 @qfunc_transform
@@ -154,7 +155,7 @@ def insert(
     if not isinstance(op_args, Sequence):
         op_args = [op_args]
 
-    num_preps = sum(isinstance(o, qml.tape.tape.STATE_PREP_OPS) for o in circuit.operations)
+    num_preps = sum(isinstance(o, STATE_PREP_OPS) for o in circuit.operations)
 
     for i in range(num_preps):
         apply(circuit.operations[i])
@@ -226,7 +227,6 @@ def insert_in_dev(
 
         dev = qml.device("default.mixed", wires=2)
 
-        @qnode(dev)
         def f(w, x, y, z):
             qml.RX(w, wires=0)
             qml.RY(x, wires=1)
@@ -235,15 +235,18 @@ def insert_in_dev(
             qml.RX(z, wires=1)
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
+        qnode = QNode(f, dev)
+
     Execution of the circuit on ``dev`` will be noise-free:
 
-    >>> f(0.9, 0.4, 0.5, 0.6)
+    >>> qnode(0.9, 0.4, 0.5, 0.6)
     tensor(0.86243536, requires_grad=True)
 
     However, noise can be easily added to the device:
 
-    >>> qml.transforms.insert_in_dev(dev, qml.AmplitudeDamping, 0.2)
-    >>> f(0.9, 0.4, 0.5, 0.6)
+    >>> dev_noisy = qml.transforms.insert_in_dev(dev, qml.AmplitudeDamping, 0.2)
+    >>> qnode_noisy = QNode(f, dev_noisy)
+    >>> qnode_noisy(0.9, 0.4, 0.5, 0.6)
     tensor(0.72945434, requires_grad=True)
     """
     # TODO: Remove warning in docstrings once new QNode replaces the old
