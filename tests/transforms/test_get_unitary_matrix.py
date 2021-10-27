@@ -465,3 +465,99 @@ def test_get_unitary_matrix_wronglabel():
         ValueError, match="Wires in circuit are inconsistent with those in wire_order"
     ):
         matrix = get_matrix()
+
+
+@pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
+def test_get_unitary_matrix_jax_differentiable(v):
+
+    jax = pytest.importorskip("jax")
+
+    def circuit(theta):
+        qml.RX(theta, wires=0)
+        qml.PauliZ(wires=0)
+        qml.CNOT(wires=[0, 1])
+
+    def loss(theta):
+        U = qml.transforms.get_unitary_matrix(circuit)(theta)
+        return qml.math.real(qml.math.trace(U))
+
+    x = jax.numpy.array(v)
+
+    l = loss(x)
+    dl = jax.grad(loss)(x)
+    matrix = qml.transforms.get_unitary_matrix(circuit)(x)
+
+    assert isinstance(matrix, jax.numpy.ndarray)
+    assert np.allclose(l, 2 * np.cos(v / 2))
+    assert np.allclose(dl, -np.sin(v / 2))
+
+
+@pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
+def test_get_unitary_matrix_torch_differentiable(v):
+
+    torch = pytest.importorskip("torch")
+
+    def circuit(theta):
+        qml.RX(theta, wires=0)
+        qml.PauliZ(wires=0)
+        qml.CNOT(wires=[0, 1])
+
+    def loss(theta):
+        U = qml.transforms.get_unitary_matrix(circuit)(theta)
+        return qml.math.real(qml.math.trace(U))
+
+    x = torch.tensor(v, requires_grad=True)
+    l = loss(x)
+    l.backward()
+    dl = x.grad
+    matrix = qml.transforms.get_unitary_matrix(circuit)(x)
+
+    assert isinstance(matrix, torch.Tensor)
+    assert np.allclose(l.detach(), 2 * np.cos(v / 2))
+    assert np.allclose(dl.detach(), -np.sin(v / 2))
+
+
+@pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
+def test_get_unitary_matrix_tensorflow_differentiable(v):
+
+    tf = pytest.importorskip("tensorflow")
+
+    def circuit(theta):
+        qml.RX(theta, wires=0)
+        qml.PauliZ(wires=0)
+        qml.CNOT(wires=[0, 1])
+
+    def loss(theta):
+        U = qml.transforms.get_unitary_matrix(circuit)(theta)
+        return qml.math.real(qml.math.trace(U))
+
+    x = tf.Variable(v)
+    with tf.GradientTape() as tape:
+        l = loss(x)
+    dl = tape.gradient(l, x)
+    matrix = qml.transforms.get_unitary_matrix(circuit)(x)
+
+    assert isinstance(matrix, tf.Tensor)
+    assert np.allclose(l, 2 * np.cos(v / 2))
+    assert np.allclose(dl, -np.sin(v / 2))
+
+
+@pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
+def test_get_unitary_matrix_autograd_differentiable(v):
+    def circuit(theta):
+        qml.RX(theta, wires=0)
+        qml.PauliZ(wires=0)
+        qml.CNOT(wires=[0, 1])
+
+    def loss(theta):
+        U = qml.transforms.get_unitary_matrix(circuit)(theta)
+        return qml.math.real(qml.math.trace(U))
+
+    x = np.array(v, requires_grad=True)
+    l = loss(x)
+    dl = qml.grad(loss)(x)
+    matrix = qml.transforms.get_unitary_matrix(circuit)(x)
+
+    assert isinstance(matrix, qml.numpy.tensor)
+    assert np.allclose(l, 2 * np.cos(v / 2))
+    assert np.allclose(dl, -np.sin(v / 2))

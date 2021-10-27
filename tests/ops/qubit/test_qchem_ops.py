@@ -910,7 +910,7 @@ class TestOrbitalRotation:
             qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
             return qml.expval(qml.PauliZ(0))
 
-        phi_t = torch.tensor(phi, dtype=torch.float64, requires_grad=True)
+        phi_t = torch.tensor(phi, dtype=torch.complex128, requires_grad=True)
 
         result = circuit(phi_t)
         result.backward()

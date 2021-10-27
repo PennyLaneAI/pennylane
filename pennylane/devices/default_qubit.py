@@ -487,6 +487,7 @@ class DefaultQubit(QubitDevice):
                 # Compute  <psi| H |psi> via sum_i coeff_i * <psi| PauliWord |psi> using a sparse
                 # representation of the Pauliword
                 res = qml.math.cast(qml.math.convert_like(0.0, observable.data), dtype=complex)
+                interface = qml.math.get_interface(self.state)
 
                 # Note: it is important that we use the Hamiltonian's data and not the coeffs attribute.
                 # This is because the .data attribute may be 'unwrapped' as required by the interfaces,
@@ -502,7 +503,11 @@ class DefaultQubit(QubitDevice):
                         * Hmat
                         * qml.math.gather(self.state, coo.col)
                     )
-                    c = qml.math.cast(qml.math.convert_like(coeff, product), "complex128")
+                    c = qml.math.convert_like(coeff, product)
+
+                    if interface == "tensorflow":
+                        c = qml.math.cast(c, "complex128")
+
                     res = qml.math.convert_like(res, product) + qml.math.sum(c * product)
 
             else:

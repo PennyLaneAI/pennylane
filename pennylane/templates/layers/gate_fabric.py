@@ -101,13 +101,13 @@ class GateFabric(Operation):
             # Define the ansatz
             @qml.qnode(dev)
             def ansatz(weights):
-                qml.templates.GateFabric(weights, wires=[0,1,2,3],
+                qml.GateFabric(weights, wires=[0,1,2,3],
                                             init_state=ref_state, include_pi=True)
                 return qml.expval(H)
 
             # Get the shape of the weights for this template
             layers = 2
-            shape = qml.templates.GateFabric.shape(n_layers=layers, n_wires=qubits)
+            shape = qml.GateFabric.shape(n_layers=layers, n_wires=qubits)
 
             # Initialize the weight tensors
             np.random.seed(42)
@@ -223,7 +223,7 @@ class GateFabric(Operation):
 
         with qml.tape.QuantumTape() as tape:
 
-            qml.templates.BasisEmbedding(self.init_state, wires=self.wires)
+            qml.BasisEmbedding(self.init_state, wires=self.wires)
             weight = self.parameters[0]
 
             for layer in range(self.n_layers):
