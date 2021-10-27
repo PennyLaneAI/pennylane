@@ -15,13 +15,12 @@
 # pylint: disable=too-few-public-methods
 import functools
 import inspect
+from typing import Tuple
 
 import pennylane as qml
-
-from typing import Tuple
-from pennylane.operation import Operation
-from pennylane import QubitStateVector, BasisState
+from pennylane import BasisState, QubitStateVector
 from pennylane.measure import MeasurementProcess
+from pennylane.operation import Operation
 
 
 def make_tape(fn):
@@ -442,6 +441,7 @@ def support_preparations_and_measurements(transform: callable) -> callable:
     >>> print(remove_rxs_fixed(tape).draw())
      0: ──H──RY(0.5)──┤ ⟨Z⟩
     """
+
     @functools.wraps(transform)
     def wrapper(tape: qml.tape.QuantumTape, *args, **kwargs) -> qml.tape.QuantumTape:
         """Wrapper for a single-tape transform that does not support state preparations and
@@ -523,7 +523,9 @@ def _remove_measurements(tape: qml.tape.QuantumTape) -> qml.tape.QuantumTape:
 
 
 @single_tape_transform
-def _add_measurements(tape: qml.tape.QuantumTape, measurements: Tuple[MeasurementProcess]) -> qml.tape.QuantumTape:
+def _add_measurements(
+    tape: qml.tape.QuantumTape, measurements: Tuple[MeasurementProcess]
+) -> qml.tape.QuantumTape:
     """Add measurements to an input tape.
 
     Args:

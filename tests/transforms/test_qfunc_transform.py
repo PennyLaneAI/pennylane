@@ -428,10 +428,7 @@ def compare_ops(ops1, ops2):
     """Compares two input lists of operations"""
     assert all(o1.name == o2.name for o1, o2 in zip(ops1, ops2))
     assert all(o1.wires == o2.wires for o1, o2 in zip(ops1, ops2))
-    assert all(
-        np.allclose(o1.parameters, o2.parameters)
-        for o1, o2 in zip(ops1, ops2)
-    )
+    assert all(np.allclose(o1.parameters, o2.parameters) for o1, o2 in zip(ops1, ops2))
 
 
 def test_add_remove_preps():
@@ -448,7 +445,10 @@ def test_add_remove_preps():
         qml.Hadamard(0)
         qml.expval(qml.PauliZ(0))
 
-    expected_preps = [qml.BasisState([0], wires=0), qml.QubitStateVector([1, 0, 0, 0], wires=[1, 2])]
+    expected_preps = [
+        qml.BasisState([0], wires=0),
+        qml.QubitStateVector([1, 0, 0, 0], wires=[1, 2]),
+    ]
 
     compare_ops(out_tape.operations, exp_tape.operations)
     compare_ops(removed_preps, expected_preps)
@@ -476,7 +476,9 @@ def test_add_remove_measurements():
 
     compare_ops(out_tape.operations, exp_tape.operations)
 
-    recovered_tape = qml.transforms.qfunc_transforms._add_measurements(out_tape, in_tape.measurements)
+    recovered_tape = qml.transforms.qfunc_transforms._add_measurements(
+        out_tape, in_tape.measurements
+    )
 
     compare_ops(in_tape.operations, recovered_tape.operations)
     assert len(recovered_tape.measurements) == 1
