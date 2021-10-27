@@ -150,7 +150,8 @@ class AmplitudeEmbedding(Operation):
         * Check that the features tensor is one-dimensional.
         * If pad_with is None, check that the first dimension of the features tensor
           has length :math:`2^n` where :math:`n` is the number of qubits. Else check that the
-          first dimension of the features tensor is not larger than :math:`2^n` and pad features with value if necessary.
+          first dimension of the features tensor is not larger than :math:`2^n` and pad features
+          with value if necessary.
         * If normalize is false, check that first dimension of features is normalised to one. Else, normalise the
           features tensor.
         """
@@ -172,7 +173,7 @@ class AmplitudeEmbedding(Operation):
             if pad_with is None and n_features != 2 ** len(wires):
                 raise ValueError(
                     f"Features must be of length {2 ** len(wires)}; got length {n_features}. "
-                    f"Use the 'pad' argument for automated padding."
+                    f"Use the 'pad_with' argument for automated padding."
                 )
 
             if pad_with is not None and n_features > 2 ** len(wires):
