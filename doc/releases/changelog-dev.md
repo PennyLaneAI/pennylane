@@ -4,6 +4,38 @@
 
 <h3>New features since last release</h3>
 
+* The `insert` transform has now been added, providing a way to insert single-qubit operations into
+  a quantum circuit. The transform can apply to quantum functions, tapes, and devices.
+  [(#1795)](https://github.com/PennyLaneAI/pennylane/pull/1795)
+  
+  The following QNode can be transformed to add noise to the circuit:
+
+  ```python
+  from pennylane.transforms import insert
+    
+  dev = qml.device("default.mixed", wires=2)
+        
+  @qml.qnode(dev)
+  @insert(qml.AmplitudeDamping, 0.2, position="end")
+  def f(w, x, y, z):
+      qml.RX(w, wires=0)
+      qml.RY(x, wires=1)
+      qml.CNOT(wires=[0, 1])
+      qml.RY(y, wires=0)
+      qml.RX(z, wires=1)
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+  ```
+        
+  Executions of this circuit will differ from the noise-free value:
+  
+  ```pycon  
+  >>> f(0.9, 0.4, 0.5, 0.6)
+  tensor(0.754847, requires_grad=True)
+  >>> print(qml.draw(f)(0.9, 0.4, 0.5, 0.6))
+   0: ──RX(0.9)──╭C──RY(0.5)──AmplitudeDamping(0.2)──╭┤ ⟨Z ⊗ Z⟩ 
+   1: ──RY(0.4)──╰X──RX(0.6)──AmplitudeDamping(0.2)──╰┤ ⟨Z ⊗ Z⟩
+  ``` 
+
 * A new class has been added to store operator attributes, such as `self_inverses`,
   and `composable_rotation`, as a list of operation names.
   [(#1763)](https://github.com/PennyLaneAI/pennylane/pull/1763)
@@ -449,6 +481,31 @@
 
 <h3>Improvements</h3>
 
+* Quantum function transforms can now be applied to devices.
+  Once applied to a device, any quantum function executed on the
+  modified device will be transformed prior to execution.
+  [(#1809)](https://github.com/PennyLaneAI/pennylane/pull/1809)
+
+  ```python
+  dev = qml.device("default.mixed", wires=1)
+  dev = qml.transforms.merge_rotations()(dev)
+  
+  @qml.beta.qnode(dev)
+  def f(w, x, y, z):
+      qml.RX(w, wires=0)
+      qml.RX(x, wires=0)
+      qml.RX(y, wires=0)
+      qml.RX(z, wires=0)
+      return qml.expval(qml.PauliZ(0))
+  ```
+
+  ```pycon
+  >>> print(f(0.9, 0.4, 0.5, 0.6))
+   -0.7373937155412453
+  >>> print(qml.draw(f, expansion_strategy="device")(0.9, 0.4, 0.5, 0.6))
+   0: ──RX(2.4)──┤ ⟨Z⟩
+  ```
+
 * The `ApproxTimeEvolution` template can now be used with Hamiltonians that have
   trainable coefficients.
   [(#1789)](https://github.com/PennyLaneAI/pennylane/pull/1789)
@@ -840,6 +897,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-Utkarsh Azad, Akash Narayanan B, Sam Banning, Olivia Di Matteo, Andrew Gardhouse, David Ittah, Josh Izaac, Christina Lee,
+Utkarsh Azad, Akash Narayanan B, Sam Banning, Thomas Bromley, Olivia Di Matteo, Andrew Gardhouse, David Ittah, Josh Izaac, Christina Lee,
 Romain Moyard, Carrie-Anne Rubidge, Maria Schuld, Rishabh Singh, Ingrid Strandberg, Antal Száva, Cody Wang,
 David Wierichs, Moritz Willmann.
