@@ -98,7 +98,7 @@ def draw(qnode, charset="unicode", wire_order=None, show_all_wires=False, expans
 
     @wraps(qnode)
     def wrapper(*args, **kwargs):
-        original_expansion_strategy = getattr(qnode, expansion_strategy, None)
+        original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
 
         try:
             qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
