@@ -236,7 +236,7 @@ def test_draw_batch_transform():
     """Test that drawing a batch transform works correctly"""
     dev = qml.device("default.qubit", wires=1)
 
-    @functools.partial(qml.gradients.param_shift, shift=0.2)
+    @qml.gradients.param_shift(shift=0.2)
     @qml.beta.qnode(dev)
     def circuit(x):
         qml.Hadamard(wires=0)
