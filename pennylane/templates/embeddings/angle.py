@@ -64,8 +64,6 @@ class AngleEmbedding(Operation):
     def expand(self):
 
         features = self.parameters[0]
-        if len(qml.math.shape(features)) != 1:
-            raise ValueError(f"You are passing batched arguments without using the batch_params decorator.")
 
         with qml.tape.QuantumTape() as tape:
 

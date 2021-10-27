@@ -211,24 +211,37 @@ def test_all_operations(mocker):
     dev = qml.device("default.qubit", wires=3)
 
     @functools.partial(qml.batch_params, all_operations=True)
-    @qml.beta.qnode(dev)
-    def circuit(x, data, weights):
+    @qml.qnode(dev)
+    def circuit(x, weights):
         qml.RX(x, wires=0)
         qml.RY([0.2, 0.3, 0.3], wires=1)
-        qml.templates.AngleEmbedding(data, wires=[0, 1, 2])
         qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
         return qml.probs(wires=[0, 2])
 
     batch_size = 3
     x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
-    data = np.ones((batch_size, 3), requires_grad = False)
     weights = np.ones((batch_size, 10, 3, 3), requires_grad=False)
 
     spy = mocker.spy(circuit.device, "batch_execute")
-    res = circuit(x, data, weights)
+    res = circuit(x, weights)
     assert res.shape == (batch_size, 1, 4)
     assert len(spy.call_args[0][0]) == batch_size
 
+def test_angle_embedding():
+    """Tests that the AngleEmbedding template supports batch_params"""
+    dev = qml.device("default.qubit", wires=3)
+
+    @qml.batch_params
+    @qml.beta.qnode(dev)
+    def circuit(data):
+        qml.templates.AngleEmbedding(data, wires=[0, 1, 2])
+        return qml.probs(wires=[0, 2])
+
+    batch_size = 3
+    data = np.ones((batch_size, 3), requires_grad = True)
+
+    res = circuit(data)
+    assert res.shape == (batch_size, 1, 4)
 
 def test_unbatched_parameter():
     """Test that an exception is raised if a parameter
