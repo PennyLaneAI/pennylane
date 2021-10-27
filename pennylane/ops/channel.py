@@ -528,8 +528,8 @@ class ThermalRelaxationError(Channel):
         K_N = \sqrt{\lambda} \Phi(\nu_\lambda)
 
     where :math:`\lambda` are the eigenvalues of the choi_matrix,
-    :math:`\nu_lambda` are the eigenvectors of the choi_matrix, and
-    :math:`\Phi(x)` is a isomorphism from :math:`\mathbb{C}^{n^2}` to
+    :math:`\nu_lambda` are the eigenvectors of the choi_matrix,
+    and :math:`\Phi(x)` is a isomorphism from :math:`\mathbb{C}^{n^2}` to
     :math:`\mathbb{C}^{n x n}` with column-major order mapping.
 
     **Details:**
