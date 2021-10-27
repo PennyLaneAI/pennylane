@@ -38,8 +38,9 @@ def insert(
     according to the positioning specified in the ``position`` argument. Only single qubit
     operations are permitted.
 
-    The type of ``op`` can be either a single operation or a quantum function. A quantum function
-    can be used to specify a sequence of operations acting on a single qubit, see the usage details
+    The type of ``op`` can be either a single operation or a quantum
+    function acting on a single wire. A quantum function can be used
+    to specify a sequence of operations acting on a single qubit, see the usage details
     for more information.
 
     Args:
