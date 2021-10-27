@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""TODO"""
+"""Provides transforms for mitigating quantum circuits."""
 from typing import Any, Dict, Optional, Sequence
 
 from pennylane.math import mean
