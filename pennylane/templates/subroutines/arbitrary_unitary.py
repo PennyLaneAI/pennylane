@@ -82,7 +82,6 @@ class ArbitraryUnitary(Operation):
 
     .. code-block:: python
 
-        @qml.template
         def arbitrary_nearest_neighbour_interaction(weights, wires):
             qml.broadcast(unitary=ArbitraryUnitary, pattern="double", wires=wires, params=weights)
 

@@ -521,7 +521,6 @@ class MultiRZ(DiagonalOperation):
         return self._eigvals(*self.parameters, len(self.wires))
 
     @staticmethod
-    @template
     def decomposition(theta, wires):
         for i in range(len(wires) - 1, 0, -1):
             qml.CNOT(wires=[wires[i], wires[i - 1]])
@@ -741,7 +740,6 @@ class PauliRot(Operation):
         return MultiRZ._eigvals(theta, len(pauli_word))
 
     @staticmethod
-    @template
     def decomposition(theta, pauli_word, wires):
         # Catch cases when the wire is passed as a single int.
         if isinstance(wires, int):
