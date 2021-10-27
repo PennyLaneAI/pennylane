@@ -448,7 +448,7 @@ def support_preparations_and_measurements(transform: callable) -> callable:
         measurements.
 
         Args:
-            tape (QuantumTape):
+            tape (QuantumTape): input quantum tape
             *args: remaining arguments passed to the transform
             **kwargs: keyword arguments passed to the transform
 
@@ -469,7 +469,7 @@ def support_preparations_and_measurements(transform: callable) -> callable:
 
 
 def _remove_preps(tape: qml.tape.QuantumTape) -> Tuple[qml.tape.QuantumTape, Tuple[Operation]]:
-    """Removes state preparations from an input tape
+    """Removes state preparations from an input tape.
 
     Args:
         tape (QuantumTape): the input quantum tape
@@ -510,7 +510,7 @@ def _add_preps(tape: qml.tape.QuantumTape, preps: Tuple[Operation]) -> qml.tape.
 
 @single_tape_transform
 def _remove_measurements(tape: qml.tape.QuantumTape) -> qml.tape.QuantumTape:
-    """Removes measurements from an input tape
+    """Removes measurements from an input tape.
 
     Args:
         tape (QuantumTape): the input quantum tape
