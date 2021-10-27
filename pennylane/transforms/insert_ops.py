@@ -15,8 +15,6 @@
 Provides transforms for inserting operations into quantum circuits.
 """
 from collections.abc import Sequence
-from copy import deepcopy
-from functools import singledispatch
 from types import FunctionType
 from typing import Type, Union
 
@@ -27,7 +25,6 @@ from pennylane.tape.tape import STATE_PREP_OPS
 from pennylane.transforms.qfunc_transforms import qfunc_transform
 
 
-@singledispatch
 @qfunc_transform
 def insert(
     circuit: Union[callable, QuantumTape],
