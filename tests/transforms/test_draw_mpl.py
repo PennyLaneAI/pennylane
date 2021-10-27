@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qml
 
-mpl = pytest.importorskip("mpl")
+mpl = pytest.importorskip("matplotlib")
 
 def test_default():
     """Tests default usage"""
