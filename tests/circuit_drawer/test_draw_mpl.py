@@ -20,6 +20,7 @@ import pennylane as qml
 from pennylane.circuit_drawer import draw_mpl
 from pennylane.tape import QuantumTape
 
+mpl = pytest.importorskip("matplotlib")
 
 with QuantumTape() as tape1:
     qml.PauliX(0)
