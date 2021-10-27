@@ -96,7 +96,7 @@ executed on the device.
 .. autosummary::
     :toctree: api
 
-    ~transforms.insert_in_dev
+    ~transforms.insert
 
 Decorators and utility functions
 --------------------------------
@@ -129,7 +129,7 @@ from .draw import draw
 from .hamiltonian_expand import hamiltonian_expand
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
-from .insert_ops import insert, insert_in_dev
+from .insert_ops import insert
 from .optimization import (
     cancel_inverses,
     commute_controlled,

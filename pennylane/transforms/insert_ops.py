@@ -16,16 +16,18 @@ Provides transforms for inserting operations into quantum circuits.
 """
 from collections.abc import Sequence
 from copy import deepcopy
+from functools import singledispatch
 from types import FunctionType
 from typing import Type, Union
 
 from pennylane import Device, apply
 from pennylane.operation import Operation
 from pennylane.tape import QuantumTape
-from pennylane.transforms.qfunc_transforms import qfunc_transform
 from pennylane.tape.tape import STATE_PREP_OPS
+from pennylane.transforms.qfunc_transforms import qfunc_transform
 
 
+@singledispatch
 @qfunc_transform
 def insert(
     circuit: Union[callable, QuantumTape],
@@ -178,7 +180,8 @@ def insert(
         apply(m)
 
 
-def insert_in_dev(
+@insert.register
+def _(
     device: Device,
     op: Union[callable, Type[Operation]],
     op_args: Union[tuple, float],
@@ -244,7 +247,7 @@ def insert_in_dev(
 
     However, noise can be easily added to the device:
 
-    >>> dev_noisy = qml.transforms.insert_in_dev(dev, qml.AmplitudeDamping, 0.2)
+    >>> dev_noisy = qml.transforms.insert(dev, qml.AmplitudeDamping, 0.2)
     >>> qnode_noisy = QNode(f, dev_noisy)
     >>> qnode_noisy(0.9, 0.4, 0.5, 0.6)
     tensor(0.72945434, requires_grad=True)
