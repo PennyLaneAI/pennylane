@@ -242,12 +242,13 @@ def generate_hamiltonian(mol, cutoff=1.0e-12):
         """
         h_ferm = generate_fermionic_hamiltonian(mol, cutoff)(*args)
 
-        h = qml.Hamiltonian([0.0j], [qml.Identity(0)])
+        ops = []
 
         for n, t in enumerate(h_ferm[1]):
 
             if len(t) == 0:
-                h = h + qml.Hamiltonian([h_ferm[0][n]], [qml.Identity(0)])
+                coeffs = np.array([h_ferm[0][n]])
+                ops = ops + [qml.Identity(0)]
 
             elif len(t) == 2:
                 op = _generate_qubit_operator(t)
@@ -262,7 +263,8 @@ def generate_hamiltonian(mol, cutoff=1.0e-12):
                             for o_ in o:
                                 k = k @ _return_pauli(o_[1])(o_[0])
                             op[1][i] = k
-                    h = h + qml.Hamiltonian(np.array(op[0]) * h_ferm[0][n], op[1])
+                    coeffs = np.concatenate([coeffs, np.array(op[0]) * h_ferm[0][n]])
+                    ops = ops + op[1]
 
             elif len(t) == 4:
                 op = _generate_qubit_operator(t)
@@ -277,7 +279,10 @@ def generate_hamiltonian(mol, cutoff=1.0e-12):
                             for o_ in o:
                                 k = k @ _return_pauli(o_[1])(o_[0])
                             op[1][i] = k
-                    h = h + qml.Hamiltonian(np.array(op[0]) * h_ferm[0][n], op[1])
+                    coeffs = np.concatenate([coeffs, np.array(op[0]) * h_ferm[0][n]])
+                    ops = ops + op[1]
+
+        h = qml.Hamiltonian(coeffs, ops, simplify=True)
 
         return h
 
