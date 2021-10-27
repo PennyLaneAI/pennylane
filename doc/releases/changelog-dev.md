@@ -4,18 +4,86 @@
 
 <h3>New features since last release</h3>
 
+* The `insert` transform has now been added, providing a way to insert single-qubit operations into
+  a quantum circuit. The transform can apply to quantum functions, tapes, and devices.
+  [(#1795)](https://github.com/PennyLaneAI/pennylane/pull/1795)
+  
+  The following QNode can be transformed to add noise to the circuit:
+
+  ```python
+  from pennylane.transforms import insert
+    
+  dev = qml.device("default.mixed", wires=2)
+        
+  @qml.qnode(dev)
+  @insert(qml.AmplitudeDamping, 0.2, position="end")
+  def f(w, x, y, z):
+      qml.RX(w, wires=0)
+      qml.RY(x, wires=1)
+      qml.CNOT(wires=[0, 1])
+      qml.RY(y, wires=0)
+      qml.RX(z, wires=1)
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+  ```
+        
+  Executions of this circuit will differ from the noise-free value:
+  
+  ```pycon  
+  >>> f(0.9, 0.4, 0.5, 0.6)
+  tensor(0.754847, requires_grad=True)
+  >>> print(qml.draw(f)(0.9, 0.4, 0.5, 0.6))
+   0: ──RX(0.9)──╭C──RY(0.5)──AmplitudeDamping(0.2)──╭┤ ⟨Z ⊗ Z⟩ 
+   1: ──RY(0.4)──╰X──RX(0.6)──AmplitudeDamping(0.2)──╰┤ ⟨Z ⊗ Z⟩
+  ``` 
+
+* A new class has been added to store operator attributes, such as `self_inverses`,
+  and `composable_rotation`, as a list of operation names.
+  [(#1763)](https://github.com/PennyLaneAI/pennylane/pull/1763)
+
+  A number of such attributes, for the purpose of compilation transforms, can be found
+  in `ops/qubit/attributes.py`, but the class can also be used to create your own. For
+  example, we can create a new Attribute, `pauli_ops`, like so:
+
+  ```pycon
+  >>> from pennylane.ops.qubits.attributes import Attribute
+  >>> pauli_ops = Attribute(["PauliX", "PauliY", "PauliZ"])
+  ```
+  
+  We can check either a string or an Operation for inclusion in this set:
+
+  ```pycon
+  >>> qml.PauliX(0) in pauli_ops
+  True
+  >>> "Hadamard" in pauli_ops
+  False
+  ```
+  
+  We can also dynamically add operators to the sets at runtime. This is useful
+  for adding custom operations to the attributes such as `composable_rotations`
+  and ``self_inverses`` that are used in compilation transforms. For example,
+  suppose you have created a new Operation, `MyGate`, which you know to be its
+  own inverse. Adding it to the set, like so
+
+  ```pycon
+  >>> from pennylane.ops.qubits.attributes import self_inverses
+  >>> self_inverses.add("MyGate")
+  ```
+
+  will enable the gate to be considered by the `cancel_inverses` compilation
+  transform if two such gates are adjacent in a circuit.
+
 * Common tape expansion functions are now available in `qml.transforms`,
   alongside a new `create_expand_fn` function for easily creating expansion functions
   from stopping criteria.
   [(#1734)](https://github.com/PennyLaneAI/pennylane/pull/1734)
   [(#1760)](https://github.com/PennyLaneAI/pennylane/pull/1760)
 
-  `create_expand_fn` takes the default depth to which the expansion function 
+  `create_expand_fn` takes the default depth to which the expansion function
   should expand a tape, a stopping criterion, an optional device, and a docstring to be set for the
   created function.
   The stopping criterion must take a queuable object and return a boolean.
 
-* A new transform, `@qml.batch_params`, has been added, that makes QNodes 
+* A new transform, `@qml.batch_params`, has been added, that makes QNodes
   handle a batch dimension in trainable parameters.
   [(#1710)](https://github.com/PennyLaneAI/pennylane/pull/1710)
   [(#1761)](https://github.com/PennyLaneAI/pennylane/pull/1761)
@@ -167,9 +235,34 @@
   res = jax.grad(cost_fn)(params)
   ```
 
-* The unitary matrix corresponding to a quantum circuit can now be created using the new
+* The unitary matrix corresponding to a quantum circuit can now be generated using the new
   `get_unitary_matrix()` transform.
   [(#1609)](https://github.com/PennyLaneAI/pennylane/pull/1609)
+  [(#1786)](https://github.com/PennyLaneAI/pennylane/pull/1786)
+
+  This transform is fully differentiable across all supported PennyLane autodiff frameworks.
+
+  ```python
+  def circuit(theta):
+      qml.RX(theta, wires=1)
+      qml.PauliZ(wires=0)
+      qml.CNOT(wires=[0, 1])
+  ```
+
+  ```pycon
+  >>> theta = torch.tensor(0.3, requires_grad=True)
+  >>> matrix = qml.transforms.get_unitary_matrix(circuit)(theta)
+  >>> print(matrix)
+  tensor([[ 0.9888+0.0000j,  0.0000+0.0000j,  0.0000-0.1494j,  0.0000+0.0000j],
+        [ 0.0000+0.0000j,  0.0000+0.1494j,  0.0000+0.0000j, -0.9888+0.0000j],
+        [ 0.0000-0.1494j,  0.0000+0.0000j,  0.9888+0.0000j,  0.0000+0.0000j],
+        [ 0.0000+0.0000j, -0.9888+0.0000j,  0.0000+0.0000j,  0.0000+0.1494j]],
+       grad_fn=<MmBackward>)
+  >>> loss = torch.real(torch.trace(matrix))
+  >>> loss.backward()
+  >>> theta.grad
+  tensor(-0.1494)
+  ```
 
 * Arbitrary two-qubit unitaries can now be decomposed into elementary gates. This
   functionality has been incorporated into the `qml.transforms.unitary_to_rot` transform, and is
@@ -376,7 +469,7 @@
   coordinates = np.array([0.0, 0.0, -0.6614, 0.0, 0.0, 0.6614])
   H, qubits = qml.qchem.molecular_hamiltonian(["H", "H"], coordinates)
   ref_state = qml.qchem.hf_state(electrons=2, qubits)
-  
+
   dev = qml.device('default.qubit', wires=qubits)
   @qml.qnode(dev)
   def ansatz(weights):
@@ -384,9 +477,38 @@
                                   init_state=ref_state)
       return qml.expval(H)
   ```
-  
+
 
 <h3>Improvements</h3>
+
+* `qml.circuit_drawer.MPLDrawer` will now automatically rotate and resize text to fit inside
+  the rectangle created by the `box_gate` method.
+  [(#1764)](https://github.com/PennyLaneAI/pennylane/pull/1764)
+  
+* Quantum function transforms can now be applied to devices.
+  Once applied to a device, any quantum function executed on the
+  modified device will be transformed prior to execution.
+  [(#1809)](https://github.com/PennyLaneAI/pennylane/pull/1809)
+
+  ```python
+  dev = qml.device("default.mixed", wires=1)
+  dev = qml.transforms.merge_rotations()(dev)
+  
+  @qml.beta.qnode(dev)
+  def f(w, x, y, z):
+      qml.RX(w, wires=0)
+      qml.RX(x, wires=0)
+      qml.RX(y, wires=0)
+      qml.RX(z, wires=0)
+      return qml.expval(qml.PauliZ(0))
+  ```
+
+  ```pycon
+  >>> print(f(0.9, 0.4, 0.5, 0.6))
+   -0.7373937155412453
+  >>> print(qml.draw(f, expansion_strategy="device")(0.9, 0.4, 0.5, 0.6))
+   0: ──RX(2.4)──┤ ⟨Z⟩
+  ```
 
 * The `ApproxTimeEvolution` template can now be used with Hamiltonians that have
   trainable coefficients.
@@ -465,12 +587,12 @@
 
   After wrapping, `qml.BooleanFn` can be called like the wrapped function, and
   multiple instances can be manipulated and combined with the bitwise operators
-  `&`, `|` and `~`. 
+  `&`, `|` and `~`.
 
-* `qml.probs` now accepts an attribute `op` that allows to rotate the computational basis and get the 
+* `qml.probs` now accepts an attribute `op` that allows to rotate the computational basis and get the
   probabilities in the rotated basis.
   [(#1692)](https://github.com/PennyLaneAI/pennylane/pull/1692)
-  
+
 * The `qml.beta.QNode` now supports the `qml.qnn` module.
   [(#1748)](https://github.com/PennyLaneAI/pennylane/pull/1748)
 
@@ -596,6 +718,13 @@
 
 <h3>Breaking changes</h3>
 
+- The operator attributes `has_unitary_generator`, `is_composable_rotation`,
+  `is_self_inverse`, `is_symmetric_over_all_wires`, and
+  `is_symmetric_over_control_wires` have been removed as attributes from the
+  base class. They have been replaced by the sets that store the names of
+  operations with similar properties in `ops/qubit/attributes.py`.
+  [(#1763)](https://github.com/PennyLaneAI/pennylane/pull/1763)
+
 * The `template` decorator is now deprecated with a warning message and will be removed
   in release `v0.20.0`.
   [(#1794)](https://github.com/PennyLaneAI/pennylane/pull/1794)
@@ -642,6 +771,63 @@
 
 <h3>Deprecations</h3>
 
+* Allowing cost functions to be differentiated using `qml.grad` or
+  `qml.jacobian` without explicitly marking parameters as trainable is being
+  deprecated, and will be removed in the next release.
+  Please specify the `requires_grad` attribute for every argument, or specify
+  `argnum` when using `qml.grad` or `qml.jacobian`.
+  [(#1773)](https://github.com/PennyLaneAI/pennylane/pull/1773)
+
+  The following raises a warning in v0.19.0 and will raise an error in
+  v0.20.0:
+
+  ```python
+  import pennylane as qml
+
+  dev = qml.device('default.qubit', wires=1)
+
+  @qml.qnode(dev)
+  def test(x):
+      qml.RY(x, wires=[0])
+      return qml.expval(qml.PauliZ(0))
+
+  par = 0.3
+  qml.grad(test)(par)
+  ```
+
+  Preferred approaches include specifying the `requires_grad` attribute:
+
+  ```python
+  import pennylane as qml
+  from pennylane import numpy as np
+
+  dev = qml.device('default.qubit', wires=1)
+
+  @qml.qnode(dev)
+  def test(x):
+      qml.RY(x, wires=[0])
+      return qml.expval(qml.PauliZ(0))
+
+  par = np.array(0.3, requires_grad=True)
+  qml.grad(test)(par)
+  ```
+
+  Or specifying the `argnum` argument when using `qml.grad` or `qml.jacobian`:
+
+  ```python
+  import pennylane as qml
+
+  dev = qml.device('default.qubit', wires=1)
+
+  @qml.qnode(dev)
+  def test(x):
+      qml.RY(x, wires=[0])
+      return qml.expval(qml.PauliZ(0))
+
+  par = 0.3
+  qml.grad(test, argnum=0)(par)
+  ```
+
 * The `qml.fourier.spectrum` function has been renamed to `qml.fourier.circuit_spectrum`,
   in order to clearly separate the new `qnode_spectrum` function from this one.
   `qml.fourier.spectrum` is now an alias for `circuit_spectrum` but is flagged for
@@ -657,7 +843,7 @@
 * The `QNode.draw` method has been deprecated, and will be removed in an upcoming release.
   Please use the `qml.draw` transform instead.
   [(#1746)](https://github.com/PennyLaneAI/pennylane/pull/1746)
-  
+
 * The `QNode.metric_tensor` method has been deprecated, and will be removed in an upcoming release.
   Please use the `qml.metric_tensor` transform instead.
   [(#1638)](https://github.com/PennyLaneAI/pennylane/pull/1638)
@@ -715,6 +901,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-Utkarsh Azad, Akash Narayanan B, Olivia Di Matteo, Andrew Gardhouse, David Ittah, Josh Izaac, Christina Lee,
+Utkarsh Azad, Akash Narayanan B, Sam Banning, Thomas Bromley, Olivia Di Matteo, Andrew Gardhouse, David Ittah, Josh Izaac, Christina Lee,
 Romain Moyard, Carrie-Anne Rubidge, Maria Schuld, Rishabh Singh, Ingrid Strandberg, Antal Száva, Cody Wang,
 David Wierichs, Moritz Willmann.
