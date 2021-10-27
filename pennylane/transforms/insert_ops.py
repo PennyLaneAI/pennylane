@@ -51,9 +51,9 @@ def insert(
         op_args (tuple or float): the arguments fed to the operation, either as a tuple or a single
             float
         position (str): Specification of where to add the operation. Should be one of: ``"all"`` to
-            add the operation after all gates; ``"start"`` to add the operation to all wires
-            at the start of the circuit; ``"end"`` to add the operation to all wires at the
-            end of the circuit.
+            add the operation after all gates (except state preparations); ``"start"`` to add the
+            operation to all wires at the start of the circuit (but after state preparations);
+            ``"end"`` to add the operation to all wires at the end of the circuit.
 
     Returns:
         callable or QuantumTape or Device: the updated version of the input circuit or an updated
