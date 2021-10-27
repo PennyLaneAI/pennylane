@@ -119,13 +119,11 @@ class DefaultTask(QubitDevice):
         with cm:
             results = []
             if isinstance(circuits, qml.beta.QNode):
-                print(idx, circuit.operations)
                 results.append(self.client.submit(DefaultTask._execute_wrapper, self._backend, self._wires, circuit))
             elif isinstance(circuits, dask.distributed.client.Future):
                 results = self.client.submit(lambda backend, wires, tapes: [DefaultTask._execute_wrapper(backend, wires, i) for i in tapes], self._backend, self._wires, circuits)
             else:
                 for idx,circuit in enumerate(circuits):
-                    print(idx, circuit.operations)
                     results.append(self.client.submit(DefaultTask._execute_wrapper, self._backend, self._wires, circuit))
 
             if self._future:
