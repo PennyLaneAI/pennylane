@@ -154,7 +154,7 @@ def insert(
     if not isinstance(op_args, Sequence):
         op_args = [op_args]
 
-    num_preps = sum(isinstance(o, (QubitStateVector, BasisState)) for o in circuit.operations)
+    num_preps = sum(isinstance(o, qml.tape.tape.STATE_PREP_OPS) for o in circuit.operations)
 
     for i in range(num_preps):
         apply(circuit.operations[i])
