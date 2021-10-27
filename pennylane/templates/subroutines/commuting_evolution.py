@@ -99,7 +99,9 @@ class CommutingEvolution(Operation):
     par_domain = "R"
     grad_method = "A"
 
-    def __init__(self, hamiltonian, time, frequencies=None, param_shifts=None, do_queue=True, id=None):
+    def __init__(
+        self, hamiltonian, time, frequencies=None, param_shifts=None, do_queue=True, id=None
+    ):
         from pennylane.gradients.general_shift_rules import (
             get_shift_rule,
         )  # pylint: disable=import-outside-toplevel
@@ -119,6 +121,7 @@ class CommutingEvolution(Operation):
         self.hamiltonian = hamiltonian
         self.num_params = len(hamiltonian.data) + 1
         self.frequencies = frequencies
+        self.param_shifts = param_shifts
 
         super().__init__(time, *hamiltonian.data, wires=hamiltonian.wires, do_queue=do_queue, id=id)
 
@@ -137,5 +140,6 @@ class CommutingEvolution(Operation):
         hamiltonian = qml.Hamiltonian(self.parameters[1:], self.hamiltonian.ops)
         time = self.parameters[0]
         frequencies = self.frequencies
+        param_shifts = self.param_shifts
 
-        return CommutingEvolution(hamiltonian, -time, frequencies)
+        return CommutingEvolution(hamiltonian, -time, frequencies, param_shifts)

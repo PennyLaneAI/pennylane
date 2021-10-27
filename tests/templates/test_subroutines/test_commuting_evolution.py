@@ -15,9 +15,40 @@
 Tests for the CommutingEvolution template.
 """
 import pytest
-import numpy as np
-from pennylane import numpy as pnp
+from pennylane import numpy as np
 import pennylane as qml
+
+
+def test_adjoint():
+    """Tests the CommutingEvolution.adjoint method provides the correct adjoint operation."""
+
+    n_wires = 2
+    dev1 = qml.device("default.qubit", wires=n_wires)
+    dev2 = qml.device("default.qubit", wires=n_wires)
+
+    obs = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(0) @ qml.PauliX(1)]
+    coeffs = [1, -1]
+    hamiltonian = qml.Hamiltonian(coeffs, obs)
+    frequencies = [2]
+
+    @qml.qnode(dev1)
+    def adjoint_evolution_circuit(time):
+        for i in range(n_wires):
+            qml.Hadamard(i)
+        qml.CommutingEvolution(hamiltonian, time, frequencies).adjoint
+        return qml.expval(qml.PauliZ(1))
+
+    @qml.qnode(dev2)
+    def evolution_circuit(time):
+        for i in range(n_wires):
+            qml.Hadamard(i)
+        qml.CommutingEvolution(hamiltonian, time, frequencies)
+        return qml.expval(qml.PauliZ(1))
+
+    evolution_circuit(0.13)
+    adjoint_evolution_circuit(-0.13)
+
+    assert all(np.isclose(dev1.state, dev2.state))
 
 
 class TestInputs:
@@ -82,3 +113,32 @@ class TestGradients:
         grads_param_shift = [qml.gradients.param_shift(circuit)(x) for x in x_vals]
 
         assert all(np.isclose(grads_finite_diff, grads_param_shift, atol=1e-7))
+
+    def test_differentiable_hamiltonian(self):
+        """Tests correct gradients are produced when the Hamiltonian is differentiable."""
+
+        n_wires = 2
+        dev = qml.device("default.qubit", wires=n_wires)
+        obs = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(0) @ qml.PauliX(1)]
+        diff_coeffs = np.array([1.0, -1.0], requires_grad=True)
+        frequencies = [2, 4]
+
+        def parameterized_hamiltonian(coeffs):
+            return qml.Hamiltonian(coeffs, obs)
+
+        @qml.qnode(dev)
+        def circuit(time, coeffs):
+            qml.PauliX(0)
+            qml.CommutingEvolution(parameterized_hamiltonian(coeffs), time, frequencies)
+            return qml.expval(qml.PauliZ(0))
+
+        x_vals = [np.array(x, requires_grad=True) for x in np.linspace(-np.pi, np.pi, num=10)]
+
+        grads_finite_diff = [
+            np.hstack(qml.gradients.finite_diff(circuit)(x, diff_coeffs)) for x in x_vals
+        ]
+        grads_param_shift = [
+            np.hstack(qml.gradients.param_shift(circuit)(x, diff_coeffs)) for x in x_vals
+        ]
+
+        assert np.isclose(grads_finite_diff, grads_param_shift, atol=1e-6).all()
