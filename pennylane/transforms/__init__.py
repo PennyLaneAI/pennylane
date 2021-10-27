@@ -87,17 +87,6 @@ more tapes as well as a classical processing function.
     ~transforms.measurement_grouping
     ~transforms.hamiltonian_expand
 
-Transforms that act on devices
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-These transforms apply to circuits just before they are
-executed on the device.
-
-.. autosummary::
-    :toctree: api
-
-    ~transforms.insert
-
 Decorators and utility functions
 --------------------------------
 

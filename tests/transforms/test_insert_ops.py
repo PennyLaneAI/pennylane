@@ -299,15 +299,8 @@ def test_insert_dev(mocker, monkeypatch):
     dev = qml.device("default.mixed", wires=2)
     res_without_noise = qml.execute([in_tape], dev, qml.gradients.param_shift)
 
-    def patched_deepcopy(dev):
-        global spy
-        copied = deepcopy(dev)
-        spy = mocker.spy(copied, "expand_fn")
-        return copied
-
-    with monkeypatch.context() as m:
-        m.setattr(pennylane.transforms.insert_ops, "deepcopy", patched_deepcopy)
-        new_dev = insert(dev, qml.PhaseDamping, 0.4)
+    new_dev = insert(qml.PhaseDamping, 0.4)(dev)
+    spy = mocker.spy(new_dev, "default_expand_fn")
 
     res_with_noise = qml.execute([in_tape], new_dev, qml.gradients.param_shift)
     tape = spy.call_args[0][0]

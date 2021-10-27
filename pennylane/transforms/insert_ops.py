@@ -15,8 +15,6 @@
 Provides transforms for inserting operations into quantum circuits.
 """
 from collections.abc import Sequence
-from copy import deepcopy
-from functools import singledispatch
 from types import FunctionType
 from typing import Type, Union
 
@@ -27,7 +25,6 @@ from pennylane.tape.tape import STATE_PREP_OPS
 from pennylane.transforms.qfunc_transforms import qfunc_transform
 
 
-@singledispatch
 @qfunc_transform
 def insert(
     circuit: Union[callable, QuantumTape, Device],
@@ -182,7 +179,7 @@ def insert(
 
         However, noise can be easily added to the device:
 
-        >>> dev_noisy = qml.transforms.insert(dev, qml.AmplitudeDamping, 0.2)
+        >>> dev_noisy = qml.transforms.insert(qml.AmplitudeDamping, 0.2)(dev)
         >>> qnode_noisy = QNode(f, dev_noisy)
         >>> qnode_noisy(0.9, 0.4, 0.5, 0.6)
         tensor(0.72945434, requires_grad=True)
@@ -217,31 +214,3 @@ def insert(
 
     for m in circuit.measurements:
         apply(m)
-
-
-@insert.register
-def _(
-    device: Device,
-    op: Union[callable, Type[Operation]],
-    op_args: Union[tuple, float],
-    position: str = "all",
-) -> Device:
-    """Insert an operation into specified points in circuits during device execution.
-
-    After applying this transform, circuits executed on the device will have operations inserted.
-    The operations are specified by the ``op`` argument and positioned according to the
-    ``position`` argument. Only single qubit operations are permitted.
-
-    The type of ``op`` can be either a single operation or a quantum function. A quantum function
-    can be used to specify a sequence of operations acting on a single qubit.
-    """
-    new_dev = deepcopy(device)
-    original_expand_fn = new_dev.expand_fn
-
-    def new_expand_fn(circuit, max_expansion=10):
-        new_tape = insert(op, op_args, position)(circuit)
-        return original_expand_fn(new_tape, max_expansion=max_expansion)
-
-    new_dev.expand_fn = new_expand_fn
-
-    return new_dev
