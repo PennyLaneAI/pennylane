@@ -40,8 +40,8 @@ def insert(
 
     The type of ``op`` can be either a single operation or a quantum
     function acting on a single wire. A quantum function can be used
-    to specify a sequence of operations acting on a single qubit, see the usage details
-    for more information.
+    to specify a sequence of operations acting on a single qubit (see the usage details
+    for more information).
 
     Args:
         circuit (callable or QuantumTape or Device): the input circuit to be transformed, or a
