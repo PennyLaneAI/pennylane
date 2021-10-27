@@ -50,6 +50,7 @@ containing quantum operations) that are used to construct QNodes.
     ~ctrl
     ~apply_controlled_Q
     ~quantum_monte_carlo
+    ~transforms.insert
 
 Transforms for circuit compilation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -124,6 +125,7 @@ from .draw import draw
 from .hamiltonian_expand import hamiltonian_expand
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
+from .insert_ops import insert
 from .mitigate import mitigate_with_zne
 from .optimization import (
     cancel_inverses,
