@@ -445,6 +445,31 @@
 
 <h3>Improvements</h3>
 
+* Quantum function transforms can now be applied to devices.
+  Once applied to a device, any quantum function executed on the
+  modified device will be transformed prior to execution.
+  [(#1809)](https://github.com/PennyLaneAI/pennylane/pull/1809)
+
+  ```python
+  dev = qml.device("default.mixed", wires=1)
+  dev = qml.transforms.merge_rotations()(dev)
+  
+  @qml.beta.qnode(dev, expansion_strategy="device")
+  def f(w, x, y, z):
+      qml.RX(w, wires=0)
+      qml.RX(x, wires=0)
+      qml.RX(y, wires=0)
+      qml.RX(z, wires=0)
+      return qml.expval(qml.PauliZ(0))
+  ```
+
+  ```pycon
+  >>>   print(f(0.9, 0.4, 0.5, 0.6))
+   -0.7373937155412453
+  >>>   print(qml.draw(f)(0.9, 0.4, 0.5, 0.6))
+   0: ──RX(2.4)──┤ ⟨Z⟩
+  ```
+
 * The `ApproxTimeEvolution` template can now be used with Hamiltonians that have
   trainable coefficients.
   [(#1789)](https://github.com/PennyLaneAI/pennylane/pull/1789)
