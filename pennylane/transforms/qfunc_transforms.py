@@ -16,7 +16,6 @@
 from copy import deepcopy
 import functools
 import inspect
-from .mitigate import mitigate_with_zne
 from typing import Tuple
 
 import pennylane as qml
