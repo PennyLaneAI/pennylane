@@ -484,3 +484,33 @@ def test_add_remove_measurements():
     assert recovered_tape.observables[0].name == "PauliZ"
     assert recovered_tape.observables[0].wires.tolist() == [0]
     assert recovered_tape.measurements[0].return_type is Expectation
+
+
+def test_support_preparations_and_measurements():
+    """Test for the support_preparations_and_measurements function"""
+
+    @qml.single_tape_transform
+    def unsupported_transform(tape):
+        for op in tape.operations:
+            if not isinstance(op, qml.BasisState):
+                qml.apply(op)
+
+    with qml.tape.QuantumTape() as tape:
+        qml.BasisState((0,), wires=0)
+        qml.Hadamard(wires=0)
+        qml.expval(qml.PauliZ(0))
+
+    transform = qml.transforms.support_preparations_and_measurements(unsupported_transform)
+
+    out_tape = transform(tape)
+    out_tape_unsupported = unsupported_transform(tape)
+
+    compare_ops(out_tape_unsupported.operations, [qml.Hadamard(wires=0)])
+    compare_ops(tape.operations, out_tape.operations)
+
+    assert len(out_tape_unsupported.measurements) == 0
+    assert len(out_tape.measurements) == 1
+
+    assert out_tape.observables[0].name == "PauliZ"
+    assert out_tape.observables[0].wires.tolist() == [0]
+    assert out_tape.measurements[0].return_type is Expectation
