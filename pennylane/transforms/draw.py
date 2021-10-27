@@ -33,14 +33,11 @@ def draw(qnode, charset="unicode", wire_order=None, show_all_wires=False, expans
 
             - ``gradient``: The QNode will attempt to decompose
               the internal circuit such that all circuit operations are supported by the gradient
-              method. Further decompositions required for device execution are performed by the
-              device prior to circuit execution.
+              method.
 
             - ``device``: The QNode will attempt to decompose the internal circuit
               such that all circuit operations are natively supported by the device.
 
-            The ``gradient`` strategy typically results in a reduction in quantum device evaluations
-            required during optimization, at the expense of an increase in classical preprocessing.
 
     Returns:
         A function that has the same argument signature as ``qnode``. When called,
