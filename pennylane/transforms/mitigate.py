@@ -19,6 +19,7 @@ from pennylane.tape import QuantumTape
 from pennylane.transforms import batch_transform, support_preparations_and_measurements
 
 
+# pylint: disable=too-many-arguments
 @batch_transform
 def mitigate_with_zne(
     tape: QuantumTape,
