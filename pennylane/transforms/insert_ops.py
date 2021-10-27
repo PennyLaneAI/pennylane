@@ -36,7 +36,7 @@ def insert(
 
     Circuits passed through this transform will be updated to have the operation, specified by the
     ``op`` argument, added according to the positioning specified in the ``position`` argument. Only
-    single qubit operations are permitted.
+    single qubit operations are permitted to be inserted.
 
     The type of ``op`` can be either a single operation or a quantum
     function acting on a single wire. A quantum function can be used
@@ -56,7 +56,7 @@ def insert(
             end of the circuit.
 
     Returns:
-        callable or QuantumTape or device: the updated version of the input circuit or an updated
+        callable or QuantumTape or Device: the updated version of the input circuit or an updated
         device which will transform circuits before execution
 
     Raises:
@@ -110,7 +110,7 @@ def insert(
             dev = qml.device("default.qubit", wires=2)
 
             @qml.qnode(dev)
-            @insert(op, [0.2, 0.3], position="end")
+            @qml.transforms.insert(op, [0.2, 0.3], position="end")
             def f(w, x, y, z):
                 qml.RX(w, wires=0)
                 qml.RY(x, wires=1)
@@ -158,7 +158,7 @@ def insert(
 
         .. code-block:: python3
 
-            from pennylane.beta import qnode
+            from pennylane.beta import QNode
 
             dev = qml.device("default.mixed", wires=2)
 
