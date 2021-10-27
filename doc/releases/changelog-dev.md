@@ -619,6 +619,8 @@
 
 * To standardize across all optimizers, `qml.optimize.AdamOptimizer` now also uses `accumulation` (in form of `collections.namedtuple`) to keep track of running quantities. Before it used three variables `fm`, `sm` and `t`. [(#1757)](https://github.com/PennyLaneAI/pennylane/pull/1757)
 
+* AngleEmbedding now supports `batch_params` decorator. [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
+
 <h3>Breaking changes</h3>
 
 * The `template` decorator is now deprecated with a warning message and will be removed
