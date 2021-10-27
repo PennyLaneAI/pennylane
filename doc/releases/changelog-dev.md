@@ -454,7 +454,7 @@
   dev = qml.device("default.mixed", wires=1)
   dev = qml.transforms.merge_rotations()(dev)
   
-  @qml.beta.qnode(dev, expansion_strategy="device")
+  @qml.beta.qnode(dev)
   def f(w, x, y, z):
       qml.RX(w, wires=0)
       qml.RX(x, wires=0)
