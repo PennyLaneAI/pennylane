@@ -47,9 +47,11 @@
   
   Now, executing `circuit` will be mitigated:
   
+  ```pycon
   >>> circuit(w1, w2)
   array([0.19113067])
-
+  ```
+  
 * The `insert` transform has now been added, providing a way to insert single-qubit operations into
   a quantum circuit. The transform can apply to quantum functions, tapes, and devices.
   [(#1795)](https://github.com/PennyLaneAI/pennylane/pull/1795)
