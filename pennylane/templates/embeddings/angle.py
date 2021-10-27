@@ -65,7 +65,7 @@ class AngleEmbedding(Operation):
 
         features = self.parameters[0]
         if len(qml.math.shape(features)) != 1:
-            raise ValueError(f"Features must be a one-dimensional tensor; got shape {qml.math.shape(features)}.")
+            raise ValueError(f"You are passing batched arguments without using the batch_params decorator.")
 
         with qml.tape.QuantumTape() as tape:
 
