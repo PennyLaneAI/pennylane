@@ -22,6 +22,11 @@ from .mpldrawer import MPLDrawer
 from .drawable_layers import drawable_layers
 from .utils import convert_wire_order
 
+############################ Special Gate Methods #########################
+# If an operation is drawn differently than the standard box/ ctrl+box style
+# create a private method here and add it to the ``special_cases`` dictionary
+# These methods should accept arguments in the order of ``drawer, op, layer, mapped_wires``
+
 
 def _add_swap(drawer, op, layer, mapped_wires):
     drawer.SWAP(layer, mapped_wires)
@@ -55,6 +60,7 @@ special_cases = {
     ops.MultiControlledX: _add_multicontrolledx,
     ops.CZ: _add_cz,
 }
+"""Dictionary mapping special case classes to functions for drawing them."""
 
 
 def draw_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwargs):
