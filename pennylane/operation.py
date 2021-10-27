@@ -467,7 +467,7 @@ class Operator(abc.ABC):
         if self.num_params == 1:
             return op_label + f"\n({_format(params[0])})"
 
-        param_string = ",\n".join(_format(p) for p in params)
+        param_string = ",".join(_format(p) for p in params)
         return op_label + f"\n({param_string})"
 
     def __init__(self, *params, wires=None, do_queue=True, id=None):
@@ -1917,6 +1917,12 @@ def operation_derivative(operation) -> np.ndarray:
         generator = qml.math.conj(qml.math.T(generator))
 
     return 1j * prefactor * generator @ operation.matrix
+
+
+@qml.BooleanFn
+def not_tape(obj):
+    """Returns ``True`` if the object is not a quantum tape"""
+    return isinstance(obj, qml.tape.QuantumTape)
 
 
 @qml.BooleanFn

@@ -400,7 +400,6 @@ class MPLDrawer:
         box_min = min(wires)
         box_max = max(wires)
         box_center = (box_max + box_min) / 2.0
-        box_width = 2 * self._box_dx + extra_width
 
         x_loc = layer - self._box_length / 2.0 - extra_width / 2.0
         y_loc = box_min - self._box_length / 2.0
