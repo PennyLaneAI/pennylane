@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the insert transforms.
+Tests for the insert transform.
 """
 from copy import deepcopy
 
@@ -46,8 +46,8 @@ class TestInsert:
         qml.RX(0.6, wires=1)
         qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-    def test_multiwire_noisy_op(self):
-        """Tests if a ValueError is raised when multiqubit channels are requested"""
+    def test_multiwire_op(self):
+        """Tests if a ValueError is raised when multiqubit operations are requested"""
         with pytest.raises(ValueError, match="Only single-qubit operations can be inserted into"):
             insert(qml.CNOT, [])(self.tape)
 
@@ -256,7 +256,7 @@ class TestInsert:
         assert tape.measurements[0].return_type is Expectation
 
 
-def test_insert_integration():
+def test_insert_qnode():
     """Test that a QNode with the insert decorator gives a different result than one
     without."""
     dev = qml.device("default.mixed", wires=2)
@@ -285,7 +285,7 @@ def test_insert_integration():
     assert not np.isclose(f_noisy(*args), f(*args))
 
 
-def test_insert_in_dev(mocker, monkeypatch):
+def test_insert_dev(mocker, monkeypatch):
     """Test if a device transformed by the insert function does successfully add noise to
     subsequent circuit executions"""
     with QuantumTape() as in_tape:
