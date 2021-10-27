@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains tools and decorators for registering qfunc transforms."""
-# pylint: disable=too-few-public-methods
-from copy import deepcopy
 import functools
 import inspect
+
+# pylint: disable=too-few-public-methods
+from copy import deepcopy
 from typing import Tuple
 
 import pennylane as qml

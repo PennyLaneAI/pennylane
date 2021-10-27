@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """TODO"""
-from typing import Any, Dict, Sequence, Optional
-from pennylane.transforms import batch_transform, support_preparations_and_measurements
-from pennylane.tape import QuantumTape
+from typing import Any, Dict, Optional, Sequence
+
 from pennylane.math import mean
+from pennylane.tape import QuantumTape
+from pennylane.transforms import batch_transform, support_preparations_and_measurements
 
 
 @batch_transform
@@ -149,7 +150,7 @@ def mitigate_with_zne(
 
     def processing_fn(results):
         results = [
-            results[i: i + reps_per_factor] for i in range(0, len(results), reps_per_factor)
+            results[i : i + reps_per_factor] for i in range(0, len(results), reps_per_factor)
         ]  # creates nested list according to reps_per_factor
         results = mean(results, axis=1)
 
