@@ -81,7 +81,7 @@ class TestDecomposition:
 
         circuit(x=inpt)
         state = circuit.device.state.ravel()
-        assert len(set(state[len(inpt) :])) == 1
+        assert len(set(state[len(inpt):])) == 1
 
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
