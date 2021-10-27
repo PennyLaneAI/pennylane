@@ -582,7 +582,7 @@ class ThermalRelaxationError(Channel):
             K3 = np.sqrt(pr0) * np.array([[0, 1], [0, 0]])
             K4 = np.sqrt(pr1) * np.array([[0, 0], [1, 0]])
             K5 = np.sqrt(pr1) * np.array([[0, 0], [0, 1]])
-            return [K0, K1, K2, K3, K4, K5]
+            K = [K0, K1, K2, K3, K4, K5]
         else:
             e0 = p_reset * pe
             v0 = np.array([[0], [1], [0], [0]])
@@ -601,7 +601,8 @@ class ThermalRelaxationError(Channel):
             e3 = 1 - p_reset / 2 + common_term / 2
             v3 = np.array([[term3], [0], [0], [1]]) / np.sqrt(term3 ** 2 + 1 ** 2)
             K3 = np.sqrt(e3) * v3.reshape(2, 2, order="F")
-            return [K0, K1, K2, K3]
+            K = [K0, K1, K2, K3]
+        return K
 
 
 __qubit_channels__ = {
