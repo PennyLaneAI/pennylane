@@ -207,11 +207,23 @@ class MPLDrawer:
             :target: javascript:void(0);
     """
 
-    _box_dx = 0.4
+    _box_length = 0.8
+    """The width/height of the rectangle drawn by ``box_gate``"""
+
     _circ_rad = 0.3
+    """The radius of CNOT's target symbol."""
+
     _ctrl_rad = 0.1
+    """The radius of the control-on-one solid circle."""
+
     _octrl_rad = 0.1
+    """The radius of the control-on-zero open circle."""
+
     _swap_dx = 0.2
+    """Half the width/height of the SWAP X-symbol."""
+
+    _fontsize = 14
+    """The default fontsize."""
 
     def __init__(self, n_layers, n_wires, wire_options=None, figsize=None):
 
@@ -296,12 +308,12 @@ class MPLDrawer:
 
         """
         if text_options is None:
-            text_options = {}
+            text_options = {"ha": "center", "va": "center", "fontsize": self._fontsize}
 
         for wire, ii_label in enumerate(labels):
             self._ax.text(-1.5, wire, ii_label, **text_options)
 
-    def box_gate(self, layer, wires, text="", extra_width=0, box_options=None, text_options=None):
+    def box_gate(self, layer, wires, text="", box_options=None, text_options=None, **kwargs):
         """Draws a box and adds label text to its center.
 
         Args:
@@ -311,9 +323,10 @@ class MPLDrawer:
             text (str): string to print at the box's center
 
         Keyword Args:
-            extra_width (float): extra box width
             box_options=None (dict): any matplotlib keywords for the ``plt.Rectangle`` patch
             text_options=None (dict): any matplotlib keywords for the text
+            extra_width (float): extra box width
+            autosize (bool): whether to rotate and shrink text to fit within the box
 
         **Example**
 
@@ -327,6 +340,8 @@ class MPLDrawer:
             :align: center
             :width: 60%
             :target: javascript:void(0);
+
+        .. UsageDetails::
 
         This method can accept two different sets of design keywords. ``box_options`` takes
         `Rectangle keywords <https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.Rectangle.html>`_
@@ -348,13 +363,35 @@ class MPLDrawer:
             :width: 60%
             :target: javascript:void(0);
 
+        By default, text is rotated and/or shrunk to fit within the box. This behavior can be turned off
+        with the ``autosize=False`` keyword.
+
+        .. code-block:: python
+
+            drawer = MPLDrawer(n_layers=4, n_wires=2)
+
+            drawer.box_gate(layer=0, wires=0, text="A longer label")
+            drawer.box_gate(layer=0, wires=1, text="Label")
+
+            drawer.box_gate(layer=1, wires=(0,1), text="long multigate label")
+
+            drawer.box_gate(layer=3, wires=(0,1), text="Not autosized label", autosize=False)
+
+        .. figure:: ../../_static/drawer/box_gates_autosized.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
         """
+        extra_width = kwargs.get("extra_width", 0)
+        autosize = kwargs.get("autosize", True)
+
         if box_options is None:
             box_options = {}
         if "zorder" not in box_options:
             box_options["zorder"] = 2
 
-        new_text_options = {"zorder": 3, "ha": "center", "va": "center", "fontsize": "x-large"}
+        new_text_options = {"zorder": 3, "ha": "center", "va": "center", "fontsize": self._fontsize}
         if text_options is not None:
             new_text_options.update(text_options)
 
@@ -362,23 +399,76 @@ class MPLDrawer:
 
         box_min = min(wires)
         box_max = max(wires)
-        box_len = box_max - box_min
         box_center = (box_max + box_min) / 2.0
 
+        x_loc = layer - self._box_length / 2.0 - extra_width / 2.0
+        y_loc = box_min - self._box_length / 2.0
+        box_height = box_max - box_min + self._box_length
+        box_width = self._box_length + extra_width
+
         box = plt.Rectangle(
-            (layer - self._box_dx - extra_width / 2, box_min - self._box_dx),
-            2 * self._box_dx + extra_width,
-            (box_len + 2 * self._box_dx),
+            (x_loc, y_loc),
+            box_width,
+            box_height,
             **box_options,
         )
         self._ax.add_patch(box)
 
-        self._ax.text(
+        text_obj = self._ax.text(
             layer,
             box_center,
             text,
             **new_text_options,
         )
+
+        if autosize:
+            margin = 0.1
+            max_width = box_width - margin
+            # factor of 2 makes it look nicer
+            max_height = box_height - 2 * margin
+
+            w, h = self._text_dims(text_obj)
+
+            # rotate the text
+            if (box_min != box_max) and (w > max_width) and (w > h):
+                text_obj.set_rotation(90)
+                w, h = self._text_dims(text_obj)
+
+            # shrink by decreasing the font size
+            current_fontsize = text_obj.get_fontsize()
+            for s in range(int(current_fontsize), 1, -1):
+                if (w < max_width) and (h < max_height):
+                    break
+                text_obj.set_fontsize(s)
+                w, h = self._text_dims(text_obj)
+
+    def _text_dims(self, text_obj):
+        """Get width and height of text object in data coordinates.
+
+        See `this tutorial <https://matplotlib.org/stable/tutorials/advanced/transforms_tutorial.html>`_
+        for details on matplotlib coordinate systems.
+
+        If the renderered figure is resized, such as in a GUI display, rectangles and lines
+        are resized, but text stays the same size.  Text objects rely on display coordinates, that wont shrink
+        as the figure is modified.
+
+        Args:
+            text_obj (matplotlib.text.Text): the matplotlib text object
+
+        Returns:
+            width (float): the width of the text in data coordinates
+            height (float): the height of the text in data coordinates
+        """
+        renderer = self._fig.canvas.get_renderer()
+
+        # https://matplotlib.org/stable/api/_as_gen/matplotlib.artist.Artist.get_window_extent.html
+        # Quote: "Be careful when using this function, the results will not update if the artist
+        # window extent of the artist changes. "
+        # But I haven't encountered any issues yet and don't see a better solution
+        bbox = text_obj.get_window_extent(renderer)
+
+        corners = self._ax.transData.inverted().transform(bbox)
+        return abs(corners[1][0] - corners[0][0]), abs(corners[0][1] - corners[1][1])
 
     def ctrl(self, layer, wires, wires_target=None, control_values=None, options=None):
         """Add an arbitrary number of control wires
@@ -662,17 +752,17 @@ class MPLDrawer:
             lines_options["zorder"] = 3
 
         box = plt.Rectangle(
-            (layer - self._box_dx, wires - self._box_dx),
-            2 * self._box_dx,
-            2 * self._box_dx,
+            (layer - self._box_length / 2.0, wires - self._box_length / 2.0),
+            self._box_length,
+            self._box_length,
             **box_options,
         )
         self._ax.add_patch(box)
 
         arc = patches.Arc(
-            (layer, wires + self._box_dx / 8),
-            1.2 * self._box_dx,
-            1.1 * self._box_dx,
+            (layer, wires + self._box_length / 16),
+            0.6 * self._box_length,
+            0.55 * self._box_length,
             theta1=180,
             theta2=0,
             **lines_options,
@@ -680,10 +770,10 @@ class MPLDrawer:
         self._ax.add_patch(arc)
 
         # can experiment with the specific numbers to make it look decent
-        arrow_start_x = layer - 0.33 * self._box_dx
-        arrow_start_y = wires + 0.5 * self._box_dx
-        arrow_width = 0.6 * self._box_dx
-        arrow_height = -1.0 * self._box_dx
+        arrow_start_x = layer - 0.165 * self._box_length
+        arrow_start_y = wires + 0.25 * self._box_length
+        arrow_width = 0.3 * self._box_length
+        arrow_height = -0.5 * self._box_length
 
         lines_options["zorder"] += 1
         arrow = plt.arrow(
@@ -691,7 +781,7 @@ class MPLDrawer:
             arrow_start_y,
             arrow_width,
             arrow_height,
-            head_width=self._box_dx / 4,
+            head_width=self._box_length / 2.0,
             **lines_options,
         )
         self._ax.add_line(arrow)
