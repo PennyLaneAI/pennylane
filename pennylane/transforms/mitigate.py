@@ -19,16 +19,28 @@ from pennylane.math import mean
 
 
 @batch_transform
-def mitigate_with_zne(tape: QuantumTape, scale_factors: Sequence[float], folding: callable, extrapolate: callable, folding_kwargs: Optional[Dict[str, Any]]=None, extrapolate_kwargs: Optional[Dict[str, Any]]=None, reps_per_factor=1) -> float:
+def mitigate_with_zne(
+    tape: QuantumTape,
+    scale_factors: Sequence[float],
+    folding: callable,
+    extrapolate: callable,
+    folding_kwargs: Optional[Dict[str, Any]] = None,
+    extrapolate_kwargs: Optional[Dict[str, Any]] = None,
+    reps_per_factor=1,
+) -> float:
     folding_kwargs = folding_kwargs or {}
     extrapolate_kwargs = extrapolate_kwargs or {}
     folding = support_preparations_and_measurements(folding)
 
-    tapes = [[folding(tape, s, **folding_kwargs) for _ in range(reps_per_factor)] for s in scale_factors]
+    tapes = [
+        [folding(tape, s, **folding_kwargs) for _ in range(reps_per_factor)] for s in scale_factors
+    ]
     tapes = [tape_ for tapes_ in tapes for tape_ in tapes_]
 
     def processing_fn(results):
-        results = [results[i:i + reps_per_factor] for i in range(0, len(results), reps_per_factor)]
+        results = [
+            results[i: i + reps_per_factor] for i in range(0, len(results), reps_per_factor)
+        ]
         results = mean(results, axis=1)
 
         return extrapolate(scale_factors, results, **extrapolate_kwargs)
