@@ -26,7 +26,6 @@ from pennylane.transforms.qfunc_transforms import qfunc_transform, single_tape_t
 
 
 @qfunc_transform
-@single_tape_transform
 def insert(
     circuit: Union[callable, QuantumTape],
     op: Union[callable, Type[Operation]],
