@@ -84,6 +84,16 @@ def mitigate_with_zne(
     Returns:
         float: the result of evaluating the circuit when mitigated using ZNE
 
+    **Example:**
+
+    We first create a noisy device using ``default.mixed`` by adding :class:`~.AmplitudeDamping` to
+    each gate of circuits executed on the device using the :func:`~.insert` transform:
+
+    .. code-block:: python3
+
+        import pennylane as qml
+        from pennylane import numpy as np
+        from pennylane.beta import qnode
 
     """
     folding_kwargs = folding_kwargs or {}
