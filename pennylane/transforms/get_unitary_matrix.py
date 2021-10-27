@@ -15,7 +15,6 @@
 A transform to obtain the matrix representation of a quantum circuit.
 """
 from functools import wraps
-import numpy as np
 from pennylane.wires import Wires
 import pennylane as qml
 
@@ -31,7 +30,8 @@ def get_unitary_matrix(circuit, wire_order=None):
 
     Returns:
          function: Function which accepts the same arguments as the QNode or quantum function.
-         When called, this function will return the unitary matrix as a numpy array.
+         When called, this function will return the unitary matrix in the appropriate autodiff framework
+         (Autograd, TensorFlow, PyTorch, JAX) given its parameters.
 
     **Example**
 
@@ -49,7 +49,7 @@ def get_unitary_matrix(circuit, wire_order=None):
 
 
     >>> get_matrix = get_unitary_matrix(circuit)
-    >>> theta = np.pi/4
+    >>> theta = np.pi / 4
     >>> get_matrix(theta)
     array([[ 0.92387953+0.j,  0.+0.j ,  0.-0.38268343j,  0.+0.j],
        [ 0.+0.j,  -0.92387953+0.j,  0.+0.j,  0. +0.38268343j],
@@ -68,6 +68,29 @@ def get_unitary_matrix(circuit, wire_order=None):
     larger Hilbert space. For example, with the same function ``circuit`` and
     ``wire_order=["a", 0, "b", 1]`` you obtain the :math:`16\times 16` matrix for
     the operation :math:`I\otimes Z\otimes I\otimes  R_X(\theta)`.
+
+    This unitary matrix can also be used in differentiable calculations.
+    For example, consider the following cost function:
+
+    .. code-block:: python
+
+        def circuit(theta):
+            qml.RX(theta, wires=1)
+            qml.PauliZ(wires=0)
+            qml.CNOT(wires=[0, 1])
+
+        def cost(theta):
+            matrix = get_unitary_matrix(circuit)(theta)
+            return np.real(np.trace(matrix))
+
+    Since this cost function returns a real scalar as a function of ``theta``,
+    we can differentiate it:
+
+    >>> theta = np.array(0.3, requires_grad=True)
+    >>> cost(theta)
+    1.9775421558720845
+    >>> qml.grad(cost)(theta)
+    -0.14943813247359922
     """
 
     wires = wire_order
@@ -80,9 +103,14 @@ def get_unitary_matrix(circuit, wire_order=None):
             circuit.construct(args, kwargs)
             tape = circuit.qtape
 
+            # if no wire ordering is specified, take wire list from the device
+            wire_order = circuit.device.wires if wires is None else Wires(wires)
+
         elif isinstance(circuit, qml.tape.QuantumTape):
             # user passed a tape
             tape = circuit
+            # if no wire ordering is specified, take wire list from tape
+            wire_order = tape.wires if wires is None else Wires(wires)
 
         elif callable(circuit):
             # user passed something that is callable but not a tape or qnode.
@@ -91,11 +119,15 @@ def get_unitary_matrix(circuit, wire_order=None):
             if len(tape.operations) == 0:
                 raise ValueError("Function contains no quantum operation")
 
+            # if no wire ordering is specified, take wire list from tape
+            wire_order = tape.wires if wires is None else Wires(wires)
+
         else:
             raise ValueError("Input is not a tape, QNode, or quantum function")
 
-        # if no wire ordering is specified, take wire list from tape
-        wire_order = tape.wires if wires is None else Wires(wires)
+        # get interface of parameters to be used to construct the output matrix in same framework
+        params = tape.get_parameters(trainable_only=False)
+        interface = qml.math._multi_dispatch(params)  # pylint: disable=protected-access
 
         n_wires = len(wire_order)
 
@@ -104,29 +136,31 @@ def get_unitary_matrix(circuit, wire_order=None):
             raise ValueError("Wires in circuit are inconsistent with those in wire_order")
 
         # initialize the unitary matrix
-        unitary_matrix = np.eye(2 ** n_wires)
+        unitary_matrix = qml.math.eye(2 ** n_wires, like=interface)
 
-        with qml.tape.Unwrap(tape):
-            for op in tape.operations:
-                # operator wire position relative to wire ordering
-                op_wire_pos = wire_order.indices(op.wires)
+        for op in tape.operations:
+            # operator wire position relative to wire ordering
+            op_wire_pos = wire_order.indices(op.wires)
 
-                I = np.reshape(np.eye(2 ** n_wires), [2] * n_wires * 2)
-                axes = (np.arange(len(op.wires), 2 * len(op.wires)), op_wire_pos)
+            I = qml.math.reshape(qml.math.eye(2 ** n_wires, like=interface), [2] * n_wires * 2)
+            axes = (list(range(len(op.wires), 2 * len(op.wires))), op_wire_pos)
 
-                # reshape op.matrix
-                U_op_reshaped = np.reshape(op.matrix, [2] * len(op.wires) * 2)
-                U_tensordot = np.tensordot(U_op_reshaped, I, axes=axes)
+            # reshape op.matrix
+            op_matrix_interface = qml.math.convert_like(op.matrix, I)
+            U_op_reshaped = qml.math.reshape(op_matrix_interface, [2] * len(op.wires) * 2)
+            U_tensordot = qml.math.tensordot(
+                U_op_reshaped, qml.math.cast_like(I, U_op_reshaped), axes
+            )
 
-                unused_idxs = [idx for idx in range(n_wires) if idx not in op_wire_pos]
-                # permute matrix axes to match wire ordering
-                perm = op_wire_pos + unused_idxs
-                U = np.moveaxis(U_tensordot, wire_order.indices(wire_order), perm)
+            unused_idxs = [idx for idx in range(n_wires) if idx not in op_wire_pos]
+            # permute matrix axes to match wire ordering
+            perm = op_wire_pos + unused_idxs
+            U = qml.math.moveaxis(U_tensordot, wire_order.indices(wire_order), perm)
 
-                U = np.reshape(U, ((2 ** n_wires, 2 ** n_wires)))
+            U = qml.math.reshape(U, ((2 ** n_wires, 2 ** n_wires)))
 
-                # add to total matrix if there are multiple ops
-                unitary_matrix = np.dot(U, unitary_matrix)
+            # add to total matrix if there are multiple ops
+            unitary_matrix = qml.math.dot(U, unitary_matrix)
 
         return unitary_matrix
 
