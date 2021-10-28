@@ -154,7 +154,7 @@ def mitigate_with_zne(
             results[i : i + reps_per_factor] for i in range(0, len(results), reps_per_factor)
         ]  # creates nested list according to reps_per_factor
         results = mean(results, axis=1)
-
-        return extrapolate(scale_factors, results, **extrapolate_kwargs)
+        extrapolated = extrapolate(scale_factors, results, **extrapolate_kwargs)
+        return extrapolated[0] if len(extrapolated) == 1 else extrapolated
 
     return tapes, processing_fn
