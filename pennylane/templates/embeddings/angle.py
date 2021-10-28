@@ -58,7 +58,7 @@ class AngleEmbedding(Operation):
         self.rotation = ROT[rotation]
 
         shape = qml.math.shape(features)[-1:]
-   
+
         n_features = shape[0]
         if n_features > len(wires):
             raise ValueError(
