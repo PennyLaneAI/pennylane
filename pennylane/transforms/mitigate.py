@@ -14,7 +14,8 @@
 """Provides transforms for mitigating quantum circuits."""
 from typing import Any, Dict, Optional, Sequence, Tuple
 
-from pennylane import apply, single_tape_transform
+from pennylane import apply
+from pennylane.transforms import single_tape_transform
 from pennylane.math import mean
 from pennylane.measure import MeasurementProcess
 from pennylane.operation import Operation
