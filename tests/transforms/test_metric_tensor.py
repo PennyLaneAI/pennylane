@@ -927,7 +927,9 @@ class TestDifferentiability:
 
         weights_t = tf.Variable(self.weights)
         with tf.GradientTape() as tape:
-            loss_diag = tf.linalg.diag_part(qml.metric_tensor(qnode, approx="block-diag")(weights_t))
+            loss_diag = tf.linalg.diag_part(
+                qml.metric_tensor(qnode, approx="block-diag")(weights_t)
+            )
         jac = tape.jacobian(loss_diag, weights_t)
         assert np.allclose(jac, self.expected_diag, atol=tol, rtol=0)
 
@@ -958,6 +960,7 @@ class TestDifferentiability:
         expected_full = qml.jacobian(_cost_full)(self.weights)
         assert np.allclose(_cost_full(self.weights), cost_full(weights_t).detach().numpy())
         assert np.allclose(expected_full, jac)
+
 
 def test_generator_no_expval(monkeypatch):
     """Test exception is raised if subcircuit contains an
