@@ -132,11 +132,14 @@ def mitigate_with_zne(
         module.
 
         This transform also requires a callable to be passed to the ``extrapolate`` argument that
-        returns the extrapolated value. Its function should be
+        returns the extrapolated value(s). Its function should be
         ``fn(scale_factors, results, **extrapolate_kwargs)`` where ``scale_factors`` are the ZNE
         scale factors, ``results`` are the execution results of the circuit at the specified scale
-        factors, and ``extrapolate_kwargs`` are optional keyword arguments. Extrapolation
-        functionality is available using ``extrapolate`` methods of the factories in the
+        factors, and ``extrapolate_kwargs`` are optional keyword arguments. The shape of ``results``
+        will be ``(len(scale_factors), num_returns)``, where ``num_returns`` is the number of
+        returns in the mitigated QNode. The output of ``extrapolate`` should be a flat array of
+        length ``num_returns``. Extrapolation functionality is available using ``extrapolate``
+        methods of the factories in the
         `mitiq.zne.inference <https://mitiq.readthedocs.io/en/stable/apidoc.html#module-mitiq.zne.inference>`__
         module (version 0.11.0 and above).
 
