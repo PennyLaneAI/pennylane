@@ -139,6 +139,11 @@ def mitigate_with_zne(
         functionality is available using ``extrapolate`` methods of the factories in the
         `mitiq.zne.inference <https://mitiq.readthedocs.io/en/stable/apidoc.html#module-mitiq.zne.inference>`__
         module (version 0.11.0 and above).
+
+        .. warning::
+
+            Calculating the gradient of mitigated circuits is not supported when using the Mitiq
+            package as a backend for folding or extrapolation.
     """
     folding_kwargs = folding_kwargs or {}
     extrapolate_kwargs = extrapolate_kwargs or {}
