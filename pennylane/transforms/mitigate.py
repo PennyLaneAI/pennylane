@@ -150,12 +150,16 @@ def mitigate_with_zne(
     """
     folding_kwargs = folding_kwargs or {}
     extrapolate_kwargs = extrapolate_kwargs or {}
-    folding = support_preparations_and_measurements(folding)
+
+    tape, in_preps = _remove_preps(tape)
+    tape = _remove_measurements(tape)
 
     tapes = [
         [folding(tape, s, **folding_kwargs) for _ in range(reps_per_factor)] for s in scale_factors
     ]
     tapes = [tape_ for tapes_ in tapes for tape_ in tapes_]  # flattens nested list
+    tapes = [_add_measurements(tape_, tape.measurements) for tape_ in tapes]
+    tapes = [_add_preps(tape_, in_preps) for tape_ in tapes]
 
     def processing_fn(results):
         results = [
@@ -168,7 +172,13 @@ def mitigate_with_zne(
     return tapes, processing_fn
 
 
-def _remove_preps(tape: qml.tape.QuantumTape) -> Tuple[qml.tape.QuantumTape, Tuple[Operation]]:
+from pennylane.operation import Operation
+from typing import Tuple
+from pennylane import apply
+from pennylane.tape.tape import STATE_PREP_OPS
+
+
+def _remove_preps(tape: QuantumTape) -> Tuple[QuantumTape, Tuple[Operation]]:
     """Removes state preparations from an input tape.
 
     Args:
@@ -178,19 +188,22 @@ def _remove_preps(tape: qml.tape.QuantumTape) -> Tuple[qml.tape.QuantumTape, Tup
         Tuple[QuantumTape, Tuple[Operation]]: the transformed tape with the state preparations
         removed and an ordered tuple detailing the removed preparations
     """
-    num_preps = sum(isinstance(o, (QubitStateVector, BasisState)) for o in tape.operations)
+    num_preps = sum(isinstance(o, STATE_PREP_OPS) for o in tape.operations)
 
-    with qml.tape.QuantumTape() as new_tape:
+    with QuantumTape() as new_tape:
         for op in tape.operations[num_preps:]:
-            qml.apply(op)
+            apply(op)
         for op in tape.measurements:
-            qml.apply(op)
+            apply(op)
 
     return new_tape, tape.operations[:num_preps]
 
 
+from pennylane import single_tape_transform
+
+
 @single_tape_transform
-def _add_preps(tape: qml.tape.QuantumTape, preps: Tuple[Operation]) -> qml.tape.QuantumTape:
+def _add_preps(tape: QuantumTape, preps: Tuple[Operation]) -> QuantumTape:
     """Add state preparations to an input tape.
 
     Args:
@@ -201,15 +214,15 @@ def _add_preps(tape: qml.tape.QuantumTape, preps: Tuple[Operation]) -> qml.tape.
         QuantumTape: the transformed tape with the state preparations added
     """
     for prep in preps:
-        qml.apply(prep)
+        apply(prep)
     for op in tape.operations:
-        qml.apply(op)
+        apply(op)
     for m in tape.measurements:
-        qml.apply(m)
+        apply(m)
 
 
 @single_tape_transform
-def _remove_measurements(tape: qml.tape.QuantumTape) -> qml.tape.QuantumTape:
+def _remove_measurements(tape: QuantumTape) -> QuantumTape:
     """Removes measurements from an input tape.
 
     Args:
@@ -219,13 +232,15 @@ def _remove_measurements(tape: qml.tape.QuantumTape) -> qml.tape.QuantumTape:
         QuantumTape: the transformed tape with the measurements removed
     """
     for op in tape.operations:
-        qml.apply(op)
+        apply(op)
 
+
+from pennylane.measure import MeasurementProcess
 
 @single_tape_transform
 def _add_measurements(
-    tape: qml.tape.QuantumTape, measurements: Tuple[MeasurementProcess]
-) -> qml.tape.QuantumTape:
+    tape: QuantumTape, measurements: Tuple[MeasurementProcess]
+) -> QuantumTape:
     """Add measurements to an input tape.
 
     Args:
@@ -236,83 +251,6 @@ def _add_measurements(
         QuantumTape: the transformed tape with the measurements added
     """
     for op in tape.operations:
-        qml.apply(op)
+        apply(op)
     for m in measurements:
-        qml.apply(m)
-
-
-
-
-
-# def support_preparations_and_measurements(transform: callable) -> callable:
-#     """For supporting single-tape transforms which are not compatible with transforming tapes that
-#     include state preparations or measurements.
-#
-#     Args:
-#         transform (callable): the single-tape transform that doesn't support state preparations or
-#             measurements
-#
-#     Returns:
-#         callable: a new transform that leaves state preparations and measurements unchanged but
-#         otherwise transforms according to the input ``transform``
-#
-#     **Example:**
-#
-#     The following transform does not properly keep track of measurements:
-#
-#     .. code-block:: python3
-#
-#         @qml.single_tape_transform
-#         def remove_rxs(tape):
-#             for op in tape.operations:
-#                 if not isinstance(op, qml.RX):
-#                     qml.apply(op)
-#
-#     Consider the following tape, which includes a measurement:
-#
-#     .. code-block:: python3
-#
-#         with qml.tape.QuantumTape() as tape:
-#             qml.Hadamard(wires=0)
-#             qml.RX(0.4, wires=0)
-#             qml.RY(0.5, wires=0)
-#             qml.expval(qml.PauliZ(0))
-#
-#     The ``remove_rxs`` transform loses track of the measurement:
-#
-#     >>> print(remove_rxs(tape).draw())
-#      0: ──H──RY(0.5)──┤
-#
-#     This can be fixed using:
-#
-#     >>> remove_rxs_fixed = support_preparations_and_measurements(remove_rxs)
-#     >>> print(remove_rxs_fixed(tape).draw())
-#      0: ──H──RY(0.5)──┤ ⟨Z⟩
-#     """
-#
-#     @functools.wraps(transform)
-#     def wrapper(tape: qml.tape.QuantumTape, *args, **kwargs) -> qml.tape.QuantumTape:
-#         """Wrapper for a single-tape transform that does not support state preparations and
-#         measurements.
-#
-#         Args:
-#             tape (QuantumTape): input quantum tape
-#             *args: remaining arguments passed to the transform
-#             **kwargs: keyword arguments passed to the transform
-#
-#         Returns:
-#             callable: a wrapped version of the transform that supports state preparations and
-#             measurements
-#         """
-#         meas = tape.measurements
-#
-#         tape = tape.expand(stop_at=lambda op: not isinstance(op, qml.tape.QuantumTape))
-#
-#         tape, preps = _remove_preps(tape)
-#         tape = _remove_measurements(tape)
-#         tape = transform(tape, *args, **kwargs)
-#         tape = _add_measurements(tape, meas)
-#         tape = _add_preps(tape, preps)
-#         return tape
-#
-#     return wrapper
+        apply(m)
