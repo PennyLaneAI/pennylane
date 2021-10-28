@@ -16,7 +16,7 @@ Tests for mitigation transforms.
 """
 from packaging import version
 import pennylane as qml
-import numpy as np
+from pennylane import numpy as np
 from pennylane.tape import QuantumTape
 from pennylane.transforms import mitigate_with_zne
 import pytest
@@ -130,6 +130,7 @@ def skip_if_no_mitiq_support():
 @pytest.mark.usefixtures("skip_if_no_mitiq_support")
 class TestMitiqIntegration:
     """Tests if the mitigate_with_zne transform is compatible with using mitiq as a backend"""
+    from mitiq.interface.conversions import CircuitConversionError
 
     def test_multiple_returns(self):
         """Tests if the expected shape is returned when mitigating a circuit with two returns"""
@@ -276,3 +277,31 @@ class TestMitiqIntegration:
 
         assert np.allclose(exact_val, [1, 1])
         assert all(mitigated_err < noisy_err)
+
+    @pytest.mark.xfail(raises=CircuitConversionError, reason="Using external tape transforms breaks differentiability")
+    def test_grad(self):
+        """Tests if the gradient is calculated successfully."""
+        from mitiq.zne.scaling import fold_global
+        from mitiq.zne.inference import RichardsonFactory
+
+        noise_strength = 0.05
+
+        dev_noise_free = qml.device("default.mixed", wires=2)
+        dev = qml.transforms.insert(qml.AmplitudeDamping, noise_strength)(dev_noise_free)
+
+        n_wires = 2
+        n_layers = 2
+
+        shapes = qml.templates.SimplifiedTwoDesign.shape(n_wires, n_layers)
+        np.random.seed(0)
+        w1, w2 = [np.random.random(s, requires_grad=True) for s in shapes]
+
+        @qml.transforms.mitigate_with_zne([1, 2, 3], fold_global, RichardsonFactory.extrapolate)
+        @qnode(dev)
+        def mitigated_circuit(w1, w2):
+            qml.templates.SimplifiedTwoDesign(w1, w2, wires=range(2))
+            return qml.expval(qml.PauliZ(0))
+
+        g = qml.grad(mitigated_circuit)(w1, w2)
+        for g_ in g:
+            assert not np.allclose(g_, 0)
