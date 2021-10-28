@@ -27,36 +27,37 @@ from pennylane.transforms.qfunc_transforms import qfunc_transform
 
 @qfunc_transform
 def insert(
-    circuit: Union[callable, QuantumTape],
+    circuit: Union[callable, QuantumTape, Device],
     op: Union[callable, Type[Operation]],
     op_args: Union[tuple, float],
     position: str = "all",
 ) -> Union[callable, QuantumTape]:
     """Insert an operation into specified points in an input circuit.
 
-    The circuit will be updated to have the operation, specified by the ``op`` argument, added
-    according to the positioning specified in the ``position`` argument. Only single qubit
-    operations are permitted.
+    Circuits passed through this transform will be updated to have the operation, specified by the
+    ``op`` argument, added according to the positioning specified in the ``position`` argument. Only
+    single qubit operations are permitted to be inserted.
 
     The type of ``op`` can be either a single operation or a quantum
     function acting on a single wire. A quantum function can be used
-    to specify a sequence of operations acting on a single qubit, see the usage details
-    for more information.
+    to specify a sequence of operations acting on a single qubit (see the usage details
+    for more information).
 
     Args:
         circuit (callable or QuantumTape or Device): the input circuit to be transformed, or a
-            device TODO
+            device
         op (callable or Type[Operation]): the single-qubit operation, or sequence of operations
             acting on a single qubit, to be inserted into the circuit
         op_args (tuple or float): the arguments fed to the operation, either as a tuple or a single
             float
         position (str): Specification of where to add the operation. Should be one of: ``"all"`` to
-            add the operation after all gates; ``"start"`` to add the operation to all wires
-            at the start of the circuit; ``"end"`` to add the operation to all wires at the
-            end of the circuit.
+            add the operation after all gates (except state preparations); ``"start"`` to add the
+            operation to all wires at the start of the circuit (but after state preparations);
+            ``"end"`` to add the operation to all wires at the end of the circuit.
 
     Returns:
-        callable or QuantumTape: the updated version of the input circuit
+        callable or QuantumTape or Device: the updated version of the input circuit or an updated
+        device which will transform circuits before execution
 
     Raises:
         ValueError: if a single operation acting on multiple wires is passed to ``op``
@@ -109,7 +110,7 @@ def insert(
             dev = qml.device("default.qubit", wires=2)
 
             @qml.qnode(dev)
-            @insert(op, [0.2, 0.3], position="end")
+            @qml.transforms.insert(op, [0.2, 0.3], position="end")
             def f(w, x, y, z):
                 qml.RX(w, wires=0)
                 qml.RY(x, wires=1)
@@ -151,14 +152,13 @@ def insert(
         .. warning::
 
             Using this transform on devices is a beta feature. Use the :class:`pennylane.beta.QNode`
-            decorator to create compatible QNodes and use :func:`~.execute` to execute quantum
-            tapes.
+            decorator to create compatible QNodes.
 
         Consider the following QNode:
 
         .. code-block:: python3
 
-            from pennylane.beta import qnode
+            from pennylane.beta import QNode
 
             dev = qml.device("default.mixed", wires=2)
 
