@@ -428,7 +428,7 @@ def frobenius_inner_product(A, B, normalize=False):
     return inner_product
 
 
-def scatter_element_add(tensor, index, value):
+def scatter_element_add(tensor, index, value, like=None):
     """In-place addition of a multidimensional value over various
     indices of a tensor.
 
@@ -436,6 +436,7 @@ def scatter_element_add(tensor, index, value):
         tensor (tensor_like[float]): Tensor to add the value to
         index (tuple or list[tuple]): Indices to which to add the value
         value (float or tensor_like[float]): Value to add to ``tensor``
+        like (str):
     Returns:
         tensor_like[float]: The tensor with the value added at the given indices.
 
@@ -474,33 +475,7 @@ def scatter_element_add(tensor, index, value):
     """
 
     interface = _multi_dispatch([tensor, value])
-    # tensor, value = np.coerce([tensor, value], like=interface)
-    if interface == "tensorflow":
-        tf = import_module("tensorflow")
-        indices = tf.expand_dims(index, 0)
-        value = tf.cast(tf.expand_dims(value, 0), tensor.dtype)
-        return tf.tensor_scatter_nd_add(tensor, indices, value)
-
-    if interface == "torch":
-        if tensor.is_leaf:
-            tensor = tensor.clone()
-        tensor[tuple(index)] += value
-        return tensor
-
-    if interface == "autograd":
-        qml = import_module("pennylane")
-        size = tensor.size
-        flat_index = qml.numpy.ravel_multi_index(index, tensor.shape)
-        t = [0] * size
-        t[flat_index] = value
-        return tensor + qml.numpy.array(t).reshape(tensor.shape)
-
-    if interface == "jax":
-        jax = import_module("jax")
-        return jax.ops.index_add(tensor, tuple(index), value)
-
-    tensor[tuple(index)] += value
-    return tensor
+    return np.scatter_element_add(tensor, index, value, like=interface)
 
 
 def unwrap(values, max_depth=None):
