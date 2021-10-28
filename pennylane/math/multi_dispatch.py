@@ -449,7 +449,7 @@ def scatter_element_add(tensor, index, value, like=None):
             [ 0.4000,  0.5000, -2.5000]])
 
     If multiple indices are given, in the form of a list of tuples, the
-    ``k``th tuple is interpreted to contain the ``k``th entry of all indices:
+    ``k`` th tuple is interpreted to contain the ``k`` th entry of all indices:
 
     >>> indices = [(1, 0), (2, 1)] # This will modify the entries (1, 2) and (0, 1)
     >>> values = torch.tensor([10, 20])
