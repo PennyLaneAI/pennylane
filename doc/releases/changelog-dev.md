@@ -4,6 +4,93 @@
 
 <h3>New features since last release</h3>
 
+* A differentiable Hartree-Fock (HF) solver and functions to compute a differentiable PennyLane
+  Hamiltonian from the results of the solver have been added.
+  [(#1610)](https://github.com/PennyLaneAI/pennylane/pull/1610)
+
+  The HF solver computes the integrals over basis functions, constructs the relevant matrices and
+  performs self-consistent-field iterations to obtain a set of optimized molecular orbital
+  coefficients. These coefficients and the computed integrals over basis functions are used to
+  construct the one- and two-body electron integrals in the molecular orbital basis which can be
+  used to generate a differentiable second-quantized Hamiltonian in the fermionic and qubit basis.
+
+  The following code shows the construction of the Hamiltonian for the hydrogen molecule where the
+  geometry of the molecule and the basis set parameters are all differentiable.
+
+  ```python
+  import pennylane as qml
+  from pennylane import numpy as np
+  
+  symbols = ["H", "H"]
+  geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]], requires_grad=True)
+  alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
+                    [3.42525091, 0.62391373, 0.1688554]], requires_grad = True)
+  coeff = np.array([[0.15432897, 0.53532814, 0.44463454],
+                    [0.15432897, 0.53532814, 0.44463454]], requires_grad = True)
+
+  mol = qml.hf.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+  args = [geometry, alpha, coeff]
+  
+  hamiltonian = qml.hf.generate_hamiltonian(mol)(*args)
+  ```
+
+  The generated hamiltonian can be used in a circuit where the molecular geometry, the basis set
+  parameters and the circuit parameters are optimized simultaneously.
+
+  ```python
+  import autograd
+  
+  params = [np.array([0.0], requires_grad=True)]
+  dev = qml.device("default.qubit", wires=4)
+  
+  def generate_circuit(mol):
+      @qml.qnode(dev)
+      def circuit(*args):
+          qml.PauliX(0)
+          qml.PauliX(1)
+          qml.DoubleExcitation(*args[0][0], wires=[0, 1, 2, 3])
+          return qml.expval(hf.generate_hamiltonian(mol)(*args[1:]))
+      return circuit
+  
+  for n in range(10):
+  
+      mol = hf.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+      args_ = [params, *args]
+  
+      g_params = autograd.grad(generate_circuit(mol), argnum = 0)(*args_)
+      params = params - 0.1 * g_params[0]
+  
+      forces = autograd.grad(generate_circuit(mol), argnum = 1)(*args_)
+      geometry = geometry - 0.5 * forces
+  
+      g_alpha = autograd.grad(generate_circuit(mol), argnum = 2)(*args_)
+      alpha = alpha - 0.1 * g_alpha
+  
+      g_coeff = autograd.grad(generate_circuit(mol), argnum = 3)(*args_)
+      coeff = coeff - 0.1 * g_coeff
+  ```
+
+  The components of the HF solver can also be differentiated individually. For instance, the overlap
+  integral can be differentiated with respect to the basis set parameters as
+
+  ```python
+  symbols = ["H", "H"]
+  geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]], requires_grad=False)
+  alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
+                    [3.42525091, 0.62391373, 0.1688554]], requires_grad = True)
+  coeff = np.array([[0.15432897, 0.53532814, 0.44463454],
+                    [0.15432897, 0.53532814, 0.44463454]], requires_grad = True)
+
+  mol = qml.hf.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+  args = [alpha, coeff]
+  
+  a = mol.basis_set[0]
+  b = mol.basis_set[1]
+
+  g_alpha = autograd.grad(qml.hf.generate_overlap(a, b), argnum = 0)(*args)
+  g_coeff = autograd.grad(qml.hf.generate_overlap(a, b), argnum = 1)(*args)
+  ```
+
 * The `insert` transform has now been added, providing a way to insert single-qubit operations into
   a quantum circuit. The transform can apply to quantum functions, tapes, and devices.
   [(#1795)](https://github.com/PennyLaneAI/pennylane/pull/1795)
