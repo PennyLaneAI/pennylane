@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+import numpy as onp
 
 
 np.random.seed(42)
@@ -55,6 +56,17 @@ class TestGradientUnivar:
         correct_grad = 4 * x_vals + 3
 
         assert np.allclose(auto_grad, correct_grad, atol=tol, rtol=0)
+
+    def test_sin_warns_grad(self, tol):
+        """Test that a warning is raised if a positional argument without the
+        requires_grad attribute set is passed when differentiating a classical
+        scalar valued function."""
+        x_vals = np.linspace(-10, 10, 16, endpoint=False)
+
+        with pytest.warns(
+            UserWarning, match="inputs have to explicitly specify requires_grad=True"
+        ):
+            qml.grad(np.sin)(0.0)
 
 
 class TestGradientMultiVar:
@@ -98,6 +110,16 @@ class TestGradientMultiVar:
         correct_grad = grad_multi_var(x_vec)
 
         assert np.allclose(auto_grad, correct_grad, atol=tol, rtol=0)
+
+    def test_sin_warns_jacobian(self, tol):
+        """Test that a warning is raised if a positional argument without the
+        requires_grad attribute set is passed when differentiating a classical
+        vector valued function."""
+        arr = onp.array([0.1, 0.2, 0.3])
+        with pytest.warns(
+            UserWarning, match="inputs have to explicitly specify requires_grad=True"
+        ):
+            qml.jacobian(np.sin)(arr)
 
 
 class TestGradientMultiargs:
