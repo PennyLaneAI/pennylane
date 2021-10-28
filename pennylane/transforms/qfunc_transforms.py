@@ -473,6 +473,8 @@ def support_preparations_and_measurements(transform: callable) -> callable:
         """
         meas = tape.measurements
 
+        tape = tape.expand(stop_at=lambda op: not isinstance(op, qml.tape.QuantumTape))
+
         tape, preps = _remove_preps(tape)
         tape = _remove_measurements(tape)
         tape = transform(tape, *args, **kwargs)

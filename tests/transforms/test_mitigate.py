@@ -20,7 +20,7 @@ import numpy as np
 from pennylane.tape import QuantumTape
 from pennylane.transforms import mitigate_with_zne
 import pytest
-from pennylane.beta import qnode
+from pennylane.beta import qnode, QNode
 
 with QuantumTape() as tape:
     qml.BasisState([1], wires=0)
@@ -233,3 +233,46 @@ class TestMitiqIntegration:
 
         assert res_mitigated.shape == res_ideal.shape
         assert not np.allclose(res_mitigated, res_ideal)
+
+    def test_integration(self):
+        """Test if the error of the mitigated result is less than the error of the unmitigated
+        result for a circuit with known expectation values"""
+        from mitiq.zne.scaling import fold_global
+        from mitiq.zne.inference import RichardsonFactory
+
+        noise_strength = 0.05
+
+        dev_noise_free = qml.device("default.mixed", wires=2)
+        dev = qml.transforms.insert(qml.AmplitudeDamping, noise_strength)(dev_noise_free)
+
+        n_wires = 2
+        n_layers = 2
+
+        shapes = qml.templates.SimplifiedTwoDesign.shape(n_wires, n_layers)
+        np.random.seed(0)
+        w1, w2 = [np.random.random(s) for s in shapes]
+
+        def circuit(w1, w2):
+            qml.templates.SimplifiedTwoDesign(w1, w2, wires=range(2))
+            qml.adjoint(qml.templates.SimplifiedTwoDesign)(w1, w2, wires=range(2))
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+        exact_qnode = QNode(circuit, dev_noise_free)
+        noisy_qnode = QNode(circuit, dev)
+
+        @qml.transforms.mitigate_with_zne([1, 2, 3], fold_global, RichardsonFactory.extrapolate)
+        @qnode(dev)
+        def mitigated_qnode(w1, w2):
+            qml.templates.SimplifiedTwoDesign(w1, w2, wires=range(2))
+            qml.adjoint(qml.templates.SimplifiedTwoDesign)(w1, w2, wires=range(2))
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+        exact_val = exact_qnode(w1, w2)
+        noisy_val = noisy_qnode(w1, w2)
+        mitigated_val = mitigated_qnode(w1, w2)
+
+        mitigated_err = np.abs(exact_val - mitigated_val)
+        noisy_err = np.abs(exact_val - noisy_val)
+
+        assert np.allclose(exact_val, [1, 1])
+        assert all(mitigated_err < noisy_err)
