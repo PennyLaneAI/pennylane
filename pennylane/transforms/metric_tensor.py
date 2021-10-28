@@ -343,7 +343,7 @@ def _metric_tensor_cov_matrix(tape, diag_approx):
     return metric_tensor_tapes, processing_fn, obs_list, coeffs_list
 
 
-@functools.lru_cache
+@functools.lru_cache()
 def _get_gen_op(op, allow_nonunitary, aux_wire):
     """Get the controlled-generator operation for a given operation.
 
