@@ -854,6 +854,10 @@
 
 <h3>Bug fixes</h3>
 
+* The helper function `qml.math.block_diag` now is entirely differentiable when using
+  Autograd. Previously only indexed entries could be differentiated.
+  [(#1816)](https://github.com/PennyLaneAI/pennylane/pull/1816)
+  
 * Fixes a bug where the GPU cannot be used with `qml.qnn.TorchLayer`.
   [(#1705)](https://github.com/PennyLaneAI/pennylane/pull/1705)
 
