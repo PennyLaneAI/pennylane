@@ -548,6 +548,9 @@
   eventually override the `RepresentationResolver` class.
   [(#1678)](https://github.com/PennyLaneAI/pennylane/pull/1678)
 
+* The operation `label` method now supports string variables.
+  [(#1815)](https://github.com/PennyLaneAI/pennylane/pull/1815)
+
 * It is now possible to draw QNodes that have been transformed by a 'batch transform'; that is,
   a transform that maps a single QNode into multiple circuits under the hood. Examples of
   batch transforms include `@qml.metric_tensor` and `@qml.gradients`.
@@ -857,6 +860,10 @@
 
 <h3>Bug fixes</h3>
 
+* The helper function `qml.math.block_diag` now is entirely differentiable when using
+  Autograd. Previously only indexed entries could be differentiated.
+  [(#1816)](https://github.com/PennyLaneAI/pennylane/pull/1816)
+  
 * Fixes a bug where the GPU cannot be used with `qml.qnn.TorchLayer`.
   [(#1705)](https://github.com/PennyLaneAI/pennylane/pull/1705)
 
