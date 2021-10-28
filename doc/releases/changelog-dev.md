@@ -896,8 +896,16 @@
   Please use the `qml.metric_tensor` transform instead.
   [(#1638)](https://github.com/PennyLaneAI/pennylane/pull/1638)
 
+* The `pad` parameter of the `qml.AmplitudeEmbedding` template has been removed.
+  It has instead been renamed to the `pad_with` parameter.
+  [(#1805)](https://github.com/PennyLaneAI/pennylane/pull/1805)
+
 <h3>Bug fixes</h3>
 
+* The helper function `qml.math.block_diag` now is entirely differentiable when using
+  Autograd. Previously only indexed entries could be differentiated.
+  [(#1816)](https://github.com/PennyLaneAI/pennylane/pull/1816)
+  
 * Fixes a bug where the GPU cannot be used with `qml.qnn.TorchLayer`.
   [(#1705)](https://github.com/PennyLaneAI/pennylane/pull/1705)
 
@@ -949,6 +957,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-Utkarsh Azad, Akash Narayanan B, Sam Banning, Thomas Bromley, Olivia Di Matteo, Andrew Gardhouse, David Ittah, Josh Izaac, Christina Lee,
-Romain Moyard, Carrie-Anne Rubidge, Maria Schuld, Rishabh Singh, Ingrid Strandberg, Antal Száva, Cody Wang,
-David Wierichs, Moritz Willmann.
+Utkarsh Azad, Akash Narayanan B, Sam Banning, Thomas Bromley, Olivia Di Matteo, Andrew Gardhouse, David Ittah, 
+Josh Izaac, Christina Lee, Romain Moyard, Carrie-Anne Rubidge, Maria Schuld, Rishabh Singh, Jay Soni, Ingrid Strandberg, 
+Antal Száva, Cody Wang, David Wierichs, Moritz Willmann.
