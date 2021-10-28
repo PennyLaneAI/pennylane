@@ -156,11 +156,12 @@ def mitigate_with_zne(
     folding_kwargs = folding_kwargs or {}
     extrapolate_kwargs = extrapolate_kwargs or {}
 
-    tape, in_preps = _remove_preps(tape)
-    tape = _remove_measurements(tape)
+    tape_expanded = tape.expand(stop_at=lambda op: not isinstance(op, QuantumTape))
+    tape_removed, in_preps = _remove_preps(tape_expanded)
+    tape_removed = _remove_measurements(tape_removed)
 
     tapes = [
-        [folding(tape, s, **folding_kwargs) for _ in range(reps_per_factor)] for s in scale_factors
+        [folding(tape_removed, s, **folding_kwargs) for _ in range(reps_per_factor)] for s in scale_factors
     ]
     tapes = [tape_ for tapes_ in tapes for tape_ in tapes_]  # flattens nested list
     tapes = [_add_measurements(tape_, tape.measurements) for tape_ in tapes]
