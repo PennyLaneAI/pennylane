@@ -427,7 +427,7 @@ def frobenius_inner_product(A, B, normalize=False):
     return inner_product
 
 
-def scatter_element_add(tensor, index, value):
+def scatter_element_add(tensor, index, value, like=None):
     """In-place addition of a multidimensional value over various
     indices of a tensor.
 
@@ -435,7 +435,7 @@ def scatter_element_add(tensor, index, value):
         tensor (tensor_like[float]): Tensor to add the value to
         index (tuple or list[tuple]): Indices to which to add the value
         value (float or tensor_like[float]): Value to add to ``tensor``
-        like (str):
+        like (str): Manually chosen interface to dispatch to.
     Returns:
         tensor_like[float]: The tensor with the value added at the given indices.
 
@@ -473,7 +473,7 @@ def scatter_element_add(tensor, index, value):
             [ 0.4,  0.5, -2.5]], requires_grad=True)
     """
 
-    interface = _multi_dispatch([tensor, value])
+    interface = like or _multi_dispatch([tensor, value])
     return np.scatter_element_add(tensor, index, value, like=interface)
 
 
