@@ -68,9 +68,26 @@ ar.autoray._MODULE_ALIASES["autograd"] = "pennylane.numpy"
 
 ar.register_function("autograd", "flatten", lambda x: x.flatten())
 ar.register_function("autograd", "coerce", lambda x: x)
-ar.register_function("autograd", "block_diag", lambda x: _scipy_block_diag(*x))
 ar.register_function("autograd", "gather", lambda x, indices: x[np.array(indices)])
 ar.register_function("autograd", "unstack", list)
+
+
+def _block_diag_autograd(tensors):
+    """Autograd implementation of scipy.linalg.block_diag"""
+    _np = _i("qml").numpy
+    tensors = [t.reshape((1, len(t))) if len(t.shape) == 1 else t for t in tensors]
+    rsizes, csizes = _np.array([t.shape for t in tensors]).T
+    all_zeros = [[_np.zeros((rsize, csize)) for csize in csizes] for rsize in rsizes]
+
+    res = _np.hstack([tensors[0], *all_zeros[0][1:]])
+    for i, t in enumerate(tensors[1:], start=1):
+        row = _np.hstack([*all_zeros[i][:i], t, *all_zeros[i][i + 1 :]])
+        res = _np.vstack([res, row])
+
+    return res
+
+
+ar.register_function("autograd", "block_diag", _block_diag_autograd)
 
 
 def _unwrap_arraybox(arraybox, max_depth=None, _n=0):
