@@ -153,6 +153,7 @@ def test_integration_with_mitiq():
 
     assert res_mitigated.shape == res_ideal.shape
 
+    # Repeat but with just one return
     @qml.transforms.mitigate_with_zne([1, 2, 3], fold_global, RichardsonFactory.extrapolate)
     @qnode(dev)
     def mitigated_circuit(w1, w2):
