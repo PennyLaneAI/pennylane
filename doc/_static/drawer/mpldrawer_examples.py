@@ -60,6 +60,21 @@ def box_gates_formatted(savefile="box_gates_formatted.png"):
     plt.close()
 
 
+def autosize(savefile="box_gates_autosized.png"):
+
+    drawer = MPLDrawer(n_layers=4, n_wires=2)
+
+    drawer.box_gate(layer=0, wires=0, text="A longer label")
+    drawer.box_gate(layer=0, wires=1, text="Label")
+
+    drawer.box_gate(layer=1, wires=(0, 1), text="long multigate label")
+
+    drawer.box_gate(layer=3, wires=(0, 1), text="Not autosized label", autosize=False)
+
+    plt.savefig(folder / savefile)
+    plt.close()
+
+
 def ctrl(savefile="ctrl.png"):
     drawer = MPLDrawer(n_wires=2, n_layers=3)
 
@@ -126,8 +141,7 @@ def integration(style="default", savefile="example_basic.png"):
 
     drawer.label(["0", "a", r"$|\Psi\rangle$", r"$|\theta\rangle$", "aux"])
 
-    drawer.box_gate(0, [0, 1, 2, 3, 4], "Entangling Layers",
-        text_options={"rotation": "vertical"})
+    drawer.box_gate(0, [0, 1, 2, 3, 4], "Entangling Layers", text_options={"rotation": "vertical"})
     drawer.box_gate(1, [0, 1], "U(θ)")
 
     drawer.box_gate(1, 4, "Z")
@@ -136,8 +150,9 @@ def integration(style="default", savefile="example_basic.png"):
     drawer.CNOT(2, (0, 2))
 
     drawer.ctrl(3, [1, 3], control_values=[True, False])
-    drawer.box_gate(layer=3, wires=2, text="H", box_options={'zorder': 4},
-        text_options={'zorder': 5})
+    drawer.box_gate(
+        layer=3, wires=2, text="H", box_options={"zorder": 4}, text_options={"zorder": 5}
+    )
 
     drawer.ctrl(4, [1, 2])
 
@@ -161,8 +176,7 @@ def integration_rcParams(savefile="example_rcParams.png"):
 
     drawer.label(["0", "a", r"$|\Psi\rangle$", r"$|\theta\rangle$", "aux"])
 
-    drawer.box_gate(0, [0, 1, 2, 3, 4], "Entangling Layers",
-        text_options={"rotation": "vertical"})
+    drawer.box_gate(0, [0, 1, 2, 3, 4], "Entangling Layers", text_options={"rotation": "vertical"})
     drawer.box_gate(1, [0, 1], "U(θ)")
 
     drawer.box_gate(1, 4, "Z")
@@ -171,8 +185,9 @@ def integration_rcParams(savefile="example_rcParams.png"):
     drawer.CNOT(2, (0, 2))
 
     drawer.ctrl(3, [1, 3], control_values=[True, False])
-    drawer.box_gate(layer=3, wires=2, text="H", box_options={'zorder': 4},
-        text_options={'zorder': 5})
+    drawer.box_gate(
+        layer=3, wires=2, text="H", box_options={"zorder": 4}, text_options={"zorder": 5}
+    )
 
     drawer.ctrl(4, [1, 2])
 
@@ -186,31 +201,30 @@ def integration_rcParams(savefile="example_rcParams.png"):
 
 
 def integration_formatted(savefile="example_formatted.png"):
-    
+
     wire_options = {"color": "indigo", "linewidth": 4}
     drawer = MPLDrawer(n_wires=2, n_layers=4, wire_options=wire_options)
 
-    label_options = {"fontsize": "x-large", 'color': 'indigo'}
+    label_options = {"fontsize": "x-large", "color": "indigo"}
     drawer.label(["0", "a"], text_options=label_options)
 
-    box_options = {'facecolor': 'lightcoral', 'edgecolor': 'maroon', 'linewidth': 5}
-    text_options = {'fontsize': 'xx-large', 'color': 'maroon'}
+    box_options = {"facecolor": "lightcoral", "edgecolor": "maroon", "linewidth": 5}
+    text_options = {"fontsize": "xx-large", "color": "maroon"}
     drawer.box_gate(layer=0, wires=0, text="Z", box_options=box_options, text_options=text_options)
 
-    swap_options = {'linewidth': 4, 'color': 'darkgreen'}
+    swap_options = {"linewidth": 4, "color": "darkgreen"}
     drawer.SWAP(layer=1, wires=(0, 1), options=swap_options)
 
-    ctrl_options = {'linewidth': 4, 'color': 'teal'}
+    ctrl_options = {"linewidth": 4, "color": "teal"}
     drawer.CNOT(layer=2, wires=(0, 1), options=ctrl_options)
     drawer.ctrl(layer=3, wires=(0, 1), options=ctrl_options)
 
-
-    measure_box = {'facecolor': 'white', 'edgecolor': 'indigo'}
-    measure_lines = {'edgecolor': 'indigo', 'facecolor': 'plum', 'linewidth': 2}
+    measure_box = {"facecolor": "white", "edgecolor": "indigo"}
+    measure_lines = {"edgecolor": "indigo", "facecolor": "plum", "linewidth": 2}
     for wire in range(2):
         drawer.measure(layer=4, wires=wire, box_options=measure_box, lines_options=measure_lines)
 
-    drawer.fig.suptitle('My Circuit', fontsize='xx-large')
+    drawer.fig.suptitle("My Circuit", fontsize="xx-large")
 
     plt.savefig(folder / savefile)
     plt.close()
@@ -233,6 +247,7 @@ if __name__ == "__main__":
     labels_formatted()
     box_gates()
     box_gates_formatted()
+    autosize()
     ctrl()
     CNOT()
     SWAP()
