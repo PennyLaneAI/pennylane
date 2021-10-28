@@ -16,7 +16,7 @@ from typing import Any, Dict, Optional, Sequence
 
 from pennylane.math import mean
 from pennylane.tape import QuantumTape
-from pennylane.transforms import batch_transform, support_preparations_and_measurements
+from pennylane.transforms import batch_transform
 
 
 # pylint: disable=too-many-arguments
@@ -166,3 +166,153 @@ def mitigate_with_zne(
         return extrapolated[0] if len(extrapolated) == 1 else extrapolated
 
     return tapes, processing_fn
+
+
+def _remove_preps(tape: qml.tape.QuantumTape) -> Tuple[qml.tape.QuantumTape, Tuple[Operation]]:
+    """Removes state preparations from an input tape.
+
+    Args:
+        tape (QuantumTape): the input quantum tape
+
+    Returns:
+        Tuple[QuantumTape, Tuple[Operation]]: the transformed tape with the state preparations
+        removed and an ordered tuple detailing the removed preparations
+    """
+    num_preps = sum(isinstance(o, (QubitStateVector, BasisState)) for o in tape.operations)
+
+    with qml.tape.QuantumTape() as new_tape:
+        for op in tape.operations[num_preps:]:
+            qml.apply(op)
+        for op in tape.measurements:
+            qml.apply(op)
+
+    return new_tape, tape.operations[:num_preps]
+
+
+@single_tape_transform
+def _add_preps(tape: qml.tape.QuantumTape, preps: Tuple[Operation]) -> qml.tape.QuantumTape:
+    """Add state preparations to an input tape.
+
+    Args:
+        tape (QuantumTape): the input quantum tape
+        preps (tuple[Operation]): the state preparations to be added
+
+    Returns:
+        QuantumTape: the transformed tape with the state preparations added
+    """
+    for prep in preps:
+        qml.apply(prep)
+    for op in tape.operations:
+        qml.apply(op)
+    for m in tape.measurements:
+        qml.apply(m)
+
+
+@single_tape_transform
+def _remove_measurements(tape: qml.tape.QuantumTape) -> qml.tape.QuantumTape:
+    """Removes measurements from an input tape.
+
+    Args:
+        tape (QuantumTape): the input quantum tape
+
+    Returns:
+        QuantumTape: the transformed tape with the measurements removed
+    """
+    for op in tape.operations:
+        qml.apply(op)
+
+
+@single_tape_transform
+def _add_measurements(
+    tape: qml.tape.QuantumTape, measurements: Tuple[MeasurementProcess]
+) -> qml.tape.QuantumTape:
+    """Add measurements to an input tape.
+
+    Args:
+        tape (QuantumTape): the input quantum tape
+        measurements (tuple[MeasurementProcess]): the measurements to be added
+
+    Returns:
+        QuantumTape: the transformed tape with the measurements added
+    """
+    for op in tape.operations:
+        qml.apply(op)
+    for m in measurements:
+        qml.apply(m)
+
+
+
+
+
+# def support_preparations_and_measurements(transform: callable) -> callable:
+#     """For supporting single-tape transforms which are not compatible with transforming tapes that
+#     include state preparations or measurements.
+#
+#     Args:
+#         transform (callable): the single-tape transform that doesn't support state preparations or
+#             measurements
+#
+#     Returns:
+#         callable: a new transform that leaves state preparations and measurements unchanged but
+#         otherwise transforms according to the input ``transform``
+#
+#     **Example:**
+#
+#     The following transform does not properly keep track of measurements:
+#
+#     .. code-block:: python3
+#
+#         @qml.single_tape_transform
+#         def remove_rxs(tape):
+#             for op in tape.operations:
+#                 if not isinstance(op, qml.RX):
+#                     qml.apply(op)
+#
+#     Consider the following tape, which includes a measurement:
+#
+#     .. code-block:: python3
+#
+#         with qml.tape.QuantumTape() as tape:
+#             qml.Hadamard(wires=0)
+#             qml.RX(0.4, wires=0)
+#             qml.RY(0.5, wires=0)
+#             qml.expval(qml.PauliZ(0))
+#
+#     The ``remove_rxs`` transform loses track of the measurement:
+#
+#     >>> print(remove_rxs(tape).draw())
+#      0: ──H──RY(0.5)──┤
+#
+#     This can be fixed using:
+#
+#     >>> remove_rxs_fixed = support_preparations_and_measurements(remove_rxs)
+#     >>> print(remove_rxs_fixed(tape).draw())
+#      0: ──H──RY(0.5)──┤ ⟨Z⟩
+#     """
+#
+#     @functools.wraps(transform)
+#     def wrapper(tape: qml.tape.QuantumTape, *args, **kwargs) -> qml.tape.QuantumTape:
+#         """Wrapper for a single-tape transform that does not support state preparations and
+#         measurements.
+#
+#         Args:
+#             tape (QuantumTape): input quantum tape
+#             *args: remaining arguments passed to the transform
+#             **kwargs: keyword arguments passed to the transform
+#
+#         Returns:
+#             callable: a wrapped version of the transform that supports state preparations and
+#             measurements
+#         """
+#         meas = tape.measurements
+#
+#         tape = tape.expand(stop_at=lambda op: not isinstance(op, qml.tape.QuantumTape))
+#
+#         tape, preps = _remove_preps(tape)
+#         tape = _remove_measurements(tape)
+#         tape = transform(tape, *args, **kwargs)
+#         tape = _add_measurements(tape, meas)
+#         tape = _add_preps(tape, preps)
+#         return tape
+#
+#     return wrapper

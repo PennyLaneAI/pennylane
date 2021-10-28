@@ -330,3 +330,110 @@ class TestMitiqIntegration:
         g = qml.grad(mitigated_circuit)(w1, w2)
         for g_ in g:
             assert not np.allclose(g_, 0)
+
+
+
+
+
+
+
+
+
+
+
+
+# def compare_ops(ops1, ops2):
+#     """Compares two input lists of operations"""
+#     assert all(o1.name == o2.name for o1, o2 in zip(ops1, ops2))
+#     assert all(o1.wires == o2.wires for o1, o2 in zip(ops1, ops2))
+#     assert all(np.allclose(o1.parameters, o2.parameters) for o1, o2 in zip(ops1, ops2))
+#
+#
+# def test_add_remove_preps():
+#     """Test for the _remove_preps and _add_preps functions"""
+#     with qml.tape.QuantumTape() as in_tape:
+#         qml.BasisState([0], wires=0)
+#         qml.QubitStateVector([1, 0, 0, 0], wires=[1, 2])
+#         qml.Hadamard(0)
+#         qml.expval(qml.PauliZ(0))
+#
+#     out_tape, removed_preps = qml.transforms.qfunc_transforms._remove_preps(in_tape)
+#
+#     with qml.tape.QuantumTape() as exp_tape:
+#         qml.Hadamard(0)
+#         qml.expval(qml.PauliZ(0))
+#
+#     expected_preps = [
+#         qml.BasisState([0], wires=0),
+#         qml.QubitStateVector([1, 0, 0, 0], wires=[1, 2]),
+#     ]
+#
+#     compare_ops(out_tape.operations, exp_tape.operations)
+#     compare_ops(removed_preps, expected_preps)
+#
+#     recovered_tape = qml.transforms.qfunc_transforms._add_preps(out_tape, removed_preps)
+#
+#     compare_ops(recovered_tape.operations, in_tape.operations)
+#
+#
+# def test_add_remove_measurements():
+#     """Test for the _remove_measurements and _add_measurements functions"""
+#     with qml.tape.QuantumTape() as in_tape:
+#         qml.BasisState([0], wires=0)
+#         qml.QubitStateVector([1, 0, 0, 0], wires=[1, 2])
+#         qml.Hadamard(0)
+#         qml.expval(qml.PauliZ(0))
+#
+#     out_tape = qml.transforms.qfunc_transforms._remove_measurements(in_tape)
+#     assert len(out_tape.measurements) == 0
+#
+#     with qml.tape.QuantumTape() as exp_tape:
+#         qml.BasisState([0], wires=0)
+#         qml.QubitStateVector([1, 0, 0, 0], wires=[1, 2])
+#         qml.Hadamard(0)
+#
+#     compare_ops(out_tape.operations, exp_tape.operations)
+#
+#     recovered_tape = qml.transforms.qfunc_transforms._add_measurements(
+#         out_tape, in_tape.measurements
+#     )
+#
+#     compare_ops(in_tape.operations, recovered_tape.operations)
+#     assert len(recovered_tape.measurements) == 1
+#
+#     assert recovered_tape.observables[0].name == "PauliZ"
+#     assert recovered_tape.observables[0].wires.tolist() == [0]
+#     assert recovered_tape.measurements[0].return_type is Expectation
+#
+#
+# def test_support_preparations_and_measurements():
+#     """Test for the support_preparations_and_measurements function"""
+#
+#     @qml.single_tape_transform
+#     def unsupported_transform(tape):
+#         for op in tape.operations:
+#             if not isinstance(op, qml.BasisState):
+#                 qml.apply(op)
+#
+#     with qml.tape.QuantumTape() as tape:
+#         qml.BasisState((0,), wires=0)
+#         qml.Hadamard(wires=0)
+#         qml.expval(qml.PauliZ(0))
+#
+#     transform = qml.transforms.support_preparations_and_measurements(unsupported_transform)
+#
+#     out_tape = transform(tape)
+#     out_tape_unsupported = unsupported_transform(tape)
+#
+#     compare_ops(out_tape_unsupported.operations, [qml.Hadamard(wires=0)])
+#     compare_ops(tape.operations, out_tape.operations)
+#
+#     assert len(out_tape_unsupported.measurements) == 0
+#     assert len(out_tape.measurements) == 1
+#
+#     assert out_tape.observables[0].name == "PauliZ"
+#     assert out_tape.observables[0].wires.tolist() == [0]
+#     assert out_tape.measurements[0].return_type is Expectation
+#
+#
+#
