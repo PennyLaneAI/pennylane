@@ -14,13 +14,14 @@
 """
 Tests for mitigation transforms.
 """
+import pytest
 from packaging import version
+
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.beta import QNode, qnode
 from pennylane.tape import QuantumTape
 from pennylane.transforms import mitigate_with_zne
-import pytest
-from pennylane.beta import qnode, QNode
 
 with QuantumTape() as tape:
     qml.BasisState([1], wires=0)
@@ -48,7 +49,9 @@ def same_tape(tape1, tape2):
         for o1, o2 in zip(tape1.operations, tape2.operations)
     )
     assert len(tape1.measurements) == len(tape2.measurements)
-    assert all(m1.return_type == m2.return_type for m1, m2 in zip(tape1.measurements, tape2.measurements))
+    assert all(
+        m1.return_type == m2.return_type for m1, m2 in zip(tape1.measurements, tape2.measurements)
+    )
     assert all(o1.name == o2.name for o1, o2 in zip(tape1.observables, tape2.observables))
     assert all(o1.wires == o2.wires for o1, o2 in zip(tape1.observables, tape2.observables))
 
@@ -81,7 +84,13 @@ class TestMitigateWithZNE:
         random_results = [0.1, 0.2, 0.3]
         extrapolate_kwargs = {"Hello": "goodbye"}
 
-        tapes, fn = mitigate_with_zne(tape, scale_factors, self.folding, self.extrapolate, extrapolate_kwargs=extrapolate_kwargs)
+        tapes, fn = mitigate_with_zne(
+            tape,
+            scale_factors,
+            self.folding,
+            self.extrapolate,
+            extrapolate_kwargs=extrapolate_kwargs,
+        )
         res = fn(random_results)
         assert res == 3.141
 
@@ -99,7 +108,9 @@ class TestMitigateWithZNE:
         scale_factors = [1, 2, -4]
         spy_fold = mocker.spy(self, "folding")
         spy_extrapolate = mocker.spy(self, "extrapolate")
-        tapes, fn = mitigate_with_zne(tape, scale_factors, self.folding, self.extrapolate, reps_per_factor=2)
+        tapes, fn = mitigate_with_zne(
+            tape, scale_factors, self.folding, self.extrapolate, reps_per_factor=2
+        )
         random_results = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
 
         args = spy_fold.call_args_list
@@ -119,9 +130,10 @@ def skip_if_no_mitiq_support():
     """Fixture to skip if minimum version of mitiq is not available"""
     try:
         import mitiq
+
         v = version.parse(mitiq.__version__)
         t = version.parse("0.11.0")
-        if v.major < t.major and v.minor < t.minor :
+        if v.major < t.major and v.minor < t.minor:
             pytest.skip("Mitiq version too low")
     except ImportError:
         pytest.skip("Mitiq not available")
@@ -130,6 +142,7 @@ def skip_if_no_mitiq_support():
 @pytest.mark.usefixtures("skip_if_no_mitiq_support")
 class TestMitiqIntegration:
     """Tests if the mitigate_with_zne transform is compatible with using mitiq as a backend"""
+
     from mitiq.interface.conversions import CircuitConversionError
 
     def test_multiple_returns(self):
@@ -218,7 +231,9 @@ class TestMitiqIntegration:
         np.random.seed(0)
         w1, w2 = [np.random.random(s) for s in shapes]
 
-        @qml.transforms.mitigate_with_zne([1, 2, 3], fold_gates_at_random, RichardsonFactory.extrapolate, reps_per_factor=2)
+        @qml.transforms.mitigate_with_zne(
+            [1, 2, 3], fold_gates_at_random, RichardsonFactory.extrapolate, reps_per_factor=2
+        )
         @qnode(dev)
         def mitigated_circuit(w1, w2):
             qml.templates.SimplifiedTwoDesign(w1, w2, wires=range(2))
@@ -278,7 +293,10 @@ class TestMitiqIntegration:
         assert np.allclose(exact_val, [1, 1])
         assert all(mitigated_err < noisy_err)
 
-    @pytest.mark.xfail(raises=CircuitConversionError, reason="Using external tape transforms breaks differentiability")
+    @pytest.mark.xfail(
+        raises=CircuitConversionError,
+        reason="Using external tape transforms breaks differentiability",
+    )
     def test_grad(self):
         """Tests if the gradient is calculated successfully."""
         from mitiq.zne.scaling import fold_global
