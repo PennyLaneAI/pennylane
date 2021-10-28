@@ -462,7 +462,11 @@ class Operator(abc.ABC):
             return op_label
 
         def _format(x):
-            return format(qml.math.toarray(x), f".{decimals}f")
+            try:
+                return format(qml.math.toarray(x), f".{decimals}f")
+            except ValueError:
+                # If the parameter can't be displayed as a float
+                return format(x)
 
         if self.num_params == 1:
             return op_label + f"\n({_format(params[0])})"
