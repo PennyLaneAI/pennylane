@@ -473,20 +473,20 @@ def scatter_element_add(tensor, index, value):
     """
 
     interface = _multi_dispatch([tensor, value])
-    #tensor, value = np.coerce([tensor, value], like=interface)
-    if interface=="tensorflow":
+    # tensor, value = np.coerce([tensor, value], like=interface)
+    if interface == "tensorflow":
         tf = import_module("tensorflow")
         indices = tf.expand_dims(index, 0)
         value = tf.cast(tf.expand_dims(value, 0), tensor.dtype)
         return tf.tensor_scatter_nd_add(tensor, indices, value)
 
-    if interface=="torch":
+    if interface == "torch":
         if tensor.is_leaf:
             tensor = tensor.clone()
         tensor[tuple(index)] += value
         return tensor
 
-    if interface=="autograd":
+    if interface == "autograd":
         qml = import_module("pennylane")
         size = tensor.size
         flat_index = qml.numpy.ravel_multi_index(index, tensor.shape)
@@ -494,7 +494,7 @@ def scatter_element_add(tensor, index, value):
         t[flat_index] = value
         return tensor + qml.numpy.array(t).reshape(tensor.shape)
 
-    if interface=="jax":
+    if interface == "jax":
         jax = import_module("jax")
         return jax.ops.index_add(tensor, tuple(index), value)
 

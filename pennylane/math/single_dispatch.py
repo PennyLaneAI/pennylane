@@ -43,14 +43,14 @@ ar.register_function("numpy", "gather", lambda x, indices: x[np.array(indices)])
 ar.register_function("numpy", "unstack", list)
 
 
-#def _scatter_element_add_numpy(tensor, index, value):
-    #"""In-place addition of a multidimensional value over various
-    #indices of a tensor."""
-    #tensor[tuple(index)] += value
-    #return tensor
+# def _scatter_element_add_numpy(tensor, index, value):
+# """In-place addition of a multidimensional value over various
+# indices of a tensor."""
+# tensor[tuple(index)] += value
+# return tensor
 
 
-#ar.register_function("numpy", "scatter_element_add", _scatter_element_add_numpy)
+# ar.register_function("numpy", "scatter_element_add", _scatter_element_add_numpy)
 
 
 # -------------------------------- Autograd --------------------------------- #
@@ -114,18 +114,18 @@ def _to_numpy_autograd(x, max_depth=None, _n=0):
 ar.register_function("autograd", "to_numpy", _to_numpy_autograd)
 
 
-#def _scatter_element_add_autograd(tensor, index, value):
-    #"""In-place addition of a multidimensional value over various
-    #indices of a tensor. Since Autograd doesn't support indexing
-    #assignment, we have to be clever and use ravel_multi_index."""
-    #size = tensor.size
-    #flat_index = _i("qml").numpy.ravel_multi_index(index, tensor.shape)
-    #t = [0] * size
-    #t[flat_index] = value
-    #return tensor + _i("qml").numpy.array(t).reshape(tensor.shape)
+# def _scatter_element_add_autograd(tensor, index, value):
+# """In-place addition of a multidimensional value over various
+# indices of a tensor. Since Autograd doesn't support indexing
+# assignment, we have to be clever and use ravel_multi_index."""
+# size = tensor.size
+# flat_index = _i("qml").numpy.ravel_multi_index(index, tensor.shape)
+# t = [0] * size
+# t[flat_index] = value
+# return tensor + _i("qml").numpy.array(t).reshape(tensor.shape)
 
 
-#ar.register_function("autograd", "scatter_element_add", _scatter_element_add_autograd)
+# ar.register_function("autograd", "scatter_element_add", _scatter_element_add_autograd)
 
 
 def _take_autograd(tensor, indices, axis=None):
@@ -248,17 +248,17 @@ def _block_diag_tf(tensors):
 ar.register_function("tensorflow", "block_diag", _block_diag_tf)
 
 
-#def _scatter_element_add_tf(tensor, index, value):
-    #"""In-place addition of a multidimensional value over various
-    #indices of a tensor."""
-    #import tensorflow as tf
+# def _scatter_element_add_tf(tensor, index, value):
+# """In-place addition of a multidimensional value over various
+# indices of a tensor."""
+# import tensorflow as tf
 #
-    #indices = tf.expand_dims(index, 0)
-    #value = tf.cast(tf.expand_dims(value, 0), tensor.dtype)
-    #return tf.tensor_scatter_nd_add(tensor, indices, value)
+# indices = tf.expand_dims(index, 0)
+# value = tf.cast(tf.expand_dims(value, 0), tensor.dtype)
+# return tf.tensor_scatter_nd_add(tensor, indices, value)
 
 
-#ar.register_function("tensorflow", "scatter_element_add", _scatter_element_add_tf)
+# ar.register_function("tensorflow", "scatter_element_add", _scatter_element_add_tf)
 
 
 # -------------------------------- Torch --------------------------------- #
@@ -362,17 +362,17 @@ def _block_diag_torch(tensors):
 ar.register_function("torch", "block_diag", _block_diag_torch)
 
 
-#def _scatter_element_add_torch(tensor, index, value):
-    #"""In-place addition of a multidimensional value over various
-    #indices of a tensor. Note that Torch only supports index assignments
-    #on non-leaf nodes; if the node is a leaf, we must clone it first."""
-    #if tensor.is_leaf:
-        #tensor = tensor.clone()
-    #tensor[tuple(index)] += value
-    #return tensor
+# def _scatter_element_add_torch(tensor, index, value):
+# """In-place addition of a multidimensional value over various
+# indices of a tensor. Note that Torch only supports index assignments
+# on non-leaf nodes; if the node is a leaf, we must clone it first."""
+# if tensor.is_leaf:
+# tensor = tensor.clone()
+# tensor[tuple(index)] += value
+# return tensor
 
 
-#ar.register_function("torch", "scatter_element_add", _scatter_element_add_torch)
+# ar.register_function("torch", "scatter_element_add", _scatter_element_add_torch)
 
 
 def _sort_torch(tensor):
@@ -410,9 +410,9 @@ ar.register_function("jax", "coerce", lambda x: x)
 ar.register_function("jax", "to_numpy", _to_numpy_jax)
 ar.register_function("jax", "block_diag", lambda x: _i("jax").scipy.linalg.block_diag(*x))
 ar.register_function("jax", "gather", lambda x, indices: x[np.array(indices)])
-#ar.register_function(
-    #"jax",
-    #"scatter_element_add",
-    #lambda x, index, value: _i("jax").ops.index_add(x, tuple(index), value),
-#)
+# ar.register_function(
+# "jax",
+# "scatter_element_add",
+# lambda x, index, value: _i("jax").ops.index_add(x, tuple(index), value),
+# )
 ar.register_function("jax", "unstack", list)
