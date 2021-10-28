@@ -46,7 +46,7 @@ def mitigate_with_zne(
     see the example and usage details for further information.
 
     Args:
-        tape (QuantumTape): the circuit to be error mitigated
+        tape (QuantumTape): the circuit to be error-mitigated
         scale_factors (Sequence[float]): the range of scale factors used
         folding (callable): a function that returns a folded circuit for a specified scale factor
         extrapolate (callable): a function that returns an extrapolated result when provided a
@@ -87,14 +87,14 @@ def mitigate_with_zne(
         n_wires = 2
         n_layers = 2
 
-        shapes = qml.templates.SimplifiedTwoDesign.shape(n_wires, n_layers)
+        shapes = qml.SimplifiedTwoDesign.shape(n_wires, n_layers)
         np.random.seed(0)
         w1, w2 = [np.random.random(s) for s in shapes]
 
         @qml.transforms.mitigate_with_zne([1, 2, 3], fold_global, RichardsonFactory.extrapolate)
         @qnode(dev)
         def circuit(w1, w2):
-            qml.templates.SimplifiedTwoDesign(w1, w2, wires=range(2))
+            qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
             return qml.expval(qml.PauliZ(0))
 
     Executions of ``circuit`` will now be mitigated:
@@ -115,7 +115,7 @@ def mitigate_with_zne(
         circuit, it can be varied using
         `unitary folding <https://ieeexplore.ieee.org/document/9259940>`__. Unitary folding
         works by noticing that a unitary :math:`U` is equivalent to :math:`U U^{\dagger} U`. This
-        type of transform can be applied to individual gates in the circuit or to the whole circuit
+        type of transform can be applied to individual gates in the circuit or to the whole circuit,
         and is controlled by a scale parameter :math:`s` which is calibrated so that :math:`s = 1`
         corresponds to the (unfolded) input circuit and :math:`s = 3` is a folding of all gates in
         the circuit once.
