@@ -12,10 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Provides transforms for mitigating quantum circuits."""
-from typing import Any, Dict, Optional, Sequence
+from typing import Any, Dict, Optional, Sequence, Tuple
 
+from pennylane import apply, single_tape_transform
 from pennylane.math import mean
+from pennylane.measure import MeasurementProcess
+from pennylane.operation import Operation
 from pennylane.tape import QuantumTape
+from pennylane.tape.tape import STATE_PREP_OPS
 from pennylane.transforms import batch_transform
 
 
@@ -162,6 +166,7 @@ def mitigate_with_zne(
     tapes = [_add_preps(tape_, in_preps) for tape_ in tapes]
 
     def processing_fn(results):
+        """Maps from input tape executions to an error-mitigated estimate"""
         results = [
             results[i : i + reps_per_factor] for i in range(0, len(results), reps_per_factor)
         ]  # creates nested list according to reps_per_factor
@@ -170,12 +175,6 @@ def mitigate_with_zne(
         return extrapolated[0] if len(extrapolated) == 1 else extrapolated
 
     return tapes, processing_fn
-
-
-from pennylane.operation import Operation
-from typing import Tuple
-from pennylane import apply
-from pennylane.tape.tape import STATE_PREP_OPS
 
 
 def _remove_preps(tape: QuantumTape) -> Tuple[QuantumTape, Tuple[Operation]]:
@@ -197,9 +196,6 @@ def _remove_preps(tape: QuantumTape) -> Tuple[QuantumTape, Tuple[Operation]]:
             apply(op)
 
     return new_tape, tape.operations[:num_preps]
-
-
-from pennylane import single_tape_transform
 
 
 @single_tape_transform
@@ -235,12 +231,8 @@ def _remove_measurements(tape: QuantumTape) -> QuantumTape:
         apply(op)
 
 
-from pennylane.measure import MeasurementProcess
-
 @single_tape_transform
-def _add_measurements(
-    tape: QuantumTape, measurements: Tuple[MeasurementProcess]
-) -> QuantumTape:
+def _add_measurements(tape: QuantumTape, measurements: Tuple[MeasurementProcess]) -> QuantumTape:
     """Add measurements to an input tape.
 
     Args:
