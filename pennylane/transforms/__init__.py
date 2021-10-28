@@ -113,7 +113,6 @@ from .qfunc_transforms import (
     make_tape,
     single_tape_transform,
     qfunc_transform,
-    support_preparations_and_measurements,
 )
 from .adjoint import adjoint
 from .batch_params import batch_params
