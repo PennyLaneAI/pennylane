@@ -458,9 +458,10 @@ def scatter_element_add(tensor, index, value, like=None):
             [ 0.4000,  0.5000, 10.6000]])
 
     Depending on the framework, the ``tensor`` is modified in-place. As you can see
-    above, this is *not* the case to PyTorch (The change of the last tensor entry to
-    ``-2.5`` was not remembered when adding ``10`` in the second modification).
-    For Autograd, for example, we have:
+    above, this is *not* the case in PyTorch (the change of the last tensor entry to
+    ``-2.5`` was not retained when adding ``10`` in the second modification).
+
+    However, when using Autograd, this function does mutate the input tensor:
 
     >>> tensor = np.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
     >>> index = (1, 2)

@@ -1426,7 +1426,6 @@ class TestCovMatrix:
 
         weights = jnp.array([0.1, 0.2, 0.3])
         res = cov(weights)
-        print(res)
         expected = self.expected_cov(weights)
         assert jnp.allclose(res, expected, atol=tol, rtol=0)
 
