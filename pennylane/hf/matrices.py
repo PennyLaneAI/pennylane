@@ -14,7 +14,7 @@
 """
 This module contains the functions needed for computing matrices.
 """
-
+# pylint: disable= too-many-branches
 import autograd.numpy as anp
 from pennylane.hf.integrals import (
     generate_attraction,
@@ -92,8 +92,8 @@ def generate_overlap_matrix(basis_functions):
                 if i < j:
                     if args:
                         args_ab = []
-                        for l in range(len(args)):
-                            args_ab.append(args[l][[i, j]])
+                        for arg in args:
+                            args_ab.append(arg[[i, j]])
                         overlap_integral = generate_overlap(a, b)(*args_ab)
                     else:
                         overlap_integral = generate_overlap(a, b)()
@@ -142,8 +142,8 @@ def generate_kinetic_matrix(basis_functions):
                 if i <= j:
                     if args:
                         args_ab = []
-                        for l in range(len(args)):
-                            args_ab.append(args[l][[i, j]])
+                        for arg in args:
+                            args_ab.append(arg[[i, j]])
                         kinetic_integral = generate_kinetic(a, b)(*args_ab)
                     else:
                         kinetic_integral = generate_kinetic(a, b)()
@@ -201,8 +201,8 @@ def generate_attraction_matrix(basis_functions, charges, r):
                             for l in range(len(args) - 1):
                                 args_ab.append(args[l + 1][[i, j]])
                         else:
-                            for l in range(len(args)):
-                                args_ab.append(args[l][[i, j]])
+                            for arg in args:
+                                args_ab.append(arg[[i, j]])
 
                         for k, c in enumerate(r):
                             if c.requires_grad:
@@ -275,8 +275,8 @@ def generate_repulsion_tensor(basis_functions):
                         if [i, j, k, l] not in e_calc:
                             if args:
                                 args_abcd = []
-                                for m in range(len(args)):
-                                    args_abcd.append(args[m][[i, j, k, l]])
+                                for arg in args:
+                                    args_abcd.append(arg[[i, j, k, l]])
                                 repulsion_integral = generate_repulsion(a, b, c, d)(*args_abcd)
                             else:
                                 repulsion_integral = generate_repulsion(a, b, c, d)()
