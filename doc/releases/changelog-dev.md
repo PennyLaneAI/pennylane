@@ -859,9 +859,9 @@
 
 * The helper functions `qml.math.block_diag` and `qml.math.scatter_element_add` now are
   entirely differentiable when using Autograd.
-  Previously only indexed entries of the block diagonal could be differentiated and the
-  derivative w.r.t to the second argument of `qml.math.scatter_element_add` dispatched
-  to `numpy` instead of Autograd.
+  Previously only indexed entries of the block diagonal could be differentiated, while
+  the derivative w.r.t to the second argument of `qml.math.scatter_element_add` dispatched
+  to NumPy instead of Autograd.
   [(#1816)](https://github.com/PennyLaneAI/pennylane/pull/1816)
   [(#1818)](https://github.com/PennyLaneAI/pennylane/pull/1818)
   
