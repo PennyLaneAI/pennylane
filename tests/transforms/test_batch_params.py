@@ -227,6 +227,7 @@ def test_all_operations(mocker):
     assert res.shape == (batch_size, 1, 4)
     assert len(spy.call_args[0][0]) == batch_size
 
+
 def test_angle_embedding():
     """Tests that the AngleEmbedding template supports batch_params"""
     dev = qml.device("default.qubit", wires=3)
@@ -238,10 +239,11 @@ def test_angle_embedding():
         return qml.probs(wires=[0, 2])
 
     batch_size = 3
-    data = np.ones((batch_size, 3), requires_grad = True)
+    data = np.ones((batch_size, 3), requires_grad=True)
 
     res = circuit(data)
     assert res.shape == (batch_size, 1, 4)
+
 
 def test_unbatched_parameter():
     """Test that an exception is raised if a parameter

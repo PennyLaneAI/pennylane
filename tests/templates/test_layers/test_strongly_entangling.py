@@ -137,7 +137,6 @@ class TestInputs:
             weights = np.random.randn(2, 2, 3)
             circuit(weights, ranges=[1])
 
-
     def test_exception_wrong_ranges(self):
         """Verifies that exception is raised if the
         value of ranges is incorrect."""
