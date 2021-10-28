@@ -14,6 +14,7 @@
 """Multiple dispatch functions"""
 # pylint: disable=import-outside-toplevel,too-many-return-statements
 import warnings
+from importlib import import_module
 
 from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
@@ -425,6 +426,80 @@ def frobenius_inner_product(A, B, normalize=False):
         inner_product = inner_product / norm
 
     return inner_product
+
+
+def scatter_element_add(tensor, index, value):
+    """In-place addition of a multidimensional value over various
+    indices of a tensor.
+
+    Args:
+        tensor (tensor_like[float]): Tensor to add the value to
+        index (tuple or list[tuple]): Indices to which to add the value
+        value (float or tensor_like[float]): Value to add to ``tensor``
+    Returns:
+        tensor_like[float]: The tensor with the value added at the given indices.
+
+    **Example**
+
+    >>> tensor = torch.tensor([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
+    >>> index = (1, 2)
+    >>> value = -3.1
+    >>> qml.math.scatter_element_add(tensor, index, value)
+    tensor([[ 0.1000,  0.2000,  0.3000],
+            [ 0.4000,  0.5000, -2.5000]])
+
+    If multiple indices are given, in the form of a list of tuples, the
+    ``k``th tuple is interpreted to contain the ``k``th entry of all indices:
+    >>> indices = [(1, 0), (2, 1)] # This will modify the entries (1, 2) and (0, 1)
+    >>> values = torch.tensor([10, 20])
+    >>> qml.math.scatter_element_add(tensor, indices, values)
+    tensor([[ 0.1000, 20.2000,  0.3000],
+            [ 0.4000,  0.5000, 10.6000]])
+
+    Depending on the framework, the ``tensor`` is modified in-place. As you can see
+    above, this is *not* the case to PyTorch (The change of the last tensor entry to
+    ``-2.5`` was not remembered when adding ``10`` in the second modification).
+    For Autograd, for example, we have:
+
+    >>> tensor = np.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
+    >>> index = (1, 2)
+    >>> value = -3.1
+    >>> qml.math.scatter_element_add(tensor, index, value) # tensor is modified in-place
+    tensor([[ 0.1,  0.2,  0.3],
+            [ 0.4,  0.5, -2.5]], requires_grad=True)
+    >>> tensor
+    tensor([[ 0.1,  0.2,  0.3],
+            [ 0.4,  0.5, -2.5]], requires_grad=True)
+    """
+
+    interface = _multi_dispatch([tensor, value])
+    #tensor, value = np.coerce([tensor, value], like=interface)
+    if interface=="tensorflow":
+        tf = import_module("tensorflow")
+        indices = tf.expand_dims(index, 0)
+        value = tf.cast(tf.expand_dims(value, 0), tensor.dtype)
+        return tf.tensor_scatter_nd_add(tensor, indices, value)
+
+    if interface=="torch":
+        if tensor.is_leaf:
+            tensor = tensor.clone()
+        tensor[tuple(index)] += value
+        return tensor
+
+    if interface=="autograd":
+        qml = import_module("pennylane")
+        size = tensor.size
+        flat_index = qml.numpy.ravel_multi_index(index, tensor.shape)
+        t = [0] * size
+        t[flat_index] = value
+        return tensor + qml.numpy.array(t).reshape(tensor.shape)
+
+    if interface=="jax":
+        jax = import_module("jax")
+        return jax.ops.index_add(tensor, tuple(index), value)
+
+    tensor[tuple(index)] += value
+    return tensor
 
 
 def unwrap(values, max_depth=None):

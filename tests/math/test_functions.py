@@ -1097,6 +1097,33 @@ class TestScatterElementAdd:
         assert fn.allclose(grad[0], onp.array([[0, 0, 0], [0, 0, 1.0]]))
         assert fn.allclose(grad[1], 2 * y)
 
+        def cost_multi(weight_0, weight_1):
+            return fn.scatter_element_add(weight_0, [1, 2], weight_1 ** 2)
+
+        res = cost_multi(x, y)
+        assert isinstance(res, np.ndarray)
+        assert fn.allclose(res, onp.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.3136]]))
+
+        grad = qml.grad(lambda *weights: cost_multi(*weights)[1, 2], argnum=[0, 1])(x, y)
+        assert fn.allclose(grad[0], onp.array([[0, 0, 0], [0, 0, 1.0]]))
+        assert fn.allclose(grad[1], 2 * y)
+
+    def test_autograd(self):
+        """Test that a Autograd array is differentiable when using scatter addition"""
+        x = np.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]], requires_grad=True)
+        y = np.array(0.56, requires_grad=True)
+
+        def cost(weights):
+            return fn.scatter_element_add(weights[0], [1, 2], weights[1] ** 2)
+
+        res = cost([x, y])
+        assert isinstance(res, np.ndarray)
+        assert fn.allclose(res, onp.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.3136]]))
+
+        grad = qml.grad(lambda weights: cost(weights)[1, 2])([x, y])
+        assert fn.allclose(grad[0], onp.array([[0, 0, 0], [0, 0, 1.0]]))
+        assert fn.allclose(grad[1], 2 * y)
+
     def test_tensorflow(self):
         """Test that a TF tensor is differentiable when using scatter addition"""
         x = tf.Variable([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]])
@@ -1392,6 +1419,7 @@ class TestCovMatrix:
 
         weights = jnp.array([0.1, 0.2, 0.3])
         res = cov(weights)
+        print(res)
         expected = self.expected_cov(weights)
         assert jnp.allclose(res, expected, atol=tol, rtol=0)
 
