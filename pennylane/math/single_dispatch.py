@@ -76,8 +76,7 @@ def _block_diag_autograd(tensors):
     """Autograd implementation of scipy.linalg.block_diag"""
     _np = _i("qml").numpy
     tensors = [t.reshape((1, len(t))) if len(t.shape) == 1 else t for t in tensors]
-    rsizes = _np.array([t.shape[0] for t in tensors])
-    csizes = _np.array([t.shape[1] for t in tensors])
+    rsizes, csize = _np.array([t.shape for t in tensors]).T
     all_zeros = [[_np.zeros((rsize, csize)) for csize in csizes] for rsize in rsizes]
 
     res = _np.hstack([tensors[0], *all_zeros[0][1:]])
