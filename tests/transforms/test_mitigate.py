@@ -14,6 +14,7 @@
 """
 Tests for mitigation transforms.
 """
+from packaging import version
 import pennylane as qml
 import numpy as np
 from pennylane.tape import QuantumTape
@@ -56,7 +57,7 @@ class TestMitigateWithZNE:
     """Tests for the mitigate_with_zne function"""
 
     folding = lambda *args, **kwargs: tape_base
-    extrapolate = lambda *args, **kwargs: 3.141
+    extrapolate = lambda *args, **kwargs: [3.141]
 
     def test_folding_call(self, mocker):
         """Tests that arguments are passed to the folding function as expected"""
@@ -116,56 +117,119 @@ class TestMitigateWithZNE:
 @pytest.fixture
 def skip_if_no_mitiq_support():
     """Fixture to skip if minimum version of mitiq is not available"""
-    pytest.importorskip("mitiq", minversion="0.11")
+    try:
+        import mitiq
+        v = version.parse(mitiq.__version__)
+        t = version.parse("0.11.0")
+        if v.major < t.major and v.minor < t.minor :
+            pytest.skip("Mitiq version too low")
+    except ImportError:
+        pytest.skip("Mitiq not available")
 
 
-# @pytest.mark.usefixtures("skip_if_no_mitiq_support")
-def test_integration_with_mitiq():
+@pytest.mark.usefixtures("skip_if_no_mitiq_support")
+class TestMitiqIntegration:
     """Tests if the mitigate_with_zne transform is compatible with using mitiq as a backend"""
-    noise_strength = 0.05
 
-    dev_noise_free = qml.device("default.mixed", wires=2)
-    dev = qml.transforms.insert(qml.AmplitudeDamping, noise_strength)(dev_noise_free)
+    def test_multiple_returns(self):
+        """Tests if the expected shape is returned when mitigating a circuit with two returns"""
+        from mitiq.zne.scaling import fold_global
+        from mitiq.zne.inference import RichardsonFactory
 
-    from mitiq.zne.scaling import fold_global
-    from mitiq.zne.inference import RichardsonFactory
+        noise_strength = 0.05
 
-    n_wires = 2
-    n_layers = 2
+        dev_noise_free = qml.device("default.mixed", wires=2)
+        dev = qml.transforms.insert(qml.AmplitudeDamping, noise_strength)(dev_noise_free)
 
-    shapes = qml.templates.SimplifiedTwoDesign.shape(n_wires, n_layers)
-    np.random.seed(0)
-    w1, w2 = [np.random.random(s) for s in shapes]
+        n_wires = 2
+        n_layers = 2
 
-    @qml.transforms.mitigate_with_zne([1, 2, 3], fold_global, RichardsonFactory.extrapolate)
-    @qnode(dev)
-    def mitigated_circuit(w1, w2):
-        qml.templates.SimplifiedTwoDesign(w1, w2, wires=range(2))
-        return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
+        shapes = qml.templates.SimplifiedTwoDesign.shape(n_wires, n_layers)
+        np.random.seed(0)
+        w1, w2 = [np.random.random(s) for s in shapes]
 
-    @qnode(dev_noise_free)
-    def ideal_circuit(w1, w2):
-        qml.templates.SimplifiedTwoDesign(w1, w2, wires=range(2))
-        return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
+        @qml.transforms.mitigate_with_zne([1, 2, 3], fold_global, RichardsonFactory.extrapolate)
+        @qnode(dev)
+        def mitigated_circuit(w1, w2):
+            qml.templates.SimplifiedTwoDesign(w1, w2, wires=range(2))
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
 
-    res_mitigated = mitigated_circuit(w1, w2)
-    res_ideal = ideal_circuit(w1, w2)
+        @qnode(dev_noise_free)
+        def ideal_circuit(w1, w2):
+            qml.templates.SimplifiedTwoDesign(w1, w2, wires=range(2))
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
 
-    assert res_mitigated.shape == res_ideal.shape
+        res_mitigated = mitigated_circuit(w1, w2)
+        res_ideal = ideal_circuit(w1, w2)
 
-    # Repeat but with just one return
-    @qml.transforms.mitigate_with_zne([1, 2, 3], fold_global, RichardsonFactory.extrapolate)
-    @qnode(dev)
-    def mitigated_circuit(w1, w2):
-        qml.templates.SimplifiedTwoDesign(w1, w2, wires=range(2))
-        return qml.expval(qml.PauliZ(0))
+        assert res_mitigated.shape == res_ideal.shape
+        assert not np.allclose(res_mitigated, res_ideal)
 
-    @qnode(dev_noise_free)
-    def ideal_circuit(w1, w2):
-        qml.templates.SimplifiedTwoDesign(w1, w2, wires=range(2))
-        return qml.expval(qml.PauliZ(0))
+    def test_single_return(self):
+        """Tests if the expected shape is returned when mitigating a circuit with a single return"""
+        from mitiq.zne.scaling import fold_global
+        from mitiq.zne.inference import RichardsonFactory
 
-    res_mitigated = mitigated_circuit(w1, w2)
-    res_ideal = ideal_circuit(w1, w2)
+        noise_strength = 0.05
 
-    assert res_mitigated.shape == res_ideal.shape
+        dev_noise_free = qml.device("default.mixed", wires=2)
+        dev = qml.transforms.insert(qml.AmplitudeDamping, noise_strength)(dev_noise_free)
+
+        n_wires = 2
+        n_layers = 2
+
+        shapes = qml.templates.SimplifiedTwoDesign.shape(n_wires, n_layers)
+        np.random.seed(0)
+        w1, w2 = [np.random.random(s) for s in shapes]
+
+        @qml.transforms.mitigate_with_zne([1, 2, 3], fold_global, RichardsonFactory.extrapolate)
+        @qnode(dev)
+        def mitigated_circuit(w1, w2):
+            qml.templates.SimplifiedTwoDesign(w1, w2, wires=range(2))
+            return qml.expval(qml.PauliZ(0))
+
+        @qnode(dev_noise_free)
+        def ideal_circuit(w1, w2):
+            qml.templates.SimplifiedTwoDesign(w1, w2, wires=range(2))
+            return qml.expval(qml.PauliZ(0))
+
+        res_mitigated = mitigated_circuit(w1, w2)
+        res_ideal = ideal_circuit(w1, w2)
+
+        assert res_mitigated.shape == res_ideal.shape
+        assert not np.allclose(res_mitigated, res_ideal)
+
+    def test_with_reps_per_factor(self):
+        """Tests if the expected shape is returned when mitigating a circuit with a reps_per_factor
+        set not equal to 1"""
+        from mitiq.zne.scaling import fold_gates_at_random
+        from mitiq.zne.inference import RichardsonFactory
+
+        noise_strength = 0.05
+
+        dev_noise_free = qml.device("default.mixed", wires=2)
+        dev = qml.transforms.insert(qml.AmplitudeDamping, noise_strength)(dev_noise_free)
+
+        n_wires = 2
+        n_layers = 2
+
+        shapes = qml.templates.SimplifiedTwoDesign.shape(n_wires, n_layers)
+        np.random.seed(0)
+        w1, w2 = [np.random.random(s) for s in shapes]
+
+        @qml.transforms.mitigate_with_zne([1, 2, 3], fold_gates_at_random, RichardsonFactory.extrapolate, reps_per_factor=2)
+        @qnode(dev)
+        def mitigated_circuit(w1, w2):
+            qml.templates.SimplifiedTwoDesign(w1, w2, wires=range(2))
+            return qml.expval(qml.PauliZ(0))
+
+        @qnode(dev_noise_free)
+        def ideal_circuit(w1, w2):
+            qml.templates.SimplifiedTwoDesign(w1, w2, wires=range(2))
+            return qml.expval(qml.PauliZ(0))
+
+        res_mitigated = mitigated_circuit(w1, w2)
+        res_ideal = ideal_circuit(w1, w2)
+
+        assert res_mitigated.shape == res_ideal.shape
+        assert not np.allclose(res_mitigated, res_ideal)
