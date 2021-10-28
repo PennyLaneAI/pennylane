@@ -470,13 +470,12 @@ class FermionicDoubleExcitation(Operation):
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane.templates import FermionicDoubleExcitation
 
             dev = qml.device('default.qubit', wires=5)
 
             @qml.qnode(dev)
             def circuit(weight, wires1=None, wires2=None):
-                FermionicDoubleExcitation(weight, wires1=wires1, wires2=wires2)
+                qml.FermionicDoubleExcitation(weight, wires1=wires1, wires2=wires2)
                 return qml.expval(qml.PauliZ(0))
 
             weight = 1.34817

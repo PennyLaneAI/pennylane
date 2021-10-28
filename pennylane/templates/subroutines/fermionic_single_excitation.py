@@ -109,13 +109,12 @@ class FermionicSingleExcitation(Operation):
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane.templates import FermionicSingleExcitation
 
             dev = qml.device('default.qubit', wires=3)
 
             @qml.qnode(dev)
             def circuit(weight, wires=None):
-                FermionicSingleExcitation(weight, wires=wires)
+                qml.FermionicSingleExcitation(weight, wires=wires)
                 return qml.expval(qml.PauliZ(0))
 
             weight = 0.56

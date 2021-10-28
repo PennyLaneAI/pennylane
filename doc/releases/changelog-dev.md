@@ -852,6 +852,10 @@
   It has instead been renamed to the `pad_with` parameter.
   [(#1805)](https://github.com/PennyLaneAI/pennylane/pull/1805)
 
+* Templates `SingleExcitationUnitary` and `DoubleExcitationUnitary` have been renamed
+  to `FermionicSingleExcitation` and `FermionicDoubleExcitation`, respectively.
+  [(#1822)](https://github.com/PennyLaneAI/pennylane/pull/1822)
+
 <h3>Bug fixes</h3>
 
 * The helper function `qml.math.block_diag` now is entirely differentiable when using
@@ -904,6 +908,9 @@
   [(#1750)](https://github.com/PennyLaneAI/pennylane/pull/1750)
 
 * Add the `jax` interface in QNode Documentation. [(#1755)](https://github.com/PennyLaneAI/pennylane/pull/1755)
+
+* Reorganized all the templates related to quantum chemistry under a common header `Quantum Chemistry templates`.
+  [(#1822)](https://github.com/PennyLaneAI/pennylane/pull/1822)
 
 <h3>Contributors</h3>
 
