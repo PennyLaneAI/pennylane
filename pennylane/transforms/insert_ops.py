@@ -203,10 +203,13 @@ def insert(
             op(*op_args, wires=w)
 
     for circuit_op in circuit.operations[num_preps:]:
-        apply(circuit_op)
-        if position == "all":
-            for w in circuit_op.wires:
-                op(*op_args, wires=w)
+        if isinstance(circuit_op, QuantumTape):
+            insert(circuit_op, op, op_args, position)
+        else:
+            apply(circuit_op)
+            if position == "all":
+                for w in circuit_op.wires:
+                    op(*op_args, wires=w)
 
     if position == "end":
         for w in circuit.wires:
