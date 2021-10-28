@@ -882,7 +882,7 @@ class TestDifferentiability:
 
         def cost_diag(weights):
             mt = qml.metric_tensor(qnode, approx="block-diag")(weights)
-            return mt
+            return np.diag(mt)
 
         jac = qml.jacobian(cost_diag)(self.weights)
         print(jac, self.expected_diag)
