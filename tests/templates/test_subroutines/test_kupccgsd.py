@@ -84,8 +84,8 @@ class TestDecomposition:
         weights = np.random.normal(0, 2 * np.pi, (k, n_excit_terms))
 
         n_gates = 1 + n_excit_terms * k
-        exp_unitary = [qml.templates.DoubleExcitationUnitary] * len(pair_double_terms_wires)
-        exp_unitary += [qml.templates.SingleExcitationUnitary] * len(gen_single_terms_wires)
+        exp_unitary = [qml.templates.FermionicDoubleExcitation] * len(pair_double_terms_wires)
+        exp_unitary += [qml.templates.FermionicSingleExcitation] * len(gen_single_terms_wires)
 
         op = qml.templates.kUpCCGSD(
             weights, wires=wires, k=k, delta_sz=delta_sz, init_state=init_state
@@ -492,12 +492,12 @@ def circuit_template(weights):
 
 def circuit_decomposed(weights):
     qml.BasisState(np.array([0, 0, 1, 1]), wires=[0, 1, 2, 3])
-    qml.templates.DoubleExcitationUnitary(weights[0][4], wires1=[0, 1], wires2=[2, 3])
-    qml.templates.DoubleExcitationUnitary(weights[0][5], wires1=[2, 3], wires2=[0, 1])
-    qml.templates.SingleExcitationUnitary(weights[0][0], wires=[0, 1, 2])
-    qml.templates.SingleExcitationUnitary(weights[0][1], wires=[1, 2, 3])
-    qml.templates.SingleExcitationUnitary(weights[0][2], wires=[2, 1, 0])
-    qml.templates.SingleExcitationUnitary(weights[0][3], wires=[3, 2, 1])
+    qml.templates.FermionicDoubleExcitation(weights[0][4], wires1=[0, 1], wires2=[2, 3])
+    qml.templates.FermionicDoubleExcitation(weights[0][5], wires1=[2, 3], wires2=[0, 1])
+    qml.templates.FermionicSingleExcitation(weights[0][0], wires=[0, 1, 2])
+    qml.templates.FermionicSingleExcitation(weights[0][1], wires=[1, 2, 3])
+    qml.templates.FermionicSingleExcitation(weights[0][2], wires=[2, 1, 0])
+    qml.templates.FermionicSingleExcitation(weights[0][3], wires=[3, 2, 1])
     return qml.expval(qml.PauliZ(0))
 
 

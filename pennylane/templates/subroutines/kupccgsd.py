@@ -64,7 +64,7 @@ def generalized_pair_doubles(wires):
 class kUpCCGSD(Operation):
     r"""Implements the k-Unitary Pair Coupled-Cluster Generalized Singles and Doubles (k-UpCCGSD) ansatz.
 
-    The k-UpCCGSD ansatz calls the :func:`~.SingleExcitationUnitary` and :func:`~.DoubleExcitationUnitary`
+    The k-UpCCGSD ansatz calls the :func:`~.FermionicSingleExcitation` and :func:`~.FermionicDoubleExcitation`
     templates to exponentiate the product of :math:`k` generalized singles and pair coupled-cluster doubles
     excitation operators. Here, "generalized" means that the single and double excitation terms do not
     distinguish between occupied and unoccupied orbitals. Additionally, the term "pair coupled-cluster"
@@ -90,7 +90,7 @@ class kUpCCGSD(Operation):
 
     Args:
         weights (tensor_like): Tensor containing the parameters :math:`\theta_{pr}` and :math:`\theta_{pqrs}`
-            entering the Z rotation in :func:`~.SingleExcitationUnitary` and :func:`~.DoubleExcitationUnitary`.
+            entering the Z rotation in :func:`~.FermionicSingleExcitation` and :func:`~.FermionicDoubleExcitation`.
             These parameters are the coupled-cluster amplitudes that need to be optimized for each generalized
             single and pair double excitation terms.
         wires (Iterable): wires that the template acts on
@@ -251,12 +251,12 @@ class kUpCCGSD(Operation):
 
             for layer in range(self.k):
                 for i, (w1, w2) in enumerate(self.d_wires):
-                    qml.templates.DoubleExcitationUnitary(
+                    qml.templates.FermionicDoubleExcitation(
                         weights[layer][len(self.s_wires) + i], wires1=w1, wires2=w2
                     )
 
                 for j, s_wires_ in enumerate(self.s_wires):
-                    qml.templates.SingleExcitationUnitary(weights[layer][j], wires=s_wires_)
+                    qml.templates.FermionicSingleExcitation(weights[layer][j], wires=s_wires_)
 
         return tape
 
