@@ -332,7 +332,7 @@ def _metric_tensor_cov_matrix(tape, diag_approx):
 
         for prob, obs, coeffs in zip(probs, obs_list, coeffs_list):
             # calculate the covariance matrix of this layer
-            scale = qml.math.convert_like(np.outer(coeffs, coeffs), prob)
+            scale = qml.math.convert_like(qml.math.outer(coeffs, coeffs), prob)
             scale = qml.math.cast_like(scale, prob)
             g = scale * qml.math.cov_matrix(prob, obs, wires=tape.wires, diag_approx=diag_approx)
             gs.append(g)
@@ -513,7 +513,7 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire):
     # Combine block diagonal and off-diagonal tapes
     tapes = diag_tapes + first_term_tapes
     # prepare block off-diagonal mask
-    mask = 1 - qml.math.block_diag([np.ones((bsize, bsize)) for bsize in block_sizes])
+    mask = 1 - qml.math.block_diag([qml.math.ones((bsize, bsize)) for bsize in block_sizes])
     # Required for slicing in processing_fn
     num_diag_tapes = len(diag_tapes)
 
@@ -545,8 +545,8 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire):
         off_diag_mt = first_term - second_term
 
         # Rescale first and second term
-        _coeffs = np.hstack(coeffs)
-        scale = qml.math.convert_like(np.outer(_coeffs, _coeffs), results[0])
+        _coeffs = qml.math.stack(coeffs, 1)
+        scale = qml.math.convert_like(qml.math.outer(_coeffs, _coeffs), results[0])
         off_diag_mt = scale * off_diag_mt
 
         # Combine block diagonal and off-diagonal

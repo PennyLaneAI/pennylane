@@ -881,24 +881,18 @@ class TestDifferentiability:
         qnode = qml.QNode(self.circuit, self.dev, interface="autograd", diff_method=diff_method)
 
         def cost_diag(weights):
-            mt = qml.metric_tensor(qnode, approx="block-diag")(weights)
-            return np.diag(mt)
+            return np.diag(qml.metric_tensor(qnode, approx="block-diag")(weights))
 
         jac = qml.jacobian(cost_diag)(self.weights)
-        print(jac, self.expected_diag)
         assert np.allclose(jac, self.expected_diag, atol=tol, rtol=0)
 
         def cost_full(weights):
             return qml.metric_tensor(qnode, approx=None)(weights)
 
         _cost_full = lambda weights: autodiff_metric_tensor(self.ansatz, num_wires=3)(weights)
-        print(np.round(_cost_full(self.weights), 6))
-        print(cost_full(self.weights))
         assert np.allclose(_cost_full(self.weights), cost_full(self.weights))
         jac = qml.jacobian(cost_full)(self.weights)
         expected_full = qml.jacobian(_cost_full)(self.weights)
-        print(np.round(expected_full, 6))
-        print(jac)
         assert np.allclose(expected_full, jac)
 
     def test_jax(self, diff_method, tol):
@@ -912,15 +906,19 @@ class TestDifferentiability:
         qnode = qml.QNode(self.circuit, self.dev, interface="jax", diff_method=diff_method)
 
         def cost_diag(weights):
-            return qml.metric_tensor(qnode, approx="block-diag")(weights)[2, 2]
+            return jnp.diag(qml.metric_tensor(qnode, approx="block-diag")(weights))
 
-        grad = jax.grad(cost_diag)(jnp.array(self.weights))
-        assert np.allclose(grad, self.expected_diag, atol=tol, rtol=0)
+        jac = jax.jacobian(cost_diag)(jnp.array(self.weights))
+        assert np.allclose(jac, self.expected_diag, atol=tol, rtol=0)
 
         def cost_full(weights):
-            return jnp.sum(qml.metric_tensor(qnode, approx=None)(weights))
+            return qml.metric_tensor(qnode, approx=None)(weights)
 
-        grad = jax.grad(cost_full)(jnp.array(self.weights))
+        _cost_full = lambda weights: autodiff_metric_tensor(self.ansatz, num_wires=3)(weights)
+        assert np.allclose(_cost_full(self.weights), cost_full(self.weights))
+        jac = jax.jacobian(cost_full)(self.weights)
+        expected_full = qml.jacobian(_cost_full)(self.weights)
+        assert np.allclose(expected_full, jac)
 
     def test_tf(self, diff_method, tol):
         """Test metric tensor differentiability in the TF interface"""
@@ -929,13 +927,17 @@ class TestDifferentiability:
 
         weights_t = tf.Variable(self.weights)
         with tf.GradientTape() as tape:
-            loss_diag = qml.metric_tensor(qnode, approx="block-diag")(weights_t)[2, 2]
-        grad = tape.gradient(loss_diag, weights_t)
-        assert np.allclose(grad, self.expected_diag, atol=tol, rtol=0)
+            loss_diag = tf.linalg.diag_part(qml.metric_tensor(qnode, approx="block-diag")(weights_t))
+        jac = tape.jacobian(loss_diag, weights_t)
+        assert np.allclose(jac, self.expected_diag, atol=tol, rtol=0)
 
         with tf.GradientTape() as tape:
-            loss_full = qml.math.sum(qml.metric_tensor(qnode, approx=None)(weights_t))
-        grad = tape.gradient(loss_full, weights_t)
+            loss_full = qml.metric_tensor(qnode, approx=None)(weights_t)
+        jac = tape.jacobian(loss_full, weights_t)
+        _cost_full = lambda weights: autodiff_metric_tensor(self.ansatz, num_wires=3)(weights)
+        assert np.allclose(_cost_full(self.weights), loss_full)
+        expected_full = qml.jacobian(_cost_full)(self.weights)
+        assert np.allclose(expected_full, jac)
 
     def test_torch(self, diff_method, tol):
         """Test metric tensor differentiability in the torch interface"""
@@ -944,18 +946,18 @@ class TestDifferentiability:
         qnode = qml.QNode(self.circuit, self.dev, interface="torch", diff_method=diff_method)
 
         weights_t = torch.tensor(self.weights, requires_grad=True)
-        loss_diag = qml.metric_tensor(qnode, approx="block-diag")(weights_t)[2, 2]
-        loss_diag.backward()
+        cost_diag = lambda w: torch.diag(qml.metric_tensor(qnode, approx="block-diag")(w))
+        jac = torch.autograd.functional.jacobian(cost_diag, weights_t)
 
-        grad = weights_t.grad
-        assert np.allclose(grad, self.expected_diag, atol=tol, rtol=0)
+        assert np.allclose(jac, self.expected_diag, atol=tol, rtol=0)
 
         weights_t = torch.tensor(self.weights, requires_grad=True)
-        loss_full = qml.math.sum(qml.metric_tensor(qnode, approx=None)(weights_t))
-        loss_full.backward()
-
-        grad = weights_t.grad
-
+        cost_full = lambda w: qml.metric_tensor(qnode, approx=None)(w)
+        _cost_full = lambda weights: autodiff_metric_tensor(self.ansatz, num_wires=3)(weights)
+        jac = torch.autograd.functional.jacobian(cost_full, weights_t)
+        expected_full = qml.jacobian(_cost_full)(self.weights)
+        assert np.allclose(_cost_full(self.weights), cost_full(weights_t).detach().numpy())
+        assert np.allclose(expected_full, jac)
 
 def test_generator_no_expval(monkeypatch):
     """Test exception is raised if subcircuit contains an
