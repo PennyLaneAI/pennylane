@@ -62,7 +62,7 @@ def mitigate_with_zne(
     **Example:**
 
     We first create a noisy device using ``default.mixed`` by adding :class:`~.AmplitudeDamping` to
-    each gate of circuits executed on the device using the :func:`~.insert` transform:
+    each gate of circuits executed on the device using the :func:`~.transforms.insert` transform:
 
     .. code-block:: python3
 
@@ -108,7 +108,7 @@ def mitigate_with_zne(
         method works by assuming that the circuit experiences a fixed amount of noise when executed
         on a noisy device that is enumerated by the parameter :math:`\gamma`. If an equivalent
         circuit can be run for a range of noise parameters :math:`\gamma`, then the results can be
-        extrapolated to the :math:`\gamma = 0` noise case.
+        extrapolated to the :math:`\gamma = 0` noiseless case.
 
         A key element of ZNE is the ability to run equivalent circuits for a range of noise
         parameters :math:`\gamma`. When :math:`\gamma` scales with the number of gates in the
