@@ -1501,7 +1501,7 @@ class TestLabel:
         assert op1.label() == "RX"
         assert op1.label(decimals=0) == "RX\n(x)"
 
-        op2 = qml.CRX("y", wires=(0,1))
+        op2 = qml.CRX("y", wires=(0, 1))
         assert op2.label(decimals=0) == "RX\n(y)"
 
         op3 = qml.Rot("x", "y", "z", wires=0)
