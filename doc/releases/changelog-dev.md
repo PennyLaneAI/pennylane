@@ -545,6 +545,9 @@
   eventually override the `RepresentationResolver` class.
   [(#1678)](https://github.com/PennyLaneAI/pennylane/pull/1678)
 
+* The operation `label` method now supports string variables.
+  [(#1815)](https://github.com/PennyLaneAI/pennylane/pull/1815)
+
 * It is now possible to draw QNodes that have been transformed by a 'batch transform'; that is,
   a transform that maps a single QNode into multiple circuits under the hood. Examples of
   batch transforms include `@qml.metric_tensor` and `@qml.gradients`.
