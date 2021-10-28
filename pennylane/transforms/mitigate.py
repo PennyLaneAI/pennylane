@@ -42,8 +42,8 @@ def mitigate_with_zne(
 
     Details on the functions passed to the ``folding`` and ``extrapolate`` arguments of this
     transform can be found in the usage details. This transform is compatible with functionality
-    from the `Mitiq <https://mitiq.readthedocs.io/en/stable/>`__ package, see the example and
-    usage details for further information.
+    from the `Mitiq <https://mitiq.readthedocs.io/en/stable/>`__ package (version 0.11.0 and above),
+    see the example and usage details for further information.
 
     Args:
         tape (QuantumTape): the circuit to be error mitigated
@@ -126,7 +126,7 @@ def mitigate_with_zne(
         ``scale_factor`` is a float, and ``folding_kwargs`` are optional arguments passed to the
         folding function. The output of the function should be the folded circuit as a quantum tape.
         Folding functionality is available from the
-        `Mitiq <https://mitiq.readthedocs.io/en/stable/>`__ package
+        `Mitiq <https://mitiq.readthedocs.io/en/stable/>`__ package (version 0.11.0 and above)
         in the
         `zne.scaling.folding <https://mitiq.readthedocs.io/en/stable/apidoc.html#module-mitiq.zne.scaling.folding>`__
         module.
@@ -138,7 +138,7 @@ def mitigate_with_zne(
         factors, and ``extrapolate_kwargs`` are optional keyword arguments. Extrapolation
         functionality is available using ``extrapolate`` methods of the factories in the
         `mitiq.zne.inference <https://mitiq.readthedocs.io/en/stable/apidoc.html#module-mitiq.zne.inference>`__
-        module.
+        module (version 0.11.0 and above).
     """
     folding_kwargs = folding_kwargs or {}
     extrapolate_kwargs = extrapolate_kwargs or {}
