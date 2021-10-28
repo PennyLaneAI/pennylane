@@ -184,6 +184,8 @@ def insert(
         >>> qnode_noisy(0.9, 0.4, 0.5, 0.6)
         tensor(0.72945434, requires_grad=True)
     """
+    circuit = circuit.expand(stop_at=lambda op: not isinstance(op, QuantumTape))
+
     if not isinstance(op, FunctionType) and op.num_wires != 1:
         raise ValueError("Only single-qubit operations can be inserted into the circuit")
 
@@ -203,13 +205,10 @@ def insert(
             op(*op_args, wires=w)
 
     for circuit_op in circuit.operations[num_preps:]:
-        if isinstance(circuit_op, QuantumTape):
-            insert(circuit_op, op, op_args, position)
-        else:
-            apply(circuit_op)
-            if position == "all":
-                for w in circuit_op.wires:
-                    op(*op_args, wires=w)
+        apply(circuit_op)
+        if position == "all":
+            for w in circuit_op.wires:
+                op(*op_args, wires=w)
 
     if position == "end":
         for w in circuit.wires:
