@@ -68,11 +68,12 @@ class TestInitialization:
 
         drawer = MPLDrawer(1, 1)
 
-        assert drawer._box_dx == 0.4
+        assert drawer._box_length == 0.8
         assert drawer._circ_rad == 0.3
         assert drawer._ctrl_rad == 0.1
         assert drawer._octrl_rad == 0.1
         assert drawer._swap_dx == 0.2
+        assert drawer._fontsize == 14
         plt.close()
 
     def test_wires_formatting(self):
@@ -531,12 +532,127 @@ class TestMeasure:
 
         plt.close()
 
-    def test_matplotlib_import_error(self, monkeypatch):
-        """Test that an error is raised if the MPLDrawer would be used without
-        an installed version of matplotlib."""
-        with monkeypatch.context() as m:
-            m.setitem(sys.modules, "matplotlib", None)
-            reload(sys.modules["pennylane.circuit_drawer.mpldrawer"])
-            assert not pennylane.circuit_drawer.mpldrawer.has_mpl
-            with pytest.raises(ImportError, match="Module matplotlib is required for"):
-                MPLDrawer(1, 1)
+
+class TestAutosize:
+    """Test the autosize keyword of the `box_gate` method"""
+
+    def text_in_box(self, drawer):
+        """This utility determines the last text drawn is inside the last patch drawn.
+        This is done over and over in this test class, and so extracted for convenience.
+
+        This is a complimentary approach to comparing sizing to that used in the drawer
+        class `text_dims` method
+        """
+
+        text = drawer.ax.texts[-1]
+        rect = drawer.ax.patches[-1]
+
+        renderer = drawer.fig.canvas.get_renderer()
+
+        # https://matplotlib.org/stable/api/_as_gen/matplotlib.artist.Artist.get_window_extent.html
+        text_bbox = text.get_window_extent(renderer)
+        rect_bbox = rect.get_window_extent(renderer)
+
+        # check all text corners inside rectangle
+        # https://matplotlib.org/stable/api/transformations.html
+        return all(rect_bbox.contains(*p) for p in text_bbox.corners())
+
+    def test_autosize_false(self):
+        """Test that the text is unchanged if autosize is set to False."""
+
+        drawer = MPLDrawer(n_layers=1, n_wires=2)
+        drawer.box_gate(0, (0, 1), text="very very long text", autosize=False)
+
+        t = drawer.ax.texts[0]
+        assert t.get_rotation() == 0
+        assert t.get_fontsize() == drawer._fontsize
+
+        plt.close()
+
+    def test_autosize_one_wire(self):
+        """Test case where the box is on only one wire.  The text should still
+        be inside the box, but not rotated."""
+
+        drawer = MPLDrawer(n_layers=1, n_wires=1)
+        drawer.box_gate(0, 0, text="very very long text", autosize=True)
+
+        t = drawer.ax.texts[0]
+        assert t.get_rotation() == 0
+
+        assert self.text_in_box(drawer)
+
+        plt.close()
+
+    def test_autosize_multiwires(self):
+        """Test case where the box is on multiple wires.  The text should
+        be rotated 90deg, and still inside the box."""
+
+        drawer = MPLDrawer(n_layers=1, n_wires=2)
+        drawer.box_gate(0, (0, 1), text="very very long text", autosize=True)
+
+        t = drawer.ax.texts[0]
+        assert t.get_rotation() == 90.0
+
+        assert self.text_in_box(drawer)
+
+        plt.close()
+
+    def test_multiline_text_single_wire(self):
+        """Test case where the box is on one wire and the text is skinny and tall.
+        If the text is too tall, it should still be shrunk to fit inside the box."""
+
+        drawer = MPLDrawer(n_layers=1, n_wires=1)
+        drawer.box_gate(0, 0, text="text\nwith\nall\nthe\nlines\nyep", autosize=True)
+
+        t = drawer.ax.texts[0]
+        assert t.get_rotation() == 0.0
+
+        assert self.text_in_box(drawer)
+
+        plt.close()
+
+    def text_tall_multitline_text_multiwires(self):
+        """Test case where the box is on mutiple wires and the text is skinny and tall.
+        If the text is just too tall and the width fits inside the box, the text should not
+        be rotated."""
+
+        drawer = MPLDrawer(n_layers=1, n_wires=2)
+        drawer.box_gate(
+            0,
+            (0, 1),
+            text="text\nwith\nall\nthe\nlines\nyep\ntoo\nmany\nlines\nway\ntoo\nmany",
+            autosize=True,
+        )
+
+        t = drawer.ax.texts[0]
+        assert t.get_rotation() == 0.0
+
+        assert self.text_in_box(drawer)
+
+        plt.close()
+
+    def test_wide_multline_text_multiwires(self):
+        """Test case where the box is on multiple wires and text is fat, tall,
+        and fatter than it is tall. It should be rotated."""
+
+        drawer = MPLDrawer(n_layers=1, n_wires=2)
+        drawer.box_gate(0, (0, 1), text="very very long text\nall\nthe\nlines\nyep", autosize=True)
+
+        assert self.text_in_box(drawer)
+
+        plt.close()
+
+
+def test_matplotlib_import_error(monkeypatch):
+    """Test that an error is raised if the MPLDrawer would be used without
+    an installed version of matplotlib.
+
+    This test needs to be the last in the suite because it makes a permanent change
+    to the system configuration.
+    """
+    with monkeypatch.context() as m:
+        m.setitem(sys.modules, "matplotlib", None)
+        reload(sys.modules["pennylane.circuit_drawer.mpldrawer"])
+        assert not pennylane.circuit_drawer.mpldrawer.has_mpl
+        with pytest.raises(ImportError, match="Module matplotlib is required for"):
+            MPLDrawer(1, 1)

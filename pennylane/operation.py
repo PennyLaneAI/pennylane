@@ -602,49 +602,6 @@ class Operation(Operator):
         s_1]=[-1/2, 1, -\pi/2]` is assumed for every parameter.
     """
 
-    # Attributes for compilation transforms
-    is_self_inverse = None
-    """bool or None: ``True`` if the operation is its own inverse.
-
-    If ``None``, all instances of the given operation will be ignored during
-    compilation transforms involving inverse cancellation.
-    """
-
-    is_symmetric_over_all_wires = None
-    """bool or None: ``True`` if the operation is the same if you exchange the order
-    of wires.
-
-    For example, ``qml.CZ(wires=[0, 1])`` has the same effect as ``qml.CZ(wires=[1,
-    0])`` due to symmetry of the operation.
-
-    If ``None``, all instances of the operation will be ignored during
-    compilation transforms that check for wire symmetry.
-    """
-
-    is_symmetric_over_control_wires = None
-    """bool or None: ``True`` if the operation is the same if you exchange the order
-    of all but the last wire.
-
-    For example, ``qml.Toffoli(wires=[0, 1, 2])`` has the same effect as
-    ``qml.Toffoli(wires=[1, 0, 2])``, but neither are the same as
-    ``qml.Toffoli(wires=[0, 2, 1])``.
-
-    If ``None``, all instances of the operation will be ignored during
-    compilation transforms that check for control-wire symmetry.
-    """
-
-    is_composable_rotation = None
-    """bool or None: ``True`` if composing multiple copies of the operation
-    results in an addition (or alternative accumulation) of parameters.
-
-    For example, ``qml.RZ`` is a composable rotation. Applying ``qml.RZ(0.1,
-    wires=0)`` followed by ``qml.RZ(0.2, wires=0)`` is equivalent to performing
-    a single rotation ``qml.RZ(0.3, wires=0)``.
-
-    If set to ``None``, the operation will be ignored during compilation
-    transforms that merge adjacent rotations.
-    """
-
     basis = None
     """str or None: The basis of an operation, or for controlled gates, of the
     target operation. If not ``None``, should take a value of ``"X"``, ``"Y"``,
@@ -652,19 +609,6 @@ class Operation(Operator):
 
     For example, ``X`` and ``CNOT`` have ``basis = "X"``, whereas
     ``ControlledPhaseShift`` and ``RZ`` have ``basis = "Z"``.
-    """
-
-    has_unitary_generator = None
-    """bool or None: ``True`` if the operation has a ``generator`` and the first
-    entry of that ``generator`` is unitary.
-
-    For example, ``qml.RZ.generator = [qml.PauliZ, -1/2]`` and ``qml.PauliZ`` is
-    unitary, so that ``qml.RZ.has_unitary_generator = True``. Contrary,
-    ``qml.PhaseShift.generator = [np.array([[0, 0], [0, 1]]), 1]`` where the
-    array in the first entry is not unitary, so that
-    ``qml.PhaseShift.has_unitary_generator = False``. This flag is used for
-    decompositions in algorithms using the Hadamard test like ``qml.metric_tensor``
-    when used without approximation.
     """
 
     @property
@@ -2011,7 +1955,7 @@ def has_nopar(obj):
 def has_unitary_gen(obj):
     """Returns ``True`` if an operator has a unitary_generator
     according to the ``has_unitary_generator`` flag."""
-    return obj.has_unitary_generator
+    return obj in qml.ops.qubit.attributes.has_unitary_generator
 
 
 @qml.BooleanFn
