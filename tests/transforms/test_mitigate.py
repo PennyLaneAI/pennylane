@@ -139,6 +139,13 @@ def skip_if_no_mitiq_support():
         pytest.skip("Mitiq not available")
 
 
+@pytest.fixture
+def skip_if_no_pl_qiskit_support():
+    """Fixture to skip if pennylane_qiskit is not available"""
+    pytest.importorskip("pennylane_qiskit")
+
+
+@pytest.mark.usefixtures("skip_if_no_pl_qiskit_support")
 @pytest.mark.usefixtures("skip_if_no_mitiq_support")
 class TestMitiqIntegration:
     """Tests if the mitigate_with_zne transform is compatible with using mitiq as a backend"""
