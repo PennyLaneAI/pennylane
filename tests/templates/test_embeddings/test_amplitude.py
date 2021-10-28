@@ -220,24 +220,6 @@ class TestInputs:
         # No normalization error is raised
         circuit(x=inputs)
 
-    def test_deprecated_pad_arg(self):
-        """Test that the pad argument raises a deprecation warning"""
-
-        num_qubits = 2
-        dev = qml.device("default.qubit", wires=num_qubits)
-        inputs = np.array([1.0, 0.0, 0.0, 0.0])
-
-        @qml.qnode(dev)
-        def circuit(x=None):
-            qml.AmplitudeEmbedding(x, list(range(num_qubits)), pad=0.0, normalize=True)
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.warns(
-            UserWarning,
-            match="will be replaced by the pad_with option in future versions",
-        ):
-            circuit(x=inputs)
-
     def test_id(self):
         """Tests that the id attribute can be set."""
         template = qml.AmplitudeEmbedding(np.array([1, 0]), wires=[0], id="a")

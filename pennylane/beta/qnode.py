@@ -407,24 +407,26 @@ class QNode:
                 f"{backprop_interface} interface."
             )
 
-        if device.shots is None and backprop_devices is not None:
+        if backprop_devices is not None:
+            if device.shots is None:
+                # device is analytic and has child devices that support backpropagation natively
 
-            # device is analytic and has child devices that support backpropagation natively
+                if interface in backprop_devices:
+                    # TODO: need a better way of passing existing device init options
+                    # to a new device?
+                    device = qml.device(
+                        backprop_devices[interface],
+                        wires=device.wires,
+                        shots=device.shots,
+                    )
+                    return "backprop", {}, device
 
-            if interface in backprop_devices:
-                # TODO: need a better way of passing existing device init options
-                # to a new device?
-                device = qml.device(
-                    backprop_devices[interface],
-                    wires=device.wires,
-                    shots=device.shots,
+                raise qml.QuantumFunctionError(
+                    f"Device {device.short_name} only supports diff_method='backprop' when using the "
+                    f"{list(backprop_devices.keys())} interfaces."
                 )
-                return "backprop", {}, device
 
-            raise qml.QuantumFunctionError(
-                f"Device {device.short_name} only supports diff_method='backprop' when using the "
-                f"{list(backprop_devices.keys())} interfaces."
-            )
+            raise qml.QuantumFunctionError("Backpropagation is only supported when shots=None.")
 
         raise qml.QuantumFunctionError(
             f"The {device.short_name} device does not support native computations with "
