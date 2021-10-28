@@ -14,7 +14,6 @@
 """Multiple dispatch functions"""
 # pylint: disable=import-outside-toplevel,too-many-return-statements
 import warnings
-from importlib import import_module
 
 from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
@@ -428,7 +427,7 @@ def frobenius_inner_product(A, B, normalize=False):
     return inner_product
 
 
-def scatter_element_add(tensor, index, value, like=None):
+def scatter_element_add(tensor, index, value):
     """In-place addition of a multidimensional value over various
     indices of a tensor.
 
