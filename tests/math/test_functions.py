@@ -1419,6 +1419,72 @@ def test_block_diag(tensors):
     assert fn.allclose(res, expected)
 
 
+class TestBlockDiagDiffability:
+
+    expected = lambda self, x, y: np.array(
+        [
+            [[-np.sin(x * y) * y, -np.sin(x * y) * x], [0, 0], [0, 0]],
+            [[0, 0], [1.0, 0.0], [0, 1.2]],
+            [[0, 0], [2 * x, -1 / 3], [-1 / y, x / y ** 2]],
+        ]
+    )
+
+    def test_autograd(self):
+        """Tests for differentiating the block diagonal function with autograd."""
+        tensors = lambda x, y: [
+            np.array([[fn.cos(x * y)]]),
+            np.array([[x, 1.2 * y], [x ** 2 - y / 3, -x / y]]),
+        ]
+        f = lambda x, y: fn.block_diag(tensors(x, y))
+        x, y = 0.2, 1.5
+        res = qml.jacobian(f)(x, y)
+        exp = self.expected(x, y)
+        # Transposes in the following because autograd behaves strangely
+        assert fn.allclose(res[:, :, 0].T, exp[:, :, 0])
+        assert fn.allclose(res[:, :, 1].T, exp[:, :, 1])
+
+    def test_jax(self):
+        """Tests for differentiating the block diagonal function with JAX."""
+        jax = pytest.importorskip("jax")
+        tensors = lambda x, y: [
+            jnp.array([[fn.cos(x * y)]]),
+            jnp.array([[x, 1.2 * y], [x ** 2 - y / 3, -x / y]]),
+        ]
+        f = lambda x, y: fn.block_diag(tensors(x, y))
+        x, y = 0.2, 1.5
+        res = jax.jacobian(f, argnums=[0, 1])(x, y)
+        exp = self.expected(x, y)
+        assert fn.allclose(exp[:, :, 0], res[0])
+        assert fn.allclose(exp[:, :, 1], res[1])
+
+    def test_tf(self):
+        """Tests for differentiating the block diagonal function with Tensorflow."""
+        tf = pytest.importorskip("tensorflow")
+        x, y = [tf.Variable([[0.2]]), tf.Variable([[0.1, 0.2], [0.3, 0.4]])]
+        with tf.GradientTape() as tape:
+            out = fn.block_diag([x, y])
+        res = tape.jacobian(out, (x, y))
+        exp_0 = np.zeros((3, 3, 1, 1))
+        exp_0[0, 0, 0, 0] = 1.0
+        exp_1 = np.zeros((3, 3, 2, 2))
+        exp_1[1, 1, 0, 0] = exp_1[1, 2, 0, 1] = exp_1[2, 1, 1, 0] = exp_1[2, 2, 1, 1] = 1.0
+        assert fn.allclose(exp_0, res[0])
+        assert fn.allclose(exp_1, res[1])
+
+    def test_torch(self):
+        """Tests for differentiating the block diagonal function with Torch."""
+        torch = pytest.importorskip("torch")
+        x, y = [torch.tensor([[0.2]]), torch.tensor([[0.1, 0.2], [0.3, 0.4]])]
+        f = lambda x, y: fn.block_diag([x, y])
+        res = torch.autograd.functional.jacobian(f, (x, y))
+        exp_0 = np.zeros((3, 3, 1, 1))
+        exp_0[0, 0, 0, 0] = 1.0
+        exp_1 = np.zeros((3, 3, 2, 2))
+        exp_1[1, 1, 0, 0] = exp_1[1, 2, 0, 1] = exp_1[2, 1, 1, 0] = exp_1[2, 2, 1, 1] = 1.0
+        assert fn.allclose(exp_0, res[0])
+        assert fn.allclose(exp_1, res[1])
+
+
 gather_data = [
     torch.tensor([[1, 2, 3], [-1, -6, -3]]),
     tf.Variable([[1, 2, 3], [-1, -6, -3]]),
