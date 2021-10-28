@@ -594,33 +594,312 @@ class TestMetricTensor:
         assert [[type(op) for op in tape.operations] for tape in tapes] == expected_ops
 
 
-@pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
+fixed_pars = np.array([-0.2, 0.2, 0.5, 0.3, 0.7], requires_grad=False)
+
+
+def fubini_ansatz0(params, wires=None):
+    qml.RX(params[0], wires=0)
+    qml.RY(fixed_pars[0], wires=0)
+    qml.CNOT(wires=[wires[0], wires[1]])
+    qml.RZ(params[1], wires=0)
+    qml.CNOT(wires=[wires[0], wires[1]])
+
+
+def fubini_ansatz1(params, wires=None):
+    qml.RX(fixed_pars[1], wires=0)
+    for wire in wires:
+        qml.Rot(*params[0][wire], wires=wire)
+    qml.CNOT(wires=[0, 1])
+    qml.RY(fixed_pars[1], wires=0)
+    qml.CNOT(wires=[1, 2])
+    for wire in wires:
+        qml.Rot(*params[1][wire], wires=wire)
+    qml.CNOT(wires=[1, 2])
+    qml.RX(fixed_pars[2], wires=1)
+
+
+def fubini_ansatz2(params0, params1, wires=None):
+    qml.RX(fixed_pars[1], wires=0)
+    qml.RX(fixed_pars[3], wires=1)
+    qml.CNOT(wires=[0, 1])
+    qml.RY(params0, wires=0)
+    qml.RY(params0, wires=1)
+    qml.CNOT(wires=[0, 1])
+    qml.RX(params1, wires=0)
+    qml.RX(params1, wires=1)
+
+
+def fubini_ansatz3(params0, params1, params2, wires=None):
+    qml.RX(fixed_pars[1], wires=0)
+    qml.RX(fixed_pars[3], wires=1)
+    qml.CNOT(wires=[0, 1])
+    qml.CNOT(wires=[1, 2])
+    qml.RX(params0, wires=0)
+    qml.RX(params0, wires=1)
+    qml.CNOT(wires=[0, 1])
+    qml.CNOT(wires=[1, 2])
+    qml.CNOT(wires=[2, 0])
+    qml.RY(params1, wires=0)
+    qml.RY(params1, wires=1)
+    qml.RY(params1, wires=2)
+    qml.RZ(params2, wires=0)
+    qml.RZ(params2, wires=1)
+    qml.RZ(params2, wires=2)
+
+
+def fubini_ansatz4(params00, params01, params10, params11, wires=None):
+    qml.RY(fixed_pars[3], wires=0)
+    qml.RY(fixed_pars[2], wires=1)
+    qml.CNOT(wires=[0, 1])
+    qml.CNOT(wires=[1, 2])
+    qml.RY(fixed_pars[4], wires=0)
+    qml.RX(params00, wires=0)
+    qml.CNOT(wires=[0, 1])
+    qml.RX(params01, wires=1)
+    qml.RZ(params10, wires=1)
+    qml.CNOT(wires=[0, 1])
+    qml.RZ(params11, wires=1)
+
+
+def fubini_ansatz5(params0, params1, wires=None):
+    fubini_ansatz4(params0, params0, params1, params1, wires=wires)
+
+
+def fubini_ansatz6(params0, params1, wires=None):
+    fubini_ansatz4(params0, params0, params1, -params1, wires=wires)
+
+
+def fubini_ansatz7(params0, params1, wires=None):
+    qml.RX(fixed_pars[1], wires=[0])
+    qml.RY(fixed_pars[3], wires=[0])
+    qml.RZ(fixed_pars[2], wires=[0])
+    qml.RX(fixed_pars[2], wires=[1])
+    qml.RY(fixed_pars[2], wires=[1])
+    qml.RZ(fixed_pars[4], wires=[1])
+    qml.CNOT(wires=[0, 1])
+    qml.RX(fixed_pars[0], wires=[0])
+    qml.RY(fixed_pars[1], wires=[0])
+    qml.RZ(fixed_pars[3], wires=[0])
+    qml.RX(fixed_pars[1], wires=[1])
+    qml.RY(fixed_pars[2], wires=[1])
+    qml.RZ(fixed_pars[0], wires=[1])
+    qml.CNOT(wires=[0, 1])
+    qml.RX(params0, wires=[0])
+    qml.RX(params0, wires=[1])
+    qml.CNOT(wires=[0, 1])
+    qml.RY(fixed_pars[4], wires=[1])
+    qml.RY(params1, wires=[0])
+    qml.RY(params1, wires=[1])
+    qml.CNOT(wires=[0, 1])
+    qml.RX(fixed_pars[2], wires=[1])
+
+
+fubini_ansatze = [
+    fubini_ansatz0,
+    fubini_ansatz1,
+    fubini_ansatz2,
+    fubini_ansatz3,
+    fubini_ansatz4,
+    fubini_ansatz5,
+    fubini_ansatz6,
+    fubini_ansatz7,
+]
+
+fubini_params = [
+    (np.array([0.3434, -0.7245345]),),
+    (
+        np.reshape(
+            [
+                0.73,
+                0.49,
+                0.04,
+                0.29,
+                0.45,
+                0.59,
+                0.64,
+                0.06,
+                0.26,
+                0.93,
+                0.14,
+                0.46,
+                0.31,
+                0.83,
+                0.79,
+                0.25,
+                0.40,
+                0.16,
+            ],
+            (2, 3, 3),
+        ),
+    ),
+    (-0.1111, -0.2222),
+    (-0.1111, -0.2222, 0.4554),
+    (-0.1735, -0.1735, -0.2846, -0.2846),
+    (-0.1735, -0.2846),
+    (-0.1735, -0.2846),
+    (-0.1111, 0.3333),
+]
+
+
+def autodiff_metric_tensor(ansatz, num_wires):
+    """Compute the metric tensor by full state vector
+    differentiation via autograd."""
+    dev = qml.device("default.qubit", wires=num_wires)
+
+    @qml.qnode(dev)
+    def qnode(*params):
+        ansatz(*params, wires=dev.wires)
+        return qml.state()
+
+    def mt(*params):
+        state = qnode(*params)
+        rqnode = lambda *params: np.real(qnode(*params))
+        iqnode = lambda *params: np.imag(qnode(*params))
+        jac = qml.jacobian(rqnode)(*params) + 1j * qml.jacobian(iqnode)(*params)
+        psidpsi = np.tensordot(np.conj(state), jac, axes=([0], [0]))
+        return np.real(
+            np.tensordot(np.conj(jac), jac, axes=([0], [0]))
+            - np.tensordot(np.conj(psidpsi), psidpsi, axes=0)
+        )
+
+    return mt
+
+
+class TestFullMetricTensor:
+
+    num_wires = 3
+
+    @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
+    def test_correct_output_autograd(self, ansatz, params):
+        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
+        dev = qml.device("default.qubit.autograd", wires=self.num_wires + 1)
+
+        @qml.qnode(dev, interface="autograd")
+        def circuit(*params):
+            """Circuit with dummy output to create a QNode."""
+            ansatz(*params, dev.wires[:-1])
+            return qml.expval(qml.PauliZ(0))
+
+        mt = qml.metric_tensor(circuit, approx=None)(*params)
+
+        assert np.allclose(mt, expected)
+
+    @pytest.mark.xfail(reason="JAX does not support the forward pass metric tensor.")
+    @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
+    def test_correct_output_jax(self, ansatz, params):
+        jax = pytest.importorskip("jax")
+        from jax import numpy as jnp
+
+        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
+        dev = qml.device("default.qubit.jax", wires=self.num_wires + 1)
+
+        params = tuple(jnp.array(p) for p in params)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(*params):
+            """Circuit with dummy output to create a QNode."""
+            ansatz(*params, dev.wires[:-1])
+            return qml.expval(qml.PauliZ(0))
+
+        mt = qml.metric_tensor(circuit, approx=None)(*params)
+
+        assert np.allclose(mt, expected)
+
+    @pytest.mark.xfail(
+        reason="The torch implementation is not adapted to the forward pass metric tensor yet."
+    )
+    @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
+    def test_correct_output_torch(self, ansatz, params):
+        torch = pytest.importorskip("torch")
+        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
+        dev = qml.device("default.qubit.torch", wires=self.num_wires + 1)
+
+        params = tuple(torch.tensor(p, dtype=torch.float64, requires_grad=True) for p in params)
+
+        @qml.qnode(dev, interface="torch")
+        def circuit(*params):
+            """Circuit with dummy output to create a QNode."""
+            ansatz(*params, dev.wires[:-1])
+            return qml.expval(qml.PauliZ(0))
+
+        qml.metric_tensor(circuit, approx="block-diag")(*params)
+        mt = qml.metric_tensor(circuit, approx=None)(*params)
+
+        assert np.allclose(mt, expected)
+
+    @pytest.mark.xfail(
+        reason="The tensorflow implementation is not adapted to the forward pass metric tensor yet."
+    )
+    @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
+    def test_correct_output_tf(self, ansatz, params):
+        tf = pytest.importorskip("tensorflow")
+        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
+        dev = qml.device("default.qubit.tf", wires=self.num_wires + 1)
+
+        params = tuple(tf.Variable(p, dtype=tf.float64) for p in params)
+
+        @qml.qnode(dev, interface="tf")
+        def circuit(*params):
+            """Circuit with dummy output to create a QNode."""
+            ansatz(*params, dev.wires[:-1])
+            return qml.expval(qml.PauliZ(0))
+
+        with tf.GradientTape() as t:
+            qml.metric_tensor(circuit, approx="block-diag")(*params)
+            mt = qml.metric_tensor(circuit, approx=None)(*params)
+
+        assert np.allclose(mt, expected)
+
+
+@pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
 class TestDifferentiability:
     """Test for metric tensor differentiability"""
 
-    def circuit(self, weights):
+    def ansatz(self, weights, wires=None):
         qml.RX(weights[0], wires=0)
         qml.RY(weights[1], wires=0)
         qml.CNOT(wires=[0, 1])
-        qml.PhaseShift(weights[2], wires=1)
+        qml.RZ(weights[2], wires=1)
+
+    def circuit(self, weights):
+        self.ansatz(weights)
         return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
 
-    dev = qml.device("default.qubit", wires=2)
-    weights = np.array([0.432, 0.12, -0.432], requires_grad=True)
+    dev = qml.device("default.qubit", wires=3)
+    weights = np.array([0.432, 0.12, -0.292], requires_grad=True)
     a, b, c = weights
-    expected = np.array(
-        [np.cos(a) * np.cos(b) ** 2 * np.sin(a) / 2, np.cos(a) ** 2 * np.sin(2 * b) / 4, 0]
+    expected_diag = np.array(
+        [
+            [0, 0, 0],
+            [-np.sin(2 * a) / 4, 0, 0],
+            [np.cos(a) * np.cos(b) ** 2 * np.sin(a) / 2, np.cos(a) ** 2 * np.sin(2 * b) / 4, 0],
+        ]
     )
 
     def test_autograd(self, diff_method, tol):
         """Test metric tensor differentiability in the autograd interface"""
         qnode = qml.QNode(self.circuit, self.dev, interface="autograd", diff_method=diff_method)
 
-        def cost(weights):
-            return qml.metric_tensor(qnode, approx="block-diag")(weights)[2, 2]
+        def cost_diag(weights):
+            mt = qml.metric_tensor(qnode, approx="block-diag")(weights)
+            return mt
 
-        grad = qml.grad(cost)(self.weights)
-        assert np.allclose(grad, self.expected, atol=tol, rtol=0)
+        jac = qml.jacobian(cost_diag)(self.weights)
+        print(jac, self.expected_diag)
+        assert np.allclose(jac, self.expected_diag, atol=tol, rtol=0)
+
+        def cost_full(weights):
+            return qml.metric_tensor(qnode, approx=None)(weights)
+
+        _cost_full = lambda weights: autodiff_metric_tensor(self.ansatz, num_wires=3)(weights)
+        print(np.round(_cost_full(self.weights), 6))
+        print(cost_full(self.weights))
+        assert np.allclose(_cost_full(self.weights), cost_full(self.weights))
+        jac = qml.jacobian(cost_full)(self.weights)
+        expected_full = qml.jacobian(_cost_full)(self.weights)
+        print(np.round(expected_full, 6))
+        print(jac)
+        assert np.allclose(expected_full, jac)
 
     def test_jax(self, diff_method, tol):
         """Test metric tensor differentiability in the JAX interface"""
@@ -632,11 +911,16 @@ class TestDifferentiability:
 
         qnode = qml.QNode(self.circuit, self.dev, interface="jax", diff_method=diff_method)
 
-        def cost(weights):
+        def cost_diag(weights):
             return qml.metric_tensor(qnode, approx="block-diag")(weights)[2, 2]
 
-        grad = jax.grad(cost)(jnp.array(self.weights))
-        assert np.allclose(grad, self.expected, atol=tol, rtol=0)
+        grad = jax.grad(cost_diag)(jnp.array(self.weights))
+        assert np.allclose(grad, self.expected_diag, atol=tol, rtol=0)
+
+        def cost_full(weights):
+            return jnp.sum(qml.metric_tensor(qnode, approx=None)(weights))
+
+        grad = jax.grad(cost_full)(jnp.array(self.weights))
 
     def test_tf(self, diff_method, tol):
         """Test metric tensor differentiability in the TF interface"""
@@ -645,23 +929,32 @@ class TestDifferentiability:
 
         weights_t = tf.Variable(self.weights)
         with tf.GradientTape() as tape:
-            loss = qml.metric_tensor(qnode, approx="block-diag")(weights_t)[2, 2]
-        grad = tape.gradient(loss, weights_t)
-        assert np.allclose(grad, self.expected, atol=tol, rtol=0)
+            loss_diag = qml.metric_tensor(qnode, approx="block-diag")(weights_t)[2, 2]
+        grad = tape.gradient(loss_diag, weights_t)
+        assert np.allclose(grad, self.expected_diag, atol=tol, rtol=0)
+
+        with tf.GradientTape() as tape:
+            loss_full = qml.math.sum(qml.metric_tensor(qnode, approx=None)(weights_t))
+        grad = tape.gradient(loss_full, weights_t)
 
     def test_torch(self, diff_method, tol):
         """Test metric tensor differentiability in the torch interface"""
         torch = pytest.importorskip("torch")
 
-        dev = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(self.circuit, self.dev, interface="torch", diff_method=diff_method)
 
         weights_t = torch.tensor(self.weights, requires_grad=True)
-        loss = qml.metric_tensor(qnode, approx="block-diag")(weights_t)[2, 2]
-        loss.backward()
+        loss_diag = qml.metric_tensor(qnode, approx="block-diag")(weights_t)[2, 2]
+        loss_diag.backward()
 
         grad = weights_t.grad
-        assert np.allclose(grad, self.expected, atol=tol, rtol=0)
+        assert np.allclose(grad, self.expected_diag, atol=tol, rtol=0)
+
+        weights_t = torch.tensor(self.weights, requires_grad=True)
+        loss_full = qml.math.sum(qml.metric_tensor(qnode, approx=None)(weights_t))
+        loss_full.backward()
+
+        grad = weights_t.grad
 
 
 def test_generator_no_expval(monkeypatch):
@@ -676,6 +969,65 @@ def test_generator_no_expval(monkeypatch):
 
         with pytest.raises(qml.QuantumFunctionError, match="no corresponding observable"):
             qml.metric_tensor(tape, approx="block-diag")
+
+
+def test_error_missing_aux_wire():
+    """Tests that a special error is raised if the requested (or default, if not given)
+    auxiliary wire for the Hadamard test is missing."""
+    dev = qml.device("default.qubit", wires=qml.wires.Wires(["wire1", "wire2"]))
+
+    @qml.qnode(dev)
+    def circuit(x, z):
+        qml.RX(x, wires="wire1")
+        qml.RZ(z, wires="wire2")
+        qml.CNOT(wires=["wire1", "wire2"])
+        qml.RX(x, wires="wire1")
+        qml.RZ(z, wires="wire2")
+        return qml.expval(qml.PauliZ("wire2"))
+
+    x = np.array(0.5, requires_grad=True)
+    z = np.array(0.1, requires_grad=True)
+
+    with pytest.raises(qml.wires.WireError, match="Hadamard tests"):
+        qml.metric_tensor(circuit, approx=None)(x, z)
+    with pytest.raises(qml.wires.WireError, match="Hadamard tests"):
+        qml.metric_tensor(circuit, approx=None, aux_wire=None)(x, z)
+
+
+def test_no_error_missing_aux_wire_not_used():
+    """Tests that a no error is raised if the requested (or default, if not given)
+    auxiliary wire for the Hadamard test is missing but it is not used, either
+    because ``approx`` is used or because there only is a diagonal contribution."""
+    dev = qml.device("default.qubit", wires=qml.wires.Wires(["wire1", "wire2"]))
+
+    @qml.qnode(dev)
+    def circuit_single_block(x, z):
+        """This circuit has a metric tensor that consists
+        of a single block in the block diagonal "approximation"."""
+        qml.RX(x, wires="wire1")
+        qml.RZ(z, wires="wire2")
+        qml.CNOT(wires=["wire1", "wire2"])
+        return qml.expval(qml.PauliZ("wire2"))
+
+    @qml.qnode(dev)
+    def circuit_multi_block(x, z):
+        """This circuit has a metric tensor that consists
+        of multiple blocks and thus is approximated when only
+        computing the block diagonal."""
+        qml.RX(x, wires="wire1")
+        qml.RZ(z, wires="wire2")
+        qml.CNOT(wires=["wire1", "wire2"])
+        qml.RX(x, wires="wire1")
+        qml.RZ(z, wires="wire2")
+        return qml.expval(qml.PauliZ("wire2"))
+
+    x = np.array(0.5, requires_grad=True)
+    z = np.array(0.1, requires_grad=True)
+
+    qml.metric_tensor(circuit_single_block, approx=None)(x, z)
+    qml.metric_tensor(circuit_single_block, approx=None, aux_wire="aux_wire")(x, z)
+    qml.metric_tensor(circuit_multi_block, approx="block-diag")(x, z)
+    qml.metric_tensor(circuit_multi_block, approx="block-diag", aux_wire="aux_wire")(x, z)
 
 
 class TestDeprecatedQNodeMethod:

@@ -17,9 +17,11 @@ methods of computing the metric tensor.
 """
 import functools
 import warnings
+from inspect import signature
 
-import numpy as np
 import pennylane as qml
+from pennylane import numpy as np
+from pennylane.circuit_graph import LayerData
 
 from .batch_transform import batch_transform
 
@@ -35,7 +37,7 @@ _OP_TO_CGEN = {
 }
 
 
-def expand_fn(tape, approx="block-diag", diag_approx=None, allow_nonunitary=True):
+def expand_fn(tape, approx="block-diag", diag_approx=None, allow_nonunitary=True, aux_wire=None):
     """Set the metric tensor based on whether non-unitary gates are allowed."""
     # pylint: disable=unused-argument
     if not allow_nonunitary and approx is None:  # pragma: no cover
@@ -221,10 +223,21 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
     mt_fn = self.default_qnode_wrapper(qnode, targs, tkwargs)
 
     _expand_fn = lambda tape: self.expand_fn(tape, *targs, **tkwargs)
+    # Extract number of arguments
+    # sig_pars = signature(qnode.func).parameters
+    # num_args = sum(par.default is par.empty for par in sig_pars.values())
+    # cjac_fn = qml.transforms.classical_jacobian(qnode, argnum=list(range(num_args)), expand_fn=_expand_fn)
     cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=_expand_fn)
 
     def wrapper(*args, **kwargs):
-        mt = mt_fn(*args, **kwargs)
+        try:
+            mt = mt_fn(*args, **kwargs)
+        except qml.wires.WireError as e:
+            raise qml.wires.WireError(
+                "A wire was not found while executing tapes for the metric tensor. "
+                "Probably you tried to use Hadamard tests and the device does not provide an "
+                "additional wire or the requested auxiliary wire does not exist on the device."
+            ) from e
 
         if not hybrid:
             return mt
@@ -396,19 +409,19 @@ def _get_first_term_tapes(tape, layer_i, layer_j, allow_nonunitary, aux_wire):
     tapes = []
     ids = []
     # Exclude the backwards cone of layer_i from the backwards cone of layer_j
-    ops_between_cgens = [op for op in layer_j[0] if op not in layer_i[0]]
+    ops_between_cgens = [op for op in layer_j.pre_ops if op not in layer_i.pre_ops]
     # Iterate over differentiated operation in first layer
-    for diffed_op_i, par_idx_i in zip(*layer_i[1:3]):
-        gen_op_i = _get_gen_op(diffed_op_i, aux_wire, allow_nonunitary)
+    for diffed_op_i, par_idx_i in zip(layer_i.ops, layer_i.param_inds):
+        gen_op_i = _get_gen_op(diffed_op_i, allow_nonunitary, aux_wire)
         # Iterate over differentiated operation in second layer
         # There will be one tape per pair of differentiated operations
-        for diffed_op_j, par_idx_j in zip(*layer_j[1:3]):
-            gen_op_j = _get_gen_op(diffed_op_j, aux_wire, allow_nonunitary)
+        for diffed_op_j, par_idx_j in zip(layer_j.ops, layer_j.param_inds):
+            gen_op_j = _get_gen_op(diffed_op_j, allow_nonunitary, aux_wire)
             with tape.__class__() as new_tape:
                 # Initialize auxiliary wire
                 qml.Hadamard(wires=aux_wire)
                 # Apply backward cone of first layer
-                for op in layer_i[0]:
+                for op in layer_i.pre_ops:
                     qml.apply(op)
                 # Controlled-generator operation of first diff'ed op
                 qml.apply(gen_op_i)
@@ -474,16 +487,26 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire):
     # as well as the generator observables and generator coefficients for each diff'ed operation
     diag_tapes, diag_proc_fn, obs_list, coeffs = _metric_tensor_cov_matrix(tape, diag_approx=False)
     graph = tape.graph
-    layers = list(graph.iterate_parametrized_layers())
+    par_idx_to_trainable_idx = {idx: i for i, idx in enumerate(sorted(tape.trainable_params))}
+    layers = graph.iterate_parametrized_layers()
+    layers = [
+        LayerData(
+            layer.pre_ops,
+            layer.ops,
+            tuple(par_idx_to_trainable_idx[idx] for idx in layer[2]),
+            layer.post_ops,
+        )
+        for layer in layers
+    ]
 
     first_term_tapes = []
     ids = []
     block_sizes = []
     # Get all tapes for the first term of the metric tensor
     for idx_i, layer_i in enumerate(layers):
-        block_sizes.append(len(layer_i[2]))
+        block_sizes.append(len(layer_i.param_inds))
         for layer_j in layers[idx_i + 1 :]:
-            _tapes, _ids = _get_first_term_tapes(tape, layer_i, layer_j, allow_nonunitary)
+            _tapes, _ids = _get_first_term_tapes(tape, layer_i, layer_j, allow_nonunitary, aux_wire)
             first_term_tapes.extend(_tapes)
             ids.extend(_ids)
 
@@ -502,7 +525,8 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire):
         first_term = qml.math.zeros_like(diag_mt)
         for result, idx in zip(off_diag_res, ids):
             # The metric tensor is symmetric
-            first_term[idx] = first_term[idx[::-1]] = result
+            first_term = qml.math.scatter_element_add(first_term, idx, result[0])
+            first_term = qml.math.scatter_element_add(first_term, idx[::-1], result[0])
 
         # Second terms of block off-diagonal metric tensor
         expvals = []
@@ -514,16 +538,15 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire):
                 expvals.append(qml.math.dot(l, p))
 
         # Construct <\partial_i\psi|\psi><\psi|\partial_j\psi> and mask it
-        second_term = np.outer(expvals, expvals)
+        expvals = qml.math.convert_like(expvals, results[0])
+        second_term = qml.math.tensordot(expvals, expvals, 0) * mask
         second_term = qml.math.convert_like(second_term, results[0])
-        second_term = qml.math.cast_like(second_term, results[0]) * mask
         # Subtract second term from first term
         off_diag_mt = first_term - second_term
 
         # Rescale first and second term
         _coeffs = np.hstack(coeffs)
         scale = qml.math.convert_like(np.outer(_coeffs, _coeffs), results[0])
-        scale = qml.math.cast_like(scale, results[0])
         off_diag_mt = scale * off_diag_mt
 
         # Combine block diagonal and off-diagonal
