@@ -134,7 +134,7 @@ state preparation is typically used as the first operation.
 Quantum Chemistry templates
 ---------------------------
 
-Quantum chemistry templates define various heuristic ansätze used in variational algorithms
+Quantum chemistry templates define various quantum circuits used in variational algorithms
 like VQE to perform quantum chemistry simulations.
 
 .. customgalleryitem::
@@ -148,6 +148,16 @@ like VQE to perform quantum chemistry simulations.
     :figure: ../_static/templates/layers/gate_fabric_layer.png
 
 .. customgalleryitem::
+    :link: ../code/api/pennylane.UCCSD.html
+    :description: UCCSD
+    :figure: ../_static/templates/subroutines/uccsd.png  
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.kUpCCGSD.html
+    :description: k-UpCCGSD
+    :figure: ../_static/templates/subroutines/kupccgsd.png
+
+.. customgalleryitem::
     :link: ../code/api/pennylane.ParticleConservingU1.html
     :description: ParticleConservingU1
     :figure: ../_static/templates/layers/particle_conserving_u1_thumbnail.png
@@ -156,16 +166,6 @@ like VQE to perform quantum chemistry simulations.
     :link: ../code/api/pennylane.ParticleConservingU2.html
     :description: ParticleConservingU2
     :figure: ../_static/templates/layers/particle_conserving_u2.png
-
-.. customgalleryitem::
-    :link: ../code/api/pennylane.UCCSD.html
-    :description: UCCSD
-    :figure: ../_static/templates/subroutines/uccsd.png  
-
-.. customgalleryitem::
-    :link: ../code/api/pennylane.kUpCCGSD.html
-    :description: k-UpCCGSD
-    :figure: ../_static/templates/subroutines/kupccgsd.png  
 
 .. raw:: html
 

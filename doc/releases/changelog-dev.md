@@ -772,6 +772,10 @@
   non-recordable or non-queueable within a QNode or quantum tape context.
   [(#1754)](https://github.com/PennyLaneAI/pennylane/pull/1754)
 
+* Templates `SingleExcitationUnitary` and `DoubleExcitationUnitary` have been renamed
+  to `FermionicSingleExcitation` and `FermionicDoubleExcitation`, respectively.
+  [(#1822)](https://github.com/PennyLaneAI/pennylane/pull/1822)
+
 <h3>Deprecations</h3>
 
 * Allowing cost functions to be differentiated using `qml.grad` or
@@ -854,10 +858,6 @@
 * The `pad` parameter of the `qml.AmplitudeEmbedding` template has been removed.
   It has instead been renamed to the `pad_with` parameter.
   [(#1805)](https://github.com/PennyLaneAI/pennylane/pull/1805)
-
-* Templates `SingleExcitationUnitary` and `DoubleExcitationUnitary` have been renamed
-  to `FermionicSingleExcitation` and `FermionicDoubleExcitation`, respectively.
-  [(#1822)](https://github.com/PennyLaneAI/pennylane/pull/1822)
 
 <h3>Bug fixes</h3>
 
