@@ -450,6 +450,7 @@ def scatter_element_add(tensor, index, value):
 
     If multiple indices are given, in the form of a list of tuples, the
     ``k``th tuple is interpreted to contain the ``k``th entry of all indices:
+
     >>> indices = [(1, 0), (2, 1)] # This will modify the entries (1, 2) and (0, 1)
     >>> values = torch.tensor([10, 20])
     >>> qml.math.scatter_element_add(tensor, indices, values)
