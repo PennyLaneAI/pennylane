@@ -46,8 +46,9 @@ ar.register_function("numpy", "unstack", list)
 def _scatter_element_add_numpy(tensor, index, value):
     """In-place addition of a multidimensional value over various
     indices of a tensor."""
-    tensor[tuple(index)] += value
-    return tensor
+    new_tensor = tensor.copy()
+    new_tensor[tuple(index)] += value
+    return new_tensor
 
 
 ar.register_function("numpy", "scatter_element_add", _scatter_element_add_numpy)

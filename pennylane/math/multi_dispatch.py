@@ -456,21 +456,6 @@ def scatter_element_add(tensor, index, value, like=None):
     >>> qml.math.scatter_element_add(tensor, indices, values)
     tensor([[ 0.1000, 20.2000,  0.3000],
             [ 0.4000,  0.5000, 10.6000]])
-
-    Depending on the framework, the ``tensor`` is modified in-place. As you can see
-    above, this is *not* the case to PyTorch (The change of the last tensor entry to
-    ``-2.5`` was not remembered when adding ``10`` in the second modification).
-    For Autograd, for example, we have:
-
-    >>> tensor = np.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
-    >>> index = (1, 2)
-    >>> value = -3.1
-    >>> qml.math.scatter_element_add(tensor, index, value) # tensor is modified in-place
-    tensor([[ 0.1,  0.2,  0.3],
-            [ 0.4,  0.5, -2.5]], requires_grad=True)
-    >>> tensor
-    tensor([[ 0.1,  0.2,  0.3],
-            [ 0.4,  0.5, -2.5]], requires_grad=True)
     """
 
     interface = like or _multi_dispatch([tensor, value])
