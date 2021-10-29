@@ -106,8 +106,8 @@ def mitigate_with_zne(
     >>> circuit(w1, w2)
     0.19113067083636542
 
-    The unmitigated circuit result is `0.33652776` while the ideal circuit result is `0.23688169`
-    and we can hence see that mitigation has helped reduce our estimation error.
+    The unmitigated circuit result is ``0.33652776`` while the ideal circuit result is
+    ``0.23688169`` and we can hence see that mitigation has helped reduce our estimation error.
 
     .. UsageDetails::
 
