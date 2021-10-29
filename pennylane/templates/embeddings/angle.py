@@ -18,7 +18,7 @@ Contains the ``AngleEmbedding`` template.
 import pennylane as qml
 from pennylane.ops import RX, RY, RZ
 from pennylane.operation import Operation, AnyWires
-from pennylane import numpy as np
+import numpy as np
 
 ROT = {"X": RX, "Y": RY, "Z": RZ}
 
@@ -58,47 +58,27 @@ class AngleEmbedding(Operation):
         self.rotation = ROT[rotation]
 
         shape = qml.math.shape(features)[-1:]
+        if len(shape) != 1:
+            raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
         n_features = shape[0]
-
-        features = self._preprocess(features, wires)
+        if n_features > len(wires):
+            raise ValueError(
+                f"Features must be of length {len(wires)} or less; got length {n_features}."
+            )
 
         wires = wires[:n_features]
         super().__init__(features, wires=wires, do_queue=do_queue, id=id)
 
     def expand(self):
-        features = np.array(self.parameters[0]).T
+
+        features = self.parameters[0]
+        batched = len(qml.math.shape(features)) > 1
+
+        features = features.T if batched else features
+
         with qml.tape.QuantumTape() as tape:
+
             for i in range(len(self.wires)):
                 self.rotation(features[i], wires=self.wires[i])
 
         return tape
-
-    @staticmethod
-    def _preprocess(features, wires):
-        """Validate and pre-process inputs as follows:
-
-        * If features is batched, the processing that follows is applied to each feature set in the batch.
-        * Check that the features tensor is one-dimensional.
-        """
-
-        # check if features is batched
-        batched = len(qml.math.shape(features)) > 1
-
-        features_batch = features if batched else [features]
-
-        # apply pre-processing to each features tensor in the batch
-        for i, feature_set in enumerate(features_batch):
-            shape = qml.math.shape(feature_set)
-
-            # check shape
-            if len(shape) != 1:
-                raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
-
-            n_features = shape[0]
-            if n_features > len(wires):
-                raise ValueError(
-                    f"Features must be of length {len(wires)} or less; got length {n_features}."
-                )
-            features_batch[i] = qml.math.cast(feature_set, np.complex128)
-
-        return features_batch if batched else features_batch[0]

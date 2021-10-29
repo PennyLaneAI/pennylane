@@ -35,7 +35,7 @@ def test_simple_circuit(mocker):
         qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
         return qml.probs(wires=[0, 2])
 
-    batch_size = 3
+    batch_size = 5
     data = np.random.random((batch_size, 8))
     data2 = np.random.random((batch_size, 3))
     x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
