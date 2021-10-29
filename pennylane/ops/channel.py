@@ -382,10 +382,10 @@ class PauliError(Channel):
     .. math::
         K_1 = \sqrt{p} * (K_{w0} \otimes (K_{w1} \otimes (\dots K_{w_{max}})))
 
-    Where :math:'I' is the Identity,
-    and :math:'\otimes' denotes the Kronecker Product,
-    and :math:'K_wi' denotes the Kraus matrix corresponding to the operator acting on wire i,
-    and :math:'p' denotes the probability with which the channel is applied
+    Where :math:`I` is the Identity,
+    and :math:`\otimes` denotes the Kronecker Product,
+    and :math:`K_wi` denotes the Kraus matrix corresponding to the operator acting on wire i,
+    and :math:`p` denotes the probability with which the channel is applied
 
     **Warning:**
     Because the Kraus Matrices scale exponentially to the amount of wires, their dimension blow up
@@ -394,7 +394,7 @@ class PauliError(Channel):
     **Details:**
 
     * Number of wires: Any (the operation can act on any number of wires)
-    * Number of parameters: 1
+    * Number of parameters: 3
 
     Args:
         operators (str): The Pauli operators acting on the specified (groups of) wires

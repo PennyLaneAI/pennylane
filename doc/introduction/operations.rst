@@ -190,6 +190,7 @@ Noisy channels
     ~pennylane.BitFlip
     ~pennylane.PhaseFlip
     ~pennylane.ResetError
+    ~pennylane.PauliError
     ~pennylane.QubitChannel
 
 :html:`</div>`
