@@ -281,7 +281,7 @@ try:
         # autoray.py:84: UserWarning: torch.symeig is deprecated in favor of torch.linalg.eigh
         # and will be removed in a future PyTorch release.
         del ar.autoray._FUNCS["torch", "linalg.eigh"]
-except ImportError as e:
+except ImportError:
     pass
 
 
