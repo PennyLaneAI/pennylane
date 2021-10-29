@@ -655,6 +655,7 @@ class DefaultGaussian(Device):
     author = "Xanadu Inc."
 
     _operation_map = {
+        "Identity":qml.Identity._matrix(),
         "Beamsplitter": beamsplitter,
         "ControlledAddition": controlled_addition,
         "ControlledPhase": controlled_phase,
