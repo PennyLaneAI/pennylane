@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the DoubleExcitationUnitary template.
+Tests for the FermionicDoubleExcitation template.
 """
 import pytest
 import numpy as np
@@ -185,14 +185,14 @@ class TestDecomposition:
         ],
     )
     def test_double_ex_unitary_operations(self, wires1, wires2, ref_gates):
-        """Test the correctness of the DoubleExcitationUnitary template including the gate count
+        """Test the correctness of the FermionicDoubleExcitation template including the gate count
         and order, the wires each operation acts on and the correct use of parameters
         in the circuit."""
 
         sqg = 72
         cnots = 16 * (len(wires1) - 1 + len(wires2) - 1 + 1)
         weight = np.pi / 3
-        op = qml.DoubleExcitationUnitary(weight, wires1=wires1, wires2=wires2)
+        op = qml.FermionicDoubleExcitation(weight, wires1=wires1, wires2=wires2)
         queue = op.expand().operations
 
         assert len(queue) == sqg + cnots
@@ -220,12 +220,12 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.DoubleExcitationUnitary(0.4, wires1=[0, 2], wires2=[1, 4, 3])
+            qml.FermionicDoubleExcitation(0.4, wires1=[0, 2], wires2=[1, 4, 3])
             return qml.expval(qml.Identity(0))
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.DoubleExcitationUnitary(0.4, wires1=["z", "k"], wires2=["a", "s", "t"])
+            qml.FermionicDoubleExcitation(0.4, wires1=["z", "k"], wires2=["a", "s", "t"])
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -252,7 +252,7 @@ class TestInputs:
         dev = qml.device("default.qubit", wires=10)
 
         def circuit(weight):
-            qml.DoubleExcitationUnitary(weight=weight, wires1=wires1, wires2=wires2)
+            qml.FermionicDoubleExcitation(weight=weight, wires1=wires1, wires2=wires2)
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, dev)
@@ -262,12 +262,12 @@ class TestInputs:
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.DoubleExcitationUnitary(0.4, wires1=[0, 2], wires2=[1, 4, 3], id="a")
+        template = qml.FermionicDoubleExcitation(0.4, wires1=[0, 2], wires2=[1, 4, 3], id="a")
         assert template.id == "a"
 
 
 def circuit_template(weight):
-    qml.DoubleExcitationUnitary(weight, wires1=[0, 1], wires2=[2, 3])
+    qml.FermionicDoubleExcitation(weight, wires1=[0, 1], wires2=[2, 3])
     return qml.expval(qml.PauliZ(0))
 
 

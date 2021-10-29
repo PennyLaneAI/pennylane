@@ -97,21 +97,6 @@ neural network. Note that arbitrary templates or operations can also be repeated
     :description: BasicEntanglerLayers
     :figure: ../_static/templates/layers/basic_entangler.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.ParticleConservingU2.html
-    :description: ParticleConservingU2
-    :figure: ../_static/templates/layers/particle_conserving_u2.png
-
-.. customgalleryitem::
-    :link: ../code/api/pennylane.ParticleConservingU1.html
-    :description: ParticleConservingU1
-    :figure: ../_static/templates/layers/particle_conserving_u1_thumbnail.png
-
-.. customgalleryitem::
-    :link: ../code/api/pennylane.GateFabric.html
-    :description: GateFabric
-    :figure: ../_static/templates/layers/gate_fabric_layer.png
-
 .. raw:: html
 
         <div style='clear:both'></div>
@@ -146,6 +131,48 @@ state preparation is typically used as the first operation.
 
 .. _intro_ref_temp_subroutines:
 
+Quantum Chemistry templates
+---------------------------
+
+Quantum chemistry templates define various quantum circuits used in variational algorithms
+like VQE to perform quantum chemistry simulations.
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.AllSinglesDoubles.html
+    :description: AllSinglesDoubles
+    :figure: ../_static/templates/subroutines/all_singles_doubles.png
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.GateFabric.html
+    :description: GateFabric
+    :figure: ../_static/templates/layers/gate_fabric_layer.png
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.UCCSD.html
+    :description: UCCSD
+    :figure: ../_static/templates/subroutines/uccsd.png  
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.kUpCCGSD.html
+    :description: k-UpCCGSD
+    :figure: ../_static/templates/subroutines/kupccgsd.png
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.ParticleConservingU1.html
+    :description: ParticleConservingU1
+    :figure: ../_static/templates/layers/particle_conserving_u1_thumbnail.png
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.ParticleConservingU2.html
+    :description: ParticleConservingU2
+    :figure: ../_static/templates/layers/particle_conserving_u2.png
+
+.. raw:: html
+
+        <div style='clear:both'></div>
+
+.. _intro_ref_temp_qchem:
+
 Other subroutines
 -----------------
 
@@ -162,24 +189,14 @@ Other useful templates which do not belong to the previous categories can be fou
     :figure: ../_static/templates/subroutines/interferometer.png
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.SingleExcitationUnitary.html
-    :description: SingleExcitationUnitary
+    :link: ../code/api/pennylane.FermionicSingleExcitation.html
+    :description: FermionicSingleExcitation
     :figure: ../_static/templates/subroutines/single_excitation_unitary.png
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.DoubleExcitationUnitary.html
-    :description: DoubleExcitationUnitary
+    :link: ../code/api/pennylane.FermionicDoubleExcitation.html
+    :description: FermionicDoubleExcitation
     :figure: ../_static/templates/subroutines/double_excitation_unitary.png    
-
-.. customgalleryitem::
-    :link: ../code/api/pennylane.UCCSD.html
-    :description: UCCSD
-    :figure: ../_static/templates/subroutines/uccsd.png  
-
-.. customgalleryitem::
-    :link: ../code/api/pennylane.kUpCCGSD.html
-    :description: k-UpCCGSD
-    :figure: ../_static/templates/subroutines/kupccgsd.png  
 
 .. customgalleryitem::
     :link: ../code/api/pennylane.ArbitraryUnitary.html
@@ -205,11 +222,6 @@ Other useful templates which do not belong to the previous categories can be fou
   :link: ../code/api/pennylane.QuantumMonteCarlo.html
   :description: QuantumMonteCarlo
   :figure: ../_static/templates/subroutines/qmc.svg
-
-.. customgalleryitem::
-    :link: ../code/api/pennylane.AllSinglesDoubles.html
-    :description: AllSinglesDoubles
-    :figure: ../_static/templates/subroutines/all_singles_doubles.png
 
 .. customgalleryitem::
     :link: ../code/api/pennylane.QFT.html
