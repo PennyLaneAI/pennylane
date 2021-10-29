@@ -42,17 +42,15 @@ class TestChannels:
 
     @pytest.mark.parametrize("ops", ch_list)
     @pytest.mark.parametrize("p", [0, 0.1, 1])
-    def test_kraus_matrices_sum_identity(self, ops, p, tol):
+    @pytest.mark.parametrize("tr_args", [[100e-6, 100e-6, 20e-9], [100e-6, 120e-6, 20e-9]])
+    def test_kraus_matrices_sum_identity(self, ops, p, tr_args, tol):
         """Test channels are trace-preserving"""
         if ops.__name__ == "GeneralizedAmplitudeDamping":
             op = ops(p, p, wires=0)
         elif ops.__name__ == "ResetError":
             op = ops(p / 2, p / 3, wires=0)
         elif ops.__name__ == "ThermalRelaxationError":
-            t1 = 100e-6
-            t2 = 100e-6
-            tg = 20e-9
-            op = ops(p, t1, t2, tg, wires=0)
+            op = ops(p, *tr_args, wires=0)
         else:
             op = ops(p, wires=0)
         K_list = op.kraus_matrices

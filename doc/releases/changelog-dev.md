@@ -3,6 +3,9 @@
 # Release 0.19.0-dev (development release)
 
 <h3>New features since last release</h3>
+* A thermal relaxation channel is added to the Noisy channels. The channel description can be 
+  found on the supplementary information of [Quantum classifier with tailored quantum kernels](https://arxiv.org/abs/1909.02611).
+  [(#1766)](https://github.com/PennyLaneAI/pennylane/pull/1766)
 
 * The `insert` transform has now been added, providing a way to insert single-qubit operations into
   a quantum circuit. The transform can apply to quantum functions, tapes, and devices.

@@ -576,34 +576,34 @@ class ThermalRelaxationError(Channel):
             pr0 = (1 - pe) * p_reset
             pr1 = pe * p_reset
             pid = 1 - pz - pr0 - pr1
-            
+
             K0 = np.sqrt(pid) * np.eye(2)
             K1 = np.sqrt(pz) * np.array([[1, 0], [0, -1]])
             K2 = np.sqrt(pr0) * np.array([[1, 0], [0, 0]])
             K3 = np.sqrt(pr0) * np.array([[0, 1], [0, 0]])
             K4 = np.sqrt(pr1) * np.array([[0, 0], [1, 0]])
             K5 = np.sqrt(pr1) * np.array([[0, 0], [0, 1]])
-            
+
             K = [K0, K1, K2, K3, K4, K5]
         else:
             e0 = p_reset * pe
-            v0 = np.array([[0], [1], [0], [0]])
-            K0 = np.sqrt(e0) * v0.reshape(2, 2, order="F")
+            v0 = np.array([[0, 0], [1, 0]])
+            K0 = np.sqrt(e0) * v0
             e1 = -p_reset * pe + p_reset
-            v1 = np.array([[0], [0], [1], [0]])
-            K1 = np.sqrt(e1) * v1.reshape(2, 2, order="F")
+            v1 = np.array([[0, 1], [0, 0]])
+            K1 = np.sqrt(e1) * v1
             common_term = np.sqrt(
                 4 * eT2 ** 2 + 4 * p_reset ** 2 * pe ** 2 - 4 * p_reset ** 2 * pe + p_reset ** 2
             )
             e2 = 1 - p_reset / 2 - common_term / 2
             term2 = 2 * eT2 / (2 * p_reset * pe - p_reset - common_term)
-            v2 = np.array([[term2], [0], [0], [1]]) / np.sqrt(term2 ** 2 + 1 ** 2)
-            K2 = np.sqrt(e2) * v2.reshape(2, 2, order="F")
+            v2 = np.array([[term2, 0], [0, 1]]) / np.sqrt(term2 ** 2 + 1)
+            K2 = np.sqrt(e2) * v2
             term3 = 2 * eT2 / (2 * p_reset * pe - p_reset + common_term)
             e3 = 1 - p_reset / 2 + common_term / 2
-            v3 = np.array([[term3], [0], [0], [1]]) / np.sqrt(term3 ** 2 + 1 ** 2)
-            K3 = np.sqrt(e3) * v3.reshape(2, 2, order="F")
-            
+            v3 = np.array([[term3, 0], [0, 1]]) / np.sqrt(term3 ** 2 + 1)
+            K3 = np.sqrt(e3) * v3
+
             K = [K0, K1, K2, K3]
         return K
 
