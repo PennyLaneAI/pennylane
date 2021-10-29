@@ -52,7 +52,7 @@ def mitigate_with_zne(
         package as a backend for folding or extrapolation.
 
     Args:
-        circuit (qfunc or QuantumTape): the circuit to be error-mitigated
+        circuit (callable or QuantumTape): the circuit to be error-mitigated
         scale_factors (Sequence[float]): the range of noise scale factors used
         folding (callable): a function that returns a folded circuit for a specified scale factor
         extrapolate (callable): a function that returns an extrapolated result when provided a
