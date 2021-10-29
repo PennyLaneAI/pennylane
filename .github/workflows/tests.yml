@@ -59,15 +59,6 @@ jobs:
         if: contains(matrix.config.interfaces, 'jax')
         run: pip3 install jax jaxlib
 
-      # Mitiq requires numpy~=1.20.1 but current versions of TF are only compatible with
-      # numpy<=1.19. Installing Mitiq and tensorflow together causes some tests to fail. We also
-      # install pennylane-qiskit which is needed for Mitiq integration.
-      - name: Conditionally install mitiq if TensorFlow is not installed
-        if: false == ${{contains(matrix.config.device, 'tf')}}
-        run: |
-          pip3 install git+git://github.com/unitaryfund/mitiq@master#egg=mitiq
-          pip3 install pennylane-qiskit
-
       - name: Install PennyLane
         run: |
           pip install -r requirements-ci.txt
