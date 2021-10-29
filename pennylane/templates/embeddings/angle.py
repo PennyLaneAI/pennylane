@@ -57,9 +57,6 @@ class AngleEmbedding(Operation):
         self.rotation = ROT[rotation]
 
         shape = qml.math.shape(features)[-1:]
-        if len(shape) != 1:
-            raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
-        n_features = shape[0]
         if n_features > len(wires):
             raise ValueError(
                 f"Features must be of length {len(wires)} or less; got length {n_features}."
