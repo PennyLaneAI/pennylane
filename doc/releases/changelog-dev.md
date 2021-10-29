@@ -49,7 +49,7 @@
   
   ```pycon
   >>> circuit(w1, w2)
-  array([0.19113067])
+  0.19113067083636542
   ```
   
 * The `insert` transform has now been added, providing a way to insert single-qubit operations into
