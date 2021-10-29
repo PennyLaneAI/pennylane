@@ -526,9 +526,9 @@ class ThermalRelaxationError(Channel):
                         \end{bmatrix}
 
     .. math::
-        K_N = \sqrt{\lambda} \Phi(\nu_\lambda)
+        K_N = \sqrt{\lambda} \Phi(\nu_{\lambda})
 
-    where :math:`\lambda` are the eigenvalues of the Choi matrix, :math:`\nu_lambda` are the eigenvectors of 
+    where :math:`\lambda` are the eigenvalues of the Choi matrix, :math:`\nu_{\lambda}` are the eigenvectors of 
     the choi_matrix, and :math:`\Phi(x)` is a isomorphism from :math:`\mathbb{C}^{n^2}` 
     to :math:`\mathbb{C}^{n \times n}` with column-major order mapping.
 
