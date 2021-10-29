@@ -93,7 +93,6 @@ def postprocessing(tape):
     fig, ax = draw_mpl(tape)
     fig.suptitle("My Circuit", fontsize="xx-large")
 
-    from matplotlib.patches import FancyBboxPatch
     options = {'facecolor': "white", 'edgecolor': "#f57e7e", "linewidth": 6, "zorder": -1}
     box1 = plt.Rectangle((-0.5, -0.5), width=3.0, height=4.0, **options)
     ax.add_patch(box1)
