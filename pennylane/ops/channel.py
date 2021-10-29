@@ -468,69 +468,69 @@ class QubitChannel(Channel):
 
 class ThermalRelaxationError(Channel):
     r"""ThermalRelaxationError(pe, t1, t2, tg, wires)
-    thermal relaxation error channel.
+    Thermal relaxation error channel.
 
     This channel is modelled by the following Kraus matrices:
 
-    Case T2 <= T1:
+    Case :math:`T_2 \leq T_1`:
 
     .. math::
-        K_0 = \sqrt{1 - pz - pr0 - pr1} \begin{bmatrix}
+        K_0 = \sqrt{1 - p_z - p_{r0} - p_{r1}} \begin{bmatrix}
                 1 & 0 \\
                 0 & 1
                 \end{bmatrix}
 
     .. math::
-        K_1 = \sqrt{pz}\begin{bmatrix}
+        K_1 = \sqrt{p_z}\begin{bmatrix}
                 1 & 0  \\
                 0 & -1
                 \end{bmatrix}
 
     .. math::
-        K_2 = \sqrt{pr0}\begin{bmatrix}
+        K_2 = \sqrt{p_{r0}}\begin{bmatrix}
                 1 & 0  \\
                 0 & 0
                 \end{bmatrix}
 
     .. math::
-        K_3 = \sqrt{pr0}\begin{bmatrix}
+        K_3 = \sqrt{p_{r0}}\begin{bmatrix}
                 0 & 1  \\
                 0 & 0
                 \end{bmatrix}
 
     .. math::
-        K_4 = \sqrt{pr1}\begin{bmatrix}
+        K_4 = \sqrt{p_{r1}}\begin{bmatrix}
                 0 & 0  \\
                 1 & 0
                 \end{bmatrix}
 
     .. math::
-        K_5 = \sqrt{pr1}\begin{bmatrix}
+        K_5 = \sqrt{p_{r1}}\begin{bmatrix}
                 0 & 0  \\
                 0 & 1
                 \end{bmatrix}
 
-    where :math:`pr0 \in [0, 1]` is the probability of a reset to 0,
-    :math:`pr1 \in [0, 1]` is the probability of a reset to 1 error,
-    :math:`pz \in [0, 1]` is the probability of a phase flip (Pauli :math:`Z`) error
+    where :math:`p_{r0} \in [0, 1]` is the probability of a reset to 0, :math:`p_{r1} \in [0, 1]` is the probability of 
+    a reset to 1 error, :math:`p_z \in [0, 1]` is the probability of a phase flip (Pauli :math:`Z`) error.
 
-    Case T2 > T1:
+    Case :math:`T_2 > T_1`:
+    
+    The Choi matrix is given by
 
     .. math::
-        choi_matrix = \begin{bmatrix}
-                        1 - pe * p_reset & 0 & 0 & eT2 \\
-                        0 & pe * p_reset & 0 & 0 \\
-                        0 & 0 & (1 - pe) * p_reset & 0 \\
-                        eT2 & 0 & 0 & 1 - (1 - pe) * p_reset
+        \Lambda = \begin{bmatrix}
+                        1 - p_e * p_{reset} & 0 & 0 & eT_2 \\
+                        0 & p_e * p_{reset} & 0 & 0 \\
+                        0 & 0 & (1 - p_e) * p_{reset} & 0 \\
+                        eT_2 & 0 & 0 & 1 - (1 - p_e) * p_reset
                         \end{bmatrix}
 
     .. math::
         K_N = \sqrt{\lambda} \Phi(\nu_\lambda)
 
-    where :math:`\lambda` are the eigenvalues of the choi_matrix,
-    :math:`\nu_lambda` are the eigenvectors of the choi_matrix,
-    and :math:`\Phi(x)` is a isomorphism from :math:`\mathbb{C}^{n^2}` to
-    :math:`\mathbb{C}^{n x n}` with column-major order mapping.
+    where :math:`\lambda` are the eigenvalues of the Choi matrix, :math:`\nu_lambda` are the eigenvectors of 
+    the choi_matrix, and :math:`\Phi(x)` is a isomorphism from :math:`\mathbb{C}^{n^2}` 
+    to :math:`\mathbb{C}^{n \times n}` with column-major order mapping.
 
     **Details:**
 
@@ -539,8 +539,8 @@ class ThermalRelaxationError(Channel):
 
     Args:
         pe (float): exited state population.
-        t1 (float): the T_1 relaxation time constant.
-        t2 (float): the T_2 relaxation time constant.
+        t1 (float): the :math:`T_1` relaxation constant.
+        t2 (float): the :math:`T_2` dephasing constant.
         tg (float): the gate time for relaxation error.
         wires (Sequence[int] or int): the wire the channel acts on
     """
@@ -576,12 +576,14 @@ class ThermalRelaxationError(Channel):
             pr0 = (1 - pe) * p_reset
             pr1 = pe * p_reset
             pid = 1 - pz - pr0 - pr1
+            
             K0 = np.sqrt(pid) * np.eye(2)
             K1 = np.sqrt(pz) * np.array([[1, 0], [0, -1]])
             K2 = np.sqrt(pr0) * np.array([[1, 0], [0, 0]])
             K3 = np.sqrt(pr0) * np.array([[0, 1], [0, 0]])
             K4 = np.sqrt(pr1) * np.array([[0, 0], [1, 0]])
             K5 = np.sqrt(pr1) * np.array([[0, 0], [0, 1]])
+            
             K = [K0, K1, K2, K3, K4, K5]
         else:
             e0 = p_reset * pe
@@ -601,6 +603,7 @@ class ThermalRelaxationError(Channel):
             e3 = 1 - p_reset / 2 + common_term / 2
             v3 = np.array([[term3], [0], [0], [1]]) / np.sqrt(term3 ** 2 + 1 ** 2)
             K3 = np.sqrt(e3) * v3.reshape(2, 2, order="F")
+            
             K = [K0, K1, K2, K3]
         return K
 
