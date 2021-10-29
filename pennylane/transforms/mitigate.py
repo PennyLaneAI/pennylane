@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Provides transforms for mitigating quantum circuits."""
-from typing import Any, Dict, Optional, Sequence, Tuple
+from typing import Any, Dict, Optional, Sequence, Tuple, Union
 
-from pennylane import apply
+from pennylane import apply, QNode
 from pennylane.math import mean
 from pennylane.measure import MeasurementProcess
 from pennylane.operation import Operation
@@ -26,7 +26,7 @@ from pennylane.transforms import batch_transform, single_tape_transform
 # pylint: disable=too-many-arguments
 @batch_transform
 def mitigate_with_zne(
-    tape: QuantumTape,
+    circuit: Union[QNode, QuantumTape],
     scale_factors: Sequence[float],
     folding: callable,
     extrapolate: callable,
@@ -168,7 +168,7 @@ def mitigate_with_zne(
         returns the extrapolated value(s). Its function should be
 
         .. code-block:: python
- 
+
             fn(scale_factors, results, **extrapolate_kwargs)
 
         where
@@ -191,7 +191,7 @@ def mitigate_with_zne(
     folding_kwargs = folding_kwargs or {}
     extrapolate_kwargs = extrapolate_kwargs or {}
 
-    tape_expanded = tape.expand(stop_at=lambda op: not isinstance(op, QuantumTape))
+    tape_expanded = circuit.expand(stop_at=lambda op: not isinstance(op, QuantumTape))
     tape_removed, in_preps = _remove_preps(tape_expanded)
     tape_removed = _remove_measurements(tape_removed)
 
@@ -200,7 +200,7 @@ def mitigate_with_zne(
         for s in scale_factors
     ]
     tapes = [tape_ for tapes_ in tapes for tape_ in tapes_]  # flattens nested list
-    tapes = [_add_measurements(tape_, tape.measurements) for tape_ in tapes]
+    tapes = [_add_measurements(tape_, circuit.measurements) for tape_ in tapes]
     tapes = [_add_preps(tape_, in_preps) for tape_ in tapes]
 
     def processing_fn(results):
