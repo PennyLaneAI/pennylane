@@ -521,13 +521,15 @@ class MultiRZ(DiagonalOperation):
 
     @staticmethod
     def decomposition(theta, wires):
-        for i in range(len(wires) - 1, 0, -1):
-            qml.CNOT(wires=[wires[i], wires[i - 1]])
+        with qml.tape.OperationRecorder() as rec:
+            for i in range(len(wires) - 1, 0, -1):
+                qml.CNOT(wires=[wires[i], wires[i - 1]])
 
-        RZ(theta, wires=wires[0])
+            RZ(theta, wires=wires[0])
 
-        for i in range(len(wires) - 1):
-            qml.CNOT(wires=[wires[i + 1], wires[i]])
+            for i in range(len(wires) - 1):
+                qml.CNOT(wires=[wires[i + 1], wires[i]])
+        return rec.queue
 
     def adjoint(self):
         return MultiRZ(-self.parameters[0], wires=self.wires)
@@ -743,28 +745,29 @@ class PauliRot(Operation):
         # Catch cases when the wire is passed as a single int.
         if isinstance(wires, int):
             wires = [wires]
+        with qml.tape.OperationRecorder() as rec:
+            # Check for identity and do nothing
+            if pauli_word == "I" * len(wires):
+                return []
 
-        # Check for identity and do nothing
-        if pauli_word == "I" * len(wires):
-            return
+            active_wires, active_gates = zip(
+                *[(wire, gate) for wire, gate in zip(wires, pauli_word) if gate != "I"]
+            )
 
-        active_wires, active_gates = zip(
-            *[(wire, gate) for wire, gate in zip(wires, pauli_word) if gate != "I"]
-        )
+            for wire, gate in zip(active_wires, active_gates):
+                if gate == "X":
+                    Hadamard(wires=[wire])
+                elif gate == "Y":
+                    RX(np.pi / 2, wires=[wire])
 
-        for wire, gate in zip(active_wires, active_gates):
-            if gate == "X":
-                Hadamard(wires=[wire])
-            elif gate == "Y":
-                RX(np.pi / 2, wires=[wire])
+            MultiRZ(theta, wires=list(active_wires))
 
-        MultiRZ(theta, wires=list(active_wires))
-
-        for wire, gate in zip(active_wires, active_gates):
-            if gate == "X":
-                Hadamard(wires=[wire])
-            elif gate == "Y":
-                RX(-np.pi / 2, wires=[wire])
+            for wire, gate in zip(active_wires, active_gates):
+                if gate == "X":
+                    Hadamard(wires=[wire])
+                elif gate == "Y":
+                    RX(-np.pi / 2, wires=[wire])
+        return rec.queue
 
     def adjoint(self):
         return PauliRot(-self.parameters[0], self.parameters[1], wires=self.wires)
