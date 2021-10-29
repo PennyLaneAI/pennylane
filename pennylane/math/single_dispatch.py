@@ -18,6 +18,7 @@ import numbers
 
 import autoray as ar
 import numpy as np
+import semantic_version
 
 
 def _i(name):
@@ -266,6 +267,15 @@ ar.register_function("tensorflow", "scatter_element_add", _scatter_element_add_t
 
 ar.autoray._FUNC_ALIASES["torch", "unstack"] = "unbind"
 
+
+def _to_numpy_torch(x):
+    if x.is_conj():
+        x = x.resolve_conj()
+
+    return x.detach().cpu().numpy()
+
+
+ar.register_function("torch", "to_numpy", _to_numpy_torch)
 ar.register_function(
     "torch", "asarray", lambda x, device=None: _i("torch").as_tensor(x, device=device)
 )
@@ -273,6 +283,18 @@ ar.register_function("torch", "diag", lambda x, k=0: _i("torch").diag(x, diagona
 ar.register_function("torch", "expand_dims", lambda x, axis: _i("torch").unsqueeze(x, dim=axis))
 ar.register_function("torch", "shape", lambda x: tuple(x.shape))
 ar.register_function("torch", "gather", lambda x, indices: x[indices])
+ar.register_function("torch", "gather", lambda x, indices: x[indices])
+
+try:
+    if semantic_version.match(">=1.10", _i("torch").__version__):
+        # Autoray uses the deprecated torch.symeig as an alias for eigh, however this has
+        # been deprecated in favour of torch.linalg.eigh.
+        # autoray.py:84: UserWarning: torch.symeig is deprecated in favor of torch.linalg.eigh
+        # and will be removed in a future PyTorch release.
+        del ar.autoray._FUNCS["torch", "linalg.eigh"]
+except ImportError:
+    pass
+
 
 ar.register_function(
     "torch",
@@ -414,6 +436,6 @@ ar.register_function("jax", "gather", lambda x, indices: x[np.array(indices)])
 ar.register_function(
     "jax",
     "scatter_element_add",
-    lambda x, index, value: _i("jax").ops.index_add(x, tuple(index), value),
+    lambda x, index, value: x.at[tuple(index)].add(value),
 )
 ar.register_function("jax", "unstack", list)
