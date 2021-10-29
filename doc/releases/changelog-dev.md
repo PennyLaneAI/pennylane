@@ -462,6 +462,7 @@
 * Added a new template `kUpCCGSD`, which implements a unitary coupled cluster ansatz with
   generalized singles and pair doubles excitation operators, proposed by Joonho Lee *et al.*
   in [arXiv:1810.02327](https://arxiv.org/abs/1810.02327).
+  [(#1743)](https://github.com/PennyLaneAI/pennylane/pull/1743)
 
   An example of a circuit using `kUpCCGSD` template is:
 
