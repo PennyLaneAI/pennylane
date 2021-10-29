@@ -16,7 +16,6 @@
 from copy import deepcopy
 import functools
 import inspect
-import types
 
 import pennylane as qml
 

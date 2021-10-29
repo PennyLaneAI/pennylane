@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the DoubleExcitationUnitary template.
+Contains the FermionicDoubleExcitation template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import math
@@ -376,7 +376,7 @@ def _layer8(weight, s, r, q, p, set_cnot_wires):
     RX(np.pi / 2, wires=p)
 
 
-class DoubleExcitationUnitary(Operation):
+class FermionicDoubleExcitation(Operation):
     r"""Circuit to exponentiate the tensor product of Pauli matrices representing the
     double-excitation operator entering the Unitary Coupled-Cluster Singles
     and Doubles (UCCSD) ansatz. UCCSD is a VQE ansatz commonly used to run quantum
@@ -470,13 +470,12 @@ class DoubleExcitationUnitary(Operation):
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane.templates import DoubleExcitationUnitary
 
             dev = qml.device('default.qubit', wires=5)
 
             @qml.qnode(dev)
             def circuit(weight, wires1=None, wires2=None):
-                DoubleExcitationUnitary(weight, wires1=wires1, wires2=wires2)
+                qml.FermionicDoubleExcitation(weight, wires1=wires1, wires2=wires2)
                 return qml.expval(qml.PauliZ(0))
 
             weight = 1.34817

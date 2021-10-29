@@ -64,7 +64,7 @@ def generalized_pair_doubles(wires):
 class kUpCCGSD(Operation):
     r"""Implements the k-Unitary Pair Coupled-Cluster Generalized Singles and Doubles (k-UpCCGSD) ansatz.
 
-    The k-UpCCGSD ansatz calls the :func:`~.SingleExcitationUnitary` and :func:`~.DoubleExcitationUnitary`
+    The k-UpCCGSD ansatz calls the :func:`~.FermionicSingleExcitation` and :func:`~.FermionicDoubleExcitation`
     templates to exponentiate the product of :math:`k` generalized singles and pair coupled-cluster doubles
     excitation operators. Here, "generalized" means that the single and double excitation terms do not
     distinguish between occupied and unoccupied orbitals. Additionally, the term "pair coupled-cluster"
@@ -90,7 +90,7 @@ class kUpCCGSD(Operation):
 
     Args:
         weights (tensor_like): Tensor containing the parameters :math:`\theta_{pr}` and :math:`\theta_{pqrs}`
-            entering the Z rotation in :func:`~.SingleExcitationUnitary` and :func:`~.DoubleExcitationUnitary`.
+            entering the Z rotation in :func:`~.FermionicSingleExcitation` and :func:`~.FermionicDoubleExcitation`.
             These parameters are the coupled-cluster amplitudes that need to be optimized for each generalized
             single and pair double excitation terms.
         wires (Iterable): wires that the template acts on
@@ -132,13 +132,13 @@ class kUpCCGSD(Operation):
             # Define the ansatz
             @qml.qnode(dev)
             def ansatz(weights):
-                qml.templates.kUpCCGSD(weights, wires=[0, 1, 2, 3],
+                qml.kUpCCGSD(weights, wires=[0, 1, 2, 3],
                                 k=1, delta_sz=0, init_state=ref_state)
                 return qml.expval(H)
 
             # Get the shape of the weights for this template
             layers = 1
-            shape = qml.templates.kUpCCGSD.shape(k=layers,
+            shape = qml.kUpCCGSD.shape(k=layers,
                                 n_wires=qubits, delta_sz=0)
 
             # Initialize the weight tensors
@@ -192,7 +192,7 @@ class kUpCCGSD(Operation):
 
         .. code-block:: python
 
-            shape = qml.templates.kUpCCGSD.shape(n_layers=2, n_wires=4)
+            shape = qml.kUpCCGSD.shape(n_layers=2, n_wires=4)
             weights = np.random.random(size=shape)
 
         >>> weights.shape
@@ -246,17 +246,17 @@ class kUpCCGSD(Operation):
 
         with qml.tape.QuantumTape() as tape:
 
-            qml.templates.BasisEmbedding(self.init_state_flipped, wires=self.wires)
+            qml.BasisEmbedding(self.init_state_flipped, wires=self.wires)
             weights = self.parameters[0]
 
             for layer in range(self.k):
                 for i, (w1, w2) in enumerate(self.d_wires):
-                    qml.templates.DoubleExcitationUnitary(
+                    qml.FermionicDoubleExcitation(
                         weights[layer][len(self.s_wires) + i], wires1=w1, wires2=w2
                     )
 
                 for j, s_wires_ in enumerate(self.s_wires):
-                    qml.templates.SingleExcitationUnitary(weights[layer][j], wires=s_wires_)
+                    qml.FermionicSingleExcitation(weights[layer][j], wires=s_wires_)
 
         return tape
 
