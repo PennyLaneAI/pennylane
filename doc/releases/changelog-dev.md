@@ -462,6 +462,7 @@
 * Added a new template `kUpCCGSD`, which implements a unitary coupled cluster ansatz with
   generalized singles and pair doubles excitation operators, proposed by Joonho Lee *et al.*
   in [arXiv:1810.02327](https://arxiv.org/abs/1810.02327).
+  [(#1743)](https://github.com/PennyLaneAI/pennylane/pull/1743)
 
   An example of a circuit using `kUpCCGSD` template is:
 
@@ -772,6 +773,10 @@
   non-recordable or non-queueable within a QNode or quantum tape context.
   [(#1754)](https://github.com/PennyLaneAI/pennylane/pull/1754)
 
+* Templates `SingleExcitationUnitary` and `DoubleExcitationUnitary` have been renamed
+  to `FermionicSingleExcitation` and `FermionicDoubleExcitation`, respectively.
+  [(#1822)](https://github.com/PennyLaneAI/pennylane/pull/1822)
+
 <h3>Deprecations</h3>
 
 * Allowing cost functions to be differentiated using `qml.grad` or
@@ -911,6 +916,9 @@
   [(#1750)](https://github.com/PennyLaneAI/pennylane/pull/1750)
 
 * Add the `jax` interface in QNode Documentation. [(#1755)](https://github.com/PennyLaneAI/pennylane/pull/1755)
+
+* Reorganized all the templates related to quantum chemistry under a common header `Quantum Chemistry templates`.
+  [(#1822)](https://github.com/PennyLaneAI/pennylane/pull/1822)
 
 <h3>Contributors</h3>
 
