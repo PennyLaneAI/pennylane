@@ -207,7 +207,7 @@ def mitigate_with_zne(
     out_tapes = []
 
     for tape_ in tapes:
-        #pylint: disable=expression-not-assigned
+        # pylint: disable=expression-not-assigned
         with QuantumTape() as t:
             [apply(p) for p in tape._prep]
             [apply(op) for op in tape_.operations]
