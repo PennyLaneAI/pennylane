@@ -20,15 +20,8 @@ from packaging import version
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.beta import QNode, qnode
-from pennylane.operation import Expectation
 from pennylane.tape import QuantumTape
 from pennylane.transforms import mitigate_with_zne
-from pennylane.transforms.mitigate import (
-    _add_measurements,
-    _add_preps,
-    _remove_measurements,
-    _remove_preps,
-)
 
 with QuantumTape() as tape:
     qml.BasisState([1], wires=0)
@@ -334,63 +327,3 @@ class TestMitiqIntegration:
         g = qml.grad(mitigated_circuit)(w1, w2)
         for g_ in g:
             assert not np.allclose(g_, 0)
-
-
-def test_add_remove_preps():
-    """Test for the _remove_preps and _add_preps functions"""
-    with qml.tape.QuantumTape() as in_tape:
-        qml.BasisState([0], wires=0)
-        qml.QubitStateVector([1, 0, 0, 0], wires=[1, 2])
-        qml.Hadamard(0)
-        qml.expval(qml.PauliZ(0))
-
-    out_tape, removed_preps = _remove_preps(in_tape)
-
-    with qml.tape.QuantumTape() as exp_tape:
-        qml.Hadamard(0)
-        qml.expval(qml.PauliZ(0))
-
-    expected_preps = [
-        qml.BasisState([0], wires=0),
-        qml.QubitStateVector([1, 0, 0, 0], wires=[1, 2]),
-    ]
-
-    same_tape(out_tape, exp_tape)
-
-    assert all(o1.name == o2.name for o1, o2 in zip(removed_preps, expected_preps))
-    assert all(o1.wires == o2.wires for o1, o2 in zip(removed_preps, expected_preps))
-    assert all(
-        np.allclose(o1.parameters, o2.parameters) for o1, o2 in zip(removed_preps, expected_preps)
-    )
-
-    recovered_tape = _add_preps(out_tape, removed_preps)
-
-    same_tape(recovered_tape, in_tape)
-
-
-def test_add_remove_measurements():
-    """Test for the _remove_measurements and _add_measurements functions"""
-    with qml.tape.QuantumTape() as in_tape:
-        qml.BasisState([0], wires=0)
-        qml.QubitStateVector([1, 0, 0, 0], wires=[1, 2])
-        qml.Hadamard(0)
-        qml.expval(qml.PauliZ(0))
-
-    out_tape = _remove_measurements(in_tape)
-    assert len(out_tape.measurements) == 0
-
-    with qml.tape.QuantumTape() as exp_tape:
-        qml.BasisState([0], wires=0)
-        qml.QubitStateVector([1, 0, 0, 0], wires=[1, 2])
-        qml.Hadamard(0)
-
-    same_tape(out_tape, exp_tape)
-
-    recovered_tape = _add_measurements(out_tape, in_tape.measurements)
-
-    same_tape(in_tape, recovered_tape)
-    assert len(recovered_tape.measurements) == 1
-
-    assert recovered_tape.observables[0].name == "PauliZ"
-    assert recovered_tape.observables[0].wires.tolist() == [0]
-    assert recovered_tape.measurements[0].return_type is Expectation

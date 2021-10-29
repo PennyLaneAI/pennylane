@@ -12,15 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Provides transforms for mitigating quantum circuits."""
-from typing import Any, Dict, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, Optional, Sequence, Union
 
 from pennylane import apply, QNode
 from pennylane.math import mean
-from pennylane.measure import MeasurementProcess
-from pennylane.operation import Operation
 from pennylane.tape import QuantumTape
-from pennylane.tape.tape import STATE_PREP_OPS
-from pennylane.transforms import batch_transform, single_tape_transform
+from pennylane.transforms import batch_transform
 
 
 # pylint: disable=too-many-arguments
@@ -195,17 +192,26 @@ def mitigate_with_zne(
     folding_kwargs = folding_kwargs or {}
     extrapolate_kwargs = extrapolate_kwargs or {}
 
-    tape_expanded = circuit.expand(stop_at=lambda op: not isinstance(op, QuantumTape))
-    tape_removed, in_preps = _remove_preps(tape_expanded)
-    tape_removed = _remove_measurements(tape_removed)
+    tape = circuit.expand(stop_at=lambda op: not isinstance(op, QuantumTape))
+
+    with QuantumTape() as tape_removed:
+        for op in tape._ops:
+            apply(op)
 
     tapes = [
         [folding(tape_removed, s, **folding_kwargs) for _ in range(reps_per_factor)]
         for s in scale_factors
     ]
     tapes = [tape_ for tapes_ in tapes for tape_ in tapes_]  # flattens nested list
-    tapes = [_add_measurements(tape_, circuit.measurements) for tape_ in tapes]
-    tapes = [_add_preps(tape_, in_preps) for tape_ in tapes]
+
+    out_tapes = []
+
+    for tape_ in tapes:
+        with QuantumTape() as t:
+            [apply(p) for p in tape._prep]
+            [apply(op) for op in tape_.operations]
+            [apply(m) for m in tape.measurements]
+        out_tapes.append(t)
 
     def processing_fn(results):
         """Maps from input tape executions to an error-mitigated estimate"""
@@ -216,75 +222,4 @@ def mitigate_with_zne(
         extrapolated = extrapolate(scale_factors, results, **extrapolate_kwargs)
         return extrapolated[0] if len(extrapolated) == 1 else extrapolated
 
-    return tapes, processing_fn
-
-
-def _remove_preps(tape: QuantumTape) -> Tuple[QuantumTape, Tuple[Operation]]:
-    """Removes state preparations from an input tape.
-
-    Args:
-        tape (QuantumTape): the input quantum tape
-
-    Returns:
-        Tuple[QuantumTape, Tuple[Operation]]: the transformed tape with the state preparations
-        removed and an ordered tuple detailing the removed preparations
-    """
-    num_preps = sum(isinstance(o, STATE_PREP_OPS) for o in tape.operations)
-
-    with QuantumTape() as new_tape:
-        for op in tape.operations[num_preps:]:
-            apply(op)
-        for op in tape.measurements:
-            apply(op)
-
-    return new_tape, tape.operations[:num_preps]
-
-
-@single_tape_transform
-def _add_preps(tape: QuantumTape, preps: Tuple[Operation]) -> QuantumTape:
-    """Add state preparations to an input tape.
-
-    Args:
-        tape (QuantumTape): the input quantum tape
-        preps (tuple[Operation]): the state preparations to be added
-
-    Returns:
-        QuantumTape: the transformed tape with the state preparations added
-    """
-    for prep in preps:
-        apply(prep)
-    for op in tape.operations:
-        apply(op)
-    for m in tape.measurements:
-        apply(m)
-
-
-@single_tape_transform
-def _remove_measurements(tape: QuantumTape) -> QuantumTape:
-    """Removes measurements from an input tape.
-
-    Args:
-        tape (QuantumTape): the input quantum tape
-
-    Returns:
-        QuantumTape: the transformed tape with the measurements removed
-    """
-    for op in tape.operations:
-        apply(op)
-
-
-@single_tape_transform
-def _add_measurements(tape: QuantumTape, measurements: Tuple[MeasurementProcess]) -> QuantumTape:
-    """Add measurements to an input tape.
-
-    Args:
-        tape (QuantumTape): the input quantum tape
-        measurements (tuple[MeasurementProcess]): the measurements to be added
-
-    Returns:
-        QuantumTape: the transformed tape with the measurements added
-    """
-    for op in tape.operations:
-        apply(op)
-    for m in measurements:
-        apply(m)
+    return out_tapes, processing_fn
