@@ -1011,6 +1011,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Utkarsh Azad, Akash Narayanan B, Sam Banning, Thomas Bromley, Olivia Di Matteo, Andrew Gardhouse, David Ittah, 
-Josh Izaac, Christina Lee, Romain Moyard, Carrie-Anne Rubidge, Maria Schuld, Rishabh Singh, Jay Soni, Ingrid Strandberg, 
-Antal Száva, Cody Wang, David Wierichs, Moritz Willmann.
+Juan Miguel Arrazola, Utkarsh Azad, Akash Narayanan B, Sam Banning, Thomas Bromley, Jack Ceroni,
+Alain Delgado, Olivia Di Matteo, Andrew Gardhouse, David Ittah, Josh Izaac, Soran Jahangiri,
+Christina Lee, Romain Moyard, Carrie-Anne Rubidge, Maria Schuld, Rishabh Singh, Jay Soni,
+Ingrid Strandberg, Antal Száva, Teresa Tamayo-Mendoza, Rodrigo Vargas, Cody Wang, David Wierichs,
+Moritz Willmann.

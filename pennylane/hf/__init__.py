@@ -14,8 +14,8 @@
 """
 This subpackage provides the functionality to perform differentiable Hartree-Fock calculations.
 """
-from .basis_data import *
-from .basis_set import *
+from .basis_data import STO3G, atomic_numbers
+from .basis_set import BasisFunction, atom_basis_data, mol_basis_data
 from .hamiltonian import (
     generate_electron_integrals,
     generate_fermionic_hamiltonian,
@@ -43,4 +43,4 @@ from .matrices import (
     generate_repulsion_tensor,
     molecular_density_matrix,
 )
-from .molecule import *
+from .molecule import Molecule
