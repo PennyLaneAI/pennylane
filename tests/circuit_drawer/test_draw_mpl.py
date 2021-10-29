@@ -28,15 +28,23 @@ with QuantumTape() as tape1:
     qml.PauliX(1.234)
 
 
+label_data = [({}, ["0", "a", "1.234"]),
+({'wire_order': [1.234, "a", 0]}, ["1.234", "a", "0"]),
+({'wire_order': ["a", 1.234]}, ["a", "1.234", "0"]),
+({'wire_order': ["nope", "not there", 3]}, ["a", "1.234", "0"])
+]
+
 class TestLabelling:
     """Test the labels for the wires."""
 
-    def test_tape_wires(self, mocker):
+    def test_tape_wires(self):
         """Test labels when determined from tape wires"""
-        mock_drawer = mocker.patch("pennylane.circuit_drawer.draw.MPLDrawer")
-        draw_mpl(tape1)
 
-        mock_drawer().label.assert_called_with([0, "a", 1.234], text_options=None)
+        fig, ax = draw_mpl(tape1)
+
+        assert ax.texts[0].get_text() == "0"
+        assert ax.texts[1].get_text() == "a"
+        assert ax.texts[2].get_text() == "1.234"
 
     def test_wire_order(self, mocker):
         """Test labels when full wire order provided"""
@@ -332,6 +340,7 @@ class TestMeasurements:
 
         draw_mpl(tape)
 
+        # layer 1 wire 0
         mock_drawer().measure.assert_called_with(1, 0)
 
     def test_state(self, mocker):
@@ -359,6 +368,20 @@ class TestMeasurements:
         call_list = [((1, 0),), ((1, 1),), ((1, 2),)]
         assert mock_drawer().measure.call_args_list == call_list
 
+    def test_multiple_measurements(self, mocker):
+        """Assert """
+
+        mock_drawer = mocker.patch("pennylane.circuit_drawer.draw.MPLDrawer")
+
+        with QuantumTape() as tape:
+            qml.expval(qml.PauliZ(0))
+            qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
+            qml.state()
+
+        draw_mpl(tape)
+        
+        call_list = [((1,0),), ((1,1), )]
+        assert mock_drawer().measure.call_args_list == call_list
 
 class TestLayering:
     """Tests operations are placed into layers correctly."""

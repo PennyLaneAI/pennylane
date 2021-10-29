@@ -31,16 +31,16 @@ from .utils import convert_wire_order
 # create a private method here and add it to the ``special_cases`` dictionary
 # These methods should accept arguments in the order of ``drawer, op, layer, mapped_wires``
 
-
+# pylint: disable=unused-argument
 def _add_swap(drawer, op, layer, mapped_wires):
     drawer.SWAP(layer, mapped_wires)
 
-
+# pylint: disable=unused-argument
 def _add_cswap(drawer, op, layer, mapped_wires):
     drawer.ctrl(layer, wires=mapped_wires[0], wires_target=mapped_wires[1:])
     drawer.SWAP(layer, wires=mapped_wires[1:])
 
-
+# pylint: disable=unused-argument
 def _add_cx(drawer, op, layer, mapped_wires):
     drawer.CNOT(layer, mapped_wires)
 
@@ -49,9 +49,10 @@ def _add_multicontrolledx(drawer, op, layer, mapped_wires):
     # convert control values
     control_values = [(i == "1") for i in op.control_values]
     drawer.ctrl(layer, mapped_wires[:-1], mapped_wires[-1], control_values=control_values)
+    # pylint: disable=protected-access
     drawer._target_x(layer, mapped_wires[-1])
 
-
+# pylint: disable=unused-argument
 def _add_cz(drawer, op, layer, mapped_wires):
     drawer.ctrl(layer, mapped_wires)
 
@@ -257,25 +258,27 @@ def draw_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
                     layer,
                     target_wires,
                     op.label(decimals=decimals),
-                    box_options={"zorder": 4},
+                    box_options={"zorder": 4}, # make sure box and text above control wires
                     text_options={"zorder": 5},
                 )
 
             else:
                 drawer.box_gate(layer, mapped_wires, op.label(decimals=decimals))
 
-    m_wires = Wires([])
-    for m in tape.measurements:
-        if len(m.wires) == 0:
-            m_wires = -1
-            break
-        m_wires += m.wires
+    # store wires we've already drawn on
+    # max one measurement symbol per wire
+    measured_wires = Wires([])
 
-    if m_wires == -1:
-        for wire in range(n_wires):
-            drawer.measure(n_layers, wire)
-    else:
-        for wire in m_wires:
-            drawer.measure(n_layers, wire_map[wire])
+    for m in tape.measurements:
+        # state and probs 
+        if len(m.wires) == 0:
+            for wire in range(n_wires):
+                drawer.measure(n_layers, wire)
+            break
+
+        for wire in m.wires:
+            if wire not in measured_wires:
+                drawer.measure(n_layers, wire_map[wire])
+                measured_wires += wire
 
     return drawer.fig, drawer.ax
