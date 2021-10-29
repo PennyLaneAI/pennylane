@@ -557,6 +557,7 @@
 * Added a new template `kUpCCGSD`, which implements a unitary coupled cluster ansatz with
   generalized singles and pair doubles excitation operators, proposed by Joonho Lee *et al.*
   in [arXiv:1810.02327](https://arxiv.org/abs/1810.02327).
+  [(#1743)](https://github.com/PennyLaneAI/pennylane/pull/1743)
 
   An example of a circuit using `kUpCCGSD` template is:
 
@@ -576,14 +577,19 @@
 
 <h3>Improvements</h3>
 
+* The default for an `Operation`'s `control_wires` attribute is now an empty `Wires`
+  object instead of the attribute raising a `NonImplementedError`.
+  [(#1821)](https://github.com/PennyLaneAI/pennylane/pull/1821)
+
 * `qml.circuit_drawer.MPLDrawer` will now automatically rotate and resize text to fit inside
   the rectangle created by the `box_gate` method.
   [(#1764)](https://github.com/PennyLaneAI/pennylane/pull/1764)
   
-* Quantum function transforms can now be applied to devices.
+* Quantum function transforms and batch transforms can now be applied to devices.
   Once applied to a device, any quantum function executed on the
   modified device will be transformed prior to execution.
   [(#1809)](https://github.com/PennyLaneAI/pennylane/pull/1809)
+  [(#1810)](https://github.com/PennyLaneAI/pennylane/pull/1810)
 
   ```python
   dev = qml.device("default.mixed", wires=1)
@@ -867,6 +873,10 @@
   non-recordable or non-queueable within a QNode or quantum tape context.
   [(#1754)](https://github.com/PennyLaneAI/pennylane/pull/1754)
 
+* Templates `SingleExcitationUnitary` and `DoubleExcitationUnitary` have been renamed
+  to `FermionicSingleExcitation` and `FermionicDoubleExcitation`, respectively.
+  [(#1822)](https://github.com/PennyLaneAI/pennylane/pull/1822)
+
 <h3>Deprecations</h3>
 
 * Allowing cost functions to be differentiated using `qml.grad` or
@@ -952,6 +962,9 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug with the arrow width in the `measure` of `qml.circuit_drawer.MPLDrawer`. 
+  [(#1823)](https://github.com/PennyLaneAI/pennylane/pull/1823)
+
 * The helper functions `qml.math.block_diag` and `qml.math.scatter_element_add` now are
   entirely differentiable when using Autograd.
   Previously only indexed entries of the block diagonal could be differentiated, while
@@ -1006,6 +1019,9 @@
   [(#1750)](https://github.com/PennyLaneAI/pennylane/pull/1750)
 
 * Add the `jax` interface in QNode Documentation. [(#1755)](https://github.com/PennyLaneAI/pennylane/pull/1755)
+
+* Reorganized all the templates related to quantum chemistry under a common header `Quantum Chemistry templates`.
+  [(#1822)](https://github.com/PennyLaneAI/pennylane/pull/1822)
 
 <h3>Contributors</h3>
 
