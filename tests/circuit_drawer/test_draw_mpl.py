@@ -21,6 +21,7 @@ from pennylane.circuit_drawer import draw_mpl
 from pennylane.tape import QuantumTape
 
 mpl = pytest.importorskip("matplotlib")
+plt = pytest.importorskip("matplotlib.pyplot")
 
 with QuantumTape() as tape1:
     qml.PauliX(0)
@@ -28,58 +29,36 @@ with QuantumTape() as tape1:
     qml.PauliX(1.234)
 
 
-label_data = [({}, ["0", "a", "1.234"]),
-({'wire_order': [1.234, "a", 0]}, ["1.234", "a", "0"]),
-({'wire_order': ["a", 1.234]}, ["a", "1.234", "0"]),
-({'wire_order': ["nope", "not there", 3]}, ["a", "1.234", "0"])
+label_data = [({}, ["0", "a", "1.234"]), # default behaviour
+({'wire_order': [1.234, "a", 0]}, ["1.234", "a", "0"]), # provide standard wire order
+({'wire_order': ["a", 1.234]}, ["a", "1.234", "0"]), # wire order that doesn't include all active wires
+({'wire_order': ["nope", "not there", 3]}, ["0", "a", "1.234"]), # wire order includes unused wires
+({'wire_order': ["aux", 0, "a", 1.234], 'show_all_wires': True}, ["aux", "0", "a", ]) # show_all_wires=True
 ]
 
 class TestLabelling:
     """Test the labels for the wires."""
 
-    def test_tape_wires(self):
-        """Test labels when determined from tape wires"""
+    @pytest.mark.parametrize("kwargs, labels", label_data)
+    def test_labels(self, kwargs, labels):
+        """Test produced labels under different settings.  Check both text value and position"""
+        _, ax = draw_mpl(tape1, **kwargs)
 
-        fig, ax = draw_mpl(tape1)
+        for wire, (text_obj, label) in enumerate(zip(ax.texts, labels)):
+            assert text_obj.get_text() == label
+            assert text_obj.get_position() == (-1.5, wire)
 
-        assert ax.texts[0].get_text() == "0"
-        assert ax.texts[1].get_text() == "a"
-        assert ax.texts[2].get_text() == "1.234"
+        plt.close()
 
-    def test_wire_order(self, mocker):
-        """Test labels when full wire order provided"""
-        mock_drawer = mocker.patch("pennylane.circuit_drawer.draw.MPLDrawer")
+    def test_label_options(self):
+        """Test providing `label_options` alters styling of the text"""
 
-        draw_mpl(tape1, wire_order=[1.234, "a", 0])
-        mock_drawer().label.assert_called_with([1.234, "a", 0], text_options=None)
+        _, ax = draw_mpl(tape1, label_options={"fontsize": 10})
 
-    def test_partial_wire_order(self, mocker):
-        """Test wire order that only contains some tape wires."""
-        mock_drawer = mocker.patch("pennylane.circuit_drawer.draw.MPLDrawer")
+        for text_obj in ax.texts[0:3]:
+            assert text_obj.get_fontsize() == 10.0
 
-        draw_mpl(tape1, wire_order=["a", 1.234])
-        mock_drawer().label.assert_called_with(["a", 1.234, 0], text_options=None)
-
-    def test_wire_order_unused_wire(self, mocker):
-        """Test when wire order contains wire not in the tape"""
-        mock_drawer = mocker.patch("pennylane.circuit_drawer.draw.MPLDrawer")
-
-        draw_mpl(tape1, wire_order=["nope", "not there", 3])
-        mock_drawer().label.assert_called_with([0, "a", 1.234], text_options=None)
-
-    def test_show_all_wires_unused_wire(self, mocker):
-        """Test empty wires in wire order added when ``show_all_wires=True``"""
-        mock_drawer = mocker.patch("pennylane.circuit_drawer.draw.MPLDrawer")
-
-        draw_mpl(tape1, wire_order=["aux", 0, "a", 1.234], show_all_wires=True)
-        mock_drawer().label.assert_called_with(["aux", 0, "a", 1.234], text_options=None)
-
-    def test_label_options(self, mocker):
-        """Test text_options"""
-        mock_drawer = mocker.patch("pennylane.circuit_drawer.draw.MPLDrawer")
-
-        draw_mpl(tape1, label_options={"fontsize": 10})
-        mock_drawer().label.assert_called_with([0, "a", 1.234], text_options={"fontsize": 10})
+        plt.close()
 
 
 class TestWires:
@@ -88,12 +67,14 @@ class TestWires:
     def test_empty_tape_wire_order(self):
         """Test situation with empty tape but specified wires."""
 
-        fig, ax = draw_mpl(QuantumTape(), wire_order=[0, 1, 2], show_all_wires=True)
+        _, ax = draw_mpl(QuantumTape(), wire_order=[0, 1, 2], show_all_wires=True)
 
         assert len(ax.lines) == 3
         for wire, line in enumerate(ax.lines):
-            assert line.get_xdata() == (-1, 1)
+            assert line.get_xdata() == (-1, 1) # from -1 to number of layers
             assert line.get_ydata() == (wire, wire)
+
+        plt.close()
 
     def test_single_layer(self):
         """Test a single layer with multiple wires."""
@@ -107,8 +88,10 @@ class TestWires:
 
         assert len(ax.lines) == 3
         for wire, line in enumerate(ax.lines):
-            assert line.get_xdata() == (-1, 1)
+            assert line.get_xdata() == (-1, 1) # from -1 to number of layers
             assert line.get_ydata() == (wire, wire)
+
+        plt.close()
 
     def test_three_layers(self):
         """Test wire length when circuit has three layers."""
@@ -118,11 +101,13 @@ class TestWires:
             qml.PauliX(0)
             qml.PauliX(0)
 
-        fig, ax = draw_mpl(tape)
+        _, ax = draw_mpl(tape)
 
         assert len(ax.lines) == 1
-        assert ax.lines[0].get_xdata() == (-1, 3)
+        assert ax.lines[0].get_xdata() == (-1, 3) # from -1 to number of layers
         assert ax.lines[0].get_ydata() == (0, 0)
+
+        plt.close()
 
     def test_wire_options(self):
         """Test wires are formatted by provided dictionary."""
@@ -132,137 +117,202 @@ class TestWires:
             qml.PauliX(1)
 
         rgba_red = (1, 0, 0, 1)
-        fig, ax = draw_mpl(tape, wire_options={"linewidth": 5, "color": rgba_red})
+        _, ax = draw_mpl(tape, wire_options={"linewidth": 5, "color": rgba_red})
 
         for line in ax.lines:
             assert line.get_linewidth() == 5
             assert line.get_color() == rgba_red
 
+        plt.close()
+
 
 class TestSpecialGates:
     """Tests the gates with special drawing methods."""
 
-    def test_SWAP(self, mocker):
-        """Test SWAP gate gets special call"""
-        mock_drawer = mocker.patch("pennylane.circuit_drawer.draw.MPLDrawer")
+    def test_SWAP(self):
+        """Test SWAP gate special call"""
 
         with QuantumTape() as tape:
             qml.SWAP(wires=(0, 1))
 
-        draw_mpl(tape)
+        _, ax = draw_mpl(tape)
+        layer = 0
 
-        mock_drawer().SWAP.assert_called_with(0, [0, 1])
+        # two wires, SWAP contains 5 lines
+        assert len(ax.lines) == 7
 
-    def test_CSWAP(self, mocker):
-        """Test CSWAP gets special call"""
-        mock_drawer = mocker.patch("pennylane.circuit_drawer.draw.MPLDrawer")
+        connecting_line = ax.lines[2]
+        assert connecting_line.get_data() == ((layer, layer), [0, 1])
+
+        x_lines = ax.lines[3:]
+        assert x_lines[0].get_data() == ((layer-0.2, layer+0.2), (-0.2, 0.2))
+        assert x_lines[1].get_data() == ((layer-0.2, layer+0.2), (0.2, -0.2))
+        assert x_lines[2].get_data() == ((layer-0.2, layer+0.2), (0.8, 1.2))
+        assert x_lines[3].get_data() == ((layer-0.2, layer+0.2), (1.2, 0.8))
+        plt.close()
+
+
+    def test_CSWAP(self):
+        """Test CSWAP special call"""
 
         with QuantumTape() as tape:
             qml.CSWAP(wires=(0, 1, 2))
 
-        draw_mpl(tape)
+        _, ax = draw_mpl(tape)
+        layer = 0
 
-        mock_drawer().ctrl.assert_called_with(0, wires=0, wires_target=[1, 2])
-        mock_drawer().SWAP.assert_called_with(0, wires=[1, 2])
+        # three wires, one control, 5 swap
+        assert len(ax.lines) == 9
+
+        control_line = ax.lines[3]
+        assert control_line.get_data() == ((layer,layer), (0,2))
+
+        # control circle
+        assert ax.patches[0].center == (layer,0)
+
+        # SWAP components
+        connecting_line = ax.lines[4]
+        assert connecting_line.get_data() == ((layer,layer), [1,2])
+
+        x_lines = ax.lines[5:]
+        assert x_lines[0].get_data() == ((layer-0.2, layer+0.2), (0.8, 1.2))
+        assert x_lines[1].get_data() == ((layer-0.2, layer+0.2), (1.2, 0.8))
+
+        assert x_lines[2].get_data() == ((layer-0.2, layer+0.2), (1.8, 2.2))
+        assert x_lines[3].get_data() == ((layer-0.2, layer+0.2), (2.2, 1.8))
+        plt.close()
 
     def test_CNOT(self, mocker):
         """Test CNOT gets a special call"""
-        mock_drawer = mocker.patch("pennylane.circuit_drawer.draw.MPLDrawer")
 
         with QuantumTape() as tape:
             qml.CNOT(wires=(0, 1))
 
-        draw_mpl(tape)
+        _, ax = draw_mpl(tape)
+        layer = 0
 
-        mock_drawer().CNOT.assert_called_with(0, [0, 1])
+        assert len(ax.patches) == 2
+        assert ax.patches[0].center == (layer,0)
+        assert ax.patches[1].center == (layer,1)
 
-    def test_Toffoli(self, mocker):
+        control_line = ax.lines[2]
+        assert control_line.get_data() == ((layer,layer), (0,1))
+
+        assert len(ax.lines) == 5
+        plt.close()
+
+    def test_Toffoli(self):
         """Test Toffoli gets a special call."""
-
-        mock_drawer = mocker.patch("pennylane.circuit_drawer.draw.MPLDrawer")
 
         with QuantumTape() as tape:
             qml.Toffoli(wires=(0, 1, 2))
 
-        draw_mpl(tape)
+        _, ax = draw_mpl(tape)
+        layer = 0
 
-        mock_drawer().CNOT.assert_called_with(0, [0, 1, 2])
+        assert len(ax.patches) == 3
+        assert ax.patches[0].center == (layer, 0)
+        assert ax.patches[1].center == (layer, 1)
+        assert ax.patches[2].center == (layer, 2)
 
-    def test_MultiControlledX_no_control_values(self, mocker):
+        # three wires, one control line, two target lines
+        assert len(ax.lines) == 6
+        control_line = ax.lines[3]
+        assert control_line.get_data() == ((layer, layer), (0, 2))
+
+        plt.close()
+
+    def test_MultiControlledX_no_control_values(self):
         """Test MultiControlledX gets a special call."""
-
-        mock_drawer = mocker.patch("pennylane.circuit_drawer.draw.MPLDrawer")
 
         with QuantumTape() as tape:
             qml.MultiControlledX(control_wires=[0, 1, 2, 3], wires=4)
 
-        draw_mpl(tape)
+        _, ax = draw_mpl(tape)
+        layer = 0
 
-        mock_drawer().ctrl.assert_called_with(
-            0, [0, 1, 2, 3], 4, control_values=[True, True, True, True]
-        )
-        mock_drawer()._target_x.assert_called_with(0, 4)
+        assert len(ax.patches) == 5
+        for wire, patch in enumerate(ax.patches):
+            assert patch.center == (layer, wire)
 
-    def test_MultiControlledX_control_values(self, mocker):
+        # five wires, one control line, two target lines
+        assert len(ax.lines) == 8
+        control_line = ax.lines[5]
+        assert control_line.get_data() == ((layer, layer), (0, 4))
+
+        plt.close()
+
+    def test_MultiControlledX_control_values(self):
         """Test MultiControlledX with provided control values."""
-
-        mock_drawer = mocker.patch("pennylane.circuit_drawer.draw.MPLDrawer")
 
         with QuantumTape() as tape:
             qml.MultiControlledX(control_wires=[0, 1, 2, 3], wires=4, control_values="0101")
 
-        draw_mpl(tape)
+        _, ax = draw_mpl(tape)
+        
+        assert ax.patches[0].get_facecolor() == (1.0, 1.0, 1.0, 1.0) # white
+        assert ax.patches[1].get_facecolor() == mpl.colors.to_rgba(plt.rcParams['lines.color'])
+        assert ax.patches[2].get_facecolor() == (1.0, 1.0, 1.0, 1.0)
+        assert ax.patches[3].get_facecolor() == mpl.colors.to_rgba(plt.rcParams['lines.color'])
 
-        mock_drawer().ctrl.assert_called_with(
-            0, [0, 1, 2, 3], 4, control_values=[False, True, False, True]
-        )
-        mock_drawer()._target_x.assert_called_with(0, 4)
+        plt.close()
 
-    def test_CZ(self, mocker):
+    def test_CZ(self):
         """Test CZ gets a special call."""
-
-        mock_drawer = mocker.patch("pennylane.circuit_drawer.draw.MPLDrawer")
 
         with QuantumTape() as tape:
             qml.CZ(wires=(0, 1))
 
-        draw_mpl(tape)
+        _, ax = draw_mpl(tape)
+        layer = 0
 
-        mock_drawer().ctrl.assert_called_with(0, [0, 1])
+        # two wires one control line
+        assert len(ax.lines) == 3
 
+        assert ax.lines[2].get_data() == ((layer, layer), (0,1))
+
+        # two control circles
+        assert len(ax.patches) == 2
+        assert ax.patches[0].center == (layer, 0)
+        assert ax.patches[1].center == (layer, 1)
+
+        plt.close()
+
+controlled_data = [(qml.CY(wires=(0,1)), "Y"), 
+    (qml.CRX(1.2345, wires=(0,1)), "RX"),
+    (qml.CRot(1.2, 2.2, 3.3, wires=(0,1)), "Rot")
+]
 
 class TestControlledGates:
     """Tests generic controlled gates"""
 
-    def test_CY(self, mocker):
-        """Test a controlled non-parametric operation."""
-
-        mock_drawer = mocker.patch("pennylane.circuit_drawer.draw.MPLDrawer")
+    @pytest.mark.parametrize("op, label", controlled_data)
+    def test_control_gates(self, op, label):
 
         with QuantumTape() as tape:
-            qml.CY(wires=(0, 1))
+            qml.apply(op)
 
-        draw_mpl(tape)
+        _, ax = draw_mpl(tape)
+        layer = 0
 
-        mock_drawer().ctrl.assert_called_with(0, [0], wires_target=[1])
-        mock_drawer().box_gate.assert_called_with(
-            0, [1], "Y", box_options={"zorder": 4}, text_options={"zorder": 5}
-        )
+        assert isinstance(ax.patches[0], mpl.patches.Circle)
+        assert ax.patches[0].center == (layer,0)
 
-    def test_CRX(self, mocker):
-        """Test a controlled parametric operation."""
+        control_line = ax.lines[2]
+        assert control_line.get_data() == ((layer,layer), (0,1))
 
-        mock_drawer = mocker.patch("pennylane.circuit_drawer.draw.MPLDrawer")
+        assert isinstance(ax.patches[1], mpl.patches.Rectangle)
+        assert ax.patches[1].get_xy() == (layer-0.4, 0.6)
 
-        with QuantumTape() as tape:
-            qml.CRX(1.234, wires=(0, 1))
+        # two wire labels, so [2] is box gate label
+        assert ax.texts[2].get_text() == label
 
-        draw_mpl(tape)
+        # box and text must be raised above control wire
+        # text raised over box
+        assert ax.patches[1].get_zorder() > control_line.get_zorder()
+        assert ax.texts[2].get_zorder() > ax.patches[1].get_zorder()
 
-        mock_drawer().ctrl.assert_called_with(0, [0], wires_target=[1])
-        mock_drawer().box_gate.assert_called_with(
-            0, [1], "RX", box_options={"zorder": 4}, text_options={"zorder": 5}
-        )
+        plt.close()
 
     def test_CRX_decimals(self, mocker):
         """Test a controlled parametric operation with specified decimals."""
