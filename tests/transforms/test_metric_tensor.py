@@ -757,6 +757,8 @@ def autodiff_metric_tensor(ansatz, num_wires):
         iqnode = lambda *params: np.imag(qnode(*params))
         jac = qml.jacobian(rqnode)(*params) + 1j * qml.jacobian(iqnode)(*params)
         psidpsi = np.tensordot(np.conj(state), jac, axes=([0], [0]))
+        print(f"First:\n{np.real(np.tensordot(np.conj(jac), jac, axes=([0], [0])))}")
+        print(f"Second:\n{-np.real(np.tensordot(np.conj(psidpsi), psidpsi, axes=0))}")
         return np.real(
             np.tensordot(np.conj(jac), jac, axes=([0], [0]))
             - np.tensordot(np.conj(psidpsi), psidpsi, axes=0)
@@ -782,6 +784,8 @@ class TestFullMetricTensor:
 
         mt = qml.metric_tensor(circuit, approx=None)(*params)
 
+        print(mt)
+        print(expected)
         assert np.allclose(mt, expected)
 
     @pytest.mark.xfail(reason="JAX does not support the forward pass metric tensor.")

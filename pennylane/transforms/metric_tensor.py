@@ -244,6 +244,7 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
 
         kwargs.pop("shots", False)
         cjac = cjac_fn(*args, **kwargs)
+        print(cjac)
 
         if isinstance(cjac, tuple):
             if len(cjac) == 1:
@@ -488,6 +489,7 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire):
     diag_tapes, diag_proc_fn, obs_list, coeffs = _metric_tensor_cov_matrix(tape, diag_approx=False)
     graph = tape.graph
     par_idx_to_trainable_idx = {idx: i for i, idx in enumerate(sorted(tape.trainable_params))}
+    print(par_idx_to_trainable_idx)
     layers = graph.iterate_parametrized_layers()
     layers = [
         LayerData(
@@ -509,6 +511,8 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire):
             _tapes, _ids = _get_first_term_tapes(tape, layer_i, layer_j, allow_nonunitary, aux_wire)
             first_term_tapes.extend(_tapes)
             ids.extend(_ids)
+    print(block_sizes)
+    print(ids)
 
     # Combine block diagonal and off-diagonal tapes
     tapes = diag_tapes + first_term_tapes
@@ -521,6 +525,7 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire):
         diag_res, off_diag_res = results[:num_diag_tapes], results[num_diag_tapes:]
         # Get full block diagonal tensor
         diag_mt = diag_proc_fn(diag_res)
+        print(f"Diag:\n{diag_mt}")
         # Initialize block off-diagonal tensor using the stored ids
         first_term = qml.math.zeros_like(diag_mt)
         for result, idx in zip(off_diag_res, ids):
@@ -545,13 +550,14 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire):
         off_diag_mt = first_term - second_term
 
         # Rescale first and second term
-        _coeffs = qml.math.stack(coeffs, 1)
+        _coeffs = qml.math.hstack(coeffs)
         scale = qml.math.convert_like(qml.math.outer(_coeffs, _coeffs), results[0])
         off_diag_mt = scale * off_diag_mt
+        print(f"First (off):\n{scale*first_term}")
+        print(f"Second (off):\n{-scale*second_term}")
 
         # Combine block diagonal and off-diagonal
         mt = off_diag_mt + diag_mt
 
         return mt
-
     return tapes, processing_fn
