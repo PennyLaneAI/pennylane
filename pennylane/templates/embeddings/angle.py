@@ -66,7 +66,7 @@ class AngleEmbedding(Operation):
         super().__init__(features, wires=wires, do_queue=do_queue, id=id)
 
     def expand(self):
-        features = self.parameters[0].T
+        features = np.array(self.parameters[0]).T
         with qml.tape.QuantumTape() as tape:
             for i in range(len(self.wires)):
                 self.rotation(features[i], wires=self.wires[i])
