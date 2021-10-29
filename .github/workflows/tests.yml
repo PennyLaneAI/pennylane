@@ -118,6 +118,10 @@ jobs:
         if: contains(matrix.config.device, 'tf')
         run: pip3 install tensorflow==$TF_VERSION
 
+      - name: Conditionally install mitiq if TensorFlow is not installed
+        if: !contains(matrix.config.device, 'tf')
+        run: pip3 install git+git://github.com/unitaryfund/mitiq@master#egg=mitiq
+
       - name: Conditionally install Jax
         if: contains(matrix.config.device, 'jax')
         run: pip3 install jax jaxlib
