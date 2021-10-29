@@ -12,3 +12,4 @@ semantic_version==2.6
 dask[delayed]==2021.08
 autoray==0.2
 matplotlib==3.4
+git+git://github.com/unitaryfund/mitiq@master#egg=mitiq
