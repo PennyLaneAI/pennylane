@@ -136,7 +136,7 @@ def mitigate_with_zne(
         circuit or to the whole circuit. When no folding occurs, the scale factor is
         :math:`s=1` and we are running our input circuit. On the other hand, when each gate has been
         folded once, we have tripled the amount of noise in the circuit so that :math:`s=3`. For
-        :math:`s \geq 3`, each gate in the circuit will be folded more than once. An typical choice
+        :math:`s \geq 3`, each gate in the circuit will be folded more than once. A typical choice
         of scale parameters is :math:`(1, 2, 3)`.
 
         **Unitary folding**
@@ -187,7 +187,7 @@ def mitigate_with_zne(
         Extrapolation functionality is available using ``extrapolate``
         methods of the factories in the
         `mitiq.zne.inference <https://mitiq.readthedocs.io/en/stable/apidoc.html#module-mitiq.zne.inference>`__
-        module (version 0.11.0 and above).
+        module.
     """
     folding_kwargs = folding_kwargs or {}
     extrapolate_kwargs = extrapolate_kwargs or {}
