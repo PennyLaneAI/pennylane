@@ -18,7 +18,6 @@ Contains the ``AngleEmbedding`` template.
 import pennylane as qml
 from pennylane.ops import RX, RY, RZ
 from pennylane.operation import Operation, AnyWires
-import numpy as np
 
 ROT = {"X": RX, "Y": RY, "Z": RZ}
 
