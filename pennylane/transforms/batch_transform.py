@@ -348,7 +348,7 @@ class batch_transform:
             wrapper.construct = _construct
 
         else:
-            # Input is not a QNode nor a quantum tape.
+            # Input is not a QNode nor a quantum tape nor a device.
             # Assume Python decorator syntax:
             #
             # result = some_transform(*transform_args)(qnode)(*qnode_args)
