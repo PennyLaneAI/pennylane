@@ -462,6 +462,7 @@
 * Added a new template `kUpCCGSD`, which implements a unitary coupled cluster ansatz with
   generalized singles and pair doubles excitation operators, proposed by Joonho Lee *et al.*
   in [arXiv:1810.02327](https://arxiv.org/abs/1810.02327).
+  [(#1743)](https://github.com/PennyLaneAI/pennylane/pull/1743)
 
   An example of a circuit using `kUpCCGSD` template is:
 
@@ -481,6 +482,10 @@
 
 <h3>Improvements</h3>
 
+* `qml.circuit_drawer.MPLDrawer` will now automatically rotate and resize text to fit inside
+  the rectangle created by the `box_gate` method.
+  [(#1764)](https://github.com/PennyLaneAI/pennylane/pull/1764)
+  
 * Quantum function transforms can now be applied to devices.
   Once applied to a device, any quantum function executed on the
   modified device will be transformed prior to execution.
@@ -540,6 +545,9 @@
 * Operators now have a `label` method to determine how they are drawn.  This will
   eventually override the `RepresentationResolver` class.
   [(#1678)](https://github.com/PennyLaneAI/pennylane/pull/1678)
+
+* The operation `label` method now supports string variables.
+  [(#1815)](https://github.com/PennyLaneAI/pennylane/pull/1815)
 
 * It is now possible to draw QNodes that have been transformed by a 'batch transform'; that is,
   a transform that maps a single QNode into multiple circuits under the hood. Examples of
@@ -765,6 +773,10 @@
   non-recordable or non-queueable within a QNode or quantum tape context.
   [(#1754)](https://github.com/PennyLaneAI/pennylane/pull/1754)
 
+* Templates `SingleExcitationUnitary` and `DoubleExcitationUnitary` have been renamed
+  to `FermionicSingleExcitation` and `FermionicDoubleExcitation`, respectively.
+  [(#1822)](https://github.com/PennyLaneAI/pennylane/pull/1822)
+
 <h3>Deprecations</h3>
 
 * Allowing cost functions to be differentiated using `qml.grad` or
@@ -844,8 +856,23 @@
   Please use the `qml.metric_tensor` transform instead.
   [(#1638)](https://github.com/PennyLaneAI/pennylane/pull/1638)
 
+* The `pad` parameter of the `qml.AmplitudeEmbedding` template has been removed.
+  It has instead been renamed to the `pad_with` parameter.
+  [(#1805)](https://github.com/PennyLaneAI/pennylane/pull/1805)
+
 <h3>Bug fixes</h3>
 
+* Fixes a bug with the arrow width in the `measure` of `qml.circuit_drawer.MPLDrawer`. 
+  [(#1823)](https://github.com/PennyLaneAI/pennylane/pull/1823)
+
+* The helper functions `qml.math.block_diag` and `qml.math.scatter_element_add` now are
+  entirely differentiable when using Autograd.
+  Previously only indexed entries of the block diagonal could be differentiated, while
+  the derivative w.r.t to the second argument of `qml.math.scatter_element_add` dispatched
+  to NumPy instead of Autograd.
+  [(#1816)](https://github.com/PennyLaneAI/pennylane/pull/1816)
+  [(#1818)](https://github.com/PennyLaneAI/pennylane/pull/1818)
+  
 * Fixes a bug where the GPU cannot be used with `qml.qnn.TorchLayer`.
   [(#1705)](https://github.com/PennyLaneAI/pennylane/pull/1705)
 
@@ -893,10 +920,13 @@
 
 * Add the `jax` interface in QNode Documentation. [(#1755)](https://github.com/PennyLaneAI/pennylane/pull/1755)
 
+* Reorganized all the templates related to quantum chemistry under a common header `Quantum Chemistry templates`.
+  [(#1822)](https://github.com/PennyLaneAI/pennylane/pull/1822)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Utkarsh Azad, Akash Narayanan B, Sam Banning, Thomas Bromley, Olivia Di Matteo, Andrew Gardhouse, David Ittah, Josh Izaac, Christina Lee,
-Romain Moyard, Carrie-Anne Rubidge, Maria Schuld, Rishabh Singh, Ingrid Strandberg, Antal Száva, Cody Wang,
-David Wierichs, Moritz Willmann.
+Utkarsh Azad, Akash Narayanan B, Sam Banning, Thomas Bromley, Olivia Di Matteo, Andrew Gardhouse, David Ittah, 
+Josh Izaac, Christina Lee, Romain Moyard, Carrie-Anne Rubidge, Maria Schuld, Rishabh Singh, Jay Soni, Ingrid Strandberg, 
+Antal Száva, Cody Wang, David Wierichs, Moritz Willmann.
