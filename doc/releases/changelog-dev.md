@@ -858,6 +858,7 @@
 <h3>Bug fixes</h3>
 
 * Fixes a bug with the arrow width in the `measure` of `qml.circuit_drawer.MPLDrawer`. 
+  [(#1823)](https://github.com/PennyLaneAI/pennylane/pull/1823)
 
 * The helper functions `qml.math.block_diag` and `qml.math.scatter_element_add` now are
   entirely differentiable when using Autograd.
