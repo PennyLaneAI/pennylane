@@ -277,15 +277,12 @@ ar.register_function("torch", "gather", lambda x, indices: x[indices])
 ar.register_function("torch", "gather", lambda x, indices: x[indices])
 
 try:
-    import torch
-
-    if semantic_version.match(">=1.10", torch.__version__):
+    if semantic_version.match(">=1.10", _i("torch").__version__):
         # autoray.py:84: UserWarning: torch.symeig is deprecated in favor of torch.linalg.eigh
         # and will be removed in a future PyTorch release.
         del ar.autoray._FUNCS["torch", "linalg.eigh"]
 except ImportError as e:
     pass
-
 
 
 ar.register_function(
