@@ -118,6 +118,8 @@ jobs:
         if: contains(matrix.config.device, 'tf')
         run: pip3 install tensorflow==$TF_VERSION
 
+      # Mitiq requires numpy~=1.20.1 but current versions of TF are only compatible with
+      # numpy<=1.19. Installing mitiq and tensorflow together causes some tests to fail
       - name: Conditionally install mitiq if TensorFlow is not installed
         if: false == ${{contains(matrix.config.device, 'tf')}}
         run: pip3 install git+git://github.com/unitaryfund/mitiq@master#egg=mitiq
