@@ -482,6 +482,10 @@
 
 <h3>Improvements</h3>
 
+* The default for an `Operation`'s `control_wires` attribute is now an empty `Wires`
+  object instead of the attribute raising a `NonImplementedError`.
+  [(#1821)](https://github.com/PennyLaneAI/pennylane/pull/1821)
+
 * `qml.circuit_drawer.MPLDrawer` will now automatically rotate and resize text to fit inside
   the rectangle created by the `box_gate` method.
   [(#1764)](https://github.com/PennyLaneAI/pennylane/pull/1764)
