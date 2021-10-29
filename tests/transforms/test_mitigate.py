@@ -157,8 +157,6 @@ def skip_if_no_pl_qiskit_support():
 class TestMitiqIntegration:
     """Tests if the mitigate_with_zne transform is compatible with using mitiq as a backend"""
 
-    from mitiq.interface.conversions import CircuitConversionError
-
     def test_multiple_returns(self):
         """Tests if the expected shape is returned when mitigating a circuit with two returns"""
         from mitiq.zne.scaling import fold_global
@@ -308,7 +306,6 @@ class TestMitiqIntegration:
         assert all(mitigated_err < noisy_err)
 
     @pytest.mark.xfail(
-        raises=CircuitConversionError,
         reason="Using external tape transforms breaks differentiability",
     )
     def test_grad(self):
