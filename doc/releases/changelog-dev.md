@@ -28,8 +28,10 @@
   coeff = np.array([[0.15432897, 0.53532814, 0.44463454],
                     [0.15432897, 0.53532814, 0.44463454]], requires_grad = True)
 
+  # we create a molecule object with differentiable atomic coordinates and basis set parameters
+  # alpha and coeff are the exponentents and contraction coefficients of the Gaussian functions
   mol = qml.hf.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
-  args = [geometry, alpha, coeff]
+  args = [geometry, alpha, coeff] # initial values of the differentiable parameters
   
   hamiltonian = qml.hf.generate_hamiltonian(mol)(*args)
   ```
@@ -42,30 +44,36 @@
   
   params = [np.array([0.0], requires_grad=True)]
   dev = qml.device("default.qubit", wires=4)
+  hf_state = np.array([1, 1, 0, 0])
   
   def generate_circuit(mol):
       @qml.qnode(dev)
       def circuit(*args):
-          qml.PauliX(0)
-          qml.PauliX(1)
+          qml.BasisState(hf_state, wires=[0, 1, 2, 3])
           qml.DoubleExcitation(*args[0][0], wires=[0, 1, 2, 3])
           return qml.expval(hf.generate_hamiltonian(mol)(*args[1:]))
       return circuit
   
-  for n in range(10):
+  for n in range(10): # geometry and parameter optimization loop
   
+      # we create a molecule object with differentiable atomic coordinates and basis set parameters
+      # alpha and coeff are the exponentents and contraction coefficients of the Gaussian functions 
       mol = hf.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
-      args_ = [params, *args]
+      args_ = [params, *args] # initial values of the differentiable parameters
   
+      # compute gradients with respect to the circuit parameters and update the parameters
       g_params = autograd.grad(generate_circuit(mol), argnum = 0)(*args_)
       params = params - 0.1 * g_params[0]
   
+      # compute gradients with respect to the nuclear coordinates and update geometry
       forces = autograd.grad(generate_circuit(mol), argnum = 1)(*args_)
       geometry = geometry - 0.5 * forces
   
+      # compute gradients with respect to the Gaussian exponents and update the exponents
       g_alpha = autograd.grad(generate_circuit(mol), argnum = 2)(*args_)
       alpha = alpha - 0.1 * g_alpha
   
+      # compute gradients with respect to the Gaussian contraction coefficients and update them
       g_coeff = autograd.grad(generate_circuit(mol), argnum = 3)(*args_)
       coeff = coeff - 0.1 * g_coeff
   ```
