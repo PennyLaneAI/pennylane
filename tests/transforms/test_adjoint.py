@@ -378,7 +378,7 @@ class TestTemplateIntegration:
     def test_single_excitation(self):
         """Test that the adjoint correctly inverts the single excitation unitary"""
         dev = qml.device("default.qubit", wires=3)
-        template = qml.templates.SingleExcitationUnitary
+        template = qml.templates.FermionicSingleExcitation
 
         @qml.qnode(dev)
         def circuit(weights):
@@ -395,7 +395,7 @@ class TestTemplateIntegration:
     def test_double_excitation(self):
         """Test that the adjoint correctly inverts the double excitation unitary"""
         dev = qml.device("default.qubit", wires=4)
-        template = qml.templates.DoubleExcitationUnitary
+        template = qml.templates.FermionicDoubleExcitation
 
         @qml.qnode(dev)
         def circuit(weights):

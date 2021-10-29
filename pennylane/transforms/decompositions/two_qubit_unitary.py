@@ -181,7 +181,7 @@ def _su2su2_to_tensor_products(U):
         a2 *= -1
 
     # Construct A
-    A = math.stack([[a1, a2], [-math.conj(a2), math.conj(a1)]])
+    A = math.stack([math.stack([a1, a2]), math.stack([-math.conj(a2), math.conj(a1)])])
 
     # Next, extract B. Can do from any of the C, just need to be careful in
     # case one of the elements of A is 0.
