@@ -4,11 +4,11 @@
 
 <h3>New features since last release</h3>
 
-* A differentiable Hartree-Fock (HF) solver and functions to compute a differentiable PennyLane
-  Hamiltonian from the results of the solver have been added.
+* A differentiable Hartree-Fock (HF) solver has been added. It can be used to construct molecular Hamiltonians 
+  that can be differentiated with respect to nuclear coordinates and basis-set parameters.
   [(#1610)](https://github.com/PennyLaneAI/pennylane/pull/1610)
 
-  The HF solver computes the integrals over basis functions, constructs the relevant matrices and
+  The HF solver computes the integrals over basis functions, constructs the relevant matrices, and
   performs self-consistent-field iterations to obtain a set of optimized molecular orbital
   coefficients. These coefficients and the computed integrals over basis functions are used to
   construct the one- and two-body electron integrals in the molecular orbital basis which can be
@@ -34,7 +34,7 @@
   hamiltonian = qml.hf.generate_hamiltonian(mol)(*args)
   ```
 
-  The generated hamiltonian can be used in a circuit where the molecular geometry, the basis set
+  The generated Hamiltonian can be used in a circuit where the molecular geometry, the basis set
   parameters and the circuit parameters are optimized simultaneously.
 
   ```python
