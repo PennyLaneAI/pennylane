@@ -140,18 +140,18 @@ def mitigate_with_zne(
         This transform applies ZNE to an input circuit using the unitary folding approach. It
         requires a callable to be passed as the ``folding`` argument with signature
         .. code-block:: python
-        
+
             fn(circuit, scale_factor, **folding_kwargs)
-            
+
         where
 
         - ``circuit`` is a quantum tape,
-        
+
         - ``scale_factor`` is a float, and
-        
+
         - ``folding_kwargs`` are optional arguments passed to the
           folding function.
-        
+
         The output of the function should be the folded circuit as a quantum tape.
         Folding functionality is available from the
         `Mitiq <https://mitiq.readthedocs.io/en/stable/>`__ package (version 0.11.0 and above)
@@ -161,23 +161,23 @@ def mitigate_with_zne(
 
         This transform also requires a callable to be passed to the ``extrapolate`` argument that
         returns the extrapolated value(s). Its function should be
-        
+
         .. code-block:: python
  
             fn(scale_factors, results, **extrapolate_kwargs)
-            
+
         where
-        
+
         - ``scale_factors`` are the ZNE scale factors,
 
         - ``results`` are the execution results of the circuit at the specified scale
           factors of shape ``(len(scale_factors), len(qnode_returns))``, and
-          
+
         - ``extrapolate_kwargs`` are optional keyword arguments.
-        
+
         The output of the extrapolate ``fn`` should be a flat array of
         length ``len(qnode_returns)``.
-        
+
         Extrapolation functionality is available using ``extrapolate``
         methods of the factories in the
         `mitiq.zne.inference <https://mitiq.readthedocs.io/en/stable/apidoc.html#module-mitiq.zne.inference>`__
