@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This file automatically generates and saves a series of example pictures for the
-circuit drawer. This will be useful during early stages when the project is still
-undergoing cosmetic changes.
+This file generates the images used in docstrings for``qml.circuit_drawer.draw_mpl``.
+This makes it easier to keep docstrings up to date with the latest styling.
+
+It is not intended to be used in any Continuous Integration, but save time and hassle
+for developers when making any change that might impact the resulting figures.
 """
 
 import pathlib

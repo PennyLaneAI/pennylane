@@ -12,10 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains integration functions for drawing tapes.
+This module a function for generating matplotlib images from a tape.
+
+Developer note: when making changes to this file, you can run
+`pennylane/doc/_static/draw_mpl/draw_mpl_examples.py` to generate docstring
+images.  If you change the docstring examples, please update this file.
 """
 
-# cant import pennylane as a whole because of circular imports with circuit graph
+# cant `import pennylane as qml` because of circular imports with circuit graph
 from pennylane import ops
 from pennylane.wires import Wires
 from .mpldrawer import MPLDrawer
