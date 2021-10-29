@@ -486,10 +486,11 @@
   the rectangle created by the `box_gate` method.
   [(#1764)](https://github.com/PennyLaneAI/pennylane/pull/1764)
   
-* Quantum function transforms can now be applied to devices.
+* Quantum function transforms and batch transforms can now be applied to devices.
   Once applied to a device, any quantum function executed on the
   modified device will be transformed prior to execution.
   [(#1809)](https://github.com/PennyLaneAI/pennylane/pull/1809)
+  [(#1810)](https://github.com/PennyLaneAI/pennylane/pull/1810)
 
   ```python
   dev = qml.device("default.mixed", wires=1)
