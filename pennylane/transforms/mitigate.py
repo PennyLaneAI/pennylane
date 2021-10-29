@@ -106,17 +106,8 @@ def mitigate_with_zne(
     >>> circuit(w1, w2)
     0.19113067083636542
 
-    This can be compared to the unmitigated circuit:
-
-    .. code-block:: python3
-
-        @qnode(dev)
-        def circuit_unmitigated(w1, w2):
-            qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
-            return qml.expval(qml.PauliZ(0))
-
-    >>> circuit_unmitigated(w1, w2)
-    tensor(0.33652776, requires_grad=True)
+    The unmitigated circuit result is `0.33652776` while the ideal circuit result is `0.23688169`
+    and we can hence see that mitigation has helped reduce our estimation error.
 
     .. UsageDetails::
 
@@ -141,9 +132,8 @@ def mitigate_with_zne(
         circuit or to the whole circuit. When no folding occurs, the scale factor is
         :math:`s=1` and we are running our input circuit. On the other hand, when each gate has been
         folded once, we have tripled the amount of noise in the circuit so that :math:`s=3`. For
-        :math:`s \geq 3`, each gate in the circuit will be folded more than once. Check out
-        `this <https://ieeexplore.ieee.org/document/9259940>`__ paper for more information on how
-        the scaling parameter works.
+        :math:`s \geq 3`, each gate in the circuit will be folded more than once. An typical choice
+        of scale parameters is :math:`(1, 2, 3)`.
 
         This transform applies ZNE to an input circuit using the unitary folding approach. It
         requires a callable to be passed as the ``folding`` argument with signature
