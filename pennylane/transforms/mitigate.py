@@ -20,7 +20,7 @@ from pennylane.tape import QuantumTape
 from pennylane.transforms import batch_transform
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, protected-access
 @batch_transform
 def mitigate_with_zne(
     circuit: Union[QNode, QuantumTape],
@@ -207,6 +207,7 @@ def mitigate_with_zne(
     out_tapes = []
 
     for tape_ in tapes:
+        #pylint: disable=expression-not-assigned
         with QuantumTape() as t:
             [apply(p) for p in tape._prep]
             [apply(op) for op in tape_.operations]
