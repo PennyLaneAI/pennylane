@@ -781,7 +781,7 @@ class MPLDrawer:
             arrow_start_y,
             arrow_width,
             arrow_height,
-            head_width=self._box_length / 2.0,
+            head_width=self._box_length / 8.0,
             **lines_options,
         )
         self._ax.add_line(arrow)
