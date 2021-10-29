@@ -17,9 +17,9 @@ any of the characteristics of other templates (i.e. to prepare a specific state,
 """
 
 from .arbitrary_unitary import ArbitraryUnitary
-from .double_excitation_unitary import DoubleExcitationUnitary
+from .fermionic_double_excitation import FermionicDoubleExcitation
 from .interferometer import Interferometer
-from .single_excitation_unitary import SingleExcitationUnitary
+from .fermionic_single_excitation import FermionicSingleExcitation
 from .uccsd import UCCSD
 from .approx_time_evolution import ApproxTimeEvolution
 from .permute import Permute

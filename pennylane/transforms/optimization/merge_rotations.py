@@ -17,6 +17,7 @@ from pennylane import apply
 from pennylane.transforms import qfunc_transform
 from pennylane.math import allclose, stack, cast_like, zeros
 
+from pennylane.ops.qubit.attributes import composable_rotations
 from .optimization_utils import find_next_gate, fuse_rot_angles
 
 
@@ -33,9 +34,9 @@ def merge_rotations(tape, atol=1e-8, include_gates=None):
         atol (float): After fusion of gates, if the fused angle :math:`\theta` is such that
             :math:`|\theta|\leq \text{atol}`, no rotation gate will be applied.
         include_gates (None or list[str]): A list of specific operations to merge. If
-            set to ``None`` (default), all operations with the ``is_composable_rotation``
-            attribute set to ``True`` will be merged. Otherwise, only the operations whose
-            names match those in the list will undergo merging.
+            set to ``None`` (default), all operations in the
+            `~.pennylane.ops.qubit.attributes.composable_rotations` attribute will be merged. Otherwise,
+            only the operations whose names match those in the list will undergo merging.
 
     Returns:
         function: the transformed quantum function
@@ -101,7 +102,7 @@ def merge_rotations(tape, atol=1e-8, include_gates=None):
                 continue
 
         # Check if the rotation is composable; if it is not, move on.
-        if not current_gate.is_composable_rotation:
+        if not current_gate in composable_rotations:
             apply(current_gate)
             list_copy.pop(0)
             continue
