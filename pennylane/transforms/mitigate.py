@@ -104,7 +104,19 @@ def mitigate_with_zne(
     Executions of ``circuit`` will now be mitigated:
 
     >>> circuit(w1, w2)
-    array([0.19113067])
+    0.19113067083636542
+
+    This can be compared to the unmitigated circuit:
+
+    .. code-block:: python3
+
+        @qnode(dev)
+        def circuit_unmitigated(w1, w2):
+            qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
+            return qml.expval(qml.PauliZ(0))
+
+    >>> circuit_unmitigated(w1, w2)
+    tensor(0.33652776, requires_grad=True)
 
     .. UsageDetails::
 
