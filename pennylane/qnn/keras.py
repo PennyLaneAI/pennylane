@@ -128,7 +128,7 @@ class KerasLayer(Layer):
         **Additional example**
 
         The code block below shows how a circuit composed of templates from the
-        :doc:`/code/qml_templates` module can be combined with classical
+        :doc:`/introduction/templates` module can be combined with classical
         `Dense <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Dense>`__ layers to learn
         the two-dimensional `moons <https://scikit-learn.org/stable/modules/generated/sklearn
         .datasets.make_moons.html>`__ dataset.

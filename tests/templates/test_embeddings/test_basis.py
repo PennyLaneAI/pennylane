@@ -27,7 +27,7 @@ class TestDecomposition:
     def test_expansion(self, features):
         """Checks the queue."""
 
-        op = qml.templates.BasisEmbedding(features=features, wires=range(3))
+        op = qml.BasisEmbedding(features=features, wires=range(3))
         tape = op.expand()
 
         assert len(tape.operations) == features.count(1)
@@ -43,7 +43,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.BasisEmbedding(features=x, wires=range(2))
+            qml.BasisEmbedding(features=x, wires=range(2))
             return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
 
         res = circuit(x=state)
@@ -59,12 +59,12 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.BasisEmbedding(features, wires=range(3))
+            qml.BasisEmbedding(features, wires=range(3))
             return qml.expval(qml.Identity(0))
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.BasisEmbedding(features, wires=["z", "a", "k"])
+            qml.BasisEmbedding(features, wires=["z", "a", "k"])
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -84,7 +84,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.BasisEmbedding(features=x, wires=range(2))
+            qml.BasisEmbedding(features=x, wires=range(2))
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Features must be of length"):
@@ -97,7 +97,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.BasisEmbedding(features=x, wires=range(2))
+            qml.BasisEmbedding(features=x, wires=range(2))
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Basis state must only consist of"):
@@ -110,7 +110,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.BasisEmbedding(features=x, wires=2)
+            qml.BasisEmbedding(features=x, wires=2)
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Features must be one-dimensional"):
@@ -118,12 +118,12 @@ class TestInputs:
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.templates.BasisEmbedding([0, 1], wires=[0, 1], id="a")
+        template = qml.BasisEmbedding([0, 1], wires=[0, 1], id="a")
         assert template.id == "a"
 
 
 def circuit_template(features):
-    qml.templates.BasisEmbedding(features, wires=range(3))
+    qml.BasisEmbedding(features, wires=range(3))
     return qml.state()
 
 

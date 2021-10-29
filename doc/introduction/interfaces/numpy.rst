@@ -158,7 +158,7 @@ and two non-differentiable arguments ``data`` and ``wires``:
 
     @qml.qnode(dev)
     def circuit(weights, data, wires):
-        qml.templates.AmplitudeEmbedding(data, wires=wires, normalize=True)
+        qml.AmplitudeEmbedding(data, wires=wires, normalize=True)
         qml.RX(weights[0], wires=wires[0])
         qml.RY(weights[1], wires=wires[1])
         qml.RZ(weights[2], wires=wires[2])

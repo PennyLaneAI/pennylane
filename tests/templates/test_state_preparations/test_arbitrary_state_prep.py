@@ -65,7 +65,7 @@ class TestDecomposition:
         """Test that the correct gates are applied on a single wire."""
         weights = np.array([0, 1], dtype=float)
 
-        op = qml.templates.ArbitraryStatePreparation(weights, wires=[0])
+        op = qml.ArbitraryStatePreparation(weights, wires=[0])
         queue = op.expand().operations
 
         assert queue[0].name == "PauliRot"
@@ -83,7 +83,7 @@ class TestDecomposition:
         """Test that the correct gates are applied on on two wires."""
         weights = np.array([0, 1, 2, 3, 4, 5], dtype=float)
 
-        op = qml.templates.ArbitraryStatePreparation(weights, wires=[0, 1])
+        op = qml.ArbitraryStatePreparation(weights, wires=[0, 1])
         queue = op.expand().operations
 
         assert queue[0].name == "PauliRot"
@@ -126,7 +126,7 @@ class TestDecomposition:
 
         @qml.qnode(qubit_device_3_wires)
         def circuit(weights):
-            qml.templates.ArbitraryStatePreparation(weights, [0, 1, 2])
+            qml.ArbitraryStatePreparation(weights, [0, 1, 2])
             return qml.expval(qml.PauliZ(0))
 
         circuit(weights)
@@ -144,7 +144,7 @@ class TestDecomposition:
 
         @qml.qnode(qubit_device_3_wires)
         def circuit(weights):
-            qml.templates.ArbitraryStatePreparation(weights, [0, 1, 2])
+            qml.ArbitraryStatePreparation(weights, [0, 1, 2])
 
             return qml.expval(qml.PauliZ(0))
 
@@ -161,12 +161,12 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.ArbitraryStatePreparation(weights, wires=range(3))
+            qml.ArbitraryStatePreparation(weights, wires=range(3))
             return qml.expval(qml.Identity(0))
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.ArbitraryStatePreparation(weights, wires=["z", "a", "k"])
+            qml.ArbitraryStatePreparation(weights, wires=["z", "a", "k"])
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -185,7 +185,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(weights):
-            qml.templates.ArbitraryStatePreparation(weights, wires=range(3))
+            qml.ArbitraryStatePreparation(weights, wires=range(3))
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Weights tensor must be of shape"):
@@ -194,7 +194,7 @@ class TestInputs:
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.templates.ArbitraryStatePreparation(
+        template = qml.ArbitraryStatePreparation(
             np.random.random(size=(2 ** 4 - 2)), wires=[0, 1, 2], id="a"
         )
         assert template.id == "a"
@@ -214,12 +214,12 @@ class TestAttributes:
     def test_shape(self, n_wires, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""
 
-        shape = qml.templates.ArbitraryStatePreparation.shape(n_wires)
+        shape = qml.ArbitraryStatePreparation.shape(n_wires)
         assert shape == expected_shape
 
 
 def circuit_template(weights):
-    qml.templates.ArbitraryStatePreparation(weights, range(2))
+    qml.ArbitraryStatePreparation(weights, range(2))
     return qml.expval(qml.PauliZ(0))
 
 
