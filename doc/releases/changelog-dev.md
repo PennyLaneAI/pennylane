@@ -482,7 +482,7 @@
 
 <h3>Improvements</h3>
 
-* The default for the Operation `control_wires` attribute is now an empty `Wires`
+* The default for an `Operation`'s `control_wires` attribute is now an empty `Wires`
   object instead of the attribute raising a `NonImplementedError`.
   [(#1821)](https://github.com/PennyLaneAI/pennylane/pull/1821)
 

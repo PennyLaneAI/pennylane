@@ -418,7 +418,7 @@ class TestOperationConstruction:
         assert op.id == "test"
 
     def test_control_wires(self):
-        """Test that control wires defaults to an empty wires object."""
+        """Test that control_wires defaults to an empty Wires object."""
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
