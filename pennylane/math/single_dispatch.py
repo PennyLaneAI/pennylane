@@ -267,6 +267,15 @@ ar.register_function("tensorflow", "scatter_element_add", _scatter_element_add_t
 
 ar.autoray._FUNC_ALIASES["torch", "unstack"] = "unbind"
 
+
+def _to_numpy_torch(x):
+    if x.is_conj():
+        x = x.resolve_conj()
+
+    return x.detach().cpu().numpy()
+
+
+ar.register_function("torch", "to_numpy", _to_numpy_torch)
 ar.register_function(
     "torch", "asarray", lambda x, device=None: _i("torch").as_tensor(x, device=device)
 )
@@ -425,6 +434,6 @@ ar.register_function("jax", "gather", lambda x, indices: x[np.array(indices)])
 ar.register_function(
     "jax",
     "scatter_element_add",
-    lambda x, index, value: _i("jax").ops.index_add(x, tuple(index), value),
+    lambda x, index, value: x.at[tuple(index)].add(value),
 )
 ar.register_function("jax", "unstack", list)
