@@ -725,6 +725,8 @@
 
 * To standardize across all optimizers, `qml.optimize.AdamOptimizer` now also uses `accumulation` (in form of `collections.namedtuple`) to keep track of running quantities. Before it used three variables `fm`, `sm` and `t`. [(#1757)](https://github.com/PennyLaneAI/pennylane/pull/1757)
 
+* New `qml.ops.PauliError` Channel allowing the application of an arbitrary number of Pauli operators on an arbitrary number of wires. [(#1781)](https://github.com/PennyLaneAI/pennylane/pull/1781)
+
 <h3>Breaking changes</h3>
 
 - The operator attributes `has_unitary_generator`, `is_composable_rotation`,

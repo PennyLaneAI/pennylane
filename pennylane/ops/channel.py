@@ -18,7 +18,6 @@ quantum channels supported by PennyLane, as well as their conventions.
 import numpy as np
 
 from pennylane.operation import AnyWires, Channel
-from pennylane.wires import Wires
 
 
 class AmplitudeDamping(Channel):
