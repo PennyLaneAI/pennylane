@@ -172,19 +172,19 @@ class TestMitiqIntegration:
         n_wires = 2
         n_layers = 2
 
-        shapes = qml.templates.SimplifiedTwoDesign.shape(n_wires, n_layers)
+        shapes = qml.SimplifiedTwoDesign.shape(n_wires, n_layers)
         np.random.seed(0)
         w1, w2 = [np.random.random(s) for s in shapes]
 
         @qml.transforms.mitigate_with_zne([1, 2, 3], fold_global, RichardsonFactory.extrapolate)
         @qnode(dev)
         def mitigated_circuit(w1, w2):
-            qml.templates.SimplifiedTwoDesign(w1, w2, wires=range(2))
+            qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
 
         @qnode(dev_noise_free)
         def ideal_circuit(w1, w2):
-            qml.templates.SimplifiedTwoDesign(w1, w2, wires=range(2))
+            qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
 
         res_mitigated = mitigated_circuit(w1, w2)
@@ -206,19 +206,19 @@ class TestMitiqIntegration:
         n_wires = 2
         n_layers = 2
 
-        shapes = qml.templates.SimplifiedTwoDesign.shape(n_wires, n_layers)
+        shapes = qml.SimplifiedTwoDesign.shape(n_wires, n_layers)
         np.random.seed(0)
         w1, w2 = [np.random.random(s) for s in shapes]
 
         @qml.transforms.mitigate_with_zne([1, 2, 3], fold_global, RichardsonFactory.extrapolate)
         @qnode(dev)
         def mitigated_circuit(w1, w2):
-            qml.templates.SimplifiedTwoDesign(w1, w2, wires=range(2))
+            qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
             return qml.expval(qml.PauliZ(0))
 
         @qnode(dev_noise_free)
         def ideal_circuit(w1, w2):
-            qml.templates.SimplifiedTwoDesign(w1, w2, wires=range(2))
+            qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
             return qml.expval(qml.PauliZ(0))
 
         res_mitigated = mitigated_circuit(w1, w2)
@@ -241,7 +241,7 @@ class TestMitiqIntegration:
         n_wires = 2
         n_layers = 2
 
-        shapes = qml.templates.SimplifiedTwoDesign.shape(n_wires, n_layers)
+        shapes = qml.SimplifiedTwoDesign.shape(n_wires, n_layers)
         np.random.seed(0)
         w1, w2 = [np.random.random(s) for s in shapes]
 
@@ -250,12 +250,12 @@ class TestMitiqIntegration:
         )
         @qnode(dev)
         def mitigated_circuit(w1, w2):
-            qml.templates.SimplifiedTwoDesign(w1, w2, wires=range(2))
+            qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
             return qml.expval(qml.PauliZ(0))
 
         @qnode(dev_noise_free)
         def ideal_circuit(w1, w2):
-            qml.templates.SimplifiedTwoDesign(w1, w2, wires=range(2))
+            qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
             return qml.expval(qml.PauliZ(0))
 
         res_mitigated = mitigated_circuit(w1, w2)
@@ -278,13 +278,13 @@ class TestMitiqIntegration:
         n_wires = 2
         n_layers = 2
 
-        shapes = qml.templates.SimplifiedTwoDesign.shape(n_wires, n_layers)
+        shapes = qml.SimplifiedTwoDesign.shape(n_wires, n_layers)
         np.random.seed(0)
         w1, w2 = [np.random.random(s) for s in shapes]
 
         def circuit(w1, w2):
-            qml.templates.SimplifiedTwoDesign(w1, w2, wires=range(2))
-            qml.adjoint(qml.templates.SimplifiedTwoDesign)(w1, w2, wires=range(2))
+            qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
+            qml.adjoint(qml.SimplifiedTwoDesign)(w1, w2, wires=range(2))
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
         exact_qnode = QNode(circuit, dev_noise_free)
@@ -293,8 +293,8 @@ class TestMitiqIntegration:
         @qml.transforms.mitigate_with_zne([1, 2, 3], fold_global, RichardsonFactory.extrapolate)
         @qnode(dev)
         def mitigated_qnode(w1, w2):
-            qml.templates.SimplifiedTwoDesign(w1, w2, wires=range(2))
-            qml.adjoint(qml.templates.SimplifiedTwoDesign)(w1, w2, wires=range(2))
+            qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
+            qml.adjoint(qml.SimplifiedTwoDesign)(w1, w2, wires=range(2))
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
         exact_val = exact_qnode(w1, w2)
@@ -324,14 +324,14 @@ class TestMitiqIntegration:
         n_wires = 2
         n_layers = 2
 
-        shapes = qml.templates.SimplifiedTwoDesign.shape(n_wires, n_layers)
+        shapes = qml.SimplifiedTwoDesign.shape(n_wires, n_layers)
         np.random.seed(0)
         w1, w2 = [np.random.random(s, requires_grad=True) for s in shapes]
 
         @qml.transforms.mitigate_with_zne([1, 2, 3], fold_global, RichardsonFactory.extrapolate)
         @qnode(dev)
         def mitigated_circuit(w1, w2):
-            qml.templates.SimplifiedTwoDesign(w1, w2, wires=range(2))
+            qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
             return qml.expval(qml.PauliZ(0))
 
         g = qml.grad(mitigated_circuit)(w1, w2)
