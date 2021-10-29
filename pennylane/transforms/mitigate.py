@@ -49,6 +49,11 @@ def mitigate_with_zne(
     from the `Mitiq <https://mitiq.readthedocs.io/en/stable/>`__ package (version 0.11.0 and above),
     see the example and usage details for further information.
 
+    .. warning::
+
+        Calculating the gradient of mitigated circuits is not supported when using the Mitiq
+        package as a backend for folding or extrapolation.
+
     Args:
         tape (QNode or QuantumTape): the circuit to be error-mitigated
         scale_factors (Sequence[float]): the range of noise scale factors used
@@ -182,11 +187,6 @@ def mitigate_with_zne(
         methods of the factories in the
         `mitiq.zne.inference <https://mitiq.readthedocs.io/en/stable/apidoc.html#module-mitiq.zne.inference>`__
         module (version 0.11.0 and above).
-
-        .. warning::
-
-            Calculating the gradient of mitigated circuits is not supported when using the Mitiq
-            package as a backend for folding or extrapolation.
     """
     folding_kwargs = folding_kwargs or {}
     extrapolate_kwargs = extrapolate_kwargs or {}
