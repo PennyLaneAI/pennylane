@@ -51,7 +51,7 @@ def mitigate_with_zne(
 
     Args:
         tape (QuantumTape): the circuit to be error-mitigated
-        scale_factors (Sequence[float]): the range of scale factors used
+        scale_factors (Sequence[float]): the range of noise scale factors used
         folding (callable): a function that returns a folded circuit for a specified scale factor
         extrapolate (callable): a function that returns an extrapolated result when provided a
             range of scale factors and corresponding results
@@ -121,20 +121,29 @@ def mitigate_with_zne(
     .. UsageDetails::
 
         A summary of ZNE can be found in `LaRose et al. <https://arxiv.org/abs/2009.04417>`__. The
-        method works by assuming that the circuit experiences a fixed amount of noise when executed
-        on a noisy device that is enumerated by the parameter :math:`\gamma`. If an equivalent
-        circuit can be run for a range of noise parameters :math:`\gamma`, then the results can be
-        extrapolated to the :math:`\gamma = 0` noiseless case.
+        method works by assuming that the amount of noise present when a circuit is run on a
+        noisy device is enumerated by a parameter :math:`\gamma`. Suppose we have an input circuit
+        that experiences an amount of noise equal to :math:`\gamma = \gamma_{0}` when executed.
+        Ideally, we would like to evaluate the result of the circuit in the :math:`\gamma = 0`
+        noise-free setting.
 
-        A key element of ZNE is the ability to run equivalent circuits for a range of noise
-        parameters :math:`\gamma`. When :math:`\gamma` scales with the number of gates in the
-        circuit, it can be varied using
-        `unitary folding <https://ieeexplore.ieee.org/document/9259940>`__. Unitary folding
-        works by noticing that a unitary :math:`U` is equivalent to :math:`U U^{\dagger} U`. This
-        type of transform can be applied to individual gates in the circuit or to the whole circuit,
-        and is controlled by a scale parameter :math:`s` which is calibrated so that :math:`s = 1`
-        corresponds to the (unfolded) input circuit and :math:`s = 3` is a folding of all gates in
-        the circuit once.
+        To do this, we create a family of equivalent circuits whose ideal noise-free value is the
+        same as our input circuit. However, when run on a noisy device, each circuit experiences
+        a noise equal to :math:`\gamma = s \gamma_{0}` for some scale factor :math:`s`. By
+        evaluating the noisy outputs of each circuit, we can extrapolate to :math:`s=0` to estimate
+        the result of running a noise-free circuit.
+
+        A key element of ZNE is the ability to run equivalent circuits for a range of scale factors
+        :math:`s`. When the noise present in a circuit scales with the number of gates, :math:`s`
+        can be varied using `unitary folding <https://ieeexplore.ieee.org/document/9259940>`__.
+        Unitary folding works by noticing that a unitary :math:`U` is equivalent to
+        :math:`U U^{\dagger} U`. This type of transform can be applied to individual gates in the
+        circuit or to the whole circuit. When no folding occurs, the scale factor is
+        :math:`s=1` and we are running our input circuit. On the other hand, when each gate has been
+        folded once, we have tripled the amount of noise in the circuit so that :math:`s=3`. For
+        :math:`s \geq 3`, each gate in the circuit will be folded more than once. Check out
+        `this <https://ieeexplore.ieee.org/document/9259940>`__ paper for more information on how
+        the scaling parameter works.
 
         This transform applies ZNE to an input circuit using the unitary folding approach. It
         requires a callable to be passed as the ``folding`` argument with signature
