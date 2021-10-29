@@ -18,6 +18,7 @@ quantum channels supported by PennyLane, as well as their conventions.
 import numpy as np
 
 from pennylane.operation import AnyWires, Channel
+from pennylane.wires import Wires
 
 
 class AmplitudeDamping(Channel):
@@ -366,55 +367,46 @@ class ResetError(Channel):
 
 
 class PauliError(Channel):
-    r"""PauliError(operators, wires, p)
+    r"""PauliError(operators, p, wirelist, wires)
     Arbitrary number qubit, arbitrary Pauli error channel.
 
-    This Class returns a dictionary of Kraus Matrices specified in the operators string.
-    The  returned dictionary is organized by wires specified in the wires list. Each wire
-    in the dictionary is assigned a list of numpy arrays of Kraus Matrices specified by
-    the according operator. The operators act on the wire in the corresponding position
-    of the wire's array.
+    This class models corresponding Kraus matrices to a series of arbitrary Pauli operators on
+    an arbitrary amount of wires. The operators are supplied in a string. The according wires are
+    supplied in an array called wirelist. The probability with which the channel is applied is
+    supplied as a float. Each wire can take one Pauli operator.
 
-    The channel is modelled by the following Kraus Matrices:
-    
-    .. math::
-        K_I = \sqrt{1-p} \begin{bmatrix}
-                1 & 0 \\
-                0 & 1
-                \end{bmatrix}
-
-    and either of
+    This channel is modelled by the following Kraus matrices:
 
     .. math::
-        K_X = \sqrt{p/3}\begin{bmatrix}
-                0 & 1  \\
-                1 & 0
-                \end{bmatrix}
+        K_0 = \sqrt{1-p} * I
 
     .. math::
-        K_Y = \sqrt{p/3}\begin{bmatrix}
-                0 & -i \\
-                i & 0
-                \end{bmatrix}
+        K_1 = \sqrt{p} * (K_{w0} \otimes (K_{w1} \otimes (\dots K_{w_{max}})))
 
-    .. math::
-        K_Z = \sqrt{p/3}\begin{bmatrix}
-                1 & 0 \\
-                0 & -1
-                \end{bmatrix}
+    Where :math:'I' is the Identity,
+    and :math:'\otimes' denotes the Kronecker Product,
+    and :math:'K_wi' denotes the Kraus matrix corresponding to the operator acting on wire i,
+    and :math:'p' denotes the probability with which the channel is applied
 
-    depending on the supplied operator.
+    **Warning:**
+    Because the Kraus Matrices scale exponentially to the amount of wires, their dimension blow up
+    fast. Use with caution!
 
     **Details:**
 
     * Number of wires: Any (the operation can act on any number of wires)
-    * Number of parameters: 3
+    * Number of parameters: 1
 
     Args:
         operators (str): The Pauli operators acting on the specified (groups of) wires
-        wires (Sequence[int]): The wires the channel acts on
         p (float): The probability of the operator being applied
+        wirelist (Sequence[int]): The wires the channel acts on
+        wires (Sequence[int]): The wires the channel acts on
     """
+
+    num_params = 3
+    num_wires = AnyWires
+    par_domain = "L"
 
     ops = {
         "X": np.array([[0, 1], [1, 0]]),
@@ -424,44 +416,44 @@ class PauliError(Channel):
 
     @classmethod
     def _kraus_matrices(cls, *params):
-        operators = params[0]
-        wires = params[1]
-        p = params[2]
+        operators, p, wirelist = params[0], params[1], params[2]
 
         # check if the specified operators are legal
-        if type(operators) == str and not all(c in "XYZ" for c in operators):
+        if not all(c in "XYZ" for c in operators):
             raise ValueError("The specified operators need to be either of 'X', 'Y' or 'Z'")
 
-        if type(operators) == list and not all(c in "XYZ" for c in "".join(operators)):
-            raise ValueError("The specified operators need to be combinations of 'X', 'Y', or 'Z'")
-
-        # check if the number of operators matches the number of wires
-        if type(operators) == list and (
-            len(operators) != len(wires) or any(len(o) != len(w) for o, w in zip(operators, wires))
-        ):
-            raise ValueError("The number of operators must match the number of wires")
-
-        if type(operators) == str and len(operators) != len(wires):
-            raise ValueError("The number of operators must match the number of wires")
-
         # check if probabilities are legal
-        if type(p) == list and not all(0.0 <= v <= 1.0 for v in p) or (not 0.0 <= p <= 1.0):
+        if not 0.0 <= p <= 1.0:
             raise ValueError("p must be between [0,1]")
 
-        if type(p) == list and sum(p) > 1.0:
-            raise ValueError("the sum of p must not be larger than 1")
+        # check if the number of operators matches the number of wires
+        if len(operators) != len(wirelist):
+            raise ValueError("The number of operators must match the number of wires")
 
-        max_q = max(wires)
+        # check if each wire is accessed only once
+        if len(wirelist) != len(set(wirelist)):
+            raise ValueError("Each wire can take only one operator")
 
-        K = dict(zip(range(max_q), [None] * max_q))
+        max_q = max(wirelist)
 
-        for op, wire in sorted(zip(operators, wires), key=lambda x: x[1]):
-            if K[wire] == None:
-                K[wire] = [[(1 - np.sqrt(p)) * cls.ops["I"], np.sqrt(p) * cls.ops[op]]]
+        print(
+            f"Warning: The resulting Kronecker matrix will have dimensions {2**(max_q+1)} x {2**(max_q+1)}."
+        )
+
+        # K0 is sqrt(1-p) * Identity
+        K0 = np.sqrt(1 - p) * np.eye(2 ** (max_q + 1))
+
+        # K1 is composed by Kraus matrices of operators
+        K1 = np.sqrt(p) * np.array([1])
+        for wire in range(max_q, -1, -1):
+            if wire in wirelist:
+                # If operator acting on wire, apply Kraus matrix
+                K1 = np.kron(cls.ops[operators[wirelist.index(wire)]], K1)
             else:
-                K[wire] += [[(1 - np.sqrt(p)) * cls.ops["I"], np.sqrt(p) * cls.ops[op]]]
+                # else, skip (multiply by identity)
+                K1 = np.kron(np.eye(2), K1)
 
-        return K
+        return [K0, K1]
 
 
 class PhaseFlip(Channel):
@@ -572,6 +564,7 @@ __qubit_channels__ = {
     "DepolarizingChannel",
     "BitFlip",
     "PhaseFlip",
+    "PauliError",
     "ResetError",
     "QubitChannel",
 }

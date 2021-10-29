@@ -19,7 +19,7 @@ import functools
 import numpy as np
 import pennylane as qml
 from pennylane.ops import channel
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WireError
 
 X = np.array([[0, 1], [1, 0]])
 Y = np.array([[0, -1j], [1j, 0]])
@@ -33,6 +33,7 @@ ch_list = [
     channel.PhaseFlip,
     channel.DepolarizingChannel,
     channel.ResetError,
+    channel.PauliError,
 ]
 
 
@@ -47,6 +48,8 @@ class TestChannels:
             op = ops(p, p, wires=0)
         elif ops.__name__ == "ResetError":
             op = ops(p / 2, p / 3, wires=0)
+        elif ops.__name__ == "PauliError":
+            op = ops("X", p, [0], wires=0)
         else:
             op = ops(p, wires=0)
         K_list = op.kraus_matrices
@@ -312,6 +315,366 @@ class TestResetError:
                 ]
             ),
         )
+
+
+operators = ["X", "XY", "ZX"]
+wires = [[1], [0, 1], [3, 1]]
+expected_Ks = [
+    [
+        np.sqrt(0.5) * np.eye(4),
+        np.array(
+            [
+                [0.0, 0.70710678, 0.0, 0.0],
+                [0.70710678, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.70710678],
+                [0.0, 0.0, 0.70710678, 0.0],
+            ]
+        ),
+    ],
+    [
+        np.sqrt(0.5) * np.eye(4),
+        np.array(
+            [
+                [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 - 0.70710678j],
+                [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.70710678j, 0.0 + 0.0j],
+                [0.0 + 0.0j, 0.0 - 0.70710678j, 0.0 + 0.0j, 0.0 + 0.0j],
+                [0.0 + 0.70710678j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+            ]
+        ),
+    ],
+    [
+        np.sqrt(0.5) * np.eye(16),
+        np.array(
+            [
+                [
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.70710678,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ],
+                [
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.70710678,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                ],
+                [
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.70710678,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ],
+                [
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.70710678,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                ],
+                [
+                    0.70710678,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ],
+                [
+                    0.0,
+                    -0.70710678,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                ],
+                [
+                    0.0,
+                    0.0,
+                    0.70710678,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ],
+                [
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.70710678,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                ],
+                [
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.70710678,
+                    0.0,
+                    0.0,
+                    0.0,
+                ],
+                [
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.70710678,
+                    0.0,
+                    -0.0,
+                ],
+                [
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.70710678,
+                    0.0,
+                ],
+                [
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.70710678,
+                ],
+                [
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.70710678,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ],
+                [
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.70710678,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                ],
+                [
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.70710678,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ],
+                [
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.70710678,
+                    0.0,
+                    -0.0,
+                    0.0,
+                    -0.0,
+                ],
+            ]
+        ),
+    ],
+]
+
+
+class TestPauliError:
+    """Tests for the quantum channel PauliError"""
+
+    def test_wrong_parameters(self):
+        with pytest.raises(ValueError):
+            channel.PauliError("XXX", 0.5, [0], wires=[0]).kraus_matrices
+
+        with pytest.raises(ValueError):
+            channel.PauliError("XXX", 1.5, [1, 2, 3], wires=[1, 2, 3]).kraus_matrices
+
+        with pytest.raises(ValueError):
+            channel.PauliError("ABC", 0.5, [1, 2, 3], wires=[1, 2, 3]).kraus_matrices
+
+        with pytest.raises(WireError):
+            channel.PauliError("XXX", 0.5, [1, 1, 3], wires=[1, 1, 3]).kraus_matrices
+
+    def test_p_zero(self, tol):
+        expected_Ks = [np.eye(2 ** 5), np.zeros((2 ** 5, 2 ** 5))]
+        c = channel.PauliError("XXXXX", 0, [0, 1, 2, 3, 4], wires=[0, 1, 2, 3, 4])
+
+        assert np.allclose(c.kraus_matrices, expected_Ks, atol=tol, rtol=0)
+
+    def test_p_one(self, tol):
+        expected_Ks = [np.zeros((2 ** 5, 2 ** 5)), np.flip(np.eye(2 ** 5), axis=1)]
+        c = channel.PauliError("XXXXX", 1, [0, 1, 2, 3, 4], wires=[0, 1, 2, 3, 4])
+
+        assert np.allclose(c.kraus_matrices, expected_Ks, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize(
+        "operators, wires, expected_Ks", list(zip(operators, wires, expected_Ks))
+    )
+    def test_kraus_matrix(self, tol, operators, wires, expected_Ks):
+        c = channel.PauliError(operators, 0.5, wires, wires=wires)
+
+        assert np.allclose(c.kraus_matrices, expected_Ks, atol=tol, rtol=0)
 
 
 class TestQubitChannel:
