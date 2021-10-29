@@ -4,6 +4,54 @@
 
 <h3>New features since last release</h3>
 
+* Error mitigation using the zero-noise extrapolation method is now available through the
+  `transforms.mitigate_with_zne` transform. This transform can integrate with the
+  [Mitiq](https://mitiq.readthedocs.io/en/stable/) package for unitary folding and extrapolation
+  functionality.
+  [(#1813)](https://github.com/PennyLaneAI/pennylane/pull/1813)
+  
+  Consider the following noisy device:
+  
+  ```python
+  import pennylane as qml
+
+  noise_strength = 0.05
+
+  dev = qml.device("default.mixed", wires=2)
+  dev = qml.transforms.insert(qml.AmplitudeDamping, noise_strength)(dev)
+  ```
+  
+  We can mitigate the effects of this noise for circuits run on this device by using the added
+  transform:
+  
+  ```python
+  from pennylane import numpy as np
+  from pennylane.beta import qnode
+
+  from mitiq.zne.scaling import fold_global
+  from mitiq.zne.inference import RichardsonFactory
+
+  n_wires = 2
+  n_layers = 2
+
+  shapes = qml.SimplifiedTwoDesign.shape(n_wires, n_layers)
+  np.random.seed(0)
+  w1, w2 = [np.random.random(s) for s in shapes]
+
+  @qml.transforms.mitigate_with_zne([1, 2, 3], fold_global, RichardsonFactory.extrapolate)
+  @qnode(dev)
+  def circuit(w1, w2):
+      qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
+      return qml.expval(qml.PauliZ(0))
+  ```
+  
+  Now, executing `circuit` will be mitigated:
+  
+  ```pycon
+  >>> circuit(w1, w2)
+  0.19113067083636542
+  ```
+
 * A differentiable Hartree-Fock (HF) solver has been added. It can be used to construct molecular Hamiltonians 
   that can be differentiated with respect to nuclear coordinates and basis-set parameters.
   [(#1610)](https://github.com/PennyLaneAI/pennylane/pull/1610)
