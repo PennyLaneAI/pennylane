@@ -339,13 +339,6 @@ class TestMitiqIntegration:
             assert not np.allclose(g_, 0)
 
 
-def compare_ops(ops1, ops2):
-    """Compares two input lists of operations"""
-    assert all(o1.name == o2.name for o1, o2 in zip(ops1, ops2))
-    assert all(o1.wires == o2.wires for o1, o2 in zip(ops1, ops2))
-    assert all(np.allclose(o1.parameters, o2.parameters) for o1, o2 in zip(ops1, ops2))
-
-
 def test_add_remove_preps():
     """Test for the _remove_preps and _add_preps functions"""
     with qml.tape.QuantumTape() as in_tape:
@@ -365,12 +358,17 @@ def test_add_remove_preps():
         qml.QubitStateVector([1, 0, 0, 0], wires=[1, 2]),
     ]
 
-    compare_ops(out_tape.operations, exp_tape.operations)
-    compare_ops(removed_preps, expected_preps)
+    same_tape(out_tape, exp_tape)
+
+    assert all(o1.name == o2.name for o1, o2 in zip(removed_preps, expected_preps))
+    assert all(o1.wires == o2.wires for o1, o2 in zip(removed_preps, expected_preps))
+    assert all(
+        np.allclose(o1.parameters, o2.parameters) for o1, o2 in zip(removed_preps, expected_preps)
+    )
 
     recovered_tape = _add_preps(out_tape, removed_preps)
 
-    compare_ops(recovered_tape.operations, in_tape.operations)
+    same_tape(recovered_tape, in_tape)
 
 
 def test_add_remove_measurements():
@@ -389,11 +387,11 @@ def test_add_remove_measurements():
         qml.QubitStateVector([1, 0, 0, 0], wires=[1, 2])
         qml.Hadamard(0)
 
-    compare_ops(out_tape.operations, exp_tape.operations)
+    same_tape(out_tape, exp_tape)
 
     recovered_tape = _add_measurements(out_tape, in_tape.measurements)
 
-    compare_ops(in_tape.operations, recovered_tape.operations)
+    same_tape(in_tape, recovered_tape)
     assert len(recovered_tape.measurements) == 1
 
     assert recovered_tape.observables[0].name == "PauliZ"
