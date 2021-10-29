@@ -429,10 +429,6 @@ class PauliError(Channel):
         if len(operators) != len(wirelist):
             raise ValueError("The number of operators must match the number of wires")
 
-        # check if each wire is accessed only once
-        if len(wirelist) != len(set(wirelist)):
-            raise ValueError("Each wire can take only one operator")
-
         max_q = max(wirelist)
 
         print(
