@@ -20,11 +20,15 @@ from packaging import version
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.beta import QNode, qnode
+from pennylane.operation import Expectation
 from pennylane.tape import QuantumTape
 from pennylane.transforms import mitigate_with_zne
-from pennylane.transforms.mitigate import _remove_preps, _add_preps, _remove_measurements, _add_measurements
-from pennylane.operation import Expectation
-
+from pennylane.transforms.mitigate import (
+    _add_measurements,
+    _add_preps,
+    _remove_measurements,
+    _remove_preps,
+)
 
 with QuantumTape() as tape:
     qml.BasisState([1], wires=0)
@@ -387,9 +391,7 @@ def test_add_remove_measurements():
 
     compare_ops(out_tape.operations, exp_tape.operations)
 
-    recovered_tape = _add_measurements(
-        out_tape, in_tape.measurements
-    )
+    recovered_tape = _add_measurements(out_tape, in_tape.measurements)
 
     compare_ops(in_tape.operations, recovered_tape.operations)
     assert len(recovered_tape.measurements) == 1

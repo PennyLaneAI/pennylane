@@ -15,13 +15,12 @@
 from typing import Any, Dict, Optional, Sequence, Tuple
 
 from pennylane import apply
-from pennylane.transforms import single_tape_transform
 from pennylane.math import mean
 from pennylane.measure import MeasurementProcess
 from pennylane.operation import Operation
 from pennylane.tape import QuantumTape
 from pennylane.tape.tape import STATE_PREP_OPS
-from pennylane.transforms import batch_transform
+from pennylane.transforms import batch_transform, single_tape_transform
 
 
 # pylint: disable=too-many-arguments
@@ -161,7 +160,8 @@ def mitigate_with_zne(
     tape_removed = _remove_measurements(tape_removed)
 
     tapes = [
-        [folding(tape_removed, s, **folding_kwargs) for _ in range(reps_per_factor)] for s in scale_factors
+        [folding(tape_removed, s, **folding_kwargs) for _ in range(reps_per_factor)]
+        for s in scale_factors
     ]
     tapes = [tape_ for tapes_ in tapes for tape_ in tapes_]  # flattens nested list
     tapes = [_add_measurements(tape_, tape.measurements) for tape_ in tapes]
