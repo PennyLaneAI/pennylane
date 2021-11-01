@@ -34,6 +34,11 @@ respect to any floating point arguments.
 In addition, this module also includes an API for writing your own quantum
 transforms.
 
+.. note::
+
+    For gradient transforms, please see the :mod:`qml.gradients <pennylane.gradients>`
+    module.
+
 .. currentmodule:: pennylane
 
 Overview
