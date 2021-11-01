@@ -228,7 +228,7 @@ class TestOptimize:
         # check final cost
         assert np.allclose(cost_fn(theta), -1.41421356, atol=tol, rtol=0)
 
-    def test_single_qubit_vqe_using_vqecost(self, tol):
+    def test_single_qubit_vqe_using_vqecost(self, tol, recwarn):
         """Test single-qubit VQE using ExpvalCost
         has the correct QNG value every step, the correct parameter updates,
         and correct cost after 200 steps"""
@@ -252,7 +252,7 @@ class TestOptimize:
             return np.array([da, db])
 
         eta = 0.01
-        init_params = np.array([0.011, 0.012])
+        init_params = np.array([0.011, 0.012], requires_grad=True)
         num_steps = 200
 
         opt = qml.QNGOptimizer(eta)
@@ -275,3 +275,4 @@ class TestOptimize:
 
         # check final cost
         assert np.allclose(cost_fn(theta), -1.41421356, atol=tol, rtol=0)
+        assert len(recwarn) == 0

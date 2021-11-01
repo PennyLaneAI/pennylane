@@ -15,7 +15,7 @@
 # pylint: disable=too-many-branches
 # pylint: disable=too-many-arguments
 
-import numpy as np
+from pennylane import numpy as np
 
 import pennylane as qml
 from pennylane.utils import _flatten, unflatten
@@ -202,7 +202,7 @@ class QNGOptimizer(GradientDescentOptimizer):
             self.metric_tensor += self.lam * np.identity(self.metric_tensor.shape[0])
 
         g, forward = self.compute_grad(qnode, args, kwargs, grad_fn=grad_fn)
-        new_args = self.apply_grad(g, args)
+        new_args = np.array(self.apply_grad(g, args))
 
         if forward is None:
             forward = qnode(*args, **kwargs)
