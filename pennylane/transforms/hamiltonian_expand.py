@@ -18,6 +18,10 @@ Contains the hamiltonian expand tape transform
 import pennylane as qml
 
 
+from .batch_transform import batch_transform
+
+
+@batch_transform
 def hamiltonian_expand(tape, group=True):
     r"""
     Splits a tape measuring a Hamiltonian expectation into mutliple tapes of Pauli expectations,
