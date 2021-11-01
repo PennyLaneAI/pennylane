@@ -1,12 +1,6 @@
-# Release 0.19.0-dev
+# Release 0.20.0-dev
 
 <h3>New features</h3>
-
-* The ``dipole`` function has been added to the ``obs`` module
-  to construct the electric dipole operator of a molecule.
-  Currently, the implemented function relies on a PySCF functionality
-  to load the dipole matrix elements in the atomic basis.
-  [(#1698)](https://github.com/PennyLaneAI/pennylane/pull/1698)
 
 <h3>Improvements</h3>
 
@@ -18,7 +12,21 @@
 
 This release contains contributions from (in alphabetical order):
 
-Alain Delgado
+# Release 0.19.0
+
+<h3>New features</h3>
+
+* The ``dipole`` function has been added to the ``obs`` module
+  to construct the electric dipole operator of a molecule.
+  Currently, the implemented function relies on a PySCF functionality
+  to load the dipole matrix elements in the atomic basis.
+  [(#1698)](https://github.com/PennyLaneAI/pennylane/pull/1698)
+
+<h3>Contributors</h3>
+
+This release contains contributions from (in alphabetical order):
+
+Juan Miguel Arrazola, Alain Delgado Gran, Soran Jahangiri.
 
 # Release 0.17.0
 
