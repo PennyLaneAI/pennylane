@@ -192,7 +192,11 @@ class QNGOptimizer(GradientDescentOptimizer):
 
         if recompute_tensor or self.metric_tensor is None:
             if metric_tensor_fn is None:
-                metric_tensor_fn = qml.metric_tensor(qnode, diag_approx=self.diag_approx)
+
+                if self.diag_approx:
+                    metric_tensor_fn = qml.metric_tensor(qnode, approx="diag")
+                else:
+                    metric_tensor_fn = qml.metric_tensor(qnode)
 
             self.metric_tensor = metric_tensor_fn(*args, **kwargs)
             self.metric_tensor += self.lam * np.identity(self.metric_tensor.shape[0])
