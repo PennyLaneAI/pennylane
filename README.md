@@ -38,8 +38,10 @@
 </p>
 
 <p align="center">
-  Announcing <strong>PennyLane Quantum Carnival</strong>. We're throwing a party to celebrate the 3rd anniversary of Pennylane's release! Throughout November, we will have special events, announcements, and releases, all happening under one big tent. <a href="https://pennylane.ai/carnival">Join the fun!</a>"
+  Announcing <strong>PennyLane Quantum Carnival</strong>. We're throwing a party to celebrate the 3rd anniversary of Pennylane's release! Throughout November, we will have special events, announcements, and releases, all happening under one big tent. <a href="https://pennylane.ai/carnival">Join the fun!</a>
 </p>
+
+<hr>
 
 <p align="center">
   <a href="https://pennylane.ai">PennyLane</a> is a cross-platform Python library for <a
