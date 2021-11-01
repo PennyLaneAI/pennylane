@@ -88,6 +88,7 @@ ops = {
     "QubitCarry",
     "QubitSum",
     "OrbitalRotation",
+    "Barrier",
 }
 
 
