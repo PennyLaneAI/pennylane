@@ -104,10 +104,6 @@ def specs(qnode, max_expansion=None):
         finally:
             qnode.max_expansion = initial_max_expansion
 
-        if isinstance(qnode, qml.qnode_old.QNode):
-            # TODO: remove when the old QNode is removed
-            return qnode.specs
-
         info = qnode.qtape.specs.copy()
 
         info["num_device_wires"] = qnode.device.num_wires
