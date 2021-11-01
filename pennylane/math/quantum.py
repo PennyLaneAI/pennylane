@@ -18,7 +18,7 @@ from autoray import numpy as np
 from numpy import float64
 
 from . import single_dispatch  # pylint:disable=unused-import
-from .multi_dispatch import cast, diag, dot
+from .multi_dispatch import cast, diag, dot, scatter_element_add
 
 
 def cov_matrix(prob, obs, wires=None, diag_approx=False):
@@ -119,8 +119,8 @@ def cov_matrix(prob, obs, wires=None, diag_approx=False):
 
         res = dot(l12, p12) - dot(l1, p1) * dot(l2, p2)
 
-        cov = np.scatter_element_add(cov, [i, j], res)
-        cov = np.scatter_element_add(cov, [j, i], res)
+        cov = scatter_element_add(cov, [i, j], res)
+        cov = scatter_element_add(cov, [j, i], res)
 
     return cov
 

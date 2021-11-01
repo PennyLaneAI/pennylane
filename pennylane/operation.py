@@ -462,7 +462,11 @@ class Operator(abc.ABC):
             return op_label
 
         def _format(x):
-            return format(qml.math.toarray(x), f".{decimals}f")
+            try:
+                return format(qml.math.toarray(x), f".{decimals}f")
+            except ValueError:
+                # If the parameter can't be displayed as a float
+                return format(x)
 
         if self.num_params == 1:
             return op_label + f"\n({_format(params[0])})"
@@ -613,12 +617,13 @@ class Operation(Operator):
 
     @property
     def control_wires(self):  # pragma: no cover
-        r"""For operations that are controlled, returns the set of control wires.
+        r"""Returns the control wires.  For operations that are not controlled,
+        this is an empty ``Wires`` object of length ``0``.
 
         Returns:
-            Wires: The set of control wires of the operation.
+            Wires: The control wires of the operation.
         """
-        raise NotImplementedError
+        return Wires([])
 
     @property
     def single_qubit_rot_angles(self):
