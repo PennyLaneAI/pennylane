@@ -97,13 +97,13 @@ class ExecuteTapes(torch.autograd.Function):
                 # For backwards compatibility, we flatten ragged tape outputs
                 r = np.hstack(r)
 
-            elif isinstance(r, (list, tuple)):
+            if isinstance(r, (list, tuple)):
                 res[i] = [torch.as_tensor(t) for t in r]
 
                 if isinstance(r, tuple):
                     res[i] = tuple(res[i])
             else:
-                res[i] = torch.as_tensor(qml.math.toarray(r), device=ctx.torch_device)
+                res[i] = torch.as_tensor(r, device=ctx.torch_device)
 
             if ctx.jacs:
                 ctx.jacs[i] = torch.as_tensor(ctx.jacs[i], device=ctx.torch_device)

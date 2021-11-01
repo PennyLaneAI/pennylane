@@ -283,7 +283,7 @@ ar.register_function("torch", "to_numpy", _to_numpy_torch)
 ar.register_function(
     "torch",
     "asarray",
-    lambda x, device=None: _i("torch").as_tensor(ar.numpy.to_numpy(x), device=device),
+    lambda x, device=None: _i("torch").as_tensor(x, device=device),
 )
 ar.register_function("torch", "diag", lambda x, k=0: _i("torch").diag(x, diagonal=k))
 ar.register_function("torch", "expand_dims", lambda x, axis: _i("torch").unsqueeze(x, dim=axis))
