@@ -18,7 +18,6 @@ measurement basis, and templates for the circuit implementations.
 import pennylane as qml
 from pennylane.operation import Tensor
 from pennylane.wires import Wires
-from pennylane.templates import template
 from pennylane.grouping.utils import (
     pauli_to_binary,
     are_identical_pauli_words,
@@ -28,7 +27,6 @@ from pennylane.grouping.utils import (
 import numpy as np
 
 
-@template
 def qwc_rotation(pauli_operators):
     """Performs circuit implementation of diagonalizing unitary for a Pauli word.
 
@@ -51,13 +49,16 @@ def qwc_rotation(pauli_operators):
             "All values of input pauli_operators must be either Identity, PauliX, PauliY, or PauliZ instances,"
             " instead got pauli_operators = {}.".format(pauli_operators)
         )
+    with qml.tape.OperationRecorder() as rec:
 
-    for pauli in pauli_operators:
-        if isinstance(pauli, qml.PauliX):
-            qml.RY(-np.pi / 2, wires=pauli.wires)
+        for pauli in pauli_operators:
+            if isinstance(pauli, qml.PauliX):
+                qml.RY(-np.pi / 2, wires=pauli.wires)
 
-        elif isinstance(pauli, qml.PauliY):
-            qml.RX(np.pi / 2, wires=pauli.wires)
+            elif isinstance(pauli, qml.PauliY):
+                qml.RX(np.pi / 2, wires=pauli.wires)
+
+    return rec.queue
 
 
 def diagonalize_pauli_word(pauli_word):
