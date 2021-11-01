@@ -138,6 +138,7 @@ class DefaultQubit(QubitDevice):
         "QubitCarry",
         "QubitSum",
         "OrbitalRotation",
+        "QFT",
     }
 
     observables = {
@@ -468,8 +469,9 @@ class DefaultQubit(QubitDevice):
         Returns:
             float: returns the expectation value of the observable
         """
-        # intercept Hamiltonians here; in future, we want a logic that handles
-        # general observables that do not define eigenvalues
+        # intercept other Hamiltonians
+        # TODO: Ideally, this logic should not live in the Device, but be moved
+        # to a component that can be re-used by devices as needed.
         if observable.name in ("Hamiltonian", "SparseHamiltonian"):
             assert self.shots is None, f"{observable.name} must be used with shots=None"
 
@@ -485,6 +487,7 @@ class DefaultQubit(QubitDevice):
                 # Compute  <psi| H |psi> via sum_i coeff_i * <psi| PauliWord |psi> using a sparse
                 # representation of the Pauliword
                 res = qml.math.cast(qml.math.convert_like(0.0, observable.data), dtype=complex)
+                interface = qml.math.get_interface(self.state)
 
                 # Note: it is important that we use the Hamiltonian's data and not the coeffs attribute.
                 # This is because the .data attribute may be 'unwrapped' as required by the interfaces,
@@ -500,7 +503,11 @@ class DefaultQubit(QubitDevice):
                         * Hmat
                         * qml.math.gather(self.state, coo.col)
                     )
-                    c = qml.math.cast(qml.math.convert_like(coeff, product), "complex128")
+                    c = qml.math.convert_like(coeff, product)
+
+                    if interface == "tensorflow":
+                        c = qml.math.cast(c, "complex128")
+
                     res = qml.math.convert_like(res, product) + qml.math.sum(c * product)
 
             else:
@@ -512,9 +519,10 @@ class DefaultQubit(QubitDevice):
                 elif observable.name == "SparseHamiltonian":
                     Hmat = observable.matrix
 
+                state = qml.math.toarray(self.state)
                 res = coo_matrix.dot(
-                    coo_matrix(qml.math.conj(self.state)),
-                    coo_matrix.dot(Hmat, coo_matrix(self.state.reshape(len(self.state), 1))),
+                    coo_matrix(qml.math.conj(state)),
+                    coo_matrix.dot(Hmat, coo_matrix(state.reshape(len(self.state), 1))),
                 ).toarray()[0]
 
             if observable.name == "Hamiltonian":

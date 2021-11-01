@@ -21,6 +21,7 @@ import pkg_resources
 import numpy as _np
 from semantic_version import Spec, Version
 
+from pennylane.boolean_fn import BooleanFn
 from pennylane.queuing import apply, QueuingContext
 
 import pennylane.init
@@ -30,6 +31,7 @@ import pennylane.math
 import pennylane.operation
 import pennylane.qnn
 import pennylane.templates
+import pennylane.hf
 from pennylane._device import Device, DeviceError
 from pennylane._grad import grad, jacobian, finite_diff
 from pennylane._qubit_device import QubitDevice
@@ -41,12 +43,17 @@ from pennylane.tracker import Tracker
 from pennylane.io import *
 from pennylane.measure import density_matrix, expval, probs, sample, state, var
 from pennylane.ops import *
+from pennylane.templates import broadcast, layer, template
+from pennylane.templates.embeddings import *
+from pennylane.templates.layers import *
+from pennylane.templates.state_preparations import *
+from pennylane.templates.subroutines import *
 from pennylane.optimize import *
 from pennylane import qaoa
 from pennylane.qnode import QNode, qnode
-from pennylane.templates import broadcast, layer, template
 from pennylane.transforms import (
     adjoint,
+    batch_params,
     batch_transform,
     draw,
     ControlledOperation,
@@ -60,7 +67,6 @@ from pennylane.transforms import (
     quantum_monte_carlo,
     apply_controlled_Q,
 )
-from pennylane.utils import inv
 from pennylane.vqe import ExpvalCost, VQECost
 
 # QueuingContext and collections needs to be imported after all other pennylane imports

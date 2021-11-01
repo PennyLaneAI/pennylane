@@ -910,9 +910,33 @@ class TestOrbitalRotation:
             qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
             return qml.expval(qml.PauliZ(0))
 
-        phi_t = torch.tensor(phi, dtype=torch.float64, requires_grad=True)
+        phi_t = torch.tensor(phi, dtype=torch.complex128, requires_grad=True)
 
         result = circuit(phi_t)
         result.backward()
 
         assert np.allclose(phi_t.grad, np.sin(phi))
+
+
+label_data = [
+    (qml.SingleExcitation(1.2345, wires=(0, 1)), "G", "G\n(1.23)", "G\n(1)"),
+    (qml.SingleExcitationMinus(1.2345, wires=(0, 1)), "G₋", "G₋\n(1.23)", "G₋\n(1)"),
+    (qml.SingleExcitationPlus(1.2345, wires=(0, 1)), "G₊", "G₊\n(1.23)", "G₊\n(1)"),
+    (qml.DoubleExcitation(2.3456, wires=(0, 1, 2, 3)), "G²", "G²\n(2.35)", "G²\n(2)"),
+    (qml.DoubleExcitationPlus(2.3456, wires=(0, 1, 2, 3)), "G²₊", "G²₊\n(2.35)", "G²₊\n(2)"),
+    (qml.DoubleExcitationMinus(2.345, wires=(0, 1, 2, 3)), "G²₋", "G²₋\n(2.35)", "G²₋\n(2)"),
+    (
+        qml.OrbitalRotation(2.3456, wires=(0, 1, 2, 3)),
+        "OrbitalRotation",
+        "OrbitalRotation\n(2.35)",
+        "OrbitalRotation\n(2)",
+    ),
+]
+
+
+@pytest.mark.parametrize("op, label1, label2, label3", label_data)
+def test_label_method(op, label1, label2, label3):
+    """Test the label method for qchem operations."""
+    assert op.label() == label1
+    assert op.label(decimals=2) == label2
+    assert op.label(decimals=0) == label3

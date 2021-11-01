@@ -105,11 +105,15 @@ def _execute(
         res, jacs = execute_fn(tapes, **gradient_kwargs)
 
     for i, r in enumerate(res):
-        res[i] = np.tensor(r)
 
-        if res[i].dtype == np.dtype("object"):
+        if isinstance(res[i], np.ndarray):
             # For backwards compatibility, we flatten ragged tape outputs
-            res[i] = np.hstack(r)
+            # when there is no sampling
+            r = np.hstack(res[i]) if res[i].dtype == np.dtype("object") else res[i]
+            res[i] = np.tensor(r)
+
+        elif isinstance(res[i], tuple):
+            res[i] = tuple(np.tensor(r) for r in res[i])
 
     return res, jacs
 

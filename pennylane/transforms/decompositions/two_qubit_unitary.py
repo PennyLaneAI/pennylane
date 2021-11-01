@@ -181,7 +181,7 @@ def _su2su2_to_tensor_products(U):
         a2 *= -1
 
     # Construct A
-    A = math.stack([[a1, a2], [-math.conj(a2), math.conj(a1)]])
+    A = math.stack([math.stack([a1, a2]), math.stack([-math.conj(a2), math.conj(a1)])])
 
     # Next, extract B. Can do from any of the C, just need to be careful in
     # case one of the elements of A is 0.
@@ -598,14 +598,15 @@ def two_qubit_decomposition(U, wires):
     # the form of the decomposition.
     num_cnots = _compute_num_cnots(U)
 
-    if num_cnots == 0:
-        decomp = qml.transforms.invisible(_decomposition_0_cnots)(U, wires)
-    elif num_cnots == 1:
-        decomp = qml.transforms.invisible(_decomposition_1_cnot)(U, wires)
-    elif num_cnots == 2:
-        decomp = qml.transforms.invisible(_decomposition_2_cnots)(U, wires)
-    else:
-        decomp = qml.transforms.invisible(_decomposition_3_cnots)(U, wires)
+    with qml.tape.stop_recording():
+        if num_cnots == 0:
+            decomp = _decomposition_0_cnots(U, wires)
+        elif num_cnots == 1:
+            decomp = _decomposition_1_cnot(U, wires)
+        elif num_cnots == 2:
+            decomp = _decomposition_2_cnots(U, wires)
+        else:
+            decomp = _decomposition_3_cnots(U, wires)
 
     # If there is an active tape, queue the decomposition so that expand works
     current_tape = qml.tape.get_active_tape()

@@ -23,17 +23,19 @@ Transforms
 Transforms that act on QNodes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Thes transforms accept QNodes, and return new transformed functions
+These transforms accept QNodes, and return new transformed functions
 that compute the desired quantity.
 
 .. autosummary::
     :toctree: api
 
     ~transforms.classical_jacobian
+    ~batch_params
     ~draw
     ~transforms.get_unitary_matrix
     ~metric_tensor
     ~specs
+    ~transforms.mitigate_with_zne
 
 Transforms that act on quantum functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -46,9 +48,9 @@ containing quantum operations) that are used to construct QNodes.
 
     ~adjoint
     ~ctrl
-    ~transforms.invisible
     ~apply_controlled_Q
     ~quantum_monte_carlo
+    ~transforms.insert
 
 Transforms for circuit compilation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -99,20 +101,26 @@ to help build custom QNode, quantum function, and tape transforms:
     ~batch_transform
     ~qfunc_transform
     ~transforms.make_tape
+    ~transforms.create_expand_fn
+    ~transforms.expand_invalid_trainable
+    ~transforms.expand_multipar
+    ~transforms.expand_nonunitary_gen
 """
 # Import the decorators first to prevent circular imports when used in other transforms
 from .batch_transform import batch_transform
 from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
 from .adjoint import adjoint
+from .batch_params import batch_params
 from .classical_jacobian import classical_jacobian
 from .compile import compile
 from .control import ControlledOperation, ctrl
 from .decompositions import zyz_decomposition, two_qubit_decomposition
 from .draw import draw
 from .hamiltonian_expand import hamiltonian_expand
-from .invisible import invisible
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
+from .insert_ops import insert
+from .mitigate import mitigate_with_zne
 from .optimization import (
     cancel_inverses,
     commute_controlled,
@@ -123,3 +131,9 @@ from .specs import specs
 from .qmc import apply_controlled_Q, quantum_monte_carlo
 from .unitary_to_rot import unitary_to_rot
 from .get_unitary_matrix import get_unitary_matrix
+from .tape_expand import (
+    expand_invalid_trainable,
+    expand_multipar,
+    expand_nonunitary_gen,
+    create_expand_fn,
+)

@@ -19,7 +19,7 @@ from functools import wraps
 import pennylane as qml
 
 
-def draw(qnode, charset="unicode", wire_order=None, show_all_wires=False):
+def draw(qnode, charset="unicode", wire_order=None, show_all_wires=False, expansion_strategy=None):
     """Create a function that draws the given qnode.
 
     Args:
@@ -28,6 +28,16 @@ def draw(qnode, charset="unicode", wire_order=None, show_all_wires=False):
             "ascii" are supported.
         wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
+        expansion_strategy (str): The strategy to use when circuit expansions or decompositions
+            are required.
+
+            - ``gradient``: The QNode will attempt to decompose
+              the internal circuit such that all circuit operations are supported by the gradient
+              method.
+
+            - ``device``: The QNode will attempt to decompose the internal circuit
+              such that all circuit operations are natively supported by the device.
+
 
     Returns:
         A function that has the same argument signature as ``qnode``. When called,
@@ -88,7 +98,14 @@ def draw(qnode, charset="unicode", wire_order=None, show_all_wires=False):
 
     @wraps(qnode)
     def wrapper(*args, **kwargs):
-        qnode.construct(args, kwargs)
+        original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
+
+        try:
+            qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
+            tapes = qnode.construct(args, kwargs)
+        finally:
+            qnode.expansion_strategy = original_expansion_strategy
+
         _wire_order = wire_order or qnode.device.wires
         _wire_order = qml.wires.Wires(_wire_order)
 
@@ -101,6 +118,13 @@ def draw(qnode, charset="unicode", wire_order=None, show_all_wires=False):
             raise ValueError(
                 f"Provided wire order {_wire_order.labels} contains wires not contained on the device: {qnode.device.wires}."
             )
+
+        if tapes is not None:
+            res = [
+                t.draw(charset=charset, wire_order=_wire_order, show_all_wires=show_all_wires)
+                for t in tapes[0]
+            ]
+            return "\n".join(res)
 
         return qnode.qtape.draw(
             charset=charset, wire_order=_wire_order, show_all_wires=show_all_wires

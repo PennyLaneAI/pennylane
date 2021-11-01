@@ -395,3 +395,18 @@ class TestControlledQubitUnitary:
         pauli_x_state = circuit_pauli_x()
 
         assert np.allclose(mixed_polarity_state, pauli_x_state)
+
+
+label_data = [
+    (qml.QubitUnitary(X, wires=0), "U"),
+    (qml.DiagonalQubitUnitary([1, 1], wires=1), "U"),
+    (qml.ControlledQubitUnitary(X, control_wires=0, wires=1), "U"),
+]
+
+
+@pytest.mark.parametrize("op, label", label_data)
+def test_label(op, label):
+    assert op.label() == label
+    assert op.label(decimals=5) == label
+    op.inv()
+    assert op.label() == label + "⁻¹"
