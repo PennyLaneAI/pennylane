@@ -35,7 +35,8 @@ def test_adjoint():
     def adjoint_evolution_circuit(time):
         for i in range(n_wires):
             qml.Hadamard(i)
-        qml.CommutingEvolution(hamiltonian, time, frequencies).adjoint
+        #qml.CommutingEvolution(hamiltonian, time, frequencies).adjoint
+        qml.adjoint(qml.CommutingEvolution)(hamiltonian, time, frequencies)
         return qml.expval(qml.PauliZ(1))
 
     @qml.qnode(dev2)
