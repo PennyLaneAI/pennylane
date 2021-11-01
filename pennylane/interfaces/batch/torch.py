@@ -97,7 +97,7 @@ class ExecuteTapes(torch.autograd.Function):
                 # For backwards compatibility, we flatten ragged tape outputs
                 r = np.hstack(r)
 
-            if isinstance(r, (list, tuple)):
+            elif isinstance(r, (list, tuple)):
                 res[i] = [torch.as_tensor(t) for t in r]
 
                 if isinstance(r, tuple):
