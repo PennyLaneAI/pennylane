@@ -65,8 +65,8 @@ class CommutingEvolution(Operation):
             will be computed using the standard two-term shift rule applied to the constituent
             Pauli words in the Hamiltonian individually.
 
-        shifts (list): The parameter shifts to use in obtaining the generalized parameter shift
-        rules. If unspecified, equidistant shifts are used.
+        param_shifts (list): The parameter shifts to use in obtaining the generalized parameter shift
+            rules. If unspecified, equidistant shifts are used.
 
     .. UsageDetails::
 
@@ -104,7 +104,7 @@ class CommutingEvolution(Operation):
     ):
         from pennylane.gradients.general_shift_rules import (
             get_shift_rule,
-        )  # pylint: disable=import-outside-toplevel
+        )  # pylint: disable-msg=import-outside-toplevel
 
         if not isinstance(hamiltonian, qml.Hamiltonian):
             raise TypeError(
