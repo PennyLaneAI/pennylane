@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the SingleExcitationUnitary template.
+Contains the FermionicSingleExcitation template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import math
@@ -32,7 +32,7 @@ b = 3 * np.pi / 2
 four_term_grad_recipe = ([[c1, 1, a], [-c1, 1, -a], [-c2, 1, b], [c2, 1, -b]],)
 
 
-class SingleExcitationUnitary(Operation):
+class FermionicSingleExcitation(Operation):
     r"""Circuit to exponentiate the tensor product of Pauli matrices representing the
     single-excitation operator entering the Unitary Coupled-Cluster Singles
     and Doubles (UCCSD) ansatz. UCCSD is a VQE ansatz commonly used to run quantum
@@ -109,13 +109,12 @@ class SingleExcitationUnitary(Operation):
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane.templates import SingleExcitationUnitary
 
             dev = qml.device('default.qubit', wires=3)
 
             @qml.qnode(dev)
             def circuit(weight, wires=None):
-                SingleExcitationUnitary(weight, wires=wires)
+                qml.FermionicSingleExcitation(weight, wires=wires)
                 return qml.expval(qml.PauliZ(0))
 
             weight = 0.56

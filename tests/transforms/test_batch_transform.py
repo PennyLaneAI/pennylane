@@ -288,6 +288,93 @@ class TestBatchTransform:
         assert tapes[1].operations[1].name == "RZ"
         assert tapes[1].operations[1].parameters == [b * np.sin(x)]
 
+    def test_parametrized_transform_tape_decorator(self):
+        """Test that a parametrized transform can be applied
+        to a tape"""
+
+        a = 0.1
+        b = 0.4
+        x = 0.543
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=0)
+            qml.RX(x, wires=0)
+            qml.expval(qml.PauliX(0))
+
+        tapes, fn = self.my_transform(a, b)(tape)
+
+        assert len(tapes[0].operations) == 2
+        assert tapes[0].operations[0].name == "Hadamard"
+        assert tapes[0].operations[1].name == "RY"
+        assert tapes[0].operations[1].parameters == [a * np.abs(x)]
+
+        assert len(tapes[1].operations) == 2
+        assert tapes[1].operations[0].name == "Hadamard"
+        assert tapes[1].operations[1].name == "RZ"
+        assert tapes[1].operations[1].parameters == [b * np.sin(x)]
+
+    def test_parametrized_transform_device(self, mocker):
+        """Test that a parametrized transform can be applied
+        to a device"""
+
+        a = 0.1
+        b = 0.4
+        x = 0.543
+
+        dev = qml.device("default.qubit", wires=1)
+        dev = self.my_transform(dev, a, b)
+
+        @qml.beta.qnode(dev)
+        def circuit(x):
+            qml.Hadamard(wires=0)
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        spy = mocker.spy(circuit.device, "batch_execute")
+        circuit(x)
+        tapes = spy.call_args[0][0]
+
+        assert len(tapes[0].operations) == 2
+        assert tapes[0].operations[0].name == "Hadamard"
+        assert tapes[0].operations[1].name == "RY"
+        assert tapes[0].operations[1].parameters == [a * np.abs(x)]
+
+        assert len(tapes[1].operations) == 2
+        assert tapes[1].operations[0].name == "Hadamard"
+        assert tapes[1].operations[1].name == "RZ"
+        assert tapes[1].operations[1].parameters == [b * np.sin(x)]
+
+    def test_parametrized_transform_device_decorator(self, mocker):
+        """Test that a parametrized transform can be applied
+        to a device"""
+
+        a = 0.1
+        b = 0.4
+        x = 0.543
+
+        dev = qml.device("default.qubit", wires=1)
+        dev = self.my_transform(a, b)(dev)
+
+        @qml.beta.qnode(dev)
+        def circuit(x):
+            qml.Hadamard(wires=0)
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        spy = mocker.spy(circuit.device, "batch_execute")
+        circuit(x)
+        tapes = spy.call_args[0][0]
+
+        assert len(tapes[0].operations) == 2
+        assert tapes[0].operations[0].name == "Hadamard"
+        assert tapes[0].operations[1].name == "RY"
+        assert tapes[0].operations[1].parameters == [a * np.abs(x)]
+
+        assert len(tapes[1].operations) == 2
+        assert tapes[1].operations[0].name == "Hadamard"
+        assert tapes[1].operations[1].name == "RZ"
+        assert tapes[1].operations[1].parameters == [b * np.sin(x)]
+
     def test_parametrized_transform_qnode(self, mocker):
         """Test that a parametrized transform can be applied
         to a QNode"""

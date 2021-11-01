@@ -123,7 +123,7 @@ class TestDecomposition:
         # queue as a single operation
         queue = []
         for op in raw_queue:
-            if op.name in ["SingleExcitationUnitary", "DoubleExcitationUnitary"]:
+            if op.name in ["FermionicSingleExcitation", "FermionicDoubleExcitation"]:
                 queue.extend(op.expand().operations)
             else:
                 queue.append(op)
@@ -293,8 +293,8 @@ def circuit_template(weights):
 
 def circuit_decomposed(weights):
     qml.BasisState(np.array([1, 0, 0, 0]), wires=range(4))
-    qml.DoubleExcitationUnitary(weights[1], wires1=[0, 1], wires2=[2, 3])
-    qml.SingleExcitationUnitary(weights[0], wires=[0, 1])
+    qml.FermionicDoubleExcitation(weights[1], wires1=[0, 1], wires2=[2, 3])
+    qml.FermionicSingleExcitation(weights[0], wires=[0, 1])
     return qml.expval(qml.PauliZ(0))
 
 
