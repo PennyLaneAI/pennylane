@@ -103,7 +103,7 @@ class ExecuteTapes(torch.autograd.Function):
                 if isinstance(r, tuple):
                     res[i] = tuple(res[i])
             else:
-                res[i] = torch.as_tensor(r, device=ctx.torch_device)
+                res[i] = torch.as_tensor(qml.math.toarray(r), device=ctx.torch_device)
 
             if ctx.jacs:
                 ctx.jacs[i] = torch.as_tensor(ctx.jacs[i], device=ctx.torch_device)

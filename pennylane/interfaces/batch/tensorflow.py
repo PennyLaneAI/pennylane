@@ -97,6 +97,9 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         elif isinstance(res[i], tuple):
             res[i] = tuple(tf.convert_to_tensor(r) for r in res[i])
 
+        else:
+            res[i] = tf.convert_to_tensor(qml.math.toarray(res[i]))
+
     @tf.custom_gradient
     def _execute(*parameters):  # pylint:disable=unused-argument
         def grad_fn(*dy, **tfkwargs):

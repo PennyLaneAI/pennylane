@@ -115,6 +115,9 @@ def _execute(
         elif isinstance(res[i], tuple):
             res[i] = tuple(np.tensor(r) for r in res[i])
 
+        else:
+            res[i] = qml.math.toarray(res[i])
+
     return res, jacs
 
 
