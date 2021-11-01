@@ -33,7 +33,7 @@
 
 <p align="center">
   <a href="https://pennylane.ai/carnival/">
-    <img width=50% src="https://pennylane.ai/img/carnival_logo_splash2.png">
+    <img width=75% src="https://pennylane.ai/img/carnival_logo_splash2.png">
   </a>
 </p>
 
