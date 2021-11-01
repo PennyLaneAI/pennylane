@@ -18,7 +18,6 @@ from contextlib import nullcontext
 import pennylane as qml
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
 from .default_qubit import DefaultQubit
-#from pennylane_lightning import LightningQubit
 from .._version import __version__
 
 import numpy as np
@@ -26,6 +25,7 @@ import numpy as np
 try:
     import dask
     import dask.distributed as dist
+    from distributed import get_client, secede, rejoin
 
 except ImportError as e:  # pragma: no cover
     raise ImportError("default.task requires installing dask and dask.distributed") from e
@@ -95,7 +95,7 @@ class DefaultTask(QubitDevice):
         if client == None:
             self.client = dist.Client(scheduler)
         else:
-            self.client = client
+            self.client = get_client()
 
         self._backend = backend
         self._wires = wires
@@ -129,7 +129,10 @@ class DefaultTask(QubitDevice):
             if self._future:
                 return results
             else:
-                return self.client.gather(results)
+                secede()
+                res = self.client.gather(results)
+                rejoin()
+                return res
 
     def apply():
         pass
