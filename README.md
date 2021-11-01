@@ -33,7 +33,7 @@
 
 <p align="center">
   <a href="https://pennylane.ai/carnival/">
-    <img width=100% src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/carnival_splash_bg.png">
+    <img width=100% src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/carnival-callout/doc/_static/carnival_splash_bg.png">
   </a>
 </p>
 
@@ -51,7 +51,7 @@
 
 <p align="center">
   <strong>Train a quantum computer the same way as a neural network.</strong>
-  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/carnival-callout/doc/_static/header.png" width="700px">
+  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/header.png" width="700px">
 </p>
 
 ## Key Features
