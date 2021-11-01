@@ -996,6 +996,22 @@
   which can then be generated manually.
   [(#1689)](https://github.com/PennyLaneAI/pennylane/pull/1689)
 
+  To generate the parameter tensors, the `np.random.normal` and
+  `np.random.uniform` functions can be used (just like in the `init` module).
+  Considering the default arguments of these functions as of NumPy v1.21, some
+  non-default options were used by the `init` module:
+
+  * All functions generating normally distributed parameters used
+    `np.random.normal` by passing `scale=0.1`;
+
+  * Most functions generating uniformly distributed parameters (except for
+    certain CVQNN initializers) used `np.random.uniform` by passing
+    `high=2*math.pi`;
+
+  * The `cvqnn_layers_r_uniform`, `cvqnn_layers_a_uniform`,
+    `cvqnn_layers_kappa_uniform` functions used `np.random.uniform` by passing
+    `high=0.1`.
+
 * The `QNode.draw` method has been deprecated, and will be removed in an upcoming release.
   Please use the `qml.draw` transform instead.
   [(#1746)](https://github.com/PennyLaneAI/pennylane/pull/1746)
