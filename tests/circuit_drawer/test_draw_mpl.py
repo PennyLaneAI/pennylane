@@ -314,21 +314,21 @@ class TestControlledGates:
 
         plt.close()
 
-    def test_CRX_decimals(self, mocker):
+    def test_CRX_decimals(self):
         """Test a controlled parametric operation with specified decimals."""
-
-        mock_drawer = mocker.patch("pennylane.circuit_drawer.draw.MPLDrawer")
 
         with QuantumTape() as tape:
             qml.CRX(1.234, wires=(0, 1))
 
-        draw_mpl(tape, decimals=2)
+        _, ax = draw_mpl(tape, decimals=2)
 
-        mock_drawer().ctrl.assert_called_with(0, [0], wires_target=[1])
-        mock_drawer().box_gate.assert_called_with(
-            0, [1], "RX\n(1.23)", box_options={"zorder": 4}, text_options={"zorder": 5}
-        )
+        # two wire labels, so CRX is third text object
+        assert ax.texts[2].get_text() == "RX\n(1.23)"
 
+general_op_data = [(qml.RX(1.234, wires=0), "RX"),
+    (qml.IsingXX(1.234, wires=(0,1)), "IsingXX"),
+
+]
 
 class TestGeneralOperations:
     """Tests general operations."""
