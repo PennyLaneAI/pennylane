@@ -38,7 +38,7 @@
 </p>
 
 <p align="center">
-  We're throwing a party to celebrate the 3rd anniversary of Pennylane's release! Throughout November, we will have special events, announcements, and releases, all happening under one big tent. <a href="https://pennylane.ai/carnival>Join the fun!</a>"
+  Announcing <strong>PennyLane Quantum Carnival</strong>. We're throwing a party to celebrate the 3rd anniversary of Pennylane's release! Throughout November, we will have special events, announcements, and releases, all happening under one big tent. <a href="https://pennylane.ai/carnival">Join the fun!</a>"
 </p>
 
 <p align="center">
