@@ -44,8 +44,8 @@ transforms.
 Overview
 --------
 
-Information
-~~~~~~~~~~~
+Information transforms
+~~~~~~~~~~~~~~~~~~~~~~
 
 These transforms accept QNodes, and return new transformed functions
 that compute the desired quantity. These transforms do not result
