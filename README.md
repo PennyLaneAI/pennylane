@@ -32,6 +32,16 @@
 </p>
 
 <p align="center">
+  <a href="https://pennylane.ai/carnival/">
+    <img width=50% src="https://pennylane.ai/img/carnival_logo_splash2.png">
+  </a>
+</p>
+
+<p align="center">
+  We're throwing a party to celebrate the 3rd anniversary of Pennylane's release! Throughout November, we will have special events, announcements, and releases, all happening under one big tent. <a href="https://pennylane.ai/carnival>Join the fun!</a>"
+</p>
+
+<p align="center">
   <a href="https://pennylane.ai">PennyLane</a> is a cross-platform Python library for <a
   href="https://en.wikipedia.org/wiki/Differentiable_programming">differentiable
   programming</a> of quantum computers.
