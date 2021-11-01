@@ -269,7 +269,7 @@ ar.autoray._FUNC_ALIASES["torch", "unstack"] = "unbind"
 
 
 def _to_numpy_torch(x):
-    if x.is_conj():
+    if getattr(x, "is_conj", False) and x.is_conj():
         x = x.resolve_conj()
 
     return x.detach().cpu().numpy()
