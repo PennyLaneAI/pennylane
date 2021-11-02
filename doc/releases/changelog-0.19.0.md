@@ -625,6 +625,10 @@
 
 <h3>Improvements</h3>
 
+* Updated the `qml.QNGOptimizer.step_and_cost` method to avoid the use of
+  deprecated functionality.
+  [(#1834)](https://github.com/PennyLaneAI/pennylane/pull/1834)
+
 * The default for an `Operation`'s `control_wires` attribute is now an empty `Wires`
   object instead of the attribute raising a `NonImplementedError`.
   [(#1821)](https://github.com/PennyLaneAI/pennylane/pull/1821)
@@ -891,12 +895,6 @@
 
   If `hybrid=False`, the changed expansion rule might lead to a changed output.
 
-* The `qml.metric_tensor` keyword argument `diag_approx` is deprecated.
-  Approximations can be controlled with the more fine-grained `approx`
-  keyword argument, with `approx="block-diag"` (the default) reproducing
-  the old behaviour.
-  [(#1721)](https://github.com/PennyLaneAI/pennylane/pull/1721)
-
 * The `default.qubit.torch` device automatically determines if computations
   should be run on a CPU or a GPU and doesn't take a `torch_device` argument
   anymore.
@@ -922,6 +920,14 @@
   [(#1822)](https://github.com/PennyLaneAI/pennylane/pull/1822)
 
 <h3>Deprecations</h3>
+
+* The `qml.metric_tensor` and `qml.QNGOptimizer` keyword argument `diag_approx`
+  is deprecated.
+  Approximations can be controlled with the more fine-grained `approx` keyword
+  argument, with `approx="block-diag"` (the default) reproducing the old
+  behaviour.
+  [(#1721)](https://github.com/PennyLaneAI/pennylane/pull/1721)
+  [(#1834)](https://github.com/PennyLaneAI/pennylane/pull/1834)
 
 * The `template` decorator is now deprecated with a warning message and will be removed
   in release `v0.20.0`. It has been removed from different PennyLane functions.
@@ -996,6 +1002,22 @@
   Instead, the templates' `shape` method can be used to get the desired shape of the tensor,
   which can then be generated manually.
   [(#1689)](https://github.com/PennyLaneAI/pennylane/pull/1689)
+
+  To generate the parameter tensors, the `np.random.normal` and
+  `np.random.uniform` functions can be used (just like in the `init` module).
+  Considering the default arguments of these functions as of NumPy v1.21, some
+  non-default options were used by the `init` module:
+
+  * All functions generating normally distributed parameters used
+    `np.random.normal` by passing `scale=0.1`;
+
+  * Most functions generating uniformly distributed parameters (except for
+    certain CVQNN initializers) used `np.random.uniform` by passing
+    `high=2*math.pi`;
+
+  * The `cvqnn_layers_r_uniform`, `cvqnn_layers_a_uniform`,
+    `cvqnn_layers_kappa_uniform` functions used `np.random.uniform` by passing
+    `high=0.1`.
 
 * The `QNode.draw` method has been deprecated, and will be removed in an upcoming release.
   Please use the `qml.draw` transform instead.
