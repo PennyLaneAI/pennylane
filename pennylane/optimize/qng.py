@@ -202,7 +202,7 @@ class QNGOptimizer(GradientDescentOptimizer):
             self.metric_tensor += self.lam * np.identity(self.metric_tensor.shape[0])
 
         g, forward = self.compute_grad(qnode, args, kwargs, grad_fn=grad_fn)
-        new_args = np.array(self.apply_grad(g, args))
+        new_args = np.array(self.apply_grad(g, args), requires_grad=True)
 
         if forward is None:
             forward = qnode(*args, **kwargs)
