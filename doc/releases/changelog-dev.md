@@ -625,6 +625,10 @@
 
 <h3>Improvements</h3>
 
+* Updated the `qml.QNGOptimizer.step_and_cost` method to avoid the use of
+  deprecated functionality.
+  [(#1834)](https://github.com/PennyLaneAI/pennylane/pull/1834)
+
 * The default for an `Operation`'s `control_wires` attribute is now an empty `Wires`
   object instead of the attribute raising a `NonImplementedError`.
   [(#1821)](https://github.com/PennyLaneAI/pennylane/pull/1821)
@@ -895,12 +899,6 @@
 
   If `hybrid=False`, the changed expansion rule might lead to a changed output.
 
-* The `qml.metric_tensor` keyword argument `diag_approx` is deprecated.
-  Approximations can be controlled with the more fine-grained `approx`
-  keyword argument, with `approx="block-diag"` (the default) reproducing
-  the old behaviour.
-  [(#1721)](https://github.com/PennyLaneAI/pennylane/pull/1721)
-
 * The `default.qubit.torch` device automatically determines if computations
   should be run on a CPU or a GPU and doesn't take a `torch_device` argument
   anymore.
@@ -926,6 +924,14 @@
   [(#1822)](https://github.com/PennyLaneAI/pennylane/pull/1822)
 
 <h3>Deprecations</h3>
+
+* The `qml.metric_tensor` and `qml.QNGOptimizer` keyword argument `diag_approx`
+  is deprecated.
+  Approximations can be controlled with the more fine-grained `approx` keyword
+  argument, with `approx="block-diag"` (the default) reproducing the old
+  behaviour.
+  [(#1721)](https://github.com/PennyLaneAI/pennylane/pull/1721)
+  [(#1834)](https://github.com/PennyLaneAI/pennylane/pull/1834)
 
 * Allowing cost functions to be differentiated using `qml.grad` or
   `qml.jacobian` without explicitly marking parameters as trainable is being
