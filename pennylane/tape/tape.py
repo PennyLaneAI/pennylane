@@ -809,7 +809,6 @@ class QuantumTape(AnnotatedQueue):
             op = self._par_info[p_idx]["op"]
             op_idx = self._par_info[p_idx]["p_idx"]
             params.append(op.data[op_idx])
-
         return params
 
     def set_parameters(self, params, trainable_only=True):
