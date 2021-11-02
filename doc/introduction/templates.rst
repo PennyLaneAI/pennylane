@@ -194,21 +194,6 @@ Other useful templates which do not belong to the previous categories can be fou
     :figure: ../_static/templates/subroutines/single_excitation_unitary.png
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.DoubleExcitationUnitary.html
-    :description: DoubleExcitationUnitary
-    :figure: ../_static/templates/subroutines/double_excitation_unitary.png
-
-.. customgalleryitem::
-    :link: ../code/api/pennylane.UCCSD.html
-    :description: UCCSD
-    :figure: ../_static/templates/subroutines/uccsd.png
-
-.. customgalleryitem::
-    :link: ../code/api/pennylane.kUpCCGSD.html
-    :description: k-UpCCGSD
-    :figure: ../_static/templates/subroutines/kupccgsd.png
-
-.. customgalleryitem::
     :link: ../code/api/pennylane.FermionicDoubleExcitation.html
     :description: FermionicDoubleExcitation
     :figure: ../_static/templates/subroutines/double_excitation_unitary.png    
@@ -387,3 +372,4 @@ gates to a set of wires. You can import this function both via
 .. autosummary::
 
     pennylane.layer
+
