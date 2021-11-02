@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -275,4 +275,55 @@ class TestOptimize:
 
         # check final cost
         assert np.allclose(cost_fn(theta), -1.41421356, atol=tol, rtol=0)
+        assert len(recwarn) == 0
+
+
+    def test_single_qubit_vqe_using_expval_h_multiple_input_params(self, tol, recwarn):
+        """Test single-qubit VQE by returning qml.expval(H) in the QNode and
+        check for the correct QNG value every step, the correct parameter updates, and
+        correct cost after 200 steps"""
+        dev = qml.device("default.qubit", wires=1)
+        coeffs = [1, 1]
+        obs_list = [qml.PauliX(0), qml.PauliZ(0)]
+
+        H = qml.Hamiltonian(coeffs=coeffs, observables=obs_list)
+
+        @qml.qnode(dev)
+        def circuit(x, y, wires=0):
+            qml.RX(x, wires=wires)
+            qml.RY(y, wires=wires)
+            return qml.expval(H)
+
+        eta = 0.01
+        x = np.array(0.011, requires_grad=True)
+        y = np.array(0.022, requires_grad=True)
+
+        def gradient(params):
+            """Returns the gradient"""
+            da = -np.sin(params[0]) * (np.cos(params[1]) + np.sin(params[1]))
+            db = np.cos(params[0]) * (np.cos(params[1]) - np.sin(params[1]))
+            return np.array([da, db])
+
+        eta = 0.01
+        num_steps = 200
+
+        opt = qml.QNGOptimizer(eta)
+
+        # optimization for 200 steps total
+        for t in range(num_steps):
+            theta = np.array([x, y])
+            x, y = opt.step(circuit, x, y)
+
+            # check metric tensor
+            res = opt.metric_tensor
+            exp = np.diag([0.25, (np.cos(x) ** 2) / 4])
+            assert np.allclose(res, exp, atol=0.00001, rtol=0)
+
+            # check parameter update
+            theta_new = np.array([x, y])
+            dtheta = eta * sp.linalg.pinvh(exp) @ gradient(theta)
+            assert np.allclose(dtheta, theta - theta_new, atol=0.000001, rtol=0)
+
+        # check final cost
+        assert np.allclose(circuit(x, y), -1.41421356, atol=tol, rtol=0)
         assert len(recwarn) == 0
