@@ -285,11 +285,6 @@ class batch_transform:
             shots = kwargs.pop("shots", False)
             qnode.construct(args, kwargs)
             tapes, processing_fn = self.construct(qnode.qtape, *targs, **tkwargs)
-            #print(type(tapes))
-            #print(tapes)
-            for _tape in tapes:
-                #print(tape)
-                print(_tape.draw())
 
             interface = qnode.interface
             execute_kwargs = getattr(qnode, "execute_kwargs", {})

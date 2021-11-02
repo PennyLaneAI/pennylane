@@ -244,7 +244,7 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
 
         kwargs.pop("shots", False)
         cjac = cjac_fn(*args, **kwargs)
-        print(cjac)
+        print(qnode.qtape.get_parameters())
 
         if isinstance(cjac, tuple):
             if len(cjac) == 1:
@@ -489,7 +489,6 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire):
     diag_tapes, diag_proc_fn, obs_list, coeffs = _metric_tensor_cov_matrix(tape, diag_approx=False)
     graph = tape.graph
     par_idx_to_trainable_idx = {idx: i for i, idx in enumerate(sorted(tape.trainable_params))}
-    print(par_idx_to_trainable_idx)
     layers = graph.iterate_parametrized_layers()
     layers = [
         LayerData(
@@ -511,8 +510,6 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire):
             _tapes, _ids = _get_first_term_tapes(tape, layer_i, layer_j, allow_nonunitary, aux_wire)
             first_term_tapes.extend(_tapes)
             ids.extend(_ids)
-    print(block_sizes)
-    print(ids)
 
     # Combine block diagonal and off-diagonal tapes
     tapes = diag_tapes + first_term_tapes

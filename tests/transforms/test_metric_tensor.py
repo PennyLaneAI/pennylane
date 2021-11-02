@@ -620,7 +620,7 @@ def fubini_ansatz1(params, wires=None):
 
 def fubini_ansatz2(params0, params1, wires=None):
     qml.RX(fixed_pars[1], wires=0)
-    qml.RX(fixed_pars[3], wires=1)
+    qml.Rot(*fixed_pars[2:5], wires=1)
     qml.CNOT(wires=[0, 1])
     qml.RY(params0, wires=0)
     qml.RY(params0, wires=1)
@@ -668,17 +668,20 @@ def fubini_ansatz5(params0, params1, wires=None):
 def fubini_ansatz6(params0, params1, wires=None):
     fubini_ansatz4(params0, params0, params1, -params1, wires=wires)
 
+def fubini_ansatz7(x, wires=None):
+    qml.RX(fixed_pars[0], wires=0)
+    qml.RX(x, wires=0)
 
-def fubini_ansatz7(params0, params1, wires=None):
-    qml.RX(fixed_pars[1], wires=[0])
-    qml.RY(fixed_pars[3], wires=[0])
-    qml.RZ(fixed_pars[2], wires=[0])
-    qml.RX(fixed_pars[2], wires=[1])
-    qml.RY(fixed_pars[2], wires=[1])
-    qml.RZ(fixed_pars[4], wires=[1])
-    qml.CNOT(wires=[0, 1])
-    qml.RX(fixed_pars[0], wires=[0])
-    qml.RY(fixed_pars[1], wires=[0])
+def fubini_ansatz8(params0, params1, wires=None):
+    #qml.RX(fixed_pars[1], wires=[0])
+    #qml.RY(fixed_pars[3], wires=[0])
+    #qml.RZ(fixed_pars[2], wires=[0])
+    #qml.RX(fixed_pars[2], wires=[1])
+    #qml.RY(fixed_pars[2], wires=[1])
+    #qml.RZ(fixed_pars[4], wires=[1])
+    #qml.CNOT(wires=[0, 1])
+    #qml.RX(fixed_pars[0], wires=[0])
+    #qml.RY(fixed_pars[1], wires=[0])
     qml.RZ(fixed_pars[3], wires=[0])
     qml.RX(fixed_pars[1], wires=[1])
     qml.RY(fixed_pars[2], wires=[1])
@@ -695,14 +698,15 @@ def fubini_ansatz7(params0, params1, wires=None):
 
 
 fubini_ansatze = [
-    fubini_ansatz0,
-    fubini_ansatz1,
-    fubini_ansatz2,
-    fubini_ansatz3,
-    fubini_ansatz4,
-    fubini_ansatz5,
-    fubini_ansatz6,
-    fubini_ansatz7,
+    #fubini_ansatz0,
+    #fubini_ansatz1,
+    #fubini_ansatz2,
+    #fubini_ansatz3,
+    #fubini_ansatz4,
+    #fubini_ansatz5,
+    #fubini_ansatz6,
+    #fubini_ansatz7,
+    fubini_ansatz8,
 ]
 
 fubini_params = [
@@ -737,6 +741,10 @@ fubini_params = [
     (-0.1735, -0.1735, -0.2846, -0.2846),
     (-0.1735, -0.2846),
     (-0.1735, -0.2846),
+    (-0.1735,),
+    (-0.1111, 0.3333),
+]
+fubini_params = [
     (-0.1111, 0.3333),
 ]
 
@@ -784,8 +792,8 @@ class TestFullMetricTensor:
 
         mt = qml.metric_tensor(circuit, approx=None)(*params)
 
-        print(mt)
-        print(expected)
+        print(f"Output:\n{mt}")
+        print(f"Expected:\n{expected}")
         assert np.allclose(mt, expected)
 
     @pytest.mark.xfail(reason="JAX does not support the forward pass metric tensor.")
