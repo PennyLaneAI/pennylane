@@ -1,14 +1,16 @@
 qml.hf
 ======
 
+.. currentmodule:: pennylane.hf
+
+.. automodapi:: pennylane.hf
+
 Overview
 --------
 
 This module provides the functionality to perform differentiable Hartree-Fock (HF) calculations and
 construct molecular Hamiltonians that can be differentiated with respect to nuclear coordinates and
 basis-set parameters.
-
-.. currentmodule:: pennylane.hf
 
 Usage details
 -------------
@@ -23,15 +25,16 @@ The following code shows the construction of the Hamiltonian for the hydrogen mo
 geometry of the molecule and the basis set parameters are all differentiable.
 
 .. code-block:: python3
+
     import pennylane as qml
     from pennylane import numpy as np
 
     symbols = ["H", "H"]
     geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]], requires_grad=True)
     alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
-                    [3.42525091, 0.62391373, 0.1688554]], requires_grad = True)
+                      [3.42525091, 0.62391373, 0.1688554]], requires_grad = True)
     coeff = np.array([[0.15432897, 0.53532814, 0.44463454],
-                    [0.15432897, 0.53532814, 0.44463454]], requires_grad = True)
+                      [0.15432897, 0.53532814, 0.44463454]], requires_grad = True)
 
     # we create a molecule object with differentiable atomic coordinates and basis set parameters
     # alpha and coeff are the exponentents and contraction coefficients of the Gaussian functions
