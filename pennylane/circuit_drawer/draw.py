@@ -242,28 +242,24 @@ def draw_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
     for layer, layer_ops in enumerate(layers):
         for op in layer_ops:
             mapped_wires = [wire_map[w] for w in op.wires]
-            try:
-                control_wires = [wire_map[w] for w in op.control_wires]
-            except (NotImplementedError, AttributeError):
-                control_wires = None
-
+            
             specialfunc = special_cases.get(op.__class__, None)
             if specialfunc is not None:
                 specialfunc(drawer, op, layer, mapped_wires)
 
-            elif control_wires is not None:
+            else:
+                control_wires = [wire_map[w] for w in op.control_wires]
                 target_wires = [wire_map[w] for w in op.wires if w not in op.control_wires]
-                drawer.ctrl(layer, control_wires, wires_target=target_wires)
+
+                if len(control_wires) == 0:
+                    drawer.ctrl(layer, control_wires, wires_target=target_wires)
                 drawer.box_gate(
                     layer,
                     target_wires,
                     op.label(decimals=decimals),
-                    box_options={"zorder": 4}, # make sure box and text above control wires
+                    box_options={"zorder": 4}, # make sure box and text above control wires if controlled
                     text_options={"zorder": 5},
                 )
-
-            else:
-                drawer.box_gate(layer, mapped_wires, op.label(decimals=decimals))
 
     # store wires we've already drawn on
     # max one measurement symbol per wire

@@ -324,58 +324,55 @@ class TestControlledGates:
 
         # two wire labels, so CRX is third text object
         assert ax.texts[2].get_text() == "RX\n(1.23)"
+        plt.close()
 
-general_op_data = [(qml.RX(1.234, wires=0), "RX"),
-    (qml.IsingXX(1.234, wires=(0,1)), "IsingXX"),
-
+general_op_data = [qml.RX(1.234, wires=0),
+    qml.Hadamard(0),
+    qml.S(wires=0),
+    qml.IsingXX(1.234, wires=(0,1)),
+    qml.U3(1.234,2.345,3.456, wires=0),
+    ### Templates
+    qml.QFT(wires=range(3)),
+    qml.Permute([4,2,0,1,3], wires=(0,1,2,3,4)),
+    qml.GroverOperator(wires=(0,1,2,3,4,5)),
+    ### Continuous Variable
+    qml.Kerr(1.234, wires=0),
+    qml.Beamsplitter(1.234,2.345, wires=(0,1)),
+    qml.Rotation(1.234, wires=0)
 ]
 
 class TestGeneralOperations:
     """Tests general operations."""
 
-    def test_RX(self, mocker):
-        """Test RX gate"""
-        mock_drawer = mocker.patch("pennylane.circuit_drawer.draw.MPLDrawer")
+    @pytest.mark.parametrize("op", general_op_data)
+    def test_general_operations(self, op):
 
         with QuantumTape() as tape:
-            qml.RX(1.234, wires=0)
+            qml.apply(op)
 
-        draw_mpl(tape)
+        _, ax = draw_mpl(tape)
 
-        mock_drawer().box_gate.assert_called_with(0, [0], "RX")
+        num_wires = len(op.wires)
+        assert ax.texts[num_wires].get_text() == op.label()
 
-    def test_RX_decimals(self, mocker):
-        """Test RX gate"""
-        mock_drawer = mocker.patch("pennylane.circuit_drawer.draw.MPLDrawer")
+        assert isinstance(ax.patches[0], mpl.patches.Rectangle)
+        assert ax.patches[0].get_xy() == (-0.4, -0.4)
+        assert ax.patches[0].get_width() == 0.8
+        assert ax.patches[0].get_height() == num_wires-0.2
 
-        with QuantumTape() as tape:
-            qml.RX(1.234, wires=0)
+        plt.close()
 
-        draw_mpl(tape, decimals=2)
-
-        mock_drawer().box_gate.assert_called_with(0, [0], "RX\n(1.23)")
-
-    def test_IsingXX(self, mocker):
-        """Test a standard multiwire gate."""
-        mock_drawer = mocker.patch("pennylane.circuit_drawer.draw.MPLDrawer")
+    @pytest.mark.parametrize("op", general_op_data)
+    def test_general_operations_decimals(self, op):
 
         with QuantumTape() as tape:
-            qml.IsingXX(1.234, wires=(0, 1))
+            qml.apply(op)
 
-        draw_mpl(tape)
+        _, ax = draw_mpl(tape, decimals=2)
 
-        mock_drawer().box_gate.assert_called_with(0, [0, 1], "IsingXX")
+        num_wires = len(op.wires)
+        assert ax.texts[num_wires].get_text() == op.label(decimals=2)
 
-    def test_QFT(self, mocker):
-        """Test a template operation"""
-        mock_drawer = mocker.patch("pennylane.circuit_drawer.draw.MPLDrawer")
-
-        with QuantumTape() as tape:
-            qml.QFT(wires=range(3))
-
-        draw_mpl(tape)
-
-        mock_drawer().box_gate.assert_called_with(0, [0, 1, 2], "QFT")
 
 
 class TestMeasurements:
@@ -436,50 +433,55 @@ class TestMeasurements:
 class TestLayering:
     """Tests operations are placed into layers correctly."""
 
-    def test_single_layer_multiple_wires(self, mocker):
+    def test_single_layer_multiple_wires(self):
         """Tests mulitple gates all in the same layer"""
-        mock_drawer = mocker.patch("pennylane.circuit_drawer.draw.MPLDrawer")
 
         with QuantumTape() as tape:
             qml.PauliX(0)
             qml.PauliX(1)
             qml.PauliX(2)
 
-        draw_mpl(tape)
+        _, ax = draw_mpl(tape)
 
-        # no order in set, so may be called in a different order
-        mock_drawer().box_gate.assert_any_call(0, [0], "X")
-        mock_drawer().box_gate.assert_any_call(0, [1], "X")
-        mock_drawer().box_gate.assert_any_call(0, [2], "X")
+        # may enter same layer in any order
+        # there check just exists in layer
+        box_coords = [p.get_xy() for p in ax.patches]
+        for wire in range(3):
+            assert (-0.4, wire-0.4) in box_coords
 
-    def test_three_layers_one_wire(self, mocker):
+        for t in ax.texts[3:]:
+            assert t.get_text() == "X"
+
+    def test_three_layers_one_wire(self):
         """Tests multiple gates all on the same wire"""
-
-        mock_drawer = mocker.patch("pennylane.circuit_drawer.draw.MPLDrawer")
 
         with QuantumTape() as tape:
             qml.PauliX(0)
             qml.PauliX(0)
             qml.PauliX(0)
 
-        draw_mpl(tape)
+        _, ax = draw_mpl(tape)
 
-        mock_drawer().box_gate.assert_any_call(0, [0], "X")
-        mock_drawer().box_gate.assert_any_call(1, [0], "X")
-        mock_drawer().box_gate.assert_any_call(2, [0], "X")
+        for layer, box in enumerate(ax.patches):
+            assert box.get_xy() == (layer-0.4, -0.4)
 
-    def test_blocking_IsingXX(self, mocker):
+        for t in ax.texts[1:]:
+            assert t.get_text() == "X"
+
+    def test_blocking_IsingXX(self):
         """Tests a multiwire gate blocking another on its empty wire"""
-
-        mock_drawer = mocker.patch("pennylane.circuit_drawer.draw.MPLDrawer")
 
         with QuantumTape() as tape:
             qml.PauliX(0)
             qml.IsingXX(1.234, wires=(0, 2))
             qml.PauliX(1)
 
-        draw_mpl(tape, wire_order=[0, 1, 2])
+        _, ax = draw_mpl(tape, wire_order=[0, 1, 2])
 
-        mock_drawer().box_gate.assert_any_call(0, [0], "X")
-        mock_drawer().box_gate.assert_any_call(1, [0, 2], "IsingXX")
-        mock_drawer().box_gate.assert_any_call(2, [1], "X")
+        assert ax.patches[0].get_xy() == (-0.4, -0.4) # layer=0, wire=0
+        assert ax.patches[1].get_xy() == (0.6, -0.4) # layer=1, wire=0
+        assert ax.patches[2].get_xy() == (1.6, 0.6) # layer=2, wire=1
+
+        assert ax.texts[3].get_text() == "X"
+        assert ax.texts[4].get_text() == "IsingXX"
+        assert ax.texts[5].get_text() == "X"
