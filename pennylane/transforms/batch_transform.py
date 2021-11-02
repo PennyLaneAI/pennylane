@@ -13,6 +13,7 @@
 # limitations under the License.
 """Contains tools and decorators for registering batch transforms."""
 # pylint: disable=too-few-public-methods
+import copy
 import functools
 import inspect
 import os
@@ -318,12 +319,21 @@ class batch_transform:
 
         return _wrapper
 
-    def __call__(self, qnode, *targs, **tkwargs):
+    def __call__(self, *targs, **tkwargs):
+        qnode = None
+
+        if targs:
+            qnode, *targs = targs
+
+        if isinstance(qnode, qml.Device):
+            # Input is a quantum device.
+            # dev = some_transform(dev, *transform_args)
+            return self._device_wrapper(*targs, **tkwargs)(qnode)
 
         if isinstance(qnode, qml.tape.QuantumTape):
             # Input is a quantum tape.
             # tapes, fn = some_transform(tape, *transform_args)
-            return self.construct(qnode, *targs, **tkwargs)
+            return self._tape_wrapper(*targs, **tkwargs)(qnode)
 
         if isinstance(qnode, (qml.QNode, QNode, qml.ExpvalCost)):
             # Input is a QNode:
@@ -338,7 +348,7 @@ class batch_transform:
             wrapper.construct = _construct
 
         else:
-            # Input is not a QNode nor a quantum tape.
+            # Input is not a QNode nor a quantum tape nor a device.
             # Assume Python decorator syntax:
             #
             # result = some_transform(*transform_args)(qnode)(*qnode_args)
@@ -353,11 +363,24 @@ class batch_transform:
 
             # Prepend the input to the transform args,
             # and create a wrapper function.
-            targs = (qnode,) + targs
+            if qnode is not None:
+                targs = (qnode,) + tuple(targs)
 
             def wrapper(qnode):
+                if isinstance(qnode, qml.Device):
+                    return self._device_wrapper(*targs, **tkwargs)(qnode)
+
+                if isinstance(qnode, qml.tape.QuantumTape):
+                    return self._tape_wrapper(*targs, **tkwargs)(qnode)
+
                 _wrapper = self.qnode_wrapper(qnode, targs, tkwargs)
                 _wrapper = functools.wraps(qnode)(_wrapper)
+
+                def _construct(args, kwargs):
+                    qnode.construct(args, kwargs)
+                    return self.construct(qnode.qtape, *targs, **tkwargs)
+
+                _wrapper.construct = _construct
                 return _wrapper
 
         wrapper.tape_fn = functools.partial(self.transform_fn, *targs, **tkwargs)
@@ -388,3 +411,14 @@ class batch_transform:
             processing_fn = lambda x: x
 
         return tapes, processing_fn
+
+    def _device_wrapper(self, *targs, **tkwargs):
+        def _wrapper(dev):
+            new_dev = copy.deepcopy(dev)
+            new_dev.batch_transform = lambda tape: self.construct(tape, *targs, **tkwargs)
+            return new_dev
+
+        return _wrapper
+
+    def _tape_wrapper(self, *targs, **tkwargs):
+        return lambda tape: self.construct(tape, *targs, **tkwargs)
