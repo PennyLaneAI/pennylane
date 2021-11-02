@@ -881,10 +881,6 @@
   operations with similar properties in `ops/qubit/attributes.py`.
   [(#1763)](https://github.com/PennyLaneAI/pennylane/pull/1763)
 
-* The `template` decorator is now deprecated with a warning message and will be removed
-  in release `v0.20.0`.
-  [(#1794)](https://github.com/PennyLaneAI/pennylane/pull/1794)
-
 * The `qml.inv` function has been removed, `qml.adjoint` should be used
   instead.
   [(#1778)](https://github.com/PennyLaneAI/pennylane/pull/1778)
@@ -932,6 +928,11 @@
   behaviour.
   [(#1721)](https://github.com/PennyLaneAI/pennylane/pull/1721)
   [(#1834)](https://github.com/PennyLaneAI/pennylane/pull/1834)
+
+* The `template` decorator is now deprecated with a warning message and will be removed
+  in release `v0.20.0`. It has been removed from different PennyLane functions.
+  [(#1794)](https://github.com/PennyLaneAI/pennylane/pull/1794)
+  [(#1808)](https://github.com/PennyLaneAI/pennylane/pull/1808)
 
 * Allowing cost functions to be differentiated using `qml.grad` or
   `qml.jacobian` without explicitly marking parameters as trainable is being
