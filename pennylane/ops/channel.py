@@ -510,11 +510,10 @@ class ThermalRelaxationError(Channel):
                 0 & 1
                 \end{bmatrix}
 
-    where :math:`p_{r0} \in [0, 1]` is the probability of a reset to 0, :math:`p_{r1} \in [0, 1]` is the probability of 
+    where :math:`p_{r0} \in [0, 1]` is the probability of a reset to 0, :math:`p_{r1} \in [0, 1]` is the probability of
     a reset to 1 error, :math:`p_z \in [0, 1]` is the probability of a phase flip (Pauli :math:`Z`) error.
 
     Case :math:`T_2 > T_1`:
-    
     The Choi matrix is given by
 
     .. math::
@@ -522,14 +521,14 @@ class ThermalRelaxationError(Channel):
                         1 - p_e * p_{reset} & 0 & 0 & eT_2 \\
                         0 & p_e * p_{reset} & 0 & 0 \\
                         0 & 0 & (1 - p_e) * p_{reset} & 0 \\
-                        eT_2 & 0 & 0 & 1 - (1 - p_e) * p_reset
+                        eT_2 & 0 & 0 & 1 - (1 - p_e) * p_{reset}
                         \end{bmatrix}
 
     .. math::
         K_N = \sqrt{\lambda} \Phi(\nu_{\lambda})
 
-    where :math:`\lambda` are the eigenvalues of the Choi matrix, :math:`\nu_{\lambda}` are the eigenvectors of 
-    the choi_matrix, and :math:`\Phi(x)` is a isomorphism from :math:`\mathbb{C}^{n^2}` 
+    where :math:`\lambda` are the eigenvalues of the Choi matrix, :math:`\nu_{\lambda}` are the eigenvectors of
+    the choi_matrix, and :math:`\Phi(x)` is a isomorphism from :math:`\mathbb{C}^{n^2}`
     to :math:`\mathbb{C}^{n \times n}` with column-major order mapping.
 
     **Details:**
