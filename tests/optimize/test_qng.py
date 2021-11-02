@@ -332,9 +332,8 @@ class TestOptimize:
         "diag_approx, approx_expected", [(True, "diag"), (False, "block-diag")]
     )
     def test_deprecate_diag_approx(self, diag_approx, approx_expected):
-        """Test single-qubit VQE by returning qml.expval(H) in the QNode and
-        check for the correct QNG value every step, the correct parameter updates, and
-        correct cost after 200 steps"""
+        """Test that using the diag_approx argument raises a warning due to
+        deprecation."""
         with pytest.warns(UserWarning, match="keyword argument diag_approx is deprecated"):
             opt = qml.QNGOptimizer(0.1, diag_approx=True)
 
