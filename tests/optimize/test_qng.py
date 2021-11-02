@@ -278,7 +278,6 @@ class TestOptimize:
         assert np.allclose(cost_fn(theta), -1.41421356, atol=tol, rtol=0)
         assert len(recwarn) == 0
 
-
     def test_single_qubit_vqe_using_expval_h_multiple_input_params(self, tol, recwarn):
         """Test single-qubit VQE by returning qml.expval(H) in the QNode and
         check for the correct QNG value every step, the correct parameter updates, and
@@ -329,14 +328,14 @@ class TestOptimize:
         assert np.allclose(circuit(x, y), -1.41421356, atol=tol, rtol=0)
         assert len(recwarn) == 0
 
-    @pytest.mark.parametrize("diag_approx, approx_expected", [(True, "diag"), (False, "block-diag")])
+    @pytest.mark.parametrize(
+        "diag_approx, approx_expected", [(True, "diag"), (False, "block-diag")]
+    )
     def test_deprecate_diag_approx(self, diag_approx, approx_expected):
         """Test single-qubit VQE by returning qml.expval(H) in the QNode and
         check for the correct QNG value every step, the correct parameter updates, and
         correct cost after 200 steps"""
-        with pytest.warns(
-            UserWarning, match="keyword argument diag_approx is deprecated"
-        ):
+        with pytest.warns(UserWarning, match="keyword argument diag_approx is deprecated"):
             opt = qml.QNGOptimizer(0.1, diag_approx=True)
 
         assert opt.approx == "diag"
