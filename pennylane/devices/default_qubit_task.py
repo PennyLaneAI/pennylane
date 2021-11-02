@@ -13,19 +13,30 @@
 # limitations under the License.
 """This module contains a proxy qubit object for spawning multiple instances of a given qubit type for run on a background scheduler.
 """
-from typing import List, Union
+from typing import List, Union, Tuple, Dict
 from contextlib import nullcontext
 import pennylane as qml
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
 from .default_qubit import DefaultQubit
 from .._version import __version__
 
-import numpy as np
-
 try:
     import dask
     import dask.distributed as dist
     from distributed import get_client, secede, rejoin
+    from distributed.protocol import dask_serialize, dask_deserialize, serialize, deserialize
+
+    @dask_serialize.register(qml.numpy.tensor)
+    def serialize(tensor: qml.numpy.tensor) -> Tuple[Dict, List[bytes]]:
+        header,frames = dist.protocol.numpy.serialize_numpy_ndarray(tensor)
+        header["type"] = "qml.numpy.tensor"
+        header["requires_grad"] = tensor.requires_grad
+        frames = [tensor.data]
+        return header, frames
+
+    @dask_deserialize.register(qml.numpy.tensor)
+    def deserialize(header: Dict, frames: List[bytes]) -> qml.numpy.tensor:
+        return qml.numpy.tensor(frames[0], requires_grad=header["requires_grad"])
 
 except ImportError as e:  # pragma: no cover
     raise ImportError("default.task requires installing dask and dask.distributed") from e
@@ -92,8 +103,8 @@ class DefaultTask(QubitDevice):
     supported_devices = {"default.qubit", "default.qubit.tf", "default.qubit.jax", "lightning.qubit", }
 
     def __init__(self, wires, *, shots=None, analytic=None, client=None, backend="default.qubit", gen_report: Union[bool, str] = False, future = False):
-        if client == None:
-            self.client = dist.Client(scheduler)
+        if client != None:
+            self.client = client
         else:
             self.client = get_client()
 
@@ -104,6 +115,8 @@ class DefaultTask(QubitDevice):
         self._shots = None
         self._cache = None
         self._future = future
+        self.expand_fn = self.default_expand_fn
+        self._shot_vector = None
 
         if backend not in DefaultTask.supported_devices:
             raise("Unsupported device backend.")
