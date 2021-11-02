@@ -12,9 +12,14 @@
 
 <h3>Bug fixes</h3>
 
+* `qml.CSWAP` and `qml.CRot` now define `control_wires`, and `qml.SWAP` 
+  returns the default empty wires object.
+  [(#1830)](https://github.com/PennyLaneAI/pennylane/pull/1830)
+
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Christina Lee
