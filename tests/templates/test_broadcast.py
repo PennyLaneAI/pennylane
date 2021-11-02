@@ -26,38 +26,32 @@ from pennylane.templates.broadcast import wires_pyramid, wires_all_to_all, wires
 from pennylane.wires import Wires
 
 
-@template
 def ConstantTemplate(wires):
     T(wires=wires)
     S(wires=wires)
 
 
-@template
 def ParametrizedTemplate(par1, par2, wires):
     RX(par1, wires=wires)
     RY(par2, wires=wires)
 
 
-@template
 def KwargTemplate(par, wires, a=True):
     if a:
         T(wires=wires)
     RY(par, wires=wires)
 
 
-@template
 def ConstantTemplateDouble(wires):
     T(wires=wires[0])
     CNOT(wires=wires)
 
 
-@template
 def ParametrizedTemplateDouble(par1, par2, wires):
     CRX(par1, wires=wires)
     RY(par2, wires=wires[0])
 
 
-@template
 def KwargTemplateDouble(par, wires, a=True):
     if a:
         T(wires=wires[0])
