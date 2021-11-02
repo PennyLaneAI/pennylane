@@ -636,8 +636,9 @@ class Device(abc.ABC):
 
     def expand_fn(self, circuit, max_expansion=10):
         """Method for expanding or decomposing an input circuit.
-        Can be the default or a custom expansion method, see default_expand_fn
-        and custom_expand for more details.
+        Can be the default or a custom expansion method, see
+        :meth:`.Device.default_expand_fn` and :meth:`.Device.custom_expand` for more
+        details.
 
         Args:
             circuit (.QuantumTape): the circuit to expand.
