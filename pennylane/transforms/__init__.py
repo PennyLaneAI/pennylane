@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Quantum transforms are composable transformations of quantum functions. A
+Quantum transforms are composable transformations of quantum functions (qfuncs). A
 quantum transform, when applied to a qfunc (a Python function containing
 quantum operations) or a :class:`~pennylane.QNode`, will **transform** the
 quantum circuit in order to achieve the desired result. For example, quantum
@@ -27,7 +27,7 @@ transforms can be used to:
   such as the gradient and the Fisher information matrix.
 
 This module provides a selection of device-independent, differentiable quantum
-gradient transforms. As such, not only is the output of a quantum transform
+transforms. As such, not only is the output of a quantum transform
 differentiable, but quantum transforms *themselves* can be differentiated with
 respect to any floating point arguments.
 
@@ -60,13 +60,16 @@ in quantum executions.
     ~transforms.classical_jacobian
 
 
-Multiple circuit transforms
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Batch circuit transforms
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 These transforms accept QNodes, and return new QNodes
 that compute the desired quantity. The transformed QNode, when
 executed, may result in multiple quantum circuit evaluations
 under the hood.
+
+.. autosummary::
+    :toctree: api
 
     ~batch_params
     ~metric_tensor
