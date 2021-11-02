@@ -41,6 +41,11 @@ class Barrier(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
 
+    def __init__(self, only_visual = False, *params, wires=None, do_queue=True, id=None):
+
+        self.only_visual = only_visual
+        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+
     num_params = 0
     num_wires = AnyWires
     par_domain = None
@@ -49,6 +54,13 @@ class Barrier(Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "||"
 
+
+    def decomposition(self, wires):
+        if self.only_visual:
+            decomp_ops = []
+        else:
+            raise NotImplementedError
+        return decomp_ops
 
     @property
     def matrix(self):
@@ -65,12 +77,6 @@ class Barrier(Operation):
     @classmethod
     def _eigvals(cls, num_wires):
         return np.ones(2 ** num_wires)
-
-    @staticmethod
-    def decomposition(wires):
-        decomp_ops = []
-
-        return decomp_ops
 
     def diagonalizing_gates(self):
         r"""Rotates the specified wires such that they
