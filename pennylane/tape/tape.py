@@ -803,6 +803,7 @@ class QuantumTape(AnnotatedQueue):
         [0.432, 0.543, 0.133]
         """
         params = []
+        #iterator = sorted(self.trainable_params) if trainable_only else self._par_info
         iterator = self.trainable_params if trainable_only else self._par_info
 
         for p_idx in iterator:
