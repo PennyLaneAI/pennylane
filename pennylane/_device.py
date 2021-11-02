@@ -141,7 +141,6 @@ class Device(abc.ABC):
         self._parameters = None
 
         self.tracker = qml.Tracker()
-        self.expand_fn = self.default_expand_fn
 
     def __repr__(self):
         """String representation."""
@@ -634,6 +633,9 @@ class Device(abc.ABC):
             circuit = circuit.expand(depth=max_expansion, stop_at=self.stopping_condition)
 
         return circuit
+
+    def expand_fn(self, circuit, max_expansion=10):
+        return self.default_expand_fn(circuit, max_expansion=max_expansion)
 
     def batch_transform(self, circuit):
         """Apply a differentiable batch transform for preprocessing a circuit
