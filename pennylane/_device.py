@@ -141,6 +141,7 @@ class Device(abc.ABC):
         self._parameters = None
 
         self.tracker = qml.Tracker()
+        self.custom_expand_fn = None
 
     def __repr__(self):
         """String representation."""
@@ -598,7 +599,7 @@ class Device(abc.ABC):
         before returning, to ensure that the expanded circuit is supported
         on the device.
         """
-        self.expand_fn = types.MethodType(fn, self)
+        self.custom_expand_fn = types.MethodType(fn, self)
 
     def default_expand_fn(self, circuit, max_expansion=10):
         """Method for expanding or decomposing an input circuit.
@@ -652,6 +653,9 @@ class Device(abc.ABC):
             .QuantumTape: The expanded/decomposed circuit, such that the device
             will natively support all operations.
         """
+        if self.custom_expand_fn is not None:
+            return self.custom_expand_fn(circuit, max_expansion=max_expansion)
+
         return self.default_expand_fn(circuit, max_expansion=max_expansion)
 
     def batch_transform(self, circuit):
