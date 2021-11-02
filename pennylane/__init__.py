@@ -31,6 +31,7 @@ import pennylane.math
 import pennylane.operation
 import pennylane.qnn
 import pennylane.templates
+import pennylane.hf
 from pennylane._device import Device, DeviceError
 from pennylane._grad import grad, jacobian, finite_diff
 from pennylane._qubit_device import QubitDevice
