@@ -241,10 +241,10 @@ def draw_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
 
     for layer, layer_ops in enumerate(layers):
         for op in layer_ops:
-            mapped_wires = [wire_map[w] for w in op.wires]
             
             specialfunc = special_cases.get(op.__class__, None)
             if specialfunc is not None:
+                mapped_wires = [wire_map[w] for w in op.wires]
                 specialfunc(drawer, op, layer, mapped_wires)
 
             else:
