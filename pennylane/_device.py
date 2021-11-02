@@ -635,6 +635,22 @@ class Device(abc.ABC):
         return circuit
 
     def expand_fn(self, circuit, max_expansion=10):
+        """Method for expanding or decomposing an input circuit.
+        Can be the default or a custom expansion method, see default_expand_fn
+        and custom_expand for more details.
+
+        Args:
+            circuit (.QuantumTape): the circuit to expand.
+            max_expansion (int): The number of times the circuit should be
+                expanded. Expansion occurs when an operation or measurement is not
+                supported, and results in a gate decomposition. If any operations
+                in the decomposition remain unsupported by the device, another
+                expansion occurs.
+
+        Returns:
+            .QuantumTape: The expanded/decomposed circuit, such that the device
+            will natively support all operations.
+        """
         return self.default_expand_fn(circuit, max_expansion=max_expansion)
 
     def batch_transform(self, circuit):
