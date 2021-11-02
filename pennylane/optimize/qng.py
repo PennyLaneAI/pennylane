@@ -14,6 +14,7 @@
 """Quantum natural gradient optimizer"""
 # pylint: disable=too-many-branches
 # pylint: disable=too-many-arguments
+import warnings
 
 from pennylane import numpy as np
 
@@ -150,9 +151,23 @@ class QNGOptimizer(GradientDescentOptimizer):
             to be applied at each optimization step
     """
 
-    def __init__(self, stepsize=0.01, diag_approx=False, lam=0):
+    def __init__(self, stepsize=0.01, approx="block-diag", diag_approx=None, lam=0):
         super().__init__(stepsize)
-        self.diag_approx = diag_approx
+
+        approx_set = False
+        if diag_approx is not None:
+
+            warnings.warn(
+                "The keyword argument diag_approx is deprecated. Please use approx='diag' instead.",
+                UserWarning,
+            )
+            if diag_approx:
+                self.approx = "diag"
+                approx_set = True
+
+        if not approx_set:
+            self.approx = approx
+
         self.metric_tensor = None
         self.lam = lam
 
@@ -193,10 +208,7 @@ class QNGOptimizer(GradientDescentOptimizer):
         if recompute_tensor or self.metric_tensor is None:
             if metric_tensor_fn is None:
 
-                if self.diag_approx:
-                    metric_tensor_fn = qml.metric_tensor(qnode, approx="diag")
-                else:
-                    metric_tensor_fn = qml.metric_tensor(qnode)
+                metric_tensor_fn = qml.metric_tensor(qnode, approx=self.approx)
 
             self.metric_tensor = metric_tensor_fn(*args, **kwargs)
             self.metric_tensor += self.lam * np.identity(self.metric_tensor.shape[0])

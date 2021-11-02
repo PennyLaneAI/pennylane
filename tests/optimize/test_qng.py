@@ -14,6 +14,7 @@
 """Tests for the QNG optimizer"""
 import pytest
 import scipy as sp
+import warnings
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -327,3 +328,15 @@ class TestOptimize:
         # check final cost
         assert np.allclose(circuit(x, y), -1.41421356, atol=tol, rtol=0)
         assert len(recwarn) == 0
+
+    @pytest.mark.parametrize("diag_approx, approx_expected", [(True, "diag"), (False, "block-diag")])
+    def test_deprecate_diag_approx(self, diag_approx, approx_expected):
+        """Test single-qubit VQE by returning qml.expval(H) in the QNode and
+        check for the correct QNG value every step, the correct parameter updates, and
+        correct cost after 200 steps"""
+        with pytest.warns(
+            UserWarning, match="keyword argument diag_approx is deprecated"
+        ):
+            opt = qml.QNGOptimizer(0.1, diag_approx=True)
+
+        assert opt.approx == "diag"
