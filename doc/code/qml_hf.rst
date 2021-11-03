@@ -63,7 +63,10 @@ construct the Hamiltonian.
 + ((0.05013061742645664+0j)) [X0 Y2 X3 Y1]
 
 The generated Hamiltonian can be used in a circuit where the molecular geometry, the basis set
-parameters, and the circuit parameters are optimized simultaneously.
+parameters, and the circuit parameters are optimized simultaneously. Further information about
+molecular geometry optimization with PennyLane is provided in this
+`paper <https://arxiv.org/abs/2106.13840>`__ and this
+`demo <https://pennylane.ai/qml/demos/tutorial_mol_geo_opt.html>`__ .
 
 .. code-block:: python3
 
